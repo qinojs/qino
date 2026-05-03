@@ -1,0 +1,65 @@
+cms-image2 {
+    display:inline-block;
+    position:relative;
+    overflow:hidden;
+    box-sizing:border-box;
+
+    max-width:80px; /* shout be overwritten */
+    width:100%; /* if max-width:100% => somtimes "with" wins in containers */
+    min-width:10px;
+    min-height:10px;
+
+    background-size:cover; /* can be overwritten */
+    background-repeat:no-repeat;
+    background-position:50% 50%; /* shout be overwritten */
+    vertical-align: middle;
+    padding:0 !important;
+
+    /* aspect-ratio: calc(1 / var(--aspect-ratio) ); todo */
+    /* z-index:-1; todo? */
+}
+cms-image2::after {
+    content:'';
+    display:block;
+    height:0;
+    box-sizing:border-box;
+    /* padding-bottom:100%; /* should be overwritten */
+    padding-bottom:calc( var(--aspect-ratio) * 100% ); /* new style */
+}
+cms-image2 img {
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    height:100%;
+    width:100%;
+    object-fit:cover;
+    object-position:50% 50%;
+}
+
+/*
+cms-image2 > img {
+    transition:opacity .3s;
+    opacity:0;
+    &:not([loading]) { opacity:1; }
+}
+*/
+
+
+cms-image2[fit="contain"] { background-size:contain; }
+cms-image2[fit="contain"] img { object-fit:contain; }
+
+
+[data-cms-image2-bg] {
+    background-size:cover;
+}
+
+/* *
+cms-image2::after {
+    transition: backdrop-filter .4s ease-in;
+}
+cms-image2:not([loaded])::after {
+    backdrop-filter: blur(12px);
+}
+/* */

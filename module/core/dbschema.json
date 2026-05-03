@@ -1,0 +1,833 @@
+{
+  "properties": {
+    "client": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          }
+        },
+        "required": [
+          "id",
+          "hash"
+        ]
+      }
+    },
+    "client_usr": {
+      "additionalProperties": {
+        "properties": {
+          "client_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "client",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "save_login": {
+            "type": "boolean"
+          },
+          "time": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "client_id",
+          "usr_id",
+          "save_login",
+          "time"
+        ]
+      }
+    },
+    "file": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "x-index": true
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1073741823,
+            "x-index": "fulltext"
+          },
+          "mime": {
+            "type": "string",
+            "maxLength": 100,
+            "x-index": true
+          },
+          "access": {
+            "type": "boolean"
+          },
+          "md5": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "size": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "x-index": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "text",
+          "mime",
+          "access",
+          "md5",
+          "size"
+        ]
+      }
+    },
+    "grp": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          }
+        },
+        "required": [
+          "id",
+          "usr_id",
+          "type",
+          "name"
+        ]
+      }
+    },
+    "log": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "time": {
+            "type": "integer",
+            "x-index": true
+          },
+          "sess_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "sess",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "post": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "client"
+          },
+          "user_agent_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log_user_agent"
+          },
+          "url_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log_url"
+          },
+          "referer_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log_url"
+          },
+          "ip_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log_ip"
+          }
+        },
+        "required": [
+          "id",
+          "time",
+          "post"
+        ]
+      }
+    },
+    "log_user_agent": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "user_agent": {
+            "type": "string",
+            "x-index": "fulltext"
+          }
+        },
+        "required": [
+          "id",
+          "user_agent"
+        ]
+      }
+    },
+    "log_url": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 40,
+            "x-index": true
+          },
+          "url": {
+            "type": "string",
+            "x-index": "fulltext"
+          }
+        },
+        "required": [
+          "id",
+          "hash",
+          "url"
+        ]
+      }
+    },
+    "log_ip": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "ip": {
+            "type": "string",
+            "maxLength": 39,
+            "x-index": "unique"
+          }
+        },
+        "required": [
+          "id",
+          "ip"
+        ]
+      }
+    },
+    "mail": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "sender": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "sendername": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "reply_to": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "text": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sender",
+          "sendername",
+          "reply_to",
+          "subject",
+          "text",
+          "html"
+        ]
+      }
+    },
+    "mail_attachment": {
+      "additionalProperties": {
+        "properties": {
+          "mail_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "mail",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 40,
+            "x-index": "primary"
+          },
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 63
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 63
+          },
+          "inline": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mail_id",
+          "hash",
+          "path",
+          "name",
+          "type",
+          "inline"
+        ]
+      }
+    },
+    "mail_recipient": {
+      "additionalProperties": {
+        "properties": {
+          "mail_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "mail",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "data": {
+            "type": "string"
+          },
+          "sent": {
+            "type": "integer"
+          },
+          "opened": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mail_id",
+          "email",
+          "name",
+          "data",
+          "sent",
+          "opened",
+          "error"
+        ]
+      }
+    },
+    "module": {
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 127,
+            "x-index": "primary"
+          },
+          "access": {
+            "type": "boolean"
+          },
+          "title_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "text",
+            "x-qg-on-parent-delete": "setnull"
+          }
+        },
+        "required": [
+          "name",
+          "access",
+          "title_id"
+        ]
+      }
+    },
+    "qg_hashaction": {
+      "additionalProperties": {
+        "properties": {
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 127,
+            "x-index": "primary"
+          },
+          "fn": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "expires": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "times": {
+            "type": "integer"
+          },
+          "data": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hash",
+          "fn",
+          "expires",
+          "times",
+          "data"
+        ]
+      }
+    },
+    "qg_setting": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "basis": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "qg_setting"
+          },
+          "offset": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 1073741823
+          },
+          "type": {
+            "type": "integer",
+            "minimum": -128,
+            "maximum": 127
+          },
+          "handler": {
+            "type": "string"
+          },
+          "options": {
+            "type": "string"
+          },
+          "w": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "basis",
+          "offset",
+          "value",
+          "type",
+          "handler",
+          "options",
+          "w"
+        ]
+      }
+    },
+    "qg_setting_usr": {
+      "additionalProperties": {
+        "properties": {
+          "setting_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "qg_setting",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "setting_id",
+          "usr_id",
+          "value"
+        ]
+      }
+    },
+    "sess": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "token": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          },
+          "time": {
+            "type": "integer"
+          },
+          "access": {
+            "type": "integer",
+            "x-index": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "data": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "time",
+          "access"
+        ]
+      }
+    },
+    "smalltext": {
+      "additionalProperties": {
+        "properties": {
+          "hash": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": "primary"
+          },
+          "original": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32767
+          },
+          "de": {
+            "type": "string"
+          },
+          "fr": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          },
+          "it": {
+            "type": "string"
+          },
+          "pl": {
+            "type": "string"
+          },
+          "zh": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hash",
+          "namespace",
+          "original",
+          "count",
+          "de",
+          "fr",
+          "en",
+          "it",
+          "pl",
+          "zh"
+        ]
+      }
+    },
+    "smalltext_code_log": {
+      "additionalProperties": {
+        "properties": {
+          "hash": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary",
+            "x-qg-parent": "smalltext",
+            "x-qg-parent-field": "hash"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": "primary",
+            "x-qg-parent": "smalltext",
+            "x-qg-parent-field": "namespace"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "line": {
+            "type": "integer",
+            "x-index": "primary"
+          }
+        },
+        "required": [
+          "hash",
+          "namespace",
+          "file",
+          "line"
+        ]
+      }
+    },
+    "text": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 12,
+            "x-index": "primary"
+          },
+          "text": {
+            "type": "string",
+            "x-index": "fulltext"
+          }
+        },
+        "required": [
+          "id",
+          "lang",
+          "text"
+        ]
+      }
+    },
+    "usr": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "unique"
+          },
+          "pw": {
+            "type": "string",
+            "maxLength": 127
+          },
+          "firstname": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "lastname": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "superuser": {
+            "type": "boolean"
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 8
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "settings": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "active",
+          "pw",
+          "firstname",
+          "lastname",
+          "superuser",
+          "lang",
+          "company"
+        ]
+      }
+    },
+    "usr_grp": {
+      "additionalProperties": {
+        "properties": {
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "grp_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "grp",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          }
+        },
+        "required": [
+          "usr_id",
+          "grp_id",
+          "log_id"
+        ]
+      }
+    }
+  }
+}

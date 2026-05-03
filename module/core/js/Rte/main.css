@@ -1,0 +1,189 @@
+/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+@font-face {
+  font-family: 'qgRte';
+  src: url('font/tinymce.woff?v=4.5.0') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[contenteditable]:focus td {
+	outline:1px dashed #F4E2DC;
+	outline-offset:0px;
+}
+[contenteditable] td {
+	min-width:1em;
+}
+[contenteditable]:focus table {
+	outline:1px dashed #F4E2DC;
+	outline-offset:1px;
+}
+
+body #qgRteToolbar [hidden] {
+    display:none;
+}
+
+#qgRteToolbar {
+	position:absolute;
+	top:90px;
+	left:90px;
+	z-index:1999;
+	box-shadow: 0 0 10px rgba(0,0,0,.4);
+	font-size:14px;
+	font-family:Arial;
+    background-color:#222;
+    color:#fff;
+    max-width:297px;
+    transition:top .14s;
+    transition-property:top, left, opacity;
+    will-change:top, left;
+    padding:1px;
+
+    & > div {
+        display:flex;
+        flex-flow:wrap;
+        box-sizing: border-box;
+    }
+    & .-more {
+        color:#fff;
+        display:none;
+    }
+    & .-more.-show {
+        display:flex;
+    }
+    & > .-more:focus-within {
+        display:flex !important;
+    }
+
+    & :is(input, textarea) {
+        font-size:inherit;
+        background:inherit;
+        box-sizing:border-box;
+        border:1px solid;
+        width:100%;
+        padding:3px;
+        color:#fff;
+    }
+    & input[type=checkbox] {
+        width:auto;
+    }
+    & table {
+        margin:0;
+        flex: 1 1 100%;
+        border-collapse:collapse;
+        width: 100%;
+    }
+
+    & td {
+        height:39px;
+        box-sizing:border-box;
+        vertical-align: middle;
+        padding:8px 10px;
+    }
+    & input {
+        border:none;
+        background:#ccc;
+        color:#000;
+        margin:0;
+        padding:.3em .6em;
+    }
+    & input:is(:focus, :hover) {
+        background:#fff;
+    }
+
+    & .-item {
+        display:flex;
+        align-items:center;
+        justify-content: center;
+        box-sizing:border-box;
+        cursor:pointer;
+        line-height:1.2;
+        width:36px;
+        height:36px;
+        padding:5px 8px;
+        outline:.5px solid #444;
+        margin:.5px;
+    }
+    & .-item:hover {
+        background:#555;
+    }
+
+    & .-item.-select {
+        width:73px;
+        position:relative;
+        padding:5px 8px;
+        flex:1 1 auto;
+        padding-right:16px;
+    }
+    & .-item.-select:after {
+        content:'▼';
+        position:absolute;
+        top:50%;
+        right:5px;
+        transform:translateY(-50%);
+        font-size:.8em;
+    }
+    & .-item.-button {
+        width:auto;
+        flex:auto;
+    }
+
+    & .-state {
+        max-width:125px;
+        overflow:hidden;
+        white-space:nowrap;
+    }
+
+    & .-options {
+        display:none;
+        padding:3px 3px 3px 3px;
+        position: absolute;
+        left:-1px;
+        top:100%;
+        z-index:1;
+        background-color:#fff;
+        color:#000;
+        overflow:visible;
+        border:1px solid #bbb;
+        box-shadow:1px 1px 2px rgba(0,0,0,.4);
+        min-width:100%;
+    }
+    & .-options > * {
+        padding:1px 4px;
+        display:block !important;
+        clear:both !important;
+        width:auto !important;
+        border-bottom:1px solid #eee;
+        white-space:nowrap;
+    }
+    & .-options > .-selected {
+        background-color:#49F;
+        color:#fff;
+    }
+
+    & .-item.active {
+        color:#0099ff;
+    }
+
+    & .-item::before {
+        font-family:qgRte;
+        display:inline-block;
+        text-align:center;
+        font-size:14px;
+        min-width:20px;
+        padding-left: 0px;
+    }
+
+    & .-item.-Bold::before                 { content:'\e02a'; }
+    & .-item.-Italic::before               { content:'\e02b'; }
+    & .-item.-Insertunorderedlist::before  { content:'\e00a'; }
+    & .-item.-Insertorderedlist::before    { content:'\e00b'; }
+    & .-item.-Code::before                 { content:'\e017'; }
+    & .-item.-Link::before                 { content:'\e011'; }
+    & .-item.-Unlink::before               { content:'\e012'; }
+    & .-item.-Removeformat::before         { content:'\e01d'; }
+    & .-item.-Underline::before            { content:'\e02c'; }
+    & .-item.-Strikethrough::before        { content:'\e02d'; }
+    & .-item.-Hr::before                   { content:'\e01c'; }
+    & .-item.-Table::before                { content:'\e01b'; }
+    & .-item.-ShowInvisibleChars::before   { content:'\e02e'; }    
+}

@@ -1,0 +1,26 @@
+.cmsBeTree .-toggle {
+	display:block;
+	height:22px;
+	width:22px;
+	display:inline-block;
+	vertical-align:middle;
+	background-position:50%;
+	background-size:75%;
+	background-repeat: no-repeat;
+}
+.cmsBeTree .-minus {
+	background-image:url(close.svg)
+}
+.cmsBeTree .-plus  {
+	background-image:url(open.svg)
+}
+#content .cmsBeTree tbody tr {
+    background: #fff;
+}
+#content .cmsBeTree tbody td {
+    border: 1px solid #ddd;
+}
+#content .cmsBeTree tbody tr.-isCont  {
+	font-size:10px;
+	background:#f0f0f0;
+}

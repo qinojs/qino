@@ -1,0 +1,332 @@
+{
+  "properties": {
+    "page": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 1,
+            "x-index": true
+          },
+          "basis": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "page"
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32767,
+            "x-index": true
+          },
+          "lft": {
+            "type": "integer",
+            "x-index": true
+          },
+          "rgt": {
+            "type": "integer",
+            "x-index": true
+          },
+          "module": {
+            "type": "string",
+            "maxLength": 127,
+            "x-index": true,
+            "x-qg-parent": "module",
+            "x-qg-on-parent-delete": ""
+          },
+          "access": {
+            "type": "integer",
+            "minimum": -128,
+            "maximum": 127,
+            "x-index": true
+          },
+          "online_start": {
+            "type": "integer",
+            "x-index": true
+          },
+          "online_end": {
+            "type": "integer",
+            "x-index": true
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "searchable": {
+            "type": "boolean",
+            "x-index": true
+          },
+          "title_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "text",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "settings": {
+            "type": "string"
+          },
+          "_cache": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "log_id",
+          "log_id_ch",
+          "type",
+          "basis",
+          "sort",
+          "module",
+          "visible",
+          "searchable",
+          "title_id",
+          "_cache"
+        ]
+      }
+    },
+    "page_class": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade"
+          },
+          "class": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary"
+          }
+        },
+        "required": [
+          "page_id",
+          "class"
+        ]
+      }
+    },
+    "page_access_grp": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade"
+          },
+          "grp_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "grp",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade"
+          },
+          "access": {
+            "type": "integer",
+            "minimum": -128,
+            "maximum": 127
+          }
+        },
+        "required": [
+          "page_id",
+          "grp_id",
+          "access"
+        ]
+      }
+    },
+    "page_access_usr": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade",
+            "x-qg-on-parent-copy": "cascade"
+          },
+          "access": {
+            "type": "integer",
+            "minimum": -128,
+            "maximum": 127
+          }
+        },
+        "required": [
+          "page_id",
+          "usr_id",
+          "access"
+        ]
+      }
+    },
+    "page_file": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "sort": {
+            "type": "integer",
+            "minimum": -32768,
+            "maximum": 32767,
+            "x-index": true
+          }
+        },
+        "required": [
+          "page_id",
+          "name",
+          "file_id",
+          "sort"
+        ]
+      }
+    },
+    "page_redirect": {
+      "additionalProperties": {
+        "properties": {
+          "request": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "redirect": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request",
+          "redirect"
+        ]
+      }
+    },
+    "page_text": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "x-index": "primary"
+          },
+          "text_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "text",
+            "x-qg-on-parent-delete": "cascade"
+          }
+        },
+        "required": [
+          "page_id",
+          "name",
+          "text_id"
+        ]
+      }
+    },
+    "page_url": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 12,
+            "x-index": "primary"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 255,
+            "x-index": true
+          },
+          "custom": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_id",
+          "lang",
+          "url",
+          "custom",
+          "target"
+        ]
+      }
+    },
+    "grp": {
+      "additionalProperties": {
+        "properties": {
+          "page_access": {
+            "type": "boolean",
+            "x-index": true
+          }
+        },
+        "required": [
+          "page_access"
+        ]
+      }
+    },
+    "mail": {
+      "additionalProperties": {
+        "properties": {
+          "page_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "page",
+            "x-qg-on-parent-delete": "setnull"
+          }
+        }
+      }
+    }
+  }
+}

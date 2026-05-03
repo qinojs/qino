@@ -1,0 +1,87 @@
+{
+  "properties": {
+    "m_error_report": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "x-index": true
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 5,
+            "x-index": true
+          },
+          "message": {
+            "type": "string",
+            "x-index": "fulltext"
+          },
+          "file": {
+            "type": "string",
+            "x-index": "fulltext"
+          },
+          "line": {
+            "type": "integer",
+            "x-index": true
+          },
+          "col": {
+            "type": "integer",
+            "x-index": true
+          },
+          "prio": {
+            "type": "string",
+            "maxLength": 10,
+            "x-index": true
+          },
+          "sample": {
+            "type": "string",
+            "x-index": "fulltext"
+          },
+          "backtrace": {
+            "type": "string"
+          },
+          "browser": {
+            "type": "string",
+            "x-index": "fulltext"
+          },
+          "request": {
+            "type": "string",
+            "x-index": "fulltext"
+          },
+          "referer": {
+            "type": "string",
+            "x-index": "fulltext"
+          },
+          "ip": {
+            "type": "string",
+            "maxLength": 39,
+            "x-index": true
+          },
+          "bot": {
+            "type": "boolean",
+            "x-index": true
+          },
+          "unsupported_ua": {
+            "type": "boolean",
+            "x-index": true
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  }
+}

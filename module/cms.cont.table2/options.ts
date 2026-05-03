@@ -1,0 +1,40 @@
+// Port of cms.cont.table2/options.php
+import type { Node } from "../cms/lib/Node.ts";
+import { hee, getCtx } from "qg";
+
+export default async function (node: Node, _vars: any): Promise<string> {
+  const cols = Math.max(1, parseInt(String(await node.settings.cols)) || 1);
+  const rows = Math.max(1, parseInt(String(await node.settings.rows)) || 1);
+  const percent = Math.floor(100 / cols);
+  const errorID = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+
+  const ctx = getCtx();
+  const requestUri = ctx.server.REQUEST_URI;
+  const exportUrl = requestUri + (requestUri.includes("?") ? "&" : "?") + `export_table=${node.id}`;
+
+  let colWidths = "";
+  for (let i = 1; i <= cols; i++) {
+    const val = String(await node.settings[`row_${i}`] ?? "");
+    colWidths += `
+    <div style="width:${percent}%; text-align:center;">
+      ${i}<br>
+      <input value="${hee(val)}" oninput="$fn('page::setDefault')(${node},{${"row_" + i}:this.value}).run();" style="width:93%; text-align:center" placeholder="50%"/>
+    </div>`;
+  }
+
+  return `
+<input type=number value="${hee(String(rows))}" min=1 max=300 oninput="$fn('page::setDefault')(${node},{rows:this.value}).run()" style="width:80px; font-size:18px;">
+Zeilen (max: 300)<br>
+<br>
+<input type=number value="${hee(String(cols))}" min=1 max=15 oninput="$fn('page::setDefault')(${node},{cols:this.value}); cms.cont(cms.cont.active).showWidget('options')" style="width:80px; font-size:18px;">
+Spalten (max: 15)<br>
+
+<br>
+<br>
+<p id="${errorID}" style="color:#FF0000; display:none;">Bitte beachten Sie: Die Summe aller Spalten muss 100% ergeben.</p>
+<div style="display:flex">${colWidths}
+</div>
+
+<p>&nbsp;</p>
+<a href="${hee(exportUrl)}">Tabelle als Excel exportieren</a>`;
+}

@@ -1,0 +1,39 @@
+.c1-box {
+    display:flex;
+    flex-flow:column;
+    overflow:visible; /* overwrite c1-dialog */
+}
+.c1-box.c1-box { /* stronger */
+    padding:0;
+}
+.c1-box > .-body {
+    /* flex:1 0 auto; old */
+    flex:1 1 auto;
+    overflow:auto;
+    padding:20px;
+}
+.c1-box > .-head ,
+.c1-box > .-foot {
+    flex:0 0 auto;
+    display:flex;
+    background:#000;
+    color:#fff;
+    padding:10px 20px;
+}
+.c1-box > .-head > .-title {
+    flex:1;
+}
+.c1-box > .-foot {
+    background:transparent;
+}
+
+
+/* neu */
+tr.c1-box-head > * {
+    position:sticky;
+    top:0;
+    left:0;
+    background:#000;
+    color:#fff;
+    padding:10px;
+}

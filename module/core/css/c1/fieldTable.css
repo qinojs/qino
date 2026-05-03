@@ -1,0 +1,64 @@
+.c1-fieldTable {
+    display:table;
+    width: 100%;
+}
+.c1-fieldTable > * {
+    display:table-row-group;
+}
+.c1-fieldTable > * > * {
+    display:table-row;
+}
+.c1-fieldTable > * > * > * {
+    display:table-cell;
+    padding:.3em;
+    width:50%;
+    vertical-align:middle;
+}
+.c1-fieldTable > * > * > :first-child {
+	padding-left:0;
+	/* width:37%; */
+}
+.c1-fieldTable > * > * > :last-child {
+	padding-right:0;
+}
+.c1-fieldTable input:not([type=checkbox]):not([type=radio]) ,
+.c1-fieldTable textarea ,
+.c1-fieldTable select {
+	width:100%;
+    vertical-align:middle;
+}
+
+@media (max-width: 600px) {
+	.c1-fieldTable > * > * {
+		display: block;
+	}
+	.qgCmsPage .c1-fieldTable > * > * > * {
+		display: block;
+		width: auto;
+	}
+	.c1-fieldTable > * > * > :first-child {
+		padding: 0.45em 0 0.2em 0;
+	}
+	.c1-fieldTable > * > * > :last-child {
+		padding: 0.2em 0 0.45em 0;
+	}
+}
+
+
+/*
+baseline aligning, would be the perfect solution - but...
+ugly hack for ff
+safari works if textarea has content or a placeholder!!
+http://jsbin.com/topobayatu/1/edit?html,css,output
+
+### flexbox solution
+old: http://jsbin.com/pafuhizeza/1/edit?html,css,output
+new: this works: https://jsbin.com/cequwiqavo/2/edit?html,css,output
+
+adventage:
+- use margins instead of padding in cells
+- smaller
+
+### grid solution, all advantages, but display contents has to be supported;
+http://jsbin.com/xalirebofo/1/edit?html,css,output
+*/

@@ -1,0 +1,212 @@
+// deno-lint-ignore-file no-explicit-any
+import { HTTPException } from "hono/http-exception";
+import { getCtx } from "qg";
+
+// // ─── REST helper ──────────────────────────────────────────────────────────────
+
+// async function resolvePage(c: Context, minAccess = 1): Promise<any> {
+//     const page = await getCtx().app.cms.page(c.req.param("id"));
+//     if (!await page.is()) throw new HTTPException(404, { message: "Page not found" });
+//     if (await page.access() < minAccess) throw new HTTPException(403, { message: "Forbidden" });
+//     return page;
+// }
+
+// ─── Shared business logic (used by REST + serverInterface shim) ──────────────
+
+export async function nodeToJson(pid: any, type = "*"): Promise<any> {
+    const app = getCtx().app.cms;
+    const Page = await app.node(pid);
+    const titleObj = await Page.title();
+    const titleStr = String(await titleObj.string() ?? "").trim();
+    return {
+        title:    (await Page.access()) ? (titleStr || "-") : "(no access)",
+        title_id: titleObj.id,
+        isLazy:   (await Page.children({ type }))?.size ?? 0,
+        key:      parseInt(String(Page.id)),
+        url:      await Page.url(),
+        myaccess: await Page.access(),
+        visible:  parseInt(String(Page.vs?.["visible"] ?? 0)),
+        online:   (await Page.isOnline()) ? 1 : 0,
+        public:   (await Page.isPublic()) ? 1 : 0,
+        type:     Page.vs.type,
+        module:   Page.vs.module,
+        name:     String(Page.vs.name ?? ""),
+    };
+}
+
+export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
+    const ctx = getCtx();
+    const filter = opt["filter"] ?? "*";
+    const level  = (opt["_level"] ?? 0) + 1;
+    const res: any[] = [];
+    let Cs: any[];
+    if (String(start) === "0") {
+        Cs = [await ctx.app.cms.node(1)];
+    } else {
+        const P = await ctx.app.cms.node(start);
+        Cs = [...(await P.children({ type: filter }) ?? new Map()).values()];
+    }
+    for (const C of Cs) {
+        const node: any = await nodeToJson(C.id, filter);
+        const shouldExpand =
+            (!opt["in"] || await (await ctx.app.cms.node(opt["in"])).in(C)) &&
+            (!opt["level"] || opt["level"] > level);
+        if (shouldExpand) {
+            node["children"] = await cmsGetTree(C.id, { ...opt, _level: level });
+            node["state"] = { open: true };
+        }
+        res.push(node);
+    }
+    return res;
+}
+
+export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
+    const ctx  = getCtx();
+    const ret  = { parent_id: parseInt(String(await node.parent())) };
+    const trash = await ctx.app.settings.cms.pageTrash ?? 0;
+    if (await node.in(trash)) {
+        if (await node.access() < 3) throw new HTTPException(403);
+        await (await node.parent()).removeChild(node);
+    } else {
+        const pSET = await node.SET;
+        await pSET?.offsetSet("__deleted_from",   String(await node.parent()));
+        await pSET?.offsetSet("__deleted_before",  String(await node.nextSibling({ type: node.vs?.["type"] })));
+        await pSET?.offsetSet("__deleted_time",    Math.floor(Date.now() / 1000));
+        const TrashNode = await ctx.app.cms.node(trash);
+        await TrashNode.insertBefore(node, await TrashNode.cont("main"));
+        const bough = await node.bough() ?? new Map();
+        for (const Child of bough.values()) {
+            if (Child.vs?.["access"] !== null) await Child.set("access", 0);
+            await ctx.app.db.query("DELETE FROM page_access_usr WHERE page_id = ? AND access < 2", [String(Child)]);
+            await ctx.app.db.query("DELETE FROM page_access_grp WHERE page_id = ? AND access < 2", [String(Child)]);
+        }
+    }
+    return ret;
+}
+
+export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<{ url: string; name: string }> {
+    const ctx = getCtx();
+    let File: any;
+    if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
+        const dbF = ctx.app.dbFiles.file(parseInt(String(file)));
+        if (!await dbF.access()) throw new HTTPException(403);
+        if (replace) {
+            const existing = await node.File(replace);
+            await dbF.clone(existing?.id);
+            File = existing;
+        } else {
+            File = await node.addFile(await dbF.clone());
+        }
+    } else {
+        if (file !== null && file !== undefined && !/^https?:\/\//.test(String(file))) {
+            throw new HTTPException(403);
+        }
+        File = await node.addFile(file, replace);
+    }
+    return { url: await File?.url() ?? "", name: await File?.name() ?? "" };
+}
+
+export async function filesSetOrder(node: any, by: string): Promise<void> {
+    const db  = getCtx().app.db;
+    const pid = String(node.id);
+    let sorted: string[];
+    if (by === "name" || by === "name_reverse") {
+        const rows = await db.all(
+            " SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY f.name ",
+            [pid],
+        );
+        const vs: Record<string, string> = {};
+        for (const row of rows) vs[row["name"]] = row["fname"];
+        if (by === "name_reverse") for (const n in vs) vs[n] = vs[n].split("").reverse().join("");
+        sorted = Object.keys(vs).sort((a, b) =>
+            vs[a].localeCompare(vs[b], undefined, { numeric: true, sensitivity: "base" }),
+        );
+    } else {
+        const sql = by === "date"
+            ? " SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY f.log_id"
+            : " SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY pf.sort DESC";
+        sorted = (await db.all(sql, [pid])).map((r: any) => r["name"]);
+    }
+    await node.sortFiles(sorted);
+}
+
+export async function cmsRequestUsed(v: string): Promise<boolean> {
+    const db = getCtx().app.db;
+    const r  = await db.one("SELECT count(*) FROM page_redirect WHERE request = ?", [v]);
+    const u  = await db.one("SELECT count(*) FROM page_url WHERE url = ?", [v]);
+    return !!(r || u);
+}
+
+export async function cmsSearchNodes(search: string): Promise<any[]> {
+    const ctx = getCtx();
+    search = search.replace(/^cmspid:\/\//, "");
+    const sql =
+        " SELECT p.id AS id FROM page p, text t WHERE 1" +
+        " AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id" +
+        " AND ( p.id = ? OR t.text LIKE ? ) GROUP BY p.id ORDER BY" +
+        " p.id = ? DESC, t.lang = '" + ctx.lang + "' DESC," +
+        " t.text = ? DESC, t.text LIKE ? DESC, t.text LIKE ? DESC, t.text ASC LIMIT 20";
+    const params = [search, "%" + search + "%", search, search, search + "%", "% " + search + "%"];
+    const res: any[] = [];
+    for (const vs of await ctx.app.db.all(sql, params)) {
+        const Page = await ctx.app.cms.node(vs.id);
+        if (!await Page.access()) continue;
+        const titleStr = String(await (await Page.title()).string() ?? "").trim();
+        if (!titleStr) continue;
+        const parent   = await Page.Parent();
+        const pTitle   = parent ? String(await (await Parent.title()).string() ?? "").trim() : "";
+        const gpTitle  = (parent && await parent.Parent()) ? String(await (await (await parent.Parent()).title()).string() ?? "").trim() : "";
+        res.push({
+            html:  `<b>${titleStr}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
+                   (parent ? `<i style="font-size:10px;display:block">${pTitle}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${gpTitle}</i>` : "") : ""),
+            text:  titleStr ? `${titleStr} (${Page.id})` : String(Page.id),
+            value: Page.id,
+        });
+    }
+    return res;
+}
+/** @deprecated use cmsSearchNodes() */
+export function cmsSearchPages(search: string): Promise<any[]> { console.warn("cmsSearchPages() is deprecated, use cmsSearchNodes()"); return cmsSearchNodes(search); }
+
+export async function cmsSearchFiles(search: string): Promise<any[]> {
+    const ctx = getCtx();
+    const db  = ctx.app.db;
+    const s   = search;
+    const sql =
+        " SELECT pf.page_id AS pid, f.*" +
+        " FROM page_file pf, file f WHERE 1 AND pf.file_id = f.id" +
+        " AND ( f.id = ? OR f.name LIKE ? OR f.text LIKE ? ) GROUP BY f.id" +
+        " ORDER BY f.id = ? DESC, f.name = ? DESC, f.name LIKE ? DESC," +
+        " f.name LIKE ? DESC, f.text = ? DESC, f.text LIKE ? DESC, f.name ASC";
+    const params = [s, "%" + s + "%", s + "%", s, s, s + "%", "% " + s + "%", s, s + "%"];
+    const res: any[] = [];
+    let i = 0;
+    const used: Record<string, boolean> = {};
+    for (const vs of await db.all(sql, params)) {
+        const node = await ctx.app.cms.node(vs["pid"]);
+        if ((await node.access()) < 2) continue;
+        const F = ctx.app.dbFiles.file(vs.id, vs);
+        if (!F.exists()) continue;
+        if (i++ > 10) break;
+        const md5 = vs["md5"];
+        if (md5 && used[md5]) continue;
+        if (md5) used[md5] = true;
+        const ext   = F.extension();
+        const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(ext);
+        const imgSrc = isImg ? (await F.url()) + "/w-32/h-32/img.jpg" : "about:blank";
+        res.push({
+            html:  `<div style="background:url(${imgSrc}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
+                   `<b>${vs["name"]}</b><br><i>${await (await (await node.page()).title()).string() ?? ""}</i>`,
+            text:  vs["name"],
+            value: F.id,
+        });
+    }
+    return res;
+}
+
+/** @deprecated use nodeToJson() */
+export function pageToJson(pid: any, type = "*"): Promise<any> { console.warn("pageToJson() is deprecated, use nodeToJson()"); return nodeToJson(pid, type); }
+/** @deprecated use nodeRemove() */
+export function pageRemove(node: any): Promise<{ parent_id: number }> { console.warn("pageRemove() is deprecated, use nodeRemove()"); return nodeRemove(node); }
+/** @deprecated use nodeFileAdd() */
+export function pageFileAdd(node: any, file: any, replace?: any): Promise<{ url: string; name: string }> { console.warn("pageFileAdd() is deprecated, use nodeFileAdd()"); return nodeFileAdd(node, file, replace); }

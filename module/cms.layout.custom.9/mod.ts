@@ -1,0 +1,56 @@
+import { hee } from "qg";
+import type { CMS } from "../cms/lib/CMS.ts";
+import type { Node } from "../cms/lib/Node.ts";
+
+export const name = "cms.layout.custom.9";
+
+const settingsSchema = {
+  properties: {
+    "font-css-file": { type: "string", description: "URL oder Pfad zu einer zusaetzlichen CSS-Datei, die vor dem Custom-Layout eingebunden wird." },
+  },
+};
+
+async function render(node: Node, data: any = {}): Promise<string> {
+  const module = node.vs.module;
+  const LPage = await getLayoutPage((node.app as any).cms, String(module));
+
+  // Font CSS from layout settings
+  const fontCss = LPage.settings["font-css-file"]();
+  if (fontCss) {
+    data.ctx.html.head += `<link rel=stylesheet href="${
+      hee(fontCss.replace(/\|/g, "%7C"))
+    }">\n`;
+  }
+
+  // Delegate to app-specific layout override: qg/<module>/index.ts
+  const customPath = node.app.appPATH + "qg/" + module + "/index.ts";
+  //try {
+  await Deno.stat(customPath);
+  const mod = await import(customPath);
+  if (typeof mod.default === "function") {
+    return await mod.default(node, { LPage, ...data });
+  }
+  //} catch { /* no custom layout override */ }
+
+  // Fallback: basic layout
+  const mainCont = await node.cont("main");
+  return `<div id=container><main>${await mainCont.get()}</main></div>`;
+}
+
+async function getLayoutPage(cms: CMS, module: string): Promise<Page> {
+  const sysPage = await cms.node(5);
+  const children = await sysPage.children({ module });
+  let LPage = children.values().next().value;
+  if (!LPage) {
+    LPage = await sysPage.createChild({ module, name: module, access: 1 });
+    await LPage.title(undefined, module);
+  }
+  return LPage;
+}
+
+export const cms = {
+  node: {
+    render,
+    settingsSchema,
+  },
+};
