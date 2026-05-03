@@ -4,6 +4,8 @@ import { Hono, type Context } from "hono";
 import { basePath, matchedRoutes } from "hono/route";
 import { fromFileUrl } from "@std/path";
 import { serveDir } from "@std/http/file-server";
+import type { ItemProxy } from "item/item.d.ts";
+
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/context.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
 import { ensureSlash, AnswerException, RedirectException, OutputException, OutputDoneException } from "qg";
@@ -17,7 +19,6 @@ import { listen as siListen } from "./lib/serverInterface.ts";
 import { toHono, client, type Tree } from "./lib/apt.ts";
 import { initClient, initLog, touchSession } from "./lib/init.ts";
 import { Auth } from "./lib/Auth.ts";
-import type { ItemProxy } from "item/item.d.ts";
 
 const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
@@ -89,14 +90,24 @@ export class App {
 
     async import(spec: string): Promise<ModuleExports> { return await this.modules.import(spec); }
 
-    async importAll(path?: string): Promise<void> { await this.modules.importAll(path); }
+    async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
 
     private async serveStatic(hc: Context, next: () => Promise<void>): Promise<Response | void> {
         const appURL = ensureSlash(basePath(hc));
         const appRequestUri = decodeURIComponent(hc.req.path.slice(appURL.length));
 
-        if (/^(?:m|qg)\/[^/]+\/(?:pub|js|css)\//.test(appRequestUri)) {
-            return serveDir(hc.req.raw, { fsRoot: this.appPATH, urlRoot: appURL.replace(/^\//, ""), quiet: true });
+        const matchM = appRequestUri.match(/^m\/([^/]+)\/(pub|js|css)\//);
+        if (matchM) {
+            const modName = matchM[1];
+            const mod = this.modules.get(modName);
+            const fsRoot = mod?.dir ?? (this.appPATH + "m/" + modName + "/");
+            return serveDir(hc.req.raw, { fsRoot, urlRoot: (appURL + "m/" + modName + "/").replace(/^\//, ""), quiet: true });
+        }
+        const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\//);
+        if (matchQg) {
+            const modName = matchQg[1];
+            const fsRoot = this.appPATH + "qg/" + modName + "/";
+            return serveDir(hc.req.raw, { fsRoot, urlRoot: (appURL + "qg/" + modName + "/").replace(/^\//, ""), quiet: true });
         }
         await next();
     }

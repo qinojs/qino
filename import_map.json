@@ -1,0 +1,25 @@
+{
+  "imports": {
+    "hono": "npm:hono@^4",
+    "hono/cookie": "npm:hono@^4/cookie",
+    "hono/http-exception": "npm:hono@^4/http-exception",
+    "hono/route": "npm:hono@^4/route",
+    "mysql2": "npm:mysql2@^3",
+    "mysql2/promise": "npm:mysql2@^3/promise",
+    "bcryptjs": "npm:bcryptjs@^2",
+    "node:async_hooks": "node:async_hooks",
+    "node:crypto": "node:crypto",
+    "node:fs": "node:fs",
+    "node:fs/promises": "node:fs/promises",
+    "node:path": "node:path",
+    "node:os": "node:os",
+    "@std/http": "jsr:@std/http@^1",
+    "@std/http/file-server": "jsr:@std/http@^1/file-server",
+    "@std/path": "jsr:@std/path@^1",
+    "@std/assert": "jsr:@std/assert@^1",
+    "@std/media-types": "jsr:@std/media-types@^1",
+    "item/": "../../nuxodin/item.js/",
+    "dump.js": "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@x/mod.min.js",
+    "qg": "./module/core/lib/qg.ts"
+  }
+}
