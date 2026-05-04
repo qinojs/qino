@@ -7,10 +7,10 @@ import { Item } from "../../../deps.ts";
 import type { DB } from "./db.ts";
 
 class SettingItem extends Item<SettingItem> {
-  data: any = null;
+  data: Record<string, unknown> | null = null;
   db!: DB;
 
-  constructor(...args: any[]) {
+  constructor(...args: ConstructorParameters<typeof Item>) {
     super(...args);
     if (this.io) this.io.options.ttl = 1000 * 60 * 60 * 2;
   }
@@ -43,7 +43,7 @@ class SettingItem extends Item<SettingItem> {
     await this.reader(); // ensure data is loaded
 
     if (typeof value !== "object" || value == null) {
-      return await this.root.db.query("UPDATE qg_setting SET value = ? WHERE id = ?", [String(value), this.data.id]);
+      return await this.root.db.query("UPDATE qg_setting SET value = ? WHERE id = ?", [String(value), this.data!.id]);
     }
 
     const promises = [];
@@ -56,7 +56,7 @@ class SettingItem extends Item<SettingItem> {
   override remover = async () => {
     await this.reader(); // ensure data is loaded
     for (const sub of this.items()) await sub.remove();
-    return await this.root.db.query("DELETE FROM qg_setting WHERE id = ?", [this.data.id]);
+    return await this.root.db.query("DELETE FROM qg_setting WHERE id = ?", [this.data!.id]);
   };
 }
 
