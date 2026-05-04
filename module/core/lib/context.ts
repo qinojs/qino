@@ -155,5 +155,9 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
 export const requestStorage = new AsyncLocalStorage<RequestContext>();
 
 export function getCtx(): RequestContext | undefined {
-  return requestStorage.getStore();
+  try {
+    return requestStorage.getStore();
+  } catch {
+    throw new Error("getCtx() called outside of request context");
+  }
 }
