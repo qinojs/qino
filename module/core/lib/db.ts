@@ -46,11 +46,11 @@ export class DB {
     }
   }
 
-  query(sql: string, params?: unknown[]) {
+  query(sql: string, params?: unknown[]): Promise<RowDataPacket[]> {
     return this.#exec<RowDataPacket[]>(sql, params, true);
   }
 
-  exec(sql: string, params?: unknown[]) {
+  exec(sql: string, params?: unknown[]): Promise<ResultSetHeader> {
     return this.#exec<ResultSetHeader>(sql, params, false);
   }
 
