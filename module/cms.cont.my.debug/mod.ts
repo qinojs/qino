@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/lib/Node.ts";
-import { getCtx, hee } from "qg";
-import { dump } from "dump.js";
+import { hee } from "../core/lib/util.ts"
+import { getCtx } from "../core/lib/context.ts";
+import { dump } from "../../deps.ts";
 
 export const name = "cms.cont.my.debug";
 export const needs = ["cms"];
@@ -32,7 +33,7 @@ async function render(_node: Node): Promise<string> {
             `<h3>Gruppen: ${hee(grps)}</h3>\n`;
     }
 
-    return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;padding:8px;display:inline-block">
+    return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:8px;display:inline-block">
     <h3>session</h3>
     ${dump(sessionData)}
     <h3>settings</h3>

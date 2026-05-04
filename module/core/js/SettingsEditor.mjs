@@ -77,17 +77,10 @@ async function settingsItem(data, schema) {
   return root;
 }
 
-function normalizeInputSchema(schema) {
-  if (schema?.format === "textarea" && schema["x-multiline"] == null) {
-    return { ...schema, "x-multiline": true };
-  }
-  return schema ?? {};
-}
-
 async function inputHtml(schema, value, path) {
   const toInput = await itemJsHtmlRenderer;
   if (toInput) {
-    return toInput(normalizeInputSchema(schema), {
+    return toInput(schema ?? {}, {
       value,
       name: JSON.stringify(path),
     });
@@ -112,7 +105,7 @@ function fallbackInputHtml(schema, value, path) {
     return `<input type="number" name="${name}" value="${escapeHtml(value ?? "")}">`;
   }
   const str = String(value ?? "");
-  if (str.includes("\n") || schema?.format === "textarea") {
+  if (str.includes("\n")) {
     return `<textarea name="${name}">${escapeHtml(str)}</textarea>`;
   }
   return `<input type="text" name="${name}" value="${escapeHtml(str)}">`;

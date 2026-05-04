@@ -8,9 +8,6 @@
 export const name = "cms.backend";
 export const needs = ["cms"];
 
-export function init(app) {
-    backend.checkInstalled(app);
-}
 
 export const backend = {
     async checkInstalled(app): Promise<any> {
@@ -30,7 +27,7 @@ export const backend = {
                 await P.changeGroup(1, 0);
                 await P.changeGroup(2, 0);
                 await P.changeGroup(3, 0);
-                const cont = await P.Cont?.(1);
+                const cont = await P.cont(1);
                 await cont.set("module", "cms.backend");
                 P.settings.childXML = '<page visible="1"></page>';
                 app.settings.cms.backend = String(P.id);

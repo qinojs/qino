@@ -1,8 +1,8 @@
-import { hee, getCtx } from "qg";
+import { hee } from "../../../core/lib/util.ts"
+import { getCtx } from "../../../core/lib/context.ts";
 import { cmsFrontend1WidgetAccordion } from "../../mod.ts";
 import type { Node } from "../../../cms/lib/Node.ts";
-// @ts-ignore no types
-import { $item } from "item/item.js";
+import { $item } from "../../../../deps.ts";
 
 export default async function (node: Node): Promise<string> {
   const app = node.app;
@@ -50,10 +50,8 @@ export default async function (node: Node): Promise<string> {
   let accordions = "";
 
   // options: wenn das Modul options exportiert ODER page-settings vorhanden
-  const hasOptions = typeof node.mod?.cms?.node?.options === "function";
-  const pageSettingsOld = await app.settings.cms.pages[String(node.id)] ?? null;
-  const hasPageSettings = (pageSettingsOld && Object.keys(pageSettingsOld).length > 0)
-    || (node.settings?.[$item]?.keys?.length ?? 0) > 0;
+  const hasOptions = typeof node.module?.cms?.node?.options === "function";
+  const hasPageSettings = (node.settings[$item].keys?.length ?? 0) > 0;
   if (hasOptions || hasPageSettings) accordions += await cmsFrontend1WidgetAccordion("options", node, await app.t`Einstellungen`);
 
   accordions += await cmsFrontend1WidgetAccordion("media", node);

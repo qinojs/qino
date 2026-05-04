@@ -25,7 +25,7 @@ export async function render(ctx: RequestContext): Promise<void> {
       }
       ctx.responseHeaders.set("Location", url);
       ctx.responseStatus = 301;
-      return "";
+      return;
     }
     // Not found
     ctx.responseStatus = 404;

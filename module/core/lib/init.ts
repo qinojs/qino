@@ -36,7 +36,7 @@ async function registerClient(ctx: RequestContext): Promise<void> {
       "Expires=Sat, 01 Jan 2033 00:00:00 GMT",
       "HttpOnly",
       "SameSite=Lax",
-      "Secure",
+      ctx.app.https ? "Secure" : "",
     ].filter(Boolean).join("; ");
     ctx.responseHeaders.append("Set-Cookie", cookieOpts);
     ctx.cookie["cid"] = hash;

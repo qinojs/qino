@@ -3,7 +3,7 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
-import { getCtx } from "qg";
+import { getCtx } from "./context.ts";
 import type { App } from "../server.ts";
 
 export class DbTextManager {

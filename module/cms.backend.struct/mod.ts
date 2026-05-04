@@ -1,6 +1,6 @@
 // Port of cms.backend.struct/index.php + control.php
 
-import { hee } from "qg";
+import { hee } from "../core/lib/util.ts";
 import { list } from "./parts/list.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { RequestContext } from "../core/lib/context.ts";
@@ -28,7 +28,7 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 
   // Breadcrumb path to root node
   let pathHtml = "";
-  for (const C of (await rootNode.Path()).values()) {
+  for (const C of (await rootNode.path()).values()) {
     const title = (await C.title("de")) || (await C.title("en")) || "(kein Text)";
     pathHtml += `<a href="${hee("?rp=" + C.id)}">${hee(String(title)).trim() || "(kein Text)"}</a> > `;
   }

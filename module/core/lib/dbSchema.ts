@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { schemaToDb } from "item/tools/schema/db/mysql/to-db.js";
+import { schemaToDb } from "../../../deps.ts";
 
 type FieldSchema = Record<string, any> & {
   "x-index"?: "primary" | "unique" | "fulltext" | true;

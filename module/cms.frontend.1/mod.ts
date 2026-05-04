@@ -4,7 +4,8 @@
  */
 
 import "./serverInterface.ts";
-import { getCtx, hee } from "qg";
+import { hee } from "../core/lib/util.ts"
+import { getCtx } from "../core/lib/context.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { Tree } from "../core/lib/apt.ts";

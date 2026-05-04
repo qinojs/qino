@@ -1,5 +1,5 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-import { getCtx } from "qg";
+import { getCtx } from "../../../core/lib/context.ts";
 
 export default async function (node: Node, _vars: any = {}): Promise<string> {
   const ctx = getCtx()

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { HTTPException } from "hono/http-exception";
-import { getCtx } from "qg";
+import { HTTPException } from "../../deps.ts";
+import { getCtx } from "../core/lib/context.ts";
 
 // // ─── REST helper ──────────────────────────────────────────────────────────────
 

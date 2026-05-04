@@ -8,9 +8,10 @@
 import * as nodePath from "node:path";
 import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
-import { getCtx, hee } from "qg";
+import { hee } from "../../core/lib/util.ts"
+import { getCtx } from "../../core/lib/context.ts";
 //import { html } from "../../core/lib/html.ts";
-import { typeByExtension } from "@std/media-types";
+import { typeByExtension } from "../../../deps.ts";
 
 export default async function codemirrorView(file: string): Promise<string> {
     const ctx = getCtx();

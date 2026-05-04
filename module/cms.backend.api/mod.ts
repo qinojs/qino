@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee, getCtx } from "qg";
+import { hee } from "../core/lib/util.ts"
+import { getCtx } from "../core/lib/context.ts";
 import type { Schema } from "../core/lib/schema.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { VERBS, RESERVED, camelName } from "../core/lib/apt.ts";

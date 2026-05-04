@@ -1,7 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assert, assertEquals, assertRejects } from "@std/assert";
-import { toFileUrl } from "@std/path";
-import { $item } from "item/item.js";
+import { assert, assertEquals, assertRejects, toFileUrl, $item } from "../../../deps.ts";
 import { ModuleManager } from "../lib/ModuleManager.ts";
 
 Deno.test({

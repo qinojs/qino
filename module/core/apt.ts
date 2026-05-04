@@ -6,13 +6,13 @@
  * core endpoints.
  */
 
-import { getCtx } from "qg";
-import { $item } from "item/item.js";
+import { getCtx } from "./lib/context.ts";
+import { $item } from "../../deps.ts";
 import { AccessError } from "./lib/apt.ts";
 import { s } from "./lib/schema.ts";
 import { Auth } from "./lib/Auth.ts";
 import { readSettings } from "./lib/settings.ts";
-import type { Item } from "item/item.js";
+import type { Item } from "../../deps.ts";
 import type { Tree } from "./lib/apt.ts";
 
 function pathParts(path?: string): string[] {

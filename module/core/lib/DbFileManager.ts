@@ -2,12 +2,12 @@
 
 import * as nodeFs from "node:fs/promises";
 import * as nodeCrypto from "node:crypto";
-import { Hono } from "hono";
+import { Hono } from "../../../deps.ts";
 import { File } from "./File.ts";
-import { typeByExtension } from "@std/media-types";
+import { typeByExtension } from "../../../deps.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { DB } from "./db.ts";
-import { getCtx } from "qg";
+import { getCtx } from "./context.ts";
 import type { App } from "../server.ts";
 
 export class DbFileManager {

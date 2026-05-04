@@ -1,4 +1,4 @@
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl } from "../../../deps.ts";
 import type { ModuleManager } from "./ModuleManager.ts";
 
 export abstract class ModuleStore {

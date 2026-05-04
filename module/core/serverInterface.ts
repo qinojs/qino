@@ -4,7 +4,7 @@
  */
 // deno-lint-ignore-file no-explicit-any
 
-import { serverInterface } from "qg";
+import { serverInterface } from "./lib/serverInterface.ts";
 
 serverInterface.core = {
   async changePw(v: { oldpw: string; pw: string }): Promise<number> {

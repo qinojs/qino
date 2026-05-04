@@ -5,7 +5,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { hee } from "qg";
+import { hee } from "../core/lib/util.ts";
 
 
 export type Solution = {

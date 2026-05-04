@@ -1,6 +1,7 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 import { cmsFrontend1WidgetAccordion } from "../../mod.ts";
-import { hee, getCtx } from "qg";
+import { hee } from "../../../core/lib/util.ts"
+import { getCtx } from "../../../core/lib/context.ts";
 export default async function (node: Node): Promise<string> {
   const ctx = getCtx();
   const app = node.app;

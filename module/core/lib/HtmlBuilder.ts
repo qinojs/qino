@@ -5,7 +5,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { hee } from "qg";
+import { hee } from "./util.ts";
 import type { RequestContext } from "./context.ts";
 
 export class HtmlBuilder {

@@ -5,7 +5,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { hee } from "qg";
+import { hee } from "../core/lib/util.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { RequestContext } from "../core/lib/context.ts";
 
@@ -44,11 +44,11 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   // Nav: get backend root page and its children
   const backendId = parseInt(String(await app.settings.cms.backend ?? "0"));
   const BackendRoot = backendId ? await app.cms.node(backendId) : null;
-  const navItems = BackendRoot ? [...(await BackendRoot.children("navi")).values()] : [];
+  const navItems = BackendRoot ? [...(await BackendRoot.children({ access: 1 })).values()] : [];
 
   let navHtml = "";
   for (const C of navItems as any[]) {
-    const subC = [...(await C.children("navi")).values()] as any[];
+    const subC = [...(await C.children({ access: 1 })).values()] as any[];
     const isActive = await Page.in(C);
     const hasSub = subC.length > 0;
     const cUrl = hee(await C.url());
@@ -56,7 +56,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     let subHtml = "";
     if (isActive) {
       for (const SC of subC) {
-        const subSC = [...(await SC.children("navi")).values()] as any[];
+        const subSC = [...(await SC.children({ access: 1 })).values()] as any[];
         const isActiveSC = await Page.in(SC);
         const hasSubSC = subSC.length > 0;
         const scUrl = hee(await SC.url());

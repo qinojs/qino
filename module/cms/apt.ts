@@ -6,8 +6,8 @@
 
 import { s } from "../core/lib/schema.ts";
 import { AccessError, ConflictError, NotFoundError } from "../core/lib/apt.ts";
-import { getCtx } from "qg";
-import { $item } from "item/item.js";
+import { getCtx } from "../core/lib/context.ts";
+import { $item } from "../../deps.ts";
 import { readSettings } from "../core/lib/settings.ts";
 import {
   cmsGetTree,
@@ -596,7 +596,7 @@ const node = {
       description: "Modul-spezifische Page-API aufrufen.",
       execute: async ({ node, ...vars }: any) => {
         try {
-          const pageApi = node.mod?.cms?.node?.pageApi;
+          const pageApi = node.module?.cms?.node?.pageApi;
           return typeof pageApi === "function" ? await pageApi(node, vars) ?? null : null;
         } catch (e: any) {
           if (!e?.message?.includes("Module not found")) throw e;

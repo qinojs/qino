@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import * as GitService from "./lib/GitService.ts";
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl } from "../../deps.ts";
 import { s } from "../core/lib/schema.ts";
 import type { App } from "../core/server.ts";
 

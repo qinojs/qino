@@ -11,7 +11,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "qg";
+import { getCtx } from "../../core/lib/context.ts";
 import type { RequestContext } from "../../core/lib/context.ts";
 import type { DB } from "../../core/lib/db.ts";
 

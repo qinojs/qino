@@ -3,11 +3,11 @@
  * Port of cms/lib/Page.class.php
  */
 
-import { hee, getCtx } from "qg";
+import { hee } from "../../core/lib/util.ts"
+import { getCtx } from "../../core/lib/context.ts";
 import { resolveText } from "./resolveText.ts";
 import { DbFile } from "../../core/lib/DbFileManager.ts";
-import { $item } from "item/item.js";
-import { bildJsonItem } from "item/tools/jsonDataItem.js";
+import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
 import type { App } from "../../core/server.ts";
 import type { DbText, DbTextLang } from "../../core/lib/DbTextManager.ts";
@@ -45,22 +45,14 @@ export class Node {
         this.app = cms.app;
         this.db = cms.app.db;
         this.id = parseInt(String(id));
-        if (vs) {
-            this.vs = vs;
-            this.#is = !!vs;
-        }
+        if (vs) this.vs = vs;
     }
 
     async init(): Promise<this> {
         if (!this.vs || Object.keys(this.vs).length === 0) {
             this.vs = await this.db.row(`SELECT * FROM ${table("page")} WHERE id = ?`, [this.id]);
-            //await this.app.fire("page::construct", { Page: this });
             if (!this.vs) {
-                this.vs = {
-                    id: this.id,
-                    basis: 0,
-                    type: "p",
-                };
+                this.vs = { id: this.id, basis: 0, type: "p" };
                 this.#is = false;
                 return this;
             }
@@ -96,7 +88,7 @@ export class Node {
 
     async set(data: string | Record<string, any>, value?: any): Promise<void> {
         if (!this.#is) {
-            console.warn("Node " + this.id + " does not exist! (::set)", { "skip-stack": 1 });
+            console.warn(`Node ${this.id} does not exist! (::set)`);
             return;
         }
         if (typeof data === "string") data = { [data]: value };
@@ -114,12 +106,10 @@ export class Node {
     // Access control
     #usrAccess: Record<number, number> = {};
 
-    async access(Usr?: dbEntry_usr): Promise<number> {
-        Usr ??= getCtx().user;
-        const usrId = parseInt(String(Usr));
-        if (!(usrId in this.#usrAccess)) {
-            this.#usrAccess[usrId] = await this.#calcUsrAccess(Usr);
-        }
+    async access(user?: dbEntry_usr): Promise<number> {
+        user ??= getCtx().user;
+        const usrId = parseInt(String(user));
+        this.#usrAccess[usrId] ??= await this.#calcUsrAccess(user);
         return this.#usrAccess[usrId];
     }
 
@@ -148,10 +138,7 @@ export class Node {
     }
 
     async #usrAccessOnly(Usr: dbEntry_usr): Promise<number> {
-        const sql =
-            " SELECT access " +
-            " FROM page_access_usr " +
-            " WHERE page_id = ? AND usr_id = ? ";
+        const sql = " SELECT access FROM page_access_usr WHERE page_id = ? AND usr_id = ? ";
         return parseInt(String(await this.db.one(sql, [this.id, String(Usr)]) ?? "0")) || 0;
     }
 
@@ -192,11 +179,7 @@ export class Node {
     async htmlPrepared(vars: Record<string, any> = {}): Promise<string> {
         const ctx = getCtx();
 
-        let str: string | undefined;
-        //await this.app.fire("page::parseTemplate-before", { Cont: this, string: str });
-        if (str !== undefined) return str;
-
-        str = (await this.htmlRaw(vars) ?? "").trim();
+        let str = (await this.htmlRaw(vars) ?? "").trim();
         if (!str) str = "<div></div>";
 
         const type = this.vs.type === "c" ? "Cont" : "Page";
@@ -226,14 +209,11 @@ export class Node {
         if (!this.#is) { console.warn("Seite existiert nicht!"); return undefined; }
 
         try {
-            return await this.module!.exports.cms.node.render(this, {ctx:getCtx(), vars});
+            if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
+            return await this.module.exports.cms.node.render(this, {ctx:getCtx(), vars});
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            if (this.edit) {
-                return `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>`;
-            } else {
-                return '<div></div>';
-            }
+            return this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>';
         }
     }
 
@@ -247,11 +227,7 @@ export class Node {
             return await fn(this, {ctx:getCtx(), vars});
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            if (this.edit) {
-                return `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>`;
-            } else {
-                return '<div></div>';
-            }
+            return this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>';
         }
     }
 
@@ -313,7 +289,7 @@ export class Node {
                 await Child.init();
                 this.#children.set(id, Child);
                 if (row.name) {
-                    if (!this.#named[row.type]) this.#named[row.type] = {};
+                    this.#named[row.type] ??= {};
                     this.#named[row.type][row.name] = Child;
                 }
             }
@@ -323,12 +299,7 @@ export class Node {
     }
 
     async conts(): Promise<Node[]> {
-        if (this.#conts === null) {
-            this.#conts = [];
-            const children = await this.children({ type: "c" });
-            for (const C of children.values()) this.#conts.push(C);
-        }
-        return this.#conts;
+        return this.#conts ??= [...(await this.children({ type: "c" })).values()];
     }
 
     async parent(level?: number): Promise<Node | false> {
@@ -375,7 +346,7 @@ export class Node {
     }
 
     async showText(name = "main", lang?: string | null): Promise<any> {
-        const obj = await this.text(name, lang);
+        const obj = await this.text(name, lang ?? null);
         return this.#showTextLang(obj, lang);
     }
 
@@ -396,45 +367,37 @@ export class Node {
         return this.#texts;
     }
 
+    async text(name?: string): Promise<DbText>;
+    async text(name: string, lang: string | null): Promise<DbTextLang>;
+    async text(name: string, lang: string | null, value: any): Promise<false | undefined>;
     async text(name = "main", lang?: string | null, value?: any): Promise<DbText | DbTextLang | undefined | false> {
         const texts = await this.texts();
         if (!(name in texts)) {
-            //await this.app.fire("page::text_generate-before", { Page: this, name });
             const T = await this.app.dbTexts.generate();
-            //await this.app.fire("page::text_generate-after", { Page: this, name });
             await this.db.table("page_text").insert({ name, page_id: String(this), text_id: T.id });
             texts[name] = T;
         }
         if (lang == null) return texts[name];
         const textLang = await texts[name].lang(lang);
         if (value === undefined) return textLang;
-        //if (value === undefined) return textLang.get();
         if ((await textLang.get()) === value) return false;
-        //await this.app.fire("page::text_set-before", { Page: this, name, lang, value });
         await textLang.set(value);
-        //await this.app.fire("page::text_set-after", { Page: this, name, lang, value });
     }
 
     async textDelete(name: string): Promise<void> {
         const texts = await this.texts();
-        if (texts[name]) {
-            const T = texts[name];
-            await this.db.table("text").delete(T.id);
-            delete texts[name];
-        }
+        if (!texts[name]) return;
+        await this.db.table("text").delete(texts[name].id);
+        delete texts[name];
     }
 
     async title(lang?: string | null, value?: any): Promise<any> {
-        if (this.#title === null) {
-            this.#title = this.app.dbTexts.text(parseInt(String(this.vs.title_id ?? "0")));
-        }
+        this.#title ??= this.app.dbTexts.text(parseInt(String(this.vs.title_id ?? "0")));
         if (lang == null) return this.#title;
         const TextLang = await this.#title.lang(lang);
         if (value === undefined) return TextLang.get();
         if ((await TextLang.get()) === value) return false;
-        //await this.app.fire("page::title_set-before", { Page: this, lang, value });
         await TextLang.set(value);
-        //await this.app.fire("page::title_set-after", { Page: this, lang, value });
         await this.urlsSeoGen();
     }
 
@@ -524,7 +487,7 @@ export class Node {
 
     async url(lang?: string): Promise<string> {
         const ctx = getCtx();
-        if (!lang) lang = ctx.lang;
+        lang ??= ctx.lang;
         const hash = this.vs.type === "c" ? await this.urlSeo(lang) : "";
         if (this.edit) return ctx.appURL + "?cmspid=" + await this.page() + "&changeLanguage=" + lang + hash;
         return ctx.appURL + (await (await this.page()).urlSeo(lang)) + hash;
@@ -532,20 +495,14 @@ export class Node {
 
     async urlSeo(lang: string): Promise<string> {
         const urls = await this.urls();
-        if (!urls[lang]) {
-            urls[lang] = { url: await this.urlSeoGen(lang), target: "" };
-        }
+        urls[lang] ??= { url: await this.urlSeoGen(lang), target: "" };
         return urls[lang].url;
     }
 
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
         data = { page_id: this.id, lang, ...data };
         const row = await this.db.row(this.sql("SELECT * FROM page_url WHERE page_id = ? AND lang = ?"), [this.id, lang]);
-        if (row) {
-            await this.db.table("page_url").update(data);
-        } else {
-            await this.db.table("page_url").insert(data);
-        }
+        await this.db.table("page_url")[row ? "update" : "insert"](data);
     }
 
     async urlSeoGenerated(lang: string): Promise<string> {
@@ -623,7 +580,7 @@ export class Node {
     }
 
     async copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | false> {
-        if (ifFn && await ifFn(this) === false) return false;
+        if (await ifFn?.(this) === false) return false;
 
         const row: Record<string, any> = { ...this.vs };
         delete row["id"];
@@ -655,7 +612,6 @@ export class Node {
         P.#filesAll = null;
 
         if (Object.keys(old2new).length) {
-            P.#texts = null;
             const newTexts = await P.texts();
             for (const [, Text] of Object.entries(newTexts)) {
                 for (const l of this.app.languages.all) {
@@ -671,14 +627,14 @@ export class Node {
 
         for (const Cont of (await this.children({ type: deep ? "*" : "c" })).values()) {
             const Copy = await Cont.copy(deep, ifFn);
-            if (Copy) {
-                await Copy.set("basis", newId);
-                Copy.vs.basis = newId;
-            }
+            if (Copy) await Copy.set("basis", newId);
         }
 
         P.#children = P.#conts = null;
-        await this.app.fire("cms::manipulate_tree", {});
+
+        const parent = await this.parent();
+        if (parent) parent.#children = parent.#conts = null;
+        
         return P;
     }
 
@@ -698,8 +654,6 @@ export class Node {
         }
         sort = sort !== null ? sort : i++;
         await P.set({ basis: this.id, sort });
-        P.vs.basis = this.id;
-        P.vs.sort = sort;
 
         this.#children = this.#conts = null;
         this.#named = {};
@@ -710,8 +664,6 @@ export class Node {
         }
 
         await P.urlsSeoGen();
-
-        //await this.app.fire("cms::manipulate_tree", {});
         return true;
     }
 
@@ -720,36 +672,34 @@ export class Node {
         const children = await this.children({ type: "*" });
         if (!children.has(parseInt(String(P)))) return false;
         for (const C of (await P.children({ type: "*" })).values()) await P.removeChild(C);
-        for (const [name] of Object.entries(await P.files())) await P.deleteFile(name);
-        for (const [name] of Object.entries(await P.texts())) await P.textDelete(name);
+        for (const name of Object.keys(await P.files())) await P.deleteFile(name);
+        for (const name of Object.keys(await P.texts())) await P.textDelete(name);
         await this.db.table("page").delete(String(P));
         this.#children = this.#conts = null;
         this.#named = {};
-        //await this.app.fire("cms::manipulate_tree", {});
         return true;
     }
 
     async cont(name: string, attris: any = {}): Promise<Node> {
-        await this.conts();
-        if (!this.#named["c"]?.[name]) {
+        const conts = await this.conts();
+        this.#named["c"] ??= {};
+        if (!this.#named["c"][name]) {
             if (typeof attris !== "object") attris = { module: attris };
             attris.name = name;
-            attris.sort = (await this.conts()).length + 1;
-            if (!this.#named["c"]) this.#named["c"] = {};
+            attris.sort = conts.length + 1;
             this.#named["c"][name] = await this.createCont(attris);
         }
         return this.#named["c"][name];
     }
-
-    async nodeChild(name: string, attris: any = {}): Promise<Node> {
-        await this.children();
-        if (this.#named["p"]?.[name]) return this.#named["p"][name];
-        if (typeof attris !== "object") attris = { module: attris };
-        attris.name = name;
-        return this.createChild(attris);
-    }
-    /** @deprecated use nodeChild() */
-    PageChild(name: string, attris: any = {}): Promise<Node> { console.warn("Node.PageChild() is deprecated, use nodeChild()", Error().stack); return this.nodeChild(name, attris); }
+    
+    // named sub-page, created if not exists, needed?
+    // async subPage(name: string, attris: any = {}): Promise<Node> {
+    //     await this.children();
+    //     if (this.#named["p"]?.[name]) return this.#named["p"][name];
+    //     if (typeof attris !== "object") attris = { module: attris };
+    //     attris.name = name;
+    //     return this.createChild(attris);
+    // }
 
     /* Access */
     async changeUser(Usr: dbEntry_usr, access: number): Promise<this> {

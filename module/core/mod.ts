@@ -6,8 +6,8 @@
 
 import "./serverInterface.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { RedirectException } from "qg";
-import { $item } from "item/item.js";
+import { RedirectException } from "./lib/util.ts";
+import { $item } from "../../deps.ts";
 import { getCtx } from "./lib/context.ts";
 import { api } from "./apt.ts";
 

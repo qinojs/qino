@@ -3,7 +3,7 @@
  * Port of cms.frontend.1/qg.php — class serverInterface_cms_frontend_1
  */
 
-import { serverInterface } from "qg";
+import { serverInterface } from "../core/lib/serverInterface.ts";
 
 serverInterface["cms_frontend_1"] = {
   async widget(widget: string, params: Record<string, any> = {}): Promise<string | null | false> {

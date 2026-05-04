@@ -3,7 +3,7 @@
 
 import * as nodeFs from "node:fs/promises";
 import { Buffer } from "node:buffer";
-import { hee } from "qg";
+import { hee } from "../core/lib/util.ts";
 import { magickIdentify, magick, isMagickAvailable } from "../core/lib/transform/imagemagick.ts";
 import type { App } from "../core/server.ts";
 import type { DbFile } from "../core/lib/DbFileManager.ts";

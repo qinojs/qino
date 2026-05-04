@@ -9,15 +9,16 @@
 // deno-lint-ignore-file no-explicit-any
 
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { OutputException } from "qg";
+import { OutputException } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
-import type { Context } from "hono";
+import type { Context } from "../../deps.ts";
 import type { RequestContext } from "../core/lib/context.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
 await import(reporterPath);
 
 export const name = "error_report";
+export const needs = ["core"];
 export { dbSchema };
 
 export const settingsSchema = {

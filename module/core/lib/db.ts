@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import mysql, { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { mysql, type Pool, type ResultSetHeader, type RowDataPacket } from "../../../deps.ts";
 import { dbTable } from "./dbTable.ts";
 
 const DB_DATE_TYPES: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
@@ -8,11 +8,15 @@ const DB_NUM_TYPES: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1,
 export class DB {
   #tables: Record<string, dbTable> = {};
   #pool: Pool;
+  #database: string;
+  #connParams: { host: string; user: string; password: string };
   #fieldMeta: Record<string, Record<string, Record<string, any>>> = {};
 
   constructor(conn: string, user: string, pass: string) {
     const [, host = "localhost"] = conn.match(/host=([^;]+)/) ?? [];
     const [, database = user] = conn.match(/dbname=([^;]+)/) ?? [];
+    this.#database = database;
+    this.#connParams = { host, user, password: pass };
 
     this.#pool = mysql.createPool({
       host,
@@ -62,6 +66,12 @@ export class DB {
   static escapeId = mysql.escapeId;
 
   async init(): Promise<void> {
+    const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
+    try {
+      await tmp.query(`CREATE DATABASE IF NOT EXISTS \`${this.#database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
+    } finally {
+      await tmp.end();
+    }
     const tables = await this.col("SHOW TABLES");
     this.#tables = {};
     for (const table of tables) {

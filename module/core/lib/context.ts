@@ -7,11 +7,10 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import { getCookie } from "hono/cookie";
-import { basePath } from "hono/route";
+import { getCookie, basePath } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
 import type { App } from "../server.ts";
-import type { Context } from "hono";
+import type { Context } from "../../../deps.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import { userSettingsItem, sessSettingsItem } from "./CustomSettingItem.ts";
 
@@ -97,6 +96,9 @@ export class RequestContext {
 
 export async function makeRequestContext(app: App, c: Context): Promise<[RequestContext, boolean]> {
 
+  // const existing = c.get("ctx") as RequestContext | undefined; needed?
+  // if (existing) return [existing, false];
+
   const bPath = basePath(c);
   const appURL = bPath.endsWith("/") ? bPath : bPath + "/";
   const req = c.req;
@@ -152,8 +154,6 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
 
 export const requestStorage = new AsyncLocalStorage<RequestContext>();
 
-export function getCtx(): RequestContext {
-  const ctx = requestStorage.getStore();
-  if (!ctx) throw new Error("No request context - called outside of request handler");
-  return ctx;
+export function getCtx(): RequestContext | undefined {
+  return requestStorage.getStore();
 }

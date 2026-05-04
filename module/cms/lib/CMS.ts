@@ -3,7 +3,8 @@
  * Port of cms/lib/cms.class.php
  */
 
-import { hee, getCtx } from "qg";
+import { hee } from "../../core/lib/util.ts"
+import { getCtx } from "../../core/lib/context.ts";
 import type { App } from "../../core/server.ts";
 import type { Module } from "../../core/lib/ModuleManager.ts";
 import type { DB } from "../../core/lib/db.ts";
@@ -38,6 +39,7 @@ export class CMS {
         if (!vs) await p.init();
         return p;
     }
+
 
     async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
         const ret: Record<string, Node> = {};

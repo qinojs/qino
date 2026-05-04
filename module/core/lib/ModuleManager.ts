@@ -1,9 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl } from "@std/path";
-import { serveDir } from "@std/http/file-server";
-import { Hono, type Context } from "hono";
-import { basePath } from "hono/route";
-import { $item } from "item/item.js";
+import { fromFileUrl, isAbsolute, toFileUrl, serveDir, Hono, type Context, basePath, $item } from "../../../deps.ts";
 import { dbSchema as DbSchema } from "./dbSchema.ts";
 import type { App } from "../server.ts";
 

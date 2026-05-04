@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "qg";
+import { getCtx } from "./context.ts";
 import { createHash } from "node:crypto";
 
 export class LangManager {

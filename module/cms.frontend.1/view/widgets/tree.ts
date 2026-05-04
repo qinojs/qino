@@ -1,5 +1,5 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-import { hee } from "qg";
+import { hee } from "../../../core/lib/util.ts";
 import { call } from "../../../core/lib/serverInterface.ts";
 import { getCtx } from "../../../core/lib/context.ts";
 

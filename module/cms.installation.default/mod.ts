@@ -81,38 +81,38 @@ export async function install({app}: {app: App}): Promise<void> {
     const P = await (await app.cms.node(1)).createChild({ id: 2, access: 1, visible: 1, offline: 0, searchable: 1, sort: 1 });
     await P.changeGroup(adminGrp, 2);
     await app.db.query("REPLACE INTO page_redirect SET request = '', redirect = '2'");
-    await (await P.title()).set("de", "Home");
-    await (await P.title()).set("en", "Home");
+    await P.title("de", "Home");
+    await P.title("en", "Home");
   }
   // Service
   if (!await app.db.one("SELECT id FROM page WHERE id = 10")) {
     const P = await (await app.cms.node(1)).createChild({ id: 10, access: 1, visible: 0, searchable: 1, sort: 4 });
     await P.changeGroup(adminGrp, 1);
-    await (await P.title()).set("de", "Service");
-    await (await P.title()).set("en", "Service");
+    await P.title("de", "Service");
+    await P.title("en", "Service");
   }
   // Suche
   if (!await app.db.one("SELECT id FROM page WHERE id = 20")) {
     const P = await (await app.cms.node(10)).createChild({ id: 20, visible: 1, searchable: 0 });
     await P.changeGroup(adminGrp, 2);
     await (await (await P.cont("main")).cont(1, "cms.cont.search1"));
-    await (await P.title()).set("de", "Suche");
-    await (await P.title()).set("en", "Search");
+    await P.title("de", "Suche");
+    await P.title("en", "Search");
   }
 
   // System
   if (!await app.db.one("SELECT id FROM page WHERE id = 40")) {
     const P = await (await app.cms.node(1)).createChild({ id: 40, access: 0, visible: 0, searchable: 0, sort: 8 });
     await P.changeGroup(adminGrp, 1);
-    await (await P.title()).set("de", "System");
-    await (await P.title()).set("en", "System");
+    await P.title("de", "System");
+    await P.title("en", "System");
   }
   // Layout
   if (!await app.db.one("SELECT id FROM page WHERE id = 5")) {
     const P = await (await app.cms.node(40)).createChild({ id: 5, access: 1, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 1);
-    await (await P.title()).set("de", "Layout");
-    await (await P.title()).set("en", "Layout");
+    await P.title("de", "Layout");
+    await P.title("en", "Layout");
   }
 
   // Papierkorb
@@ -120,8 +120,8 @@ export async function install({app}: {app: App}): Promise<void> {
     const P = await (await app.cms.node(40)).createChild({ id: 50, access: 0, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont("cms.cont.trash");
-    await (await P.title()).set("de", "Papierkorb");
-    await (await P.title()).set("en", "Trash");
+    await P.title('de', "Papierkorb");
+    await P.title('en', "Trash");
     if (!await s.cms.pageTrash) s.cms.pageTrash(50);
   }
   await (await app.cms.node(50)).set("module", "cms.layout.login");
@@ -132,8 +132,8 @@ export async function install({app}: {app: App}): Promise<void> {
     const P = await (await app.cms.node(40)).createChild({ id: 60, access: 1, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont('1', "cms.cont.login4");
-    await (await P.title()).set("de", "kein Recht");
-    await (await P.title()).set("en", "No access");
+    await P.title("de", "kein Recht");
+    await P.title("en", "No access");
     if (!await s.cms.pageNoAccess) s.cms.pageNoAccess(60);
   }
   // Login
@@ -142,8 +142,8 @@ export async function install({app}: {app: App}): Promise<void> {
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont('1', "cms.cont.login4");
     // await (await C.SET).make("redirect", 2); // todo: Cont-Settings API
-    await (await P.title()).set("de", "Login");
-    await (await P.title()).set("en", "Login");
+    await P.title("de", "Login");
+    await P.title("en", "Login");
     await app.db.query("REPLACE INTO page_redirect SET request = 'login', redirect = '80'");
   }
   await (await app.cms.node(80)).set("module", "cms.layout.login");
@@ -154,8 +154,8 @@ export async function install({app}: {app: App}): Promise<void> {
     const P = await (await app.cms.node(40)).createChild({ id: 70, access: 1, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 2);
     await (await P.cont("main")).cont('1', "cms.cont.not_found1");
-    await (await P.title()).set("de", "nicht gefunden");
-    await (await P.title()).set("en", "not Found");
+    await P.title("de", "nicht gefunden");
+    await P.title("en", "not Found");
     if (!await s.cms.pageNotFound) s.cms.pageNotFound(70);
     if (!await s.cms.pageOffline)  s.cms.pageOffline(60);
   }

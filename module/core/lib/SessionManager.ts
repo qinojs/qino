@@ -1,8 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCookie, setCookie } from "hono/cookie";
-import { bildJsonItem } from "item/tools/jsonDataItem.js";
-import type { Context } from "hono";
+import { getCookie, bildJsonItem, type Context } from "../../../deps.ts";
 import type { DB } from "./db.ts";
 import type { RequestContext } from "./context.ts";
 
@@ -48,13 +46,8 @@ export class SessionManager {
         }, 50);
     }
 
-    setCookie(c: Context, ctx: RequestContext): void {
-        setCookie(c, COOKIE_NAME, ctx.sessionToken, {
-            path: ctx.appURL,
-            httpOnly: true,
-            sameSite: "Lax",
-            secure: ctx.app.https,
-        });
+    setCookie(_c: Context, ctx: RequestContext): void {
+        ctx.responseHeaders.append("Set-Cookie", this.cookieHeader(ctx));
     }
 
     cookieHeader(ctx: RequestContext, sessionToken = ctx.sessionToken): string {

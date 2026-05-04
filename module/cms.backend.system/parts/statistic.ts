@@ -5,7 +5,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { hee } from "qg";
+import { hee } from "../../core/lib/util.ts";
 
 export default async function render(node: any): Promise<string> {
   const db      = node.app.db;

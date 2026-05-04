@@ -5,7 +5,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "qg";
+import { getCtx } from "./context.ts";
 import { dbEntry, registerEntryClass } from "./dbEntry.ts";
 
 // === dbEntry_usr ===

@@ -7,7 +7,8 @@
 
 import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
-import { getCtx, OutputException } from "qg";
+import { OutputException } from "../core/lib/util.ts"
+import { getCtx } from "../core/lib/context.ts";
 import { serverInterface } from "../core/lib/serverInterface.ts";
 import type { Tree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";

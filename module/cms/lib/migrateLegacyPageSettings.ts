@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { $item } from "item/item.js";
+import { $item } from "../../../deps.ts";
 import type { App } from "../../core/server.ts";
 
 async function findSettingNodeId(app: App, path: string[]): Promise<number | null> {

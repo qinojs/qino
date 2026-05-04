@@ -8,7 +8,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "qg";
+import { getCtx } from "../../core/lib/context.ts";
 import type { DB } from "../../core/lib/db.ts";
 // App.cms is added dynamically by the cms module — cast to any where needed
 import {
@@ -21,7 +21,7 @@ import {
  * Port of cms_vers::page_load_runtime_cache().
  */
 export async function pageLoadRuntimeCache(node: any): Promise<void> {
-    await node.Files();
+    await node.files();
     const ctx = getCtx();
     for (const l of (ctx.app as any).languages.all) {
         await node.title(l);

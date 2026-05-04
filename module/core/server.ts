@@ -1,14 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { Hono, type Context } from "hono";
-import { basePath, matchedRoutes } from "hono/route";
-import { fromFileUrl } from "@std/path";
-import { serveDir } from "@std/http/file-server";
-import type { ItemProxy } from "item/item.d.ts";
+import { Hono, type Context, fromFileUrl, serveDir, basePath, matchedRoutes, type ItemProxy } from "../../deps.ts";
 
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/context.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
-import { ensureSlash, AnswerException, RedirectException, OutputException, OutputDoneException } from "qg";
+import { ensureSlash, AnswerException, RedirectException, OutputException, OutputDoneException } from "./lib/util.ts";
 import { DB } from "./lib/db.ts";
 import { DbFileManager } from "./lib/DbFileManager.ts";
 import { createSettingItem } from "./lib/SettingItem.ts";
@@ -55,6 +51,7 @@ export class App {
 
     constructor(config: Partial<AppConfig> = {}) {
         const c = { ...defaultConfig, ...config };
+        if (c.appPATH.startsWith("file:")) c.appPATH = fromFileUrl(c.appPATH);
         c.appPATH = ensureSlash(c.appPATH);
 
         this.config    = c;
@@ -84,8 +81,14 @@ export class App {
         this.router.use("*", (hc, next) => this.handleAppFallback(hc, next));
     }
 
+    get fetch() {
+        return this.router.fetch.bind(this.router);
+    }
+
     static async create(config: Partial<AppConfig> = {}): Promise<App> {
-        const app = new App(config); await app.db.init(); return app;
+        const app = new App(config);
+        await app.db.init();
+        return app;
     }
 
     async import(spec: string): Promise<ModuleExports> { return await this.modules.import(spec); }
@@ -115,17 +118,18 @@ export class App {
     private async withRequestContext(hc: Context, next: () => Promise<void>): Promise<Response> {
 const _t0 = performance.now();
         const [ctx, isNew] = await makeRequestContext(this, hc);
+        const initialSessionToken = ctx.sessionToken;
         hc.set("ctx", ctx);
 
         return await requestStorage.run(ctx, async () => {
             try {
                 await this.initRequest(ctx);
+                if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(hc, ctx);
                 await next();
             } catch (e: any) {
                 this.handleError(ctx, e);
                 hc.res = await this.buildResponse(hc, ctx);
             }
-            if (isNew) this.sessions.setCookie(hc, ctx);
 console.log(`${hc.req.method} ${hc.req.path} – ${(performance.now() - _t0).toFixed(1)}ms`);
             return hc.res;
         });
@@ -153,6 +157,8 @@ console.log(`${hc.req.method} ${hc.req.path} – ${(performance.now() - _t0).toF
     }
 
     private async handleAppRequest(ctx: RequestContext): Promise<void> {
+        const t0 = Date.now();
+        console.log(`→ ${ctx.server.REQUEST_URI}`);
         await this.fire("action", { ctx });
         await siListen(ctx);
         await this.fire("render", { ctx });

@@ -4,7 +4,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, hee } from "qg";
+import { hee } from "../core/lib/util.ts"
+import { getCtx } from "../core/lib/context.ts";
 import type { ProviderModel, ProviderStrength } from "../ai/types.ts";
 import {
   customProviderModels,

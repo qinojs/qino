@@ -1,13 +1,14 @@
 import type { Node } from "../../../cms/lib/Node.ts";
+import { getCtx } from "../../../core/lib/context.ts";
 import { addSettingsEditor, settingsSourceAttr } from "../../../core/lib/settings.ts";
 
 export default async function (node: Node): Promise<string> {
   if ((await node.access()) < 2) return "";
-  const ctx = (await import("qg")).getCtx();
+  const ctx = getCtx();
   addSettingsEditor(ctx);
   const source = settingsSourceAttr({
-    kind: "app",
-    path: ["cms", "pages", String(node.id)],
+    kind: "node",
+    id: node.id,
   });
-  return `<settings-editor source="${source}" pid="${node.id}"></settings-editor>`;
+  return `<settings-editor source="${source}"></settings-editor>`;
 }

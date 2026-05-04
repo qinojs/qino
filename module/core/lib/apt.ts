@@ -8,9 +8,8 @@
  * Siehe ../../apt-concept.md
  */
 
-import { Hono } from "hono";
-import type { Context } from "hono";
-import { getCtx } from "qg";
+import { Hono, type Context } from "../../../deps.ts";
+import { getCtx } from "./context.ts";
 import { toJsonSchema } from "./schema.ts";
 import type { Schema, StandardIssue } from "./schema.ts";
 

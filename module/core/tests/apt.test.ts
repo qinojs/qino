@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertRejects, assertThrows } from "@std/assert";
+import { assertEquals, assertRejects, assertThrows } from "../../../deps.ts";
 import { s } from "../lib/schema.ts";
 
 // ───── Schema tests ───────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 // Port of cms.filebrowser/qg.php
 
-import { getCtx } from "qg";
+import { getCtx } from "../core/lib/context.ts";
 import { s } from "../core/lib/schema.ts";
 import { serverInterface } from "../core/lib/serverInterface.ts";
 import type { Tree } from "../core/lib/apt.ts";

@@ -6,7 +6,7 @@
 
 import { dbField } from "./dbField.ts";
 import { dbEntry, getEntryClass } from "./dbEntry.ts";
-import { getCtx } from "qg";
+import { getCtx } from "./context.ts";
 import { DB } from "./db.ts";
 
 export class dbTable {

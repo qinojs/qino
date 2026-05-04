@@ -3,11 +3,10 @@
  * Port of core/lib/Auth.class.php
  */
 
-import { getCtx } from "qg";
+import { getCtx } from "./context.ts";
 import { RedirectException } from "./util.ts";
-import { Usr } from "./qgEntries.ts";
 import type { RequestContext } from "./context.ts";
-import bcrypt from "bcryptjs";
+import { bcrypt } from "../../../deps.ts";
 
 export const Auth = {
   async listen(ctx: RequestContext): Promise<void> {
@@ -94,7 +93,6 @@ export const Auth = {
     ctx.sessionToken = sessionToken;
     ctx.sessId = sessId;
     ctx.session = session;
-    ctx.responseHeaders.append("Set-Cookie", ctx.app.sessions.cookieHeader(ctx, sessionToken));
     ctx.session.liveUser(id);
     await ctx.client.addUsr(id);
     await ctx.client.set("usr_id", id);

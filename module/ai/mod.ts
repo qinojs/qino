@@ -4,6 +4,7 @@ import { api } from "./apt.ts";
 import { AiApi } from "./lib/AiApi.ts";
 
 export const name = "ai";
+export const needs = ["core"];
 
 export function init(app: any) {
   app.ai = new AiApi(app);

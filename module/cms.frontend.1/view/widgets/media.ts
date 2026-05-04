@@ -1,5 +1,5 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-import { hee } from "qg";
+import { hee } from "../../../core/lib/util.ts";
 
 export default async function (node: Node): Promise<string> {
   const app = node.app;

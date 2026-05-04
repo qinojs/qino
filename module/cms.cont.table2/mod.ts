@@ -1,6 +1,6 @@
 // Port of cms.cont.table2/index.php
 import type { Node } from "../cms/lib/Node.ts";
-import { OutputException } from "qg";
+import { OutputException } from "../core/lib/util.ts";
 import options from "./options.ts";
 import pageApi from "./page_api.ts";
 

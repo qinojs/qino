@@ -1,7 +1,7 @@
 // Port of cms.backend.users/page_api.php
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "qg";
+import { getCtx } from "../core/lib/context.ts";
 import { Auth } from "../core/lib/Auth.ts";
 import { Usr } from "../core/lib/qgEntries.ts";
 import type { Node } from "../cms/lib/Node.ts";

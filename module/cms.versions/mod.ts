@@ -29,7 +29,7 @@ import {
     versTable, view, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
-import { getCtx } from "qg";
+import { getCtx } from "../core/lib/context.ts";
 import type { Tree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
@@ -100,12 +100,10 @@ export function init(app: App) {
     // Writes a REPLACE INTO _vers_* for every tracked table mutation.
     const catchInsertUpdate = async (e: any) => {
         const ctx = getCtx();
-        if (!ctx.logId) return;
+        if (!ctx?.logId) return;
         const tableName: string = String(e.Table);
         // Handle writes directly to _vers_* (log=0 slot)
-        if (tableName.startsWith("_vers_") && !e.data?._vers_log) {
-            return; // already writing to vers table – just let it through
-        }
+        if (tableName.startsWith("_vers_") && !e.data?._vers_log) return;  // already writing to vers table – just let it through
         const vt = await versTable(ctx.app.db, tableName);
         if (!vt) return;
         // Build field list from _vers_* table to ensure correct column order
@@ -150,6 +148,7 @@ export function init(app: App) {
     // Port of vers.events.php: keep live table AUTO_INCREMENT ≥ shadow table
     app.db.on("table::insert-after", async (e: any) => {
         const ctx = getCtx();
+        if (!ctx) return;
         if (ctx.versSpace) return; // only in live space
         const tableName: string = String(e.Table);
         if (!tableName.startsWith("_vers_")) return;
@@ -224,24 +223,26 @@ export function init(app: App) {
     // with the live table even when we're in a space.
     // Port of qg.php: qg::on('table::update-before', ...) for page table.
     app.db.on("table::update-before", async (e: any) => {
-        if (!getCtx().versSpace) return;
+        const ctx = getCtx();
+        if (!ctx) return;
+        if (!ctx?.versSpace) return;
         if (String(e.Table) !== "page") return;
         const liveData: Record<string, any> = {};
         for (const key of ["sort", "basis", "access", "title_id"]) {
             if (key in e.data) liveData[key] = e.data[key];
         }
         if (!liveData) return;
-        const row = await getCtx().app.db.row(
+        const row = await ctx.app.db.row(
             `SELECT * FROM page WHERE ${e.Table.entryId2where(e.id)}`
         );
         if (!row) return;
         if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
         if (!Object.keys(liveData).length) return;
         const set = e.Table.valuesToSet(liveData);
-        await getCtx().app.db.query(
+        await ctx.app.db.query(
             `UPDATE page       SET ${set} WHERE ${e.Table.entryId2where(e.id)}`
         );
-        await getCtx().app.db.query(
+        await ctx.app.db.query(
             `UPDATE _vers_page SET ${set} WHERE ${e.Table.entryId2where(e.id)}`
         );
     });

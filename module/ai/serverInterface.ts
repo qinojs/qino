@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { serverInterface } from "qg";
+import { serverInterface } from "../core/lib/serverInterface.ts";
 
 serverInterface.ai = {
   chatCompletions(data: Record<string, unknown>): Promise<any> {

@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 // Port of cms.cont.login4/index.php
 import type { Node } from "../cms/lib/Node.ts";
-import { getCtx, hee } from "qg";
+import { hee } from "../core/lib/util.ts"
+import { getCtx } from "../core/lib/context.ts";
 
 export const name = "cms.cont.login4";
 
@@ -39,9 +40,9 @@ async function render(node: Node): Promise<string> {
 
   // Login error message
   let errorHtml = "";
-  const errorT: any = await node.text("login failed");
+  const errorT = await node.text("login failed");
   if (!(await errorT.string())) {
-    await errorT.set("de", "Ihr Loginversuch ist fehlgeschlagen");
+    await errorT.lang("de").set("Ihr Loginversuch ist fehlgeschlagen");
   }
   if (ctx.loginError) {
     const errorText = await errorT.string();

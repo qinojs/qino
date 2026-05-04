@@ -1,6 +1,6 @@
 import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
-import { typeByExtension } from '@std/media-types';
+import { typeByExtension } from '../../../../deps.ts';
 import type { Phase, TransformerDef, TransformContext, TransformOptions, TransformResult } from './types.ts';
 import { checkMagick, checkAvifSupport, isMagickAvailable } from './imagemagick.ts';
 import { isFfmpegAvailable } from './ffmpeg.ts';

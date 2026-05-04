@@ -5,7 +5,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { Item } from "item/item.js";
+import { Item } from "../../../deps.ts";
 
 class SettingItem extends Item {
   data: any = null;

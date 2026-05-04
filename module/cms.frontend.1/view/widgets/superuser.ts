@@ -1,5 +1,6 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-import { hee, getCtx } from "qg";
+import { hee } from "../../../core/lib/util.ts"
+import { getCtx } from "../../../core/lib/context.ts";
 import { addSettingsEditor, settingsSourceAttr } from "../../../core/lib/settings.ts";
 
 function moduleDir(node: Node): string | null {
