@@ -27,7 +27,7 @@ export class RequestContext {
     HTTP_ACCEPT_LANGUAGE: "", HTTP_IF_NONE_MATCH: "", HTTP_RANGE: "", HTTP_DPR: "",
     REMOTE_ADDR: "", SCHEME: "http" as "http" | "https", DOCUMENT_ROOT: "", SCRIPT_FILENAME: "",
   };
-  responseHeaders = new Headers();
+  responseHeaders: Headers = new Headers();
   responseStatus = 200;
   responseBody: any = "";
   state: Record<string, any> = {};
@@ -74,8 +74,8 @@ export class RequestContext {
   cmsVersSpace = 0;            // configured CMS space (cms_vers::$space)
   cmsVersLog   = 0;            // configured CMS log   (cms_vers::$log)
 
-  settingCache = new Map<number, unknown>();
-  entryCache = new Map<string, Map<string, unknown>>();
+  settingCache: Map<number, unknown> = new Map();
+  entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; 
   appURL = "/"; 
   sysURL = "/m/"; 

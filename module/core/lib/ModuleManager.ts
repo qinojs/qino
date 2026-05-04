@@ -28,7 +28,7 @@ async function fileExists(path: string): Promise<boolean> {
 
 export class ModuleManager {
   #app: App;
-  router = new Hono();
+  router: Hono = new Hono();
 
   #modules: Record<string, Module> = {};
 

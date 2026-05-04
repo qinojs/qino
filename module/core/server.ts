@@ -16,7 +16,7 @@ import { toHono, client, type Tree } from "./lib/apt.ts";
 import { initClient, initLog, touchSession } from "./lib/init.ts";
 import { Auth } from "./lib/Auth.ts";
 
-const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir:string = fromFileUrl(new URL(".", Deno.mainModule));
 
 const defaultConfig = {
     appPATH: mainDir,

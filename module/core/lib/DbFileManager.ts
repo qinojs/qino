@@ -16,7 +16,7 @@ export class DbFileManager {
   db: DB;
   directory: string;
   baseURL = "";
-  router = new Hono();
+  router: Hono = new Hono();
 
   constructor(app: App, directory: string) {
     this.app = app;
@@ -39,7 +39,7 @@ export class DbFileManager {
     }
   }
 
-  async add(path?: string) {
+  async add(path?: string): Promise<DbFile> {
     const id = parseInt(String(await this.db.table("file").insert({}) ?? "0"));
     const f = this.file(id);
     if (path) await f.replaceBy(path);
@@ -141,7 +141,7 @@ export class DbFile extends File {
     }
   }
 
-  async get(field: string) {
+  async get(field: string): Promise<unknown> {
     await this._loadVs();
     return this.vs[field];
   }
@@ -164,7 +164,7 @@ export class DbFile extends File {
     }
   }
 
-  override async url(params: Record<string, any> | null = null) {
+  override async url(params: Record<string, any> | null = null): Promise<string> {
     await this._loadVs();
     const noNome = params == null; // backwards compatibility: if params is null, include name in URL; if params is an empty object, exclude name
     params = params ?? {};
@@ -175,7 +175,7 @@ export class DbFile extends File {
     return baseURL + this.id + "/" + paramStr + "/" + encodeURIComponent(await this.name());
   }
 
-  async access(set?: any) {
+  async access(set?: any): Promise<boolean> {
     await this._loadVs();
     if (set === undefined) {
       const access = this.vs["access"] == "1";
@@ -188,17 +188,18 @@ export class DbFile extends File {
     return !!set;
   }
 
-  async name(set?: any) {
+  async name(): Promise<string>;
+  async name(set?: any): Promise<string | void> {
     await this._loadVs();
     if (set === undefined) return this.vs["name"] ?? "";
     this.setVs({ name: set });
   }
 
-  override extension() {
+  override extension(): string {
     return String(this.vs["name"] ?? "").replace(/.*\./, "").toLowerCase();
   }
 
-  override mime() {
+  override mime(): string {
     return this.vs["mime"] ?? "";
   }
 
@@ -208,11 +209,11 @@ export class DbFile extends File {
     this.setVs({ text: await this.getText(), size: await this.size() });
   }
 
-  override toString() {
+  override toString(): string {
     return String(this.id);
   }
 
-  async used() {
+  async used(): Promise<boolean> {
     await this._loadVs();
     const tbl = this.#manager.db.table("file");
     for (const Field of tbl.children) {
@@ -285,7 +286,7 @@ export class DbFile extends File {
     this.setVs({ name: f["name"] ?? "", mime: type, md5: hash, size: await this.size(), text: await this.getText() });
   }
 
-  async clone(to?: number | null) {
+  async clone(to?: number | null): Promise<DbFile> {
     await this._loadVs();
     const data = { ...this.vs };
     let newId: number;
