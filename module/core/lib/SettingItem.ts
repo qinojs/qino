@@ -7,7 +7,7 @@ import { Item } from "../../../deps.ts";
 import type { DB } from "./db.ts";
 
 class SettingItem extends Item<SettingItem> {
-  data: Record<string, unknown> | null = null;
+  data: Record<string, unknown> | undefined;
   db!: DB;
 
   constructor(...args: ConstructorParameters<typeof Item>) {
