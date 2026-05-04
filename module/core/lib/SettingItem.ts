@@ -3,27 +3,26 @@
  * Port of core/lib/settingArray.class.php
  */
 
-// deno-lint-ignore-file no-explicit-any
-
 import { Item } from "../../../deps.ts";
+import type { DB } from "./db.ts";
 
-class SettingItem extends Item {
+class SettingItem extends Item<SettingItem> {
   data: any = null;
-  db: any = null;
+  db!: DB;
 
   constructor(...args: any[]) {
     super(...args);
-    if (this.io) (this.io as any).options.ttl = 1000 * 60 * 60 * 2;
+    if (this.io) this.io.options.ttl = 1000 * 60 * 60 * 2;
   }
 
-  async reader() {
-    await (this.parent as any)?.read();
+  override reader = async () => {
+    await this.parent?.read();
 
     // autovivif: create if they don't exist in db
-    if (this.parent && !(this as any).data?.id) {
-      const parentId = (this.parent as any).data?.id ?? 0;
+    if (this.parent && !this.data?.id) {
+      const parentId = this.parent.data?.id ?? 0;
       const offset = this.key;
-      const result = await this.root.db.query("INSERT INTO qg_setting (basis, `offset`, value) VALUES (?, ?, '')", [parentId, offset]);
+      const result = await this.root.db.exec("INSERT INTO qg_setting (basis, `offset`, value) VALUES (?, ?, '')", [parentId, offset]);
       this.data = await this.root.db.row("SELECT * FROM qg_setting WHERE id = ?", [result.insertId]);
     }
 
@@ -36,12 +35,11 @@ class SettingItem extends Item {
     }
 
     if (!rows[0]) {
-      //console.log('hier:', rows, this)
       return this.data?.value; // not an object
     }
   }
 
-  async writer(value: any) {
+  override writer = async (value: any) => {
     await this.reader(); // ensure data is loaded
 
     if (typeof value !== "object" || value == null) {
@@ -53,16 +51,16 @@ class SettingItem extends Item {
       promises.push(this.item(key).set(value[key]));
     }
     return Promise.all(promises);
-  }
+  };
 
-  async remover() {
+  override remover = async () => {
     await this.reader(); // ensure data is loaded
     for (const sub of this.items()) await sub.remove();
     return await this.root.db.query("DELETE FROM qg_setting WHERE id = ?", [this.data.id]);
-  }
+  };
 }
 
-export function createSettingItem(db: any) {
+export function createSettingItem(db: DB) {
   const root = new SettingItem();
   root.db = db;
   return root;
