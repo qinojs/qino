@@ -28,6 +28,9 @@
     "@nuxodin/item@0.4.1": {
       "integrity": "b50071dfd7c0b84efe4a81fee7640473fe1cb855450d001de94e62feba108400"
     },
+    "@nuxodin/item@0.5.2": {
+      "integrity": "eece404a9fa74a0ec850f71688dcb901c4a7e572860fd1d986cab686326c0cdc"
+    },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [

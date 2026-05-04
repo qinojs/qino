@@ -72,7 +72,7 @@ export class DB {
     } finally {
       await tmp.end();
     }
-    const tables = await this.col("SHOW TABLES");
+    const tables = await this.col("SHOW TABLES") as string[];
     this.#tables = {};
     for (const table of tables) {
       this.#tables[table] = new dbTable(this, table);
