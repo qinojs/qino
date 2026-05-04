@@ -81,7 +81,7 @@ export class App {
         this.router.use("*", (hc, next) => this.handleAppFallback(hc, next));
     }
 
-    get fetch() {
+    get fetch(): (req: Request) => Response | Promise<Response> {
         return this.router.fetch.bind(this.router);
     }
 

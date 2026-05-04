@@ -54,10 +54,10 @@ export class DB {
     return this.#exec<ResultSetHeader>(sql, params, false);
   }
 
-  all = (sql: string, p?: unknown[]) => this.query(sql, p);
-  row = async (sql: string, p?: unknown[]) => (await this.query(sql, p))[0];
-  col = async (sql: string, p?: unknown[]) => (await this.query(sql, p)).map((r) => Object.values(r)[0]);
-  one = async (sql: string, p?: unknown[]) => Object.values(await this.row(sql, p) ?? {})[0];
+  all = (sql: string, p?: unknown[]): Promise<RowDataPacket[]> => this.query(sql, p);
+  row = async (sql: string, p?: unknown[]): Promise<RowDataPacket | undefined> => (await this.query(sql, p))[0];
+  col = async (sql: string, p?: unknown[]): Promise<unknown[]> => (await this.query(sql, p)).map((r) => Object.values(r)[0]);
+  one = async (sql: string, p?: unknown[]): Promise<unknown> => Object.values(await this.row(sql, p) ?? {})[0];
 
   async indexCol(sql: string, p?: unknown[]): Promise<Record<string, any>> {
     return Object.fromEntries((await this.query(sql, p)).map((r) => Object.values(r) as [string, any]));
@@ -72,7 +72,7 @@ export class DB {
     } finally {
       await tmp.end();
     }
-    const tables = await this.col("SHOW TABLES");
+    const tables = await this.col("SHOW TABLES") as string[];
     this.#tables = {};
     for (const table of tables) {
       this.#tables[table] = new dbTable(this, table);
@@ -80,7 +80,7 @@ export class DB {
     }
   }
 
-  get tables() { return this.#tables; }
+  get tables(): Record<string, dbTable> { return this.#tables; }
 
   table(name: string): dbTable { return this.#tables[name]; }
 
@@ -130,7 +130,7 @@ export class DB {
     await this.init();
   }
 
-  close = () => this.#pool.end();
+  close = (): Promise<void> => this.#pool.end();
 
   #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
   on(name: string, fn: (data: Record<string, any>) => void | Promise<void>): void {
