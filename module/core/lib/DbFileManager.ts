@@ -26,7 +26,7 @@ export class DbFileManager {
     Deno.mkdir(this.directory, { recursive: true }).catch(() => {});
   }
 
-  file(id: number | string, vs?: any) {
+  file(id: number | string, vs?: any): DbFile {
     const key = String(id);
     return this.#cache[key] ??= new DbFile(this, id, vs);
   }

@@ -32,7 +32,7 @@ export class RequestContext {
   responseBody: any = "";
   state: Record<string, any> = {};
 
-  get html() { return this.#html ??= new HtmlBuilder(this); }
+  get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(this); }
   get hasHtml(): boolean { return this.#html !== null; }
   #html: HtmlBuilder | null = null;
 

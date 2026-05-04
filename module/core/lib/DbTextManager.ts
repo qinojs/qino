@@ -5,6 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "./context.ts";
 import type { App } from "../server.ts";
+import type { DB } from "./db.ts";
 
 export class DbTextManager {
   #cache: Record<string, DbText> = {};
@@ -37,12 +38,8 @@ export class DbTextManager {
     return t;
   }
 
-  get db() {
-    return this.#db;
-  }
-  get app() {
-    return this.#app;
-  }
+  get db(): DB { return this.#db; }
+  get app(): App { return this.#app; }
 }
 
 export class DbText {
@@ -85,16 +82,14 @@ export class DbText {
     return newText;
   }
 
-  get manager() {
-    return this.#manager;
-  }
+  get manager(): DbTextManager { return this.#manager; }
 
-  async string() {
+  async string(): Promise<string | null> {
     const lang = getCtx()?.lang ?? this.#manager.app.languages.def;
     const t = await this.orFallback(lang);
     return t.get();
   }
-  toString() {
+  toString(): string {
     throw new Error("DbText: toString() not implemented");
   }
 }
@@ -113,7 +108,7 @@ export class DbTextLang {
     if (this.value === null) {
       const db = this.Text.manager.db;
       const value = await db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [this.Text.id, this.lang]);
-      this.value = value ?? "";
+      this.value = String(value ?? "");
       //await qg.fire("textpro_lang::get", { obj: this });
     }
     return this.value!;

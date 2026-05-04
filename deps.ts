@@ -14,4 +14,4 @@ export { Item, $item } from "jsr:@nuxodin/item@^0.4.1/item.js";
 export type { ItemProxy } from "jsr:@nuxodin/item@^0.4.1/item.js";
 export { bildJsonItem } from "jsr:@nuxodin/item@^0.4.1/tools/jsonDataItem.js";
 export { schemaToDb } from "jsr:@nuxodin/item@^0.4.1/tools/schema/db/mysql/to-db.js";
-export { dump } from "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@x/mod.min.js";
+export { dump } from "jsr:@nuxodin/dump@^1.3.0";

@@ -18,7 +18,7 @@ export class Module {
     this.exports = exports;
   }
   get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
-  toString() { return this.name; }
+  toString(): string { return this.name; }
 }
 
 async function fileExists(path: string): Promise<boolean> {
