@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, serveDir, Hono, type Context, basePath, $item } from "../../../deps.ts";
-import { dbSchema as DbSchema } from "./dbSchema.ts";
+import { DbSchema } from "./DbSchema.ts";
 import type { App } from "../server.ts";
 
 export type ModuleExports = Record<string, any>;
@@ -78,10 +78,7 @@ export class ModuleManager {
 
   async add(spec: string): Promise<Module> {
     const mod = await this.import(spec);
-    if (mod.exports.dbSchema) {
-      const { dbSchema: DbSchema } = await import("./dbSchema.ts");
-      await new DbSchema(this.#app.db).check(mod.exports.dbSchema);
-    }
+    if (mod.exports.dbSchema) await new DbSchema(this.#app.db).check(mod.exports.dbSchema);
     await mod.exports.init?.(this.#app);
     await mod.exports.install?.({ app: this.#app, module: mod.exports });
     return mod;

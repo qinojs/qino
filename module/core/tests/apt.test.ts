@@ -30,7 +30,6 @@ Deno.test("schema: object with optional and default", () => {
 
 Deno.test("schema: object exposes keys + shape for introspection", () => {
   const Sch = s.object({ a: s.string(), b: s.number() });
-  assertEquals(Sch.keys, ["a", "b"]);
   assertEquals(Sch.kind, "object");
   assertEquals(Object.keys(Sch.shape!), ["a", "b"]);
 });
@@ -49,7 +48,7 @@ Deno.test("schema: array + record", () => {
 Deno.test("schema: collision source names are surfaced via keys", () => {
   // This is what checkCollisions() in apt.ts uses to detect overlaps.
   const pathNames = new Set(["node", "file"]);
-  const inputKeys = s.object({ deep: s.boolean() }).keys!;
+  const inputKeys = Object.keys(s.object({ deep: s.boolean() }).shape!);
   for (const k of inputKeys) {
     if (pathNames.has(k)) throw new Error(`collision on ${k}`);
   }

@@ -5,7 +5,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "./context.ts";
 import type { App } from "../server.ts";
-import type { DB } from "./db.ts";
+import type { Db } from "./Db.ts";
 
 export class DbTextManager {
   #cache: Record<string, DbText> = {};
@@ -35,7 +35,7 @@ export class DbTextManager {
     return this.text(id);
   }
 
-  get db(): DB { return this.#db; }
+  get db(): Db { return this.#db; }
   get app(): App { return this.#app; }
 }
 

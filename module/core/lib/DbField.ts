@@ -3,10 +3,10 @@
  * Port of core/lib/dbField.class.php
  */
 
-import type { dbTable } from "./dbTable.ts";
-import { DB, dateTypes, stringTypes, numTypes } from "./db.ts";
+import type { DbTable } from "./DbTable.ts";
+import { Db, dateTypes, stringTypes, numTypes } from "./Db.ts";
 
-export class dbField {
+export class DbField {
 
   #type: string | null = null;
   #length: string | null = null;
@@ -14,12 +14,12 @@ export class dbField {
   #name: string;
 
   vs: Record<string, any>;
-  Table: dbTable;
-  Db: DB;
+  table: DbTable;
+  db: Db;
 
-  constructor(Table: dbTable, name: string, vs: Record<string, any>) {
-    this.Table = Table;
-    this.Db = Table.db;
+  constructor(Table: DbTable, name: string, vs: Record<string, any>) {
+    this.table = Table;
+    this.db = Table.db;
     this.#name = name;
     this.vs = vs;
   }
@@ -42,7 +42,7 @@ export class dbField {
 
   valueToSql(value: any): string {
     value = this.valueTransform(value);
-    return value === null ? "NULL" : DB.quote(value); // DB.quote hier behalten!
+    return value === null ? "NULL" : Db.quote(value); // Db.quote hier behalten!
   }
 
   isPrimary(): boolean { return this.vs.Key === "PRI"; }
@@ -67,15 +67,15 @@ export class dbField {
     data.autoincrement = data.autoincrement ?? this.isAutoIncrement();
 
     if (data.type === "text" && this.getType() !== "text") {
-      const hasIndex = await this.Db.row(`SHOW INDEX FROM ${this.Table} WHERE KEY_NAME = '${this}'`);
-      if (hasIndex) await this.Db.query(`ALTER TABLE ${this.Table} DROP INDEX ${this}`);
+      const hasIndex = await this.db.row(`SHOW INDEX FROM ${this.table} WHERE KEY_NAME = '${this}'`);
+      if (hasIndex) await this.db.query(`ALTER TABLE ${this.table} DROP INDEX ${this}`);
     }
 
-    let sql = `ALTER TABLE ${this.Table} CHANGE \`${this}\` \`${data.name ?? this}\` ${DB._array_to_column_definition(data)}`;
+    let sql = `ALTER TABLE ${this.table} CHANGE \`${this}\` \`${data.name ?? this}\` ${Db._array_to_column_definition(data)}`;
     if (data.after !== undefined) sql += data.after ? ` AFTER \`${data.after}\`` : " FIRST";
-    await this.Db.query(sql);
+    await this.db.query(sql);
     this.#special = data.special;
-    await this.Table.reloadFields();
+    await this.table.reloadFields();
   }
 
   getType(): string {
@@ -129,10 +129,10 @@ export class dbField {
   getID(): number {
     return this.vs.id;
   }
-  parent(): dbTable | false {
-    return this.vs.parent ? this.Db.table(this.vs.parent) : false;
+  parent(): DbTable | false {
+    return this.vs.parent ? this.db.table(this.vs.parent) : false;
   }
-  parentField(): dbField | false {
+  parentField(): DbField | false {
     const P = this.parent();
     if (!P) return false;
     return this.vs.parent_field ? P.field(this.vs.parent_field) : P.primary;
@@ -148,33 +148,33 @@ export class dbField {
     } else {
       await this.#setPrimary(false);
       if (this.getKey()) {
-        await this.Db.query(`ALTER TABLE ${this.Table} DROP INDEX \`${this}\``);
+        await this.db.query(`ALTER TABLE ${this.table} DROP INDEX \`${this}\``);
       }
       if (type === "MUL") {
         const t = this.getType();
         if (["text", "tinytext", "mediumtext", "longtext"].includes(t)) {
-          await this.Db.query(`ALTER TABLE ${this.Table} ADD FULLTEXT (\`${this}\`)`);
+          await this.db.query(`ALTER TABLE ${this.table} ADD FULLTEXT (\`${this}\`)`);
         } else {
-          await this.Db.query(`ALTER TABLE ${this.Table} ADD INDEX (\`${this}\`)`);
+          await this.db.query(`ALTER TABLE ${this.table} ADD INDEX (\`${this}\`)`);
         }
       } else if (type === "UNI") {
-        await this.Db.query(`ALTER TABLE ${this.Table} ADD UNIQUE (\`${this}\`)`);
+        await this.db.query(`ALTER TABLE ${this.table} ADD UNIQUE (\`${this}\`)`);
       }
     }
-    await this.Table.reloadFields();
+    await this.table.reloadFields();
   }
   async #setPrimary(v: boolean): Promise<void> {
     if (!!this.isPrimary() === v) return;
     const ps: Record<string, string> = {};
-    let Auto: dbField | undefined;
-    for (const [field, Field] of Object.entries(this.Table.primaries)) {
+    let Auto: DbField | undefined;
+    for (const [field, Field] of Object.entries(this.table.primaries)) {
       ps[field] = field;
       if (Field.isAutoIncrement()) {
         Auto = Field;
         await Field.setAutoincrement(false);
       }
     }
-    if (Object.keys(ps).length) await this.Db.query(`ALTER TABLE ${this.Table} DROP PRIMARY KEY`);
+    if (Object.keys(ps).length) await this.db.query(`ALTER TABLE ${this.table} DROP PRIMARY KEY`);
 
     if (v) {
       ps[String(this)] = String(this);
@@ -184,7 +184,7 @@ export class dbField {
       this.vs.Key = "";
     }
     if (Object.keys(ps).length) {
-      await this.Db.query(`ALTER TABLE ${this.Table} ADD PRIMARY KEY (${Object.keys(ps).join(",")})`);
+      await this.db.query(`ALTER TABLE ${this.table} ADD PRIMARY KEY (${Object.keys(ps).join(",")})`);
     }
     if (Auto) await Auto.setAutoincrement(true);
   }

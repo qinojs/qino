@@ -1,15 +1,10 @@
-// deno-lint-ignore-file no-explicit-any
+import { hee } from "./util.ts";
 
 export type SettingsSource = {
   kind: "app" | "ctx" | "node" | "page";
   path?: string[];
   id?: number;
 };
-
-function hee(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function normalizePath(path?: string[]): string[] {
   return Array.isArray(path)

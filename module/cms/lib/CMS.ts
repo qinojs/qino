@@ -7,7 +7,7 @@ import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/context.ts";
 import type { App } from "../../core/server.ts";
 import type { Module } from "../../core/lib/ModuleManager.ts";
-import type { DB } from "../../core/lib/db.ts";
+import type { Db } from "../../core/lib/Db.ts";
 import type { Node } from "./Node.ts";
 
 
@@ -15,7 +15,8 @@ function table(name: string): string { return name; }
 
 export class CMS {
     app: App;
-    db: DB
+    db: Db;
+    
     #nodes: Map<number, Node> = new Map();
     #layouts: Record<string, string> | null = null;
 

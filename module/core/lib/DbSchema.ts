@@ -26,7 +26,7 @@ type DatabaseSchema = {
 
 const INDEX_TO_KEY: Record<string, string> = { primary: "PRI", unique: "UNI", fulltext: "MUL", "true": "MUL" };
 
-export class dbSchema {
+export class DbSchema {
   #db: any;
 
   constructor(db: any) {

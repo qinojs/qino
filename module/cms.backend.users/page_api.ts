@@ -3,7 +3,6 @@
 
 import { getCtx } from "../core/lib/context.ts";
 import { Auth } from "../core/lib/Auth.ts";
-import { Usr } from "../core/lib/qgEntries.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
 export default async function (node: Node, vars:any): Promise<any> {
@@ -28,7 +27,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   }
 
   if ("delete" in vars) {
-    const TargetUsr = Usr(vars.delete);
+    const TargetUsr = db.table("usr").Entry(vars.delete);
     if (!await TargetUsr.is()) return false;
     if (await TargetUsr.get("superuser") && !isSuperuser) return false;
     await db.table("usr").delete(vars.delete);
@@ -36,7 +35,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   }
 
   if ("save" in vars) {
-    const TargetUsr = Usr(vars.save);
+    const TargetUsr = db.table("usr").Entry(vars.save);
     if (!await TargetUsr.is()) return false;
     if (await TargetUsr.get("superuser") && !isSuperuser) return false;
     const allowed: Record<string, boolean> = {
@@ -54,7 +53,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   }
 
   if ("set_grp" in vars) {
-    const TargetUsr = Usr(vars.set_grp);
+    const TargetUsr = db.table("usr").Entry(vars.set_grp);
     if (!await TargetUsr.is()) return false;
     if (await TargetUsr.get("superuser") && !isSuperuser) return false;
     const grpId = parseInt(String(vars.grp_id));

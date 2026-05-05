@@ -7,7 +7,7 @@
 
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/context.ts";
-import { DB } from "../core/lib/db.ts";
+import { Db } from "../core/lib/Db.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
@@ -268,9 +268,9 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
     const historyOf = get.history_of ?? "ip";
     let historyWhere = "";
-    if      (historyOf === "ip"     && error.ip)       historyWhere = `log.ip_id IN (SELECT id FROM log_ip WHERE ip = ${DB.quote(error.ip)})`;
-    else if (historyOf === "sess"   && log?.sess_id)   historyWhere = `log.sess_id = ${DB.quote(log.sess_id)}`;
-    else if (historyOf === "client" && log?.client_id) historyWhere = `log.client_id = ${DB.quote(log.client_id)}`;
+    if      (historyOf === "ip"     && error.ip)       historyWhere = `log.ip_id IN (SELECT id FROM log_ip WHERE ip = ${Db.quote(error.ip)})`;
+    else if (historyOf === "sess"   && log?.sess_id)   historyWhere = `log.sess_id = ${Db.quote(log.sess_id)}`;
+    else if (historyOf === "client" && log?.client_id) historyWhere = `log.client_id = ${Db.quote(log.client_id)}`;
 
     let historyRows = "";
     if (historyWhere) {
@@ -279,7 +279,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
              FROM log
                 LEFT JOIN log_url url     ON log.url_id     = url.id
                 LEFT JOIN log_url referer ON log.referer_id = referer.id
-             WHERE ${historyWhere} AND log.id <= ${DB.quote(error.log_id)}
+             WHERE ${historyWhere} AND log.id <= ${Db.quote(error.log_id)}
              ORDER BY log.id DESC LIMIT 30`
         ).catch(() => []);
 

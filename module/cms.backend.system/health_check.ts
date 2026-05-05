@@ -92,9 +92,9 @@ export async function getTypes(app: any): Promise<HealthTypes> {
     let info = "";
     for (const row of usrs) {
       // bcrypt check: password "su"
-      const { verify } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
+      const { compare } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
       let match = false;
-      try { match = await verify("su", row.pw); } catch { /* skip */ }
+      try { match = await compare("su", row.pw); } catch { /* skip */ }
       if (!match) continue;
       found.push(row);
       info += hee(row.email) + "<br>";

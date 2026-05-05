@@ -22,13 +22,13 @@ export class LangManager {
 
     // Sprache des Users (vor NS-Override)
     getUsr(ctx?: any): string {
-        const c = ctx ?? this.#ctx();
+        const c = ctx ?? getCtx();
         return c?.langUsr || this.def;
     }
 
     // Aktueller Namespace
     getNs(ctx?: any): string {
-        const c = ctx ?? this.#ctx();
+        const c = ctx ?? getCtx();
         return c?.langNs ?? "";
     }
 
@@ -61,7 +61,7 @@ export class LangManager {
     }
 
     async nsStart(ns: string, ctx?: any): Promise<void> {
-        const c = ctx ?? this.#ctx();
+        const c = ctx ?? getCtx();
         c.langNsPath.push(c.langNs);
         c.langNs = ns;
         const nsLang = String(await c.settings.qg.lang_ns[ns] ?? "");
@@ -69,7 +69,7 @@ export class LangManager {
     }
 
     nsStop(ctx?: any): void {
-        const c = ctx ?? this.#ctx();
+        const c = ctx ?? getCtx();
         c.langNs = c.langNsPath.pop() ?? "";
         c.lang = this.getUsr(c);
     }
@@ -124,7 +124,7 @@ export class LangManager {
 
     // Shortcut: Text übersetzen (nutzt automatisch den aktuellen ctx)
     async t(strings: TemplateStringsArray, ...values: (Promise<string> | string)[]): Promise<string> {
-        const ctx = this.#ctx();
+        const ctx = getCtx();
         
         // Originalstring aus den Template-Parts zusammensetzen (mit ###1### Platzhaltern)
         const original = strings.reduce((acc, str, i) => 
@@ -164,7 +164,4 @@ export class LangManager {
         }
     }
 
-    #ctx(): any {
-        return getCtx();
-    }
 }

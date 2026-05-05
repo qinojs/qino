@@ -323,7 +323,7 @@ serverInterface.page = {
 // ─── serverInterface_cms ───────────────────────────────────────────────────
 
 serverInterface.cms = {
-  onBefore(_fn: string): Promise<boolean> {
+  onBefore(_fn: string): void {
     this.Answer = this.ctx.state.Answer;
     this.apt = this.ctx.app.apt.cms;
   },

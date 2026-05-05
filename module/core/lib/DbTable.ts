@@ -4,31 +4,31 @@
  */
 // deno-lint-ignore-file no-explicit-any
 
-import { dbField } from "./dbField.ts";
-import { dbEntry, getEntryClass } from "./dbEntry.ts";
+import { DbField } from "./DbField.ts";
+import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { getCtx } from "./context.ts";
-import { DB, numTypes } from "./db.ts";
+import { Db, numTypes } from "./Db.ts";
 
-export class dbTable {
-  #fields: Record<string, dbField> | null = null;
-  #primaries: Record<string, dbField> = {};
-  #autoIncrement: dbField | false = false;
-  #db: DB;
+export class DbTable {
+  #fields: Record<string, DbField> | null = null;
+  #primaries: Record<string, DbField> = {};
+  #autoIncrement: DbField | false = false;
+  #db: Db;
   #name: string;
-  #children: dbField[] | null = null;
+  #children: DbField[] | null = null;
 
-  constructor(db: DB, name: string) {
+  constructor(db: Db, name: string) {
     this.#db = db;
     this.#name = name;
   }
 
-  get db(): DB {
+  get db(): Db {
     return this.#db;
   }
-  get fields(): Record<string, dbField> | null {
+  get fields(): Record<string, DbField> | null {
     return this.#fields;
   }
-  get autoIncrement(): dbField | false {
+  get autoIncrement(): DbField | false {
     return this.#autoIncrement;
   }
 
@@ -38,15 +38,15 @@ export class dbTable {
     await this.init();
   }
 
-  field(n: string): dbField | false {
+  field(n: string): DbField | false {
     return this.#fields?.[n] ?? false;
   }
 
-  async init(): Promise<Record<string, dbField>> {
+  async init(): Promise<Record<string, DbField>> {
     if (this.#fields === null) {
       const fields = [];
 
-      const columns = await this.#db.query(`SHOW FULL COLUMNS FROM ${DB.escapeId(String(this))}`);
+      const columns = await this.#db.query(`SHOW FULL COLUMNS FROM ${Db.escapeId(String(this))}`);
       for (const values of columns) {
         const name = values.Field;
         fields.push({ ...values, ...this.#db.fieldMeta(String(this), name) });
@@ -56,7 +56,7 @@ export class dbTable {
       this.#autoIncrement = false;
       for (const field of fields) {
         const name = field.Field;
-        this.#fields[name] = new dbField(this, name, field);
+        this.#fields[name] = new DbField(this, name, field);
         if (this.#fields[name].isPrimary()) {
           this.#primaries[name] = this.#fields[name];
         }
@@ -72,10 +72,10 @@ export class dbTable {
     return this.#fields!;
   }
 
-  get primaries(): Record<string, dbField> {
+  get primaries(): Record<string, DbField> {
     return this.#primaries;
   }
-  get primary(): dbField | false {
+  get primary(): DbField | false {
     return Object.values(this.#primaries)[0] ?? false;
   }
 
@@ -132,7 +132,7 @@ export class dbTable {
   }
   async select(v = "1"): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
-    const rows = await this.#db.all(`SELECT * FROM ${DB.escapeId(String(this))} WHERE ${v}`);
+    const rows = await this.#db.all(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${v}`);
     for (const entry of rows) {
       const eid = this.entryId(entry);
       if (eid !== false) ret[eid] = entry;
@@ -145,7 +145,7 @@ export class dbTable {
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
       const value = Field.valueTransform(values[field]);
-      const ref = alias ? `${DB.escapeId(alias)}.${DB.escapeId(field)}` : DB.escapeId(field);
+      const ref = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
       if (!isSet && value === null) {
         sqls.push(`${ref} IS NULL`);
         continue;
@@ -160,7 +160,7 @@ export class dbTable {
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
       const v = Field.valueToSql(values[field]);
-      const f = alias ? `${DB.escapeId(alias)}.${DB.escapeId(field)}` : DB.escapeId(field);
+      const f = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
       const equal = !isSet && v === "NULL" ? " IS " : " = ";
       sqls.push(f + equal + v);
     }
@@ -178,7 +178,7 @@ export class dbTable {
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const [set, params] = this.#valuesToFragment(values, undefined, true);
-    const res = await this.#db.exec(`INSERT INTO ${DB.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
+    const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
     if (auto) {
@@ -206,7 +206,7 @@ export class dbTable {
       if (!whereValues) return false;
       const [where, whereParams] = this.#valuesToFragment(whereValues);
       if (!where) return false;
-      const rows = await this.#db.exec(`UPDATE ${DB.escapeId(String(this))} SET ${set} WHERE ${where}`, [...setParams, ...whereParams]) as any;
+      const rows = await this.#db.exec(`UPDATE ${Db.escapeId(String(this))} SET ${set} WHERE ${where}`, [...setParams, ...whereParams]) as any;
       if (!rows) return false;
       if (!rows.affectedRows) return String(id);
       await this.#db.fire("table::update-after", { Table: this, id, data: values });
@@ -218,7 +218,7 @@ export class dbTable {
   async ensure(values: Record<string, any> = {}): Promise<string | false | undefined> {
     const whereValues = this.entryId2Array(values);
     const where = whereValues ? this.#valuesToFragment(whereValues) : null;
-    if (where?.[0] && await this.#db.row(`SELECT * FROM ${DB.escapeId(String(this))} WHERE ${where[0]}`, where[1])) {
+    if (where?.[0] && await this.#db.row(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1])) {
       return this.update(values);
     } else {
       return this.insert(values);
@@ -233,17 +233,17 @@ export class dbTable {
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const where = values ? this.#valuesToFragment(values) : null;
     if (!where?.[0]) return false;
-    const rows = await this.#db.exec(`DELETE FROM ${DB.escapeId(String(this))} WHERE ${where[0]}`, where[1]) as any;
+    const rows = await this.#db.exec(`DELETE FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1]) as any;
     if (!rows?.affectedRows) return undefined;
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
     for (const Field of this.children) {
       if (Field.vs.on_parent_delete === "cascade") {
         const childRows = await this.#db.all(
-          `SELECT * FROM ${DB.escapeId(String(Field.Table))} WHERE ${DB.escapeId(String(Field))} = ?`,
+          `SELECT * FROM ${Db.escapeId(String(Field.table))} WHERE ${Db.escapeId(String(Field))} = ?`,
           [id],
         );
         for (const row of childRows) {
-          await Field.Table.delete(row);
+          await Field.table.delete(row);
         }
       }
     }
@@ -256,12 +256,7 @@ export class dbTable {
     for (const row of Object.values(rows)) await this.delete(row);
   }
 
-  #getChildren(): dbField[] {
-    console.log("deprecated: dbTable.#getChildren(), use dbTable.children instead");    
-    return this.children;
-  }
-
-  get children(): dbField[] {
+  get children(): DbField[] {
     if (this.#children === null) {
       this.#children = [];
       for (const child of this.#db.childFields(String(this))) {
@@ -276,7 +271,7 @@ export class dbTable {
   toString(): string { return this.#name; }
   get name(): string { return this.#name; }
 
-  Entry(id?: any): dbEntry {
+  Entry(id?: any): DbEntry {
     const ctx = getCtx();
     const t = String(this);
 
@@ -300,12 +295,12 @@ export class dbTable {
     if (!tableCache.has(eid)) {
       tableCache.set(eid, new Cl(this, values));
     }
-    return tableCache.get(eid) as dbEntry;
+    return tableCache.get(eid) as DbEntry;
   }
 
   async selectEntries(str = ""): Promise<Record<string, any>> {
     const Es: Record<string, any> = {};
-    const rows = await this.#db.query(`SELECT * FROM ${DB.escapeId(String(this))} ${str}`);
+    const rows = await this.#db.query(`SELECT * FROM ${Db.escapeId(String(this))} ${str}`);
     for (const row of rows) {
       const Entry = await this.Entry(row);
       Es[String(Entry)] = Entry;
@@ -313,15 +308,15 @@ export class dbTable {
     return Es;
   }
 
-  async addField(data: string | Record<string, any>): Promise<dbField | false> {
+  async addField(data: string | Record<string, any>): Promise<DbField | false> {
     if (typeof data === "string") data = { name: data };
     data = { type: "varchar", length: 255, null: false, ...data };
-    await this.#db.exec(`ALTER TABLE ${DB.escapeId(String(this))} ADD ${DB.escapeId(String(data.name))} ${DB._array_to_column_definition(data)}`);
+    await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} ADD ${Db.escapeId(String(data.name))} ${Db._array_to_column_definition(data)}`);
     await this.reloadFields();
     return this.#fields?.[data.name] ?? false;
   }
   async remField(name: string): Promise<void> {
-    await this.#db.exec(`ALTER TABLE ${DB.escapeId(String(this))} DROP ${DB.escapeId(name)}`);
+    await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} DROP ${Db.escapeId(name)}`);
     if (this.#fields) {
       delete this.#fields[name];
       delete this.#primaries[name];

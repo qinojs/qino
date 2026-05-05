@@ -104,17 +104,6 @@ async function render(node: Node): Promise<string> {
     return h > 0 ? `${h}h ${m}m` : `${m.toFixed(2)}m`;
   };
 
-  // Ressourcen-Check (Sicherheits-Fallback)
-  let resourceCount: string | number = "N/A";
-  try {
-    // @ts-ignore
-    if (typeof Deno.resources === "function") {
-      resourceCount = Object.keys(Deno.resources()).length;
-    }
-  } catch {
-    resourceCount = "Locked";
-  }
-
   const serverInfoHtml = `
 <div class="c1-box">
   <div class="-head">Systeminfos</div>
@@ -128,7 +117,6 @@ async function render(node: Node): Promise<string> {
         <tr><td>System Load:</td><td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)</td></tr>
         <tr><td>Heap (Used/Total):</td><td>${hee((mem.heapUsed / 1024 / 1024).toFixed(2))} / ${hee((mem.heapTotal / 1024 / 1024).toFixed(2))} MB</td></tr>
         <tr><td>RSS (Echter RAM):</td><td>${hee((mem.rss / 1024 / 1024).toFixed(2))} MB</td></tr>
-        <tr><td>Offene Ressourcen:</td><td>${hee(resourceCount)}</td></tr>    
         <tr><td>Server-IP:</td><td>${hee(serverIP)}</td></tr>
         <tr><td>APP-Path:</td><td>${hee(appPATH)}</td></tr>
       </table>

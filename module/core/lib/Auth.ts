@@ -52,7 +52,7 @@ export const Auth = {
     const UsrEntry = ctx.app.db.table("usr").Entry(user.id);
     const rehash = Auth.pw_needs_rehash(await UsrEntry.get("pw"));
     if (!rehash) {
-      const clientUsrs = await ctx.client.Usrs?.() ?? {};
+      const clientUsrs = await ctx.client.users?.() ?? {};
       const usrId = String(await UsrEntry.get("id") ?? "");
       if (clientUsrs[usrId] && await clientUsrs[usrId].get?.("save_login")) {
         return Auth.login(user.id);

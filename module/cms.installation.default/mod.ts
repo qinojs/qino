@@ -74,7 +74,7 @@ export async function install({app}: {app: App}): Promise<void> {
   }
 
   // Admingruppe ID holen (für nachfolgende Seiten)
-  const adminGrp = await app.db.one("SELECT id FROM grp WHERE name = 'admin'");
+  const adminGrp = parseInt(String(await app.db.one("SELECT id FROM grp WHERE name = 'admin'")));
 
   // Home
   if (!await app.db.one("SELECT id FROM page WHERE id = 2")) {
@@ -95,7 +95,7 @@ export async function install({app}: {app: App}): Promise<void> {
   if (!await app.db.one("SELECT id FROM page WHERE id = 20")) {
     const P = await (await app.cms.node(10)).createChild({ id: 20, visible: 1, searchable: 0 });
     await P.changeGroup(adminGrp, 2);
-    await (await (await P.cont("main")).cont(1, "cms.cont.search1"));
+    await (await P.cont("main")).cont('1', "cms.cont.search1");
     await P.title("de", "Suche");
     await P.title("en", "Search");
   }

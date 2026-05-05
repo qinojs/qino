@@ -6,14 +6,14 @@ import { Hono } from "../../../deps.ts";
 import { File } from "./File.ts";
 import { typeByExtension } from "../../../deps.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
-import { DB } from "./db.ts";
+import { Db } from "./Db.ts";
 import { getCtx } from "./context.ts";
 import type { App } from "../server.ts";
 
 export class DbFileManager {
   #cache: Record<string, DbFile> = {};
   app: App;
-  db: DB;
+  db: Db;
   directory: string;
   baseURL = "";
   router: Hono = new Hono();
@@ -217,7 +217,7 @@ export class DbFile extends File {
     await this._loadVs();
     const tbl = this.#manager.db.table("file");
     for (const Field of tbl.children) {
-      const sql = `SELECT 1 FROM ${DB.escapeId(Field.Table.name)} WHERE ${DB.escapeId(Field.name)} = ? LIMIT 1`;
+      const sql = `SELECT 1 FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)} = ? LIMIT 1`;
       const has = await this.#manager.db.one(sql, [this.id]);
       if (has) return true;
     }

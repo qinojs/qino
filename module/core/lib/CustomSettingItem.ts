@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { DB } from "./db.ts";
+import { Db } from "./Db.ts";
 import { bildJsonItem } from "../../../deps.ts";
 
 async function buildRoot(
@@ -21,7 +21,7 @@ export function userSettingsItem(user: any, schema?: any): Promise<any> {
     );
 }
 
-export function sessSettingsItem(db: DB, sessId: string | number, schema?: any): Promise<any> {
+export function sessSettingsItem(db: Db, sessId: string | number, schema?: any): Promise<any> {
     return buildRoot(
         async () => (await db.row("SELECT settings FROM sess WHERE id = ?", [sessId]))?.settings,
         async (json) => { await db.query("UPDATE sess SET settings = ? WHERE id = ?", [json, sessId]); },
@@ -35,7 +35,7 @@ export function sessSettingsItem(db: DB, sessId: string | number, schema?: any):
  *
  * Todo? "nur wenn User noch keine hat" oder nur die überschreiben welche undefined sind? macht das sinn? oder gibt das komplikationen?
  */
-export async function mergeSessionSettingsToUser(db: DB, userId: number, sessId: string): Promise<void> {
+export async function mergeSessionSettingsToUser(db: Db, userId: number, sessId: string): Promise<void> {
     const sessSettings = await db.one("SELECT settings FROM sess WHERE id = ?", [sessId]);
     if (!sessSettings) return;
     const usrSettings = await db.one("SELECT settings FROM usr WHERE id = ?", [userId]);

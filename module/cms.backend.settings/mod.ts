@@ -5,6 +5,7 @@
 
 import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { backend } from "../cms.backend/mod.ts";
+import type { RequestContext } from "../core/lib/context.ts";
 
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];
@@ -21,7 +22,7 @@ export async function install({ app }: any): Promise<void> {
   }
 }
 
-function render(_node, { ctx }) {
+function render(_node: any, { ctx }: { ctx: RequestContext }): string {
   addSettingsEditor(ctx);
   const source = settingsSourceAttr({ kind: "app" });
   return `<div class=c1-box>

@@ -5,7 +5,7 @@ import { Hono, type Context, fromFileUrl, serveDir, basePath, matchedRoutes, typ
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/context.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
 import { ensureSlash, AnswerError, RedirectError, OutputError, OutputDoneError } from "./lib/util.ts";
-import { DB } from "./lib/db.ts";
+import { Db } from "./lib/Db.ts";
 import { DbFileManager } from "./lib/DbFileManager.ts";
 import { createSettingItem } from "./lib/SettingItem.ts";
 import { DbTextManager } from "./lib/DbTextManager.ts";
@@ -33,7 +33,7 @@ export class App {
     config: AppConfig;
     appPATH: string;
     https: boolean;
-    db: DB;
+    db: Db;
     settings: ItemProxy;
     ctxSettingsSchema: any = { properties: {} };
     dbFiles: DbFileManager;
@@ -58,7 +58,7 @@ export class App {
         this.appPATH   = c.appPATH;
         this.https     = c.https;
 
-        this.db        = new DB(`mysql:host=${c.dbHost};dbname=${c.dbName}`, c.dbUser, c.dbPass);
+        this.db        = new Db(`mysql:host=${c.dbHost};dbname=${c.dbName}`, c.dbUser, c.dbPass);
         this.settings  = createSettingItem(this.db).proxy;
         this.dbFiles   = new DbFileManager(this, this.appPATH + "qg/file/");
         this.dbTexts   = new DbTextManager(this);
@@ -155,8 +155,6 @@ export class App {
     }
 
     private async handleAppRequest(ctx: RequestContext): Promise<void> {
-        const t0 = Date.now();
-        console.log(`→ ${ctx.server.REQUEST_URI}`);
         await this.fire("action", { ctx });
         await siListen(ctx);
         await this.fire("render", { ctx });

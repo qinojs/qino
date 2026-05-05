@@ -3,13 +3,11 @@
  * Port of core/lib/qgEntries.php
  */
 
-// deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "./context.ts";
-import { dbEntry, registerEntryClass } from "./dbEntry.ts";
+import { DbEntry, registerEntryClass } from "./DbEntry.ts";
 
 // === dbEntry_usr ===
-class dbEntry_usr extends dbEntry {
+class dbEntry_usr extends DbEntry {
   #grps: number[] | null = null;
 
   async grps(): Promise<number[]> {
@@ -25,26 +23,25 @@ class dbEntry_usr extends dbEntry {
 }
 
 // === dbEntry_log ===
-class dbEntry_log extends dbEntry {
-  async Sess(): Promise<any> {
-    const sessId = await this.get("sess_id");
-    return this._T.db.table("sess").Entry(sessId);
+class dbEntry_log extends DbEntry {
+  async sess(): Promise<any> {
+    const id = await this.get("sess_id");
+    return this._T.db.table("sess").Entry(id);
   }
 }
 
 
 // === dbEntry_sess ===
-class dbEntry_sess extends dbEntry {
-  #Usr: any = null;
-  async Usr_(): Promise<any> {
-    if (!this.#Usr) this.#Usr = Usr(await this.get("usr_id"));
-    return this.#Usr;
+class dbEntry_sess extends DbEntry {
+  async user(): Promise<any> {
+    const id = await this.get("usr_id")
+    return this._T.db.table("usr").Entry(id);
   }
 }
 
 // === dbEntry_client ===
-class dbEntry_client extends dbEntry {
-  async Usrs(): Promise<Record<string, any>> {
+class dbEntry_client extends DbEntry {
+  async users(): Promise<Record<string, any>> {
     const usrs: Record<string, any> = {};
     const rows = await this._T.db.table("client_usr").selectEntries(`WHERE client_id = '${this}' ORDER BY time DESC`);
     for (const [, Usr] of Object.entries(rows)) {
@@ -64,18 +61,20 @@ class dbEntry_client extends dbEntry {
 
 
 // === dbEntry_client_usr ===
-class dbEntry_client_usr extends dbEntry {
-  async Usr_(): Promise<any> {
-    return Usr(await this.get("usr_id"));
+class dbEntry_client_usr extends DbEntry {
+  async user(): Promise<any> {
+    const id = await this.get("usr_id");
+    return this._T.db.table("usr").Entry(id);
   }
 }
 
-
+/*
 export function Usr(id: number | string): dbEntry_client {
   const ctx = getCtx();
   id = parseInt(String(id));
   return ctx.app.db.table("usr").Entry(id) as dbEntry_client;
 }
+*/
 
 registerEntryClass("usr", dbEntry_usr);
 registerEntryClass("log", dbEntry_log);

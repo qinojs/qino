@@ -63,7 +63,7 @@ export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
 export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
     const ctx  = getCtx();
     const ret  = { parent_id: parseInt(String(await node.parent())) };
-    const trash = await ctx.app.settings.cms.pageTrash ?? 0;
+    const trash = parseInt(String(await ctx.app.settings.cms.pageTrash ?? 0));
     if (await node.in(trash)) {
         if (await node.access() < 3) throw new HTTPException(403);
         await (await node.parent()).removeChild(node);
@@ -153,9 +153,9 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
         if (!await Page.access()) continue;
         const titleStr = String(await (await Page.title()).string() ?? "").trim();
         if (!titleStr) continue;
-        const parent   = await Page.Parent();
-        const pTitle   = parent ? String(await (await Parent.title()).string() ?? "").trim() : "";
-        const gpTitle  = (parent && await parent.Parent()) ? String(await (await (await parent.Parent()).title()).string() ?? "").trim() : "";
+        const parent   = await Page.parent();
+        const pTitle   = parent ? String(await (await parent.title()).string() ?? "").trim() : "";
+        const gpTitle  = (parent && await parent.parent()) ? String(await (await (await parent.parent()).title()).string() ?? "").trim() : "";
         res.push({
             html:  `<b>${titleStr}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${pTitle}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${gpTitle}</i>` : "") : ""),

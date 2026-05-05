@@ -5,10 +5,11 @@
 // deno-lint-ignore-file no-explicit-any
 
 import "./serverInterface.ts";
+import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { RedirectError } from "./lib/util.ts";
 import { $item } from "../../deps.ts";
-import { getCtx } from "./lib/context.ts";
+import { getCtx, type RequestContext } from "./lib/context.ts";
 import { api } from "./apt.ts";
 
 import type { App } from "./server.ts";
@@ -74,12 +75,12 @@ export async function init(app: App) {
 
     app.aptTree.core = api;
 
-    app.on("init", async () => {
+    app.on("init", () => {
         const rootSchema = app.settings[$item].schema;
-        rootSchema.properties.qg = qgSettingsSchema;
+        rootSchema!.properties.qg = qgSettingsSchema;
     });
 
-    const langsRaw = await app.settings.qg.langs ?? "";
+    const langsRaw = String(await app.settings.qg.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
 
 
@@ -124,7 +125,8 @@ export async function init(app: App) {
       await ctx.initSettings();
     });
 
-    app.on("respond", async ({ctx}) => {
+    app.on("respond", async (e) => {
+        const ctx: RequestContext = e.ctx;
 
         ctx.responseHeaders.set("Accept-CH", "DPR");
 
@@ -132,6 +134,7 @@ export async function init(app: App) {
         const enable = enableRaw === "report only"
             ? "report only"
             : (enableRaw && enableRaw !== "0" && enableRaw !== "false" ? "enforce" : "");
+
         if (enable) {
             ctx.csp["script-src"]["'report-sample'"] = 1;
             ctx.csp["style-src"]["'report-sample'"] = 1;

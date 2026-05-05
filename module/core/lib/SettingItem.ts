@@ -4,11 +4,11 @@
  */
 
 import { Item } from "../../../deps.ts";
-import type { DB } from "./db.ts";
+import type { Db } from "./Db.ts";
 
 class SettingItem extends Item<SettingItem> {
   data: Record<string, unknown> | undefined;
-  db!: DB;
+  db!: Db;
 
   constructor(...args: ConstructorParameters<typeof Item>) {
     super(...args);
@@ -60,7 +60,7 @@ class SettingItem extends Item<SettingItem> {
   };
 }
 
-export function createSettingItem(db: DB) {
+export function createSettingItem(db: Db) {
   const root = new SettingItem();
   root.db = db;
   return root;

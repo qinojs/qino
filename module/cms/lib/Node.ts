@@ -12,7 +12,7 @@ import type { CMS } from "./CMS.ts";
 import type { App } from "../../core/server.ts";
 import type { DbText, DbTextLang } from "../../core/lib/DbTextManager.ts";
 import type { dbEntry_usr } from "../../core/lib/qgEntries.ts";
-import type { dbEntry } from "../../core/lib/dbEntry.ts";
+import type { DbEntry } from "../../core/lib/DbEntry.ts";
 
 function table(name: string): string { return name; }
 
@@ -106,14 +106,14 @@ export class Node {
     // Access control
     #usrAccess: Record<number, number> = {};
 
-    async access(user?: dbEntry_usr): Promise<number> {
+    async access(user?: dbEntry_usr | null): Promise<number> {
         user ??= getCtx().user;
         const usrId = parseInt(String(user));
         this.#usrAccess[usrId] ??= await this.#calcUsrAccess(user);
         return this.#usrAccess[usrId];
     }
 
-    async #calcUsrAccess(Usr: dbEntry_usr | undefined): Promise<number> {
+    async #calcUsrAccess(Usr?: dbEntry_usr | null): Promise<number> {
         if (await Usr?.get("superuser")) return 3;
         const parent = await this.parent();
         if (this.vs.access === null && parent) {
@@ -137,7 +137,7 @@ export class Node {
         return Math.max(access, grpAccess);
     }
 
-    async #usrAccessOnly(Usr: dbEntry_usr): Promise<number> {
+    async #usrAccessOnly(Usr?: dbEntry_usr | null): Promise<number> {
         const sql = " SELECT access FROM page_access_usr WHERE page_id = ? AND usr_id = ? ";
         return parseInt(String(await this.db.one(sql, [this.id, String(Usr)]) ?? "0")) || 0;
     }
@@ -702,14 +702,14 @@ export class Node {
     // }
 
     /* Access */
-    async changeUser(Usr: dbEntry_usr, access: number): Promise<this> {
-        const vs = { page_id: String(this), usr_id: String(Usr), access };
+    async changeUser(user: dbEntry_usr | number, access: number): Promise<this> {
+        const vs = { page_id: String(this), usr_id: String(user), access };
         if (!access) await this.db.table("page_access_usr").delete(vs);
         else await this.db.table("page_access_usr").ensure(vs);
         return this;
     }
-    async changeGroup(Grp: dbEntry, access: number): Promise<this> {
-        const vs = { page_id: String(this), grp_id: String(Grp), access };
+    async changeGroup(grp: DbEntry | number, access: number): Promise<this> {
+        const vs = { page_id: String(this), grp_id: String(grp), access };
         if (!access) await this.db.table("page_access_grp").delete(vs);
         else await this.db.table("page_access_grp").ensure(vs);
         return this;

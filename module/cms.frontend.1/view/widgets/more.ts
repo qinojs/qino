@@ -23,13 +23,13 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
       "Firstname": firstname,
       "Lastname":  lastname,
     };
-    const Mail = app.db.table("mail").Entry();
-    Mail.subject  = "CMS feedback";
-    Mail.reply_to = email;
-    Mail.html     = JSON.stringify(arr);
-    const feedbackEmail = await app.settings.cms.feedback.email ?? "";
-    await Mail.addTo?.(feedbackEmail);
-    await Mail.send?.();
+    // const Mail = app.db.table("mail").Entry();
+    // Mail.subject  = "CMS feedback";
+    // Mail.reply_to = email;
+    // Mail.html     = JSON.stringify(arr);
+    // const feedbackEmail = await app.settings.cms.feedback.email ?? "";
+    // await Mail.addTo?.(feedbackEmail);
+    // await Mail.send?.();
     ctx.settings.cms.feedback.text = "";
     feedbackConfirmation = `<br><i style="color:#4c4">Danke für Ihr Feedback. <br>Wir werden uns so schnell wie möglich bei Ihnen melden.</i><br>`;
   }

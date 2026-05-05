@@ -3,6 +3,8 @@
  * Port of cms.backend/index.php
  */
 
+import type { App } from "@qino/qino";
+
 // deno-lint-ignore-file no-explicit-any
 
 export const name = "cms.backend";
@@ -10,7 +12,7 @@ export const needs = ["cms"];
 
 
 export const backend = {
-    async checkInstalled(app): Promise<any> {
+    async checkInstalled(app: App): Promise<any> {
         const cms = app.cms;
         let node = await cms.nodeByModule("cms.backend");
         if (!node) {
@@ -27,16 +29,16 @@ export const backend = {
                 await P.changeGroup(1, 0);
                 await P.changeGroup(2, 0);
                 await P.changeGroup(3, 0);
-                const cont = await P.cont(1);
+                const cont = await P.cont('1');
                 await cont.set("module", "cms.backend");
                 P.settings.childXML = '<page visible="1"></page>';
-                app.settings.cms.backend = String(P.id);
+                app.settings.cms.backend(String(P.id));
             }
             node = await cms.nodeByModule("cms.backend");
         }
         return node ? await node.page() : node;
     },
-    async install(app, module: string): Promise<any> {
+    async install(app: App, module: string): Promise<any> {
         const cms = app.cms;
 
         await backend.checkInstalled(app);

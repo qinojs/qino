@@ -115,5 +115,5 @@ export const api = {
 };
 
 export function init(app: App): void {
-  (app as any).aptTree.git = api.git;
+  app.aptTree.git = api.git;
 }
