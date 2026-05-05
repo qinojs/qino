@@ -4,12 +4,9 @@
  */
 
 import type { dbTable } from "./dbTable.ts";
-import { DB } from "./db.ts";
+import { DB, dateTypes, stringTypes, numTypes } from "./db.ts";
 
 export class dbField {
-  static dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
-  static stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
-  static numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
 
   #type: string | null = null;
   #length: string | null = null;
@@ -33,11 +30,11 @@ export class dbField {
   valueTransform(value: any): any {
     const type = this.getType().toUpperCase();
     if (this.getNull() && value === null) return null;
-    if (this.getNull() && value === "" && !dbField.stringTypes[type]) return null;
-    if (typeof value === "number" && dbField.dateTypes[type]) {
+    if (this.getNull() && value === "" && !stringTypes[type]) return null;
+    if (typeof value === "number" && dateTypes[type]) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }
-    if (dbField.numTypes[type] && typeof value !== "number") {
+    if (numTypes[type] && typeof value !== "number") {
       value = parseFloat(String(value)) || 0;
     }
     return String(value ?? "");
@@ -124,9 +121,6 @@ export class dbField {
   async setCollate(v: string): Promise<void> {
     await this.change({ collate: v });
     this.vs.Collate = v;
-  }
-  getAutoincrement(): string {
-    return this.isAutoIncrement() ? "true" : "false";
   }
   async setAutoincrement(v: boolean): Promise<void> {
     await this.change({ autoincrement: v });

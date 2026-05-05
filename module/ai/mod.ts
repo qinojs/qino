@@ -60,6 +60,10 @@ export async function install({ app }: { app: any }): Promise<void> {
   settings.provider["nvidia.com"].key;
   settings.provider["openrouter.ai"].key;
   settings.provider["jina.ai"].key;
+  settings.provider["x-ai"].key;
+  settings.provider["x-ai"].models;
+  settings.provider["x-ai"].default_model;
+  settings.provider["x-ai"].models_synced_at;
   settings.provider["groq.com"].models;
   settings.provider["openai.com"].models;
   settings.provider["nvidia.com"].models;

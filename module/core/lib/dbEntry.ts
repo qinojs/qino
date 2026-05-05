@@ -115,7 +115,7 @@ export class dbEntry {
   #scheduleSave(): void {
     if (!this._changed) return;
     clearTimeout(this.#saveTimer);
-    this.#saveTimer = setTimeout(() => { this.save(); }, 50) as unknown as number;
+    this.#saveTimer = setTimeout(() => { this.save().catch(e => console.error("auto-save failed:", e)); }, 50) as unknown as number;
   }
 
   async makeIfNot(): Promise<this> {
@@ -139,6 +139,7 @@ export class dbEntry {
   async save(): Promise<void> {
     if (this._changed) {
       await this._ensureEid();
+      if (this._eid === false) throw new Error(`dbEntry.save(): _eid is false, cannot update`);
       await this._T.update(this._eid, this._vs);
       this._changed = false;
     }

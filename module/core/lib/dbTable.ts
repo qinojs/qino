@@ -7,7 +7,7 @@
 import { dbField } from "./dbField.ts";
 import { dbEntry, getEntryClass } from "./dbEntry.ts";
 import { getCtx } from "./context.ts";
-import { DB } from "./db.ts";
+import { DB, numTypes } from "./db.ts";
 
 export class dbTable {
   #fields: Record<string, dbField> | null = null;
@@ -97,7 +97,7 @@ export class dbTable {
       }
       let value = vs[primary];
       const type = Field.getType().toUpperCase();
-      if (dbField.numTypes[type]) value = String(parseFloat(String(value)));
+      if (numTypes[type]) value = String(parseFloat(String(value)));
       part.push(value);
     }
     return part.join("-:-");

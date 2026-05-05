@@ -39,6 +39,7 @@ const modelSyncProviders: Record<
   "openai.com": { label: "OpenAI", source: "openai-sync", requiresKey: true },
   "nvidia.com": { label: "NVIDIA", source: "nvidia-sync" },
   "openrouter.ai": { label: "OpenRouter", source: "openrouter-sync" },
+  "x-ai": { label: "xAI", source: "x-ai-sync", requiresKey: true },
 };
 
 function sourceLabel(source: string | undefined): string | undefined {

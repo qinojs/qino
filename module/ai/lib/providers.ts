@@ -1,6 +1,14 @@
 import type { ProviderConf } from "../types.ts";
 
 export const providers: Record<string, ProviderConf> = {
+  "x-ai": {
+    endpoint: "https://api.x.ai/v1",
+    strengths: ["quality", "speed"],
+    models: [
+      { id: "grok-imagine-image", label: "Grok Imagine Image" },
+      { id: "grok-imagine-image-pro", label: "Grok Imagine Image Pro" },
+    ],
+  },
   "groq.com": {
     endpoint: "https://api.groq.com/openai/v1",
     jsonMode: true,

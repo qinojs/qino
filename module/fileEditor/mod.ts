@@ -7,7 +7,7 @@
 
 import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
-import { OutputException } from "../core/lib/util.ts"
+import { OutputError } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/context.ts";
 import { serverInterface } from "../core/lib/serverInterface.ts";
 import type { Tree } from "../core/lib/apt.ts";
@@ -67,7 +67,7 @@ export function init(app: any) {
 
         if (!allowed && !isSuperuser) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
-            throw new OutputException("no access");
+            throw new OutputError("no access");
         }
 
         // create file if requested
@@ -89,10 +89,10 @@ export function init(app: any) {
         } catch { /* not found */ }
         if (!isFile) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
-            throw new OutputException("file does not exist");
+            throw new OutputError("file does not exist");
         }
 
         ctx.responseHeaders.set("Content-Type", "text/html; charset=utf-8");
-        throw new OutputException(await codemirrorView(file));
+        throw new OutputError(await codemirrorView(file));
     });
 }

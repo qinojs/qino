@@ -2,8 +2,9 @@
 import { mysql, type Pool, type ResultSetHeader, type RowDataPacket } from "../../../deps.ts";
 import { dbTable } from "./dbTable.ts";
 
-const DB_DATE_TYPES: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
-const DB_NUM_TYPES: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
+export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
+export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
+export const numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
 
 export class DB {
   #tables: Record<string, dbTable> = {};
@@ -29,10 +30,7 @@ export class DB {
       connectionLimit: 10,
       timezone: "Z",
     });
-    this.#pool.on("connection", (c: any) => {
-      c.query("SET SESSION sql_mode = ''");
-      //c.query(`SET SESSION sql_mode = 'STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,ONLY_FULL_GROUP_BY'`);
-    });
+    this.#pool.on("connection", (c: any) => c.query("SET SESSION sql_mode = ''"));
   }
 
   // Zentrale Methode, query und exec nutzen die gleiche
@@ -134,8 +132,7 @@ export class DB {
 
   #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
   on(name: string, fn: (data: Record<string, any>) => void | Promise<void>): void {
-    if (!this.#events[name]) this.#events[name] = [];
-    this.#events[name].push(fn);
+    (this.#events[name] ??= []).push(fn);
   }
   async fire(name: string, data: Record<string, any> = {}): Promise<void> {
     if (!this.#events[name]) return;
@@ -171,7 +168,7 @@ export class DB {
       def = "DEFAULT " + ({ NULL: 1, CURRENT_TIMESTAMP: 1, "CURRENT_TIMESTAMP()": 1, "NOW()": 1, LOCALTIME: 1, "LOCALTIME()": 1, LOCALTIMESTAMP: 1, "LOCALTIMESTAMP()": 1 }[defVal] ? defVal : "?");
     }
 
-    if (DB_NUM_TYPES[d.type] || DB_DATE_TYPES[d.type]) d.collate = false;
+    if (numTypes[d.type] || dateTypes[d.type]) d.collate = false;
     const col = d.collate ? `CHARACTER SET ${String(d.collate).split("_")[0]} COLLATE ${d.collate} ` : "";
 
     return ` ${d.type}${len} ${d.special} ${col}${d.null ? "NULL" : "NOT NULL"} ${def}`;

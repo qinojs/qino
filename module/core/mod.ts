@@ -6,7 +6,7 @@
 
 import "./serverInterface.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { RedirectException } from "./lib/util.ts";
+import { RedirectError } from "./lib/util.ts";
 import { $item } from "../../deps.ts";
 import { getCtx } from "./lib/context.ts";
 import { api } from "./apt.ts";
@@ -90,7 +90,7 @@ export async function init(app: App) {
         if (https && ctx.server.SCHEME === "http") {
             ctx.responseHeaders.set("Location", "https://" + ctx.server.HTTP_HOST + ctx.server.REQUEST_URI);
             ctx.responseStatus = 301;
-            throw new RedirectException();
+            throw new RedirectError();
         }
 
         // HSTS

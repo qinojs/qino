@@ -1,6 +1,6 @@
 // Port of cms.cont.table2/index.php
 import type { Node } from "../cms/lib/Node.ts";
-import { OutputException } from "../core/lib/util.ts";
+import { OutputError } from "../core/lib/util.ts";
 import options from "./options.ts";
 import pageApi from "./page_api.ts";
 
@@ -60,7 +60,7 @@ async function render(node: Node, { ctx }: any): Promise<string> {
     ctx.responseHeaders.set("Expires", "0");
     ctx.responseHeaders.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
     ctx.responseHeaders.set("Pragma", "public");
-    throw new OutputException(csv);
+    throw new OutputError(csv);
   }
 
   let html = `<div>\n\t<table thm1-width>\n\t\t<tbody>\n`;

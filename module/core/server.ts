@@ -4,7 +4,7 @@ import { Hono, type Context, fromFileUrl, serveDir, basePath, matchedRoutes, typ
 
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/context.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
-import { ensureSlash, AnswerException, RedirectException, OutputException, OutputDoneException } from "./lib/util.ts";
+import { ensureSlash, AnswerError, RedirectError, OutputError, OutputDoneError } from "./lib/util.ts";
 import { DB } from "./lib/db.ts";
 import { DbFileManager } from "./lib/DbFileManager.ts";
 import { createSettingItem } from "./lib/SettingItem.ts";
@@ -116,7 +116,6 @@ export class App {
     }
 
     private async withRequestContext(hc: Context, next: () => Promise<void>): Promise<Response> {
-const _t0 = performance.now();
         const [ctx, isNew] = await makeRequestContext(this, hc);
         const initialSessionToken = ctx.sessionToken;
         hc.set("ctx", ctx);
@@ -130,7 +129,6 @@ const _t0 = performance.now();
                 this.handleError(ctx, e);
                 hc.res = await this.buildResponse(hc, ctx);
             }
-console.log(`${hc.req.method} ${hc.req.path} – ${(performance.now() - _t0).toFixed(1)}ms`);
             return hc.res;
         });
     }
@@ -166,12 +164,12 @@ console.log(`${hc.req.method} ${hc.req.path} – ${(performance.now() - _t0).toF
     }
 
     private handleError(ctx: RequestContext, e: any): void {
-        if (e instanceof AnswerException) {
+        if (e instanceof AnswerError) {
             ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
             ctx.responseBody = JSON.stringify(e.data);
-        } else if (e instanceof OutputException) {
+        } else if (e instanceof OutputError) {
             ctx.responseBody = e.body;
-        } else if (!(e instanceof RedirectException || e instanceof OutputDoneException)) {
+        } else if (!(e instanceof RedirectError || e instanceof OutputDoneError)) {
             console.error("Error:", e);
             ctx.responseStatus = 500;
             ctx.responseBody = "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>";

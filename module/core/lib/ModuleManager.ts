@@ -134,7 +134,6 @@ export class ModuleManager {
       order.push(name);
     };
     for (const name of Object.keys(this.#modules)) visit(name);
-    console.log(order);
     return order;
   }
 

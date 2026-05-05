@@ -23,19 +23,19 @@ export function ensureSlash(v: string) {
     return v.endsWith("/") ? v : v + "/";
 }
 
-export class AnswerException extends Error {
+export class AnswerError extends Error {
   constructor(public data: Record<string, any>) { super("Answer"); }
 }
 
-export class RedirectException extends Error {
+export class RedirectError extends Error {
   constructor() { super("redirect"); }
 }
 
-export class OutputException extends Error {
+export class OutputError extends Error {
   constructor(public body: any) { super("output"); }
 }
 
-export class OutputDoneException extends Error { // used?
+export class OutputDoneError extends Error {
   constructor() { super("output done"); }
 }
 
@@ -140,9 +140,4 @@ export function niceDate(ts: number | string | null): string {
 export function array2formatedStr(v: any): string {
   // Simplified HTML table output
   return `<div>${JSON.stringify(v)}</div>`;
-}
-
-/** URL helper - returns URL with scheme+host stripped */
-export function URL(requestUri: string): string {
-  return requestUri;
 }

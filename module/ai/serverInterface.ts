@@ -13,4 +13,8 @@ serverInterface.ai = {
   embeddings(data: { input: string | string[]; model?: string; _provider?: string }): Promise<any> {
     return this.ctx.app.apt.ai["embeddings"].post({ data });
   },
+
+  imageGenerations(data: Record<string, unknown>): Promise<any> {
+    return this.ctx.app.apt.ai["image-generations"].post({ data });
+  },
 };

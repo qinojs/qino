@@ -4,7 +4,7 @@
  */
 
 import { getCtx } from "./context.ts";
-import { RedirectException } from "./util.ts";
+import { RedirectError } from "./util.ts";
 import type { RequestContext } from "./context.ts";
 import { bcrypt } from "../../../deps.ts";
 
@@ -33,7 +33,7 @@ export const Auth = {
       await Auth.logout();
       ctx.responseHeaders.set("Location", ctx.get["liveUser_logout"]);
       ctx.responseStatus = 302;
-      throw new RedirectException();
+      throw new RedirectError();
     }
     if (!ctx.userId && ctx.clientId) {
       const uidVal = await ctx.client.get("usr_id");

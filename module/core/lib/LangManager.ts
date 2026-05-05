@@ -92,8 +92,8 @@ export class LangManager {
                     if (langQuality > currentQ) {
                         currentLang = code;
                         currentQ = langQuality;
-                        break;
                     }
+                    break;
                 }
                 langCode.pop();
             }

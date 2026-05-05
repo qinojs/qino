@@ -24,4 +24,11 @@ export const api: Tree = {
       execute: ({ data }: any, ctx: any) => ctx.app.ai.embeddings(data),
     },
   },
+  "image-generations": {
+    post: {
+      description: "Bild aus Text-Prompt generieren.",
+      input: s.object({ data: s.record() }),
+      execute: ({ data }: any, ctx: any) => ctx.app.ai.imageGenerations(data),
+    },
+  },
 };

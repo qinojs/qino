@@ -9,7 +9,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx } from "./context.ts";
-import { AnswerException, OutputException } from "./util.ts";
+import { AnswerError, OutputError } from "./util.ts";
 import type { RequestContext } from "../lib/context.ts";
 
 export const serverInterface: Record<string, any> = {};
@@ -97,7 +97,7 @@ export async function call(fn: string, args: any[]): Promise<any> {
 export function answer(data: Record<string, any>): never {
     const ctx = getCtx();
     if (ctx.state.Answer) Object.assign(data, ctx.state.Answer);
-    throw new AnswerException(data);
+    throw new AnswerError(data);
 }
 
 export async function listen(ctx: RequestContext): Promise<void> {
@@ -129,7 +129,7 @@ function checkToken(ctx: RequestContext): void {
     const qgToken = String(ctx.post.qgToken);
     if (!qgToken) {
         console.warn("hacking? qgToken not set");
-        throw new OutputException("");
+        throw new OutputError("");
     }
     if (qgToken !== ctx.token) {
         answer({

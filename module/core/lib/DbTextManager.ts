@@ -19,8 +19,7 @@ export class DbTextManager {
 
   text(id: number | string): DbText {
     const key = String(id);
-    if (!this.#cache[key]) this.#cache[key] = new DbText(this, id);
-    return this.#cache[key];
+    return this.#cache[key] ??= new DbText(this, id);
   }
 
   clearCache(id?: number | string) {
@@ -32,10 +31,8 @@ export class DbTextManager {
   }
 
   async generate(): Promise<DbText> {
-    const lang = this.#app.languages.def;
-    const id = parseInt(String(await this.#db.table("text").insert({ lang })));
-    const t = this.text(id);
-    return t;
+    const id = parseInt(String(await this.#db.table("text").insert({ lang: this.#app.languages.def })));
+    return this.text(id);
   }
 
   get db(): DB { return this.#db; }
@@ -109,7 +106,6 @@ export class DbTextLang {
       const db = this.Text.manager.db;
       const value = await db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [this.Text.id, this.lang]);
       this.value = String(value ?? "");
-      //await qg.fire("textpro_lang::get", { obj: this });
     }
     return this.value!;
   }
@@ -117,11 +113,6 @@ export class DbTextLang {
   async set(value: any): Promise<void> {
     this.value = null;
     const db = this.Text.manager.db;
-    // const data: Record<string, any> = {
-    //     id: this.Text.id,
-    //     lang: this.lang,
-    //     text: value,
-    // };
     const data = { id: this.Text.id, lang: this.lang, text: value };
     const has = await db.one("SELECT id FROM text WHERE id = ? AND lang = ?", [this.Text.id, this.lang]);
     if (has) await db.table("text").update(data);

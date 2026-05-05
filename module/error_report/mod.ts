@@ -9,7 +9,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { OutputException } from "../core/lib/util.ts";
+import { OutputError } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import type { Context } from "../../deps.ts";
 import type { RequestContext } from "../core/lib/context.ts";
@@ -103,7 +103,7 @@ export function init(app: App): void {
       }
       await errorReport(ctx, report);
       ctx.responseStatus = 500;
-      throw new OutputException("");
+      throw new OutputError("");
     }
 
     // CSP-Verletzungen
@@ -134,7 +134,7 @@ export function init(app: App): void {
         "Content-Type",
         "application/json; charset=UTF-8",
       );
-      throw new OutputException("{}");
+      throw new OutputError("{}");
     }
   });
 
