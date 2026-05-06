@@ -67,13 +67,6 @@ export class RequestContext {
   #settingsRoot: any = null;
 
 
-  // cms.versions per-request state (ports vers::$space/$log and cms_vers::$space/$log)
-  versSpace = 0;               // active DB space (vers::$space)
-  versLog   = 0;               // active DB log   (vers::$log)
-  versTableEntriesCopying = false; // prevent recursive history capture
-  cmsVersSpace = 0;            // configured CMS space (cms_vers::$space)
-  cmsVersLog   = 0;            // configured CMS log   (cms_vers::$log)
-
   settingCache: Map<number, unknown> = new Map();
   entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; 

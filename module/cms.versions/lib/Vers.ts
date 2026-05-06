@@ -4,9 +4,6 @@
  *
  * Manages versioned shadow tables (_vers_<table>) and MySQL VIEWs for
  * point-in-time / draft-space reads.
- *
- * Per-request state lives on RequestContext (ctx.versSpace / ctx.versLog /
- * ctx.versTableEntriesCopying) instead of PHP static class variables.
  */
 
 // deno-lint-ignore-file no-explicit-any
@@ -23,16 +20,37 @@ export const versedTables: Record<string, true | Record<string, 1>> = {};
 // App-level cache: which _vers_* tables have been created this process.
 const versTableCreated = new Set<string>();
 
+// ─── Per-request state ───────────────────────────────────────────────────────
+
+export interface CmsVersState {
+    versSpace: number;
+    versLog: number;
+    versTableEntriesCopying: boolean;
+    cmsVersSpace: number;
+    cmsVersLog: number;
+}
+
+const STATE_KEY = "cms.versions";
+
+export function getCmsVers(ctx: RequestContext): CmsVersState {
+    if (!ctx.state[STATE_KEY]) {
+        ctx.state[STATE_KEY] = { versSpace: 0, versLog: 0, versTableEntriesCopying: false, cmsVersSpace: 0, cmsVersLog: 0 };
+    }
+    return ctx.state[STATE_KEY] as CmsVersState;
+}
+
 // ─── State helpers (replace PHP static vars) ────────────────────────────────
 
 export function setSpace(ctx: RequestContext, space: number): number {
-    const old = ctx.versSpace;
-    ctx.versSpace = space;
+    const s = getCmsVers(ctx);
+    const old = s.versSpace;
+    s.versSpace = space;
     return old;
 }
 export function setLog(ctx: RequestContext, log: number): number {
-    const old = ctx.versLog;
-    ctx.versLog = log;
+    const s = getCmsVers(ctx);
+    const old = s.versLog;
+    s.versLog = log;
     return old;
 }
 /** setVers(ctx, [space,log]) — returns [oldSpace,oldLog] */
@@ -243,14 +261,15 @@ export async function tableEntriesCopyTo(
     for (const e of await db.all(`SELECT * FROM \`${fromView}\` WHERE ${where}`)) newEntries[Table.entryId(e) as string] = e;
 
     const ctx = getCtx();
+    const s = getCmsVers(ctx);
     const oldVers = setVers(ctx, [toSpace, 0]);
-    ctx.versTableEntriesCopying = true;
+    s.versTableEntriesCopying = true;
     for (const [id, entry] of Object.entries(newEntries)) {
         oldEntries[id] ? await Table.update(entry) : await Table.ensure(entry);
     }
     for (const [id, entry] of Object.entries(oldEntries)) {
         if (!newEntries[id]) await Table.delete(entry);
     }
-    ctx.versTableEntriesCopying = false;
+    s.versTableEntriesCopying = false;
     setVers(ctx, oldVers);
 }

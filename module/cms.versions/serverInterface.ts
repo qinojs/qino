@@ -6,7 +6,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { serverInterface } from "../core/lib/serverInterface.ts";
-import { versedTables, view } from "./lib/Vers.ts";
+import { versedTables, view, getCmsVers } from "./lib/Vers.ts";
 import { publishCont as doPublishCont } from "./lib/CmsVers.ts";
 
 export async function publishCont(ctx: any, pid: any, options: any = {}): Promise<any> {
@@ -14,9 +14,9 @@ export async function publishCont(ctx: any, pid: any, options: any = {}): Promis
         await Page.init();
         if ((await Page.access()) < 2) return false;
         options = {
-            fromSpace: ctx.cmsVersSpace,
+            fromSpace: getCmsVers(ctx).cmsVersSpace,
             fromLog:   0,
-            toSpace:   ctx.cmsVersSpace,
+            toSpace:   getCmsVers(ctx).cmsVersSpace,
             subPages:  false,
             ...options,
         };
@@ -103,7 +103,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
                 if (fn === "cms::setTxt") {
                     const vs = await ctx.app.db.row(
                         `SELECT name, page_id FROM _vers_page_text WHERE text_id = ? AND _vers_space = ?`,
-                        [parseInt(args[0]), ctx.cmsVersSpace]
+                        [parseInt(args[0]), getCmsVers(ctx).cmsVersSpace]
                     ) ?? await ctx.app.db.row(
                         `SELECT name, page_id FROM page_text WHERE text_id = ?`, [parseInt(args[0])]
                     );
@@ -176,7 +176,7 @@ async function versProtocolForPageAndConts(ctx: any, pid: number): Promise<any[]
 }
 
 async function versProtocolForPage(ctx: any, pid: number): Promise<any[]> {
-    const space = ctx.cmsVersSpace;
+    const space = getCmsVers(ctx).cmsVersSpace;
     const spaceView = (t: string) => view(ctx.app.db, t, space, 0);
 
     const protocol = [
@@ -202,7 +202,7 @@ async function versProtocol(ctx: any, table: string, where: string): Promise<any
         `LEFT JOIN usr   ON sess.usr_id = usr.id ` +
         `WHERE t._vers_space = ? AND t._vers_log > 0 AND ${where} ` +
         `ORDER BY t._vers_log`;
-    const rows = await ctx.app.db.all(sql, [ctx.cmsVersSpace]);
+    const rows = await ctx.app.db.all(sql, [getCmsVers(ctx).cmsVersSpace]);
     return rows.map((r: any) => ({
         vers: r._vers_log,
         time: parseInt(String(r.time ?? 0)),

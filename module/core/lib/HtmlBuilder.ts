@@ -44,7 +44,7 @@ export class HtmlBuilder {
         ret += this.head;
 
         for (const url of Object.keys(this.cssFiles)) {
-            ret += `<link rel=stylesheet href="${url}">\n`;
+            ret += `<link rel=stylesheet href="${hee(url)}">\n`;
         }
 
         const jsData = this.ctx.state.js_data;

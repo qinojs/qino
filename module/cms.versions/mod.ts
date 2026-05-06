@@ -25,7 +25,7 @@ import "./serverInterface.ts";
 import type { App } from "../core/server.ts";
 import {
     versedTables,
-    setSpace, setLog, setVers,
+    setSpace, setLog, setVers, getCmsVers,
     versTable, view, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
@@ -110,7 +110,7 @@ export function init(app: App) {
         const versCols = await ctx.app.db.all(`SHOW COLUMNS FROM \`${vt}\``);
         const selects = versCols.map((c: any) => {
             const f = c.Field;
-            if (f === "_vers_space")   return `${ctx.versSpace}`;
+            if (f === "_vers_space")   return `${getCmsVers(ctx).versSpace}`;
             if (f === "_vers_log")     return ctx.logId;
             if (f === "_vers_deleted") return "0";
             if (f === "offset")        return "`offset`";
@@ -136,7 +136,7 @@ export function init(app: App) {
         const data: Record<string, any> = {
             ...ids,
             _vers_log:     ctx.logId,
-            _vers_space:   ctx.versSpace,
+            _vers_space:   getCmsVers(ctx).versSpace,
             _vers_deleted: 1,
         };
         const VT = ctx.app.db.table(vt);
@@ -149,7 +149,7 @@ export function init(app: App) {
     app.db.on("table::insert-after", async (e: any) => {
         const ctx = getCtx();
         if (!ctx) return;
-        if (ctx.versSpace) return; // only in live space
+        if (getCmsVers(ctx).versSpace) return; // only in live space
         const tableName: string = String(e.Table);
         if (!tableName.startsWith("_vers_")) return;
         const originalTable = tableName.slice(6);
@@ -225,7 +225,7 @@ export function init(app: App) {
     app.db.on("table::update-before", async (e: any) => {
         const ctx = getCtx();
         if (!ctx) return;
-        if (!ctx?.versSpace) return;
+        if (!getCmsVers(ctx).versSpace) return;
         if (String(e.Table) !== "page") return;
         const liveData: Record<string, any> = {};
         for (const key of ["sort", "basis", "access", "title_id"]) {
@@ -258,7 +258,7 @@ export function init(app: App) {
         for (const node of path) {
             const data: Record<string, any> = {
                 page_id:        node.id,
-                space:          ctx.versSpace,
+                space:          getCmsVers(ctx).versSpace,
                 changed_inside: now,
             };
             if (node === Page)                data.changed      = now;
@@ -281,7 +281,7 @@ export function init(app: App) {
     // Inform client about changed pages after API calls (draftmode)
     app.on("serverInterface::after", async (e: any) => {
         const ctx = getCtx();
-        if (!ctx.cmsVersSpace) return;
+        if (!getCmsVers(ctx).cmsVersSpace) return;
         if (!e.fn?.startsWith("page::")) return;
         const pid = parseInt(String(e.args?.[0]));
         if (!pid) return;
@@ -303,26 +303,27 @@ export function init(app: App) {
     // Port of qg.php bottom section: determine cmsVersSpace/cmsVersLog from
     // settings + request params.
     app.on("action", async ({ ctx }) => {
-        await ensureSpace(ctx.app.db, ctx.cmsVersSpace);
+        const vs = getCmsVers(ctx);
+        await ensureSpace(ctx.app.db, vs.cmsVersSpace);
 
         // Determine space from draftmode setting
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (draftmode) {
-            ctx.cmsVersSpace = ctx.state.editmode ? 1 : 0;
+            vs.cmsVersSpace = ctx.state.editmode ? 1 : 0;
         }
 
         // Override from request params
         if (ctx.get.qgCmsVersSpace !== undefined && ctx.get.qgCmsVersSpace !== "active") {
-            ctx.cmsVersSpace = parseInt(ctx.get.qgCmsVersSpace) || 0;
+            vs.cmsVersSpace = parseInt(ctx.get.qgCmsVersSpace) || 0;
         }
-        ctx.cmsVersLog = parseInt(ctx.get.qgCmsVersLog ?? "0") || 0;
+        vs.cmsVersLog = parseInt(ctx.get.qgCmsVersLog ?? "0") || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
-        if (ctx.cmsVersLog) {
+        if (vs.cmsVersLog) {
             const space = ctx.get.qgCmsVersSpace === "active"
-                ? ctx.cmsVersSpace
-                : (parseInt(ctx.get.qgCmsVersSpace ?? "0") || ctx.cmsVersSpace);
-            ctx.cmsVersSpace = space;
+                ? vs.cmsVersSpace
+                : (parseInt(ctx.get.qgCmsVersSpace ?? "0") || vs.cmsVersSpace);
+            vs.cmsVersSpace = space;
 
             const pid = parseInt(ctx.get.qgCmsVersPage ?? "0");
             preventDbManipulations(ctx.app);
@@ -341,7 +342,7 @@ export function init(app: App) {
                 await pageLoadRuntimeCache(node);
             };
 
-            const oldVers = setVers(ctx, [space, ctx.cmsVersLog]);
+            const oldVers = setVers(ctx, [space, vs.cmsVersLog]);
             if ((ctx.app as any).cms) ((ctx.app as any).cms as any)._Pages = {};
             await generate(pid);
             setVers(ctx, oldVers);

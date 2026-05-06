@@ -225,6 +225,29 @@ export class DbTable {
     }
   }
 
+  async copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | false> {
+    id = this.entryId(id);
+    if (id === false) return false;
+    const key = `${this}:${id}`;
+    if (visiting.has(key)) return false;
+    visiting.add(key);
+
+    const row = await this.selectByID(id);
+    if (!row) return false;
+    if (this.autoIncrement) delete row[String(this.autoIncrement)];
+    const newId = await this.insert({ ...row, ...override });
+    if (newId === false) return false;
+
+    for (const Field of this.children) {
+      if (Field.vs.on_parent_copy !== "cascade") continue;
+      const childRows = await this.#db.all(
+        `SELECT * FROM ${Db.escapeId(String(Field.table))} WHERE ${Db.escapeId(String(Field))} = ?`, [id],
+      );
+      for (const childRow of childRows) await Field.table.copy(childRow, { [String(Field)]: newId }, visiting);
+    }
+    return newId;
+  }
+
   async delete(id: any): Promise<boolean | undefined> {
     id = this.entryId(id);
     const values = this.entryId2Array(id);
@@ -273,12 +296,12 @@ export class DbTable {
 
   Entry(id?: any): DbEntry {
     const ctx = getCtx();
-    const t = String(this);
+    const table = String(this);
 
-    if (!ctx.entryCache.has(t)) ctx.entryCache.set(t, new Map());
-    const tableCache = ctx.entryCache.get(t)!;
+    if (!ctx.entryCache.has(table)) ctx.entryCache.set(table, new Map());
+    const tableCache = ctx.entryCache.get(table)!;
 
-    const Cl = getEntryClass(t);
+    const Cl = getEntryClass(table);
 
     if (id instanceof Cl) return id;
     if (id === undefined) {
