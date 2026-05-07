@@ -133,7 +133,7 @@ function modelOptionHtml(models: ProviderModel[], selected: string): string {
   return models.map((model) =>
     `<option value="${hee(model.id)}" ${
       model.id === selected ? "selected" : ""
-    }>${hee(model.label ? `${model.label} (${model.id})` : model.id)}</option>`
+    }>${hee(model.label ? `${model.label} (${model.id})` : model.id)}`
   ).join("");
 }
 
@@ -489,7 +489,7 @@ async function render(node: any): Promise<string> {
   const providerOptions = Object.keys(providers).map((providerName) =>
     `<option value="${hee(providerName)}" ${
       providerName === defaultProvider ? "selected" : ""
-    }>${hee(providerName)}</option>`
+    }>${hee(providerName)}`
   ).join("");
 
   const allModels = new Map<string, ProviderModel>();
@@ -549,23 +549,17 @@ async function render(node: any): Promise<string> {
       <input type=hidden name=action value=save-provider>
       <input type=hidden name=provider value="${hee(providerName)}">
       <table class="c1-style ai-kv">
-        <tr><th>Endpoint<td><code>${
-      hee(provider.endpoint)
-    }</code>
+        <tr><th>Endpoint<td><code>${hee(provider.endpoint)}</code>
         <tr><th>Stärken<td>${formatList(provider.strengths)}
         <tr><th>JSON Mode<td>${provider.jsonMode ? "ja" : "nein"}
         <tr><th>API-Key<td>
           <input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" value="${hee(key)}" placeholder="API-Key">
         <tr><th>Provider-Default<td>
-          <input name=provider_default_model value="${
-      hee(providerDefaultModel)
-    }" list="${hee(datalistId)}">
-          <datalist id="${hee(datalistId)}">${
-      modelOptionHtml(effectiveModels, providerDefaultModel)
-    }</datalist>
-        <tr><th>Verbrauch (Tokens)<td>${
-      hee(usedInput.toLocaleString("de-DE"))
-    } input / ${hee(usedOutput.toLocaleString("de-DE"))} output
+          <input name=provider_default_model value="${hee(providerDefaultModel)}" list="${hee(datalistId)}">
+          <datalist id="${hee(datalistId)}">${modelOptionHtml(effectiveModels, providerDefaultModel)}</datalist>
+        <tr>
+          <th>Verbrauch (Tokens)
+          <td>${hee(usedInput.toLocaleString("de-DE"))} input / ${hee(usedOutput.toLocaleString("de-DE"))} output
       </table>
       <div class=ai-autosave-state aria-live=polite></div>
     </form>
@@ -579,10 +573,8 @@ async function render(node: any): Promise<string> {
         <table class="c1-style ai-model-table">
           <thead>
             <tr><th>Model<th>Label<th>Stärken<th>Features<th>Limits<th>Kosten/M<th>Quelle<th>
-          </thead>
-          <tbody>${
-      modelRows(providerName, provider.models ?? [], customModels, ctx.token)
-    }
+          <tbody>
+            ${modelRows(providerName, provider.models ?? [], customModels, ctx.token)}
         </table>
       </div>
     </details>
@@ -678,13 +670,11 @@ async function render(node: any): Promise<string> {
           <tr>
             <th>Model
             <td>
-              <input name=default_model value="${
-    hee(defaultModel)
-  }" list=ai-all-models>
-              <datalist id=ai-all-models>${
-    modelOptionHtml([...allModels.values()], defaultModel)
-  }</datalist>
-          <tr><th><td><button>Defaults speichern</button>
+              <input name=default_model value="${hee(defaultModel)}" list=ai-all-models>
+              <datalist id=ai-all-models>${modelOptionHtml([...allModels.values()], defaultModel)}</datalist>
+          <tr>
+            <th>
+            <td><button>Defaults speichern</button>
         </table>
       </form>
     </div>

@@ -107,9 +107,9 @@ function fieldInput(f: { name: string; type: string; required: boolean; default?
   if (f.type === "boolean") {
     return `<label class="api-field"><span>${hee(f.name)}</span>
       <select name="${hee(f.name)}"${req}>
-        ${f.required ? "" : '<option value="">—</option>'}
-        <option value="true">true</option>
-        <option value="false">false</option>
+        ${f.required ? "" : '<option value="">—'}
+        <option value="true">true
+        <option value="false">false
       </select></label>`;
   }
   return `<label class="api-field" id="${id}"><span>${hee(f.name)}${f.required ? "" : "?"}</span>

@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 			}
 		}
 		if (poly.id === 'contextMenuePolyfill') {
-			var fragment = c1.dom.fragment('<li style="font-size:12px; padding:5px" class=-disabled>shift + rightclick to show the<br> native menu</li>');
+			var fragment = c1.dom.fragment('<li style="font-size:12px; padding:5px" class=-disabled>shift + rightclick to show the<br> native menu');
 			poly.append(fragment);
 		}
 	}

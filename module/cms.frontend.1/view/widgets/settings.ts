@@ -28,7 +28,7 @@ export default async function (node: Node): Promise<string> {
   const modules = node.vs.type === "p" ? await cms.getLayouts() : await cms.getModules();
   let moduleOptions = "";
   for (const [name] of Object.entries(modules)) {
-    moduleOptions += `<option value="${hee(name)}" ${name === node.vs.module ? "selected" : ""}>${name}</option>`;
+    moduleOptions += `<option value="${hee(name)}" ${name === node.vs.module ? "selected" : ""}>${name}`;
   }
 
   const Parent = await node.parent();

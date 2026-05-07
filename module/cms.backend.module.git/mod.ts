@@ -67,8 +67,8 @@ async function renderModuleGitSection(app: any, modName: string, isSuperuser: bo
   ]);
 
   const versionOptions = [
-    ...tags.map(t => `<option value=${JSON.stringify(hee(t))}>tag: ${hee(t)}</option>`),
-    ...log.map(c => `<option value=${JSON.stringify(hee(c.hash))}>${hee(c.shortHash)} ${hee(c.message.slice(0, 60))}</option>`),
+    ...tags.map(t => `<option value=${JSON.stringify(hee(t))}>tag: ${hee(t)}`),
+    ...log.map(c => `<option value=${JSON.stringify(hee(c.hash))}>${hee(c.shortHash)} ${hee(c.message.slice(0, 60))}`),
   ].join("");
 
   const encodedMod = JSON.stringify(modName);
@@ -98,7 +98,7 @@ async function renderModuleGitSection(app: any, modName: string, isSuperuser: bo
 
     ${versionOptions ? `<div style="display:flex;gap:8px;align-items:center">
       <select id="git-ref-${hee(modName)}" style="flex:1;max-width:400px">
-        <option value="">— Version wählen —</option>
+        <option value="">— Version wählen —
         ${versionOptions}
       </select>
       ${isSuperuser ? `<button class=c1-btn onclick="gitCheckout(${encodedMod})">Checkout</button>` : ""}

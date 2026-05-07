@@ -153,9 +153,8 @@ CmsVersViewer.prototype = {
 			rows.forEach(row=>{
 				const li = c1.dom.fragment(
 					'<li v='+row.vers+'>'+
-						'<div class=-date>'+toDate(row.time)+'</div>'+
-						'<div class=-usr>'+row.usr+'</div>'+
-					'</li>'
+							'<div class=-date>'+toDate(row.time)+'</div>'+
+							'<div class=-usr>'+row.usr+'</div>'
 				).firstChild;
 				li.addEventListener('mouseover',e=>{
 					if (activeRow === row.vers) return;

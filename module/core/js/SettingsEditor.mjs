@@ -97,7 +97,7 @@ function fallbackInputHtml(schema, value, path) {
   if (Array.isArray(schema?.enum)) {
     const options = schema.enum.map((option) => {
       const selected = String(option) === String(value ?? "") ? " selected" : "";
-      return `<option value="${escapeHtml(option)}"${selected}>${escapeHtml(option)}</option>`;
+      return `<option value="${escapeHtml(option)}"${selected}>${escapeHtml(option)}`;
     }).join("");
     return `<select name="${name}">${options}</select>`;
   }
@@ -145,7 +145,6 @@ async function renderItems(item) {
     html += `<span class=-rem><a>x</a></span>`;
     html += "</span>";
     if (objectNode && isOpen) html += await renderItems(child);
-    html += "</li>";
   }
   html += "</ul>";
   return html;
