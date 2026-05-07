@@ -53,11 +53,11 @@ async function render(node: Node): Promise<string> {
       for (const [solution, solveData] of Object.entries(data.solutions ?? {}) as any) {
         let formFields = "";
         for (const [fname, field] of Object.entries(solveData.form ?? {})) {
-          formFields += `<tr><td>${hee(fname.charAt(0).toUpperCase() + fname.slice(1))}:</td><td><input name="${hee(fname)}" type="${hee((field as any).type ?? "text")}"></td></tr>`;
+          formFields += `<tr><td>${hee(fname.charAt(0).toUpperCase() + fname.slice(1))}:<td><input name="${hee(fname)}" type="${hee((field as any).type ?? "text")}">`;
         }
         solutionsHtml += `
 <form style="margin:8px;">
-  ${formFields ? `<table><tbody style="vertical-align:baseline">${formFields}</tbody></table>` : ""}
+  ${formFields ? `<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
   <button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}"
           style="background-color:var(--cms-dark); display:block; margin-left:auto">
     ${hee(solution.charAt(0).toUpperCase() + solution.slice(1))}
@@ -110,15 +110,15 @@ async function render(node: Node): Promise<string> {
   <div style="overflow:auto">
     <div class="-body">
       <table class="c1-style" style="white-space:nowrap">
-        <tr><td>Deno Version:</td><td>${hee(Deno.version.deno)}</td></tr>
-        <tr><td>PID:</td><td>${hee(pid)}</td></tr>
-        <tr><td>App Uptime:</td><td>${hee(formatTime(appUptimeSec))}</td></tr>
-        <tr><td>Server Uptime:</td><td>${hee(formatTime(osUptimeSec))}</td></tr>
-        <tr><td>System Load:</td><td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)</td></tr>
-        <tr><td>Heap (Used/Total):</td><td>${hee((mem.heapUsed / 1024 / 1024).toFixed(2))} / ${hee((mem.heapTotal / 1024 / 1024).toFixed(2))} MB</td></tr>
-        <tr><td>RSS (Echter RAM):</td><td>${hee((mem.rss / 1024 / 1024).toFixed(2))} MB</td></tr>
-        <tr><td>Server-IP:</td><td>${hee(serverIP)}</td></tr>
-        <tr><td>APP-Path:</td><td>${hee(appPATH)}</td></tr>
+        <tr><td>Deno Version:<td>${hee(Deno.version.deno)}
+        <tr><td>PID:<td>${hee(pid)}
+        <tr><td>App Uptime:<td>${hee(formatTime(appUptimeSec))}
+        <tr><td>Server Uptime:<td>${hee(formatTime(osUptimeSec))}
+        <tr><td>System Load:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
+        <tr><td>Heap (Used/Total):<td>${hee((mem.heapUsed / 1024 / 1024).toFixed(2))} / ${hee((mem.heapTotal / 1024 / 1024).toFixed(2))} MB
+        <tr><td>RSS (Echter RAM):<td>${hee((mem.rss / 1024 / 1024).toFixed(2))} MB
+        <tr><td>Server-IP:<td>${hee(serverIP)}
+        <tr><td>APP-Path:<td>${hee(appPATH)}
       </table>
     </div>
   </div>
@@ -135,9 +135,9 @@ async function render(node: Node): Promise<string> {
       const mark  = relevant.has(name);
       let   value = row.Value;
       if (name === "max_allowed_packet") value = (Number(value) / 1024).toFixed(1) + " KB";
-      rows += `<tr><td ${mark ? 'style="font-weight:bold"' : ""}>${hee(name)}</td><td>${hee(String(value))}</td></tr>`;
+      rows += `<tr><td ${mark ? 'style="font-weight:bold"' : ""}>${hee(name)}<td>${hee(String(value))}`;
     }
-    mysqlHtml = `<table class="c1-style"><tbody>${rows}</tbody></table>`;
+    mysqlHtml = `<table class="c1-style"><tbody>${rows}</table>`;
   }
 
   const mysqlBox = `
@@ -155,10 +155,10 @@ async function render(node: Node): Promise<string> {
   <div class="-head">Locales</div>
   <div class="-body">
     <table class="c1-style">
-      <tr><td>Date()</td><td>${hee(osDate)}</td></tr>
-      <tr><td>database</td><td>${hee(dbNow)}</td></tr>
+      <tr><td>Date()<td>${hee(osDate)}
+      <tr><td>database<td>${hee(dbNow)}
       <tr>
-        <td>Your Browser</td>
+        <td>Your Browser
         <td id="uaDateTest">
           <script>
           const now = new Date();
@@ -172,8 +172,6 @@ async function render(node: Node): Promise<string> {
             +' '+p.find(x=>x.type==='hour').value+':'+p.find(x=>x.type==='minute').value+':'+p.find(x=>x.type==='second').value;
           document.getElementById('uaDateTest').textContent = s + ' (' + navigator.language + ')';
           </script>
-        </td>
-      </tr>
     </table>
   </div>
 </div>`;

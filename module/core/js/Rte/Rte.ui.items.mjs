@@ -412,7 +412,7 @@ import {TableHandles} from '../c1/tableHandles.mjs?qgUniq=bbcd4cc';
 		if (e.target.classList.contains('-colAdd')) {
 			const trs = table.c1FindAll('> * > tr');
 			for (const tr of trs) {
-				const td = c1.dom.fragment('<td><br></td>'); // firefox needs <br> to be able to navigate to the cell
+				const td = c1.dom.fragment('<td><br>'); // firefox needs <br> to be able to navigate to the cell
 				tr.children[index].after(td);
 			}
 		}

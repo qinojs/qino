@@ -72,11 +72,10 @@ async function render(node: Node, { ctx }: any): Promise<string> {
       if (/^\d+$/.test(w)) w = w + "px";
       const styleAttr = w ? ` style="width:${w}"` : "";
       const editAttr = node.edit ? ` contenteditable cmstxt=${T.id}` : "";
-      html += `\t\t\t\t<td${styleAttr}${editAttr}>${T}</td>\n`;
+      html += `\t\t\t\t<td${styleAttr}${editAttr}>${T}\n`;
     }
-    html += `\t\t\t</tr>\n`;
   }
-  html += `\t\t</tbody>\n\t</table>\n</div>`;
+  html += `\t</table>\n</div>`;
   return html;
 }
 

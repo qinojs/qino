@@ -162,7 +162,7 @@ function modelRows(
     );
   }
   if (!rows.length) {
-    return `<tr><td colspan=8><em>Noch keine Models hinterlegt.</em></td></tr>`;
+    return `<tr><td colspan=8><em>Noch keine Models hinterlegt.</em>`;
   }
   return rows.join("");
 }
@@ -188,15 +188,14 @@ function modelRow(
       </form>`
     : "";
   return `<tr>
-    <td><code>${hee(model.id)}</code></td>
-    <td>${hee(model.label ?? "")}</td>
-    <td>${formatList(model.strengths)}</td>
-    <td>${formatSupports(model)}</td>
-    <td>${hee(limits)}</td>
-    <td>${hee(formatCosts(model))}</td>
-    <td>${hee(source)}</td>
-    <td>${deleteForm}</td>
-  </tr>`;
+    <td><code>${hee(model.id)}</code>
+    <td>${hee(model.label ?? "")}
+    <td>${formatList(model.strengths)}
+    <td>${formatSupports(model)}
+    <td>${hee(limits)}
+    <td>${hee(formatCosts(model))}
+    <td>${hee(source)}
+    <td>${deleteForm}`;
 }
 
 async function saveCustomModels(
@@ -550,25 +549,23 @@ async function render(node: any): Promise<string> {
       <input type=hidden name=action value=save-provider>
       <input type=hidden name=provider value="${hee(providerName)}">
       <table class="c1-style ai-kv">
-        <tr><th>Endpoint</th><td><code>${
+        <tr><th>Endpoint<td><code>${
       hee(provider.endpoint)
-    }</code></td></tr>
-        <tr><th>Stärken</th><td>${formatList(provider.strengths)}</td></tr>
-        <tr><th>JSON Mode</th><td>${provider.jsonMode ? "ja" : "nein"}</td></tr>
-        <tr><th>API-Key</th><td>
+    }</code>
+        <tr><th>Stärken<td>${formatList(provider.strengths)}
+        <tr><th>JSON Mode<td>${provider.jsonMode ? "ja" : "nein"}
+        <tr><th>API-Key<td>
           <input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" value="${hee(key)}" placeholder="API-Key">
-        </td></tr>
-        <tr><th>Provider-Default</th><td>
+        <tr><th>Provider-Default<td>
           <input name=provider_default_model value="${
       hee(providerDefaultModel)
     }" list="${hee(datalistId)}">
           <datalist id="${hee(datalistId)}">${
       modelOptionHtml(effectiveModels, providerDefaultModel)
     }</datalist>
-        </td></tr>
-        <tr><th>Verbrauch (Tokens)</th><td>${
+        <tr><th>Verbrauch (Tokens)<td>${
       hee(usedInput.toLocaleString("de-DE"))
-    } input / ${hee(usedOutput.toLocaleString("de-DE"))} output</td></tr>
+    } input / ${hee(usedOutput.toLocaleString("de-DE"))} output
       </table>
       <div class=ai-autosave-state aria-live=polite></div>
     </form>
@@ -581,11 +578,11 @@ async function render(node: any): Promise<string> {
       <div class=ai-table-wrap>
         <table class="c1-style ai-model-table">
           <thead>
-            <tr><th>Model</th><th>Label</th><th>Stärken</th><th>Features</th><th>Limits</th><th>Kosten/M</th><th>Quelle</th><th></th></tr>
+            <tr><th>Model<th>Label<th>Stärken<th>Features<th>Limits<th>Kosten/M<th>Quelle<th>
           </thead>
           <tbody>${
       modelRows(providerName, provider.models ?? [], customModels, ctx.token)
-    }</tbody>
+    }
         </table>
       </div>
     </details>
@@ -676,11 +673,10 @@ async function render(node: any): Promise<string> {
         <input type=hidden name=action value=save-default>
         <table class=c1-style>
           <tr>
-            <th>Provider</th>
-            <td><select name=default_provider>${providerOptions}</select></td>
-          </tr>
+            <th>Provider
+            <td><select name=default_provider>${providerOptions}</select>
           <tr>
-            <th>Model</th>
+            <th>Model
             <td>
               <input name=default_model value="${
     hee(defaultModel)
@@ -688,9 +684,7 @@ async function render(node: any): Promise<string> {
               <datalist id=ai-all-models>${
     modelOptionHtml([...allModels.values()], defaultModel)
   }</datalist>
-            </td>
-          </tr>
-          <tr><th></th><td><button>Defaults speichern</button></td></tr>
+          <tr><th><td><button>Defaults speichern</button>
         </table>
       </form>
     </div>

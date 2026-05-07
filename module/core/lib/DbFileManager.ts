@@ -222,7 +222,7 @@ export class DbFile extends File {
       if (has) return true;
     }
     const e = { dbFile: this, used: false };
-    //await qg.fire("dbFile-used", e);
+    await this.#manager.app.fire("dbFile-used", e);
     return e.used;
   }
 
@@ -230,7 +230,7 @@ export class DbFile extends File {
     await this._loadVs();
     await this.#manager.db.table("file").delete(this.id);
     const e = { dbFile: this, prevent: false };
-//await qg.fire("dbFile-remove-fs", e);
+    await this.#manager.app.fire("dbFile-remove-fs", e);
     const md5 = this.vs["md5"];
     this.path = "";
     if (e.prevent) return;
