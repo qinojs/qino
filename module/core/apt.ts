@@ -13,7 +13,7 @@ import { s } from "./lib/schema.ts";
 import { Auth } from "./lib/Auth.ts";
 import { readSettings } from "./lib/settings.ts";
 import type { Item } from "../../deps.ts";
-import type { Tree } from "./lib/apt.ts";
+import type { AptTree } from "./lib/apt.ts";
 
 function pathParts(path?: string): string[] {
   return String(path ?? "").split("/").filter(Boolean);
@@ -29,7 +29,7 @@ function ctxSettingsRoot(path?: string): Item {
   return getCtx().settings[$item].sub(pathParts(path));
 }
 
-export const api: Tree = {
+export const api: AptTree = {
   password: {
     put: {
       description: "Passwort des angemeldeten Users ändern.",

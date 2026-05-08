@@ -1,7 +1,7 @@
 import { apt } from "./apt.js";
 
 const opened = new Set();
-const itemJsBase = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.0/";
+const itemJsBase = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/";
 const itemJs = import(itemJsBase + "item.js").catch((err) => {
   console.warn("settings-editor: item.js unavailable", err);
   return null;
@@ -41,10 +41,6 @@ function normalizeSource(source) {
   throw new Error(`Unknown settings source "${String(source.kind)}"`);
 }
 
-function joinPath(parts) {
-  return splitPath(parts).join("/");
-}
-
 
 function settingsApi(source, schema = false) {
   const name = schema ? "settings-schema" : "settings";
@@ -60,10 +56,8 @@ async function apiGet(source, path, schema = false) {
 }
 
 async function apiWrite(method, source, path, value) {
-  const body = {
-    path: [...splitPath(source.path), ...splitPath(path)],
-    value,
-  };
+  const fullPath = [...splitPath(source.path), ...splitPath(path)];
+  const body = { path: fullPath, value };
   const write = method === "DELETE" ? "delete" : method.toLowerCase();
   return await settingsApi(source)[write](body);
 }

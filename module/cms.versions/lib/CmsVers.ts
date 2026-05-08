@@ -9,11 +9,8 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx } from "../../core/lib/context.ts";
-import type { DB } from "../../core/lib/db.ts";
-// App.cms is added dynamically by the cms module — cast to any where needed
-import {
-    versedTables, setVers, view, tableEntriesCopyTo,
-} from "./Vers.ts";
+import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
+import type { Db } from "../../core/lib/Db.ts";
 
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads
@@ -23,7 +20,7 @@ import {
 export async function pageLoadRuntimeCache(node: any): Promise<void> {
     await node.files();
     const ctx = getCtx();
-    for (const l of (ctx.app as any).languages.all) {
+    for (const l of ctx.app.languages.all) {
         await node.title(l);
         await node.urlSeo(l);
         const texts = await node.texts();
@@ -39,7 +36,7 @@ export async function pageLoadRuntimeCache(node: any): Promise<void> {
  * qg_setting copying is intentionally omitted (settings are not versioned).
  */
 export async function publishCont(
-    db: DB,
+    db: Db,
     pid: number,
     fromSpace: number,
     fromLog: number,
@@ -50,7 +47,6 @@ export async function publishCont(
 
     const generate = async (id: number): Promise<void> => {
         const Page = await (ctx.app as any).cms.node(id);
-        await Page.init();
         if ((await Page.access()) <= 1) return;
 
         await tableEntriesCopyTo(db, "page",      { id },        fromSpace, fromLog, toSpace);
@@ -98,7 +94,6 @@ export async function publishCont(
     if ((ctx.app as any).cms) ((ctx.app as any).cms as any)._Pages = {};
     setVers(ctx, [toSpace, 0]);
     const P = await (ctx.app as any).cms.node(pid);
-    await P.init();
     for (const l of (ctx.app as any).languages.all) {
         const genUrl = await P.urlSeoGenerated?.(l);
         const curUrl = await P.urlSeo?.(l);

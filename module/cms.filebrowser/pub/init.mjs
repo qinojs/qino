@@ -10,7 +10,7 @@ c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
             const pid = cms.cont.active || Page;
             for (const id of e.dbFiles) await apt.cms.node(pid).files.post({ file: String(id) });
             for (const url of e.urls) await apt.cms.node(pid).files.post({ file: url });
-            apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+            //apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
         });
     });
     el.style.display = 'none';
@@ -28,7 +28,7 @@ c1.onElement('.qgCmsFileManager .-preview', el=>{
             const item = e.dbFiles[0] || e.urls[0];
             if (item) {
                 await apt.cms.node(pid).files.post({ file: String(item), replace });
-                apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+                //apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
             }
             if (e.files) {
                 cms.cont(pid).upload(e.files[0], function(){

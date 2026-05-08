@@ -5,9 +5,10 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import type { App } from "../core/server.ts";
-import type { Tree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
+import type { App } from "../core/server.ts";
+import type { AptTree } from "../core/lib/apt.ts";
+import type { RequestContext } from "../core/lib/context.ts";
 
 export const name = "cms.text";
 export const needs = ["cms"];
@@ -45,7 +46,8 @@ export const settingsSchema = {
 export function init(app: App) {
     app.aptTree["cms.text"] = api;
 
-    app.on("cms-ready", ({ ctx }) => {
+    app.on("cms-ready", e => {
+        const ctx = e.ctx as RequestContext;
         if (!ctx.state.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
         ctx.html.addJSM(ctx.sysURL + "cms.text/pub/init.mjs");
@@ -255,7 +257,7 @@ function service(ctx: any): any {
     return svc;
 }
 
-export const api: Tree = {
+export const api: AptTree = {
     text: {
         ":text": {
             get: {

@@ -11,7 +11,6 @@ import { publishCont as doPublishCont } from "./lib/CmsVers.ts";
 export async function publishCont(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = parseInt(String(pid));
     const Page = await ctx.app.cms.node(id);
-    await Page.init();
     if ((await Page.access()) < 2) return false;
     const cmsVersSpace = getCmsVers(ctx).cmsVersSpace;
     options = {
@@ -102,7 +101,6 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
                 );
                 if (vs) {
                     const P = await ctx.app.cms.node(vs.page_id);
-                    await P.init();
                     messages.push((await contOrPage(P)) + ` Text "${vs.name}" geändert`);
                 } else {
                     const vs2 = await ctx.app.db.row(
@@ -110,17 +108,14 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
                     );
                     if (vs2) {
                         const P = await ctx.app.cms.node(vs2.id);
-                        await P.init();
                         messages.push((await contOrPage(P)) + " Titel geändert");
                     }
                 }
             } else if (fn === "page::insertBefore") {
                 const P = await ctx.app.cms.node(args[1]);
-                await P.init();
                 messages.push((await contOrPage(P)) + " " + translateFn[fn]);
             } else if (translateFn[fn]) {
                 const P = await ctx.app.cms.node(args[0]);
-                await P.init();
                 messages.push((await contOrPage(P)) + " " + translateFn[fn]);
             } else {
                 messages.push(`<span style="color:red">${fn}</span>`);
@@ -142,7 +137,6 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 
 async function versProtocolForPageAndConts(ctx: any, pid: number): Promise<any[]> {
     const P = await ctx.app.cms.node(pid);
-    await P.init();
     const conts = await P.Conts?.() ?? [];
     const [data, ...subs] = await Promise.all([
         versProtocolForPage(ctx, pid),

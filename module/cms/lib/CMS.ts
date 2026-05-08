@@ -3,12 +3,14 @@
  * Port of cms/lib/cms.class.php
  */
 
+import { Node } from "./Node.ts";
 import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/context.ts";
 import type { App } from "../../core/server.ts";
 import type { Module } from "../../core/lib/ModuleManager.ts";
 import type { Db } from "../../core/lib/Db.ts";
-import type { Node } from "./Node.ts";
+import type { DbFile } from "../../core/lib/DbFileManager.ts";
+import type { DbText } from "../../core/lib/DbTextManager.ts";
 
 
 function table(name: string): string { return name; }
@@ -34,11 +36,11 @@ export class CMS {
     async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
         id = parseInt(String(id));
         if (this.#nodes.has(id)) return this.#nodes.get(id)!;
-        const { Node } = await import("./Node.ts");
-        const p = new Node(this, id, vs);
-        this.#nodes.set(id, p);
-        if (!vs) await p.init();
-        return p;
+        const node = new Node(this, id, vs);
+        this.#nodes.set(id, node);
+        //if (!vs) await node.init();
+        await node.init();
+        return node;
     }
 
 
@@ -60,17 +62,17 @@ export class CMS {
         return ret;
     }
 
-    async nodeByName(name: string): Promise<any> {
+    async nodeByName(name: string): Promise<Node | undefined> {
         const ret = await this.nodesByName(name);
-        return Object.values(ret)[0] ?? false;
+        return Object.values(ret)[0];
     }
 
-    async nodeByModule(moduleName: string): Promise<any> {
+    async nodeByModule(moduleName: string): Promise<Node | undefined> {
         const ret = await this.nodesByModule(moduleName);
-        return Object.values(ret)[0] ?? false;
+        return Object.values(ret)[0];
     }
 
-    async nodeFromRequest(): Promise<any> {
+    async nodeFromRequest(): Promise<Node> {
         const ctx = getCtx();
         const cmspid = ctx.get["cmspid"];
         let pid: number;
@@ -105,10 +107,11 @@ export class CMS {
         return ret;
     }
 
-    async filter(Pages: Map<number, any>, filter: any): Promise<Map<number, any>> {
+    // deno-lint-ignore no-explicit-any
+    async filter(Pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
         filter = Array.isArray(filter) ? filter : { ...filter };
         if (!Array.isArray(filter) && !filter.type) filter.type = "p";
-        const ret: Map<number, any> = new Map();
+        const ret: Map<number, Node> = new Map();
         for (const [id, C] of Pages) {
             const vs = C.vs;
             if (!Array.isArray(filter)) {
@@ -141,9 +144,9 @@ export class CMS {
         return ret;
     }
 
-    async link(Cont: any): Promise<string> {
+    async link(node: Node | number): Promise<string> {
         const ctx = getCtx();
-        const P = await this.node(parseInt(String(Cont)));
+        const P = await this.node(parseInt(String(node)));
         await P.urlSeo(ctx.lang);
         const urls = await P.urls();
         const t = urls[ctx.lang]?.target;
@@ -152,9 +155,9 @@ export class CMS {
         return `<a${await this.link_attributes(P)}${target}>${title}</a>`;
     }
 
-    async link_attributes(Cont: any): Promise<string> {
+    async link_attributes(node: Node | number): Promise<string> {
         const ctx = getCtx();
-        const P = await this.node(parseInt(String(Cont)));
+        const P = await this.node(parseInt(String(node)));
         await P.urlSeo(ctx.lang);
         const MainNode = this.MainNode || await this.nodeFromRequest();
         const href = ` href="${await P.url()}"`;
@@ -187,12 +190,12 @@ export class CMS {
     }
 
     // deno-lint-ignore no-explicit-any
-    async text(pid: any, name: string, options: Record<string, any> = {}): Promise<string> {
-        const Cont = await this.node(parseInt(String(pid)));
-        const T = name === "title" ? await Cont.title() : await Cont.text(name);
+    async text(pid: Node | number, name: string, options: Record<string, any> = {}): Promise<string> {
+        const node = await this.node(parseInt(String(pid)));
+        const T = name === "title" ? await node.title() : await node.text(name);
         const tag = options.tag ?? "div";
-        if (options.contenteditable === undefined) options.contenteditable = Cont.edit;
-        if (Cont.edit) {
+        if (options.contenteditable === undefined) options.contenteditable = node.edit;
+        if (node.edit) {
             if (options.contenteditable === undefined) options.contenteditable = true;
             if (!options["cmstxt-placeholder"]) options["cmstxt-placeholder"] = name;
         }
@@ -213,14 +216,14 @@ export class CMS {
             }
         }
 
-        const shown = name === "title" ? await Cont.showTitle() : await Cont.showText(name);
+        const shown = name === "title" ? await node.showTitle() : await node.showText(name);
         text = String(shown);
 
         // if (shown.lang && shown.lang !== getCtx().lang && !("lang" in options)) {
         //     options.lang = shown.lang;
         // }
 
-        if (options.if && !Cont.edit && !text.replace(/<[^>]*>/g, "").trim()) return "";
+        if (options.if && !node.edit && !text.replace(/<[^>]*>/g, "").trim()) return "";
         delete options.if;
         delete options.tag;
         delete options.initial;
@@ -234,34 +237,34 @@ export class CMS {
         return `<${tag}${attrStr}>${text}</${tag}>`;
     }
 
-    async parentFile(name: string, Cont?: any): Promise<any> {
-        if (!Cont) Cont = this.MainNode || await this.nodeFromRequest();
-        while (Cont) {
-            const File = await Cont.FileHas(name);
+    async parentFile(name: string, node?: Node): Promise<DbFile | false> {
+        if (!node) node = this.MainNode || await this.nodeFromRequest();
+        while (node) {
+            const File = await node.hasFile(name);
             if (File) return File;
-            Cont = await Cont.Parent();
+            node = await node.parent();
         }
         return false;
     }
 
-    async fileLang(name: string, Cont?: any, lang?: string): Promise<any> {
-        if (!Cont) Cont = this.MainNode || await this.nodeFromRequest();
+    async fileLang(name: string, node?: Node, lang?: string): Promise<DbFile | undefined> {
+        if (!node) node = this.MainNode || await this.nodeFromRequest();
         if (!lang) lang = getCtx().lang;
-        for (const l of Cont.app.languages.all) await Cont.File(name + " " + l);
-        const file = await Cont.File(name + " " + lang);
+        for (const l of node.app.languages.all) await node.file(name + " " + l);
+        const file = await node.file(name + " " + lang);
         if (await file.exists()) return file;
-        for (const l of Cont.app.languages.all) {
-            const f = await Cont.File(name + " " + l);
+        for (const l of node.app.languages.all) {
+            const f = await node.file(name + " " + l);
             if (await f.exists()) return f;
         }
     }
 
-    async parentText(name: string, Cont?: any): Promise<any> {
-        if (!Cont) Cont = this.MainNode || await this.nodeFromRequest();
-        while (Cont) {
-            const texts = await Cont.texts();
+    async parentText(name: string, node?: Node): Promise<DbText | undefined> {
+        if (!node) node = this.MainNode || await this.nodeFromRequest();
+        while (node) {
+            const texts = await node.texts();
             if (name in texts) return texts[name];
-            Cont = await Cont.Parent();
+            node = await node.parent();
         }
     }
 

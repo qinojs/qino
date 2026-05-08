@@ -1,16 +1,15 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * Smoketest für apt.ts — ohne Hono-Server, nur invoke() und client().
  * Läuft: deno run --allow-env m/core/apt.smoke.ts
  */
 
 import { s } from "../lib/schema.ts";
-import { AccessError, NotFoundError, toTools, invoke, client } from "../lib/apt.ts";
+import { AccessError, NotFoundError, toTools, invoke, aptClient } from "../lib/apt.ts";
 import { requestStorage, RequestContext } from "../lib/context.ts";
 
 // Provide a fake request context so getCtx() works
 const fakeCtx = new RequestContext();
-(fakeCtx as any).lang = "de";
+fakeCtx.lang = "de";
 
 // A tiny fake CMS-ish tree
 const mockPages = new Map<string, { id: string; title: string; access: () => number }>([
@@ -29,14 +28,14 @@ const api = {
       },
       get: {
         description: "Read page",
-        execute: ({ page }: any) => ({ id: page.id, title: page.title }),
+        execute: ({ page }: { page: { id: string; title: string; access: () => number } }) => ({ id: page.id, title: page.title }),
       },
       copy: {
         post: {
           description: "Copy a page",
           input: s.object({ deep: s.boolean().default(false) }),
           output: s.object({ id: s.string() }),
-          execute: async ({ page, deep }: any) => {
+          execute: async ({ page, deep }: { page: { id: string; access: () => number }; deep: boolean }) => {
             if (page.access() < 2) throw new AccessError("copy needs write");
             return { id: page.id + "-copy" + (deep ? "-deep" : "") };
           },
@@ -62,7 +61,7 @@ async function expect(label: string, fn: () => unknown, want: unknown) {
   }
 }
 
-async function expectThrows(label: string, fn: () => unknown, errType: any) {
+async function expectThrows(label: string, fn: () => unknown, errType: abstract new (...args: never[]) => Error) {
   try {
     await withCtx(fn);
     console.log("FAIL", label, "did not throw");
@@ -106,7 +105,7 @@ for (const t of tools) {
 
 // client proxy
 console.log("\nRPC client:");
-const rpc = client(api);
+const rpc = aptClient(api);
 await expect("rpc.page('1').get()",
   () => rpc.page("1").get(),
   { id: "1", title: "Home" });

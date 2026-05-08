@@ -4,19 +4,20 @@
  * G(), $_SESSION, $_GET, $_POST, $_FILES, $_COOKIE, $_SERVER, etc.
  */
 
-// deno-lint-ignore-file no-explicit-any
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { getCookie, basePath } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
+import { userSettingsItem, sessSettingsItem } from "./CustomSettingItem.ts";
+import { readUploadFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
+import type { Item, ItemProxy } from "../../../deps.ts";
 import type { Context } from "../../../deps.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
-import { userSettingsItem, sessSettingsItem } from "./CustomSettingItem.ts";
 
 export class RequestContext {
   app!: App;
-  session: any = null;
+  session: ItemProxy = null!;
   sessionToken = "";
   cookie: Record<string, string> = {};
   get: Record<string, string> = {};
@@ -29,7 +30,8 @@ export class RequestContext {
   };
   responseHeaders: Headers = new Headers();
   responseStatus = 200;
-  responseBody: any = "";
+  responseBody: string = "";
+  // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
 
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(this); }
@@ -55,7 +57,7 @@ export class RequestContext {
     return this.app.db.table('client').Entry(this.clientId) as dbEntry_client;
   }
 
-  get settings(): any {
+  get settings(): ItemProxy {
     if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
     return this.#settingsRoot.proxy;
   }
@@ -64,7 +66,7 @@ export class RequestContext {
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
   }
-  #settingsRoot: any = null;
+  #settingsRoot: Item | null = null;
 
 
   settingCache: Map<number, unknown> = new Map();
@@ -83,7 +85,7 @@ export class RequestContext {
   get token(): string {
     const token = this.session.qg.token;
     if (!token()) this.session.qg.token(crypto.randomUUID().replace(/-/g, "").slice(0, 12));
-    return token();
+    return token() as string;
   }
 }
 
@@ -102,11 +104,11 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
     : {};
   const post: Record<string, unknown> = {};
   const files: Record<string, unknown> = {};
+  const uploadMaxFileSize = parseInt(String(await app.settings.core.uploadMaxFileSize ?? "")) || 100 * 1024 * 1024;
 
   for (const [key, val] of Object.entries(rawBody)) {
     if (val instanceof File) {
-      const data = new Uint8Array(await val.arrayBuffer());
-      files[key] = { name: val.name, type: val.type, size: val.size, data, error: 0 };
+      files[key] = await readUploadFile(val, { maxSize: uploadMaxFileSize });
     } else {
       post[key] = val;
     }

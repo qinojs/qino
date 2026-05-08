@@ -281,7 +281,7 @@ apt.on('PUT cms/txt/:id', ({ value }) => {
 	if (value?.changed) cms.console.show('Der Text wurde gespeichert.', 'info');
 });
 
-apt.on('PUT cms/node/:id/position', async ({ id }) => {
+apt.on('PUT cms/node/:id/position', async ({ params: { id } }) => {
 	if (parseInt(id) == window.Page) {
 		const res = await apt.cms.node(id).html.get();
 		document.querySelector('.-pid' + id).outerHTML = res;

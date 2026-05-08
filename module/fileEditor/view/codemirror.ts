@@ -63,6 +63,7 @@ export default async function codemirrorView(file: string): Promise<string> {
 
     ctx.state.js_data = ctx.state.js_data ?? {};
     ctx.state.js_data["qgToken"] = ctx.token;
+    ctx.state.js_data["appURL"] = ctx.appURL;
 
     const ext = file.replace(/.*\.([^.]+)/, "$1");
     let mime = extToCodeMirrorMime(ext);

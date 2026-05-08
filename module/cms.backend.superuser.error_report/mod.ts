@@ -97,7 +97,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const tools = `
 <script type=module>
 import { apt } from '${ctx.sysURL}core/js/apt.js';
-globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).api.post(vars).then(() => location.reload());
+globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
 </script>
 <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
     <div class="-head">Tools</div>

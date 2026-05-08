@@ -9,7 +9,7 @@ import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
 import { OutputError } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/context.ts";
-import type { Tree } from "../core/lib/apt.ts";
+import type { AptTree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
 import codemirrorView from "./view/codemirror.ts";
 
@@ -34,7 +34,7 @@ async function saveFile(ctx: any, file: string, content: string): Promise<number
     return 1;
 }
 
-const api: Tree = {
+const api: AptTree = {
     save: {
         put: {
             description: "Datei aus dem File-Editor speichern.",

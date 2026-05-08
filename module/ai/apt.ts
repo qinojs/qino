@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Tree } from "../core/lib/apt.ts";
+import type { AptTree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
 
-export const api: Tree = {
+export const api: AptTree = {
   "chat-completions": {
     post: {
       description: "AI Chat-Completions ausführen.",

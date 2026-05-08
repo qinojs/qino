@@ -36,14 +36,6 @@
             "maximum": 32767,
             "x-index": true
           },
-          "lft": {
-            "type": "integer",
-            "x-index": true
-          },
-          "rgt": {
-            "type": "integer",
-            "x-index": true
-          },
           "module": {
             "type": "string",
             "maxLength": 127,
@@ -85,46 +77,9 @@
           },
           "settings": {
             "type": "string"
-          },
-          "_cache": {
-            "type": "string"
           }
         },
-        "required": [
-          "id",
-          "log_id",
-          "log_id_ch",
-          "type",
-          "basis",
-          "sort",
-          "module",
-          "visible",
-          "searchable",
-          "title_id",
-          "_cache"
-        ]
-      }
-    },
-    "page_class": {
-      "additionalProperties": {
-        "properties": {
-          "page_id": {
-            "type": "integer",
-            "x-index": "primary",
-            "x-qg-parent": "page",
-            "x-qg-on-parent-delete": "cascade",
-            "x-qg-on-parent-copy": "cascade"
-          },
-          "class": {
-            "type": "string",
-            "maxLength": 64,
-            "x-index": "primary"
-          }
-        },
-        "required": [
-          "page_id",
-          "class"
-        ]
+        "required": ["id", "log_id", "log_id_ch", "type", "basis", "sort", "module", "visible", "searchable", "title_id"]
       }
     },
     "page_access_grp": {
@@ -150,11 +105,7 @@
             "maximum": 127
           }
         },
-        "required": [
-          "page_id",
-          "grp_id",
-          "access"
-        ]
+        "required": ["page_id", "grp_id", "access"]
       }
     },
     "page_access_usr": {
@@ -180,11 +131,7 @@
             "maximum": 127
           }
         },
-        "required": [
-          "page_id",
-          "usr_id",
-          "access"
-        ]
+        "required": ["page_id", "usr_id", "access"]
       }
     },
     "page_file": {
@@ -214,12 +161,7 @@
             "x-index": true
           }
         },
-        "required": [
-          "page_id",
-          "name",
-          "file_id",
-          "sort"
-        ]
+        "required": ["page_id", "name", "file_id", "sort"]
       }
     },
     "page_redirect": {
@@ -234,10 +176,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "request",
-          "redirect"
-        ]
+        "required": ["request", "redirect"]
       }
     },
     "page_text": {
@@ -261,11 +200,7 @@
             "x-qg-on-parent-delete": "cascade"
           }
         },
-        "required": [
-          "page_id",
-          "name",
-          "text_id"
-        ]
+        "required": ["page_id", "name", "text_id"]
       }
     },
     "page_url": {
@@ -294,13 +229,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "page_id",
-          "lang",
-          "url",
-          "custom",
-          "target"
-        ]
+        "required": ["page_id", "lang", "url", "custom", "target"]
       }
     },
     "grp": {
@@ -311,9 +240,7 @@
             "x-index": true
           }
         },
-        "required": [
-          "page_access"
-        ]
+        "required": ["page_access"]
       }
     },
     "mail": {

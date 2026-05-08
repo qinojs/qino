@@ -4,7 +4,7 @@ import { getCtx } from "../../../core/lib/context.ts";
 
 export default async function (node: Node, _vars: any = {}): Promise<string> {
   try {
-    const options = node.module?.cms?.node?.options;
+    const options = node.module?.exports?.cms?.node?.options;
     if (typeof options === "function") {
       const result = await options(node, _vars);
       if (result !== false) return result ?? "";

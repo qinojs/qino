@@ -58,7 +58,7 @@ export const backend = {
                         visible: 1,
                         access: 0,
                         offline: 0,
-                    })).cont(1);
+                    })).cont('1');
                     await Node.set("module", mod);
                 }
             }

@@ -3,15 +3,13 @@
  * Port of cms/qg.php
  */
 
-// deno-lint-ignore-file no-explicit-any
-
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./lib/CMS.ts";
-import { migrateLegacyPageSettings } from "./lib/migrateLegacyPageSettings.ts";
 import { render } from "./lib/render.ts";
-import { answer } from "../core/lib/serverInterface.ts";
+import { AnswerError } from "../core/lib/util.ts";
 import { api } from "./apt.ts";
 import type { App } from "../core/server.ts";
+import type { RequestContext } from "../core/lib/context.ts";
 
 declare module "../core/server.ts" {
   interface App { cms: CMS; }
@@ -90,61 +88,33 @@ export function init(app: App) {
     app.cms = new CMS(app);
     app.aptTree.cms = api;
 
-    app.on("init", async () => {
-        await migrateLegacyPageSettings(app);
+    app.on("render", async (e) => {
+        await render(e.ctx as RequestContext);
     });
 
-    app.on("render", async ({ ctx }) => {
-        await render(ctx);
-    });
+    app.on("action", async (e) => {
+        const ctx = e.ctx as RequestContext;
 
-    app.on("action", async ({ctx}) => {
         const settings = ctx.settings;
 
         // Edit mode
         const editmode = ctx.get.qgCms_editmode;
-        if (editmode !== undefined) settings.cms.editmode = editmode;
+        if (editmode !== undefined) settings.cms.editmode(editmode);
 
-        // Pre-set editmode for all requests (including AJAX/serverInterface),
-        // mirroring PHP: Page->edit reads G()->SET['cms']['editmode']->v directly.
         ctx.state.editmode = parseInt(await settings.cms.editmode) || 0;
-
-        // if (access > 1) { // check access first?
-        //     ctx.state.editmode = parseInt(await settings.cms.editmode) || 0;
-        // }
-
 
         // File upload
         const cmsPageFile = ctx.files["cmsPageFile"];
         if (cmsPageFile) {
-            if (cmsPageFile.error) {
-                const errors: Record<number, string> = {
-                    1: "Die hochgeladene Datei überschreitet die in der Anweisung upload_max_filesize in php.ini festgelegte Größe.",
-                    3: "Die Datei wurde nur teilweise hochgeladen.",
-                    4: "Es wurde keine Datei hochgeladen.",
-                    6: "Fehlender temporärer Ordner.",
-                    7: "Speichern der Datei auf die Festplatte ist fehlgeschlagen.",
-                    8: "Eine PHP Erweiterung hat den Upload der Datei gestoppt.",
-                };
-                answer({ error: errors[cmsPageFile.error] ?? "Upload error" });
-            }
-
             // Fix EXIF orientation for JPEG
             // (Deno doesn't have built-in exif support, stub for now)
-
             const cmspid = parseInt(String(ctx.get["cmspid"] ?? "0"));
             const P = await app.cms.node(cmspid);
-            await P.init();
             if ((await P.access()) > 1) {
                 const replace = ctx.get["replace"];
-                let File: any;
-                if (replace) {
-                    File = await P.file(replace);
-                } else {
-                    File = await P.addFile();
-                }
+                const File = await (replace ? P.file(replace) : P.addFile());
                 await File.replaceFromUpload(cmsPageFile);
-                answer({ id: String(File), url: await File.url() + "/" + await File.get("name") });
+                throw new AnswerError({ id: String(File), url: await File.url() + "/" + await File.get("name") });
             }
         }
 
@@ -153,7 +123,6 @@ export function init(app: App) {
         const zipPid = ctx.get["qgCms_page_files_as_zip"];
         if (zipPid) {
             const P = await app.cms.node(parseInt(zipPid));
-            await P.init();
             if (!(await P.isReadable())) { ctx.responseStatus = 403; return; }
             const files = await P.files();
             if (!Object.keys(files).length) { ctx.responseStatus = 404; return; }
@@ -169,7 +138,6 @@ export function init(app: App) {
         const rows = await app.db.all("SELECT page_id FROM page_file WHERE file_id = ?", [e.File]);
         for (const vs of rows) {
             const P = await app.cms.node(vs.page_id);
-            await P.init();
             if (await P.isReadable()) {
                 e.access = 1;
                 return;

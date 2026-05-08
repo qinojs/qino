@@ -205,7 +205,7 @@ window.cmsTreeInit = async (json) => {
 };
 
 /* server listener */
-apt.on("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:id/access", ({ id }) => {
+apt.on("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:id/access", ({ params: { id } }) => {
   if (!cms.Tree) return;
   const node = cms.Tree.getNodeByKey(id);
   if (!node) return;
@@ -216,18 +216,18 @@ apt.on("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:
   });
   node.data.isLazy && node.reloadChildren(() => cms.Tree.activateKey(id));
 });
-apt.on("PUT cms/node/:id/visible", ({ id, input }) => {
+apt.on("PUT cms/node/:id/visible", ({ params: { id }, input }) => {
   if (!cms.Tree) return;
   const node = cms.Tree.getNodeByKey(id);
   if (!node) return;
   node.data.visible = input?.value;
   node.render();
 });
-apt.on("PUT cms/node/:id/position", ({ id }) => {
+apt.on("PUT cms/node/:id/position", ({ params: { id } }) => {
   if (!cms.Tree) return;
   cms.Tree.goTo(id);
 });
-apt.on("DELETE cms/node/:id", ({ id }) => {
+apt.on("DELETE cms/node/:id", ({ params: { id } }) => {
   if (!cms.Tree) return;
   const node = cms.Tree.getNodeByKey(id);
   if (!node) return;

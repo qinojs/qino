@@ -67,20 +67,23 @@ Object.assign(DbFile.prototype, proto);
 Object.assign(DbFileUrl.prototype, proto);
 
 // apt: special inputs
+function abortableCombobox(input, apiFn) {
+	const box = new c1Combobox(input);
+	let last;
+	box.searchOptions = () => {
+		last?.abort();
+		last = new AbortController();
+		apiFn({ q: input.value }, { signal: last.signal }).then(box.setOptions.bind(box));
+	};
+	return box;
+}
+
 document.addEventListener('focus', e => {
 	const input = e.target;
 	if (input.tagName !== 'INPUT') return;
 	let box;
-	if (input.getAttribute('type') === 'qgcms-page') {
-		box = new c1Combobox(input);
-		let last;
-		box.searchOptions = () => { last?.abort(); last = apt.cms.nodes.get({ q: input.value }).then(box.setOptions.bind(box)); };
-	}
-	if (input.getAttribute('type') === 'qgcms-file') {
-		box = new c1Combobox(input);
-		let last;
-		box.searchOptions = () => { last?.abort(); last = apt.cms.files.get({ q: input.value }).then(box.setOptions.bind(box)); };
-	}
+	if (input.getAttribute('type') === 'qgcms-page') box = abortableCombobox(input, apt.cms.nodes.get.bind(apt.cms.nodes));
+	if (input.getAttribute('type') === 'qgcms-file') box = abortableCombobox(input, apt.cms.files.get.bind(apt.cms.files));
 	box && box.onfocus(e);
 }, true);
 

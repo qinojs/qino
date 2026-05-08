@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import "../../../core/js/SettingsEditor.mjs?qgUniq=62bf8df";
+import "../../../core/js/SettingsEditor.mjs?qgUniq=uploadMaxFileSize";
 import "./frontend.mjs?qgUniq=19aae46";
 import { apt } from "../../../core/js/apt.js";
 
@@ -21,8 +21,8 @@ function setCtxSetting(value, path) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  let panel = cms.panel = new xCollection(cmsFrontend1Data);
-  let el = document.getElementById("qgCmsFrontend1");
+  const panel = cms.panel = new xCollection(cmsFrontend1Data);
+  const el = document.getElementById("qgCmsFrontend1");
 
   /* sidebar */
   panel.loadWidget = (widget, params, cb) => {
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
       );
 
       if (e.value) {
-        let item = el.c1Find('> .-sidebar > .-item[itemid="' + e.value + '"]');
+        const item = el.c1Find('> .-sidebar > .-item[itemid="' + e.value + '"]');
         item.classList.add("-open");
         item.focus();
 
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function titleDown(e) {
     if (e.type === "mousedown" && e.button !== 0) return;
-    let titelEl = e.target.closest(".-sidebar > .-item > .-title");
+    const titelEl = e.target.closest(".-sidebar > .-item > .-title");
     if (!titelEl) return;
     cms.cont.active = Page;
     const sidebar = titelEl.closest("[itemid]").getAttribute("itemid");
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   el.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
-    let wHead = e.target.closest(".-widgetHead");
+    const wHead = e.target.closest(".-widgetHead");
     if (!wHead) return;
     e.preventDefault();
     const value = wHead.classList.toggle("-open");
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.key == "v") {
       cms.panel.toggle("sidebar", "add");
       setTimeout(() => {
-        let inp = el.c1Find('[widget="add"] .-h1 > input');
+        const inp = el.c1Find('[widget="add"] .-h1 > input');
         inp && inp.focus();
       }, 700);
     }
@@ -177,7 +177,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  apt.on("POST cms/node/:id/files", ({ id }) => cms.cont(id).showWidget("media", true));
+  apt.on("POST cms/node/:id/files", ({ params: { id } }) => {
+    cms.cont(id).showWidget("media", true);
+  });
   cms.cont.prototype.showWidget = function (what, reload) {
     if (!reload) {
       if (
@@ -197,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function enter() {
     el.classList.add("-open", "-sidebar-open");
   }
-  for (let switc of switches) {
+  for (const switc of switches) {
     switc.addEventListener("mouseenter", enter);
     switc.addEventListener("touchstart", enter);
   }
@@ -242,10 +244,7 @@ c1.onElement(".qgCmsTreeManager", async (el) => {
   // change placeholder
   const old = cms.Tree.options.onActivate;
   cms.Tree.options.onActivate = function (node) {
-    inp.placeholder = inp.placeholder.replace(
-      /"([^"]*)"/,
-      '"' + node.data.title + '"',
-    );
+    inp.placeholder = inp.placeholder.replace(/"([^"]*)"/, `"${node.data.title}"`);
     old.apply(this, arguments);
   };
   /* go to hash-url  if (!isset(G()->ASK['serverInterface']) && G()->SET['cms.frontend.1']['custom']['tree_show_c']->v) { ?>
@@ -266,11 +265,9 @@ c1.onElement(".qgCmsFileManager", async (el) => {
   });
   const tbody = el.c1Find("tbody");
   if (tbody) {
-    for (let tr of tbody.children) {
-      let img = tr.querySelector(".-preview > img"),
-        f = 1,
-        oW,
-        oH;
+    for (const tr of tbody.children) {
+      const img = tr.querySelector(".-preview > img");
+      let f = 1, oW, oH;
       if (!img) continue;
       img.parentNode.addEventListener("wheel", function (e) {
         if (f === 1) {
@@ -278,11 +275,11 @@ c1.onElement(".qgCmsFileManager", async (el) => {
           oH = img.offsetHeight;
         }
         e.preventDefault();
-        var newf = e.wheelDelta < 0 ? f / 0.6666 : f * 0.6666;
+        const newf = e.wheelDelta < 0 ? f / 0.6666 : f * 0.6666;
         if (newf >= 1 && newf <= 15) {
           f = newf;
-          var w = parseInt(f * oW);
-          var h = parseInt(f * oH);
+          const w = parseInt(f * oW);
+          const h = parseInt(f * oH);
           new dbFile(img).set("h", h).set("w", w).write();
           img.height = h;
           img.width = w;
@@ -309,16 +306,16 @@ c1.onElement(".qgCmsFileManager", async (el) => {
       },
     });
     tbody.addEventListener("click", (e) => {
-      let del = e.target.closest(".-delete");
+      const del = e.target.closest(".-delete");
       if (del) {
-        var tr = del.closest("tr");
+        const tr = del.closest("tr");
         confirm("Möchten Sie die Datei wirklich löschen?") &&
           apt.cms.node(pid).files(tr.getAttribute("itemid")).delete().then(() => tr.remove());
         return;
       }
-      let preview = e.target.closest(".-preview");
+      const preview = e.target.closest(".-preview");
       if (preview) {
-        var replaces = preview.closest("tr").getAttribute("itemid");
+        const replaces = preview.closest("tr").getAttribute("itemid");
         c1.form.fileDialog({ multiple: false }).then((files) =>
           upload(files, replaces)
         );
@@ -336,10 +333,10 @@ c1.onElement(".qgCmsFileManager", async (el) => {
     });
   }
 
-  var upload = (files, replaces) => {
+  const upload = (files, replaces) => {
     for (const file of files) cms.cont(pid).upload(file, reload, replaces);
   };
-  var reload = () => {
+  const reload = () => {
     apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
     cms.panel.get("widget").set("media", 1);
   };
@@ -363,7 +360,7 @@ c1.onElement(".qgCmsFront1ModuleManager", (el) => {
 
   const searchInp = el.c1Find("input");
   searchInp.addEventListener("input", function () {
-    for (let box of el.c1FindAll(".-module-boxes > *")) {
+    for (const box of el.c1FindAll(".-module-boxes > *")) {
       box.style.display =
         box.textContent.toLowerCase().match(this.value.toLowerCase())
           ? "flex"
@@ -407,7 +404,7 @@ c1.onElement(".qgCmsFront1AccessGrpManager", (el) => {
   );
   // change grp access
   el.addEventListener("change", (e) => {
-    var inp = e.target;
+    const inp = e.target;
     if (!inp.closest('[widget="access.grp.list"]')) return;
     if (inp.name === "public") {
       apt.cms.node(pid).access.put({ value: parseInt(inp.value) });
@@ -427,7 +424,7 @@ c1.onElement(".qgCmsFront1AccessUsrManager", (el) => {
   );
   // change usr access
   el.addEventListener("change", (e) => {
-    var inp = e.target;
+    const inp = e.target;
     if (!inp.closest('[widget="access.usr.list"]')) return;
     apt.cms.node(pid).access.users(inp.name.replace("u_", "")).put({ access: parseInt(inp.value) });
   });
@@ -482,10 +479,10 @@ c1.onElement(".qgCmsFront1AccessTimeManager", (el) => {
 c1.onElement(".qgCmsFront1UrlManager", (el) => {
   const pid = el.getAttribute("pid");
   el.c1Find("> .-urls").addEventListener("change", (e) => {
-    var tr = e.target.closest("[data-lang]");
-    var lang = tr.getAttribute("data-lang");
+    const tr = e.target.closest("[data-lang]");
+    const lang = tr.getAttribute("data-lang");
 
-    var inp = e.target.closest(".-target");
+    let inp = e.target.closest(".-target");
     if (inp) {
       apt.cms.node(pid).urls(lang).target.put({ value: inp.checked ? "_blank" : "" });
     }
@@ -510,7 +507,7 @@ c1.onElement(".qgCmsFront1UrlManager", (el) => {
     apt.cms.node(pid).redirects.delete({ url: v });
   });
 
-  var addInp = el.c1Find(".-add_inp");
+  const addInp = el.c1Find(".-add_inp");
   addInp.addEventListener(
     "keyup",
     function () {
@@ -525,7 +522,7 @@ c1.onElement(".qgCmsFront1UrlManager", (el) => {
   el.c1Find(".-add").addEventListener("click", cmsRequestSet);
 
   function cmsRequestSet() {
-    var v = addInp.value;
+    const v = addInp.value;
     apt.cms.node(pid).redirects.post({ url: v });
     cms.panel.get("widget").set("urls", 1);
   }
@@ -588,9 +585,9 @@ c1.onElement(".qgCmsFront1MoreManager", (el) => {
   // change password
   el.c1Find(".-pwchange").addEventListener("submit", function (e) {
     e.preventDefault();
-    var oldpw = this.c1Find("[name=old]").value;
-    var pw = this.c1Find("[name=new]").value;
-    var pw2 = this.c1Find("[name=new2]").value;
+    const oldpw = this.c1Find("[name=old]").value;
+    const pw = this.c1Find("[name=new]").value;
+    const pw2 = this.c1Find("[name=new2]").value;
     if (pw2 !== pw) alert("Die Passwörter stimmen nicht überein");
     else {
       apt.core.password.put({ oldpw, pw }).then((res) => {
@@ -609,8 +606,8 @@ c1.onElement(".qgCmsFront1MoreManager", (el) => {
     }
   });
   el.c1Find(".-changelang").addEventListener("change", function (e) {
-    var val = this.options[this.selectedIndex].value;
-    var path = JSON.parse(this.name);
+    const val = this.options[this.selectedIndex].value;
+    const path = JSON.parse(this.name);
     setCtxSetting(val, path).then(() => {
       location.href = location.href.replace(/#.*$/, "");
     });
@@ -645,10 +642,10 @@ c1.onElement(".qgCMSFron1ContManager", (el) => {
     }
   });
   // übergeordnet
-  var editparent = el.c1Find(".-editparent");
+  const editparent = el.c1Find(".-editparent");
   editparent && editparent.addEventListener("click", function (e) {
-    var pid = this.getAttribute("parent");
-    var type = this.getAttribute("page-type");
+    const pid = this.getAttribute("parent");
+    const type = this.getAttribute("page-type");
     if (type !== "p") {
       e.preventDefault();
       cms.cont.active = pid;
@@ -678,27 +675,28 @@ c1.onElement(".qgCmsFront1SuperuserManager", (el) => {
   });
 });
 
-apt.on("PUT|POST|PATCH|DELETE cms/node/:id/settings/*", async ({ id }) => {
+apt.on("PUT|POST|PATCH|DELETE cms/node/:id/*", async ({ params: { id } }) => {
+  const els = document.querySelectorAll('.-pid' + id);
+  if (!els.length) return;
   const res = await apt.cms.node(id).html.get();
-  const el = document.querySelector('.-pid' + id);
-  if (el) el.outerHTML = res;
+  els.forEach(el => el.outerHTML = res);
 });
 
 /* xCollection */
-var xCollection = function (obj) {
+function xCollection(obj) {
   this.data = {};
   obj && this.set(obj);
-};
+}
 c1.ext(c1.Eventer, xCollection.prototype);
 c1.ext({
   set(n, v) {
     if (typeof n === "object") {
-      for (var key in n) {
+      for (const key in n) {
         n.hasOwnProperty(key) && this.set(key, n[key]);
       }
       return;
     }
-    var old_value = this.data[n];
+    const old_value = this.data[n];
     if (typeof v === "object") {
       this.data[n] = new xCollection(v);
     } else {

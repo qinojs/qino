@@ -82,9 +82,8 @@ export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<
         const dbF = ctx.app.dbFiles.file(parseInt(String(file)));
         if (!await dbF.access()) throw new HTTPException(403);
         if (replace) {
-            const existing = await node.File(replace);
-            await dbF.clone(existing?.id);
-            File = existing;
+            const existing = await node.file(replace);
+            File = await dbF.clone(existing?.id);
         } else {
             File = await node.addFile(await dbF.clone());
         }

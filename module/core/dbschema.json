@@ -20,10 +20,7 @@
             "x-qg-on-parent-delete": "setnull"
           }
         },
-        "required": [
-          "id",
-          "hash"
-        ]
+        "required": ["id", "hash"]
       }
     },
     "client_usr": {
@@ -48,12 +45,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "client_id",
-          "usr_id",
-          "save_login",
-          "time"
-        ]
+        "required": ["client_id", "usr_id", "save_login", "time"]
       }
     },
     "file": {
@@ -96,24 +88,17 @@
           },
           "md5": {
             "type": "string",
-            "maxLength": 32
+            "maxLength": 32,
+            "x-index": true
           },
           "size": {
             "type": "integer",
-            "minimum": -9007199254740991,
+            "minimum": 0,
             "maximum": 9007199254740991,
             "x-index": true
           }
         },
-        "required": [
-          "id",
-          "name",
-          "text",
-          "mime",
-          "access",
-          "md5",
-          "size"
-        ]
+        "required": ["id", "name", "text", "mime", "access", "md5", "size"]
       }
     },
     "grp": {
@@ -149,12 +134,7 @@
             "maxLength": 191
           }
         },
-        "required": [
-          "id",
-          "usr_id",
-          "type",
-          "name"
-        ]
+        "required": ["id", "usr_id", "type", "name"]
       }
     },
     "log": {
@@ -204,11 +184,7 @@
             "x-qg-parent": "log_ip"
           }
         },
-        "required": [
-          "id",
-          "time",
-          "post"
-        ]
+        "required": ["id", "time", "post"]
       }
     },
     "log_user_agent": {
@@ -224,10 +200,7 @@
             "x-index": "fulltext"
           }
         },
-        "required": [
-          "id",
-          "user_agent"
-        ]
+        "required": ["id", "user_agent"]
       }
     },
     "log_url": {
@@ -248,11 +221,7 @@
             "x-index": "fulltext"
           }
         },
-        "required": [
-          "id",
-          "hash",
-          "url"
-        ]
+        "required": ["id", "hash", "url"]
       }
     },
     "log_ip": {
@@ -269,10 +238,7 @@
             "x-index": "unique"
           }
         },
-        "required": [
-          "id",
-          "ip"
-        ]
+        "required": ["id", "ip"]
       }
     },
     "mail": {
@@ -320,15 +286,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "sender",
-          "sendername",
-          "reply_to",
-          "subject",
-          "text",
-          "html"
-        ]
+        "required": ["id", "sender", "sendername", "reply_to", "subject", "text", "html"]
       }
     },
     "mail_attachment": {
@@ -360,14 +318,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "mail_id",
-          "hash",
-          "path",
-          "name",
-          "type",
-          "inline"
-        ]
+        "required": ["mail_id", "hash", "path", "name", "type", "inline"]
       }
     },
     "mail_recipient": {
@@ -407,15 +358,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "mail_id",
-          "email",
-          "name",
-          "data",
-          "sent",
-          "opened",
-          "error"
-        ]
+        "required": ["mail_id", "email", "name", "data", "sent", "opened", "error"]
       }
     },
     "module": {
@@ -436,11 +379,7 @@
             "x-qg-on-parent-delete": "setnull"
           }
         },
-        "required": [
-          "name",
-          "access",
-          "title_id"
-        ]
+        "required": ["name", "access", "title_id"]
       }
     },
     "qg_hashaction": {
@@ -480,13 +419,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "hash",
-          "fn",
-          "expires",
-          "times",
-          "data"
-        ]
+        "required": ["hash", "fn", "expires", "times", "data"]
       }
     },
     "qg_setting": {
@@ -526,16 +459,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "basis",
-          "offset",
-          "value",
-          "type",
-          "handler",
-          "options",
-          "w"
-        ]
+        "required": ["id", "basis", "offset", "value", "type", "handler", "options", "w"]
       }
     },
     "qg_setting_usr": {
@@ -557,11 +481,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "setting_id",
-          "usr_id",
-          "value"
-        ]
+        "required": ["setting_id", "usr_id", "value"]
       }
     },
     "sess": {
@@ -597,11 +517,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "time",
-          "access"
-        ]
+        "required": ["id", "time", "access"]
       }
     },
     "smalltext": {
@@ -644,18 +560,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "hash",
-          "namespace",
-          "original",
-          "count",
-          "de",
-          "fr",
-          "en",
-          "it",
-          "pl",
-          "zh"
-        ]
+        "required": ["hash", "namespace", "original", "count", "de", "fr", "en", "it", "pl", "zh"]
       }
     },
     "smalltext_code_log": {
@@ -685,12 +590,7 @@
             "x-index": "primary"
           }
         },
-        "required": [
-          "hash",
-          "namespace",
-          "file",
-          "line"
-        ]
+        "required": ["hash", "namespace", "file", "line"]
       }
     },
     "text": {
@@ -723,11 +623,7 @@
             "x-index": "fulltext"
           }
         },
-        "required": [
-          "id",
-          "lang",
-          "text"
-        ]
+        "required": ["id", "lang", "text"]
       }
     },
     "usr": {
@@ -788,16 +684,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "active",
-          "pw",
-          "firstname",
-          "lastname",
-          "superuser",
-          "lang",
-          "company"
-        ]
+        "required": ["id", "active", "pw", "firstname", "lastname", "superuser", "lang", "company"]
       }
     },
     "usr_grp": {
@@ -822,11 +709,7 @@
             "x-qg-on-parent-delete": "setnull"
           }
         },
-        "required": [
-          "usr_id",
-          "grp_id",
-          "log_id"
-        ]
+        "required": ["usr_id", "grp_id", "log_id"]
       }
     }
   }

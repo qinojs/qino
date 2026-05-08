@@ -187,7 +187,7 @@ export class Node {
 
         if (this.edit) {
             cls += " -e";
-            if (this.vs.module?.startsWith("cms.cont.flexible")) cls += " qgCMS-dropTarget";
+            if (this.module?.name.startsWith("cms.cont.flexible")) cls += " qgCMS-dropTarget";
             if (!(await this.isOnline())) cls += " qgCMS-offline";
         }
 
@@ -286,7 +286,6 @@ export class Node {
             for (const row of rows) {
                 const id = parseInt(row.id);
                 const Child = await this.cms.node(id, row);
-                await Child.init();
                 this.#children.set(id, Child);
                 if (row.name) {
                     this.#named[row.type] ??= {};
@@ -302,13 +301,12 @@ export class Node {
         return this.#conts ??= [...(await this.children({ type: "c" })).values()];
     }
 
-    async parent(level?: number): Promise<Node | false> {
-        const parent = this.vs.basis ? await this.cms.node(this.vs.basis) : false;
+    async parent(level?: number): Promise<Node | undefined> {
+        const parent = this.vs.basis ? await this.cms.node(this.vs.basis) : undefined;
         if (level === undefined) return parent;
         const path = await this.path();
         let i = 0;
         for (const P of path.values()) if (i++ === level) return P;
-        return false;
     }
 
     async path(): Promise<Map<number, Node>> {
@@ -552,8 +550,7 @@ export class Node {
         };
         const id = await this.db.table("page").insert(vs);
         const P = await this.cms.node(parseInt(String(id ?? "0")));
-        await P.init();
-        if (!id) return P;
+        if (!id) return P; // hier? nicht zuspät?
 
         const accessUsrs = await this.db.all("SELECT * FROM page_access_usr WHERE page_id = ?", [this.id]);
         for (const data of accessUsrs) await this.db.table("page_access_usr").insert({ ...data, page_id: String(P) });
@@ -587,11 +584,10 @@ export class Node {
         const newId = parseInt(String(await this.db.table("page").insert(row) ?? "0"));
         if (!newId) return false;
         const P = await this.cms.node(newId);
-        await P.init();
 
         const titleCopy = await (await this.title())!.copy();
         const ctx = getCtx();
-        await P.set({ log_id: ctx.logId ?? null, title_id: titleCopy.id, _cache: "" });
+        await P.set({ log_id: ctx.logId ?? null, title_id: titleCopy.id });
         P.#title = titleCopy;
 
         const texts = await this.texts();

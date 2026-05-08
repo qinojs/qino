@@ -3,7 +3,7 @@
 
 import { getCtx } from "../core/lib/context.ts";
 import { s } from "../core/lib/schema.ts";
-import type { Tree } from "../core/lib/apt.ts";
+import type { AptTree } from "../core/lib/apt.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.filebrowser";
@@ -105,7 +105,7 @@ async function search(s_: string, ctx: any): Promise<any[]> {
     return items;
 }
 
-export const api: Tree = {
+export const api: AptTree = {
     search: {
         get: {
             description: "Dateien im CMS-Filebrowser suchen.",

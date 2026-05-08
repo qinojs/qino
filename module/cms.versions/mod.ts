@@ -28,8 +28,8 @@ import {
     versTable, view, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
-import { getCtx } from "../core/lib/context.ts";
-import type { Tree } from "../core/lib/apt.ts";
+import { getCtx, type RequestContext } from "../core/lib/context.ts";
+import type { AptTree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
 
@@ -45,7 +45,7 @@ export const settingsSchema = {
     },
 };
 
-export const api: Tree = {
+export const api: AptTree = {
     "publish-cont": {
         post: {
             description: "Content/Page in einen Versions-Space publizieren.",
@@ -90,7 +90,8 @@ export function init(app: App) {
 
     // ─── Ensure _vers_* tables exist on first action ─────────────────────────
     // Port of vers.events.php: qg::on('action', function() { versTable() })
-    app.on("action", async ({ ctx }) => {
+    app.on("action", async e => {
+        const ctx = e.ctx as RequestContext;
         for (const t of Object.keys(versedTables)) await versTable(ctx.app.db, t);
     });
 
@@ -301,7 +302,9 @@ export function init(app: App) {
     // ─── Request init ─────────────────────────────────────────────────────────
     // Port of qg.php bottom section: determine cmsVersSpace/cmsVersLog from
     // settings + request params.
-    app.on("action", async ({ ctx }) => {
+    app.on("action", async e => {
+        const ctx = e.ctx as RequestContext;
+
         const vs = getCmsVers(ctx);
         await ensureSpace(ctx.app.db, vs.cmsVersSpace);
 
@@ -329,13 +332,12 @@ export function init(app: App) {
             cacheHeaders(ctx);
 
             // Disable editmode for the historical view
-            ctx.settings.cms.editmode = 0;
+            ctx.settings.cms.editmode(0);
 
             // Load page data into cache for the requested log
             const generate = async (id: number): Promise<void> => {
-                const node = await (ctx.app as any).cms.node(id);
-                await node.init();
-                for (const SubCont of (await node.Conts?.() ?? [])) await generate(SubCont.id);
+                const node = await ctx.app.cms.node(id);
+                for (const SubCont of await node.conts()) await generate(SubCont.id);
                 if ((await node.access()) < 2) return;
                 (node.vs as any).online_start = (node.vs as any).online_end = 0;
                 await pageLoadRuntimeCache(node);
@@ -404,7 +406,8 @@ export function init(app: App) {
     // ─────────────────────────────────────────────────────────────────────────
 
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────
-    app.on("cms-ready", async ({ ctx }) => {
+    app.on("cms-ready", async (e) => {
+        const ctx = e.ctx as RequestContext;
         if (!ctx.state.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
         ctx.html.addJSM(ctx.sysURL + "cms.versions/pub/vers.mjs");

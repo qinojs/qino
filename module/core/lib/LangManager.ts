@@ -64,7 +64,7 @@ export class LangManager {
         const c = ctx ?? getCtx();
         c.langNsPath.push(c.langNs);
         c.langNs = ns;
-        const nsLang = String(await c.settings.qg.lang_ns[ns] ?? "");
+        const nsLang = String(await c.settings.core.lang_ns[ns] ?? "");
         c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : this.getUsr(c);
     }
 

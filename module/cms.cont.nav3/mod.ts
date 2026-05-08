@@ -7,13 +7,35 @@ export const name = "cms.cont.nav3";
 
 const settingsSchema = {
   properties: {
-    "active page by renderpath": { type: "boolean", description: "Bestimmt die aktive Seite aus dem Renderpfad statt aus der Hauptseite des aktuellen Inhalts." },
-    startPage: { type: "integer", minimum: 1, description: "Page-ID, ab der die Navigation aufgebaut wird. Leer lassen fuer die aktuelle Seite." },
-    startLevel: { type: "integer", minimum: 0, description: "Startet die Navigation bei einem Eltern-Level der aktiven Seite. Ueberschreibt startPage, wenn gesetzt." },
-    filter_visible: { enum: ["", "visible", "hidden"], description: "Filtert Navigationspunkte nach Sichtbarkeit: leer zeigt alle lesbaren Seiten, visible nur sichtbare, hidden nur versteckte." },
-    level: { type: "integer", minimum: 0, description: "Maximale Tiefe der Navigation. 0 oder leer bedeutet ohne explizite Tiefenbegrenzung." },
-    pathOnly: { type: "boolean", description: "Zeigt Unterebenen nur entlang des aktiven Pfads." },
-    "include contents": { type: "boolean", description: "Nimmt sichtbare Content-Elemente der Seiten als Navigationspunkte mit auf." },
+    "active page by renderpath": {
+      type: "boolean",
+      description: "Bestimmt die aktive Seite aus dem Renderpfad statt aus der Hauptseite des aktuellen Inhalts.",
+    },
+    startPage: {
+      type: "integer", minimum: 1,
+      description: "Page-ID, ab der die Navigation aufgebaut wird. Leer lassen fuer die aktuelle Seite.",
+      "x-html": { type: "qgcms-page" }
+    },
+    startLevel: {
+      type: "integer", minimum: 0,
+      description: "Startet die Navigation bei einem Eltern-Level der aktiven Seite. Ueberschreibt startPage, wenn gesetzt.",
+    },
+    filter_visible: {
+      enum: ["", "visible", "hidden"],
+      description: "Filtert Navigationspunkte nach Sichtbarkeit: leer zeigt alle lesbaren Seiten, visible nur sichtbare, hidden nur versteckte.",
+    },
+    level: {
+      type: "integer", minimum: 0,
+      description: "Maximale Tiefe der Navigation. 0 oder leer bedeutet ohne explizite Tiefenbegrenzung.",
+    },
+    pathOnly: {
+      type: "boolean",
+      description: "Zeigt Unterebenen nur entlang des aktiven Pfads.",
+    },
+    "include contents": {
+      type: "boolean",
+      description: "Nimmt sichtbare Content-Elemente der Seiten als Navigationspunkte mit auf.",
+    },
   },
 };
 
@@ -98,7 +120,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
     const levelLimit = parseInt(String(levelLimitSetting || 0));
     if (levelLimit && level >= levelLimit) return "";
 
-    if (pathOnly && level > 0 && !(await ActivePage.in(CurPage))) return "";
+    if (pathOnly && level > 0 && !(await ActivePage?.in(CurPage))) return "";
 
     level++;
     let str = `<ul class="cmsChilds${CurPage}">`;
@@ -106,7 +128,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
       const childStr = await getUl(ChildPage);
 
       const childPage = await ChildPage.page();
-      const isInside = await ActivePage.in(childPage);
+      const isInside = ActivePage ? await ActivePage.in(childPage) : false;
       const isActive = ActivePage === childPage;
       const hasSub = childStr !== false;
       const isOnline = await ChildPage.isOnline();

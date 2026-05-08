@@ -134,7 +134,7 @@ setTimeout(function(){
 		if (ok) return;
 		el.classList.add('qgCMS-text-untranslated');
 	});
-	apt.on('PUT cms/txt/:id', ({ id, input }) => {
+	apt.on('PUT cms/txt/:id', ({ params: { id }, input }) => {
 		const txt = input?.value;
 		const setLang = input?.lang || activeLang;
 		const els = document.querySelectorAll('[cmstxt="'+id+'"]');

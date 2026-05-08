@@ -39,7 +39,7 @@ class SettingItem extends Item<SettingItem> {
     }
   }
 
-  override writer = async (value: any) => {
+  override writer = async (value: unknown) => {
     await this.reader(); // ensure data is loaded
 
     if (typeof value !== "object" || value == null) {
@@ -48,7 +48,7 @@ class SettingItem extends Item<SettingItem> {
 
     const promises = [];
     for (const key in value) {
-      promises.push(this.item(key).set(value[key]));
+      promises.push(this.item(key).set((value as Record<string, unknown>)[key]));
     }
     return Promise.all(promises);
   };

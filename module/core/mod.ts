@@ -7,28 +7,22 @@
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { RedirectError } from "./lib/util.ts";
-import { $item } from "../../deps.ts";
 import { getCtx, type RequestContext } from "./lib/context.ts";
 import { api } from "./apt.ts";
-
 import type { App } from "./server.ts";
 
 export const name = "core";
 export { dbSchema };
 
-const qgSettingsSchema = {
+export const settingsSchema = {
     properties: {
         langs: {
             type: "string",
             description: "Kommagetrennte Liste der verfugbaren Sprachcodes, z.B. de,en.",
         },
-        _secure: {
-            type: "string",
-            description: "Intern verwendeter Sicherheitsschlussel des Systems.",
-        },
-        lang_ns: {
-            description: "Optionale Sprachvorgaben pro Namespace.",
-            additionalProperties: { type: "string" },
+        uploadMaxFileSize: {
+            type: "integer",
+            description: "Maximale Dateigrosse fur Uploads und Remote-Dateiimporte in Bytes.",
         },
         HSTS: {
             description: "Einstellungen fur den Strict-Transport-Security-Header.",
@@ -62,6 +56,10 @@ const qgSettingsSchema = {
 
 export const ctxSettingsSchema = {
     properties: {
+        lang_ns: {
+            description: "Optionale Sprachvorgaben pro Namespace.",
+            additionalProperties: { type: "string" },
+        },
         settingsTree: {
             properties: {
                 opened: { type: "string" },
@@ -74,16 +72,12 @@ export async function init(app: App) {
 
     app.aptTree.core = api;
 
-    app.on("init", () => {
-        const rootSchema = app.settings[$item].schema;
-        rootSchema!.properties.qg = qgSettingsSchema;
-    });
-
-    const langsRaw = String(await app.settings.qg.langs ?? "");
+    const langsRaw = String(await app.settings.core.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
 
 
-    app.on("action", async ({ctx}) => {
+    app.on("action", async (e) => {
+        const ctx = e.ctx as RequestContext;
 
         // HTTPS redirect
         const https = app.https;
@@ -95,7 +89,7 @@ export async function init(app: App) {
 
         // HSTS
         if (https) {
-            const set = app.settings.qg.HSTS;
+            const set = app.settings.core.HSTS;
             const maxAge = parseInt(String(await set["max-age"])) || 0;
             if (maxAge) {
                 let header = `max-age=${maxAge}`;
@@ -125,11 +119,11 @@ export async function init(app: App) {
     });
 
     app.on("respond", async (e) => {
-        const ctx: RequestContext = e.ctx;
+        const ctx = e.ctx as RequestContext;
 
         ctx.responseHeaders.set("Accept-CH", "DPR");
 
-        const enableRaw = String(await ctx.app.settings.qg.csp.enable ?? "");
+        const enableRaw = String(await ctx.app.settings.core.csp.enable ?? "");
         const enable = enableRaw === "report only"
             ? "report only"
             : (enableRaw && enableRaw !== "0" && enableRaw !== "false" ? "enforce" : "");

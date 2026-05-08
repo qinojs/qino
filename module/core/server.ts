@@ -1,7 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
-
-import { Hono, type Context, fromFileUrl, serveDir, basePath, matchedRoutes, type ItemProxy } from "../../deps.ts";
-
+import { Hono, fromFileUrl, serveDir, basePath, matchedRoutes, type ItemProxy, type Context } from "../../deps.ts";
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/context.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
 import { ensureSlash, AnswerError, RedirectError, OutputError, OutputDoneError } from "./lib/util.ts";
@@ -11,7 +8,7 @@ import { createSettingItem } from "./lib/SettingItem.ts";
 import { DbTextManager } from "./lib/DbTextManager.ts";
 import { ModuleManager, type ModuleExports } from "./lib/ModuleManager.ts";
 import { LangManager } from "./lib/LangManager.ts";
-import { toHono, client, type Tree } from "./lib/apt.ts";
+import { toHono, aptClient, type AptTree, type AptProxy } from "./lib/apt.ts";
 import { initClient, initLog, touchSession } from "./lib/init.ts";
 import { Auth } from "./lib/Auth.ts";
 
@@ -34,7 +31,7 @@ export class App {
     https: boolean;
     db: Db;
     settings: ItemProxy;
-    ctxSettingsSchema: any = { properties: {} };
+    ctxSettingsSchema: object = { properties: {} };
     dbFiles: DbFileManager;
     dbTexts: DbTextManager;
     router: Hono = new Hono();
@@ -42,22 +39,22 @@ export class App {
     modules: ModuleManager;
     languages: LangManager;
     t: LangManager["t"];
-    aptTree: Tree = {};
+    aptTree: AptTree = {};
     #initPromise: Promise<void> | null = null;
-    #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
+    #events: Record<string, ((data: Record<string, unknown>) => void | Promise<void>)[]> = {};
 
-    get apt(): any { return client(this.aptTree); }
+    get apt(): AptProxy { return aptClient(this.aptTree); }
 
     constructor(config: Partial<AppConfig> = {}) {
-        const c = { ...defaultConfig, ...config };
-        if (c.appPATH.startsWith("file:")) c.appPATH = fromFileUrl(c.appPATH);
-        c.appPATH = ensureSlash(c.appPATH);
+        const cfg = { ...defaultConfig, ...config };
+        if (cfg.appPATH.startsWith("file:")) cfg.appPATH = fromFileUrl(cfg.appPATH);
+        cfg.appPATH = ensureSlash(cfg.appPATH);
 
-        this.config    = c;
-        this.appPATH   = c.appPATH;
-        this.https     = c.https;
+        this.config    = cfg;
+        this.appPATH   = cfg.appPATH;
+        this.https     = cfg.https;
 
-        this.db        = new Db(`mysql:host=${c.dbHost};dbname=${c.dbName}`, c.dbUser, c.dbPass);
+        this.db        = new Db(`mysql:host=${cfg.dbHost};dbname=${cfg.dbName}`, cfg.dbUser, cfg.dbPass);
         this.settings  = createSettingItem(this.db).proxy;
         this.dbFiles   = new DbFileManager(this, this.appPATH + "qg/file/");
         this.dbTexts   = new DbTextManager(this);
@@ -123,8 +120,9 @@ export class App {
             try {
                 await this.initRequest(ctx);
                 if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(hc, ctx);
+                await this.fire("action", { ctx });
                 await next();
-            } catch (e: any) {
+            } catch (e: unknown) {
                 this.handleError(ctx, e);
                 hc.res = await this.buildResponse(hc, ctx);
             }
@@ -143,23 +141,15 @@ export class App {
 
     private async handleAppFallback(hc: Context, next: () => Promise<void>): Promise<void> {
         await next();
-        if (hc.res.status !== 404 || this.hasMatchedRoute(hc)) return;
+        const hasRoute = matchedRoutes(hc).some((route) => route.path && route.path !== basePath(hc).replace(/\/$/, "") + "/*");
+        if (hc.res.status !== 404 || hasRoute) return;
         const ctx = getCtx();
-        await this.handleAppRequest(ctx);
+        await this.fire("render", { ctx });
+        if (ctx.hasHtml) ctx.responseBody = ctx.html.render();
         hc.res = await this.buildResponse(hc, ctx);
     }
 
-    private hasMatchedRoute(hc: Context): boolean {
-        return matchedRoutes(hc).some((route) => route.path && route.path !== basePath(hc).replace(/\/$/, "") + "/*");
-    }
-
-    private async handleAppRequest(ctx: RequestContext): Promise<void> {
-        await this.fire("action", { ctx });
-        await this.fire("render", { ctx });
-        if (ctx.hasHtml) ctx.responseBody = ctx.html.render();
-    }
-
-    private handleError(ctx: RequestContext, e: any): void {
+    private handleError(ctx: RequestContext, e: unknown): void {
         if (e instanceof AnswerError) {
             ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
             ctx.responseBody = JSON.stringify(e.data);
@@ -187,23 +177,20 @@ export class App {
 
         const headers = new Headers(ctx.responseHeaders);
 
-        if (headers.has("Location")) return this.newResponse(hc, null, { status: ctx.responseStatus, headers });
+        if (headers.has("Location")) return hc.newResponse(null, new Response(null, { status: ctx.responseStatus, headers }));
 
-        const body = String(ctx.responseBody ?? "");
+        const body = ctx.responseBody;
         if (!headers.get("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("X-Content-Type-Options", "nosniff");
-        return this.newResponse(hc, body, { status: ctx.responseStatus, headers });
+        return hc.newResponse(body, new Response(null, { status: ctx.responseStatus, headers }));
     }
 
-    private newResponse(hc: Context, body: string | ReadableStream<Uint8Array> | null, init: ResponseInit): Response {
-        return hc.newResponse(body, new Response(null, init));
-    }
-
-    on(name: string, fn: (data: Record<string, any>) => void | Promise<void>): void {
+    on(name: string, fn: (data: Record<string, unknown>) => void | Promise<void>): void {
         (this.#events[name] ??= []).push(fn);
     }
-    async fire(name: string, data: Record<string, any> = {}): Promise<void> {
+
+    async fire(name: string, data: Record<string, unknown> = {}): Promise<void> {
         if (!this.#events[name]) return;
         data["event_type"] = name;
         for (const event of this.#events[name]) await event(data);

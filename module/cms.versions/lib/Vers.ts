@@ -10,7 +10,7 @@
 
 import { getCtx } from "../../core/lib/context.ts";
 import type { RequestContext } from "../../core/lib/context.ts";
-import type { DB } from "../../core/lib/db.ts";
+import type { Db } from "../../core/lib/Db.ts";
 
 // Tables (and optional field-subset) that are versioned.
 // true  = version all fields
@@ -66,7 +66,7 @@ export function setVers(ctx: RequestContext, spaceLog: [number, number] | null):
  * Port of vers::versTable().
  * Returns the shadow table name, or false if the table is not versioned.
  */
-export async function versTable(db: DB, tableName: string): Promise<string | false> {
+export async function versTable(db: Db, tableName: string): Promise<string | false> {
     if (!versedTables[tableName]) return false;
     const vt = `_vers_${tableName}`;
     if (versTableCreated.has(vt)) return vt;
@@ -129,7 +129,7 @@ export async function versTable(db: DB, tableName: string): Promise<string | fal
  * Port of vers::view().
  * Created views are registered on ctx.state.versViews for cleanup after response.
  */
-export async function view(db: DB, tableName: string, space: number, log: number): Promise<string> {
+export async function view(db: Db, tableName: string, space: number, log: number): Promise<string> {
     if (!versedTables[tableName]) return tableName;
     if (space === 0 && log === 0) return tableName;
 
@@ -203,7 +203,7 @@ export async function view(db: DB, tableName: string, space: number, log: number
  * Drop all views created during this request.
  * Call this after the response has been sent (port of register_shutdown_function).
  */
-export async function dropRequestViews(db: DB): Promise<void> {
+export async function dropRequestViews(db: Db): Promise<void> {
     const ctx = getCtx();
     if (!ctx.state.versViews?.size) return;
     for (const name of ctx.state.versViews) {
@@ -217,7 +217,7 @@ export async function dropRequestViews(db: DB): Promise<void> {
  * Ensure a space exists in vers_space and that _vers_* tables are seeded.
  * Port of vers::ensureSpace().
  */
-export async function ensureSpace(db: DB, space: number): Promise<void> {
+export async function ensureSpace(db: Db, space: number): Promise<void> {
     if (!space) return;
     const exists = await db.row("SELECT space FROM vers_space WHERE space = ?", [space]);
     if (exists) return;
@@ -242,7 +242,7 @@ export async function ensureSpace(db: DB, space: number): Promise<void> {
  * Port of vers::tableEntriesCopyTo().
  */
 export async function tableEntriesCopyTo(
-    db: DB,
+    db: Db,
     tableName: string,
     filter: Record<string, any>,
     fromSpace: number,

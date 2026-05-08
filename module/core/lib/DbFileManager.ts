@@ -1,13 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
 
 import * as nodeFs from "node:fs/promises";
-import * as nodeCrypto from "node:crypto";
 import { Hono } from "../../../deps.ts";
 import { File } from "./File.ts";
 import { typeByExtension } from "../../../deps.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
 import { getCtx } from "./context.ts";
+import { fetchRemoteFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
 
 export class DbFileManager {
@@ -28,7 +28,9 @@ export class DbFileManager {
 
   file(id: number | string, vs?: any): DbFile {
     const key = String(id);
-    return this.#cache[key] ??= new DbFile(this, id, vs);
+    const File = this.#cache[key] ??= new DbFile(this, id);
+    if (vs && Object.keys(vs).length) File.setLocalVs(vs);
+    return File;
   }
 
   clearCache(id?: number | string) {
@@ -135,10 +137,13 @@ export class DbFile extends File {
     super("");
     this.#manager = manager;
     this.id = parseInt(String(id));
-    this.vs = vs ?? {};
-    if (this.vs?.["md5"]) {
-      this.path = this.#manager.directory + this.vs["md5"];
-    }
+    this.vs = {};
+    this.setLocalVs(vs ?? {});
+  }
+
+  setLocalVs(vs: Record<string, any>) {
+    this.vs = vs;
+    this.path = this.vs["md5"] ? this.#manager.directory + this.vs["md5"] : "";
   }
 
   async get(field: string): Promise<unknown> {
@@ -155,8 +160,8 @@ export class DbFile extends File {
     }
   }
 
-  setVs(vs: Record<string, any>) {
-    this.#manager.db.table("file").update(this.id, vs);
+  async setVs(vs: Record<string, any>) {
+    await this.#manager.db.table("file").update(this.id, vs);
     if (!this.vs) return;
     this.vs = { ...this.vs, ...vs };
     if (this.vs["md5"]) {
@@ -168,7 +173,7 @@ export class DbFile extends File {
     await this._loadVs();
     const noNome = params == null; // backwards compatibility: if params is null, include name in URL; if params is an empty object, exclude name
     params = params ?? {};
-    params["u"] = String(this.vs["md5"] ?? "").slice(0, 4);
+    params["u"] = String(this.vs["md5"] ?? "").slice(0, 5);
     const paramStr = Object.entries(params).map(([k, v]) => `${k}-${v}`).join("/");
     const baseURL = getCtx().appURL + "dbFile/";
     if (noNome) return baseURL + this.id + "/" + paramStr;
@@ -184,7 +189,7 @@ export class DbFile extends File {
       await this.#manager.app.fire("dbFile::access2", e);
       return e.access;
     }
-    this.setVs({ access: set ? 1 : 0 });
+    await this.setVs({ access: set ? 1 : 0 });
     return !!set;
   }
 
@@ -192,7 +197,7 @@ export class DbFile extends File {
   async name(set?: any): Promise<string | void> {
     await this._loadVs();
     if (set === undefined) return this.vs["name"] ?? "";
-    this.setVs({ name: set });
+    await this.setVs({ name: set });
   }
 
   override extension(): string {
@@ -206,7 +211,7 @@ export class DbFile extends File {
   async updateDb() {
     await this._loadVs();
     this.path = this.#manager.directory + this.vs["md5"];
-    this.setVs({ text: await this.getText(), size: await this.size() });
+    await this.setVs({ text: await this.getText(), size: await this.size() });
   }
 
   override toString(): string {
@@ -243,38 +248,32 @@ export class DbFile extends File {
   }
 
   async replaceBy(path: string) {
-    let F: File;
-
     if (/^https?:\/\//.test(path)) {
-      const resp = await fetch(path, { redirect: "follow" });
-      const content = new Uint8Array(await resp.arrayBuffer());
-      let basename = path.replace(/\?.*/, "").split("/").pop() ?? "file";
-      const m = (resp.headers.get("content-disposition") ?? "").match(/filename="([^"]+)"/);
-      if (m?.[1]) basename = m[1];
-      const tmpDir = this.#manager.app.appPATH + "cache/tmp/";
-      await nodeFs.mkdir(tmpDir, { recursive: true }).catch(() => {});
-      const tmpPath = tmpDir + basename.replace(/\?.*/, "");
-      await nodeFs.writeFile(tmpPath, content);
-      F = new File(tmpPath);
-    } else {
-      F = new File(path);
+      const remote = await fetchRemoteFile({
+        url: path,
+        maxSize: parseInt(String(await this.#manager.app.settings.core.uploadMaxFileSize ?? "")) || 100 * 1024 * 1024,
+      });
+      this.path = this.#manager.directory + remote.md5;
+      await Deno.rename(remote.tmpPath, this.path);
+      Object.assign(this.vs, { name: remote.name, mime: remote.type });
+      await this.setVs({ name: remote.name, mime: remote.type, text: await this.getText(), md5: remote.md5, size: remote.size });
+      return;
     }
+    const F = new File(path);
 
     const md5 = await F.md5();
     this.path = this.#manager.directory + md5;
     await nodeFs.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
     await F.copyTo(this.path);
 
-    this.setVs({ name: F.basename(), mime: F.mime(), text: await F.getText(), md5, size: await this.size() });
+    await this.setVs({ name: F.basename(), mime: F.mime(), text: await F.getText(), md5, size: await this.size() });
   }
 
   async replaceFromUpload(f: any) {
-    const data: Uint8Array = f["data"] ?? new Uint8Array();
-    const hash = nodeCrypto.createHash("md5").update(data).digest("hex");
-
+    const hash = f["md5"];
     this.path = this.#manager.directory + hash;
     await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-    await Deno.writeFile(this.path, data);
+    await Deno.rename(f["tmpPath"], this.path);
 
     const ext = String(f["name"] ?? "").replace(/.*\./, "").toLowerCase();
     
@@ -283,7 +282,7 @@ export class DbFile extends File {
     type = type.replace(/;.*/, "");
 
     this.vs["md5"] = hash;
-    this.setVs({ name: f["name"] ?? "", mime: type, md5: hash, size: await this.size(), text: await this.getText() });
+    await this.setVs({ name: f["name"] ?? "", mime: type, md5: hash, size: await this.size(), text: await this.getText() });
   }
 
   async clone(to?: number | null): Promise<DbFile> {
@@ -297,7 +296,7 @@ export class DbFile extends File {
       data["id"] = String(to);
       await this.#manager.db.table("file").update(to, data);
       newId = to;
-      this.#manager.clearCache(to);
+      return this.#manager.file(newId, data);
     }
     return this.#manager.file(newId);
   }

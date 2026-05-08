@@ -58,7 +58,7 @@ async function render(node: Node): Promise<string> {
     const historyLimit = Number(await settings.history) || 0;
     if (historyLimit > 0) {
       const client = ctx.client;
-      const clientUsrs = await client.usrs();
+      const clientUsrs = await client.users();
       let i = 0;
       for (const clientUsr of Object.values(clientUsrs)) {
         if (++i > historyLimit) break;

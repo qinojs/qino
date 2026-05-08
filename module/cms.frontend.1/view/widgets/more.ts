@@ -30,7 +30,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
     // const feedbackEmail = await app.settings.cms.feedback.email ?? "";
     // await Mail.addTo?.(feedbackEmail);
     // await Mail.send?.();
-    ctx.settings.cms.feedback.text = "";
+    ctx.settings.cms.feedback.text('');
     feedbackConfirmation = `<br><i style="color:#4c4">Danke für Ihr Feedback. <br>Wir werden uns so schnell wie möglich bei Ihnen melden.</i><br>`;
   }
 
@@ -38,7 +38,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   const feedbackText = await ctx.settings.cms.feedback.text ?? "";
 
   const treeShowC = await ctx.settings["cms.frontend.1"].custom.tree_show_c;
-  const langVal = String(await ctx.settings.qg.lang_ns.cms ?? "");
+  const langVal = String(await ctx.settings.core.lang_ns.cms ?? "");
 
   return `<div class=qgCmsFront1MoreManager>
   <div class=-standalone>
@@ -72,7 +72,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
     <table class=-styled style="width:100%">
       <tr>
         <td>${await app.t`Sprache`}
-        <td><select class=-changelang name='["qg","lang_ns","cms"]'>
+        <td><select class=-changelang name='["core","lang_ns","cms"]'>
           <option value="" ${langVal === "" ? "selected" : ""}>auto (${await app.t`Wie Website`})
           ${app.languages.all.map(l => `<option${langVal === l ? " selected" : ""}>${l}`).join("")}
         </select>

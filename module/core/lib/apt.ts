@@ -9,7 +9,7 @@
  */
 
 import { Hono, type Context } from "../../../deps.ts";
-import { getCtx } from "./context.ts";
+import { getCtx, type RequestContext } from "./context.ts";
 import { toJsonSchema } from "./schema.ts";
 import type { Schema, StandardIssue } from "./schema.ts";
 
@@ -42,7 +42,6 @@ export class ValidationError extends Error {
 
 // ───── Tree types ─────────────────────────────────────────────────────────
 
-type Ctx = any;
 type Params = Record<string, unknown>;
 
 export interface Verb {
@@ -50,11 +49,11 @@ export interface Verb {
   input?: Schema;
   query?: Schema;
   output?: Schema;
-  execute(params: Params, ctx: Ctx): unknown | Promise<unknown>;
+  execute(params: Params, ctx: RequestContext): unknown | Promise<unknown>;
 }
 
-export interface Node {
-  resolve?(raw: unknown, ctx: Ctx, parents: Params): unknown | Promise<unknown>;
+export interface AptNode {
+  resolve?(raw: unknown, ctx: RequestContext, parents: Params): unknown | Promise<unknown>;
   paramSchema?: Schema;
   get?: Verb;
   post?: Verb;
@@ -64,7 +63,7 @@ export interface Node {
   [child: string]: any;
 }
 
-export type Tree = Record<string, Node>;
+export type AptTree = Record<string, AptNode>;
 
 export const VERBS = ["get", "post", "put", "delete", "patch"] as const;
 export type Method = typeof VERBS[number];
@@ -77,21 +76,21 @@ const BODY_METHODS = new Set<Method>(["post", "put", "patch"]);
 interface Route {
   method: Method;
   segments: string[];   // tree-level: literal or ":param"
-  nodes: Node[];        // parallel to segments
+  nodes: AptNode[];        // parallel to segments
   verb: Verb;
   name: string;         // camelCase: "createPageFile"
 }
 
-function* walk(tree: Tree, segments: string[] = [], nodes: Node[] = []): Generator<Route> {
+function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(tree)) {
     if (RESERVED.has(key) || typeof value !== "object" || value === null) continue;
     for (const verbKey of VERBS) {
-      const verb = (value as Node)[verbKey];
+      const verb = (value as AptNode)[verbKey];
       if (verb && typeof verb === "object" && typeof verb.execute === "function") {
         yield { method: verbKey, segments: [...segments, key], nodes: [...nodes, value], verb, name: camelName(verbKey, [...segments, key]) };
       }
     }
-    yield* walk(value as Tree, [...segments, key], [...nodes, value]);
+    yield* walk(value as AptTree, [...segments, key], [...nodes, value]);
   }
 }
 
@@ -129,12 +128,12 @@ function validate(schema: Schema, data: unknown, where: string): unknown {
 const pick = (obj: Params, keys: readonly string[] = []): Params =>
   Object.fromEntries(keys.filter((k) => k in obj).map((k) => [k, obj[k]]));
 
-export async function invoke(tree: Tree, method: string, path: string, rawParams: Params = {}): Promise<unknown> {
+export async function invoke(tree: AptTree, method: string, path: string, rawParams: Params = {}): Promise<unknown> {
   const m = method.toLowerCase() as Method;
   if (!VERB_SET.has(m)) throw new NotFoundError(`no route: ${method} ${path}`);
 
   const segments: string[] = [];
-  const nodes: Node[] = [];
+  const nodes: AptNode[] = [];
   const pathValues: Record<string, unknown> = {};
 
   let cursor: any = tree;
@@ -202,7 +201,7 @@ function coerce(raw: unknown, schema: Schema): unknown {
 
 // ───── Adapter 1: toHono ──────────────────────────────────────────────────
 
-export function toHono(tree: Tree, app: Hono = new Hono()): Hono {
+export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
   for (const r of walk(tree)) checkCollisions(r);
   const handle = async (c: Context): Promise<Response> => {
     try {
@@ -215,7 +214,7 @@ export function toHono(tree: Tree, app: Hono = new Hono()): Hono {
       Object.assign(raw, Object.fromEntries(new URL(c.req.url).searchParams));
       const result = await invoke(tree, c.req.method, path, raw);
       if (result === undefined) return new Response(null, { status: 204 });
-      return c.json(result as any);
+      return c.json(result);
     } catch (e) {
       if (e instanceof ValidationError) return c.json({ error: e.message, issues: e.issues }, 422);
       if (e instanceof AccessError)     return c.json({ error: e.message }, 403);
@@ -235,10 +234,10 @@ export interface Tool {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
-  execute(args: unknown, ctx: unknown): Promise<unknown>;
+  execute(args: unknown, ctx: RequestContext): Promise<unknown>;
 }
 
-export function toTools(tree: Tree, opts: { apis?: Record<string, Method[]> } = {}): Tool[] {
+export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> } = {}): Tool[] {
   const tools: Tool[] = [];
   for (const r of walk(tree)) {
     checkCollisions(r);
@@ -288,14 +287,14 @@ export function toTools(tree: Tree, opts: { apis?: Record<string, Method[]> } = 
 
 // ───── Adapter 3: client (RPC proxy) ──────────────────────────────────────
 
+export type AptProxy ={ [key: string]: AptProxy } & ((...args: unknown[]) => AptProxy) & { [K in Method]: (params?: Params) => Promise<unknown> };
+
 /**
  * Returns a proxy that mirrors the tree.
  *   rpc.page(42).copy.post({ deep: true })
  *   rpc.page(42).file("logo.png").meta.get()
- *
- * TODO: type-inferred Client<T>. For now, `any`.
  */
-export function client(tree: Tree): any {
+export function aptClient(tree: AptTree): AptProxy {
   function buildProxy(node: any, pathSoFar: string[]): any {
     return new Proxy(function () {}, {
       get(_t, prop: string | symbol) {

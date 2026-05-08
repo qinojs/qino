@@ -108,6 +108,11 @@ const node = {
       input: s.object({ vars: s.optional(s.record()) }),
       execute: ({ node, vars }: any) => node.html(vars ?? {}),
     },
+    post: {
+      description: "Node als HTML rendern (mit vars als JSON-Body).",
+      input: s.object({ vars: s.optional(s.any()) }),
+      execute: ({ node, vars }: any) => node.html(vars ?? {}),
+    },
     part: {
       ":part": {
         paramSchema: s.string(),
@@ -644,7 +649,7 @@ export const api = {
           const P = await (ctx.app as any).cms.node(value);
           if ((await P.access()) < 2) throw new AccessError();
         }
-        ctx.settings.cms.clipboard = parseInt(String(value ?? 0));
+        ctx.settings.cms.clipboard(parseInt(value ?? ''));
         return { ok: true };
       },
     },

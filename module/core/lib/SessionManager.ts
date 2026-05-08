@@ -1,12 +1,10 @@
-// deno-lint-ignore-file no-explicit-any
-
-import { getCookie, bildJsonItem, type Context } from "../../../deps.ts";
+import { getCookie, bildJsonItem, type Context, type ItemProxy } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
 import type { RequestContext } from "./context.ts";
 
 const COOKIE_NAME = "qgSession";
 const EMPTY_SESSION = "{}";
-type SessionResult = { sessionToken: string; sessId: string; session: any; isNew: boolean };
+type SessionResult = { sessionToken: string; sessId: string; session: ItemProxy; isNew: boolean };
 
 export class SessionManager {
     #db: Db;

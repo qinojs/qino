@@ -50,7 +50,7 @@ export default async function (node: Node): Promise<string> {
   let accordions = "";
 
   // options: wenn das Modul options exportiert ODER page-settings vorhanden
-  const hasOptions = typeof node.module?.cms?.node?.options === "function";
+  const hasOptions = typeof node.module?.exports?.cms?.node?.options === "function";
   const hasPageSettings = (node.settings[$item].keys?.length ?? 0) > 0;
   if (hasOptions || hasPageSettings) accordions += await cmsFrontend1WidgetAccordion("options", node, await app.t`Einstellungen`);
 

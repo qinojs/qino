@@ -4,10 +4,10 @@
  */
 
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx, type RequestContext } from "../core/lib/context.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
-import type { Tree } from "../core/lib/apt.ts";
+import type { AptTree } from "../core/lib/apt.ts";
 import { AccessError } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
 import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
@@ -56,7 +56,7 @@ async function renderWidget(ctx: any, widget: string, params: Record<string, any
   return html;
 }
 
-export const api: Tree = {
+export const api: AptTree = {
   widget: {
     ":widget": {
       post: {
@@ -126,7 +126,8 @@ export async function cmsFrontend1WidgetSidebar(widget: string, node: Node, titl
 export function init(app: App) {
   app.aptTree["cms.frontend.1"] = api;
 
-  app.on("cms-ready", async ({ ctx }) => {
+  app.on("cms-ready", async e => {
+    const ctx = e.ctx as RequestContext;
     if (ctx.get.qgCmsNoFrontend) return;
     if (await app.settings.cms.frontend !== "cms.frontend.1") return;
 
@@ -143,7 +144,7 @@ export function init(app: App) {
       if (pageNotFound != node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-        settings.cms[lastKey] = ctx.server.REQUEST_URI;
+        settings.cms[lastKey](ctx.server.REQUEST_URI);
         const toggleUrl = await settings.cms[otherKey] ?? "";
         g.js_data = g.js_data ?? {};
         g.js_data.cmsBackendUrl = toggleUrl;
@@ -158,9 +159,7 @@ export function init(app: App) {
       g.js_data = g.js_data ?? {};
       g.js_data.Page = node.id;
       g.js_data.qgCmsRequestedPage = app.cms.RequestedNode?.id;
-      g.js_data.qgDebugmode = (await ctx.user.get?.("superuser"))
-        ? "debug"
-        : null;
+      g.js_data.qgDebugmode = (await ctx.user?.get?.("superuser")) ? "debug" : null;
       g.js_data.qgCmsEditmode = g.editmode;
 
       if (g.editmode) {
