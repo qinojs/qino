@@ -1,5 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-import "./serverInterface.ts";
 import { api } from "./apt.ts";
 import { AiApi } from "./lib/AiApi.ts";
 

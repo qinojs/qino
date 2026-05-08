@@ -1,6 +1,8 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
 import '../../../core/js/c1/contextMenu.mjs?qgUniq=11ccbd1';
+import { apt } from '../../../core/js/apt.js';
+import '../../../cms/pub/js/cms.mjs';
 
 let Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu('CMS Inhalt',{
 	icon: sysURL+'cms.frontend.1/pub/img/module_default.svg',
@@ -35,8 +37,8 @@ Menu.addItem('Kopieren', {
 		this.disabled = !cms.contPos.active.el.classList.contains('-e');
 	},
 	onclick() {
-		$fn('page::copy')(this.activePid).run(ret=>{
-			cms.cont(ret).addPosition();
+		apt.cms.node(this.activePid).copy.post().then(({ id }) => {
+			cms.cont(id).addPosition();
 		});
 	}
 });
@@ -49,7 +51,7 @@ Menu.addItem('Ausschneiden', {
 	},
 	onclick() {
 		const pid = this.activePid;
-		$fn('cms::clipboardSet')(pid).run(()=>{
+		apt.cms.clipboard.put({ value: parseInt(pid) }).then(() => {
 			let els = document.querySelectorAll('.-pid'+pid);
 			for (let el of els) el.style.opacity = .3;
 		});
@@ -67,7 +69,7 @@ Menu.addItem('Löschen', {
 		if (!confirm('Möchten Sie den Inhalt wirklich löschen?')) return;
 		const pid = cms.el.pid(el);
 		el.remove();
-		$fn('page::remove')(pid).run();
+		apt.cms.node(pid).delete();
 	}
 });
 
@@ -116,13 +118,13 @@ TreeMenu.addItem('Kopieren', {
 		cms.frontend1.dialog('Die Seite "'+node.data.title+'" kopieren?','',[
 			{
 				title:'Seite kopieren',then(){
-					$fn('page::copy')(node.data.key).run(ret=>{
+					apt.cms.node(node.data.key).copy.post().then(() => {
 						node.parent.reloadChildren();
 					});
 				}
 			},{
 				title:'inklusiv Unterseiten',then(){
-					$fn('page::copy')(node.data.key,true).run(ret=>{
+					apt.cms.node(node.data.key).copy.post({ deep: true }).then(() => {
 						node.parent.reloadChildren();
 					});
 				}
@@ -144,7 +146,7 @@ TreeMenu.addItem('Löschen', {
 	onclick() {
 		const n = cms.Tree.getNodeByKey(this.lastPid);
 		if (!confirm('Möchten Sie die Seite "'+n.data.title+'" wirklich löschen?')) return;
-		$fn('page::remove')(n.data.key).run(ret=>{
+		apt.cms.node(n.data.key).delete().then(ret => {
 			if (ret.parent_id && n.data.key==Page) {
 				location.href = "?cmspid="+ret.parent_id;
 			} else {

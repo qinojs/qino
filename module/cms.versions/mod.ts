@@ -21,7 +21,6 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import "./serverInterface.ts";
 import type { App } from "../core/server.ts";
 import {
     versedTables,

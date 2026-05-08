@@ -95,6 +95,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     );
 
     const tools = `
+<script type=module>
+import { apt } from '${ctx.sysURL}core/js/apt.js';
+globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).api.post(vars).then(() => location.reload());
+</script>
 <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
     <div class="-head">Tools</div>
     <div class="-body">
@@ -103,19 +107,19 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
             : `<a href="?order=num_ip">nach Anzahl IPs sortieren</a><br>`}
         <br>
         Delete:<br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{bot:'1',source:'404'}}); this.disabled=true">404 und Bots</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{unsupported_ua:'1',source:'404'}}); this.disabled=true">404 und alte Browser</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{referer:'',source:'404'}}); this.disabled=true">404 kein Referer</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{bot:'1',source:'js'}}); this.disabled=true">js und Bots</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{unsupported_ua:'1',source:'js'}}); this.disabled=true">js und alte Browser</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{file:'',source:'js'}}); this.disabled=true">js kein File</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete_foreign_js:true}); this.disabled=true">js, fremd</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{source:'404'}}); this.disabled=true">404 löschen</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{source:'net'}}); this.disabled=true">net löschen</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{source:'perf'}}); this.disabled=true">perf löschen</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{prio:'notice',source:'csp'}}); this.disabled=true">csp read-only</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{delete:{prio:'notice'}}); this.disabled=true">Notizen</button><br>
-        <button onclick="$fn('page::reload')(${node.id},{deleteAll:1}); this.disabled=true">Alle Einträge löschen</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{bot:'1',source:'404'}}); this.disabled=true">404 und Bots</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{unsupported_ua:'1',source:'404'}}); this.disabled=true">404 und alte Browser</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{referer:'',source:'404'}}); this.disabled=true">404 kein Referer</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{bot:'1',source:'js'}}); this.disabled=true">js und Bots</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{unsupported_ua:'1',source:'js'}}); this.disabled=true">js und alte Browser</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{file:'',source:'js'}}); this.disabled=true">js kein File</button><br>
+        <button onclick="cmsApi(${node.id},{delete_foreign_js:true}); this.disabled=true">js, fremd</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{source:'404'}}); this.disabled=true">404 löschen</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{source:'net'}}); this.disabled=true">net löschen</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{source:'perf'}}); this.disabled=true">perf löschen</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{prio:'notice',source:'csp'}}); this.disabled=true">csp read-only</button><br>
+        <button onclick="cmsApi(${node.id},{delete:{prio:'notice'}}); this.disabled=true">Notizen</button><br>
+        <button onclick="cmsApi(${node.id},{deleteAll:1}); this.disabled=true">Alle Einträge löschen</button><br>
     </div>
 </div>`;
 
@@ -160,7 +164,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         <div>${hee(row.usr_email ?? "")}</div>
     <td>
         <img
-            onclick="$fn('page::reload')(${node.id},{delete:Object.assign({},this.dataset)})"
+            onclick="cmsApi(${node.id},{delete:Object.assign({},this.dataset)})"
             data-file="${hee(row.file)}"
             data-line="${hee(String(row.line))}"
             data-col="${hee(String(row.col))}"
@@ -215,7 +219,7 @@ async function renderEntryList(node: Node, ctx: any, get: Record<string, string>
 <tr style="white-space:nowrap">
     <td>
         <a href="?id=${hee(String(row.id))}">${hee(row.time ?? "")} <br> ${hee(String(row.log_id ?? ""))}</a>
-        <br><button onclick="$fn('page::reload')(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
+        <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
     <td>
         <b>${hee(row.message ?? "")}</b><br>
         <a href="${hee(row.request ?? "")}" target="_blank">${hee(row.request ?? "")}</a><br>
@@ -335,7 +339,7 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
             </table>
             ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
             <br>
-            <button onclick="$fn('page::reload')(${node.id},{delete:{id:'${hee(String(error.id))}'}}); this.disabled=true">delete</button>
+            <button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(error.id))}'}}); this.disabled=true">delete</button>
         </div>
     </div>
 

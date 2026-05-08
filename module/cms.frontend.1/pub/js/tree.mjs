@@ -1,4 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+import { apt } from '../../../core/js/apt.js';
 
 window.cmsTreeInit = async (json) => {
   c1Use.able(window, "jQuery");
@@ -21,7 +22,7 @@ window.cmsTreeInit = async (json) => {
     },
     onLazyRead(node) {
       const id = node.data.key;
-      $fn("cms::getTree")(id, {
+      apt.cms.node(id).tree.get({
         level: 1,
         filter: cms.panel.data.tree_show_c ? "*" : "p",
       }).then((res) => {
@@ -52,7 +53,7 @@ window.cmsTreeInit = async (json) => {
         if (!confirm('Seite "' + node.data.title + '" wirklich löschen?')) {
           return;
         }
-        $fn("page::remove")(node.data.key);
+        apt.cms.node(node.data.key).delete();
       }
       if (e.key === "F2") {
         cms.Tree.editNode(node);
@@ -106,7 +107,7 @@ window.cmsTreeInit = async (json) => {
         } else if (where === "before") {
           before = target.data.key;
         }
-        $fn("page::insertBefore")(parent, source.data.key, before).run(() => {
+        apt.cms.node(source.data.key).position.put({ target: String(parent), before: before ? String(before) : undefined }).then(() => {
           source.move(target, where);
         });
       },
@@ -117,7 +118,7 @@ window.cmsTreeInit = async (json) => {
   cms.Tree.addPage = (name) => {
     let parent = cms.Tree.activeNode;
     parent.expand(1);
-    $fn("page::createChild")(parent.data.key, name).run((child) => {
+    apt.cms.node(parent.data.key).children.post({ title: name }).then((child) => {
       if (!child) return false;
       let node = parent.addChild(
         child,
@@ -161,7 +162,7 @@ window.cmsTreeInit = async (json) => {
     };
     editInput[0].onblur = (e) => {
       var title = editInput.val();
-      $fn("cms::setTxt")(node.data.title_id, title).run(() => {
+      apt.cms.txt(node.data.title_id).put({ value: title }).then(() => {
         node.setTitle(title);
       });
       $widget.bind();
@@ -172,7 +173,7 @@ window.cmsTreeInit = async (json) => {
   cms.Tree.goTo = (pid) => {
     pid = pid + "";
     //var node = cms.Tree.getNodeByKey(pid);
-    $fn("cms::getTree")(0, {
+    apt.cms.tree.get({
       "in": pid,
       filter: cms.panel.data.tree_show_c ? "*" : "p",
     }).then((json) => {
@@ -204,40 +205,34 @@ window.cmsTreeInit = async (json) => {
 };
 
 /* server listener */
-$fn.on("page::onlineStart page::onlineEnd page::setPublic", (e) => {
+apt.on("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:id/access", ({ id }) => {
   if (!cms.Tree) return;
-  var pid = e.arguments[0];
-  var node = cms.Tree.getNodeByKey(pid + "");
+  const node = cms.Tree.getNodeByKey(id);
   if (!node) return;
-  $fn("cms::toJSON")(pid).then((data) => {
+  apt.cms.node(id).get().then((data) => {
     data.key = "" + data.key;
     node.data = data;
     node.render();
   });
-  node.data.isLazy && node.reloadChildren(() => {
-    cms.Tree.activateKey(pid + "");
-  });
+  node.data.isLazy && node.reloadChildren(() => cms.Tree.activateKey(id));
 });
-$fn.on("page::setVisible", (e) => {
+apt.on("PUT cms/node/:id/visible", ({ id, input }) => {
   if (!cms.Tree) return;
-  var node = cms.Tree.getNodeByKey(e.arguments[0] + "");
+  const node = cms.Tree.getNodeByKey(id);
   if (!node) return;
-  node.data.visible = e.arguments[1];
+  node.data.visible = input?.value;
   node.render();
 });
-$fn.on("page::insertBefore", (e) => {
+apt.on("PUT cms/node/:id/position", ({ id }) => {
   if (!cms.Tree) return;
-  var pid = e.arguments[1];
-  cms.Tree.goTo(pid);
+  cms.Tree.goTo(id);
 });
-$fn.on("page::remove", (e) => {
+apt.on("DELETE cms/node/:id", ({ id }) => {
   if (!cms.Tree) return;
-  var pid = e.arguments[0];
-  var node = cms.Tree.getNodeByKey(pid + "");
+  const node = cms.Tree.getNodeByKey(id);
   if (!node) return;
   if (cms.Tree.activeNode === node) {
-    var nextActive = node.getPrevSibling() || node.getNextSibling() ||
-      node.parent;
+    const nextActive = node.getPrevSibling() || node.getNextSibling() || node.parent;
     nextActive && nextActive.activate();
   }
   node.remove();

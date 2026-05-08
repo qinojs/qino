@@ -171,7 +171,11 @@ export async function invoke(tree: Tree, method: string, path: string, rawParams
   for (const key of ["input", "query"] as const) {
     const schema = verb[key];
     if (!schema) continue;
-    Object.assign(params, validate(schema, pick(rawParams, Object.keys(schema.shape ?? {})), key));
+    const picked = pick(rawParams, Object.keys(schema.shape ?? {}));
+    for (const [k, fieldSchema] of Object.entries(schema.shape ?? {})) {
+      if (k in picked) picked[k] = coerce(picked[k], fieldSchema as Schema);
+    }
+    Object.assign(params, validate(schema, picked, key));
   }
 
   const result = await verb.execute(params, ctx);
@@ -189,6 +193,7 @@ function decodeSegment(s: string): string {
 }
 
 function coerce(raw: unknown, schema: Schema): unknown {
+  if (raw == null) return raw;
   const kind = schema.kind === "optional" ? schema.inner?.kind : schema.kind;
   if (kind === "number") { const n = Number(raw); return typeof raw === "number" || Number.isNaN(n) ? raw : n; }
   if (kind === "boolean") return raw === "true" || raw === "1" || raw === true;

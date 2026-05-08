@@ -1,4 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+import { apt } from '../../../core/js/apt.js';
 
 const dragOver = function(e) {
 	const el = e.target.closest('[cmstxt][contenteditable]');
@@ -37,11 +38,11 @@ const drop = async function(e) {
 	if (fileUrl.match(location.host)) {
 		const intern = fileUrl.match(/dbFile\/([0-9]+)\//)[1];
 		if (intern) {
-			$fn('page::FileAdd')(pid, intern).run();
+			apt.cms.node(pid).files.post({ file: intern });
 			return;
 		}
 	}
-	const res = await $fn('page::FileAdd')(pid, fileUrl);
+	const res = await apt.cms.node(pid).files.post({ file: fileUrl });
 	if (!fileUrl.match(/(jpg|jpeg|gif|png)$/i)) return;
 	const img = document.createElement('img');
 	img.src = res.url+'/'+res.name;
@@ -111,7 +112,7 @@ root.addEventListener('drop', e=>{
 	e.stopPropagation();
 	e.preventDefault();
 	const dt = new q9DataTransfer(e.dataTransfer);
-	function complete() { $fn('page::reload')(pid).run(); }
+	function complete() { apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; }); }
 	if (dt.files.length) {
 		let hasOne = false;
 		for (let i=0, file; file=dt.files[i++];) {
@@ -126,9 +127,9 @@ root.addEventListener('drop', e=>{
 	if (fileUrl.match(location.host)) {
 		const match = fileUrl.match(/dbFile\/([0-9]+)\//);
 		if (match) {
-			$fn('page::FileAdd')(pid, match[1]).run(complete);
+			apt.cms.node(pid).files.post({ file: match[1] }).then(complete);
 			return;
 		}
 	}
-	$fn('page::FileAdd')(pid, fileUrl).run(complete);
+	apt.cms.node(pid).files.post({ file: fileUrl }).then(complete);
 });

@@ -11,7 +11,6 @@ import { createSettingItem } from "./lib/SettingItem.ts";
 import { DbTextManager } from "./lib/DbTextManager.ts";
 import { ModuleManager, type ModuleExports } from "./lib/ModuleManager.ts";
 import { LangManager } from "./lib/LangManager.ts";
-import { listen as siListen } from "./lib/serverInterface.ts";
 import { toHono, client, type Tree } from "./lib/apt.ts";
 import { initClient, initLog, touchSession } from "./lib/init.ts";
 import { Auth } from "./lib/Auth.ts";
@@ -156,7 +155,6 @@ export class App {
 
     private async handleAppRequest(ctx: RequestContext): Promise<void> {
         await this.fire("action", { ctx });
-        await siListen(ctx);
         await this.fire("render", { ctx });
         if (ctx.hasHtml) ctx.responseBody = ctx.html.render();
     }

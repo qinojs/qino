@@ -54,43 +54,24 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 \t\t<tbody data-part=list>
 \t\t\t${listHtml}
 \t</table>
-\t<script>
-\ttoggleVisible = function(el, pid) {
-\t\tvar callb = function() {
-\t\t\tif (el.style.color === 'green') {
-\t\t\t\tel.innerHTML = 'unsichtbar'; el.style.color = 'red';
-\t\t\t} else {
-\t\t\t\tel.innerHTML = 'sichtbar'; el.style.color = 'green';
-\t\t\t}
-\t\t}
-\t\tvar v = el.style.color === 'green' ? 0 : 1;
-\t\t$fn('page::setVisible')(pid, v).run(callb);
+\t<script type=module>
+\timport { apt } from '${ctx.sysURL}core/js/apt.js';
+\tfunction toggle(el, labels, fn) {
+\t\tconst on = el.style.color === 'green';
+\t\tfn(!on).then(() => { el.innerHTML = labels[+!on]; el.style.color = !on ? 'green' : 'red'; });
 \t\treturn false;
 \t}
-\ttoggleSearchable = function(el, pid) {
-\t\tvar callb = function() {
-\t\t\tif (el.style.color === 'green') {
-\t\t\t\tel.innerHTML = 'nicht durchsuchbar'; el.style.color = 'red';
-\t\t\t} else {
-\t\t\t\tel.innerHTML = 'durchsuchbar'; el.style.color = 'green';
-\t\t\t}
-\t\t}
-\t\tv = el.style.color === 'green' ? 0 : 1;
-\t\t$fn('page::setSearchable')(pid, v).run(callb);
-\t\treturn false;
-\t}
-\ttoggleAccess = function(el, pid) {
-\t\tvar callb = function() {
-\t\t\tif (el.style.color === 'green') {
-\t\t\t\tel.innerHTML = 'private'; el.style.color = 'red';
-\t\t\t} else {
-\t\t\t\tel.innerHTML = 'public'; el.style.color = 'green';
-\t\t\t}
-\t\t}
-\t\tv = el.style.color === 'green' ? 0 : 1;
-\t\t$fn('page::setPublic')(pid, v).run(callb);
-\t\treturn false;
-\t}
+\tglobalThis.toggleVisible    = (el, pid) => toggle(el, ['unsichtbar','sichtbar'],            v => apt.cms.node(pid).visible.put({value: v}));
+\tglobalThis.toggleSearchable = (el, pid) => toggle(el, ['nicht durchsuchbar','durchsuchbar'], v => apt.cms.node(pid).searchable.put({value: v}));
+\tglobalThis.toggleAccess     = (el, pid) => toggle(el, ['private','public'],                  v => apt.cms.node(pid).access.put({value: +v}));
+\tdocument.querySelector('.cmsBeTree').addEventListener('click', async e => {
+\t\tconst a = e.target.closest('[data-toggle-node]');
+\t\tif (!a) return;
+\t\te.preventDefault();
+\t\tconst nid = a.dataset.toggleNode, id = a.dataset.toggleId, val = a.dataset.toggleValue;
+\t\tconst html = await apt.cms.node(nid).html.part('list').get({ vars: { toggleOpen: id, value: val } });
+\t\ta.closest('tbody[data-part=list]').innerHTML = html;
+\t});
 \t</script>
 </div>`;
 }

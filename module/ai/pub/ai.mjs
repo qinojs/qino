@@ -1,5 +1,7 @@
+import { apt } from '../../core/js/apt.js';
+
 async function chatCompletion(data) {
-    const response = await $fn('ai::chatCompletions')(data);
+    const response = await apt.ai['chat-completions'].post({ data });
     return response.choices[0].message.content;
 }
 

@@ -28,7 +28,7 @@ export default async function (node: Node): Promise<string> {
   }
   </style>
   ${hee(textPrio)}:<br>
-  <input type=range min=0 max=1 step=.1 value=${prioVal} onchange="$fn('page::setDefault')(${node},{_seo_priority:this.value})">
+  <input type=range min=0 max=1 step=.1 value=${prioVal} data-pid=${node} class=-seo-prio>
   <br>
 </div>`;
 }

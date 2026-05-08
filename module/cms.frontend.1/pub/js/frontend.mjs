@@ -12,6 +12,7 @@ import './contextMenu.mjs?qgUniq=01e9d3f';
 import './ddConts.mjs?qgUniq=7e085d8';
 import './dropPasteHelper.mjs?qgUniq=81e42cf';
 import './dropPaste.mjs?qgUniq=c40292d';
+import { apt } from '../../../core/js/apt.js';
 
 cms.frontend1 = { // only used by clipboard
 	c1UseSrc: sysURL+'cms.frontend.1/pub/js/frontend1',
@@ -99,12 +100,13 @@ cms.cont.prototype = {
 		});
 		cms.cont.trigger('upload', event);
 	},
-	addPosition(){
-		$fn('page::getWithHead')(this.id).run(loadCallback);
+	async addPosition(){
+		const res = await apt.cms.node(this.id).html.get();
+		loadCallback({ html: res });
 	}
 };
 cms.cont.all = {};
-cms.cont.add = mod => $fn('page::addContent')(Page, mod).run(loadCallback);
+cms.cont.add = mod => apt.cms.node(Page).contents.post({ module: mod }).then(loadCallback);
 
 function loadCallback(res){
 	setTimeout(()=>{ // html possibility has content-script that needs header-script to be executed first
@@ -173,10 +175,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 		p.moving = null;
 		el.classList.remove('-moving');
 		if (!cms.el.pid(el.parentNode)) { // trash
-			$fn('page::remove')(cms.el.pid(el));
+			apt.cms.node(cms.el.pid(el)).delete();
 		} else {
-			let next = el.nextElementSibling ? cms.el.pid(el.nextElementSibling) : null; // next '.qgCmsCont'?
-			$fn('page::insertBefore')(cms.el.pid(el.parentNode), cms.el.pid(el), next).setInitiator('cms.dnd');
+			const next = el.nextElementSibling ? cms.el.pid(el.nextElementSibling) : null;
+			apt.cms.node(cms.el.pid(el)).position.put({ target: String(cms.el.pid(el.parentNode)), before: next ? String(next) : undefined });
 		}
 		trash.classList.remove('-dropTarget');
 	})
@@ -185,8 +187,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 	function move(e) {
 		if (e.ctrlKey) {
 			const pid = cms.el.pid(ddEl);
-			$fn('page::copy')(pid).run(ret=>{
-				cms.cont(ret).addPosition();
+			apt.cms.node(pid).copy.post().then(({ id }) => {
+				cms.cont(id).addPosition();
 			});
 		} else {
 			if (Math.max( Math.abs(startX-e.clientX), Math.abs(startY-e.clientY) ) < 6) return;
@@ -229,7 +231,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	});
 	cms.contPos.on('unmark', () => menu.style.display = 'none' );
 	setTimeout(() => document.activeElement.blur());
-	window.cmsClipboard && cms.frontend1.c1Use('clipboard', fn=>fn(cmsClipboard));
+	window.cmsClipboard && import(sysURL+'cms.frontend.1/pub/js/frontend1/clipboard.mjs').then(()=>cms.frontend1.clipboard(cmsClipboard));
 });
 
 cms.console = {
@@ -275,13 +277,21 @@ cms.frontend1.dialog = (title,body,buttons)=>{
 	})
 };
 
-$fn.on('page::insertBefore', function(e) {
-	if (e.initiator === 'cms.dnd') return;
-	if (e.arguments[1] == window.Page) {
-		$fn('page::reload')(e.arguments[1]);
+apt.on('PUT cms/txt/:id', ({ value }) => {
+	if (value?.changed) cms.console.show('Der Text wurde gespeichert.', 'info');
+});
+
+apt.on('PUT cms/node/:id/position', async ({ id }) => {
+	if (parseInt(id) == window.Page) {
+		const res = await apt.cms.node(id).html.get();
+		document.querySelector('.-pid' + id).outerHTML = res;
 	} else {
-		var els = document.querySelectorAll('.-pid'+e.arguments[1]);
-		for (var i=0,el; el=els[i++];) el.parentNode.removeChild(el);
-		$fn('page::reload')(e.arguments[0]);
+		document.querySelectorAll('.-pid' + id).forEach(el => el.remove());
+		const parent = document.querySelector('.-pid' + id)?.closest('.qgCmsPage');
+		if (parent) {
+			const pid = cms.el.pid(parent);
+			const res = await apt.cms.node(pid).html.get();
+			document.querySelector('.-pid' + pid).outerHTML = res;
+		}
 	}
 });

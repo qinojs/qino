@@ -2,16 +2,7 @@
 import { HTTPException } from "../../deps.ts";
 import { getCtx } from "../core/lib/context.ts";
 
-// // ─── REST helper ──────────────────────────────────────────────────────────────
-
-// async function resolvePage(c: Context, minAccess = 1): Promise<any> {
-//     const page = await getCtx().app.cms.page(c.req.param("id"));
-//     if (!await page.is()) throw new HTTPException(404, { message: "Page not found" });
-//     if (await page.access() < minAccess) throw new HTTPException(403, { message: "Forbidden" });
-//     return page;
-// }
-
-// ─── Shared business logic (used by REST + serverInterface shim) ──────────────
+// ─── business logic used by REST ──────────────
 
 export async function nodeToJson(pid: any, type = "*"): Promise<any> {
     const app = getCtx().app.cms;

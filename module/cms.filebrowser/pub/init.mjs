@@ -1,4 +1,4 @@
-// add files
+import { apt } from '../../core/js/apt.js';
 'use strict';
 c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
     let newButton = c1.dom.fragment('<button>auswählen').firstChild;
@@ -6,11 +6,11 @@ c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
     newButton.addEventListener('click', async e => {
         const fB = new cms.fileBrowser({multiple:true});
         fB.show();
-        fB.on('select',e=>{
-            var pid = cms.cont.active || Page;
-            e.dbFiles.forEach(id => $fn('page::FileAdd')(pid,id));
-            e.urls.forEach(url => $fn('page::FileAdd')(pid,url));
-            $fn('page::reload')(pid);
+        fB.on('select', async e=>{
+            const pid = cms.cont.active || Page;
+            for (const id of e.dbFiles) await apt.cms.node(pid).files.post({ file: String(id) });
+            for (const url of e.urls) await apt.cms.node(pid).files.post({ file: url });
+            apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
         });
     });
     el.style.display = 'none';
@@ -23,12 +23,12 @@ c1.onElement('.qgCmsFileManager .-preview', el=>{
         const replace = e.target.closest('tr').getAttribute('itemid');
         const fB = new cms.fileBrowser({multiple:false,local:1});
         fB.show();
-        fB.on('select',e=>{
-            var pid = cms.cont.active || Page;
-            var item = e.dbFiles[0] || e.urls[0];
+        fB.on('select', async e=>{
+            const pid = cms.cont.active || Page;
+            const item = e.dbFiles[0] || e.urls[0];
             if (item) {
-                $fn('page::FileAdd')(pid, item, replace);
-                $fn('page::reload')(pid);
+                await apt.cms.node(pid).files.post({ file: String(item), replace });
+                apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
             }
             if (e.files) {
                 cms.cont(pid).upload(e.files[0], function(){
@@ -150,7 +150,7 @@ cms.fileBrowser = class {
 
         var search = needle=>{
             c1.loading.mark(list);
-            $fn('cms_filebrowser::search')(needle).then(result=>{
+            apt['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result=>{
                 c1.loading.done(list);
 
                 let has = {};

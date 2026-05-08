@@ -1,4 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+import { apt } from '../../core/js/apt.js';
 cms.contextMenueContent.addItem('Veröffentlichen', {
 	icon: sysURL+'cms.versions/pub/check.png',
 	selector: '.qgCmsCont',
@@ -12,7 +13,7 @@ cms.contextMenueContent.addItem('Veröffentlichen', {
 });
 function publish(pid, subPages){
 	if (!confirm('Möchten Sie die aktuelle Live-Version wirklich überschreiben?')) return;
-	$fn('cms_vers::publishCont')(pid, {toSpace:0, subPages}).run(function(){
+	apt['cms.versions']['publish-cont'].post({ pid, options: {toSpace:0, subPages} }).then(function(){
 		location.href = location.href.replace(/#.*$/,'');
 	});
 }
@@ -76,7 +77,7 @@ el.querySelector('.-versionPublish').addEventListener('click',function(){
 el.querySelector('.-versionUnPublish').addEventListener('click',function(){
 	let subPages = this.parentNode.querySelector('.-subPages').checked;
 	if (!confirm("Achtung! \nMöchten Sie den Entwurf wirklich überschreiben?")) return;
-	$fn('cms_vers::publishCont')(Page, {toSpace:1, fromSpace:0, subPages}).run(()=>{
+	apt['cms.versions']['publish-cont'].post({ pid: Page, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
 		location.href = location.href.replace(/#.*$/,'');
 	});
 });

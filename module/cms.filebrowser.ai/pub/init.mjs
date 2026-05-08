@@ -1,3 +1,5 @@
+import { apt } from '../../core/js/apt.js';
+
 c1.onElement('.cmsFileBrowser', el => {
     const mainList = el.c1Find('.-list.-main');
     const container = c1.dom.fragment(
@@ -20,7 +22,7 @@ c1.onElement('.cmsFileBrowser', el => {
         if (!prompt) return;
         list.innerHTML = 'Generating…';
         try {
-            const res = await $fn('ai::imageGenerations')({ prompt });
+            const res = await apt.ai['image-generations'].post({ data: { prompt } });
             list.innerHTML = '';
             const urls = res?.data?.map(i => i.url) ?? [];
             if (!urls.length) urls.push('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt));

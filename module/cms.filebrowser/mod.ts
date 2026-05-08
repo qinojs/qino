@@ -3,7 +3,6 @@
 
 import { getCtx } from "../core/lib/context.ts";
 import { s } from "../core/lib/schema.ts";
-import { serverInterface } from "../core/lib/serverInterface.ts";
 import type { Tree } from "../core/lib/apt.ts";
 import type { App } from "../core/server.ts";
 
@@ -16,7 +15,7 @@ export function init(app: App) {
     app.on("cms-ready", ({ ctx }: any) => {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.state.editmode) return;
-        ctx.html.addJSFile(ctx.sysURL + "cms.filebrowser/pub/init.js");
+        ctx.html.addJSM(ctx.sysURL + "cms.filebrowser/pub/init.mjs");
     });
 
     app.on("dbFile::access2", async (e: any) => {
@@ -116,8 +115,3 @@ export const api: Tree = {
     },
 };
 
-serverInterface.cms_filebrowser = { // legacy
-    search(needle: string): Promise<any[]> {
-        return this.ctx.app.apt["cms.filebrowser"].search.get({ s: needle });
-    },
-};

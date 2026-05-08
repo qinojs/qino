@@ -9,7 +9,6 @@ import type { Node } from "../../cms/lib/Node.ts";
 export async function list(node: Node, { ctx, vars }: any): Promise<string> {
   ctx ??= getCtx();
 
-  // Handle toggleOpen from $fn('page::loadPart')(..., {toggleOpen: id, value: v})
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
     const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
@@ -58,7 +57,7 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
       let toggleBtn = '<span class=-toggle></span>';
       if (hasChildren) {
         const cls = open ? "-minus" : "-plus";
-        toggleBtn = `<a class="-toggle ${hee(cls)}" onclick="$fn('page::loadPart')(${node.id},'list',{toggleOpen:${SubPage.id},value:${open ? 0 : 1}}).run()"></a>`;
+        toggleBtn = `<a class="-toggle ${hee(cls)}" data-toggle-node="${node.id}" data-toggle-id="${SubPage.id}" data-toggle-value="${open ? 0 : 1}"></a>`;
       }
 
       // Title cell

@@ -218,10 +218,10 @@ a[cmstxt][contenteditable]:empty, span[cmstxt][contenteditable]:empty { display:
 :hover [cmstxt][contenteditable] { min-height:.8em; min-width:1em; }
 :hover :not(.qgCmsCont)[cmstxt][contenteditable] 	   { outline:1px solid rgba(255,50,0,.3); }
 :hover :not(.qgCmsCont)[cmstxt][contenteditable]:hover { outline:1px solid rgba(255,50,0,.5); }
-:hover :not(.qgCmsCont)[cmstxt][contenteditable]:focus { outline:1px solid rgba(255,50,0,.8); }
+:hover :not(.qgCmsCont)[cmstxt][contenteditable]:focus { outline:2px solid rgba(255,50,0,.8); }
 :hover .qgCmsCont[cmstxt][contenteditable]       { box-shadow:0 0 0 1px rgba(255,50,0,.3); }
 :hover .qgCmsCont[cmstxt][contenteditable]:hover { box-shadow:0 0 0 1px rgba(255,50,0,.5); }
-:hover .qgCmsCont[cmstxt][contenteditable]:focus { box-shadow:0 0 0 1px rgba(255,50,0,.8); }
+:hover .qgCmsCont[cmstxt][contenteditable]:focus { box-shadow:0 0 0 2px rgba(255,50,0,.8); }
 
 
 /* text-fields placeholder */

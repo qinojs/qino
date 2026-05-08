@@ -1,4 +1,4 @@
-import { createAptClient } from "./apt-client.mjs";
+import { apt } from "./apt.js";
 
 const opened = new Set();
 const itemJsBase = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.0/";
@@ -45,7 +45,6 @@ function joinPath(parts) {
   return splitPath(parts).join("/");
 }
 
-const apt = globalThis.apt ?? createAptClient();
 
 function settingsApi(source, schema = false) {
   const name = schema ? "settings-schema" : "settings";
@@ -55,14 +54,14 @@ function settingsApi(source, schema = false) {
 }
 
 async function apiGet(source, path, schema = false) {
-  const fullPath = joinPath([...splitPath(source.path), ...splitPath(path)]);
-  const body = fullPath ? { path: fullPath } : {};
+  const fullPath = [...splitPath(source.path), ...splitPath(path)];
+  const body = fullPath.length ? { path: fullPath } : {};
   return await settingsApi(source, schema).get(body);
 }
 
 async function apiWrite(method, source, path, value) {
   const body = {
-    path: joinPath([...splitPath(source.path), ...splitPath(path)]),
+    path: [...splitPath(source.path), ...splitPath(path)],
     value,
   };
   const write = method === "DELETE" ? "delete" : method.toLowerCase();

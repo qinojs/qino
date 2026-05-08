@@ -1,6 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 //import '../../cms.frontend.1/pub/js/contextMenu.mjs?qgUniq=01e9d3f';
 import '../../cms.frontend.1/pub/js/frontend.mjs?qgUniq=19aae46';
+import { apt } from '../../core/js/apt.js';
 
 var css =
 ' '+
@@ -147,7 +148,7 @@ CmsVersViewer.prototype = {
 		this.container.style.pointerEvents = 'none';
 		setTimeout(()=> { this.container.style.pointerEvents = ''; } ,900)
 		body.style.overflow = htmlEl.style.overflow = 'hidden';
-		$fn('cms_vers::getForPage')(pid).then(rows=>{
+		apt['cms.versions'].page(pid).get().then(rows=>{
 			var activeRow = null;
 			this.container.c1Find('.-list').innerHTML = '';
 			rows.forEach(row=>{
@@ -238,7 +239,7 @@ Viewer.on('before-load',function(e){
 	top = Math.min(top, window.innerHeight - 260);
 	more.style.transform = 'translateY('+top+'px)';
 	more.c1Find('.-txt').innerHTML = 'please wait...';
-	$fn('cms_vers::logDetails')(e.vers).run(function(data){
+	apt['cms.versions'].log(e.vers).get().then(function(data){
 		var date = new Date(data.time * 1000);
 		var str = '';
 		for (let msg of data.messages) {
@@ -253,7 +254,7 @@ Viewer.on('before-load',function(e){
 	});
 	more.c1Find('.-reactivate').onclick = function(){
 		body.style.opacity = 0.3;
-		$fn('cms_vers::publishCont')(Viewer.pid, {fromLog:e.vers+1}).run(function(){
+		apt['cms.versions']['publish-cont'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(function(){
 			location.href = location.href.replace(/#.*$/,'');
 		});
 	};

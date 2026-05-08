@@ -4,7 +4,6 @@
  */
 // deno-lint-ignore-file no-explicit-any
 
-import "./serverInterface.ts";
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { RedirectError } from "./lib/util.ts";

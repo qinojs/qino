@@ -5,7 +5,6 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { serverInterface, call } from "../core/lib/serverInterface.ts";
 import type { App } from "../core/server.ts";
 import type { Tree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
@@ -57,7 +56,7 @@ const cmsTextService: any = {
 
     async textAccess(text_id: any): Promise<boolean> {
         text_id = parseInt(String(text_id));
-        const pid = await call("cms::pidFromTxtId", [text_id]);
+        const pid = await this.ctx.app.apt.cms["pid-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
         const P = await this.ctx.app.cms.node(pid);
         if ((await P.access()) < 2) return false;
@@ -314,26 +313,6 @@ export const api: Tree = {
     },
 };
 
-serverInterface.cms_text = {
-    get(txt_id: any): Promise<any> {
-        return this.ctx.app.apt["cms.text"].text(txt_id).get();
-    },
-    translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
-        return this.ctx.app.apt["cms.text"].text(txt_id).translate.post({ target_lang, source_lang });
-    },
-    translatePageAllLangs(pid: any, ifNeeded: boolean, subpages: boolean): Promise<void> {
-        return this.ctx.app.apt["cms.text"].page(pid)["translate-all-langs"].post({ ifNeeded, subpages });
-    },
-    translatePage(pid: any, target_lang: string, source_lang = "auto", ifNeeded = true, subpages = false): Promise<any> {
-        return this.ctx.app.apt["cms.text"].page(pid).translate.post({ target_lang, source_lang, ifNeeded, subpages });
-    },
-    history(txt_id: any, lang: string): Promise<any> {
-        return this.ctx.app.apt["cms.text"].text(txt_id).history.get({ lang });
-    },
-    isTranslated(txt_id: any, lang: any): Promise<any> {
-        return this.ctx.app.apt["cms.text"].text(txt_id)["is-translated"].get({ lang: lang ?? undefined });
-    },
-};
 
 /**
  * cms.text install()

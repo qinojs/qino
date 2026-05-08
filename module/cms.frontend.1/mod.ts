@@ -3,7 +3,6 @@
  * Port of cms.frontend.1/qg.php
  */
 
-import "./serverInterface.ts";
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/context.ts";
 import type { App } from "../core/server.ts";
@@ -184,7 +183,7 @@ export function init(app: App) {
       ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/browserCheck.js");
       ctx.html.addJSFile(ctx.sysURL + "core/js/qg.js");
       ctx.html.addJSFile(ctx.sysURL + "core/js/c1/onElement.js");
-      ctx.html.addJSFile(ctx.sysURL + "cms/pub/js/cms.js");
+      ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
       ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery.js");
       ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery/ui.js");
       ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery/fn/dynatree.js");

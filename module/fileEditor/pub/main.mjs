@@ -1,3 +1,4 @@
+import { apt } from '../../core/js/apt.js';
 const btn = document.getElementById('saveButton');
 const editorEl = document.getElementById('editor');
 const mime   = editorEl.getAttribute('mime');
@@ -7,7 +8,7 @@ const cmCol  = editorEl.getAttribute('col')-1;
 
 function saveFile(content){
 	btn.style.backgroundColor = '#fea';
-	$fn('fileEditor::save')(file, content).run(function(asw){
+	apt.fileEditor.save.put({ file, content }).then(function(asw){
 		if (asw) {
 			btn.style.backgroundColor = '';
 			btn.style.display = 'none';

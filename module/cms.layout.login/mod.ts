@@ -11,7 +11,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addJSFile(ctx.sysURL + "core/js/c1.js");
   ctx.html.addJSFile(ctx.sysURL + "core/js/c1/onElement.js");
   ctx.html.addJSFile(ctx.sysURL + "core/js/c1/dom.js");
-  ctx.html.addJSFile(ctx.sysURL + "cms/pub/js/cms.js");
+  ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
   ctx.html.addJSFile(ctx.sysURL + "core/js/qg.js");
 
   ctx.html.meta["viewport"] = "width=device-width";

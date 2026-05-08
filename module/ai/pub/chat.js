@@ -1,3 +1,5 @@
+import { apt } from '../../core/js/apt.js';
+
 class AiChat extends HTMLElement {
   static observedAttributes = ['bot'];
 
@@ -62,7 +64,7 @@ class AiChat extends HTMLElement {
     loading.classList.add('loading');
 
     try {
-      const response = await $fn('ai::chatSession')({ bot: this.#bot, messages: this.#history, context: this.#context });
+      const response = await apt.ai['chat-session'].post({ data: { bot: this.#bot, messages: this.#history, context: this.#context } });
       const content = typeof response === 'string' ? response : (response.response ?? response.error ?? 'Error');
       loading.textContent = content;
       loading.classList.remove('loading');

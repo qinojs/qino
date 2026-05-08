@@ -9,7 +9,6 @@ import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
 import { OutputError } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/context.ts";
-import { serverInterface } from "../core/lib/serverInterface.ts";
 import type { Tree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/schema.ts";
 import codemirrorView from "./view/codemirror.ts";
@@ -48,17 +47,11 @@ const api: Tree = {
 export function init(app: any) {
     app.aptTree.fileEditor = api;
 
-    serverInterface.fileEditor = {
-        async save(file: string, content: string): Promise<number> {
-            return this.ctx.app.apt.fileEditor.save.put({ file, content });
-        }
-    };
 
     app.on("action", async () => {
         const ctx = getCtx();
         const file = ctx.get["file"] as string;
         if (!file || !ctx.appRequestUri.startsWith("editor")) return;
-        if (ctx.post["askJSON"]) return; // serverInterface POST — siListen handles it
 
         // access check: session must have fileEditor.allow[$file] or user must be superuser
         const allowed = ctx.session.fileEditor.allow[file]();

@@ -36,8 +36,6 @@ export class DbEntry {
     }
   }
 
-  protected construct(): void {}
-
   async is(): Promise<this | false> {
     if (this.#is === null) await this.getVs();
     return this.#is ? this : false;
@@ -46,15 +44,8 @@ export class DbEntry {
   async get(n: string): Promise<any> {
     if (!this.#full) await this.getVs();
     if (n in this.#vs) return this.#vs[n];
-    return this._get(n);
-  }
-
-  protected async _get(name: string): Promise<any> {
-    if (await this.is()) {
-      console.warn(`_get "${this._T}::${name}" not implemented`);
-    } else {
-      console.warn("Entry does not exists");
-    }
+    if (await this.is()) console.warn(`_get "${this._T}::${n}" not implemented`);
+    else console.warn("Entry does not exists");
   }
 
   #fullCheck(): boolean {
@@ -101,12 +92,6 @@ export class DbEntry {
         if (this.#vs[n] !== v) this.#changed = true;
       }
     }
-    this.#vs[n] = v;
-    this.#scheduleSave();
-  }
-
-  __set(n: string, v: any): void {
-    if (n in this.#vs && this.#vs[n] !== v) this.#changed = true;
     this.#vs[n] = v;
     this.#scheduleSave();
   }

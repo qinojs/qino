@@ -1,6 +1,6 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 import { hee } from "../../../core/lib/util.ts";
-import { call } from "../../../core/lib/serverInterface.ts";
+import { cmsGetTree } from "../../../cms/apt-exports.ts";
 import { getCtx } from "../../../core/lib/context.ts";
 
 export default async function (node: Node): Promise<string> {
@@ -8,10 +8,10 @@ export default async function (node: Node): Promise<string> {
   const ctx = getCtx();
   const treeShowC = await ctx.settings["cms.frontend.1"].custom.tree_show_c;
 
-  const treeData = await call("cms::getTree", [0, {
+  const treeData = await cmsGetTree(0, {
     in: node,
     filter: treeShowC ? "*" : "p",
-  }]);
+  });
   const treeJson = hee(JSON.stringify(treeData));
 
   return `<div class="-standalone qgCmsTreeManager" style="flex:1; margin-bottom:2em" data="${treeJson}">

@@ -22,7 +22,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addJSFile(ctx.sysURL + "core/js/c1/dom.js");
   ctx.html.addJSFile(ctx.sysURL + "core/js/c1/onElement.js");
   ctx.html.addJSFile(ctx.sysURL + "core/js/qg.js");
-  ctx.html.addJSFile(ctx.sysURL + "cms/pub/js/cms.js");
+  ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
   //ctx.html.addJSFile(ctx.sysURL + "core/js/c1/loading.js");
 
   ctx.html.addCSSFile(u2Root + "css/norm/norm.css");

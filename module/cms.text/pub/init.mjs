@@ -1,6 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import '../../core/js/c1/fix/contextMenu.mjs?qgUniq=d5e4606';
 import '../../core/js/c1/contextMenu.mjs?qgUniq=11ccbd1';
+import { apt } from '../../core/js/apt.js';
 
 const activeLang = document.documentElement.lang;
 
@@ -14,7 +15,7 @@ c1.globalContextMenu.addItem('CMS Text',{
 
 let showEditor = async function(el) {
     const tid = el.getAttribute('cmstxt');
-    const data = await $fn('cms_text::get')(tid);
+    const data = await apt['cms.text'].text(tid).get();
     let dialog = document.createElement('dialog');
     dialog.className = 'qgCMS q1Rst';
     let body = '<div style="display:flex">';
@@ -54,7 +55,7 @@ let showEditor = async function(el) {
         const source_lang = btn.getAttribute('source_lang');
         const [loading] = await c1.c1Use('loading');
         const unmark = loading.mark(e.target.closest('.-language'));
-        const done = await $fn('cms_text::translate')(tid, target_lang, source_lang);
+        const done = await apt['cms.text'].text(tid).translate.post({ target_lang, source_lang });
         dialog.close();
         done ? showEditor(el) : alert('Failed');
         unmark();
@@ -62,7 +63,7 @@ let showEditor = async function(el) {
     dialog.addEventListener('click',async e=>{
         if (!e.target.classList.contains('-history')) return;
         const lang = e.target.closest('.-language').c1Find('>[cmstxt]').getAttribute('cmslang');
-        const history = await $fn('cms_text::history')(tid, lang);
+        const history = await apt['cms.text'].text(tid).history.get({ lang });
         const hDialog = document.createElement('dialog');
 
         hDialog.className = 'qgCMS q1Rst';
@@ -95,7 +96,7 @@ let showEditor = async function(el) {
             // Restore the text
             const [loading] = await c1.c1Use('loading');
             const unmark = loading.mark(historyItem);
-            const success = await $fn('cms::setTxt')(tid, textContent, lang);
+            const success = await apt.cms.txt(parseInt(tid)).put({ value: textContent, lang });
             unmark();
             
             if (success) {
@@ -129,14 +130,14 @@ setTimeout(function(){
 	c1.onElement('[cmstxt]', async el=>{
 		const id = el.getAttribute('cmstxt');
 		const lang = el.getAttribute('cmslang') || activeLang;
-		const ok = await $fn('cms_text::isTranslated')(id, lang);
+		const ok = await apt['cms.text'].text(id)['is-translated'].get({ lang });
 		if (ok) return;
 		el.classList.add('qgCMS-text-untranslated');
 	});
-	$fn.on('cms::setTxt',(data)=>{
-		const [id, txt, lang] = data['arguments'];
-		const setLang = lang || activeLang;
-		const els = document.querySelectorAll('[cmstxt="'+id+'"]')
+	apt.on('PUT cms/txt/:id', ({ id, input }) => {
+		const txt = input?.value;
+		const setLang = input?.lang || activeLang;
+		const els = document.querySelectorAll('[cmstxt="'+id+'"]');
 		for (let el of els) {
 			const elLang = el.getAttribute('cmslang') || activeLang;
 			if (setLang !== elLang) continue;
@@ -173,9 +174,9 @@ c1.onElement('.qgCmsFront1MoreManager', el=>{
         await c1.c1Use('loading');
 		let sourceLang = e.submitter.name;
         var done = c1.loading.mark(e.target);
-        const result = await $fn('cms_text::translatePage')(Page, lang, sourceLang, true, false);
-        //const result = await $fn('cms_text::translatePage')(Page, lang, 'auto', inps.if_needed.checked, inps.subpages.checked);
-        //await $fn('cms_text::translatePageAllLangs')(Page, inps.if_needed.checked, inps.subpages.checked);
+        const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
+        //const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: 'auto', ifNeeded: inps.if_needed.checked, subpages: inps.subpages.checked });
+        //await apt['cms.text'].page(Page)['translate-all-langs'].post({ ifNeeded: inps.if_needed.checked, subpages: inps.subpages.checked });
         alert('translated texts: '+result.count);
         if (result.fail) alert('not allowed on '+result.fail+' pages');
         done();

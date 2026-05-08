@@ -3,6 +3,7 @@
 if (window.cms_image2) return;
 
 
+
 const InitializedSet = new WeakSet();
 
 window.cms_image2 = {
@@ -75,10 +76,7 @@ function onIntersecting(entry) {
 
 
     // load
-    const dbf = new dbFileUrl(img.c1Image2_url);
-    dbf.set('w', roundImgSize(rect.width));
-    dbf.set('h', roundImgSize(rect.height));
-    const src = dbf.toString();
+    const src = dbFileSetSize(img.c1Image2_url, roundImgSize(rect.width), roundImgSize(rect.height));
 
     //if (src === img.__actualSrc) return;
     if (src === img.__futuerSrc) return;
@@ -156,6 +154,14 @@ const c1UglyResize = {};
     });
 }();
 
+
+function dbFileSetSize(url, w, h) {
+	const m = url.match(/(.*dbFile\/([^/]+))((?:\/[^/]+)*?)\/([^/]+)$/);
+	if (!m) return url;
+	const params = Object.fromEntries((m[3].match(/\/[^/]+/g) ?? []).map(s => s.slice(1).split('-')));
+	params.w = w; params.h = h;
+	return m[1] + Object.entries(params).map(([k,v]) => `/${k}-${v}`).join('') + '/' + m[4];
+}
 
 }();
 

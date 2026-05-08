@@ -344,10 +344,10 @@ const node = {
   access: {
     put: {
       description: "Öffentlichen Zugriff der Seite setzen.",
-      input: s.object({ value: s.number() }),
+      input: s.object({ value: s.optional(s.number()) }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 3) throw new AccessError();
-        await node.set("access", parseInt(value));
+        await node.set("access", value == null ? null : parseInt(value));
         await node.changeUser(getCtx().user, 3);
         return { public: !!value };
       },
@@ -547,34 +547,31 @@ const node = {
 
   settings: {
     get: {
-      description: "Page-Settings lesen. Optional: path=foo/bar für Unterpfad.",
-      input: s.object({ path: s.optional(s.string()) }),
+      description: "Page-Settings lesen. Optional: path=['foo','bar'] für Unterpfad.",
+      input: s.object({ path: s.optional(s.array(s.string())) }),
       execute: async ({ node, path }: any) => {
-        const sub = (path ?? "").split("/").filter(Boolean);
-        const item = node.settings[$item].sub(sub);
+        const item = node.settings[$item].sub(path ?? []);
         return readSettings(item);
       },
     },
     put: {
       description: "Page-Settings setzen.",
-      input: s.object({ path: s.optional(s.string()), value: s.any() }),
+      input: s.object({ path: s.optional(s.array(s.string())), value: s.any() }),
       execute: async ({ node, path, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
-        const sub = (path ?? "").split("/").filter(Boolean);
-        node.settings[$item].sub(sub).set(value);
+        node.settings[$item].sub(path ?? []).set(value);
         return { ok: true };
       },
     },
     delete: {
       description: "Page-Settings löschen.",
-      input: s.object({ path: s.string() }),
+      input: s.object({ path: s.array(s.string()) }),
       execute: async ({ node, path }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
-        const sub = (path ?? "").split("/").filter(Boolean);
-        if (!sub.length) {
+        if (!path?.length) {
           throw new ConflictError("Cannot delete page settings root");
         }
-        await node.settings[$item].sub(sub).remove();
+        await node.settings[$item].sub(path).remove();
         return { ok: true };
       },
     },
@@ -582,11 +579,10 @@ const node = {
 
   "settings-schema": {
     get: {
-      description: "Schema der Page-Settings lesen. Optional: path=foo/bar für Unterpfad.",
-      input: s.object({ path: s.optional(s.string()) }),
+      description: "Schema der Page-Settings lesen. Optional: path=['foo','bar'] für Unterpfad.",
+      input: s.object({ path: s.optional(s.array(s.string())) }),
       execute: ({ node, path }: any) => {
-        const sub = (path ?? "").split("/").filter(Boolean);
-        return node.settings[$item].sub(sub).schema ?? {};
+        return node.settings[$item].sub(path ?? []).schema ?? {};
       },
     },
   },

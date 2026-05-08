@@ -1,5 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import './../../../core/js/c1/NodeCleaner.mjs?qgUniq=c086a19';
+import { apt } from '../../../core/js/apt.js';
 
 if (!document.caretRangeFromPoint) { // polyfill for ff
     document.caretRangeFromPoint = function(x,y){
@@ -13,7 +14,7 @@ if (!document.caretRangeFromPoint) { // polyfill for ff
 const txtIds = {};
 cms.txtIdToPid = async function(tid) {
 	if (txtIds[tid]) return txtIds[tid];
-	return txtIds[tid] = await $fn('cms::pidFromTxtId')(tid);
+	return txtIds[tid] = await apt.cms['pid-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
 };
 // clean texts
 cms.txtCleanElement = function(el,tid){

@@ -181,7 +181,7 @@ async function render(node: Node): Promise<string> {
 <div class="c1-box">
   <div class="-head">Statistics</div>
   <div class="-body" data-part="statistic">
-    <button onclick="$fn('page::loadPart')(${node.id}, 'statistic')">run</button>
+    <button onclick="import('${getCtx().sysURL}core/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('statistic').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">run</button>
   </div>
 </div>`;
 

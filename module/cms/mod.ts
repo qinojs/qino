@@ -5,7 +5,6 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import "./serverInterface.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./lib/CMS.ts";
 import { migrateLegacyPageSettings } from "./lib/migrateLegacyPageSettings.ts";

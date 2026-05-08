@@ -3,6 +3,7 @@
 //import '../../../core/js/Rte/Rte.ui.items.mjs?qgUniq=6fb933c';
 
 import '../../../core/js/Rte/index.mjs?qgUniq=e1a8c3b';
+import { apt } from '../../../core/js/apt.js';
 
 let urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 let mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
@@ -82,7 +83,7 @@ Rte.ui.setItem('Link', {
 				inp.value = txt;
 				el.setAttribute('href',txt);
 			} else {
-				$fn('cms::searchPagesByTitle')(txt).run(res=>{
+				apt.cms.nodes.get({ q: txt }).then(res => {
 					if (!res[0]) return;
 					inp.value = txt;
 					inp.dispatchEvent(new Event('input'));
@@ -117,7 +118,7 @@ let externMediaDialog = async function(txtEl,medias) {
 			title:'fertigstellen',then(){
 				for (let [uri,media] of Object.entries(medias)) {
 					if (media.checked) {
-						$fn('page::FileAdd')(pid,uri).run(v=>{
+						apt.cms.node(pid).files.post({ file: uri }).then(v=>{
 							if (!v.url) return;
 							for (let el of media.els) {
 								let att = el.hasAttribute('src') ? 'src' : 'href';

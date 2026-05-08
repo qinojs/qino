@@ -1,6 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import "../../../core/js/SettingsEditor.mjs?qgUniq=62bf8df";
 import "./frontend.mjs?qgUniq=19aae46";
+import { apt } from "../../../core/js/apt.js";
 
 const ctxSettingsUrl = new URL(
   "../../../../api/core/ctx-settings",
@@ -31,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
       loading.mark(widgetEl);
       if (!params) params = {};
       params.pid = params.pid || cms.cont.active || Page; // neu
-      $fn("cms_frontend_1::widget")(widget, params).then((res) => {
+      apt['cms.frontend.1'].widget(widget).post({ params }).then((res) => {
         loading.done(widgetEl);
         //widgetEl.innerHTML = res; // scripts are not executed :(
         $(widgetEl).html(res);
@@ -155,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  $fn.on("page::addContent", (e) => cms.panel.set("sidebar", ""));
+  apt.on("POST cms/node/:id/contents", () => cms.panel.set("sidebar", ""));
 
   cms.cont.on("upload", (ev) => {
     cms.cont(ev.pid).showWidget("media");
@@ -176,10 +177,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  $fn.on(
-    "page::FileAdd",
-    (e) => cms.cont(e.arguments[0]).showWidget("media", true),
-  );
+  apt.on("POST cms/node/:id/files", ({ id }) => cms.cont(id).showWidget("media", true));
   cms.cont.prototype.showWidget = function (what, reload) {
     if (!reload) {
       if (
@@ -205,17 +203,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* update accordion-heads */
-  $fn.on("page::onlineStart", (e) => panel.loadWidget("access.time.head"));
-  $fn.on("page::onlineEnd", (e) => panel.loadWidget("access.time.head"));
-  $fn.on("page::setPublic", (e) => panel.loadWidget("access.grp.head"));
-  $fn.on("page::changeGroup", (e) => panel.loadWidget("access.grp.head"));
-  $fn.on("page::changeUser", (e) => panel.loadWidget("access.usr.head"));
-  $fn.on("page::FileDelete", (e) => panel.loadWidget("media.head"));
-  $fn.on("page::filesDeleteDouble", (e) => panel.loadWidget("media.head"));
-  $fn.on("page::filesDeleteAll", (e) => panel.loadWidget("media.head"));
-  $fn.on("page::filesDeleteDouble", (e) => panel.loadWidget("media.head"));
-  $fn.on("page::requestAdd", (e) => panel.loadWidget("urls.head"));
-  $fn.on("page::requestDel", (e) => panel.loadWidget("urls.head"));
+  apt.on("PUT cms/node/:id/online-start", () => panel.loadWidget("access.time.head"));
+  apt.on("PUT cms/node/:id/online-end",   () => panel.loadWidget("access.time.head"));
+  apt.on("PUT cms/node/:id/access",       () => panel.loadWidget("access.grp.head"));
+  apt.on("PUT cms/node/:id/access/groups/*", () => panel.loadWidget("access.grp.head"));
+  apt.on("PUT cms/node/:id/access/users/*",  () => panel.loadWidget("access.usr.head"));
+  apt.on("DELETE cms/node/:id/files/*",   () => panel.loadWidget("media.head"));
+  apt.on("DELETE cms/node/:id/files/doubles", () => panel.loadWidget("media.head"));
+  apt.on("DELETE cms/node/:id/files/all", () => panel.loadWidget("media.head"));
+  apt.on("POST cms/node/:id/redirects",   () => panel.loadWidget("urls.head"));
+  apt.on("DELETE cms/node/:id/redirects", () => panel.loadWidget("urls.head"));
 });
 
 c1.onElement(".qgCmsTreeManager", async (el) => {
@@ -308,7 +305,7 @@ c1.onElement(".qgCmsFileManager", async (el) => {
         const sort = Array.from(tbody.children).map((el) =>
           el.getAttribute("itemid")
         );
-        $fn("page::FilesSort")(pid, sort).run();
+        apt.cms.node(pid).files.put({ sort });
       },
     });
     tbody.addEventListener("click", (e) => {
@@ -316,9 +313,7 @@ c1.onElement(".qgCmsFileManager", async (el) => {
       if (del) {
         var tr = del.closest("tr");
         confirm("Möchten Sie die Datei wirklich löschen?") &&
-          $fn("page::FileDelete")(pid, tr.getAttribute("itemid")).run(() =>
-            tr.remove()
-          );
+          apt.cms.node(pid).files(tr.getAttribute("itemid")).delete().then(() => tr.remove());
         return;
       }
       let preview = e.target.closest(".-preview");
@@ -345,25 +340,21 @@ c1.onElement(".qgCmsFileManager", async (el) => {
     for (const file of files) cms.cont(pid).upload(file, reload, replaces);
   };
   var reload = () => {
-    $fn("page::reload")(pid);
+    apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
     cms.panel.get("widget").set("media", 1);
   };
   el.c1Find(".-addExistingFile").addEventListener(
     "select_by_pointer",
-    function () {
-      this.value && $fn("page::FileAdd")(pid, this.value).run();
-    },
+    function () { this.value && apt.cms.node(pid).files.post({ file: this.value }); },
   );
   if (el.c1Find(".-sortFilesSelect")) {
     el.c1Find(".-sortFilesSelect").addEventListener("change", function () {
-      this.value && $fn("page::filesSetOrder")(pid, this.value, "asc") &&
-        reload();
+      this.value && apt.cms.node(pid).files.order.post({ by: this.value }).then(reload);
     });
     el.c1Find(".-deleteFilesSelect").addEventListener("change", function () {
       const val = this.options[this.selectedIndex].value;
-      val === "double" && $fn("page::filesDeleteDouble")(pid) && reload();
-      val === "all" && confirm("Möchten Sie die Dateien wirklich löschen?") &&
-        $fn("page::filesDeleteAll")(pid) && reload();
+      if (val === "double") apt.cms.node(pid).files.doubles.delete().then(reload);
+      if (val === "all" && confirm("Möchten Sie die Dateien wirklich löschen?")) apt.cms.node(pid).files.all.delete().then(reload);
     });
   }
 });
@@ -389,9 +380,9 @@ c1.onElement(".qgCmsFront1ModuleManager", (el) => {
     c1.c1Use("loading", (loading) => {
       loading.mark(box);
       if (box.closest(".cmsAddModels")) {
-        $fn("page::copy")(itemid).run((ret) => {
+        apt.cms.node(itemid).copy.post().then(({ id }) => {
           cms.panel.set("sidebar", "");
-          cms.cont(ret).addPosition();
+          cms.cont(id).addPosition();
         });
       } else {
         cms.cont.add(itemid);
@@ -403,8 +394,8 @@ c1.onElement(".qgCmsFront1ModuleManager", (el) => {
 c1.onElement(".qgCmsFront1AccessGrpManager", (el) => {
   const pid = el.getAttribute("pid");
   el.c1Find(".-inherit").addEventListener("change", function () {
-    const value = this.checked ? null : this.value; // not inherit ? set it to what it was inherited
-    $fn("page::setPublic")(pid, value);
+    const value = this.checked ? null : parseInt(this.value); // not inherit ? set it to what it was inherited
+    apt.cms.node(pid).access.put({ value });
     cms.panel.get("widget").set("access.grp", 1);
   });
   const searchInp = el.c1Find(".-search");
@@ -419,10 +410,9 @@ c1.onElement(".qgCmsFront1AccessGrpManager", (el) => {
     var inp = e.target;
     if (!inp.closest('[widget="access.grp.list"]')) return;
     if (inp.name === "public") {
-      $fn("page::setPublic")(pid, inp.value).run();
+      apt.cms.node(pid).access.put({ value: parseInt(inp.value) });
     } else {
-      $fn("page::changeGroup")(pid, inp.name.replace("g_", ""), inp.value)
-        .run();
+      apt.cms.node(pid).access.groups(inp.name.replace("g_", "")).put({ access: parseInt(inp.value) });
     }
   });
 });
@@ -439,7 +429,7 @@ c1.onElement(".qgCmsFront1AccessUsrManager", (el) => {
   el.addEventListener("change", (e) => {
     var inp = e.target;
     if (!inp.closest('[widget="access.usr.list"]')) return;
-    $fn("page::changeUser")(pid, inp.name.replace("u_", ""), inp.value);
+    apt.cms.node(pid).access.users(inp.name.replace("u_", "")).put({ access: parseInt(inp.value) });
   });
 });
 c1.onElement(".qgCmsFront1AccessTimeManager", (el) => {
@@ -448,20 +438,20 @@ c1.onElement(".qgCmsFront1AccessTimeManager", (el) => {
   const inpStart = el.c1Find(".-start");
   inpStart.addEventListener("blur", () => {
     const value = inpStart.value;
-    $fn("page::onlineStart")(pid, value).run();
+    apt.cms.node(pid)["online-start"].put({ value });
     cms.panel.get("widget").set("access.time", 1);
   });
   el.c1Find(".-start_always").addEventListener("click", () => {
-    $fn("page::onlineStart")(pid, "0");
+    apt.cms.node(pid)["online-start"].put({ value: "0" });
     cms.panel.get("widget").set("access.time", 1);
   });
   const startNow = el.c1Find(".-start_now");
   startNow.addEventListener("click", () => {
-    $fn("page::onlineStart")(pid, Math.ceil(Date.now() / 1000));
+    apt.cms.node(pid)["online-start"].put({ value: String(Math.ceil(Date.now() / 1000)) });
     cms.panel.get("widget").set("access.time", 1);
   });
   el.c1Find(".-start_inherit").addEventListener("click", () => {
-    $fn("page::onlineStart")(pid, null).run();
+    apt.cms.node(pid)["online-start"].put({ value: null });
     cms.panel.get("widget").set("access.time", 1);
   });
   inpStart.style.display = inpStart.value ? "block" : "none";
@@ -470,20 +460,20 @@ c1.onElement(".qgCmsFront1AccessTimeManager", (el) => {
   const inpEnd = el.c1Find(".-end");
   inpEnd.addEventListener("blur", () => {
     const value = inpEnd.value;
-    $fn("page::onlineEnd")(pid, value).run();
+    apt.cms.node(pid)["online-end"].put({ value });
     cms.panel.get("widget").set("access.time", 1);
   });
   el.c1Find(".-end_always").addEventListener("click", () => {
-    $fn("page::onlineEnd")(pid, "0");
+    apt.cms.node(pid)["online-end"].put({ value: "0" });
     cms.panel.get("widget").set("access.time", 1);
   });
   const endNow = el.c1Find(".-end_now");
   endNow.addEventListener("click", () => {
-    $fn("page::onlineEnd")(pid, Math.ceil(Date.now() / 1000));
+    apt.cms.node(pid)["online-end"].put({ value: String(Math.ceil(Date.now() / 1000)) });
     cms.panel.get("widget").set("access.time", 1);
   });
   el.c1Find(".-end_inherit").addEventListener("click", () => {
-    $fn("page::onlineEnd")(pid, null).run();
+    apt.cms.node(pid)["online-end"].put({ value: null });
     cms.panel.get("widget").set("access.time", 1);
   });
   inpEnd.style.display = inpEnd.value ? "block" : "none";
@@ -497,16 +487,16 @@ c1.onElement(".qgCmsFront1UrlManager", (el) => {
 
     var inp = e.target.closest(".-target");
     if (inp) {
-      $fn("page::urlTargetSet")(pid, lang, inp.checked ? "_blank" : "");
+      apt.cms.node(pid).urls(lang).target.put({ value: inp.checked ? "_blank" : "" });
     }
     inp = e.target.closest(".-url");
     if (inp) {
-      $fn("page::urlCustomSet")(pid, lang, inp.value);
+      apt.cms.node(pid).urls(lang).put({ url: inp.value });
       tr.c1Find(".-custom").checked = true;
     }
     inp = e.target.closest(".-custom");
     if (inp) {
-      $fn("page::urlCustomUnset")(pid, lang).run((url) => {
+      apt.cms.node(pid).urls(lang).custom.delete().then(url => {
         tr.c1Find(".-url").value = url;
       });
     }
@@ -517,15 +507,15 @@ c1.onElement(".qgCmsFront1UrlManager", (el) => {
     const tr = del.closest("[itemid]");
     const v = tr.getAttribute("itemid");
     tr.remove();
-    $fn("page::requestDel")(pid, v).run();
+    apt.cms.node(pid).redirects.delete({ url: v });
   });
 
   var addInp = el.c1Find(".-add_inp");
   addInp.addEventListener(
     "keyup",
     function () {
-      $fn("cms::requestUsed")(this.value).then((v) => {
-        this.style.border = v ? "1px solid red" : "1px solid green";
+      apt.cms["request-used"].get({ url: this.value }).then(({ used }) => {
+        this.style.border = used ? "1px solid red" : "1px solid green";
       });
     }.c1Debounce(200),
   );
@@ -536,36 +526,36 @@ c1.onElement(".qgCmsFront1UrlManager", (el) => {
 
   function cmsRequestSet() {
     var v = addInp.value;
-    $fn("page::requestAdd")(pid, v);
+    apt.cms.node(pid).redirects.post({ url: v });
     cms.panel.get("widget").set("urls", 1);
   }
 });
 c1.onElement(".qgCmsFront1DiversManager", (el) => {
   const pid = el.getAttribute("pid");
   el.c1Find(".-visible").addEventListener("change", function () {
-    $fn("page::setVisible")(pid, this.checked);
+    apt.cms.node(pid).visible.put({ value: this.checked });
   });
   el.c1Find(".-searchable").addEventListener("change", function () {
-    $fn("page::setSearchable")(pid, this.checked);
+    apt.cms.node(pid).searchable.put({ value: this.checked });
   });
   el.c1Find(".-name").addEventListener(
     "input",
     function () {
-      $fn("page::name")(pid, this.value);
+      apt.cms.node(pid).name.put({ value: this.value });
     }.c1Debounce(400),
   );
   el.c1Find(".-name").addEventListener("change", function () {
-    $fn("page::name")(pid, this.value);
+    apt.cms.node(pid).name.put({ value: this.value });
   });
   el.c1Find(".-model").addEventListener("change", function () {
-    $fn("Setting")(this.value, this.name);
+    apt.core["ctx-settings"].put({ path: this.name, value: this.value });
     cms.panel.loadWidget("divers", { pid });
   });
   el.c1Find(".-basis").addEventListener("blur", function () {
-    this.value && $fn("page::insertBefore")(this.value, pid);
+    this.value && apt.cms.node(this.value).position.put({ target: String(pid) });
   });
   el.c1Find(".-childXML").addEventListener("change", function () {
-    $fn("page::setDefault")(pid, { "childXML": this.value });
+    apt.cms.node(pid).defaults.put({ value: { childXML: this.value } });
   });
 });
 c1.onElement(".qgCmsFront1SeoManager", (el) => {
@@ -573,10 +563,11 @@ c1.onElement(".qgCmsFront1SeoManager", (el) => {
   function checkTextarea(el) {
     el.classList[el.value.match(/^.{60,156}$/) ? "remove" : "add"]("-invalid");
   }
-  desc.addEventListener("input", function () {
-    checkTextarea(this);
-  });
+  desc.addEventListener("input", function () { checkTextarea(this); });
   checkTextarea(desc);
+  el.c1Find(".-seo-prio").addEventListener("change", function () {
+    apt.cms.node(this.dataset.pid).defaults.put({ value: { _seo_priority: this.value } });
+  });
 });
 c1.onElement(".qgCmsFront1MoreManager", (el) => {
   // feedback-formular
@@ -602,7 +593,7 @@ c1.onElement(".qgCmsFront1MoreManager", (el) => {
     var pw2 = this.c1Find("[name=new2]").value;
     if (pw2 !== pw) alert("Die Passwörter stimmen nicht überein");
     else {
-      $fn("core::changePw")({ oldpw, pw }).run((res) => {
+      apt.core.password.put({ oldpw, pw }).then((res) => {
         switch (res) {
           case 1:
             alert("Das Passwort wurde erfolgreicht geändert.");
@@ -645,11 +636,11 @@ c1.onElement(".qgCMSFron1ContManager", (el) => {
   el.c1Find(".-changemodule").addEventListener("change", function (e) {
     const val = this.options[this.selectedIndex].value;
     const type = el.getAttribute("page-type");
-    $fn("page::setModule")(pid, val).then(() => {
+    apt.cms.node(pid).module.put({ module: val }).then(() => {
       if (type === "p") location.href = location.href.replace(/#.*$/, "");
     });
     if (type !== "p") {
-      $fn("page::reload")(pid);
+      apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
       cms.panel.set("sidebar", "settings");
     }
   });
@@ -687,14 +678,10 @@ c1.onElement(".qgCmsFront1SuperuserManager", (el) => {
   });
 });
 
-addEventListener("apt:complete", (e) => {
-  const { method, path } = e.detail ?? {};
-  if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) return;
-  if (
-    path?.[0] !== "cms" || !["node", "page"].includes(path[1]) ||
-    path[3] !== "settings"
-  ) return;
-  $fn("page::reload")(parseInt(path[2], 10));
+apt.on("PUT|POST|PATCH|DELETE cms/node/:id/settings/*", async ({ id }) => {
+  const res = await apt.cms.node(id).html.get();
+  const el = document.querySelector('.-pid' + id);
+  if (el) el.outerHTML = res;
 });
 
 /* xCollection */
