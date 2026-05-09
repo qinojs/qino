@@ -107,7 +107,7 @@ window.cmsTreeInit = async (json) => {
         } else if (where === "before") {
           before = target.data.key;
         }
-        apt.cms.node(source.data.key).position.put({ target: String(parent), before: before ? String(before) : undefined }).then(() => {
+        apt.cms.node(String(parent)).insertBefore.put({ id: source.data.key, before: before ? String(before) : undefined }).then(() => {
           source.move(target, where);
         });
       },
@@ -223,9 +223,9 @@ apt.on("PUT cms/node/:id/visible", ({ params: { id }, input }) => {
   node.data.visible = input?.value;
   node.render();
 });
-apt.on("PUT cms/node/:id/position", ({ params: { id } }) => {
+apt.on("PUT cms/node/:id/insertBefore", ({ input }) => {
   if (!cms.Tree) return;
-  cms.Tree.goTo(id);
+  cms.Tree.goTo(input?.id);
 });
 apt.on("DELETE cms/node/:id", ({ params: { id } }) => {
   if (!cms.Tree) return;

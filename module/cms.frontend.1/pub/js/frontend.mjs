@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 			apt.cms.node(cms.el.pid(el)).delete();
 		} else {
 			const next = el.nextElementSibling ? cms.el.pid(el.nextElementSibling) : null;
-			apt.cms.node(cms.el.pid(el)).position.put({ target: String(cms.el.pid(el.parentNode)), before: next ? String(next) : undefined });
+			apt.cms.node(cms.el.pid(el.parentNode)).insertBefore.put({ id: String(cms.el.pid(el)), before: next ? String(next) : undefined });
 		}
 		trash.classList.remove('-dropTarget');
 	})
@@ -281,17 +281,18 @@ apt.on('PUT cms/txt/:id', ({ value }) => {
 	if (value?.changed) cms.console.show('Der Text wurde gespeichert.', 'info');
 });
 
-apt.on('PUT cms/node/:id/position', async ({ params: { id } }) => {
-	if (parseInt(id) == window.Page) {
-		const res = await apt.cms.node(id).html.get();
-		document.querySelector('.-pid' + id).outerHTML = res;
-	} else {
-		document.querySelectorAll('.-pid' + id).forEach(el => el.remove());
-		const parent = document.querySelector('.-pid' + id)?.closest('.qgCmsPage');
-		if (parent) {
-			const pid = cms.el.pid(parent);
-			const res = await apt.cms.node(pid).html.get();
-			document.querySelector('.-pid' + pid).outerHTML = res;
-		}
-	}
-});
+// apt.on('PUT cms/node/:id/position', async ({ params: { id } }) => {
+// 	return;
+// 	if (parseInt(id) == window.Page) {
+// 		const res = await apt.cms.node(id).html.get();
+// 		document.querySelector('.-pid' + id).outerHTML = res;
+// 	} else {
+// 		document.querySelectorAll('.-pid' + id).forEach(el => el.remove());
+// 		const parent = document.querySelector('.-pid' + id)?.closest('.qgCmsPage');
+// 		if (parent) {
+// 			const pid = cms.el.pid(parent);
+// 			const res = await apt.cms.node(pid).html.get();
+// 			document.querySelector('.-pid' + pid).outerHTML = res;
+// 		}
+// 	}
+// });

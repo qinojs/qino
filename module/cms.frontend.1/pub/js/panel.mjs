@@ -549,7 +549,7 @@ c1.onElement(".qgCmsFront1DiversManager", (el) => {
     cms.panel.loadWidget("divers", { pid });
   });
   el.c1Find(".-basis").addEventListener("blur", function () {
-    this.value && apt.cms.node(this.value).position.put({ target: String(pid) });
+    this.value && apt.cms.node(String(this.value)).insertBefore.put({ id: String(pid) });
   });
   el.c1Find(".-childXML").addEventListener("change", function () {
     apt.cms.node(pid).defaults.put({ value: { childXML: this.value } });
@@ -675,7 +675,7 @@ c1.onElement(".qgCmsFront1SuperuserManager", (el) => {
   });
 });
 
-apt.on("PUT|POST|PATCH|DELETE cms/node/:id/*", async ({ params: { id } }) => {
+apt.on("PUT|PATCH|DELETE cms/node/:id/*", async ({ params: { id } }) => {
   const els = document.querySelectorAll('.-pid' + id);
   if (!els.length) return;
   const res = await apt.cms.node(id).html.get();

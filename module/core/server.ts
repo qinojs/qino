@@ -63,18 +63,18 @@ export class App {
         this.languages = new LangManager(this);
         this.t         = this.languages.t;
 
-        this.router.onError((e, hc) => this.handleHonoError(hc, e));
+        this.router.onError((e, hc) => this.#handleHonoError(hc, e));
         this.router.get("/favicon.ico", () => new Response(null, { status: 204 }));
         this.router.use("*", async (_hc, next) => {
             await (this.#initPromise ??= this.modules.init());
             await next();
         });
         this.router.route("/m", this.modules.router);
-        this.router.use("*", (hc, next) => this.serveStatic(hc, next));
-        this.router.use("*", (hc, next) => this.withRequestContext(hc, next));
+        this.router.use("*", (hc, next) => this.#serveStatic(hc, next));
+        this.router.use("*", (hc, next) => this.#withRequestContext(hc, next));
         this.router.route("/dbFile", this.dbFiles.router);
         this.router.route("/api", toHono(this.aptTree));
-        this.router.use("*", (hc, next) => this.handleAppFallback(hc, next));
+        this.router.use("*", (hc, next) => this.#handleAppFallback(hc, next));
     }
 
     get fetch(): (req: Request) => Response | Promise<Response> {
@@ -91,7 +91,7 @@ export class App {
 
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
 
-    private async serveStatic(hc: Context, next: () => Promise<void>): Promise<Response | void> {
+    async #serveStatic(hc: Context, next: () => Promise<void>): Promise<Response | void> {
         const appURL = ensureSlash(basePath(hc));
         const appRequestUri = decodeURIComponent(hc.req.path.slice(appURL.length));
 
@@ -111,26 +111,26 @@ export class App {
         await next();
     }
 
-    private async withRequestContext(hc: Context, next: () => Promise<void>): Promise<Response> {
+    async #withRequestContext(hc: Context, next: () => Promise<void>): Promise<Response> {
         const [ctx, isNew] = await makeRequestContext(this, hc);
         const initialSessionToken = ctx.sessionToken;
         hc.set("ctx", ctx);
 
         return await requestStorage.run(ctx, async () => {
             try {
-                await this.initRequest(ctx);
+                await this.#initRequest(ctx);
                 if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(hc, ctx);
                 await this.fire("action", { ctx });
                 await next();
             } catch (e: unknown) {
-                this.handleError(ctx, e);
-                hc.res = await this.buildResponse(hc, ctx);
+                this.#handleError(ctx, e);
+                hc.res = await this.#buildResponse(hc, ctx);
             }
             return hc.res;
         });
     }
 
-    private async initRequest(ctx: RequestContext): Promise<void> {
+    async #initRequest(ctx: RequestContext): Promise<void> {
         await initClient(ctx);
         await Auth.listen(ctx);
         touchSession(ctx);
@@ -139,17 +139,17 @@ export class App {
         await initLog(ctx);
     }
 
-    private async handleAppFallback(hc: Context, next: () => Promise<void>): Promise<void> {
+    async #handleAppFallback(hc: Context, next: () => Promise<void>): Promise<void> {
         await next();
         const hasRoute = matchedRoutes(hc).some((route) => route.path && route.path !== basePath(hc).replace(/\/$/, "") + "/*");
         if (hc.res.status !== 404 || hasRoute) return;
         const ctx = getCtx();
         await this.fire("render", { ctx });
         if (ctx.hasHtml) ctx.responseBody = ctx.html.render();
-        hc.res = await this.buildResponse(hc, ctx);
+        hc.res = await this.#buildResponse(hc, ctx);
     }
 
-    private handleError(ctx: RequestContext, e: unknown): void {
+    #handleError(ctx: RequestContext, e: unknown): void {
         if (e instanceof AnswerError) {
             ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
             ctx.responseBody = JSON.stringify(e.data);
@@ -162,17 +162,17 @@ export class App {
         }
     }
 
-    private async handleHonoError(hc: Context, e: Error): Promise<Response> {
+    async #handleHonoError(hc: Context, e: Error): Promise<Response> {
         const ctx = requestStorage.getStore();
         if (!ctx) {
             console.error("Error:", e);
             return new Response("<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>", { status: 500 });
         }
-        this.handleError(ctx, e);
-        return await this.buildResponse(hc, ctx);
+        this.#handleError(ctx, e);
+        return await this.#buildResponse(hc, ctx);
     }
 
-    private async buildResponse(hc: Context, ctx: RequestContext): Promise<Response> {
+    async #buildResponse(hc: Context, ctx: RequestContext): Promise<Response> {
         await this.fire("respond", { ctx });
 
         const headers = new Headers(ctx.responseHeaders);

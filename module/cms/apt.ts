@@ -295,20 +295,18 @@ const node = {
     },
   },
 
-  position: {
+  insertBefore: {
     put: {
-      description: "Seite oder Inhalt verschieben (vor eine andere Node einordnen).",
-      input: s.object({ target: s.string(), before: s.optional(s.string()) }),
-      execute: async ({ node, target, before }: any) => {
-        if ((await node.access()) < 2) throw new AccessError();
-        const Target = await (getCtx().app as any).cms.node(target);
-        if ((await Target.access()) < 2) {
-          throw new AccessError("no access on target");
-        }
-        if (await node.in(Target)) {
+      description: "Node in diesen Node verschieben (vor eine andere Node einordnen). 'id' ist die zu verschiebende Node, 'before' (optional) ist die Node vor der eingefügt wird.",
+      input: s.object({ id: s.string(), before: s.optional(s.string()) }),
+      execute: async ({ node, id, before }: any) => {
+        const Child = await getCtx().app.cms.node(id);
+        if ((await Child.access()) < 2) throw new AccessError();
+        if ((await node.access()) < 2) throw new AccessError("no access on target");
+        if (await node.in(Child)) {
           throw new ConflictError("would create a loop");
         }
-        await node.insertBefore(Target, before);
+        await node.insertBefore(Child, before);
         return { ok: true };
       },
     },
@@ -554,7 +552,7 @@ const node = {
     get: {
       description: "Page-Settings lesen. Optional: path=['foo','bar'] für Unterpfad.",
       input: s.object({ path: s.optional(s.array(s.string())) }),
-      execute: async ({ node, path }: any) => {
+      execute: ({ node, path }: any) => {
         const item = node.settings[$item].sub(path ?? []);
         return readSettings(item);
       },

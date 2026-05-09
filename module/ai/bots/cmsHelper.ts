@@ -10,7 +10,7 @@ const renames: Record<string, string> = {
   setNodeSettings: "setNodeSettings",
   createNodeFiles: "addNodeFile",
   setTxt: "setInlineText",
-  setNodePosition: "moveNode",
+  putNodeInsertBefore: "moveNode",
 };
 
 const cmsTools = toTools(cmsApi, {
@@ -27,7 +27,7 @@ const cmsTools = toTools(cmsApi, {
     "/node/:node/settings": ["get", "put"],
     "/node/:node/files": ["get", "post"],
     "/node/:node/visible": ["put"],
-    "/node/:node/position": ["put"],
+    "/node/:node/insertBefore": ["put"],
   }
 }).map((t) => {
   t.name = renames[t.name] ?? t.name;

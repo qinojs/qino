@@ -183,7 +183,7 @@ export class Node {
         if (!str) str = "<div></div>";
 
         const type = this.vs.type === "c" ? "Cont" : "Page";
-        let cls = `qgCms${type} -pid${this.id} -m-${this.vs.module?.replace(/\./g, "-")}`;
+        let cls = `qgCms${type} -pid${this.id} -m-${this.module?.name.replace(/\./g, "-")}`;
 
         if (this.edit) {
             cls += " -e";

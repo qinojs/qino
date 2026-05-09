@@ -49,7 +49,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
   // Determine active page
   const activeByRenderPath = await settings["active page by renderpath"];
   //await activeByRenderPath.setType("bool");
-  let ActivePage: any;
+  let ActivePage: Node;
   if (activeByRenderPath) {
     const firstId = cms.RenderPath.values().next().value;
     const firstPage = firstId ? await cms.node(firstId) : null;
@@ -62,7 +62,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
   const startPageSetting = await settings.startPage;
   const startLevelSetting = await settings.startLevel;
 
-  let StartPage: any;
+  let StartPage: Node | undefined;
   if (startPageSetting) {
     StartPage = await cms.node(parseInt(String(startPageSetting)));
     if (!(await StartPage.is())) StartPage = await node.page();
@@ -71,7 +71,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
   }
 
   if (startLevelSetting) {
-    StartPage = await ActivePage.Parent(parseInt(String(startLevelSetting)));
+    StartPage = await ActivePage.parent(parseInt(String(startLevelSetting)));
     if (!StartPage || !(await StartPage.is())) {
       StartPage = await node.page();
     }
