@@ -28,12 +28,14 @@ export class Schema<T = unknown> {
   readonly shape?: Record<string, Schema<any>>;
   readonly inner?: Schema<any>;
   readonly defaultValue?: () => T;
+  readonly description?: string;
 
-  constructor(kind: Kind, validator: Validator<T>, extras: { shape?: Record<string, Schema<any>>; inner?: Schema<any>; defaultValue?: () => T } = {}) {
+  constructor(kind: Kind, validator: Validator<T>, extras: { shape?: Record<string, Schema<any>>; inner?: Schema<any>; defaultValue?: () => T; description?: string } = {}) {
     this.kind = kind;
     this.shape = extras.shape;
     this.inner = extras.inner;
     this.defaultValue = extras.defaultValue;
+    this.description = extras.description;
     const def = extras.defaultValue;
     this["~standard"] = {
       version: 1,
@@ -47,6 +49,16 @@ export class Schema<T = unknown> {
       shape: this.shape,
       inner: this.inner,
       defaultValue: () => value,
+      description: this.description,
+    });
+  }
+
+  describe(description: string): Schema<T> {
+    return new Schema<T>(this.kind, (v, p) => this["~standard"].validate(v) as any, {
+      shape: this.shape,
+      inner: this.inner,
+      defaultValue: this.defaultValue,
+      description,
     });
   }
 }
@@ -131,13 +143,14 @@ export type InferObject<Shape extends Record<string, Schema<any>>> =
   & { [K in OptionalKeys<Shape>]?: Infer<Shape[K]> };
 
 export function toJsonSchema(schema: Schema): Record<string, unknown> {
+  const desc = schema.description ? { description: schema.description } : {};
   switch (schema.kind) {
-    case "string":   return { type: "string" };
-    case "number":   return { type: "number" };
-    case "boolean":  return { type: "boolean" };
-    case "array":    return { type: "array", items: schema.inner ? toJsonSchema(schema.inner) : {} };
-    case "record":   return { type: "object" };
-    case "optional": return schema.inner ? toJsonSchema(schema.inner) : {};
+    case "string":   return { type: "string", ...desc };
+    case "number":   return { type: "number", ...desc };
+    case "boolean":  return { type: "boolean", ...desc };
+    case "array":    return { type: "array", items: schema.inner ? toJsonSchema(schema.inner) : {}, ...desc };
+    case "record":   return { type: "object", ...desc };
+    case "optional": return schema.inner ? { ...toJsonSchema(schema.inner), ...desc } : { ...desc };
     case "object": {
       const properties: Record<string, unknown> = {};
       const required: string[] = [];
@@ -145,8 +158,8 @@ export function toJsonSchema(schema: Schema): Record<string, unknown> {
         properties[k] = toJsonSchema(f);
         if (f.kind !== "optional" && !f.defaultValue) required.push(k);
       }
-      return { type: "object", properties, required };
+      return { type: "object", properties, required, ...desc };
     }
-    default: return {};
+    default: return { ...desc };
   }
 }

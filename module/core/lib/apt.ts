@@ -94,11 +94,9 @@ function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] = []): G
   }
 }
 
-const VERB_PREFIXES: Record<Method, string> = { get: "get", post: "create", put: "set", patch: "update", delete: "delete" };
-
 export function camelName(verb: Method, segments: string[]): string {
-  const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-  return VERB_PREFIXES[verb] + segments.filter((s) => !s.startsWith(":")).map((p) => p.split("-").map(cap).join("")).join("");
+  const parts = [verb, ...segments.filter((s) => !s.startsWith(":"))];
+  return parts.map((p) => p.replace(/[-.]([a-z])/g, (_, c) => c.toUpperCase())).join("_");
 }
 
 // ───── Setup-time checks ──────────────────────────────────────────────────
@@ -233,7 +231,7 @@ export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
 export interface Tool {
   name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  parameters?: Record<string, unknown>;
   execute(args: unknown, ctx: RequestContext): Promise<unknown>;
 }
 
@@ -262,10 +260,11 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
       }
     }
 
+    const hasParams = Object.keys(properties).length > 0;
     tools.push({
       name: r.name,
       description: r.verb.description ?? r.name,
-      parameters: { type: "object", properties, required },
+      ...(hasParams && { parameters: { type: "object", properties, required } }),
       execute: (args) => {
         const raw = (args && typeof args === "object") ? { ...args as Params } : {};
         for (let i = 0; i < r.segments.length; i++) {

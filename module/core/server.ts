@@ -91,6 +91,16 @@ export class App {
 
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
 
+    on(name: string, fn: (data: Record<string, unknown>) => void | Promise<void>): void {
+        (this.#events[name] ??= []).push(fn);
+    }
+
+    async fire(name: string, data: Record<string, unknown> = {}): Promise<void> {
+        if (!this.#events[name]) return;
+        data["event_type"] = name;
+        for (const event of this.#events[name]) await event(data);
+    }
+
     async #serveStatic(hc: Context, next: () => Promise<void>): Promise<Response | void> {
         const appURL = ensureSlash(basePath(hc));
         const appRequestUri = decodeURIComponent(hc.req.path.slice(appURL.length));
@@ -184,16 +194,6 @@ export class App {
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("X-Content-Type-Options", "nosniff");
         return hc.newResponse(body, new Response(null, { status: ctx.responseStatus, headers }));
-    }
-
-    on(name: string, fn: (data: Record<string, unknown>) => void | Promise<void>): void {
-        (this.#events[name] ??= []).push(fn);
-    }
-
-    async fire(name: string, data: Record<string, unknown> = {}): Promise<void> {
-        if (!this.#events[name]) return;
-        data["event_type"] = name;
-        for (const event of this.#events[name]) await event(data);
     }
 
 }

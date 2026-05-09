@@ -2,8 +2,10 @@
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/context.ts";
 import type { Schema } from "../core/lib/schema.ts";
+import { toJsonSchema } from "../core/lib/schema.ts";
+import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { VERBS, RESERVED, camelName } from "../core/lib/apt.ts";
+import { VERBS, RESERVED, camelName, toTools } from "../core/lib/apt.ts";
 import type { Method } from "../core/lib/apt.ts";
 
 export const name = "cms.backend.api";
@@ -76,18 +78,20 @@ function schemaText(s: Schema | undefined): string {
   }
 }
 
-// ───── Schema → JSON Schema (for playground form) ─────────────────────────
+// ───── Schema → form fields ───────────────────────────────────────────────
 
-function schemaToFields(s: Schema | undefined): Array<{ name: string; type: string; required: boolean; default?: unknown }> {
-  if (!s || s.kind !== "object" || !s.shape) return [];
-  return Object.entries(s.shape).map(([k, v]) => ({
-    name: k,
-    type: (v as Schema).kind === "optional"
-      ? ((v as Schema).inner?.kind ?? "string")
-      : (v as Schema).kind === "boolean" ? "boolean" : (v as Schema).kind === "number" ? "number" : "string",
-    required: (v as Schema).kind !== "optional" && !(v as any).defaultValue,
-    default: (v as any).defaultValue?.(),
-  }));
+function schemaToFormFields(s: Schema | undefined): string {
+  if (!s || s.kind !== "object" || !s.shape) return "";
+  return Object.entries(s.shape).map(([k, v]) => {
+    const field = v as Schema;
+    const inner = field.kind === "optional" ? field.inner ?? field : field;
+    const required = field.kind !== "optional" && !(field as any).defaultValue;
+    const jsonSchema = toJsonSchema(inner);
+    const description = (field.description ?? inner.description) as string | undefined;
+    const inputHtml = toInput({ title: description, ...jsonSchema }, { name: k, required });
+    const label = hee(k) + (required ? "" : "?");
+    return `<label class="api-field"><span>${label}</span>${inputHtml}</label>`;
+  }).join("");
 }
 
 // ───── HTML helpers ───────────────────────────────────────────────────────
@@ -100,35 +104,19 @@ const METHOD_COLORS: Record<Method, string> = {
   patch:  "#50e3c2",
 };
 
-function fieldInput(f: { name: string; type: string; required: boolean; default?: unknown }, prefix: string): string {
-  const id = hee(`${prefix}-${f.name}`);
-  const dflt = f.default !== undefined ? ` placeholder="${hee(String(f.default))}"` : "";
-  const req = f.required ? " required" : "";
-  if (f.type === "boolean") {
-    return `<label class="api-field"><span>${hee(f.name)}</span>
-      <select name="${hee(f.name)}"${req}>
-        ${f.required ? "" : '<option value="">—'}
-        <option value="true">true
-        <option value="false">false
-      </select></label>`;
-  }
-  return `<label class="api-field" id="${id}"><span>${hee(f.name)}${f.required ? "" : "?"}</span>
-    <input name="${hee(f.name)}" type="text"${dflt}${req}></label>`;
+function pathParamFields(params: string[]): string {
+  return params.map((p) =>
+    `<label class="api-field"><span>${hee(p)}</span>${toInput({ type: "string" }, { name: p, required: true })}</label>`
+  ).join("");
 }
 
-function routeHtml(r: Route, idx: number): string {
+function routeHtml(r: Route, idx: number, toolJson: string): string {
   const color = METHOD_COLORS[r.method];
-  const inputFields = schemaToFields(r.input);
-  const queryFields = schemaToFields(r.query);
-  const allPathParams = r.pathParams.map((p) => ({
-    name: p, type: "string", required: true,
-  }));
+  const paramForm = pathParamFields(r.pathParams);
+  const inputForm = schemaToFormFields(r.input);
+  const queryForm = schemaToFormFields(r.query);
 
-  const hasForm = allPathParams.length || inputFields.length || queryFields.length;
-
-  const paramForm = allPathParams.map((f) => fieldInput(f, `r${idx}-path`)).join("");
-  const inputForm = inputFields.map((f) => fieldInput(f, `r${idx}-in`)).join("");
-  const queryForm = queryFields.map((f) => fieldInput(f, `r${idx}-q`)).join("");
+  const hasForm = r.pathParams.length || !!inputForm || !!queryForm;
 
   const outputText = r.output ? schemaText(r.output) : "";
 
@@ -137,7 +125,6 @@ function routeHtml(r: Route, idx: number): string {
   <div class="api-route-head" onclick="apiToggle(${idx})">
     <span class="api-badge" style="background:${hee(color)}">${hee(r.method.toUpperCase())}</span>
     <code class="api-path">${hee(r.path)}</code>
-    <code class="api-name">${hee(r.name)}</code>
     <span class="api-desc">${hee(r.description)}</span>
     <span class="api-arrow">▶</span>
   </div>
@@ -149,15 +136,19 @@ function routeHtml(r: Route, idx: number): string {
     </div>
     ${hasForm ? `
     <form class="api-form" onsubmit="apiSubmit(event,${idx})">
-      ${allPathParams.length ? `<div class="api-section">Path params${paramForm}</div>` : ""}
-      ${inputFields.length   ? `<div class="api-section">Body${inputForm}</div>` : ""}
-      ${queryFields.length   ? `<div class="api-section">Query${queryForm}</div>` : ""}
+      ${r.pathParams.length ? `<div class="api-section">Path params${paramForm}</div>` : ""}
+      ${inputForm           ? `<div class="api-section">Body${inputForm}</div>` : ""}
+      ${queryForm           ? `<div class="api-section">Query${queryForm}</div>` : ""}
       <button type="submit">Send ▶</button>
     </form>` : `
     <form class="api-form" onsubmit="apiSubmit(event,${idx})">
       <button type="submit">Send ▶</button>
     </form>`}
     <pre class="api-result" id="api-result-${idx}" hidden></pre>
+    <div class="api-tool-section">
+      <button class="api-tool-btn" type="button" onclick="apiToolToggle(${idx})">As tool: &quot;${hee(r.name)}&quot;</button>
+      <pre class="api-tool-json" id="api-tool-${idx}" hidden>${hee(toolJson)}</pre>
+    </div>
   </div>
 </div>`;
 }
@@ -168,7 +159,11 @@ function render(): string {
   const ctx = getCtx() as any;
   const appURL: string = ctx.appURL ?? "/";
 
-  const routes = [...walk((ctx.app as any).aptTree)];
+  const aptTree = (ctx.app as any).aptTree;
+  const routes = [...walk(aptTree)];
+  const tools = toTools(aptTree);
+  const toolJsonByName = new Map(tools.map((t) => [t.name, JSON.stringify({ name: t.name, description: t.description, parameters: t.parameters }, null, 2)]));
+
   const routesJson = JSON.stringify(
     routes.map((r) => ({
       method: r.method,
@@ -179,7 +174,7 @@ function render(): string {
     })),
   );
 
-  const routesHtml = routes.map((r, i) => routeHtml(r, i)).join("");
+  const routesHtml = routes.map((r, i) => routeHtml(r, i, toolJsonByName.get(r.name) ?? "{}")).join("");
 
   return `
 <div class="api-docs">
@@ -208,6 +203,10 @@ function render(): string {
 .api-form button:hover { background:#000; }
 .api-result { margin-top:10px; padding:10px; background:#1a1a2e; color:#a8ff78; border-radius:4px; font-size:12px; overflow:auto; max-height:300px; white-space:pre-wrap; }
 .api-result.error { color:#ff6b6b; }
+.api-tool-section { margin-top:8px; }
+.api-tool-btn { padding:3px 10px; background:#555; color:#fff; border:none; border-radius:4px; cursor:pointer; font:inherit; font-size:11px; }
+.api-tool-btn:hover { background:#333; }
+.api-tool-json { margin-top:6px; padding:10px; background:#1a1a2e; color:#79c0ff; border-radius:4px; font-size:12px; overflow:auto; max-height:300px; white-space:pre-wrap; }
 </style>
 
 <div class="api-filter">
@@ -229,6 +228,11 @@ ${routesHtml}
     const hidden = el.hidden;
     el.hidden = !hidden;
     route.classList.toggle('open', !hidden);
+  };
+
+  window.apiToolToggle = function(idx) {
+    const el = document.getElementById('api-tool-' + idx);
+    el.hidden = !el.hidden;
   };
 
   window.apiFilter = function(q) {

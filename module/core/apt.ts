@@ -32,8 +32,11 @@ function ctxSettingsRoot(path?: string): Item {
 export const api: AptTree = {
   password: {
     put: {
-      description: "Passwort des angemeldeten Users ändern.",
-      input: s.object({ oldpw: s.string(), pw: s.string() }),
+      description: "Change the password of the logged-in user",
+      input: s.object({
+        oldpw: s.string().describe("Current password"),
+        pw: s.string().describe("New password (min 5 chars)"),
+      }),
       execute: async ({ oldpw, pw }: any) => {
         const ctx = getCtx();
         const usr = ctx.user;
@@ -50,7 +53,7 @@ export const api: AptTree = {
 
   logout: {
     post: {
-      description: "Aktuelle Session ausloggen.",
+      description: "Logout current session",
       execute: async () => {
         await Auth.logout();
         return { ok: true };
@@ -60,21 +63,24 @@ export const api: AptTree = {
 
   settings: {
     get: {
-      description: "App-Settings lesen. Optional: path=foo/bar für Unterpfad.",
-      input: s.object({ path: s.optional(s.string()) }),
+      description: "Read app settings",
+      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: async ({ path }: any) => readSettings(await appSettingsRoot(path)),
     },
     put: {
-      description: "App-Settings setzen.",
-      input: s.object({ path: s.optional(s.string()), value: s.any() }),
+      description: "Set app settings",
+      input: s.object({
+        path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\""),
+        value: s.any().describe("Value to set (any JSON type)"),
+      }),
       execute: async ({ path, value }: any) => {
         await (await appSettingsRoot(path)).set(value);
         return { ok: true };
       },
     },
     delete: {
-      description: "App-Settings löschen.",
-      input: s.object({ path: s.string() }),
+      description: "Delete app settings at given path",
+      input: s.object({ path: s.string().describe("Sub-path to delete") }),
       execute: async ({ path }: any) => {
         await (await appSettingsRoot(path)).remove();
         return { ok: true };
@@ -84,29 +90,32 @@ export const api: AptTree = {
 
   "settings-schema": {
     get: {
-      description: "Schema der App-Settings lesen. Optional: path=foo/bar für Unterpfad.",
-      input: s.object({ path: s.optional(s.string()) }),
+      description: "Read app settings schema",
+      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: async ({ path }: any) => (await appSettingsRoot(path)).schema ?? {},
     },
   },
 
   "ctx-settings": {
     get: {
-      description: "User-/Session-Settings lesen. Optional: path=foo/bar für Unterpfad.",
-      input: s.object({ path: s.optional(s.string()) }),
+      description: "Read user/session settings",
+      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: ({ path }: any) => readSettings(ctxSettingsRoot(path)),
     },
     put: {
-      description: "User-/Session-Settings setzen.",
-      input: s.object({ path: s.optional(s.string()), value: s.any() }),
+      description: "Set user/session settings",
+      input: s.object({
+        path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\""),
+        value: s.any().describe("Value to set (any JSON type)"),
+      }),
       execute: async ({ path, value }: any) => {
         await ctxSettingsRoot(path).set(value);
         return { ok: true };
       },
     },
     delete: {
-      description: "User-/Session-Settings löschen.",
-      input: s.object({ path: s.string() }),
+      description: "Delete user/session settings at given path",
+      input: s.object({ path: s.string().describe("Sub-path to delete") }),
       execute: async ({ path }: any) => {
         await ctxSettingsRoot(path).remove();
         return { ok: true };
@@ -116,8 +125,8 @@ export const api: AptTree = {
 
   "ctx-settings-schema": {
     get: {
-      description: "Schema der User-/Session-Settings lesen. Optional: path=foo/bar für Unterpfad.",
-      input: s.object({ path: s.optional(s.string()) }),
+      description: "Read user/session settings schema",
+      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: ({ path }: any) => ctxSettingsRoot(path).schema ?? {},
     },
   },

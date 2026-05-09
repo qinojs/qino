@@ -18,13 +18,13 @@ export const settingsSchema = {
         "translation service": {
             type: "string",
             enum: ["", "google", "deepl"],
-            description: "Welcher Ubersetzungsdienst fur automatische Ubersetzungen verwendet wird.",
+            description: "Welcher Übersetzungsdienst fur automatische Übersetzungen verwendet wird",
         },
         deepl: {
             properties: {
                 key: {
                     type: "string",
-                    description: "API-Key fur DeepL.",
+                    description: "API-Key fur DeepL",
                 },
             },
         },
@@ -32,13 +32,13 @@ export const settingsSchema = {
             properties: {
                 key: {
                     type: "string",
-                    description: "API-Key fur Google Translate.",
+                    description: "API-Key fur Google Translate",
                 },
             },
         },
         "translate char count": {
             type: "integer",
-            description: "Mitgezahler der automatisch ubersetzten Zeichen.",
+            description: "Mitgezahler der automatisch übersetzten Zeichen",
         },
     },
 };
@@ -58,7 +58,7 @@ const cmsTextService: any = {
 
     async textAccess(text_id: any): Promise<boolean> {
         text_id = parseInt(String(text_id));
-        const pid = await this.ctx.app.apt.cms["pid-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
+        const pid = await this.ctx.app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
         const P = await this.ctx.app.cms.node(pid);
         if ((await P.access()) < 2) return false;
@@ -260,29 +260,33 @@ function service(ctx: any): any {
 export const api: AptTree = {
     text: {
         ":text": {
+            paramSchema: s.number().describe("Text-ID"),
             get: {
-                description: "Text in allen Sprachen lesen.",
+                description: "Read text in all languages",
                 execute: ({ text }: any, ctx: any) => service(ctx).get(text),
             },
             translate: {
                 post: {
-                    description: "Text in eine Sprache uebersetzen.",
-                    input: s.object({ target_lang: s.string(), source_lang: s.string() }),
+                    description: "Translate text into a target language",
+                    input: s.object({
+                        target_lang: s.string().describe("Target language code, e.g. \"en\""),
+                        source_lang: s.string().describe("Source language code, e.g. \"de\""),
+                    }),
                     execute: ({ text, target_lang, source_lang }: any, ctx: any) =>
                         service(ctx).translate(text, target_lang, source_lang),
                 },
             },
             history: {
                 get: {
-                    description: "Text-Historie lesen.",
-                    input: s.object({ lang: s.string() }),
+                    description: "Read text history for a language",
+                    input: s.object({ lang: s.string().describe("Language code, e.g. \"de\"") }),
                     execute: ({ text, lang }: any, ctx: any) => service(ctx).history(text, lang),
                 },
             },
             "is-translated": {
                 get: {
-                    description: "Pruefen, ob Text in Sprache uebersetzt ist.",
-                    input: s.object({ lang: s.optional(s.string()) }),
+                    description: "Check if text is translated in a language",
+                    input: s.object({ lang: s.optional(s.string()).describe("Language code. Default: current language") }),
                     execute: ({ text, lang }: any, ctx: any) => service(ctx).isTranslated(text, lang ?? null),
                 },
             },
@@ -290,14 +294,15 @@ export const api: AptTree = {
     },
     page: {
         ":page": {
+            paramSchema: s.number().describe("Node-ID"),
             translate: {
                 post: {
-                    description: "Alle Texte einer Seite/eines Contents uebersetzen.",
+                    description: "Translate all texts of a page/content into a target language",
                     input: s.object({
-                        target_lang: s.string(),
-                        source_lang: s.optional(s.string()),
-                        ifNeeded: s.optional(s.boolean()),
-                        subpages: s.optional(s.boolean()),
+                        target_lang: s.string().describe("Target language code, e.g. \"en\""),
+                        source_lang: s.optional(s.string()).describe("Source language code. Default: auto-detect"),
+                        ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
+                        subpages: s.optional(s.boolean()).describe("Include sub-pages"),
                     }),
                     execute: ({ page, target_lang, source_lang, ifNeeded, subpages }: any, ctx: any) =>
                         service(ctx).translatePage(page, target_lang, source_lang ?? "auto", ifNeeded ?? true, subpages ?? false),
@@ -305,8 +310,11 @@ export const api: AptTree = {
             },
             "translate-all-langs": {
                 post: {
-                    description: "Seite/Content in alle Sprachen uebersetzen.",
-                    input: s.object({ ifNeeded: s.optional(s.boolean()), subpages: s.optional(s.boolean()) }),
+                    description: "Translate a page/content into all languages",
+                    input: s.object({
+                        ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
+                        subpages: s.optional(s.boolean()).describe("Include sub-pages"),
+                    }),
                     execute: ({ page, ifNeeded, subpages }: any, ctx: any) =>
                         service(ctx).translatePageAllLangs(page, ifNeeded ?? true, subpages ?? false),
                 },

@@ -14,7 +14,7 @@ if (!document.caretRangeFromPoint) { // polyfill for ff
 const txtIds = {};
 cms.txtIdToPid = async function(tid) {
 	if (txtIds[tid]) return txtIds[tid];
-	return txtIds[tid] = await apt.cms['pid-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
+	return txtIds[tid] = await apt.cms['node-id-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
 };
 // clean texts
 cms.txtCleanElement = function(el,tid){

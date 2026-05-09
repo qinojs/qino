@@ -60,7 +60,7 @@ async function contentBlocks(node: any): Promise<any[]> {
 // ───── Node ───────────────────────────────────────────────────────────────
 
 const node = {
-  paramSchema: s.number(),
+  paramSchema: s.number().describe("Node-ID"),
 
   resolve: async (id: number) => {
     const app = getCtx().app;
@@ -71,12 +71,12 @@ const node = {
   },
 
   get: {
-    description: "Node als JSON lesen.",
+    description: "Read node as JSON",
     execute: ({ node }: any) => nodeToJson(node.id),
   },
 
   delete: {
-    description: "Node löschen (landet ggf. im Papierkorb).",
+    description: "Delete node (may go to trash)",
     execute: async ({ node }: any) => {
       if ((await node.access()) < 2) throw new AccessError();
       return nodeRemove(node);
@@ -85,17 +85,17 @@ const node = {
 
   sitemap: {
     get: {
-      description: "Seitenbaum ab diesem Node lesen (nur id und Titel).",
+      description: "Read page tree from this node (id and title only)",
       execute: ({ node }: any) => slimTree(node),
     },
   },
 
   tree: {
     get: {
-      description: "Seitenbaum ab diesem Node lesen.",
+      description: "Read page tree from this node",
       input: s.object({
-        filter: s.optional(s.string()),
-        level: s.optional(s.number()),
+        filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
+        level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
       execute: ({ node, filter, level }: any) =>
         cmsGetTree(node.id, { filter: filter ?? "*", level: level ?? 0 }),
@@ -104,12 +104,12 @@ const node = {
 
   html: {
     get: {
-      description: "Node als HTML rendern.",
+      description: "Render node as HTML",
       input: s.object({ vars: s.optional(s.record()) }),
       execute: ({ node, vars }: any) => node.html(vars ?? {}),
     },
     post: {
-      description: "Node als HTML rendern (mit vars als JSON-Body).",
+      description: "Render node as HTML (vars as JSON body)",
       input: s.object({ vars: s.optional(s.any()) }),
       execute: ({ node, vars }: any) => node.html(vars ?? {}),
     },
@@ -117,7 +117,7 @@ const node = {
       ":part": {
         paramSchema: s.string(),
         get: {
-          description: "Einen HTML-Part des Nodes rendern.",
+          description: "Render a specific HTML part of the node",
           input: s.object({ vars: s.optional(s.record()) }),
           execute: ({ node, part, vars }: any) =>
             node.htmlPart(part, vars ?? {}),
@@ -128,7 +128,7 @@ const node = {
 
   name: {
     put: {
-      description: "Internen Namen der Seite setzen.",
+      description: "Set the internal name of the page",
       input: s.object({ value: s.string() }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -140,8 +140,8 @@ const node = {
 
   title: {
     put: {
-      description: "Titel der Seite setzen (sprachspezifisch).",
-      input: s.object({ value: s.string(), lang: s.optional(s.string()) }),
+      description: "Set page title (language-specific)",
+      input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
       output: s.object({ changed: s.boolean() }),
       execute: async ({ node, value, lang }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -153,10 +153,10 @@ const node = {
 
   text: {
     ":name": {
-      paramSchema: s.string(),
+      paramSchema: s.string().describe("Text field name"),
       put: {
-        description: "Textfeld einer Seite setzen (sprachspezifisch).",
-        input: s.object({ value: s.string(), lang: s.optional(s.string()) }),
+        description: "Set a text field of the page (language-specific)",
+        input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),
         execute: async ({ node, name, value, lang }: any) => {
           if ((await node.access()) < 2) throw new AccessError();
@@ -169,7 +169,7 @@ const node = {
 
   visible: {
     put: {
-      description: "Sichtbarkeit in der Navigation setzen.",
+      description: "Set navigation visibility",
       input: s.object({ value: s.boolean() }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -181,7 +181,7 @@ const node = {
 
   searchable: {
     put: {
-      description: "Durchsuchbarkeit der Seite setzen.",
+      description: "Set page searchability",
       input: s.object({ value: s.boolean() }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -193,10 +193,10 @@ const node = {
 
   module: {
     put: {
-      description: "Layout-Modul der Seite setzen.",
+      description: "Set the layout module of the page",
       input: s.object({
-        module: s.string(),
-        recursive: s.boolean().default(false),
+        module: s.string().describe("Module name, e.g. \"cms.default\""),
+        recursive: s.boolean().default(false).describe("If true, apply to all sub-pages too"),
       }),
       execute: async ({ node, module, recursive }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -227,8 +227,8 @@ const node = {
 
   "online-start": {
     put: {
-      description: "Online-Start-Zeitpunkt setzen (ISO-String oder Unix-Timestamp).",
-      input: s.object({ value: s.optional(s.string()) }),
+      description: "Set online-start time (ISO string or Unix timestamp)",
+      input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-01-01T00:00:00\") or Unix timestamp. Omit to remove limit.") }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
         let v = value;
@@ -243,8 +243,8 @@ const node = {
 
   "online-end": {
     put: {
-      description: "Online-End-Zeitpunkt setzen (ISO-String oder Unix-Timestamp).",
-      input: s.object({ value: s.optional(s.string()) }),
+      description: "Set online-end time (ISO string or Unix timestamp)",
+      input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-12-31T23:59:59\") or Unix timestamp. Omit to remove limit.") }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
         let v = value;
@@ -259,7 +259,7 @@ const node = {
 
   children: {
     post: {
-      description: "Neue Unterseite erstellen.",
+      description: "Create a new child page",
       input: s.object({ title: s.string() }),
       execute: async ({ node, title }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -276,8 +276,8 @@ const node = {
 
   copy: {
     post: {
-      description: "Seite/Inhalt kopieren. Mit deep=true werden Unterseiten mitkopiert.",
-      input: s.object({ deep: s.boolean().default(false) }),
+      description: "Copy page/content",
+      input: s.object({ deep: s.boolean().default(false).describe("If true, sub-pages are copied too") }),
       output: s.object({ id: s.string() }),
       execute: async ({ node, deep }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -297,8 +297,11 @@ const node = {
 
   insertBefore: {
     put: {
-      description: "Node in diesen Node verschieben (vor eine andere Node einordnen). 'id' ist die zu verschiebende Node, 'before' (optional) ist die Node vor der eingefügt wird.",
-      input: s.object({ id: s.string(), before: s.optional(s.string()) }),
+      description: "Move a node into this node",
+      input: s.object({
+        id: s.string().describe("ID of the node to move"),
+        before: s.optional(s.string()).describe("Insert before this node-ID. Omit to append."),
+      }),
       execute: async ({ node, id, before }: any) => {
         const Child = await getCtx().app.cms.node(id);
         if ((await Child.access()) < 2) throw new AccessError();
@@ -314,13 +317,13 @@ const node = {
 
   contents: {
     get: {
-      description: "Content-Bloecke dieser Seite lesen (id, module, name, children).",
+      description: "Read content blocks of this page (id, module, name, children)",
       execute: ({ node }: any) => contentBlocks(node),
     },
 
     post: {
-      description: "Neuen Content-Block erstellen.",
-      input: s.object({ module: s.string() }),
+      description: "Create a new content block",
+      input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\"") }),
       execute: async ({ node, module }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
         const ctx = getCtx();
@@ -334,7 +337,7 @@ const node = {
 
   defaults: {
     put: {
-      description: "Default-Einstellungen der Seite setzen.",
+      description: "Set default settings of the page",
       input: s.object({ value: s.optional(s.record()) }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -346,8 +349,8 @@ const node = {
 
   access: {
     put: {
-      description: "Öffentlichen Zugriff der Seite setzen.",
-      input: s.object({ value: s.optional(s.number()) }),
+      description: "Set public access level of the page",
+      input: s.object({ value: s.optional(s.number()).describe("Access level (0 = private, 1 = public). Omit to reset.") }),
       execute: async ({ node, value }: any) => {
         if ((await node.access()) < 3) throw new AccessError();
         await node.set("access", value == null ? null : parseInt(value));
@@ -360,10 +363,10 @@ const node = {
       ":user": {
         paramSchema: s.number(),
         put: {
-          description: "Zugriffslevel eines Users auf dieser Seite setzen.",
+          description: "Set a user's access level on this page",
           input: s.object({
-            access: s.number(),
-            recursive: s.boolean().default(false),
+            access: s.number().describe("Access level (1=read, 2=write, 3=admin, 0=revoke)"),
+            recursive: s.boolean().default(false).describe("Apply to all sub-pages too"),
           }),
           execute: async ({ node, user, access, recursive }: any) => {
             if ((await node.access()) < 3) throw new AccessError();
@@ -387,8 +390,8 @@ const node = {
       ":group": {
         paramSchema: s.number(),
         put: {
-          description: "Zugriffslevel einer Gruppe auf dieser Seite setzen.",
-          input: s.object({ access: s.number() }),
+          description: "Set a group's access level on this page",
+          input: s.object({ access: s.number().describe("Access level (1=read, 2=write, 3=admin, 0=revoke)") }),
           execute: async ({ node, group, access }: any) => {
             if ((await node.access()) < 3) throw new AccessError();
             await node.changeGroup(group, access);
@@ -401,15 +404,15 @@ const node = {
 
   files: {
     get: {
-      description: "Alle Dateien der Seite auflisten.",
+      description: "List all files of the page",
       execute: ({ node }: any) => node.files().then((f: any) => f ?? {}),
     },
 
     post: {
-      description: "Datei zur Seite hinzufügen.",
+      description: "Add a file to the page",
       input: s.object({
-        file: s.optional(s.string()),
-        replace: s.optional(s.string()),
+        file: s.optional(s.string()).describe("Filename to add (from upload or server path)"),
+        replace: s.optional(s.string()).describe("Existing filename to replace"),
       }),
       execute: async ({ node, file, replace }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -418,7 +421,7 @@ const node = {
     },
 
     put: {
-      description: "Datei-Reihenfolge manuell setzen (Array von Dateinamen).",
+      description: "Manually set file order (array of filenames)",
       input: s.object({ sort: s.array(s.string()) }),
       execute: async ({ node, sort }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -429,7 +432,7 @@ const node = {
 
     doubles: {
       delete: {
-        description: "Doppelte Dateien (gleicher MD5) löschen.",
+        description: "Delete duplicate files (same MD5)",
         execute: async ({ node }: any) => {
           if ((await node.access()) < 2) throw new AccessError();
           const files = await node.files();
@@ -446,7 +449,7 @@ const node = {
 
     all: {
       delete: {
-        description: "Alle Dateien der Seite löschen.",
+        description: "Delete all files of the page",
         execute: async ({ node }: any) => {
           if ((await node.access()) < 2) throw new AccessError();
           for (const name of Object.keys(await node.files() ?? {})) {
@@ -459,8 +462,8 @@ const node = {
 
     order: {
       post: {
-        description: "Dateien nach Kriterium sortieren (name, name_reverse, date, sort).",
-        input: s.object({ by: s.string() }),
+        description: "Sort files by criterion",
+        input: s.object({ by: s.string().describe("Sort criterion: \"name\", \"name_reverse\", \"date\", \"sort\"") }),
         execute: async ({ node, by }: any) => {
           if ((await node.access()) < 2) throw new AccessError();
           await filesSetOrder(node, by);
@@ -470,9 +473,9 @@ const node = {
     },
 
     ":file": {
-      paramSchema: s.string(),
+      paramSchema: s.string().describe("Filename"),
       delete: {
-        description: "Eine Datei von der Seite löschen.",
+        description: "Delete a file from the page",
         execute: async ({ node, file }: any) => {
           if ((await node.access()) < 2) throw new AccessError();
           return node.deleteFile(file);
@@ -483,9 +486,9 @@ const node = {
 
   urls: {
     ":lang": {
-      paramSchema: s.string(),
+      paramSchema: s.string().describe("Language code, e.g. \"de\""),
       put: {
-        description: "Custom-URL für eine Sprache setzen.",
+        description: "Set custom URL for a language",
         input: s.object({ url: s.string() }),
         execute: async ({ node, lang, url }: any) => {
           if ((await node.access()) < 2) throw new AccessError();
@@ -496,7 +499,7 @@ const node = {
 
       custom: {
         delete: {
-          description: "Custom-URL für eine Sprache entfernen (SEO-URL wird wiederhergestellt).",
+          description: "Remove custom URL for a language (restores SEO URL)",
           execute: async ({ node, lang }: any) => {
             if ((await node.access()) < 2) throw new AccessError();
             await node.urlSet(lang, { custom: 0 });
@@ -507,8 +510,8 @@ const node = {
 
       target: {
         put: {
-          description: "URL-Target (_blank etc.) für eine Sprache setzen.",
-          input: s.object({ value: s.optional(s.string()) }),
+          description: "Set URL target for a language",
+          input: s.object({ value: s.optional(s.string()).describe("Link target, e.g. \"_blank\". Omit to reset.") }),
           execute: async ({ node, lang, value }: any) => {
             if ((await node.access()) < 2) throw new AccessError();
             await node.urlSet(lang, { target: value });
@@ -521,7 +524,7 @@ const node = {
 
   redirects: {
     post: {
-      description: "Redirect-URL hinzufügen.",
+      description: "Add a redirect URL",
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -535,7 +538,7 @@ const node = {
     },
 
     delete: {
-      description: "Redirect-URL entfernen.",
+      description: "Remove a redirect URL",
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
@@ -550,16 +553,19 @@ const node = {
 
   settings: {
     get: {
-      description: "Page-Settings lesen. Optional: path=['foo','bar'] für Unterpfad.",
-      input: s.object({ path: s.optional(s.array(s.string())) }),
+      description: "Read page settings. Optional sub-path via path param",
+      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]") }),
       execute: ({ node, path }: any) => {
         const item = node.settings[$item].sub(path ?? []);
         return readSettings(item);
       },
     },
     put: {
-      description: "Page-Settings setzen.",
-      input: s.object({ path: s.optional(s.array(s.string())), value: s.any() }),
+      description: "Set page settings",
+      input: s.object({
+        path: s.optional(s.array(s.string())).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]"),
+        value: s.any().describe("Value to set (any JSON type)"),
+      }),
       execute: async ({ node, path, value }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
         node.settings[$item].sub(path ?? []).set(value);
@@ -567,8 +573,8 @@ const node = {
       },
     },
     delete: {
-      description: "Page-Settings löschen.",
-      input: s.object({ path: s.array(s.string()) }),
+      description: "Delete page settings at given path",
+      input: s.object({ path: s.array(s.string()).describe("Sub-path to delete, e.g. [\"theme\", \"color\"]") }),
       execute: async ({ node, path }: any) => {
         if ((await node.access()) < 2) throw new AccessError();
         if (!path?.length) {
@@ -582,8 +588,8 @@ const node = {
 
   "settings-schema": {
     get: {
-      description: "Schema der Page-Settings lesen. Optional: path=['foo','bar'] für Unterpfad.",
-      input: s.object({ path: s.optional(s.array(s.string())) }),
+      description: "Read page settings schema. Optional sub-path via path param",
+      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path within settings schema") }),
       execute: ({ node, path }: any) => {
         return node.settings[$item].sub(path ?? []).schema ?? {};
       },
@@ -592,7 +598,7 @@ const node = {
 
   api: {
     post: {
-      description: "Modul-spezifische Page-API aufrufen.",
+      description: "Call module-specific page API",
       execute: async ({ node, ...vars }: any) => {
         try {
           const pageApi = node.module?.cms?.node?.pageApi;
@@ -611,10 +617,10 @@ const node = {
 export const api = {
   tree: {
     get: {
-      description: "Kompletten Seitenbaum lesen.",
+      description: "Read the full page tree",
       input: s.object({
-        filter: s.optional(s.string()),
-        level: s.optional(s.number()),
+        filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
+        level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
       execute: ({ filter, level }: any) =>
         cmsGetTree(0, { filter: filter ?? "*", level: level ?? 0 }),
@@ -623,24 +629,24 @@ export const api = {
 
   nodes: {
     get: {
-      description: "Nodes nach Titel suchen.",
-      input: s.object({ q: s.string() }),
+      description: "Search nodes by title",
+      input: s.object({ q: s.string().describe("Search query") }),
       execute: ({ q }: any) => cmsSearchNodes(q),
     },
   },
 
   files: {
     get: {
-      description: "Dateien suchen.",
-      input: s.object({ q: s.string() }),
+      description: "Search files",
+      input: s.object({ q: s.string().describe("Search query") }),
       execute: ({ q }: any) => cmsSearchFiles(q),
     },
   },
 
   clipboard: {
     put: {
-      description: "Clipboard-Seite setzen (ausschneiden).",
-      input: s.object({ value: s.optional(s.number()) }),
+      description: "Set clipboard node (cut)",
+      input: s.object({ value: s.optional(s.number()).describe("Node-ID to cut. Omit to clear clipboard.") }),
       execute: async ({ value }: any) => {
         const ctx = getCtx();
         if (value) {
@@ -655,15 +661,15 @@ export const api = {
 
   "request-used": {
     get: {
-      description: "Prüfen ob eine URL bereits als Redirect verwendet wird.",
+      description: "Check if a URL is already used as a redirect",
       input: s.object({ url: s.string() }),
       execute: ({ url }: any) => cmsRequestUsed(url).then((used) => ({ used })),
     },
   },
 
-  "pid-from-txt-id": {
+  "node-id-from-txt-id": {
     get: {
-      description: "Page-ID zu einer Text-ID ermitteln (Titel oder Textfeld).",
+      description: "Get node ID from a text ID (title or text field)",
       input: s.object({ id: s.number() }),
       execute: async ({ id }: any) => {
         const db = (getCtx().app as any).db;
@@ -683,10 +689,10 @@ export const api = {
 
   txt: {
     ":id": {
-      paramSchema: s.number(),
+      paramSchema: s.number().describe("Text-ID"),
       put: {
-        description: "Text oder Titel per Text-ID setzen (Inline-Editor).",
-        input: s.object({ value: s.string(), lang: s.optional(s.string()) }),
+        description: "Set text or title by text ID (inline editor)",
+        input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language") }),
         execute: async ({ id, value, lang }: any) => {
           const ctx = getCtx();
           const db = (ctx.app as any).db;
