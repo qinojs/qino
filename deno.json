@@ -1,5 +1,5 @@
 {
   "name": "@qino/qino",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "exports": "./module/core/server.ts"
 }
