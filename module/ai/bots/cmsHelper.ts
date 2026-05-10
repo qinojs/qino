@@ -2,17 +2,6 @@ import type { Bot, ClientContext } from "../types.ts";
 import { toTools } from "../../core/lib/apt.ts";
 import { api as cmsApi } from "../../cms/apt.ts";
 
-const renames: Record<string, string> = {
-  getNodes: "searchNodes",
-  getNodeContents: "getContentBlocks",
-  createNodeChildren: "createChildNode",
-  createNodeContents: "createContentBlock",
-  setNodeSettings: "setNodeSettings",
-  createNodeFiles: "addNodeFile",
-  setTxt: "setInlineText",
-  putNodeInsertBefore: "moveNode",
-};
-
 const cmsTools = toTools(cmsApi, {
   apis: {
     "/nodes": ["get"],
@@ -29,9 +18,6 @@ const cmsTools = toTools(cmsApi, {
     "/node/:node/visible": ["put"],
     "/node/:node/insertBefore": ["put"],
   }
-}).map((t) => {
-  t.name = renames[t.name] ?? t.name;
-  return t;
 });
 
 const CMS_CONTEXT = `
