@@ -3,7 +3,7 @@
  * Port of cms/lib/cms.class.php (render method)
  */
 
-import type { RequestContext } from "../../core/lib/context.ts";
+import type { RequestContext } from "../../core/lib/RequestContext.ts";
 
 
 export async function render(ctx: RequestContext): Promise<void> {

@@ -1,4 +1,4 @@
-import { getCtx } from "../../../core/lib/context.ts";
+import { getCtx } from "../../../core/lib/RequestContext.ts";
 import type { Node } from "../../../cms/lib/Node.ts";
 
 export default async function (node: Node): Promise<string> {

@@ -6,11 +6,11 @@
  * core endpoints.
  */
 
-import { getCtx } from "./lib/context.ts";
+import { getCtx } from "./lib/RequestContext.ts";
 import { $item } from "../../deps.ts";
 import { AccessError } from "./lib/apt.ts";
-import { s } from "./lib/schema.ts";
-import { Auth } from "./lib/Auth.ts";
+import { s } from "./lib/StandardSchema.ts";
+import { pwVerify, pwHash, logout } from "./lib/auth.ts";
 import { readSettings } from "./lib/settings.ts";
 import type { Item } from "../../deps.ts";
 import type { AptTree } from "./lib/apt.ts";
@@ -42,9 +42,9 @@ export const api: AptTree = {
         const usr = ctx.user;
         if (!usr) return 0;
         const currentHash = String(await usr.get("pw") ?? "");
-        if (!await Auth.pw_verify(oldpw, currentHash)) return -1;
+        if (!await pwVerify(oldpw, currentHash)) return -1;
         if (String(pw ?? "").length < 5) return -2;
-        await usr.set("pw", await Auth.pw_hash(pw));
+        await usr.set("pw", await pwHash(pw));
         await usr.save();
         return 1;
       },
@@ -55,7 +55,7 @@ export const api: AptTree = {
     post: {
       description: "Logout current session",
       execute: async () => {
-        await Auth.logout();
+        await logout(getCtx());
         return { ok: true };
       },
     },

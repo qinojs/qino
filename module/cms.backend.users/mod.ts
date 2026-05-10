@@ -2,8 +2,8 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
-import { Auth } from "../core/lib/Auth.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
+import { pwHash } from "../core/lib/auth.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
@@ -43,7 +43,7 @@ async function renderOverview(node: Node): Promise<string> {
       await db.table("usr").insert({
         active: 1,
         email: email || null,
-        pw: await Auth.pw_hash(String(ctx.post.pw ?? "")),
+        pw: await pwHash(String(ctx.post.pw ?? "")),
         firstname: String(ctx.post.firstname ?? ""),
         lastname: String(ctx.post.lastname ?? ""),
       });

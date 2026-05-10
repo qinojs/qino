@@ -6,7 +6,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "./util.ts";
-import type { RequestContext } from "./context.ts";
+import type { RequestContext } from "./RequestContext.ts";
 
 export class HtmlBuilder {
     head = "";

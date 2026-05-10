@@ -3,9 +3,9 @@
  * Läuft: deno run --allow-env m/core/apt.smoke.ts
  */
 
-import { s } from "../lib/schema.ts";
+import { s } from "../lib/StandardSchema.ts";
 import { AccessError, NotFoundError, toTools, invoke, aptClient } from "../lib/apt.ts";
-import { requestStorage, RequestContext } from "../lib/context.ts";
+import { requestStorage, RequestContext } from "../lib/RequestContext.ts";
 
 // Provide a fake request context so getCtx() works
 const fakeCtx = new RequestContext();

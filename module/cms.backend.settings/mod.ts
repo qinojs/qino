@@ -5,7 +5,7 @@
 
 import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { backend } from "../cms.backend/mod.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];

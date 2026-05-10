@@ -1,7 +1,7 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 import { hee } from "../../../core/lib/util.ts";
 import { cmsGetTree } from "../../../cms/apt-exports.ts";
-import { getCtx } from "../../../core/lib/context.ts";
+import { getCtx } from "../../../core/lib/RequestContext.ts";
 
 export default async function (node: Node): Promise<string> {
   const app = node.app;

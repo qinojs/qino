@@ -1,8 +1,8 @@
 // Port of cms.backend.users/page_api.php
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../core/lib/context.ts";
-import { Auth } from "../core/lib/Auth.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
+import { login, pwHash } from "../core/lib/auth.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
 export default async function (node: Node, vars:any): Promise<any> {
@@ -22,7 +22,7 @@ export default async function (node: Node, vars:any): Promise<any> {
     const TargetUsr = db.table("usr").Entry(vars.login_as);
     if (!await TargetUsr.is()) return false;
     if (await TargetUsr.get("superuser") && !isSuperuser) return false;
-    await Auth.login(vars.login_as);
+    await login(ctx, vars.login_as);
     return 1;
   }
 
@@ -46,7 +46,7 @@ export default async function (node: Node, vars:any): Promise<any> {
     if (!allowed[name]) return false;
     if (name === "superuser" && !isSuperuser) return false;
     let value = vars.value;
-    if (name === "pw") value = await Auth.pw_hash(String(value));
+    if (name === "pw") value = await pwHash(String(value));
     await TargetUsr.set(name, value);
     await TargetUsr.save();
     return 1;

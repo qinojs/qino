@@ -4,7 +4,7 @@
  */
 
 import { hee } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/context.ts";
+import { getCtx } from "../../core/lib/RequestContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { DbFile } from "../../core/lib/DbFileManager.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
@@ -413,7 +413,7 @@ export class Node {
                 " ORDER BY sort ";
             const rows = await this.db.all(this.sql(sql), [this.id]);
             for (const vs of rows) {
-                const F = this.app.dbFiles.file(vs.id, vs);
+                const F = await this.app.dbFiles.file(vs.id, vs);
                 this.#filesAll[vs.pf_name] = F;
                 if (await F.exists()) this.#files[vs.pf_name] = F;
             }

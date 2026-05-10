@@ -5,7 +5,7 @@
 
 import { Node } from "./Node.ts";
 import { hee } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/context.ts";
+import { getCtx } from "../../core/lib/RequestContext.ts";
 import type { App } from "../../core/server.ts";
 import type { Module } from "../../core/lib/ModuleManager.ts";
 import type { Db } from "../../core/lib/Db.ts";
@@ -172,7 +172,8 @@ export class CMS {
     }
 
     // deno-lint-ignore no-explicit-any
-    async url(pidOrUrl: string, ret: Record<string, any> = {}): Promise<string | false> {
+    async url(pidOrUrl?: string, ret: Record<string, any> = {}): Promise<string | false> {
+        if (!pidOrUrl) return false;
         pidOrUrl = pidOrUrl.trim();
         ret.target = "_blank";
         if (/^\d+$/.test(pidOrUrl)) {
@@ -184,7 +185,7 @@ export class CMS {
             }
             return false;
         }
-        if (pidOrUrl === "") return false;
+        if (!pidOrUrl) return false;
         if (!/^[a-z]+:/.test(pidOrUrl)) return "http://" + pidOrUrl;
         return pidOrUrl;
     }

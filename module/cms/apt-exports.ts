@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { HTTPException } from "../../deps.ts";
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 
 // ─── business logic used by REST ──────────────
 
@@ -79,7 +79,7 @@ export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<
     const ctx = getCtx();
     let File: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
-        const dbF = ctx.app.dbFiles.file(parseInt(String(file)));
+        const dbF = await ctx.app.dbFiles.file(parseInt(String(file)));
         if (!await dbF.access()) throw new HTTPException(403);
         if (replace) {
             const existing = await node.file(replace);
@@ -93,7 +93,7 @@ export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<
         }
         File = await node.addFile(file, replace);
     }
-    return { url: await File?.url() ?? "", name: await File?.name() ?? "" };
+    return { url: await File?.url() ?? "", name: File?.name ?? "" };
 }
 
 export async function filesSetOrder(node: any, by: string): Promise<void> {
@@ -145,7 +145,8 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
         if (!titleStr) continue;
         const parent   = await Page.parent();
         const pTitle   = parent ? String(await (await parent.title()).string() ?? "").trim() : "";
-        const gpTitle  = (parent && await parent.parent()) ? String(await (await (await parent.parent()).title()).string() ?? "").trim() : "";
+        const gp       = parent ? await parent.parent() : null;
+        const gpTitle  = gp ? String(await (await gp.title()).string() ?? "").trim() : "";
         res.push({
             html:  `<b>${titleStr}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${pTitle}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${gpTitle}</i>` : "") : ""),
@@ -175,13 +176,13 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
     for (const vs of await db.all(sql, params)) {
         const node = await ctx.app.cms.node(vs["pid"]);
         if ((await node.access()) < 2) continue;
-        const F = ctx.app.dbFiles.file(vs.id, vs);
-        if (!F.exists()) continue;
+        const F = await ctx.app.dbFiles.file(vs.id, vs);
+        if (!await F.exists()) continue;
         if (i++ > 10) break;
         const md5 = vs["md5"];
         if (md5 && used[md5]) continue;
         if (md5) used[md5] = true;
-        const ext   = F.extension();
+        const ext   = F.extension;
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(ext);
         const imgSrc = isImg ? (await F.url()) + "/w-32/h-32/img.jpg" : "about:blank";
         res.push({

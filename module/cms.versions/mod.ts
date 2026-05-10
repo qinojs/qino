@@ -28,9 +28,9 @@ import {
     versTable, view, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
-import { getCtx, type RequestContext } from "../core/lib/context.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import type { AptTree } from "../core/lib/apt.ts";
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
 
 export const name = "cms.versions";

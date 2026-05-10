@@ -49,7 +49,7 @@ export class DbField {
   getKey(): string { return this.vs.Key ?? ""; }
   isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 
-  private explodeTypeData(): void {
+  #explodeTypeData(): void {
     if (this.#type === null) {
       const match = this.vs.Type?.match(/^([a-z]+)(\(([^)]+)\)|.*)(.*)$/i);
       this.#type = match ? match[1].toLowerCase().trim() : "varchar";
@@ -57,7 +57,7 @@ export class DbField {
       this.#special = match ? (match[4] ?? "").trim().toLowerCase() : "";
     }
   }
-  async change(data: Record<string, any>): Promise<void> {
+  async #change(data: Record<string, any>): Promise<void> {
     data.type = data.type ?? this.getType();
     data.length = data.length ?? this.getLength();
     data.special = data.special ?? this.getSpecial();
@@ -79,51 +79,51 @@ export class DbField {
   }
 
   getType(): string {
-    this.explodeTypeData();
+    this.#explodeTypeData();
     return this.#type!;
   }
   async setType(v: string): Promise<void> {
-    await this.change({ type: v });
+    await this.#change({ type: v });
     this.#type = v;
   }
   getLength(): string {
-    this.explodeTypeData();
+    this.#explodeTypeData();
     return this.#length!;
   }
   async setLength(v: string): Promise<void> {
-    await this.change({ length: v });
+    await this.#change({ length: v });
     this.#length = v;
   }
   getSpecial(): string {
-    this.explodeTypeData();
+    this.#explodeTypeData();
     return this.#special!;
   }
   async setSpecial(v: string): Promise<void> {
-    await this.change({ special: v });
+    await this.#change({ special: v });
     this.#special = v;
   }
   getNull(): boolean {
     return this.vs.Null === "YES";
   }
   async setNull(v: boolean): Promise<void> {
-    await this.change({ null: v });
+    await this.#change({ null: v });
     this.vs.Null = v ? "YES" : "NO";
   }
   getDefault(): any {
     return this.vs.Default;
   }
   async setDefault(v: any): Promise<void> {
-    await this.change({ default: v });
+    await this.#change({ default: v });
   }
   getCollate(): string {
     return this.vs.Collation ?? "";
   }
   async setCollate(v: string): Promise<void> {
-    await this.change({ collate: v });
+    await this.#change({ collate: v });
     this.vs.Collate = v;
   }
   async setAutoincrement(v: boolean): Promise<void> {
-    await this.change({ autoincrement: v });
+    await this.#change({ autoincrement: v });
   }
 
   getID(): number {
@@ -138,7 +138,7 @@ export class DbField {
     return this.vs.parent_field ? P.field(this.vs.parent_field) : P.primary;
   }
   async setAfter(F: any): Promise<void> {
-    await this.change({ after: F });
+    await this.#change({ after: F });
   }
   async setKey(type: string): Promise<void> {
     type = type.toUpperCase();

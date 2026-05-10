@@ -7,7 +7,7 @@
 
 import { hee } from "../core/lib/util.ts";
 import type { Node } from "../cms/lib/Node.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.backend";
 

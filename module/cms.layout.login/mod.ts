@@ -1,5 +1,5 @@
 import type { Node } from "../cms/lib/Node.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.login";
 

@@ -4,7 +4,7 @@
  */
 
 import { createHash } from "node:crypto";
-import type { RequestContext } from "./context.ts";
+import type { RequestContext } from "./RequestContext.ts";
 
 export async function initClient(ctx: RequestContext): Promise<void> {
     const db = ctx.app.db;

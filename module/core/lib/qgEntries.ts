@@ -68,14 +68,6 @@ class dbEntry_client_usr extends DbEntry {
   }
 }
 
-/*
-export function Usr(id: number | string): dbEntry_client {
-  const ctx = getCtx();
-  id = parseInt(String(id));
-  return ctx.app.db.table("usr").Entry(id) as dbEntry_client;
-}
-*/
-
 registerEntryClass("usr", dbEntry_usr);
 registerEntryClass("log", dbEntry_log);
 registerEntryClass("sess", dbEntry_sess);

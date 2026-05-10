@@ -8,9 +8,9 @@
 import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
 import { OutputError } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 import type { AptTree } from "../core/lib/apt.ts";
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";

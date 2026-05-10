@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { AptTree } from "../core/lib/apt.ts";
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 
 export const api: AptTree = {
   "chat-completions": {

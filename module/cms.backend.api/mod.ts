@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
-import type { Schema } from "../core/lib/schema.ts";
-import { toJsonSchema } from "../core/lib/schema.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
+import type { StandardSchema } from "../core/lib/StandardSchema.ts";
+import { toJsonSchema } from "../core/lib/StandardSchema.ts";
 import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { VERBS, RESERVED, camelName, toTools } from "../core/lib/apt.ts";
@@ -24,9 +24,9 @@ interface Route {
   path: string;
   name: string;
   description: string;
-  input?: Schema;
-  query?: Schema;
-  output?: Schema;
+  input?: StandardSchema;
+  query?: StandardSchema;
+  output?: StandardSchema;
   pathParams: string[];
 }
 
@@ -53,9 +53,9 @@ function* walk(node: any, segments: string[] = []): Generator<Route> {
   }
 }
 
-// ───── Schema → readable text ─────────────────────────────────────────────
+// ───── StandardSchema → readable text ─────────────────────────────────────────────
 
-function schemaText(s: Schema | undefined): string {
+function schemaText(s: StandardSchema | undefined): string {
   if (!s) return "";
   switch (s.kind) {
     case "string":  return "string";
@@ -68,9 +68,9 @@ function schemaText(s: Schema | undefined): string {
     case "object": {
       if (!s.shape) return "{}";
       const fields = Object.entries(s.shape).map(([k, v]) => {
-        const opt = (v as Schema).kind === "optional" || (v as any).defaultValue ? "?" : "";
+        const opt = (v as StandardSchema).kind === "optional" || (v as any).defaultValue ? "?" : "";
         const def = (v as any).defaultValue ? `=${JSON.stringify((v as any).defaultValue())}` : "";
-        return `${k}${opt}: ${schemaText(v as Schema)}${def}`;
+        return `${k}${opt}: ${schemaText(v as StandardSchema)}${def}`;
       });
       return `{ ${fields.join(", ")} }`;
     }
@@ -78,12 +78,12 @@ function schemaText(s: Schema | undefined): string {
   }
 }
 
-// ───── Schema → form fields ───────────────────────────────────────────────
+// ───── StandardSchema → form fields ───────────────────────────────────────────────
 
-function schemaToFormFields(s: Schema | undefined): string {
+function schemaToFormFields(s: StandardSchema | undefined): string {
   if (!s || s.kind !== "object" || !s.shape) return "";
   return Object.entries(s.shape).map(([k, v]) => {
-    const field = v as Schema;
+    const field = v as StandardSchema;
     const inner = field.kind === "optional" ? field.inner ?? field : field;
     const required = field.kind !== "optional" && !(field as any).defaultValue;
     const jsonSchema = toJsonSchema(inner);

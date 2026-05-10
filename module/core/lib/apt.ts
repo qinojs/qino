@@ -9,9 +9,9 @@
  */
 
 import { Hono, type Context } from "../../../deps.ts";
-import { getCtx, type RequestContext } from "./context.ts";
-import { toJsonSchema } from "./schema.ts";
-import type { Schema, StandardIssue } from "./schema.ts";
+import { getCtx, type RequestContext } from "./RequestContext.ts";
+import { toJsonSchema } from "./StandardSchema.ts";
+import type { StandardSchema, StandardIssue } from "./StandardSchema.ts";
 
 // ───── Errors ─────────────────────────────────────────────────────────────
 
@@ -46,15 +46,15 @@ type Params = Record<string, unknown>;
 
 export interface Verb {
   description?: string;
-  input?: Schema;
-  query?: Schema;
-  output?: Schema;
+  input?: StandardSchema;
+  query?: StandardSchema;
+  output?: StandardSchema;
   execute(params: Params, ctx: RequestContext): unknown | Promise<unknown>;
 }
 
 export interface AptNode {
   resolve?(raw: unknown, ctx: RequestContext, parents: Params): unknown | Promise<unknown>;
-  paramSchema?: Schema;
+  paramSchema?: StandardSchema;
   get?: Verb;
   post?: Verb;
   put?: Verb;
@@ -117,7 +117,7 @@ function checkCollisions(r: Route): void {
 
 // ───── Core: invoke ───────────────────────────────────────────────────────
 
-function validate(schema: Schema, data: unknown, where: string): unknown {
+function validate(schema: StandardSchema, data: unknown, where: string): unknown {
   const res = schema["~standard"].validate(data);
   if (res.issues) throw new ValidationError(res.issues, where);
   return res.value;
@@ -170,7 +170,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
     if (!schema) continue;
     const picked = pick(rawParams, Object.keys(schema.shape ?? {}));
     for (const [k, fieldSchema] of Object.entries(schema.shape ?? {})) {
-      if (k in picked) picked[k] = coerce(picked[k], fieldSchema as Schema);
+      if (k in picked) picked[k] = coerce(picked[k], fieldSchema as StandardSchema);
     }
     Object.assign(params, validate(schema, picked, key));
   }
@@ -189,7 +189,7 @@ function decodeSegment(s: string): string {
   try { return decodeURIComponent(s); } catch { return s; }
 }
 
-function coerce(raw: unknown, schema: Schema): unknown {
+function coerce(raw: unknown, schema: StandardSchema): unknown {
   if (raw == null) return raw;
   const kind = schema.kind === "optional" ? schema.inner?.kind : schema.kind;
   if (kind === "number") { const n = Number(raw); return typeof raw === "number" || Number.isNaN(n) ? raw : n; }

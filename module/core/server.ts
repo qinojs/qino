@@ -1,5 +1,5 @@
 import { Hono, fromFileUrl, serveDir, basePath, matchedRoutes, type ItemProxy, type Context } from "../../deps.ts";
-import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/context.ts";
+import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/RequestContext.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
 import { ensureSlash, AnswerError, RedirectError, OutputError, OutputDoneError } from "./lib/util.ts";
 import { Db } from "./lib/Db.ts";
@@ -10,7 +10,7 @@ import { ModuleManager, type ModuleExports } from "./lib/ModuleManager.ts";
 import { LangManager } from "./lib/LangManager.ts";
 import { toHono, aptClient, type AptTree, type AptProxy } from "./lib/apt.ts";
 import { initClient, initLog, touchSession } from "./lib/init.ts";
-import { Auth } from "./lib/Auth.ts";
+import { authListen } from "./lib/auth.ts";
 
 const mainDir:string = fromFileUrl(new URL(".", Deno.mainModule));
 
@@ -142,7 +142,7 @@ export class App {
 
     async #initRequest(ctx: RequestContext): Promise<void> {
         await initClient(ctx);
-        await Auth.listen(ctx);
+        await authListen(ctx);
         touchSession(ctx);
         await ctx.initSettings();
         await this.languages.initCtx(ctx);

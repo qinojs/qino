@@ -9,7 +9,7 @@ import { render } from "./lib/render.ts";
 import { AnswerError } from "../core/lib/util.ts";
 import { api } from "./apt.ts";
 import type { App } from "../core/server.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 declare module "../core/server.ts" {
   interface App { cms: CMS; }

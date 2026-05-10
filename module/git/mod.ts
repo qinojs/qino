@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import * as GitService from "./lib/GitService.ts";
 import { fromFileUrl } from "../../deps.ts";
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "git";

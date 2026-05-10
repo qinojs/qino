@@ -8,8 +8,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../../core/lib/context.ts";
-import type { RequestContext } from "../../core/lib/context.ts";
+import { getCtx } from "../../core/lib/RequestContext.ts";
+import type { RequestContext } from "../../core/lib/RequestContext.ts";
 import type { Db } from "../../core/lib/Db.ts";
 
 // Tables (and optional field-subset) that are versioned.

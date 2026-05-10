@@ -23,13 +23,14 @@ async function render(node: Node, { ctx }: any) {
   const settings = node.settings;
 
   let Img = null;
-  let url = await node.cms.url(String(settings.url()));
+  let url = await node.cms.url(settings.url());
 
   // Sprachspezifische Varianten
   for (const l of node.app.languages.all) {
     const LImg = await node.file("image_" + l);
-    if (!Img && await LImg.exists()) Img = LImg;
-    const lUrl = await node.cms.url(String(settings["url_" + l]()));
+    if (ctx.lang === l && await LImg.exists()) Img = LImg;
+    else if (!Img && await LImg.exists()) Img = LImg;
+    const lUrl = await node.cms.url(settings["url_" + l]());
     if (ctx.lang === l && lUrl) url = lUrl;
   }
   Img = Img ?? await node.file("image_" + ctx.lang);
@@ -57,7 +58,7 @@ async function render(node: Node, { ctx }: any) {
     editable: node.edit ? await Img.url() : null,
   };
 
-  const imgHtml = await cms_image2(Img, options, ctx, node.app);
+  const imgHtml = await cms_image2(Img, options);
 
   let editHtml = "";
   if (node.edit) {

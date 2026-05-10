@@ -3,7 +3,7 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
-import { getCtx } from "./context.ts";
+import { getCtx } from "./RequestContext.ts";
 import type { App } from "../server.ts";
 import type { Db } from "./Db.ts";
 

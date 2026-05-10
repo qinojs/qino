@@ -6,31 +6,33 @@ import { File } from "./File.ts";
 import { typeByExtension } from "../../../deps.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
-import { getCtx } from "./context.ts";
+import { getCtx } from "./RequestContext.ts";
 import { fetchRemoteFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
 
 export class DbFileManager {
   #cache: Record<string, DbFile> = {};
-  app: App;
-  db: Db;
-  directory: string;
-  baseURL = "";
+  #app: App;
+  #directory: string;
+
   router: Hono = new Hono();
+  get app() { return this.#app; }
+  get db() { return this.#app.db; }
+  get directory() { return this.#directory; }
 
   constructor(app: App, directory: string) {
-    this.app = app;
-    this.db = app.db;
-    this.directory = directory.endsWith("/") ? directory : directory + "/";
-    this.router.all("/:path{.*}", (c) => this.output(c.req.param("path"), c.req.raw));
-    Deno.mkdir(this.directory, { recursive: true }).catch(() => {});
+    this.#app = app;
+    this.#directory = directory.endsWith("/") ? directory : directory + "/";
+    this.router.all("/:path{.*}", (c) => this.#output(c.req.param("path"), c.req.raw));
+    Deno.mkdir(this.#directory, { recursive: true }).catch(() => {});
   }
 
-  file(id: number | string, vs?: any): DbFile {
+  async file(id: number | string, vs?: any): Promise<DbFile> {
     const key = String(id);
-    const File = this.#cache[key] ??= new DbFile(this, id);
-    if (vs && Object.keys(vs).length) File.setLocalVs(vs);
-    return File;
+    this.#cache[key] ??= new DbFile(this, id);
+    if (vs) this.#cache[key].setLocalVs(vs);
+    else await this.#cache[key].ensureVs();
+    return this.#cache[key];
   }
 
   clearCache(id?: number | string) {
@@ -43,12 +45,12 @@ export class DbFileManager {
 
   async add(path?: string): Promise<DbFile> {
     const id = parseInt(String(await this.db.table("file").insert({}) ?? "0"));
-    const f = this.file(id);
+    const f = await this.file(id);
     if (path) await f.replaceBy(path);
     return f;
   }
 
-  async output(request: string, req: Request): Promise<Response> {
+  async #output(request: string, req: Request): Promise<Response> {
     const x = request.split("/");
     const id = parseInt(x.shift() ?? "0");
     const name = x.pop() ?? "";
@@ -59,13 +61,11 @@ export class DbFileManager {
       param[y[0]] = y[1] ?? true;
     }
 
-    const F = this.file(id);
-    await F._loadVs();
-
+    const F = await this.file(id);
     if (!await F.exists()) return new Response(null, { status: 404 });
     if (!await F.access()) return new Response(null, { status: 401 });
 
-    let mime = F.mime() || typeByExtension(F.extension()) || "application/octet-stream";
+    let mime = F.mime || typeByExtension(F.extension) || "application/octet-stream";
     if (mime === "image/svg+xml") mime += "; charset=utf-8";
 
     const headers = new Headers();
@@ -86,7 +86,7 @@ export class DbFileManager {
 
     if (/\.pdf$/.test(name) || mime === "application/pdf") {
       mime = "application/pdf";
-      headers.set("Content-Disposition", `inline; filename="${await F.name()}"`);
+      headers.set("Content-Disposition", `inline; filename="${F.name}"`);
       headers.set("Expires", "0");
       headers.set("Cache-Control", "must-revalidate");
     }
@@ -95,7 +95,7 @@ export class DbFileManager {
       mime = "application/force-download";
       headers.set("Expires", "0");
       headers.set("Cache-Control", "private, must-revalidate");
-      headers.set("Content-Disposition", `attachment; filename="${await F.name()}"`);
+      headers.set("Content-Disposition", `attachment; filename="${F.name}"`);
       headers.set("Content-Transfer-Encoding", "binary");
     }
 
@@ -130,60 +130,56 @@ export class DbFileManager {
 
 export class DbFile extends File {
   #manager: DbFileManager;
-  public id: number;
-  public vs: Record<string, any>;
+  id: number;
+  vs?: Record<string, any>;
 
-  constructor(manager: DbFileManager, id: number | string, vs?: any) {
+  constructor(manager: DbFileManager, id: number | string) {
     super("");
     this.#manager = manager;
     this.id = parseInt(String(id));
-    this.vs = {};
-    this.setLocalVs(vs ?? {});
   }
 
   setLocalVs(vs: Record<string, any>) {
     this.vs = vs;
-    this.path = this.vs["md5"] ? this.#manager.directory + this.vs["md5"] : "";
+    this.path = vs["md5"] ? this.#manager.directory + vs["md5"] : "";
+  }
+
+  async ensureVs(): Promise<Record<string, any>> {
+    if (this.id && !this.vs) {
+      this.vs = await this.#manager.db.row(`SELECT * FROM file WHERE id = ?`, [this.id]) ?? {};
+      if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
+    }
+    return this.vs!;
   }
 
   async get(field: string): Promise<unknown> {
-    await this._loadVs();
-    return this.vs[field];
+    return (await this.ensureVs())[field];
   }
 
-  async _loadVs() {
-    if (this.id && (!this.vs || !Object.keys(this.vs).length)) {
-      this.vs = await this.#manager.db.row(`SELECT * FROM file WHERE id = ?`, [this.id]) ?? {};
-      if (this.vs["md5"]) {
-        this.path = this.#manager.directory + this.vs["md5"];
-      }
-    }
+  override async exists() {
+    await this.ensureVs();
+    return super.exists();
   }
 
   async setVs(vs: Record<string, any>) {
     await this.#manager.db.table("file").update(this.id, vs);
     if (!this.vs) return;
     this.vs = { ...this.vs, ...vs };
-    if (this.vs["md5"]) {
-      this.path = this.#manager.directory + this.vs["md5"];
-    }
+    if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
   }
 
-  override async url(params: Record<string, any> | null = null): Promise<string> {
-    await this._loadVs();
-    const noNome = params == null; // backwards compatibility: if params is null, include name in URL; if params is an empty object, exclude name
-    params = params ?? {};
-    params["u"] = String(this.vs["md5"] ?? "").slice(0, 5);
+  override async url(params: Record<string, any> = {}): Promise<string> {
+    const vs = await this.ensureVs();
+    params["u"] = String(vs["md5"] ?? "").slice(0, 5);
     const paramStr = Object.entries(params).map(([k, v]) => `${k}-${v}`).join("/");
     const baseURL = getCtx().appURL + "dbFile/";
-    if (noNome) return baseURL + this.id + "/" + paramStr;
-    return baseURL + this.id + "/" + paramStr + "/" + encodeURIComponent(await this.name());
+    return baseURL + this.id + "/" + paramStr + "/" + encodeURIComponent(this.name);
   }
 
   async access(set?: any): Promise<boolean> {
-    await this._loadVs();
+    const vs = await this.ensureVs();
     if (set === undefined) {
-      const access = this.vs["access"] == "1";
+      const access = vs["access"] == "1";
       const e = { File: this, access };
       await this.#manager.app.fire("dbFile::access", e);
       await this.#manager.app.fire("dbFile::access2", e);
@@ -193,33 +189,31 @@ export class DbFile extends File {
     return !!set;
   }
 
-  async name(): Promise<string>;
-  async name(set?: any): Promise<string | void> {
-    await this._loadVs();
-    if (set === undefined) return this.vs["name"] ?? "";
-    await this.setVs({ name: set });
+  override get extension(): string {
+    return String(this.vs?.["name"] ?? "").replace(/.*\./, "").toLowerCase();
   }
 
-  override extension(): string {
-    return String(this.vs["name"] ?? "").replace(/.*\./, "").toLowerCase();
+  override get mime(): string {
+    return this.vs?.["mime"] ?? "";
   }
 
-  override mime(): string {
-    return this.vs["mime"] ?? "";
+  get name(): string {
+    return this.vs?.["name"] ?? "";
+  }
+
+  set name(value: string) {
+    if (this.vs) this.vs["name"] = value;
+    this.setVs({ name: value }).catch(console.error);
   }
 
   async updateDb() {
-    await this._loadVs();
-    this.path = this.#manager.directory + this.vs["md5"];
+    const vs = await this.ensureVs();
+    this.path = this.#manager.directory + vs["md5"];
     await this.setVs({ text: await this.getText(), size: await this.size() });
   }
 
-  override toString(): string {
-    return String(this.id);
-  }
-
   async used(): Promise<boolean> {
-    await this._loadVs();
+    await this.ensureVs();
     const tbl = this.#manager.db.table("file");
     for (const Field of tbl.children) {
       const sql = `SELECT 1 FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)} = ? LIMIT 1`;
@@ -232,18 +226,16 @@ export class DbFile extends File {
   }
 
   async remove() {
-    await this._loadVs();
+    const vs = await this.ensureVs();
     await this.#manager.db.table("file").delete(this.id);
     const e = { dbFile: this, prevent: false };
     await this.#manager.app.fire("dbFile-remove-fs", e);
-    const md5 = this.vs["md5"];
+    const md5 = vs["md5"];
     this.path = "";
     if (e.prevent) return;
     if (md5) {
       const still = await this.#manager.db.one(`SELECT id FROM file WHERE md5 = ?`, [md5]);
-      if (!still && this.path) {
-        await nodeFs.unlink(this.path).catch(() => {});
-      }
+      if (!still && this.path) await nodeFs.unlink(this.path).catch(() => {});
     }
   }
 
@@ -255,7 +247,6 @@ export class DbFile extends File {
       });
       this.path = this.#manager.directory + remote.md5;
       await Deno.rename(remote.tmpPath, this.path);
-      Object.assign(this.vs, { name: remote.name, mime: remote.type });
       await this.setVs({ name: remote.name, mime: remote.type, text: await this.getText(), md5: remote.md5, size: remote.size });
       return;
     }
@@ -266,7 +257,7 @@ export class DbFile extends File {
     await nodeFs.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
     await F.copyTo(this.path);
 
-    await this.setVs({ name: F.basename(), mime: F.mime(), text: await F.getText(), md5, size: await this.size() });
+    await this.setVs({ name: F.basename(), mime: F.mime, text: await F.getText(), md5, size: await this.size() });
   }
 
   async replaceFromUpload(f: any) {
@@ -281,13 +272,11 @@ export class DbFile extends File {
     if (type === "application/octet-stream") type = typeByExtension(ext) ?? "application/octet-stream";
     type = type.replace(/;.*/, "");
 
-    this.vs["md5"] = hash;
     await this.setVs({ name: f["name"] ?? "", mime: type, md5: hash, size: await this.size(), text: await this.getText() });
   }
 
   async clone(to?: number | null): Promise<DbFile> {
-    await this._loadVs();
-    const data = { ...this.vs };
+    const data = { ...await this.ensureVs() };
     let newId: number;
     if (to == null) {
       delete data["id"];
@@ -296,19 +285,22 @@ export class DbFile extends File {
       data["id"] = String(to);
       await this.#manager.db.table("file").update(to, data);
       newId = to;
-      return this.#manager.file(newId, data);
+      return await this.#manager.file(newId, data);
     }
-    return this.#manager.file(newId);
+    return await this.#manager.file(newId);
   }
 
   async transform(param: Record<string, any>): Promise<{ path: string; mime: string }> {
-    await this._loadVs();
-    if (!this.path) return { path: this.path, mime: this.mime() };
+    await this.ensureVs();
+    if (!this.path) return { path: this.path, mime: this.mime };
     const cacheDir = this.#manager.app.appPATH + "cache/pri/";
-    const dbMime = this.mime();
+    const dbMime = this.mime;
     const result = await FileTransformer.transform(this.path, cacheDir, parseTransformOptions(param), dbMime);
     return { path: result.path, mime: result.mime || dbMime };
   }
+
+  override toString(): string { return String(this.id); }
+
 }
 
 function parseTransformOptions(param: Record<string, any>): TransformOptions {

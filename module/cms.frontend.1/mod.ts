@@ -4,12 +4,12 @@
  */
 
 import { hee } from "../core/lib/util.ts"
-import { getCtx, type RequestContext } from "../core/lib/context.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { AptTree } from "../core/lib/apt.ts";
 import { AccessError } from "../core/lib/apt.ts";
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
 
 export const name = "cms.frontend.1";

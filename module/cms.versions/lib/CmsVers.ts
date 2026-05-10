@@ -8,7 +8,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../../core/lib/context.ts";
+import { getCtx } from "../../core/lib/RequestContext.ts";
 import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
 import type { Db } from "../../core/lib/Db.ts";
 

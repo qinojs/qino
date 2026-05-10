@@ -1,6 +1,6 @@
 // Port of cms.filebrowser.pexels/qg.php
 
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.filebrowser.pexels";

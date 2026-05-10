@@ -5,10 +5,10 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
 import type { AptTree } from "../core/lib/apt.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.text";
 export const needs = ["cms"];

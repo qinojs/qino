@@ -12,7 +12,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { OutputError } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import type { Context } from "../../deps.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
 await import(reporterPath);

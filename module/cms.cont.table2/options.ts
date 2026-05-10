@@ -1,7 +1,7 @@
 // Port of cms.cont.table2/options.php
 import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 
 export default async function (node: Node, _vars: any): Promise<string> {
   const cols = Math.max(1, parseInt(String(await node.settings.cols)) || 1);

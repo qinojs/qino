@@ -1,5 +1,5 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-import { getCtx } from "../../../core/lib/context.ts";
+import { getCtx } from "../../../core/lib/RequestContext.ts";
 import { addSettingsEditor, settingsSourceAttr } from "../../../core/lib/settings.ts";
 
 export default async function (node: Node): Promise<string> {

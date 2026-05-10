@@ -2,7 +2,7 @@
 // Port of cms.cont.login4/index.php
 import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.cont.login4";
 

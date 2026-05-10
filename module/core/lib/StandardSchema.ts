@@ -20,17 +20,17 @@ type Kind = "string" | "number" | "boolean" | "object" | "array" | "optional" | 
 type Validator<T> = (value: unknown, path: PropertyKey[]) => StandardResult<T>;
 
 declare const OPTIONAL_BRAND: unique symbol;
-type Optional<T> = Schema<T | undefined> & { readonly [OPTIONAL_BRAND]: true };
+type Optional<T> = StandardSchema<T | undefined> & { readonly [OPTIONAL_BRAND]: true };
 
-export class Schema<T = unknown> {
+export class StandardSchema<T = unknown> {
   readonly "~standard": { readonly version: 1; readonly vendor: "apt"; readonly validate: (value: unknown) => StandardResult<T> };
   readonly kind: Kind;
-  readonly shape?: Record<string, Schema<any>>;
-  readonly inner?: Schema<any>;
+  readonly shape?: Record<string, StandardSchema<any>>;
+  readonly inner?: StandardSchema<any>;
   readonly defaultValue?: () => T;
   readonly description?: string;
 
-  constructor(kind: Kind, validator: Validator<T>, extras: { shape?: Record<string, Schema<any>>; inner?: Schema<any>; defaultValue?: () => T; description?: string } = {}) {
+  constructor(kind: Kind, validator: Validator<T>, extras: { shape?: Record<string, StandardSchema<any>>; inner?: StandardSchema<any>; defaultValue?: () => T; description?: string } = {}) {
     this.kind = kind;
     this.shape = extras.shape;
     this.inner = extras.inner;
@@ -44,8 +44,8 @@ export class Schema<T = unknown> {
     };
   }
 
-  default(value: T): Schema<T> {
-    return new Schema<T>(this.kind, (v, p) => this["~standard"].validate(v) as any, {
+  default(value: T): StandardSchema<T> {
+    return new StandardSchema<T>(this.kind, (v, p) => this["~standard"].validate(v) as any, {
       shape: this.shape,
       inner: this.inner,
       defaultValue: () => value,
@@ -53,8 +53,8 @@ export class Schema<T = unknown> {
     });
   }
 
-  describe(description: string): Schema<T> {
-    return new Schema<T>(this.kind, (v, p) => this["~standard"].validate(v) as any, {
+  describe(description: string): StandardSchema<T> {
+    return new StandardSchema<T>(this.kind, (v, p) => this["~standard"].validate(v) as any, {
       shape: this.shape,
       inner: this.inner,
       defaultValue: this.defaultValue,
@@ -72,18 +72,18 @@ function err(path: PropertyKey[], message: string): StandardIssue[] {
 // ───── Builder `s` ────────────────────────────────────────────────────────
 
 export const s = {
-  string: () => new Schema<string>("string", (v, p) =>
+  string: () => new StandardSchema<string>("string", (v, p) =>
     typeof v === "string" ? { value: v } : { issues: err(p, "expected string") }),
 
-  number: () => new Schema<number>("number", (v, p) =>
+  number: () => new StandardSchema<number>("number", (v, p) =>
     typeof v === "number" && !Number.isNaN(v) ? { value: v } : { issues: err(p, "expected number") }),
 
-  boolean: () => new Schema<boolean>("boolean", (v, p) =>
+  boolean: () => new StandardSchema<boolean>("boolean", (v, p) =>
     typeof v === "boolean" ? { value: v } : { issues: err(p, "expected boolean") }),
 
-  object: <Shape extends Record<string, Schema<any>>>(shape: Shape): Schema<InferObject<Shape>> => {
+  object: <Shape extends Record<string, StandardSchema<any>>>(shape: Shape): StandardSchema<InferObject<Shape>> => {
     const keys = Object.keys(shape);
-    return new Schema<InferObject<Shape>>("object", (v, p) => {
+    return new StandardSchema<InferObject<Shape>>("object", (v, p) => {
       if (typeof v !== "object" || v === null || Array.isArray(v)) return { issues: err(p, "expected object") };
       const out: Record<string, unknown> = {};
       const issues: StandardIssue[] = [];
@@ -96,8 +96,8 @@ export const s = {
     }, { shape });
   },
 
-  array: <T>(item: Schema<T>): Schema<T[]> =>
-    new Schema<T[]>("array", (v, p) => {
+  array: <T>(item: StandardSchema<T>): StandardSchema<T[]> =>
+    new StandardSchema<T[]>("array", (v, p) => {
       if (!Array.isArray(v)) return { issues: err(p, "expected array") };
       const out: T[] = [];
       const issues: StandardIssue[] = [];
@@ -109,16 +109,16 @@ export const s = {
       return issues.length ? { issues } : { value: out };
     }, { inner: item }),
 
-  optional: <T>(inner: Schema<T>): Optional<T> =>
-    new Schema<T | undefined>("optional", (v) =>
+  optional: <T>(inner: StandardSchema<T>): Optional<T> =>
+    new StandardSchema<T | undefined>("optional", (v) =>
       v === undefined || v === null ? { value: undefined } : inner["~standard"].validate(v) as StandardResult<T | undefined>,
     { inner }) as Optional<T>,
 
-  any: (): Schema<unknown> =>
-    new Schema<unknown>("any", (v) => ({ value: v })),
+  any: (): StandardSchema<unknown> =>
+    new StandardSchema<unknown>("any", (v) => ({ value: v })),
 
-  record: <T = unknown>(value?: Schema<T>): Schema<Record<string, T>> =>
-    new Schema<Record<string, T>>("record", (v, p) => {
+  record: <T = unknown>(value?: StandardSchema<T>): StandardSchema<Record<string, T>> =>
+    new StandardSchema<Record<string, T>>("record", (v, p) => {
       if (typeof v !== "object" || v === null || Array.isArray(v)) return { issues: err(p, "expected object") };
       if (!value) return { value: v as Record<string, T> };
       const out: Record<string, T> = {};
@@ -136,13 +136,13 @@ export const s = {
 
 type OptionalKeys<Shape> = { [K in keyof Shape]: Shape[K] extends Optional<any> ? K : never }[keyof Shape];
 type RequiredKeys<Shape> = Exclude<keyof Shape, OptionalKeys<Shape>>;
-type Infer<S> = S extends Schema<infer T> ? T : never;
+type Infer<S> = S extends StandardSchema<infer T> ? T : never;
 
-export type InferObject<Shape extends Record<string, Schema<any>>> =
+export type InferObject<Shape extends Record<string, StandardSchema<any>>> =
   & { [K in RequiredKeys<Shape>]: Infer<Shape[K]> }
   & { [K in OptionalKeys<Shape>]?: Infer<Shape[K]> };
 
-export function toJsonSchema(schema: Schema): Record<string, unknown> {
+export function toJsonSchema(schema: StandardSchema): Record<string, unknown> {
   const desc = schema.description ? { description: schema.description } : {};
   switch (schema.kind) {
     case "string":   return { type: "string", ...desc };

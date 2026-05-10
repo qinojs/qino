@@ -13,9 +13,7 @@ export class File {
     this.path = path;
   }
 
-  toString(): string {
-    return this.path;
-  }
+  toString(): string { return this.path; }
 
   read(): void {
     // In Deno context: read is used to stream a file; callers use ctx.state.__fileOutput
@@ -72,13 +70,12 @@ export class File {
     }
   }
 
-  extension(): string {
+  get extension(): string {
     return this.path.replace(/.*\./, "").toLowerCase();
   }
 
-  mime(): string {
-    const ext = this.extension();
-    return typeByExtension(ext) || "application/octet-stream";
+  get mime(): string {
+    return typeByExtension(this.extension) || "application/octet-stream";
   }
 
   url(): string | Promise<string> {
@@ -99,7 +96,7 @@ export class File {
 
   async getText(): Promise<string> {
     if (!await this.exists()) return "";
-    const ext = this.extension();
+    const ext = this.extension;
     switch (ext) {
       case "csv":
       case "txt":

@@ -5,7 +5,7 @@
 
 import type { Node } from "../../cms/lib/Node.ts";
 import { hee } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/context.ts";
+import { getCtx } from "../../core/lib/RequestContext.ts";
 import { cmsFrontend1WidgetSidebar, } from "../mod.ts";
 
 export default async function (node: Node): Promise<string> {

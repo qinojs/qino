@@ -5,28 +5,29 @@ import * as nodeFs from "node:fs/promises";
 import { Buffer } from "node:buffer";
 import { hee } from "../core/lib/util.ts";
 import { magickIdentify, magick, isMagickAvailable } from "../core/lib/transform/imagemagick.ts";
-import type { App } from "../core/server.ts";
 import type { DbFile } from "../core/lib/DbFileManager.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.image2";
 
-export async function cms_image2(dbFile: DbFile, options: Record<string, any>, ctx: RequestContext, app: App): Promise<string> {
+export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<string> {
+  const ctx = getCtx();
   ctx.html.addJSFile(ctx.sysURL + "cms.image2/pub/cms-image2.js");
   ctx.html.addCSSFile(ctx.sysURL + "cms.image2/pub/cms-image2.css");
-  if ((options["if"] ?? 0) && !dbFile.vs["size"] && !options["editable"]) return "";
+  if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return "";
   if (!options["quality"]) options["quality"] = "85";
   delete options["if"];
-  return await dbImage_html2(dbFile, options, app);
+  return await dbImage_html2(dbFile, options);
 }
 
-export async function cms_image2_bg(dbFile: DbFile, options: Record<string, any>, ctx: RequestContext, app: App): Promise<string> {
+export async function cms_image2_bg(dbFile: DbFile, options: Record<string, any>): Promise<string> {
+  const ctx = getCtx();
   ctx.html.addJSFile(ctx.sysURL + "cms.image2/pub/cms-image2.js");
   ctx.html.addCSSFile(ctx.sysURL + "cms.image2/pub/cms-image2.css");
   if (!options["quality"]) options["quality"] = "78";
   if (!options["style"]) options["style"] = "";
-  if (dbFile.vs["size"]) {
-    const data = await dbImage_html_2_getData(dbFile, options, app);
+  if (await dbFile.exists()) {
+    const data = await dbImage_html_2_getData(dbFile, options);
     const src = await dbImage_fileUrl(dbFile, data, options);
     options["style"] += `; background-position:${data.hpos}% ${data.vpos}%`;
     options["style"] += `; background-image:url(${data.preview})`;
@@ -35,14 +36,14 @@ export async function cms_image2_bg(dbFile: DbFile, options: Record<string, any>
   return `style="${hee(options["style"])}"`;
 }
 
-export async function dbImage_html2(dbFile: DbFile, options: Record<string, any>, app: App): Promise<string> {
-  const data = await dbImage_html_2_getData(dbFile, options, app);
+export async function dbImage_html2(dbFile: DbFile, options: Record<string, any>): Promise<string> {
+  const data = await dbImage_html_2_getData(dbFile, options);
   const w = data.w || 1;
   const h = data.h || 1;
   const { vpos, hpos } = data;
 
   const src = await dbImage_fileUrl(dbFile, data, options);
-  const alt = String(options["alt"] ?? "").trim() || dbImage_name2alt(String(dbFile.vs["name"] ?? ""));
+  const alt = String(options["alt"] ?? "").trim() || dbImage_name2alt(String(await dbFile.get("name") ?? ""));
 
   const styles: Record<string, string> = { ...(options["css"] ?? {}) };
   if (!styles["max-width"]) styles["max-width"] = w + "px";
@@ -73,18 +74,17 @@ async function dbImage_fileUrl(dbFile: DbFile, data: any, options: Record<string
   return await dbFile.url({ w: data.w, h: data.h, vpos: data.vpos, hpos: data.hpos, q: options["quality"] ?? "85" });
 }
 
-async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, any>, app: App): Promise<any> {
-  await dbFile._loadVs();
-  const vs = dbFile.vs;
+async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, any>): Promise<any> {
+  const ctx = getCtx();
   let w = parseInt(String(options["width"] ?? 0)) || 0;
   let h = parseInt(String(options["height"] ?? 0)) || 0;
-  const hpos = options["hpos"] ?? vs["hpos"] ?? 50;
-  const vpos = options["vpos"] ?? vs["vpos"] ?? 50;
+  const hpos = options["hpos"] ?? await dbFile.get("hpos") ?? 50;
+  const vpos = options["vpos"] ?? await dbFile.get("vpos") ?? 50;
   const faktor = 50;
   const maxHW = 22;
 
-  const md5 = vs["md5"];
-  const cacheFile = app.appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${faktor}.${maxHW}.json`;
+  const md5 = await dbFile.get("md5");
+  const cacheFile = ctx.app.appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${faktor}.${maxHW}.json`;
 
   if (md5) {
     try { return JSON.parse(await nodeFs.readFile(cacheFile, "utf-8")); } catch { /* no cache */ }
@@ -113,7 +113,6 @@ async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, an
     if (!h) h = 600;
   }
 
-  // Preview im Hintergrund berechnen
   const preview = "";
   if (md5) {
     setTimeout(async () => {
@@ -121,8 +120,8 @@ async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, an
         if (!await isMagickAvailable() || !filePath || !ow) return;
         const smallW = Math.max(Math.min(Math.round(w / faktor), maxHW), 1);
         const smallH = Math.max(Math.min(Math.round(h / faktor), maxHW), 1);
-        const tmpPath = app.appPATH + `cache/cms-image2-prev-${md5}.png`;
-        await nodeFs.mkdir(app.appPATH + "cache/", { recursive: true }).catch(() => {});
+        const tmpPath = ctx.app.appPATH + `cache/cms-image2-prev-${md5}.png`;
+        await nodeFs.mkdir(ctx.app.appPATH + "cache/", { recursive: true }).catch(() => {});
         await magick(filePath, [`-resize`, `${smallW}x${smallH}`, `-quality`, `9`], tmpPath);
         const buf = await nodeFs.readFile(tmpPath);
         const prev = "data:image/png;base64," + Buffer.from(buf).toString("base64");

@@ -2,7 +2,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/context.ts";
+import { getCtx } from "../../core/lib/RequestContext.ts";
 import { showDateTime } from "../../core/lib/util.ts";
 import type { Node } from "../../cms/lib/Node.ts";
 

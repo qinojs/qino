@@ -4,9 +4,9 @@
  * Vollständige Portierung aller Routen aus apt-exports.ts.
  */
 
-import { s } from "../core/lib/schema.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import { AccessError, ConflictError, NotFoundError } from "../core/lib/apt.ts";
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 import { $item } from "../../deps.ts";
 import { readSettings } from "../core/lib/settings.ts";
 import {

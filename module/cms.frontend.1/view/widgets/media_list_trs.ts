@@ -7,7 +7,7 @@ export default async function (node: Node): Promise<string> {
   const files = await node.filesAndPlaceholders();
   let html = "";
   for (const [name, F] of Object.entries(files)) {
-    const ext = F.extension?.() ?? "";
+    const ext = F.extension;
     const exists = await F.exists();
     let preview = "";
     switch (ext) {
@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<string> {
       case "pdf": {
         if (await FileTransformer.capabilities.magick) {
           const url = await F.url();
-          const fname = hee(await F.name());
+          const fname = hee(F.name);
           const extra = ext === "pdf" ? "page-1/" : "";
           preview = `<img src="${url}/w-60/h-40/dpr-0/max/${extra}${fname}" ${ext === "svg" ? "height=40" : ""} alt="" draggable=true>`;
         }
@@ -24,14 +24,14 @@ export default async function (node: Node): Promise<string> {
       case "mp4": case "webm": case "mov": case "avi": case "mkv": {
         if (await FileTransformer.capabilities.ffmpeg) {
           const url = await F.url();
-          const fname = hee(await F.name());
+          const fname = hee(F.name);
           preview = `<img src="${url}/w-60/h-40/fmt-jpeg/frame-1/${fname}" alt="" draggable=true>`;
         }
         break;
       }
       case "mp3": {
         const url = await F.url();
-        const fname = hee(await F.name());
+        const fname = hee(F.name);
         preview = `<audio src="${url}/${fname}" controls style="min-width:70px;width:100%" draggable=true>`;
         break;
       }
@@ -43,13 +43,13 @@ export default async function (node: Node): Promise<string> {
         </svg>`;
       }
     }
-    const vsName = await F.vs.name ?? "";
+    const vsName = F.name;
     let linkHtml = "";
     if (!exists) {
       linkHtml = await app.t`Platzhalter`;
     } else {
       const url = await F.url();
-      const fname = hee(await F.name());
+      const fname = hee(F.name);
       linkHtml = `<a title="${fname}" href="${url}/${fname}" target=_blank>${hee(vsName)}</a>`;
     }
     const nameLabel = name[0] !== "_" ? `<div style="font-size:11px;color:#999;font-style:italic">(${hee(name)})</div>` : "";

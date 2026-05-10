@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 // Port of cms.filebrowser/qg.php
 
-import { getCtx } from "../core/lib/context.ts";
-import { s } from "../core/lib/schema.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
+import { s } from "../core/lib/StandardSchema.ts";
 import type { AptTree } from "../core/lib/apt.ts";
 import type { App } from "../core/server.ts";
 
@@ -75,7 +75,7 @@ async function search(s_: string, ctx: any): Promise<any[]> {
 
     for (const vs of rows) {
         const Page = vs.pid ? await cms.node(parseInt(String(vs.pid))) : null;
-        const dbFile = ctx.app.dbFiles.file(parseInt(String(vs.id)), vs);
+        const dbFile = await ctx.app.dbFiles.file(parseInt(String(vs.id)), vs);
 
         if (!await dbFile.exists()) continue;
         if (!await dbFile.access()) continue;
@@ -86,7 +86,7 @@ async function search(s_: string, ctx: any): Promise<any[]> {
                 id: vs.id,
                 mime: vs.mime,
                 url: await dbFile.url({}),
-                name: await dbFile.name(),
+                name: dbFile.name,
                 pages: {} as Record<string, string>,
             };
         }

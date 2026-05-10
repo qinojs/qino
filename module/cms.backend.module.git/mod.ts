@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/context.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { getModuleGitInfo } from "../git/mod.ts";
 import * as GitService from "../git/lib/GitService.ts";

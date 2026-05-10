@@ -6,7 +6,7 @@
 
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
-import { getCtx } from "./context.ts";
+import { getCtx } from "./RequestContext.ts";
 import { Db, numTypes } from "./Db.ts";
 
 export class DbTable {

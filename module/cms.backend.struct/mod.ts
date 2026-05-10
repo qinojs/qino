@@ -3,7 +3,7 @@
 import { hee } from "../core/lib/util.ts";
 import { list } from "./parts/list.ts";
 import type { Node } from "../cms/lib/Node.ts";
-import type { RequestContext } from "../core/lib/context.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.struct";

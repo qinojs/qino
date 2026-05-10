@@ -1,6 +1,6 @@
 import { getCookie, bildJsonItem, type Context, type ItemProxy } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
-import type { RequestContext } from "./context.ts";
+import type { RequestContext } from "./RequestContext.ts";
 
 const COOKIE_NAME = "qgSession";
 const EMPTY_SESSION = "{}";
