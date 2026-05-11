@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import "../../../core/js/SettingsEditor.mjs?qgUniq=uploadMaxFileSize";
+import "../../../core/pub/js/SettingsEditor.mjs?qgUniq=uploadMaxFileSize";
 import "./frontend.mjs?qgUniq=19aae46";
-import { apt } from "../../../core/js/apt.js";
+import { apt } from "../../../core/pub/js/apt.js";
 
 const ctxSettingsUrl = new URL(
   "../../../../api/core/ctx-settings",
@@ -287,7 +287,7 @@ c1.onElement(".qgCmsFileManager", async (el) => {
       });
     }
     /*
-		var {Sortable} = await import('./../../../core/js/sortable.m js?qgUniq=');
+		var {Sortable} = await import('./../../../core/pub/js/sortable.m js?qgUniq=');
 		new Sortable(tbody, {
 			handle:'.-handle',
 			forceFallback:true,

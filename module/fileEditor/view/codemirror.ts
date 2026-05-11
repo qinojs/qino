@@ -17,12 +17,12 @@ export default async function codemirrorView(file: string): Promise<string> {
     const ctx = getCtx();
     const html = ctx.html;
 
-    html.addCSSFile(ctx.sysURL + "core/css/q1Rst.css");
+    html.addCSSFile(ctx.sysURL + "core/pub/css/q1Rst.css");
     html.addCSSFile("https://cdn.jsdelivr.net/gh/u1ui/norm.css@3.2.0/norm.min.css");
     html.addCSSFile("https://cdn.jsdelivr.net/gh/u1ui/base.css@3.2.0/base.min.css");
 
-    html.addJSFile(ctx.sysURL + "core/js/c1.js");
-    html.addJSFile(ctx.sysURL + "core/js/qg.js");
+    html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
+    html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
 
     const version = "5.65.5";
     const url = `https://cdn.jsdelivr.net/npm/codemirror@${version}`;

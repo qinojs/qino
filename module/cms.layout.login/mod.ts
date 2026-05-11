@@ -8,11 +8,11 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addCSSFile("https://cdn.jsdelivr.net/gh/u1ui/norm.css@3.2.0/norm.min.css");
   ctx.html.addCSSFile("https://cdn.jsdelivr.net/gh/u1ui/base.css@3.2.0/base.min.css");
   ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/c1.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/c1/onElement.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/c1/dom.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
   ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/qg.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
 
   ctx.html.meta["viewport"] = "width=device-width";
 

@@ -1,9 +1,9 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 // todo? // externe Seiten http://github.com/codepo8/GooHooBi/blob/master/multisearch.html
-//import '../../../core/js/Rte/Rte.ui.items.mjs?qgUniq=6fb933c';
+//import '../../../core/pub/js/Rte/Rte.ui.items.mjs?qgUniq=6fb933c';
 
-import '../../../core/js/Rte/index.mjs?qgUniq=e1a8c3b';
-import { apt } from '../../../core/js/apt.js';
+import '../../../core/pub/js/Rte/index.mjs?qgUniq=e1a8c3b';
+import { apt } from '../../../core/pub/js/apt.js';
 
 let urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 let mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;

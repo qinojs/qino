@@ -5,6 +5,43 @@
 
 // deno-lint-ignore-file no-explicit-any
 
+import * as nodePath from "node:path";
+
+export function appRequestUriToLocalPath(appRequestUri: string, app: any): string | null {
+  const matchM = appRequestUri.match(/^m\/([^/]+)\/pub\/(.*)/);
+  if (matchM) {
+    const mod = app.modules.get(matchM[1]);
+    const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
+    return base + "pub/" + matchM[2];
+  }
+  const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\/(.*)/);
+  if (matchQg) {
+    return app.appPATH + "qg/" + matchQg[1] + "/pub/" + matchQg[2];
+  }
+  return null;
+}
+
+export function urlToLocalPath(url: string, ctx: any): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol === "file:") return u.pathname;
+    const appRequestUri = decodeURIComponent(u.pathname.slice(ctx.appURL.length));
+    return appRequestUriToLocalPath(appRequestUri, ctx.app);
+  } catch { /* not a URL */ }
+  return null;
+}
+
+export function assertAllowedPath(file: string, app: any): void {
+  if (!file || file.includes("\0")) throw new OutputError("invalid path");
+  const resolved = nodePath.resolve(file);
+  if (resolved !== nodePath.normalize(file) && resolved !== file) throw new OutputError("invalid path");
+  const roots: string[] = [nodePath.resolve(app.appPATH)];
+  for (const mod of Object.values(app.modules.all()) as any[]) {
+    if (mod.dir) roots.push(nodePath.resolve(mod.dir));
+  }
+  if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new OutputError("invalid path");
+}
+
 export function number(v: any): string {
   return String(v ?? "").replace(",", ".");
 }

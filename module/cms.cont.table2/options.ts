@@ -19,15 +19,15 @@ export default async function (node: Node, _vars: any): Promise<string> {
     colWidths += `
     <div style="width:${percent}%; text-align:center;">
       ${i}<br>
-      <input value="${hee(val)}" data-node="${node}" data-key="${"row_" + i}" oninput="import('${ctx.sysURL}core/js/apt.js').then(m=>m.apt.cms.node(this.dataset.node).defaults.put({value:{[this.dataset.key]:this.value}}))" style="width:93%; text-align:center" placeholder="50%"/>
+      <input value="${hee(val)}" data-node="${node}" data-key="${"row_" + i}" oninput="import('${ctx.sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(this.dataset.node).defaults.put({value:{[this.dataset.key]:this.value}}))" style="width:93%; text-align:center" placeholder="50%"/>
     </div>`;
   }
 
   return `
-<input type=number value="${hee(String(rows))}" min=1 max=300 data-node="${node}" oninput="import('${ctx.sysURL}core/js/apt.js').then(m=>m.apt.cms.node(this.dataset.node).defaults.put({value:{rows:this.value}}))" style="width:80px; font-size:18px;">
+<input type=number value="${hee(String(rows))}" min=1 max=300 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(this.dataset.node).defaults.put({value:{rows:this.value}}))" style="width:80px; font-size:18px;">
 Zeilen (max: 300)<br>
 <br>
-<input type=number value="${hee(String(cols))}" min=1 max=15 data-node="${node}" oninput="import('${ctx.sysURL}core/js/apt.js').then(m=>m.apt.cms.node(this.dataset.node).defaults.put({value:{cols:this.value}})); cms.cont(cms.cont.active).showWidget('options')" style="width:80px; font-size:18px;">
+<input type=number value="${hee(String(cols))}" min=1 max=15 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(this.dataset.node).defaults.put({value:{cols:this.value}})); cms.cont(cms.cont.active).showWidget('options')" style="width:80px; font-size:18px;">
 Spalten (max: 15)<br>
 
 <br>

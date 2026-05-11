@@ -76,7 +76,7 @@ export class HtmlBuilder {
         jsData["qgToken"] = ctx.token;
         jsData["appURL"] = ctx.appURL || "/";
         jsData["sysURL"] = ctx.sysURL || "/m/";
-        jsData["c1UseSrc"] = (ctx.sysURL || "/m/") + "core/js";
+        jsData["c1UseSrc"] = (ctx.sysURL || "/m/") + "core/pub/js";
 
         const lang = ctx.lang;
         return `<!DOCTYPE HTML>\n<html lang=${lang}>\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;

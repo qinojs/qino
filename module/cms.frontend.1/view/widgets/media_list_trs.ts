@@ -14,10 +14,8 @@ export default async function (node: Node): Promise<string> {
       case "jpg": case "jpeg": case "gif": case "png": case "svg": case "webp":
       case "pdf": {
         if (await FileTransformer.capabilities.magick) {
-          const url = await F.url();
-          const fname = hee(F.name);
-          const extra = ext === "pdf" ? "page-1/" : "";
-          preview = `<img src="${url}/w-70/h-40/dpr-0/max/${extra}${fname}" ${ext === "svg" ? "height=40" : ""} alt="" draggable=true>`;
+          const url = await F.url({w: 70, h: 40, dpt: 0, max: true, page:1});
+          preview = `<img src="${url}" ${ext === "svg" ? "height=40" : ""} alt="" draggable=true>`;
         }
         break;
       }

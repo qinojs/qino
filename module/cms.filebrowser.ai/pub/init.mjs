@@ -1,4 +1,4 @@
-import { apt } from '../../core/js/apt.js';
+import { apt } from '../../core/pub/js/apt.js';
 
 c1.onElement('.cmsFileBrowser', el => {
     const mainList = el.c1Find('.-list.-main');

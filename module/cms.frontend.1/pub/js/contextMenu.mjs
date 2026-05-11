@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
-import '../../../core/js/c1/contextMenu.mjs?qgUniq=11ccbd1';
-import { apt } from '../../../core/js/apt.js';
+import '../../../core/pub/js/c1/contextMenu.mjs?qgUniq=11ccbd1';
+import { apt } from '../../../core/pub/js/apt.js';
 import '../../../cms/pub/js/cms.mjs';
 
 let Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu('CMS Inhalt',{

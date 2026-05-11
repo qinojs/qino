@@ -36,11 +36,8 @@ export class DbFileManager {
   }
 
   clearCache(id?: number | string) {
-    if (id !== undefined) {
-      delete this.#cache[String(id)];
-    } else {
-      this.#cache = {};
-    }
+    if (id !== undefined) delete this.#cache[String(id)];
+    else this.#cache = {};
   }
 
   async add(path?: string): Promise<DbFile> {
@@ -152,41 +149,33 @@ export class DbFile extends File {
     return this.vs!;
   }
 
-  async get(field: string): Promise<unknown> {
-    return (await this.ensureVs())[field];
-  }
+  async get(field: string) { return (await this.ensureVs())[field]; }
 
-  override async exists(): Promise<this | false> {
-    await this.ensureVs();
-    return super.exists();
-  }
+  override async exists(): Promise<this | false> { await this.ensureVs(); return super.exists(); }
 
   async setVs(vs: Record<string, any>) {
     await this.#manager.db.table("file").update(this.id, vs);
-    if (!this.vs) return;
-    this.vs = { ...this.vs, ...vs };
-    if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
+    if (this.vs) {
+      Object.assign(this.vs, vs);
+      if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
+    }
   }
 
   override async url(params: Record<string, any> = {}): Promise<string> {
     const vs = await this.ensureVs();
-    params["u"] = String(vs["md5"] ?? "").slice(0, 5);
-    const paramStr = Object.entries(params).map(([k, v]) => `${k}-${v}`).join("/");
+    const u = `u-${String(vs["md5"] ?? "").slice(0, 5)}`;
+    const parts = [u, ...Object.entries(params).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
     const baseURL = getCtx().appURL + "dbFile/";
-    return baseURL + this.id + "/" + paramStr + "/" + encodeURIComponent(this.name);
+    return baseURL + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
   }
 
   async access(set?: any): Promise<boolean> {
+    if (set !== undefined) { await this.setVs({ access: set ? 1 : 0 }); return !!set; }
     const vs = await this.ensureVs();
-    if (set === undefined) {
-      const access = vs["access"] == "1";
-      const e = { File: this, access };
-      await this.#manager.app.fire("dbFile::access", e);
-      await this.#manager.app.fire("dbFile::access2", e);
-      return e.access;
-    }
-    await this.setVs({ access: set ? 1 : 0 });
-    return !!set;
+    const e = { File: this, access: vs["access"] == "1" };
+    await this.#manager.app.fire("dbFile::access", e);
+    await this.#manager.app.fire("dbFile::access2", e);
+    return e.access;
   }
 
   override get extension(): string {
@@ -213,12 +202,9 @@ export class DbFile extends File {
   }
 
   async used(): Promise<boolean> {
-    await this.ensureVs();
-    const tbl = this.#manager.db.table("file");
-    for (const Field of tbl.children) {
+    for (const Field of this.#manager.db.table("file").children) {
       const sql = `SELECT 1 FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)} = ? LIMIT 1`;
-      const has = await this.#manager.db.one(sql, [this.id]);
-      if (has) return true;
+      if (await this.#manager.db.one(sql, [this.id])) return true;
     }
     const e = { dbFile: this, used: false };
     await this.#manager.app.fire("dbFile-used", e);
@@ -226,17 +212,14 @@ export class DbFile extends File {
   }
 
   async remove() {
-    const vs = await this.ensureVs();
+    const { md5 } = await this.ensureVs();
     await this.#manager.db.table("file").delete(this.id);
     const e = { dbFile: this, prevent: false };
     await this.#manager.app.fire("dbFile-remove-fs", e);
-    const md5 = vs["md5"];
     this.path = "";
-    if (e.prevent) return;
-    if (md5) {
-      const still = await this.#manager.db.one(`SELECT id FROM file WHERE md5 = ?`, [md5]);
-      if (!still && this.path) await nodeFs.unlink(this.path).catch(() => {});
-    }
+    if (e.prevent || !md5) return;
+    const still = await this.#manager.db.one(`SELECT id FROM file WHERE md5 = ?`, [md5]);
+    if (!still) await nodeFs.unlink(this.#manager.directory + md5).catch(() => {});
   }
 
   async replaceBy(path: string) {

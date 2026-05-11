@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { apt } from '../../../core/js/apt.js';
+import { apt } from '../../../core/pub/js/apt.js';
 
 c1.c1Use('tableHandles', function() {
 	const handles = new c1.tableHandles();

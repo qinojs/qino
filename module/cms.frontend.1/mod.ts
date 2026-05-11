@@ -173,26 +173,26 @@ export function init(app: App) {
     }
 
     if (access < 2) return;
-    ctx.html.addJSFile(ctx.sysURL + "core/js/c1.js");
-    ctx.html.addJSFile(ctx.sysURL + "core/js/c1/dom.js");
+    ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
+    ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
     ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/off.css");
 
     const editmode = access > 1 && parseInt(await settings.cms.editmode);
     if (editmode) {
       ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/browserCheck.js");
-      ctx.html.addJSFile(ctx.sysURL + "core/js/qg.js");
-      ctx.html.addJSFile(ctx.sysURL + "core/js/c1/onElement.js");
+      ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
+      ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
       ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
-      ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery.js");
-      ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery/ui.js");
-      ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery/fn/dynatree.js");
+      ctx.html.addJSFile(ctx.sysURL + "core/pub/js/jQuery.js");
+      ctx.html.addJSFile(ctx.sysURL + "core/pub/js/jQuery/ui.js");
+      ctx.html.addJSFile(ctx.sysURL + "core/pub/js/jQuery/fn/dynatree.js");
       ctx.html.addJSM(ctx.sysURL + "cms.frontend.1/pub/js/frontend.mjs");
       allowSettingsEditorAssets(ctx);
       ctx.html.addJSM(ctx.sysURL + "cms.frontend.1/pub/js/panel.mjs");
-      ctx.html.addCSSFile(ctx.sysURL + "core/js/Rte/main.css");
-      ctx.html.addCSSFile(ctx.sysURL + "core/js/jQuery/fn/dynatree/skin-vista/ui.dynatree.css");
-      ctx.html.addCSSFile(ctx.sysURL + "core/css/q1Rst.css");
-      ctx.html.addCSSFile(ctx.sysURL + "core/css/c1/box.css");
+      ctx.html.addCSSFile(ctx.sysURL + "core/pub/js/Rte/main.css");
+      ctx.html.addCSSFile(ctx.sysURL + "core/pub/js/jQuery/fn/dynatree/skin-vista/ui.dynatree.css");
+      ctx.html.addCSSFile(ctx.sysURL + "core/pub/css/q1Rst.css");
+      ctx.html.addCSSFile(ctx.sysURL + "core/pub/css/c1/box.css");
       ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
       ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/panel.css");
       ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/tree.css");

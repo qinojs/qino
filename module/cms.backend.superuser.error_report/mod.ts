@@ -5,7 +5,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { hee } from "../core/lib/util.ts"
+import { hee } from "../core/lib/util.ts";
+import { urlToLocalPath } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { Db } from "../core/lib/Db.ts";
 import { backend } from "../cms.backend/mod.ts";
@@ -24,24 +25,14 @@ export async function install({ app }: any): Promise<void> {
 
 function makeFileHelper(ctx: any) {
     const appURL = ctx.appURL as string;
-    const sysURL = ctx.sysURL as string;
-    function toLocalPath(file: string): string | null {
-        try { const u = new URL(file); if (u.protocol === "file:") return u.pathname; } catch { /* not a URL */ }
-        for (const mod of Object.values(ctx.app.modules.all() as Record<string, any>)) {
-            if (!mod.dir) continue;
-            const pubUrl = sysURL + mod.name + "/pub/";
-            if (file.startsWith(pubUrl)) return mod.dir + "pub/" + file.slice(pubUrl.length);
-        }
-        return null;
-    }
     function editorLink(file: string, line: unknown, col: unknown): string {
-        const localPath = toLocalPath(file) ?? file;
+        const localPath = urlToLocalPath(file, ctx) ?? file;
         return appURL + "editor/?file=" + encodeURIComponent(localPath)
             + "&line=" + encodeURIComponent(String(line ?? ""))
             + "&col="  + encodeURIComponent(String(col  ?? ""));
     }
     function fileDisplay(file: string): string {
-        const localPath = toLocalPath(file);
+        const localPath = urlToLocalPath(file, ctx);
         if (!localPath) return file;
         for (const mod of Object.values(ctx.app.modules.all() as Record<string, any>)) {
             if (mod.dir && localPath.startsWith(mod.dir)) return "m/" + mod.name + "/" + localPath.slice(mod.dir.length);
@@ -49,7 +40,7 @@ function makeFileHelper(ctx: any) {
         const mIdx = localPath.lastIndexOf("/m/");
         return mIdx >= 0 ? localPath.slice(mIdx + 1) : localPath;
     }
-    return { toLocalPath, editorLink, fileDisplay };
+    return { editorLink, fileDisplay };
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
@@ -96,7 +87,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
     const tools = `
 <script type=module>
-import { apt } from '${ctx.sysURL}core/js/apt.js';
+import { apt } from '${ctx.sysURL}core/pub/js/apt.js';
 globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
 </script>
 <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
@@ -247,7 +238,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     const db  = node.app.db;
     const ctx = getCtx();
     const get = ctx.get as Record<string, string>;
-    const { toLocalPath, editorLink, fileDisplay } = makeFileHelper(ctx);
+    const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
     const error = await db.row("SELECT * FROM m_error_report WHERE id = ?", [id]);
     if (!error) return "<div>Error-Eintrag nicht gefunden</div>";
@@ -259,7 +250,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     let btHtml = "";
     const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
     for (const item of bt) {
-        const isLocal = toLocalPath(item.file ?? "") !== null;
+        const isLocal = urlToLocalPath(item.file ?? "", ctx) !== null;
         const fileCell = isLocal
             ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target="_blank">${hee(fileDisplay(item.file ?? ""))} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span></a>`
             : `${hee(item.file ?? "")} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span>`;
@@ -309,7 +300,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 <a href="?id=${id}&history_of=ip">IP</a>
 ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&history_of=client">Client</a>` : ""}`;
 
-    const isLocalFile = toLocalPath(error.file ?? "") !== null;
+    const isLocalFile = urlToLocalPath(error.file ?? "", ctx) !== null;
     const fileBlock = isLocalFile
         ? `<a style="color:inherit; text-decoration:none" target="_blank" href="${hee(editorLink(error.file, error.line, error.col))}">
                <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(String(error.line))} column: ${hee(String(error.col))}

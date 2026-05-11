@@ -17,21 +17,21 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   const app = node.app;
 
-  ctx.html.addJSFile(ctx.sysURL + "core/js/jQuery.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/c1.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/c1/dom.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/c1/onElement.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/js/qg.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/jQuery.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
+  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
   ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
-  //ctx.html.addJSFile(ctx.sysURL + "core/js/c1/loading.js");
+  //ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/loading.js");
 
   ctx.csp["style-src"]["https://cdn.jsdelivr.net"] = 1;
   ctx.html.addCSSFile(u2Root + "css/norm/norm.css");
   ctx.html.addCSSFile(u2Root + "css/base/base.css");
   ctx.html.addCSSFile(u2Root + "css/classless/variables.css");
   ctx.html.addCSSFile(u2Root + "css/classless/classless.css");
-  ctx.html.addCSSFile(ctx.sysURL + "core/js/c1/css/theme1.css");
-  ctx.html.addCSSFile(ctx.sysURL + "core/css/c1/box.css");
+  ctx.html.addCSSFile(ctx.sysURL + "core/pub/js/c1/css/theme1.css");
+  ctx.html.addCSSFile(ctx.sysURL + "core/pub/css/c1/box.css");
   ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
 
   ctx.html.meta["viewport"] = "width=device-width";

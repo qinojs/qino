@@ -337,7 +337,7 @@ a.cmsOffline { text-decoration: line-through !important; }
 	border-width:0;
 }
 .qgCMS table.-styled > * > tr > *:first-child {
-	padding-left:0;
+	padding-inline:0;
 }
 .qgCMS table.-styled > * > tr > *:last-child {
 	padding-right:0;
@@ -345,7 +345,7 @@ a.cmsOffline { text-decoration: line-through !important; }
 .qgCMS table.-styled > * > tr > th {
 	border:none;
 }
-.qgCMS table.-styled img {
+.qgCMS table.-styled :where(img, audio, video, svg) {
 	display:block;
 	margin:auto;
 	transition:all .12s linear; /* media-list */

@@ -55,7 +55,7 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 \t\t\t${listHtml}
 \t</table>
 \t<script type=module>
-\timport { apt } from '${ctx.sysURL}core/js/apt.js';
+\timport { apt } from '${ctx.sysURL}core/pub/js/apt.js';
 \tfunction toggle(el, labels, fn) {
 \t\tconst on = el.style.color === 'green';
 \t\tfn(!on).then(() => { el.innerHTML = labels[+!on]; el.style.color = !on ? 'green' : 'red'; });

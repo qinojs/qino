@@ -51,7 +51,7 @@ async function renderEditBox(node: Node, ctx: any): Promise<string> {
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
   if (node.cms.MainNode === await node.cms.nodeFromRequest?.()) return "";
 
-  ctx.html.addCSSFile(ctx.sysURL + "core/css/c1/box.css");
+  ctx.html.addCSSFile(ctx.sysURL + "core/pub/css/c1/box.css");
   ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
   ctx.html.addJSM(ctx.sysURL + "cms.frontend.1/pub/js/frontend.mjs");
 

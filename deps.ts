@@ -6,7 +6,7 @@ export { basePath, matchedRoutes } from "npm:hono@^4/route";
 export { default as mysql } from "npm:mysql2@^3/promise";
 export type { Pool, ResultSetHeader, RowDataPacket } from "npm:mysql2@^3/promise";
 export { default as bcrypt } from "npm:bcryptjs@^2";
-export { serveDir } from "jsr:@std/http@^1/file-server";
+export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
 export { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@^1";
 export { typeByExtension } from "jsr:@std/media-types@^1";

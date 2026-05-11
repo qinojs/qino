@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import './../../../core/js/c1/NodeCleaner.mjs?qgUniq=c086a19';
-import { apt } from '../../../core/js/apt.js';
+import './../../../core/pub/js/c1/NodeCleaner.mjs?qgUniq=c086a19';
+import { apt } from '../../../core/pub/js/apt.js';
 
 if (!document.caretRangeFromPoint) { // polyfill for ff
     document.caretRangeFromPoint = function(x,y){

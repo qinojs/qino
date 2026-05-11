@@ -1,4 +1,4 @@
-import { apt } from '../../../../core/js/apt.js';
+import { apt } from '../../../../core/pub/js/apt.js';
 
 cms.frontend1.clipboard = pid => {
     function close() {

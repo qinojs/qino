@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl, serveDir, Hono, type Context, basePath, $item } from "../../../deps.ts";
+import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
 import { DbSchema } from "./DbSchema.ts";
 import type { App } from "../server.ts";
 
@@ -28,14 +28,11 @@ async function fileExists(path: string): Promise<boolean> {
 
 export class ModuleManager {
   #app: App;
-  router: Hono = new Hono();
 
   #modules: Record<string, Module> = {};
 
   constructor(app: App) {
     this.#app = app;
-    this.router.all("/:module/pub", (c) => this.servePub(c));
-    this.router.all("/:module/pub/:path{.*}", (c) => this.servePub(c));
   }
 
   get(name: string): Module | undefined {
@@ -44,18 +41,6 @@ export class ModuleManager {
 
   all(): Record<string, Module> {
     return this.#modules;
-  }
-
-  async servePub(c: Context): Promise<Response> {
-    const name = c.req.param("module");
-    const path = this.#modules[name]?.path;
-    if (!path) return new Response(null, { status: 404 });
-    const fsRoot = path.replace(/\/[^/]+$/, "/pub/");
-    const stat = await Deno.stat(fsRoot).catch(() => null);
-    if (!stat?.isDirectory) return new Response(null, { status: 404 });
-    const appURL = basePath(c).endsWith("/") ? basePath(c) : basePath(c) + "/";
-    const urlRoot = (appURL + "m/" + name + "/pub/").replace(/^\//, "");
-    return serveDir(c.req.raw, { fsRoot, urlRoot, quiet: true });
   }
 
   async import(spec: string): Promise<Module> {

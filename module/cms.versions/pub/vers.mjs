@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 //import '../../cms.frontend.1/pub/js/contextMenu.mjs?qgUniq=01e9d3f';
 import '../../cms.frontend.1/pub/js/frontend.mjs?qgUniq=19aae46';
-import { apt } from '../../core/js/apt.js';
+import { apt } from '../../core/pub/js/apt.js';
 
 var css =
 ' '+

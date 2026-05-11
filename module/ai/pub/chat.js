@@ -1,4 +1,4 @@
-import { apt } from '../../core/js/apt.js';
+import { apt } from '../../core/pub/js/apt.js';
 
 class AiChat extends HTMLElement {
   static observedAttributes = ['bot'];

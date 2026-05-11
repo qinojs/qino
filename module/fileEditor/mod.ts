@@ -7,7 +7,7 @@
 
 import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
-import { OutputError } from "../core/lib/util.ts"
+import { OutputError, assertAllowedPath } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import type { AptTree } from "../core/lib/apt.ts";
 import { s } from "../core/lib/StandardSchema.ts";
@@ -15,19 +15,8 @@ import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";
 
-function assertSafePath(file: string, app: any): void {
-    if (!file || file.includes("\0")) throw new OutputError("invalid path");
-    const resolved = nodePath.resolve(file);
-    if (resolved !== nodePath.normalize(file) && resolved !== file) throw new OutputError("invalid path");
-    const allowedRoots: string[] = [nodePath.resolve(app.appPATH)];
-    for (const mod of Object.values(app.modules.all()) as any[]) {
-        if (mod.dir) allowedRoots.push(nodePath.resolve(mod.dir));
-    }
-    if (!allowedRoots.some(root => resolved.startsWith(root + nodePath.sep))) throw new OutputError("invalid path");
-}
-
 async function saveFile(ctx: any, file: string, content: string): Promise<number> {
-    assertSafePath(file, ctx.app);
+    assertAllowedPath(file, ctx.app);
     const allowed = ctx.session.fileEditor.allow[file]();
     const usr = ctx.user;
     if (!allowed && !(await usr?.get('superuser'))) return 0;
@@ -64,7 +53,7 @@ export function init(app: any) {
         const ctx = getCtx();
         const file = ctx.get["file"] as string;
         if (!file || !ctx.appRequestUri.startsWith("editor")) return;
-        assertSafePath(file, ctx.app);
+        assertAllowedPath(file, ctx.app);
 
         // access check: session must have fileEditor.allow[$file] or user must be superuser
         const allowed = ctx.session.fileEditor.allow[file]();

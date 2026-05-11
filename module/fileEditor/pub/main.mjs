@@ -1,4 +1,4 @@
-import { apt } from '../../core/js/apt.js';
+import { apt } from '../../core/pub/js/apt.js';
 const btn = document.getElementById('saveButton');
 const editorEl = document.getElementById('editor');
 const mime   = editorEl.getAttribute('mime');
