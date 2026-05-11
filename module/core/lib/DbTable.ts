@@ -22,15 +22,9 @@ export class DbTable {
     this.#name = name;
   }
 
-  get db(): Db {
-    return this.#db;
-  }
-  get fields(): Record<string, DbField> | null {
-    return this.#fields;
-  }
-  get autoIncrement(): DbField | false {
-    return this.#autoIncrement;
-  }
+  get db(): Db { return this.#db; }
+  get fields(): Record<string, DbField> | null { return this.#fields; }
+  get autoIncrement(): DbField | false { return this.#autoIncrement; }
 
   async reloadFields(): Promise<void> {
     this.#fields = null;
@@ -38,9 +32,7 @@ export class DbTable {
     await this.init();
   }
 
-  field(n: string): DbField | false {
-    return this.#fields?.[n] ?? false;
-  }
+  field(n: string): DbField | false { return this.#fields?.[n] ?? false; }
 
   async init(): Promise<Record<string, DbField>> {
     if (this.#fields === null) {
@@ -96,7 +88,7 @@ export class DbTable {
         return false;
       }
       let value = vs[primary];
-      const type = Field.getType().toUpperCase();
+      const type = Field.type.toUpperCase();
       if (numTypes[type]) value = String(parseFloat(String(value)));
       part.push(value);
     }
@@ -130,9 +122,9 @@ export class DbTable {
     const rows = await this.select(where);
     return Object.values(rows)[0];
   }
-  async select(v = "1"): Promise<Record<string, Record<string, any>>> {
+  async select(v = "1", params: unknown[] = []): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
-    const rows = await this.#db.all(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${v}`);
+    const rows = await this.#db.all(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${v}`, params);
     for (const entry of rows) {
       const eid = this.entryId(entry);
       if (eid !== false) ret[eid] = entry;

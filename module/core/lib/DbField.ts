@@ -28,9 +28,9 @@ export class DbField {
   get name(): string { return this.#name; }
 
   valueTransform(value: any): any {
-    const type = this.getType().toUpperCase();
-    if (this.getNull() && value === null) return null;
-    if (this.getNull() && value === "" && !stringTypes[type]) return null;
+    const type = this.type.toUpperCase();
+    if (this.null && value === null) return null;
+    if (this.null && value === "" && !stringTypes[type]) return null;
     if (typeof value === "number" && dateTypes[type]) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }
@@ -46,7 +46,7 @@ export class DbField {
   }
 
   isPrimary(): boolean { return this.vs.Key === "PRI"; }
-  getKey(): string { return this.vs.Key ?? ""; }
+  get key(): string { return this.vs.Key ?? ""; }
   isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 
   #explodeTypeData(): void {
@@ -58,15 +58,15 @@ export class DbField {
     }
   }
   async #change(data: Record<string, any>): Promise<void> {
-    data.type = data.type ?? this.getType();
-    data.length = data.length ?? this.getLength();
-    data.special = data.special ?? this.getSpecial();
-    data.collate = data.collate ?? this.getCollate();
-    data.null = data.null ?? this.getNull();
+    data.type = data.type ?? this.type;
+    data.length = data.length ?? this.length;
+    data.special = data.special ?? this.special;
+    data.collate = data.collate ?? this.collate;
+    data.null = data.null ?? this.null;
     data.default = data.default ?? (this.vs.Default !== null ? this.vs.Default : false);
     data.autoincrement = data.autoincrement ?? this.isAutoIncrement();
 
-    if (data.type === "text" && this.getType() !== "text") {
+    if (data.type === "text" && this.type !== "text") {
       const hasIndex = await this.db.row(`SHOW INDEX FROM ${this.table} WHERE KEY_NAME = '${this}'`);
       if (hasIndex) await this.db.query(`ALTER TABLE ${this.table} DROP INDEX ${this}`);
     }
@@ -78,7 +78,7 @@ export class DbField {
     await this.table.reloadFields();
   }
 
-  getType(): string {
+  get type(): string {
     this.#explodeTypeData();
     return this.#type!;
   }
@@ -86,7 +86,7 @@ export class DbField {
     await this.#change({ type: v });
     this.#type = v;
   }
-  getLength(): string {
+  get length(): string {
     this.#explodeTypeData();
     return this.#length!;
   }
@@ -94,7 +94,7 @@ export class DbField {
     await this.#change({ length: v });
     this.#length = v;
   }
-  getSpecial(): string {
+  get special(): string {
     this.#explodeTypeData();
     return this.#special!;
   }
@@ -102,20 +102,20 @@ export class DbField {
     await this.#change({ special: v });
     this.#special = v;
   }
-  getNull(): boolean {
+  get null(): boolean {
     return this.vs.Null === "YES";
   }
   async setNull(v: boolean): Promise<void> {
     await this.#change({ null: v });
     this.vs.Null = v ? "YES" : "NO";
   }
-  getDefault(): any {
+  get default(): unknown {
     return this.vs.Default;
   }
   async setDefault(v: any): Promise<void> {
     await this.#change({ default: v });
   }
-  getCollate(): string {
+  get collate(): string {
     return this.vs.Collation ?? "";
   }
   async setCollate(v: string): Promise<void> {
@@ -126,7 +126,7 @@ export class DbField {
     await this.#change({ autoincrement: v });
   }
 
-  getID(): number {
+  get id(): number {
     return this.vs.id;
   }
   parent(): DbTable | false {
@@ -142,16 +142,16 @@ export class DbField {
   }
   async setKey(type: string): Promise<void> {
     type = type.toUpperCase();
-    if (this.getKey() === type) return;
+    if (this.key === type) return;
     if (type === "PRI") {
       await this.#setPrimary(true);
     } else {
       await this.#setPrimary(false);
-      if (this.getKey()) {
+      if (this.key) {
         await this.db.query(`ALTER TABLE ${this.table} DROP INDEX \`${this}\``);
       }
       if (type === "MUL") {
-        const t = this.getType();
+        const t = this.type;
         if (["text", "tinytext", "mediumtext", "longtext"].includes(t)) {
           await this.db.query(`ALTER TABLE ${this.table} ADD FULLTEXT (\`${this}\`)`);
         } else {

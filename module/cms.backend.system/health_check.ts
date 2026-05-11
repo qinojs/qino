@@ -327,7 +327,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
           let msg = "";
 
           // logs
-          const logRes = await db.query(`DELETE FROM log WHERE time < ${monthAgo} LIMIT 1000000`);
+          const logRes = await db.query("DELETE FROM log WHERE time < ? LIMIT 1000000", [monthAgo]);
           await db.query("OPTIMIZE TABLE log");
           msg += (logRes as any).affectedRows + " log-rows deleted\n";
 

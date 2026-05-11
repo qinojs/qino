@@ -3,7 +3,9 @@ import type { Db } from "./Db.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
 const COOKIE_NAME = "qgSession";
+const hostCookieName = (https: boolean) => https ? `__Host-${COOKIE_NAME}` : COOKIE_NAME;
 const EMPTY_SESSION = "{}";
+
 type SessionResult = { sessionToken: string; sessId: string; session: ItemProxy; isNew: boolean };
 
 export class SessionManager {
@@ -13,8 +15,8 @@ export class SessionManager {
         this.#db = db;
     }
 
-    loadFromRequest(c: Context): Promise<SessionResult> {
-        return this.load(getCookie(c, COOKIE_NAME));
+    loadFromRequest(c: Context, https: boolean): Promise<SessionResult> {
+        return this.load(getCookie(c, hostCookieName(https)));
     }
 
     async load(cookieSessionToken?: string): Promise<SessionResult> {
@@ -44,17 +46,18 @@ export class SessionManager {
         }, 50);
     }
 
-    setCookie(_c: Context, ctx: RequestContext): void {
+    setCookie(ctx: RequestContext): void {
         ctx.responseHeaders.append("Set-Cookie", this.cookieHeader(ctx));
     }
 
     cookieHeader(ctx: RequestContext, sessionToken = ctx.sessionToken): string {
+        const https = ctx.app.https;
         return [
-            `${COOKIE_NAME}=${sessionToken}`,
-            `Path=${ctx.appURL}`,
+            `${hostCookieName(https)}=${sessionToken}`,
+            `Path=/`,
             "HttpOnly",
             "SameSite=Lax",
-            ctx.app.https ? "Secure" : "",
+            https ? "Secure" : "",
         ].filter(Boolean).join("; ");
     }
 

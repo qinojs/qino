@@ -32,7 +32,7 @@ export class Node {
 
     #title: DbText | null= null;
     #texts: Record<string, DbText> | null = null;
-    #files: Record<string, DbFile> | null = null;
+    #files: Promise<Record<string, DbFile>> | null = null;
     #filesAll: Record<string, DbFile> | null = null;
     #urls: Record<string, Record<string, string>> | null = null;
 
@@ -400,28 +400,31 @@ export class Node {
     }
 
     /* Files */
-    async files(): Promise<Record<string, DbFile>> {
-        if (this.#files === null) {
-            this.#files = {};
+    files(): Promise<Record<string, DbFile>> {
+        if (!this.#files) {
             this.#filesAll = {};
-            const sql =
-                " SELECT f.*, pf.name as pf_name " +
-                " FROM " +
-                `   ${table("page_file")} pf ` +
-                `   LEFT JOIN ${table("file")} f ON f.id = pf.file_id ` +
-                " WHERE pf.page_id = ? " +
-                " ORDER BY sort ";
-            const rows = await this.db.all(this.sql(sql), [this.id]);
-            for (const vs of rows) {
-                const F = await this.app.dbFiles.file(vs.id, vs);
-                this.#filesAll[vs.pf_name] = F;
-                if (await F.exists()) this.#files[vs.pf_name] = F;
-            }
+            this.#files = (async () => {
+                const files: Record<string, DbFile> = {};
+                const sql =
+                    " SELECT f.*, pf.name as pf_name " +
+                    " FROM " +
+                    `   ${table("page_file")} pf ` +
+                    `   LEFT JOIN ${table("file")} f ON f.id = pf.file_id ` +
+                    " WHERE pf.page_id = ? " +
+                    " ORDER BY sort ";
+                const rows = await this.db.all(this.sql(sql), [this.id]);
+                for (const vs of rows) {
+                    const F = await this.app.dbFiles.file(vs.id, vs);
+                    this.#filesAll![vs.pf_name] = F;
+                    if (await F.exists()) files[vs.pf_name] = F;
+                }
+                return files;
+            })();
         }
         return this.#files;
     }
 
-    async filesAndPlaceholders(): Promise<Record<string, any>> {
+    async filesAndPlaceholders(): Promise<Record<string, DbFile>> {
         await this.files();
         return this.#filesAll!;
     }
@@ -436,7 +439,7 @@ export class Node {
 
         const File = file instanceof DbFile ? file : await this.app.dbFiles.add(file);
 
-        const row: Record<string, any> = { page_id: String(this), file_id: String(File) };
+        const row: Record<string, string | number> = { page_id: String(this), file_id: String(File) };
         if (!name) {
             const minSort = await this.db.one(this.sql("SELECT min(sort) FROM page_file WHERE page_id = ?"), [this.id]);
             row.sort = (parseInt(String(minSort ?? "0")) || 0) - 1;
@@ -444,25 +447,23 @@ export class Node {
         }
         row.name = name;
         await this.db.table("page_file").ensure(row);
-        this.#files = null;
+        this.#files = null; this.#filesAll = null;
         return File;
     }
 
     async deleteFile(name: string): Promise<boolean> {
         await this.files();
         if (!this.#filesAll![name]) return false;
-        const dbFileEntry = this.#filesAll![name];
+        const dbFile = this.#filesAll![name];
         await this.db.table("page_file").delete({ page_id: String(this), name });
-        const used = await dbFileEntry.used?.();
-        if (!used) await dbFileEntry.remove?.();
-        delete this.#files![name];
-        delete this.#filesAll![name];
+        const used = await dbFile.used();
+        if (!used) await dbFile.remove();
+        this.#files = null; this.#filesAll = null;
         return true;
     }
 
     async hasFile(name: string): Promise<DbFile | undefined> {
-        await this.files();
-        return this.#files?.[name];
+        return (await this.files())[name];
     }
 
     async sortFiles(sort: string[]): Promise<void> {  // todo, security: just existing files allowed!
@@ -470,7 +471,7 @@ export class Node {
         for (const file of sort) {
             await this.db.table("page_file").update({ page_id: String(this), name: file, sort: i++ });
         }
-        this.#files = null;
+        this.#files = null; this.#filesAll = null;
     }
 
     /* URLs */

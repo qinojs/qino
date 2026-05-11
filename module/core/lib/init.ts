@@ -10,7 +10,7 @@ export async function initClient(ctx: RequestContext): Promise<void> {
     const db = ctx.app.db;
     if (ctx.clientId) return;
 
-    const cid = ctx.cookie["cid"];
+    const cid = ctx.cookie[ctx.app.https ? "__Host-cid" : "cid"];
     if (!cid) {
       await registerClient(ctx);
       return;
@@ -29,17 +29,17 @@ async function registerClient(ctx: RequestContext): Promise<void> {
     crypto.getRandomValues(bytes);
     const hash = btoa(String.fromCharCode(...bytes));
 
-    // Set cookie header
+    const cidName = ctx.app.https ? "__Host-cid" : "cid";
     const cookieOpts = [
-      `cid=${hash}`,
-      `Path=${ctx.appURL}`,
+      `${cidName}=${hash}`,
+      "Path=/",
       "Expires=Sat, 01 Jan 2033 00:00:00 GMT",
       "HttpOnly",
       "SameSite=Lax",
       ctx.app.https ? "Secure" : "",
     ].filter(Boolean).join("; ");
     ctx.responseHeaders.append("Set-Cookie", cookieOpts);
-    ctx.cookie["cid"] = hash;
+    ctx.cookie[cidName] = hash;
 
     const clientId = await ctx.app.db.table("client").insert({ hash });
     ctx.clientId = String(clientId);

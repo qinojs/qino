@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { HTTPException } from "../../deps.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
+import { hee } from "../core/lib/util.ts";
 
 // ─── business logic used by REST ──────────────
 
@@ -148,9 +149,9 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
         const gp       = parent ? await parent.parent() : null;
         const gpTitle  = gp ? String(await (await gp.title()).string() ?? "").trim() : "";
         res.push({
-            html:  `<b>${titleStr}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
-                   (parent ? `<i style="font-size:10px;display:block">${pTitle}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${gpTitle}</i>` : "") : ""),
-            text:  titleStr ? `${titleStr} (${Page.id})` : String(Page.id),
+            html:  `<b>${hee(titleStr)}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
+                   (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),
+            text:  titleStr ? `${hee(titleStr)} (${Page.id})` : String(Page.id),
             value: Page.id,
         });
     }
@@ -186,8 +187,8 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(ext);
         const imgSrc = isImg ? (await F.url()) + "/w-32/h-32/img.jpg" : "about:blank";
         res.push({
-            html:  `<div style="background:url(${imgSrc}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
-                   `<b>${vs["name"]}</b><br><i>${await (await (await node.page()).title()).string() ?? ""}</i>`,
+            html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
+                   `<b>${hee(vs["name"])}</b><br><i>${hee(await (await (await node.page()).title()).string() ?? "")}</i>`,
             text:  vs["name"],
             value: F.id,
         });

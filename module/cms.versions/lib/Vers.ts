@@ -227,7 +227,7 @@ export async function ensureSpace(db: Db, space: number): Promise<void> {
         const vt = await versTable(db, tableName);
         if (!vt) continue;
         await db.query(`DELETE FROM \`${vt}\` WHERE _vers_space = ?`, [space]);
-        await db.query(`INSERT INTO \`${vt}\` SELECT *, 0, ${space}, 0 FROM \`${tableName}\``);
+        await db.query(`INSERT INTO \`${vt}\` SELECT *, 0, ?, 0 FROM \`${tableName}\``, [space]);
     }
     await db.table("vers_space").insert({ space, time_created: new Date() });
     // fire so other modules (like history.php) can react

@@ -141,7 +141,11 @@ export class Db {
   }
 
   static quote(v: any): string {
-    return v == null ? "NULL" : `'${String(v).replace(/[\\'\n\r\0]/g, c => ({ "\\": "\\\\", "'": "\\'", "\n": "\\n", "\r": "\\r", "\0": "\\0" }[c]!))}'`;
+    if (v == null) return "NULL";
+    return `'${String(v).replace(/[\0\b\t\n\r'"\\]/g, c => ({
+      "\0": "\\0", "\b": "\\b", "\t": "\\t", "\n": "\\n",
+      "\r": "\\r", "'": "\\'", '"': '\\"', "\\": "\\\\",
+    }[c]!))}'`;
   }
 
   static _array_to_column_definition(d: Record<string, any>): string {

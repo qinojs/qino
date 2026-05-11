@@ -16,7 +16,7 @@ export function getEntryClass(tableName: string): typeof DbEntry {
 }
 
 export class DbEntry {
-  protected _T: DbTable;
+  protected table: DbTable;
   #is: boolean | null = null;
   #full = false;
   #vs: Record<string, any> = {};
@@ -24,7 +24,7 @@ export class DbEntry {
   #changed = false;
 
   constructor(T: DbTable, vs?: any) {
-    this._T = T;
+    this.table = T;
     if (vs !== undefined && (Array.isArray(vs) || (typeof vs === "object" && vs !== null))) {
       this.#eid = T.entryId(vs) || false;
       this.#vs  = vs;
@@ -44,14 +44,14 @@ export class DbEntry {
   async get(n: string): Promise<any> {
     if (!this.#full) await this.getVs();
     if (n in this.#vs) return this.#vs[n];
-    if (await this.is()) console.warn(`_get "${this._T}::${n}" not implemented`);
+    if (await this.is()) console.warn(`_get "${this.table}::${n}" not implemented`);
     else console.warn("Entry does not exists");
   }
 
   #fullCheck(): boolean {
     if (this.#full) return true;
-    if (!this._T.fields) return false;
-    const nonPrimaries = Object.entries(this._T.fields)
+    if (!this.table.fields) return false;
+    const nonPrimaries = Object.entries(this.table.fields)
       .filter(([, Field]) => !Field.isPrimary())
       .map(([field]) => field);
     if (!nonPrimaries.length) return false;
@@ -61,15 +61,15 @@ export class DbEntry {
   }
 
   #ensureEid(): void {
-    if (this.#eid === false && this._T.fields && Object.keys(this.#vs).length > 0) {
-      this.#eid = this._T.entryId(this.#vs) || false;
+    if (this.#eid === false && this.table.fields && Object.keys(this.#vs).length > 0) {
+      this.#eid = this.table.entryId(this.#vs) || false;
     }
   }
 
   async getVs(): Promise<Record<string, any>> {
     if (!this.#fullCheck()) {
       this.#ensureEid();
-      const data = await this._T.selectByID(this.#eid);
+      const data = await this.table.selectByID(this.#eid);
       this.#is = !!data;
       if (data) this.#vs = data;
       this.#full = true;
@@ -86,7 +86,7 @@ export class DbEntry {
   async set(n: string, v: any): Promise<void> {
     await this.getVs();
     if (n in this.#vs) {
-      const Field = this._T.field(n);
+      const Field = this.table.field(n);
       if (Field) {
         v = Field.valueTransform(v);
         if (this.#vs[n] !== v) this.#changed = true;
@@ -105,9 +105,9 @@ export class DbEntry {
 
   async makeIfNot(): Promise<this> {
     if (!(await this.is())) {
-      const arr = this._T.entryId2Array(this.#eid);
+      const arr = this.table.entryId2Array(this.#eid);
       if (arr) this.#vs = arr;
-      await this._T.insert(this.#vs);
+      await this.table.insert(this.#vs);
       this.#full = false;
       this.#is = true;
     }
@@ -115,7 +115,7 @@ export class DbEntry {
   }
 
   async delete(): Promise<void> {
-    await this._T.delete(this.#eid);
+    await this.table.delete(this.#eid);
     this.#eid = false;
     this.#vs = {};
     this.#is = false;
@@ -125,7 +125,7 @@ export class DbEntry {
     if (this.#changed) {
       this.#ensureEid();
       if (this.#eid === false) throw new Error(`dbEntry.save(): _eid is false, cannot update`);
-      await this._T.update(this.#eid, this.#vs);
+      await this.table.update(this.#eid, this.#vs);
       this.#changed = false;
     }
   }

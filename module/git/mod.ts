@@ -24,13 +24,13 @@ export async function addModule(app: any, modulePath: string): Promise<void> {
   await app.modules.add(absPath);
 }
 
-// todo, nur access wenn auf backend module seite access
 export const api = {
   git: {
     status: {
       get: {
         input: s.object({ module: s.string() }),
         execute: async (params: any, ctx: any) => {
+          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot, info } = await getModuleGitInfo(ctx.app, params.module);
           return { gitRoot, ...info };
         },
@@ -40,6 +40,7 @@ export const api = {
       get: {
         input: s.object({ module: s.string(), limit: s.optional(s.number()) }),
         execute: async (params: any, ctx: any) => {
+          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           return await GitService.getLog(gitRoot, params.limit ?? 20);
@@ -50,6 +51,7 @@ export const api = {
       get: {
         input: s.object({ module: s.string() }),
         execute: async (params: any, ctx: any) => {
+          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           return await GitService.getTags(gitRoot);
@@ -60,7 +62,7 @@ export const api = {
       post: {
         input: s.object({ module: s.string() }),
         execute: async (params: any, ctx: any) => {
-          if (!ctx?.user) throw new Error("Nicht eingeloggt");
+          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           const output = await GitService.pull(gitRoot);

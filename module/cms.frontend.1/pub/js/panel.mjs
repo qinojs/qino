@@ -171,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function () {
           percent + "%, transparent " + percent + "%, transparent)";
       }
     });
-    ev.on("complete", (e) => {
+    ev.on("complete", () => {
       cms.console.show("Datei hochgeladen");
       cms.cont(ev.pid).showWidget("media", true);
     });
@@ -337,7 +337,7 @@ c1.onElement(".qgCmsFileManager", async (el) => {
     for (const file of files) cms.cont(pid).upload(file, reload, replaces);
   };
   const reload = () => {
-    apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+    cms.reloadNode(pid);
     cms.panel.get("widget").set("media", 1);
   };
   el.c1Find(".-addExistingFile").addEventListener(
@@ -676,10 +676,7 @@ c1.onElement(".qgCmsFront1SuperuserManager", (el) => {
 });
 
 apt.on("PUT|PATCH|DELETE cms/node/:id/*", async ({ params: { id } }) => {
-  const els = document.querySelectorAll('.-pid' + id);
-  if (!els.length) return;
-  const res = await apt.cms.node(id).html.get();
-  els.forEach(el => el.outerHTML = res);
+  cms.reloadNode(id);
 });
 
 /* xCollection */

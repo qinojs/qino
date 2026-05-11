@@ -4,6 +4,7 @@
  */
 
 import type { App } from "../core/server.ts";
+import { pwHash } from "../core/lib/auth.ts";
 
 export const name = "cms.installation.default";
 export const needs = [
@@ -55,6 +56,7 @@ export const needs = [
 
 export async function install({app}: {app: App}): Promise<void> {
   const s = app.settings;
+
   let freshInstallation = false;
   if (!await app.settings.core.langs && !await app.settings.qg.langs) {
     app.settings.core.langs('de');
@@ -70,7 +72,10 @@ export async function install({app}: {app: App}): Promise<void> {
   }
   // Superuser
   if (!await app.db.one("SELECT id FROM usr WHERE superuser = '1'")) {
-    await app.db.query("INSERT INTO usr SET email = 'su', pw = '$2y$10$CfeMgTdPi26our51Q06E4u.Hf/H5p2UFJcDc0uFS/TM6Ar7KLiCL2', superuser=1, active=1, firstname='Superuser', lastname='Superuser'");
+    const pwChars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
+    const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => pwChars[b % pwChars.length]).join("");
+    await app.db.exec("INSERT INTO usr SET email = 'su', pw = ?, superuser=1, active=1, firstname='Superuser', lastname='Superuser'", [await pwHash(suPw)]);
+    console.log(`\n\x1b[33m[qino] Superuser created — email: su  password: ${suPw}\x1b[0m\n`);
   }
 
   // Admingruppe ID holen (für nachfolgende Seiten)

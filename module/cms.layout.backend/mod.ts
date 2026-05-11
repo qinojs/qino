@@ -25,6 +25,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
   //ctx.html.addJSFile(ctx.sysURL + "core/js/c1/loading.js");
 
+  ctx.csp["style-src"]["https://cdn.jsdelivr.net"] = 1;
   ctx.html.addCSSFile(u2Root + "css/norm/norm.css");
   ctx.html.addCSSFile(u2Root + "css/base/base.css");
   ctx.html.addCSSFile(u2Root + "css/classless/variables.css");

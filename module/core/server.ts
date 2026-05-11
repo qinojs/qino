@@ -129,7 +129,7 @@ export class App {
         return await requestStorage.run(ctx, async () => {
             try {
                 await this.#initRequest(ctx);
-                if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(hc, ctx);
+                if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(ctx);
                 await this.fire("action", { ctx });
                 await next();
             } catch (e: unknown) {

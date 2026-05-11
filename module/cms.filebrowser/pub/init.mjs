@@ -28,11 +28,11 @@ c1.onElement('.qgCmsFileManager .-preview', el=>{
             const item = e.dbFiles[0] || e.urls[0];
             if (item) {
                 await apt.cms.node(pid).files.post({ file: String(item), replace });
-                //apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+                cms.reloadNode(pid);
             }
             if (e.files) {
                 cms.cont(pid).upload(e.files[0], function(){
-//                    console.log(arguments)
+                    cms.reloadNode(pid);
                 }, replace);
             }
         });

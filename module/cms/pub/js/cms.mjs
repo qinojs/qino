@@ -108,6 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.addEventListener('input', saveTxt.c1Debounce(1600));
 });
 
+cms.reloadNode = (pid) => {
+	return apt.cms.node(pid).html.get().then(html => {
+		document.querySelectorAll('.-pid' + pid).forEach(el => el.outerHTML = html);
+	});
+};
+
 // global exports for legacy scripts
 globalThis.cms      = cms;
 globalThis.dbFile   = DbFile;

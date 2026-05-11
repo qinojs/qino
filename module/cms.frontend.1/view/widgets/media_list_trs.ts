@@ -17,7 +17,7 @@ export default async function (node: Node): Promise<string> {
           const url = await F.url();
           const fname = hee(F.name);
           const extra = ext === "pdf" ? "page-1/" : "";
-          preview = `<img src="${url}/w-60/h-40/dpr-0/max/${extra}${fname}" ${ext === "svg" ? "height=40" : ""} alt="" draggable=true>`;
+          preview = `<img src="${url}/w-70/h-40/dpr-0/max/${extra}${fname}" ${ext === "svg" ? "height=40" : ""} alt="" draggable=true>`;
         }
         break;
       }
@@ -25,7 +25,7 @@ export default async function (node: Node): Promise<string> {
         if (await FileTransformer.capabilities.ffmpeg) {
           const url = await F.url();
           const fname = hee(F.name);
-          preview = `<img src="${url}/w-60/h-40/fmt-jpeg/frame-1/${fname}" alt="" draggable=true>`;
+          preview = `<img src="${url}/w-70/h-40/fmt-jpeg/frame-1/${fname}" alt="" draggable=true>`;
         }
         break;
       }
@@ -37,8 +37,8 @@ export default async function (node: Node): Promise<string> {
       }
       default: {
         const text = exists ? ext : "upload";
-        preview = `<svg width=60 height=40 style="display:block">
-          <rect x=0 y=0 width=60 height=40 fill="var(--cms-color)"></rect>
+        preview = `<svg width=70 height=40 style="display:block">
+          <rect x=0 y=0 width=70 height=40 fill="var(--cms-color)"></rect>
           <text x=30 y=24 fill="#fff"><tspan text-anchor=middle>${text}</tspan></text>
         </svg>`;
       }

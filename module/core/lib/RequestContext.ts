@@ -68,7 +68,6 @@ export class RequestContext {
   }
   #settingsRoot: Item | null = null;
 
-
   settingCache: Map<number, unknown> = new Map();
   entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; 
@@ -81,7 +80,6 @@ export class RequestContext {
     "style-src": { "'self'": 1, "'unsafe-inline'": 1 }, "connect-src": { "'self'": 1 }, "frame-src": { "'self'": 1 },
   };
   cspReportUri: string | false = false;
-  //customSettings: any = null;
   get token(): string {
     const token = this.session.qg.token;
     if (!token()) this.session.qg.token(crypto.randomUUID().replace(/-/g, "").slice(0, 12));
@@ -114,7 +112,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
     }
   }
 
-  const { sessionToken, sessId, session, isNew } = await app.sessions.loadFromRequest(c);
+  const { sessionToken, sessId, session, isNew } = await app.sessions.loadFromRequest(c, app.https);
 
   const ctx = new RequestContext();
   Object.assign(ctx, {

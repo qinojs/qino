@@ -9,7 +9,7 @@ export async function authListen(ctx: RequestContext): Promise<void> {
     ctx.loginError = errorMap[String(error)];
     await rememberLogin(ctx, saveLogin);
   }
-  if (ctx.post["liveUser_logout"]) {
+  if ("liveUser_logout" in ctx.post) {
     if (ctx.post["token"] !== ctx.token) return;
     await logout(ctx);
   }
@@ -31,9 +31,9 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
   const UsrEntry = ctx.app.db.table("usr").Entry(user.id);
   const rehash = pwNeedsRehash(await UsrEntry.get("pw"));
   if (!rehash) {
-    const clientUsrs = await ctx.client.users?.() ?? {};
+    const clientUsrs = await ctx.client.users() ?? {};
     const usrId = String(await UsrEntry.get("id") ?? "");
-    if (clientUsrs[usrId] && await clientUsrs[usrId].get?.("save_login")) return login(ctx, user.id);
+    if (clientUsrs[usrId] && parseInt(await clientUsrs[usrId].get("save_login")) === 1) return login(ctx, user.id);
   }
   if (!await pwVerify(pw, await UsrEntry.get("pw") ?? "")) return 0;
   if (rehash) {
@@ -62,7 +62,7 @@ export async function login(ctx: RequestContext, id: number | string): Promise<b
 
 export async function logout(ctx: RequestContext): Promise<void> {
   await rememberLogin(ctx, false);
-  await ctx.client.set?.("usr_id", 0);
+  ctx.client.set("usr_id", 0);
   ctx.session({});
   await ctx.app.fire("logout");
 }
