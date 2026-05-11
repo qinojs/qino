@@ -149,7 +149,7 @@ export class DbFile extends File {
     return this.vs!;
   }
 
-  async get(field: string) { return (await this.ensureVs())[field]; }
+  async get(field: string): Promise<any> { return (await this.ensureVs())[field]; }
 
   override async exists(): Promise<this | false> { await this.ensureVs(); return super.exists(); }
 
