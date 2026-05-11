@@ -16,9 +16,9 @@ export class DbFileManager {
   #directory: string;
 
   router: Hono = new Hono();
-  get app() { return this.#app; }
-  get db() { return this.#app.db; }
-  get directory() { return this.#directory; }
+  get app(): App { return this.#app; }
+  get db(): Db { return this.#app.db; }
+  get directory(): string { return this.#directory; }
 
   constructor(app: App, directory: string) {
     this.#app = app;
@@ -156,7 +156,7 @@ export class DbFile extends File {
     return (await this.ensureVs())[field];
   }
 
-  override async exists() {
+  override async exists(): Promise<this | false> {
     await this.ensureVs();
     return super.exists();
   }

@@ -11,7 +11,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   const lastname  = await u!.get?.("lastname")  ?? "";
   const email     = await u!.get?.("email")     ?? "";
 
-  const logoutUrl = hee((ctx.server.REQUEST_URI || "/") + (ctx.server.REQUEST_URI.includes("?") ? "&" : "?") + "liveUser_logout=1");
+  const logoutUrl = hee(ctx.server.REQUEST_URI || "/");
 
   let feedbackConfirmation = "";
   if (vars.param?.msg) {
@@ -44,7 +44,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   <div class=-standalone>
     <div class=-h1>
       <span>${await app.t`Angemeldet als:`} ${hee(firstname + " " + lastname)}</span>
-      <a href="${logoutUrl}"><button style="margin:0">${await app.t`abmelden`}</button></a>
+      <form method=post action="${logoutUrl}" style="margin:0"><input type=hidden name=token value="${hee(ctx.token)}"><button name=liveUser_logout>${await app.t`abmelden`}</button></form>
     </div>
   </div>
   ${feedbackConfirmation}

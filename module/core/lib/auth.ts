@@ -1,4 +1,3 @@
-import { RedirectError } from "./util.ts";
 import type { RequestContext } from "./RequestContext.ts";
 import { bcrypt } from "../../../deps.ts";
 
@@ -11,14 +10,8 @@ export async function authListen(ctx: RequestContext): Promise<void> {
     await rememberLogin(ctx, saveLogin);
   }
   if (ctx.post["liveUser_logout"]) {
+    if (ctx.post["token"] !== ctx.token) return;
     await logout(ctx);
-  }
-  if (ctx.get["liveUser_logout"]) {
-    if (ctx.get["token"] !== ctx.token) console.warn("todo: Logout attempt with invalid token");
-    await logout(ctx);
-    ctx.responseHeaders.set("Location", ctx.get["liveUser_logout"]);
-    ctx.responseStatus = 302;
-    throw new RedirectError();
   }
   if (!ctx.userId && ctx.clientId) {
     const uidVal = await ctx.client.get("usr_id");

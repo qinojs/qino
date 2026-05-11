@@ -135,6 +135,7 @@ async function render(node: Node): Promise<string> {
       }
     }
     html += `<form method=post${action}>
+  <input type=hidden name=token value="${hee(ctx.token)}">
   <button name=liveUser_logout>${await app.t`Abmelden`}</button>
 </form>\n`;
   }
