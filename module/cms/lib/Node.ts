@@ -26,7 +26,7 @@ export class Node {
     db;
 
     id: number = 0;
-    vs: Record<string, string | number> = {};
+    vs: Record<string, string | number | null> = {};
 
     #is: boolean = true;
 
@@ -50,12 +50,13 @@ export class Node {
 
     async init(): Promise<this> {
         if (!this.vs || Object.keys(this.vs).length === 0) {
-            this.vs = await this.db.row(`SELECT * FROM ${table("page")} WHERE id = ?`, [this.id]);
-            if (!this.vs) {
+            const row = await this.db.row(`SELECT * FROM ${table("page")} WHERE id = ?`, [this.id]);
+            if (!row) {
                 this.vs = { id: this.id, basis: 0, type: "p" };
                 this.#is = false;
                 return this;
             }
+            this.vs = row;
         } else {
             await this.app.fire("page::construct", { Page: this });
         }
@@ -122,7 +123,7 @@ export class Node {
             return isUser ? Math.max(parentAccess, await this.#usrAccessOnly(Usr)) : parentAccess;
         }
         //if (!(await Usr.is())) return parseInt(this.vs.access) ? 1 : 0;
-        if (!Usr) return parseInt(this.vs.access) ? 1 : 0;
+        if (!Usr) return parseInt(String(this.vs.access ?? "0")) ? 1 : 0;
         const access = Math.max(parseInt(String(this.vs.access ?? "0")), await this.#usrAccessOnly(Usr));
         if (access === 3) return 3;
         const grps = await Usr.grps?.() ?? [0];
@@ -302,7 +303,7 @@ export class Node {
     }
 
     async parent(level?: number): Promise<Node | undefined> {
-        const parent = this.vs.basis ? await this.cms.node(this.vs.basis) : undefined;
+        const parent = this.vs.basis ? await this.cms.node(Number(this.vs.basis)) : undefined;
         if (level === undefined) return parent;
         const path = await this.path();
         let i = 0;

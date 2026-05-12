@@ -26,7 +26,7 @@ export class RequestContext {
   server = {
     REQUEST_URI: "/", HTTP_HOST: "", HTTP_REFERER: "", HTTP_USER_AGENT: "",
     HTTP_ACCEPT_LANGUAGE: "", HTTP_IF_NONE_MATCH: "", HTTP_RANGE: "", HTTP_DPR: "",
-    REMOTE_ADDR: "", SCHEME: "http" as "http" | "https", DOCUMENT_ROOT: "", SCRIPT_FILENAME: "",
+    REMOTE_ADDR: "", SERVER_ADDR: "", SCHEME: "http" as "http" | "https", DOCUMENT_ROOT: "", SCRIPT_FILENAME: "",
   };
   responseHeaders: Headers = new Headers();
   responseStatus = 200;
@@ -134,6 +134,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
       HTTP_IF_NONE_MATCH: req.header("if-none-match") ?? "", HTTP_RANGE: req.header("range") ?? "",
       HTTP_DPR: req.header("dpr") ?? "",
       REMOTE_ADDR: (c.env as Record<string, string>)?.["REMOTE_ADDR"] ?? req.header("x-forwarded-for") ?? "",
+      SERVER_ADDR: (c.env as Record<string, string>)?.["SERVER_ADDR"] ?? "",
       SCHEME: url.protocol === "https:" ? "https" : "http",
       DOCUMENT_ROOT: app.config.appPATH, SCRIPT_FILENAME: app.config.appPATH + "server.ts",
     },

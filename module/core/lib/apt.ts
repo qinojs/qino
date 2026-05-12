@@ -253,7 +253,7 @@ export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
 export interface Tool {
   name: string;
   description: string;
-  parameters?: Record<string, unknown>;
+  parameters: Record<string, unknown>;
   execute(args: unknown, ctx: RequestContext): Promise<unknown>;
 }
 
@@ -286,7 +286,7 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
     tools.push({
       name: r.name,
       description: r.verb.description ?? r.name,
-      ...(hasParams && { parameters: { type: "object", properties, required } }),
+      parameters: hasParams ? { type: "object", properties, required } : {},
       execute: (args) => {
         const raw = (args && typeof args === "object") ? { ...args as Params } : {};
         for (let i = 0; i < r.segments.length; i++) {

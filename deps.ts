@@ -10,8 +10,10 @@ export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
 export { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@^1";
 export { typeByExtension } from "jsr:@std/media-types@^1";
-export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@^0.5.6/item.js";
-export { bildJsonItem } from "jsr:@nuxodin/item@^0.5.6/tools/jsonDataItem.js";
-export { schemaToDb } from "jsr:@nuxodin/item@^0.5.6/tools/schema/db/mysql/to-db.js";
-export { toInput } from "jsr:@nuxodin/item@^0.5.6/tools/schema/render/html.js";
+
+export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@^0.5.7/item.js";
+export { bildJsonItem } from "jsr:@nuxodin/item@^0.5.7/tools/jsonDataItem.js";
+export { schemaToDb } from "jsr:@nuxodin/item@^0.5.7/tools/schema/db/mysql/to-db.js";
+export { toInput } from "jsr:@nuxodin/item@^0.5.7/tools/schema/render/html.js";
+
 export { dump } from "jsr:@nuxodin/dump@^1.3.0";

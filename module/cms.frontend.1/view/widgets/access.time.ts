@@ -1,8 +1,8 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 
-function toDatetimeLocal(ts: number | null): string {
+function toDatetimeLocal(ts: string | number | null): string {
   if (!ts) return "";
-  const d = new Date(ts * 1000);
+  const d = new Date(Number(ts) * 1000);
   return d.toISOString().slice(0, 16);
 }
 

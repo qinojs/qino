@@ -178,7 +178,7 @@ export function init(app: App) {
     ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
     ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/off.css");
 
-    const editmode = access > 1 && parseInt(await settings.cms.editmode);
+    const editmode = access > 1 && parseInt(String(await settings.cms.editmode));
     if (editmode) {
       ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/browserCheck.js");
       ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");

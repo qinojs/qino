@@ -74,7 +74,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
 
   const module = node.vs.module;
   let globalSettings = "";
-  if (module in app.settings) {
+  if (module && module in app.settings) {
     addSettingsEditor(ctx);
     const source = settingsSourceAttr({
       kind: "app",
