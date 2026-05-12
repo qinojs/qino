@@ -3,7 +3,16 @@ import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
 import { DbSchema } from "./DbSchema.ts";
 import type { App } from "../server.ts";
 
-export type ModuleExports = Record<string, any>;
+export type ModuleExports = Record<string, any> & {
+  name: string;
+  needs?: string[];
+  routes?(app: App): void;
+  dbSchema?: Record<string, unknown>;
+  init?(app: App): void | Promise<void>;
+  install?(ctx: { app: App; module: ModuleExports }): void | Promise<void>;
+  settingsSchema?: Record<string, unknown>;
+  ctxSettingsSchema?: Record<string, unknown>;
+};
 
 export class Module {
   readonly name: string;
@@ -94,7 +103,7 @@ export class ModuleManager {
       await exports.init?.(this.#app);
       await exports.install?.({ app: this.#app, module: exports });
     }
-    (this.#app.settings as any)[$item].setSchema(appSettingsSchema);
+    this.#app.settings[$item].setSchema(appSettingsSchema);
     this.#app.ctxSettingsSchema = ctxSettingsSchema;
     await this.#app.fire("init", { app: this.#app });
   }
