@@ -8,6 +8,7 @@
 import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
 import type { AptTree } from "../core/lib/apt.ts";
+import { Access } from "../core/lib/apt.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.text";
@@ -263,11 +264,13 @@ export const api: AptTree = {
             paramSchema: s.number().describe("Text-ID"),
             get: {
                 description: "Read text in all languages",
+                access: Access.USER, // fine-grained check via textAccess() in execute
                 execute: ({ text }: any, ctx: any) => service(ctx).get(text),
             },
             translate: {
                 post: {
                     description: "Translate text into a target language",
+                    access: Access.USER,
                     input: s.object({
                         target_lang: s.string().describe("Target language code, e.g. \"en\""),
                         source_lang: s.string().describe("Source language code, e.g. \"de\""),
@@ -279,6 +282,7 @@ export const api: AptTree = {
             history: {
                 get: {
                     description: "Read text history for a language",
+                    access: Access.USER,
                     input: s.object({ lang: s.string().describe("Language code, e.g. \"de\"") }),
                     execute: ({ text, lang }: any, ctx: any) => service(ctx).history(text, lang),
                 },
@@ -286,6 +290,7 @@ export const api: AptTree = {
             "is-translated": {
                 get: {
                     description: "Check if text is translated in a language",
+                    access: Access.USER,
                     input: s.object({ lang: s.optional(s.string()).describe("Language code. Default: current language") }),
                     execute: ({ text, lang }: any, ctx: any) => service(ctx).isTranslated(text, lang ?? null),
                 },
@@ -298,6 +303,7 @@ export const api: AptTree = {
             translate: {
                 post: {
                     description: "Translate all texts of a page/content into a target language",
+                    access: Access.USER,
                     input: s.object({
                         target_lang: s.string().describe("Target language code, e.g. \"en\""),
                         source_lang: s.optional(s.string()).describe("Source language code. Default: auto-detect"),
@@ -311,6 +317,7 @@ export const api: AptTree = {
             "translate-all-langs": {
                 post: {
                     description: "Translate a page/content into all languages",
+                    access: Access.USER,
                     input: s.object({
                         ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
                         subpages: s.optional(s.boolean()).describe("Include sub-pages"),

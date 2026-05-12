@@ -10,6 +10,7 @@ import * as nodePath from "node:path";
 import { OutputError, assertAllowedPath } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import type { AptTree } from "../core/lib/apt.ts";
+import { Access } from "../core/lib/apt.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import codemirrorView from "./view/codemirror.ts";
 
@@ -39,6 +40,7 @@ const api: AptTree = {
     save: {
         put: {
             description: "Datei aus dem File-Editor speichern.",
+            access: Access.USER,
             input: s.object({ file: s.string(), content: s.string() }),
             execute: ({ file, content }: any, ctx: any) => saveFile(ctx, file, content),
         },

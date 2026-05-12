@@ -8,7 +8,7 @@ import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { AptTree } from "../core/lib/apt.ts";
-import { AccessError } from "../core/lib/apt.ts";
+import { Access, AccessError } from "../core/lib/apt.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
 
@@ -61,6 +61,7 @@ export const api: AptTree = {
     ":widget": {
       post: {
         description: "CMS-Frontend-Widget rendern.",
+        access: Access.USER,
         input: s.object({ params: s.optional(s.record()) }),
         execute: ({ widget, params }: any, ctx: any) =>
           renderWidget(ctx, widget, params ?? {}),

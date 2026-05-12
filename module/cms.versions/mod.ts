@@ -30,6 +30,7 @@ import {
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import type { AptTree } from "../core/lib/apt.ts";
+import { Access } from "../core/lib/apt.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
 
@@ -49,6 +50,7 @@ export const api: AptTree = {
     "publish-cont": {
         post: {
             description: "Content/Page in einen Versions-Space publizieren.",
+            access: Access.USER,
             input: s.object({ pid: s.number(), options: s.optional(s.record()) }),
             execute: ({ pid, options }: any, ctx: any) => publishCont(ctx, pid, options ?? {}),
         },
@@ -57,6 +59,7 @@ export const api: AptTree = {
         ":page": {
             get: {
                 description: "Versionsprotokoll fuer Seite und Inhalte lesen.",
+                access: Access.USER,
                 execute: ({ page }: any, ctx: any) => getForPage(ctx, page),
             },
         },
@@ -65,6 +68,7 @@ export const api: AptTree = {
         ":log": {
             get: {
                 description: "Details zu einem Versions-Log lesen.",
+                access: Access.USER,
                 execute: ({ log }: any, ctx: any) => logDetails(ctx, log),
             },
         },

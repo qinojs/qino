@@ -49,8 +49,27 @@ export interface Verb {
   input?: StandardSchema;
   query?: StandardSchema;
   output?: StandardSchema;
+  access?: (params: Params, ctx: RequestContext) => boolean | Promise<boolean>;
   execute(params: Params, ctx: RequestContext): unknown | Promise<unknown>;
 }
+
+export const staticAccessKey = Symbol("staticAccess");
+
+type StaticAccessFn = NonNullable<Verb["access"]> & { [staticAccessKey]: true };
+
+function staticAccess(fn: NonNullable<Verb["access"]>): StaticAccessFn {
+  return Object.assign(fn, { [staticAccessKey]: true as const });
+}
+
+export function isStaticAccess(fn: NonNullable<Verb["access"]>): boolean {
+  return (fn as any)[staticAccessKey] === true;
+}
+
+export const Access = {
+  PUBLIC:    staticAccess(() => true),
+  USER:      staticAccess((_: Params, ctx: RequestContext) => ctx.user !== null),
+  SUPERUSER: staticAccess((_: Params, ctx: RequestContext) => ctx.user?.get?.("superuser").then(Boolean) ?? Promise.resolve(false)),
+} satisfies Record<string, NonNullable<Verb["access"]>>;
 
 export interface AptNode {
   resolve?(raw: unknown, ctx: RequestContext, parents: Params): unknown | Promise<unknown>;
@@ -75,10 +94,10 @@ const BODY_METHODS = new Set<Method>(["post", "put", "patch"]);
 
 interface Route {
   method: Method;
-  segments: string[];   // tree-level: literal or ":param"
-  nodes: AptNode[];        // parallel to segments
+  segments: string[];  // literal or ":param"
+  nodes: AptNode[];    // parallel to segments
   verb: Verb;
-  name: string;         // camelCase: "createPageFile"
+  name: string;        // camelCase: "createPageFile"
 }
 
 function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
@@ -165,6 +184,10 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
     params[name] = node.resolve ? await node.resolve(value, ctx, params) : value;
   }
 
+  if (!verb.access) throw new AccessError("no access defined");
+  if (!await verb.access(params, ctx)) throw new AccessError();
+  if (rawParams["_checkAccess"]) return { ok: true };
+
   for (const key of ["input", "query"] as const) {
     const schema = verb[key];
     if (!schema) continue;
@@ -174,7 +197,6 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
     }
     Object.assign(params, validate(schema, picked, key));
   }
-
   const result = await verb.execute(params, ctx);
 
   if (verb.output) {
@@ -320,8 +342,3 @@ export function aptClient(tree: AptTree): AptProxy {
   return buildProxy(tree, []);
 }
 
-// ───── Convenience: simple access helper ──────────────────────────────────
-
-export async function require(resource: { access(): number | Promise<number> }, level: number): Promise<void> {
-  if ((await resource.access()) < level) throw new AccessError();
-}

@@ -4,6 +4,7 @@
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import type { AptTree } from "../core/lib/apt.ts";
+import { Access } from "../core/lib/apt.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.filebrowser";
@@ -109,6 +110,7 @@ export const api: AptTree = {
     search: {
         get: {
             description: "Dateien im CMS-Filebrowser suchen.",
+            access: Access.USER,
             query: s.object({ s: s.optional(s.string()) }),
             execute: ({ s: needle }: any, ctx: any) => search(needle ?? "", ctx),
         },

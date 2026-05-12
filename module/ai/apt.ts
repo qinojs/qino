@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { AptTree } from "../core/lib/apt.ts";
+import { Access } from "../core/lib/apt.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 
 export const api: AptTree = {
@@ -7,6 +8,7 @@ export const api: AptTree = {
     post: {
       description: "Run AI chat completions",
       input: s.object({ data: s.record() }),
+      access: Access.USER,
       execute: ({ data }: any, ctx: any) => ctx.app.ai.chatCompletions(data),
     },
   },
@@ -14,6 +16,7 @@ export const api: AptTree = {
     post: {
       description: "Run a bot chat session",
       input: s.object({ data: s.record() }),
+      access: Access.USER,
       execute: ({ data }: any, ctx: any) => ctx.app.ai.chatSession(data, ctx),
     },
   },
@@ -21,6 +24,7 @@ export const api: AptTree = {
     post: {
       description: "Generate text embeddings",
       input: s.object({ data: s.record() }),
+      access: Access.USER,
       execute: ({ data }: any, ctx: any) => ctx.app.ai.embeddings(data),
     },
   },
@@ -28,6 +32,7 @@ export const api: AptTree = {
     post: {
       description: "Generate an image from a text prompt",
       input: s.object({ data: s.record() }),
+      access: Access.USER,
       execute: ({ data }: any, ctx: any) => ctx.app.ai.imageGenerations(data),
     },
   },

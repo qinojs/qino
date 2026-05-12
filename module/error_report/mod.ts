@@ -12,7 +12,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import type { App } from "../core/server.ts";
 import type { Context } from "../../deps.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
-import { urlToLocalPath } from "../core/lib/util.ts";
+import { urlToLocalPath, assertAllowedPath } from "../core/lib/util.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
@@ -57,6 +57,8 @@ async function handleCssError(c: Context): Promise<Response> {
     try {
       const localPath = urlToLocalPath(file, ctx);
       if (!localPath) throw new Error("not a local file");
+      if (!localPath.endsWith(".css")) throw new Error("not a css file");
+      assertAllowedPath(localPath, ctx.app);
       const content = await Deno.readTextFile(localPath);
       const pos = content.indexOf(message);
       if (pos >= 0) {
@@ -73,9 +75,8 @@ async function handleCssError(c: Context): Promise<Response> {
 
 async function handleCspError(c: Context): Promise<Response> {
   const ctx = c.get("ctx") as RequestContext;
-  const cspReport = ctx.post["csp-report"];
-  if (cspReport) {
-    const report = cspReport as Report;
+  const report = ctx.post["csp-report"] as Report;
+  if (report) {
     const directive = report["effective-directive"] ?? report["violated-directive"] ?? "";
     let blockedUri = report["blocked-uri"] ?? "";
     if (typeof blockedUri === "string" && /^https?:/.test(blockedUri)) {
@@ -120,7 +121,6 @@ async function addReport(app: any, vs: Report): Promise<void> {
 }
 
 export function init(app: App): void {
-  // ── Config ───────────────────────────────────────────────────────────
 
   (globalThis as any).reporterJsOptions = {
     onError: async (data: Report) => {
@@ -128,8 +128,6 @@ export function init(app: App): void {
       await addReport(app, data);
     },
   };
-
-  // ── Browser-Frontend: reporter.js + Konfiguration ins HTML injizieren ───────
 
   app.on("render", async ({ ctx }: any) => {
     if (!ctx.hasHtml) return;

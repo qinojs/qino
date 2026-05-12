@@ -3,7 +3,6 @@
 
 import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
-import { showDateTime } from "../../core/lib/util.ts";
 import type { Node } from "../../cms/lib/Node.ts";
 
 export async function list(node: Node, { ctx, vars }: any): Promise<string> {
@@ -119,24 +118,27 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
     if (access === 0) return "---";
     const onlineStart = SubPage.vs.online_start;
     const ok = !onlineStart || (parseInt(String(onlineStart)) < Math.floor(Date.now() / 1000));
-    const date = onlineStart ? showDateTime(parseInt(String(onlineStart))) : "---";
-    if (access <= 2) return `<span style="color:${ok ? "#8a8" : "#a88"}">${hee(date)}</span>`;
-    return `<span style="color:${ok ? "green" : "red"}">${hee(date)}</span>`;
+    const iso = onlineStart ? new Date(parseInt(String(onlineStart)) * 1000).toISOString() : "";
+    const date = iso ? `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "---";
+    if (access <= 2) return `<span style="color:${ok ? "#8a8" : "#a88"}">${date}</span>`;
+    return `<span style="color:${ok ? "green" : "red"}">${date}</span>`;
   }
 
   function renderOnlineEnd(SubPage: Node, access: number, numNotInherit: number): string {
     if (access === 0) return "---";
     const onlineEnd = SubPage.vs.online_end;
+    const ts = onlineEnd == null ? null : parseInt(String(onlineEnd));
+    const iso = ts ? new Date(ts * 1000).toISOString() : "";
     const date = onlineEnd == null
       ? "vererbt"
-      : (onlineEnd === "0" || onlineEnd === 0 ? "immer" : showDateTime(parseInt(String(onlineEnd))));
+      : (ts === 0 ? "immer" : `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
 
     let badge = "";
     if (numNotInherit && access > 2) {
       badge = ` <span title="Inhalte bei denen &quot;Online bis&quot; nicht vererbt wird!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
     }
 
-    if (access <= 2) return `<span style="color:#8a8">${hee(date)}</span>${badge}`;
+    if (access <= 2) return `<span style="color:#8a8">${date}</span>${badge}`;
 
     const now = Math.floor(Date.now() / 1000);
     const endTs = parseInt(String(onlineEnd ?? "0"));
@@ -144,7 +146,7 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
     const diff = Math.min(Math.max(endTs - now, 0), maxSec);
     const r = onlineEnd ? 256 - Math.floor(256 * diff / maxSec) : 0;
     const g = onlineEnd ? Math.floor(256 * diff / maxSec) - 128 : 128;
-    return `<span style="color:rgb(${r},${g},0)">${hee(date)}</span>${badge}`;
+    return `<span style="color:rgb(${r},${g},0)">${date}</span>${badge}`;
   }
 
   function renderAccess(SubPage: Node, access: number, numNotInherit: number): string {

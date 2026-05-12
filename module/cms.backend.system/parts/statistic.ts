@@ -56,7 +56,7 @@ export default async function render(node: any): Promise<string> {
 
   let folderRows = "";
   for (const [folder, size] of array) {
-    folderRows += `<tr><td>${hee(folder)}<td style="text-align:right">${(size / 1000).toFixed(1)} KB`;
+    folderRows += `<tr><td>${hee(folder)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`;
   }
 
   // ── DB table sizes ────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ export default async function render(node: any): Promise<string> {
   let tableRows = "";
   for (const t of tables) {
     const size = (t.Data_length ?? 0) + (t.Index_length ?? 0);
-    tableRows += `<tr><td>${hee(t.Name)}<td style="text-align:right">${(size / 1000).toFixed(1)} KB`;
+    tableRows += `<tr><td>${hee(t.Name)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`;
   }
 
   return `

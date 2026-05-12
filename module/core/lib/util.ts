@@ -57,7 +57,7 @@ export function hee(str: any): string {
 }
 
 export function ensureSlash(v: string) {
-    return v.endsWith("/") ? v : v + "/";
+  return v.endsWith("/") ? v : v + "/";
 }
 
 export class AnswerError extends Error {
@@ -98,12 +98,11 @@ export function urlize(str: string): string {
   return str.toLowerCase();
 }
 
-
 export async function copyDir(src: string, dest: string): Promise<void> {
   try {
     await Deno.mkdir(dest, { recursive: true });
     for await (const entry of Deno.readDir(src)) {
-      if (!entry.name || entry.name === "." || entry.name === "..") continue;
+      if (!entry.name) continue;
       const sf = src + "/" + entry.name;
       const df = dest + "/" + entry.name;
       if (entry.isDirectory) {
@@ -172,9 +171,4 @@ export function niceDate(ts: number | string | null): string {
   yesterday.setDate(now.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return "Yesterday " + d.toTimeString().slice(0, 8);
   return showDateTime(t);
-}
-
-export function array2formatedStr(v: any): string {
-  // Simplified HTML table output
-  return `<div>${JSON.stringify(v)}</div>`;
 }

@@ -11,7 +11,7 @@ import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.backend";
 
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.2.0/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.0/";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
@@ -23,7 +23,8 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
   ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
   ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
-  //ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/loading.js");
+
+  ctx.html.addJSM(u2Root + "u2/auto.js");
 
   ctx.csp["style-src"]["https://cdn.jsdelivr.net"] = 1;
   ctx.html.addCSSFile(u2Root + "css/norm/norm.css");

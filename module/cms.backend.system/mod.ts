@@ -97,12 +97,8 @@ async function render(node: Node): Promise<string> {
   const osUptimeSec = Deno.osUptime(); // Benötigt --allow-sys
   const load = Deno.loadavg();
 
-  // Zeit-Formatierer (Minuten oder Stunden/Minuten)
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m.toFixed(2)}m`;
-  };
+  const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
+  const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
 
   const serverInfoHtml = `
 <div class="c1-box">
@@ -112,11 +108,11 @@ async function render(node: Node): Promise<string> {
       <table class="c1-style" style="white-space:nowrap">
         <tr><td>Deno Version:<td>${hee(Deno.version.deno)}
         <tr><td>PID:<td>${hee(pid)}
-        <tr><td>App Uptime:<td>${hee(formatTime(appUptimeSec))}
-        <tr><td>Server Uptime:<td>${hee(formatTime(osUptimeSec))}
+        <tr><td>App Uptime:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+        <tr><td>Server Uptime:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
         <tr><td>System Load:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
-        <tr><td>Heap (Used/Total):<td>${hee((mem.heapUsed / 1024 / 1024).toFixed(2))} / ${hee((mem.heapTotal / 1024 / 1024).toFixed(2))} MB
-        <tr><td>RSS (Echter RAM):<td>${hee((mem.rss / 1024 / 1024).toFixed(2))} MB
+        <tr><td>Heap (Used/Total):<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+        <tr><td>RSS (Echter RAM):<td><u2-bytes>${mem.rss}</u2-bytes>
         <tr><td>Server-IP:<td>${hee(serverIP)}
         <tr><td>APP-Path:<td>${hee(appPATH)}
       </table>
@@ -147,30 +143,21 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   // ── locales / time ─────────────────────────────────────────────────────
-  const osDate  = new Date().toISOString().replace("T", " ").slice(0, 19);
-  const dbNow   = String(await db.one("SELECT NOW()") ?? "");
-
+  const osIso   = new Date().toISOString();
+  const dbRaw   = await db.one("SELECT UTC_TIMESTAMP()");
+  const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
 <div class="c1-box">
   <div class="-head">Locales</div>
   <div class="-body">
     <table class="c1-style">
-      <tr><td>Date()<td>${hee(osDate)}
-      <tr><td>database<td>${hee(dbNow)}
-      <tr>
-        <td>Your Browser
-        <td id="uaDateTest">
-          <script>
-          const now = new Date();
-          const f = new Intl.DateTimeFormat(navigator.language, {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false
-          });
-          const p = f.formatToParts(now);
-          const s = p.find(x=>x.type==='year').value+'-'+p.find(x=>x.type==='month').value+'-'+p.find(x=>x.type==='day').value
-            +' '+p.find(x=>x.type==='hour').value+':'+p.find(x=>x.type==='minute').value+':'+p.find(x=>x.type==='second').value;
-          document.getElementById('uaDateTest').textContent = s + ' (' + navigator.language + ')';
+      <tr><td>OS<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
+      <tr><td>DB<td>${dbIso.slice(0, 19).replace("T", " ")}<td>UTC+0
+      <tr><td>Browser<script>
+          const _d = new Date(), _off = -_d.getTimezoneOffset() / 60;
+          const _tr = document.currentScript.closest('tr');
+          _tr.insertAdjacentHTML('beforeend', '<td>'+_d.toISOString().slice(0,19).replace('T',' ')+'<td>UTC+'+_off);
+          document.currentScript.remove();
           </script>
     </table>
   </div>

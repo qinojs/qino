@@ -104,8 +104,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     for await (const { filePath, rel } of walkDir(modDir)) {
       const info = await Deno.stat(filePath).catch(() => null);
       if (!info?.isFile) continue;
-      const size = info.size < 1024 ? info.size + " B" : (info.size / 1024).toFixed(1) + " KB";
-      const mtime = info.mtime ? new Date(info.mtime).toLocaleString("de") : "";
+      const mtimeIso = info.mtime?.toISOString() ?? "";
       let nameCell: string;
       if (isSuperuser) {
         const href = hee(ctx.appURL + "editor?file=" + encodeURIComponent(filePath));
@@ -115,8 +114,8 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
       }
       rows.push(`<tr>
         <td style="font-family:monospace;font-size:12px">${nameCell}
-        <td style="text-align:right;color:#999;font-size:12px;padding-right:12px">${hee(size)}
-        <td style="color:#999;font-size:12px">${hee(mtime)}`);
+        <td style="text-align:right;color:#999;font-size:12px;padding-right:12px"><u2-bytes>${info.size}</u2-bytes>
+        <td style="color:#999;font-size:12px"><u2-time datetime="${mtimeIso}" type=relative>${mtimeIso.slice(0, 16).replace("T", " ")}</u2-time>`);
     }
     if (rows.length) {
       filesHtml = `<table class=c1-style style="width:100%;white-space:nowrap">

@@ -5,7 +5,7 @@ import type { StandardSchema } from "../core/lib/StandardSchema.ts";
 import { toJsonSchema } from "../core/lib/StandardSchema.ts";
 import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { VERBS, RESERVED, camelName, toTools } from "../core/lib/apt.ts";
+import { VERBS, RESERVED, camelName, toTools, isStaticAccess, Access } from "../core/lib/apt.ts";
 import type { Method } from "../core/lib/apt.ts";
 
 export const name = "cms.backend.api";
@@ -28,9 +28,21 @@ interface Route {
   query?: StandardSchema;
   output?: StandardSchema;
   pathParams: string[];
+  accessLevel: "public" | "user" | "superuser" | "dynamic" | "none";
 }
 
-function* walk(node: any, segments: string[] = []): Generator<Route> {
+function accessLevel(action: any, ctx: any): Route["accessLevel"] {
+  const { access } = action;
+  if (!access) return "none";
+  if (!isStaticAccess(access)) return "dynamic";
+  if (access === Access.PUBLIC) return "public";
+  if (access === Access.SUPERUSER) return "superuser";
+  if (access === Access.USER) return "user";
+  // custom static: evaluate now
+  return access({}, ctx) ? "user" : "none";
+}
+
+function* walk(node: any, ctx: any, segments: string[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(node as object)) {
     if (RESERVED.has(key) || typeof value !== "object" || value === null) continue;
     const segs = [...segments, key];
@@ -46,10 +58,11 @@ function* walk(node: any, segments: string[] = []): Generator<Route> {
           query: action.query,
           output: action.output,
           pathParams: segs.filter((s) => s.startsWith(":")).map((s) => s.slice(1)),
+          accessLevel: accessLevel(action, ctx),
         };
       }
     }
-    yield* walk(value, segs);
+    yield* walk(value, ctx, segs);
   }
 }
 
@@ -104,6 +117,22 @@ const METHOD_COLORS: Record<Method, string> = {
   patch:  "#50e3c2",
 };
 
+const ACCESS_LABELS: Record<Route["accessLevel"], string> = {
+  public:    "public",
+  user:      "user",
+  superuser: "superuser",
+  dynamic:   "dynamic",
+  none:      "none",
+};
+
+const ACCESS_COLORS: Record<Route["accessLevel"], string> = {
+  public:    "#aaa",
+  user:      "#7c3aed",
+  superuser: "#b45309",
+  dynamic:   "#0369a1",
+  none:      "#dc2626",
+};
+
 function pathParamFields(params: string[]): string {
   return params.map((p) =>
     `<label class="api-field"><span>${hee(p)}</span>${toInput({ type: "string" }, { name: p, required: true })}</label>`
@@ -112,6 +141,8 @@ function pathParamFields(params: string[]): string {
 
 function routeHtml(r: Route, idx: number, toolJson: string): string {
   const color = METHOD_COLORS[r.method];
+  const accessColor = ACCESS_COLORS[r.accessLevel];
+  const accessLabel = ACCESS_LABELS[r.accessLevel];
   const paramForm = pathParamFields(r.pathParams);
   const inputForm = schemaToFormFields(r.input);
   const queryForm = schemaToFormFields(r.query);
@@ -126,6 +157,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
     <span class="api-badge" style="background:${hee(color)}">${hee(r.method.toUpperCase())}</span>
     <code class="api-path">${hee(r.path)}</code>
     <span class="api-desc">${hee(r.description)}</span>
+    <span class="api-access" style="color:${hee(accessColor)}" title="access">${hee(accessLabel)}</span>
     <span class="api-arrow">▶</span>
   </div>
   <div class="api-route-body" id="api-body-${idx}" hidden>
@@ -140,9 +172,11 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
       ${inputForm           ? `<div class="api-section">Body${inputForm}</div>` : ""}
       ${queryForm           ? `<div class="api-section">Query${queryForm}</div>` : ""}
       <button type="submit">Send ▶</button>
+      <button type="button" onclick="apiCheckAccess(event,${idx})">Check access</button>
     </form>` : `
     <form class="api-form" onsubmit="apiSubmit(event,${idx})">
       <button type="submit">Send ▶</button>
+      <button type="button" onclick="apiCheckAccess(event,${idx})">Check access</button>
     </form>`}
     <pre class="api-result" id="api-result-${idx}" hidden></pre>
     <div class="api-tool-section">
@@ -160,7 +194,7 @@ function render(): string {
   const appURL: string = ctx.appURL ?? "/";
 
   const aptTree = (ctx.app as any).aptTree;
-  const routes = [...walk(aptTree)];
+  const routes = [...walk(aptTree, ctx)];
   const tools = toTools(aptTree);
   const toolJsonByName = new Map(tools.map((t) => [t.name, JSON.stringify({ name: t.name, description: t.description, parameters: t.parameters }, null, 2)]));
 
@@ -189,7 +223,8 @@ function render(): string {
 .api-path { font-size:14px; flex-shrink:0; }
 .api-name { font-size:12px; color:#888; flex-shrink:0; }
 .api-desc { color:#666; font-size:12px; flex:1; }
-.api-arrow { margin-left:auto; transition:transform .15s; }
+.api-access { font-size:11px; font-weight:bold; margin-left:auto; }
+.api-arrow { transition:transform .15s; }
 .api-route.open .api-arrow { transform:rotate(90deg); }
 .api-route-body { padding:12px 16px; border-top:1px solid #eee; background:#fff; }
 .api-meta { font-size:12px; color:#555; margin-bottom:10px; display:flex; flex-direction:column; gap:4px; }
@@ -298,6 +333,33 @@ ${routesHtml}
       let pretty;
       try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch { pretty = text; }
       result.textContent = res.status + ' ' + res.statusText + '\\n\\n' + pretty;
+      if (!res.ok) result.className = 'api-result error';
+    } catch(err) {
+      result.textContent = String(err);
+      result.className = 'api-result error';
+    }
+  };
+
+  window.apiCheckAccess = async function(e, idx) {
+    const r = routes[idx];
+    const form = e.target.closest('form');
+    const result = document.getElementById('api-result-' + idx);
+    result.hidden = false;
+    result.className = 'api-result';
+    try {
+      let path = r.path;
+      for (const p of r.pathParams) {
+        const el = form.elements[p];
+        if (!el || !el.value) {
+          result.textContent = '⚠ fill in path param: ' + p;
+          result.className = 'api-result error';
+          return;
+        }
+        path = path.replace(':' + p, encodeURIComponent(el.value));
+      }
+      result.textContent = 'Checking…';
+      const res = await fetch(appURL + 'api' + path + '?_checkAccess=1', { method: r.method.toUpperCase(), headers: { 'Content-Type': 'application/json' } });
+      result.textContent = res.ok ? '✓ access granted' : '✗ ' + res.status + ' access denied';
       if (!res.ok) result.className = 'api-result error';
     } catch(err) {
       result.textContent = String(err);

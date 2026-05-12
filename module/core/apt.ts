@@ -8,7 +8,7 @@
 
 import { getCtx } from "./lib/RequestContext.ts";
 import { $item } from "../../deps.ts";
-import { AccessError } from "./lib/apt.ts";
+import { Access, AccessError } from "./lib/apt.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
 import { readSettings } from "./lib/settings.ts";
@@ -33,6 +33,7 @@ export const api: AptTree = {
   password: {
     put: {
       description: "Change the password of the logged-in user",
+      access: Access.USER,
       input: s.object({
         oldpw: s.string().describe("Current password"),
         pw: s.string().describe("New password (min 5 chars)"),
@@ -54,6 +55,7 @@ export const api: AptTree = {
   logout: {
     post: {
       description: "Logout current session",
+      access: Access.USER,
       execute: async () => {
         await logout(getCtx());
         return { ok: true };
@@ -64,11 +66,13 @@ export const api: AptTree = {
   settings: {
     get: {
       description: "Read app settings",
+      access: Access.SUPERUSER,
       input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: async ({ path }: any) => readSettings(await appSettingsRoot(path)),
     },
     put: {
       description: "Set app settings",
+      access: Access.SUPERUSER,
       input: s.object({
         path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\""),
         value: s.any().describe("Value to set (any JSON type)"),
@@ -80,6 +84,7 @@ export const api: AptTree = {
     },
     delete: {
       description: "Delete app settings at given path",
+      access: Access.SUPERUSER,
       input: s.object({ path: s.string().describe("Sub-path to delete") }),
       execute: async ({ path }: any) => {
         await (await appSettingsRoot(path)).remove();
@@ -91,6 +96,7 @@ export const api: AptTree = {
   "settings-schema": {
     get: {
       description: "Read app settings schema",
+      access: Access.SUPERUSER,
       input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: async ({ path }: any) => (await appSettingsRoot(path)).schema ?? {},
     },
@@ -99,11 +105,13 @@ export const api: AptTree = {
   "ctx-settings": {
     get: {
       description: "Read user/session settings",
+      access: Access.USER,
       input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: ({ path }: any) => readSettings(ctxSettingsRoot(path)),
     },
     put: {
       description: "Set user/session settings",
+      access: Access.USER,
       input: s.object({
         path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\""),
         value: s.any().describe("Value to set (any JSON type)"),
@@ -115,6 +123,7 @@ export const api: AptTree = {
     },
     delete: {
       description: "Delete user/session settings at given path",
+      access: Access.USER,
       input: s.object({ path: s.string().describe("Sub-path to delete") }),
       execute: async ({ path }: any) => {
         await ctxSettingsRoot(path).remove();
@@ -126,6 +135,7 @@ export const api: AptTree = {
   "ctx-settings-schema": {
     get: {
       description: "Read user/session settings schema",
+      access: Access.USER,
       input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
       execute: ({ path }: any) => ctxSettingsRoot(path).schema ?? {},
     },

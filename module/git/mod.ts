@@ -3,6 +3,7 @@ import * as GitService from "./lib/GitService.ts";
 import { fromFileUrl } from "../../deps.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
+import { Access } from "../core/lib/apt.ts";
 
 export const name = "git";
 export const needs: string[] = [];
@@ -29,8 +30,8 @@ export const api = {
     status: {
       get: {
         input: s.object({ module: s.string() }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot, info } = await getModuleGitInfo(ctx.app, params.module);
           return { gitRoot, ...info };
         },
@@ -39,8 +40,8 @@ export const api = {
     log: {
       get: {
         input: s.object({ module: s.string(), limit: s.optional(s.number()) }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           return await GitService.getLog(gitRoot, params.limit ?? 20);
@@ -50,8 +51,8 @@ export const api = {
     tags: {
       get: {
         input: s.object({ module: s.string() }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           return await GitService.getTags(gitRoot);
@@ -61,8 +62,8 @@ export const api = {
     pull: {
       post: {
         input: s.object({ module: s.string() }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           const output = await GitService.pull(gitRoot);
@@ -73,8 +74,8 @@ export const api = {
     push: {
       post: {
         input: s.object({ module: s.string() }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           const output = await GitService.push(gitRoot);
@@ -85,8 +86,8 @@ export const api = {
     checkout: {
       post: {
         input: s.object({ module: s.string(), ref: s.string() }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
           const output = await GitService.checkout(gitRoot, params.ref);
@@ -97,8 +98,8 @@ export const api = {
     install: {
       post: {
         input: s.object({ gitUrl: s.string(), targetDir: s.optional(s.string()) }),
+        access: Access.SUPERUSER,
         execute: async (params: any, ctx: any) => {
-          if (!(await ctx?.user?.get("superuser"))) throw new Error("Superuser erforderlich");
           const app = ctx.app;
           const basePath = app.appPATH + "privat-module/";
           const repoName = params.gitUrl.split("/").pop()?.replace(/\.git$/, "") ?? "module";

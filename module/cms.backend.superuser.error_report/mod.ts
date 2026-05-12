@@ -13,6 +13,13 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
 export const name = "cms.backend.superuser.error_report";
+
+const u2time = (t: unknown) => {
+  const d = t instanceof Date ? t : typeof t === "number" ? new Date(t * 1000) : typeof t === "string" ? new Date(t) : null;
+  if (!d || isNaN(d.getTime())) return "";
+  const iso = d.toISOString();
+  return `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
+};
 export const needs = ["cms.backend", "error_report"];
 
 export async function install({ app }: any): Promise<void> {
@@ -151,7 +158,7 @@ globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html
         </small>
     <td>
         <a target="_blank" href="${hee(editorUrl)}">${hee(row.message)}</a><br>
-        <small>${hee(row.time)}</small>
+        <small>${u2time(row.time)}</small>
         <div>${hee(row.usr_email ?? "")}</div>
     <td>
         <img
@@ -209,7 +216,7 @@ async function renderEntryList(node: Node, ctx: any, get: Record<string, string>
         tableRows += `
 <tr style="white-space:nowrap">
     <td>
-        <a href="?id=${hee(String(row.id))}">${hee(row.time ?? "")} <br> ${hee(String(row.log_id ?? ""))}</a>
+        <a href="?id=${hee(String(row.id))}">${u2time(row.time)} <br> ${hee(String(row.log_id ?? ""))}</a>
         <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
     <td>
         <b>${hee(row.message ?? "")}</b><br>
@@ -287,7 +294,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
             }
             historyRows += `
 <tr>
-    <td>${hee(item.time ?? "")} <br> Session: ${hee(String(item.sess_id ?? ""))} <br> Log-ID: ${hee(String(item.id))}
+    <td>${u2time(item.time)} <br> Session: ${hee(String(item.sess_id ?? ""))} <br> Log-ID: ${hee(String(item.id))}
     <td>
         <a href="${hee(item.url ?? "")}" target="_blank">${hee(item.url ?? "")}</a><br>
         <div style="font-size:.9em; color:#aaa">${hee(item.referer ?? "")}</div>
@@ -325,7 +332,7 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
                     <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
                     <small>Referer <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
                 <tr><th>Browser<td><small>${hee(error.browser ?? "")}</small>
-                <tr><th>Time<td>${hee(error.time ?? "")} <small>(Log-ID ${error.log_id ?? ""})</small>
+                <tr><th>Time<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
                 <tr><th>IP<td>${hee(error.ip ?? "")}
             </table>
             ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
