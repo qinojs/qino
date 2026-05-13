@@ -54,62 +54,63 @@ async function renderOverview(node: Node): Promise<string> {
   const loginAsTh = allowLoginAs ? '<th width=20>' : "";
 
   return `<div class=beBoxCont>
-\t<div class=c1-box style="flex:0 1 23rem">
-\t\t<div class=-head>Benutzer hinzufügen</div>
-\t\t${addMessage}
-\t\t<form method=post>
-\t\t\t<input hidden name=fake1>
-\t\t\t<input hidden name=fake2 type=password>
-\t\t\t<input type=hidden name=qgToken value="${hee(ctx.token)}">
-\t\t\t<table class=c1-style>
-\t\t\t\t<tr>
-\t\t\t\t\t<th style="width:6em"> Email:
-\t\t\t\t\t<td> <input type=text name=email class=-new-email>
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Passwort:
-\t\t\t\t\t<td> <input type=password name=pw autocomplete=new-password>
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Vorname:
-\t\t\t\t\t<td> <input type=text name=firstname>
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Nachname:
-\t\t\t\t\t<td> <input type=text name=lastname>
-\t\t\t\t<tr>
-\t\t\t\t\t<th>
-\t\t\t\t\t<td> <button name=add>hinzufügen</button>
-\t\t\t</table>
-\t\t</form>
-\t</div>
+  <div class=c1-box style="flex:0 1 23rem">
+    <div class=-head>Benutzer hinzufügen</div>
+    ${addMessage}
+    <form method=post>
+      <input hidden name=fake1>
+      <input hidden name=fake2 type=password>
+      <input type=hidden name=qgToken value="${hee(ctx.token)}">
+      <table class=c1-style>
+        <tr>
+          <th style="width:6em"> Email:
+          <td> <input type=text name=email class=-new-email>
+        <tr>
+          <th> Passwort:
+          <td> <input type=password name=pw autocomplete=new-password>
+        <tr>
+          <th> Vorname:
+          <td> <input type=text name=firstname>
+        <tr>
+          <th> Nachname:
+          <td> <input type=text name=lastname>
+        <tr>
+          <th>
+          <td> <button name=add>hinzufügen</button>
+      </table>
+    </form>
+  </div>
 
-\t<div class=c1-box style="flex:1">
-\t\t<div class=-head> Benutzer suchen </div>
-\t\t<div class=-body>
-\t\t\t<input type=search placeholder="suchen..." id=usrSearch style="width:300px; max-width:100%">
-\t\t</div>
-\t\t<div style="overflow:auto">
-\t\t\t<table class=c1-style>
-\t\t\t\t<thead>
-\t\t\t\t\t<tr>
-\t\t\t\t\t\t<th> ID
-\t\t\t\t\t\t<th> Name
-\t\t\t\t\t\t<th> Email
-\t\t\t\t\t\t<th> Firma
-\t\t\t\t\t\t<th> Active
-\t\t\t\t\t\t<th> Sessions
-\t\t\t\t\t\t<th> zuletzt online
-\t\t\t\t\t\t${loginAsTh}
-\t\t\t\t\t\t<th width=20>
-\t\t\t\t\t\t<th width=20>
-\t\t\t\t<tbody data-part=list>
-\t\t\t\t\t${ await list(node, {ctx, vars: {}}) }
-\t\t\t</table>
-\t\t</div>
-\t</div>
+  <div class=c1-box style="flex:1">
+    <div class=-head> Benutzer suchen </div>
+    <div class=-body>
+      <input type=search placeholder="suchen..." id=usrSearch style="width:300px; max-width:100%">
+    </div>
+    <div style="overflow:auto">
+      <table class=c1-style>
+        <thead>
+          <tr>
+            <th> ID
+            <th> Name
+            <th> Email
+            <th> Firma
+            <th> Active
+            <th> Sessions
+            <th> zuletzt online
+            ${loginAsTh}
+            <th width=20>
+            <th width=20>
+        <tbody data-part=list>
+          ${ await list(node, {ctx, vars: {}}) }
+      </table>
+    </div>
+  </div>
 </div>`;
 }
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     render,
     pageApi,
     parts: {
@@ -127,11 +128,11 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const superuserRow = isSuperuser ? `
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Superuser:
-\t\t\t\t\t<td>
-\t\t\t\t\t\t<input type=hidden name=superuser value=0>
-\t\t\t\t\t\t<input type=checkbox name=superuser value=1 ${vs.superuser ? "checked" : ""}>` : "";
+        <tr>
+          <th> Superuser:
+          <td>
+            <input type=hidden name=superuser value=0>
+            <input type=checkbox name=superuser value=1 ${vs.superuser ? "checked" : ""}>` : "";
 
   const grpRows = await db.all(
     "SELECT grp.*, usr_grp.usr_id as has FROM grp LEFT JOIN usr_grp ON grp.id = usr_grp.grp_id AND usr_grp.usr_id = ? ORDER BY grp.name",
@@ -141,47 +142,47 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   let grpHtml = "";
   for (const g of grpRows) {
     grpHtml += `
-\t\t\t<tr>
-\t\t\t\t<td>${hee(g.name)}
-\t\t\t\t<td>
-\t\t\t\t\t<input type=checkbox value=${hee(g.id)} ${g.has ? "checked" : ""}>`;
+      <tr>
+        <td>${hee(g.name)}
+        <td>
+          <input type=checkbox value=${hee(g.id)} ${g.has ? "checked" : ""}>`;
   }
 
   return `<div class=beBoxCont itemid="${hee(String(id))}">
-\t<div class=c1-box style="flex:0 1 340px">
-\t\t<div class=-head>Benutzer ${hee(String(vs.id))}</div>
-\t\t<div style="overflow:auto">
-\t\t\t<table class="c1-style -detail">
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Active:
-\t\t\t\t\t<td>
-\t\t\t\t\t\t<input type=hidden name=active value=0>
-\t\t\t\t\t\t<input type=checkbox name=active value=1 ${vs.active ? "checked" : ""}>
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Email:
-\t\t\t\t\t<td> <input name=email value="${hee(vs.email ?? "")}">
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Passwort:
-\t\t\t\t\t<td> <input name=pw autocomplete=new-password type=password>
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Vorname:
-\t\t\t\t\t<td> <input name=firstname value="${hee(vs.firstname ?? "")}">
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Nachname:
-\t\t\t\t\t<td> <input name=lastname value="${hee(vs.lastname ?? "")}">
-\t\t\t\t<tr>
-\t\t\t\t\t<th> Firma:
-\t\t\t\t\t<td> <input name=company value="${hee(vs.company ?? "")}">
-\t\t\t\t${superuserRow}
-\t\t\t</table>
-\t\t</div>
-\t</div>
+  <div class=c1-box style="flex:0 1 340px">
+    <div class=-head>Benutzer ${hee(String(vs.id))}</div>
+    <div style="overflow:auto">
+      <table class="c1-style -detail">
+        <tr>
+          <th> Active:
+          <td>
+            <input type=hidden name=active value=0>
+            <input type=checkbox name=active value=1 ${vs.active ? "checked" : ""}>
+        <tr>
+          <th> Email:
+          <td> <input name=email value="${hee(vs.email ?? "")}">
+        <tr>
+          <th> Passwort:
+          <td> <input name=pw autocomplete=new-password type=password>
+        <tr>
+          <th> Vorname:
+          <td> <input name=firstname value="${hee(vs.firstname ?? "")}">
+        <tr>
+          <th> Nachname:
+          <td> <input name=lastname value="${hee(vs.lastname ?? "")}">
+        <tr>
+          <th> Firma:
+          <td> <input name=company value="${hee(vs.company ?? "")}">
+        ${superuserRow}
+      </table>
+    </div>
+  </div>
 
-\t<div class=c1-box style="flex:0 1 auto">
-\t\t<div class=-head>Gruppen</div>
-\t\t<table class="c1-style -set_grp" style="width:auto">
-\t\t\t${grpHtml}
-\t\t</table>
-\t</div>
+  <div class=c1-box style="flex:0 1 auto">
+    <div class=-head>Gruppen</div>
+    <table class="c1-style -set_grp" style="width:auto">
+      ${grpHtml}
+    </table>
+  </div>
 </div>`;
 }

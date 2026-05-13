@@ -95,20 +95,20 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
 
       html += `
 <tr${isCont ? ' class=-isCont' : ''}>
-\t<td style="text-align:right; font-weight:bold">
-\t\t<a title="als Startpunkt setzen" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
-\t<td style="padding-left:${level * 15}px">
-\t\t<div style="display:flex; align-items:center">
-\t\t\t${toggleBtn}
-\t\t\t${titleCell}
-\t\t\t${linkCell}
-\t\t</div>
-\t<td>${onlineStartCell}
-\t<td>${onlineEndCell}
-\t<td>${accessCell}
-\t<td>${visibleCell}
-\t<td>${searchableCell}
-\t<td><span>${hee(String(SubPage.vs.module ?? ""))}</span>`;
+  <td style="text-align:right; font-weight:bold">
+    <a title="als Startpunkt setzen" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
+  <td style="padding-left:${level * 15}px">
+    <div style="display:flex; align-items:center">
+      ${toggleBtn}
+      ${titleCell}
+      ${linkCell}
+    </div>
+  <td>${onlineStartCell}
+  <td>${onlineEndCell}
+  <td>${accessCell}
+  <td>${visibleCell}
+  <td>${searchableCell}
+  <td><span>${hee(String(SubPage.vs.module ?? ""))}</span>`;
 
       if (open) await renderChildren(SubPage, level + 1);
     }

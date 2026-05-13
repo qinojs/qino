@@ -114,6 +114,14 @@ cms.reloadNode = (pid) => {
 	});
 };
 
+cms.reloadPart = (pid, part, vars) => {
+	return apt.cms.node(pid).html.part(part).get(vars ? { vars } : undefined).then(html => {
+		document.querySelectorAll('.-pid' + pid + ' [cms-part="' + part + '"]').forEach(el => {
+			if (el.closest('.qgCmsCont').matches('.-pid' + pid)) el.innerHTML = html;
+		});
+	});
+};
+
 // global exports for legacy scripts
 globalThis.cms      = cms;
 globalThis.dbFile   = DbFile;

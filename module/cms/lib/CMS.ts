@@ -4,7 +4,7 @@
  */
 
 import { Node } from "./Node.ts";
-import { hee } from "../../core/lib/util.ts"
+import { hee, HtmlString } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import type { App } from "../../core/server.ts";
 import type { Module } from "../../core/lib/ModuleManager.ts";
@@ -144,7 +144,7 @@ export class CMS {
         return ret;
     }
 
-    async link(node: Node | number): Promise<string> {
+    async link(node: Node | number): Promise<HtmlString> {
         const ctx = getCtx();
         const P = await this.node(parseInt(String(node)));
         await P.urlSeo(ctx.lang);
@@ -152,10 +152,10 @@ export class CMS {
         const t = urls[ctx.lang]?.target;
         const target = t ? ` target="${t}"` : "";
         const title = await (await P.title()).string();
-        return `<a${await this.link_attributes(P)}${target}>${title}</a>`;
+        return new HtmlString(`<a${await this.link_attributes(P)}${target}>${title}</a>`);
     }
 
-    async link_attributes(node: Node | number): Promise<string> {
+    async link_attributes(node: Node | number): Promise<HtmlString> {
         const ctx = getCtx();
         const P = await this.node(parseInt(String(node)));
         await P.urlSeo(ctx.lang);
@@ -168,7 +168,7 @@ export class CMS {
         const titleObj = await P.title();
         const cmstxt = P.edit ? ` cmstxt=${titleObj?.id ?? ""}` : "";
         const ariaCurrent = MainNode === P ? " aria-current=page" : "";
-        return href + cls + cmstxt + ariaCurrent;
+        return new HtmlString(href + cls + cmstxt + ariaCurrent);
     }
 
     // deno-lint-ignore no-explicit-any
@@ -189,9 +189,9 @@ export class CMS {
         if (!/^[a-z]+:/.test(pidOrUrl)) return "http://" + pidOrUrl;
         return pidOrUrl;
     }
-
+ 
     // deno-lint-ignore no-explicit-any
-    async text(pid: Node | number, name: string, options: Record<string, any> = {}): Promise<string> {
+    async text(pid: Node | number, name: string, options: Record<string, any> = {}): Promise<HtmlString | string> {
         const node = await this.node(parseInt(String(pid)));
         const T = name === "title" ? await node.title() : await node.text(name);
         const tag = options.tag ?? "div";
@@ -235,7 +235,7 @@ export class CMS {
             if (v === false) continue;
             attrStr += v === true ? ` ${n}` : ` ${n}="${hee(v)}"`;
         }
-        return `<${tag}${attrStr}>${text}</${tag}>`;
+        return new HtmlString(`<${tag}${attrStr}>${text}</${tag}>`);
     }
 
     async parentFile(name: string, node?: Node): Promise<DbFile | false> {
@@ -251,10 +251,10 @@ export class CMS {
     async fileLang(name: string, node?: Node, lang?: string): Promise<DbFile | undefined> {
         if (!node) node = this.MainNode || await this.nodeFromRequest();
         if (!lang) lang = getCtx().lang;
-        for (const l of node.app.languages.all) await node.file(name + " " + l);
+        for (const l of node.cms.app.languages.all) await node.file(name + " " + l);
         const file = await node.file(name + " " + lang);
         if (await file.exists()) return file;
-        for (const l of node.app.languages.all) {
+        for (const l of node.cms.app.languages.all) {
             const f = await node.file(name + " " + l);
             if (await f.exists()) return f;
         }

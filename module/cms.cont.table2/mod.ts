@@ -63,19 +63,19 @@ async function render(node: Node, { ctx }: any): Promise<string> {
     throw new OutputError(csv);
   }
 
-  let html = `<div>\n\t<table thm1-width>\n\t\t<tbody>\n`;
+  let html = `<div>\n  <table thm1-width>\n    <tbody>\n`;
   for (let r = 0; r < rows; r++) {
-    html += `\t\t\t<tr>\n`;
+    html += `      <tr>\n`;
     for (let j = 0; j < cols; j++) {
       const T = await node.showText(`${r}_${j}`);
       let w = String(await node.settings[`row_${j + 1}`] ?? "");
       if (/^\d+$/.test(w)) w = w + "px";
       const styleAttr = w ? ` style="width:${w}"` : "";
       const editAttr = node.edit ? ` contenteditable cmstxt=${T.id}` : "";
-      html += `\t\t\t\t<td${styleAttr}${editAttr}>${T}\n`;
+      html += `        <td${styleAttr}${editAttr}>${T}\n`;
     }
   }
-  html += `\t</table>\n</div>`;
+  html += `  </table>\n</div>`;
   return html;
 }
 

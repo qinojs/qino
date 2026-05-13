@@ -7,6 +7,7 @@
 
 import * as nodePath from "node:path";
 
+/* path / url utilities */
 export function appRequestUriToLocalPath(appRequestUri: string, app: any): string | null {
   const matchM = appRequestUri.match(/^m\/([^/]+)\/pub\/(.*)/);
   if (matchM) {
@@ -42,11 +43,11 @@ export function assertAllowedPath(file: string, app: any): void {
   if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new OutputError("invalid path");
 }
 
-export function number(v: any): string {
-  return String(v ?? "").replace(",", ".");
+export function ensureSlash(v: string) {
+  return v.endsWith("/") ? v : v + "/";
 }
 
-/** HTML entity encode */
+/** HTML utilities */
 export function hee(str: any): string {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -56,10 +57,35 @@ export function hee(str: any): string {
     .replace(/>/g, "&gt;");
 }
 
-export function ensureSlash(v: string) {
-  return v.endsWith("/") ? v : v + "/";
+export class HtmlString {
+  #html: string;
+  constructor(html: unknown) { this.#html = String(html ?? ""); }
+  get html(): string { return this.#html; }
+  toString() { return this.#html; }
+  escaped() { return new HtmlString(hee(this.#html)); }
 }
 
+function htmlValue(v: unknown): string {
+  if (v instanceof HtmlString) return v.html;
+  if (v !== null && typeof v === "object" && "html" in (v as object)) return (v as { html: string }).html;
+  return hee(v);
+}
+
+export function html(strings: TemplateStringsArray, ...values: unknown[]): HtmlString {
+  return new HtmlString(strings.reduce((acc, str, i) => {
+    return i < values.length ? acc + str + htmlValue(values[i]) : acc + str;
+  }, ""));
+}
+
+html.async = async function(strings: TemplateStringsArray, ...values: unknown[]): Promise<HtmlString> {
+  const resolved = await Promise.all(values.map(v => v));
+  return new HtmlString(strings.reduce((acc, str, i) => {
+    return i < resolved.length ? acc + str + htmlValue(resolved[i]) : acc + str;
+  }, ""));
+};
+
+
+/* Error classes for control flow */
 export class AnswerError extends Error {
   constructor(public data: Record<string, any>) { super("Answer"); }
 }
@@ -141,34 +167,3 @@ export function sqlSearchHelper(
   return { where: wheres.join(" AND "), order: orders.join(", "), whereParams, orderParams };
 }
 
-// Port of util::showDateTime
-export function showDateTime(ts: number): string {
-  return new Intl.DateTimeFormat("de-CH", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  }).format(new Date(ts * 1000));
-}
-
-// Port of util::niceDate — relative time for small differences, absolute for older dates
-export function niceDate(ts: number | string | null): string {
-  if (!ts) return "-";
-  const t = typeof ts === "string" ? parseFloat(ts) : ts;
-  if (!t) return "-";
-  const diff = Math.floor(Date.now() / 1000) - t;
-  if (diff < 0) return showDateTime(t);
-  if (diff < 10000) {
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = Math.round(diff) % 60;
-    if (h) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} hours ago`;
-    if (m) return `${m}:${String(s).padStart(2, "0")} minutes ago`;
-    return `${s} seconds ago`;
-  }
-  const d = new Date(t * 1000);
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) return "Today " + d.toTimeString().slice(0, 8);
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday " + d.toTimeString().slice(0, 8);
-  return showDateTime(t);
-}

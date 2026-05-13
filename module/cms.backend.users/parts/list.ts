@@ -64,19 +64,19 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
 
     html += `
 <tr itemid=${hee(String(vs.id))} data-c1-href="${hee(detailUrl)}">
-\t<td> ${hee(String(vs.id))}
-\t<td>
-\t\t<a href="${hee(detailUrl)}">${hee((vs.firstname ?? "") + " " + (vs.lastname ?? ""))}</a>
-\t<td> ${emailCell}
-\t<td> ${hee(vs.company ?? "")}
-\t<td> ${vs.active ? "yes" : "no"}
-\t<td> ${hee(String(numSess))}
-\t<td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
-\t${loginAsTd}
-\t<td>
-\t\t<a href="${hee(detailUrl)}"><img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/pencil.svg" alt="Bearbeiten"></a>
-\t<td class=-delete>
-\t\t<img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/delete.svg" alt="Löschen">`;
+  <td> ${hee(String(vs.id))}
+  <td>
+    <a href="${hee(detailUrl)}">${hee((vs.firstname ?? "") + " " + (vs.lastname ?? ""))}</a>
+  <td> ${emailCell}
+  <td> ${hee(vs.company ?? "")}
+  <td> ${vs.active ? "yes" : "no"}
+  <td> ${hee(String(numSess))}
+  <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
+  ${loginAsTd}
+  <td>
+    <a href="${hee(detailUrl)}"><img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/pencil.svg" alt="Bearbeiten"></a>
+  <td class=-delete>
+    <img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/delete.svg" alt="Löschen">`;
   }
 
   return html;

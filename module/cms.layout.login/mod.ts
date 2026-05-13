@@ -35,6 +35,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     render,
   },
 };

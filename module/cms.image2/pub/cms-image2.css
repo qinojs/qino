@@ -51,10 +51,6 @@ cms-image2[fit="contain"] { background-size:contain; }
 cms-image2[fit="contain"] img { object-fit:contain; }
 
 
-[data-cms-image2-bg] {
-    background-size:cover;
-}
-
 /* *
 cms-image2::after {
     transition: backdrop-filter .4s ease-in;

@@ -1,0 +1,8 @@
+.-m-cms-cont-example {
+  padding: 1em;
+  border-radius: 4px;
+
+  & h2 { margin: 0 0 .5em; }
+  & img { max-width: 100%; }
+  & .-text { margin-top: .5em; }
+}

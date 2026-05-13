@@ -63,6 +63,12 @@ export async function install({ app }: { app: any }): Promise<void> {
   settings.provider["x-ai"].models;
   settings.provider["x-ai"].default_model;
   settings.provider["x-ai"].models_synced_at;
+  settings.provider["aihubmix.com"].key;
+  settings.provider["aihubmix.com"].models;
+  settings.provider["aihubmix.com"].default_model;
+  settings.provider["aihubmix.com"].models_synced_at;
+  settings.provider["aihubmix.com"].used_input_tokens;
+  settings.provider["aihubmix.com"].used_output_tokens;
   settings.provider["groq.com"].models;
   settings.provider["openai.com"].models;
   settings.provider["nvidia.com"].models;

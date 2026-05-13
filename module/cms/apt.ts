@@ -103,13 +103,13 @@ const node = {
       description: "Render node as HTML",
       access: nodeRead,
       input: s.object({ vars: s.optional(s.record()) }),
-      execute: ({ node, vars }: any) => node.html(vars ?? {}),
+      execute: async ({ node, vars }: any) => String(await node.html(vars ?? {})),
     },
     post: {
       description: "Render node as HTML (vars as JSON body)",
       access: nodeRead,
       input: s.object({ vars: s.optional(s.any()) }),
-      execute: ({ node, vars }: any) => node.html(vars ?? {}),
+      execute: async ({ node, vars }: any) => String(await node.html(vars ?? {})),
     },
     part: {
       ":part": {
@@ -118,8 +118,8 @@ const node = {
           description: "Render a specific HTML part of the node",
           access: nodeRead,
           input: s.object({ vars: s.optional(s.record()) }),
-          execute: ({ node, part, vars }: any) =>
-            node.htmlPart(part, vars ?? {}),
+          execute: async ({ node, part, vars }: any) =>
+            String(await node.htmlPart(part, vars ?? {}) || ""),
         },
       },
     },

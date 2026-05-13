@@ -3,7 +3,7 @@
  * Port of cms/lib/Page.class.php
  */
 
-import { hee } from "../../core/lib/util.ts"
+import { hee, HtmlString } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { DbFile } from "../../core/lib/DbFileManager.ts";
@@ -144,40 +144,29 @@ export class Node {
     }
 
     /* Render */
-    async html(vars: Record<string, any> = {}): Promise<string> {
-        if (!(await this.isReadable())) return "";
+    async html(vars: Record<string, any> = {}): Promise<HtmlString> {
+        if (!(await this.isReadable())) return new HtmlString("");
         const ctx = getCtx();
         const renderPath: Set<number> = ctx.state.cmsRenderPath ??= new Set();
         if (renderPath.has(this.id)) {
-            return this.edit ? `<div class="qgCmsCont -pid${this}">Recursion, Content ${this.id} again!</div>` : "";
+            return new HtmlString(this.edit ? `<div class="qgCmsCont -pid${this}">Recursion, Content ${this.id} again!</div>` : "");
         }
         renderPath.add(this.id);
 
-        // Add CSS for module
-        try {
-            await Deno.stat(this.app.appPATH + "qg/" + this.vs.module + "/pub/main.css");
-            ctx.html.addCSSFile(ctx.appURL + "qg/" + this.vs.module + "/pub/main.css");
-        } catch {/**/}
+        const mod = this.module;
+        const nodeExports = mod?.exports.cms?.node;
+        const modBase = ctx.appURL + "m/" + this.vs.module + "/";
+        const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
+        for (const file of nodeExports?.css ?? []) ctx.html.addCSSFile(isAbsolute(file) ? file : modBase + file);
+        for (const file of nodeExports?.js ?? [])  ctx.html.addJSM(isAbsolute(file) ? file : modBase + file);
 
         const s = await this.htmlPrepared(vars);
-
-        const modDir = this.module?.dir;
-
-        if (modDir) try {
-            await Deno.stat(modDir + "pub/main.js");
-            ctx.html.addJSM(ctx.sysURL + this.vs.module + "/pub/main.js");
-        } catch {/**/}
-
-        if (modDir) try {
-            await Deno.stat(modDir + "pub/main.css");
-            ctx.html.addCSSFile(ctx.appURL + "m/" + this.vs.module + "/pub/main.css");
-        } catch {/**/}
 
         renderPath.delete(this.id);
         return s;
     }
 
-    async htmlPrepared(vars: Record<string, any> = {}): Promise<string> {
+    async htmlPrepared(vars: Record<string, any> = {}): Promise<HtmlString> {
         const ctx = getCtx();
 
         let str = (await this.htmlRaw(vars) ?? "").trim();
@@ -200,10 +189,10 @@ export class Node {
 
         // Try to inject class into first HTML element
         const ret1 = str.replace(/^<([^>]+)class=("([^"]*)"|([^\s>]*))/, `<$1class="$3$4 ${cls}"${attr}`);
-        if (ret1 !== str) return ret1;
+        if (ret1 !== str) return new HtmlString(ret1);
         const ret2 = str.replace(/^<([^\s>]+)([\s]?)/, `<$1 class="${cls}"${attr}$2`);
-        if (ret2 !== str) return ret2;
-        return `<div class="${cls}"${attr}>${str}</div>`;
+        if (ret2 !== str) return new HtmlString(ret2);
+        return new HtmlString(`<div class="${cls}"${attr}>${str}</div>`);
     }
 
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {
@@ -211,24 +200,24 @@ export class Node {
 
         try {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
-            return await this.module.exports.cms.node.render(this, {ctx:getCtx(), vars});
+            return String(await this.module.exports.cms.node.render(this, {ctx:getCtx(), vars}));
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
             return this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>';
         }
     }
 
-    async htmlPart(part: string, vars: Record<string, any> = {}): Promise<string | false> {
+    async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | false> {
         if (/[/\\]/.test(part)) return false;
         const parts = this.module?.exports.cms?.node?.parts ?? {};
         const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : false;
         if (!fn) return false;
 
         try {
-            return await fn(this, {ctx:getCtx(), vars});
+            return new HtmlString(String(await fn(this, {ctx:getCtx(), vars})));
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>';
+            return new HtmlString(this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>');
         }
     }
 

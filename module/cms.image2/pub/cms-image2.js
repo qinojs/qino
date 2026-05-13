@@ -2,8 +2,6 @@
 'use strict';
 if (window.cms_image2) return;
 
-
-
 const InitializedSet = new WeakSet();
 
 window.cms_image2 = {
@@ -43,15 +41,6 @@ window.cms_image2 = {
 			onIntersecting({target:img, boundingClientRect:img.getBoundingClientRect() }) // trigger earlier but getBoundingClientRect is not performant
 		}
         observer.observe(img);
-    },
-    bg:function(element){
-        const src = element.getAttribute('data-cms-image2-bg');
-        element.c1Image2_url = src;
-        const preload = element.hasAttribute('data-preload') || element.hasAttribute('preload');
-		if (preload) {
-			onIntersecting({target:element, boundingClientRect:element.getBoundingClientRect() }) // trigger earlier but bcr is not performant
-		}
-        observer.observe(element);
     }
 };
 
@@ -93,13 +82,9 @@ function onIntersecting(entry) {
             return;
         }
 
-        if (img.hasAttribute('data-cms-image2-bg')) {
-            img.style.backgroundImage = 'url('+src+')';
-        } else {
-            img.src = src;
-            //img.__actualSrc = src;
-			img.removeAttribute('loading'); // some images have loading=lazy
-        }
+        img.src = src;
+        //img.__actualSrc = src;
+        img.removeAttribute('loading'); // some images have loading=lazy
         requestAnimationFrame(()=>{
             img.parentNode.setAttribute('loaded','');
             img.parentNode.style.backgroundImage = 'none';
@@ -124,8 +109,7 @@ function loadImage(url, cb) {
 
     img.fetchPriority = 'high';
     img.decoding = 'async';
-    
-    
+
     img.onload = () => cb(aborted ? false : img)
     img.onerror = () => cb(false);
     img.src = url; // todo await img.decode() ?
@@ -158,9 +142,9 @@ const c1UglyResize = {};
 function dbFileSetSize(url, w, h) {
 	const m = url.match(/(.*dbFile\/([^/]+))((?:\/[^/]+)*?)\/([^/]+)$/);
 	if (!m) return url;
-	const params = Object.fromEntries((m[3].match(/\/[^/]+/g) ?? []).map(s => s.slice(1).split('-')));
+	const params = Object.fromEntries((m[3].match(/\/[^/]+/g) ?? []).map(s => { const [k,...rest] = s.slice(1).split('-'); return [k, rest.length ? rest.join('-') : true]; }));
 	params.w = w; params.h = h;
-	return m[1] + Object.entries(params).map(([k,v]) => `/${k}-${v}`).join('') + '/' + m[4];
+	return m[1] + Object.entries(params).map(([k,v]) => v === true ? `/${k}` : `/${k}-${v}`).join('') + '/' + m[4];
 }
 
 }();
@@ -172,13 +156,4 @@ customElements.define('cms-image2', class CmsImage2 extends HTMLElement {
         if (this.hasAttribute('data-preload')) console.warn('cms-image2: data-preload attribute is deprecated, use "preload"');
         cms_image2.init(this);
     }
-});
-
-c1.onElement('[data-cms-image2-bg]',{
-	immediate:function(element){
-        // console.warn('data-cms-image2-bg used?'); yes, used
-		if (element.hasAttribute('wait')) return;
-        if (this.hasAttribute('data-preload')) console.warn('cms-image2: data-preload attribute is deprecated, use "preload"');
-		cms_image2.bg(element);
-	}
 });

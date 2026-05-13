@@ -36,48 +36,49 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
   const listHtml = await list(node, { ctx, vars: {} });
 
   return `<div class=c1-box style="flex:0 1 1200px">
-\t<div class=-head>Struktur</div>
-\t<div class=-body>
-\t\t${pathHtml}
-\t</div>
-\t<table class="c1-style cmsBeTree">
-\t\t<thead>
-\t\t\t<tr>
-\t\t\t\t<th style="width:20px"> Nr.
-\t\t\t\t<th style="min-width:250px"> Seite
-\t\t\t\t<th style="width:80px"> Online ab
-\t\t\t\t<th style="width:80px"> Online bis
-\t\t\t\t<th style="width:80px"> Öffentlich
-\t\t\t\t<th style="width:80px"> Sichtbar
-\t\t\t\t<th style="width:80px"> Durchsuchbar
-\t\t\t\t<th style="width:160px"> Layout
-\t\t<tbody data-part=list>
-\t\t\t${listHtml}
-\t</table>
-\t<script type=module>
-\timport { apt } from '${ctx.sysURL}core/pub/js/apt.js';
-\tfunction toggle(el, labels, fn) {
-\t\tconst on = el.style.color === 'green';
-\t\tfn(!on).then(() => { el.innerHTML = labels[+!on]; el.style.color = !on ? 'green' : 'red'; });
-\t\treturn false;
-\t}
-\tglobalThis.toggleVisible    = (el, pid) => toggle(el, ['unsichtbar','sichtbar'],            v => apt.cms.node(pid).visible.put({value: v}));
-\tglobalThis.toggleSearchable = (el, pid) => toggle(el, ['nicht durchsuchbar','durchsuchbar'], v => apt.cms.node(pid).searchable.put({value: v}));
-\tglobalThis.toggleAccess     = (el, pid) => toggle(el, ['private','public'],                  v => apt.cms.node(pid).access.put({value: +v}));
-\tdocument.querySelector('.cmsBeTree').addEventListener('click', async e => {
-\t\tconst a = e.target.closest('[data-toggle-node]');
-\t\tif (!a) return;
-\t\te.preventDefault();
-\t\tconst nid = a.dataset.toggleNode, id = a.dataset.toggleId, val = a.dataset.toggleValue;
-\t\tconst html = await apt.cms.node(nid).html.part('list').get({ vars: { toggleOpen: id, value: val } });
-\t\ta.closest('tbody[data-part=list]').innerHTML = html;
-\t});
-\t</script>
+  <div class=-head>Struktur</div>
+  <div class=-body>
+    ${pathHtml}
+  </div>
+  <table class="c1-style cmsBeTree">
+    <thead>
+      <tr>
+        <th style="width:20px"> Nr.
+        <th style="min-width:250px"> Seite
+        <th style="width:80px"> Online ab
+        <th style="width:80px"> Online bis
+        <th style="width:80px"> Öffentlich
+        <th style="width:80px"> Sichtbar
+        <th style="width:80px"> Durchsuchbar
+        <th style="width:160px"> Layout
+    <tbody data-part=list>
+      ${listHtml}
+  </table>
+  <script type=module>
+  import { apt } from '${ctx.sysURL}core/pub/js/apt.js';
+  function toggle(el, labels, fn) {
+    const on = el.style.color === 'green';
+    fn(!on).then(() => { el.innerHTML = labels[+!on]; el.style.color = !on ? 'green' : 'red'; });
+    return false;
+  }
+  globalThis.toggleVisible    = (el, pid) => toggle(el, ['unsichtbar','sichtbar'],            v => apt.cms.node(pid).visible.put({value: v}));
+  globalThis.toggleSearchable = (el, pid) => toggle(el, ['nicht durchsuchbar','durchsuchbar'], v => apt.cms.node(pid).searchable.put({value: v}));
+  globalThis.toggleAccess     = (el, pid) => toggle(el, ['private','public'],                  v => apt.cms.node(pid).access.put({value: +v}));
+  document.querySelector('.cmsBeTree').addEventListener('click', async e => {
+    const a = e.target.closest('[data-toggle-node]');
+    if (!a) return;
+    e.preventDefault();
+    const nid = a.dataset.toggleNode, id = a.dataset.toggleId, val = a.dataset.toggleValue;
+    const html = await apt.cms.node(nid).html.part('list').get({ vars: { toggleOpen: id, value: val } });
+    a.closest('tbody[data-part=list]').innerHTML = html;
+  });
+  </script>
 </div>`;
 }
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     render,
     parts: {
       list,

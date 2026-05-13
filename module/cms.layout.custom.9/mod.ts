@@ -14,6 +14,12 @@ async function render(node: Node, data: any = {}): Promise<string> {
   const module = node.vs.module;
   const LPage = await getLayoutPage(node.app.cms, String(module));
 
+  // App-specific layout CSS
+  try {
+    await Deno.stat(node.app.appPATH + "qg/" + module + "/pub/main.css");
+    data.ctx.html.addCSSFile(data.ctx.appURL + "qg/" + module + "/pub/main.css");
+  } catch {/**/}
+
   // Font CSS from layout settings
   const fontCss = LPage.settings["font-css-file"]();
   if (fontCss) {

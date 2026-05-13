@@ -84,6 +84,7 @@ async function render(node: Node, { ctx }: any) {
 
 export const cms = {
   node: {
+    css: ["pub/main.css"],
     render,
     settingsSchema,
   },

@@ -44,6 +44,13 @@ export const providers: Record<string, ProviderConf> = {
     strengths: ["routing", "model-choice"],
     models: [],
   },
+  "aihubmix.com": {
+    endpoint: "https://aihubmix.com/v1",
+    jsonMode: true,
+    supports: { tools: true, toolChoiceAuto: true, jsonMode: true },
+    strengths: ["routing", "model-choice", "cost"],
+    models: [],
+  },
   "jina.ai": {
     endpoint: "https://api.jina.ai/v1",
     strengths: ["cost", "embedding"],

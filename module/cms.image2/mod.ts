@@ -3,37 +3,21 @@
 
 import * as nodeFs from "node:fs/promises";
 import { Buffer } from "node:buffer";
-import { hee } from "../core/lib/util.ts";
+import { hee, HtmlString } from "../core/lib/util.ts";
 import { magickIdentify, magick, isMagickAvailable } from "../core/lib/transform/imagemagick.ts";
 import type { DbFile } from "../core/lib/DbFileManager.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.image2";
 
-export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<string> {
+export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
   ctx.html.addJSFile(ctx.sysURL + "cms.image2/pub/cms-image2.js");
   ctx.html.addCSSFile(ctx.sysURL + "cms.image2/pub/cms-image2.css");
-  if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return "";
+  if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return new HtmlString("");
   if (!options["quality"]) options["quality"] = "85";
   delete options["if"];
-  return await dbImage_html2(dbFile, options);
-}
-
-export async function cms_image2_bg(dbFile: DbFile, options: Record<string, any>): Promise<string> {
-  const ctx = getCtx();
-  ctx.html.addJSFile(ctx.sysURL + "cms.image2/pub/cms-image2.js");
-  ctx.html.addCSSFile(ctx.sysURL + "cms.image2/pub/cms-image2.css");
-  if (!options["quality"]) options["quality"] = "78";
-  if (!options["style"]) options["style"] = "";
-  if (await dbFile.exists()) {
-    const data = await dbImage_html_2_getData(dbFile, options);
-    const src = await dbImage_fileUrl(dbFile, data, options);
-    options["style"] += `; background-position:${data.hpos}% ${data.vpos}%`;
-    options["style"] += `; background-image:url(${data.preview})`;
-    return `data-cms-image2-bg="${hee(src)}" style="${hee(options["style"])}"`;
-  }
-  return `style="${hee(options["style"])}"`;
+  return new HtmlString(await dbImage_html2(dbFile, options));
 }
 
 export async function dbImage_html2(dbFile: DbFile, options: Record<string, any>): Promise<string> {
@@ -43,9 +27,9 @@ export async function dbImage_html2(dbFile: DbFile, options: Record<string, any>
   const { vpos, hpos } = data;
 
   const src = await dbImage_fileUrl(dbFile, data, options);
-  const alt = String(options["alt"] ?? "").trim() || dbImage_name2alt(String(await dbFile.get("name") ?? ""));
+  const alt = String(options.alt ?? "").trim() || dbImage_name2alt(String(await dbFile.get("name") ?? ""));
 
-  const styles: Record<string, string> = { ...(options["css"] ?? {}) };
+  const styles: Record<string, string> = { ...(options.css ?? {}) };
   if (!styles["max-width"]) styles["max-width"] = w + "px";
   styles["background-image"] = `url(${data.preview})`;
   styles["background-position"] = `${hpos}% ${vpos}%`;
@@ -53,11 +37,11 @@ export async function dbImage_html2(dbFile: DbFile, options: Record<string, any>
 
   let styleStr = ";";
   for (const [k, v] of Object.entries(styles)) styleStr += `${k}:${v}; `;
-  styleStr += options["style"] ?? "";
+  styleStr += options.style ?? "";
 
-  const skip = new Set(["quality", "alt", "width", "height", "css", "style", "fit", "if", "editable"]);
+  const skip = new Set(["quality", "alt", "width", "height", "css", "style", "if", "editable"]);
   let attrStr = ` style="${hee(styleStr)}"`;
-  if (options["editable"]) attrStr += ` dbfile-editable="${hee(options["editable"])}"`;
+  if (options.editable) attrStr += ` dbfile-editable="${hee(options.editable)}"`;
   for (const [k, v] of Object.entries(options)) {
     if (skip.has(k)) continue;
     attrStr += v === true ? ` ${k}` : v === false ? "" : ` ${k}="${hee(String(v))}"`;
@@ -71,15 +55,17 @@ export async function dbImage_html2(dbFile: DbFile, options: Record<string, any>
 }
 
 async function dbImage_fileUrl(dbFile: DbFile, data: any, options: Record<string, any>): Promise<string> {
-  return await dbFile.url({ w: data.w, h: data.h, vpos: data.vpos, hpos: data.hpos, q: options["quality"] ?? "85" });
+  const params: Record<string, any> = { w: data.w, h: data.h, vpos: data.vpos, hpos: data.hpos, q: options.quality ?? "85" };
+  if (options.fit === "contain") params.max = true;
+  return await dbFile.url(params);
 }
 
 async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, any>): Promise<any> {
   const ctx = getCtx();
-  let w = parseInt(String(options["width"] ?? 0)) || 0;
-  let h = parseInt(String(options["height"] ?? 0)) || 0;
-  const hpos = options["hpos"] ?? await dbFile.get("hpos") ?? 50;
-  const vpos = options["vpos"] ?? await dbFile.get("vpos") ?? 50;
+  let w = parseInt(String(options.width ?? 0)) || 0;
+  let h = parseInt(String(options.height ?? 0)) || 0;
+  const hpos = options.hpos ?? await dbFile.get("hpos") ?? 50;
+  const vpos = options.vpos ?? await dbFile.get("vpos") ?? 50;
   const faktor = 50;
   const maxHW = 22;
 
@@ -104,7 +90,7 @@ async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, an
     if (!w && !h) { w = ow; h = oh; }
     if (!w) w = Math.round(h * oRatio);
     if (!h) h = Math.round(w / oRatio);
-    if (options["fit"] === "contain") {
+    if (options.fit === "contain") {
       if (w / h > oRatio) w = Math.round(h * oRatio);
       else h = Math.round(w / oRatio);
     }
