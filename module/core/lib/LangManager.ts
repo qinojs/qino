@@ -123,7 +123,7 @@ export class LangManager {
     }
 
     // Shortcut: Text übersetzen (nutzt automatisch den aktuellen ctx)
-    async t(strings: TemplateStringsArray, ...values: (Promise<string> | string)[]): Promise<string> {
+    async t(strings: TemplateStringsArray, ...values: unknown[]): Promise<string> {
         const ctx = getCtx();
         
         // Originalstring aus den Template-Parts zusammensetzen (mit ###1### Platzhaltern)
@@ -136,7 +136,7 @@ export class LangManager {
         // Werte auflösen und einsetzen
         const resolved = await Promise.all(values.map(v => v));
         for (let i = 0; i < resolved.length; i++) {
-            result = result.replace(`###${i + 1}###`, resolved[i]);
+            result = result.replace(`###${i + 1}###`, String(resolved[i] ?? ""));
         }
         return result;
     }
