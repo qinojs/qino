@@ -10,6 +10,7 @@
 
 import { Hono, type Context } from "../../../deps.ts";
 import { getCtx, type RequestContext } from "./RequestContext.ts";
+import { AnswerError } from "./util.ts";
 import { toJsonSchema } from "./StandardSchema.ts";
 import type { StandardSchema, StandardIssue } from "./StandardSchema.ts";
 
@@ -224,23 +225,26 @@ function coerce(raw: unknown, schema: StandardSchema): unknown {
 export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
   for (const r of walk(tree)) checkCollisions(r);
   const handle = async (c: Context): Promise<Response> => {
+    const ctx = getCtx();
+    const path = "/" + (c.req.param("path") || "");
+    const raw: Params = {};
+    if (BODY_METHODS.has(c.req.method.toLowerCase() as Method)) {
+      const body = await c.req.json().catch(() => ({}));
+      if (body && typeof body === "object") Object.assign(raw, body);
+    }
+    Object.assign(raw, Object.fromEntries(new URL(c.req.url).searchParams));
     try {
-      const path = "/" + (c.req.param("path") || "");
-      const raw: Params = {};
-      if (BODY_METHODS.has(c.req.method.toLowerCase() as Method)) {
-        const body = await c.req.json().catch(() => ({}));
-        if (body && typeof body === "object") Object.assign(raw, body);
-      }
-      Object.assign(raw, Object.fromEntries(new URL(c.req.url).searchParams));
       const result = await invoke(tree, c.req.method, path, raw);
-      if (result === undefined) return new Response(null, { status: 204 });
-      return c.json(result);
+      if (result === undefined) ctx.responseStatus = 204;
+      throw new AnswerError(result === undefined ? {} : result as Record<string, unknown>);
     } catch (e) {
-      if (e instanceof ValidationError) return c.json({ error: e.message, issues: e.issues }, 422);
-      if (e instanceof AccessError)     return c.json({ error: e.message }, 403);
-      if (e instanceof NotFoundError)   return c.json({ error: e.message }, 404);
+      if (e instanceof AnswerError)     throw e;
+      if (e instanceof ValidationError) { ctx.responseStatus = 422; throw new AnswerError({ error: e.message, issues: e.issues }); }
+      if (e instanceof AccessError)     { ctx.responseStatus = 403; throw new AnswerError({ error: e.message }); }
+      if (e instanceof NotFoundError)   { ctx.responseStatus = 404; throw new AnswerError({ error: e.message }); }
       console.error("[apt]", e);
-      return c.json({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" }, 500);
+      ctx.responseStatus = 500;
+      throw new AnswerError({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" });
     }
   };
   app.all("/", handle);

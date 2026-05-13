@@ -1,0 +1,77 @@
+{
+  "properties": {
+    "web_auth_credential": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "credential_id": {
+            "type": "string",
+            "maxLength": 255,
+            "x-index": "unique"
+          },
+          "public_key": {
+            "type": "string",
+            "maxLength": 1073741823
+          },
+          "sign_count": {
+            "type": "integer"
+          },
+          "aaguid": {
+            "type": "string",
+            "maxLength": 36
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "last_used": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id", "usr_id", "credential_id", "public_key", "sign_count", "aaguid", "name", "created", "last_used"]
+      }
+    },
+    "web_auth_challenge": {
+      "additionalProperties": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary"
+          },
+          "challenge": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "usr_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "expires": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["token", "challenge", "usr_id", "type", "expires"]
+      }
+    }
+  }
+}
