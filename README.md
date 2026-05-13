@@ -1,14 +1,12 @@
 # Qino
 
-A modular, TypeScript-first web framework for Deno built on [Hono](https://hono.dev). Qino provides a pluggable module system, a declarative API tree, server-side rendering, database abstraction, and a full CMS out of the box.
+Simple, declarative Deno framework — pluggable modules, batteries included.
 
 ## Install
 
 ```ts
 import { App } from "jsr:@qino/qino";
 ```
-
-Works with Deno, Bun, and Node.
 
 ## Quick Start
 

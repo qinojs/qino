@@ -23,8 +23,10 @@ const defaultConfig = {
     dbPass: "",
 };
 
+/** Configuration options for the Qino application. */
 export type AppConfig = typeof defaultConfig;
 
+/** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App {
     config: AppConfig;
     appPATH: string;
