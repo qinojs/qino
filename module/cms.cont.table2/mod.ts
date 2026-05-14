@@ -29,8 +29,8 @@ async function render(node: Node, { ctx }: any): Promise<string> {
     ctx.html.addJSM(node.modUrl + "pub/edit.mjs");
   }
 
-  const cols = Math.min(Math.max(1, parseInt(String(await node.settings.cols)) || 2), 15);
-  const rows = Math.min(Math.max(1, parseInt(String(await node.settings.rows)) || 2), 300);
+  const cols = Math.min(Math.max(1, Number(node.settings.cols()) || 2), 15);
+  const rows = Math.min(Math.max(1, Number(node.settings.rows()) || 2), 300);
 
   if (
     ctx.get["export_table"] && String(ctx.get["export_table"]) === String(node)
@@ -68,7 +68,7 @@ async function render(node: Node, { ctx }: any): Promise<string> {
     html += `      <tr>\n`;
     for (let j = 0; j < cols; j++) {
       const T = await node.showText(`${r}_${j}`);
-      let w = String(await node.settings[`row_${j + 1}`] ?? "");
+      let w = String(node.settings[`row_${j + 1}`]() ?? "");
       if (/^\d+$/.test(w)) w = w + "px";
       const styleAttr = w ? ` style="width:${w}"` : "";
       const editAttr = node.edit ? ` contenteditable cmstxt=${T.id}` : "";

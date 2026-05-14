@@ -25,7 +25,7 @@ async function render(node: Node): Promise<string> {
   }
 
   if ("delete_cred" in ctx.post && ctx.post.token === ctx.token) {
-    const id = parseInt(String(ctx.post.delete_cred ?? "0"));
+    const id = Number(ctx.post.delete_cred ?? "0");
     if (id) await db.exec("DELETE FROM web_auth_credential WHERE id = ?", [id]);
   }
 

@@ -19,23 +19,23 @@ export const cms = { node: { render, settingsSchema } };
 async function render(node: Node): Promise<string> {
   const ctx     = getCtx();
   const settings = node.settings;
-  const mode    = String(await settings.mode ?? "auto");
+  const mode    = String(settings.mode() ?? "auto");
 
   const showManage = mode === "manage" || (mode === "auto" && !!ctx.user);
   const showLogin  = mode === "login"  || (mode === "auto" && !ctx.user);
 
-  const apiBase   = String(await settings.apiBase ?? "") || ctx.appURL + "api/web_auth";
+  const apiBase   = String(settings.apiBase() ?? "") || ctx.appURL + "api/web_auth";
   const scriptUrl = ctx.sysURL + "web_auth/pub/web_auth.js";
 
   if (showManage && ctx.user) return renderManage(apiBase, scriptUrl);
   if (showLogin) {
-    const redirectId = Number(await settings.redirectAfterLogin ?? 0);
+    const redirectId = Number(settings.redirectAfterLogin() ?? 0);
     let redirectUrl  = "";
     if (redirectId) {
       const P = await (node.app as any).cms?.node(redirectId);
       if (P?.is()) redirectUrl = await P.url();
     }
-    return renderLogin(apiBase, scriptUrl, !!(await settings.showPasswordFallback), redirectUrl);
+    return renderLogin(apiBase, scriptUrl, !!(settings.showPasswordFallback()), redirectUrl);
   }
   return "";
 }

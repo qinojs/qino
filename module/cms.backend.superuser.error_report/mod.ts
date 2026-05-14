@@ -60,7 +60,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         if (where) await db.query(`DELETE FROM m_error_report WHERE ${where}`);
     }
     if (vars.delete_foreign_js) {
-        const host = ctx.server.HTTP_HOST;
+        const host = ctx.req.header("host") ?? "";
         await db.query(
             "DELETE FROM m_error_report WHERE source = 'js' AND file NOT LIKE '/_%' AND file NOT LIKE ? AND file NOT LIKE ?", ["http://" + host + "%", "https://" + host + "%"]
         );
@@ -69,7 +69,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         await db.query("DELETE FROM m_error_report");
     }
 
-    if (get.id) return await renderDetail(node, parseInt(get.id));
+    if (get.id) return await renderDetail(node, Number(get.id));
 
     const order    = get.order ?? "max_id";
     const orderSql = order !== "num_ip" ? "max(e.id) DESC" : "num_ip DESC, num DESC";
@@ -134,9 +134,9 @@ globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html
     let tableRows = "";
     for (const row of rows) {
         const color   = ({ error: "red", warning: "orange", notice: "blue" } as any)[row.prio] ?? "black";
-        const num     = parseInt(row.num)     || 0;
-        const numBot  = parseInt(row.num_bot) || 0;
-        const numUns  = parseInt(row.num_unsupported) || 0;
+        const num     = Number(row.num)     || 0;
+        const numBot  = Number(row.num_bot) || 0;
+        const numUns  = Number(row.num_unsupported) || 0;
         const entriesUrl = `?show=entries&source=${encodeURIComponent(row.source)}&file=${encodeURIComponent(row.file)}&line=${encodeURIComponent(row.line)}&col=${encodeURIComponent(row.col)}`;
         const editorUrl  = editorLink(row.file, row.line, row.col);
         tableRows += `

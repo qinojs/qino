@@ -9,7 +9,7 @@ import { versedTables, view, getCmsVers } from "./lib/Vers.ts";
 import { publishCont as doPublishCont } from "./lib/CmsVers.ts";
 
 export async function publishCont(ctx: any, pid: any, options: any = {}): Promise<any> {
-    const id = parseInt(String(pid));
+    const id = Number(pid);
     const Page = await ctx.app.cms.node(id);
     if ((await Page.access()) < 2) return false;
     const cmsVersSpace = getCmsVers(ctx).cmsVersSpace;
@@ -24,14 +24,14 @@ export async function publishCont(ctx: any, pid: any, options: any = {}): Promis
 }
 
 export async function getForPage(ctx: any, pid: any): Promise<any[]> {
-    const data = await versProtocolForPageAndConts(ctx, parseInt(String(pid)));
+    const data = await versProtocolForPageAndConts(ctx, Number(pid));
     const map: Record<number, any> = {};
     for (const row of data) map[row.vers] = row;
     return Object.values(map).sort((a, b) => a.vers - b.vers);
 }
 
 export async function logDetails(ctx: any, id: any): Promise<any> {
-    id = parseInt(String(id));
+    id = Number(id);
     const row = await ctx.app.db.row(
         " SELECT log.time, log.post, log_ip.ip, log_user_agent.user_agent, usr.email " +
         " FROM log " +
@@ -95,16 +95,16 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
             if (fn === "cms::setTxt") {
                 const vs = await ctx.app.db.row(
                     `SELECT name, page_id FROM _vers_page_text WHERE text_id = ? AND _vers_space = ?`,
-                    [parseInt(args[0]), getCmsVers(ctx).cmsVersSpace]
+                    [Number(args[0]), getCmsVers(ctx).cmsVersSpace]
                 ) ?? await ctx.app.db.row(
-                    `SELECT name, page_id FROM page_text WHERE text_id = ?`, [parseInt(args[0])]
+                    `SELECT name, page_id FROM page_text WHERE text_id = ?`, [Number(args[0])]
                 );
                 if (vs) {
                     const P = await ctx.app.cms.node(vs.page_id);
                     messages.push((await contOrPage(P)) + ` Text "${vs.name}" geändert`);
                 } else {
                     const vs2 = await ctx.app.db.row(
-                        `SELECT id FROM page WHERE title_id = ?`, [parseInt(args[0])]
+                        `SELECT id FROM page WHERE title_id = ?`, [Number(args[0])]
                     );
                     if (vs2) {
                         const P = await ctx.app.cms.node(vs2.id);
@@ -128,7 +128,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         usr:     row.email ?? "guest",
         ip:      row.ip ?? "",
         browser: row.user_agent ?? "",
-        time:    parseInt(String(row.time ?? 0)),
+        time:    Number(row.time ?? 0),
     };
 }
 
@@ -172,7 +172,7 @@ async function versProtocol(ctx: any, table: string, where: string): Promise<any
     const rows = await ctx.app.db.all(sql, [getCmsVers(ctx).cmsVersSpace]);
     return rows.map((r: any) => ({
         vers: r._vers_log,
-        time: parseInt(String(r.time ?? 0)),
+        time: Number(r.time ?? 0),
         usr:  r.usr_id ? r.email : "guest",
     }));
 }

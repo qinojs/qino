@@ -50,7 +50,7 @@ async function handleJsError(c: Context): Promise<Response> {
 
 async function handleCssError(c: Context): Promise<Response> {
   const ctx = c.get("ctx") as RequestContext;
-  const file = ctx.server.HTTP_REFERER;
+  const file = ctx.req.header("referer");
   const message = ctx.get.message || "css-error";
   const report: Report = { source: "css", message, file, backtrace: [] };
   if (file) {
@@ -111,9 +111,9 @@ async function addReport(app: any, vs: Report): Promise<void> {
   try {
     const ctx = getCtx();
     row.request ??= ctx.appURL + ctx.appRequestUri;
-    row.referer ??= ctx.server.HTTP_REFERER;
-    row.browser ??= ctx.server.HTTP_USER_AGENT;
-    row.ip ??= ctx.server.REMOTE_ADDR;
+    row.referer ??= ctx.req.header("referer");
+    row.browser ??= ctx.req.header("user-agent");
+    row.ip ??= ctx.remoteAddr;
     row.log_id ??= ctx.logId ?? null;
   } catch { /* kein Request-Context vorhanden */ }
   if (Array.isArray(row.backtrace)) row.backtrace = JSON.stringify(row.backtrace);

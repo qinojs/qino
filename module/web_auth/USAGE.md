@@ -64,7 +64,7 @@ if (r.ok) { /* geschützte Aktion */ }
 
 Server-seitig prüfen (z.B. max. 60 Sekunden gültig):
 ```ts
-const confirmed = parseInt(String(await ctx.session.web_auth_confirmed() ?? "0"));
+const confirmed = Number(await ctx.session.web_auth_confirmed() ?? "0");
 if (now() - confirmed > 60) return { ok: false, error: "confirmation_required" };
 ```
 

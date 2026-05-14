@@ -17,8 +17,8 @@ export async function render(ctx: RequestContext): Promise<void> {
     const redirect = await db.one("SELECT redirect FROM page_redirect WHERE request = ?", [ctx.appRequestUri]);
     if (redirect) {
       let url: string;
-      if (!isNaN(parseInt(String(redirect)))) {
-        const P = await cms.node(parseInt(String(redirect)));
+      if (!isNaN(Number(redirect))) {
+        const P = await cms.node(Number(redirect));
         url = new URL(ctx.req.url).origin + (await P.url());
       } else {
         url = String(redirect);
@@ -30,7 +30,7 @@ export async function render(ctx: RequestContext): Promise<void> {
     // Not found
     ctx.responseStatus = 404;
     const notFoundId = await app.settings.cms.pageNotFound ?? 0;
-    Page = await cms.node(parseInt(String(notFoundId)));
+    Page = await cms.node(Number(notFoundId));
   }
 
   cms.MainNode = Page;
@@ -42,12 +42,12 @@ export async function render(ctx: RequestContext): Promise<void> {
   if (!access) {
     ctx.responseStatus = 401;
     const noAccessId = await app.settings.cms.pageNoAccess ?? 0;
-    cms.MainNode = await cms.node(parseInt(String(noAccessId)));
+    cms.MainNode = await cms.node(Number(noAccessId));
   }
   if (!(await cms.MainNode.isReadable())) {
     ctx.responseStatus = 401;
     const offlineId = await app.settings.cms.pageOffline;
-    cms.MainNode = await cms.node(parseInt(String(offlineId ?? "0")));
+    cms.MainNode = await cms.node(Number(offlineId ?? "0"));
   }
 
   const mainNode = cms.MainNode;

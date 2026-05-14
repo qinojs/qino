@@ -16,7 +16,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   ctx.html.meta["viewport"] = "width=device-width";
 
-  const host = ctx.server.HTTP_HOST;
+  const host = ctx.req.header("host") ?? "";
   const titleObj = await node.title();
   const title = await titleObj.string();
   const mainCont = await node.cont("main");

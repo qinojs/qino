@@ -75,8 +75,8 @@ async function search(s_: string, ctx: any): Promise<any[]> {
     const res: Record<string, any> = {};
 
     for (const vs of rows) {
-        const Page = vs.pid ? await cms.node(parseInt(String(vs.pid))) : null;
-        const dbFile = await ctx.app.dbFiles.file(parseInt(String(vs.id)), vs);
+        const Page = vs.pid ? await cms.node(Number(vs.pid)) : null;
+        const dbFile = await ctx.app.dbFiles.file(Number(vs.id), vs);
 
         if (!await dbFile.exists()) continue;
         if (!await dbFile.access()) continue;

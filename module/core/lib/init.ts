@@ -5,6 +5,7 @@
 
 import { createHash } from "node:crypto";
 import type { RequestContext } from "./RequestContext.ts";
+import { uid } from "./util.ts";
 
 export async function initClient(ctx: RequestContext): Promise<void> {
     const db = ctx.app.db;
@@ -25,9 +26,7 @@ export async function initClient(ctx: RequestContext): Promise<void> {
 
 
 async function registerClient(ctx: RequestContext): Promise<void> {
-    const bytes = new Uint8Array(18);
-    crypto.getRandomValues(bytes);
-    const hash = btoa(String.fromCharCode(...bytes));
+    const hash = uid();
 
     const cidName = ctx.app.https ? "__Host-cid" : "cid";
     const cookieOpts = [
@@ -73,21 +72,21 @@ export async function initLog(ctx: RequestContext): Promise<void> {
 
     setTimeout(async ()=>{ // background
       try {
-        const url = ctx.server.REQUEST_URI;
+        const url = ctx.requestUri;
         const urlHash = createHash("md5").update(url).digest("hex");
         let urlId = await db.one("SELECT id FROM log_url WHERE hash = ?", [urlHash]);
         if (!urlId) urlId = await db.table("log_url").insert({ url, hash: urlHash });
 
-        const referer = ctx.server.HTTP_REFERER || "";
+        const referer = ctx.req.header("referer") || "";
         const refererHash = createHash("md5").update(referer).digest("hex");
         let refererId = await db.one("SELECT id FROM log_url WHERE hash = ?", [refererHash]);
         if (!refererId) refererId = await db.table("log_url").insert({ url: referer, hash: refererHash });
 
-        const ip = ctx.server.REMOTE_ADDR || "";
+        const ip = ctx.remoteAddr || "";
         let ipId = await db.one("SELECT id FROM log_ip WHERE ip = ?", [ip]);
         if (!ipId) ipId = await db.table("log_ip").insert({ ip });
 
-        const ua = ctx.server.HTTP_USER_AGENT || "";
+        const ua = ctx.req.header("user-agent") || "";
         let uaId = await db.one("SELECT id FROM log_user_agent WHERE user_agent = ?", [ua]);
         if (!uaId) uaId = await db.table("log_user_agent").insert({ user_agent: ua });
 

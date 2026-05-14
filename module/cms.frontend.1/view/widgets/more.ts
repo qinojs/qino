@@ -11,14 +11,14 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   const lastname  = await u!.get?.("lastname")  ?? "";
   const email     = await u!.get?.("email")     ?? "";
 
-  const logoutUrl = hee(ctx.server.REQUEST_URI || "/");
+  const logoutUrl = hee(ctx.requestUri || "/");
 
   let feedbackConfirmation = "";
   if (vars.param?.msg) {
     const arr: Record<string, string> = {
       "Message:": vars.param.msg,
       "Link":     vars.param.link ?? "",
-      "Browser":  ctx.server.HTTP_USER_AGENT,
+      "Browser":  ctx.req.header("user-agent") ?? "",
       "E-Mail:":  email,
       "Firstname": firstname,
       "Lastname":  lastname,
@@ -35,10 +35,10 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   }
 
   const feedbackEmail = await app.settings.cms.feedback.email ?? "";
-  const feedbackText = await ctx.settings.cms.feedback.text ?? "";
+  const feedbackText = ctx.settings.cms.feedback.text() ?? "";
 
-  const treeShowC = await ctx.settings["cms.frontend.1"].custom.tree_show_c;
-  const langVal = String(await ctx.settings.core.lang_ns.cms ?? "");
+  const treeShowC = ctx.settings["cms.frontend.1"].custom.tree_show_c();
+  const langVal = String(ctx.settings.core.lang_ns.cms() ?? "");
 
   return `<div class=qgCmsFront1MoreManager>
   <div class=-standalone>

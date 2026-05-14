@@ -17,7 +17,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   }
 
   if ("login_as" in vars) {
-    const allowLoginAs = !!(await node.settings.allow_login_as) || isSuperuser;
+    const allowLoginAs = !!(node.settings.allow_login_as()) || isSuperuser;
     if (!allowLoginAs) return false;
     const TargetUsr = db.table("usr").Entry(vars.login_as);
     if (!await TargetUsr.is()) return false;
@@ -56,8 +56,8 @@ export default async function (node: Node, vars:any): Promise<any> {
     const TargetUsr = db.table("usr").Entry(vars.set_grp);
     if (!await TargetUsr.is()) return false;
     if (await TargetUsr.get("superuser") && !isSuperuser) return false;
-    const grpId = parseInt(String(vars.grp_id));
-    const usrId = parseInt(String(vars.set_grp));
+    const grpId = Number(vars.grp_id);
+    const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;
     if (vars.add) {
       await db.query("REPLACE INTO usr_grp SET grp_id = ?, usr_id = ?", [grpId, usrId]);

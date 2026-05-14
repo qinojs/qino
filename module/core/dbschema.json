@@ -10,7 +10,7 @@
           },
           "hash": {
             "type": "string",
-            "maxLength": 64,
+            "maxLength": 22,
             "x-index": "unique"
           },
           "usr_id": {

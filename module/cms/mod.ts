@@ -101,14 +101,14 @@ export function init(app: App) {
         const editmode = ctx.get.qgCms_editmode;
         if (editmode !== undefined) settings.cms.editmode(editmode);
 
-        ctx.state.editmode = parseInt(String(await settings.cms.editmode)) || 0;
+        ctx.state.editmode = Number(await settings.cms.editmode) || 0;
 
         // File upload
         const cmsPageFile = ctx.files["cmsPageFile"];
         if (cmsPageFile) {
             // Fix EXIF orientation for JPEG
             // (Deno doesn't have built-in exif support, stub for now)
-            const cmspid = parseInt(String(ctx.get["cmspid"] ?? "0"));
+            const cmspid = Number(ctx.get["cmspid"] ?? "0");
             const P = await app.cms.node(cmspid);
             if ((await P.access()) > 1) {
                 const replace = ctx.get["replace"];
@@ -122,7 +122,7 @@ export function init(app: App) {
         // Page files as ZIP
         const zipPid = ctx.get["qgCms_page_files_as_zip"];
         if (zipPid) {
-            const P = await app.cms.node(parseInt(zipPid));
+            const P = await app.cms.node(Number(zipPid));
             if (!(await P.isReadable())) { ctx.responseStatus = 403; return; }
             const files = await P.files();
             if (!Object.keys(files).length) { ctx.responseStatus = 404; return; }

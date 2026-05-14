@@ -44,7 +44,7 @@ export class Node {
         this.cms = cms;
         this.app = cms.app;
         this.db = cms.app.db;
-        this.id = parseInt(String(id));
+        this.id = Number(id);
         if (vs) this.vs = vs;
     }
 
@@ -109,7 +109,7 @@ export class Node {
 
     async access(user?: dbEntry_usr | null): Promise<number> {
         user ??= getCtx().user;
-        const usrId = parseInt(String(user));
+        const usrId = Number(user);
         this.#usrAccess[usrId] ??= await this.#calcUsrAccess(user);
         return this.#usrAccess[usrId];
     }
@@ -123,8 +123,8 @@ export class Node {
             return isUser ? Math.max(parentAccess, await this.#usrAccessOnly(Usr)) : parentAccess;
         }
         //if (!(await Usr.is())) return parseInt(this.vs.access) ? 1 : 0;
-        if (!Usr) return parseInt(String(this.vs.access ?? "0")) ? 1 : 0;
-        const access = Math.max(parseInt(String(this.vs.access ?? "0")), await this.#usrAccessOnly(Usr));
+        if (!Usr) return Number(this.vs.access ?? "0") ? 1 : 0;
+        const access = Math.max(Number(this.vs.access ?? "0"), await this.#usrAccessOnly(Usr));
         if (access === 3) return 3;
         const grps = await Usr.grps?.() ?? [0];
         const placeholders = grps.map(() => "?").join(", ");
@@ -134,13 +134,13 @@ export class Node {
             " WHERE grp_id != 0 AND " +
             "   page_id = ? AND " +
             `   grp_id IN(${placeholders}) `;
-        const grpAccess = parseInt(String(await this.db.one(sql, [this.id, ...grps]) ?? "0")) || 0;
+        const grpAccess = Number(await this.db.one(sql, [this.id, ...grps]) ?? "0") || 0;
         return Math.max(access, grpAccess);
     }
 
     async #usrAccessOnly(Usr?: dbEntry_usr | null): Promise<number> {
         const sql = " SELECT access FROM page_access_usr WHERE page_id = ? AND usr_id = ? ";
-        return parseInt(String(await this.db.one(sql, [this.id, String(Usr)]) ?? "0")) || 0;
+        return Number(await this.db.one(sql, [this.id, String(Usr)]) ?? "0") || 0;
     }
 
     /* Render */
@@ -227,11 +227,11 @@ export class Node {
     /* Online state */
     async onlineStart(): Promise<number> {
         const p = await this.parent();
-        return this.vs.online_start === null && p ? p.onlineStart() : parseInt(String(this.vs.online_start ?? "0"));
+        return this.vs.online_start === null && p ? p.onlineStart() : Number(this.vs.online_start ?? "0");
     }
     async onlineEnd(): Promise<number> {
         const p = await this.parent();
-        return this.vs.online_end === null && p ? p.onlineEnd() : parseInt(String(this.vs.online_end ?? "0"));
+        return this.vs.online_end === null && p ? p.onlineEnd() : Number(this.vs.online_end ?? "0");
     }
     async isOnline(): Promise<boolean> {
         const start = await this.onlineStart();
@@ -253,7 +253,7 @@ export class Node {
 
     get edit(): boolean {
         const ctx = getCtx();
-        const usrId = parseInt(String(ctx.user));
+        const usrId = Number(ctx.user);
         const cachedAccess = this.#usrAccess[usrId] ?? 0;
         return cachedAccess > 1 && !!ctx.state.editmode;
     }
@@ -274,7 +274,7 @@ export class Node {
             this.#children = new Map();
             const rows = await this.db.all(`SELECT * FROM ${table("page")} WHERE basis = ? ORDER BY type DESC, sort, id DESC`, [this.id]);
             for (const row of rows) {
-                const id = parseInt(row.id);
+                const id = Number(row.id);
                 const Child = await this.cms.node(id, row);
                 this.#children.set(id, Child);
                 if (row.name) {
@@ -316,7 +316,7 @@ export class Node {
 
     async in(PageRef: Node | number): Promise<boolean> {
         const path = await this.path();
-        return path.has(parseInt(String(PageRef)));
+        return path.has(Number(PageRef));
     }
 
     /* Texts */
@@ -348,7 +348,7 @@ export class Node {
             const rows = await this.db.indexCol(this.sql(`SELECT name, text_id FROM ${table("page_text")} WHERE page_id = ?`), [this.id]);
             this.#texts = {};
             for (const [name, id] of Object.entries(rows ?? {})) {
-                const T = this.app.dbTexts.text(parseInt(String(id)));
+                const T = this.app.dbTexts.text(Number(id));
                 this.#texts[name] = T;
             }
         }
@@ -380,7 +380,7 @@ export class Node {
     }
 
     async title(lang?: string | null, value?: any): Promise<any> {
-        this.#title ??= this.app.dbTexts.text(parseInt(String(this.vs.title_id ?? "0")));
+        this.#title ??= this.app.dbTexts.text(Number(this.vs.title_id ?? "0"));
         if (lang == null) return this.#title;
         const TextLang = await this.#title.lang(lang);
         if (value === undefined) return TextLang.get();
@@ -432,7 +432,7 @@ export class Node {
         const row: Record<string, string | number> = { page_id: String(this), file_id: String(File) };
         if (!name) {
             const minSort = await this.db.one(this.sql("SELECT min(sort) FROM page_file WHERE page_id = ?"), [this.id]);
-            row.sort = (parseInt(String(minSort ?? "0")) || 0) - 1;
+            row.sort = (Number(minSort ?? "0") || 0) - 1;
             name = "_" + Math.random().toString(36).slice(2, 9);
         }
         row.name = name;
@@ -540,7 +540,7 @@ export class Node {
             ...vs,
         };
         const id = await this.db.table("page").insert(vs);
-        const P = await this.cms.node(parseInt(String(id ?? "0")));
+        const P = await this.cms.node(Number(id ?? "0"));
         if (!id) return P; // hier? nicht zuspät?
 
         const accessUsrs = await this.db.all("SELECT * FROM page_access_usr WHERE page_id = ?", [this.id]);
@@ -572,7 +572,7 @@ export class Node {
 
         const row: Record<string, any> = { ...this.vs };
         delete row["id"];
-        const newId = parseInt(String(await this.db.table("page").insert(row) ?? "0"));
+        const newId = Number(await this.db.table("page").insert(row) ?? "0");
         if (!newId) return false;
         const P = await this.cms.node(newId);
 
@@ -626,9 +626,9 @@ export class Node {
     }
 
     async insertBefore(PageArg: Node | number, Before?: Node | number | null): Promise<boolean> {
-        const P = await this.cms.node(parseInt(String(PageArg)));
+        const P = await this.cms.node(Number(PageArg));
         const OldParent = await P.parent();
-        const BeforePage = Before ? await this.cms.node(parseInt(String(Before))) : null;
+        const BeforePage = Before ? await this.cms.node(Number(Before)) : null;
         if (await this.in(P)) return false;
         const type = P.vs.type;
 
@@ -655,9 +655,9 @@ export class Node {
     }
 
     async removeChild(Child: Node | number): Promise<boolean> {
-        const P = await this.cms.node(parseInt(String(Child)));
+        const P = await this.cms.node(Number(Child));
         const children = await this.children({ type: "*" });
-        if (!children.has(parseInt(String(P)))) return false;
+        if (!children.has(Number(P))) return false;
         for (const C of (await P.children({ type: "*" })).values()) await P.removeChild(C);
         for (const name of Object.keys(await P.files())) await P.deleteFile(name);
         for (const name of Object.keys(await P.texts())) await P.textDelete(name);

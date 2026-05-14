@@ -54,7 +54,7 @@ async function consumeChallenge(db: any, token: string, type: string): Promise<{
   );
   if (!row) return null;
   await db.exec("DELETE FROM web_auth_challenge WHERE token = ?", [token]);
-  return { challenge: row.challenge, usr_id: parseInt(String(row.usr_id)) };
+  return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
 // ─── WebAuthn parsing & verification ──────────────────────────────────────────
@@ -305,7 +305,7 @@ function buildApi(app: App): AptTree { return {
           if (email) {
             const usr = await app.db.row("SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(?) AND active = 1", [String(email).trim()]);
             if (usr) {
-              usrId = parseInt(String(usr.id));
+              usrId = Number(usr.id);
               const creds = await app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [usrId]);
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             }
@@ -345,13 +345,13 @@ function buildApi(app: App): AptTree { return {
           const r = await verifyAssertion(app.db, rpId, credentialId, clientDataJSON, authenticatorData, signature, "webauthn.get");
           if (!r.ok) return r;
 
-          if (stored.usr_id && parseInt(String(r.cred.usr_id)) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
+          if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
-          const usrId = parseInt(String(r.cred.usr_id));
+          const usrId = Number(r.cred.usr_id);
           if (!(await app.db.row("SELECT id FROM usr WHERE id = ? AND active = 1", [usrId]))) return { ok: false, error: "user_inactive" };
 
           // sign_count must increase — protects against cloned authenticators (0 = not supported by device)
-          const storedCount = parseInt(String(r.cred.sign_count));
+          const storedCount = Number(r.cred.sign_count);
           const newCount    = parseAuthenticatorData(r.authDataBytes).signCount;
           if (storedCount > 0 && newCount > 0 && newCount <= storedCount) return { ok: false, error: "sign_count_regression" };
 
@@ -443,7 +443,7 @@ function buildApi(app: App): AptTree { return {
           const ctx  = getCtx();
           const cred = await app.db.row("SELECT usr_id FROM web_auth_credential WHERE id = ?", [credId]);
           if (!cred) return { ok: false, error: "not_found" };
-          if (parseInt(String(cred.usr_id)) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
+          if (Number(cred.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
           await app.db.exec("DELETE FROM web_auth_credential WHERE id = ?", [credId]);
           return { ok: true };
         },

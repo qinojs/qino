@@ -45,7 +45,7 @@ export class DbEntry {
     if (!this.#full) await this.getVs();
     if (n in this.#vs) return this.#vs[n];
     if (await this.is()) console.warn(`_get "${this.table}::${n}" not implemented`);
-    else console.warn("Entry does not exists");
+    else console.warn("Entry does not exists", Error().stack);
   }
 
   #fullCheck(): boolean {

@@ -145,7 +145,7 @@ export function init(app: App) {
       if (pageNotFound != node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-        settings.cms[lastKey](ctx.server.REQUEST_URI);
+        settings.cms[lastKey](ctx.requestUri);
         const toggleUrl = await settings.cms[otherKey] ?? "";
         g.js_data = g.js_data ?? {};
         g.js_data.cmsBackendUrl = toggleUrl;
@@ -164,7 +164,7 @@ export function init(app: App) {
       g.js_data.qgCmsEditmode = g.editmode;
 
       if (g.editmode) {
-        g.js_data.cmsClipboard = parseInt(String(await settings.cms.clipboard ?? "0"));
+        g.js_data.cmsClipboard = Number(await settings.cms.clipboard ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         await app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");
@@ -178,7 +178,7 @@ export function init(app: App) {
     ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
     ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/off.css");
 
-    const editmode = access > 1 && parseInt(String(await settings.cms.editmode));
+    const editmode = access > 1 && Number(await settings.cms.editmode);
     if (editmode) {
       ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/browserCheck.js");
       ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");

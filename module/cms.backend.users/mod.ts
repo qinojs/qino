@@ -23,7 +23,7 @@ export async function install({ app }: any): Promise<void> {
 
 function render(node: Node): Promise<string> {
   const ctx = getCtx();
-  const id = ctx.get.id ? parseInt(ctx.get.id) : 0;
+  const id = ctx.get.id ? Number(ctx.get.id) : 0;
 
   if (id) return renderDetail(node, id);
   return renderOverview(node);
@@ -50,7 +50,7 @@ async function renderOverview(node: Node): Promise<string> {
     }
   }
 
-  const allowLoginAs = !!(await node.settings.allow_login_as) || !!(await ctx.user?.get("superuser"));
+  const allowLoginAs = !!(node.settings.allow_login_as()) || !!(await ctx.user?.get("superuser"));
   const loginAsTh = allowLoginAs ? '<th width=20>' : "";
 
   return `<div class=beBoxCont>

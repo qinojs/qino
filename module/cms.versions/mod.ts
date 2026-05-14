@@ -160,7 +160,7 @@ export function init(app: App) {
         const auto = e.Table.autoIncrement;
         if (!auto) return;
         const ids = e.Table.entryId2Array(e.id) ?? {};
-        const value = parseInt(String(ids[String(auto)]));
+        const value = Number(ids[String(auto)]);
         if (!value) return;
         await ctx.app.db.query(`ALTER TABLE \`${originalTable}\` AUTO_INCREMENT=${value + 1}`);
     });
@@ -205,7 +205,7 @@ export function init(app: App) {
     //     e.returnValue = e.Table.entryId(ids);
     //     const auto = e.Table.autoIncrement;
     //     if (auto) {
-    //         const value = parseInt(String(ids?.[String(auto)]));
+    //         const value = Number(ids?.[String(auto)]);
     //         if (value) await ctx.app.db.query(`ALTER TABLE \`${tableName}\` AUTO_INCREMENT=${value + 1}`);
     //     }
     // });
@@ -287,10 +287,11 @@ export function init(app: App) {
         const ctx = getCtx();
         if (!getCmsVers(ctx).cmsVersSpace) return;
         if (!e.fn?.startsWith("page::")) return;
-        const pid = parseInt(String(e.args?.[0]));
+        const pid = Number(e.args?.[0]);
         if (!pid) return;
-        const P = await (ctx.app as any).cms.node(pid);
-        const pids = [pid, P.Page?.id].filter(Boolean);
+        const P = await ctx.app.cms.node(pid);
+        const page = await P.page();
+        const pids = [pid, page?.id].filter(Boolean);
         for (const page_id of pids) {
             const versions = await ctx.app.db.indexCol(
                 `SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ?`,
@@ -320,18 +321,18 @@ export function init(app: App) {
 
         // Override from request params
         if (ctx.get.qgCmsVersSpace !== undefined && ctx.get.qgCmsVersSpace !== "active") {
-            vs.cmsVersSpace = parseInt(ctx.get.qgCmsVersSpace) || 0;
+            vs.cmsVersSpace = Number(ctx.get.qgCmsVersSpace) || 0;
         }
-        vs.cmsVersLog = parseInt(ctx.get.qgCmsVersLog ?? "0") || 0;
+        vs.cmsVersLog = Number(ctx.get.qgCmsVersLog ?? "0") || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
         if (vs.cmsVersLog) {
             const space = ctx.get.qgCmsVersSpace === "active"
                 ? vs.cmsVersSpace
-                : (parseInt(ctx.get.qgCmsVersSpace ?? "0") || vs.cmsVersSpace);
+                : (Number(ctx.get.qgCmsVersSpace ?? "0") || vs.cmsVersSpace);
             vs.cmsVersSpace = space;
 
-            const pid = parseInt(ctx.get.qgCmsVersPage ?? "0");
+            const pid = Number(ctx.get.qgCmsVersPage ?? "0");
             preventDbManipulations(ctx.app);
             cacheHeaders(ctx);
 

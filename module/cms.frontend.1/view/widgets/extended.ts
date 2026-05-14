@@ -13,7 +13,7 @@ export default async function (node: Node): Promise<string> {
   const newArr = [...allArr];
   if (has) { const i = newArr.indexOf(String(node.id)); newArr.splice(i, 1); } else { newArr.push(String(node.id)); }
 
-  const childXML = (await node.settings.childXML) ?? '';
+  const childXML = (node.settings.childXML()) ?? '';
 
   let extras = "";
   if (await ctx.user?.get?.("superuser")) {

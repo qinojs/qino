@@ -1,21 +1,21 @@
 // Port of cms.cont.table2/options.php
 import type { Node } from "../cms/lib/Node.ts";
-import { hee } from "../core/lib/util.ts"
+import { hee, uid } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 
 export default async function (node: Node, _vars: any): Promise<string> {
-  const cols = Math.max(1, parseInt(String(await node.settings.cols)) || 1);
-  const rows = Math.max(1, parseInt(String(await node.settings.rows)) || 1);
+  const cols = Math.max(1, Number(node.settings.cols()) || 1);
+  const rows = Math.max(1, Number(node.settings.rows()) || 1);
   const percent = Math.floor(100 / cols);
-  const errorID = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
+  const errorID = uid(7);
 
   const ctx = getCtx();
-  const requestUri = ctx.server.REQUEST_URI;
+  const { requestUri } = ctx;
   const exportUrl = requestUri + (requestUri.includes("?") ? "&" : "?") + `export_table=${node.id}`;
 
   let colWidths = "";
   for (let i = 1; i <= cols; i++) {
-    const val = String(await node.settings[`row_${i}`] ?? "");
+    const val = String(node.settings[`row_${i}`]() ?? "");
     colWidths += `
     <div style="width:${percent}%; text-align:center;">
       ${i}<br>

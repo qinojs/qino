@@ -7,7 +7,7 @@ export default async function (node: Node): Promise<string> {
   const app = node.app;
   const db = app.db;
 
-  const host = ctx.server.HTTP_HOST;
+  const host = ctx.req.header("host") ?? "";
 
   const urlRows = await db.all("SELECT * FROM page_url WHERE page_id = ?", [String(node)]);
   let urlTrs = "";

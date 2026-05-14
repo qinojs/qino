@@ -14,10 +14,10 @@ export async function nodeToJson(pid: any, type = "*"): Promise<any> {
         title:    (await Page.access()) ? (titleStr || "-") : "(no access)",
         title_id: titleObj.id,
         isLazy:   (await Page.children({ type }))?.size ?? 0,
-        key:      parseInt(String(Page.id)),
+        key:      Number(Page.id),
         url:      await Page.url(),
         myaccess: await Page.access(),
-        visible:  parseInt(String(Page.vs?.["visible"] ?? 0)),
+        visible:  Number(Page.vs?.["visible"] ?? 0),
         online:   (await Page.isOnline()) ? 1 : 0,
         public:   (await Page.isPublic()) ? 1 : 0,
         type:     Page.vs.type,
@@ -54,8 +54,8 @@ export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
 
 export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
     const ctx  = getCtx();
-    const ret  = { parent_id: parseInt(String(await node.parent())) };
-    const trash = parseInt(String(await ctx.app.settings.cms.pageTrash ?? 0));
+    const ret  = { parent_id: Number(await node.parent()) };
+    const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
     if (await node.in(trash)) {
         if (await node.access() < 3) throw new HTTPException(403);
         await (await node.parent()).removeChild(node);
@@ -80,7 +80,7 @@ export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<
     const ctx = getCtx();
     let File: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
-        const dbF = await ctx.app.dbFiles.file(parseInt(String(file)));
+        const dbF = await ctx.app.dbFiles.file(Number(file));
         if (!await dbF.access()) throw new HTTPException(403);
         if (replace) {
             const existing = await node.file(replace);

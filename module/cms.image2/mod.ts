@@ -62,15 +62,15 @@ async function dbImage_fileUrl(dbFile: DbFile, data: any, options: Record<string
 
 async function dbImage_html_2_getData(dbFile: DbFile, options: Record<string, any>): Promise<any> {
   const ctx = getCtx();
-  let w = parseInt(String(options.width ?? 0)) || 0;
-  let h = parseInt(String(options.height ?? 0)) || 0;
+  let w = Number(options.width ?? 0) || 0;
+  let h = Number(options.height ?? 0) || 0;
   const hpos = options.hpos ?? await dbFile.get("hpos") ?? 50;
   const vpos = options.vpos ?? await dbFile.get("vpos") ?? 50;
   const faktor = 50;
   const maxHW = 22;
 
   const md5 = await dbFile.get("md5");
-  const cacheFile = ctx.app.appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${faktor}.${maxHW}.json`;
+  const cacheFile = ctx.app.appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${faktor}.${maxHW}.${options.fit ?? ""}.json`;
 
   if (md5) {
     try { return JSON.parse(await nodeFs.readFile(cacheFile, "utf-8")); } catch { /* no cache */ }

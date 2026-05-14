@@ -41,7 +41,7 @@ export default async function (node: Node): Promise<string> {
   const models = [];
   for (const id of allIds) {
     if (!id) continue;
-    const P = await node.cms.node(parseInt(id));
+    const P = await node.cms.node(Number(id));
     if (P.vs?.type !== "c") continue;
     if ((await P.access()) < 2) continue;
     models.push(P);

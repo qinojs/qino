@@ -22,7 +22,7 @@ async function slimTree(node: any): Promise<any> {
   const children = [
     ...((await node.children({ type: "p" })) ?? new Map()).values(),
   ];
-  const entry: any = { id: parseInt(String(node.id)), title: title || "-" };
+  const entry: any = { id: Number(node.id), title: title || "-" };
   const childNodes = [];
   for (const child of children) {
     if ((await child.access()) >= 1) childNodes.push(await slimTree(child));
@@ -40,7 +40,7 @@ async function contentBlocks(node: any): Promise<any[]> {
     if ((await content.access()) < 1) continue;
     const title = String(await (await content.title()).string() ?? "").trim();
     const entry: any = {
-      id: parseInt(String(content.id)),
+      id: Number(content.id),
       module: String(content.vs?.module ?? ""),
       name: String(content.vs?.name ?? ""),
     };
@@ -350,7 +350,7 @@ const node = {
       access: nodeAdmin,
       input: s.object({ value: s.optional(s.number()).describe("Access level (0 = private, 1 = public). Omit to reset.") }),
       execute: async ({ node, value }: any) => {
-        await node.set("access", value == null ? null : parseInt(value));
+        await node.set("access", value == null ? null : Number(value));
         await node.changeUser(getCtx().user, 3);
         return { public: !!value };
       },
@@ -654,7 +654,7 @@ export const api = {
           const P = await (ctx.app as any).cms.node(value);
           if ((await P.access()) < 2) throw new AccessError();
         }
-        ctx.settings.cms.clipboard(parseInt(value ?? ''));
+        ctx.settings.cms.clipboard(Number(value ?? ''));
         return { ok: true };
       },
     },

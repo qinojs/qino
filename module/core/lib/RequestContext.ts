@@ -1,19 +1,13 @@
-/**
- * Per-request context using AsyncLocalStorage.
- * Replaces PHP's implicit per-process/per-request global state:
- * G(), $_SESSION, $_GET, $_POST, $_FILES, $_COOKIE, $_SERVER, etc.
- */
-
-
 import { AsyncLocalStorage } from "node:async_hooks";
 import { getCookie, basePath } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
+import { uid } from "./util.ts";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { readUploadFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
-import type { Item, ItemProxy } from "../../../deps.ts";
-import type { Context } from "../../../deps.ts";
+import type { Item, ItemProxy, Context } from "../../../deps.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
+import type { HonoRequest } from "npm:hono@4";
 
 export class RequestContext {
   app!: App;
@@ -23,11 +17,8 @@ export class RequestContext {
   get: Record<string, string> = {};
   post: Record<string, unknown> = {};
   files: Record<string, unknown> = {};
-  server = {
-    REQUEST_URI: "/", HTTP_HOST: "", HTTP_REFERER: "", HTTP_USER_AGENT: "",
-    HTTP_ACCEPT_LANGUAGE: "", HTTP_IF_NONE_MATCH: "", HTTP_RANGE: "", HTTP_DPR: "",
-    REMOTE_ADDR: "", SERVER_ADDR: "", SCHEME: "http" as "http" | "https", DOCUMENT_ROOT: "", SCRIPT_FILENAME: "",
-  };
+  requestUri = "/";
+  remoteAddr = "";
   responseHeaders: Headers = new Headers();
   responseStatus = 200;
   responseBody: string = "";
@@ -40,14 +31,15 @@ export class RequestContext {
 
   lang = "en";
   langUsr = "en";
-  langNsPath: string[] = []; langNs = "";
-  req!: Request;
+  langNsPath: string[] = [];
+  langNs = "";
+  req!: HonoRequest;
   clientId: string | null = null;
   sessId: string | null = null;
   logId: string | null = null;
 
   get userId(): number {
-    return parseInt(String(this.session.liveUser() ?? "0")) || 0;
+    return Number(this.session.liveUser() || 0);
   }
   get user(): dbEntry_usr | null {
     return this.userId ? this.app.db.table('usr').Entry(this.userId) as dbEntry_usr : null;
@@ -68,11 +60,10 @@ export class RequestContext {
   }
   #settingsRoot: Item | null = null;
 
-  settingCache: Map<number, unknown> = new Map();
   entryCache: Map<string, Map<string, unknown>> = new Map();
-  loginError: string | undefined; 
-  appURL = "/"; 
-  sysURL = "/m/"; 
+  loginError: string | undefined; // braucht es den hier eigentlich?
+  appURL = "/";
+  sysURL = "/m/";
   appRequestUri = "";
   csp: Record<string, Record<string, number>> = {
     "default-src": { "'self'": 1 }, "font-src": { "*": 1, "data:": 1 },
@@ -82,27 +73,25 @@ export class RequestContext {
   cspReportUri: string | false = false;
   get token(): string {
     const token = this.session.qg.token;
-    if (!token()) this.session.qg.token(crypto.randomUUID().replace(/-/g, "").slice(0, 12));
+    if (!token()) this.session.qg.token(uid(10));
     return token() as string;
   }
 }
 
 export async function makeRequestContext(app: App, c: Context): Promise<[RequestContext, boolean]> {
 
-  // const existing = c.get("ctx") as RequestContext | undefined; needed?
-  // if (existing) return [existing, false];
-
   const bPath = basePath(c);
   const appURL = bPath.endsWith("/") ? bPath : bPath + "/";
   const req = c.req;
   const url = new URL(req.url);
+
   const ct = req.header("content-type") ?? "";
   const rawBody: Record<string, unknown> = req.method === "POST"
     ? (ct.includes("application/json") ? await req.json() : await req.parseBody())
     : {};
   const post: Record<string, unknown> = {};
   const files: Record<string, unknown> = {};
-  const uploadMaxFileSize = parseInt(String(await app.settings.core.uploadMaxFileSize ?? "")) || 100 * 1024 * 1024;
+  const uploadMaxFileSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
 
   for (const [key, val] of Object.entries(rawBody)) {
     if (val instanceof File) {
@@ -116,6 +105,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
 
   const ctx = new RequestContext();
   Object.assign(ctx, {
+    req,
     app,
     appURL,
     sysURL: appURL + "m/",
@@ -127,21 +117,9 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
     get: req.query(),
     post,
     files,
-    server: {
-      REQUEST_URI: url.pathname + url.search,
-      HTTP_HOST: req.header("host") ?? "", HTTP_REFERER: req.header("referer") ?? "",
-      HTTP_USER_AGENT: req.header("user-agent") ?? "", HTTP_ACCEPT_LANGUAGE: req.header("accept-language") ?? "",
-      HTTP_IF_NONE_MATCH: req.header("if-none-match") ?? "", HTTP_RANGE: req.header("range") ?? "",
-      HTTP_DPR: req.header("dpr") ?? "",
-      REMOTE_ADDR: (c.env as Record<string, string>)?.["REMOTE_ADDR"] ?? req.header("x-forwarded-for") ?? "",
-      SERVER_ADDR: (c.env as Record<string, string>)?.["SERVER_ADDR"] ?? "",
-      SCHEME: url.protocol === "https:" ? "https" : "http",
-      DOCUMENT_ROOT: app.config.appPATH, SCRIPT_FILENAME: app.config.appPATH + "server.ts",
-    },
+    requestUri: url.pathname + url.search,
+    remoteAddr: req.header("x-forwarded-for")?.split(",").shift()?.trim(),
   });
-
-  ctx.req = req.raw;
-  ctx.state.Answer = {};
 
   return [ctx, isNew];
 }

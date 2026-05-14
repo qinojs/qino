@@ -20,7 +20,7 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
   const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
-  const rootId = parseInt(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
+  const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
   const rootNode = await (node ?? ctx.app.cms.node(rootId)).app.cms.node(rootId);
 
   const sysURL = ctx.sysURL as string;
@@ -117,8 +117,8 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
   function renderOnlineStart(SubPage: Node, access: number): string {
     if (access === 0) return "---";
     const onlineStart = SubPage.vs.online_start;
-    const ok = !onlineStart || (parseInt(String(onlineStart)) < Math.floor(Date.now() / 1000));
-    const iso = onlineStart ? new Date(parseInt(String(onlineStart)) * 1000).toISOString() : "";
+    const ok = !onlineStart || Number(onlineStart) < Math.floor(Date.now() / 1000);
+    const iso = onlineStart ? new Date(Number(onlineStart) * 1000).toISOString() : "";
     const date = iso ? `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "---";
     if (access <= 2) return `<span style="color:${ok ? "#8a8" : "#a88"}">${date}</span>`;
     return `<span style="color:${ok ? "green" : "red"}">${date}</span>`;
@@ -127,7 +127,7 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
   function renderOnlineEnd(SubPage: Node, access: number, numNotInherit: number): string {
     if (access === 0) return "---";
     const onlineEnd = SubPage.vs.online_end;
-    const ts = onlineEnd == null ? null : parseInt(String(onlineEnd));
+    const ts = onlineEnd == null ? null : Number(onlineEnd);
     const iso = ts ? new Date(ts * 1000).toISOString() : "";
     const date = onlineEnd == null
       ? "vererbt"
@@ -141,7 +141,7 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
     if (access <= 2) return `<span style="color:#8a8">${date}</span>${badge}`;
 
     const now = Math.floor(Date.now() / 1000);
-    const endTs = parseInt(String(onlineEnd ?? "0"));
+    const endTs = Number(onlineEnd ?? "0");
     const maxSec = 60 * 60 * 24 * 7;
     const diff = Math.min(Math.max(endTs - now, 0), maxSec);
     const r = onlineEnd ? 256 - Math.floor(256 * diff / maxSec) : 0;

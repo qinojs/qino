@@ -7,7 +7,7 @@ export async function resolveText(app: App, value: string): Promise<string> {
 }
 
 async function replaceLinks(app: App, pid: string): Promise<string> {
-    const page = await app.cms.node(parseInt(pid));
+    const page = await app.cms.node(Number(pid));
     if (!(await page.is())) {
         console.warn(`[content-issue] DeadInternalLink cmspid://${pid}`);
         return "#";
@@ -16,7 +16,7 @@ async function replaceLinks(app: App, pid: string): Promise<string> {
 }
 
 async function replaceFileUrls(app: App, id: string): Promise<string> {
-    const file = await app.dbFiles.file(parseInt(id));
+    const file = await app.dbFiles.file(Number(id));
     if (await file.exists()) {
         const u = String(await file.get("md5") ?? "").slice(0, 5);
         return `/dbFile/${id}/u-${u}/`;

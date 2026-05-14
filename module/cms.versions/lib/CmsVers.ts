@@ -81,7 +81,7 @@ export async function publishCont(
             `SELECT id FROM \`${childView}\` WHERE basis = ? ${subPages ? "" : "AND type = 'c'"}`,
             [id]
         );
-        for (const cid of childIds) await generate(parseInt(String(cid)));
+        for (const cid of childIds) await generate(Number(cid));
     };
 
     // Switch to fromSpace so Page.access() reads correct data

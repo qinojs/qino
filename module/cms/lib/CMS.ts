@@ -34,7 +34,7 @@ export class CMS {
     get RenderPath(): Set<number> { return getCtx().state.cmsRenderPath ??= new Set(); }
 
     async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
-        id = parseInt(String(id));
+        id = Number(id);
         if (this.#nodes.has(id)) return this.#nodes.get(id)!;
         const node = new Node(this, id, vs);
         this.#nodes.set(id, node);
@@ -77,10 +77,10 @@ export class CMS {
         const cmspid = ctx.get["cmspid"];
         let pid: number;
         if (cmspid) {
-            pid = parseInt(cmspid);
+            pid = Number(cmspid);
         } else {
             const id = await this.db.one(`SELECT page_id FROM ${table("page_url")} WHERE url = ?`, [ctx.appRequestUri]);
-            pid = parseInt(String(id ?? "0")) || 0;
+            pid = Number(id ?? "0") || 0;
         }
         return this.node(pid);
     }
@@ -146,7 +146,7 @@ export class CMS {
 
     async link(node: Node | number): Promise<HtmlString> {
         const ctx = getCtx();
-        const P = await this.node(parseInt(String(node)));
+        const P = await this.node(Number(node));
         await P.urlSeo(ctx.lang);
         const urls = await P.urls();
         const t = urls[ctx.lang]?.target;
@@ -157,7 +157,7 @@ export class CMS {
 
     async link_attributes(node: Node | number): Promise<HtmlString> {
         const ctx = getCtx();
-        const P = await this.node(parseInt(String(node)));
+        const P = await this.node(Number(node));
         await P.urlSeo(ctx.lang);
         const MainNode = this.MainNode || await this.nodeFromRequest();
         const href = ` href="${await P.url()}"`;
@@ -177,7 +177,7 @@ export class CMS {
         pidOrUrl = pidOrUrl.trim();
         ret.target = "_blank";
         if (/^\d+$/.test(pidOrUrl)) {
-            const P = await this.node(parseInt(pidOrUrl));
+            const P = await this.node(Number(pidOrUrl));
             if (await P.is()) {
                 ret.target = "_self";
                 ret.Node = P;
@@ -192,7 +192,7 @@ export class CMS {
  
     // deno-lint-ignore no-explicit-any
     async text(pid: Node | number, name: string, options: Record<string, any> = {}): Promise<HtmlString | string> {
-        const node = await this.node(parseInt(String(pid)));
+        const node = await this.node(Number(pid));
         const T = name === "title" ? await node.title() : await node.text(name);
         const tag = options.tag ?? "div";
         if (options.contenteditable === undefined) options.contenteditable = node.edit;

@@ -4,8 +4,8 @@ import type { Node } from "../cms/lib/Node.ts";
 export default async function (node: Node, vars: any, self: any): Promise<void> {
   if (await node.access() < 2) return;
 
-  let cols = Math.min(Math.max(1, parseInt(String(await node.settings.cols)) || 1), 15);
-  let rows = Math.min(Math.max(1, parseInt(String(await node.settings.rows)) || 1), 300);
+  let cols = Math.min(Math.max(1, Number(node.settings.cols()) || 1), 15);
+  let rows = Math.min(Math.max(1, Number(node.settings.rows()) || 1), 300);
 
   const { do: $do, row, col } = vars;
 

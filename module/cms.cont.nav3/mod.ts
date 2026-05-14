@@ -59,28 +59,28 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
   }
 
   // Determine start page
-  const startPageSetting = await settings.startPage;
-  const startLevelSetting = await settings.startLevel;
+  const startPageSetting = settings.startPage();
+  const startLevelSetting = settings.startLevel();
 
   let StartPage: Node | undefined;
   if (startPageSetting) {
-    StartPage = await cms.node(parseInt(String(startPageSetting)));
+    StartPage = await cms.node(Number(startPageSetting));
     if (!(await StartPage.is())) StartPage = await node.page();
   } else {
     StartPage = await node.page();
   }
 
   if (startLevelSetting) {
-    StartPage = await ActivePage.parent(parseInt(String(startLevelSetting)));
+    StartPage = await ActivePage.parent(Number(startLevelSetting));
     if (!StartPage || !(await StartPage.is())) {
       StartPage = await node.page();
     }
   }
 
   // Settings for rendering
-  const filterVisible = await settings.filter_visible;
-  const levelLimitSetting = await settings.level;
-  const pathOnly = await settings.pathOnly;
+  const filterVisible = settings.filter_visible();
+  const levelLimitSetting = settings.level();
+  const pathOnly = settings.pathOnly();
   const includeContentsSetting = await settings["include contents"];
 
   let level = 0;
@@ -117,7 +117,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
 
     if (!filtered.length) return false;
 
-    const levelLimit = parseInt(String(levelLimitSetting || 0));
+    const levelLimit = Number(levelLimitSetting || 0);
     if (levelLimit && level >= levelLimit) return "";
 
     if (pathOnly && level > 0 && !(await ActivePage?.in(CurPage))) return "";

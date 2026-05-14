@@ -41,7 +41,7 @@ export class DbFileManager {
   }
 
   async add(path?: string): Promise<DbFile> {
-    const id = parseInt(String(await this.db.table("file").insert({}) ?? "0"));
+    const id = Number(await this.db.table("file").insert({}) ?? "0");
     const f = await this.file(id);
     if (path) await f.replaceBy(path);
     return f;
@@ -49,7 +49,7 @@ export class DbFileManager {
 
   async #output(request: string, req: Request): Promise<Response> {
     const x = request.split("/");
-    const id = parseInt(x.shift() ?? "0");
+    const id = Number(x.shift() ?? "0");
     const name = x.pop() ?? "";
 
     const param: Record<string, any> = {};
@@ -133,7 +133,7 @@ export class DbFile extends File {
   constructor(manager: DbFileManager, id: number | string) {
     super("");
     this.#manager = manager;
-    this.id = parseInt(String(id));
+    this.id = Number(id);
   }
 
   setLocalVs(vs: Record<string, any>) {
@@ -226,7 +226,7 @@ export class DbFile extends File {
     if (/^https?:\/\//.test(path)) {
       const remote = await fetchRemoteFile({
         url: path,
-        maxSize: parseInt(String(await this.#manager.app.settings.core.uploadMaxFileSize ?? "")) || 100 * 1024 * 1024,
+        maxSize: Number(await this.#manager.app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024,
       });
       this.path = this.#manager.directory + remote.md5;
       await Deno.rename(remote.tmpPath, this.path);
@@ -263,7 +263,7 @@ export class DbFile extends File {
     let newId: number;
     if (to == null) {
       delete data["id"];
-      newId = parseInt(String(await this.#manager.db.table("file").insert(data) ?? "0"));
+      newId = Number(await this.#manager.db.table("file").insert(data) ?? "0");
     } else {
       data["id"] = String(to);
       await this.#manager.db.table("file").update(to, data);

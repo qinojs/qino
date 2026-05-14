@@ -44,7 +44,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   if (!conts.length) await node.cont("main");
 
   // Nav: get backend root page and its children
-  const backendId = parseInt(String(await app.settings.cms.backend ?? "0"));
+  const backendId = Number(await app.settings.cms.backend ?? "0");
   const BackendRoot = backendId ? await app.cms.node(backendId) : null;
   const navItems = BackendRoot ? [...(await BackendRoot.children({ access: 1 })).values()] : [];
 
@@ -86,7 +86,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     let links = "";
     for (const l of allLangs) {
       if (l === currentLang) continue;
-      const uri = ctx.server.REQUEST_URI;
+      const uri = ctx.requestUri;
       const sep = uri.includes("?") ? "&amp;" : "?";
       links += `<a href="${hee(uri + sep + "changeLanguage=" + encodeURIComponent(l))}">${hee(l)}</a> `;
     }

@@ -13,7 +13,7 @@ function normalizeSettingsSource(source: SettingsSource): SettingsSource {
   }
   const path = (source.path ?? []).filter((k) => typeof k === "string" && k);
   if (source.kind === "node" || source.kind === "page") {
-    const id = parseInt(String(source.id ?? ""));
+    const id = Number(source.id ?? "");
     if (!id) throw new Error("Missing node settings source id");
     return { kind: "node", id, path };
   }

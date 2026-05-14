@@ -85,6 +85,14 @@ html.async = async function(strings: TemplateStringsArray, ...values: unknown[])
 };
 
 
+export function uid(length?: number): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  const full = btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  return length ? full.slice(0, length) : full;
+}
+
 /* Error classes for control flow */
 export class AnswerError extends Error {
   constructor(public data: Record<string, any>) { super("Answer"); }

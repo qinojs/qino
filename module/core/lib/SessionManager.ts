@@ -1,4 +1,5 @@
 import { getCookie, bildJsonItem, type Context, type ItemProxy } from "../../../deps.ts";
+import { uid } from "./util.ts";
 import type { Db } from "./Db.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
@@ -77,7 +78,7 @@ export class SessionManager {
     }
 
     #token(): string {
-        return crypto.randomUUID().replace(/-/g, "");
+        return uid();
     }
 
     #time(): number {

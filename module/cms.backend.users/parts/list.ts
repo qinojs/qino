@@ -12,11 +12,11 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
 
   const node: Node | null = _node;
   const allowLoginAs = node
-    ? (!!(await node.settings.allow_login_as) || !!(await ctx.user?.get("superuser")))
+    ? (!!(node.settings.allow_login_as()) || !!(await ctx.user?.get("superuser")))
     : !!(await ctx.user?.get("superuser"));
 
   const search = String(vars?.search ?? "");
-  const grpId = ctx.get.grp_id ? parseInt(ctx.get.grp_id) : null;
+  const grpId = ctx.get.grp_id ? Number(ctx.get.grp_id) : null;
 
   const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
 

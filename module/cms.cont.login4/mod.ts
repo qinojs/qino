@@ -55,7 +55,7 @@ async function render(node: Node): Promise<string> {
 
   if (!usrIsLoggedIn || edit) {
     // Show history of recently logged-in users
-    const historyLimit = Number(await settings.history) || 0;
+    const historyLimit = Number(settings.history()) || 0;
     if (historyLimit > 0) {
       const client = ctx.client;
       const clientUsrs = await client.users();
@@ -65,7 +65,7 @@ async function render(node: Node): Promise<string> {
         const email = hee(await ctx.user?.get("email") ?? "");
         const saveLogin = await (clientUsr as any).get("save_login");
         const saveLoginChecked = saveLogin ? " checked" : "";
-        const showSaveLogin = await settings.saveLogin;
+        const showSaveLogin = settings.saveLogin();
         const showPwField = !saveLogin;
 
         html += `<form method=post>
@@ -83,9 +83,9 @@ async function render(node: Node): Promise<string> {
     }
 
     // Main login form
-    const fixUser = await settings["fix user"];
-    const noAutofocus = await settings["no autofocus"];
-    const showSaveLogin = await settings.saveLogin;
+    const fixUser = settings["fix user"]();
+    const noAutofocus = settings["no autofocus"]();
+    const showSaveLogin = settings.saveLogin();
 
     html += `<form method=post>
   ${fixUser ? `<input type=hidden name=email value="${hee(fixUser)}">` : ""}
@@ -126,7 +126,7 @@ async function render(node: Node): Promise<string> {
 </form>\n`;
   } else {
     // Logout form
-    const logoutRedirectId = Number(await settings.logout_redirect);
+    const logoutRedirectId = Number(settings.logout_redirect());
     let action = "";
     if (logoutRedirectId) {
       const P = await cms.node(logoutRedirectId);

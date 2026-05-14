@@ -81,8 +81,8 @@ export async function init(app: App) {
 
         // HTTPS redirect
         const https = app.https;
-        if (https && ctx.server.SCHEME === "http") {
-            ctx.responseHeaders.set("Location", "https://" + ctx.server.HTTP_HOST + ctx.server.REQUEST_URI);
+        if (https && new URL(ctx.req.url).protocol !== "https:") {
+            ctx.responseHeaders.set("Location", "https://" + ctx.req.header("host") + ctx.requestUri);
             ctx.responseStatus = 301;
             throw new RedirectError();
         }
@@ -90,7 +90,7 @@ export async function init(app: App) {
         // HSTS
         if (https) {
             const set = app.settings.core.HSTS;
-            const maxAge = parseInt(String(await set["max-age"])) || 0;
+            const maxAge = Number(await set["max-age"]) || 0;
             if (maxAge) {
                 let header = `max-age=${maxAge}`;
                 if (await set.includeSubDomains) header += "; includeSubDomains";

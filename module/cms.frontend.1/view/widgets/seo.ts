@@ -12,7 +12,7 @@ export default async function (node: Node): Promise<string> {
   const Ttitle = await node.text("_title");
   const Tdescr  = await node.text("_meta_description");
 
-  const prioVal = (await node.settings._seo_priority) ?? 0.5;
+  const prioVal = (node.settings._seo_priority()) ?? 0.5;
 
   return `<div class=qgCmsFront1SeoManager pid=${node}>
   ${textTitle}:

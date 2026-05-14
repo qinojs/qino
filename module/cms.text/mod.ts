@@ -58,7 +58,7 @@ export function init(app: App) {
 const cmsTextService: any = {
 
     async textAccess(text_id: any): Promise<boolean> {
-        text_id = parseInt(String(text_id));
+        text_id = Number(text_id);
         const pid = await this.ctx.app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
         const P = await this.ctx.app.cms.node(pid);
@@ -67,7 +67,7 @@ const cmsTextService: any = {
     },
 
     async get(txt_id: any): Promise<any> {
-        txt_id = parseInt(String(txt_id));
+        txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const return_: any[] = [];
         for (const l of this.ctx.app.languages.all) {
@@ -79,7 +79,7 @@ const cmsTextService: any = {
     },
 
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
-        txt_id = parseInt(String(txt_id));
+        txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const input = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, source_lang]);
         let output = await this.transl(input, target_lang, source_lang);
@@ -192,7 +192,7 @@ const cmsTextService: any = {
         }).then((r) => r.json());
         const translation: string | false = resp?.translations?.[0]?.text ?? false;
         if (translation) {
-            const prev = parseInt(String(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0"));
+            const prev = Number(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0");
             this.ctx.app.settings["cms.text"]["translate char count"] = prev + text.length;
         }
         return translation;
@@ -216,14 +216,14 @@ const cmsTextService: any = {
         const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {
             console.log(await this.ctx.app.settings["cms.text"]["translate char count"]);
-            const prev = parseInt(String(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0"));
+            const prev = Number(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0");
             this.ctx.app.settings["cms.text"]["translate char count"] = prev + text.length;
         }
         return translation;
     },
 
     async history(txt_id: any, lang: string): Promise<any> {
-        txt_id = parseInt(String(txt_id));
+        txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const space = 0; // cms_vers::$space — cms.versions not ported yet
         const sql =
@@ -244,7 +244,7 @@ const cmsTextService: any = {
     },
 
     async isTranslated(txt_id: any, lang: any): Promise<any> {
-        txt_id = parseInt(String(txt_id));
+        txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         if (lang === null) lang = this.ctx.lang;
         const text = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, lang]);

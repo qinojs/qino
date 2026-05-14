@@ -88,7 +88,7 @@ async function render(node: Node): Promise<string> {
 
   // ── server info ────────────────────────────────────────────────────────
 
-  const serverIP  = ctx.server?.SERVER_ADDR ?? "";
+  const serverIP  = 'todo'
   const appPATH   = app.appPATH ?? "";
 
   const mem = Deno.memoryUsage();

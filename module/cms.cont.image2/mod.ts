@@ -54,7 +54,7 @@ async function render(node: Node, { ctx }: any) {
     fit: (await settings["contain"]) ? "contain" : "cover",
     if: 1,
     style,
-    quality: parseInt(String(await settings["quality"] ?? "0")) || null,
+    quality: Number(await settings["quality"] ?? "0") || null,
     editable: node.edit ? await Img.url() : null,
   };
 

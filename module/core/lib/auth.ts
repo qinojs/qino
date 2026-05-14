@@ -15,7 +15,7 @@ export async function authListen(ctx: RequestContext): Promise<void> {
   }
   if (!ctx.userId && ctx.clientId) {
     const uidVal = await ctx.client.get("usr_id");
-    const uid = uidVal ? parseInt(String(uidVal)) : 0;
+    const uid = uidVal ? Number(uidVal) : 0;
     if (uid) {
       const row = await ctx.app.db.row("SELECT email FROM usr WHERE id = ?", [uid]);
       if (row?.email) await auth(ctx, row.email);
@@ -33,7 +33,7 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
   if (!rehash) {
     const clientUsrs = await ctx.client.users() ?? {};
     const usrId = String(await UsrEntry.get("id") ?? "");
-    if (clientUsrs[usrId] && parseInt(await clientUsrs[usrId].get("save_login")) === 1) return login(ctx, user.id);
+    if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return login(ctx, user.id);
   }
   if (!await pwVerify(pw, await UsrEntry.get("pw") ?? "")) return 0;
   if (rehash) {
@@ -44,7 +44,7 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
 }
 
 export async function login(ctx: RequestContext, id: number | string): Promise<boolean> {
-  id = parseInt(String(id));
+  id = Number(id);
   if (!await ctx.app.db.one("SELECT id FROM usr WHERE id = ?", [id])) return false;
   const oldSession = ctx.session;
   await logout(ctx);

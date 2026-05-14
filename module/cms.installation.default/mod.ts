@@ -79,7 +79,7 @@ export async function install({app}: {app: App}): Promise<void> {
   }
 
   // Admingruppe ID holen (für nachfolgende Seiten)
-  const adminGrp = parseInt(String(await app.db.one("SELECT id FROM grp WHERE name = 'admin'")));
+  const adminGrp = Number(await app.db.one("SELECT id FROM grp WHERE name = 'admin'"));
 
   // Home
   if (!await app.db.one("SELECT id FROM page WHERE id = 2")) {

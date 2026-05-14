@@ -76,7 +76,7 @@ export class LangManager {
 
     // Sprache aus dem Browser-Header ermitteln
     #fromBrowser(ctx: any): string {
-        const acceptLang = ctx.server?.HTTP_ACCEPT_LANGUAGE;
+        const acceptLang = ctx.req.header("accept-language");
         if (!acceptLang) return this.def;
         const accepted = acceptLang.split(/,\s*/);
         let currentLang = this.def;

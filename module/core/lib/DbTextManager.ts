@@ -31,7 +31,9 @@ export class DbTextManager {
   }
 
   async generate(): Promise<DbText> {
-    const id = parseInt(String(await this.#db.table("text").insert({ lang: this.#app.languages.def })));
+    const values: Record<string, unknown> = { lang: this.#app.languages.def };
+    await this.#db.table("text").insert(values);
+    const id = Number(values.id);
     return this.text(id);
   }
 
@@ -46,7 +48,7 @@ export class DbText {
 
   constructor(manager: DbTextManager, id: number | string) {
     this.#manager = manager;
-    this.id = parseInt(String(id));
+    this.id = Number(id);
   }
 
   lang(lang?: string | null): DbTextLang {

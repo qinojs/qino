@@ -14,7 +14,7 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
 
   // If no children yet, optionally init a default child module
   if (Object.keys(conts).length === 0) {
-    const defaultModule = await node.settings["init-child-module"];
+    const defaultModule = node.settings["init-child-module"]();
     const initModule = vars["init-child-module"] ?? defaultModule;
     if (initModule) await node.cont("init", initModule);
   }

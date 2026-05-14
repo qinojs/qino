@@ -31,7 +31,7 @@ function normalizeSource(source) {
   }
   const path = splitPath(source.path);
   if (source.kind === "node" || source.kind === "page") {
-    const id = parseInt(String(source.id ?? ""), 10);
+    const id = Number(source.id ?? "");
     if (!id) throw new Error("Missing node settings source id");
     return { kind: "node", id, path };
   }
