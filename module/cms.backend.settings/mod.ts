@@ -6,6 +6,7 @@
 import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
+import { hee } from "../core/lib/util.ts";
 
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];
@@ -31,6 +32,15 @@ function render(_node: any, { ctx }: { ctx: RequestContext }): string {
 		<settings-editor source="${source}"></settings-editor>
 	</div>
 </div>`;
+}
+
+export async function backendDashboardWidget(app: any): Promise<string> {
+  const db = app.db;
+  const count = Number(await db.one("SELECT count(*) FROM qg_setting"));
+  return `
+<table class="c1-style" style="white-space:nowrap">
+  <tr><td>Einträge:<td>${hee(String(count))}
+</table>`;
 }
 
 export const cms = {

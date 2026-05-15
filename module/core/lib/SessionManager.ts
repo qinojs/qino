@@ -3,9 +3,10 @@ import { uid } from "./util.ts";
 import type { Db } from "./Db.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
+const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qgSession";
 const hostCookieName = (https: boolean) => https ? `__Host-${COOKIE_NAME}` : COOKIE_NAME;
-const EMPTY_SESSION = "{}";
+const unixTime = () => Math.floor(Date.now() / 1000);
 
 type SessionResult = { sessionToken: string; sessId: string; session: ItemProxy; isNew: boolean };
 
@@ -31,9 +32,8 @@ export class SessionManager {
     async regenerateId(oldSessionToken: string): Promise<SessionResult> {
         const row = oldSessionToken ? await this.#db.row("SELECT id FROM sess WHERE token = ?", [oldSessionToken]) : null;
         if (!row) return this.#create();
-        const token = this.#token();
-        const time = this.#time();
-        await this.#db.exec("UPDATE sess SET token = ?, data = ?, `access` = ? WHERE id = ?", [token, EMPTY_SESSION, time, row.id]);
+        const token = uid();
+        await this.#db.exec("UPDATE sess SET token = ?, data = ?, `access` = ? WHERE id = ?", [token, EMPTY_SESSION, unixTime(), row.id]);
         return this.#result(row.id, token, EMPTY_SESSION, true);
     }
 
@@ -42,29 +42,21 @@ export class SessionManager {
         clearTimeout(this.#touchTimer);
         this.#touchTimer = setTimeout(async () => {
             try {
-                await this.#db.exec("UPDATE sess SET `access` = ?, usr_id = ? WHERE id = ?", [this.#time(), userId || null, sessId]);
+                await this.#db.exec("UPDATE sess SET `access` = ?, usr_id = ? WHERE id = ?", [unixTime(), userId || null, sessId]);
             } catch (e) { console.error("session touch error:", e); }
         }, 50);
     }
 
     setCookie(ctx: RequestContext): void {
-        ctx.responseHeaders.append("Set-Cookie", this.cookieHeader(ctx));
-    }
-
-    cookieHeader(ctx: RequestContext, sessionToken = ctx.sessionToken): string {
         const https = ctx.app.https;
-        return [
-            `${hostCookieName(https)}=${sessionToken}`,
-            `Path=/`,
-            "HttpOnly",
-            "SameSite=Lax",
-            https ? "Secure" : "",
-        ].filter(Boolean).join("; ");
+        const parts = [`${hostCookieName(https)}=${ctx.sessionToken}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
+        if (https) parts.push("Secure");
+        ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
     }
 
     async #create() {
-        const token = this.#token();
-        const time = this.#time();
+        const token = uid();
+        const time = unixTime();
         const res = await this.#db.exec("INSERT INTO sess SET token = ?, time = ?, `access` = ?, data = ?", [token, time, time, EMPTY_SESSION]);
         if (!res.insertId) throw new Error("Could not create session");
         return this.#result(res.insertId, token, EMPTY_SESSION, true);
@@ -77,11 +69,4 @@ export class SessionManager {
         return { sessionToken: token, sessId: String(sessId), session: root.proxy, isNew };
     }
 
-    #token(): string {
-        return uid();
-    }
-
-    #time(): number {
-        return Math.floor(Date.now() / 1000);
-    }
 }

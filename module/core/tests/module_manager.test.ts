@@ -81,3 +81,73 @@ Deno.test({
     await Deno.remove(root, { recursive: true });
   },
 });
+
+Deno.test("ModuleManager rejects invalid module exports", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(root + "/no-name.ts", `export const value = 1;`);
+    await Deno.writeTextFile(root + "/bad-needs.ts", `export const name = "bad.needs"; export const needs = "core";`);
+
+    const modules = new ModuleManager({} as any);
+    await assertRejects(
+      () => modules.import(toFileUrl(root + "/no-name.ts").href),
+      Error,
+      "Module has no exported name",
+    );
+    await assertRejects(
+      () => modules.import(toFileUrl(root + "/bad-needs.ts").href),
+      Error,
+      "exported needs must be an array",
+    );
+    await assertRejects(
+      () => modules.import(toFileUrl(root + "/").href),
+      Error,
+      "Module import needs a file",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("ModuleManager init reports missing and circular dependencies", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    await Deno.writeTextFile(root + "/missing.ts", `
+      export const name = "missing.dep";
+      export const needs = ["not.imported"];
+    `);
+    await Deno.writeTextFile(root + "/a.ts", `
+      export const name = "cycle.a";
+      export const needs = ["cycle.b"];
+    `);
+    await Deno.writeTextFile(root + "/b.ts", `
+      export const name = "cycle.b";
+      export const needs = ["cycle.a"];
+    `);
+
+    const app = {
+      settings: { [$item]: { setSchema() {} } },
+      fire() {},
+      db: {},
+    };
+
+    const missing = new ModuleManager(app as any);
+    await missing.import(toFileUrl(root + "/missing.ts").href);
+    await assertRejects(
+      () => missing.init(),
+      Error,
+      'Module "missing.dep" needs "not.imported"',
+    );
+
+    const cyclic = new ModuleManager(app as any);
+    await cyclic.import(toFileUrl(root + "/a.ts").href);
+    await cyclic.import(toFileUrl(root + "/b.ts").href);
+    await assertRejects(
+      () => cyclic.init(),
+      Error,
+      "Circular module dependency",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});

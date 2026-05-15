@@ -189,6 +189,70 @@ async function render(node: Node): Promise<string> {
 </div>`;
 }
 
+export async function backendDashboardWidget(app: any): Promise<string> {
+  (app)._lastCtx = getCtx();
+  const types = await getTypes(app);
+
+  let errors = 0, warnings = 0;
+  for (const [type, checks] of Object.entries(types)) {
+    for (const checkFn of Object.values(checks)) {
+      let result;
+      try { result = await (checkFn as () => Promise<unknown>)(); } catch { continue; }
+      if (!result) continue;
+      if (type === "error") errors++;
+      else if (type === "warning") warnings++;
+    }
+  }
+
+  const badge = (n: number, label: string, color: string) =>
+    n ? `<span style="background:${color};color:#fff;border-radius:3px;padding:1px 7px;margin-right:4px">${n} ${label}</span>` : "";
+
+  const statusHtml = (errors || warnings)
+    ? badge(errors, "Fehler", "hsl(0,80%,45%)") + badge(warnings, "Warnungen", "hsl(40,90%,40%)")
+    : `<span style="color:green">&#10003; Alles OK</span>`;
+
+  // DB top tables
+  const tables = await (app.db.all("SHOW TABLE STATUS") as Promise<any[]>).catch(() => [] as any[]);
+  tables.sort((a: any, b: any) => ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0)));
+  const dbRows = tables.slice(0, 3).map((t: any) => {
+    const size = (t.Data_length ?? 0) + (t.Index_length ?? 0);
+    return `<tr><td>${hee(t.Name)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`;
+  }).join("");
+
+  // Cache size
+  const cacheDir = app.appPATH + "cache/";
+  let cacheSize = 0, cacheCount = 0;
+  try {
+    for await (const entry of Deno.readDir(cacheDir)) {
+      if (entry.isFile) { const s = await Deno.stat(cacheDir + entry.name).catch(() => null); cacheSize += s?.size ?? 0; cacheCount++; }
+    }
+  } catch { /* cache dir may not exist */ }
+
+  return `${statusHtml}
+<table class="c1-style" style="white-space:nowrap;margin-top:8px">` + systemInfoRows() + `</table>
+<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+  <thead><tr><th>Top DB-Tabellen<th style="text-align:right">Grösse
+  <tbody>${dbRows}
+</table>
+<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+  <tr><td>Cache-Dateien:<td>${hee(String(cacheCount))}
+  <tr><td>Cache-Grösse:<td><u2-bytes>${cacheSize}</u2-bytes>
+</table>`;
+}
+
+function systemInfoRows(): string {
+  const mem = Deno.memoryUsage();
+  const load = Deno.loadavg();
+  const appUptimeSec = performance.now() / 1000;
+  const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
+  return `
+  <tr><td>Deno:<td>${hee(Deno.version.deno)}
+  <tr><td>Uptime:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+  <tr><td>Load (1m/5m/15m):<td>${hee(load[0].toFixed(2))} / ${hee(load[1].toFixed(2))} / ${hee(load[2].toFixed(2))}
+  <tr><td>RAM (RSS):<td><u2-bytes>${mem.rss}</u2-bytes>
+  <tr><td>Heap:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>`;
+}
+
 export const cms = {
   node: {
     render,

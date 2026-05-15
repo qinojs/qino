@@ -3,21 +3,9 @@ import "../../../core/pub/js/SettingsEditor.mjs?qgUniq=uploadMaxFileSize";
 import "./frontend.mjs?qgUniq=19aae46";
 import { apt } from "../../../core/pub/js/apt.js";
 
-const ctxSettingsUrl = new URL(
-  "../../../../api/core/ctx-settings",
-  import.meta.url,
-);
 function setCtxSetting(value, path) {
-  const p = Array.isArray(path) ? path.join("/") : String(path || "");
-  const url = new URL(ctxSettingsUrl);
-  return fetch(url, {
-    method: "PUT",
-    headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ path: p, value }),
-  }).then((res) => {
-    if (!res.ok) throw new Error("ctx settings save failed: " + res.status);
-    return res.status === 204 ? null : res.json();
-  });
+  const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);
+  return apt.core["ctx-settings"].put({ path: p, value });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -545,7 +533,7 @@ c1.onElement(".qgCmsFront1DiversManager", (el) => {
     apt.cms.node(pid).name.put({ value: this.value });
   });
   el.c1Find(".-model").addEventListener("change", function () {
-    apt.core["ctx-settings"].put({ path: this.name, value: this.value });
+    apt.core["ctx-settings"].put({ path: this.name ? this.name.split("/").filter(Boolean) : [], value: this.value });
     cms.panel.loadWidget("divers", { pid });
   });
   el.c1Find(".-basis").addEventListener("blur", function () {

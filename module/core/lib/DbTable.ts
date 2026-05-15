@@ -25,6 +25,7 @@ export class DbTable {
   get db(): Db { return this.#db; }
   get fields(): Record<string, DbField> | null { return this.#fields; }
   get autoIncrement(): DbField | false { return this.#autoIncrement; }
+  get schema(): Record<string, any> { return this.#db.schema?.properties?.[String(this)] ?? {}; }
 
   async reloadFields(): Promise<void> {
     this.#fields = null;
@@ -36,12 +37,11 @@ export class DbTable {
 
   async init(): Promise<Record<string, DbField>> {
     if (this.#fields === null) {
-      const fields = [];
+      const fields: Record<string, any>[] = [];
 
       const columns = await this.#db.query(`SHOW FULL COLUMNS FROM ${Db.escapeId(String(this))}`);
       for (const values of columns) {
-        const name = values.Field;
-        fields.push({ ...values, ...this.#db.fieldMeta(String(this), name) });
+        fields.push(values);
       }
       this.#fields = {};
       this.#primaries = {};
@@ -56,20 +56,12 @@ export class DbTable {
           this.#autoIncrement = this.#fields[name];
         }
       }
-      // Remove temp field if others exist
-      if (this.#fields["_qgtmp"] && Object.keys(this.#fields).length > 1) {
-        await this.remField("_qgtmp");
-      }
     }
     return this.#fields!;
   }
 
-  get primaries(): Record<string, DbField> {
-    return this.#primaries;
-  }
-  get primary(): DbField | false {
-    return Object.values(this.#primaries)[0] ?? false;
-  }
+  get primaries(): Record<string, DbField> { return this.#primaries; }
+  get primary(): DbField | false { return Object.values(this.#primaries)[0] ?? false; }
 
   getStatus(): Promise<Record<string, any> | undefined> {
     return this.#db.row("SHOW TABLE STATUS LIKE ?", [String(this)]);
@@ -231,7 +223,7 @@ export class DbTable {
     if (newId === false) return false;
 
     for (const Field of this.children) {
-      if (Field.vs.on_parent_copy !== "cascade") continue;
+      if (Field.onParentCopy !== "cascade") continue;
       const childRows = await this.#db.all(
         `SELECT * FROM ${Db.escapeId(String(Field.table))} WHERE ${Db.escapeId(String(Field))} = ?`, [id],
       );
@@ -252,7 +244,7 @@ export class DbTable {
     if (!rows?.affectedRows) return undefined;
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
     for (const Field of this.children) {
-      if (Field.vs.on_parent_delete === "cascade") {
+      if (Field.onParentDelete === "cascade") {
         const childRows = await this.#db.all(
           `SELECT * FROM ${Db.escapeId(String(Field.table))} WHERE ${Db.escapeId(String(Field))} = ?`,
           [id],
@@ -274,10 +266,12 @@ export class DbTable {
   get children(): DbField[] {
     if (this.#children === null) {
       this.#children = [];
-      for (const child of this.#db.childFields(String(this))) {
-        const table = this.#db.table(child.table);
-        const field = table.field(child.field);
-        if (field) this.#children.push(field);
+      for (const table of Object.values(this.#db.tables ?? {})) {
+        for (const [name, schema] of Object.entries(table.schema.additionalProperties?.properties ?? {})) {
+          if ((schema as any)["x-qg-parent"] !== String(this)) continue;
+          const field = table.field(name);
+          if (field) this.#children.push(field);
+        }
       }
     }
     return this.#children;
@@ -323,22 +317,22 @@ export class DbTable {
     return Es;
   }
 
-  async addField(data: string | Record<string, any>): Promise<DbField | false> {
-    if (typeof data === "string") data = { name: data };
-    data = { type: "varchar", length: 255, null: false, ...data };
-    await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} ADD ${Db.escapeId(String(data.name))} ${Db._array_to_column_definition(data)}`);
-    await this.reloadFields();
-    return this.#fields?.[data.name] ?? false;
-  }
-  async remField(name: string): Promise<void> {
-    await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} DROP ${Db.escapeId(name)}`);
-    if (this.#fields) {
-      delete this.#fields[name];
-      delete this.#primaries[name];
-      if (this.#autoIncrement && String(this.#autoIncrement) === name) {
-        this.#autoIncrement = false;
-      }
-    }
-    this.#children = null;
-  }
+  // async addField(data: string | Record<string, any>): Promise<DbField | false> {
+  //   if (typeof data === "string") data = { name: data };
+  //   data = { type: "varchar", length: 255, null: false, ...data };
+  //   await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} ADD ${Db.escapeId(String(data.name))} ${Db._array_to_column_definition(data)}`);
+  //   await this.reloadFields();
+  //   return this.#fields?.[data.name] ?? false;
+  // }
+  // async remField(name: string): Promise<void> {
+  //   await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} DROP ${Db.escapeId(name)}`);
+  //   if (this.#fields) {
+  //     delete this.#fields[name];
+  //     delete this.#primaries[name];
+  //     if (this.#autoIncrement && String(this.#autoIncrement) === name) {
+  //       this.#autoIncrement = false;
+  //     }
+  //   }
+  //   this.#children = null;
+  // }
 }

@@ -250,12 +250,11 @@ function buildApi(app: App): AptTree { return {
         access: Access.USER,
         input: s.object({
           token:             s.string(),
-          credentialId:      s.string(),
           clientDataJSON:    s.string(),
           attestationObject: s.string(),
           name:              s.optional(s.string()),
         }),
-        execute: async ({ token, credentialId, clientDataJSON, attestationObject, name }: any) => {
+        execute: async ({ token, clientDataJSON, attestationObject, name }: any) => {
           const ctx    = getCtx();
           const stored = await consumeChallenge(app.db, token, "register");
           if (!stored)                       return { ok: false, error: "challenge_expired" };

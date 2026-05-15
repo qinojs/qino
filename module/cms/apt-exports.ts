@@ -157,8 +157,6 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
     }
     return res;
 }
-/** @deprecated use cmsSearchNodes() */
-export function cmsSearchPages(search: string): Promise<any[]> { console.warn("cmsSearchPages() is deprecated, use cmsSearchNodes()"); return cmsSearchNodes(search); }
 
 export async function cmsSearchFiles(search: string): Promise<any[]> {
     const ctx = getCtx();
@@ -195,10 +193,3 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
     }
     return res;
 }
-
-/** @deprecated use nodeToJson() */
-export function pageToJson(pid: any, type = "*"): Promise<any> { console.warn("pageToJson() is deprecated, use nodeToJson()"); return nodeToJson(pid, type); }
-/** @deprecated use nodeRemove() */
-export function pageRemove(node: any): Promise<{ parent_id: number }> { console.warn("pageRemove() is deprecated, use nodeRemove()"); return nodeRemove(node); }
-/** @deprecated use nodeFileAdd() */
-export function pageFileAdd(node: any, file: any, replace?: any): Promise<{ url: string; name: string }> { console.warn("pageFileAdd() is deprecated, use nodeFileAdd()"); return nodeFileAdd(node, file, replace); }

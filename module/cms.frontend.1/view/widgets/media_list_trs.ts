@@ -27,10 +27,15 @@ export default async function (node: Node): Promise<string> {
         }
         break;
       }
-      case "mp3": {
+      case "mp3": case "flac": case "ogg": case "aac": case "wav": case "m4a": {
         const url = await F.url();
-        const fname = hee(F.name);
-        preview = `<audio src="${url}/${fname}" controls style="min-width:70px;width:100%" draggable=true>`;
+        if (await FileTransformer.capabilities.ffmpeg) {
+          const coverUrl = await F.url({w: 70, h: 40, max: true});
+          preview = `<img src="${coverUrl}" alt="" draggable=true
+            onerror="this.replaceWith(Object.assign(document.createElement('audio'),{src:'${url}',controls:true,draggable:true,style:'min-width:70px;width:100%'}))">`;
+        } else {
+          preview = `<audio src="${url}" controls style="min-width:70px;width:100%" draggable=true>`;
+        }
         break;
       }
       default: {
@@ -48,7 +53,7 @@ export default async function (node: Node): Promise<string> {
     } else {
       const url = await F.url();
       const fname = hee(F.name);
-      linkHtml = `<a title="${fname}" href="${url}/${fname}" target=_blank>${hee(vsName)}</a>`;
+      linkHtml = `<a title="${fname}" href="${url}" target=_blank>${hee(vsName)}</a>`;
     }
     const nameLabel = name[0] !== "_" ? `<div style="font-size:11px;color:#999;font-style:italic">(${hee(name)})</div>` : "";
     const size = exists ? (await F.size() ?? 0) : 0;

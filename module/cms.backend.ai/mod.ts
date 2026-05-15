@@ -510,4 +510,32 @@ async function render(node: any): Promise<string> {
 </div>`;
 }
 
+export async function backendDashboardWidget(app: any): Promise<string> {
+  const defaultProvider = String(await app.settings.ai.default.provider ?? "");
+  const defaultModel    = String(await app.settings.ai.default.model    ?? "");
+
+  let rows = "";
+  for (const name of Object.keys(providers)) {
+    const s = app.settings.ai.provider[name];
+    const input  = Number(await s.used_input_tokens  ?? 0);
+    const output = Number(await s.used_output_tokens ?? 0);
+    if (!input && !output) continue;
+    rows += `<tr><td>${hee(name)}<td style="text-align:right">${hee(input.toLocaleString("de-DE"))}<td style="text-align:right">${hee(output.toLocaleString("de-DE"))}`;
+  }
+
+  const defaultHtml = defaultProvider
+    ? `<tr><td>Provider:<td>${hee(defaultProvider)}
+       <tr><td>Model:<td>${hee(defaultModel || "–")}`
+    : `<tr><td colspan=2 style="color:#999">Kein Default konfiguriert.`;
+
+  return `
+<table class="c1-style" style="white-space:nowrap">
+  ${defaultHtml}
+</table>
+${rows ? `<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+  <thead><tr><th>Provider<th style="text-align:right">Input<th style="text-align:right">Output
+  <tbody>${rows}
+</table>` : ""}`;
+}
+
 export const cms = { node: { render } };

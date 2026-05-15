@@ -132,21 +132,21 @@ export function urlize(str: string): string {
   return str.toLowerCase();
 }
 
-export async function copyDir(src: string, dest: string): Promise<void> {
-  try {
-    await Deno.mkdir(dest, { recursive: true });
-    for await (const entry of Deno.readDir(src)) {
-      if (!entry.name) continue;
-      const sf = src + "/" + entry.name;
-      const df = dest + "/" + entry.name;
-      if (entry.isDirectory) {
-        await copyDir(sf, df);
-      } else {
-        await Deno.copyFile(sf, df);
-      }
-    }
-  } catch { /* ignore */ }
-}
+// export async function copyDir(src: string, dest: string): Promise<void> {
+//   try {
+//     await Deno.mkdir(dest, { recursive: true });
+//     for await (const entry of Deno.readDir(src)) {
+//       if (!entry.name) continue;
+//       const sf = src + "/" + entry.name;
+//       const df = dest + "/" + entry.name;
+//       if (entry.isDirectory) {
+//         await copyDir(sf, df);
+//       } else {
+//         await Deno.copyFile(sf, df);
+//       }
+//     }
+//   } catch { /* ignore */ }
+// }
 
 export function br2nl(str: string): string {
   return str.replace(/<br(\s*)\/?>/gi, "\n");

@@ -28,6 +28,19 @@ export async function checkFfmpeg(): Promise<void> {
   }
 }
 
+/** Extrahiert Cover-Art aus einer Audio-Datei und schreibt sie als PNG nach `output`.
+ *  Wirft einen Fehler wenn keine Cover-Art eingebettet ist. */
+export async function ffmpegCoverArt(input: string, output: string): Promise<void> {
+  const { code, stderr } = await new Deno.Command('ffmpeg', {
+    args: ['-i', input, '-an', '-vcodec', 'copy', '-y', output],
+    stdout: 'piped',
+    stderr: 'piped',
+  }).output();
+  if (code !== 0) {
+    throw new Error(`FFmpeg Fehler (Cover-Art): ${new TextDecoder().decode(stderr).trim()}`);
+  }
+}
+
 /** Extrahiert einen einzelnen Frame aus einem Video und schreibt ihn als PNG nach `output` */
 export async function ffmpegFrame(
   input: string,

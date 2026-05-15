@@ -367,6 +367,42 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
 </div>`;
 }
 
+export async function backendDashboardWidget(app: any): Promise<string> {
+  const db = app.db;
+  const rows = await db.all(
+    `SELECT prio, source, file, line, col, message, count(*) as num
+     FROM m_error_report
+     GROUP BY prio, source, file, line, col
+     ORDER BY FIELD(prio,'error','warning','notice'), max(id) DESC
+     LIMIT 5`
+  ).catch(() => [] as any[]);
+
+  if (!rows.length) return `<span style="color:green">&#10003; Keine Einträge</span>`;
+
+  const errNode = await app.cms.nodeByModule("cms.backend.superuser.error_report");
+  const baseUrl = errNode ? await errNode.url() : null;
+
+  const color: Record<string, string> = { error: "hsl(0,80%,45%)", warning: "hsl(40,90%,40%)", notice: "#888" };
+  let tableRows = "";
+  for (const row of rows) {
+    const c = color[row.prio] ?? "#333";
+    const qs = "?show=entries&source=" + encodeURIComponent(row.source) + "&file=" + encodeURIComponent(row.file) + "&line=" + encodeURIComponent(row.line) + "&col=" + encodeURIComponent(row.col);
+    const detailUrl = baseUrl ? hee(baseUrl.replace(/(#|$)/, qs + "$1")) : null;
+    const msg = `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${hee(row.message)}</span>`;
+    tableRows += `<tr>
+      <td><span style="color:${c};font-weight:bold">${hee(row.prio)}</span>
+      <td>${hee(row.source)}
+      <td>${detailUrl ? `<a href="${detailUrl}">${msg}</a>` : msg}
+      <td style="color:#888">${hee(String(row.num))}x`;
+  }
+
+  return `<div style="overflow:auto">
+<table class="c1-style" style="width:100%">
+  <thead><tr><th>Prio<th>Source<th>Message<th>Anzahl
+  <tbody>${tableRows}
+</table></div>`;
+}
+
 export const cms = {
   node: {
     render,

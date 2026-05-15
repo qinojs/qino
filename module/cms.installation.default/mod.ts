@@ -57,10 +57,8 @@ export const needs = [
 export async function install({app}: {app: App}): Promise<void> {
   const s = app.settings;
 
-  let freshInstallation = false;
   if (!await app.settings.core.langs && !await app.settings.qg.langs) {
     app.settings.core.langs('de');
-    freshInstallation = true;
   }
 
   // Benutzer

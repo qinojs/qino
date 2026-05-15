@@ -1,4 +1,6 @@
 import { apt } from '../../core/pub/js/apt.js';
+import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
+import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 
 class AiChat extends HTMLElement {
   static observedAttributes = ['bot'];
@@ -25,9 +27,15 @@ class AiChat extends HTMLElement {
     this.innerHTML = `<style>
       ai-chat { display: flex; flex-direction: column; height: 100%; min-height: 200px; font-family: sans-serif; }
       ai-chat .msgs { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-      ai-chat .msg { padding: 6px 10px; border-radius: 6px; max-width: 80%; white-space: pre-wrap; }
-      ai-chat .msg.user { align-self: flex-end; background: var(--color); color: #fff; }
+      ai-chat .msg { padding: 6px 10px; border-radius: 6px; max-width: 80%; }
+      ai-chat .msg.user { align-self: flex-end; background: var(--color); color: #fff; white-space: pre-wrap; }
       ai-chat .msg.assistant { align-self: flex-start; background: #f0f0f0; }
+      ai-chat .msg.assistant p { margin: 0 0 6px; }
+      ai-chat .msg.assistant p:last-child { margin-bottom: 0; }
+      ai-chat .msg.assistant ul, ai-chat .msg.assistant ol { margin: 0 0 6px; padding-left: 20px; }
+      ai-chat .msg.assistant code { background: #ddd; border-radius: 3px; padding: 1px 4px; font-size: 0.9em; }
+      ai-chat .msg.assistant pre { background: #ddd; border-radius: 4px; padding: 8px; overflow-x: auto; }
+      ai-chat .msg.assistant pre code { background: none; padding: 0; }
       ai-chat .msg.loading { opacity: 0.5; }
       ai-chat form { display: flex; gap: 4px; padding: 8px; border-top: 1px solid #ddd; }
       ai-chat input { flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
@@ -66,7 +74,7 @@ class AiChat extends HTMLElement {
     try {
       const response = await apt.ai['chat-session'].post({ data: { bot: this.#bot, messages: this.#history, context: this.#context } });
       const content = typeof response === 'string' ? response : (response.response ?? response.error ?? 'Error');
-      loading.textContent = content;
+      loading.innerHTML = DOMPurify.sanitize(marked.parse(content));
       loading.classList.remove('loading');
 
       if (response?.issue) {

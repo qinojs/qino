@@ -76,6 +76,20 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 </div>`;
 }
 
+export async function backendDashboardWidget(app: any): Promise<string> {
+  const db = app.db;
+  const now = Math.floor(Date.now() / 1000);
+  const total   = Number(await db.one("SELECT count(*) FROM page WHERE type='p'"));
+  const offline = Number(await db.one(`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`));
+  const hidden  = Number(await db.one("SELECT count(*) FROM page WHERE type='p' AND visible=0"));
+  return `
+<table class="c1-style" style="white-space:nowrap">
+  <tr><td>Seiten gesamt:<td>${hee(String(total))}
+  <tr><td>Offline:<td>${hee(String(offline))}
+  <tr><td>Versteckt:<td>${hee(String(hidden))}
+</table>`;
+}
+
 export const cms = {
   node: {
     css: ["pub/main.css"],

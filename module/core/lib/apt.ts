@@ -215,6 +215,7 @@ function decodeSegment(s: string): string {
 function coerce(raw: unknown, schema: StandardSchema): unknown {
   if (raw == null) return raw;
   const kind = schema.kind === "optional" ? schema.inner?.kind : schema.kind;
+  if (kind === "array" && !Array.isArray(raw)) return [raw];
   if (kind === "number") { const n = Number(raw); return typeof raw === "number" || Number.isNaN(n) ? raw : n; }
   if (kind === "boolean") return raw === "true" || raw === "1" || raw === true;
   return raw;
@@ -232,7 +233,11 @@ export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
       const body = await c.req.json().catch(() => ({}));
       if (body && typeof body === "object") Object.assign(raw, body);
     }
-    Object.assign(raw, Object.fromEntries(new URL(c.req.url).searchParams));
+    const searchParams = new URL(c.req.url).searchParams;
+    for (const key of new Set(searchParams.keys())) {
+      const vals = searchParams.getAll(key);
+      raw[key] = vals.length === 1 ? vals[0] : vals;
+    }
     try {
       const result = await invoke(tree, c.req.method, path, raw);
       if (result === undefined) ctx.responseStatus = 204;

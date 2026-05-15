@@ -16,4 +16,4 @@ export { bildJsonItem } from "jsr:@nuxodin/item@^0.5.7/tools/jsonDataItem.js";
 export { schemaToDb } from "jsr:@nuxodin/item@^0.5.7/tools/schema/db/mysql/to-db.js";
 export { toInput } from "jsr:@nuxodin/item@^0.5.7/tools/schema/render/html.js";
 
-export { dump } from "jsr:@nuxodin/dump@^1.3.0";
+export { dump } from "jsr:@nuxodin/dump@^1.5.2";

@@ -28,16 +28,11 @@ export async function initClient(ctx: RequestContext): Promise<void> {
 async function registerClient(ctx: RequestContext): Promise<void> {
     const hash = uid();
 
-    const cidName = ctx.app.https ? "__Host-cid" : "cid";
-    const cookieOpts = [
-      `${cidName}=${hash}`,
-      "Path=/",
-      "Expires=Sat, 01 Jan 2033 00:00:00 GMT",
-      "HttpOnly",
-      "SameSite=Lax",
-      ctx.app.https ? "Secure" : "",
-    ].filter(Boolean).join("; ");
-    ctx.responseHeaders.append("Set-Cookie", cookieOpts);
+    const https = ctx.app.https;
+    const cidName = https ? "__Host-cid" : "cid";
+    const parts = [`${cidName}=${hash}`, `Path=${ctx.appURL}`, "Expires=Sat, 01 Jan 2033 00:00:00 GMT", "HttpOnly;SameSite=Lax"];
+    if (https) parts.push("Secure");
+    ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
     ctx.cookie[cidName] = hash;
 
     const clientId = await ctx.app.db.table("client").insert({ hash });

@@ -108,6 +108,36 @@ async function renderOverview(node: Node): Promise<string> {
 </div>`;
 }
 
+export async function backendDashboardWidget(app: any): Promise<string> {
+  const db = app.db;
+  const total  = Number(await db.one("SELECT count(*) FROM usr"));
+  const active = Number(await db.one("SELECT count(*) FROM usr WHERE active = 1"));
+
+  const logins = await db.all(
+    `SELECT usr.email, sess.access
+     FROM sess
+     LEFT JOIN usr ON sess.usr_id = usr.id
+     WHERE sess.usr_id IS NOT NULL AND sess.access IS NOT NULL
+     ORDER BY sess.access DESC LIMIT 5`
+  ).catch(() => [] as any[]);
+
+  let loginRows = "";
+  for (const row of logins) {
+    const iso = new Date(Number(row.access) * 1000).toISOString();
+    loginRows += `<tr><td>${hee(row.email ?? "–")}<td><u2-time datetime="${iso}" type=relative></u2-time>`;
+  }
+
+  return `
+<table class="c1-style" style="white-space:nowrap">
+  <tr><td>Gesamt:<td>${hee(String(total))}
+  <tr><td>Aktiv:<td>${hee(String(active))}
+</table>
+${loginRows ? `<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+  <thead><tr><th>Letzte Logins<th>
+  <tbody>${loginRows}
+</table>` : ""}`;
+}
+
 export const cms = {
   node: {
     css: ["pub/main.css"],

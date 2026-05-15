@@ -24,7 +24,7 @@ type DatabaseSchema = {
   properties?: Record<string, TableSchema>;
 };
 
-const INDEX_TO_KEY: Record<string, string> = { primary: "PRI", unique: "UNI", fulltext: "MUL", "true": "MUL" };
+//const INDEX_TO_KEY: Record<string, string> = { primary: "PRI", unique: "UNI", fulltext: "MUL", "true": "MUL" };
 
 export class DbSchema {
   #db: any;
@@ -37,31 +37,31 @@ export class DbSchema {
     await schemaToDb(schema, (sql: string) => this.#db.query(sql), { patch: true });
     this.#db.registerSchema(schema);
     await this.#db.init();
-    await this.#syncPhysicalOptions(schema);
+    //await this.#syncPhysicalOptions(schema);
   }
 
-  async #syncPhysicalOptions(schema: DatabaseSchema): Promise<void> {
-    for (const [tableName, tableSchema] of Object.entries(schema.properties ?? {})) {
-      const table = this.#db.table(tableName);
-      const fields = tableSchema.additionalProperties?.properties ?? {};
-      for (const [fieldName, fieldSchema] of Object.entries(fields)) {
-        const field = table.field(fieldName);
-        if (!field) continue;
+  // async #syncPhysicalOptions(schema: DatabaseSchema): Promise<void> {
+  //   for (const [tableName, tableSchema] of Object.entries(schema.properties ?? {})) {
+  //     const table = this.#db.table(tableName);
+  //     const fields = tableSchema.additionalProperties?.properties ?? {};
+  //     for (const [fieldName, fieldSchema] of Object.entries(fields)) {
+  //       const field = table.field(fieldName);
+  //       if (!field) continue;
 
-        const key = keyFromSchema(fieldSchema);
-        if (key !== undefined) await field.setKey(key);
+  //       // const key = keyFromSchema(fieldSchema);
+  //       // if (key !== undefined) await field.setKey(key);
 
-        if (fieldSchema["x-autoincrement"] !== undefined) {
-          await field.setAutoincrement(fieldSchema["x-autoincrement"] === true);
-        }
-      }
-      await table.reloadFields();
-    }
-  }
+  //       // if (fieldSchema["x-autoincrement"] !== undefined) {
+  //       //   await field.setAutoincrement(fieldSchema["x-autoincrement"] === true);
+  //       // }
+  //     }
+  //     await table.reloadFields();
+  //   }
+  // }
 }
 
-function keyFromSchema(schema: FieldSchema): string | undefined {
-  const index = schema["x-index"];
-  if (index === undefined) return undefined;
-  return INDEX_TO_KEY[String(index)];
-}
+// function keyFromSchema(schema: FieldSchema): string | undefined {
+//   const index = schema["x-index"];
+//   if (index === undefined) return undefined;
+//   return INDEX_TO_KEY[String(index)];
+// }

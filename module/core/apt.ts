@@ -15,18 +15,14 @@ import { readSettings } from "./lib/settings.ts";
 import type { Item } from "../../deps.ts";
 import type { AptTree } from "./lib/apt.ts";
 
-function pathParts(path?: string): string[] {
-  return String(path ?? "").split("/").filter(Boolean);
-}
-
-async function appSettingsRoot(path?: string): Promise<Item> {
+async function appSettingsRoot(path?: string[]): Promise<Item> {
   const ctx = getCtx();
   if (!(await ctx.user?.get?.("superuser"))) throw new AccessError();
-  return ctx.app.settings[$item].sub(pathParts(path));
+  return ctx.app.settings[$item].sub(path ?? []);
 }
 
-function ctxSettingsRoot(path?: string): Item {
-  return getCtx().settings[$item].sub(pathParts(path));
+function ctxSettingsRoot(path?: string[]): Item {
+  return getCtx().settings[$item].sub(path ?? []);
 }
 
 export const api: AptTree = {
@@ -67,14 +63,14 @@ export const api: AptTree = {
     get: {
       description: "Read app settings",
       access: Access.SUPERUSER,
-      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
+      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
       execute: async ({ path }: any) => readSettings(await appSettingsRoot(path)),
     },
     put: {
       description: "Set app settings",
       access: Access.SUPERUSER,
       input: s.object({
-        path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\""),
+        path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]"),
         value: s.any().describe("Value to set (any JSON type)"),
       }),
       execute: async ({ path, value }: any) => {
@@ -85,7 +81,7 @@ export const api: AptTree = {
     delete: {
       description: "Delete app settings at given path",
       access: Access.SUPERUSER,
-      input: s.object({ path: s.string().describe("Sub-path to delete") }),
+      input: s.object({ path: s.array(s.string()).describe("Sub-path to delete, e.g. [\"foo\", \"bar\"]") }),
       execute: async ({ path }: any) => {
         await (await appSettingsRoot(path)).remove();
         return { ok: true };
@@ -97,7 +93,7 @@ export const api: AptTree = {
     get: {
       description: "Read app settings schema",
       access: Access.SUPERUSER,
-      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
+      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
       execute: async ({ path }: any) => (await appSettingsRoot(path)).schema ?? {},
     },
   },
@@ -106,14 +102,14 @@ export const api: AptTree = {
     get: {
       description: "Read user/session settings",
       access: Access.USER,
-      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
+      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
       execute: ({ path }: any) => readSettings(ctxSettingsRoot(path)),
     },
     put: {
       description: "Set user/session settings",
       access: Access.USER,
       input: s.object({
-        path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\""),
+        path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]"),
         value: s.any().describe("Value to set (any JSON type)"),
       }),
       execute: async ({ path, value }: any) => {
@@ -124,7 +120,7 @@ export const api: AptTree = {
     delete: {
       description: "Delete user/session settings at given path",
       access: Access.USER,
-      input: s.object({ path: s.string().describe("Sub-path to delete") }),
+      input: s.object({ path: s.array(s.string()).describe("Sub-path to delete, e.g. [\"foo\", \"bar\"]") }),
       execute: async ({ path }: any) => {
         await ctxSettingsRoot(path).remove();
         return { ok: true };
@@ -136,7 +132,7 @@ export const api: AptTree = {
     get: {
       description: "Read user/session settings schema",
       access: Access.USER,
-      input: s.object({ path: s.optional(s.string()).describe("Sub-path, e.g. \"foo/bar\"") }),
+      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
       execute: ({ path }: any) => ctxSettingsRoot(path).schema ?? {},
     },
   },

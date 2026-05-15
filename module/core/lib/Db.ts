@@ -11,7 +11,7 @@ export class Db {
   #pool: Pool;
   #database: string;
   #connParams: { host: string; user: string; password: string };
-  #fieldMeta: Record<string, Record<string, Record<string, any>>> = {};
+  #schema: Record<string, any> = { properties: {} };
 
   constructor(conn: string, user: string, pass: string) {
     const [, host = "localhost"] = conn.match(/host=([^;]+)/) ?? [];
@@ -79,53 +79,12 @@ export class Db {
   }
 
   get tables(): Record<string, DbTable> { return this.#tables; }
+  get schema(): Record<string, any> { return this.#schema; }
 
   table(name: string): DbTable { return this.#tables[name]; }
 
   registerSchema(schema: Record<string, any>): void {
-    for (const [tableName, tableSchema] of Object.entries(schema.properties ?? {})) {
-      const fields = (tableSchema as any).additionalProperties?.properties ?? {};
-      this.#fieldMeta[tableName] ??= {};
-      for (const [fieldName, fieldSchema] of Object.entries(fields)) {
-        const s = fieldSchema as Record<string, any>;
-        this.#fieldMeta[tableName][fieldName] = {
-          title: s.title ?? "",
-          description: s.description ?? "",
-          parent: s["x-qg-parent"] ?? "",
-          parent_field: s["x-qg-parent-field"] ?? "",
-          on_parent_delete: s["x-qg-on-parent-delete"] ?? "",
-          on_parent_copy: s["x-qg-on-parent-copy"] ?? "",
-        };
-      }
-    }
-  }
-
-  fieldMeta(table: string, field: string): Record<string, any> {
-    return this.#fieldMeta[table]?.[field] ?? {};
-  }
-
-  childFields(parentTable: string): Array<{ table: string; field: string }> {
-    const children: Array<{ table: string; field: string }> = [];
-    for (const [table, fields] of Object.entries(this.#fieldMeta)) {
-      for (const [field, meta] of Object.entries(fields)) {
-        if (meta.parent === parentTable) children.push({ table, field });
-      }
-    }
-    return children;
-  }
-
-  async addTable(name: string): Promise<DbTable> {
-    const id = Db.escapeId(name);
-    await this.exec(`CREATE TABLE IF NOT EXISTS ${id} (id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci`);
-    await this.init();
-    return this.table(name);
-  }
-
-  async removeTable(name: string): Promise<void> {
-    const id = Db.escapeId(name);
-    await this.exec(`DROP TABLE IF EXISTS ${id}`);
-    delete this.#fieldMeta[name];
-    await this.init();
+    mergeSchema(this.#schema, schema);
   }
 
   close = (): Promise<void> => this.#pool.end();
@@ -148,36 +107,66 @@ export class Db {
     }[c]!))}'`;
   }
 
-  static _array_to_column_definition(d: Record<string, any>): string {
-    d = { type: "varchar", length: false, special: "", collate: false, null: false, autoincrement: false, default: false, ...d };
-    d.type = String(d.type).trim().toUpperCase();
-    d.special = String(d.special).trim().toUpperCase();
+  // static _array_to_column_definition(d: Record<string, any>): string {
+  //   d = { type: "varchar", length: false, special: "", collate: false, null: false, autoincrement: false, default: false, ...d };
+  //   d.type = String(d.type).trim().toUpperCase();
+  //   d.special = String(d.special).trim().toUpperCase();
 
-    if (!["VARCHAR","TINYINT","TEXT","DATE","SMALLINT","MEDIUMINT","INT","BIGINT","FLOAT","DOUBLE","DECIMAL","DATETIME","TIMESTAMP","TIME","YEAR","CHAR","TINYBLOB","TINYTEXT","BLOB","MEDIUMBLOB","MEDIUMTEXT","LONGBLOB","LONGTEXT","BOOL","BINARY"].includes(d.type)) {
-      throw new Error(`field type "${d.type}" not allowed`);
+  //   if (!["VARCHAR","TINYINT","TEXT","DATE","SMALLINT","MEDIUMINT","INT","BIGINT","FLOAT","DOUBLE","DECIMAL","DATETIME","TIMESTAMP","TIME","YEAR","CHAR","TINYBLOB","TINYTEXT","BLOB","MEDIUMBLOB","MEDIUMTEXT","LONGBLOB","LONGTEXT","BOOL","BINARY"].includes(d.type)) {
+  //     throw new Error(`field type "${d.type}" not allowed`);
+  //   }
+  //   if (!["","BINARY","UNSIGNED","UNSIGNED ZEROFILL","ON UPDATE CURRENT_TIMESTAMP"].includes(d.special)) {
+  //     throw new Error(`field special "${d.special}" not allowed`);
+  //   }
+
+  //   let len = d.length ? `(${d.length})` : "";
+  //   if (["DATE","DATETIME","FLOAT","TEXT","TINYTEXT","MEDIUMTEXT","LONGTEXT"].includes(d.type)) len = "";
+  //   if (d.type === "VARCHAR" && !len) len = "(191)";
+  //   if (d.type === "DECIMAL" && d.length > 65) len = "(12,8)";
+
+  //   let def = "";
+  //   if (d.autoincrement) def = "AUTO_INCREMENT";
+  //   else if (d.default !== false) {
+  //     const defVal = String(d.default).toUpperCase();
+  //     def = "DEFAULT " + ({ NULL: 1, CURRENT_TIMESTAMP: 1, "CURRENT_TIMESTAMP()": 1, "NOW()": 1, LOCALTIME: 1, "LOCALTIME()": 1, LOCALTIMESTAMP: 1, "LOCALTIMESTAMP()": 1 }[defVal] ? defVal : "?");
+  //   }
+
+  //   if (numTypes[d.type] || dateTypes[d.type]) d.collate = false;
+  //   const col = d.collate ? `CHARACTER SET ${String(d.collate).split("_")[0]} COLLATE ${d.collate} ` : "";
+
+  //   return ` ${d.type}${len} ${d.special} ${col}${d.null ? "NULL" : "NOT NULL"} ${def}`;
+  // }
+
+  // async addTable(name: string): Promise<DbTable> {
+  //   const id = Db.escapeId(name);
+  //   await this.exec(`CREATE TABLE IF NOT EXISTS ${id} (id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci`);
+  //   await this.init();
+  //   return this.table(name);
+  // }
+
+  // async removeTable(name: string): Promise<void> {
+  //   await this.exec(`DROP TABLE IF EXISTS ${Db.escapeId(name)}`);
+  //   await this.init();
+  // }
+
+}
+
+function mergeSchema(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
+  for (const [key, value] of Object.entries(source ?? {})) {
+    if (Array.isArray(value)) {
+      const current = Array.isArray(target[key]) ? target[key] : [];
+      target[key] = [...new Set([...current, ...value])];
+    } else if (isRecord(value) && isRecord(target[key])) {
+      mergeSchema(target[key], value);
+    } else if (isRecord(value)) {
+      target[key] = mergeSchema({}, value);
+    } else {
+      target[key] = value;
     }
-    if (!["","BINARY","UNSIGNED","UNSIGNED ZEROFILL","ON UPDATE CURRENT_TIMESTAMP"].includes(d.special)) {
-      throw new Error(`field special "${d.special}" not allowed`);
-    }
-
-    let len = d.length ? `(${d.length})` : "";
-    if (["DATE","DATETIME","FLOAT","TEXT","TINYTEXT","MEDIUMTEXT","LONGTEXT"].includes(d.type)) len = "";
-    if (d.type === "VARCHAR" && !len) len = "(191)";
-    if (d.type === "DECIMAL" && d.length > 65) len = "(12,8)";
-
-    let def = "";
-    if (d.autoincrement) def = "AUTO_INCREMENT";
-    else if (d.default !== false) {
-      const defVal = String(d.default).toUpperCase();
-      def = "DEFAULT " + ({ NULL: 1, CURRENT_TIMESTAMP: 1, "CURRENT_TIMESTAMP()": 1, "NOW()": 1, LOCALTIME: 1, "LOCALTIME()": 1, LOCALTIMESTAMP: 1, "LOCALTIMESTAMP()": 1 }[defVal] ? defVal : "?");
-    }
-
-    if (numTypes[d.type] || dateTypes[d.type]) d.collate = false;
-    const col = d.collate ? `CHARACTER SET ${String(d.collate).split("_")[0]} COLLATE ${d.collate} ` : "";
-
-    return ` ${d.type}${len} ${d.special} ${col}${d.null ? "NULL" : "NOT NULL"} ${def}`;
   }
+  return target;
+}
 
-  /** @deprecated Nutze stattdessen `(await db.exec(...)).insertId`. */
-  lastInsertId = async (): Promise<number> => Number(await this.one("SELECT LAST_INSERT_ID()") ?? 0);
+function isRecord(value: unknown): value is Record<string, any> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }

@@ -1,9 +1,11 @@
 /**
- * cms.backend/mod.ts - Backend module welcome page
+ * cms.backend/mod.ts - Backend module welcome page / dashboard
  * Port of cms.backend/index.php
  */
 
 import type { App } from "@qino/qino";
+import type { Node } from "../cms/lib/Node.ts";
+import { hee } from "../core/lib/util.ts";
 
 // deno-lint-ignore-file no-explicit-any
 
@@ -81,12 +83,30 @@ export async function install({app}: any): Promise<void> {
   }
 }
 
-function render(): string {
-  return `
-  <div class="c1-box">
-    <div class="-head">Willkommen</div>
-    <div class="-body">Nutzen Sie die Navigation.</div>
-  </div>`;
+async function render(node: Node): Promise<string> {
+  const page = await node.page();
+  const children = [...(await page.children()).values()];
+  const widgets: string[] = [];
+
+  for (const child of children) {
+    if (!child.vs.visible) continue;
+    const cont = (await child.conts())[0];
+    const widget = cont?.module?.exports.backendDashboardWidget;
+    if (typeof widget !== "function") continue;
+    try {
+      const body = await widget(node.app);
+      if (!body) continue;
+      const url = hee(await child.url());
+      const title = hee(await (await child.title()).string());
+      widgets.push(`<div class="c1-box"><a class="-head" href="${url}">${title}</a><div class="-body">${body}</div></div>`);
+    } catch (e) { console.error(e) }
+  }
+
+  const widgetsHtml = widgets.length
+    ? widgets.join("\n")
+    : `<div class="c1-box"><div class="-body" style="color:#999">Keine Widgets verfügbar.</div></div>`;
+
+  return `<div class="beBoxCont">${widgetsHtml}</div>`;
 }
 
 export const cms = {

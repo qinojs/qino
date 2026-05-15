@@ -59,7 +59,6 @@ export class WebAuth {
 
     const result = await this.#post("/register/verify", {
       token,
-      credentialId:      WebAuth.#enc(credential.rawId),
       clientDataJSON:    WebAuth.#enc(credential.response.clientDataJSON),
       attestationObject: WebAuth.#enc(credential.response.attestationObject),
       name: opts.name ?? await this.#guessName(),

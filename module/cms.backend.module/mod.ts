@@ -255,6 +255,19 @@ async function render(node: Node): Promise<string> {
   return renderOverview(node);
 }
 
+export function backendDashboardWidget(app: any): string {
+  const allMods = app.modules.all();
+  const total = Object.keys(allMods).length;
+  const withDb = Object.values(allMods).filter((m: any) => m.exports?.dbSchema).length;
+  const withApi = Object.values(allMods).filter((m: any) => m.exports?.api).length;
+  return `
+<table class="c1-style" style="white-space:nowrap">
+  <tr><td>Gesamt:<td>${hee(String(total))}
+  <tr><td>Mit DB-Schema:<td>${hee(String(withDb))}
+  <tr><td>Mit API:<td>${hee(String(withApi))}
+</table>`;
+}
+
 export const cms = {
   node: { render },
 };

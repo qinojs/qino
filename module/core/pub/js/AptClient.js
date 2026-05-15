@@ -47,7 +47,11 @@ export class AptClient extends EventTarget {
     const init = { method, headers: { accept: "application/json", ...this.headers }, signal: opts.signal };
 
     if (method === "GET" || method === "DELETE") {
-      for (const [k, v] of Object.entries(input || {})) if (v != null) url.searchParams.set(k, v);
+      for (const [k, v] of Object.entries(input || {})) {
+        if (v == null) continue;
+        if (Array.isArray(v)) v.forEach(item => url.searchParams.append(k, item));
+        else url.searchParams.set(k, v);
+      }
     } else {
       init.headers["content-type"] = "application/json";
       init.body = JSON.stringify(input || {});
