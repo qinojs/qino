@@ -37,21 +37,4 @@ export async function daily(app: any): Promise<void> {
     await db.query(`OPTIMIZE TABLE \`${table}\``).catch(() => {});
   }
 
-  // ── check utf8mb4 migration ────────────────────────────────────────────
-  const [, database = ""] = (app.dbConn ?? "").match(/dbname=([^;]+)/) ?? [];
-  if (database) {
-    const cols = await db.all(
-      `SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = ${db.constructor.quote ? db.constructor.quote(database) : `'${database}'`}`
-    ).catch(() => [] as any[]);
-    for (const row of cols) {
-      if (!row.COLUMN_KEY) continue;
-      if (Number(row.CHARACTER_MAXIMUM_LENGTH) <= 191) continue;
-      const textTypes = new Set(["text", "tinytext", "mediumtext", "longtext"]);
-      if (textTypes.has(row.DATA_TYPE)) continue;
-      // PROCEDURE ANALYSE() is deprecated/removed in MySQL 8; skip silently
-      console.warn(
-        `migrate utf8mb4 warning: field ${row.TABLE_NAME}.${row.COLUMN_NAME} has CHARACTER_MAXIMUM_LENGTH ${row.CHARACTER_MAXIMUM_LENGTH} > 191`
-      );
-    }
-  }
 }

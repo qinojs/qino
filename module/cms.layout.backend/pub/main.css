@@ -122,18 +122,11 @@ small {
 .beBoxCont {
 	display:flex;
 	flex-wrap:wrap;
-	xalign-items:flex-start;
 }
 #content > * {
 	flex:1 1 auto;
 }
 /* c1-box */
-.beBox::before {
-	content:'deprecated class ".beBox" use ".c1-box", report to tobias buschor';
-	padding:3px;
-	background:yellow;
-	background-image:url(css-error?message=class_beBox_in_use);
-}
 .beBox,
 .qgCMS .c1-box {
 	flex:1 1 400px;

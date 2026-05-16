@@ -82,11 +82,11 @@ el.querySelector('.-versionUnPublish').addEventListener('click',function(){
 	});
 });
 
-// change "changed-status"
-Ask.on('complete', function(res) {
-	if (!res || !res.cms_vers_changed) return;
-	for (var pid in res.cms_vers_changed) {
-		pid == Page && el.classList.add('-HasChanges');
-	}
-});
+// // change "changed-status"
+// Ask.on('complete', function(res) {
+// 	if (!res || !res.cms_vers_changed) return;
+// 	for (var pid in res.cms_vers_changed) {
+// 		pid == Page && el.classList.add('-HasChanges');
+// 	}
+// });
 window.cms_vers_draft_changed && el.classList.add('-HasChanges');

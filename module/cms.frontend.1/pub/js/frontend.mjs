@@ -258,16 +258,6 @@ cms.console = {
 		return el;
 	}
 };
-Ask.on('complete', res=>{
-	if (!res) return;
-	if (res.cmsInfo) {
-		cms.console.show(res.cmsInfo,'info');
-	} else if (res.cmsWarning) {
-		cms.console.show(res.cmsWarning,'warning');
-	} else if (res.cmsError) {
-		cms.console.show(res.cmsError,'error');
-	}
-});
 
 cms.frontend1.dialog = (title,body,buttons)=>{
 	c1.c1Use('dialog',()=>{

@@ -178,10 +178,6 @@ if (!customElements.get("qg-settings-editor")) {
   customElements.define("qg-settings-editor", QgSettingsEditorViewElement);
 }
 
-globalThis.qgSettingsEditor = function deprecatedSettingsEditorInit() {
-  console.warn("[deprecated] qgSettingsEditor() is legacy. Use <settings-editor> instead.");
-};
-
 class SettingsEditorElement extends HTMLElement {
   #loadedSource = null;
   #source = null;

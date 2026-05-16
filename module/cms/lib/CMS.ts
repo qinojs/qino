@@ -238,18 +238,7 @@ export class CMS {
         return new HtmlString(`<${tag}${attrStr}>${text}</${tag}>`);
     }
 
-    async parentFile(name: string, node?: Node): Promise<DbFile | false> {
-        if (!node) node = this.MainNode || await this.nodeFromRequest();
-        while (node) {
-            const File = await node.hasFile(name);
-            if (File) return File;
-            node = await node.parent();
-        }
-        return false;
-    }
-
-    async fileLang(name: string, node?: Node, lang?: string): Promise<DbFile | undefined> {
-        if (!node) node = this.MainNode || await this.nodeFromRequest();
+    async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {
         if (!lang) lang = getCtx().lang;
         for (const l of node.cms.app.languages.all) await node.file(name + " " + l);
         const file = await node.file(name + " " + lang);
@@ -260,12 +249,21 @@ export class CMS {
         }
     }
 
-    async parentText(name: string, node?: Node): Promise<DbText | undefined> {
-        if (!node) node = this.MainNode || await this.nodeFromRequest();
-        while (node) {
-            const texts = await node.texts();
+    async parentFile(node: Node, name: string): Promise<DbFile | undefined> {
+        let currentNode: Node | undefined = node;
+        while (currentNode) {
+            const File = await currentNode.hasFile(name);
+            if (File) return File;
+            currentNode = await currentNode.parent();
+        }
+    }
+
+    async parentText(node: Node, name: string): Promise<DbText | undefined> {
+        let currentNode: Node | undefined = node;
+        while (currentNode) {
+            const texts = await currentNode.texts();
             if (name in texts) return texts[name];
-            node = await node.parent();
+            currentNode = await currentNode.parent();
         }
     }
 

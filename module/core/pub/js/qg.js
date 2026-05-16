@@ -2,7 +2,6 @@
 'use strict';
 window.qg = {}; // needed?
 
-if (window.Ask) console.warn('qg.js load again?');
 
 window.Ask = function(obj, opt) {
 	opt = opt || {};

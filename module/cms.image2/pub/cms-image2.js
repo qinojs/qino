@@ -15,8 +15,6 @@ window.cms_image2 = {
     	const noscript = c1Img.c1Find('>noscript');
 
 		if (noscript) {
-			// const html = noscript.textContent || noscript.innerHTML; // zzz
-			// var img = c1.dom.fragment( html ).firstChild;
             const tpl = document.createElement('template');
             tpl.innerHTML = noscript.textContent;
             img = tpl.content.firstElementChild;
@@ -153,7 +151,6 @@ function dbFileSetSize(url, w, h) {
 customElements.define('cms-image2', class CmsImage2 extends HTMLElement {
     connectedCallback() {
         if (this.hasAttribute('wait')) return;
-        if (this.hasAttribute('data-preload')) console.warn('cms-image2: data-preload attribute is deprecated, use "preload"');
         cms_image2.init(this);
     }
 });
