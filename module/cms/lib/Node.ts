@@ -3,9 +3,9 @@
  * Port of cms/lib/Page.class.php
  */
 
+import { resolveText } from "./resolveText.ts";
 import { hee, HtmlString } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
-import { resolveText } from "./resolveText.ts";
 import { DbFile } from "../../core/lib/DbFileManager.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";

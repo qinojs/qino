@@ -426,8 +426,7 @@ export function init(app: App) {
                     [String(MainNode)]
                 );
                 if (versions[1] && (!versions[0] || versions[1] > versions[0])) {
-                    ctx.state.js_data = ctx.state.js_data ?? {};
-                    ctx.state.js_data.cms_vers_draft_changed = true;
+                    ctx.html.jsData.cms_vers_draft_changed = true;
                 }
             }
             ctx.html.addJSM(ctx.sysURL + "cms.versions/pub/draftmode.mjs");

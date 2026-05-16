@@ -147,8 +147,7 @@ export function init(app: App) {
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         settings.cms[lastKey](ctx.requestUri);
         const toggleUrl = await settings.cms[otherKey] ?? "";
-        g.js_data = g.js_data ?? {};
-        g.js_data.cmsBackendUrl = toggleUrl;
+        ctx.html.jsData.cmsBackendUrl = toggleUrl;
         ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/init.js");
       }
     }
@@ -157,14 +156,13 @@ export function init(app: App) {
       g.csp = g.csp ?? {};
       g.csp["img-src"] = g.csp["img-src"] ?? {};
       g.csp["img-src"]["blob:"] = true;
-      g.js_data = g.js_data ?? {};
-      g.js_data.Page = node.id;
-      g.js_data.qgCmsRequestedPage = app.cms.RequestedNode?.id;
-      g.js_data.qgDebugmode = (await ctx.user?.get?.("superuser")) ? "debug" : null;
-      g.js_data.qgCmsEditmode = g.editmode;
+      ctx.html.jsData.Page = node.id;
+      ctx.html.jsData.qgCmsRequestedPage = app.cms.RequestedNode?.id;
+      ctx.html.jsData.qgDebugmode = (await ctx.user?.get?.("superuser")) ? "debug" : null;
+      ctx.html.jsData.qgCmsEditmode = g.editmode;
 
       if (g.editmode) {
-        g.js_data.cmsClipboard = Number(await settings.cms.clipboard ?? "0");
+        ctx.html.jsData.cmsClipboard = Number(await settings.cms.clipboard ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         await app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");

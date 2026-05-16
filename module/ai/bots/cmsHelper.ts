@@ -16,7 +16,7 @@ const cmsTools = toTools(cmsApi, {
     "/node/:node/settings": ["get", "put"],
     "/node/:node/files": ["get", "post"],
     "/node/:node/visible": ["put"],
-    "/node/:node/insertBefore": ["put"],
+    "/node/:node/insert-before": ["put"],
   }
 });
 

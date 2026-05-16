@@ -29,7 +29,7 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   html.addCSSFile("/style.css?x=1&y=2");
   html.addJSFile("/main.js?x=1&y=2");
   html.addJSM("/module.mjs?x=1&y=2");
-  c.state.js_data = { hello: "<world>" };
+  Object.assign(c.html.jsData, { hello: "<world>" });
 
   const out = html.getHeader();
   assertEquals(out.includes('<meta charset="utf-8">'), true);
@@ -51,9 +51,9 @@ Deno.test("HtmlBuilder: render injects js_data defaults and content", () => {
   const out = html.render();
   assertEquals(out.startsWith("<!DOCTYPE HTML>\n<html lang=de>"), true);
   assertEquals(out.includes("<main>Hi</main>"), true);
-  assertEquals(c.state.js_data.appURL, "/app/");
-  assertEquals(c.state.js_data.sysURL, "/app/m/");
-  assertEquals(c.state.js_data.c1UseSrc, "/app/m/core/pub/js");
-  assertEquals(typeof c.state.js_data.qgToken, "string");
-  assertEquals(c.state.js_data.qgToken.length, 10);
+  assertEquals(c.html.jsData.appURL, "/app/");
+  assertEquals(c.html.jsData.sysURL, "/app/m/");
+  assertEquals(c.html.jsData.c1UseSrc, "/app/m/core/pub/js");
+  assertEquals(typeof c.html.jsData.qgToken, "string");
+  assertEquals(c.html.jsData.qgToken.length, 10);
 });

@@ -537,7 +537,7 @@ c1.onElement(".qgCmsFront1DiversManager", (el) => {
     cms.panel.loadWidget("divers", { pid });
   });
   el.c1Find(".-basis").addEventListener("blur", function () {
-    this.value && apt.cms.node(String(this.value)).insertBefore.put({ id: String(pid) });
+    this.value && apt.cms.node(String(this.value))["insert-before"].put({ id: String(pid) });
   });
   el.c1Find(".-childXML").addEventListener("change", function () {
     apt.cms.node(pid).defaults.put({ value: { childXML: this.value } });

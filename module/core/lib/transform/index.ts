@@ -5,6 +5,7 @@ import './transformers/videoDecode.ts';
 import './transformers/audioDecode.ts';
 import './transformers/imageResize.ts';
 import './transformers/imageEncode.ts';
+import './transformers/pngquant.ts';
 
 export { FileTransformer } from './FileTransformer.ts';
 export type { TransformOptions, TransformResult, TransformerDef, TransformContext } from './types.ts';

@@ -200,10 +200,7 @@ const node = {
       }),
       execute: async ({ node, module, recursive }: any) => {
         const ctx = getCtx();
-        const access = await (ctx.app as any).db.one(
-          "SELECT access FROM module WHERE name = ?",
-          [module],
-        );
+        const access = await ctx.app.db.one("SELECT access FROM module WHERE name = ?", [module]);
         if (!access && !(await ctx.user?.get("superuser"))) {
           throw new AccessError();
         }
@@ -265,9 +262,9 @@ const node = {
         const ctx = getCtx();
         const id = await node.createChild();
         if (!id) throw new Error("createChild failed");
-        const child = await (ctx.app as any).cms.node(id);
+        const child = await ctx.app.cms.node(id);
         await child.title(ctx.lang, title);
-        await child.changeUser(ctx.user, 3);
+        await child.changeUser(ctx.user!, 3);
         return fns.nodeToJson(id);
       },
     },
@@ -293,7 +290,7 @@ const node = {
     },
   },
 
-  insertBefore: {
+  "insert-before": {
     put: {
       description: "Move a node into this node",
       access: nodeWrite,
@@ -523,7 +520,7 @@ const node = {
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any) => {
         if (await fns.cmsRequestUsed(url)) throw new Error("URL already in use");
-        await (getCtx().app as any).db.query(
+        await getCtx().app.db.query(
           "INSERT INTO page_redirect SET request = ?, redirect = ?",
           [url, node.id],
         );
@@ -536,7 +533,7 @@ const node = {
       access: nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any) => {
-        await (getCtx().app as any).db.query(
+        await getCtx().app.db.query(
           "DELETE FROM page_redirect WHERE request = ? AND redirect = ?",
           [url, node.id],
         );
@@ -651,10 +648,10 @@ export const api = {
       execute: async ({ value }: any) => {
         const ctx = getCtx();
         if (value) {
-          const P = await (ctx.app as any).cms.node(value);
+          const P = await ctx.app.cms.node(value);
           if ((await P.access()) < 2) throw new AccessError();
         }
-        ctx.settings.cms.clipboard(Number(value ?? ''));
+        await ctx.settings.cms.clipboard(Number(value ?? 0));
         return { ok: true };
       },
     },
@@ -675,7 +672,7 @@ export const api = {
       access: Access.USER,
       input: s.object({ id: s.number() }),
       execute: async ({ id }: any) => {
-        const db = (getCtx().app as any).db;
+        const db = getCtx().app.db;
         const pid = await db.one(
           "SELECT page_id FROM page_text WHERE text_id = ?",
           [id],
@@ -699,14 +696,14 @@ export const api = {
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language") }),
         execute: async ({ id, value, lang }: any) => {
           const ctx = getCtx();
-          const db = (ctx.app as any).db;
+          const db = ctx.app.db;
           const lang_ = lang ?? ctx.lang;
           const row = await db.row(
             "SELECT name, page_id FROM page_text WHERE text_id = ?",
             [id],
           );
           if (row) {
-            const n = await (ctx.app as any).cms.node(row.page_id);
+            const n = await ctx.app.cms.node(row.page_id);
             if (!n.is()) throw new NotFoundError();
             if ((await n.access()) < 2) throw new AccessError();
             const changed = await n.text(row.name, lang_, value);
@@ -716,7 +713,7 @@ export const api = {
             id,
           ]);
           if (pid) {
-            const n = await (ctx.app as any).cms.node(pid);
+            const n = await ctx.app.cms.node(Number(pid));
             if (!n.is()) throw new NotFoundError();
             if ((await n.access()) < 2) throw new AccessError();
             const changed = await n.title(lang_, value);

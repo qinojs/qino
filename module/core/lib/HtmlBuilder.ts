@@ -19,6 +19,8 @@ export class HtmlBuilder {
     cssFiles: Record<string, any> = {};
     jsms: Record<string, any> = {};
     content = "";
+    #jsData?: Record<string, any>;
+    get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
     constructor(private ctx: RequestContext) {}
 
@@ -47,8 +49,7 @@ export class HtmlBuilder {
             ret += `<link rel=stylesheet href="${hee(url)}">\n`;
         }
 
-        const jsData = this.ctx.state.js_data;
-        if (jsData) ret += `<script type=json/c1>${JSON.stringify(jsData)}</script>\n`;
+        if (this.#jsData) ret += `<script type=json/c1>${JSON.stringify(this.#jsData)}</script>\n`;
 
         for (const [name, value] of Object.entries(this.meta)) {
             if (value === "") continue;
@@ -70,15 +71,12 @@ export class HtmlBuilder {
 
     render(): string {
         const ctx = this.ctx;
-        const g = ctx.state;
-        if (!g.js_data) g.js_data = {};
-        const jsData = g.js_data as Record<string, any>;
-        jsData["qgToken"] = ctx.token;
-        jsData["appURL"] = ctx.appURL || "/";
-        jsData["sysURL"] = ctx.sysURL || "/m/";
-        jsData["c1UseSrc"] = (ctx.sysURL || "/m/") + "core/pub/js";
+        this.jsData["qgToken"] = ctx.token;
+        this.jsData["appURL"] = ctx.appURL || "/";
+        this.jsData["sysURL"] = ctx.sysURL || "/m/";
+        this.jsData["c1UseSrc"] = (ctx.sysURL || "/m/") + "core/pub/js";
 
-        const lang = ctx.lang;
+        const { lang } = ctx;
         return `<!DOCTYPE HTML>\n<html lang=${lang}>\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;
     }
 }

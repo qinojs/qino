@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 			apt.cms.node(cms.el.pid(el)).delete();
 		} else {
 			const next = el.nextElementSibling ? cms.el.pid(el.nextElementSibling) : null;
-			apt.cms.node(cms.el.pid(el.parentNode)).insertBefore.put({ id: String(cms.el.pid(el)), before: next ? String(next) : undefined });
+			apt.cms.node(cms.el.pid(el.parentNode))["insert-before"].put({ id: String(cms.el.pid(el)), before: next ? String(next) : undefined });
 		}
 		trash.classList.remove('-dropTarget');
 	})
