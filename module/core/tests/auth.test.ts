@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "./deps.ts";
 import { pwHash, pwNeedsRehash, pwVerify } from "../lib/auth.ts";
 
 Deno.test("auth: pwNeedsRehash accepts bcrypt variants only", () => {

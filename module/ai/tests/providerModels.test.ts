@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "../../core/tests/deps.ts";
 import { parseProviderModels, providerModels } from "../lib/providerModels.ts";
 
 Deno.test("ai: parseProviderModels accepts JSON and normalizes model fields", () => {

@@ -165,7 +165,7 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
     const sql =
         " SELECT pf.page_id AS pid, f.*" +
         " FROM page_file pf, file f WHERE 1 AND pf.file_id = f.id" +
-        " AND ( f.id = ? OR f.name LIKE ? OR f.text LIKE ? ) GROUP BY f.id" +
+        " AND ( f.id = ? OR f.name LIKE ? OR f.text LIKE ? )" +
         " ORDER BY f.id = ? DESC, f.name = ? DESC, f.name LIKE ? DESC," +
         " f.name LIKE ? DESC, f.text = ? DESC, f.text LIKE ? DESC, f.name ASC";
     const params = [s, "%" + s + "%", s + "%", s, s, s + "%", "% " + s + "%", s, s + "%"];
@@ -177,9 +177,9 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
         if ((await node.access()) < 2) continue;
         const F = await ctx.app.dbFiles.file(vs.id, vs);
         if (!await F.exists()) continue;
-        if (i++ > 10) break;
         const md5 = vs["md5"];
         if (md5 && used[md5]) continue;
+        if (i++ > 10) break;
         if (md5) used[md5] = true;
         const ext   = F.extension;
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(ext);

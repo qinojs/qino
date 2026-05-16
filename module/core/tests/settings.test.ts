@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "../../../deps.ts";
+import { assertEquals, assertThrows } from "./deps.ts";
 import { settingsSourceAttr } from "../lib/settings.ts";
 
 Deno.test("settings: settingsSourceAttr normalizes app and ctx sources", () => {

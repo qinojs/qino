@@ -123,6 +123,8 @@ export class App {
             } catch (e: unknown) {
                 this.#handleError(ctx, e);
                 hc.res = await this.#buildResponse(hc, ctx);
+            } finally {
+                await ctx.cleanup();
             }
             return hc.res;
         });
@@ -151,6 +153,7 @@ export class App {
         if (e instanceof AnswerError) {
             ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
             ctx.responseBody = JSON.stringify(e.data);
+            ctx.responseStatus = e.status;
         } else if (e instanceof OutputError) {
             ctx.responseBody = e.body;
         } else if (!(e instanceof RedirectError || e instanceof OutputDoneError)) {

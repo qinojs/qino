@@ -8,7 +8,6 @@ export type { Pool, ResultSetHeader, RowDataPacket } from "npm:mysql2@^3/promise
 export { default as bcrypt } from "npm:bcryptjs@^2";
 export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
-export { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@^1";
 export { typeByExtension } from "jsr:@std/media-types@^1";
 
 export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@^0.5.7/item.js";

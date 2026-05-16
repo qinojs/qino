@@ -76,6 +76,13 @@ export class RequestContext {
     if (!token()) this.session.qg.token(uid(10));
     return token() as string;
   }
+
+  async cleanup(): Promise<void> {
+    for (const f of Object.values(this.files)) {
+      const p = (f as { tmpPath?: unknown })?.tmpPath;
+      if (typeof p === "string") await Deno.remove(p).catch(() => {});
+    }
+  }
 }
 
 export async function makeRequestContext(app: App, c: Context): Promise<[RequestContext, boolean]> {

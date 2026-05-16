@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertRejects } from "../../../deps.ts";
+import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { AccessError, NotFoundError, ValidationError, invoke } from "../../core/lib/apt.ts";
 import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
 import { api } from "../apt.ts";
@@ -100,7 +100,7 @@ Deno.test("cms apt: node title/text/flags write through resolved node", async ()
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "PUT", "/node/1/title", { value: "Hallo" }), { changed: true });
     assertEquals(await invoke(api, "PUT", "/node/1/text/main", { value: "Text", lang: "en" }), { changed: true });
-    assertEquals(await invoke(api, "PUT", "/node/1/visible", { value: "true" }), { ok: true });
+    assertEquals(await invoke(api, "PUT", "/node/1/visible", { value: true }), { ok: true });
     assertEquals(await invoke(api, "PUT", "/node/1/searchable", { value: false }), { ok: true });
   });
 

@@ -5,6 +5,16 @@ import { DbTable } from "./DbTable.ts";
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
 export const numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
+export const sqlMode = [
+  "ONLY_FULL_GROUP_BY",
+  // "STRICT_ALL_TABLES",     // future: requires explicit defaults for all required fields
+  "NO_ZERO_IN_DATE",
+  "NO_ZERO_DATE",
+  "ERROR_FOR_DIVISION_BY_ZERO",
+  "NO_ENGINE_SUBSTITUTION",
+  // "ANSI_QUOTES",          // future: use "..." for identifiers only, closer to SQL standard
+  // "NO_BACKSLASH_ESCAPES", // future: standard string escaping; requires replacing Db.quote()
+].join(",");
 
 export class Db {
   #tables: Record<string, DbTable> = {};
@@ -30,7 +40,7 @@ export class Db {
       connectionLimit: 10,
       timezone: "Z",
     });
-    this.#pool.on("connection", (c: any) => c.query("SET SESSION sql_mode = ''"));
+    this.#pool.on("connection", (c: any) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
   }
 
   // Zentrale Methode, query und exec nutzen die gleiche
@@ -66,7 +76,7 @@ export class Db {
   async init(): Promise<void> {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
-      await tmp.query(`CREATE DATABASE IF NOT EXISTS \`${this.#database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
+      await tmp.query(`CREATE DATABASE IF NOT EXISTS ${Db.escapeId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
     } finally {
       await tmp.end();
     }

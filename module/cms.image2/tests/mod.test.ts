@@ -1,14 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../../deps.ts";
-import { dbImage_html2 } from "../mod.ts";
+import { assertEquals } from "../../core/tests/deps.ts";
+import { cms_image2 } from "../mod.ts";
 import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
 
-Deno.test("cms.image2: dbImage_html2 renders escaped image component from cached data", async () => {
+Deno.test("cms.image2: cms_image2 renders escaped image component from cached data", async () => {
   const dir = await Deno.makeTempDir();
   try {
     await Deno.mkdir(dir + "/cache/");
     const md5 = "abc123";
-    const cacheFile = dir + `/cache/cms-image2-data-${md5}.45.55.320.180.50.22..json`;
+    const cacheFile = dir + `/cache/cms-image2-data-${md5}.45.55.320.180.42.30..json`;
     await Deno.writeTextFile(cacheFile, JSON.stringify({
       w: 320,
       h: 180,
@@ -30,14 +30,14 @@ Deno.test("cms.image2: dbImage_html2 renders escaped image component from cached
       url: (params: Record<string, unknown>) => "/dbFile?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString(),
     };
 
-    const out = await requestStorage.run(ctx, () => dbImage_html2(dbFile as any, {
+    const out = String(await requestStorage.run(ctx, () => cms_image2(dbFile as any, {
       width: 320,
       height: 180,
       alt: `<Alt>`,
       class: `hero"image`,
       loading: "lazy",
       css: { "object-fit": "cover" },
-    }));
+    })));
 
     assertEquals(out.includes('<cms-image2 style=";object-fit:cover; max-width:320px; background-image:url(data:image/png;base64,preview); background-position:55% 45%; --aspect-ratio:0.5625; "'), true);
     assertEquals(out.includes(' class="hero&quot;image"'), true);
@@ -49,12 +49,12 @@ Deno.test("cms.image2: dbImage_html2 renders escaped image component from cached
   }
 });
 
-Deno.test("cms.image2: dbImage_html2 derives alt text from file name", async () => {
+Deno.test("cms.image2: cms_image2 derives alt text from file name", async () => {
   const dir = await Deno.makeTempDir();
   try {
     await Deno.mkdir(dir + "/cache/");
     const md5 = "def456";
-    const cacheFile = dir + `/cache/cms-image2-data-${md5}.50.50.100.50.50.22.contain.json`;
+    const cacheFile = dir + `/cache/cms-image2-data-${md5}.50.50.100.50.42.30.contain.json`;
     await Deno.writeTextFile(cacheFile, JSON.stringify({
       w: 100,
       h: 50,
@@ -76,11 +76,11 @@ Deno.test("cms.image2: dbImage_html2 derives alt text from file name", async () 
       url: (params: Record<string, unknown>) => "/dbFile?" + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString(),
     };
 
-    const out = await requestStorage.run(ctx, () => dbImage_html2(dbFile as any, {
+    const out = String(await requestStorage.run(ctx, () => cms_image2(dbFile as any, {
       width: 100,
       height: 50,
       fit: "contain",
-    }));
+    })));
 
     assertEquals(out.includes("max=true"), true);
     assertEquals(out.includes('alt="product photo"'), true);

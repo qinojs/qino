@@ -124,21 +124,6 @@ export class DbTable {
     return ret;
   }
 
-  #valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): [string, unknown[]] {
-    const sqls: string[] = [], params: unknown[] = [];
-    for (const [field, Field] of Object.entries(this.#fields!)) {
-      if (!(field in values)) continue;
-      const value = Field.valueTransform(values[field]);
-      const ref = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
-      if (!isSet && value === null) {
-        sqls.push(`${ref} IS NULL`);
-        continue;
-      }
-      sqls.push(`${ref} = ?`);
-      params.push(value);
-    }
-    return [isSet ? sqls.join(", ") : sqls.join(" AND "), params];
-  }
   #valuesToSqls(values: Record<string, any>, alias?: string, isSet = false): string[] {
     const sqls: string[] = [];
     for (const [field, Field] of Object.entries(this.#fields!)) {
@@ -157,6 +142,22 @@ export class DbTable {
     return this.#valuesToSqls(values, alias, true).join(", ");
   }
 
+  #valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): [string, unknown[]] {
+    const sqls: string[] = [], params: unknown[] = [];
+    for (const [field, Field] of Object.entries(this.#fields!)) {
+      if (!(field in values)) continue;
+      const value = Field.valueTransform(values[field]);
+      const ref = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
+      if (!isSet && value === null) {
+        sqls.push(`${ref} IS NULL`);
+        continue;
+      }
+      sqls.push(`${ref} = ?`);
+      params.push(value);
+    }
+    return [isSet ? sqls.join(", ") : sqls.join(" AND "), params];
+  }
+
   async insert(values: Record<string, any> = {}): Promise<string | false> {
     const eBefore: any = { Table: this, data: values, returnValue: undefined };
     await this.#db.fire("table::insert-before", eBefore);
@@ -165,9 +166,7 @@ export class DbTable {
     const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
-    if (auto) {
-      values[String(auto)] = res.insertId;
-    }
+    if (auto) values[String(auto)] = res.insertId;
     const id = this.entryId(values);
     await this.#db.fire("table::insert-after", { Table: this, id, data: values });
     return id !== false ? String(id) : false;

@@ -4,8 +4,6 @@
  *
  * Ein verschachtelter Baum beschreibt die gesamte API.
  * Adapter (REST, LLM-Tools, RPC) werden on the fly abgeleitet.
- *
- * Siehe ../../apt-concept.md
  */
 
 import { Hono, type Context } from "../../../deps.ts";
@@ -16,28 +14,19 @@ import type { StandardSchema, StandardIssue } from "./StandardSchema.ts";
 
 // ───── Errors ─────────────────────────────────────────────────────────────
 
-export class AccessError extends Error {
-  status = 403;
-  constructor(message = "Access denied") { super(message); this.name = "AccessError"; }
+export class AptError extends Error {
+  constructor(public readonly status: number, message: string, public readonly issues?: readonly StandardIssue[]) {
+    super(message);
+    this.name = this.constructor.name;
+  }
 }
 
-export class NotFoundError extends Error {
-  status = 404;
-  constructor(message = "Not found") { super(message); this.name = "NotFoundError"; }
-}
-
-export class ConflictError extends Error {
-  status = 409;
-  constructor(message = "Conflict") { super(message); this.name = "ConflictError"; }
-}
-
-export class ValidationError extends Error {
-  status = 422;
-  issues: readonly StandardIssue[];
+export class AccessError extends AptError { constructor(message = "Access denied") { super(403, message); } }
+export class NotFoundError extends AptError { constructor(message = "Not found") { super(404, message); } }
+export class ConflictError extends AptError { constructor(message = "Conflict") { super(409, message); } }
+export class ValidationError extends AptError {
   constructor(issues: readonly StandardIssue[], where = "input") {
-    super(`Validation failed (${where})`);
-    this.name = "ValidationError";
-    this.issues = issues;
+    super(422, `Validation failed (${where})`, issues);
   }
 }
 
@@ -56,9 +45,7 @@ export interface Verb {
 
 export const staticAccessKey = Symbol("staticAccess");
 
-type StaticAccessFn = NonNullable<Verb["access"]> & { [staticAccessKey]: true };
-
-function staticAccess(fn: NonNullable<Verb["access"]>): StaticAccessFn {
+function staticAccess(fn: NonNullable<Verb["access"]>) {
   return Object.assign(fn, { [staticAccessKey]: true as const });
 }
 
@@ -90,6 +77,7 @@ export type Method = typeof VERBS[number];
 const VERB_SET = new Set<string>(VERBS);
 export const RESERVED = new Set<string>(["resolve", ...VERBS]);
 const BODY_METHODS = new Set<Method>(["post", "put", "patch"]);
+const shapeOf = (schema?: StandardSchema): Record<string, StandardSchema> => schema?.shape ?? {};
 
 // ───── Route derivation ───────────────────────────────────────────────────
 
@@ -99,6 +87,12 @@ interface Route {
   nodes: AptNode[];    // parallel to segments
   verb: Verb;
   name: string;        // camelCase: "createPageFile"
+}
+
+function routeParams(r: Route): [string, StandardSchema | undefined][] {
+  return r.segments.flatMap((seg, i) =>
+    seg.startsWith(":") ? [[seg.slice(1), r.nodes[i]?.paramSchema] as [string, StandardSchema | undefined]] : []
+  );
 }
 
 function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
@@ -130,9 +124,9 @@ function checkCollisions(r: Route): void {
     );
     seen.set(name, source);
   };
-  for (const s of r.segments) if (s.startsWith(":")) add(s.slice(1), "path");
-  for (const k of Object.keys(r.verb.input?.shape ?? {})) add(k, "input");
-  for (const k of Object.keys(r.verb.query?.shape ?? {})) add(k, "query");
+  for (const [name] of routeParams(r)) add(name, "path");
+  for (const k of Object.keys(shapeOf(r.verb.input))) add(k, "input");
+  for (const k of Object.keys(shapeOf(r.verb.query))) add(k, "query");
 }
 
 // ───── Core: invoke ───────────────────────────────────────────────────────
@@ -145,6 +139,7 @@ function validate(schema: StandardSchema, data: unknown, where: string): unknown
 
 const pick = (obj: Params, keys: readonly string[] = []): Params =>
   Object.fromEntries(keys.filter((k) => k in obj).map((k) => [k, obj[k]]));
+const asParams = (v: unknown): Params => v && typeof v === "object" ? v as Params : {};
 
 export async function invoke(tree: AptTree, method: string, path: string, rawParams: Params = {}): Promise<unknown> {
   const m = method.toLowerCase() as Method;
@@ -174,6 +169,9 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
 
   const ctx = getCtx();
   const params: Params = {};
+  const isSplit = "input" in rawParams || "query" in rawParams;
+  const input = isSplit ? asParams(rawParams.input) : rawParams;
+  const query = isSplit ? asParams(rawParams.query) : rawParams;
 
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
@@ -187,16 +185,16 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
 
   if (!verb.access) throw new AccessError("no access defined");
   if (!await verb.access(params, ctx)) throw new AccessError();
-  if (rawParams["_checkAccess"]) return { ok: true };
+  if (rawParams._checkAccess || input._checkAccess || query._checkAccess) return { ok: true };
 
-  for (const key of ["input", "query"] as const) {
-    const schema = verb[key];
-    if (!schema) continue;
-    const picked = pick(rawParams, Object.keys(schema.shape ?? {}));
-    for (const [k, fieldSchema] of Object.entries(schema.shape ?? {})) {
-      if (k in picked) picked[k] = coerce(picked[k], fieldSchema as StandardSchema);
-    }
-    Object.assign(params, validate(schema, picked, key));
+  if (verb.input) {
+    Object.assign(params, validate(verb.input, pick(input, Object.keys(shapeOf(verb.input))), "input"));
+  }
+  if (verb.query) {
+    const queryShape = shapeOf(verb.query);
+    const picked = pick(query, Object.keys(queryShape));
+    for (const [k, fieldSchema] of Object.entries(queryShape)) if (k in picked) picked[k] = coerce(picked[k], fieldSchema);
+    Object.assign(params, validate(verb.query, picked, "query"));
   }
   const result = await verb.execute(params, ctx);
 
@@ -215,9 +213,16 @@ function decodeSegment(s: string): string {
 function coerce(raw: unknown, schema: StandardSchema): unknown {
   if (raw == null) return raw;
   const kind = schema.kind === "optional" ? schema.inner?.kind : schema.kind;
-  if (kind === "array" && !Array.isArray(raw)) return [raw];
-  if (kind === "number") { const n = Number(raw); return typeof raw === "number" || Number.isNaN(n) ? raw : n; }
-  if (kind === "boolean") return raw === "true" || raw === "1" || raw === true;
+  const inner = schema.kind === "optional" ? schema.inner?.inner : schema.inner;
+  if (kind === "array" && Array.isArray(raw) && inner) return raw.map((v) => coerce(v, inner));
+  if (kind === "number" && typeof raw === "string") {
+    const s = raw.trim();
+    return /^[-+]?(?:\d+|\d*\.\d+)(?:e[-+]?\d+)?$/i.test(s) ? Number(s) : raw;
+  }
+  if (kind === "boolean" && typeof raw === "string") {
+    if (raw === "true" || raw === "1") return true;
+    if (raw === "false" || raw === "0" || raw === "") return false;
+  }
   return raw;
 }
 
@@ -226,30 +231,27 @@ function coerce(raw: unknown, schema: StandardSchema): unknown {
 export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
   for (const r of walk(tree)) checkCollisions(r);
   const handle = async (c: Context): Promise<Response> => {
-    const ctx = getCtx();
     const path = "/" + (c.req.param("path") || "");
-    const raw: Params = {};
+    const input: Params = {};
+    const query: Params = {};
     if (BODY_METHODS.has(c.req.method.toLowerCase() as Method)) {
       const body = await c.req.json().catch(() => ({}));
-      if (body && typeof body === "object") Object.assign(raw, body);
+      if (body && typeof body === "object") Object.assign(input, body);
     }
     const searchParams = new URL(c.req.url).searchParams;
     for (const key of new Set(searchParams.keys())) {
       const vals = searchParams.getAll(key);
-      raw[key] = vals.length === 1 ? vals[0] : vals;
+      query[key] = vals.length === 1 ? vals[0] : vals;
     }
+    if (!BODY_METHODS.has(c.req.method.toLowerCase() as Method)) Object.assign(input, query);
     try {
-      const result = await invoke(tree, c.req.method, path, raw);
-      if (result === undefined) ctx.responseStatus = 204;
-      throw new AnswerError(result === undefined ? {} : result as Record<string, unknown>);
+      const result = await invoke(tree, c.req.method, path, { input, query });
+      throw new AnswerError(result === undefined ? {} : result as Record<string, unknown>, result === undefined ? 204 : 200);
     } catch (e) {
-      if (e instanceof AnswerError)     throw e;
-      if (e instanceof ValidationError) { ctx.responseStatus = 422; throw new AnswerError({ error: e.message, issues: e.issues }); }
-      if (e instanceof AccessError)     { ctx.responseStatus = 403; throw new AnswerError({ error: e.message }); }
-      if (e instanceof NotFoundError)   { ctx.responseStatus = 404; throw new AnswerError({ error: e.message }); }
+      if (e instanceof AnswerError) throw e;
+      if (e instanceof AptError)    throw new AnswerError({ error: e.message, ...(e.issues && { issues: e.issues }) }, e.status);
       console.error("[apt]", e);
-      ctx.responseStatus = 500;
-      throw new AnswerError({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" });
+      throw new AnswerError({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" }, 500);
     }
   };
   app.all("/", handle);
@@ -276,16 +278,12 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
 
-    for (let i = 0; i < r.segments.length; i++) {
-      const seg = r.segments[i];
-      if (!seg.startsWith(":")) continue;
-      const paramSchema = r.nodes[i]?.paramSchema;
-      properties[seg.slice(1)] = paramSchema ? toJsonSchema(paramSchema) : { type: "string" };
-      required.push(seg.slice(1));
+    for (const [name, paramSchema] of routeParams(r)) {
+      properties[name] = paramSchema ? toJsonSchema(paramSchema) : { type: "string" };
+      required.push(name);
     }
     for (const schema of [r.verb.input, r.verb.query]) {
-      if (!schema?.shape) continue;
-      for (const [k, field] of Object.entries(schema.shape)) {
+      for (const [k, field] of Object.entries(shapeOf(schema))) {
         properties[k] = toJsonSchema(field);
         if (field.kind !== "optional" && !field.defaultValue) required.push(k);
       }
@@ -297,18 +295,12 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
       description: r.verb.description ?? r.name,
       parameters: hasParams ? { type: "object", properties, required } : {},
       execute: (args) => {
-        const raw = (args && typeof args === "object") ? { ...args as Params } : {};
-        for (let i = 0; i < r.segments.length; i++) {
-          const seg = r.segments[i];
-          if (!seg.startsWith(":")) continue;
-          const name = seg.slice(1);
-          const schema = r.nodes[i]?.paramSchema;
-          if (schema && name in raw) raw[name] = coerce(raw[name], schema);
-        }
+        const raw = { ...asParams(args) };
+        for (const [name, schema] of routeParams(r)) if (schema && name in raw) raw[name] = coerce(raw[name], schema);
         const concretePath = r.segments
           .map((seg) => seg.startsWith(":") ? String(raw[seg.slice(1)] ?? "") : seg)
           .join("/");
-        return invoke(tree, r.method, "/" + concretePath, raw);
+        return invoke(tree, r.method, "/" + concretePath, { input: raw, query: raw });
       },
     });
   }
@@ -331,10 +323,10 @@ export function aptClient(tree: AptTree): AptProxy {
         if (typeof prop !== "string" || prop === "then") return undefined;
         if (VERB_SET.has(prop) && node?.[prop]?.execute) {
           return (body?: unknown, query?: unknown) => {
-            const params: Params = {};
-            if (body  && typeof body  === "object") Object.assign(params, body);
-            if (query && typeof query === "object") Object.assign(params, query);
-            return invoke(tree, prop, "/" + pathSoFar.join("/"), params);
+            return invoke(tree, prop, "/" + pathSoFar.join("/"), {
+              input: asParams(body),
+              query: asParams(query),
+            });
           };
         }
         const child = node?.[prop];
@@ -350,4 +342,3 @@ export function aptClient(tree: AptTree): AptProxy {
   }
   return buildProxy(tree, []);
 }
-

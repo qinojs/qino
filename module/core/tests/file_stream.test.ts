@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "../../../deps.ts";
+import { assertEquals, assertRejects } from "./deps.ts";
 import { readUploadFile } from "../lib/fileStream.ts";
 
 Deno.test("fileStream: readUploadFile stores upload metadata and md5", async () => {

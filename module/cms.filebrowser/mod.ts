@@ -54,7 +54,7 @@ async function search(s_: string, ctx: any): Promise<any[]> {
         params.push(s_, "%" + s_ + "%", s_ + "%");
     }
 
-    sql += " GROUP BY f.id ORDER BY";
+    sql += " ORDER BY";
 
     if (s_) {
         sql +=
@@ -116,4 +116,3 @@ export const api: AptTree = {
         },
     },
 };
-

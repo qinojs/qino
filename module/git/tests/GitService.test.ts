@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "../../core/tests/deps.ts";
 import { findGitRoot, getLog, getStatus, getTags } from "../lib/GitService.ts";
 
 async function git(args: string[], cwd: string): Promise<number> {

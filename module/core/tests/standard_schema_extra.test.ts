@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "./deps.ts";
 import { s, toJsonSchema } from "../lib/StandardSchema.ts";
 
 Deno.test("StandardSchema: nested object/array issues include paths", () => {

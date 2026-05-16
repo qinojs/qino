@@ -18,7 +18,7 @@ const u2time = (t: unknown) => {
   const d = t instanceof Date ? t : typeof t === "number" ? new Date(t * 1000) : typeof t === "string" ? new Date(t) : null;
   if (!d || isNaN(d.getTime())) return "";
   const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
+  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 };
 export const needs = ["cms.backend", "error_report"];
 
@@ -72,23 +72,31 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     if (get.id) return await renderDetail(node, Number(get.id));
 
     const order    = get.order ?? "max_id";
-    const orderSql = order !== "num_ip" ? "max(e.id) DESC" : "num_ip DESC, num DESC";
+    const orderSql = order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
 
     const rows = await db.all(
-        `SELECT *,
-            count(*)                    AS num,
-            count(DISTINCT e.ip)        AS num_ip,
-            max(e.time)                 AS time,
-            sum(e.bot)                  AS num_bot,
-            sum(e.unsupported_ua)       AS num_unsupported,
-            (SELECT usr.email FROM log
-                LEFT JOIN sess ON log.sess_id = sess.id
-                LEFT JOIN usr  ON sess.usr_id = usr.id
-                WHERE log.id = max(e.log_id)) AS usr_email
-         FROM m_error_report e
-            LEFT JOIN log  ON e.log_id  = log.id
+        `SELECT e.*,
+            g.num,
+            g.num_ip,
+            g.time,
+            g.num_bot,
+            g.num_unsupported,
+            usr.email AS usr_email
+         FROM (
+            SELECT source, file, line, col,
+                max(id)                    AS max_id,
+                count(*)                   AS num,
+                count(DISTINCT ip)         AS num_ip,
+                max(time)                  AS time,
+                sum(bot)                   AS num_bot,
+                sum(unsupported_ua)        AS num_unsupported
+            FROM m_error_report
+            GROUP BY source, file, line, col
+         ) g
+            JOIN m_error_report e ON e.id = g.max_id
+            LEFT JOIN log  ON e.log_id   = log.id
             LEFT JOIN sess ON log.sess_id = sess.id
-         GROUP BY source, file, line, col
+            LEFT JOIN usr  ON sess.usr_id = usr.id
          ORDER BY ${orderSql}`
     );
 
@@ -96,6 +104,11 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 <script type=module>
 import { apt } from '${ctx.sysURL}core/pub/js/apt.js';
 globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+globalThis.reloadBtn = (vars, btn) => {
+    const pid = ${node.id};
+    if (btn) btn.disabled = true
+    apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+}
 </script>
 <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
     <div class="-head">Tools</div>
@@ -105,19 +118,19 @@ globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html
             : `<a href="?order=num_ip">nach Anzahl IPs sortieren</a><br>`}
         <br>
         Delete:<br>
-        <button onclick="cmsApi(${node.id},{delete:{bot:'1',source:'404'}}); this.disabled=true">404 und Bots</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{unsupported_ua:'1',source:'404'}}); this.disabled=true">404 und alte Browser</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{referer:'',source:'404'}}); this.disabled=true">404 kein Referer</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{bot:'1',source:'js'}}); this.disabled=true">js und Bots</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{unsupported_ua:'1',source:'js'}}); this.disabled=true">js und alte Browser</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{file:'',source:'js'}}); this.disabled=true">js kein File</button><br>
-        <button onclick="cmsApi(${node.id},{delete_foreign_js:true}); this.disabled=true">js, fremd</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{source:'404'}}); this.disabled=true">404 löschen</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{source:'net'}}); this.disabled=true">net löschen</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{source:'perf'}}); this.disabled=true">perf löschen</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{prio:'notice',source:'csp'}}); this.disabled=true">csp read-only</button><br>
-        <button onclick="cmsApi(${node.id},{delete:{prio:'notice'}}); this.disabled=true">Notizen</button><br>
-        <button onclick="cmsApi(${node.id},{deleteAll:1}); this.disabled=true">Alle Einträge löschen</button><br>
+        <button onclick="reloadBtn({delete:{bot:'1',source:'404'}},this);">404 und Bots</button><br>
+        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'404'}},this);">404 und alte Browser</button><br>
+        <button onclick="reloadBtn({delete:{referer:'',source:'404'}},this);">404 kein Referer</button><br>
+        <button onclick="reloadBtn({delete:{bot:'1',source:'js'}},this);">js und Bots</button><br>
+        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'js'}},this);">js und alte Browser</button><br>
+        <button onclick="reloadBtn({delete:{file:'',source:'js'}},this);">js kein File</button><br>
+        <button onclick="reloadBtn({delete_foreign_js:true},this);">js, fremd</button><br>
+        <button onclick="reloadBtn({delete:{source:'404'}},this);">404 löschen</button><br>
+        <button onclick="reloadBtn({delete:{source:'net'}},this);">net löschen</button><br>
+        <button onclick="reloadBtn({delete:{source:'perf'}},this);">perf löschen</button><br>
+        <button onclick="reloadBtn({delete:{prio:'notice',source:'csp'}},this);">csp read-only</button><br>
+        <button onclick="reloadBtn({delete:{prio:'notice'}},this);">Notizen</button><br>
+        <button onclick="reloadBtn({deleteAll:1},this);">Alle Einträge löschen</button><br>
     </div>
 </div>`;
 
@@ -318,16 +331,16 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
 
     return `
 <div class="beBoxCont" style="font-size:.95em">
-    <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="c1-box" style="overflow:auto; width:auto; flex:1 1 20rem">
         <div class="-head">Fehler</div>
         <div class="-body">
-            <h2>
+            <p>
                 <span style="color:red">${hee(error.source)} ${hee(error.prio)}:</span>
                 ${hee(error.message)}
-            </h2>
+            </p>
             ${fileBlock}
             <table class="c1-style">
-                <tr><th>Message<td>${hee(error.message)}<br><small>ID ${error.id}</small>
+                <tr><th>Id<td>${error.id}
                 <tr><th>Request<td>
                     <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
                     <small>Referer <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
@@ -342,18 +355,18 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
     </div>
 
     <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
-        <div class="-head">User</div>
-        <div class="-body">
-            ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : "(kein User)"}
-        </div>
-    </div>
-
-    <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
         <div class="-head">Backtrace</div>
         <table class="c1-style">
             <thead><tr><th>File<th>Function<th>Arguments
             <tbody>${btHtml}
         </table>
+    </div>
+
+    <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
+        <div class="-head">User</div>
+        <div class="-body">
+            ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : "(kein User)"}
+        </div>
     </div>
 
     <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
@@ -368,14 +381,18 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
 }
 
 export async function backendDashboardWidget(app: any): Promise<string> {
-  const db = app.db;
-  const rows = await db.all(
-    `SELECT prio, source, file, line, col, message, count(*) as num
-     FROM m_error_report
-     GROUP BY prio, source, file, line, col
-     ORDER BY FIELD(prio,'error','warning','notice'), max(id) DESC
-     LIMIT 5`
-  ).catch(() => [] as any[]);
+	  const db = app.db;
+	  const rows = await db.all(
+	    `SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
+	     FROM (
+	        SELECT prio, source, file, line, col, max(id) AS max_id, count(*) AS num
+	        FROM m_error_report
+	        GROUP BY prio, source, file, line, col
+	     ) g
+	     JOIN m_error_report e ON e.id = g.max_id
+	     ORDER BY FIELD(e.prio,'error','warning','notice'), g.max_id DESC
+	     LIMIT 5`
+	  ).catch(() => [] as any[]);
 
   if (!rows.length) return `<span style="color:green">&#10003; Keine Einträge</span>`;
 

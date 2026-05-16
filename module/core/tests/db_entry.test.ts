@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "./deps.ts";
 import { DbEntry, getEntryClass, registerEntryClass } from "../lib/DbEntry.ts";
 
 class CustomEntry extends DbEntry {}

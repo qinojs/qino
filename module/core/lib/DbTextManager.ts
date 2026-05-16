@@ -31,7 +31,7 @@ export class DbTextManager {
   }
 
   async generate(): Promise<DbText> {
-    const values: Record<string, unknown> = { lang: this.#app.languages.def };
+    const values: Record<string, unknown> = { lang: this.#app.languages.def, text: "" };
     await this.#db.table("text").insert(values);
     const id = Number(values.id);
     return this.text(id);

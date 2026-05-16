@@ -95,7 +95,7 @@ export function uid(length?: number): string {
 
 /* Error classes for control flow */
 export class AnswerError extends Error {
-  constructor(public data: Record<string, any>) { super("Answer"); }
+  constructor(public data: Record<string, any>, public status = 200) { super("Answer"); }
 }
 
 export class RedirectError extends Error {
@@ -174,4 +174,3 @@ export function sqlSearchHelper(
   }
   return { where: wheres.join(" AND "), order: orders.join(", "), whereParams, orderParams };
 }
-

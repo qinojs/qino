@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "../../core/tests/deps.ts";
 import { toTools } from "../../core/lib/apt.ts";
 import { api } from "../apt.ts";
 

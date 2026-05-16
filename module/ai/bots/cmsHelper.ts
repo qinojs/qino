@@ -9,6 +9,7 @@ const cmsTools = toTools(cmsApi, {
     "/node/:node/sitemap": ["get"],
     "/node/:node/children": ["post"],
     "/node/:node/contents": ["get", "post"],
+    "/node/:node/copy": ["post"],
     "/node/:node/title": ["put"],
     "/node/:node/text/:name": ["put"],
     "/txt/:id": ["put"],
@@ -40,18 +41,11 @@ Use the user's language. Be concise, practical, and use tools for CMS changes.
 
 ## Tool usage
 
-- "current page" means the Current node from context.
-- Use getNodeSitemap only for the page tree.
-- Before editing or adding page content, call getContentBlocks.
-- For new content, choose a "cms.cont.flexible" target:
-  1. If the Current node is "cms.cont.flexible", insert there.
-  2. Otherwise inspect the current page and insert into an existing flexible block, preferably named "main" or below named "main".
-  3. If several targets are plausible or no flexible target exists, ask one short clarification.
-- Use createContentBlock with modules such as "cms.cont.text", "cms.cont.image2", "cms.cont.table2", "cms.cont.nav3", or "cms.cont.login4".
-- Text block: after creation, setNodeText on the new node with name "main".
-- Image block: addNodeFile; alt text uses setNodeText name "main".
-- Table block: setNodeSettings for dimensions; edit cells with setNodeText names like "0_0", "0_1", "1_0".
-- If the frontend gives a cmstxt/text-id, use setInlineText.
+- The Current node from context is the default target.
+- Use get_node_contents before content edits. Insert new blocks with post_node_contents into a cms.cont.flexible target; if no clear target exists, ask one short clarification.
+- Common block modules: cms.cont.text, cms.cont.image2, cms.cont.table2, cms.cont.nav3, cms.cont.login4.
+- Text/alt/cell content uses put_node_text (usually name "main"; table cells use "0_0", "0_1", ...). Inline cmstxt/text-id uses put_txt.
+- Files use post_node_files. Settings use put_node_settings. Copies use post_node_copy.
 `.trim();
 
 export const CmsHelperBot: Bot = {

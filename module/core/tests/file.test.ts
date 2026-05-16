@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "./deps.ts";
 import { File } from "../lib/File.ts";
 
 Deno.test("File: contents read/write, basename, size and md5", async () => {

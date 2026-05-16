@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "./deps.ts";
 import { DbTable } from "../lib/DbTable.ts";
 
 function db() {

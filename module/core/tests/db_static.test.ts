@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "../../../deps.ts";
+import { assertEquals, assertThrows } from "./deps.ts";
 import { Db } from "../lib/Db.ts";
 
 Deno.test("Db.quote escapes SQL string literals", () => {

@@ -71,6 +71,7 @@ export class ModuleManager {
   }
 
   async add(spec: string): Promise<Module> {
+    console.warn("app.modules.add() is deprecated. Use app.import() instead.");
     const mod = await this.import(spec);
     if (mod.exports.dbSchema) await new DbSchema(this.#app.db).check(mod.exports.dbSchema);
     await mod.exports.init?.(this.#app);

@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "../../core/tests/deps.ts";
 import { RequestContext } from "../../core/lib/RequestContext.ts";
 import { backendDashboardWidget, cms, name, needs } from "../mod.ts";
 

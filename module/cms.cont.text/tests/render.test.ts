@@ -1,4 +1,4 @@
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "../../core/tests/deps.ts";
 import { cms, name, needs } from "../mod.ts";
 
 Deno.test("cms.cont.text: metadata is wired", () => {

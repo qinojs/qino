@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertRejects, assertThrows } from "../../../deps.ts";
+import { assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import {
   Access,
@@ -9,9 +9,11 @@ import {
   aptClient,
   invoke,
   isStaticAccess,
+  toHono,
   toTools,
 } from "../lib/apt.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
+import { AnswerError } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.lang = "de";
@@ -83,13 +85,17 @@ Deno.test("apt: invoke resolves path params and validates output", async () => {
   });
 });
 
-Deno.test("apt: invoke coerces input and query fields", async () => {
+Deno.test("apt: invoke keeps input strict and coerces query fields", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "POST", "/thing/1/update", {
-      title: "New",
-      count: "7",
-      enabled: "1",
-      preview: "true",
+      input: {
+        title: "New",
+        count: 7,
+        enabled: true,
+      },
+      query: {
+        preview: "true",
+      },
     }), {
       id: 1,
       title: "New",
@@ -97,21 +103,56 @@ Deno.test("apt: invoke coerces input and query fields", async () => {
       enabled: true,
       preview: true,
     });
+    assertEquals(await invoke(api, "POST", "/thing/1/update", {
+      input: {
+        title: "Off",
+        count: 2,
+      },
+      query: {
+        preview: "",
+      },
+    }), {
+      id: 1,
+      title: "Off",
+      count: 2,
+      enabled: false,
+      preview: false,
+    });
   });
 });
 
 Deno.test("apt: access and validation errors are typed", async () => {
   await withCtx(async () => {
     await assertRejects(() => invoke(api, "GET", "/thing/9"), NotFoundError);
+    await assertRejects(() => invoke(api, "GET", "/thing/2kb"), ValidationError);
     await assertRejects(() => invoke(api, "GET", "/closed"), AccessError);
     await assertRejects(() => invoke(api, "POST", "/thing/2/update", { title: "No", count: 1 }), AccessError);
-    await assertRejects(() => invoke(api, "POST", "/thing/1/update", { title: "Bad", count: "x" }), ValidationError);
+    await assertRejects(() => invoke(api, "POST", "/thing/1/update", { title: "Bad", count: "7" }), ValidationError);
+    await assertRejects(() => invoke(api, "POST", "/thing/1/update", { input: { title: "Bad", count: 7 }, query: { preview: "yes" } }), ValidationError);
   });
 });
 
 Deno.test("apt: _checkAccess returns before input validation", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "POST", "/thing/1/update", { _checkAccess: "1" }), { ok: true });
+  });
+});
+
+Deno.test("apt: Hono GET query params are available as input", async () => {
+  await withCtx(async () => {
+    const app = toHono({
+      search: {
+        get: {
+          access: Access.PUBLIC,
+          input: s.object({ q: s.string() }),
+          execute: ({ q }: any) => ({ q }),
+        },
+      },
+    });
+    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    const res = await app.request("/search?q=abc");
+    assertEquals(res.status, 200);
+    assertEquals(await res.json(), { q: "abc" });
   });
 });
 

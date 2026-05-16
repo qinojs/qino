@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "../../../deps.ts";
+import { assertEquals, assertRejects } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, AccessError, NotFoundError, aptClient, invoke, toTools } from "../lib/apt.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";

@@ -240,7 +240,7 @@ cms.console = {
 		el.classList.add('-active');
 		el.setAttribute('data-type',type);
 		el.c1ZTop();
-		el.firstElementChild.innerHTML = msg;
+		el.firstElementChild.textContent = msg;
 		clearTimeout(this.timeout);
 		this.timeout = setTimeout(()=>el.classList.remove('-active'), 2200);
 		setTimeout(()=>el.classList.add('-new')   , 1);
@@ -258,6 +258,10 @@ cms.console = {
 		return el;
 	}
 };
+
+apt.addEventListener('error', ({ detail }) => {
+	cms.console.show(detail.error?.message || 'Fehler beim API-Aufruf', 'error');
+});
 
 cms.frontend1.dialog = (title,body,buttons)=>{
 	c1.c1Use('dialog',()=>{

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../../deps.ts";
+import { assertEquals } from "./deps.ts";
 import { LangManager } from "../lib/LangManager.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
 
