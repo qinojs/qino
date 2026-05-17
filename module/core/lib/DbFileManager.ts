@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
 import * as nodeFs from "node:fs/promises";
-import { Hono } from "../../../deps.ts";
+import { Hono, typeByExtension } from "../../../deps.ts";
 import { File } from "./File.ts";
-import { typeByExtension } from "../../../deps.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
 import { getCtx } from "./RequestContext.ts";

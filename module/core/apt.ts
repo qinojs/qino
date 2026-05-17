@@ -2,18 +2,18 @@
 /**
  * Core API tree.
  *
- * The apt framework lives in ./lib/apt.ts. This file contains only concrete
+ * The apt framework lives in ./lib/apt/mod.ts. This file contains only concrete
  * core endpoints.
  */
 
 import { getCtx } from "./lib/RequestContext.ts";
-import { $item } from "../../deps.ts";
-import { Access, AccessError } from "./lib/apt.ts";
+import { $item, type Item } from "../../deps.ts";
+import { Access, AccessError, ConflictError, type AptTree } from "./lib/apt/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
 import { readSettings } from "./lib/settings.ts";
-import type { Item } from "../../deps.ts";
-import type { AptTree } from "./lib/apt.ts";
+
+const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"]");
 
 async function appSettingsRoot(path?: string[]): Promise<Item> {
   const ctx = getCtx();
@@ -60,80 +60,69 @@ export const api: AptTree = {
   },
 
   settings: {
-    get: {
-      description: "Read app settings",
-      access: Access.SUPERUSER,
-      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
-      execute: async ({ path }: any) => readSettings(await appSettingsRoot(path)),
-    },
-    put: {
-      description: "Set app settings",
-      access: Access.SUPERUSER,
-      input: s.object({
-        path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]"),
-        value: s.any().describe("Value to set (any JSON type)"),
-      }),
-      execute: async ({ path, value }: any) => {
-        await (await appSettingsRoot(path)).set(value);
-        return { ok: true };
+    ":path*": {
+      paramSchema: pathParam,
+      get: { description: "Read app settings at path", access: Access.SUPERUSER, execute: async ({ path }: any) => readSettings(await appSettingsRoot(path)) },
+      put: {
+        description: "Set app settings at path",
+        access: Access.SUPERUSER,
+        input: s.object({ value: s.any().describe("Value to set (any JSON type)") }),
+        execute: async ({ path, value }: any) => {
+          await (await appSettingsRoot(path)).set(value);
+          return { ok: true };
+        },
       },
-    },
-    delete: {
-      description: "Delete app settings at given path",
-      access: Access.SUPERUSER,
-      input: s.object({ path: s.array(s.string()).describe("Sub-path to delete, e.g. [\"foo\", \"bar\"]") }),
-      execute: async ({ path }: any) => {
-        await (await appSettingsRoot(path)).remove();
-        return { ok: true };
+      delete: {
+        description: "Delete app settings at path",
+        access: Access.SUPERUSER,
+        execute: async ({ path }: any) => {
+          if (!path?.length) throw new ConflictError("Cannot delete app settings root");
+          await (await appSettingsRoot(path)).remove();
+          return { ok: true };
+        },
       },
     },
   },
 
   "settings-schema": {
-    get: {
-      description: "Read app settings schema",
-      access: Access.SUPERUSER,
-      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
-      execute: async ({ path }: any) => (await appSettingsRoot(path)).schema ?? {},
+    ":path*": {
+      paramSchema: pathParam,
+      get: { description: "Read app settings schema at path", access: Access.SUPERUSER, execute: async ({ path }: any) => (await appSettingsRoot(path)).schema ?? {} },
     },
   },
 
   "ctx-settings": {
-    get: {
-      description: "Read user/session settings",
-      access: Access.USER,
-      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
-      execute: ({ path }: any) => readSettings(ctxSettingsRoot(path)),
-    },
-    put: {
-      description: "Set user/session settings",
-      access: Access.USER,
-      input: s.object({
-        path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]"),
-        value: s.any().describe("Value to set (any JSON type)"),
-      }),
-      execute: async ({ path, value }: any) => {
-        await ctxSettingsRoot(path).set(value);
-        return { ok: true };
+    ":path*": {
+      paramSchema: pathParam,
+      get: {
+        description: "Read user/session settings at path", 
+        access: Access.USER, 
+        execute: ({ path }: any) => readSettings(ctxSettingsRoot(path)) },
+      put: {
+        description: "Set user/session settings at path",
+        access: Access.USER,
+        input: s.object({ value: s.any().describe("Value to set (any JSON type)") }),
+        execute: async ({ path, value }: any) => {
+          await ctxSettingsRoot(path).set(value);
+          return { ok: true };
+        },
       },
-    },
-    delete: {
-      description: "Delete user/session settings at given path",
-      access: Access.USER,
-      input: s.object({ path: s.array(s.string()).describe("Sub-path to delete, e.g. [\"foo\", \"bar\"]") }),
-      execute: async ({ path }: any) => {
-        await ctxSettingsRoot(path).remove();
-        return { ok: true };
+      delete: {
+        description: "Delete user/session settings at path",
+        access: Access.USER,
+        execute: async ({ path }: any) => {
+          if (!path?.length) throw new ConflictError("Cannot delete user/session settings root");
+          await ctxSettingsRoot(path).remove();
+          return { ok: true };
+        },
       },
     },
   },
 
   "ctx-settings-schema": {
-    get: {
-      description: "Read user/session settings schema",
-      access: Access.USER,
-      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path, e.g. [\"foo\", \"bar\"]") }),
-      execute: ({ path }: any) => ctxSettingsRoot(path).schema ?? {},
+    ":path*": {
+      paramSchema: pathParam,
+      get: { description: "Read user/session settings schema at path", access: Access.USER, execute: ({ path }: any) => ctxSettingsRoot(path).schema ?? {} },
     },
   },
 };

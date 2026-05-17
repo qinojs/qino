@@ -1,11 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { getCookie, basePath } from "../../../deps.ts";
+import { getCookie, basePath, HTTPException, type Item, type ItemProxy, type Context } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
 import { uid } from "./util.ts";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { readUploadFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
-import type { Item, ItemProxy, Context } from "../../../deps.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import type { HonoRequest } from "npm:hono@4";
 
@@ -37,7 +36,7 @@ export class RequestContext {
   clientId: string | null = null;
   sessId: string | null = null;
   logId: string | null = null;
-
+  
   get userId(): number {
     return Number(this.session.liveUser() || 0);
   }
@@ -59,6 +58,10 @@ export class RequestContext {
       : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
   }
   #settingsRoot: Item | null = null;
+
+  get dev(): boolean {
+    return this.app.config.dev || !!this.settings.core.dev();
+  }
 
   entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; // braucht es den hier eigentlich?
@@ -93,16 +96,18 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
   const url = new URL(req.url);
 
   const ct = req.header("content-type") ?? "";
-  const rawBody: Record<string, unknown> = req.method === "POST"
-    ? (ct.includes("application/json") ? await req.json() : await req.parseBody())
-    : {};
+  
+  const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
+  if (Number(req.header("content-length") ?? "0") > maxSize) throw new HTTPException(413);
+
+  const rawBody: Record<string, unknown> = req.method === "POST" 
+    ? (ct.includes("application/json") ? await req.json() : await req.parseBody()) : {};
   const post: Record<string, unknown> = {};
   const files: Record<string, unknown> = {};
-  const uploadMaxFileSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
 
   for (const [key, val] of Object.entries(rawBody)) {
     if (val instanceof File) {
-      files[key] = await readUploadFile(val, { maxSize: uploadMaxFileSize });
+      files[key] = await readUploadFile(val, { maxSize });
     } else {
       post[key] = val;
     }

@@ -56,6 +56,7 @@ export const settingsSchema = {
 
 export const ctxSettingsSchema = {
     properties: {
+        dev: { type: "boolean" },
         lang_ns: {
             description: "Optionale Sprachvorgaben pro Namespace.",
             additionalProperties: { type: "string" },

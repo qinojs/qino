@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
-import { Access, AccessError, NotFoundError, aptClient, invoke, toTools } from "../lib/apt.ts";
+import { Access, AccessError, NotFoundError, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
 
 const fakeCtx = new RequestContext();

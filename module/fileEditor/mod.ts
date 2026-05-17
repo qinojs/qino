@@ -9,8 +9,7 @@ import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
 import { OutputError, assertAllowedPath } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
-import type { AptTree } from "../core/lib/apt.ts";
-import { Access } from "../core/lib/apt.ts";
+import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import codemirrorView from "./view/codemirror.ts";
 

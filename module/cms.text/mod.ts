@@ -7,8 +7,7 @@
 
 import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
-import type { AptTree } from "../core/lib/apt.ts";
-import { Access } from "../core/lib/apt.ts";
+import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.text";

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toTools } from "../../core/lib/apt.ts";
+import { toTools } from "../../core/lib/apt/mod.ts";
 import { api, init, name, needs } from "../mod.ts";
 
 Deno.test("cms.filebrowser: metadata and apt shape are wired", () => {

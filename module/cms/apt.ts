@@ -5,7 +5,7 @@
  */
 
 import { s } from "../core/lib/StandardSchema.ts";
-import { Access, AccessError, ConflictError, NotFoundError } from "../core/lib/apt.ts";
+import { Access, AccessError, ConflictError, NotFoundError } from "../core/lib/apt/mod.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { $item } from "../../deps.ts";
 import { readSettings } from "../core/lib/settings.ts";
@@ -14,6 +14,7 @@ import * as fns from "./apt-exports.ts";
 const nodeRead  = ({ node }: any) => node.access().then((a: number) => a >= 1);
 const nodeWrite = ({ node }: any) => node.access().then((a: number) => a >= 2);
 const nodeAdmin = ({ node }: any) => node.access().then((a: number) => a >= 3);
+const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
 // ───── Helpers ────────────────────────────────────────────────────────────
 
@@ -543,49 +544,34 @@ const node = {
   },
 
   settings: {
-    get: {
-      description: "Read page settings. Optional sub-path via path param",
-      access: nodeRead,
-      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]") }),
-      execute: ({ node, path }: any) => {
-        const item = node.settings[$item].sub(path ?? []);
-        return readSettings(item);
+    ":path*": {
+      paramSchema: settingsPath,
+      get: { description: "Read page settings at path", access: nodeRead, execute: ({ node, path }: any) => readSettings(node.settings[$item].sub(path)) },
+      put: {
+        description: "Set page settings at path",
+        access: nodeWrite,
+        input: s.object({ value: s.any().describe("Value to set (any JSON type)") }),
+        execute: async ({ node, path, value }: any) => {
+          node.settings[$item].sub(path).set(value);
+          return { ok: true };
+        },
       },
-    },
-    put: {
-      description: "Set page settings",
-      access: nodeWrite,
-      input: s.object({
-        path: s.optional(s.array(s.string())).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]"),
-        value: s.any().describe("Value to set (any JSON type)"),
-      }),
-      execute: async ({ node, path, value }: any) => {
-        node.settings[$item].sub(path ?? []).set(value);
-        return { ok: true };
-      },
-    },
-    delete: {
-      description: "Delete page settings at given path",
-      access: nodeWrite,
-      input: s.object({ path: s.array(s.string()).describe("Sub-path to delete, e.g. [\"theme\", \"color\"]") }),
-      execute: async ({ node, path }: any) => {
-        if (!path?.length) {
-          throw new ConflictError("Cannot delete page settings root");
-        }
-        await node.settings[$item].sub(path).remove();
-        return { ok: true };
+      delete: {
+        description: "Delete page settings at path",
+        access: nodeWrite,
+        execute: async ({ node, path }: any) => {
+          if (!path?.length) throw new ConflictError("Cannot delete page settings root");
+          await node.settings[$item].sub(path).remove();
+          return { ok: true };
+        },
       },
     },
   },
 
   "settings-schema": {
-    get: {
-      description: "Read page settings schema. Optional sub-path via path param",
-      access: nodeRead,
-      input: s.object({ path: s.optional(s.array(s.string())).describe("Sub-path within settings schema") }),
-      execute: ({ node, path }: any) => {
-        return node.settings[$item].sub(path ?? []).schema ?? {};
-      },
+    ":path*": {
+      paramSchema: settingsPath,
+      get: { description: "Read page settings schema at path", access: nodeRead, execute: ({ node, path }: any) => node.settings[$item].sub(path).schema ?? {} },
     },
   },
 

@@ -11,7 +11,7 @@ import {
   isStaticAccess,
   toHono,
   toTools,
-} from "../lib/apt.ts";
+} from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
 import { AnswerError } from "../lib/util.ts";
 
@@ -153,6 +153,47 @@ Deno.test("apt: Hono GET query params are available as input", async () => {
     const res = await app.request("/search?q=abc");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { q: "abc" });
+  });
+});
+
+Deno.test("apt: catchall params collect remaining path segments", async () => {
+  await withCtx(async () => {
+    const files = {
+      file: {
+        ":path*": {
+          paramSchema: s.array(s.string()),
+          get: {
+            access: Access.PUBLIC,
+            execute: ({ path }: any) => ({ path }),
+          },
+          put: {
+            access: Access.PUBLIC,
+            input: s.object({ value: s.any() }),
+            execute: ({ path, value }: any) => ({ path, value }),
+          },
+          delete: {
+            access: Access.PUBLIC,
+            execute: ({ path }: any) => ({ path }),
+          },
+        },
+      },
+    };
+    const app = toHono(files);
+    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    assertEquals(await invoke(files, "GET", "/file"), { path: [] });
+    assertEquals(await invoke(files, "GET", "/file/a/b"), { path: ["a", "b"] });
+    assertEquals(await (await app.request("/file")).json(), { path: [] });
+    assertEquals(await (await app.request("/file/a/b")).json(), { path: ["a", "b"] });
+    assertEquals(toTools(files)[0].parameters, {
+      type: "object",
+      properties: { path: { type: "array", items: { type: "string" } } },
+      required: [],
+    });
+    assertEquals(await invoke(files, "PUT", "/file/a/b", { input: { value: 1 } }), { path: ["a", "b"], value: 1 });
+    assertEquals(await invoke(files, "DELETE", "/file/a/b"), { path: ["a", "b"] });
+    assertEquals(await toTools(files)[0].execute({ path: ["a/b", "+<\""] }, ctx), { path: ["a/b", "+<\""] });
+    assertEquals(await aptClient(files).file.get(), { path: [] });
+    assertEquals(await aptClient(files).file(["a/b", "+<\""]).get(), { path: ["a/b", "+<\""] });
   });
 });
 

@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import type { AptTree } from "../core/lib/apt.ts";
-import { Access } from "../core/lib/apt.ts";
+import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 
 export const api: AptTree = {

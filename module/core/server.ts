@@ -1,4 +1,4 @@
-import { Hono, fromFileUrl, serveFile, basePath, matchedRoutes, type ItemProxy, type Context } from "../../deps.ts";
+import { Hono, HTTPException, fromFileUrl, serveFile, basePath, matchedRoutes, type ItemProxy, type Context } from "../../deps.ts";
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/RequestContext.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
 import { ensureSlash, appRequestUriToLocalPath, AnswerError, RedirectError, OutputError, OutputDoneError } from "./lib/util.ts";
@@ -8,7 +8,7 @@ import { createSettingItem } from "./lib/SettingItem.ts";
 import { DbTextManager } from "./lib/DbTextManager.ts";
 import { ModuleManager, type ModuleExports } from "./lib/ModuleManager.ts";
 import { LangManager } from "./lib/LangManager.ts";
-import { toHono, aptClient, type AptTree, type AptProxy } from "./lib/apt.ts";
+import { toHono, aptClient, type AptTree, type AptProxy } from "./lib/apt/mod.ts";
 import { initClient, initLog, touchSession } from "./lib/init.ts";
 import { authListen } from "./lib/auth.ts";
 
@@ -17,6 +17,7 @@ const mainDir:string = fromFileUrl(new URL(".", Deno.mainModule));
 const defaultConfig = {
     appPATH: mainDir,
     https: false,
+    dev: false,
     dbHost: "localhost",
     dbName: "",
     dbUser: "",
@@ -66,7 +67,6 @@ export class App {
         this.t         = this.languages.t;
 
         this.router.onError((e, hc) => this.#handleHonoError(hc, e));
-        this.router.get("/favicon.ico", () => new Response(null, { status: 204 }));
         this.router.use("*", async (_hc, next) => {
             await (this.#initPromise ??= this.modules.init());
             await next();
@@ -76,6 +76,7 @@ export class App {
         this.router.route("/dbFile", this.dbFiles.router);
         this.router.route("/api", toHono(this.aptTree));
         this.router.use("*", (hc, next) => this.#handleAppFallback(hc, next));
+        this.router.get("/favicon.ico", () => new Response(null, { status: 204 }));
     }
 
     get fetch(): (req: Request) => Response | Promise<Response> {
@@ -159,15 +160,18 @@ export class App {
         } else if (!(e instanceof RedirectError || e instanceof OutputDoneError)) {
             console.error("Error:", e);
             ctx.responseStatus = 500;
-            ctx.responseBody = "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>";
+            ctx.responseBody = ctx.dev
+                ? "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>"
+                : "<h1>500 Internal Server Error</h1>";
         }
     }
 
     async #handleHonoError(hc: Context, e: Error): Promise<Response> {
+        if (e instanceof HTTPException) return e.getResponse();
         const ctx = requestStorage.getStore();
         if (!ctx) {
             console.error("Error:", e);
-            return new Response("<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>", { status: 500 });
+            return new Response(this.config.dev ? "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>" : "<h1>500 Internal Server Error</h1>", { status: 500 });
         }
         this.#handleError(ctx, e);
         return await this.#buildResponse(hc, ctx);

@@ -1,12 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
-import type { StandardSchema } from "../core/lib/StandardSchema.ts";
-import { toJsonSchema } from "../core/lib/StandardSchema.ts";
+import { toJsonSchema, type StandardSchema } from "../core/lib/StandardSchema.ts";
 import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { VERBS, RESERVED, camelName, toTools, isStaticAccess, Access } from "../core/lib/apt.ts";
-import type { Method } from "../core/lib/apt.ts";
+import { VERBS, RESERVED, camelName, toTools, isStaticAccess, Access, type Method } from "../core/lib/apt/mod.ts";
 
 export const name = "cms.backend.api";
 export const needs = ["cms.backend"];

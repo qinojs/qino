@@ -35,6 +35,9 @@
 	background-color:#0099ff;
 	transform:translateX(60%);
 }
+.qgCMS_editmode_switch.-dev div {
+	background-color:#ff4444;
+}
 
 @media (max-width:1024px) {
 	.qgCMS_editmode_switch {

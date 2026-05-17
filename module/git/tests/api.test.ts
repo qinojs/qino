@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toTools } from "../../core/lib/apt.ts";
+import { toTools } from "../../core/lib/apt/mod.ts";
 import { addModule, api, getModuleGitInfo, init, name, needs } from "../mod.ts";
 
 Deno.test("git: module metadata and apt tools are wired", () => {

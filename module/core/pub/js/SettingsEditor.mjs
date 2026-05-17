@@ -2,106 +2,17 @@ import { apt } from "./apt.js";
 
 const opened = new Set();
 const itemJsBase = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/";
-const itemJs = import(itemJsBase + "item.js").catch((err) => {
-  console.warn("settings-editor: item.js unavailable", err);
-  return null;
-});
-const itemJsHtmlRenderer = import(itemJsBase + "tools/schema/render/html.js")
-  .then((mod) => mod.toInput)
-  .catch((err) => {
-    console.warn("settings-editor: item.js html renderer unavailable, using fallback", err);
-    return null;
-  });
+const itemJs = import(itemJsBase + "item.js");
+const itemJsHtmlRenderer = import(itemJsBase + "tools/schema/render/html.js").then((mod) => mod.toInput);
 
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"]/g, (char) => htmlEscapes[char]);
-}
+const escapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => escapes[c]);
 
-const htmlEscapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
-
-function splitPath(path) {
-  return Array.isArray(path)
-    ? path.filter((key) => typeof key === "string" && key)
-    : [];
-}
-
-function normalizeSource(source) {
-  if (!source || typeof source !== "object") {
-    throw new Error("Invalid settings source");
-  }
-  const path = splitPath(source.path);
-  if (source.kind === "node" || source.kind === "page") {
-    const id = Number(source.id ?? "");
-    if (!id) throw new Error("Missing node settings source id");
-    return { kind: "node", id, path };
-  }
-  if (source.kind === "app" || source.kind === "ctx") {
-    return { kind: source.kind, path };
-  }
-  throw new Error(`Unknown settings source "${String(source.kind)}"`);
-}
-
-
-function settingsApi(source, schema = false) {
-  const name = schema ? "settings-schema" : "settings";
-  if (source.kind === "app") return apt.core[name];
-  if (source.kind === "ctx") return apt.core[`ctx-${name}`];
-  return apt.cms.node(source.id)[name];
-}
-
-async function apiGet(source, path, schema = false) {
-  const fullPath = [...splitPath(source.path), ...splitPath(path)];
-  const body = fullPath.length ? { path: fullPath } : {};
-  return await settingsApi(source, schema).get(body);
-}
-
-async function apiWrite(method, source, path, value) {
-  const fullPath = [...splitPath(source.path), ...splitPath(path)];
-  const body = { path: fullPath, value };
-  const write = method === "DELETE" ? "delete" : method.toLowerCase();
-  return await settingsApi(source)[write](body);
-}
-
-async function settingsItem(data, schema) {
-  const mod = await itemJs;
-  if (!mod) return null;
-  const root = mod.item(data ?? {});
-  root.setSchema(schema ?? {});
-  return root;
-}
-
-async function inputHtml(schema, value, path) {
-  const toInput = await itemJsHtmlRenderer;
-  if (toInput) {
-    return toInput(schema ?? {}, {
-      value,
-      name: JSON.stringify(path),
-    });
-  }
-  return fallbackInputHtml(schema, value, path);
-}
-
-function fallbackInputHtml(schema, value, path) {
-  const name = escapeHtml(JSON.stringify(path));
-  const type = schema?.type ?? "";
-  if (type === "boolean") {
-    return `<input type="checkbox" name="${name}"${value ? " checked" : ""}>`;
-  }
-  if (Array.isArray(schema?.enum)) {
-    const options = schema.enum.map((option) => {
-      const selected = String(option) === String(value ?? "") ? " selected" : "";
-      return `<option value="${escapeHtml(option)}"${selected}>${escapeHtml(option)}`;
-    }).join("");
-    return `<select name="${name}">${options}</select>`;
-  }
-  if (type === "integer" || type === "number") {
-    return `<input type="number" name="${name}" value="${escapeHtml(value ?? "")}">`;
-  }
-  const str = String(value ?? "");
-  if (str.includes("\n")) {
-    return `<textarea name="${name}">${escapeHtml(str)}</textarea>`;
-  }
-  return `<input type="text" name="${name}" value="${escapeHtml(str)}">`;
+const aptPath = (endpoint) => endpoint.replace(/^\/api\//, "").split("/").filter(Boolean).reduce((a, k) => a[k], apt);
+function apiWrite(method, base, path, value) {
+  const api = path.reduce((a, k) => a[k], base);
+  const del = method === "DELETE";
+  return api[del ? "delete" : method.toLowerCase()](del ? {} : { value });
 }
 
 async function renderItems(item) {
@@ -133,7 +44,7 @@ async function renderItems(item) {
     html += "<span class=-inp>";
     html += objectNode
       ? `<input type="hidden" name="${escapeHtml(id)}">`
-      : await inputHtml(cs, child.get({ silent: true }), child.path);
+      : (await itemJsHtmlRenderer)(cs, { value: child.get({ silent: true }), name: JSON.stringify(child.path) });
     html += "</span>";
     html += `<span class=-rem><a>x</a></span>`;
     html += "</span>";
@@ -150,11 +61,7 @@ function isObjectItem(item) {
 
 function readInput(el) {
   if (el.type === "checkbox") return el.checked;
-  if (el.type === "number") {
-    if (el.value === "") return "";
-    const number = Number(el.value);
-    return Number.isNaN(number) ? el.value : number;
-  }
+  if (el.type === "number") { const n = Number(el.value); return el.value === "" || isNaN(n) ? el.value : n; }
   if (el.tagName === "SELECT") return el.options[el.selectedIndex].value;
   return el.value;
 }
@@ -167,25 +74,12 @@ function debounce(fn, delay) {
   };
 }
 
-class QgSettingsEditorViewElement extends HTMLElement {
-  connectedCallback() {
-    this.classList.add("qgSettingsEditor");
-    ensureSettingsEditorCss();
-  }
-}
-
-if (!customElements.get("qg-settings-editor")) {
-  customElements.define("qg-settings-editor", QgSettingsEditorViewElement);
-}
-
 class SettingsEditorElement extends HTMLElement {
   #loadedSource = null;
   #source = null;
   #item = null;
 
-  static get observedAttributes() {
-    return ["source"];
-  }
+  static observedAttributes = ["source"];
 
   connectedCallback() {
     this.addEventListener("change", (event) => this.#saveInput(event));
@@ -197,25 +91,21 @@ class SettingsEditorElement extends HTMLElement {
     this.#load();
   }
 
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (name === "source" && oldValue !== newValue && this.isConnected) {
-      this.#load();
-    }
+  attributeChangedCallback(_name, oldValue, newValue) {
+    if (oldValue !== newValue && this.isConnected) this.#load();
   }
 
   async #load() {
     const raw = this.getAttribute("source") ?? "";
     if (!raw || raw === this.#loadedSource) return;
     try {
-      this.#source = normalizeSource(JSON.parse(raw));
+      this.#source = aptPath(raw);
       this.#loadedSource = raw;
       this.innerHTML = "<em>Lade Einstellungen...</em>";
-      const [data, schema] = await Promise.all([
-        apiGet(this.#source, []),
-        apiGet(this.#source, [], true),
-      ]);
-      this.#item = await settingsItem(data, schema);
-      if (!this.#item) throw new Error("item.js unavailable");
+      const schemaApi = aptPath(raw + "-schema");
+      const [data, schema] = await Promise.all([this.#source.get(), schemaApi.get()]);
+      this.#item = (await itemJs).item(data ?? {});
+      this.#item.setSchema(schema ?? {});
       await this.#render();
     } catch (err) {
       console.error("settings-editor load failed", err);
@@ -226,18 +116,15 @@ class SettingsEditorElement extends HTMLElement {
   async #render() {
     ensureSettingsEditorCss();
     const html = await renderItems(this.#item);
-    this.innerHTML = `<qg-settings-editor>${html || "<em>Keine Einstellungen vorhanden.</em>"}</qg-settings-editor>`;
+    this.innerHTML = `<div class=qgSettingsEditor>${html || "<em>Keine Einstellungen vorhanden.</em>"}</div>`;
   }
 
   async #saveInput(event) {
     const el = event.target;
     if (!this.#source || !el?.name || el.type === "hidden") return;
     let path;
-    try {
-      path = JSON.parse(el.name);
-    } catch {
-      return;
-    }
+    try { path = JSON.parse(el.name); }
+    catch { return; }
     try {
       const value = readInput(el);
       await apiWrite("PUT", this.#source, path, value);
@@ -249,22 +136,17 @@ class SettingsEditorElement extends HTMLElement {
 
   async #click(event) {
     const toggle = event.target.closest(".toggle");
+    const remove = toggle ? null : event.target.closest(".-rem");
+    if (!toggle && !remove) return;
+    const row = (toggle ?? remove).closest(".-row");
+    const id = row?.dataset.path;
+    if (!id) return;
     if (toggle) {
-      const row = toggle.closest(".-row");
-      const id = row?.dataset.path;
-      if (!id) return;
-      if (opened.has(id)) opened.delete(id);
-      else opened.add(id);
+      if (opened.has(id)) opened.delete(id); else opened.add(id);
       await this.#render();
       return;
     }
-
-    const remove = event.target.closest(".-rem");
-    if (!remove) return;
     if (!confirm("Möchten Sie die Einstellung wirklich löschen?")) return;
-    const row = remove.closest(".-row");
-    const id = row?.dataset.path;
-    if (!id) return;
     const path = JSON.parse(id);
     try {
       await apiWrite("DELETE", this.#source, path);
@@ -276,16 +158,11 @@ class SettingsEditorElement extends HTMLElement {
   }
 }
 
-globalThis.QgSettingsEditorElement = SettingsEditorElement;
-
-if (!customElements.get("settings-editor")) {
-  customElements.define("settings-editor", SettingsEditorElement);
-}
+customElements.define("settings-editor", SettingsEditorElement);
 
 function ensureSettingsEditorCss() {
   if (document.getElementById("qgSettingsEditorCss")) return;
   const css = `
-qg-settings-editor { display:block; }
 .qgSettingsEditor {
   > ul {
     max-width:700px; background:#fff;
@@ -315,9 +192,7 @@ qg-settings-editor { display:block; }
   document.head.append(c1.dom.fragment("<style id=qgSettingsEditorCss>" + css + "</style>"));
 }
 
-function svgUrl(svg) {
-  return `url(data:image/svg+xml;utf8,${encodeURIComponent(svg)})`;
-}
+function svgUrl(svg) { return `url(data:image/svg+xml;utf8,${encodeURIComponent(svg)})`; }
 
 const remImgData =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg>';

@@ -1,5 +1,5 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { invoke, toTools } from "../../core/lib/apt.ts";
+import { invoke, toTools } from "../../core/lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
 import { api } from "../apt.ts";
 import { init, name, needs } from "../mod.ts";

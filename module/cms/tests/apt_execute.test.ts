@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { AccessError, NotFoundError, ValidationError, invoke } from "../../core/lib/apt.ts";
+import { AccessError, NotFoundError, ValidationError, invoke } from "../../core/lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
 import { api } from "../apt.ts";
 

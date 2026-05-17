@@ -7,24 +7,16 @@ export type SettingsSource = {
   id?: number;
 };
 
-function normalizeSettingsSource(source: SettingsSource): SettingsSource {
-  if (!source || typeof source !== "object") {
-    throw new Error("Invalid settings source");
-  }
+export function settingsSourceAttr(source: SettingsSource): string {
   const path = (source.path ?? []).filter((k) => typeof k === "string" && k);
   if (source.kind === "node" || source.kind === "page") {
     const id = Number(source.id ?? "");
     if (!id) throw new Error("Missing node settings source id");
-    return { kind: "node", id, path };
+    return hee(["/api/cms/node", id, "settings", ...path].join("/"));
   }
-  if (source.kind === "app" || source.kind === "ctx") {
-    return { kind: source.kind, path };
-  }
+  if (source.kind === "app") return hee(["/api/core/settings", ...path].join("/"));
+  if (source.kind === "ctx") return hee(["/api/core/ctx-settings", ...path].join("/"));
   throw new Error(`Unknown settings source "${String(source.kind)}"`);
-}
-
-export function settingsSourceAttr(source: SettingsSource): string {
-  return hee(JSON.stringify(normalizeSettingsSource(source)));
 }
 
 export function allowSettingsEditorAssets(ctx: RequestContext): void {

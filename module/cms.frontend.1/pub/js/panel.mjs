@@ -1,11 +1,10 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import "../../../core/pub/js/SettingsEditor.mjs?qgUniq=uploadMaxFileSize";
-import "./frontend.mjs?qgUniq=19aae46";
+import "../../../core/pub/js/SettingsEditor.mjs";
+import "./frontend.mjs";
 import { apt } from "../../../core/pub/js/apt.js";
 
 function setCtxSetting(value, path) {
   const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);
-  return apt.core["ctx-settings"].put({ path: p, value });
+  return apt.core["ctx-settings"](p).put({ value });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -533,7 +532,7 @@ c1.onElement(".qgCmsFront1DiversManager", (el) => {
     apt.cms.node(pid).name.put({ value: this.value });
   });
   el.c1Find(".-model").addEventListener("change", function () {
-    apt.core["ctx-settings"].put({ path: this.name ? this.name.split("/").filter(Boolean) : [], value: this.value });
+    setCtxSetting(this.value, this.name);
     cms.panel.loadWidget("divers", { pid });
   });
   el.c1Find(".-basis").addEventListener("blur", function () {

@@ -3,7 +3,7 @@ import * as GitService from "./lib/GitService.ts";
 import { fromFileUrl } from "../../deps.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
-import { Access } from "../core/lib/apt.ts";
+import { Access } from "../core/lib/apt/mod.ts";
 
 export const name = "git";
 export const needs: string[] = [];

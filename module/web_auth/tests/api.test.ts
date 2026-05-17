@@ -1,7 +1,6 @@
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { AccessError, invoke } from "../../core/lib/apt.ts";
+import { AccessError, invoke, toTools } from "../../core/lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
-import { toTools } from "../../core/lib/apt.ts";
 import { name, routes, settingsSchema } from "../mod.ts";
 
 function makeApp() {

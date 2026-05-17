@@ -7,8 +7,7 @@ import { hee } from "../core/lib/util.ts"
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
-import type { AptTree } from "../core/lib/apt.ts";
-import { Access, AccessError } from "../core/lib/apt.ts";
+import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
 
@@ -148,7 +147,7 @@ export function init(app: App) {
         settings.cms[lastKey](ctx.requestUri);
         const toggleUrl = await settings.cms[otherKey] ?? "";
         ctx.html.jsData.cmsBackendUrl = toggleUrl;
-        ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/init.js");
+        ctx.html.addJSM(ctx.sysURL + "cms.frontend.1/pub/js/init.mjs");
       }
     }
 
@@ -158,7 +157,7 @@ export function init(app: App) {
       g.csp["img-src"]["blob:"] = true;
       ctx.html.jsData.Page = node.id;
       ctx.html.jsData.qgCmsRequestedPage = app.cms.RequestedNode?.id;
-      ctx.html.jsData.qgDebugmode = (await ctx.user?.get?.("superuser")) ? "debug" : null;
+      if (await ctx.user?.get?.("superuser")) ctx.html.jsData.qino = { dev: ctx.dev || undefined };
       ctx.html.jsData.qgCmsEditmode = g.editmode;
 
       if (g.editmode) {

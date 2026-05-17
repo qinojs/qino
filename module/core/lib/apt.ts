@@ -9,8 +9,7 @@
 import { Hono, type Context } from "../../../deps.ts";
 import { getCtx, type RequestContext } from "./RequestContext.ts";
 import { AnswerError } from "./util.ts";
-import { toJsonSchema } from "./StandardSchema.ts";
-import type { StandardSchema, StandardIssue } from "./StandardSchema.ts";
+import { toJsonSchema, type StandardSchema, type StandardIssue } from "./StandardSchema.ts";
 
 // ───── Errors ─────────────────────────────────────────────────────────────
 

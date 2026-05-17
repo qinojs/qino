@@ -2,10 +2,9 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { login } from "../core/lib/auth.ts";
-import { Access, AccessError } from "../core/lib/apt.ts";
+import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import type { App } from "../core/server.ts";
-import type { AptTree } from "../core/lib/apt.ts";
 
 export const name = "web_auth";
 export { dbSchema };

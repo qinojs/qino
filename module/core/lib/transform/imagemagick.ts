@@ -70,15 +70,15 @@ export async function checkAvifSupport(): Promise<boolean> {
 
 /** Führt convert/magick [input, ...args, output] aus */
 export async function magick(input: string, args: string[], output: string): Promise<void> {
-  const { code, stderr } = await new Deno.Command(_convertCmd, {
+  const { code, stderr, stdout } = await new Deno.Command(_convertCmd, {
     args: [input, ...args, output],
     stdout: 'piped',
     stderr: 'piped',
   }).output();
   if (code !== 0) {
-    throw new Error(
-      `ImageMagick Fehler: ${new TextDecoder().decode(stderr).trim()}`,
-    );
+    const dec = new TextDecoder();
+    const msg = dec.decode(stderr).trim() || dec.decode(stdout).trim() || `exit code ${code}`;
+    throw new Error(`ImageMagick Fehler: ${msg}`);
   }
 }
 

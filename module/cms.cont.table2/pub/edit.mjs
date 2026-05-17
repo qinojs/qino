@@ -1,22 +1,21 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt } from '../../core/pub/js/apt.js';
+import { TableHandles } from '../../core/pub/js/c1/tableHandles.mjs';
 
-c1.c1Use('tableHandles', function() {
-	const handles = new c1.tableHandles();
-	let active, pid;
-	document.documentElement.addEventListener('focus', e => {
-		const el = e.target.closest('.-m-cms-cont-table2 > table > tbody > tr > td');
-		if (!el) return;
-		active = el;
-		handles.showTd(active);
-		pid = cms.el.pid(active);
-	}, true);
-	document.addEventListener('blur', () => handles.hide(), true);
-	handles.rowRemove.addEventListener('click', () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'rowRem', row: active.parentNode.rowIndex}); });
-	handles.rowAdd.addEventListener('click',    () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'rowAddAfter', row: active.parentNode.rowIndex}); });
-	handles.colRemove.addEventListener('click', () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'colRem', col: active.cellIndex}); });
-	handles.colAdd.addEventListener('click',    () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'colAddRight', col: active.cellIndex}); });
-});
+const handles = new TableHandles();
+let active, pid;
+document.documentElement.addEventListener('focus', e => {
+	const el = e.target.closest('.-m-cms-cont-table2 > table > tbody > tr > td');
+	if (!el) return;
+	active = el;
+	handles.showTd(active);
+	pid = cms.el.pid(active);
+}, true);
+document.addEventListener('blur', () => handles.hide(), true);
+handles.rowRemove.addEventListener('click', () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'rowRem', row: active.parentNode.rowIndex}); });
+handles.rowAdd.addEventListener('click',    () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'rowAddAfter', row: active.parentNode.rowIndex}); });
+handles.colRemove.addEventListener('click', () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'colRem', col: active.cellIndex}); });
+handles.colAdd.addEventListener('click',    () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'colAddRight', col: active.cellIndex}); });
 
 cms.initCont('cms.cont.table2', function(el) {
 	el.addEventListener('paste', e => {

@@ -10,10 +10,8 @@
 
 import dbSchema from "./dbschema.json" with { type: "json" };
 import type { App } from "../core/server.ts";
-import type { Context } from "../../deps.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
-import { urlToLocalPath, assertAllowedPath } from "../core/lib/util.ts";
-import type { RequestContext } from "../core/lib/RequestContext.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
+import { AnswerError, OutputDoneError, urlToLocalPath, assertAllowedPath } from "../core/lib/util.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
 await import(reporterPath);
@@ -33,23 +31,15 @@ export const settingsSchema = {
   },
 };
 
-export function routes(app: App): void {
-  app.router.all("/js-error", handleJsError);
-  app.router.all("/css-error", handleCssError);
-  app.router.all("/csp-error", handleCspError);
-}
-
-async function handleJsError(c: Context): Promise<Response> {
-  const ctx = c.get("ctx") as RequestContext;
+async function handleJsError(ctx: RequestContext): Promise<void> {
   const report = ctx.post as Report;
   if (report.message) {
     await addReport(ctx.app, { source: "js", ...report });
   }
-  return c.json({});
+  throw new AnswerError({});
 }
 
-async function handleCssError(c: Context): Promise<Response> {
-  const ctx = c.get("ctx") as RequestContext;
+async function handleCssError(ctx: RequestContext): Promise<void> {
   const file = ctx.req.header("referer");
   const message = ctx.get.message || "css-error";
   const report: Report = { source: "css", message, file, backtrace: [] };
@@ -70,11 +60,11 @@ async function handleCssError(c: Context): Promise<Response> {
     } catch { /* Datei nicht lokal zugänglich */ }
   }
   await addReport(ctx.app, report);
-  return new Response("", { status: 500 });
+  ctx.responseStatus = 500;
+  throw new OutputDoneError();
 }
 
-async function handleCspError(c: Context): Promise<Response> {
-  const ctx = c.get("ctx") as RequestContext;
+async function handleCspError(ctx: RequestContext): Promise<void> {
   const report = ctx.post["csp-report"] as Report;
   if (report) {
     const directive = report["effective-directive"] ?? report["violated-directive"] ?? "";
@@ -95,7 +85,7 @@ async function handleCspError(c: Context): Promise<Response> {
       prio: reportOnly ? "notice" : "warning",
     });
   }
-  return c.json({});
+  throw new AnswerError({});
 }
 
 async function addReport(app: any, vs: Report): Promise<void> {
@@ -128,6 +118,12 @@ export function init(app: App): void {
       await addReport(app, data);
     },
   };
+
+  app.on("action", ({ ctx }: any) => {
+    if (ctx.appRequestUri === "js-error")  return handleJsError(ctx);
+    if (ctx.appRequestUri === "css-error") return handleCssError(ctx);
+    if (ctx.appRequestUri === "csp-error") return handleCspError(ctx);
+  });
 
   app.on("render", async ({ ctx }: any) => {
     if (!ctx.hasHtml) return;

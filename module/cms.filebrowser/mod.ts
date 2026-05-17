@@ -3,8 +3,7 @@
 
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { s } from "../core/lib/StandardSchema.ts";
-import type { AptTree } from "../core/lib/apt.ts";
-import { Access } from "../core/lib/apt.ts";
+import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.filebrowser";

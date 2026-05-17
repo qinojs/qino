@@ -173,11 +173,12 @@ export class Node {
         if (!str) str = "<div></div>";
 
         const type = this.vs.type === "c" ? "Cont" : "Page";
-        let cls = `qgCms${type} -pid${this.id} -m-${this.module?.name.replace(/\./g, "-")}`;
+        const moduleName = this.module?.name ?? "";
+        let cls = `qgCms${type} -pid${this.id} -m-${moduleName.replace(/\./g, "-").replace(/[^\w-]/g, "")}`;
 
         if (this.edit) {
             cls += " -e";
-            if (this.module?.name.startsWith("cms.cont.flexible")) cls += " qgCMS-dropTarget";
+            if (moduleName.startsWith("cms.cont.flexible")) cls += " qgCMS-dropTarget";
             if (!(await this.isOnline())) cls += " qgCMS-offline";
         }
 
