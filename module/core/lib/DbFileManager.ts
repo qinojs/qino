@@ -97,6 +97,11 @@ export class DbFileManager {
 
     if ("as" in param && param["as"] === "text") mime = "text/plain";
 
+    // Security
+    if (/^(text\/html|application\/xhtml\+xml)/.test(mime)) mime = "text/plain";
+    if (mime === "image/svg+xml") headers.set("Content-Security-Policy", "script-src 'none'");
+    headers.set("X-Content-Type-Options", "nosniff");
+
     headers.set("Content-Type", mime);
 
     const outputStat = await Deno.stat(outputPath).catch(() => null);

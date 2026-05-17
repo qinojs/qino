@@ -249,15 +249,15 @@ export async function tableEntriesCopyTo(
     toSpace: number,
 ): Promise<void> {
     const Table   = db.table(tableName);
-    const where   = Table.valuesToWhere(filter);
+    const [where, whereParams] = Table.valuesToFragment(filter);
     const fromView = await view(db, tableName, fromSpace, fromLog);
     const toView   = await view(db, tableName, toSpace, 0);
 
     const oldEntries: Record<string, any> = {};
     const newEntries: Record<string, any> = {};
 
-    for (const e of await db.all(`SELECT * FROM \`${toView}\` WHERE ${where}`))   oldEntries[Table.entryId(e) as string] = e;
-    for (const e of await db.all(`SELECT * FROM \`${fromView}\` WHERE ${where}`)) newEntries[Table.entryId(e) as string] = e;
+    for (const e of await db.all(`SELECT * FROM \`${toView}\` WHERE ${where}`, whereParams))   oldEntries[Table.entryId(e) as string] = e;
+    for (const e of await db.all(`SELECT * FROM \`${fromView}\` WHERE ${where}`, whereParams)) newEntries[Table.entryId(e) as string] = e;
 
     const ctx = getCtx();
     const s = getCmsVers(ctx);

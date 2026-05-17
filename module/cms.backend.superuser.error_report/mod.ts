@@ -7,7 +7,6 @@
 
 import { hee, urlToLocalPath } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
-import { Db } from "../core/lib/Db.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
@@ -55,13 +54,14 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const get = ctx.get;
 
     if (vars.delete) {
-        const where = db.table("m_error_report").valuesToWhere(vars.delete);
-        if (where) await db.query(`DELETE FROM m_error_report WHERE ${where}`);
+        const [where, whereParams] = db.table("m_error_report").valuesToFragment(vars.delete);
+        if (where) await db.exec(`DELETE FROM m_error_report WHERE ${where}`, whereParams);
     }
     if (vars.delete_foreign_js) {
         const host = ctx.req.header("host") ?? "";
         await db.query(
-            "DELETE FROM m_error_report WHERE source = 'js' AND file NOT LIKE '/_%' AND file NOT LIKE ? AND file NOT LIKE ?", ["http://" + host + "%", "https://" + host + "%"]
+            "DELETE FROM m_error_report WHERE source = 'js' AND file NOT LIKE '/_%' AND file NOT LIKE ? AND file NOT LIKE ?",
+            ["http://" + host + "%", "https://" + host + "%"]
         );
     }
     if (vars.deleteAll) {
@@ -200,7 +200,7 @@ async function renderEntryList(node: Node, ctx: any, get: Record<string, string>
     const db = node.app.db;
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
-    const where = db.table("m_error_report").valuesToWhere({ source: get.source, file: get.file, line: get.line, col: get.col });
+    const [where, whereParams] = db.table("m_error_report").valuesToFragment({ source: get.source, file: get.file, line: get.line, col: get.col });
     if (!where) return "<div>Ungültige Parameter</div>";
 
     const rows = await db.all(
@@ -209,7 +209,7 @@ async function renderEntryList(node: Node, ctx: any, get: Record<string, string>
             LEFT JOIN log  ON e.log_id   = log.id
             LEFT JOIN sess ON log.sess_id = sess.id
             LEFT JOIN usr  ON sess.usr_id = usr.id
-         WHERE ${where} ORDER BY e.time DESC LIMIT 200`
+         WHERE ${where} ORDER BY e.time DESC LIMIT 200`, whereParams
     );
 
     let tableRows = "";
@@ -282,9 +282,10 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
     const historyOf = get.history_of ?? "ip";
     let historyWhere = "";
-    if      (historyOf === "ip"     && error.ip)       historyWhere = `log.ip_id IN (SELECT id FROM log_ip WHERE ip = ${Db.quote(error.ip)})`;
-    else if (historyOf === "sess"   && log?.sess_id)   historyWhere = `log.sess_id = ${Db.quote(log.sess_id)}`;
-    else if (historyOf === "client" && log?.client_id) historyWhere = `log.client_id = ${Db.quote(log.client_id)}`;
+    let historyParams: unknown[] = [];
+    if      (historyOf === "ip"     && error.ip)       { historyWhere = `log.ip_id IN (SELECT id FROM log_ip WHERE ip = ?)`; historyParams = [error.ip]; }
+    else if (historyOf === "sess"   && log?.sess_id)   { historyWhere = `log.sess_id = ?`;  historyParams = [log.sess_id]; }
+    else if (historyOf === "client" && log?.client_id) { historyWhere = `log.client_id = ?`; historyParams = [log.client_id]; }
 
     let historyRows = "";
     if (historyWhere) {
@@ -293,8 +294,9 @@ async function renderDetail(node: Node, id: number): Promise<string> {
              FROM log
                 LEFT JOIN log_url url     ON log.url_id     = url.id
                 LEFT JOIN log_url referer ON log.referer_id = referer.id
-             WHERE ${historyWhere} AND log.id <= ${Db.quote(error.log_id)}
-             ORDER BY log.id DESC LIMIT 30`
+             WHERE ${historyWhere} AND log.id <= ?
+             ORDER BY log.id DESC LIMIT 30`,
+            [...historyParams, error.log_id]
         ).catch(() => []);
 
         for (const item of logs) {

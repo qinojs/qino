@@ -109,10 +109,12 @@ export class DbTable {
   }
 
   async selectByID(id: any): Promise<Record<string, any> | undefined> {
-    const where = this.entryId2where(id);
+    const values = this.entryId2Array(id);
+    if (!values) return;
+    const [where, params] = this.valuesToFragment(values);
     if (!where) return;
-    const rows = await this.select(where);
-    return Object.values(rows)[0];
+    const rows = await this.#db.all(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${where}`, params);
+    return rows[0];
   }
   async select(v = "1", params: unknown[] = []): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
@@ -124,25 +126,7 @@ export class DbTable {
     return ret;
   }
 
-  #valuesToSqls(values: Record<string, any>, alias?: string, isSet = false): string[] {
-    const sqls: string[] = [];
-    for (const [field, Field] of Object.entries(this.#fields!)) {
-      if (!(field in values)) continue;
-      const v = Field.valueToSql(values[field]);
-      const f = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
-      const equal = !isSet && v === "NULL" ? " IS " : " = ";
-      sqls.push(f + equal + v);
-    }
-    return sqls;
-  }
-  valuesToWhere(values: Record<string, any>, alias?: string): string {
-    return this.#valuesToSqls(values, alias).join(" AND ");
-  }
-  valuesToSet(values: Record<string, any>, alias?: string): string {
-    return this.#valuesToSqls(values, alias, true).join(", ");
-  }
-
-  #valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): [string, unknown[]] {
+  valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): [string, unknown[]] {
     const sqls: string[] = [], params: unknown[] = [];
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
@@ -162,7 +146,7 @@ export class DbTable {
     const eBefore: any = { Table: this, data: values, returnValue: undefined };
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const [set, params] = this.#valuesToFragment(values, undefined, true);
+    const [set, params] = this.valuesToFragment(values, undefined, true);
     const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
@@ -183,11 +167,11 @@ export class DbTable {
     const eBefore: any = { Table: this, id, data: values, returnValue: undefined };
     await this.#db.fire("table::update-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const [set, setParams] = this.#valuesToFragment(values!, undefined, true);
+    const [set, setParams] = this.valuesToFragment(values!, undefined, true);
     if (set) {
       const whereValues = this.entryId2Array(id);
       if (!whereValues) return false;
-      const [where, whereParams] = this.#valuesToFragment(whereValues);
+      const [where, whereParams] = this.valuesToFragment(whereValues);
       if (!where) return false;
       const rows = await this.#db.exec(`UPDATE ${Db.escapeId(String(this))} SET ${set} WHERE ${where}`, [...setParams, ...whereParams]) as any;
       if (!rows) return false;
@@ -200,7 +184,7 @@ export class DbTable {
 
   async ensure(values: Record<string, any> = {}): Promise<string | false | undefined> {
     const whereValues = this.entryId2Array(values);
-    const where = whereValues ? this.#valuesToFragment(whereValues) : null;
+    const where = whereValues ? this.valuesToFragment(whereValues) : null;
     if (where?.[0] && await this.#db.row(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1])) {
       return this.update(values);
     } else {
@@ -237,7 +221,7 @@ export class DbTable {
     const eBefore: any = { Table: this, data: values, id, returnValue: undefined };
     await this.#db.fire("table::delete-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const where = values ? this.#valuesToFragment(values) : null;
+    const where = values ? this.valuesToFragment(values) : null;
     if (!where?.[0]) return false;
     const rows = await this.#db.exec(`DELETE FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1]) as any;
     if (!rows?.affectedRows) return undefined;
@@ -257,8 +241,13 @@ export class DbTable {
   }
 
   async deleteWhere(values: Record<string, any> | string): Promise<void> {
-    const where = typeof values === "string" ? values : this.valuesToWhere(values);
-    const rows = await this.select(where);
+    let rows: Record<string, Record<string, any>>;
+    if (typeof values === "string") {
+      rows = await this.select(values);
+    } else {
+      const [where, params] = this.valuesToFragment(values);
+      rows = where ? await this.select(where, params) : {};
+    }
     for (const row of Object.values(rows)) await this.delete(row);
   }
 
@@ -314,6 +303,23 @@ export class DbTable {
       Es[String(Entry)] = Entry;
     }
     return Es;
+  }
+
+  /** @deprecated unsafe, use valuesToFragment */
+  valuesToWhere(values: Record<string, any>, alias?: string): string {
+    const sqls: string[] = [];
+    for (const [field, Field] of Object.entries(this.#fields!)) {
+      if (!(field in values)) continue;
+      const v = Field.valueToSql(values[field]);
+      const f = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
+      const equal = v === "NULL" ? " IS " : " = ";
+      sqls.push(f + equal + v);
+    }
+    return sqls.join(" AND ");
+  }
+  /** @deprecated unsafe, use valuesToFragment */
+  valuesToSet(values: Record<string, any>, alias?: string): string {
+    return this.valuesToFragment(values, alias, true)[0];
   }
 
   // async addField(data: string | Record<string, any>): Promise<DbField | false> {

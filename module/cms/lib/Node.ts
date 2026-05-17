@@ -105,13 +105,14 @@ export class Node {
     }
 
     // Access control
-    #usrAccess: Record<number, number> = {};
-
     async access(user?: dbEntry_usr | null): Promise<number> {
-        user ??= getCtx().user;
+        const ctx = getCtx();
+        user ??= ctx.user;
         const usrId = Number(user);
-        this.#usrAccess[usrId] ??= await this.#calcUsrAccess(user);
-        return this.#usrAccess[usrId];
+        const cache: Record<string, number> = ctx.state.cmsAccessCache ??= {};
+        const key = `${this.id}:${usrId}`;
+        cache[key] ??= await this.#calcUsrAccess(user);
+        return cache[key];
     }
 
     async #calcUsrAccess(Usr?: dbEntry_usr | null): Promise<number> {
@@ -122,7 +123,7 @@ export class Node {
             const isUser = await Usr?.is?.();
             return isUser ? Math.max(parentAccess, await this.#usrAccessOnly(Usr)) : parentAccess;
         }
-        //if (!(await Usr.is())) return parseInt(this.vs.access) ? 1 : 0;
+
         if (!Usr) return Number(this.vs.access ?? "0") ? 1 : 0;
         const access = Math.max(Number(this.vs.access ?? "0"), await this.#usrAccessOnly(Usr));
         if (access === 3) return 3;
@@ -255,7 +256,8 @@ export class Node {
     get edit(): boolean {
         const ctx = getCtx();
         const usrId = Number(ctx.user);
-        const cachedAccess = this.#usrAccess[usrId] ?? 0;
+        const cache: Record<string, number> = ctx.state.cmsAccessCache ?? {};
+        const cachedAccess = cache[`${this.id}:${usrId}`] ?? 0;
         return cachedAccess > 1 && !!ctx.state.editmode;
     }
 

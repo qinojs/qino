@@ -4,15 +4,17 @@
  */
 
 import type { RequestContext } from "../../core/lib/RequestContext.ts";
+import type { CMS } from "./CMS.ts";
 
 
 export async function render(ctx: RequestContext): Promise<void> {
   const app = ctx.app;
   const db = ctx.app.db;
-  const cms = ctx.app.cms;
+  const cms: CMS = ctx.app.cms;
 
   let Page = await cms.nodeFromRequest();
-  if (!(await Page.is())) {
+
+  if (!Page.is()) {
     // Search for redirect
     const redirect = await db.one("SELECT redirect FROM page_redirect WHERE request = ?", [ctx.appRequestUri]);
     if (redirect) {

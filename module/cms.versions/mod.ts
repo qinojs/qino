@@ -143,8 +143,8 @@ export function init(app: App) {
             _vers_deleted: 1,
         };
         const VT = ctx.app.db.table(vt);
-        const set = VT.valuesToSet(data);
-        await ctx.app.db.query(`REPLACE INTO \`${vt}\` SET ${set}`);
+        const [set, params] = VT.valuesToFragment(data, undefined, true);
+        await ctx.app.db.exec(`REPLACE INTO \`${vt}\` SET ${set}`, params);
     });
 
     // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
@@ -183,8 +183,10 @@ export function init(app: App) {
     //             if (!fieldSpec[k]) liveData[k] = v;
     //         }
     //         if (Object.keys(liveData).length) {
-    //             const [set, params] = [e.Table.valuesToSet(liveData), Object.values(liveData)];
-    //             await ctx.app.db.query(`UPDATE \`${tableName}\` SET ${set} WHERE ${e.Table.entryId2where(e.id)}`);
+    //             const [set, setParams] = e.Table.valuesToFragment(liveData, undefined, true);
+    //             const idValues = e.Table.entryId2Array(e.id);
+    //             const [idWhere, idParams] = e.Table.valuesToFragment(idValues);
+    //             await ctx.app.db.exec(`UPDATE \`${tableName}\` SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
     //         }
     //     }
     //     const VT = ctx.app.db.table(`_vers_${tableName}`);
@@ -235,19 +237,16 @@ export function init(app: App) {
             if (key in e.data) liveData[key] = e.data[key];
         }
         if (!liveData) return;
-        const row = await ctx.app.db.row(
-            `SELECT * FROM page WHERE ${e.Table.entryId2where(e.id)}`
-        );
+        const idValues = e.Table.entryId2Array(e.id);
+        if (!idValues) return;
+        const [idWhere, idParams] = e.Table.valuesToFragment(idValues);
+        const row = await ctx.app.db.row(`SELECT * FROM page WHERE ${idWhere}`, idParams);
         if (!row) return;
         if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
         if (!Object.keys(liveData).length) return;
-        const set = e.Table.valuesToSet(liveData);
-        await ctx.app.db.query(
-            `UPDATE page       SET ${set} WHERE ${e.Table.entryId2where(e.id)}`
-        );
-        await ctx.app.db.query(
-            `UPDATE _vers_page SET ${set} WHERE ${e.Table.entryId2where(e.id)}`
-        );
+        const [set, setParams] = e.Table.valuesToFragment(liveData, undefined, true);
+        await ctx.app.db.exec(`UPDATE page       SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
+        await ctx.app.db.exec(`UPDATE _vers_page SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
     });
 
     // ─── history.php: vers_cms_page_changed ──────────────────────────────────
