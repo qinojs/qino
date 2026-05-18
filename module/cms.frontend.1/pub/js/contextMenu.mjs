@@ -152,7 +152,7 @@ TreeMenu.addItem('Löschen', {
 			} else {
 				const s = n.getPrevSibling() || n.getNextSibling() || n.parent;
 				n.remove();
-				s && s.activate();
+				s?.activate();
 			}
 		});
 	}

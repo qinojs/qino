@@ -245,7 +245,7 @@ const cmsTextService: any = {
     async isTranslated(txt_id: any, lang: any): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
-        if (lang === null) lang = this.ctx.lang;
+        lang ??= this.ctx.lang;
         const text = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, lang]);
         return !!(text && text !== "");
     },

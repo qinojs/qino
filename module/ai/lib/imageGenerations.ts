@@ -11,8 +11,8 @@ export async function imageGenerations(data: Record<string, unknown>, app: any):
 
   const postData: Record<string, unknown> = { ...data };
   delete postData._provider;
-  if (!postData.model) postData.model = "grok-imagine-image";
-  if (!postData.n) postData.n = 1;
+  postData.model ||= "grok-imagine-image";
+  postData.n ||= 1;
 
   const response = await fetch(provider.endpoint + "/images/generations", {
     method: "POST",

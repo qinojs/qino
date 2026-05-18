@@ -39,7 +39,7 @@ cms.contPos.prototype = {
 	},
 	mark(e) {
 		let _ = cms.contPos;
-		e && e.stopPropagation(); // verschachtelt
+		e?.stopPropagation(); // verschachtelt
 		_.active?.unmark();
 		//_.active && _.active.unmark();
 		if (_.moving || _.active === this /*|| this.el.classList.contains('qgCMS-dropTarget')*/) { _.active = null; return; }
@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 		cms.cont.active = p.active.pid;
 		cms.panel.set('sidebar', 'settings');
 	})
-	menu.addEventListener('mouseenter', e => p.active && p.active.mark(e) )
-	menu.addEventListener('mouseleave', e => p.active && p.active.unmarkDelay(e) )
+	menu.addEventListener('mouseenter', e => p.active?.mark(e) )
+	menu.addEventListener('mouseleave', e => p.active?.unmarkDelay(e) )
 	menu.addEventListener('click',     e => e.stopPropagation() );
 	menu.addEventListener('mousedown', e => e.stopPropagation() );
 

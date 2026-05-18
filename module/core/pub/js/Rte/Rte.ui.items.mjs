@@ -63,7 +63,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 	let check = function(el) {
 		let classes = getPossibleClasses(el);
 		for (let cl of Object.keys(classes)) {
-			hasClasses = hasClasses || useClass(cl);
+			hasClasses ||= useClass(cl);
 		}
 		sopts.parentElement.style.display = hasClasses ? '' : 'none';
 	}.c1Debounce(150);
@@ -71,7 +71,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 	let sopts = Rte.ui.setSelect('Style', {
 		check() {
 			check();
-			let classes = Rte.element && Rte.element.className.split(' ').filter(useClass).join(' ') || 'Style';
+			let classes = Rte.element?.className?.split(' ').filter(useClass).join(' ') || 'Style';
 			sopts.previousElementSibling.innerHTML = classes;
 		},
 		click() {
@@ -81,7 +81,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 			let classes = getPossibleClasses(el);
 			for (let sty of Object.keys(classes)) {
 				if (!useClass(sty)) return;
-				let has = el && el.classList.contains(sty);
+				let has = el?.classList?.contains(sty);
 				let d = c1.dom.fragment('<div class="'+sty+'">'+sty+'</div>').firstChild;
 				sopts.append(d);
 				has && d.classList.add('-selected');
@@ -387,7 +387,7 @@ import {TableHandles} from '../c1/tableHandles.mjs?qgUniq=bbcd4cc';
 		let e = Rte.element;
 		if (!e) return;
 		td = e.closest('td');
-		if (Rte.active && Rte.active.contains(td)) {
+		if (Rte.active?.contains(td)) {
 			tr = td.parentNode;
 			table = tr.closest('table');
 			index = td.cellIndex;
@@ -483,7 +483,7 @@ console.warn('needed? shoud it be deprecated?');
 
 
 	var matchText = function(node, regex, callback, excludeElements) {
-		excludeElements || (excludeElements = ['script', 'style', 'iframe', 'canvas']);
+		excludeElements ||= ['script', 'style', 'iframe', 'canvas'];
 		var child = node.firstChild;
 		while (child) {
 			if (child.nodeType === 1) {
@@ -531,7 +531,7 @@ console.warn('needed? shoud it be deprecated?');
 	function addMarks(){
 		if (!Rte.active) return;
 		Rte.active.querySelectorAll('br').forEach(br=>{
-			if (br.previousElementSibling?.classList.contains('-Br')) return;
+			if (br.previousElementSibling?.classList?.contains('-Br')) return;
 			const span = document.createElement('span');
 			span.className = 'qgRte-mark-char -Br';
 			br.before(span);

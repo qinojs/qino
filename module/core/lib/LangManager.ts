@@ -20,18 +20,6 @@ export class LangManager {
     get def(): string { return this.#langs[0] ?? "en"; }
     get all(): string[] { return this.#langs; }
 
-    // Sprache des Users (vor NS-Override)
-    getUsr(ctx?: any): string {
-        const c = ctx ?? getCtx();
-        return c?.langUsr || this.def;
-    }
-
-    // Aktueller Namespace
-    getNs(ctx?: any): string {
-        const c = ctx ?? getCtx();
-        return c?.langNs ?? "";
-    }
-
     // Initialisiert Sprache pro Request (wie L.init)
     async initCtx(ctx: any): Promise<void> {
         const usr = ctx.user;
@@ -56,22 +44,23 @@ export class LangManager {
         }
 
         ctx.lang = ctx.langUsr;
-        ctx.langNs = ctx.langNs ?? "";
-        ctx.langNsPath = ctx.langNsPath ?? [];
+        ctx.langNs ??= "";
+        ctx.langNsPath ??= [];
     }
 
-    async nsStart(ns: string, ctx?: any): Promise<void> {
+    nsStart(ns: string, ctx?: any): void {
         const c = ctx ?? getCtx();
         c.langNsPath.push(c.langNs);
         c.langNs = ns;
-        const nsLang = String(await c.settings.core.lang_ns[ns] ?? "");
-        c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : this.getUsr(c);
+        const nsLang = String(c.settings.core.lang_ns[ns]() ?? "");
+        c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : c.langUsr;
     }
 
     nsStop(ctx?: any): void {
         const c = ctx ?? getCtx();
         c.langNs = c.langNsPath.pop() ?? "";
-        c.lang = this.getUsr(c);
+        const nsLang = String(c.settings.core.lang_ns[c.langNs]?.() ?? "");
+        c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : c.langUsr;
     }
 
     // Sprache aus dem Browser-Header ermitteln

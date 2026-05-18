@@ -45,7 +45,7 @@ let end = function() {
 	if (!el.hasAttribute('target')) {
 		el.setAttribute('target', v.match(/^(cmspid|mailto)/) || v[0] === '#' ? '_self' : '_blank');
 	}
-	Rte.active && Rte.active.focus(); // always false? needed?
+	Rte.active?.focus(); // always false? needed?
 	Rte.trigger('input');
 };
 inp.addEventListener('blur',end);
@@ -64,7 +64,7 @@ Rte.ui.setItem('LinkInput', {
 Rte.ui.setItem('Link', {
 	click() {
 		let cEl = Rte.element;
-		let exists = cEl && cEl.closest('a');
+		let exists = cEl?.closest('a');
 		if (exists) {
 			exists.removeNode();
 		} else {
@@ -98,7 +98,7 @@ Rte.ui.setItem('Link', {
 			},1); // todo: why timeout?
 		}
 	},
-	check(el) { return el && el.matches('a, a > *'); },
+	check(el) { return el?.matches?.('a, a > *'); },
 	shortcut: 'k'
 });
 
@@ -155,7 +155,7 @@ let checkMedia = function(root) {
 			let ext = uri.pathname.replace(/.*\./,'');
 			if (!ext) continue;
 			if (el.tagName === 'IMG' || ['pdf','doc','xls','jpg','png','gif'].includes(ext)) {
-				if (!medias[uri]) medias[uri] = {els:[]};
+				medias[uri] ||= {els:[]};
 				medias[uri].els.push(el);
 				medias[uri].basename = uri.pathname.replace(/.*\//,'');
 				medias[uri].checked = true;
@@ -294,8 +294,8 @@ class ImageZoomer {
 
             self.w = self.ctx.width  * f;
             self.h = self.ctx.height * f;
-            self.x = self.x - (self.w/2);
-            self.y = self.y - (self.h/2);
+            self.x -= self.w/2;
+            self.y -= self.h/2;
 
             self.draw();
         });
@@ -314,8 +314,8 @@ class ImageZoomer {
             mousePos = {x: e.pageX, y: e.pageY};
             self.w = self.ctx.width  * f;
             self.h = self.ctx.height * f;
-            self.x = self.x + diff.x;
-            self.y = self.y + diff.y;
+            self.x += diff.x;
+            self.y += diff.y;
             self.draw();
         }
         function up() {

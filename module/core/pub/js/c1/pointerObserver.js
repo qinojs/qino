@@ -37,7 +37,7 @@ var Observer = function(el, options) {
             d.addEventListener('touchend' , stop);
 //	            d.addEventListener('touchstart', gstart);
 		}
-		self.onstart && self.onstart(e);
+		self.onstart?.(e);
 		touching = true;
 	},
 /* qg todo?
@@ -49,7 +49,7 @@ var Observer = function(el, options) {
 			var deltaY = pointer.pageY - finger2.pageY;
 			self.degStart = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
 			self.distStart = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
-			self.ongesturestart && self.ongesturestart(e);
+			self.ongesturestart?.(e);
 		}
 	},
 */
@@ -70,7 +70,7 @@ var Observer = function(el, options) {
 		        var dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
 				e.scale = dist / self.distStart;
 
-				self.ongesture && self.ongesture(e);
+				self.ongesture?.(e);
 			}
 
 			if (pointer.identifier !== self.identifier) return;
@@ -88,13 +88,13 @@ var Observer = function(el, options) {
     		y: self.pos.y-self.last.y,
 			time: self.pos.time - self.last.time,
     	};
-        self.onmove && self.onmove(e);
+        self.onmove?.(e);
 	},
 	stop = function(e) {
 		if (e.changedTouches) {
 			if (e.changedTouches[0].identifier !== self.identifier) return;
 		}
-		self.onstop && self.onstop(e);
+		self.onstop?.(e);
 		d.removeEventListener('mousemove', move);
 		d.removeEventListener('mouseup'  , stop);
 		d.removeEventListener('dragstart', stop);

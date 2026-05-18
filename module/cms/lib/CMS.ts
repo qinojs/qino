@@ -110,7 +110,7 @@ export class CMS {
     // deno-lint-ignore no-explicit-any
     async filter(Pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
         filter = Array.isArray(filter) ? filter : { ...filter };
-        if (!Array.isArray(filter) && !filter.type) filter.type = "p";
+        if (!Array.isArray(filter)) filter.type ||= "p";
         const ret: Map<number, Node> = new Map();
         for (const [id, C] of Pages) {
             const vs = C.vs;
@@ -195,10 +195,9 @@ export class CMS {
         const node = await this.node(Number(pid));
         const T = name === "title" ? await node.title() : await node.text(name);
         const tag = options.tag ?? "div";
-        if (options.contenteditable === undefined) options.contenteditable = node.edit;
+        options.contenteditable ??= node.edit;
         if (node.edit) {
-            if (options.contenteditable === undefined) options.contenteditable = true;
-            if (!options["cmstxt-placeholder"]) options["cmstxt-placeholder"] = name;
+            options["cmstxt-placeholder"] ||= name;
         }
         if (options.contenteditable || tag === "input" || tag === "textarea") {
             options.cmstxt = T.id;
@@ -239,7 +238,7 @@ export class CMS {
     }
 
     async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {
-        if (!lang) lang = getCtx().lang;
+        lang ||= getCtx().lang;
         for (const l of node.cms.app.languages.all) await node.file(name + " " + l);
         const file = await node.file(name + " " + lang);
         if (await file.exists()) return file;

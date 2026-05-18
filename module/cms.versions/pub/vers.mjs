@@ -140,8 +140,8 @@ CmsVersViewer.prototype = {
 		this.initialScrolltop = htmlEl.scrollTop || body.scrollTop;
 		body.appendChild(this.container);
 		if (window.innerWidth < 900) {
-			this.container.webkitRequestFullscreen && this.container.webkitRequestFullscreen();
-			this.container.requestFullscreen       && this.container.requestFullscreen();
+			this.container.webkitRequestFullscreen?.();
+			this.container.requestFullscreen?.();
 		}
 		this.container.focus()
 		this.container.c1ZTop();
@@ -208,7 +208,7 @@ CmsVersViewer.prototype = {
 				doc.documentElement.scrollTop = doc.body.scrollTop = scrollTop;
 				let els = doc.querySelectorAll('.-pid'+this.pid), el;
 				for (el of els) el.style.outline = '3px solid red';
-				el && el.scrollIntoView();
+				el?.scrollIntoView();
 			}
 			document.readyState === 'complete' ? ready() : doc.addEventListener('DOMContentLoaded',ready);
 			li.classList.remove('-loading');

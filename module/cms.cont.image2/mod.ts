@@ -33,7 +33,7 @@ async function render(node: Node, { ctx }: any) {
     const lUrl = await node.cms.url(settings["url_" + l]());
     if (ctx.lang === l && lUrl) url = lUrl;
   }
-  Img = Img ?? await node.file("image_" + ctx.lang);
+  Img ??= await node.file("image_" + ctx.lang);
 
   const tag = !node.edit && url ? "a" : "div";
   const hrefAttr = url ? ` href="${url}"` : "";

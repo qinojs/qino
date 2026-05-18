@@ -17,7 +17,7 @@ c1.scrollSync = {
             }
         };
         let doc = el.ownerDocument;
-        if (!doc.c1ScrollSyncConfig) doc.c1ScrollSyncConfig = {};
+        doc.c1ScrollSyncConfig ||= {};
         doc.c1ScrollSyncConfig[selector] = config;
         return { [selector] : config };
     },
@@ -49,7 +49,7 @@ c1.scrollSync = {
     },
     syncWindows(fromWindow, toWindow){
         let doc = fromWindow.document;
-        if (!doc.c1ScrollSyncTargetWindows) doc.c1ScrollSyncTargetWindows = [];
+        doc.c1ScrollSyncTargetWindows ||= [];
         doc.c1ScrollSyncTargetWindows.push(toWindow); // massive memory leak? use weekmap?
         fromWindow.addEventListener('scroll',scrollListener,true);
     },
@@ -62,7 +62,7 @@ c1.scrollSync = {
     },
     getConfig(win){
         var doc = win.document;
-        if (!doc.c1ScrollSyncConfig) doc.c1ScrollSyncConfig = {};
+        doc.c1ScrollSyncConfig ||= {};
         return doc.c1ScrollSyncConfig;
     }
 };

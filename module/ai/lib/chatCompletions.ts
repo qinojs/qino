@@ -29,10 +29,10 @@ export async function chatCompletions(data: Record<string, unknown>, app: any): 
       ? defaultModel || providerDefaultModel || provider.defaultModel || firstProviderModel
       : providerDefaultModel || provider.defaultModel || firstProviderModel || defaultModel;
   }
-  if (postData.temperature === undefined) postData.temperature = 0.6;
-  if (postData.max_tokens === undefined) postData.max_tokens = 5512;
-  if (postData.top_p === undefined) postData.top_p = 1;
-  if (postData.n === undefined) postData.n = 1;
+  postData.temperature ??= 0.6;
+  postData.max_tokens ??= 5512;
+  postData.top_p ??= 1;
+  postData.n ??= 1;
   postData.stream = false;
 
   let response: Response;

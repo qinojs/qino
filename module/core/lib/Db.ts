@@ -43,7 +43,6 @@ export class Db {
     this.#pool.on("connection", (c: any) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
   }
 
-  // Zentrale Methode, query und exec nutzen die gleiche
   async #exec<T extends RowDataPacket[] | ResultSetHeader>(sql: string, params?: unknown[], isQuery = false): Promise<T> {
     try {
       const [res] = isQuery ? await this.#pool.query<T>(sql, params) : await this.#pool.execute<T>(sql, params as any);
@@ -90,12 +89,9 @@ export class Db {
 
   get tables(): Record<string, DbTable> { return this.#tables; }
   get schema(): Record<string, any> { return this.#schema; }
+  set schema(schema: Record<string, any>) { this.#schema = schema; }
 
   table(name: string): DbTable { return this.#tables[name]; }
-
-  registerSchema(schema: Record<string, any>): void {
-    mergeSchema(this.#schema, schema);
-  }
 
   close = (): Promise<void> => this.#pool.end();
 
@@ -160,24 +156,4 @@ export class Db {
   //   await this.init();
   // }
 
-}
-
-function mergeSchema(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
-  for (const [key, value] of Object.entries(source ?? {})) {
-    if (Array.isArray(value)) {
-      const current = Array.isArray(target[key]) ? target[key] : [];
-      target[key] = [...new Set([...current, ...value])];
-    } else if (isRecord(value) && isRecord(target[key])) {
-      mergeSchema(target[key], value);
-    } else if (isRecord(value)) {
-      target[key] = mergeSchema({}, value);
-    } else {
-      target[key] = value;
-    }
-  }
-  return target;
-}
-
-function isRecord(value: unknown): value is Record<string, any> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
 }

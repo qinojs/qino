@@ -33,7 +33,7 @@ cms.el = {
 const proto = {
 	get(part)        { return this.parts[part]; },
 	set(part, value) { this.parts[part] = value; this.write(); return this; },
-	write()          { this.el && this.el.setAttribute('src', this.toString()); },
+	write()          { this.el?.setAttribute('src', this.toString()); },
 	toString() {
 		let src = '';
 		for (const part in this.parts) {
@@ -84,7 +84,7 @@ document.addEventListener('focus', e => {
 	let box;
 	if (input.getAttribute('type') === 'qgcms-page') box = abortableCombobox(input, apt.cms.nodes.get.bind(apt.cms.nodes));
 	if (input.getAttribute('type') === 'qgcms-file') box = abortableCombobox(input, apt.cms.files.get.bind(apt.cms.files));
-	box && box.onfocus(e);
+	box?.onfocus?.(e);
 }, true);
 
 // apt: save texts

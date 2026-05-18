@@ -44,7 +44,7 @@ window.Rte = {
 	manipulate(fn) {
 		setTimeout(function() {
 			getSelection().c1SetRange(Rte.range);
-			fn && fn();
+			fn?.();
 			Rte.checkSelection();
 	        Rte.trigger('input');
 			Rte.active.focus(); // firefox
@@ -186,7 +186,7 @@ document.addEventListener('mousedown', e =>
 {
 	let Cleaner;
 	Rte.on('input', function() {
-		if (!Cleaner) Cleaner = new c1.NodeCleaner();
+		Cleaner ||= new c1.NodeCleaner();
 		Cleaner.cleanContents(Rte.active, true);
 	});
 }

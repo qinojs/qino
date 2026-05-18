@@ -54,7 +54,7 @@ export function setLog(ctx: RequestContext, log: number): number {
 }
 /** setVers(ctx, [space,log]) — returns [oldSpace,oldLog] */
 export function setVers(ctx: RequestContext, spaceLog: [number, number] | null): [number, number] {
-    if (!spaceLog) spaceLog = [0, 0];
+    spaceLog ||= [0, 0];
     return [setSpace(ctx, spaceLog[0]), setLog(ctx, spaceLog[1])];
 }
 
@@ -136,7 +136,7 @@ export async function view(db: Db, tableName: string, space: number, log: number
     const name = `_vers_${log}_space_${space}_${tableName}`;
 
     const ctx = getCtx();
-    if (!ctx.state.versViews) ctx.state.versViews = new Set<string>();
+    ctx.state.versViews ||= new Set<string>();
 
     if (!ctx.state.versViews.has(name)) {
         // Build field list: versioned fields from shadow table, rest from live table.

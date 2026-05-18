@@ -152,8 +152,8 @@ export function init(app: App) {
     }
 
     if (access > 1) {
-      g.csp = g.csp ?? {};
-      g.csp["img-src"] = g.csp["img-src"] ?? {};
+      g.csp ??= {};
+      g.csp["img-src"] ??= {};
       g.csp["img-src"]["blob:"] = true;
       ctx.html.jsData.Page = node.id;
       ctx.html.jsData.qgCmsRequestedPage = app.cms.RequestedNode?.id;

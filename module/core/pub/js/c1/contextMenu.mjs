@@ -22,7 +22,7 @@ class MenuItem {
         root.addEventListener('contextmenu', e=>{
             const target = opt.selector ? e.target.closest(opt.selector) : root;
             if (!target) return;
-            opt.onshow && opt.onshow.bind(item)({currentTarget:target});
+            opt.onshow?.call?.(item, {currentTarget:target});
             menu.append(item);
             setTimeout(()=>item.remove(),10);
         },true);

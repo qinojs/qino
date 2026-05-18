@@ -9,7 +9,7 @@ var w = window,
 
 function onIn(e) {
     var el = e.target;
-	while (el && el.classList) {
+	while (el?.classList) {
 		el.classList.add('c1-focusIn');
 		el = el.parentNode
 	}

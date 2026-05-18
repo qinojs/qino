@@ -26,11 +26,11 @@ export default async function render(node: any): Promise<string> {
           const parts = rel.split("/").filter(Boolean);
           if (parts.length >= 1) {
             const p0 = parts[0];
-            if (!tree[p0]) tree[p0] = { size: 0, children: {} };
+            tree[p0] ||= { size: 0, children: {} };
             tree[p0].size += size;
             if (parts.length >= 2) {
               const p1 = parts[1];
-              if (!tree[p0].children[p1]) tree[p0].children[p1] = { size: 0, children: {} };
+              tree[p0].children[p1] ||= { size: 0, children: {} };
               tree[p0].children[p1].size += size;
             }
           }

@@ -80,7 +80,7 @@ cms.imgToDbFile = function(img, pid, cb) {
 	const complete = function(r) {
 		const load = function() {
             img.removeEventListener('load',load);
-			cb && cb(img);
+			cb?.(img);
 		};
         img.addEventListener('load',load);
         img.src = r.url;
@@ -122,9 +122,8 @@ window.onPasteFormatNode = function(node) {
 window.q9DataTransfer = class {
     constructor(dt){
         this.dt = dt;
-        this.types = dt.types;
-        this.files = dt.files || [];
-        if (this.types===undefined) this.types = ['url','text'];
+        this.types = dt.types ?? ['url','text'];
+        this.files = dt.files ?? [];
     }
     getData(type) {
         return this.dt.getData(type);
@@ -148,7 +147,7 @@ window.q9DataTransfer = class {
 
 window.q9ClipboardData = class {
     constructor(cd) {
-        this.items = cd.items || [];
+        this.items = cd.items ?? [];
     }
     q9GetHtml(cb) {
         let alternative = null;

@@ -104,13 +104,13 @@ c1.c1Use(['focusIn','onElement'],function(){ 'use strict';
         if (options.class) element.className += ' '+options.class;
 		var btnCont = element.c1Find('>.-foot>.-buttons');
 		element.addEventListener('submit',  function(e){ e.preventDefault(); });
-        options.buttons && options.buttons.forEach(function(btn, i){
+        options.buttons?.forEach?.(function(btn, i){
             var el = document.createElement('button');
             el.innerHTML = btn.title;
             el.style.margin = '.4em';
             el.style.minWidth = '5em';
             el.addEventListener('click',function(e){
-                btn.then && btn.then.call(this,e);
+                btn.then?.call?.(this,e);
                 element.focus(); // not needed in chrome
                 element.blur(); // ie11
                 element.remove();
@@ -139,8 +139,7 @@ c1.c1Use(['focusIn','onElement'],function(){ 'use strict';
         }
     };
 
-    c1.dialog.alert = function(body, options) {
-        if (options===undefined) options = {};
+    c1.dialog.alert = function(body, options = {}) {
         var dialog = new c1.dialog({
             title: options.title || 'Hinweis',
             body:body,

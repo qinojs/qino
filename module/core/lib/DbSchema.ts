@@ -35,7 +35,7 @@ export class DbSchema {
 
   async check(schema: DatabaseSchema): Promise<void> {
     await schemaToDb(schema, (sql: string) => this.#db.query(sql), { patch: true });
-    this.#db.registerSchema(schema);
+    this.#db.schema = schema;
     await this.#db.init();
     //await this.#syncPhysicalOptions(schema);
   }

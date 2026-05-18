@@ -13,9 +13,9 @@ window.qgfileUpload = async function(f, name, opt) {
 		formData.append(name, blob, fileName);
 		var xhr = new XMLHttpRequest();
 		xhr.open('POST', opt.url || location.href, true);
-		xhr.upload && (xhr.upload.onprogress = function(e) { opt.progress && opt.progress(e); } );
+		if (xhr.upload) xhr.upload.onprogress = function(e) { opt.progress?.(e); };
 		xhr.onload = function() {
-			opt.complete && opt.complete(xhr.responseText);
+			opt.complete?.(xhr.responseText);
 		};
 		xhr.send(formData);
 	}

@@ -31,8 +31,8 @@ c1.onElement = function(selector, options/*, disconnectedCallback*/) {
 	}
     while (el = els[i++]) {
         listener.elements.add(el);
-        listener.parsed    && listener.parsed.call(el, el);
-        listener.immediate && listener.immediate.call(el, el);
+        listener.parsed?.call?.(el, el);
+        listener.immediate?.call?.(el, el);
     }
 
     listeners.push(listener);
@@ -47,7 +47,7 @@ c1.onElement = function(selector, options/*, disconnectedCallback*/) {
 };
 function checkListener(listener, target) {
     var i=0, el, els = [];
-    target && target.matches(listener.selector) && els.push(target);
+    target?.matches?.(listener.selector) && els.push(target);
     if (loaded) { // ok? check inside node on innerHTML - only when loaded
         Array.prototype.push.apply(els, (target||root).querySelectorAll(listener.selector));
     }
@@ -55,8 +55,8 @@ function checkListener(listener, target) {
         if (listener.elements.has(el)) continue;
         listener.elements.add(el);
         //listener.connectedCallback.call(el, el);
-        listener.parsed    && listener.parsed.call(el, el);
-        listener.immediate && listener.immediate.call(el, el);
+        listener.parsed?.call?.(el, el);
+        listener.immediate?.call?.(el, el);
     }
 }
 function checkListeners(inside) {

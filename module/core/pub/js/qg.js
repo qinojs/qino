@@ -4,7 +4,7 @@ window.qg = {}; // needed?
 
 
 window.Ask = function(obj, opt) {
-	opt = opt || {};
+	opt ||= {};
 	Ask.trigger('start', obj);
 	const data = new FormData();
 	data.append('qgToken', qgToken);
@@ -114,7 +114,7 @@ window.$fn = function(fn) {
 $fn.runCollected = function() { $fn.run(); }.c1Debounce(5);
 $fn.stack = [];
 $fn.run = function(cb, options) {
-	if (!options) options = {};
+	options ||= {};
 	const fns = $fn.stack;
 	if (!fns.length) return;
 	const request = Ask({ serverInterface: fns },{

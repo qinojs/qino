@@ -140,7 +140,7 @@ window.cmsTreeInit = async (json) => {
 
   var pid = cms.cont.active || Page;
   cms.Tree.activateKey(pid + "");
-  cms.Tree.activeNode && cms.Tree.activeNode.expand();
+  cms.Tree.activeNode?.expand();
 
   /*edit*/
   var editInput = $(
@@ -171,7 +171,7 @@ window.cmsTreeInit = async (json) => {
     };
   };
   cms.Tree.goTo = (pid) => {
-    pid = pid + "";
+    pid = String(pid);
     //var node = cms.Tree.getNodeByKey(pid);
     apt.cms.tree.get({
       "in": pid,
@@ -181,7 +181,7 @@ window.cmsTreeInit = async (json) => {
       root.removeChildren();
       root.addChild(json);
       cms.Tree.activateKey(pid);
-      cms.Tree.activeNode && cms.Tree.activeNode.expand();
+      cms.Tree.activeNode?.expand();
     });
   };
   /* activate content (mark) */
@@ -233,7 +233,7 @@ apt.on("DELETE cms/node/:id", ({ params: { id } }) => {
   if (!node) return;
   if (cms.Tree.activeNode === node) {
     const nextActive = node.getPrevSibling() || node.getNextSibling() || node.parent;
-    nextActive && nextActive.activate();
+    nextActive?.activate();
   }
   node.remove();
 });

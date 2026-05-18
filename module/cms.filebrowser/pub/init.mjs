@@ -130,7 +130,7 @@ cms.fileBrowser = class {
             let items = {dbFiles:[], urls:[]};
             Array.from(elements).forEach(item=>{
                 let type = item.getAttribute('data-type')+'s';
-                items[type] = items[type] || [];
+                items[type] ||= [];
                 items[type].push(item.getAttribute('itemid'));
             });
             return items;

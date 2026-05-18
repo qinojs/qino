@@ -64,7 +64,7 @@ Deno.test("LangManager: namespace start/stop changes active language", async () 
     lang: "de",
     langNs: "",
     langNsPath: [],
-    settings: { core: { lang_ns: { admin: "en", ignored: "it" } } },
+    settings: { core: { lang_ns: { admin: () => "en", ignored: () => "it" } } },
   };
 
   await lm.nsStart("admin", ctx);
@@ -72,12 +72,34 @@ Deno.test("LangManager: namespace start/stop changes active language", async () 
   assertEquals(ctx.lang, "en");
   await lm.nsStart("ignored", ctx);
   assertEquals(ctx.langNs, "ignored");
-  assertEquals(ctx.lang, "de");
+  assertEquals(ctx.lang, "de"); // "it" not in langs, fallback to langUsr
   lm.nsStop(ctx);
   assertEquals(ctx.langNs, "admin");
-  assertEquals(ctx.lang, "de");
+  assertEquals(ctx.lang, "en"); // back to admin's lang, not langUsr
   lm.nsStop(ctx);
   assertEquals(ctx.langNs, "");
+  assertEquals(ctx.lang, "de"); // back to langUsr
+});
+
+Deno.test("LangManager: nested namespaces restore lang correctly", async () => {
+  const lm = new LangManager({});
+  lm.setLangs(["de", "en", "fr"]);
+  const ctx: any = {
+    langUsr: "de",
+    lang: "de",
+    langNs: "",
+    langNsPath: [],
+    settings: { core: { lang_ns: { outer: () => "en", inner: () => "fr" } } },
+  };
+
+  await lm.nsStart("outer", ctx);
+  assertEquals(ctx.lang, "en");
+  await lm.nsStart("inner", ctx);
+  assertEquals(ctx.lang, "fr");
+  lm.nsStop(ctx);
+  assertEquals(ctx.lang, "en"); // must restore outer's lang, not langUsr
+  lm.nsStop(ctx);
+  assertEquals(ctx.lang, "de");
 });
 
 Deno.test("LangManager: t inserts new smalltext and replaces placeholders", async () => {

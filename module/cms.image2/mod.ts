@@ -13,7 +13,7 @@ export async function cms_image2(dbFile: DbFile, options: Record<string, any>): 
   ctx.html.addJSFile(ctx.sysURL + "cms.image2/pub/cms-image2.js");
   ctx.html.addCSSFile(ctx.sysURL + "cms.image2/pub/cms-image2.css");
   if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return new HtmlString("");
-  if (!options["quality"]) options["quality"] = "85";
+  options["quality"] ||= "85";
   delete options["if"];
   return new HtmlString(await html(dbFile, options, ctx.app.appPATH));
 }
@@ -28,7 +28,7 @@ async function html(dbFile: DbFile, options: Record<string, any>, appPATH: strin
   const alt = String(options.alt ?? "").trim() || name2alt(String(await dbFile.get("name") ?? ""));
 
   const styles: Record<string, string> = { ...(options.css ?? {}) };
-  if (!styles["max-width"]) styles["max-width"] = w + "px";
+  styles["max-width"] ||= w + "px";
   styles["background-image"] = `url(${data.preview})`;
   styles["background-position"] = `${hpos}% ${vpos}%`;
   styles["--aspect-ratio"] = String(h / w);
@@ -85,15 +85,15 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
   if (ow) {
     const oRatio = ow / oh;
     if (!w && !h) { w = ow; h = oh; }
-    if (!w) w = Math.round(h * oRatio);
-    if (!h) h = Math.round(w / oRatio);
+    w ||= Math.round(h * oRatio);
+    h ||= Math.round(w / oRatio);
     if (options.fit === "contain") {
       if (w / h > oRatio) w = Math.round(h * oRatio);
       else h = Math.round(w / oRatio);
     }
   } else {
-    if (!w) w = 800;
-    if (!h) h = 600;
+    w ||= 800;
+    h ||= 600;
   }
 
   const preview = "";

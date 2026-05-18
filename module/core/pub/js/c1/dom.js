@@ -14,7 +14,7 @@ c1.dom.fragment = function(html){
 /* custom el properties */
 var poly = {
 	c1Id: function() {
-		return this.getAttribute('id') || (this.id = 'c1-gen-'+(autoId++));
+		return this.id ||= 'c1-gen-'+(autoId++);
 	},
 	c1FindAll: function(selector){
 		var elements = this.querySelectorAll('#'+this.c1Id()+' '+selector);

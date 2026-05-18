@@ -171,7 +171,7 @@ export class Node {
         const ctx = getCtx();
 
         let str = (await this.htmlRaw(vars) ?? "").trim();
-        if (!str) str = "<div></div>";
+        str ||= "<div></div>";
 
         const type = this.vs.type === "c" ? "Cont" : "Page";
         const moduleName = this.module?.name ?? "";

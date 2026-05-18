@@ -8,7 +8,7 @@ c1.loading = {
 		return ()=>{ for (let done of dones) done(); }
 	},
 	_markElement(el, {delay = 0, pointerEvents = false} = {}) {
-		if (el.loadingTasks===undefined) el.loadingTasks = 0;
+		el.loadingTasks ??= 0;
 		el.loadingTasks++;
 		if (el.loadingTasks === 1) { // new, already loading
 			el.c1Loading_oldCssText = el.style.cssText;

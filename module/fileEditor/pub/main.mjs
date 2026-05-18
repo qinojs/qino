@@ -56,6 +56,6 @@ if (cmLine !== '' && cmLine !== -1) {
 		editor.setCursor(cmLine, cmCol);
 		editor.addLineClass(cmLine, null, 'markLine');
 		const line = document.querySelector('.CodeMirror-lines .markLine');
-		line && line.scrollIntoView({ behavior: 'auto', block:'center'});
+		line?.scrollIntoView({ behavior: 'auto', block:'center'});
 	}, 200);
 }

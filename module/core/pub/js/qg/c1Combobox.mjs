@@ -69,9 +69,9 @@ c1Combobox.prototype = {
 		this.initOptions();
 	},
 	mark(el){
-		this.marked && this.marked.classList.remove('-marked');
+		this.marked?.classList?.remove('-marked');
 		this.marked = el;
-		el && el.classList.add('-marked');
+		el?.classList?.add('-marked');
 	},
 	select(el){
 		if (!el) return;

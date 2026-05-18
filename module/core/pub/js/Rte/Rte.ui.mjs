@@ -105,12 +105,12 @@ window.Rte.ui = {
 			opt.el.className = '-item -'+name;
 		}
 		if (opt.cmd) {
-			if (!opt.click && opt.click != false) opt.click = ()=>qgExecCommand(opt.cmd, false);
-			if (!opt.check && opt.check != false) opt.check = ()=>qgQueryCommandState(opt.cmd);
+			opt.click ??= ()=>qgExecCommand(opt.cmd, false);
+			opt.check ??= ()=>qgQueryCommandState(opt.cmd);
 		}
 		const enable = opt.enable;
 		if (enable && enable.toLowerCase) {
-			opt.enable = el => el && el.matches(enable);
+			opt.enable = el => el?.matches?.(enable);
 			// opt.enable = el => { // todo?
 			// 	if (!el) return false;
 			// 	let target = el.closest(enable);

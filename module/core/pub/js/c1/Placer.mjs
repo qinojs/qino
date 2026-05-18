@@ -75,7 +75,7 @@ c1.Placer = class {
             //if (position !== 'absolute') this.el.style.position = 'absolute';
             let root = c1.Placer.offsetParent(this.el);
             if (root) {
-                if (!root) root = document.documentElement;
+                root ||= document.documentElement;
                 viewport = root.getBoundingClientRect();
                 rect = {
                     top:    rect.top    - viewport.top,

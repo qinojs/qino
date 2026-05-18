@@ -46,7 +46,7 @@ c1.form = {
         return el.value;
     },
     fileDialog: function(options){ // todo: polyfill and use showOpenFilePicker()
-        if (!options) options = {};
+        options ||= {};
         options = Object.assign({
             multiple: true,
             accept: '',

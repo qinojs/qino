@@ -17,13 +17,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!widgetEl) return;
     c1.c1Use("loading", (loading) => {
       loading.mark(widgetEl);
-      if (!params) params = {};
-      params.pid = params.pid || cms.cont.active || Page; // neu
+      params ||= {};
+      params.pid ||= cms.cont.active || Page; // neu
       apt['cms.frontend.1'].widget(widget).post({ params }).then((res) => {
         loading.done(widgetEl);
         //widgetEl.innerHTML = res; // scripts are not executed :(
         $(widgetEl).html(res);
-        cb && cb({ target: $(widgetEl) });
+        cb?.({ target: $(widgetEl) });
       });
     });
   };
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
       cms.panel.toggle("sidebar", "add");
       setTimeout(() => {
         const inp = el.c1Find('[widget="add"] .-h1 > input');
-        inp && inp.focus();
+        inp?.focus();
       }, 700);
     }
     if (e.key == "Escape") {
@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", function () {
       cms.panel.set("sidebar", "tree");
       setTimeout(() => {
         const inp = el.c1Find("#cmsPageAddInp");
-        inp && inp.focus();
+        inp?.focus();
       }, 700);
     }
   });
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
     cms.cont.active = this.id;
     cms.panel.get("widget").set(what, 1);
     cms.panel.set("sidebar", "settings");
-    cms.Tree && cms.Tree.goTo(this.id);
+    cms.Tree?.goTo(this.id);
   };
 
   !document.querySelector(".-e.qgCMS-dropTarget") &&
@@ -383,7 +383,7 @@ c1.onElement(".qgCmsFront1AccessGrpManager", (el) => {
     cms.panel.get("widget").set("access.grp", 1);
   });
   const searchInp = el.c1Find(".-search");
-  searchInp && searchInp.addEventListener(
+  searchInp?.addEventListener(
     "keyup",
     function () {
       cms.panel.loadWidget("access.grp.list", { pid, search: this.value });
@@ -403,7 +403,7 @@ c1.onElement(".qgCmsFront1AccessGrpManager", (el) => {
 c1.onElement(".qgCmsFront1AccessUsrManager", (el) => {
   const pid = el.getAttribute("pid");
   const searchInp = el.c1Find(".-search");
-  searchInp && searchInp.addEventListener(
+  searchInp?.addEventListener(
     "keyup",
     function () {
       cms.panel.loadWidget("access.usr.list", { pid, search: this.value });
@@ -630,7 +630,7 @@ c1.onElement(".qgCMSFron1ContManager", (el) => {
   });
   // übergeordnet
   const editparent = el.c1Find(".-editparent");
-  editparent && editparent.addEventListener("click", function (e) {
+  editparent?.addEventListener("click", function (e) {
     const pid = this.getAttribute("parent");
     const type = this.getAttribute("page-type");
     if (type !== "p") {
@@ -691,8 +691,7 @@ c1.ext({
   get(n) {
     return this.data[n];
   },
-  toggle(n, v1, v2) {
-    if (v2 === undefined) v2 = "";
+  toggle(n, v1, v2 = "") {
     this.set(n, this.data[n] === v1 ? v2 : v1);
   },
   getAll() {

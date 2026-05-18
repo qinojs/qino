@@ -45,13 +45,13 @@ Math.c1Limit = function(number,min,max) {
     return Math.min( Math.max( parseFloat(min) , parseFloat(number) ), parseFloat(max) );
 };
 
-w.c1 = w.c1 || {};
+w.c1 ||= {};
 
 /* eventer */
 c1.Eventer = {
     _getEvents : function(n) {
-        !this._Es && (this._Es={});
-        !this._Es[n] && (this._Es[n]=[]);
+        this._Es ||= {};
+        this._Es[n] ||= [];
         return this._Es[n];
     },
 	on: function(ns, fn) {
@@ -79,7 +79,7 @@ c1.Eventer = {
 };
 /* ext */
 c1.ext = function (src, target, force, deep) {
-    target = target || {};
+    target ||= {};
     for (k in src) {
     	if (!src.hasOwnProperty(k)) continue;
         if (force || target[k] === undf) {
@@ -105,10 +105,10 @@ w.c1Use = function (prop_or_opts, cb) {
 	var scope = prop_or_opts.scope || this || self;
 	var prop = prop_or_opts.property || prop_or_opts;
     if (prop in scope && scope[prop] !== void 0) { // loadet? // (test if it is the depencency setter)
-    	cb && cb.call(scope, scope[prop]);
+    	cb?.call(scope, scope[prop]);
 		return scope[prop];
     }
-	var callbacks = scope[CALLBACKS] || ( scope[CALLBACKS] = {} );
+	var callbacks = scope[CALLBACKS] ||= {};
 	if (callbacks[prop] && cb) { // is it loading? (and async zzz)
 	    callbacks[prop].push(cb);
 	} else { // load!
@@ -187,7 +187,7 @@ c1Use = function (use) {
         var scope = this;
         var p = new Promise(function(resolve, reject) {
             use.call(scope, props, function(){
-                cb && cb.apply(scope, arguments);
+                cb?.apply(scope, arguments);
                 resolve(arguments);
                 //reject('todo');
             });
