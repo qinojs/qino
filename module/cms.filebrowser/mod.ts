@@ -81,15 +81,13 @@ async function search(s_: string, ctx: any): Promise<any[]> {
         if (!await dbFile.access()) continue;
 
         const md5 = vs.md5 as string;
-        if (!res[md5]) {
-            res[md5] = {
-                id: vs.id,
-                mime: vs.mime,
-                url: await dbFile.url({}),
-                name: dbFile.name,
-                pages: {} as Record<string, string>,
-            };
-        }
+        res[md5] ||= {
+            id: vs.id,
+            mime: vs.mime,
+            url: await dbFile.url({}),
+            name: dbFile.name,
+            pages: {} as Record<string, string>,
+        };
         if (Page) {
             const title = await Page.title();
             res[md5].pages[String(Page.id)] = await title.string() ?? String(Page.id);

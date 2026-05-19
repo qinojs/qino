@@ -34,7 +34,7 @@ async function render(node: Node, data: any = {}): Promise<string> {
     await Deno.stat(customPath);
     const mod = await import(customPath);
     if (typeof mod.default === "function") {
-      return await mod.default(node, { LPage, ...data });
+      return mod.default(node, { LPage, ...data });
     }
   } catch { /* no custom layout override */ }
 

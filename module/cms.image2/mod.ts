@@ -52,10 +52,10 @@ async function html(dbFile: DbFile, options: Record<string, any>, appPATH: strin
   );
 }
 
-async function fileUrl(dbFile: DbFile, data: any, options: Record<string, any>): Promise<string> {
+function fileUrl(dbFile: DbFile, data: any, options: Record<string, any>): Promise<string> {
   const params: Record<string, any> = { w: data.w, h: data.h, vpos: data.vpos, hpos: data.hpos, q: options.quality ?? "85" };
   if (options.fit === "contain") params.max = true;
-  return await dbFile.url(params);
+  return dbFile.url(params);
 }
 
 async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = getCtx().app.appPATH): Promise<any> {
@@ -96,7 +96,6 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
     h ||= 600;
   }
 
-  const preview = "";
   if (md5) {
     setTimeout(async () => {
       try {
@@ -111,7 +110,7 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
     }, 0);
   }
 
-  return { w, h, vpos, hpos, preview };
+  return { w, h, vpos, hpos, preview: "" };
 }
 
 function name2alt(name: string): string {

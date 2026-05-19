@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 c1.tableHandles = function() {
-	var remImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#ee3c3c" stroke-width="14"><line x1="4" y1="4" x2="60" y2="60"/><line x1="4" y1="60" x2="60" y2="4"/></svg>')+'\'';
-	var addImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#444" stroke-width="14"><line x1="0" y1="32" x2="64" y2="32"/><line x1="32" y1="0" x2="32" y2="64"/></svg>')+'\'';
+	const remImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#ee3c3c" stroke-width="14"><line x1="4" y1="4" x2="60" y2="60"/><line x1="4" y1="60" x2="60" y2="4"/></svg>')+'\'';
+	const addImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#444" stroke-width="14"><line x1="0" y1="32" x2="64" y2="32"/><line x1="32" y1="0" x2="32" y2="64"/></svg>')+'\'';
 	this.root = c1.dom.fragment(
 	'<div class="c1TableHandles q1Rst">'+
 		'<a class=-rowRemove></a>'+
@@ -47,20 +47,14 @@ c1.tableHandles.prototype = {
 		this.root.remove();
 	},
 	positionize(td) {
-		var tr = td.parentNode;
+		const tr = td.parentNode;
 		if (!tr) return;
-		var Cpos = td.getBoundingClientRect();
-		Cpos = {
-			top:  Cpos.top + scrollY,
-			left: Cpos.left + scrollX,
-		}
-		var table = tr.closest('table');
+		const Cr    = td.getBoundingClientRect();
+		const Cpos  = { top: Cr.top + scrollY, left: Cr.left + scrollX };
+		const table = tr.closest('table');
 		if (!table) return;
-		var Tpos = table.getBoundingClientRect();
-		Tpos = {
-			top:  Tpos.top + scrollY,
-			left: Tpos.left + scrollX,
-		}
+		const Tr   = table.getBoundingClientRect();
+		const Tpos = { top: Tr.top + scrollY, left: Tr.left + scrollX };
 		this.rowRemove.style.cssText = 'top:'+(Cpos.top + (tr.offsetHeight / 2) - 11)+'px; left:'+(Tpos.left - 25)+'px;';
 		this.rowAdd.style.cssText    = 'top:'+(Cpos.top + tr.offsetHeight - 4)+'px;        left:'+(Tpos.left - 25)+'px;';
 		this.colRemove.style.cssText = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + (td.offsetWidth / 2) - 8)+'px;';

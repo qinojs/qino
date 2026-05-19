@@ -56,7 +56,7 @@ cms.contDrag.prototype = c1.Eventer;
 function getNearestElement(e, els, notInside) {
 	let winner, winner2, min=null;
 	for (let i = els.length, el; el = els[--i];) {
-		if (notInside && notInside.contains(el)) continue;
+		if (notInside?.contains(el)) continue;
 		var r = el.getBoundingClientRect();
 		var elMin = null;
 		var xmin = Math.min(Math.abs(r.left - e.clientX), Math.abs(r.right - e.clientX));
@@ -113,7 +113,7 @@ function elementDistances(e, els) {
 	for (let element of els) {
 		const distances = elementDistance(element, e.clientX, e.clientY);
 		let distance = distances.distance;
-		if (distances.isInside) distance = distance / 50; // inside is 50x better (nearer)!
+		if (distances.isInside) distance /= 50; // inside is 50x better (nearer)!
 		items.push({
 			element,
 			distances,
@@ -127,7 +127,7 @@ function elementDistances(e, els) {
 function getNearestElement2(e, els, notInside) {
 	els = Array.prototype.filter.call(els, el => !notInside.contains(el) )
 	const items = elementDistances(e, els);
-	return items[0] && items[0].element;
+	return items[0]?.element;
 }
 /*
 function getBeforeElement(e, inside) {

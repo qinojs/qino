@@ -11,16 +11,16 @@ export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
     const path = "/" + (c.req.param("path") || "");
     const input: Params = {};
     const query: Params = {};
-    if (BODY_METHODS.has(c.req.method.toLowerCase() as Method)) {
+    const isBodyMethod = BODY_METHODS.has(c.req.method.toLowerCase() as Method);
+    if (isBodyMethod) {
       const body = await c.req.json().catch(() => ({}));
       if (body && typeof body === "object") Object.assign(input, body);
     }
-    const searchParams = new URL(c.req.url).searchParams;
-    for (const key of new Set(searchParams.keys())) {
-      const vals = searchParams.getAll(key);
+    for (const key of new Set(Object.keys(c.req.queries()))) {
+      const vals = c.req.queries(key) ?? [];
       query[key] = vals.length === 1 ? vals[0] : vals;
     }
-    if (!BODY_METHODS.has(c.req.method.toLowerCase() as Method)) Object.assign(input, query);
+    if (!isBodyMethod) Object.assign(input, query);
     try {
       const result = await invoke(tree, c.req.method, path, { input, query });
       throw new AnswerError(result === undefined ? {} : result as Record<string, unknown>, result === undefined ? 204 : 200);

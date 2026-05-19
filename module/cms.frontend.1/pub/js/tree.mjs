@@ -103,7 +103,7 @@ window.cmsTreeInit = async (json) => {
         let before = null;
         if (where === "after") {
           const next = target.getNextSibling();
-          before = next ? next.data.key : null;
+          before = next?.data.key ?? null;
         } else if (where === "before") {
           before = target.data.key;
         }

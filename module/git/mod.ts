@@ -44,7 +44,7 @@ export const api = {
         execute: async (params: any, ctx: any) => {
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
-          return await GitService.getLog(gitRoot, params.limit ?? 20);
+          return GitService.getLog(gitRoot, params.limit ?? 20);
         },
       },
     },
@@ -55,7 +55,7 @@ export const api = {
         execute: async (params: any, ctx: any) => {
           const { gitRoot } = await getModuleGitInfo(ctx.app, params.module);
           if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
-          return await GitService.getTags(gitRoot);
+          return GitService.getTags(gitRoot);
         },
       },
     },

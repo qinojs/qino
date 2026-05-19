@@ -35,8 +35,8 @@ export class FileTransformer {
     // DPR vor der Pipeline normalisieren
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
-      if (opts.w) opts.w = Math.round(opts.w * opts.dpr);
-      if (opts.h) opts.h = Math.round(opts.h * opts.dpr);
+      opts.w &&= Math.round(opts.w * opts.dpr);
+      opts.h &&= Math.round(opts.h * opts.dpr);
     }
     delete opts.dpr;
 

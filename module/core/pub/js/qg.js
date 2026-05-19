@@ -48,7 +48,7 @@ addEventListener('beforeunload',()=>{ // blur before unload (save)
 Ask.on('complete', function(res) {
 	if (!res) return;
 	function executeHTML(html){
-		if (!html.match('<script')) return;
+		if (!html.includes('<script')) return;
 		const range = document.createRange();
 		range.selectNode(document.head); // required in Safari
 		const fragment = range.createContextualFragment(html);
@@ -67,7 +67,7 @@ Ask.on('complete', function(res) {
 	}
 	if (res.updateElements) {
 		for (const selector in res.updateElements) {
-			if (!res.updateElements.hasOwnProperty(selector)) continue;
+			if (!Object.hasOwn(res.updateElements, selector)) continue;
 			const html = res.updateElements[selector];
 			const els = document.querySelectorAll(selector);
 			for (let i=0, el; el=els[i++];) {
@@ -78,7 +78,7 @@ Ask.on('complete', function(res) {
 	}
 	if (res.replaceElements) {
 		for (const selector in res.replaceElements) {
-			if (!res.replaceElements.hasOwnProperty(selector)) continue;
+			if (!Object.hasOwn(res.replaceElements, selector)) continue;
 			const html = res.replaceElements[selector];
 			const els = document.querySelectorAll(selector);
 			for (let i=0, el; el=els[i++];) {

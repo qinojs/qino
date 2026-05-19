@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import '../c1/rte.mjs?qgUniq=7f19b4a';
-import '../c1/NodeCleaner.mjs?qgUniq=c086a19';
-import './crossbrowser.mjs?qgUniq=f9716a5';
+import '../c1/rte.mjs';
+import '../c1/NodeCleaner.mjs';
+import './crossbrowser.mjs';
 
 window.Rte = {
 	range : {},

@@ -80,7 +80,7 @@
     div.innerHTML = html;
 
     div.querySelector('.-closeBtn').addEventListener('click',function(){
-        location.href = location.href + '&qgCms_editmode=0';
+        location.href += '&qgCms_editmode=0';
     });
     div.querySelector('.-ignoreBtn').addEventListener('click',function(){
         document.cookie = 'qgCMS_browserCheck_ignore=1; max-age=300';

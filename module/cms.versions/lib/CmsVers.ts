@@ -11,6 +11,7 @@
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
 import type { Db } from "../../core/lib/Db.ts";
+import "../../cms/mod.ts";
 
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads
@@ -46,7 +47,7 @@ export async function publishCont(
     const ctx = getCtx();
 
     const generate = async (id: number): Promise<void> => {
-        const Page = await (ctx.app as any).cms.node(id);
+        const Page = await ctx.app.cms.node(id);
         if ((await Page.access()) <= 1) return;
 
         await tableEntriesCopyTo(db, "page",      { id },        fromSpace, fromLog, toSpace);
@@ -87,21 +88,21 @@ export async function publishCont(
     // Switch to fromSpace so Page.access() reads correct data
     const oldVers = setVers(ctx, [fromSpace, fromLog]);
     // Clear CMS page cache so space change takes effect
-    if ((ctx.app as any).cms) ((ctx.app as any).cms as any)._Pages = {};
+    if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
     await generate(pid);
 
     // Regenerate URLs in toSpace
-    if ((ctx.app as any).cms) ((ctx.app as any).cms as any)._Pages = {};
+    if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
     setVers(ctx, [toSpace, 0]);
-    const P = await (ctx.app as any).cms.node(pid);
-    for (const l of (ctx.app as any).languages.all) {
+    const P = await ctx.app.cms.node(pid);
+    for (const l of ctx.app.languages.all) {
         const genUrl = await P.urlSeoGenerated?.(l);
         const curUrl = await P.urlSeo?.(l);
         if (genUrl !== curUrl) await P.urlSeoGen?.(l);
     }
 
     setVers(ctx, oldVers);
-    if ((ctx.app as any).cms) ((ctx.app as any).cms as any)._Pages = {};
+    if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
 }
 
 /**
@@ -124,8 +125,7 @@ export function preventDbManipulations(app: any): void {
  */
 export function cacheHeaders(ctx: any): void {
     const maxAge = 60 * 60 * 24 * 180;
-    const expires = Math.floor(Date.now() / 1000) + maxAge;
-    const d = new Date(expires * 1000).toUTCString();
+    const d = new Date(Date.now() + maxAge * 1000).toUTCString();
     ctx.responseHeaders.set("Expires", d);
     ctx.responseHeaders.set("Cache-Control", `store, cache, max-age=${maxAge}, private`);
     ctx.responseHeaders.set("Pragma", "private");

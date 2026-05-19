@@ -46,7 +46,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const modPath = modObj.path;
   const modUrl  = modObj.url;
-  const modDir  = modPath ? modPath.replace(/\/?[^/]+$/, "") : null;
+  const modDir  = modPath?.replace(/\/?[^/]+$/, "") ?? null;
 
   // --- Exports ---
   const SKIP = new Set(["name", "needs", "cms", "install", "init", "routes", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);

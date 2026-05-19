@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 c1.onElement(".qgCmsTreeManager", async (el) => {
-  await import("./tree.mjs?qgUniq=dynamic-tree");
+  await import("./tree.mjs");
   // add Page
   const inp = document.getElementById("cmsPageAddInp");
   function add() {
@@ -274,7 +274,7 @@ c1.onElement(".qgCmsFileManager", async (el) => {
       });
     }
     /*
-		var {Sortable} = await import('./../../../core/pub/js/sortable.m js?qgUniq=');
+		var {Sortable} = await import('./../../../core/pub/js/sortable.m js');
 		new Sortable(tbody, {
 			handle:'.-handle',
 			forceFallback:true,
@@ -545,7 +545,7 @@ c1.onElement(".qgCmsFront1DiversManager", (el) => {
 c1.onElement(".qgCmsFront1SeoManager", (el) => {
   const desc = el.c1Find(".-desc");
   function checkTextarea(el) {
-    el.classList[el.value.match(/^.{60,156}$/) ? "remove" : "add"]("-invalid");
+    el.classList.toggle("-invalid", !/^.{60,156}$/.test(el.value));
   }
   desc.addEventListener("input", function () { checkTextarea(this); });
   checkTextarea(desc);
@@ -676,7 +676,7 @@ c1.ext({
   set(n, v) {
     if (typeof n === "object") {
       for (const key in n) {
-        n.hasOwnProperty(key) && this.set(key, n[key]);
+        Object.hasOwn(n, key) && this.set(key, n[key]);
       }
       return;
     }

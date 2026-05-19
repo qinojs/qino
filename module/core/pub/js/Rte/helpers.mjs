@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import {HTMLParser} from './htmlparser.mjs?qgUniq=9df0672';
+import {HTMLParser} from './htmlparser.mjs';
 
 window.domCodeIndent = function(str) {
 	let res = '';
@@ -24,14 +24,14 @@ window.domCodeIndent = function(str) {
 		},
 		end(tag) {
 			pre = tag==='pre' ? false : pre;
-			!pre && (ind=ind.substr(1));
+			!pre && (ind=ind.slice(1));
 			res += ind+'</' + tag.toLowerCase() + '>';
 			!pre && (res+='\n');
 		},
 		chars(text) {
 			!pre && (res += ind);
 			if (!text.match(/^\s/)) text = '\uFEFF'+text; // mark if no whitespace
-			if (!text.match(/\s$/)) text = text+'\uFEFF';
+			if (!text.match(/\s$/)) text += '\uFEFF';
 			res += text;
 			!pre && (res+='\n');
 		},
@@ -55,7 +55,7 @@ window.getPossibleClasses = function (el) { /* eventuell better performance? */
 		}
 	}
 	for (let sheet of document.styleSheets) {
-		if (sheet.href && sheet.href.indexOf(location.host) === -1) continue; // only inline and same domain
+		if (sheet.href && !sheet.href.includes(location.host)) continue; // only inline and same domain
 		if (sheet.href === null) {
 			try {
 				if (sheet.ownerNode.innerHTML === '') continue; // adblock chrome
@@ -76,7 +76,7 @@ window.getPossibleClasses = function (el) { /* eventuell better performance? */
 
 window.rangeExpandToStart = function(range) {
 	var node = range.startContainer;
-	while (node.previousSibling && node.previousSibling.data) {
+	while (node.previousSibling?.data) {
 		node = node.previousSibling;
 	}
 	//range.setStart(node,0);
@@ -84,7 +84,7 @@ window.rangeExpandToStart = function(range) {
 };
 window.rangeExpandToEnd = function(range) {
 	var node = range.endContainer;
-	while (node.nextSibling && node.nextSibling.data) {
+	while (node.nextSibling?.data) {
 		node = node.nextSibling;
 	}
 	//range.setEnd(node,node.data.length);
@@ -147,7 +147,7 @@ window.rangeGetNodes = function(r) {
 window.rangeGetElements = function(r) {
 	els = rangeGetNodes(r);
 	for (var i = els.length, el; el = els[--i];) {
-		if (el.data && el.data.toString().trim()) {
+		if (el.data?.toString().trim()) {
 			var span = document.createElement('span');
 			el.parentNode.insertBefore(span, el);
 			span.appendChild(el);

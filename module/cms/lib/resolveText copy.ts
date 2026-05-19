@@ -1,7 +1,7 @@
 import type { App } from "../../core/server.ts";
 
 export async function resolveText(app: App, value: string): Promise<string> {
-    value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
+    value = await replaceAsync(value ?? "", /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
     value = await replaceAsync(value, /["\/]dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(app, id));
     return value;
 }
@@ -25,11 +25,13 @@ async function replaceFileUrls(app: App, id: string): Promise<string> {
     return `/dbFile/${id}/`;
 }
 
-async function replaceAsync(str: string, regex: RegExp, fn: (match: string, ...groups: string[]) => Promise<string>): Promise<string> {
+async function replaceAsync(str: string, regex: RegExp, fn: (...args: any[]) => Promise<string>): Promise<string> {
+    const matches: { match: string; args: any[]; index: number }[] = [];
+    str.replace(regex, (...args) => { matches.push({ match: args[0], args, index: args[args.length - 2] }); return ""; });
     let result = "", last = 0;
-    for (const m of str.matchAll(regex)) {
-        result += str.slice(last, m.index) + await fn(m[0], ...m.slice(1));
-        last = m.index! + m[0].length;
+    for (const m of matches) {
+        result += str.slice(last, m.index) + await fn(...m.args);
+        last = m.index + m.match.length;
     }
     return result + str.slice(last);
 }

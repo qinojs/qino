@@ -151,6 +151,7 @@ export class DbTable {
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
     if (auto) values[String(auto)] = res.insertId;
+    else if (res.insertId && this.primary && !(String(this.primary) in values)) values[String(this.primary)] = res.insertId;
     const id = this.entryId(values);
     await this.#db.fire("table::insert-after", { Table: this, id, data: values });
     return id !== false ? String(id) : false;

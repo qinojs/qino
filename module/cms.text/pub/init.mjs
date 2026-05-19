@@ -141,7 +141,7 @@ setTimeout(function(){
 		for (let el of els) {
 			const elLang = el.getAttribute('cmslang') || activeLang;
 			if (setLang !== elLang) continue;
-			el.classList[txt?'remove':'add']('qgCMS-text-untranslated');
+			el.classList.toggle('qgCMS-text-untranslated', !txt);
 		}
 	});
 },100);

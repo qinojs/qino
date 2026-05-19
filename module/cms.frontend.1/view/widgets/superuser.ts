@@ -5,7 +5,7 @@ import { addSettingsEditor, settingsSourceAttr } from "../../../core/lib/setting
 
 function moduleDir(node: Node): string | null {
   const path = node.app.modules.get(String(node.vs.module ?? ""))?.path;
-  return path ? path.replace(/\/?mod\.[jt]s$/, "") : null;
+  return path?.replace(/\/?mod\.[jt]s$/, "") ?? null;
 }
 
 async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: string }> {

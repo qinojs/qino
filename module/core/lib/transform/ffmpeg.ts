@@ -16,9 +16,7 @@ async function tryCommand(cmd: string, args: string[]): Promise<boolean> {
 }
 
 export async function isFfmpegAvailable(): Promise<boolean> {
-  if (_available === null) {
-    _available = await tryCommand('ffmpeg', ['-version']);
-  }
+  _available ??= await tryCommand('ffmpeg', ['-version']);
   return _available;
 }
 

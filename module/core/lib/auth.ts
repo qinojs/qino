@@ -75,13 +75,13 @@ export async function rememberLogin(ctx: RequestContext, doSave: boolean): Promi
 }
 
 export async function pwHash(pw: string): Promise<string> {
-  return await bcrypt.hash(pw, 10);
+  return bcrypt.hash(pw, 10);
 }
 
 export async function pwVerify(pw: string, hash: string): Promise<boolean> {
   if (!pw || !hash) return false;
   // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
-  return await bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$"));
+  return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$"));
 }
 
 export function pwNeedsRehash(hash: string): boolean {

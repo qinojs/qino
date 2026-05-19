@@ -81,8 +81,7 @@ export const CmsHelperBot: Bot = {
       response: { type: "string", description: "The answer to show the user" },
       relevance: {
         type: "number",
-        min: 0,
-        max: 10,
+        minimum: 0, maximum: 10,
         description: "How relevant is this question for your memory.",
       },
       issue: {

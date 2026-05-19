@@ -1,10 +1,10 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
-import '../../../core/pub/js/c1/contextMenu.mjs?qgUniq=11ccbd1';
+import '../../../core/pub/js/c1/contextMenu.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 import '../../../cms/pub/js/cms.mjs';
 
-let Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu('CMS Inhalt',{
+const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu('CMS Inhalt',{
 	icon: sysURL+'cms.frontend.1/pub/img/module_default.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 });

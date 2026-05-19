@@ -48,7 +48,7 @@ window.CmsVersComparer = {
             let doc1 = win.document;
 
             // scrollSync
-            import(sysURL+'core/pub/js/c1/scrollSync.mjs?qgUniq=b0dfe76').then(function(){
+            import(sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
                 // sync scroll
                 c1.scrollSync.syncWindows(win, other.contentWindow);
                 // sync clicks

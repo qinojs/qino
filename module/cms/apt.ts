@@ -90,7 +90,7 @@ const node = {
     get: {
       description: "Read page tree from this node",
       access: nodeRead,
-      input: s.object({
+      query: s.object({
         filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
@@ -325,7 +325,7 @@ const node = {
         const cont = await node.createCont({ module });
         if (!cont) throw new Error("createCont failed");
         await cont.changeUser(ctx.user, 3);
-        return { id: cont.id, html: await cont.html() };
+        return { id: cont.id, html: String(await cont.html()) };
       },
     },
   },
@@ -599,7 +599,7 @@ export const api = {
     get: {
       description: "Read the full page tree",
       access: Access.USER,
-      input: s.object({
+      query: s.object({
         filter: s.optional(s.string()).describe("Type filter, e.g. \"p\" for pages, \"*\" for all"),
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),

@@ -92,7 +92,6 @@ small {
 }
 #nav .-item:hover,
 #nav .-item.-active {
-	xfont-weight:bold;
 	background:#fff;
 }
 #nav ul ul .-item {

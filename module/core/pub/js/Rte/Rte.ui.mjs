@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-//import '../c1/Placer.mjs?qgUniq=1ae5181';
-import './Rte.mjs?qgUniq=77fa252';
+//import '../c1/Placer.mjs';
+import './Rte.mjs';
 
 window.Rte.ui = {
 	init() {
@@ -60,8 +60,7 @@ window.Rte.ui = {
 					item.enabled = true;
 					item.el.removeAttribute('hidden');
 					if (item.check) {
-						const act = item.check(Rte.element) ? 'add' : 'remove';
-						item.el.classList[act]('active');
+						item.el.classList.toggle('active', item.check(Rte.element));
 					}
 				} else {
 					item.enabled = false;
@@ -144,7 +143,7 @@ Rte.on('selectionchange', async ()=>{
 	if (!Rte.active) return;
 	if (Rte.ui.mouseover) return;
 	const margin = getSelection().isCollapsed ? 100 : 20;
-	await import('./../c1/Placer.mjs?qgUniq=1ae5181');
+	await import('./../c1/Placer.mjs');
 	const placer = new c1.Placer(Rte.ui.div, {
 		x:'center',
 		y:'after',

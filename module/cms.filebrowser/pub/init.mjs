@@ -156,7 +156,7 @@ cms.fileBrowser = class {
                 let has = {};
                 Array.from(list.children).forEach(label=>{
                     const checkbox = label.c1Find('[type=checkbox]');
-                    if (checkbox && checkbox.checked) {
+                    if (checkbox?.checked) {
                         has[label.getAttribute('itemid')] = 1;
                     } else {
                         label.remove();
@@ -173,13 +173,13 @@ cms.fileBrowser = class {
                             '</div>'+
                         '</label>'
                     ).firstChild;
-                    if (item.mime.match('image/')) {
+                    if (item.mime.includes('image/')) {
                         el.style.backgroundImage = 'url("'+item.url+'/w-180/h-130/max/image")';
                     } else {
                         el.prepend(
                             c1.dom.fragment(
                                 '<div style="position:absolute; inset:0; display:flex; justify-content: center; align-items: center; font-size:3.6em; color:#fff">'+
-                                    item.name.replace(/.*\.([^.]+)$/,'$1').substr(-4).toUpperCase()+
+                                    item.name.replace(/.*\.([^.]+)$/,'$1').slice(-4).toUpperCase()+
                                 '</div>'
                             )
                         )

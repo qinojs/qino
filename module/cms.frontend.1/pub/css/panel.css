@@ -193,7 +193,6 @@
 		display:block;
 		margin:20px auto 20px auto;
 		flex:auto;
-		todo_flex:1 0 auto;
 		fill:currentColor;
 	}
 	& .-module-boxes .-title {

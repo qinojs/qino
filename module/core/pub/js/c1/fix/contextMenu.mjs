@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 		if (base) {
 			var id = base.getAttribute('contextmenu');
 			var mEl = document.getElementById(id);
-			if (mEl && mEl.children.length) {
+			if (mEl?.children.length) {
 				e.preventDefault();
 				parse(mEl, poly);
 				poly.style.display = 'block';

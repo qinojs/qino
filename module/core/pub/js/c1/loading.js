@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 !function(){ 'use strict';
 
 c1.loading = {
@@ -27,9 +26,7 @@ c1.loading = {
 				el.addEventListener('click', this, true);
 			}
 		}
-		return function(){
-			c1.loading.done(el);
-		}
+		return () => c1.loading.done(el);
 	},
 	done(el) {
 		el.loadingTasks--;
@@ -101,8 +98,8 @@ const css =
 '  vertical-align:middle; ' +
 '  margin-top:-.2em; ' +
 '} ';
-var styleEl = document.createElement('style');
-styleEl.appendChild(document.createTextNode(css));
+const styleEl = document.createElement('style');
+styleEl.textContent = css;
 document.head.append(styleEl);
 
 }();

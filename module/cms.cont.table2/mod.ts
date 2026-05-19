@@ -69,7 +69,7 @@ async function render(node: Node, { ctx }: any): Promise<string> {
     for (let j = 0; j < cols; j++) {
       const T = await node.showText(`${r}_${j}`);
       let w = String(node.settings[`row_${j + 1}`]() ?? "");
-      if (/^\d+$/.test(w)) w = w + "px";
+      if (/^\d+$/.test(w)) w += "px";
       const styleAttr = w ? ` style="width:${w}"` : "";
       const editAttr = node.edit ? ` contenteditable cmstxt=${T.id}` : "";
       html += `        <td${styleAttr}${editAttr}>${T}\n`;

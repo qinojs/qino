@@ -1,9 +1,9 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 !function() { 'use strict';
 
-var d = document;
-var touching = false;
-var Observer = function(el, options) {
+const d = document;
+let touching = false;
+const Observer = function(el, options) {
     this.options = c1.ext({mouse: true, touch: true, passive:true}, options);
     this.el   = el;
 	this.pos  = {};
@@ -11,22 +11,19 @@ var Observer = function(el, options) {
 	this.posStart = {};
 	this.diff = {};
 
-	var self = this,
-	start = function(e) {
+	const self = this;
+	const start = function(e) {
 		if (e.type === 'mousedown'  && !self.options.mouse) return;
 		if (e.type === 'touchstart' && !self.options.touch) return;
 
-		var pointer = e;
+		let pointer = e;
 		if (e.touches) {
 			pointer = e.touches[0];
 			if (e.touches.length > 1) return;
 			self.identifier = pointer.identifier;
 		}
 
-		self.posStart = self.pos = {
-			x:pointer.pageX,
-			y:pointer.pageY
-		};
+		self.posStart = self.pos = { x: pointer.pageX, y: pointer.pageY };
 		if (self.options.mouse) {
             d.addEventListener('mousemove', move);
             d.addEventListener('mouseup'  , stop);
@@ -39,7 +36,7 @@ var Observer = function(el, options) {
 		}
 		self.onstart?.(e);
 		touching = true;
-	},
+	};
 /* qg todo?
 	gstart = function(e) {
 		var pointer = e.touches[0];
@@ -53,21 +50,21 @@ var Observer = function(el, options) {
 		}
 	},
 */
-	move = function(e) {
-		var pointer = e;
+	const move = function(e) {
+		let pointer = e;
 
 		if (e.touches) {
 			pointer = e.touches[0];
 
-			var finger2 = e.touches[1];
+			const finger2 = e.touches[1];
 			if (finger2 && self.ongesture) {
-				var deltaX = pointer.pageX - finger2.pageX;
-				var deltaY = pointer.pageY - finger2.pageY;
+				const deltaX = pointer.pageX - finger2.pageX;
+				const deltaY = pointer.pageY - finger2.pageY;
 
-				var deg = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+				let deg = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
 				e.rotate = deg -= self.degStart;
 
-		        var dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+		        const dist = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
 				e.scale = dist / self.distStart;
 
 				self.ongesture?.(e);
@@ -77,20 +74,16 @@ var Observer = function(el, options) {
 		}
 
 		self.last = self.pos;
-		self.pos = {
-			x: pointer.pageX,
-			y: pointer.pageY,
-			time: e.timeStamp,
-		};
-        if (self.last.x===self.pos.x && self.last.y === self.pos.y) return;
+		self.pos = { x: pointer.pageX, y: pointer.pageY, time: e.timeStamp };
+        if (self.last.x === self.pos.x && self.last.y === self.pos.y) return;
         self.diff = {
-    		x: self.pos.x-self.last.x,
-    		y: self.pos.y-self.last.y,
+    		x:    self.pos.x - self.last.x,
+    		y:    self.pos.y - self.last.y,
 			time: self.pos.time - self.last.time,
     	};
         self.onmove?.(e);
-	},
-	stop = function(e) {
+	};
+	const stop = function(e) {
 		if (e.changedTouches) {
 			if (e.changedTouches[0].identifier !== self.identifier) return;
 		}
@@ -108,18 +101,8 @@ var Observer = function(el, options) {
 	}
 	el.addEventListener('touchstart', start, {passive: this.options.passive});
 };
-Observer.prototype.lastDiff = function() {
-	return {
-		x: this.pos.x - this.last.x,
-		y: this.pos.y - this.last.y
-	};
-};
-Observer.prototype.startDiff = function() {
-	return {
-		x: this.pos.x - this.posStart.x,
-		y: this.pos.y - this.posStart.y
-	};
-};
+Observer.prototype.lastDiff  = function() { return { x: this.pos.x - this.last.x,     y: this.pos.y - this.last.y     }; };
+Observer.prototype.startDiff = function() { return { x: this.pos.x - this.posStart.x, y: this.pos.y - this.posStart.y }; };
 c1.pointerObserver = Observer;
 
 

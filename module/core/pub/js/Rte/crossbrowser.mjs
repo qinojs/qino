@@ -106,7 +106,7 @@ document.addEventListener('click', e=>{
 	}
 	// keyboard click firefox
 	try { // on date-inputs explicitOriginalTarget fails because its internal, ignore it
-		if (e.explicitOriginalTarget && e.explicitOriginalTarget.isContentEditable) {
+		if (e.explicitOriginalTarget?.isContentEditable) {
 			e.preventDefault();
 		}
 	} catch {}

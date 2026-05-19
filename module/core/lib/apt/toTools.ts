@@ -28,7 +28,7 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
     for (const schema of [r.verb.input, r.verb.query]) {
       for (const [k, field] of Object.entries(shapeOf(schema))) {
         properties[k] = toJsonSchema(field);
-        if (field.kind !== "optional" && !field.defaultValue) required.push(k);
+        if (field.kind !== "optional" && field.defaultValue === undefined) required.push(k);
       }
     }
 

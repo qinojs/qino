@@ -2,6 +2,7 @@
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { AccessError, NotFoundError, ValidationError, invoke } from "../../core/lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
+import { HtmlString } from "../../core/lib/util.ts";
 import { api } from "../apt.ts";
 
 class TextObj {
@@ -53,7 +54,7 @@ class FakeNode {
     }
     return new TextObj(this.id * 100, this.texts[name] ?? "");
   }
-  html(vars = {}) { return `<div>${JSON.stringify(vars)}</div>`; }
+  html(vars = {}) { return new HtmlString(`<div>${JSON.stringify(vars)}</div>`); }
   htmlPart(part: string, vars = {}) { return `<span>${part}:${JSON.stringify(vars)}</span>`; }
   children(opt: Record<string, unknown>) {
     return new Map(this.childNodes
@@ -134,6 +135,16 @@ Deno.test("cms apt: contents returns readable content tree", async () => {
       name: "main",
       title: "Main",
     }]);
+  });
+});
+
+Deno.test("cms apt: contents post returns rendered html string", async () => {
+  const { ctx } = setup();
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "POST", "/node/1/contents", { module: "cms.text" }), {
+      id: 4,
+      html: "<div>{}</div>",
+    });
   });
 });
 

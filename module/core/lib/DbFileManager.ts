@@ -71,8 +71,7 @@ export class DbFileManager {
       headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
     }
     const maxAge = 60 * 60 * 24 * 180;
-    const expires = Math.floor(Date.now() / 1000) + maxAge;
-    headers.set("Expires", new Date(expires * 1000).toUTCString());
+    headers.set("Expires", new Date(Date.now() + maxAge * 1000).toUTCString());
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
     headers.set("Pragma", "private");
 
@@ -272,9 +271,9 @@ export class DbFile extends File {
       data["id"] = String(to);
       await this.#manager.db.table("file").update(to, data);
       newId = to;
-      return await this.#manager.file(newId, data);
+      return this.#manager.file(newId, data);
     }
-    return await this.#manager.file(newId);
+    return this.#manager.file(newId);
   }
 
   async transform(param: Record<string, any>): Promise<{ path: string; mime: string }> {
@@ -294,17 +293,17 @@ function parseTransformOptions(param: Record<string, any>): TransformOptions {
   const num = (k: string) => k in param ? Number(param[k]) : undefined;
   const bool = (k: string) => k in param ? param[k] !== 'false' && param[k] !== '0' : undefined;
   return {
-    w:    num('w'),
-    h:    num('h'),
-    q:    num('q'),
-    vpos: num('vpos'),
-    hpos: num('hpos'),
-    zoom: num('zoom'),
-    dpr:  num('dpr'),
+    w:     num('w'),
+    h:     num('h'),
+    q:     num('q'),
+    vpos:  num('vpos'),
+    hpos:  num('hpos'),
+    zoom:  num('zoom'),
+    dpr:   num('dpr'),
     page:  num('page'),
     frame: num('frame'),
     max:   bool('max'),
-    fmt:  param['fmt'] as TransformOptions['fmt'],
+    fmt:   param['fmt'] as TransformOptions['fmt'],
   };
 }
 

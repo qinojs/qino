@@ -21,7 +21,7 @@ export class File {
   }
 
   async contents(set?: string | Uint8Array | null): Promise<string | number> {
-    if (set == null) return await Deno.readTextFile(this.path);
+    if (set == null) return Deno.readTextFile(this.path);
     await (typeof set === "string" ? Deno.writeTextFile(this.path, set) : Deno.writeFile(this.path, set));
     return set.length;
   }

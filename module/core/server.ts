@@ -89,7 +89,7 @@ export class App {
         return app;
     }
 
-    async import(spec: string): Promise<ModuleExports> { return await this.modules.import(spec); }
+    async import(spec: string): Promise<ModuleExports> { return this.modules.import(spec); }
 
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
 
@@ -174,7 +174,7 @@ export class App {
             return new Response(this.config.dev ? "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>" : "<h1>500 Internal Server Error</h1>", { status: 500 });
         }
         this.#handleError(ctx, e);
-        return await this.#buildResponse(hc, ctx);
+        return this.#buildResponse(hc, ctx);
     }
 
     async #buildResponse(hc: Context, ctx: RequestContext): Promise<Response> {

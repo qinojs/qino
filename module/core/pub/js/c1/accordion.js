@@ -3,26 +3,26 @@
 
 if (c1.accordion) return;
 c1.accordion = true;
-c1.onElement('.c1-accordion', function (accordion) {
-    accordion.addEventListener('click', function (event) {
-        var target = event.target.closest('.c1-accordion > .-trigger');
+c1.onElement('.c1-accordion', accordion => {
+    accordion.addEventListener('click', event => {
+        const target = event.target.closest('.c1-accordion > .-trigger');
         if (!target || target.parentNode !== accordion) return;
-        var isExpanded = target.getAttribute('aria-expanded') == 'true';
-        var singleMode = accordion.hasAttribute('data-singlemode');
+        const isExpanded = target.getAttribute('aria-expanded') == 'true';
+        const singleMode = accordion.hasAttribute('data-singlemode');
         if (singleMode) {
-            var triggers = accordion.c1FindAll('> .-trigger');
-            triggers.forEach(function (trigger) {
+            const triggers = accordion.c1FindAll('> .-trigger');
+            triggers.forEach(trigger => {
                 if (trigger.getAttribute('aria-expanded') == 'false') return;
-				var panel = document.getElementById(trigger.getAttribute('aria-controls'));
+				const panel = document.getElementById(trigger.getAttribute('aria-controls'));
 				panel.style.height = panel.c1Find('> .-content').offsetHeight+'px';
-				setTimeout(function(){
+				setTimeout(() => {
 					panel.style.height = '';
 					panel.setAttribute('hidden', '');
 					trigger.setAttribute('aria-expanded', 'false');
 				},10)
             });
         }
-        var panel = document.getElementById(target.getAttribute('aria-controls'));
+        let panel = document.getElementById(target.getAttribute('aria-controls'));
 
 		// new
 		if (!panel) {
@@ -38,7 +38,7 @@ c1.onElement('.c1-accordion', function (accordion) {
         panel.style.overflow = 'hidden';
         if (isExpanded) {
 			panel.style.height = panel.c1Find('> .-content').offsetHeight+'px';
-			setTimeout(function(){
+			setTimeout(() => {
                 panel.style.height = '';
                 panel.setAttribute('hidden', '');
                 target.setAttribute('aria-expanded', 'false');
@@ -46,9 +46,9 @@ c1.onElement('.c1-accordion', function (accordion) {
             },10);
         } else {
             panel.removeAttribute('hidden');
-            var height = panel.c1Find('> .-content').offsetHeight;
+            const height = panel.c1Find('> .-content').offsetHeight;
 			panel.style.height = '0';
-            setTimeout(function(){
+            setTimeout(() => {
                 panel.style.height = height+'px';
                 panel.removeAttribute('hidden');
                 target.setAttribute('aria-expanded', 'true');
@@ -57,71 +57,60 @@ c1.onElement('.c1-accordion', function (accordion) {
 
 			if (singleMode) {
 				c1.c1Use('scroll');
-				var dur = getComputedStyle(panel).getPropertyValue('transition-duration');
-				dur = parseFloat(dur)*1000;
-				setTimeout(function(){
-					c1.c1Use('scroll',function(){
-
-						target.scrollIntoView({
-							behavior:'smooth',
-						})
-					})
-				},dur)
+				const dur = parseFloat(getComputedStyle(panel).getPropertyValue('transition-duration'))*1000;
+				setTimeout(() => c1.c1Use('scroll', () => target.scrollIntoView({behavior:'smooth'})), dur);
 			}
 
         }
         event.preventDefault();
     });
 
-    accordion.addEventListener('keydown', function (event) {
-        var target = event.target;
-        var key = event.which.toString(); // todo?
-        var ctrlModifier = (event.ctrlKey && key.match(/33|34/)); // 33 = Page Up, 34 = Page Down
+    accordion.addEventListener('keydown', event => {
+        const target = event.target;
+        const key = event.which.toString(); // todo?
+        const ctrlModifier = (event.ctrlKey && key.match(/33|34/)); // 33 = Page Up, 34 = Page Down
 
         if (target.matches('.c1-accordion > .-trigger')) {
-            var triggers = accordion.c1FindAll('> .-trigger');
-            triggers = Array.prototype.slice.call(triggers);
+            const triggers = accordion.c1FindAll('> .-trigger');
             // Up/ Down arrow | Control + Page Up/ Page Down
-            if (key.match(/38|40/) || ctrlModifier) { // 38 = Up, 40 = Down
-                var index = triggers.indexOf(target);
-                var direction = (key.match(/34|40/)) ? 1 : -1;
-                var newIndex = index + direction;
-                triggers[newIndex] && triggers[newIndex].focus();
+            if (/38|40/.test(key) || ctrlModifier) { // 38 = Up, 40 = Down
+                const index = triggers.indexOf(target);
+                const direction = /34|40/.test(key) ? 1 : -1;
+                const newIndex = index + direction;
+                triggers[newIndex]?.focus();
                 event.preventDefault();
-            } else if (key.match(/35|36|13|32/)) {
+            } else if (/35|36|13|32/.test(key)) {
                 switch (key) { // 35 = End, 36 = Home, 13 = Enter, 32 = Space
                     case '36': triggers[0].focus(); break;
                     case '35': triggers[triggers.length - 1].focus(); break;
                     case '13':
                     case '32':
-                        var clickEvent = document.createEvent('MouseEvent');
-                        clickEvent.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-                        target.dispatchEvent(clickEvent);
+                        target.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
                 }
                 event.preventDefault();
             }
         } else if (ctrlModifier) {
             // Control + Page Up/ Page Down keyboard operations
             // Catches events that happen inside of panels
-            var panel = target.closest('.c1-accordion > .-panel');
-            if (panel && panel.parentNode === accordion) {
+            const panel = target.closest('.c1-accordion > .-panel');
+            if (panel?.parentNode === accordion) {
                 panel.previousElementSibling.focus();
                 //panel.previousElementSibling.c1Find('button').focus();
             }
         }
     });
 	// prevent dblclick-selection
-	accordion.addEventListener('mousedown',function(e){
+	accordion.addEventListener('mousedown', e => {
 		if (e.detail < 2) return;
-        var trigger = event.target.closest('.c1-accordion > .-trigger');
+        const trigger = e.target.closest('.c1-accordion > .-trigger');
         if (!trigger || trigger.parentNode !== accordion) return;
 		e.preventDefault();
 	})
 	if (location.hash) {
-		var el = accordion.c1Find('> .-trigger' + location.hash.replace(/[=&"\\]/g, '\\$&') );
+		const el = accordion.c1Find('> .-trigger' + location.hash.replace(/[=&"\\]/g, '\\$&') );
 		if (el) {
 			el.setAttribute('aria-expanded', 'true');
-			var panel = document.getElementById(el.getAttribute('aria-controls'));
+			const panel = document.getElementById(el.getAttribute('aria-controls'));
 			panel.removeAttribute('hidden');
 		}
 	}

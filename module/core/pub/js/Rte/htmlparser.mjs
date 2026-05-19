@@ -119,10 +119,7 @@ let HTMLParser  = function(html, handler) {
 			let attrs = [];
 
 			rest.replace(attr, function(match, name) {
-				let value = arguments[2] ? arguments[2] :
-					arguments[3] ? arguments[3] :
-					arguments[4] ? arguments[4] :
-					fillAttrs[name] ? name : "";
+				let value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
 
 				attrs.push({
 					name: name,

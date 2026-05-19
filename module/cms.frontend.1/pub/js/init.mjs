@@ -6,7 +6,7 @@ function qgCmsToggleEdit(){
 	const url = new URL(location.href);
 	url.searchParams.set('qgCms_editmode', qgCmsEditmode?0:1);
 	url.searchParams.set('cmspid',qgCmsRequestedPage);
-	import(sysURL+'core/pub/js/c1/scrollSync.mjs?qgUniq=b0dfe76').then(function(){
+	import(sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
 		c1.scrollSync.reevaluate(globalThis);
 		const config = c1.scrollSync.getConfig(globalThis);
 		localStorage.setItem('cmsLastScrollPosition', JSON.stringify(config));
@@ -33,7 +33,7 @@ document.addEventListener('keydown', function(e) {
 const savedScroll = localStorage.getItem('cmsLastScrollPosition');
 if (savedScroll) {
 	localStorage.removeItem('cmsLastScrollPosition');
-	import(sysURL+'core/pub/js/c1/scrollSync.mjs?qgUniq=b0dfe76').then(function(){
+	import(sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
 		c1.scrollSync.restoreIn(JSON.parse(savedScroll), globalThis);
 	});
 }

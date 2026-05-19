@@ -15,7 +15,7 @@ x.addEventListener('mousedown', function() {
 	});
 });
 */
-import './Rte.ui.mjs?qgUniq=077f746';
+import './Rte.ui.mjs';
 
 Rte.ui.setItem('Bold', 					{cmd:'bold',		shortcut:'b', xenable:':not(img)'} );
 Rte.ui.setItem('Italic', 				{cmd:'italic',		shortcut:'i', xenable:':not(img)'} );
@@ -87,9 +87,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 				has && d.classList.add('-selected');
 				d.onmousedown = function() {
 					Rte.manipulate(()=>{
-						if (!el) {
-							el = qgSelection.surroundContents(document.createElement('span'));
-						}
+						el ||= qgSelection.surroundContents(document.createElement('span'));
 						el.classList.toggle(sty, !has);
 					});
 				};
@@ -218,7 +216,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 				code = code.replace('marker_end_laseg08a0egga','');
 
 				let brsTotal = (code.match(/\n/g)||[]).length;
-				let brs 	 = brsTotal && (code.substr(0,start).match(/\n/g)||[]).length;
+				let brs 	 = brsTotal && (code.slice(0,start).match(/\n/g)||[]).length;
 
 				setTimeout(()=>{
 					html.focus();
@@ -303,7 +301,7 @@ Rte.ui.setItem('LinkTarget', {
 	});
 	Rte.ui.setItem('AttributeTitle',{
 		check(el) {
-			inp.value = el ? el.getAttribute('title') : '';
+			inp.value = el?.getAttribute('title') ?? '';
 		},
 		el: el
 	});
@@ -378,7 +376,7 @@ Rte.ui.setItem('ImgOriginal', {
 });
 
 /* table handles */
-import {TableHandles} from '../c1/tableHandles.mjs?qgUniq=bbcd4cc';
+import {TableHandles} from '../c1/tableHandles.mjs';
 {
 	let td, tr, table, index;
 	let handles = new TableHandles();
@@ -487,7 +485,7 @@ console.warn('needed? shoud it be deprecated?');
 		var child = node.firstChild;
 		while (child) {
 			if (child.nodeType === 1) {
-				if (excludeElements.indexOf(child.tagName.toLowerCase()) > -1) break;
+				if (excludeElements.includes(child.tagName.toLowerCase())) break;
 				matchText(child, regex, callback, excludeElements);
 			}
 			if (child.nodeType === 3) {
@@ -499,7 +497,7 @@ console.warn('needed? shoud it be deprecated?');
 					var offset = args[args.length - 2];
 					var newTextNode = child.splitText(offset+bk);
 					bk -= child.data.length + str.length;
-					newTextNode.data = newTextNode.data.substr(str.length);
+					newTextNode.data = newTextNode.data.slice(str.length);
 					child.parentNode.insertBefore(tag, newTextNode);
 					child = newTextNode;
 				});

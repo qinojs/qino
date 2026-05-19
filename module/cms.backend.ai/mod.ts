@@ -181,7 +181,7 @@ function toProviderModel(providerName: string, data: Record<string, any>, synced
       syncedAt, strengths, maxInputTokens: contextLength, maxOutputTokens,
       inputCostPerMToken, outputCostPerMToken,
       costPerMToken: inputCostPerMToken !== undefined && outputCostPerMToken !== undefined
-        ? Math.round(((inputCostPerMToken + outputCostPerMToken) / 2) * 1_000_000) / 1_000_000
+        ? Math.round(((inputCostPerMToken + outputCostPerMToken) / 2) * 1_000_000) / 1_000_000 // rough average; providers charge input cheaper than output
         : undefined,
       supports: {
         streaming: true,
@@ -450,7 +450,7 @@ async function render(node: any): Promise<string> {
         <table class=c1-style>
           <tr><th>Provider<td><select name=default_provider>${providerOptions}</select>
           <tr><th>Model<td>
-            <input name=default_model value="${hee(defaultModel)}" list="ai-models-default">
+            <input name=default_model value="${hee(defaultModel)}" list="ai-models-${htmlId(defaultProvider)}-default">
             ${[...modelsByProvider.entries()].map(([n, ms]) =>
               `<datalist id="ai-models-${htmlId(n)}-default">${modelOptionHtml(ms, defaultModel)}</datalist>`
             ).join("")}

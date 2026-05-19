@@ -43,7 +43,7 @@ class SettingItem extends Item<SettingItem> {
     await this.reader(); // ensure data is loaded
 
     if (typeof value !== "object" || value == null) {
-      return await this.root.db.query("UPDATE qg_setting SET value = ? WHERE id = ?", [String(value), this.data!.id]);
+      return this.root.db.query("UPDATE qg_setting SET value = ? WHERE id = ?", [String(value), this.data!.id]);
     }
 
     const promises = [];
@@ -56,7 +56,7 @@ class SettingItem extends Item<SettingItem> {
   override remover = async () => {
     await this.reader(); // ensure data is loaded
     for (const sub of this.items()) await sub.remove();
-    return await this.root.db.query("DELETE FROM qg_setting WHERE id = ?", [this.data!.id]);
+    return this.root.db.query("DELETE FROM qg_setting WHERE id = ?", [this.data!.id]);
   };
 }
 

@@ -65,9 +65,7 @@ class NodeCleaner {
 		if (!this.conf['tags'])            return el;
 		if (this.conf['tags'][el.tagName]) return el;
 
-		if (!display) {
-			display = blockLikeTags[el.tagName] ? 'block' : 'inline';
-		}
+		display ||= blockLikeTags[el.tagName] ? 'block' : 'inline';
 
 		var nEl = notInline[display] ? document.createElement('div') : document.createElement('span');
 		/* dont loose computed styles. Problem?: links keep colored */

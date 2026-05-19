@@ -181,7 +181,7 @@ export class CMS {
             if (await P.is()) {
                 ret.target = "_self";
                 ret.Node = P;
-                return await P.url();
+                return P.url();
             }
             return false;
         }

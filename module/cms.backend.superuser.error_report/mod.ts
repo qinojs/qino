@@ -68,7 +68,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         await db.query("DELETE FROM m_error_report");
     }
 
-    if (get.id) return await renderDetail(node, Number(get.id));
+    if (get.id) return renderDetail(node, Number(get.id));
 
     const order    = get.order ?? "max_id";
     const orderSql = order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";

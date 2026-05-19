@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-!function(w,d,undf,k) { 'use strict';
+!function(w,d) { 'use strict';
 if (w.c1) return // zzz if its a module
 
 
@@ -8,20 +8,20 @@ if (w.c1) return // zzz if its a module
 */
 Function.prototype.c1Debounce = function(options) {
 	if (typeof options === 'number') options = {min:options, max:options*2};
-	var fn = this,
-		inst,
+	const fn = this;
+	let inst,
 		args,
 		timerMin = 0,
 		timerMax = 0,
-		triggered = true,
-	    trigger = function() {
+		triggered = true;
+	const trigger = () => {
 	        triggered = true;
-	        clearTimeout( timerMax );
-	        clearTimeout( timerMin );
+	        clearTimeout(timerMax);
+	        clearTimeout(timerMin);
 	        timerMax = 0;
-	        fn.apply(inst,args);
+	        fn.apply(inst, args);
         };
-    var wrapped = function() {
+    const wrapped = function() {
         inst !== this && !triggered && trigger();
         triggered = false;
         inst = this;
@@ -36,11 +36,9 @@ Function.prototype.c1Debounce = function(options) {
     };
     return wrapped;
 };
-if (!RegExp.escape) {
-    RegExp.escape = function(text) {
-        return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    };
-}
+RegExp.escape ||= function(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+};
 Math.c1Limit = function(number,min,max) {
     return Math.min( Math.max( parseFloat(min) , parseFloat(number) ), parseFloat(max) );
 };
@@ -55,34 +53,26 @@ c1.Eventer = {
         return this._Es[n];
     },
 	on: function(ns, fn) {
-    	ns = ns.split(' ');
-    	for (let i=0, n; n = ns[i++];) {
-	        this._getEvents(n).push(fn);
-    	}
+    	for (const n of ns.split(' ')) this._getEvents(n).push(fn);
     },
 	off: function(ns, fn) {
-    	ns = ns.split(' ');
-    	for (let i=0, n; n = ns[i++];) {
-	        var Events = this._getEvents(n);
-	        Events.splice(Events.indexOf(fn) ,1);
+    	for (const n of ns.split(' ')) {
+	        const Events = this._getEvents(n);
+	        Events.splice(Events.indexOf(fn), 1);
     	}
     },
 	trigger: function(ns, e) {
-        var self = this, n, i=0;
-        ns = ns.split(' ');
-        while (n = ns[i++]) {
-            this._getEvents(n).forEach(function(Event) {
-                Event.call(self,e);
-            });
+        for (const n of ns.split(' ')) {
+            this._getEvents(n).forEach(Event => Event.call(this, e));
     	}
     }
 };
 /* ext */
 c1.ext = function (src, target, force, deep) {
     target ||= {};
-    for (k in src) {
-    	if (!src.hasOwnProperty(k)) continue;
-        if (force || target[k] === undf) {
+    for (const k in src) {
+    	if (!Object.hasOwn(src, k)) continue;
+        if (force || target[k] === undefined) {
             target[k] = src[k];
         }
 		if (!deep) continue;
@@ -102,32 +92,32 @@ if (dataEl) {
 // c1Use
 const CALLBACKS = 'pseudosymbol_&/%f983';
 w.c1Use = function (prop_or_opts, cb) {
-	var scope = prop_or_opts.scope || this || self;
-	var prop = prop_or_opts.property || prop_or_opts;
-    if (prop in scope && scope[prop] !== void 0) { // loadet? // (test if it is the depencency setter)
+	const scope = prop_or_opts.scope || this || self;
+	const prop = prop_or_opts.property || prop_or_opts;
+    if (prop in scope && scope[prop] !== undefined) { // loadet? // (test if it is the depencency setter)
     	cb?.call(scope, scope[prop]);
 		return scope[prop];
     }
-	var callbacks = scope[CALLBACKS] ||= {};
+	const callbacks = scope[CALLBACKS] ||= {};
 	if (callbacks[prop] && cb) { // is it loading? (and async zzz)
 	    callbacks[prop].push(cb);
 	} else { // load!
-		var src = (prop_or_opts.from || scope.c1UseSrc) + '/' +prop;
+		const src = (prop_or_opts.from || scope.c1UseSrc) + '/' +prop;
 		callbacks[prop] = [cb];
-		var onload = function(e) {
+		const onload = e => {
             function runCallbacks(){
-                var fn, object = c1Use.able(scope,prop);
+                const object = c1Use.able(scope, prop);
 				if (e.type === 'error') object.c1UseFailed = true;
 				//object.c1UseSrc = src; // neu. why? ist von c1Use.able bereits gesetzt !?
+                let fn;
             	while (fn = callbacks[prop].shift()) fn.call(scope, object);
             }
             if (prop in scope || prop_or_opts.from) {
-                // property gesetzt oder per url (from) geladen
                 runCallbacks();
             } else {
                 // script geladen, aber darin wurde die property noch nicht gesetzt
-                Object.defineProperty(scope,prop,{
-                    set: function(value){
+                Object.defineProperty(scope, prop, {
+                    set(value){
                         delete this[prop];
                         this[prop] = value;
                         setTimeout(runCallbacks);
@@ -143,80 +133,68 @@ w.c1Use = function (prop_or_opts, cb) {
  * extend c1Use so it can have an array as first arguments
  * */
 c1Use = function (use) {
-	var fn = function (props, cb) {
-		var scope = this || self, i, prop;
+	return function (props, cb) {
+		let scope = this || self;
 		if (!scope.c1UseSrc) { throw new Error("c1Use: the Object needs a c1UseSrc property!"); }
-        if (props instanceof Array) {
-        	var returns = [], index=0, counter=0;
-        		while (prop = props[index++]) {
-        			c1Use.call(scope, prop, function(index) {
-        				var fn = function(res) {
-        				counter++;
-        					returns[index-1] = res;
-        					if (props.length === counter) cb.apply(scope, returns);
-        				};
-        				return fn;
-        			}(index));
-        		}
+        if (Array.isArray(props)) {
+        	const returns = [];
+        	let counter = 0;
+        	props.forEach((prop, index) => {
+        		c1Use.call(scope, prop, res => {
+        			counter++;
+        			returns[index] = res;
+        			if (props.length === counter) cb.apply(scope, returns);
+        		});
+        	});
         } else if (typeof props === 'string') {
-        	if (props.indexOf('/') === 0) { // neu beta
-        		var parts = props.match(/(.*)\/([^\/]*)\..+$/);
+        	if (props.startsWith('/')) { // neu beta
+        		const parts = props.match(/(.*)\/([^\/]*)\..+$/);
         		return use.call(scope, {from:parts[1], property:parts[2]}, cb);
         	} else {
                 // parts ("jQuery.fn.velocity")
-                var parts = props.split(/\./g), part;
-                i=0;
-                prop = parts.pop();
-                while (part = parts[i++]) {
+                const parts = props.split('.');
+                const prop = parts.pop();
+                for (const part of parts) {
                     c1Use.able(scope, part);
                     scope = scope[part];
                 }
         		return use.call(scope, prop, cb);
         	}
         } else {
-        	//console.log('todo?', props) // todo?
         	return use.call(scope, props, cb);
         }
 	};
-	return fn;
 } (c1Use);
 
 /* return Promise */
 c1Use = function (use) {
-	var fn = function (props,cb) {
-        var scope = this;
-        var p = new Promise(function(resolve, reject) {
-            use.call(scope, props, function(){
-                cb?.apply(scope, arguments);
-                resolve(arguments);
-                //reject('todo');
+	return function (props, cb) {
+        const scope = this;
+        return new Promise(resolve => {
+            use.call(scope, props, (...args) => {
+                cb?.apply(scope, args);
+                resolve(args);
             });
         });
-        return p;
 	};
-	return fn;
 } (c1Use);
 
 /* make the object useable */
 c1Use.able = function (obj, prop) {
-    if (obj[prop] === undf) obj[prop] = {};
-    obj[prop].c1Use    = c1Use;
-    obj[prop].c1UseSrc = obj.c1UseSrc + '/' + prop;
-    return obj[prop];
+    return Object.assign(obj[prop] ??= {}, {
+        c1Use,
+        c1UseSrc: obj.c1UseSrc + '/' + prop,
+    });
 };
 
 function loadScript(path, cb, eb) {
-    var elem = d.createElement('script');
-    elem.async   = false;
-    elem.src     = path;
-    elem.onload  = cb;
-    elem.onerror = eb;
-    d.documentElement.firstChild.appendChild(elem);
+    d.head.appendChild(Object.assign(d.createElement('script'), {
+        async: false, src: path, onload: cb, onerror: eb,
+    }));
 }
 if (!w.c1UseSrc) {
-    var tmp = d.getElementsByTagName('script');
-    tmp = tmp[tmp.length-1];
-    w.c1UseSrc = tmp.getAttribute('src').replace(/[^\/]+$/,'');
+    const scripts = d.getElementsByTagName('script');
+    w.c1UseSrc = scripts[scripts.length-1].getAttribute('src').replace(/[^\/]+$/,'');
 }
 
 c1Use.able(w,'c1');

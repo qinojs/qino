@@ -86,9 +86,9 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     let links = "";
     for (const l of allLangs) {
       if (l === currentLang) continue;
-      const uri = ctx.requestUri;
-      const sep = uri.includes("?") ? "&amp;" : "?";
-      links += `<a href="${hee(uri + sep + "changeLanguage=" + encodeURIComponent(l))}">${hee(l)}</a> `;
+      const url = new URL(ctx.requestUri, "http://x");
+      url.searchParams.set("changeLanguage", l);
+      links += `<a href="${hee(url.pathname + url.search)}">${hee(l)}</a> `;
     }
     langHtml = `<li><span class=-item style="padding:6px 16px; text-align:right">${links}</span>`;
   }

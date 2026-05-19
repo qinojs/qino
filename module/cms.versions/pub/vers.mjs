@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-//import '../../cms.frontend.1/pub/js/contextMenu.mjs?qgUniq=01e9d3f';
-import '../../cms.frontend.1/pub/js/frontend.mjs?qgUniq=19aae46';
+//import '../../cms.frontend.1/pub/js/contextMenu.mjs';
+import '../../cms.frontend.1/pub/js/frontend.mjs';
 import { apt } from '../../core/pub/js/apt.js';
 
 var css =
@@ -259,7 +259,7 @@ Viewer.on('before-load',function(e){
 		});
 	};
 	more.c1Find('.-compareActive').onclick = async function(){
-		await import('./comparer.mjs?qgUniq=fb5aad3');
+		await import('./comparer.mjs');
 		CmsVersComparer.compare(Viewer.pid, {
 			fromLog: e.vers+1,
 			fromText: li.c1Find('.-date').innerHTML,

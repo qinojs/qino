@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import './../../../core/pub/js/c1/NodeCleaner.mjs?qgUniq=c086a19';
+import './../../../core/pub/js/c1/NodeCleaner.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 
 if (!document.caretRangeFromPoint) { // polyfill for ff
@@ -31,8 +31,8 @@ cms.txtCleanElement = function(el,tid){
         el.setAttribute('width', el.offsetWidth);
         el.setAttribute('height', el.offsetHeight);
     }
-    if (el.src  && el.src.match  && el.src.match('dbFile/')  && el.src .match(location.host)) { el.src  = appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
-    if (el.href && el.href.match && el.href.match('dbFile/') && el.href.match(location.host)) { el.href = appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
+    if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
+    if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
     el.removeAttribute('cmstxt');
     el.classList.remove('qgCmsCont');
     el.classList.remove('qgCmsPage');

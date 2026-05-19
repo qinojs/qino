@@ -71,12 +71,12 @@ const PRIVATE_RANGES = [
 
 async function assertNoSSRF(url: string) {
   const { hostname } = new URL(url);
-  const ips = await Deno.resolveDns(hostname, "A").catch(() => [] as string[]);
-  const ips6 = await Deno.resolveDns(hostname, "AAAA").catch(() => [] as string[]);
+  const [ips, ips6] = await Promise.all([
+    Deno.resolveDns(hostname, "A").catch(() => [] as string[]),
+    Deno.resolveDns(hostname, "AAAA").catch(() => [] as string[]),
+  ]);
   for (const ip of [...ips, ...ips6]) {
-    if (PRIVATE_RANGES.some((r) => r.test(ip))) {
-      throw new Error(`SSRF blocked: ${ip}`);
-    }
+    if (PRIVATE_RANGES.some((r) => r.test(ip))) throw new Error(`SSRF blocked: ${ip}`);
   }
 }
 

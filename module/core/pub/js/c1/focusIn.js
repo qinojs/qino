@@ -4,36 +4,32 @@
 //console.warn('deprecated: focusIn.js use css focus-within instead');
 
 c1.focusIn = {};
-var w = window,
-    d = w.document;
+const d = document;
 
 function onIn(e) {
-    var el = e.target;
+    let el = e.target;
 	while (el?.classList) {
 		el.classList.add('c1-focusIn');
-		el = el.parentNode
+		el = el.parentNode;
 	}
 }
 function onOut() {
-    setTimeout(function() { // wait for next focus
-        var befores = d.querySelectorAll('.c1-focusIn'),
-            active = d.activeElement,
-            i = 0,
-            before = null;
-        while (before = befores[i++]) {
+    setTimeout(() => { // wait for next focus
+        const active = d.activeElement;
+        for (const before of d.querySelectorAll('.c1-focusIn')) {
             !before.contains(active) && before.classList.remove('c1-focusIn');
         }
-    },0);
+    }, 0);
 }
 d.addEventListener('focusin' , onIn);
 d.addEventListener('focusout', onOut);
 Element.prototype.c1Focus = function() {
     console.error('Element.c1Focus() is deprecated', Error().stack);
-    var el = this;
+    let el = this;
     do {
     	if (d.activeElement === el) break;
 		el.classList.add('c1-focusIn');
-		var candidate = el.parentNode;
+		const candidate = el.parentNode;
 		if (!candidate || !candidate.classList) break;
         el = candidate;
     } while (el.classList);

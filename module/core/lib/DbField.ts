@@ -56,9 +56,9 @@ export class DbField {
   #explodeTypeData(): void {
     if (this.#type === null) {
       const match = this.vs.Type?.match(/^([a-z]+)(\(([^)]+)\)|.*)(.*)$/i);
-      this.#type = match ? match[1].toLowerCase().trim() : "varchar";
-      this.#length = match ? (match[3] ?? "").trim() : "";
-      this.#special = match ? (match[4] ?? "").trim().toLowerCase() : "";
+      this.#type = match?.[1].toLowerCase().trim() ?? "varchar";
+      this.#length = match?.[3]?.trim() ?? "";
+      this.#special = match?.[4]?.trim().toLowerCase() ?? "";
     }
   }
   // async #change(data: Record<string, any>): Promise<void> {

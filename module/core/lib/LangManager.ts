@@ -35,7 +35,7 @@ export class LangManager {
         }
 
         if (!this.#langs.includes(ctx.langUsr)) ctx.langUsr = "";
-        if (ctx.langUsr === "") ctx.langUsr = this.#fromBrowser(ctx);
+        ctx.langUsr ||= this.#fromBrowser(ctx);
 
         if (usr) {
             await usr.set("lang", ctx.langUsr);
@@ -114,16 +114,10 @@ export class LangManager {
     // Shortcut: Text übersetzen (nutzt automatisch den aktuellen ctx)
     async t(strings: TemplateStringsArray, ...values: unknown[]): Promise<string> {
         const ctx = getCtx();
-        
-        // Originalstring aus den Template-Parts zusammensetzen (mit ###1### Platzhaltern)
         const original = strings.reduce((acc, str, i) => 
             acc + str + (i < strings.length - 1 ? `###${i + 1}###` : ""), "");
-        
-        // Übersetzten String holen
         let result = await this.#getTxt(original, ctx);
-        
-        // Werte auflösen und einsetzen
-        const resolved = await Promise.all(values.map(v => v));
+        const resolved = await Promise.all(values);
         for (let i = 0; i < resolved.length; i++) {
             result = result.replace(`###${i + 1}###`, String(resolved[i] ?? ""));
         }

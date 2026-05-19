@@ -67,7 +67,7 @@ export const backend = {
             parentModule = mod;
         }
         const node = await cms.nodeByModule(module);
-        return await node?.page();
+        return node?.page();
     }
 }
 

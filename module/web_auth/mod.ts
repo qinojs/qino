@@ -123,7 +123,7 @@ function parseAuthenticatorData(authData: Uint8Array): ParsedAuthData {
   return { signCount, aaguid, credentialId, publicKeyCbor };
 }
 
-async function coseToKeyJson(coseBytes: Uint8Array): Promise<string> {
+function coseToKeyJson(coseBytes: Uint8Array): string {
   const [cose] = decodeCBOR(coseBytes) as [Record<number, unknown>, number];
   const kty = cose[1], alg = cose[3];
 
@@ -199,8 +199,8 @@ async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
   const rpId   = await app.settings.web_auth.rpId;
   const rpName = await app.settings.web_auth.rpName;
   return {
-    rpId:   (rpId   && rpId   !== "null") ? String(rpId)   : "localhost",
-    rpName: (rpName && rpName !== "null") ? String(rpName) : "Qino",
+    rpId:   String(rpId   ?? "") || "localhost",
+    rpName: String(rpName ?? "") || "Qino",
   };
 }
 
@@ -278,7 +278,7 @@ function buildApi(app: App): AptTree { return {
           const t = now();
           await app.db.table("web_auth_credential").insert({
             usr_id: ctx.userId, credential_id: credId,
-            public_key: await coseToKeyJson(parsed.publicKeyCbor),
+            public_key: coseToKeyJson(parsed.publicKeyCbor),
             sign_count: parsed.signCount, aaguid: parsed.aaguid ?? "",
             name: String(name ?? "Authenticator"), created: t, last_used: t,
           });

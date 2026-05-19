@@ -1,17 +1,17 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
-import '../../../core/pub/js/c1/Placer.mjs?qgUniq=1ae5181';
-import '../../../core/pub/js/qg/c1Combobox.mjs?qgUniq=2f0275b';
-import '../../../core/pub/js/qg/fileHelpers.mjs?qgUniq=f1670d0';
-import '../../../core/pub/js/Rte/index.mjs?qgUniq=e1a8c3b';
-import '../../../core/pub/js/c1/fix/contextMenu.mjs?qgUniq=d5e4606';
-import '../../../core/pub/js/c1/contextMenu.mjs?qgUniq=11ccbd1';
+import '../../../core/pub/js/c1/Placer.mjs';
+import '../../../core/pub/js/qg/c1Combobox.mjs';
+import '../../../core/pub/js/qg/fileHelpers.mjs';
+import '../../../core/pub/js/Rte/index.mjs';
+import '../../../core/pub/js/c1/fix/contextMenu.mjs';
+import '../../../core/pub/js/c1/contextMenu.mjs';
 
-import './rte.mjs?qgUniq=97f7f96';
-import './contextMenu.mjs?qgUniq=01e9d3f';
-import './ddConts.mjs?qgUniq=7e085d8';
-import './dropPasteHelper.mjs?qgUniq=81e42cf';
-import './dropPaste.mjs?qgUniq=c40292d';
+import './rte.mjs';
+import './contextMenu.mjs';
+import './ddConts.mjs';
+import './dropPasteHelper.mjs';
+import './dropPaste.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 
 cms.frontend1 = { // only used by clipboard
@@ -109,8 +109,10 @@ cms.cont.all = {};
 cms.cont.add = mod => apt.cms.node(Page).contents.post({ module: mod }).then(loadCallback);
 
 function loadCallback(res){
-	setTimeout(()=>{ // html possibility has content-script that needs header-script to be executed first
-		let el = c1.dom.fragment(res.html).firstChild;
+	setTimeout(async ()=>{ // html possibility has content-script that needs header-script to be executed first
+		const html = typeof res.html === 'string' ? res.html : res.id ? await apt.cms.node(res.id).html.get() : '';
+		let el = c1.dom.fragment(html).firstElementChild;
+		if (!el) return console.warn('cms.cont.add: no html', res);
 		cms.contPos(el);
 		cms.contPos.dd.start(el); // todo. what todo?
 		el.style.top = '130px';

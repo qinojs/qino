@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import '../c1/Placer.mjs?qgUniq=1ae5181';
+import '../c1/Placer.mjs';
 
 var doc = document;
 var dialog = doc.createElement('div');

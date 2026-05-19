@@ -63,7 +63,7 @@ var el = c1.dom.fragment('<div class=-item itemid=publish>'+
 document.querySelector('#qgCmsFrontend1 > .-sidebar > [itemid="more"]').append(el);
 
 el.querySelector('.-versionCompare').addEventListener('click', async ()=>{
-	await import('./comparer.mjs?qgUniq=fb5aad3');
+	await import('./comparer.mjs');
 	CmsVersComparer.compare(Page,{
 		toSpace:0,
 		accept(){ publish(Page); },

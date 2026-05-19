@@ -10,16 +10,16 @@ c1.scroll = {
     },
     to: function(targetX, targetY, opt) { // todo different scroll target
         opt = c1.ext(c1.scroll.options, opt);
-        var docEl = document.documentElement;
+        const docEl = document.documentElement;
 		if (!opt.ignorMaxScroll) { // if scrollarea will grow
-			var maxScrollX = ('scrollMaxX' in window) ? scrollMaxX : (docEl.scrollWidth  - docEl.clientWidth);
-			var maxScrollY = ('scrollMaxY' in window) ? scrollMaxY : (docEl.scrollHeight - docEl.clientHeight);
+			const maxScrollX = ('scrollMaxX' in window) ? scrollMaxX : (docEl.scrollWidth  - docEl.clientWidth);
+			const maxScrollY = ('scrollMaxY' in window) ? scrollMaxY : (docEl.scrollHeight - docEl.clientHeight);
 			targetX = Math.max(Math.min(maxScrollX, targetX), 0);
 			targetY = Math.max(Math.min(maxScrollY, targetY), 0);
 		}
-    	var obj = {
-            targetX: targetX,
-            targetY: targetY,
+    	const obj = {
+            targetX,
+            targetY,
             deltaX: targetX - scrollX,
             deltaY: targetY - scrollY,
             lastX: scrollX,
@@ -37,11 +37,8 @@ c1.scroll = {
     },
 	toElement: function(el, opt){
 		const rect = el.getBoundingClientRect();
-		let left = rect.left + scrollX;
-		let top  = rect.top + scrollY
-		if (opt.marginTop) { // todo: scrollLeftMargin
-			top -= opt.marginTop;
-		}
+		const left = rect.left + scrollX;
+		const top  = rect.top + scrollY - (opt.marginTop ?? 0); // todo: scrollLeftMargin
 		this.to(left, top, opt);
 	}
 };
@@ -55,17 +52,17 @@ function step () {
     //if (window.__c1_scroll_running !== this) return this.onFinish();
 	// cancel scroll if scroll by hand, exit but dont trigger finish
 	// can happen until load :(
-	var tDiff = Date.now() - this.startTime;
+	const tDiff = Date.now() - this.startTime;
 
 	if (tDiff > 100 && this.lastY !== scrollY || this.lastX !== scrollX) {  // tDiff > 100 : ios can trigger mousemove before click fires..., not working if css-smooth-scroll
 		//console.log('interupted');
 		return;
 	}
-	var t = Math.min(tDiff / this.duration, 1); // time that has passed (0-1)
+	const t = Math.min(tDiff / this.duration, 1); // time that has passed (0-1)
 	//if (t === 1) return this.onFinish(); // Continue as long as the duration is not exceeded // zzz
   	//if (this.targetX === scrollX && this.targetY === scrollY) return this.onFinish(); // todo? Continue as long as the x/y is not exceeded
-    var x = this.targetX - ((1 - this.easing(t)) * (this.deltaX));
-	var y = this.targetY - ((1 - this.easing(t)) * (this.deltaY));
+    const x = this.targetX - (1 - this.easing(t)) * this.deltaX;
+	const y = this.targetY - (1 - this.easing(t)) * this.deltaY;
 
 
 	scrollTo(x+.5, y+.5);
@@ -83,7 +80,7 @@ function step () {
 		requestAnimationFrame(step.bind(this));
 	},12)
 }
-var Easing = { // From https://gist.github.com/gre/1650294
+const Easing = { // From https://gist.github.com/gre/1650294
 	linear:         t => t,
 	easeInQuad:     t => t*t,
 	easeOutQuad:    t => t*(2-t),
