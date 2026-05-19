@@ -97,7 +97,7 @@ function routeParams(r: Route): [string, StandardSchema | undefined][] {
 
 function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(tree)) {
-    if (RESERVED.has(key) || typeof value !== "object" || value === null) continue;
+    if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
     for (const verbKey of VERBS) {
       const verb = (value as AptNode)[verbKey];
       if (verb && typeof verb === "object" && typeof verb.execute === "function") {

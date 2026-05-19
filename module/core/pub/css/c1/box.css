@@ -3,9 +3,7 @@
     flex-flow:column;
     overflow:visible; /* overwrite c1-dialog */
 
-    &.c1-box { /* stronger */
-        padding:0;
-    }
+    &.c1-box { padding:0; }
 
     & > .-body {
         /* flex:1 0 auto; old */

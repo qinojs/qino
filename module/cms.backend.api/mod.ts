@@ -42,7 +42,7 @@ function accessLevel(action: any, ctx: any): Route["accessLevel"] {
 
 function* walk(node: any, ctx: any, segments: string[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(node as object)) {
-    if (RESERVED.has(key) || typeof value !== "object" || value === null) continue;
+    if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
     const segs = [...segments, key];
     for (const verb of VERBS) {
       const action = (value as any)[verb];

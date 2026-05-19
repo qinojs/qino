@@ -84,7 +84,7 @@ export const s = {
   object: <Shape extends Record<string, StandardSchema<any>>>(shape: Shape): StandardSchema<InferObject<Shape>> => {
     const keys = Object.keys(shape);
     return new StandardSchema<InferObject<Shape>>("object", (v, p) => {
-      if (typeof v !== "object" || v === null || Array.isArray(v)) return { issues: err(p, "expected object") };
+      if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
       const out: Record<string, unknown> = {};
       const issues: StandardIssue[] = [];
       for (const key of keys) {
@@ -119,7 +119,7 @@ export const s = {
 
   record: <T = unknown>(value?: StandardSchema<T>): StandardSchema<Record<string, T>> =>
     new StandardSchema<Record<string, T>>("record", (v, p) => {
-      if (typeof v !== "object" || v === null || Array.isArray(v)) return { issues: err(p, "expected object") };
+      if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
       if (!value) return { value: v as Record<string, T> };
       const out: Record<string, T> = {};
       const issues: StandardIssue[] = [];
