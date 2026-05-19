@@ -76,7 +76,7 @@
         '</div>'+
     '</div>';
 
-    let div = document.createElement('div');
+    const div = document.createElement('div');
     div.innerHTML = html;
 
     div.querySelector('.-closeBtn').addEventListener('click',function(){
@@ -87,7 +87,7 @@
         this.closest('.qgCMS').remove();
     });
 
-    let iv = setInterval(function(){
+    const iv = setInterval(function(){
         if (!document.body) return;
         document.body.append(div);
         div.c1ZTop();

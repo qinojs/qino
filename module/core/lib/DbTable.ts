@@ -88,7 +88,7 @@ export class DbTable {
   }
   entryId2Array(id: any): Record<string, any> | false {
     const arr: Record<string, any> = {};
-    if (typeof id === "object" && id !== null) {
+    if (id != null && typeof id === "object") {
       for (const primary of Object.keys(this.#primaries)) {
         if (!(primary in id)) return false;
         arr[primary] = id[primary];
@@ -287,8 +287,9 @@ export class DbTable {
       // return Entry;
     }
 
-    const values = Array.isArray(id) || (typeof id === "object" && id !== null) ? id : this.entryId2Array(id);
-    const eid = Array.isArray(id) || (typeof id === "object" && id !== null) ? String(this.entryId(id)) : String(id);
+    const isCompositeId = Array.isArray(id) || (id != null && typeof id === "object");
+    const values = isCompositeId ? id : this.entryId2Array(id);
+    const eid = isCompositeId ? String(this.entryId(id)) : String(id);
 
     if (!tableCache.has(eid)) {
       tableCache.set(eid, new Cl(this, values));
