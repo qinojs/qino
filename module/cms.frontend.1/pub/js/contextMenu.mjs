@@ -52,8 +52,8 @@ Menu.addItem('Ausschneiden', {
 	onclick() {
 		const pid = this.activePid;
 		apt.cms.clipboard.put({ value: parseInt(pid) }).then(() => {
-			let els = document.querySelectorAll('.-pid'+pid);
-			for (let el of els) el.style.opacity = .3;
+			const els = document.querySelectorAll('.-pid'+pid);
+			for (const el of els) el.style.opacity = .3;
 		});
 	}
 });
@@ -73,7 +73,7 @@ Menu.addItem('Löschen', {
 	}
 });
 
-let TreeMenu = c1.globalContextMenu;
+const TreeMenu = c1.globalContextMenu;
 TreeMenu.addItem('Einstellungen', {
 	icon: sysURL+'cms.frontend.1/pub/img/settings.svg',
 	selector: '#qgCmsFrontend1 .dynatree-node',

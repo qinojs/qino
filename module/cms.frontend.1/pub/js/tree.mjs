@@ -65,11 +65,11 @@ window.cmsTreeInit = async (json) => {
       node.li.title = "ID " + d.key;
     },
     onCustomRender(node) {
-      var d = node.data;
+      const d = node.data;
       d.addClass += " -access-" + d.myaccess;
       if (d.type !== "p") d.addClass += " -type-" + d.type;
       if (!d.visible) d.addClass += " -invisible";
-      var html = "<a class=dynatree-title href=#>";
+      let html = "<a class=dynatree-title href=#>";
       html += "<span cmstxt=" + d.title_id + ">" + d.title + "</span>";
       if (d.type === "c") {
         html += ' <span class=-col1 title="' + d.module + '"> ' +
@@ -116,11 +116,11 @@ window.cmsTreeInit = async (json) => {
   }).dynatree("getTree");
 
   cms.Tree.addPage = (name) => {
-    let parent = cms.Tree.activeNode;
+    const parent = cms.Tree.activeNode;
     parent.expand(1);
     apt.cms.node(parent.data.key).children.post({ title: name }).then((child) => {
       if (!child) return false;
-      let node = parent.addChild(
+      const node = parent.addChild(
         child,
         parent.childList && parent.childList[0],
       );
@@ -138,19 +138,19 @@ window.cmsTreeInit = async (json) => {
     root.visit((node) => node.childList && node.expand(true));
   });
 
-  var pid = cms.cont.active || Page;
+  const pid = cms.cont.active || Page;
   cms.Tree.activateKey(pid + "");
   cms.Tree.activeNode?.expand();
 
   /*edit*/
-  var editInput = $(
+  const editInput = $(
     '<input style="width:220px; margin:-3px; padding:2px; border:none; background:#fff; font-size:inherit; color:#444">',
   );
-  var mousedownOutside = (e) => {
+  const mousedownOutside = (e) => {
     e.target !== editInput[0] && editInput.trigger("blur");
   };
   cms.Tree.editNode = (node) => {
-    var $widget = node.tree.$widget;
+    const $widget = node.tree.$widget;
     $widget.unbind(); // Disable dynatree mouse- and key handling
     $widget.element.on("mousedown", mousedownOutside);
     $(".dynatree-title", node.span).removeAttr("href").html(editInput);
@@ -161,7 +161,7 @@ window.cmsTreeInit = async (json) => {
       e.key === "Enter" && editInput.trigger("blur");
     };
     editInput[0].onblur = (e) => {
-      var title = editInput.val();
+      const title = editInput.val();
       apt.cms.txt(node.data.title_id).put({ value: title }).then(() => {
         node.setTitle(title);
       });
@@ -177,7 +177,7 @@ window.cmsTreeInit = async (json) => {
       "in": pid,
       filter: cms.panel.data.tree_show_c ? "*" : "p",
     }).then((json) => {
-      var root = cms.Tree.getRoot();
+      const root = cms.Tree.getRoot();
       root.removeChildren();
       root.addChild(json);
       cms.Tree.activateKey(pid);
@@ -188,7 +188,7 @@ window.cmsTreeInit = async (json) => {
   function mouseEnterLeave(e) {
     let el = e.target.closest("li");
     if (!el || !el.title) return;
-    var id = el.title.match(/^ID ([0-9]+)/)[1];
+    const id = el.title.match(/^ID ([0-9]+)/)[1];
     if (!id) return;
     el = document.querySelector(".-pid" + id);
     if (!el) return;
@@ -199,7 +199,7 @@ window.cmsTreeInit = async (json) => {
       cms.contPos(el).unmark();
     }
   }
-  var divTree = cms.Tree.divTree;
+  const divTree = cms.Tree.divTree;
   divTree.addEventListener("mouseenter", mouseEnterLeave, true);
   divTree.addEventListener("mouseleave", mouseEnterLeave, true);
 };

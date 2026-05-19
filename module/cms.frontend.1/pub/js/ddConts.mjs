@@ -3,17 +3,17 @@ let active, dropCont, dropBefore, oldCss, ghost = document.createElement('div');
 ghost.style.cssText = 'background:#ff5; outline:#ff5 3px solid; min-height:8px; margin:2px; box-shadow:0 0 30px 3px rgba(0,0,0,.8); min-width:20px; z-index:999; position:relative; overflow:hidden; opacity:.9';
 
 cms.contDrag = function() {
-	let self = this;
-	let move = function(e) {
+	const self = this;
+	const move = function(e) {
 		active.style.left = e.clientX - 40 + 'px';
 		active.style.top  = e.clientY + 20 + 'px';
 		updatePosition(e, self);
 	};
 
-	let updatePosition = function(e, self){
+	const updatePosition = function(e, self){
 		if (!active) return;
-		let newDropCont   = getNearestElement2(e, self.targets, active);
-		let newDropBefore = getBeforeElement(e,newDropCont);
+		const newDropCont   = getNearestElement2(e, self.targets, active);
+		const newDropBefore = getBeforeElement(e,newDropCont);
 		if (dropCont !== newDropCont || dropBefore !== newDropBefore) {
 			dropCont   = newDropCont;
 			dropBefore = newDropBefore;
@@ -110,7 +110,7 @@ function elementDistance(el,x,y) {
 }
 function elementDistances(e, els) {
 	const items = [];
-	for (let element of els) {
+	for (const element of els) {
 		const distances = elementDistance(element, e.clientX, e.clientY);
 		let distance = distances.distance;
 		if (distances.isInside) distance /= 50; // inside is 50x better (nearer)!
@@ -152,14 +152,14 @@ function getBeforeElement(e, inside) {
 function getBeforeElement(e, el) {
 	let min=null, winner;
 	if (el.children.length) {
-		for (var i=0,child; child=el.children[i++];) {
+		for (let i=0,child; child=el.children[i++];) {
 			if (child === active || child === ghost) continue;
-			var pos = child.getBoundingClientRect();
-			var x = pos.left+(pos.width/2);
-			var y = pos.top+(pos.height/2);
-			var diffX = (e.clientX-x)*1;
-			var diffY = (e.clientY-y)*6;
-			var diff = Math.sqrt(diffX*diffX + diffY*diffY);
+			const pos = child.getBoundingClientRect();
+			const x = pos.left+(pos.width/2);
+			const y = pos.top+(pos.height/2);
+			const diffX = (e.clientX-x)*1;
+			const diffY = (e.clientY-y)*6;
+			const diff = Math.sqrt(diffX*diffX + diffY*diffY);
 			if (min === null || diff < min) {
 				min = diff;
 				winner = child;
@@ -176,7 +176,7 @@ function getBeforeElement(e, el) {
 }
 
 function moveToTargetEffect(element) {
-	let clone = element.cloneNode(true);
+	const clone = element.cloneNode(true);
 	document.body.appendChild(clone);
 	clone.style.cssText +=
 	'width:'+clone.offsetWidth+'px; '+
@@ -186,10 +186,10 @@ function moveToTargetEffect(element) {
 	'max-height:none; '+
 	'min-height:0; '+
 	'boxSizing:content-box; ';
-	let opacity = element.style.opacity;
+	const opacity = element.style.opacity;
 	setTimeout(()=>{
-		let duration = 190;
-		let pos = element.getBoundingClientRect();
+		const duration = 190;
+		const pos = element.getBoundingClientRect();
 		element.style.opacity = 0;
 		clone.style.cssText +=
 		'transition:all '+duration+'ms; '+

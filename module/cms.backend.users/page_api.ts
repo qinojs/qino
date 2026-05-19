@@ -11,6 +11,8 @@ export default async function (node: Node, vars:any): Promise<any> {
 
   const db = node.app.db;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
+  const usrOk = async (U: any) =>
+    !!(await U.is()) && (!(await U.get("superuser")) || isSuperuser);
 
   if ("email_used" in vars) {
     return db.one("SELECT id FROM usr WHERE email = ?", [vars.email_used]) ?? false;
@@ -20,24 +22,21 @@ export default async function (node: Node, vars:any): Promise<any> {
     const allowLoginAs = !!(node.settings.allow_login_as()) || isSuperuser;
     if (!allowLoginAs) return false;
     const TargetUsr = db.table("usr").Entry(vars.login_as);
-    if (!await TargetUsr.is()) return false;
-    if (await TargetUsr.get("superuser") && !isSuperuser) return false;
+    if (!(await usrOk(TargetUsr))) return false;
     await login(ctx, vars.login_as);
     return 1;
   }
 
   if ("delete" in vars) {
     const TargetUsr = db.table("usr").Entry(vars.delete);
-    if (!await TargetUsr.is()) return false;
-    if (await TargetUsr.get("superuser") && !isSuperuser) return false;
+    if (!(await usrOk(TargetUsr))) return false;
     await db.table("usr").delete(vars.delete);
     return 1;
   }
 
   if ("save" in vars) {
     const TargetUsr = db.table("usr").Entry(vars.save);
-    if (!await TargetUsr.is()) return false;
-    if (await TargetUsr.get("superuser") && !isSuperuser) return false;
+    if (!(await usrOk(TargetUsr))) return false;
     const allowed: Record<string, boolean> = {
       active: true, email: true, firstname: true, lastname: true,
       company: true, superuser: true, pw: true,
@@ -53,8 +52,7 @@ export default async function (node: Node, vars:any): Promise<any> {
 
   if ("set_grp" in vars) {
     const TargetUsr = db.table("usr").Entry(vars.set_grp);
-    if (!await TargetUsr.is()) return false;
-    if (await TargetUsr.get("superuser") && !isSuperuser) return false;
+    if (!(await usrOk(TargetUsr))) return false;
     const grpId = Number(vars.grp_id);
     const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;

@@ -1,33 +1,17 @@
-(function(){
-    'use strict';
-    let htmlEl = document.documentElement;
-    let style = htmlEl.style;
-    let ok =
-        'grid' in style &&
-        'will-change' in style &&
-        window.CSS &&
-        CSS.supports('color', 'var(--primary)');
+function run() {
+    if (globalThis.CSS && CSS.supports('selector(&)')) return;
+    if (document.cookie.includes('qgCMS_browserCheck_ignore')) return;
 
-    if (ok) return;
+    globalThis.error_report_count = 1000; // dont send errors
 
-    window.error_report_count = 1000; // dont send errors
-
-    let ignore = document.cookie.replace(/(?:(?:^|.*;\s*)qgCMS_browserCheck_ignore\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-    if (ignore) return;
-
+    const ua = navigator.userAgent;
     let OS = '';
-    if (navigator.appVersion.indexOf("Win")!=-1)   OS = 'Windows';
-    if (navigator.appVersion.indexOf("Mac")!=-1)   OS = 'Mac';
-    if (navigator.appVersion.indexOf("X11")!=-1)   OS = 'UNIX';
-    if (navigator.appVersion.indexOf("Linux")!=-1) OS = 'Linux';
+    if (ua.includes('Win'))   OS = 'Windows';
+    if (ua.includes('Mac'))   OS = 'Mac';
+    if (ua.includes('X11'))   OS = 'UNIX';
+    if (ua.includes('Linux')) OS = 'Linux';
 
-    let browsers = {
-        'IE' : {
-            'name' : 'Edge',
-            'link' : 'https://www.microsoft.com/de-de/windows/microsoft-edge',
-            'icon' : '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1" viewBox="0 0 32 32"><path fill="#188FD1" d="M11.47 18.94V19c0 1.06.24 2.07.72 3.03.56 1 1.34 1.8 2.33 2.4.98.58 2.08.88 3.3.88s2.3-.3 3.28-.88c1-.6 1.77-1.4 2.34-2.4h7.84c-1 2.85-2.77 5.2-5.27 7-2.5 1.82-5.3 2.73-8.4 2.73-2.34 0-4.53-.5-6.6-1.5-4.6 2.22-7.9 2.33-9.93.32C.37 29.9 0 28.8 0 27.27c0-1.52.3-3.23.9-5.1.6-1.9 1.58-3.96 2.97-6.22 1.38-2.25 3-4.3 4.9-6.14 1.1-1.13 1.8-1.83 2.1-2.1-2.72 1.32-5.17 3.36-7.37 6.12.8-3.2 2.5-5.83 5.1-7.9 2.6-2.04 5.6-3.07 9-3.07.34 0 .7.02 1.04.06 2.46-1.08 4.7-1.7 6.7-1.83 2.03-.13 3.46.2 4.3 1 1.66 1.7 1.8 4.37.45 8 1.26 2.24 1.9 4.65 1.9 7.23 0 .6-.02 1.16-.07 1.64H11.47zM10.1 29.7c-2.95-1.78-5.02-4.3-6.2-7.54-1.98 3.85-2.24 6.5-.8 7.95 1.28 1.28 3.6 1.15 7-.4zm13.54-14.57c-.1-1.57-.72-2.92-1.9-4.04-1.2-1.12-2.58-1.68-4.2-1.68-1.6 0-2.98.56-4.16 1.67-1.2 1.1-1.83 2.46-1.9 4.03h12.16zM22.92 3.9c2.8 1.14 5.04 2.98 6.7 5.52 1.02-2.72.97-4.62-.12-5.72-1.2-1.22-3.38-1.16-6.58.2z"/></svg>',
-            'beta' : true,
-        },
+    const browsers = {
         'Safari' : {
             'name' : 'Safari',
             'link' : 'https://support.apple.com/en-us/HT204416',
@@ -37,7 +21,7 @@
         'Chrome' : {
             'name' : 'Chrome',
             'link' : 'https://www.google.com/chrome/browser/desktop/index.html',
-            'icon' : '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1" viewBox="0 0 32 32"><path fill="#4AAE48" d="M16 24.2c-1.63 0-3.1-.45-4.44-1.32-1.33-.88-2.33-2-3-3.38L2 8c-1.38 2.46-2 5.2-2 8 0 4 1.3 7.5 3.9 10.47 2.6 2.98 5.85 4.76 9.72 5.34l4.65-8.02c-.47.14-1.25.4-2.27.4z"/><path fill="#EA3939" d="M10.97 9.53C12.45 8.4 14.12 8 16 8h13.75c-1.42-2.42-3.34-4.46-5.78-5.88C21.53.73 18.87 0 16 0c-2.5 0-4.83.53-7 1.6-2.17 1.06-4.17 2.6-5.64 4.6L8 14c.46-1.8 1.5-3.32 2.97-4.47z"/><path fill="#FED14B" d="M30.8 10h-9.3c1.63 1.63 2.7 3.7 2.7 6 0 1.7-.5 3.27-1.45 4.7L16.2 32c4.36-.04 8.1-1.63 11.18-4.75C30.46 24.12 32 20.37 32 16c0-2.04-.34-4.2-1.2-6z"/><circle cx="16" cy="16" r="6" fill="#188FD1"/></svg>',
+            'icon' : '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 32 32"><path fill="#4AAE48" d="M16 24.2c-1.63 0-3.1-.45-4.44-1.32-1.33-.88-2.33-2-3-3.38L2 8c-1.38 2.46-2 5.2-2 8 0 4 1.3 7.5 3.9 10.47 2.6 2.98 5.85 4.76 9.72 5.34l4.65-8.02c-.47.14-1.25.4-2.27.4z"/><path fill="#EA3939" d="M10.97 9.53C12.45 8.4 14.12 8 16 8h13.75c-1.42-2.42-3.34-4.46-5.78-5.88C21.53.73 18.87 0 16 0c-2.5 0-4.83.53-7 1.6-2.17 1.06-4.17 2.6-5.64 4.6L8 14c.46-1.8 1.5-3.32 2.97-4.47z"/><path fill="#FED14B" d="M30.8 10h-9.3c1.63 1.63 2.7 3.7 2.7 6 0 1.7-.5 3.27-1.45 4.7L16.2 32c4.36-.04 8.1-1.63 11.18-4.75C30.46 24.12 32 20.37 32 16c0-2.04-.34-4.2-1.2-6z"/><circle cx="16" cy="16" r="6" fill="#188FD1"/></svg>',
             'beta' : false,
         },
         'Firefox' : {
@@ -48,50 +32,46 @@
         }
     };
 
-    if (OS !== 'Windows') delete browsers.IE;
-    if (OS !== 'Mac')     delete browsers.Safari;
-
-    let windows10 = navigator.appVersion.match(/(Windows 10.0|Windows NT 10.0)/);
-    if (!windows10) delete browsers.IE;
+    if (OS !== 'Mac') delete browsers.Safari;
 
     let html =
-    '<div style="position:fixed; top:20px; left:0; right:0; margin:auto; width:310px; background:#fff; border:1px solid var(--cms-light); padding:20px; box-shadow:0 0 8px rgba(0,0,0,.5)" class="q1Rst qgCMS">'+
-        '<div style="font-size:1.3em; margin-bottom:1.2em">Browser vom CMS nicht unterstützt</div>' +
-        '<div>Folgende Browser sind technisch auf einem geeigneten Stand für die Verwendung des CMS</div>' +
-        '<div style="display:table; margin:20px 0">';
-    for (let id in browsers) {
-        let browser = browsers[id];
+        '<div style="position:fixed; top:20px; left:0; right:0; margin:auto; width:310px; background:#fff; border:1px solid var(--cms-light); padding:20px; box-shadow:0 0 8px rgba(0,0,0,.5)" class="q1Rst qgCMS">'+
+            '<div style="font-size:1.3em; margin-bottom:1.2em">Browser vom CMS nicht unterstützt</div>' +
+            '<div>Folgende Browser sind technisch auf einem geeigneten Stand für die Verwendung des CMS</div>' +
+            '<div style="display:table; margin:20px 0">';
+    for (const id in browsers) {
+        const browser = browsers[id];
         if (browser.beta) continue;
         html +=
-        '<a style="display:table-cell; padding:20px; width:10%; text-align:center" href="'+browser.link+'" target=browser>'+
-            browser.icon+
-            '<div>'+browser.name+'</div>'+
-        '</a>';
+            '<a style="display:table-cell; padding:20px; width:10%; text-align:center" href="'+browser.link+'" target=browser>'+
+                browser.icon+
+                '<div>'+browser.name+'</div>'+
+            '</a>';
     }
     html +=
-        '</div>'+
-        '<div style="text-align:right">'+
-            '<button class=-ignoreBtn>Ignorieren</button> '+
-            '<button class=-closeBtn>Editmodus verlassen</button>'+
-        '</div>'+
-    '</div>';
+            '</div>'+
+            '<div style="text-align:right">'+
+                '<button class=-ignoreBtn>Ignorieren</button> '+
+                '<button class=-closeBtn>Editmodus verlassen</button>'+
+            '</div>'+
+        '</div>';
 
     const div = document.createElement('div');
     div.innerHTML = html;
 
-    div.querySelector('.-closeBtn').addEventListener('click',function(){
-        location.href += '&qgCms_editmode=0';
+    div.querySelector('.-closeBtn').addEventListener('click', () => {
+        const url = new URL(location.href);
+        url.searchParams.set('qgCms_editmode', '0');
+        location.href = url;
     });
-    div.querySelector('.-ignoreBtn').addEventListener('click',function(){
+    div.querySelector('.-ignoreBtn').addEventListener('click', function() {
         document.cookie = 'qgCMS_browserCheck_ignore=1; max-age=300';
         this.closest('.qgCMS').remove();
     });
 
-    const iv = setInterval(function(){
-        if (!document.body) return;
-        document.body.append(div);
-        div.c1ZTop();
-        clearInterval(iv);
-    },200);
+    document.body.append(div);
+    div.style.position = 'fixed';
+    div.c1ZTop();
+}
 
-})();
+run();

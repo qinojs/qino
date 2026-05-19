@@ -71,7 +71,7 @@ const cmsTextService: any = {
         const return_: any[] = [];
         for (const l of this.ctx.app.languages.all) {
             let text = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, l]);
-            if (text === "") text = false;
+            if (text == null || text === "") text = false;
             return_.push({ lang: l, text });
         }
         return return_;
@@ -80,7 +80,8 @@ const cmsTextService: any = {
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
-        const input = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, source_lang]);
+        const input = String(await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, source_lang]) ?? "");
+        if (!input.trim()) return false;
         let output = await this.transl(input, target_lang, source_lang);
         if (output === false) return false;
 
@@ -97,10 +98,14 @@ const cmsTextService: any = {
         return true;
     },
 
-    async translatePageAllLangs(pid: any, ifNeeded: boolean, subpages: boolean): Promise<void> {
+    async translatePageAllLangs(pid: any, ifNeeded: boolean, subpages: boolean): Promise<{ count: number; fail: number }> {
+        const return_ = { count: 0, fail: 0 };
         for (const l of this.ctx.app.languages.all) {
-            await this.translatePage(pid, l, "auto", ifNeeded, subpages);
+            const result = await this.translatePage(pid, l, "auto", ifNeeded, subpages);
+            return_.count += result.count;
+            return_.fail += result.fail;
         }
+        return return_;
     },
 
     async translatePage(
@@ -145,6 +150,7 @@ const cmsTextService: any = {
         if (source_lang === "auto") {
             source_lang = "";
             for (const l of this.ctx.app.languages.all) {
+                if (l === target_lang) continue;
                 const source_text = await Text.lang(l).get();
                 if (source_text.trim() === "") continue;
                 source_lang = l;

@@ -177,7 +177,6 @@ export function init(app: App) {
 
     const editmode = access > 1 && Number(await settings.cms.editmode);
     if (editmode) {
-      ctx.html.addJSFile(ctx.sysURL + "cms.frontend.1/pub/js/browserCheck.js");
       ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
       ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
       ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");

@@ -7,8 +7,8 @@ const dragOver = function(e) {
 	e.stopImmediatePropagation();
 	if (window.q9DragInside) return;
 	e.preventDefault(); // firefox dont need this to access droped data!
-	let range = document.caretRangeFromPoint(e.clientX, e.clientY);
-	let Sel = getSelection();
+	const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+	const Sel = getSelection();
 	Sel.removeAllRanges();
 	Sel.addRange(range);
 };

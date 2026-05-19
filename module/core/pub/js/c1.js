@@ -151,7 +151,6 @@ c1Use = function (use) {
         		const parts = props.match(/(.*)\/([^\/]*)\..+$/);
         		return use.call(scope, {from:parts[1], property:parts[2]}, cb);
         	} else {
-                // parts ("jQuery.fn.velocity")
                 const parts = props.split('.');
                 const prop = parts.pop();
                 for (const part of parts) {

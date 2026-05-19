@@ -10,9 +10,8 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
   const db = ctx.app.db;
 
   const node: Node | null = _node;
-  const allowLoginAs = node
-    ? (!!(node.settings.allow_login_as()) || !!(await ctx.user?.get("superuser")))
-    : !!(await ctx.user?.get("superuser"));
+  const isSuperuser = !!(await ctx.user?.get("superuser"));
+  const allowLoginAs = isSuperuser || !!(node && node.settings.allow_login_as());
 
   const search = String(vars?.search ?? "");
   const grpId = ctx.get.grp_id ? Number(ctx.get.grp_id) : null;
@@ -27,15 +26,13 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
   }
 
   const sql =
-    "SELECT * FROM usr" +
-    " WHERE " + sh.where +
+    " SELECT * FROM usr  WHERE " + sh.where +
     grpFilter +
     " ORDER BY " + sh.order +
     " LIMIT 200";
 
   const rows = await db.all(sql, [...sh.whereParams, ...grpParams, ...sh.orderParams]);
 
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
   const pageUrl = node ? await (await node.page()).url() : "";
 
   let html = "";
@@ -71,7 +68,7 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
   <td> ${vs.active ? "yes" : "no"}
   <td> ${hee(String(numSess))}
   <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
-  ${loginAsTd}
+    ${loginAsTd}
   <td>
     <a href="${hee(detailUrl)}"><img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/pencil.svg" alt="Bearbeiten"></a>
   <td class=-delete>

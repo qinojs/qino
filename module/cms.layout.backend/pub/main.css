@@ -1,76 +1,91 @@
-/* recomment.css replacements */
-
-.c1-inp {
-	background-color:#fff;
-	border:1px solid #999;
-	min-height:1.9em;
-	width:170px;
-	display:inline-flex;
-}
-html body .c1-inp > * {
-	margin:0;
-	border-width:0 0 0 1px;
-	border-radius:0;
-	flex:1 1 auto;
-}
-.c1-inp > *:first-child {
-	border-left-width:0;
-}
-.c1-inp > input {
-	flex:100 1 auto;
-}
-[type=number] {
-	text-align:right;
-}
 html {
-	--line-height:calc(1.1em + .3rem);
-}
-
-html {
-    scrollbar-color: rgba(0,0,0,.2) rgba(0,0,0,0.009);
-    scrollbar-width: thin; /* none? */
+	font-size: 14px;
+	--color: var(--cms-color);
 	background:var(--cms-background);
-
-	--t1-color-dark:var(--cms-dark);
-	--t1-color-light:var(--cms-light);
-	--t1-color-red:var(--cms-access-3);
 }
 
+td, th { padding: calc(var(--gap) / 4); }
 small {
-	opacity:.4;
-	font-size:.86em;
+	color: var(--gray);
 }
+
+.u2-card {
+	background:var(--color-bg);
+	flex-grow:1;
+}
+.u2-card > .-head {
+	align-items:center;
+	justify-content: space-between;
+	background:var(--color-darker);
+	color: var(--color-bg);
+	padding:.7rem 1rem;
+	margin-bottom:1px;
+	font-weight: bold;
+	font-size:1.1em;
+}
+.u2-table {
+	--u2-Col-gap: 2rem;
+}
+.u2-table > tbody > tr {
+	border-top:1px solid var(--gray-lighter);
+}
+.u2-table > thead > tr {
+	background:var(--color-darker);
+	color: var(--color-bg);
+}
+
+
 #container {
-	min-height:100%;
-	display:flex;
-	flex-flow:wrap row;
-	background:#eee;
-	height:100vh; /* test */
+	display:grid;
+	grid-template-columns:auto 1fr;
+	grid-template-rows:auto 1fr;
+	height:100vh;
 	background:var(--cms-background);
 }
-/* navi  */
+
+#logo {
+	display:flex;
+	align-items:center;
+	padding:0 1.4rem;
+	background:var(--color-dark);
+	color:var(--color-light);
+	text-decoration:none;
+	padding-top:.3rem;
+}
+#logo svg { height:3.5rem; }
+
 #nav {
-	box-shadow:0 0 10px rgba(0,0,0,.3);
-	overflow:auto;
+	padding-block: .5rem;
+	grid-row:2/-1;
+	box-shadow: var(--shadow);
 	background:rgba(255,255,255,.4);
-	max-height:100%;
+	overflow:auto;
 }
 #nav > ul {
-	width:200px;
 	margin:0;
 	padding:0;
 	list-style:none;
 }
+
+#toolbar {
+	background:var(--color-dark);
+	color:var(--color-bg);
+	border-bottom:1px solid rgba(0,0,0,.2);
+	display:flex;
+	align-items:center;
+	padding:0 1rem;
+	gap:1rem;
+}
 #nav .-item {
 	display:block;
-	padding:11px 0 10px 9px;
+	padding:0.6rem 1rem;
 	color:inherit;
 	text-decoration: none;
 	position:relative;
 }
 #nav .-item.-hasSub:after {
 	font-family: 'qg_cms';
-	font-size:11px;
+	font-size:.8em;
 	font-weight:normal;
 	content: '\e800';
 	position: absolute;
@@ -105,82 +120,19 @@ small {
 	display:flex;
 	flex-wrap:wrap;
 	align-items:flex-start;
-	flex:1 1 400px;
-	padding:10px;
-
-	max-width: 100%;
+	flex:1;
+	gap: 1rem;
+	padding:2rem;
 	box-sizing:border-box;
-	max-height:100%;
-
-	overflow:auto; /* test */
+	overflow:auto;
 	background:rgba(255,255,255,.2);
-
-	position: relative; /* neu */
+	position: relative;
 	z-index: 0;
-}
-.beBoxCont {
-	display:flex;
-	flex-wrap:wrap;
 }
 #content > * {
 	flex:1 1 auto;
 }
-/* c1-box */
-.beBox,
-.qgCMS .c1-box {
-	flex:1 1 400px;
-	margin:10px;
-	max-width: calc(100% - 20px);
-	box-sizing:border-box;
-	box-shadow:0 0 10px rgba(0,0,0,.4);
-	background:#fff;
-}
-.beBox > .-head,
-.qgCMS .c1-box > .-head {
-	align-items:center;
-	justify-content: space-between;
-	background:var(--cms-dark);
-	padding:13px 15px 12px 15px;
-	min-height:40px;
-	box-sizing:border-box;
-	margin-bottom:1px;
-	font-weight: bold;
-}
-.beBox > .-body,
-.qgCMS .c1-box > .-body {
-	padding:15px;
-}
-tr.beHead > *,
-.qgCMS tr.c1-box-head > * {
-	padding-top:13px;
-	padding-bottom:12px;
-}
-/* Table */
-table {
-	word-break: initial;
-}
-table.data {
-	border-top:solid 1px #a3a3a3;
-	width:100%;
-	border-collapse: separate;
-	border-spacing: 0;
-}
-table.data > * > tr > * {
-	border-bottom:1px solid #a3a3a3;
-	padding:4px 7px;
-}
-table.data > * > tr > * > img {
-	vertical-align:middle;
-}
-table.data > thead > tr {
-	background-color:#ddd;
-	font-weight:bold;
-	text-align:left;
-}
-table.data > tbody > tr:hover { background-color:#eee; }
-td.right {
-	text-align:right;
-}
+
 
 thead [l1\:order]:after {
 	margin-left:.4em;
@@ -191,7 +143,10 @@ thead [l1\:order]:after {
 thead [l1\:order=DESC]:after {
 	content:'\e800';
 }
-::placeholder { color:#999 }
+
+
+
+/* mobile: */
 
 @media (max-width: 900px) {
 	#nav {
@@ -238,9 +193,15 @@ thead [l1\:order=DESC]:after {
 	#content {
 		padding:40px 0 0 0;
 	}
-	.beBox {
-		margin:5px;
-		max-width: 100%;
-		max-width: calc(100% - 10px);
-	}
+
 }
+
+
+
+
+
+
+
+
+
+

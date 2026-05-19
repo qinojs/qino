@@ -1,0 +1,117 @@
+// deno-lint-ignore-file no-explicit-any
+import { assertEquals } from "../../core/tests/deps.ts";
+import { invoke } from "../../core/lib/apt/mod.ts";
+import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
+import { api } from "../../cms.text/mod.ts";
+
+class FakeText {
+  id: number;
+  values: Record<string, string>;
+
+  constructor(id: number, values: Record<string, string>) {
+    this.id = id;
+    this.values = values;
+  }
+
+  lang(lang: string) {
+    return {
+      get: async () => this.values[lang] ?? "",
+      set: async (value: string) => { this.values[lang] = value; },
+    };
+  }
+}
+
+class FakeNode {
+  id: number;
+  titleText: FakeText;
+  pageTexts: Record<string, FakeText>;
+  childNodes: FakeNode[] = [];
+
+  constructor(id: number, titleText: FakeText, pageTexts: Record<string, FakeText> = {}) {
+    this.id = id;
+    this.titleText = titleText;
+    this.pageTexts = pageTexts;
+  }
+
+  access() { return 3; }
+  title() { return this.titleText; }
+  texts() { return this.pageTexts; }
+  children() {
+    return new Map(this.childNodes.map(node => [node.id, node]));
+  }
+}
+
+function ctxWith(app: any) {
+  const ctx = new RequestContext();
+  ctx.session = { liveUser: () => 1 } as any;
+  ctx.lang = "de";
+  app.db ??= {};
+  app.db.table ??= () => ({ Entry: () => ({ id: 1 }) });
+  ctx.app = app;
+  return ctx;
+}
+
+Deno.test("cms.text: missing and empty texts are returned as untranslated", async () => {
+  const ctx = ctxWith({
+    languages: { all: ["de", "en", "fr"] },
+    apt: { cms: { "node-id-from-txt-id": { get: async () => ({ id: 1 }) } } },
+    cms: { node: () => ({ access: () => 3 }) },
+    db: {
+      one: (_sql: string, args: unknown[]) => {
+        const lang = args[1];
+        if (lang === "de") return "Hallo";
+        if (lang === "en") return "";
+        return undefined;
+      },
+    },
+  });
+
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "GET", "/text/7"), [
+      { lang: "de", text: "Hallo" },
+      { lang: "en", text: false },
+      { lang: "fr", text: false },
+    ]);
+  });
+});
+
+Deno.test("cms.text: translate-all-langs translates only missing or empty texts", async () => {
+  const title = new FakeText(10, { de: "Titel", en: "", fr: "" });
+  const main = new FakeText(11, { de: "Hallo", en: "" });
+  const node = new FakeNode(1, title, { main });
+  const texts = new Map([[10, title], [11, main]]);
+  const fetchOrg = globalThis.fetch;
+  globalThis.fetch = ((url: string | URL) => {
+    const params = new URL(String(url)).searchParams;
+    return Promise.resolve({
+      json: () => Promise.resolve({
+        data: { translations: [{ translatedText: `${params.get("source")}-${params.get("target")}:${params.get("q")}` }] },
+      }),
+    } as Response);
+  }) as typeof fetch;
+
+  const ctx = ctxWith({
+    languages: { all: ["de", "en", "fr"] },
+    cms: { node: () => node },
+    dbTexts: { text: (id: number) => texts.get(id) },
+    settings: {
+      "cms.text": {
+        "translation service": "google",
+        google: { key: "" },
+        "translate char count": 0,
+      },
+      "cms.backend.webmaster": { "google.api.key": "" },
+    },
+  });
+
+  try {
+    await requestStorage.run(ctx, async () => {
+      assertEquals(await invoke(api, "POST", "/page/1/translate-all-langs", { ifNeeded: true }), { count: 4, fail: 0 });
+    });
+  } finally {
+    globalThis.fetch = fetchOrg;
+  }
+
+  assertEquals(title.values, { de: "Titel", en: "de-en:Titel", fr: "en-fr:de-en:Titel" });
+  assertEquals(main.values, { de: "Hallo", en: "de-en:Hallo", fr: "en-fr:de-en:Hallo" });
+});

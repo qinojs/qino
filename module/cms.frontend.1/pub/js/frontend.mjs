@@ -34,11 +34,11 @@ Object.assign(cms.contPos, c1.Eventer);
 cms.contPos.prototype = {
 	isDraggable() {
 		if (this.el.classList.contains('-draggable')) return true;
-		let p = this.el.parentNode;
+		const p = this.el.parentNode;
 		return p.classList.contains('-e') && p.classList.contains('qgCMS-dropTarget');
 	},
 	mark(e) {
-		let _ = cms.contPos;
+		const _ = cms.contPos;
 		e?.stopPropagation(); // verschachtelt
 		_.active?.unmark();
 		//_.active && _.active.unmark();
@@ -64,7 +64,7 @@ cms.contPos.active = null;
 
 function contMarkListener(e) {
 	if (e.target.nodeType !== 1) return; // firefox on dragenter
-	let target = e.target.closest('.qgCmsCont.-e');
+	const target = e.target.closest('.qgCmsCont.-e');
 	target && cms.contPos(target).mark(e);
 }
 document.addEventListener('mouseover',contMarkListener);
@@ -81,13 +81,13 @@ c1.ext(c1.Eventer, cms.cont);
 
 cms.cont.prototype = {
 	upload(File, complete, replace) {
-		var event = c1.ext(c1.Eventer);
+		const event = c1.ext(c1.Eventer);
 		event.pid = this.id;
 		event.File = File;
-		var progress = function(e) {
+		const progress = function(e) {
 			event.trigger('progress', e);
 		};
-		var wrapComplete = function(res) {
+		const wrapComplete = function(res) {
 			res = JSON.parse(res);
 			res.error && alert(res.error);
 			complete && setTimeout(function(){ complete(res); }, 700); // firefox problem?
@@ -111,7 +111,7 @@ cms.cont.add = mod => apt.cms.node(Page).contents.post({ module: mod }).then(loa
 function loadCallback(res){
 	setTimeout(async ()=>{ // html possibility has content-script that needs header-script to be executed first
 		const html = typeof res.html === 'string' ? res.html : res.id ? await apt.cms.node(res.id).html.get() : '';
-		let el = c1.dom.fragment(html).firstElementChild;
+		const el = c1.dom.fragment(html).firstElementChild;
 		if (!el) return console.warn('cms.cont.add: no html', res);
 		cms.contPos(el);
 		cms.contPos.dd.start(el); // todo. what todo?
@@ -123,8 +123,8 @@ function loadCallback(res){
 /* element menu */
 document.addEventListener('DOMContentLoaded',()=>{
 
-	let p = cms.contPos;
-	let menu = c1.dom.fragment(
+	const p = cms.contPos;
+	const menu = c1.dom.fragment(
 		'<div id=qgCmsContPosMenu class=q1Rst>'+
 		    '<div class=-opts title="Einstellungen">'+
                 '<svg width="24" height="24" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z"></path></svg>'+
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	menu.addEventListener('click',     e => e.stopPropagation() );
 	menu.addEventListener('mousedown', e => e.stopPropagation() );
 
-	let trash = c1.dom.fragment(
+	const trash = c1.dom.fragment(
 		'<div id=qgCmsContTrash>'+
 		'	<svg width="50" height="60" viewBox="0 -5 26 30">'+
 		'	  <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	document.body.append(trash);
 
 	/* drag drop */
-	let dd = new cms.contDrag();
+	const dd = new cms.contDrag();
 	cms.contPos.dd = dd;
 	dd.on('start',e=>{
 		const el = e.target;
@@ -212,10 +212,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 		e.preventDefault();
 	})
 	//let Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
-	let Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
+	const Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
 	cms.contPos.on('mark', obj=>{
 		menu.style.display = 'flex'; // todo
-		let isDraggable = obj.isDraggable(),
+		const isDraggable = obj.isDraggable(),
 			mod     = obj.el.className.replace(/.*-m-([^\s]+).*/,'$1').replace(/-/g,'.');
 		Placer.follow(obj.el);
 
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 cms.console = {
 	show(msg, type) {
-		let el = this.el();
+		const el = this.el();
 		el.classList.add('-active');
 		el.setAttribute('data-type',type);
 		el.c1ZTop();
@@ -252,9 +252,7 @@ cms.console = {
 		let el = document.getElementById('cmsConsole');
 		if (!el) {
 			document.body.insertAdjacentHTML('beforeend',
-			'<div id=cmsConsole class="qgCMS q1Rst">'+
-				'<div class=-msg></div>'+
-			'</div>');
+			'<div id=cmsConsole class="qgCMS q1Rst"><div class=-msg></div></div>');
 			el = document.getElementById('cmsConsole');
 		}
 		return el;
@@ -292,3 +290,5 @@ apt.on('PUT cms/txt/:id', ({ value }) => {
 // 		}
 // 	}
 // });
+
+import("./browserCheck.js");

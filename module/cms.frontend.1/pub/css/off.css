@@ -32,7 +32,7 @@
 	background-color:#222;
 }
 .qgCMS_editmode_switch.-active i {
-	background-color:#0099ff;
+	background-color: var(--cms-color, #0099ff);
 	transform:translateX(60%);
 }
 .qgCMS_editmode_switch.-dev div {

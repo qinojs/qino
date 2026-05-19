@@ -21,7 +21,7 @@ async function render(node: Node): Promise<string> {
   const db  = node.app.db;
 
   if (!(await ctx.user?.get("superuser"))) {
-    return '<div class="c1-box"><div class="-body">Kein Zugriff.</div></div>';
+    return '<div class="u2-card"><div class="-body">Kein Zugriff.</div></div>';
   }
 
   if ("delete_cred" in ctx.post && ctx.post.token === ctx.token) {
@@ -51,21 +51,21 @@ async function render(node: Node): Promise<string> {
   const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(nicht konfiguriert)";
   const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(nicht konfiguriert)";
 
-  return `<div class="beBoxCont">
-<div class="c1-box" style="flex:0 1 24rem">
+  return `<div class="u2-flex">
+<div class="u2-card" style="flex:0 1 24rem">
   <div class="-head">Konfiguration</div>
+  <table class="u2-table">
+    <tr><th style="width:8em">Relying Party ID<td>${hee(rpId)}
+    <tr><th>RP Name<td>${hee(rpName)}
+  </table>
   <div class="-body">
-    <table class="c1-style">
-      <tr><th style="width:8em">Relying Party ID<td>${hee(rpId)}
-      <tr><th>RP Name<td>${hee(rpName)}
-    </table>
     <p style="font-size:.85em;color:#888;margin-top:.5em">Einstellungen unter <code>Einstellungen → web_auth</code>.</p>
   </div>
 </div>
-<div class="c1-box" style="flex:1">
+<div class="u2-card" style="flex:1">
   <div class="-head">Registrierte Passkeys (${rows.length})</div>
-  <div style="overflow:auto">
-    <table class="c1-style">
+  <div style="overflow:auto; padding:0">
+    <table class="u2-table">
       <thead><tr><th>ID<th>Benutzer<th>Name<th>Credential ID<th>AAGUID<th>Sign Count<th>Registriert<th>Zuletzt<th width=80>
       <tbody>${tableRows || empty}
     </table>

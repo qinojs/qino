@@ -16,13 +16,12 @@ export function init(app: any) {
       <style>
           .cmsChatWrapper {
             position:fixed;
-            top:80px;
-            left:16px;
+            top:3rem;
+            left:3rem;
             z-index:9000;
             background:var(--color-bg);
             color:var(--color-text);
-            border:1px solid var(--gray-light);
-            box-shadow:0 4px 16px rgba(0,0,0,.15);
+            box-shadow:0 0 1rem rgba(0,0,0,.3);
             font-size:14px;
             display:flex;
             flex-direction:column;
@@ -34,7 +33,7 @@ export function init(app: any) {
       </style>
       <div xonmousedown="event.stopPropagation();">
         <div u2-movable class="cmsChatWrapper q1Rst qgCMS" style="position:fixed;top:80px;left:16px;">
-          <div u2-movable-handler style="background:var(--color-lighter); padding:.5rem; cursor:move">CMS Helper</div>
+          <div u2-movable-handler style="background:var(--cms-color); color:#fff; padding:.5rem; cursor:move">CMS Helper</div>
           <ai-chat bot="cms-helper"></ai-chat>
         </div>
       </div>`;

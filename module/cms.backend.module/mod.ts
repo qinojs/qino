@@ -36,9 +36,9 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const modObj = allMods[modName];
 
   if (!modObj) {
-    return `<div class=c1-box>
+    return `<div class=u2-card>
       <div class=-head><a href="?">← Module</a></div>
-      <div class=-body>Modul <code>${hee(modName)}</code> nicht gefunden.</div>
+      <div class=-body>Modul ${hee(modName)} nicht gefunden.</div>
     </div>`;
   }
 
@@ -79,7 +79,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
       const props = Object.keys((mod[key] as any)?.properties ?? {});
       if (props.length) detail = " <small>(" + props.join(", ") + ")</small>";
     }
-    return `<span style="display:inline-block;background:#e9ecef;border-radius:4px;padding:2px 8px;margin:2px;font-family:monospace;font-size:13px">${hee(label)}${detail}</span>`;
+    return `${hee(label)}${detail} `;
   }).join("");
 
   // --- Dependencies (needs) ---
@@ -90,12 +90,12 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     .sort();
 
   const depsHtml = needs.length
-    ? needs.map(d => `<a href="?mod=${encodeURIComponent(d)}" style="margin:2px;display:inline-block"><code>${hee(d)}</code></a>`).join(" ")
-    : "<em style='color:#999'>keine</em>";
+    ? needs.map(d => `<a href="?mod=${encodeURIComponent(d)}">${hee(d)}</a>`).join(" ")
+    : "<em>keine</em>";
 
   const neededByHtml = neededBy.length
-    ? neededBy.map(d => `<a href="?mod=${encodeURIComponent(d)}" style="margin:2px;display:inline-block"><code>${hee(d)}</code></a>`).join(" ")
-    : "<em style='color:#999'>keine</em>";
+    ? neededBy.map(d => `<a href="?mod=${encodeURIComponent(d)}">${hee(d)}</a>`).join(" ")
+    : "<em>keine</em>";
 
   // --- Files ---
   let filesHtml = "";
@@ -113,20 +113,20 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
         nameCell = hee(rel);
       }
       rows.push(`<tr>
-        <td style="font-family:monospace;font-size:12px">${nameCell}
-        <td style="text-align:right;color:#999;font-size:12px;padding-right:12px"><u2-bytes>${info.size}</u2-bytes>
-        <td style="color:#999;font-size:12px"><u2-time datetime="${mtimeIso}" type=relative>${mtimeIso.slice(0, 16).replace("T", " ")}</u2-time>`);
+        <td>${nameCell}
+        <td style="text-align:right"><u2-bytes>${info.size}</u2-bytes>
+        <td><u2-time datetime="${mtimeIso}" type=relative>${mtimeIso.slice(0, 16).replace("T", " ")}</u2-time>`);
     }
     if (rows.length) {
-      filesHtml = `<table class=c1-style style="width:100%;white-space:nowrap">
+      filesHtml = `<table class=u2-table style="width:100%;white-space:nowrap">
         <thead><tr><th>Datei<th style="text-align:right">Größe<th>Geändert
         <tbody>${rows.join("")}
       </table>`;
     } else {
-      filesHtml = "<em style='color:#999'>keine Dateien gefunden</em>";
+      filesHtml = "<em>keine Dateien gefunden</em>";
     }
   } else if (modUrl) {
-    filesHtml = `<em style='color:#999'>Remote-Modul (URL): <code>${hee(modUrl)}</code></em>`;
+    filesHtml = `<em>Remote-Modul (URL): ${hee(modUrl)}</em>`;
   }
 
   // --- Source info ---
@@ -135,55 +135,30 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     ? `<a href="${hee(ctx.appURL + "editor?file=" + encodeURIComponent(modPath))}" target="${hee(encodeURIComponent(modPath))}">${hee(sourceDisplay)}</a>`
     : `<code>${hee(sourceDisplay)}</code>`;
 
-  return `<div class=c1-box>
-  <div class=-head style="display:flex;align-items:center;gap:12px">
-    <a href="?" style="font-size:13px;opacity:.7">← Module</a>
-    <span style="font-family:monospace">${hee(modName)}</span>
+  return `<div class=u2-flex>
+  <div class=u2-card>
+    <div class=-head><a href="?">← Module</a> ${hee(modName)}</div>
+    <table class=u2-table>
+      <tr><th>Quelle<td>${sourceHtml}
+      <tr><th>Exports<td>${exportBadges || "<em>keine</em>"}
+      <tr><th>needs<td>${depsHtml}
+      <tr><th>used by<td>${neededByHtml}
+    </table>
   </div>
-
-  <div class=-body style="display:grid;gap:16px;padding:16px">
-
-    <section>
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:4px">Quelle</div>
-      <div style="word-break:break-all">${sourceHtml}</div>
-    </section>
-
-    <section>
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px">Exports</div>
-      <div>${exportBadges || "<em style='color:#999'>keine</em>"}</div>
-    </section>
-
-    <section style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div>
-        <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px">Benötigt (needs)</div>
-        <div>${depsHtml}</div>
-      </div>
-      <div>
-        <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px">Wird benötigt von</div>
-        <div>${neededByHtml}</div>
-      </div>
-    </section>
-
-    ${mod.settingsSchema?.properties ? `<section>
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px">Settings-Schema</div>
-      <table class=c1-style style="width:100%">
-        <thead><tr><th>Key<th>Typ<th>Titel
-        <tbody>${Object.entries((mod.settingsSchema as any).properties ?? {}).map(([k, v]: [string, any]) =>
-          `<tr><td><code>${hee(k)}</code><td><code>${hee(v?.type ?? "")}</code><td>${hee(v?.title ?? "")}`
-        ).join("")}
-      </table>
-    </section>` : ""}
-
-    ${mod.api ? `<section>
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px">API-Routen</div>
-      <div style="font-family:monospace;font-size:12px;background:#f8f9fa;padding:8px;border-radius:4px;white-space:pre-wrap">${hee(JSON.stringify(flattenApiRoutes(mod.api), null, 2))}</div>
-    </section>` : ""}
-
-    <section>
-      <div style="text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px">Dateien${isSuperuser ? " (mit Editor-Links)" : ""}</div>
-      ${filesHtml}
-    </section>
-
+  ${mod.settingsSchema?.properties ? `
+  <div class=u2-card>
+    <div class=-head>Settings-Schema</div>
+    <table class=u2-table>
+      <thead><tr><th>Key<th>Typ<th>Titel
+      <tbody>${Object.entries((mod.settingsSchema as any).properties ?? {}).map(([k, v]: [string, any]) =>
+        `<tr><td><code>${hee(k)}</code><td><code>${hee(v?.type ?? "")}</code><td>${hee(v?.title ?? "")}`
+      ).join("")}
+    </table>
+  </div>` : ""}
+  ${mod.api ? `<div class=u2-card><div class=-head>API-Routen</div><div class=-body><pre>${hee(JSON.stringify(flattenApiRoutes(mod.api), null, 2))}</pre></div></div>` : ""}
+  <div class=u2-card>
+    <div class=-head>Dateien${isSuperuser ? " (mit Editor-Links)" : ""}</div>
+    ${filesHtml}
   </div>
 </div>`;
 }
@@ -203,12 +178,14 @@ function flattenApiRoutes(tree: any, prefix = ""): Record<string, string[]> {
 
 async function renderOverview(node: Node): Promise<string> {
   const app = node.app as any;
+  const ctx = getCtx();
   const rows = [];
   const allMods = app.modules.all();
   const modules = Object.keys(allMods).sort();
 
   for (const name of modules) {
-    const mod = allMods[name].exports;
+    const modObj = allMods[name];
+    const mod = modObj.exports;
     const needs: string[] = mod.needs ?? [];
     const neededBy = Object.values(allMods).filter((m: any) => (m.exports.needs ?? []).includes(name)).length;
     const exports = [
@@ -221,22 +198,30 @@ async function renderOverview(node: Node): Promise<string> {
       mod.dbSchema && "db",
     ].filter(Boolean).join(", ");
 
+    const modDir = modObj.path?.replace(/\/?[^/]+$/, "") ?? null;
+    const hasSvg = modDir ? await Deno.stat(modDir + "/pub/module.svg").then(() => true, () => false) : false;
+    const iconHtml = hasSvg
+      ? `<svg width=16 height=16><use href="${ctx.sysURL}${name}/pub/module.svg#main"/></svg>`
+      : "";
+
     rows.push(`<tr>
-      <td><a href="?mod=${encodeURIComponent(name)}"><code>${hee(name)}</code></a>
-      <td style="text-align:center;color:#999">${needs.length}
-      <td style="text-align:center;color:#999">${neededBy}
-      <td style="font-size:12px;color:#888">${hee(exports)}`);
+      <td style="text-align:center">${iconHtml}
+      <td><a href="?mod=${encodeURIComponent(name)}">${hee(name)}</a>
+      <td style="text-align:center">${needs.length}
+      <td style="text-align:center">${neededBy}
+      <td>${hee(exports)}`);
   }
 
-  return `<div class=c1-box>
+  return `<div class=u2-card>
   <div class=-head>Module</div>
   <div class=-body>
-    <input type=search placeholder="suchen..." style="width:300px; max-width:100%" oninput="this.closest('.c1-box').querySelectorAll('tbody tr').forEach(tr=>tr.hidden=!tr.textContent.toLowerCase().includes(this.value.toLowerCase()))">
+    <input type=search placeholder="suchen..." style="width:300px; max-width:100%" oninput="this.closest('.u2-card').querySelectorAll('tbody tr').forEach(tr=>tr.hidden=!tr.textContent.toLowerCase().includes(this.value.toLowerCase()))">
   </div>
-  <div style="overflow:auto; max-height:80vh">
-    <table class=c1-style style="white-space:nowrap">
+  <div style="overflow:auto; max-height:80vh; padding:0">
+    <table class=u2-table style="white-space:nowrap">
       <thead>
         <tr>
+          <th width=10>
           <th>Name
           <th title="Anzahl Abhängigkeiten">needs
           <th title="Wird benötigt von">used by
@@ -261,7 +246,7 @@ export function backendDashboardWidget(app: any): string {
   const withDb = Object.values(allMods).filter((m: any) => m.exports?.dbSchema).length;
   const withApi = Object.values(allMods).filter((m: any) => m.exports?.api).length;
   return `
-<table class="c1-style" style="white-space:nowrap">
+<table class="u2-table" style="white-space:nowrap">
   <tr><td>Gesamt:<td>${hee(String(total))}
   <tr><td>Mit DB-Schema:<td>${hee(String(withDb))}
   <tr><td>Mit API:<td>${hee(String(withApi))}

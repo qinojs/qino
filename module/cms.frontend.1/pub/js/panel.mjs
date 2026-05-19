@@ -242,7 +242,7 @@ c1.onElement(".qgCmsTreeManager", async (el) => {
 	} */
 });
 
-c1.onElement(".qgCmsFileManager", async (el) => {
+c1.onElement(".qgCmsFileManager", (el) => {
   const pid = el.getAttribute("pid");
   c1.c1Use("form", function () {
     el.c1Find(".-uploadBtn").addEventListener("click", async function () {
@@ -273,14 +273,6 @@ c1.onElement(".qgCmsFileManager", async (el) => {
         }
       });
     }
-    /*
-		var {Sortable} = await import('./../../../core/pub/js/sortable.m js');
-		new Sortable(tbody, {
-			handle:'.-handle',
-			forceFallback:true,
-			fallbackAxis: 'y',
-		});
-		*/
 
     $(tbody).sortable({
       handle: ".-handle",

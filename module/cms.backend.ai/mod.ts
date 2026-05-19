@@ -352,7 +352,7 @@ async function render(node: any): Promise<string> {
           <input type=hidden name=qgToken value="${hee(ctx.token)}">
           <input type=hidden name=action value=save-provider>
           <input type=hidden name=provider value="${hee(providerName)}">
-          <table class="c1-style ai-kv">
+          <table class="u2-table ai-kv">
             <tr><th>Endpoint<td><code>${hee(provider.endpoint)}</code>
             <tr><th>Stärken<td>${formatList(provider.strengths)}
             <tr><th>JSON Mode<td>${provider.jsonMode ? "ja" : "nein"}
@@ -370,8 +370,8 @@ async function render(node: any): Promise<string> {
     <details class=ai-subdetails>
       <summary>Models (${hee(modelCount.toLocaleString("de-DE"))})</summary>
       <div class=ai-subbody>${syncHtml}</div>
-      <div style=overflow:auto>
-        <table class="c1-style ai-model-table">
+      <div style="overflow:auto; padding:0">
+        <table class="u2-table ai-model-table">
           <thead><tr><th>Model<th>Label<th>Stärken<th>Features<th>Limits<th>Kosten/M<th>Quelle<th>
           <tbody>${modelRows(providerName, provider.models ?? [], customModels, ctx.token)}
         </table>
@@ -410,10 +410,8 @@ async function render(node: any): Promise<string> {
   const messageHtml = message ? `<div class="ai-message -${hee(message.type)}">${hee(message.text)}</div>` : "";
 
   return `
-<div class="beBoxCont ai-page">
+<div class="u2-flex ai-page">
   <style>
-    .ai-page { gap:12px; }
-    .ai-page .c1-box { flex:1 1 100%; }
     .ai-provider-list { display:grid; gap:8px; }
     .ai-provider { border:1px solid #ddd; background:#fff; }
     .ai-provider[open] { border-color:#bbb; }
@@ -441,13 +439,13 @@ async function render(node: any): Promise<string> {
 
   ${messageHtml}
 
-  <div class=c1-box>
+  <div class=u2-card style="flex-grow:0">
     <div class=-head>AI Defaults</div>
-    <div class=-body>
+    <div class=-body style="padding:0">
       <form method=post>
         <input type=hidden name=qgToken value="${hee(ctx.token)}">
         <input type=hidden name=action value=save-default>
-        <table class=c1-style>
+        <table class=u2-table>
           <tr><th>Provider<td><select name=default_provider>${providerOptions}</select>
           <tr><th>Model<td>
             <input name=default_model value="${hee(defaultModel)}" list="ai-models-${htmlId(defaultProvider)}-default">
@@ -460,7 +458,7 @@ async function render(node: any): Promise<string> {
     </div>
   </div>
 
-  <div class=c1-box>
+  <div class=u2-card>
     <div class=-head>Provider</div>
     <div class="-body ai-provider-list">
       ${providerBoxes}
@@ -528,14 +526,15 @@ export async function backendDashboardWidget(app: any): Promise<string> {
        <tr><td>Model:<td>${hee(defaultModel || "–")}`
     : `<tr><td colspan=2 style="color:#999">Kein Default konfiguriert.`;
 
-  return `
-<table class="c1-style" style="white-space:nowrap">
+  return `<div style="overflow:auto; padding:0">
+<table class="u2-table" style="white-space:nowrap">
   ${defaultHtml}
 </table>
-${rows ? `<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+${rows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>Provider<th style="text-align:right">Input<th style="text-align:right">Output
   <tbody>${rows}
-</table>` : ""}`;
+</table>` : ""}
+</div>`;
 }
 
 export const cms = { node: { render } };

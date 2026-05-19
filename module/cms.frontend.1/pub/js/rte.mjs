@@ -5,16 +5,16 @@
 import '../../../core/pub/js/Rte/index.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 
-let urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
-let mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
+const urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
+const mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
-let inp = c1.dom.fragment('<input placeholder=url spellcheck=false type=qgcms-page>').firstChild;
-let end = function() {
+const inp = c1.dom.fragment('<input placeholder=url spellcheck=false type=qgcms-page>').firstChild;
+const end = function() {
 	let el = Rte.element.closest('a');
 	if (!el) return;
 
-	var selection = window.getSelection(); // todo: WebKit has a bug where links forces the caret to go after the link when typing
-	var range = document.createRange();
+	const selection = window.getSelection(); // todo: WebKit has a bug where links forces the caret to go after the link when typing
+	const range = document.createRange();
 	range.selectNodeContents(el);
 	selection.removeAllRanges();
 	selection.addRange(range);
@@ -56,21 +56,21 @@ Rte.ui.setItem('LinkInput', {
 	enable: 'a, a > *',
 	check(el) {
 		el = el.closest('a');
-		let v = el.getAttribute('href');
+		const v = el.getAttribute('href');
 		if (v) inp.value = v;
 	}
 });
 
 Rte.ui.setItem('Link', {
 	click() {
-		let cEl = Rte.element;
-		let exists = cEl?.closest('a');
+		const cEl = Rte.element;
+		const exists = cEl?.closest('a');
 		if (exists) {
 			exists.removeNode();
 		} else {
 			//let el = qgSelection.surroundContents(document.createElement('a')); // todo: selection on multiple elements
-			let range = window.getSelection().c1GetRange();
-			let el = document.createElement('a');
+			const range = window.getSelection().c1GetRange();
+			const el = document.createElement('a');
 			el.appendChild(range.extractContents());
 			range.insertNode(el);
 			qgSelection.toChildren(el);
@@ -103,12 +103,12 @@ Rte.ui.setItem('Link', {
 });
 
 
-let externMediaDialog = async function(txtEl,medias) {
-	let [pid] = await Promise.all([
+const externMediaDialog = async function(txtEl,medias) {
+	const [pid] = await Promise.all([
 		cms.txtIdToPid( txtEl.getAttribute('cmstxt') ),
 		c1.c1Use('dialog'),
 	]);
-	let dialog = new c1.dialog({
+	const dialog = new c1.dialog({
 		class:'qgCMS',
 		title:'Externe Medien',
 		body: 'Welche Dateien möchtest Du auf deinen Server kopieren? <br><br>'+
@@ -136,7 +136,7 @@ let externMediaDialog = async function(txtEl,medias) {
 	});
 	for (let [,media] of Object.entries(medias))  {
 		//let file = new URL(uri).pathname.replace(/.*\//,'');
-		let label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
+		const label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
 		label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
 		label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
 		label.c1Find('input').addEventListener('change',function(){ media.checked = this.checked; });
@@ -144,15 +144,15 @@ let externMediaDialog = async function(txtEl,medias) {
 	}
 	dialog.show();
 }
-let checkMedia = function(root) {
-	let medias = {}; let has=0;
+const checkMedia = function(root) {
+	const medias = {}; let has=0;
 	for (let el of root.c1FindAll('a, img')) {
 		if (el.classList.contains('externMedia')) continue;
 		for (let attr of ['src','href']) {
 			if (!el.hasAttribute(attr)) continue;
-			let uri = new URL(el[attr]);
+			const uri = new URL(el[attr]);
 			if (location.host === uri.host) continue;
-			let ext = uri.pathname.replace(/.*\./,'');
+			const ext = uri.pathname.replace(/.*\./,'');
 			if (!ext) continue;
 			if (el.tagName === 'IMG' || ['pdf','doc','xls','jpg','png','gif'].includes(ext)) {
 				medias[uri] ||= {els:[]};
@@ -167,18 +167,18 @@ let checkMedia = function(root) {
 };
 document.addEventListener('paste',function(e){
 	if (!e.target.contentEditable) return;
-	let txtEl = e.target.closest('[cmstxt]');
+	const txtEl = e.target.closest('[cmstxt]');
 	if (!txtEl) return;
 	setTimeout(()=>checkMedia(txtEl));
 });
 
 /* dbfile */
 document.addEventListener('qgResize',e=>{
-	let el = e.target;
+	const el = e.target;
 	if (!el.isContentEditable) return;
 	if (el.tagName === 'IMG' && el.src.match('dbFile/')) {
-		let width = el.width;
-		let height = el.height;
+		const width = el.width;
+		const height = el.height;
 
 		el.setAttribute('loading','lazy');
         el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
@@ -193,7 +193,7 @@ document.addEventListener('qgResize',e=>{
 
 		el.removeAttribute('draggable'); // todo: needed?
 
-		var url = el.src;
+		const url = el.src;
 		el.src = '';
 		setTimeout(()=>{
 			el.src = url;
@@ -205,13 +205,13 @@ document.addEventListener('qgResize',e=>{
 
 // dbclick zoomer
 addEventListener('dblclick', function(e) {
-    let img = e.target;
+    const img = e.target;
     if (img.isContentEditable && img.tagName === 'IMG' && img.src.match(/\/dbFile/)) {
         e.stopPropagation();
         e.preventDefault();
 
-        let zoomImg = new Image();
-        let clip = {};
+        const zoomImg = new Image();
+        const clip = {};
         zoomImg.src = img.src.replace(/([a-z]+)-([^\/]*)\//g,function(match, name, value) {
             switch (name) {
                 case 'w': case 'h': case 'vpos': case 'hpos': case 'zoom':
@@ -221,11 +221,11 @@ addEventListener('dblclick', function(e) {
             }
         });
         zoomImg.onload = function() {
-            let Zoomer = new ImageZoomer(zoomImg);
+            const Zoomer = new ImageZoomer(zoomImg);
             Zoomer.activate();
-            let change = function() {
-                let vpos = Zoomer.y / ( Zoomer.img.height - Zoomer.h ) || 0;
-                let hpos = Zoomer.x / ( Zoomer.img.width  - Zoomer.w ) || 0;
+            const change = function() {
+                const vpos = Zoomer.y / ( Zoomer.img.height - Zoomer.h ) || 0;
+                const hpos = Zoomer.x / ( Zoomer.img.width  - Zoomer.w ) || 0;
                 new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', Zoomer.factor() );
 				img.dispatchEvent(new Event('qgResize',{bubbles:true}));
             };
@@ -237,7 +237,7 @@ addEventListener('dblclick', function(e) {
             Zoomer.setDimension( pos.width, pos.height );
 
             /* set clip */
-            let f = clip.zoom || Math.max( Zoomer.img.height/Zoomer.ctx.height, Zoomer.img.width/Zoomer.ctx.width );
+            const f = clip.zoom || Math.max( Zoomer.img.height/Zoomer.ctx.height, Zoomer.img.width/Zoomer.ctx.width );
             Zoomer.w = pos.width  * f;
             Zoomer.h = pos.height * f;
             Zoomer.x = (clip.hpos/100) * (Zoomer.img.width  - Zoomer.w ) || 0;
@@ -245,7 +245,7 @@ addEventListener('dblclick', function(e) {
 
             Zoomer.draw();
 
-            let deactivate = function() {
+            const deactivate = function() {
                 document.body.removeChild(Zoomer.canvas);
                 document.removeEventListener('mousedown', deactivate);
                 change();
@@ -278,15 +278,15 @@ class ImageZoomer {
         return this.w / this.ctx.width;
     }
     activate() {
-        let self = this;
+        const self = this;
         self.canvas.addEventListener('wheel', function(e) {
             eventStop(e);
-            let oldF = self.factor();
+            const oldF = self.factor();
             let f = oldF * wheelIntervalToFaktor(e);
             f = Math.min( self.img.height/self.ctx.height, self.img.width/self.ctx.width,  f ); // limit
             f = Math.max(1,f);
 
-            let offset = self.mouseOffsetCloserToCenter(e);
+            const offset = self.mouseOffsetCloserToCenter(e);
 
             // offset transformed to image
             self.x = oldF * offset.x + self.x;
@@ -309,8 +309,8 @@ class ImageZoomer {
             document.addEventListener('mouseup', up);
         });
         function move(e) {
-            let f = self.factor();
-            let diff = {x: mousePos.x - e.pageX, y: mousePos.y - e.pageY};
+            const f = self.factor();
+            const diff = {x: mousePos.x - e.pageX, y: mousePos.y - e.pageY};
             mousePos = {x: e.pageX, y: e.pageY};
             self.w = self.ctx.width  * f;
             self.h = self.ctx.height * f;
@@ -332,8 +332,8 @@ class ImageZoomer {
     }
     mouseOffsetCloserToCenter(e) {
         // real offset on canvas
-        let x = e.offsetX;
-        let y = e.offsetY;
+        const x = e.offsetX;
+        const y = e.offsetY;
         return {
             x: ( x + 2*this.ctx.width  ) / 5, //(x+4*xhalbe durch 5)
             y: ( y + 2*this.ctx.height ) / 5
@@ -351,15 +351,15 @@ function limit(number, min, max) {
 let lastTime = 0;
 function wheelIntervalToFaktor(e) {
 	// intervall diff
-    let time = e.timeStamp;
+    const time = e.timeStamp;
     let diff = time-lastTime;
 	if (!e._eventChecked) {
         lastTime = time;
         e._eventChecked = true;
 	}
 	// faktor
-	let max = 400;
-	let min = 10;
+	const max = 400;
+	const min = 10;
 	diff = limit(diff, min, max+min);
 	let x = (diff - min) / max; // range from 1 to 0
 	x = 1-x;

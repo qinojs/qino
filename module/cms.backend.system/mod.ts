@@ -35,6 +35,41 @@ async function render(node: Node): Promise<string> {
   const db     = node.app.db;
   const app    = node.app as any;
 
+
+
+  // ── server info ────────────────────────────────────────────────────────
+
+  const serverIP  = 'todo'
+  const appPATH   = app.appPATH ?? "";
+
+  const mem = Deno.memoryUsage();
+  const pid = Deno.pid; // Die Prozess-ID
+  const appUptimeSec = performance.now() / 1000;
+  const osUptimeSec = Deno.osUptime(); // Benötigt --allow-sys
+  const load = Deno.loadavg();
+
+  const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
+  const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
+
+  const serverInfoHtml = `
+<div class=u2-card>
+  <div class=-head>Systeminfos</div>
+  <div class=-body style="padding:0">
+    <table class="u2-table" style="white-space:nowrap">
+      <tr><td>Deno Version:<td>${hee(Deno.version.deno)}
+      <tr><td>PID:<td>${hee(pid)}
+      <tr><td>App Uptime:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+      <tr><td>Server Uptime:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
+      <tr><td>System Load:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
+      <tr><td>Heap (Used/Total):<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+      <tr><td>RSS (Echter RAM):<td><u2-bytes>${mem.rss}</u2-bytes>
+      <tr><td>Server-IP:<td>${hee(serverIP)}
+      <tr><td>APP-Path:<td>${hee(appPATH)}
+    </table>
+  </div>
+</div>`;
+
+
   // ── health checks ──────────────────────────────────────────────────────
   // Provide ctx on app so health_check.ts can read server/usr/settings info
   (app as any)._lastCtx = ctx;
@@ -78,7 +113,7 @@ async function render(node: Node): Promise<string> {
   let healthHtml = "";
   for (const [type, items] of Object.entries(sections)) {
     healthHtml += `
-<div class="c1-box">
+<div class="u2-card">
   <div class="-head">${hee(type.charAt(0).toUpperCase() + type.slice(1))}</div>
   <div class="-body" style="max-height:700px; overflow:auto">
     <div class="healty_container">${items.join("")}</div>
@@ -86,39 +121,6 @@ async function render(node: Node): Promise<string> {
 </div>`;
   }
 
-  // ── server info ────────────────────────────────────────────────────────
-
-  const serverIP  = 'todo'
-  const appPATH   = app.appPATH ?? "";
-
-  const mem = Deno.memoryUsage();
-  const pid = Deno.pid; // Die Prozess-ID
-  const appUptimeSec = performance.now() / 1000;
-  const osUptimeSec = Deno.osUptime(); // Benötigt --allow-sys
-  const load = Deno.loadavg();
-
-  const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
-  const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
-
-  const serverInfoHtml = `
-<div class="c1-box">
-  <div class="-head">Systeminfos</div>
-  <div style="overflow:auto">
-    <div class="-body">
-      <table class="c1-style" style="white-space:nowrap">
-        <tr><td>Deno Version:<td>${hee(Deno.version.deno)}
-        <tr><td>PID:<td>${hee(pid)}
-        <tr><td>App Uptime:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
-        <tr><td>Server Uptime:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
-        <tr><td>System Load:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
-        <tr><td>Heap (Used/Total):<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
-        <tr><td>RSS (Echter RAM):<td><u2-bytes>${mem.rss}</u2-bytes>
-        <tr><td>Server-IP:<td>${hee(serverIP)}
-        <tr><td>APP-Path:<td>${hee(appPATH)}
-      </table>
-    </div>
-  </div>
-</div>`;
 
   // ── mysql config ───────────────────────────────────────────────────────
   let mysqlHtml = "";
@@ -133,11 +135,11 @@ async function render(node: Node): Promise<string> {
       if (name === "max_allowed_packet") value = (Number(value) / 1024).toFixed(1) + " KB";
       rows += `<tr><td ${mark ? 'style="font-weight:bold"' : ""}>${hee(name)}<td>${hee(String(value))}`;
     }
-    mysqlHtml = `<table class="c1-style"><tbody>${rows}</table>`;
+    mysqlHtml = `<table class="u2-table"><tbody>${rows}</table>`;
   }
 
   const mysqlBox = `
-<div class="c1-box">
+<div class="u2-card">
   <a class="-head" href="?open=mysql">mysql</a>
   <div class="-body">${mysqlHtml}</div>
 </div>`;
@@ -147,10 +149,10 @@ async function render(node: Node): Promise<string> {
   const dbRaw   = await db.one("SELECT UTC_TIMESTAMP()");
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
-<div class="c1-box">
+<div class="u2-card">
   <div class="-head">Locales</div>
-  <div class="-body">
-    <table class="c1-style">
+  <div class="-body" style="padding:0">
+    <table class=u2-table>
       <tr><td>OS<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
       <tr><td>DB<td>${dbIso.slice(0, 19).replace("T", " ")}<td>UTC+0
       <tr><td>Browser<script>
@@ -165,7 +167,7 @@ async function render(node: Node): Promise<string> {
 
   // ── statistics ─────────────────────────────────────────────────────────
   const statsBox = `
-<div class="c1-box">
+<div class="u2-card">
   <div class="-head">Statistics</div>
   <div class="-body" data-part="statistic">
     <button onclick="import('${getCtx().sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('statistic').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">run</button>
@@ -173,7 +175,7 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   return `
-<div class="beBoxCont">
+<div class="u2-flex">
   <style>
     .healty_container { display:grid; grid-gap:8px; }
     .healty_item { padding:8px; background:#eee; }
@@ -181,8 +183,8 @@ async function render(node: Node): Promise<string> {
     .healty_item.-warning { background:hsl(40,100%,90%); }
     .healty_item.-notice  { background:hsl(200,100%,90%); }
   </style>
-  ${healthHtml}
   ${serverInfoHtml}
+  ${healthHtml}
   ${mysqlBox}
   ${localesBox}
   ${statsBox}
@@ -228,16 +230,18 @@ export async function backendDashboardWidget(app: any): Promise<string> {
     }
   } catch { /* cache dir may not exist */ }
 
-  return `${statusHtml}
-<table class="c1-style" style="white-space:nowrap;margin-top:8px">` + systemInfoRows() + `</table>
-<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+  return `<div class=-body>${statusHtml}</div>
+<div style="overflow:auto; padding:0">
+<table class="u2-table" style="white-space:nowrap">` + systemInfoRows() + `</table>
+<table class="u2-table" style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>Top DB-Tabellen<th style="text-align:right">Grösse
   <tbody>${dbRows}
 </table>
-<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+<table class="u2-table" style="white-space:nowrap;margin-top:1px">
   <tr><td>Cache-Dateien:<td>${hee(String(cacheCount))}
   <tr><td>Cache-Grösse:<td><u2-bytes>${cacheSize}</u2-bytes>
-</table>`;
+</table>
+</div>`;
 }
 
 function systemInfoRows(): string {

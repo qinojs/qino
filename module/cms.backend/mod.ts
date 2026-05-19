@@ -98,15 +98,15 @@ async function render(node: Node): Promise<string> {
       if (!body) continue;
       const url = hee(await child.url());
       const title = hee(await (await child.title()).string());
-      widgets.push(`<div class="c1-box"><a class="-head" href="${url}">${title}</a><div class="-body">${body}</div></div>`);
+      widgets.push(`<div class="xc1-box u2-card"><a class="-head" href="${url}">${title}</a>${body}</div>`);
     } catch (e) { console.error(e) }
   }
 
   const widgetsHtml = widgets.length
     ? widgets.join("\n")
-    : `<div class="c1-box"><div class="-body" style="color:#999">Keine Widgets verfügbar.</div></div>`;
+    : `<div class="u2-card"><div class="-body" style="color:#999">Keine Widgets verfügbar.</div></div>`;
 
-  return `<div class="beBoxCont">${widgetsHtml}</div>`;
+  return `<div class="u2-flex">${widgetsHtml}</div>`;
 }
 
 export const cms = {

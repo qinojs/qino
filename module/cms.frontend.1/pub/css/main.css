@@ -7,6 +7,8 @@
 }
 :root {
 	--cms-color: #00aaff;
+	--cms-color: #906adf;
+	
 	--cms-dark: #222;
 	--cms-light: #e8e8e8;
 	--cms-access-0: var(--cms-dark);
@@ -23,13 +25,8 @@
 
 	color: var(--cms-dark);
 
-	--hsl-h:200;
-	--hsl-s:100%;
-	/* --hsl-l:50%; to dark for accent color (tested in firefo) */
-	--hsl-l:46%;
-	--hs: var(--hsl-h), var(--hsl-s);
-	--hsl: var(--hs), var(--hsl-l);
-	--color: hsl(var(--hsl));
+	--color: var(--cms-color);
+
 	accent-color: var(--color);
 
 	& *, & {

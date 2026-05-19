@@ -75,7 +75,10 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
         subHtml += `<ul><li><a class="-item ${isActiveSC ? "-active" : ""} ${hasSubSC ? "-hasSub" : ""}" href="${scUrl}">${scTitle}</a>${subSubHtml}</ul>`;
       }
     }
-    navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cTitle}</a>${subHtml}`;
+    const cConts = [...(await C.conts()).values()] as any[];
+    const cModName: string = cConts[0]?.vs?.module ?? "";
+    const cIcon = cModName ? `<svg width=16 height=16 style="flex-shrink:0; height:1em; vertical-align:-13.8%"><use href="${ctx.sysURL}${cModName}/pub/module.svg#main"/></svg> ` : "";
+    navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
   }
 
   // Language switcher
@@ -102,14 +105,20 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   return `
   <div class=qgCMS id=container>
+    <a id=logo href="${BackendRoot ? hee(await BackendRoot.url()) : "/"}">
+      <svg viewBox="0 0 90 30" xmlns="http://www.w3.org/2000/svg">
+        <text x="0" y="24" font-family="system-ui,sans-serif" font-weight="900" font-size="26" fill="currentColor" letter-spacing="-1">q<tspan opacity=".4">i</tspan>no</text>
+      </svg>
+    </a>
     <nav id=nav>
       <ul>
         ${navHtml}
         ${langHtml}
       </ul>
     </nav>
+    <div id=toolbar></div>
     <div id=content>
-    ${contentHtml}
+      ${contentHtml}
     </div>
   </div>`;
 }

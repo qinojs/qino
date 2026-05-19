@@ -109,7 +109,7 @@ globalThis.reloadBtn = (vars, btn) => {
     apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
 }
 </script>
-<div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
+<div class="u2-card" style="flex-grow:0">
     <div class="-head">Tools</div>
     <div class="-body">
         ${order === "num_ip"
@@ -134,39 +134,41 @@ globalThis.reloadBtn = (vars, btn) => {
 </div>`;
 
     if (!rows.length && get.show !== "entries") {
-        return `<div class="beBoxCont">${tools}<div class="c1-box"><div class="-body">Super, bis jetzt keine Fehler!</div></div></div>`;
+        return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">Super, bis jetzt keine Fehler!</div></div></div>`;
     }
 
     if (get.show === "entries") {
         const entriesBox = await renderEntryList(node, ctx, get);
-        return `<div class="beBoxCont">${tools}${entriesBox}</div>`;
+        return `<div class="u2-flex">${tools}${entriesBox}</div>`;
     }
 
     const { editorLink } = makeFileHelper(ctx);
     let tableRows = "";
     for (const row of rows) {
-        const color   = ({ error: "red", warning: "orange", notice: "blue" } as any)[row.prio] ?? "black";
+        const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" } as any)[row.prio] ?? "var(--gray)";
         const num     = Number(row.num)     || 0;
         const numBot  = Number(row.num_bot) || 0;
         const numUns  = Number(row.num_unsupported) || 0;
         const entriesUrl = `?show=entries&source=${encodeURIComponent(row.source)}&file=${encodeURIComponent(row.file)}&line=${encodeURIComponent(row.line)}&col=${encodeURIComponent(row.col)}`;
         const editorUrl  = editorLink(row.file, row.line, row.col);
         tableRows += `
-<tr>
+<tr u2-href>
     <td style="width:3rem; white-space:nowrap">
-        <a href="${hee(entriesUrl)}">${hee(String(row.num_ip))} IPs<br><small>${num} x</small></a>
+        <small class=u2-badge style="background-color:${color}">${hee(row.prio || "?")}</small> <small>${num}x</small>
     <td style="width:6rem">
-        ${hee(row.source)}
-        <small t1-badge style="white-space:nowrap; background-color:${color}; opacity:1">${hee(row.prio || "?")}</small><br>
-        <small>bots: ${numBot}
+		<a href="${hee(entriesUrl)}">${hee(String(row.num_ip))} IPs</a>
+	<td style="width:6rem">
+	 	${hee(row.source)}
+    <td style="width:6rem; white-space:nowrap">
+        <small>
             <div style="display:inline-block; border:1px solid; width:30px; vertical-align:middle">
                 <div style="height:.6em; width:${num ? Math.round(numBot * 100 / num) : 0}%; background:currentColor"></div>
-            </div>
+            </div> bots: ${numBot}
         </small><br>
-        <small>oldies: ${numUns}
+        <small>
             <div style="display:inline-block; border:1px solid; width:30px; vertical-align:middle">
                 <div style="height:.6em; width:${num ? Math.round(numUns * 100 / num) : 0}%; background:currentColor"></div>
-            </div>
+            </div> oldies: ${numUns}
         </small>
     <td>
         <a target="_blank" href="${hee(editorUrl)}">${hee(row.message)}</a><br>
@@ -185,11 +187,11 @@ globalThis.reloadBtn = (vars, btn) => {
     }
 
     return `
-<div class="beBoxCont">
+<div class="u2-flex">
     ${tools}
-    <div class="c1-box" style="max-height:88vh; overflow:auto; width:auto;">
+    <div class="u2-card" style="max-height:88vh; overflow:auto; flex:1 1 80rem">
         <div class="-head">Errors</div>
-        <table class="c1-style">
+        <table class="u2-table">
             <tbody>${tableRows}
         </table>
     </div>
@@ -245,9 +247,9 @@ async function renderEntryList(node: Node, ctx: any, get: Record<string, string>
     }
 
     return `
-<div class="c1-box" style="height:88vh; overflow:auto; width:auto;">
+<div class="u2-card" style="height:88vh; overflow:auto; flex:1 1 80rem">
     <div class="-head">${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
-    <table class="c1-style">
+    <table class="u2-table">
         <tbody>${tableRows}
     </table>
 </div>`;
@@ -304,7 +306,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
             let errorLinks = "";
             for (const eItem of errorItems) {
                 const active = eItem.id === error.id ? "&#x25B6;&#xFE0E;" : "";
-                errorLinks += `<a style="color:red; border:1px solid; border-width:1px 0; padding:3px 0; margin-bottom:-1px; display:block" href="?id=${hee(String(eItem.id))}">${active} ${hee(eItem.message)}</a>`;
+                errorLinks += `<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:3px 0; margin-bottom:-1px; display:block" href="?id=${hee(String(eItem.id))}">${active} ${hee(eItem.message)}</a>`;
             }
             historyRows += `
 <tr>
@@ -331,49 +333,50 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
            ${error.sample ? `<pre style="box-shadow:0 0 10px; padding:10px">${hee(error.sample)}</pre>` : ""}`;
 
     return `
-<div class="beBoxCont" style="font-size:.95em">
-    <div class="c1-box" style="overflow:auto; width:auto; flex:1 1 20rem">
+<div class="u2-flex" style="font-size:.95em">
+    <div class="u2-card" style="overflow:auto; width:auto; flex:1 1 20rem">
         <div class="-head">Fehler</div>
         <div class="-body">
             <p>
-                <span style="color:red">${hee(error.source)} ${hee(error.prio)}:</span>
+                <span style="color:var(--red)">${hee(error.source)} ${hee(error.prio)}:</span>
                 ${hee(error.message)}
             </p>
             ${fileBlock}
-            <table class="c1-style">
-                <tr><th>Id<td>${error.id}
-                <tr><th>Request<td>
-                    <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
-                    <small>Referer <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
-                <tr><th>Browser<td><small>${hee(error.browser ?? "")}</small>
-                <tr><th>Time<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
-                <tr><th>IP<td>${hee(error.ip ?? "")}
-            </table>
+        </div>
+        <table class="u2-table">
+            <tr><th>Id<td>${error.id}
+            <tr><th>Request<td>
+                <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
+                <small>Referer <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
+            <tr><th>Browser<td><small>${hee(error.browser ?? "")}</small>
+            <tr><th>Time<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+            <tr><th>IP<td>${hee(error.ip ?? "")}
+        </table>
+        <div class="-body">
             ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
-            <br>
             <button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(error.id))}'}}); this.disabled=true">delete</button>
         </div>
     </div>
 
-    <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
         <div class="-head">Backtrace</div>
-        <table class="c1-style">
+        <table class="u2-table">
             <thead><tr><th>File<th>Function<th>Arguments
             <tbody>${btHtml}
         </table>
     </div>
 
-    <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
         <div class="-head">User</div>
         <div class="-body">
             ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : "(kein User)"}
         </div>
     </div>
 
-    <div class="c1-box" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
         <div class="-head">History</div>
         <div class="-body" style="flex-grow:0">History of: ${historyLinks}</div>
-        <table class="c1-style">
+        <table class="u2-table">
             <thead><tr><th>Time / Session<th>URL / Referer<th>POST
             <tbody>${historyRows}
         </table>
@@ -395,12 +398,12 @@ export async function backendDashboardWidget(app: any): Promise<string> {
 	     LIMIT 5`
 	  ).catch(() => [] as any[]);
 
-  if (!rows.length) return `<span style="color:green">&#10003; Keine Einträge</span>`;
+  if (!rows.length) return `<span style="color:var(--green)">&#10003; Keine Einträge</span>`;
 
   const errNode = await app.cms.nodeByModule("cms.backend.superuser.error_report");
   const baseUrl = errNode ? await errNode.url() : null;
 
-  const color: Record<string, string> = { error: "hsl(0,80%,45%)", warning: "hsl(40,90%,40%)", notice: "#888" };
+  const color: Record<string, string> = { error: "var(--red)", warning: "var(--orange)", notice: "var(--gray)" };
   let tableRows = "";
   for (const row of rows) {
     const c = color[row.prio] ?? "#333";
@@ -414,8 +417,8 @@ export async function backendDashboardWidget(app: any): Promise<string> {
       <td style="color:#888">${hee(String(row.num))}x`;
   }
 
-  return `<div style="overflow:auto">
-<table class="c1-style" style="width:100%">
+  return `<div style="overflow:auto; padding:0">
+<table class="u2-table" style="width:100%">
   <thead><tr><th>Prio<th>Source<th>Message<th>Anzahl
   <tbody>${tableRows}
 </table></div>`;

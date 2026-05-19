@@ -1,8 +1,8 @@
 class Masker {
     constructor(){
-        let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.classList.add('c1IntroSvg');
-        let id = Math.random();
+        const id = Math.random();
         svg.innerHTML =
         '<defs>'+
             '<mask id="mask'+id+'">'+
@@ -59,9 +59,9 @@ document.head.append(c1.dom.fragment(
 ));
 
 /* intro */
-let intro = {};
+const intro = {};
 intro.masker = new Masker();
-let tmp = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+const tmp = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 intro.$rect = $(tmp).attr({rx:10,ry:10});
 intro.$rect[0].style.transition = 'all .3s';
 intro.masker.$container.append(intro.$rect);
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async function(){
     intro.show('#qgCmsFrontend1 [itemid="add"]', 'Ziehen Sie einfach neue Inhalte in Ihre Seite');
     await wait(1);
     cms.panel.set('sidebar','');
-    let el = document.querySelector('.-m-cms-cont-text');
+    const el = document.querySelector('.-m-cms-cont-text');
     cms.contPos(el).mark()
     intro.show('.-m-cms-cont-text', 'Dieser Inhalt ist ein Text-Modul');
     await wait(1);

@@ -4,8 +4,8 @@ import { apt } from '../../../core/pub/js/apt.js';
 
 if (!document.caretRangeFromPoint) { // polyfill for ff
     document.caretRangeFromPoint = function(x,y){
-        let caretP = document.caretPositionFromPoint(x,y);
-        let range = document.createRange();
+        const caretP = document.caretPositionFromPoint(x,y);
+        const range = document.createRange();
         range.setStart(caretP.offsetNode, caretP.offset);
         return range;
     };
@@ -23,7 +23,6 @@ cms.txtCleanElement = function(el,tid){
         cms.txtIdToPid(tid).then( pid => cms.imgToDbFile(el, pid) );
     }
     if (el.tagName === 'IMG' && el.src.match('dbFile/')) {
-        const ratio = el.offsetWidth / el.offsetHeight;
         el.style.maxWidth = '100%';
         el.style.width = el.offsetWidth+'px';
         el.style.height = 'auto';

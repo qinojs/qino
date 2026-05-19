@@ -29,7 +29,7 @@ async function render(node: Node): Promise<string> {
 
   const graphData = JSON.stringify({ nodes, links });
 
-  return `<div class=c1-box>
+  return `<div class=u2-card>
   <div class=-head>Modul-Abhängigkeiten</div>
   <div class=-body style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <input type=search id=mod-deps-search placeholder="filtern..." style="width:220px">

@@ -26,7 +26,7 @@ export async function install({ app }: any): Promise<void> {
 function render(_node: any, { ctx }: { ctx: RequestContext }): string {
   addSettingsEditor(ctx);
   const source = settingsSourceAttr({ kind: "app" });
-  return `<div class=c1-box>
+  return `<div class=u2-card>
 	<div class=-head>Einstellungen</div>
 	<div class=-body>
 		<settings-editor source="${source}"></settings-editor>
@@ -37,10 +37,11 @@ function render(_node: any, { ctx }: { ctx: RequestContext }): string {
 export async function backendDashboardWidget(app: any): Promise<string> {
   const db = app.db;
   const count = Number(await db.one("SELECT count(*) FROM qg_setting"));
-  return `
-<table class="c1-style" style="white-space:nowrap">
+  return `<div style="overflow:auto; padding:0">
+<table class="u2-table" style="white-space:nowrap">
   <tr><td>Einträge:<td>${hee(String(count))}
-</table>`;
+</table>
+</div>`;
 }
 
 export const cms = {

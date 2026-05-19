@@ -35,12 +35,12 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 
   const listHtml = await list(node, { ctx, vars: {} });
 
-  return `<div class=c1-box style="flex:0 1 1200px">
+  return `<div class=u2-card style="flex:0 1 1200px">
   <div class=-head>Struktur</div>
   <div class=-body>
     ${pathHtml}
   </div>
-  <table class="c1-style cmsBeTree">
+  <table class="u2-table cmsBeTree">
     <thead>
       <tr>
         <th style="width:20px"> Nr.
@@ -82,12 +82,13 @@ export async function backendDashboardWidget(app: any): Promise<string> {
   const total   = Number(await db.one("SELECT count(*) FROM page WHERE type='p'"));
   const offline = Number(await db.one(`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`));
   const hidden  = Number(await db.one("SELECT count(*) FROM page WHERE type='p' AND visible=0"));
-  return `
-<table class="c1-style" style="white-space:nowrap">
+  return `<div style="overflow:auto; padding:0">
+<table class="u2-table" style="white-space:nowrap">
   <tr><td>Seiten gesamt:<td>${hee(String(total))}
   <tr><td>Offline:<td>${hee(String(offline))}
   <tr><td>Versteckt:<td>${hee(String(hidden))}
-</table>`;
+</table>
+</div>`;
 }
 
 export const cms = {

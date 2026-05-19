@@ -23,13 +23,13 @@ async function render(node: Node): Promise<string> {
   const stateHtml = await renderState(node);
 
   return `<div>
-  <div class="c1-box" style="flex:0 0 auto">
+  <div class="u2-card" style="flex:0 0 auto">
     <div class="-head">State</div>
     <div class="-body" style="flex:1 1 100%; xdisplay:flex; gap:8px; align-items:start; flex-wrap:wrap">
       <button type=button onclick="cms.reloadPart(${Number(node.id)}, 'state')">neu laden</button>
     </div>
   </div>
-  <div class="beBoxCont" cms-part="state">${stateHtml}</div>
+  <div class="u2-flex" cms-part="state">${stateHtml}</div>
 </div>`;
 }
 
@@ -55,7 +55,7 @@ function dumpBox(title: string, value: unknown, depth: number): string {
   } catch (err) {
     html = `<pre>${hee(err instanceof Error ? err.stack ?? err.message : String(err))}</pre>`;
   }
-  return `<div class="c1-box" style="min-width:0; overflow:auto">
+  return `<div class="u2-card" style="min-width:0; overflow:auto">
   <div class="-head">${hee(title)}</div>
   <div class="-body" style="overflow:auto; max-height:90vh">${html}</div>
 </div>`;

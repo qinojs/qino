@@ -75,12 +75,12 @@ export default async function render(node: any): Promise<string> {
 
   return `
 <h2>Folders</h2>
-<table class="c1-style" style="width:auto">
+<table class="u2-table" style="width:auto">
   <tbody>${folderRows}
 </table>
 
 <h2>DB-Tables</h2>
-<table class="c1-style" style="width:auto">
+<table class="u2-table" style="width:auto">
   <tbody>${tableRows}
 </table>`;
 }

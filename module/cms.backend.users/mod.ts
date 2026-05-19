@@ -53,15 +53,15 @@ async function renderOverview(node: Node): Promise<string> {
   const allowLoginAs = !!(node.settings.allow_login_as()) || !!(await ctx.user?.get("superuser"));
   const loginAsTh = allowLoginAs ? '<th width=20>' : "";
 
-  return `<div class=beBoxCont>
-  <div class=c1-box style="flex:0 1 23rem">
+  return `<div class=u2-flex>
+  <div class=u2-card style="flex-grow:0">
     <div class=-head>Benutzer hinzufügen</div>
     ${addMessage}
-    <form method=post>
+    <form method=post style="padding:0">
       <input hidden name=fake1>
       <input hidden name=fake2 type=password>
       <input type=hidden name=qgToken value="${hee(ctx.token)}">
-      <table class=c1-style>
+      <table class=u2-table>
         <tr>
           <th style="width:6em"> Email:
           <td> <input type=text name=email class=-new-email>
@@ -81,13 +81,13 @@ async function renderOverview(node: Node): Promise<string> {
     </form>
   </div>
 
-  <div class=c1-box style="flex:1">
+  <div class=u2-card style="flex:1">
     <div class=-head> Benutzer suchen </div>
     <div class=-body>
       <input type=search placeholder="suchen..." id=usrSearch style="width:300px; max-width:100%">
     </div>
-    <div style="overflow:auto">
-      <table class=c1-style>
+    <div style="overflow:auto; padding:0">
+      <table class=u2-table>
         <thead>
           <tr>
             <th> ID
@@ -127,15 +127,16 @@ export async function backendDashboardWidget(app: any): Promise<string> {
     loginRows += `<tr><td>${hee(row.email ?? "–")}<td><u2-time datetime="${iso}" type=relative></u2-time>`;
   }
 
-  return `
-<table class="c1-style" style="white-space:nowrap">
+  return `<div style="overflow:auto; padding:0">
+<table class="u2-table" style="white-space:nowrap">
   <tr><td>Gesamt:<td>${hee(String(total))}
   <tr><td>Aktiv:<td>${hee(String(active))}
 </table>
-${loginRows ? `<table class="c1-style" style="white-space:nowrap;margin-top:8px">
+${loginRows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>Letzte Logins<th>
   <tbody>${loginRows}
-</table>` : ""}`;
+</table>` : ""}
+</div>`;
 }
 
 export const cms = {
@@ -154,7 +155,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const db = node.app.db;
 
   const vs: any = await db.row("SELECT * FROM usr WHERE id = ?", [id]);
-  if (!vs) return '<div class=c1-box><div class=-body>Benutzer nicht gefunden.</div></div>';
+  if (!vs) return '<div class=u2-card><div class=-body>Benutzer nicht gefunden.</div></div>';
 
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const superuserRow = isSuperuser ? `
@@ -178,11 +179,11 @@ async function renderDetail(node: Node, id: number): Promise<string> {
           <input type=checkbox value=${hee(g.id)} ${g.has ? "checked" : ""}>`;
   }
 
-  return `<div class=beBoxCont itemid="${hee(String(id))}">
-  <div class=c1-box style="flex:0 1 340px">
+  return `<div class=u2-flex itemid="${hee(String(id))}">
+  <div class=u2-card style="flex:0 1 340px">
     <div class=-head>Benutzer ${hee(String(vs.id))}</div>
-    <div style="overflow:auto">
-      <table class="c1-style -detail">
+    <div style="overflow:auto; padding:0">
+      <table class="u2-table -detail">
         <tr>
           <th> Active:
           <td>
@@ -208,9 +209,9 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     </div>
   </div>
 
-  <div class=c1-box style="flex:0 1 auto">
+  <div class=u2-card style="flex:0 1 auto">
     <div class=-head>Gruppen</div>
-    <table class="c1-style -set_grp" style="width:auto">
+    <table class="u2-table -set_grp" style="width:auto">
       ${grpHtml}
     </table>
   </div>

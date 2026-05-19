@@ -19,7 +19,7 @@ export async function install({ app }: any): Promise<void> {
 
 async function renderInstallForm(isSuperuser: boolean): Promise<string> {
   if (!isSuperuser) return "";
-  return `<div class=c1-box>
+  return `<div class=u2-card>
   <div class=-head>Modul installieren (Git)</div>
   <div class=-body style="padding:16px;display:grid;gap:12px">
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
@@ -175,16 +175,16 @@ async function renderOverview(node: Node): Promise<string> {
   const installForm = await renderInstallForm(isSuperuser);
 
   if (!rows.length) {
-    return `<div class=c1-box>
+    return `<div class=u2-card>
   <div class=-head>Module Git</div>
-  <div class=-body style="padding:16px;color:#999">Keine Module mit Git-Repository gefunden.</div>
+  <div class=-body>Keine Module mit Git-Repository gefunden.</div>
 </div>${installForm}`;
   }
 
-  return `<div class=c1-box>
+  return `<div class=u2-card>
   <div class=-head>Module Git</div>
-  <div style="overflow:auto">
-    <table class=c1-style style="white-space:nowrap;width:100%">
+  <div style="overflow:auto; padding:0">
+    <table class=u2-table style="white-space:nowrap;width:100%">
       <thead><tr><th>Modul<th>Branch<th>Status<th>Repo
       <tbody>${rows.join("")}
     </table>
@@ -200,7 +200,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const gitSection = await renderModuleGitSection(app, modName, isSuperuser);
 
   if (!gitSection) {
-    return `<div class=c1-box>
+    return `<div class=u2-card>
   <div class=-head style="display:flex;align-items:center;gap:12px">
     <a href="?" style="font-size:13px;opacity:.7">← Module Git</a>
     <span style="font-family:monospace">${hee(modName)}</span>
@@ -209,7 +209,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 </div>`;
   }
 
-  return `<div class=c1-box>
+  return `<div class=u2-card>
   <div class=-head style="display:flex;align-items:center;gap:12px">
     <a href="?" style="font-size:13px;opacity:.7">← Module Git</a>
     <span style="font-family:monospace">${hee(modName)}</span>
