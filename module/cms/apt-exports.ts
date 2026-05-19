@@ -89,7 +89,7 @@ export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<
             File = await node.addFile(await dbF.clone());
         }
     } else {
-        if (file !== null && file !== undefined && !/^https?:\/\//.test(String(file))) {
+        if (file != null && !/^https?:\/\//.test(String(file))) {
             throw new HTTPException(403);
         }
         File = await node.addFile(file, replace);

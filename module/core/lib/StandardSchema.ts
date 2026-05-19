@@ -111,7 +111,7 @@ export const s = {
 
   optional: <T>(inner: StandardSchema<T>): Optional<T> =>
     new StandardSchema<T | undefined>("optional", (v) =>
-      v === undefined || v === null ? { value: undefined } : inner["~standard"].validate(v) as StandardResult<T | undefined>,
+      v == null ? { value: undefined } : inner["~standard"].validate(v) as StandardResult<T | undefined>,
     { inner }) as Optional<T>,
 
   any: (): StandardSchema<unknown> =>

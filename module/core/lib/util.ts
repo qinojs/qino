@@ -67,7 +67,7 @@ export class HtmlString {
 
 function htmlValue(v: unknown): string {
   if (v instanceof HtmlString) return v.html;
-  if (v !== null && typeof v === "object" && "html" in (v as object)) return (v as { html: string }).html;
+  if (v != null && typeof v === "object" && "html" in (v as object)) return (v as { html: string }).html;
   return hee(v);
 }
 
