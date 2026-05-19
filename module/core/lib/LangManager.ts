@@ -24,7 +24,7 @@ export class LangManager {
     async initCtx(ctx: any): Promise<void> {
         const usr = ctx.user;
 
-        ctx.langUsr = usr ? (await usr.get("lang") || "") : ctx.session.qg.lang() ?? "";
+        ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.session.qg.lang() ?? "";
 
         const urlLang = ctx.get.changeLanguage;
         if (urlLang) {

@@ -45,8 +45,7 @@ export default async function (node: Node, vars:any): Promise<any> {
     const name = String(vars.name ?? "");
     if (!allowed[name]) return false;
     if (name === "superuser" && !isSuperuser) return false;
-    let value = vars.value;
-    if (name === "pw") value = await pwHash(String(value));
+    const value = name === "pw" ? await pwHash(String(vars.value)) : vars.value;
     await TargetUsr.set(name, value);
     await TargetUsr.save();
     return 1;

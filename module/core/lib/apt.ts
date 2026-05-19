@@ -231,7 +231,7 @@ function coerce(raw: unknown, schema: StandardSchema): unknown {
 export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
   for (const r of walk(tree)) checkCollisions(r);
   const handle = async (c: Context): Promise<Response> => {
-    const path = "/" + (c.req.param("path") || "");
+    const path = "/" + (c.req.param("path") ?? "");
     const input: Params = {};
     const query: Params = {};
     if (BODY_METHODS.has(c.req.method.toLowerCase() as Method)) {

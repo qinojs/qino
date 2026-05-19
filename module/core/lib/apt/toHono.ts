@@ -8,7 +8,7 @@ import { BODY_METHODS, type AptTree, type Method, type Params } from "./types.ts
 export function toHono(tree: AptTree, app: Hono = new Hono()): Hono {
   for (const r of walk(tree)) checkCollisions(r);
   const handle = async (c: Context): Promise<Response> => {
-    const path = "/" + (c.req.param("path") || "");
+    const path = "/" + (c.req.param("path") ?? "");
     const input: Params = {};
     const query: Params = {};
     const isBodyMethod = BODY_METHODS.has(c.req.method.toLowerCase() as Method);
