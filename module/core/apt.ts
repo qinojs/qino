@@ -62,7 +62,7 @@ export const api: AptTree = {
   settings: {
     ":path*": {
       paramSchema: pathParam,
-      get: { description: "Read app settings at path", access: Access.SUPERUSER, execute: async ({ path }: any) => readSettings(await appSettingsRoot(path)) },
+      get: { description: "Read app settings at path", access: Access.SUPERUSER, query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }), execute: async ({ path, schema }: any) => schema ? (await appSettingsRoot(path)).schema ?? {} : readSettings(await appSettingsRoot(path)) },
       put: {
         description: "Set app settings at path",
         access: Access.SUPERUSER,
@@ -84,20 +84,14 @@ export const api: AptTree = {
     },
   },
 
-  "settings-schema": {
-    ":path*": {
-      paramSchema: pathParam,
-      get: { description: "Read app settings schema at path", access: Access.SUPERUSER, execute: async ({ path }: any) => (await appSettingsRoot(path)).schema ?? {} },
-    },
-  },
-
   "ctx-settings": {
     ":path*": {
       paramSchema: pathParam,
       get: {
-        description: "Read user/session settings at path", 
-        access: Access.USER, 
-        execute: ({ path }: any) => readSettings(ctxSettingsRoot(path)) },
+        description: "Read user/session settings at path",
+        access: Access.USER,
+        query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }),
+        execute: ({ path, schema }: any) => schema ? ctxSettingsRoot(path).schema ?? {} : readSettings(ctxSettingsRoot(path)) },
       put: {
         description: "Set user/session settings at path",
         access: Access.USER,
@@ -119,10 +113,4 @@ export const api: AptTree = {
     },
   },
 
-  "ctx-settings-schema": {
-    ":path*": {
-      paramSchema: pathParam,
-      get: { description: "Read user/session settings schema at path", access: Access.USER, execute: ({ path }: any) => ctxSettingsRoot(path).schema ?? {} },
-    },
-  },
 };

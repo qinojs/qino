@@ -1,18 +1,31 @@
 // deno-lint-ignore-file no-explicit-any
+import { HTTPException } from "../../deps.ts";
 import { OutputDoneError } from "../core/lib/util.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
-import { addEvent, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
+import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
 
 const pathBlocks = new Map<string, number>();
 
 export function initSecurity(app: any) {
+  app.on("request-start", async ({ context }: any) => {
+    const info = gateInfo(context);
+    if (isPathBlocked(info)) return deny(5);
+    const set = await settings(app);
+    if (!set.enabled) return;
+    const pattern = await suspiciousPath(app, info.path);
+    if (!pattern) return;
+    rememberPathBlock(info, set);
+    await addEventDb(app.db, { ...info, prio: "error", kind: "path-block", scope: "ip", ident: info.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
+    deny(set.pathBlockSeconds);
+  });
+
   app.on("action", async ({ ctx }: any) => {
     const fast = fastInfo(ctx);
     if (isPathBlocked(fast)) return block(ctx, 5);
-    const set = await settings(ctx.app.db);
+    const set = await settings(ctx.app);
     if (!set.enabled) return;
-    const pattern = await suspiciousPath(ctx.app.db, fast.path);
+    const pattern = await suspiciousPath(ctx.app, fast.path);
     if (pattern) {
       rememberPathBlock(fast, set);
       await addEvent(ctx, { ...fast, prio: "error", kind: "path-block", scope: "ip", ident: fast.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
@@ -42,7 +55,7 @@ export function initSecurity(app: any) {
   app.on("respond", async ({ ctx }: any) => {
     const sec = ctx.state.security;
     if (!sec) return;
-    const set = await settings(ctx.app.db);
+    const set = await settings(ctx.app);
     if (!set.enabled) return;
     const info = reqInfo(ctx);
     info.status = ctx.responseStatus;
@@ -89,4 +102,17 @@ function block(ctx: any, seconds: number) {
 
 function blockKey(info: any) {
   return info.ip ? "ip:" + info.ip : "path:" + info.path;
+}
+
+function gateInfo(context: any) {
+  const ip = context.req.header("x-forwarded-for")?.split(",").shift()?.trim() || "";
+  return { ip, method: context.req.method, path: safeDecode(new URL(context.req.url).pathname).slice(0, 191), bytes_in: Number(context.req.header("content-length") ?? "0") || 0, ua: context.req.header("user-agent") ?? "" };
+}
+
+function deny(seconds: number) {
+  throw new HTTPException(429, { res: new Response("Too many requests", { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil(seconds))) } }) });
+}
+
+function safeDecode(s: string) {
+  try { return decodeURIComponent(s); } catch { return s; }
 }

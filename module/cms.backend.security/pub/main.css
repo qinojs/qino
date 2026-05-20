@@ -1,50 +1,10 @@
 .-m-cms-backend-security {
-  & .-top { align-items: stretch; }
-  & .-tabs {
-    display: flex;
-    gap: .35rem;
-    margin: .6rem 0;
-    & a { padding: .35rem .6rem; border: 1px solid var(--u2-border, #ccc); text-decoration: none; }
-    & a.-active { background: var(--u2-bg-2, #eee); font-weight: 600; }
-  }
-  & .-settings { flex: 1 1 50rem; }
-  & .-settings .-body {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-    gap: .6rem;
-    align-items: end;
-  }
-  & .-paths { flex: 1 1 50rem; }
-  & .-paths textarea {
-    width: 100%;
-    min-height: 18rem;
-    box-sizing: border-box;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  & label { display: grid; gap: .2rem; font-size: .85rem; }
-  & label small { opacity: .7; font-weight: normal; }
-  & input { width: 100%; box-sizing: border-box; }
   & .-kpi { flex: 0 0 14rem; }
   & .-table { flex: 1 1 42rem; overflow: auto; max-height: 75vh; }
   & .-toplist { flex-basis: 24rem; max-height: 20rem; }
-  & .-filter {
-    display: flex;
-    gap: .4rem;
-    padding: .4rem;
-    flex-wrap: wrap;
-    & input { width: 14rem; }
-  }
   & tr.-blocked td,
   & tr.-error td { background: color-mix(in srgb, var(--red, #c33) 14%, transparent); }
   & tr.-warning td { background: color-mix(in srgb, var(--orange, #f80) 12%, transparent); }
   & td small { opacity: .72; }
-  & .-tag {
-    display: inline-block;
-    padding: .08rem .32rem;
-    border: 1px solid var(--u2-border, #ccc);
-    border-radius: .25rem;
-    background: color-mix(in srgb, currentColor 5%, transparent);
-    white-space: nowrap;
-  }
   & code { white-space: nowrap; }
 }

@@ -115,7 +115,12 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
         ${langHtml}
       </ul>
     </nav>
-    <div id=toolbar></div>
+    <div id=toolbar>
+      <!--input type=search id=search placeholder="Search..." style="width:100%; max-width:20rem; background:var(--color-light); border:0; border-radius: var(--radius);"-->
+      <div style="margin-left:auto"shape=circle size=32>
+        ${ctx.user ? hee(await ctx.user.get("email")) : "Guest"}
+      </div>
+    </div>
     <div id=content>
       ${contentHtml}
     </div>

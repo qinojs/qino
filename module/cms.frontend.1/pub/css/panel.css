@@ -91,9 +91,6 @@
 		color:var(--cms-dark);
 	}
 	
-	
-	
-	
 	/* accordion */
 	& .-widgetHead {
 		display:flex;

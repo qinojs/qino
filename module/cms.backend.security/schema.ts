@@ -1,71 +1,50 @@
-// deno-lint-ignore-file no-explicit-any
 import { allowedPathDefaults, suspiciousPathDefaults } from "./pathlist.ts";
 
-export const defaults: Record<string, number> = {
-  enabled: 1,
-  warnScore: 40,
-  blockScore: 120,
-  delayStartScore: 20,
-  delayFactorMs: 60,
-  maxDelayMs: 6000,
-  decayPerMin: 2,
-  userScorePercent: 50,
-  ipScorePercent: 100,
-  rangeScorePercent: 35,
-  pathScorePercent: 15,
-  pathDelayStartScore: 200,
-  pathDelayFactorMs: 10,
-  pathMaxDelayMs: 1200,
-  clientScorePercent: 70,
-  userBucketPercent: 45,
-  attackScorePercent: 100,
-  loginScorePercent: 100,
-  attackBlockConfidence: 92,
-  pathBlockSeconds: 900,
-  pathBlockMax: 5000,
-  settingCacheSeconds: 5,
-  bucketCacheSeconds: 2,
-  requestWarnMs: 1500,
-  requestMaxMs: 10000,
-  slowMs: 1500,
-  largeBody: 2 * 1024 * 1024,
-  keepDays: 30,
+export const settingsSchema = {
+  properties: {
+    enabled:               { type: "boolean", default: true,            description: "Security aktiv" },
+
+    warnScore:             { type: "integer", default: 40,              description: "Warnung ab Score" },
+    blockScore:            { type: "integer", default: 120,             description: "Block ab Score" },
+    keepDays:              { type: "integer", default: 30,              description: "Aufbewahrung (Tage)" },
+
+    delayStartScore:       { type: "integer", default: 20,              description: "Delay ab Score" },
+    delayFactorMs:         { type: "integer", default: 60,              description: "Delay Faktor (ms/score)" },
+    maxDelayMs:            { type: "integer", default: 6000,            description: "Max Delay (ms)" },
+    decayPerMin:           { type: "integer", default: 2,               description: "Score-Abbau pro Minute" },
+
+    userScorePercent:      { type: "integer", default: 50,              description: "Eingeloggter User Faktor (%)" },
+    ipScorePercent:        { type: "integer", default: 100,             description: "IP-Gewicht (%)" },
+    rangeScorePercent:     { type: "integer", default: 35,              description: "IP-Range-Gewicht (%)" },
+    clientScorePercent:    { type: "integer", default: 70,              description: "Client-Gewicht (%)" },
+    userBucketPercent:     { type: "integer", default: 45,              description: "User-Gewicht (%)" },
+    pathScorePercent:      { type: "integer", default: 15,              description: "Pfad-Gewicht (%)" },
+    pathDelayStartScore:   { type: "integer", default: 200,             description: "Pfad Delay ab Score" },
+    pathDelayFactorMs:     { type: "integer", default: 10,              description: "Pfad Delay Faktor (ms/score)" },
+    pathMaxDelayMs:        { type: "integer", default: 1200,            description: "Pfad Max Delay (ms)" },
+    pathBlockSeconds:      { type: "integer", default: 900,             description: "Pfadblock Dauer (s)" },
+    pathBlockMax:          { type: "integer", default: 5000,            description: "Pfadblock Speicher (max. Einträge)" },
+
+    attackScorePercent:    { type: "integer", default: 100,             description: "Attack-Gewicht (%)" },
+    attackBlockConfidence: { type: "integer", default: 92,              description: "Attack Sofortblock ab Confidence" },
+    loginScorePercent:     { type: "integer", default: 100,             description: "Login-Gewicht (%)" },
+
+    requestWarnMs:         { type: "integer", default: 1500,            description: "Request Warnzeit (ms)" },
+    requestMaxMs:          { type: "integer", default: 10000,           description: "Request Maxzeit (ms)" },
+    slowMs:                { type: "integer", default: 1500,            description: "Legacy Slowzeit (ms)" },
+    largeBody:             { type: "integer", default: 2 * 1024 * 1024, description: "Großer Body ab (bytes)" },
+
+    bucketCacheSeconds:    { type: "integer", default: 2,               description: "Bucket-Cache TTL (s)" },
+
+    suspiciousPaths:       { type: "string",  "x-multiline": true, default: suspiciousPathDefaults.join("\n"), description: "Verdächtige Pfade (eine pro Zeile)" },
+    allowedPaths:          { type: "string",  "x-multiline": true, default: allowedPathDefaults.join("\n"),    description: "Erlaubte Pfade (eine pro Zeile)" },
+  },
 };
 
-export const textDefaults: Record<string, string> = {
-  suspiciousPaths: suspiciousPathDefaults.join("\n"),
-  allowedPaths: allowedPathDefaults.join("\n"),
-};
-
-export const settingInfo: Record<string, [string, string]> = {
-  enabled: ["Aktiv", "0/1"],
-  warnScore: ["Warnung ab Score", "score"],
-  blockScore: ["Block ab Score", "score"],
-  delayStartScore: ["Delay ab Score", "score"],
-  delayFactorMs: ["Delay Faktor", "ms/score"],
-  maxDelayMs: ["Max Delay", "ms"],
-  decayPerMin: ["Score-Abbau", "score/min"],
-  userScorePercent: ["Login-Faktor", "%"],
-  ipScorePercent: ["IP-Gewicht", "%"],
-  rangeScorePercent: ["Range-Gewicht", "%"],
-  pathScorePercent: ["Pfad-Gewicht", "%"],
-  pathDelayStartScore: ["Pfad Delay ab", "score"],
-  pathDelayFactorMs: ["Pfad Delay Faktor", "ms/score"],
-  pathMaxDelayMs: ["Pfad Max Delay", "ms"],
-  clientScorePercent: ["Client-Gewicht", "%"],
-  userBucketPercent: ["User-Gewicht", "%"],
-  attackScorePercent: ["Attack-Gewicht", "%"],
-  loginScorePercent: ["Login-Gewicht", "%"],
-  attackBlockConfidence: ["Attack Sofortblock", "confidence"],
-  pathBlockSeconds: ["Pfadblock Dauer", "s"],
-  pathBlockMax: ["Pfadblock Speicher", "max"],
-  settingCacheSeconds: ["Settings Cache", "s"],
-  bucketCacheSeconds: ["Bucket Cache", "s"],
-  requestWarnMs: ["Request Warnzeit", "ms"],
-  requestMaxMs: ["Request Maxzeit", "ms"],
-  slowMs: ["Legacy Slowzeit", "ms"],
-  largeBody: ["Grosser Body", "bytes"],
-  keepDays: ["Aufbewahrung", "days"],
+export type SecuritySettings = Record<string, number> & {
+  enabled: boolean;
+  suspiciousPaths: string;
+  allowedPaths: string;
 };
 
 export const dbSchema = {
@@ -93,7 +72,7 @@ export const dbSchema = {
           sess_id: { type: "integer", "x-index": true },
           usr_id: { type: "integer", "x-index": true },
           method: { type: "string", maxLength: 8 },
-          path: { type: "string", maxLength: 512, "x-index": true },
+          path: { type: "string", maxLength: 191, "x-index": true },
           status: { type: "integer", "x-index": true },
           duration_ms: { type: "integer", "x-index": true },
           bytes_in: { type: "integer" },
@@ -116,19 +95,10 @@ export const dbSchema = {
           first_seen: { type: "integer", "x-index": true },
           last_seen: { type: "integer", "x-index": true },
           reason: { type: "string", maxLength: 191, "x-index": true },
-          sample_path: { type: "string", maxLength: 512 },
+          sample_path: { type: "string", maxLength: 191 },
           data: { type: "string" },
         },
         required: ["id", "scope", "ident", "score", "count", "blocked", "first_seen", "last_seen", "reason", "sample_path", "data"],
-      },
-    },
-    m_security_setting: {
-      additionalProperties: {
-        properties: {
-          name: { type: "string", maxLength: 64, "x-index": "primary" },
-          value: { type: "string" },
-        },
-        required: ["name", "value"],
       },
     },
   },

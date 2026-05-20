@@ -546,7 +546,11 @@ const node = {
   settings: {
     ":path*": {
       paramSchema: settingsPath,
-      get: { description: "Read page settings at path", access: nodeRead, execute: ({ node, path }: any) => readSettings(node.settings[$item].sub(path)) },
+      get: {
+        description: "Read page settings at path",
+        access: nodeRead,
+        query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }),
+        execute: ({ node, path, schema }: any) => schema ? node.settings[$item].sub(path).schema ?? {} : readSettings(node.settings[$item].sub(path)) },
       put: {
         description: "Set page settings at path",
         access: nodeWrite,
@@ -568,12 +572,6 @@ const node = {
     },
   },
 
-  "settings-schema": {
-    ":path*": {
-      paramSchema: settingsPath,
-      get: { description: "Read page settings schema at path", access: nodeRead, execute: ({ node, path }: any) => node.settings[$item].sub(path).schema ?? {} },
-    },
-  },
 
   api: {
     post: {

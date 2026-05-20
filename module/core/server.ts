@@ -67,8 +67,9 @@ export class App {
         this.t         = this.languages.t;
 
         this.router.onError((e, hc) => this.#handleHonoError(hc, e));
-        this.router.use("*", async (_hc, next) => {
+        this.router.use("*", async (context, next) => {
             await (this.#initPromise ??= this.modules.init());
+            await this.fire("request-start", { context });
             await next();
         });
         this.router.use("*", (hc, next) => this.#withRequestContext(hc, next));

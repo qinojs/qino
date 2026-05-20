@@ -16,7 +16,7 @@ Deno.test("security path list normalizes unsafe imports", () => {
 });
 
 Deno.test("security allowed paths win over suspicious paths", async () => {
-  const db = { all: () => Promise.resolve([{ name: "suspiciousPaths", value: "/wp-*" }, { name: "allowedPaths", value: "/wp-login.php" }]) };
-  assertEquals(await suspiciousPath(db, "/wp-login.php"), "");
-  assertEquals(await suspiciousPath(db, "/wp-admin"), "/wp-*");
+  const app = { settings: { "cms.backend.security": { suspiciousPaths: "/wp-*", allowedPaths: "/wp-login.php" } } };
+  assertEquals(await suspiciousPath(app, "/wp-login.php"), "");
+  assertEquals(await suspiciousPath(app, "/wp-admin"), "/wp-*");
 });

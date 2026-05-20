@@ -35,7 +35,8 @@
 
 	& a { color: var(--cms-color); text-decoration:none; }
 	& a:hover { text-decoration:underline; }
-	& button,
+	
+	& button, & .btn,
 	& input:not([type=checkbox], [type=radio]),
 	& textarea,
 	& select,
@@ -44,16 +45,15 @@
 		border:1px solid;
 		border-radius:0;
 		margin: .2em 0;
-		box-sizing:border-box;
 		padding: .5em .8em;
 		font-size: 12px;
-		background:var(--cms-light);
+		background-color:var(--cms-light);
 		border-color:transparent transparent var(--cms-dark) transparent;
 		border-left-width:0;
 		border-right-width:0;
 		min-width:0;
 	}
-	& button {
+	& button, & .btn {
 		color:#fff;
 		border-color:transparent;
 		background:var(--cms-color);
@@ -77,12 +77,12 @@
 	& select:invalid {
 		border-bottom-color:var(--cms-access-3);
 	}
-	& button:hover ,
-	& button:focus {
+	& :is(button, .btn):hover ,
+	& :is(button, .btn):focus {
 		background:var(--cms-dark);
 		color:#fff;
 	}
-	& button:disabled {
+	& :is(button, .btn):disabled {
 		background:var(--cms-light);
 		color:#fff;
 		border-color:transparent;

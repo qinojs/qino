@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
-import { normalizePathList } from "./pathlist.ts";
-import { defaults, settingInfo, textDefaults } from "./schema.ts";
-import { saveSetting, settings, textSettings } from "./store.ts";
+import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
+import { settings } from "./store.ts";
 
 export async function backendDashboardWidget(app: any): Promise<string> {
   const row = await app.db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event").catch(() => null);
@@ -20,10 +19,7 @@ export async function render(node: any, { vars = {} }: { vars?: Record<string, a
   const ctx = getCtx() as any;
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
   const db = node.app.db;
-  if (vars.save) for (const [k, v] of Object.entries(vars.save)) if (k in defaults) await saveSetting(db, k, String(v));
-  if (vars.text) for (const [k, v] of Object.entries(vars.text)) if (k in textDefaults) await saveSetting(db, k, normalizePathList(String(v)));
-  const set = await settings(db);
-  const text = await textSettings(db);
+  const set = await settings(node.app);
   if (vars.clearEvents) await db.query("DELETE FROM m_security_event");
   if (vars.clearBuckets) await db.query("DELETE FROM m_security_bucket");
   if (vars.release) await db.table("m_security_bucket").update(vars.release, { score: 0, blocked: 0, reason: "released" });
@@ -40,16 +36,16 @@ export async function render(node: any, { vars = {} }: { vars?: Record<string, a
   const stats: any = await db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event") ?? {};
   const tab = String(ctx.get.tab ?? "live");
   return `<div class="-m-cms-backend-security">
-    <div class="u2-flex -top">
-      ${statusBox(stats)}
-    </div>
-    ${tabs(tab)}
-    ${aptScript(node)}
     <div class="u2-flex">
-      ${tab === "settings" ? settingsBox(set, text) : ""}
-      ${tab === "buckets" ? bucketTable(buckets) : ""}
-      ${tab === "analyse" ? topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
-      ${tab === "live" ? eventTable(events, ctx.get) : ""}
+      ${statusBox(stats)}
+      ${aptScript(node)}
+      <div>
+        ${tabs(tab)}
+        ${tab === "settings" ? settingsEditor(ctx) : ""}
+        ${tab === "buckets" ? bucketTable(buckets) : ""}
+        ${tab === "analyse" ? topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
+        ${tab === "live" ? eventTable(events, ctx.get) : ""}
+      </div>
     </div>
   </div>`;
 }
@@ -63,30 +59,13 @@ function statusBox(stats: any) {
 }
 
 function tabs(active: string) {
-  return `<nav class="-tabs">${["live","buckets","analyse","settings"].map(v => `<a href="?tab=${v}" class="${v===active?"-active":""}">${hee(v)}</a>`).join("")}</nav>`;
+  return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="?tab=${v}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
 }
 
-function settingsBox(set: Record<string, number>, text: Record<string, string>) {
-  return `<form class="u2-card -settings" data-settings>
-    <div class="-head">Settings</div>
-    <div class="-body">
-      ${Object.entries(set).map(([k, v]) => settingField(k, v)).join("")}
-      <button>speichern</button>
-    </div>
-  </form>
-  <form class="u2-card -paths" data-text>
-    <div class="-head">Verdächtige Pfade</div>
-    <div class="-body">
-      <textarea name="suspiciousPaths" spellcheck="false">${hee(text.suspiciousPaths ?? "")}</textarea>
-      <label>Erlaubte Pfade<textarea name="allowedPaths" spellcheck="false">${hee(text.allowedPaths ?? "")}</textarea></label>
-      <button>importieren / speichern</button>
-    </div>
-  </form>`;
-}
-
-function settingField(k: string, v: number) {
-  const [label, unit] = settingInfo[k] ?? [k, ""];
-  return `<label><span>${hee(label)}${unit ? ` <small>${hee(unit)}</small>` : ""}</span><input name="${hee(k)}" value="${hee(v)}"></label>`;
+function settingsEditor(ctx: any) {
+  addSettingsEditor(ctx);
+  const source = settingsSourceAttr({ kind: "app", path: ["cms.backend.security"] });
+  return `<div class="u2-card"><settings-editor source="${source}"></settings-editor></div>`;
 }
 
 function aptScript(node: any) {
@@ -102,9 +81,10 @@ function bucketTable(rows: any[]) {
 }
 
 function eventTable(rows: any[], get: Record<string, string>) {
-  return `<div class="u2-card -table"><div class="-head">Alarme / Aufrufe</div><table class="u2-table -Sticky">
-    <caption>${eventFilter(get)}</caption>
-    <thead><tr><th>Zeit<th>Ereignis<th>Bewertung<th>Betroffen<th>Aktion<th>Grund<th>Request<th>Status<th>
+  return `<div class="u2-card -table"><div class="-head">Alarme / Aufrufe</div>
+    ${eventFilter(get)}
+    <table class="u2-table -Sticky">
+      <thead><tr><th>Zeit<th>Ereignis<th>Bewertung<th>Betroffen<th>Aktion<th>Grund<th>Request<th>Status<th>
     <tbody>${rows.map(r => `<tr class="-${hee(r.prio)}">
       <td>${u2time(r.time)}<td>${eventCell(r)}<td>${scoreCell(r)}<td>${bucketCell(r)}<td>${actionCell(r)}<td>${hee(r.reason)}<td>${requestCell(r)}<td>${stateCell(r)}<td>${eventActions(r)}`).join("")}
   </table></div>`;
@@ -153,7 +133,7 @@ function topTable(title: string, rows: any[], key: string) {
 }
 
 function eventFilter(get: Record<string, string>) {
-  return `<form class="-filter">
+  return `<form class="u2-flex">
     <input type="hidden" name="tab" value="live">
     <input name="q" value="${hee(get.q ?? "")}" placeholder="IP, Pfad, Grund">
     <select name="prio"><option value="">Bewertung</option>${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
@@ -186,7 +166,7 @@ const stateLabels: Record<string, string> = { new: "neu", seen: "gesehen", ignor
 const actionLabels: Record<string, string> = { blocked: "blockiert", delayed: "verzögert" };
 
 const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => vs.map(v => `<option value="${hee(v)}"${v===active?" selected":""}>${hee(labels[v] ?? v)}</option>`).join("");
-const tag = (v: unknown) => `<span class="-tag">${hee(v)}</span>`;
+const tag = (v: unknown) => `<span class="u2-badge">${hee(v)}</span>`;
 const bytes = (n: unknown, name: string) => Number(n) ? name + " " + hee(humanBytes(Number(n))) : "";
 
 function humanBytes(n: number) {

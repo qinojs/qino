@@ -8,7 +8,10 @@ const itemJsHtmlRenderer = import(itemJsBase + "tools/schema/render/html.js").th
 const escapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => escapes[c]);
 
-const aptPath = (endpoint) => endpoint.replace(/^\/api\//, "").split("/").filter(Boolean).reduce((a, k) => a[k], apt);
+const aptPath = (endpoint) => {
+  const [ns, name, ...path] = endpoint.replace(/^\/api\//, "").split("/").filter(Boolean);
+  return path.length ? apt[ns][name](path) : apt[ns][name];
+};
 function apiWrite(method, base, path, value) {
   const api = path.reduce((a, k) => a[k], base);
   const del = method === "DELETE";
@@ -102,8 +105,7 @@ class SettingsEditorElement extends HTMLElement {
       this.#source = aptPath(raw);
       this.#loadedSource = raw;
       this.innerHTML = "<em>Lade Einstellungen...</em>";
-      const schemaApi = aptPath(raw + "-schema");
-      const [data, schema] = await Promise.all([this.#source.get(), schemaApi.get()]);
+      const [data, schema] = await Promise.all([this.#source.get(), this.#source.get({ schema: true })]);
       this.#item = (await itemJs).item(data ?? {});
       this.#item.setSchema(schema ?? {});
       await this.#render();

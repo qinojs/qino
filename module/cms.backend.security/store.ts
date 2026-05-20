@@ -1,57 +1,40 @@
 // deno-lint-ignore-file no-explicit-any
 import { matchPath, parsePathList } from "./pathlist.ts";
-import { defaults, textDefaults } from "./schema.ts";
+import { settingsSchema, type SecuritySettings } from "./schema.ts";
 
 export const now = () => Math.floor(Date.now() / 1000);
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const cache = new WeakMap<object, { until: number; set: Record<string, number>; text: Record<string, string>; paths: string[]; allow: string[] }>();
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: any }>>();
 
-export async function ensureDefaults(db: any) {
-  for (const [name, value] of Object.entries({ ...defaults, ...textDefaults })) {
-    if (!await db.one("SELECT name FROM m_security_setting WHERE name = ?", [name])) await db.table("m_security_setting").insert({ name, value: String(value) });
+export async function settings(app: any): Promise<SecuritySettings> {
+  const s = app.settings["cms.backend.security"];
+  const props = settingsSchema.properties as Record<string, { type: string; default: unknown }>;
+  const result: Record<string, unknown> = {};
+  for (const [key, meta] of Object.entries(props)) {
+    const raw = await s[key];
+    if (meta.type === "boolean") {
+      result[key] = raw != null && raw !== "" ? raw === true || raw === "true" || raw === "1" : meta.default;
+    } else if (meta.type === "integer") {
+      const n = Number(raw);
+      result[key] = (raw != null && raw !== "" && !isNaN(n)) ? n : meta.default;
+    } else {
+      result[key] = (raw != null && raw !== "") ? String(raw) : meta.default;
+    }
   }
+  return result as SecuritySettings;
 }
 
-export async function saveSetting(db: any, name: string, value: string) {
-  if (await db.one("SELECT name FROM m_security_setting WHERE name = ?", [name])) await db.table("m_security_setting").update(name, { name, value });
-  else await db.table("m_security_setting").insert({ name, value });
-  clearCache(db);
+export async function suspiciousPath(app: any, path: string) {
+  const set = await settings(app);
+  const allow = parsePathList(set.allowedPaths);
+  const paths = parsePathList(set.suspiciousPaths);
+  if (matchPath(allow, path)) return "";
+  return matchPath(paths, path);
 }
 
-export async function settings(db: any): Promise<Record<string, number>> {
-  return (await loadSettings(db)).set;
-}
-
-export async function textSettings(db: any): Promise<Record<string, string>> {
-  return (await loadSettings(db)).text;
-}
-
-export function clearCache(db: any) {
-  cache.delete(db);
-}
-
-export async function suspiciousPath(db: any, path: string) {
-  const data = await loadSettings(db);
-  if (matchPath(data.allow, path)) return "";
-  return matchPath(data.paths, path);
-}
-
-async function loadSettings(db: any) {
-  const old = cache.get(db);
-  if (old && old.until > Date.now()) return old;
-  const rows = await db.all("SELECT name,value FROM m_security_setting");
-  const set = { ...defaults };
-  const text = { ...textDefaults };
-  for (const r of rows) if (r.name in set) set[r.name] = Number(r.value) || 0;
-  for (const r of rows) if (r.name in text) text[r.name] = String(r.value ?? "");
-  const data = { until: Date.now() + Math.max(1, set.settingCacheSeconds) * 1000, set, text, paths: parsePathList(text.suspiciousPaths), allow: parsePathList(text.allowedPaths) };
-  cache.set(db, data);
-  return data;
-}
 
 export function fastInfo(ctx: any): any {
-  const path = ctx.appRequestUri || new URL(ctx.req.url).pathname;
+  const path = short(ctx.appRequestUri || new URL(ctx.req.url).pathname, 191);
   const ip = ctx.remoteAddr || "";
   return {
     time: now(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sessId || 0) || null,
@@ -91,7 +74,7 @@ async function hitBucket(db: any, scope: string, ident: string, add: number, rea
   const t = now();
   const row = await getBucket(db, scope, ident, set);
   const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;
-  const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore ? 1 : 0, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: path, data: "" };
+  const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore ? 1 : 0, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: short(path, 191), data: "" };
   if (row) {
     await db.table("m_security_bucket").update(row.id, data);
     setBucketCache(db, scope, ident, { ...row, ...data }, set);
@@ -193,3 +176,5 @@ function payloadText(ctx: any): string {
     .map(([k, v]) => k + "=" + String(v));
   return entries.join("&");
 }
+
+const short = (s: string, n: number) => s.length > n ? s.slice(0, n) : s;
