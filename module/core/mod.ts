@@ -102,14 +102,9 @@ export async function init(app: App) {
 
     });
 
-    // app.on("dbTablectxinsert-before", (data) => {
-    //   const ctx = getCtx();
-    //   if (ctx.logId) data.data["log_id"] = ctx.logId;
-    // });
-    // app.on("table::ctx-before", (data) => {
-    //   const ctx = getCtx();
-    //   if (ctx.logId) data.data["log_id_ch"] = ctx.logId;
-    // });
+    const logId = () => { try { return getCtx().logId; } catch { return null; } };
+    app.db.on("table::insert-before", (e: any) => { const id = logId(); if (id) e.data.log_id = id; });
+    app.db.on("table::update-before", (e: any) => { const id = logId(); if (id) e.data.log_id_ch = id; });
 
     app.on("login", async (data: any) => {
       const ctx = getCtx();

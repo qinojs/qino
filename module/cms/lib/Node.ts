@@ -495,6 +495,7 @@ export class Node {
         data = { page_id: this.id, lang, ...data };
         const row = await this.db.row(this.sql("SELECT * FROM page_url WHERE page_id = ? AND lang = ?"), [this.id, lang]);
         await this.db.table("page_url")[row ? "update" : "insert"](data);
+        this.#urls = null; // neu
     }
 
     async urlSeoGenerated(lang: string): Promise<string> {

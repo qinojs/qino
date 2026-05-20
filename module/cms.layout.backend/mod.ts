@@ -31,7 +31,6 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addCSSFile(u2Root + "css/base/base.css");
   ctx.html.addCSSFile(u2Root + "css/classless/variables.css");
   ctx.html.addCSSFile(u2Root + "css/classless/classless.css");
-  ctx.html.addCSSFile(ctx.sysURL + "core/pub/js/c1/css/theme1.css");
   ctx.html.addCSSFile(ctx.sysURL + "core/pub/css/c1/box.css");
   ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
 
@@ -77,7 +76,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     }
     const cConts = [...(await C.conts()).values()] as any[];
     const cModName: string = cConts[0]?.vs?.module ?? "";
-    const cIcon = cModName ? `<svg width=16 height=16 style="flex-shrink:0; height:1em; vertical-align:-13.8%"><use href="${ctx.sysURL}${cModName}/pub/module.svg#main"/></svg> ` : "";
+    const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.sysURL}${cModName}/pub/module.svg#main"/></svg> ` : "";
     navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
   }
 

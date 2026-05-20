@@ -22,7 +22,7 @@ const cmsTools = toTools(cmsApi, {
 });
 
 const CMS_CONTEXT = `
-You are an assistant embedded in Vanilla CMS.
+You are an assistant embedded in qino CMS.
 Use the user's language. Be concise, practical, and use tools for CMS changes.
 
 ## CMS essentials

@@ -1,0 +1,17 @@
+/* cms.backend.superuser.dbfiles */
+.-m-cms-backend-superuser-dbfiles {
+  xheight: 88vh;
+  align-items: start;
+
+  & .-sidebar { flex: 0 0 auto; overflow: auto; }
+  & .-main { flex: 1 1 auto; overflow: auto; }
+  & .-table-wrap { padding: 0; overflow: auto; max-height: 80vh; }
+  & .-thumb { width: 75px; }
+  & .-thumb img { display: block; max-width: 70px; max-height: 40px; }
+  & .-delete { all: unset; cursor: pointer; }
+  & .-preview-img {
+    max-width: 100%; display: block; max-height: 80vh;
+    background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
+    &:hover { background: repeating-conic-gradient(#888 0% 25%, #bbb 0% 50%) 0 0 / 16px 16px; }
+  }
+}

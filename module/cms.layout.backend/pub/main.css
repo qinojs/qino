@@ -2,16 +2,24 @@ html {
 	font-size: 14px;
 	--color: var(--cms-color);
 	background:var(--cms-background);
+	--u2-ico-dir: var(--u2-ico-dir-material);
 }
 
 td, th { padding: calc(var(--gap) / 4); }
-small {
-	color: var(--gray);
+
+small { color: var(--gray); }
+
+dialog {
+	border-radius: var(--radius);
+	border-width: 1px;
+	box-shadow: var(--shadow);
+	&::backdrop { background: rgba(0,0,0,.4); }
 }
 
 .u2-card {
 	background:var(--color-bg);
 	flex-grow:1;
+	min-width: 0;
 }
 .u2-card > .-head {
 	align-items:center;
@@ -32,6 +40,7 @@ small {
 .u2-table > thead > tr {
 	background:var(--color-darker);
 	color: var(--color-bg);
+	& > :is(*,#xx) { background-color:inherit; }
 }
 
 

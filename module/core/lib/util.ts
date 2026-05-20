@@ -43,18 +43,11 @@ export function assertAllowedPath(file: string, app: any): void {
   if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new OutputError("invalid path");
 }
 
-export function ensureSlash(v: string) {
-  return v.endsWith("/") ? v : v + "/";
-}
+export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
 /** HTML utilities */
 export function hee(str: any): string {
-  return String(str ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(str ?? "").replace(/[&"'<>]/g, c => ({"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"})[c]!);
 }
 
 export class HtmlString {
@@ -94,65 +87,26 @@ export function uid(length?: number): string {
 }
 
 /* Error classes for control flow */
-export class AnswerError extends Error {
-  constructor(public data: Record<string, any>, public status = 200) { super("Answer"); }
-}
-
-export class RedirectError extends Error {
-  constructor() { super("redirect"); }
-}
-
-export class OutputError extends Error {
-  constructor(public body: any) { super("output"); }
-}
-
-export class OutputDoneError extends Error {
-  constructor() { super("output done"); }
-}
+export class AnswerError extends Error { constructor(public data: Record<string, any>, public status = 200) { super("Answer"); } }
+export class RedirectError extends Error { constructor() { super("redirect"); } }
+export class OutputError extends Error { constructor(public body: any) { super("output"); } }
+export class OutputDoneError extends Error { constructor() { super("output done"); } }
 
 // urlize
-const TRANSLITERATION: Record<string, string> = {
-  ß: "ss", æ: "ae", Æ: "Ae", œ: "oe", Œ: "Oe",
-  þ: "th", Þ: "Th", ð: "dh", Ð: "Dh",
-  ø: "o",  Ø: "O",  å: "a",  Å: "A",
-  "™": "tm", "©": "c", "®": "r",
-  "&amp;": "and", "&": "and",
+const TRANSLIT: Record<string, string> = {
+  ä: "ae", ö: "oe", ü: "ue", Ä: "ae", Ö: "oe", Ü: "ue",
+  ß: "ss", æ: "ae", œ: "oe", þ: "th", ð: "dh", "&": "and", "&amp;": "and",
 };
-const TRANSLIT_RE = new RegExp(
-  Object.keys(TRANSLITERATION)
-    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|"),
-  "g"
-);
+const TRANSLIT_RE = new RegExp(Object.keys(TRANSLIT).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
 export function urlize(str: string): string {
-  str = str.replace(TRANSLIT_RE, m => TRANSLITERATION[m]);
-  str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  str = str.replace(/[^a-zA-Z0-9._~-]/g, "-");
-  str = str.replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "");
-  return str.toLowerCase();
+  return str
+    .replace(TRANSLIT_RE, m => TRANSLIT[m])
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-// export async function copyDir(src: string, dest: string): Promise<void> {
-//   try {
-//     await Deno.mkdir(dest, { recursive: true });
-//     for await (const entry of Deno.readDir(src)) {
-//       if (!entry.name) continue;
-//       const sf = src + "/" + entry.name;
-//       const df = dest + "/" + entry.name;
-//       if (entry.isDirectory) {
-//         await copyDir(sf, df);
-//       } else {
-//         await Deno.copyFile(sf, df);
-//       }
-//     }
-//   } catch { /* ignore */ }
-// }
-
-export function br2nl(str: string): string {
-  return str.replace(/<br(\s*)\/?>/gi, "\n");
-}
-
-// Port of util::sqlSearchHelper — builds parameterized WHERE + ORDER BY fragments for fulltext search
 export function sqlSearchHelper(
   search: string,
   fields: string[],

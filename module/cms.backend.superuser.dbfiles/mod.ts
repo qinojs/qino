@@ -25,32 +25,31 @@ const u2time = (t: unknown) => {
 const IMG = new Set(["jpg","jpeg","gif","png","svg","webp"]);
 const VID = new Set(["mp4","webm","mov","avi","mkv"]);
 const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
+const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
 async function mediaPreview(f: any, exists: boolean) {
   if (!exists) return `<span style="color:red">✗</span>`;
-  const ext = f.extension;
-  if (IMG.has(ext) && await FileTransformer.capabilities.magick)
-    return `<img src="${await f.url({w:70,h:40,max:true,page:1})}" style="display:block;max-width:70px;max-height:40px" alt="">`;
-  if (VID.has(ext) && await FileTransformer.capabilities.ffmpeg)
-    return `<img src="${await f.url()}/w-70/h-40/fmt-jpeg/frame-1/${hee(f.name)}" style="display:block" alt="">`;
-  if (AUD.has(ext)) return `<audio src="${await f.url()}" style="width:70px">`;
-  return `<svg width=70 height=40 style="display:block"><rect width=70 height=40 fill="var(--cms-color)"></rect><text x=35 y=25 fill="#fff" text-anchor=middle>${hee(ext||"?")}</text></svg>`;
+  return `<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
-async function mediaLarge(f: any) {
+async function mediaView(f: any) {
   const ext = f.extension;
   const url = await f.url();
   let inner = "";
   if (IMG.has(ext) && await FileTransformer.capabilities.magick)
-    inner = `<img src="${url}/w-800/h-600/max/${hee(f.name)}" style="max-width:100%;display:block">`;
+    inner = `<img src="${url}" class="-preview-img" alt="">`;
   else if (VID.has(ext))
     inner = `<video src="${url}" controls style="max-width:100%"></video>`;
   else if (AUD.has(ext))
     inner = `<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
     inner = `<iframe src="${url}" style="width:100%;height:600px;border:0"></iframe>`;
-  if (!inner) return "";
-  return `<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>`;
+  return inner ? `<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>` : "";
+}
+
+async function textView(f: any) {
+  if (!TXT.has(f.extension)) return "";
+  return `<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${hee(String(await f.contents()))}</textarea></u2-code></div></div>`;
 }
 
 const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
@@ -82,11 +81,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const orderSql: Record<string, string> = { newest:"f.log_id DESC", oldest:"f.log_id ASC", changed:"f.log_id_ch DESC", biggest:"f.size DESC" };
   const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: any, i: number) => `r${i}`)].join(",");
 
-  let sql = `SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.email AS usr_init_email,ue.email AS usr_edit_email${relSubs}
-FROM file f
-  LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
-  LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
-WHERE 1`;
+  let sql = `
+    SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.email AS usr_init_email,ue.email AS usr_edit_email${relSubs}
+    FROM file f
+      LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
+      LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
+    WHERE 1`;
   const params: unknown[] = [];
   if (search) {
     sql += ` AND (f.name LIKE ? OR f.id LIKE ? OR f.md5 LIKE ? OR ui.email=? OR ue.email=?)`;
@@ -95,7 +95,6 @@ WHERE 1`;
   sql += ` ORDER BY ${orderBy} LIMIT 1000`;
 
   const rows = await db.all(sql, params);
-  const nid = node.id;
 
   const orderOpts = ["not exists","newest","oldest","changed","biggest"]
     .map(o => `<option${o===order?" selected":""}>${o}</option>`).join("");
@@ -106,7 +105,7 @@ WHERE 1`;
     const f = await fm.file(row.id, row);
     const exists = await f.exists();
     trs += `<tr>
-  <td style="width:75px">${await mediaPreview(f, exists as boolean)}
+  <td class="-thumb">${await mediaPreview(f, exists as boolean)}
   <td>${row.id}
   <td><a href="?id=${row.id}">${hee(row.name??"")}${!exists?` <small style="color:red">missing</small>`:""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
@@ -115,54 +114,45 @@ WHERE 1`;
   <td>${u2time(row.edit_time)}<br><small>${hee(row.usr_edit_email??"")}</small>
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
-  <td><button onclick="event.stopPropagation();apt.cms.node(${nid}).html.post({vars:{delete:${row.id}}}).then(()=>{this.closest('tr').remove()})">✕</button>`;
+  <td>
+  	<button data-delete="${row.id}" class="-delete" u2-confirm><u2-ico icon="delete">x</u2-ico></button>`;
   }
 
   return `
-<div class="u2-flex" style="height:88vh;align-items:start">
-  <div class="u2-card" style="flex:0 0 auto;overflow:auto">
+<div class="u2-flex -m-cms-backend-superuser-dbfiles">
+  <div class="u2-card -sidebar">
     <div class="-head">Filter</div>
     <div class="-body">
-      <label>Search<br><input value="${hee(search)}" oninput="debSearch(this)"></label><br><br>
-      <label>Order<br><select onchange="location.search='?order='+this.value">${orderOpts}</select></label>
+      <label>Search<br><input value="${hee(search)}" data-search></label><br><br>
+      <label>Order<br><select data-order>${orderOpts}</select></label>
     </div>
     <div class="-head">Actions</div>
     <div class="-body">
-      <button onclick="doAction('delete_unlinked')">Dateien ohne DB-Eintrag löschen</button><br>
+      <button data-action="delete_unlinked">Dateien ohne DB-Eintrag löschen</button><br>
       <small>Dateien im Verlauf werden nicht gelöscht.</small><br><br>
-      <button onclick="doAction('delete_unlinked_db')">DB-Einträge ohne Verlinkung löschen</button><br>
+      <button data-action="delete_unlinked_db">DB-Einträge ohne Verlinkung löschen</button><br>
       <small>Achtung: nur Dateien älter 7 Tage.</small>
     </div>
   </div>
-  <div class="u2-card" style="flex:1 1 auto;overflow:auto">
+  <div class="u2-card -main">
     <div class="-body">Total: ${rows.length}</div>
-    <div style="padding:0;overflow:auto;max-height:80vh">
-      <table class="u2-table">
+    <div class="-table-wrap">
+      <table class="u2-table -Sticky">
         <thead><tr><th>File<th>ID<th>Name<th>Size${relHeaders}<th>Created<th>Changed<th>Used<th>Pub<th>
         <tbody>${trs}
       </table>
     </div>
   </div>
 </div>
-${aptScript(ctx.sysURL)}
-<script>
-let debTimer;
-globalThis.debSearch = inp => { clearTimeout(debTimer); debTimer = setTimeout(()=>location.href='?search='+encodeURIComponent(inp.value)+'&order=${hee(order)}',400); };
-globalThis.doAction = async (key,btn=event.currentTarget) => {
-  btn.disabled=true;
-  const r = await apt.cms.node(${nid}).html.post({vars:{[key]:1}});
-  btn.disabled=false;
-  alert(JSON.stringify(JSON.parse(r),null,2));
-};
-</script>`;
+${aptScript(ctx.sysURL)}`;
 }
 
 async function renderDetail(node: Node, id: number): Promise<string> {
-  const ctx = getCtx() as any;
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
+  const ctx = getCtx();
+  if (!await ctx.user?.get("superuser")) return "<div></div>";
 
   const { db, dbFiles: fm } = node.app;
-  const get = ctx.get as Record<string, string>;
+  const get = ctx.get;
 
   const row = await db.row("SELECT * FROM file WHERE id = ?", [id]);
   if (!row) return "<div>File not found</div>";
@@ -173,9 +163,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   if (get.set_mime)   await f.setVs({ mime: get.set_mime });
 
   const exists = await f.exists();
-  const nid = node.id;
 
-  console.log("file.children", db.table("file").children.map((f:any)=>f.table.name+"."+f.name));
   const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: any) => {
     const rows = await db.all(`SELECT * FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)}=?`, [id]);
     return rows.map((lr: any) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
@@ -183,44 +171,49 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const dupes = await db.all("SELECT id,name FROM file WHERE id!=? AND md5=?", [id, row.md5]);
 
-  const preview = exists ? await mediaLarge(f) : "";
+  const preview = exists ? await mediaView(f) : "";
+  const text = exists ? await textView(f) : "";
 
   return `
 <div class=u2-flex>
 
-  <div class="u2-card" style="flex:0 0 auto">
-    <div class="-head">${hee(row.name??"")}</div>
-    ${!exists?'<div class="-body" style="color:red">file missing on disk!</div>':""}
-    <table class="u2-table -Fields">
-      <tr><th>ID<td>${row.id}
-      <tr>
-        <th>Name
-        <td><input value="${hee(row.name??"")}" onchange="apt.cms.node(${nid}).html.post({vars:{set_name:this.value}})">
-      <tr>
-        <th>Public
-        <td><input type=checkbox ${row.access?"checked":""} onchange="apt.cms.node(${nid}).html.post({vars:{set_public:this.checked?1:0}})">
-      <tr>
-        <th>Mime
-        <td><input value="${hee(row.mime??"")}" onchange="apt.cms.node(${nid}).html.post({vars:{set_mime:this.value}})" style="width:100%">
-      <tr><th>Size<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
-      <tr><th>MD5<td><code>${hee(row.md5??"")}</code>
-      <tr><th>URL<td><a href="${hee(await f.url())}" target=_blank>open</a> <a href="${hee(await f.url({dl:true}))}" download>download</a> <button onclick="navigator.clipboard.writeText('${hee(await f.url())}')">copy url</button>
-    </table>
-  </div>
+  <div class=u2-flex style="flex-direction:column; ">
+    <div class="u2-card" style="flex:0 0 auto">
+      <div class="-head">${hee(row.name??"")}</div>
+      ${!exists?'<div class="-body" style="color:red">file missing on disk!</div>':""}
+      <table class="u2-table -Fields">
+        <tr><th>ID<td>${row.id}
+        <tr>
+          <th>Name
+          <td><input value="${hee(row.name??"")}" data-set="set_name">
+        <tr>
+          <th>Public
+          <td><input type=checkbox ${row.access?"checked":""} data-set="set_public">
+        <tr>
+          <th>Mime
+          <td><input value="${hee(row.mime??"")}" data-set="set_mime">
+        <tr><th>Size<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
+        <tr><th>MD5<td><code>${hee(row.md5??"")}</code>
+        <tr><th>URL<td><a href="${hee(await f.url())}" target=_blank data-url>open</a> <a href="${hee(await f.url({dl:true}))}" download>download</a> <button data-copy-url>copy url</button>
+      </table>
+    </div>
 
-  <div class="u2-card" style="flex:0 0 auto">
-    <div class=-head>Duplikate</div>
-    ${dupes.length
-        ? `<table class="u2-table"><tr><th>ID<th>Name${dupes.map((d: any)=>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
-        : "<div class=-body>keine</div>"}
-  </div>
+    <div class="u2-card" style="flex:0 0 auto">
+      <div class=-head>Duplikate</div>
+      ${dupes.length
+          ? `<table class=u2-table><tr><th>ID<th>Name${dupes.map((d: any)=>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
+          : "<div class=-body>keine</div>"}
+    </div>
 
-  <div class="u2-card" style="flex:0 0 auto">
-    <div class=-head>Verknüpfungen</div>
-    ${linksHtml}
+    <div class="u2-card" style="flex:0 0 auto">
+      <div class=-head>Verknüpfungen</div>
+      ${linksHtml}
+    </div>
   </div>
 
   ${preview}
+
+  ${text}
 
 </div>
 ${aptScript(ctx.sysURL)}`;
@@ -256,4 +249,4 @@ async function deleteUnlinkedDb(node: Node) {
   return { deleted };
 }
 
-export const cms = { node: { render } };
+export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render } };

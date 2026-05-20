@@ -14,6 +14,15 @@ export type ModuleExports = Record<string, any> & {
   ctxSettingsSchema?: Record<string, unknown>;
 };
 
+function mergeSchema(a: any, b: any): any {
+  for (const [k, v] of Object.entries(b ?? {})) {
+    if (Array.isArray(v)) a[k] = [...new Set([...(Array.isArray(a[k]) ? a[k] : []), ...v])];
+    else if (v && typeof v === "object") a[k] = mergeSchema(a[k] && typeof a[k] === "object" && !Array.isArray(a[k]) ? a[k] : {}, v);
+    else a[k] = v;
+  }
+  return a;
+}
+
 export class Module {
   readonly name: string;
   readonly url: string;
@@ -37,20 +46,15 @@ async function fileExists(path: string): Promise<boolean> {
 
 export class ModuleManager {
   #app: App;
-
   #modules: Record<string, Module> = {};
 
   constructor(app: App) {
     this.#app = app;
   }
 
-  get(name: string): Module | undefined {
-    return this.#modules[name];
-  }
+  get(name: string): Module | undefined { return this.#modules[name]; }
 
-  all(): Record<string, Module> {
-    return this.#modules;
-  }
+  all(): Record<string, Module> { return this.#modules; }
 
   async import(spec: string): Promise<Module> {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported. Use app.import(import.meta.resolve("${spec}"))`);
@@ -67,15 +71,6 @@ export class ModuleManager {
     const mod = new Module(exports, url, path);
     this.#modules[name] = mod;
     exports.routes?.(this.#app);
-    return mod;
-  }
-
-  async add(spec: string): Promise<Module> {
-    console.warn("app.modules.add() is deprecated. Use app.import() instead.");
-    const mod = await this.import(spec);
-    if (mod.exports.dbSchema) await new DbSchema(this.#app.db).check(mod.exports.dbSchema);
-    await mod.exports.init?.(this.#app);
-    await mod.exports.install?.({ app: this.#app, module: mod.exports });
     return mod;
   }
 
@@ -96,11 +91,17 @@ export class ModuleManager {
   async init(): Promise<void> {
     const appSettingsSchema = { properties: {} as Record<string, unknown> };
     const ctxSettingsSchema = { properties: {} as Record<string, unknown> };
-    for (const name of this.#initOrder()) {
+    const order = this.#initOrder();
+    const dbSchema = { properties: {} };
+    for (const name of order) {
       const { exports } = this.#modules[name];
       appSettingsSchema.properties[name] = exports.settingsSchema;
       ctxSettingsSchema.properties[name] = exports.ctxSettingsSchema;
-      if (exports.dbSchema) await new DbSchema(this.#app.db).check(exports.dbSchema);
+      mergeSchema(dbSchema, exports.dbSchema);
+    }
+    if (Object.keys(dbSchema.properties).length) await new DbSchema(this.#app.db).check(dbSchema);
+    for (const name of order) {
+      const { exports } = this.#modules[name];
       await exports.init?.(this.#app);
       await exports.install?.({ app: this.#app, module: exports });
     }
