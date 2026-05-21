@@ -3,12 +3,14 @@ import type { Node } from "../cms/lib/Node.ts";
 import { OutputError } from "../core/lib/util.ts";
 import options from "./options.ts";
 import pageApi from "./page_api.ts";
+import type { App } from "../core/server.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.cont.table2";
 export const needs = ["cms"];
 
 // Port of cms.cont.table2/install.php
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const exists = await app.db.one(`SELECT name FROM module WHERE name = 'cms.cont.table2'`);
   if (!exists) await app.db.query(`INSERT INTO module SET access = '1', name = 'cms.cont.table2'`);
 }
@@ -24,7 +26,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: any): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
   if (node.edit) {
     ctx.html.addJSM(node.modUrl + "pub/edit.mjs");
   }

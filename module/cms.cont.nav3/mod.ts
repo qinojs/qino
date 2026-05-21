@@ -39,7 +39,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, _vars: any = {}): Promise<string> {
+async function render(node: Node, _vars: unknown = {}): Promise<string> {
   const cms = node.cms;
   const settings = node.settings;
 
@@ -85,11 +85,11 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
 
   let level = 0;
 
-  const getUl = async (CurPage: any): Promise<string | false> => {
+  const getUl = async (CurPage: Node): Promise<string | false> => {
     if (!CurPage || !(await CurPage.is())) return "";
 
     // Collect children
-    const readableChildren: any[] = [];
+    const readableChildren: Node[] = [];
     const allChildren = await CurPage.children("readable");
     for (const C of allChildren.values()) {
       if (filterVisible === "visible" && !C.vs.visible) continue;
@@ -100,7 +100,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
     // Optionally include content items (contents of children)
     if (includeContentsSetting) {
       const conts = await CurPage.conts();
-      for (const FirstLevelCont of Object.values(conts) as any[]) {
+      for (const FirstLevelCont of conts) {
         const bough = await FirstLevelCont.bough(["readable", { type: "c" }]);
         for (const Content of bough.values()) {
           if (Content.vs.visible) readableChildren.push(Content);
@@ -109,7 +109,7 @@ async function render(node: Node, _vars: any = {}): Promise<string> {
     }
 
     // Filter: skip entries without a title
-    const filtered: any[] = [];
+    const filtered: Node[] = [];
     for (const C of readableChildren) {
       const titleObj = await C.title();
       if (titleObj && (await titleObj.string()).trim()) filtered.push(C);

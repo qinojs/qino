@@ -1,9 +1,9 @@
-// deno-lint-ignore-file no-explicit-any
 import { hee } from "../../core/lib/util.ts";
 import { schemaFromDb, schemaDiff } from "../../../deps.ts";
 import { sortTableNames } from "../lib/analyze.ts";
+import type { Db } from "../../core/lib/Db.ts";
 
-export async function renderDiff(db: any): Promise<string> {
+export async function renderDiff(db: Db): Promise<string> {
   const mergedSchema = db.schema?.properties ?? {};
   const tables = db.tables ?? {};
 
@@ -18,7 +18,7 @@ export async function renderDiff(db: any): Promise<string> {
     const tableSchema = mergedSchema[tableName];
     const table = tables[tableName];
     if (!table) continue;
-    const schemaFields: Record<string, any> = tableSchema.additionalProperties?.properties ?? {};
+    const schemaFields: Record<string, unknown> = tableSchema.additionalProperties?.properties ?? {};
     const dbFields = table.fields ?? {};
     for (const f of Object.keys(schemaFields)) {
       if (!(f in dbFields)) rows.push({ table: tableName, field: f, status: "field-missing-db" });
@@ -51,12 +51,12 @@ export async function renderDiff(db: any): Promise<string> {
   const diffs = schemaDiff(fromDb, current);
 
   const missingTables = Object.fromEntries(
-    Object.entries(fromDb.properties as Record<string, any>).filter(
+    Object.entries(fromDb.properties as Record<string, unknown>).filter(
       ([t]) => !(t in (current.properties ?? {}))
     )
   );
 
-  const schemaRows = diffs.map((d: any) =>
+  const schemaRows = diffs.map((d: { path: string[]; prev?: unknown; next?: unknown; destructive?: unknown }) =>
     `<tr>
       <td>${hee(d.path.join("."))}</td>
       <td>${hee(String(d.prev ?? "–"))}</td>

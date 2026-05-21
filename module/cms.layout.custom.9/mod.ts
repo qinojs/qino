@@ -1,6 +1,7 @@
 import { hee } from "../core/lib/util.ts";
 import type { CMS } from "../cms/lib/CMS.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.custom.9";
 
@@ -10,9 +11,9 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, data: any = {}): Promise<string> {
+async function render(node: Node, data: { ctx: RequestContext }): Promise<string> {
   const module = node.vs.module;
-  const LPage = await getLayoutPage(node.app.cms, String(module));
+  const LPage = await getLayoutPage(node.cms, String(module));
 
   // App-specific layout CSS
   try {

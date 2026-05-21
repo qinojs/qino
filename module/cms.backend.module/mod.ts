@@ -1,13 +1,13 @@
-// deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.module";
 export const needs = ["cms.backend"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.module");
   if (P) {
     await P.title("en", "Modules");
@@ -30,7 +30,7 @@ async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: str
 }
 
 async function renderDetail(node: Node, modName: string): Promise<string> {
-  const app = node.app as any;
+  const app = node.app;
   const ctx = getCtx();
   const allMods = app.modules.all();
   const modObj = allMods[modName];
@@ -76,7 +76,8 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
       const parts = Object.keys(mod.cms ?? {});
       detail = " <small>(" + parts.join(", ") + ")</small>";
     } else if (key === "settingsSchema" || key === "ctxSettingsSchema") {
-      const props = Object.keys((mod[key] as any)?.properties ?? {});
+      const schema = mod[key];
+      const props = schema && typeof schema === "object" && "properties" in schema && schema.properties && typeof schema.properties === "object" ? Object.keys(schema.properties) : [];
       if (props.length) detail = " <small>(" + props.join(", ") + ")</small>";
     }
     return `${hee(label)}${detail} `;
@@ -85,7 +86,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   // --- Dependencies (needs) ---
   const needs: string[] = mod.needs ?? [];
   const neededBy = Object.entries(allMods)
-    .filter(([, m]) => ((m as any).needs ?? []).includes(modName))
+    .filter(([, m]) => (m.exports.needs ?? []).includes(modName))
     .map(([n]) => n)
     .sort();
 
@@ -150,7 +151,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     <div class=-head>Settings-Schema</div>
     <table class=u2-table>
       <thead><tr><th>Key<th>Typ<th>Titel
-      <tbody>${Object.entries((mod.settingsSchema as any).properties ?? {}).map(([k, v]: [string, any]) =>
+      <tbody>${Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
         `<tr><td><code>${hee(k)}</code><td><code>${hee(v?.type ?? "")}</code><td>${hee(v?.title ?? "")}`
       ).join("")}
     </table>
@@ -163,21 +164,22 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 </div>`;
 }
 
-function flattenApiRoutes(tree: any, prefix = ""): Record<string, string[]> {
+function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""): Record<string, string[]> {
   const result: Record<string, string[]> = {};
   const verbs = ["get", "post", "put", "delete", "patch"];
   for (const [key, val] of Object.entries(tree ?? {})) {
     const path = prefix + "/" + key;
-    const methods = verbs.filter(v => (val as any)[v]);
+    const route = val && typeof val === "object" ? val as Record<string, unknown> : {};
+    const methods = verbs.filter(v => route[v]);
     if (methods.length) result[path] = methods.map(m => m.toUpperCase());
-    const children = flattenApiRoutes(val, path);
+    const children = flattenApiRoutes(route, path);
     Object.assign(result, children);
   }
   return result;
 }
 
 async function renderOverview(node: Node): Promise<string> {
-  const app = node.app as any;
+  const app = node.app;
   const ctx = getCtx();
   const rows = [];
   const allMods = app.modules.all();
@@ -187,7 +189,7 @@ async function renderOverview(node: Node): Promise<string> {
     const modObj = allMods[name];
     const mod = modObj.exports;
     const needs: string[] = mod.needs ?? [];
-    const neededBy = Object.values(allMods).filter((m: any) => (m.exports.needs ?? []).includes(name)).length;
+    const neededBy = Object.values(allMods).filter((m) => (m.exports.needs ?? []).includes(name)).length;
     const exports = [
       mod.init && "init",
       mod.install && "install",
@@ -233,18 +235,18 @@ async function renderOverview(node: Node): Promise<string> {
 </div>`;
 }
 
-async function render(node: Node): Promise<string> {
+function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const modName = ctx.get.mod ? String(ctx.get.mod) : "";
   if (modName) return renderDetail(node, modName);
   return renderOverview(node);
 }
 
-export function backendDashboardWidget(app: any): string {
+export function backendDashboardWidget(app: App): string {
   const allMods = app.modules.all();
   const total = Object.keys(allMods).length;
-  const withDb = Object.values(allMods).filter((m: any) => m.exports?.dbSchema).length;
-  const withApi = Object.values(allMods).filter((m: any) => m.exports?.api).length;
+  const withDb = Object.values(allMods).filter((m) => m.exports?.dbSchema).length;
+  const withApi = Object.values(allMods).filter((m) => m.exports?.api).length;
   return `
 <table class="u2-table" style="white-space:nowrap">
   <tr><td>Gesamt:<td>${hee(String(total))}

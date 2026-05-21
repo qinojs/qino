@@ -1,11 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.module.deps";
 export const needs = ["cms.backend"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.module.deps");
   if (P) {
     await P.title("en", "Module Dependencies");
@@ -14,7 +15,7 @@ export async function install({ app }: any): Promise<void> {
 }
 
 async function render(node: Node): Promise<string> {
-  const app = node.app as any;
+  const app = node.app;
   const allMods = app.modules.all();
 
   const nodes: { id: string }[] = [];
@@ -22,7 +23,7 @@ async function render(node: Node): Promise<string> {
 
   for (const [name, mod] of Object.entries(allMods)) {
     nodes.push({ id: name });
-    for (const dep of (mod as any).needs ?? []) {
+    for (const dep of mod.exports.needs ?? []) {
       links.push({ source: dep, target: name });
     }
   }

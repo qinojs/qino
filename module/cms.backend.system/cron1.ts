@@ -5,7 +5,9 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-export async function daily(app: any): Promise<void> {
+import type { App } from "../core/server.ts";
+
+export async function daily(app: App): Promise<void> {
   const db      = app.db;
   const appPATH = app.appPATH as string;
 

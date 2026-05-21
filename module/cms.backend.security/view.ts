@@ -1,22 +1,25 @@
-// deno-lint-ignore-file no-explicit-any
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
 import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { settings } from "./store.ts";
+import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
+import type { RowDataPacket } from "../../deps.ts";
 
-export async function backendDashboardWidget(app: any): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<string> {
   const row = await app.db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event").catch(() => null);
   if (!row || !Number(row.events)) return `<div class="-body">Keine Security-Events.</div>`;
   const buckets = await app.db.all("SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5");
   return `<div class="-body">
     <b>${hee(row.events)}</b> Events, <b>${hee(row.fresh ?? 0)}</b> neu, <b>${hee(row.blocked ?? 0)}</b> geblockt<br>
     <small>Letzter Alarm: ${u2time(row.last)}</small>
-    ${buckets.length ? `<table class="u2-table">${buckets.map((r: any) => `<tr><td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.reason)}`).join("")}</table>` : ""}
+    ${buckets.length ? `<table class="u2-table">${buckets.map((r) => `<tr><td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.reason)}`).join("")}</table>` : ""}
   </div>`;
 }
 
-export async function render(node: any, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const ctx = getCtx() as any;
+export async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
+  const ctx = getCtx();
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
   const db = node.app.db;
   const set = await settings(node.app);
@@ -33,7 +36,7 @@ export async function render(node: any, { vars = {} }: { vars?: Record<string, a
   const topPaths = await db.all("SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10");
   const topKinds = await db.all("SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10");
   const topUa = await db.all("SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10");
-  const stats: any = await db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event") ?? {};
+  const stats: Record<string, unknown> = await db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event") ?? {};
   const tab = String(ctx.get.tab ?? "live");
   return `<div class="-m-cms-backend-security">
     <div class="u2-flex">
@@ -50,7 +53,7 @@ export async function render(node: any, { vars = {} }: { vars?: Record<string, a
   </div>`;
 }
 
-function statusBox(stats: any) {
+function statusBox(stats: Record<string, unknown>) {
   return `<div class="u2-card -kpi"><div class="-head">Status</div><div class="-body">
     <b>${hee(stats.events ?? 0)}</b> Events<br><b>${hee(stats.fresh ?? 0)}</b> neu<br><b>${hee(stats.blocked ?? 0)}</b> Blocked<br>
     <button data-action="clearEvents" u2-confirm>Events leeren</button>
@@ -62,17 +65,17 @@ function tabs(active: string) {
   return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="?tab=${v}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
 }
 
-function settingsEditor(ctx: any) {
+function settingsEditor(ctx: RequestContext) {
   addSettingsEditor(ctx);
   const source = settingsSourceAttr({ kind: "app", path: ["cms.backend.security"] });
   return `<div class="u2-card"><settings-editor source="${source}"></settings-editor></div>`;
 }
 
-function aptScript(node: any) {
+function aptScript(node: Node) {
   return `<script type=module>import{apt}from'${getCtx().sysURL}core/pub/js/apt.js';globalThis.apt=apt;globalThis.securityNode=${node.id};</script>`;
 }
 
-function bucketTable(rows: any[]) {
+function bucketTable(rows: Record<string, unknown>[]) {
   return `<div class="u2-card -table"><div class="-head">Verdächtige Buckets</div><table class="u2-table -Sticky">
     <thead><tr><th>Score<th>Scope<th>Ident<th>Count<th>Last<th>Reason<th>
     <tbody>${rows.map(r => `<tr class="${r.blocked?"-blocked":""}">
@@ -80,7 +83,7 @@ function bucketTable(rows: any[]) {
   </table></div>`;
 }
 
-function eventTable(rows: any[], get: Record<string, string>) {
+function eventTable(rows: RowDataPacket[], get: Record<string, string>) {
   return `<div class="u2-card -table"><div class="-head">Alarme / Aufrufe</div>
     ${eventFilter(get)}
     <table class="u2-table -Sticky">
@@ -90,20 +93,20 @@ function eventTable(rows: any[], get: Record<string, string>) {
   </table></div>`;
 }
 
-function eventCell(r: any) {
+function eventCell(r: RowDataPacket) {
   return `${tag(r.kind || "-")}<br><small>${hee(prioLabels[r.prio] ?? r.prio)}</small>`;
 }
 
-function scoreCell(r: any) {
+function scoreCell(r: RowDataPacket) {
   const meta = [`Konf. ${r.confidence ?? 0}`, `Härte ${r.severity ?? 0}`].join(" / ");
   return `<b>${hee(r.score)}</b><br><small>${hee(meta)}</small>`;
 }
 
-function bucketCell(r: any) {
+function bucketCell(r: RowDataPacket) {
   return r.scope || r.ident ? `${tag(scopeLabels[r.scope] ?? (r.scope || "-"))}<br><code>${hee(r.ident || "-")}</code>` : "-";
 }
 
-function actionCell(r: any) {
+function actionCell(r: RowDataPacket) {
   const parts = [];
   if (Number(r.blocked)) parts.push("Block");
   if (Number(r.delay_ms)) parts.push(hee(r.delay_ms) + "ms Delay");
@@ -111,24 +114,24 @@ function actionCell(r: any) {
   return parts.length ? parts.join("<br>") : "-";
 }
 
-function requestCell(r: any) {
+function requestCell(r: RowDataPacket) {
   const meta = [r.method, r.ip, r.duration_ms ? r.duration_ms + "ms" : "", bytes(r.bytes_in, "in"), bytes(r.bytes_out, "out")].filter(Boolean);
   const ids = [r.log_id ? "log " + r.log_id : "", r.usr_id ? "user " + r.usr_id : "", r.client_id ? "client " + r.client_id : ""].filter(Boolean);
   return `<code>${hee(r.path)}</code>${meta.length ? `<br><small>${hee(meta.join(" · "))}</small>` : ""}${ids.length ? `<br><small>${hee(ids.join(" · "))}</small>` : ""}`;
 }
 
-function stateCell(r: any) {
+function stateCell(r: RowDataPacket) {
   return tag(stateLabels[r.state] ?? r.state ?? "-");
 }
 
-function eventActions(r: any) {
+function eventActions(r: RowDataPacket) {
   if (r.prio === "notice") return "";
   return `<button data-seen="${r.id}">gesehen</button> <button data-ignore="${r.id}">ignorieren</button>`;
 }
 
-function topTable(title: string, rows: any[], key: string) {
+function topTable(title: string, rows: Record<string, unknown>[], key: string) {
   return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">
-    ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="?tab=live&q=${encodeURIComponent(r[key])}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
+    ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="?tab=live&q=${encodeURIComponent(String(r[key] ?? ""))}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
   </table></div>`;
 }
 

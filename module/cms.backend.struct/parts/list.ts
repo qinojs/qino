@@ -4,8 +4,9 @@
 import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import type { Node } from "../../cms/lib/Node.ts";
+import type { RequestContext } from "../../core/lib/RequestContext.ts";
 
-export async function list(node: Node, { ctx, vars }: any): Promise<string> {
+export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
 
   if (vars?.toggleOpen != null) {
@@ -21,7 +22,7 @@ export async function list(node: Node, { ctx, vars }: any): Promise<string> {
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
-  const rootNode = await (node ?? ctx.app.cms.node(rootId)).app.cms.node(rootId);
+  const rootNode = await node.cms.node(rootId);
 
   const sysURL = ctx.sysURL as string;
   let html = "";

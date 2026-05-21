@@ -6,8 +6,9 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "../../core/lib/util.ts";
+import type { Node } from "../../cms/lib/Node.ts";
 
-export default async function render(node: any): Promise<string> {
+export default async function render(node: Node): Promise<string> {
   const db      = node.app.db;
   const appPATH = node.app.appPATH as string;
 
@@ -61,7 +62,7 @@ export default async function render(node: any): Promise<string> {
 
   // ── DB table sizes ────────────────────────────────────────────────────
   const tables = await db.all("SHOW TABLE STATUS");
-  tables.sort((a: any, b: any) => {
+  tables.sort((a, b) => {
     const sa = (a.Data_length ?? 0) + (a.Index_length ?? 0);
     const sb = (b.Data_length ?? 0) + (b.Index_length ?? 0);
     return sb - sa;

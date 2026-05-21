@@ -1,6 +1,7 @@
 // Port of cms.cont.image2/index.php
 import type { Node } from "../cms/lib/Node.ts";
 import { cms_image2 } from "../cms.image2/mod.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.cont.image2";
 
@@ -17,7 +18,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: any) {
+async function render(node: Node, { ctx }: { ctx: RequestContext }) {
   const T = await node.showText("main");
 
   const settings = node.settings;

@@ -1,11 +1,9 @@
-// Port of cms.backend.users/parts/list.php
-// deno-lint-ignore-file no-explicit-any
-
 import { hee, sqlSearchHelper } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import type { Node } from "../../cms/lib/Node.ts";
+import type { RequestContext } from "../../core/lib/RequestContext.ts";
 
-export async function list(_node: Node | null, { ctx, vars }: any): Promise<string> {
+export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
   const db = ctx.app.db;
 

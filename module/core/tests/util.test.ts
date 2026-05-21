@@ -4,7 +4,6 @@ import {
   OutputError,
   appRequestUriToLocalPath,
   assertAllowedPath,
-  br2nl,
   ensureSlash,
   hee,
   html,
@@ -32,7 +31,6 @@ Deno.test("util: urlize transliterates and normalizes text", () => {
 Deno.test("util: small string helpers", () => {
   assertEquals(ensureSlash("/tmp/qino"), "/tmp/qino/");
   assertEquals(ensureSlash("/tmp/qino/"), "/tmp/qino/");
-  assertEquals(br2nl("a<br>b<br />c<BR/>d"), "a\nb\nc\nd");
 });
 
 Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {

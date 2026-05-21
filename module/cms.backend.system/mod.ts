@@ -1,17 +1,10 @@
-/**
- * cms.backend.system/mod.ts
- * Port of cms.backend.system/index.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
-import type { Node } from "../cms/lib/Node.ts";
-import { getTypes } from "./health_check.ts";
+import { getTypes, type CheckResult, type Solution } from "./health_check.ts";
 import statistic from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
 import pageApi from "./page_api.ts";
+import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.system";
@@ -79,15 +72,16 @@ async function render(node: Node): Promise<string> {
   for (const [type, checks] of Object.entries(types)) {
     const items: string[] = [];
     for (const [name, checkFn] of Object.entries(checks)) {
-      let data;
+      let data: CheckResult;
       try { data = await checkFn(); } catch { continue; }
       if (!data) continue;
 
       let solutionsHtml = "";
-      for (const [solution, solveData] of Object.entries(data.solutions ?? {})) {
+      for (const [solution, solveData] of Object.entries(data.solutions ?? {}) as [string, Solution][]) {
         let formFields = "";
         for (const [fname, field] of Object.entries(solveData.form ?? {})) {
-          formFields += `<tr><td>${hee(fname.charAt(0).toUpperCase() + fname.slice(1))}:<td><input name="${hee(fname)}" type="${hee((field as any).type ?? "text")}">`;
+          const inputType = typeof field.type === "string" ? field.type : "text";
+          formFields += `<tr><td>${hee(fname.charAt(0).toUpperCase() + fname.slice(1))}:<td><input name="${hee(fname)}" type="${hee(inputType)}">`;
         }
         solutionsHtml += `
 <form style="margin:8px;">

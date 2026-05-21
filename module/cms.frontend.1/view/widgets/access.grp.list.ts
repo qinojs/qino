@@ -1,12 +1,12 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 // deno-lint-ignore-file no-explicit-any
 
-export default async function (node: Node, vars: any = {}): Promise<string> {
+export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<string> {
   const app = node.app;
   const db = app.db;
   const hasMany = vars.hasMany ?? true;
   const search  = vars.param?.search ?? "";
-  const params: any[] = [];
+  const params: unknown[] = [];
 
   let sql = ` SELECT grp.*, a.access
     FROM grp

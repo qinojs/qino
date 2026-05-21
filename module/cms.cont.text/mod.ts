@@ -1,9 +1,10 @@
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.cont.text";
 export const needs = ["cms"];
 
-export async function install({app}: any): Promise<void> {
+export async function install({app}: { app: App }): Promise<void> {
   const exists = await app.db.one(`SELECT name FROM module WHERE name = 'cms.cont.text'`);
   if (!exists) await app.db.query(`INSERT INTO module SET access = '1', name = 'cms.cont.text'`);
 }

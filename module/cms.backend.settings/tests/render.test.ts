@@ -18,6 +18,7 @@ Deno.test("cms.backend.settings: render adds settings editor and app source", ()
 });
 
 Deno.test("cms.backend.settings: dashboard widget escapes count", async () => {
-  const out = await backendDashboardWidget({ db: { one: () => 12 } });
+  const app = { db: { one: async () => 12 } } as unknown as Parameters<typeof backendDashboardWidget>[0];
+  const out = await backendDashboardWidget(app);
   assertEquals(out.includes("<tr><td>Einträge:<td>12"), true);
 });

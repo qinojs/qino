@@ -75,7 +75,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
       }
     }
     const cConts = [...(await C.conts()).values()];
-    const cModName: string = cConts[0]?.vs?.module ?? "";
+    const cModName = String(cConts[0]?.vs?.module ?? "");
     const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.sysURL}${cModName}/pub/module.svg#main"/></svg> ` : "";
     navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
   }

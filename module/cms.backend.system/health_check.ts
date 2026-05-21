@@ -10,8 +10,8 @@ import { getCtx } from "../core/lib/RequestContext.ts";
 
 
 export type Solution = {
-  form?: Record<string, any>;
-  solve: (formData?: Record<string, any>) => Promise<any> | any;
+  form?: Record<string, Record<string, unknown>>;
+  solve: (formData?: Record<string, unknown>) => Promise<unknown> | unknown;
 };
 
 export type CheckResult = {
@@ -88,7 +88,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
   // ── superuser default password ──────────────────────────────────────────
   types.error["superuser default password"] = async () => {
     const usrs = await db.all("SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20");
-    const found: any[] = [];
+    const found: typeof usrs = [];
     let info = "";
     for (const row of usrs) {
       // bcrypt check: password "su"
@@ -233,7 +233,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
   // ── orphaned settings ───────────────────────────────────────────────────
   const installedModules = app.modules.all();
   const skipModules = new Set(["app1", "client1", "m", "qg"]);
-  const allSettings: any = settings;
+  const allSettings = settings as Record<string, unknown>;
   if (allSettings) {
     for (const module of Object.keys(allSettings)) {
       if (skipModules.has(module)) continue;
@@ -324,22 +324,22 @@ export async function getTypes(app: any): Promise<HealthTypes> {
           let msg = "";
 
           // logs
-          const logRes = await db.query("DELETE FROM log WHERE time < ? LIMIT 1000000", [monthAgo]);
+          const logRes = await db.exec("DELETE FROM log WHERE time < ? LIMIT 1000000", [monthAgo]);
           await db.query("OPTIMIZE TABLE log");
-          msg += (logRes as any).affectedRows + " log-rows deleted\n";
+          msg += logRes.affectedRows + " log-rows deleted\n";
 
           // clients – simple: remove old unused
-          const clientRes = await db.query(`DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL) LIMIT 1000000`);
+          const clientRes = await db.exec(`DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL) LIMIT 1000000`);
           await db.query("OPTIMIZE TABLE client");
-          msg += (clientRes as any).affectedRows + " client-rows deleted\n";
+          msg += clientRes.affectedRows + " client-rows deleted\n";
 
           // sessions
-          const sessClearRes = await db.query("UPDATE sess SET token = NULL, data = '' WHERE access < ? AND token IS NOT NULL LIMIT 1000000", [monthAgo]);
-          msg += (sessClearRes as any).affectedRows + " sess-tokens cleared\n";
+          const sessClearRes = await db.exec("UPDATE sess SET token = NULL, data = '' WHERE access < ? AND token IS NOT NULL LIMIT 1000000", [monthAgo]);
+          msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
 
-          const sessRes = await db.query(`DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL) LIMIT 1000000`);
+          const sessRes = await db.exec(`DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL) LIMIT 1000000`);
           await db.query("OPTIMIZE TABLE sess");
-          msg += (sessRes as any).affectedRows + " sess-rows deleted\n";
+          msg += sessRes.affectedRows + " sess-rows deleted\n";
 
           const duration = (Date.now() - start) / 1000;
           msg += "duration: " + duration.toFixed(2) + " seconds";
@@ -360,11 +360,11 @@ export async function getTypes(app: any): Promise<HealthTypes> {
       solutions: {
         run: {
           solve: async () => {
-            const res = await db.query(
+            const res = await db.exec(
               "DELETE FROM text WHERE id NOT IN (SELECT DISTINCT title_id FROM page WHERE title_id IS NOT NULL) ORDER BY id DESC LIMIT 1000000"
             );
             await db.query("OPTIMIZE TABLE text");
-            return (res as any).affectedRows + " rows deleted\n";
+            return res.affectedRows + " rows deleted\n";
           },
         },
       },

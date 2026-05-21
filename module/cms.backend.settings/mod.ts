@@ -7,6 +7,7 @@ import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];
@@ -15,7 +16,7 @@ export const needs = ["cms.backend"];
  * cms.backend.settings install()
  * Port of cms.backend.settings/install.php
  */
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.settings");
   if (P) {
     await P.title("en", "Settings");
@@ -23,7 +24,7 @@ export async function install({ app }: any): Promise<void> {
   }
 }
 
-function render(_node: any, { ctx }: { ctx: RequestContext }): string {
+function render(_node: unknown, { ctx }: { ctx: RequestContext }): string {
   addSettingsEditor(ctx);
   const source = settingsSourceAttr({ kind: "app" });
   return `<div class=u2-card>
@@ -34,7 +35,7 @@ function render(_node: any, { ctx }: { ctx: RequestContext }): string {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: any): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
   const count = Number(await db.one("SELECT count(*) FROM qg_setting"));
   return `<div style="overflow:auto; padding:0">

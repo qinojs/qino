@@ -7,6 +7,7 @@
     "jsr:@nuxodin/item@~0.4.1": "0.4.1",
     "jsr:@nuxodin/item@~0.5.6": "0.5.6",
     "jsr:@nuxodin/item@~0.5.7": "0.5.7",
+    "jsr:@nuxodin/item@~0.5.8": "0.5.8",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/cli@^1.0.29": "1.0.29",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
@@ -43,6 +44,9 @@
     },
     "@nuxodin/item@0.5.7": {
       "integrity": "794e5404b8132865e32aa9041f3f5d029bddcbdb3c2ef42a600dcf9a792aa0a5"
+    },
+    "@nuxodin/item@0.5.8": {
+      "integrity": "0a776774b50a5515631c434f2a375d5ab6f55679a3e66dd1d171b6bcad68a81c"
     },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",

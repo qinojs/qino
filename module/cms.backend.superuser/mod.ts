@@ -2,11 +2,12 @@
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.superuser";
 export const needs = ["cms.backend"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser");
   if (P) {
     await P.title("en", "Superuser");
@@ -18,7 +19,7 @@ async function render(node: Node): Promise<string> {
   const page = await node.page();
   const children = [...(await page.children({ access: 1 })).values()];
   if (!children.length) return "<div></div>";
-  const links = await Promise.all(children.map(async (child: any) =>
+  const links = await Promise.all(children.map(async (child) =>
     `<a href="${hee(await child.url())}">${hee(await (await child.title()).string())}</a><br>`
   ));
 

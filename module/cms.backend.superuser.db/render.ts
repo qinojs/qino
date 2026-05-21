@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { getCtx } from "../core/lib/RequestContext.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import { renderTables } from "./views/tables.ts";
@@ -16,11 +15,11 @@ const VIEWS = [
 type ViewKey = typeof VIEWS[number]["key"];
 
 export async function render(node: Node): Promise<string> {
-  const ctx = getCtx() as any;
+  const ctx = getCtx();
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
   const { db } = node.app;
-  const modules: Record<string, any> = node.app.modules.all();
+  const modules = node.app.modules.all();
   const view = (ctx.get.view ?? "tables") as ViewKey;
   const table = ctx.get.table ?? "";
 

@@ -6,7 +6,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee, urlToLocalPath } from "../core/lib/util.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
@@ -28,7 +28,7 @@ export async function install({ app }: any): Promise<void> {
   }
 }
 
-function makeFileHelper(ctx: any) {
+function makeFileHelper(ctx: RequestContext) {
     const appURL = ctx.appURL as string;
     function editorLink(file: string, line: unknown, col: unknown): string {
         const localPath = urlToLocalPath(file, ctx) ?? file;

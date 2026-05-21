@@ -5,12 +5,13 @@ import { list } from "./parts/list.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.struct";
 export const needs = ["cms.backend"];
 
 // Port of cms.backend.struct/install.php
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.struct");
   if (P) {
     await P.title("en", "Pages");
@@ -76,7 +77,7 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 </div>`;
 }
 
-export async function backendDashboardWidget(app: any): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
   const now = Math.floor(Date.now() / 1000);
   const total   = Number(await db.one("SELECT count(*) FROM page WHERE type='p'"));

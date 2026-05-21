@@ -10,7 +10,8 @@ Deno.test("cms.backend.struct: metadata and cms export are wired", () => {
 
 Deno.test("cms.backend.struct: dashboard widget renders page counters", async () => {
   const values = [20, 3, 5];
-  const out = await backendDashboardWidget({ db: { one: () => values.shift() } });
+  const app = { db: { one: async () => values.shift() } } as unknown as Parameters<typeof backendDashboardWidget>[0];
+  const out = await backendDashboardWidget(app);
   assertEquals(out.includes("Seiten gesamt:<td>20"), true);
   assertEquals(out.includes("Offline:<td>3"), true);
   assertEquals(out.includes("Versteckt:<td>5"), true);
