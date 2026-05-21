@@ -1,0 +1,117 @@
+// deno-lint-ignore-file no-explicit-any
+import { hee } from "../../core/lib/util.ts";
+import { fieldOriginsByTable } from "../lib/analyze.ts";
+
+function keyBadge(key: string): string {
+  if (key === "PRI") return ' <small class=u2-badge style="background:var(--yellow)">PRI</small>';
+  if (key === "UNI") return ' <small class=u2-badge style="background:var(--blue)">UNI</small>';
+  if (key === "MUL") return ' <small class=u2-badge style="background:var(--green)">IDX</small>';
+  return "";
+}
+
+function statusBadge(inSchema: boolean, uncovered: number): string {
+  if (!inSchema)   return '<small class=u2-badge style="background:var(--red)">kein Schema</small>';
+  if (uncovered)   return `<small class=u2-badge style="background:var(--orange)">${uncovered} ohne Schema</small>`;
+  return "✓";
+}
+
+export function renderTables(db: any, modules: Record<string, any>, table: string): Promise<string> {
+  return table ? tableDetail(db, modules, table) : tableOverview(db);
+}
+
+async function tableOverview(db: any): Promise<string> {
+  const tables = Object.values(db.tables ?? {}) as any[];
+  const schemaProps = db.schema?.properties ?? {};
+
+  const rows = await Promise.all(
+    [...tables].sort((a, b) => {
+      const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
+      return (sa ? 1 : 0) - (sb ? 1 : 0) || a.name.localeCompare(b.name);
+    }).map(async (table: any) => {
+      const fields = await table.init();
+      const schemaFields: Record<string, any> = schemaProps[table.name]?.additionalProperties?.properties ?? {};
+      const status = await table.getStatus().catch(() => null);
+      const uncovered = Object.keys(fields).filter(f => !(f in schemaFields)).length;
+
+      const bytes = status?.Data_length != null ? `<u2-bytes>${status.Data_length}</u2-bytes>` : "?";
+      const primaries = Object.values(fields).filter((f: any) => f.isPrimary());
+      const primaryBadge = primaries.length === 0 ? '<small class=u2-badge style="background:var(--red)">keiner</small>'
+        : primaries.length === 1 ? `<small class=u2-badge style="background:var(--yellow)">${hee(String(primaries[0]))}</small>`
+        : primaries.map((f: any) => `<small class=u2-badge>${hee(String(f))}</small>`).join(" ");
+      return `<tr>
+        <td><a href="?view=tables&table=${hee(table.name)}">${hee(table.name)}</a></td>
+        <td style="text-align:right">${hee(String(status?.Rows ?? "?"))}</td>
+        <td style="text-align:right">${bytes}</td>
+        <td style="text-align:right">${Object.keys(fields).length}</td>
+        <td data-value="${primaries.length}">${primaryBadge}</td>
+        <td>${statusBadge(table.name in schemaProps, uncovered)}</td>
+      </tr>`;
+    })
+  );
+
+  return `<div class="u2-card -full">
+    <div class="-head">Tabellen (${tables.length})</div>
+    <u2-table style="padding:0">
+      <table class=u2-table>
+        <thead>
+          <tr>
+            <th data-sort-handler>Tabelle
+            <th data-sort-handler>Zeilen
+            <th data-sort-handler>Grösse
+            <th data-sort-handler>Felder
+            <th data-sort-handler>Primary
+            <th data-sort-handler>Status
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </u2-table>
+  </div>`;
+}
+
+async function tableDetail(db: any, modules: Record<string, any>, tableName: string): Promise<string> {
+  const table = db.tables?.[tableName];
+  if (!table) return `<div class=u2-card><div class="-body">Tabelle <b>${hee(tableName)}</b> nicht gefunden.</div></div>`;
+
+  const fields = await table.init();
+  const schemaFields: Record<string, any> = table.schema?.additionalProperties?.properties ?? {};
+  const origins = fieldOriginsByTable(modules, tableName);
+  const status = await table.getStatus().catch(() => null);
+
+  const rows = Object.entries(fields as Record<string, any>).map(([fname, field]) => {
+    const props = schemaFields[fname];
+    const schemaCell = props
+      ? Object.entries(props).map(([k, v]) =>
+          `<span${k.startsWith("x-") ? ' style="opacity:.5"' : ""}>${hee(k)}: <code>${hee(JSON.stringify(v))}</code></span>`
+        ).join(" ")
+      : "–";
+
+    const originsCell = (origins[fname] ?? []).map(m => `<small class=u2-badge>${hee(m)}</small>`).join(" ");
+
+    return `<tr${props ? "" : ' class=-no-schema-row'}>
+      <td style="font-family:monospace">${hee(fname)}${keyBadge(field.vs?.Key ?? "")}</td>
+      <td style="font-family:monospace;font-size:.9em">${hee(field.vs?.Type ?? "")}</td>
+      <td>${field.vs?.Null === "YES" ? "NULL" : ""}</td>
+      <td><code>${field.vs?.Default != null ? hee(String(field.vs.Default)) : ""}</code></td>
+      <td style="font-size:.82em">${schemaCell}</td>
+      <td>${originsCell}</td>
+    </tr>`;
+  });
+
+  const meta = status
+    ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.Rows ?? "?"))} Zeilen · ${hee(status.Engine ?? "")} · <u2-bytes>${status["Data_length"] ?? 0}</u2-bytes></span>`
+    : "";
+
+  return `<div class="u2-card -full">
+    <div class="-head"><a href="?view=tables">← Tabellen</a> &nbsp; ${hee(tableName)} ${meta}</div>
+    <table class=u2-table>
+      <thead>
+        <tr>
+          <th>Feld
+          <th>Typ
+          <th>NULL
+          <th>Default
+          <th>Schema
+          <th>Module
+      <tbody>${rows.join("")}</tbody>
+    </table>
+  </div>`;
+}

@@ -5,6 +5,7 @@ import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { pwHash } from "../core/lib/auth.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import pageApi from "./page_api.ts";
@@ -13,7 +14,7 @@ export const name = "cms.backend.users";
 export const needs = ["cms.backend"];
 
 // Port of cms.backend.users/install.php
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.users");
   if (P) {
     await P.title("en", "Users");
@@ -108,7 +109,7 @@ async function renderOverview(node: Node): Promise<string> {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: any): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
   const total  = Number(await db.one("SELECT count(*) FROM usr"));
   const active = Number(await db.one("SELECT count(*) FROM usr WHERE active = 1"));
@@ -119,7 +120,7 @@ export async function backendDashboardWidget(app: any): Promise<string> {
      LEFT JOIN usr ON sess.usr_id = usr.id
      WHERE sess.usr_id IS NOT NULL AND sess.access IS NOT NULL
      ORDER BY sess.access DESC LIMIT 5`
-  ).catch(() => [] as any[]);
+  ).catch(() => []);
 
   let loginRows = "";
   for (const row of logins) {
@@ -154,7 +155,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const ctx = getCtx();
   const db = node.app.db;
 
-  const vs: any = await db.row("SELECT * FROM usr WHERE id = ?", [id]);
+  const vs = await db.row("SELECT * FROM usr WHERE id = ?", [id]);
   if (!vs) return '<div class=u2-card><div class=-body>Benutzer nicht gefunden.</div></div>';
 
   const isSuperuser = !!(await ctx.user?.get("superuser"));

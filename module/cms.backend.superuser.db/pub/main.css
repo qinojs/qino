@@ -1,0 +1,11 @@
+.-m-cms-backend-superuser-db {
+  & .-nav { display: flex; gap: 4px; padding: 0 8px 8px; flex-wrap: wrap; }
+  & .-nav-item { padding: 2px 10px; text-decoration: none; border-radius: 3px; }
+  & .-nav-item.-active { font-weight: bold; text-decoration: underline; }
+
+  & .-no-schema-row { opacity: .5; }
+
+  & .-tgroup { margin-right: 10px; }
+  & .-tgroup .-tname { opacity: .6; font-size: .85em; margin-right: 4px; }
+  & .-tgroup .-field { font-family: monospace; margin-right: 3px; }
+}

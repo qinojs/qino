@@ -12,6 +12,7 @@ import { getTypes } from "./health_check.ts";
 import statistic from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
 import pageApi from "./page_api.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.system";
 export const needs = ["cms.backend"];
@@ -20,7 +21,7 @@ export const needs = ["cms.backend"];
  * cms.backend.system install()
  * Port of cms.backend.system/install.php
  */
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.system");
   if (P) {
     await P.title("en", "System");
@@ -33,7 +34,7 @@ async function render(node: Node): Promise<string> {
   const get    = ctx.get as Record<string, string>;
   const open   = get.open ?? null;
   const db     = node.app.db;
-  const app    = node.app as any;
+  const app    = node.app;
 
 
 
@@ -71,8 +72,6 @@ async function render(node: Node): Promise<string> {
 
 
   // ── health checks ──────────────────────────────────────────────────────
-  // Provide ctx on app so health_check.ts can read server/usr/settings info
-  (app as any)._lastCtx = ctx;
   const types = await getTypes(app);
 
   // Collect health-check results per category
@@ -80,12 +79,12 @@ async function render(node: Node): Promise<string> {
   for (const [type, checks] of Object.entries(types)) {
     const items: string[] = [];
     for (const [name, checkFn] of Object.entries(checks)) {
-      let data: any;
+      let data;
       try { data = await checkFn(); } catch { continue; }
       if (!data) continue;
 
       let solutionsHtml = "";
-      for (const [solution, solveData] of Object.entries(data.solutions ?? {}) as any) {
+      for (const [solution, solveData] of Object.entries(data.solutions ?? {})) {
         let formFields = "";
         for (const [fname, field] of Object.entries(solveData.form ?? {})) {
           formFields += `<tr><td>${hee(fname.charAt(0).toUpperCase() + fname.slice(1))}:<td><input name="${hee(fname)}" type="${hee((field as any).type ?? "text")}">`;
@@ -191,8 +190,7 @@ async function render(node: Node): Promise<string> {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: any): Promise<string> {
-  (app)._lastCtx = getCtx();
+export async function backendDashboardWidget(app: App): Promise<string> {
   const types = await getTypes(app);
 
   let errors = 0, warnings = 0;
@@ -214,9 +212,9 @@ export async function backendDashboardWidget(app: any): Promise<string> {
     : `<span style="color:green">&#10003; Alles OK</span>`;
 
   // DB top tables
-  const tables = await (app.db.all("SHOW TABLE STATUS") as Promise<any[]>).catch(() => [] as any[]);
-  tables.sort((a: any, b: any) => ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0)));
-  const dbRows = tables.slice(0, 3).map((t: any) => {
+  const tables = await app.db.all("SHOW TABLE STATUS").catch(() => []);
+  tables.sort((a, b) => ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0)));
+  const dbRows = tables.slice(0, 3).map((t) => {
     const size = (t.Data_length ?? 0) + (t.Index_length ?? 0);
     return `<tr><td>${hee(t.Name)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`;
   }).join("");

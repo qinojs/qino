@@ -6,6 +6,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "../core/lib/util.ts";
+import { getCtx } from "../core/lib/RequestContext.ts";
 
 
 export type Solution = {
@@ -24,8 +25,10 @@ export type HealthTypes = Record<string, Record<string, CheckFn>>;
 
 export async function getTypes(app: any): Promise<HealthTypes> {
   const db = app.db;
-  const ctx = app._lastCtx ?? {};
+  const ctx = getCtx();
   const settings = app.settings;
+  const requestUrl = new URL(ctx.req.url);
+  const domain = requestUrl.hostname.replace(/^www\./, "");
 
   const types: HealthTypes = {
     error:   {},
@@ -68,11 +71,8 @@ export async function getTypes(app: any): Promise<HealthTypes> {
 
   // ── htaccess protection ─────────────────────────────────────────────────
   types.error["htaccess protection disabled"] = async () => {
-    const scheme = ctx.server?.SCHEME ?? "https";
-    const host   = ctx.server?.SERVER_NAME ?? "";
-    const sysURL = ctx.sysURL ?? "";
     const urls = [
-      `${scheme}://${host}${sysURL}qg/index.json`,
+      new URL(ctx.sysURL + "qg/index.json", requestUrl.origin).href,
     ];
     let info = "";
     for (const url of urls) {
@@ -123,8 +123,6 @@ export async function getTypes(app: any): Promise<HealthTypes> {
 
   // ── mail from domain ────────────────────────────────────────────────────
   types.notice['default "mail from" is not in this domain'] = async () => {
-    const host   = ctx.server?.HTTP_HOST ?? "";
-    const domain = host.replace(/^www\./, "");
     const value  = String(await settings.qg?.mail?.defSender ?? "");
     if (value.endsWith("@" + domain)) return undefined;
     return {
@@ -138,8 +136,6 @@ export async function getTypes(app: any): Promise<HealthTypes> {
   };
 
   types.notice['mail "replay" not from this domain'] = async () => {
-    const host   = ctx.server?.HTTP_HOST ?? "";
-    const domain = host.replace(/^www\./, "");
     const value  = String(await settings.qg?.mail?.replay ?? "");
     if (value.endsWith("@" + domain)) return undefined;
     return {
@@ -154,12 +150,13 @@ export async function getTypes(app: any): Promise<HealthTypes> {
 
   types.notice["no mail recipient on debug mode"] = async () => {
     if (await settings.qg?.mail?.["on debugmode to"]) return undefined;
-    const usr = ctx.usr;
-    if (!usr?.superuser) return undefined;
+    const usr = ctx.user;
+    if (!usr || !await usr.get("superuser")) return undefined;
+    const email = String(await usr.get("email") ?? "");
     return {
       solutions: {
-        [`set it to: ${hee(usr.email)}`]: {
-          solve: async () => { settings.qg.mail["on debugmode to"] = usr.email; },
+        [`set it to: ${hee(email)}`]: {
+          solve: async () => { settings.qg.mail["on debugmode to"] = email; },
         },
       },
     };
@@ -167,7 +164,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
 
   types.warning["smalltexts-counter is enabled"] = async () => {
     if (!await settings.qg?.smalltext?.counter) return undefined;
-    if (!ctx.usr?.superuser) return undefined;
+    if (!await ctx.user?.get("superuser")) return undefined;
     return {
       solutions: {
         disable: { solve: async () => { settings.qg.smalltext.counter = 0; } },
@@ -177,7 +174,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
 
   types.warning["smalltext code-logger is enabled"] = async () => {
     if (!await settings.qg?.smalltext?.code_logger) return undefined;
-    if (!ctx.usr?.superuser) return undefined;
+    if (!await ctx.user?.get("superuser")) return undefined;
     return {
       solutions: {
         disable: { solve: async () => { settings.qg.smalltext.code_logger = 0; } },

@@ -19,7 +19,7 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
   const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
 
   let grpFilter = "";
-  const grpParams: any[] = [];
+  const grpParams: unknown[] = [];
   if (grpId) {
     grpFilter = " AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ?)";
     grpParams.push(grpId);
@@ -46,7 +46,7 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
 
     const sessId = await db.one("SELECT max(id) FROM sess WHERE usr_id = ?", [vs.id]);
     const time = sessId ? await db.one("SELECT max(time) FROM log WHERE log.sess_id = ?", [sessId]) : null;
-    const lastOnlineIso = time ? new Date(time * 1000).toISOString() : "";
+    const lastOnlineIso = time ? new Date(Number(time) * 1000).toISOString() : "";
 
     const detailUrl = pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + vs.id;
     const isEmail = vs.email && /@/.test(vs.email);
@@ -70,9 +70,11 @@ export async function list(_node: Node | null, { ctx, vars }: any): Promise<stri
   <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
     ${loginAsTd}
   <td>
-    <a href="${hee(detailUrl)}"><img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/pencil.svg" alt="Bearbeiten"></a>
+    <a href="${hee(detailUrl)}">
+      <u2-ico icon="edit">Edit</u2-ico>
+    </a>
   <td class=-delete>
-    <img src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/delete.svg" alt="Löschen">`;
+    <button class=u2-unstyle><u2-ico icon="delete">x</u2-ico></button>`;
   }
 
   return html;

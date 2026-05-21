@@ -3,12 +3,13 @@ import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
+import type { App } from "../core/server.ts";
 
 export const name  = "cms.backend.web_auth";
 export const needs = ["cms.backend", "web_auth"];
 export const cms   = { node: { render } };
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.web_auth");
   if (P) {
     await P.title("en", "WebAuthn");
@@ -38,9 +39,9 @@ async function render(node: Node): Promise<string> {
   `);
 
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("de") : "-";
-  const tableRows = rows.map((r: any) => {
+  const tableRows = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button onclick="return confirm('${hee(String(r.name ?? r.id))} wirklich löschen?')" style="color:red;background:none;border:1px solid red;cursor:pointer;border-radius:3px;padding:2px 6px">🗑 Löschen</button></form>`;
+    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button class=u2-unstyle onclick="return confirm('${hee(String(r.name ?? r.id))} wirklich löschen?')"><u2-ico icon="delete">x</u2-ico></button></form>`;
     return `<tr><td>${hee(String(r.id))}<td>${hee(userName)}<br><small style="color:#888">${hee(String(r.email ?? ""))}</small><td>${hee(String(r.name ?? ""))}<td title="${hee(String(r.credential_id ?? ""))}">${hee(String(r.credential_id ?? "").slice(0, 20))}…<td>${hee(String(r.aaguid ?? ""))}<td>${hee(String(r.sign_count ?? "0"))}<td>${fmt(r.created)}<td>${fmt(r.last_used)}<td>${delBtn}`;
   }).join("\n");
 

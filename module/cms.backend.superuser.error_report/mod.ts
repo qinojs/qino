@@ -39,7 +39,7 @@ function makeFileHelper(ctx: any) {
     function fileDisplay(file: string): string {
         const localPath = urlToLocalPath(file, ctx);
         if (!localPath) return file;
-        for (const mod of Object.values(ctx.app.modules.all() as Record<string, any>)) {
+        for (const mod of Object.values(ctx.app.modules.all())) {
             if (mod.dir && localPath.startsWith(mod.dir)) return "m/" + mod.name + "/" + localPath.slice(mod.dir.length);
         }
         const mIdx = localPath.lastIndexOf("/m/");

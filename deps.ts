@@ -13,6 +13,8 @@ export { typeByExtension } from "jsr:@std/media-types@^1";
 export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@^0.5.8/item.js";
 export { bildJsonItem } from "jsr:@nuxodin/item@^0.5.8/tools/jsonDataItem.js";
 export { schemaToDb } from "jsr:@nuxodin/item@^0.5.8/tools/schema/db/mysql/to-db.js";
+export { schemaFromDb } from "jsr:@nuxodin/item@^0.5.8/tools/schema/db/mysql/from-db.js";
+export { schemaDiff } from "jsr:@nuxodin/item@^0.5.8/tools/schema/diff.js";
 export { toInput } from "jsr:@nuxodin/item@^0.5.8/tools/schema/render/html.js";
 
 export { dump } from "jsr:@nuxodin/dump@^1.5.2";

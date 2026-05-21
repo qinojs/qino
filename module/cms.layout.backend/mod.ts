@@ -11,7 +11,7 @@ import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.backend";
 
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.0/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
@@ -48,8 +48,8 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   const navItems = BackendRoot ? [...(await BackendRoot.children({ access: 1 })).values()] : [];
 
   let navHtml = "";
-  for (const C of navItems as any[]) {
-    const subC = [...(await C.children({ access: 1 })).values()] as any[];
+  for (const C of navItems) {
+    const subC = [...(await C.children({ access: 1 })).values()];
     const isActive = await Page.in(C);
     const hasSub = subC.length > 0;
     const cUrl = hee(await C.url());
@@ -57,7 +57,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     let subHtml = "";
     if (isActive) {
       for (const SC of subC) {
-        const subSC = [...(await SC.children({ access: 1 })).values()] as any[];
+        const subSC = [...(await SC.children({ access: 1 })).values()];
         const isActiveSC = await Page.in(SC);
         const hasSubSC = subSC.length > 0;
         const scUrl = hee(await SC.url());
@@ -74,7 +74,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
         subHtml += `<ul><li><a class="-item ${isActiveSC ? "-active" : ""} ${hasSubSC ? "-hasSub" : ""}" href="${scUrl}">${scTitle}</a>${subSubHtml}</ul>`;
       }
     }
-    const cConts = [...(await C.conts()).values()] as any[];
+    const cConts = [...(await C.conts()).values()];
     const cModName: string = cConts[0]?.vs?.module ?? "";
     const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.sysURL}${cModName}/pub/module.svg#main"/></svg> ` : "";
     navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
@@ -102,6 +102,8 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     contentHtml += await C.html();
   }
 
+  const pathHtml = (await Promise.all(Array.from(await Page.path()).filter(([id]) => id !== 1).map(([, p]) => node.cms.link(p)))).join("");
+
   return `
   <div class=qgCMS id=container>
     <a id=logo href="${BackendRoot ? hee(await BackendRoot.url()) : "/"}">
@@ -115,9 +117,10 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
         ${langHtml}
       </ul>
     </nav>
-    <div id=toolbar>
+    <div id=toolbar class=u2-flex>
+      <u2-breadcrumb>${pathHtml}</u2-breadcrumb>
       <!--input type=search id=search placeholder="Search..." style="width:100%; max-width:20rem; background:var(--color-light); border:0; border-radius: var(--radius);"-->
-      <div style="margin-left:auto"shape=circle size=32>
+      <div style="margin-left:auto" shape=circle size=32>
         ${ctx.user ? hee(await ctx.user.get("email")) : "Guest"}
       </div>
     </div>

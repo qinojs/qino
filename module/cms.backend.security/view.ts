@@ -43,7 +43,7 @@ export async function render(node: any, { vars = {} }: { vars?: Record<string, a
         ${tabs(tab)}
         ${tab === "settings" ? settingsEditor(ctx) : ""}
         ${tab === "buckets" ? bucketTable(buckets) : ""}
-        ${tab === "analyse" ? topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
+        ${tab === "analyse" ? '<div class=u2-flex>' + topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
         ${tab === "live" ? eventTable(events, ctx.get) : ""}
       </div>
     </div>

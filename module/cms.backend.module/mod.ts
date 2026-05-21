@@ -201,11 +201,11 @@ async function renderOverview(node: Node): Promise<string> {
     const modDir = modObj.path?.replace(/\/?[^/]+$/, "") ?? null;
     const hasSvg = modDir ? await Deno.stat(modDir + "/pub/module.svg").then(() => true, () => false) : false;
     const iconHtml = hasSvg
-      ? `<svg width=16 height=16><use href="${ctx.sysURL}${name}/pub/module.svg#main"/></svg>`
+      ? `<svg style="display:block" width=16 height=16><use href="${ctx.sysURL}${name}/pub/module.svg#main"/></svg>`
       : "";
 
     rows.push(`<tr>
-      <td style="text-align:center">${iconHtml}
+      <td style="padding-right:0">${iconHtml}
       <td><a href="?mod=${encodeURIComponent(name)}">${hee(name)}</a>
       <td style="text-align:center">${needs.length}
       <td style="text-align:center">${neededBy}
