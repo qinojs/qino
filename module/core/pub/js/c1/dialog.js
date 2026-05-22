@@ -110,7 +110,7 @@ c1.c1Use(['focusIn','onElement'],function(){ 'use strict';
     };
     c1.dialog.confirm = function(title) {
         const dialog = new c1.dialog({
-            title:'Bestätigen',
+            title:'Confirm',
             body:title,
             buttons:[{
                 title:'ok', then:() => { dialog.value = true; }

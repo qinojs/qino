@@ -42,7 +42,6 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
     try { await Deno.writeTextFile(file, ""); } catch {}
   }
 
-  // Custom-Dateien (app-spezifisch)
   const customPath = app.appPATH + "qg/" + node.vs.module;
   let customFiles = "";
   for await (const { filePath } of walkDir(customPath)) {
@@ -54,10 +53,9 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
       <td><a href="${src}" target="${encodeURIComponent(filePath)}">${show}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.sysURL}cms.frontend.1/pub/img/delete.svg" alt="löschen">`;
+        <img src="${ctx.sysURL}cms.frontend.1/pub/img/delete.svg" alt="delete">`;
   }
 
-  // App-Files (Modul-Dateien)
   let appFiles = "";
   const modPath = moduleDir(node);
   for await (const { filePath } of walkDir(modPath ?? "")) {
@@ -69,7 +67,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
       <td><a href="${src}" target="${encodeURIComponent(filePath)}">${show}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.sysURL}cms.frontend.1/pub/img/delete.svg" alt="löschen">`;
+        <img src="${ctx.sysURL}cms.frontend.1/pub/img/delete.svg" alt="delete">`;
   }
 
   const module = node.vs.module;

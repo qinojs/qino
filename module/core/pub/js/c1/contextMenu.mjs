@@ -17,6 +17,7 @@ class MenuItem {
         const menu = this.menu;
         const item = document.createElement(what);
         item.setAttribute('label',label);
+        if (label?.then) label.then(v => item.setAttribute('label', v));
         item.setAttribute('icon',opt.icon);
         opt.onclick && item.addEventListener('click', opt.onclick);
         root.addEventListener('contextmenu', e=>{

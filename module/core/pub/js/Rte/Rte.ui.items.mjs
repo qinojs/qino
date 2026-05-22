@@ -270,7 +270,7 @@ Rte.ui.setItem('Table', {
 /* delete Element */
 Rte.ui.setItem('Del',{
 	click(el) { Rte.element.removeNode(); },
-	el: c1.dom.fragment('<a style="color:red">Element löschen</a>').firstChild
+	el: c1.dom.fragment('<a style="color:red">Delete element</a>').firstChild
 });
 /* Target */
 Rte.ui.setItem('LinkTarget', {
@@ -309,8 +309,8 @@ Rte.ui.setItem('LinkTarget', {
 /* Image Attributes */ {
 	let inp = c1.dom.fragment(
 		'<table>'+
-			'<tr><td style="width:84px">Breite:<td><input class=-x>'+
-			'<tr><td>Höhe:<td><input class=-y>'+
+			'<tr><td style="width:84px">Width:<td><input class=-x>'+
+			'<tr><td>Height:<td><input class=-y>'+
 			'<tr><td title="Alternativer Text">Alt-Text:<td><input class=-alt>'+
 		'</table>').firstChild;
 	inp.addEventListener('keyup',e=>{
@@ -357,7 +357,7 @@ Rte.ui.setItem('ImgOriginal', {
 		let img = Rte.element;
 		let url = img.getAttribute('src').replace(/\/(w|h|zoom|vpos|hpos|dpr)-[^\/]+/g,'');
 		ImageRealSize(url, function(w,h) {
-			w /= 2; h /= 2; // vorgängig wird dem Server per Cookie mitteilt, dass er die doppelte Auflösung ausliefern soll
+			w /= 2; h /= 2; // the server is told via cookie to deliver double resolution
 			make(w,h);
 		});
 		function make(w,h) {
@@ -372,7 +372,7 @@ Rte.ui.setItem('ImgOriginal', {
 			Rte.trigger('elementchange');
 		}
 	},
-	el: c1.dom.fragment('<span class="-item -button" title="Originalgrösse">Originalbild</span>').firstChild
+	el: c1.dom.fragment('<span class="-item -button" title="Original size">Original image</span>').firstChild
 });
 
 /* table handles */
@@ -442,7 +442,7 @@ Rte.ui.config = {
 			Rte.range.insertNode(document.createTextNode('\u00AD'));
 console.warn('needed? shoud it be deprecated?');
 		},
-		el: c1.dom.fragment('<div class="-item -button">Weiches Trennzeichen einfügen</div>').firstChild
+		el: c1.dom.fragment('<div class="-item -button">Insert soft hyphen</div>').firstChild
 	});
 	document.head.append(
 		c1.dom.fragment(

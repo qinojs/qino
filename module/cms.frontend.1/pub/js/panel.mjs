@@ -1,6 +1,7 @@
 import "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
 import { apt } from "../../../core/pub/js/apt.js";
+import { t } from "../../../core/pub/js/t.mjs";
 
 function setCtxSetting(value, path) {
   const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);
@@ -159,7 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
     ev.on("complete", () => {
-      cms.console.show("Datei hochgeladen");
+      cms.console.show(t`Datei hochgeladen`);
       cms.cont(ev.pid).showWidget("media", true);
     });
   });
@@ -215,7 +216,7 @@ c1.onElement(".qgCmsTreeManager", async (el) => {
   }
   inp.addEventListener("blur", function () {
     this.value &&
-      confirm('Möchten Sie die Seite "' + this.value + '" erstellen?')
+      confirm(t`Create page "${this.value}"?`)
       ? add()
       : null;
   });
@@ -288,7 +289,7 @@ c1.onElement(".qgCmsFileManager", (el) => {
       const del = e.target.closest(".-delete");
       if (del) {
         const tr = del.closest("tr");
-        confirm("Möchten Sie die Datei wirklich löschen?") &&
+        confirm(t`Really delete this file?`) &&
           apt.cms.node(pid).files(tr.getAttribute("itemid")).delete().then(() => tr.remove());
         return;
       }
@@ -330,7 +331,7 @@ c1.onElement(".qgCmsFileManager", (el) => {
     el.c1Find(".-deleteFilesSelect").addEventListener("change", function () {
       const val = this.options[this.selectedIndex].value;
       if (val === "double") apt.cms.node(pid).files.doubles.delete().then(reload);
-      if (val === "all" && confirm("Möchten Sie die Dateien wirklich löschen?")) apt.cms.node(pid).files.all.delete().then(reload);
+      if (val === "all" && confirm(t`Really delete all files?`)) apt.cms.node(pid).files.all.delete().then(reload);
     });
   }
 });
@@ -567,18 +568,18 @@ c1.onElement(".qgCmsFront1MoreManager", (el) => {
     const oldpw = this.c1Find("[name=old]").value;
     const pw = this.c1Find("[name=new]").value;
     const pw2 = this.c1Find("[name=new2]").value;
-    if (pw2 !== pw) alert("Die Passwörter stimmen nicht überein");
+    if (pw2 !== pw) alert(t`Passwords do not match`);
     else {
       apt.core.password.put({ oldpw, pw }).then((res) => {
         switch (res) {
           case 1:
-            alert("Das Passwort wurde erfolgreicht geändert.");
+            alert(t`Password changed successfully.`);
             break;
           case -1:
-            alert("Das alte Passwort ist nicht korrekt.");
+            alert(t`The old password is incorrect.`);
             break;
           case -2:
-            alert("Das Passwort ist zu kurz.");
+            alert(t`The password is too short.`);
             break;
         }
       });
@@ -620,7 +621,7 @@ c1.onElement(".qgCMSFron1ContManager", (el) => {
       cms.panel.set("sidebar", "settings");
     }
   });
-  // übergeordnet
+  // parent
   const editparent = el.c1Find(".-editparent");
   editparent?.addEventListener("click", function (e) {
     const pid = this.getAttribute("parent");
@@ -648,7 +649,7 @@ c1.onElement(".qgCmsFront1SuperuserManager", (el) => {
     const remove = e.target.closest(".-remove");
     if (remove) {
       const file = remove.parentNode.getAttribute("itemid");
-      confirm("Möchten Sie die Datei löschen?") &&
+      confirm(t`Really delete this file?`) &&
         cms.panel.loadWidget("superuser", { pid, delete: file });
     }
   });

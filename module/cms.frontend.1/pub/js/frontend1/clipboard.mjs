@@ -8,22 +8,22 @@ cms.frontend1.clipboard = pid => {
     $('.-pid'+pid).css({opacity: 0.4});
     apt.cms.node(pid).get().then(res => {
         cms.frontend1.dialog(
-            'Aus der Zwischenablage einfügen',
+            'Paste from clipboard',
             '<table>'+
-                '<tr><th> Titel: &nbsp;<td> '+res.title+
-                '<tr><th> Modul: &nbsp;<td> '+res.module+
+                '<tr><th> Title: &nbsp;<td> '+res.title+
+                '<tr><th> Module: &nbsp;<td> '+res.module+
                 '<tr><th> Id: &nbsp;<td> '+pid+
             '</table>',
             [{
-                title: 'Auf dieser Seite einfügen', then() {
+                title: 'Paste on this page', then() {
                     cms.cont(pid).addPosition();
                     $('.-pid'+pid).remove();
                     close();
                 }
             },{
-                title: 'Am alten Ort behalten', then: close
+                title: 'Keep in place', then: close
             },{
-                title: 'Schliessen'
+                title: 'Close'
             }]
         );
     });

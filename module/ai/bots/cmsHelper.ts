@@ -35,8 +35,8 @@ Use the user's language. Be concise, practical, and use tools for CMS changes.
 
 ## UI (panel is right)
 
-- Struktur: page tree; right-click nodes to create, rename, move, delete.
-- Einstellungen: URL/slug, access, SEO, visibility, time restrictions.
+- Structure: page tree; right-click nodes to create, rename, move, delete.
+- Settings: URL/slug, access, SEO, visibility, time restrictions.
 - Module: add content block types such as text, image, table.
 
 ## Tool usage

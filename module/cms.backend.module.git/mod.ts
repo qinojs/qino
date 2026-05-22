@@ -13,21 +13,21 @@ export async function install({ app }: any): Promise<void> {
   const P = await backend.install(app, "cms.backend.module.git");
   if (P) {
     await P.title("en", "Module Git");
-    await P.title("de", "Module Git");
+    await P.title("en", "Module Git");
   }
 }
 
 async function renderInstallForm(isSuperuser: boolean): Promise<string> {
   if (!isSuperuser) return "";
   return `<div class=u2-card>
-  <div class=-head>Modul installieren (Git)</div>
+  <div class=-head>Install module (Git)</div>
   <div class=-body style="padding:16px;display:grid;gap:12px">
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
       <div>
-        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">Git-URL</label>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">Git URL</label>
         <input id=git-install-url type=url placeholder="https://github.com/user/my-module.git" style="width:100%;box-sizing:border-box">
       </div>
-      <button id=git-install-btn class=c1-btn onclick="gitInstall()">Installieren</button>
+      <button id=git-install-btn class=c1-btn onclick="gitInstall()">Install</button>
     </div>
     <div id=git-install-out style="font-family:monospace;font-size:12px;color:#555;display:none;background:#f8f9fa;padding:8px;border-radius:4px;white-space:pre-wrap"></div>
   </div>
@@ -38,15 +38,15 @@ async function gitInstall() {
   const out = document.getElementById('git-install-out');
   if (!url) return;
   out.style.display = 'block';
-  out.textContent = 'Installiere...';
+  out.textContent = 'Installing...';
   try {
     const r = await fetch('/api/git/install', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ gitUrl: url }) });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error ?? r.statusText);
-    out.textContent = 'Installiert: ' + d.installed + '\\nPfad: ' + d.path;
+    out.textContent = 'Installed: ' + d.installed + '\\nPath: ' + d.path;
     out.style.color = '#2a7';
   } catch(e) {
-    out.textContent = 'Fehler: ' + e.message;
+    out.textContent = 'Error: ' + e.message;
     out.style.color = '#c33';
   }
 }
@@ -85,7 +85,7 @@ async function renderModuleGitSection(app: any, modName: string, isSuperuser: bo
     </div>
 
     ${info?.dirty && info.files.length ? `<details style="font-size:12px">
-      <summary style="cursor:pointer;color:#888">Geänderte Dateien (${info.files.length})</summary>
+      <summary style="cursor:pointer;color:#888">Changed files (${info.files.length})</summary>
       <div style="font-family:monospace;font-size:11px;padding:6px 0">
         ${info.files.map(f => `<div><span style="color:#e67;margin-right:8px">${hee(f.status)}</span>${hee(f.path)}</div>`).join("")}
       </div>
@@ -98,10 +98,10 @@ async function renderModuleGitSection(app: any, modName: string, isSuperuser: bo
 
     ${versionOptions ? `<div style="display:flex;gap:8px;align-items:center">
       <select id="git-ref-${hee(modName)}" style="flex:1;max-width:400px">
-        <option value="">— Version wählen —
+        <option value="">— Select version —
         ${versionOptions}
       </select>
-      ${isSuperuser ? `<button class=c1-btn onclick="gitCheckout(${encodedMod})">Checkout</button>` : ""}
+      ${isSuperuser ? `<button class=c1-btn onclick="gitCheckout(${encodedMod})">Check out</button>` : ""}
     </div>` : ""}
 
     <div id="git-out-${hee(modName)}" style="font-family:monospace;font-size:12px;display:none;background:#f8f9fa;padding:8px;border-radius:4px;white-space:pre-wrap"></div>
@@ -121,7 +121,7 @@ async function gitAction(action, mod) {
     out.textContent = d.output || 'OK';
     out.style.color = '#2a7';
   } catch(e) {
-    out.textContent = 'Fehler: ' + e.message;
+    out.textContent = 'Error: ' + e.message;
     out.style.color = '#c33';
   }
 }
@@ -129,7 +129,7 @@ async function gitCheckout(mod) {
   const sel = document.getElementById('git-ref-' + mod);
   const ref = sel.value;
   if (!ref) return;
-  if (!confirm('Zu ' + ref + ' wechseln?')) return;
+  if (!confirm('Switch to ' + ref + '?')) return;
   const out = document.getElementById('git-out-' + mod);
   out.style.display = 'block';
   out.style.color = '#555';
@@ -141,7 +141,7 @@ async function gitCheckout(mod) {
     out.textContent = d.output || 'OK';
     out.style.color = '#2a7';
   } catch(e) {
-    out.textContent = 'Fehler: ' + e.message;
+    out.textContent = 'Error: ' + e.message;
     out.style.color = '#c33';
   }
 }
@@ -177,7 +177,7 @@ async function renderOverview(node: Node): Promise<string> {
   if (!rows.length) {
     return `<div class=u2-card>
   <div class=-head>Module Git</div>
-  <div class=-body>Keine Module mit Git-Repository gefunden.</div>
+  <div class=-body>No modules with Git repository found.</div>
 </div>${installForm}`;
   }
 
@@ -185,7 +185,7 @@ async function renderOverview(node: Node): Promise<string> {
   <div class=-head>Module Git</div>
   <div style="overflow:auto; padding:0">
     <table class=u2-table style="white-space:nowrap;width:100%">
-      <thead><tr><th>Modul<th>Branch<th>Status<th>Repo
+      <thead><tr><th>Module<th>Branch<th>Status<th>Repo
       <tbody>${rows.join("")}
     </table>
   </div>
@@ -205,7 +205,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     <a href="?" style="font-size:13px;opacity:.7">← Module Git</a>
     <span style="font-family:monospace">${hee(modName)}</span>
   </div>
-  <div class=-body style="padding:16px;color:#999">Kein Git-Repository für dieses Modul gefunden.</div>
+  <div class=-body style="padding:16px;color:#999">No Git repository found for this module.</div>
 </div>`;
   }
 

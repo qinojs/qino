@@ -13,15 +13,15 @@ c1.globalContextMenu.addItem('CMS Text',{
 	onclick() { showEditor(this.qgCurrentTarget); }
 });
 
-let showEditor = async function(el) {
+const showEditor = async function(el) {
     const tid = el.getAttribute('cmstxt');
     const data = await apt['cms.text'].text(tid).get();
-    let dialog = document.createElement('dialog');
+    const dialog = document.createElement('dialog');
     dialog.className = 'qgCMS q1Rst';
     let body = '<div style="display:flex">';
-    for (let row of data) {
+    for (const row of data) {
         let source_lang = null;
-        for (let item of data) {
+        for (const item of data) {
             if (item.text !== false && item.lang !== row.lang) {
                 source_lang = item.lang;
                 break;
@@ -36,7 +36,7 @@ let showEditor = async function(el) {
                 (source_lang?
                 '<button class=-translate source_lang="'+source_lang+'">translate from '+source_lang+'</button>':'')+
                 '<button class=-history style="margin-left:.2em">history</button>'+
-                //'<button class=-continueAi style="margin-left:.2em" title="Ist das nützlich? Feedback wilkommen!">KI ergänzen (beta)</button>'+
+                //'<button class=-continueAi style="margin-left:.2em" title="Is this useful? Feedback welcome!">AI extend (beta)</button>'+
             '</div>'+
 			(el.tagName === 'INPUT'
 				? '<'+el.tagName+' cmstxt='+tid+' cmslang="'+row.lang+'" style="'+style+'" value="'+hee(text)+'">'
@@ -156,24 +156,24 @@ function hee(string){
 
 /* translate hole page */
 c1.onElement('.qgCmsFront1MoreManager', el=>{
-    var lang = document.documentElement.getAttribute('lang');
-    var fragment = c1.dom.fragment(`
+    const lang = document.documentElement.getAttribute('lang');
+    const fragment = c1.dom.fragment(`
         <div class="-widgetHead -open" tabindex="0"><span class="-title">Translate</span></div>
         <div>
             <form class=-content>
-				<b>${lang}</b>-Texte dieser Seite: <br>
-                <button name=auto>Automatisch übersetzen</button><br>
-                <button name=clean>Übersetzungen löschen</button><br>
-                <!--input name=subpages type=checkbox> inklusive Unterseiten<br-->
+				<b>${lang}</b> texts on this page: <br>
+                <button name=auto>Auto-translate</button><br>
+                <button name=clean>Delete translations</button><br>
+                <!--input name=subpages type=checkbox> including subpages<br-->
             </form>
         </div>
     `);
     fragment.querySelector('form').addEventListener('submit',async e=>{
         e.preventDefault();
-        const inps = e.target.elements;
+        //const inps = e.target.elements; zzz
         await c1.c1Use('loading');
-		let sourceLang = e.submitter.name;
-        var done = c1.loading.mark(e.target);
+		const sourceLang = e.submitter.name;
+        const done = c1.loading.mark(e.target);
         const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
         //const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: 'auto', ifNeeded: inps.if_needed.checked, subpages: inps.subpages.checked });
         //await apt['cms.text'].page(Page)['translate-all-langs'].post({ ifNeeded: inps.if_needed.checked, subpages: inps.subpages.checked });

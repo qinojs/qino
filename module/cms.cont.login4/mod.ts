@@ -8,12 +8,12 @@ export const name = "cms.cont.login4";
 
 const settingsSchema = {
   properties: {
-    redirect: { type: "integer", minimum: 1, description: "Page-ID, zu der bereits eingeloggte Benutzer automatisch weitergeleitet werden." },
-    history: { type: "integer", minimum: 0, description: "Anzahl der zuletzt verwendeten Logins, die als Schnelllogin angezeigt werden." },
-    saveLogin: { type: "boolean", description: "Zeigt im Loginformular die Option, angemeldet zu bleiben." },
-    "fix user": { type: "string", description: "Feste Benutzerkennung fuer dieses Formular. Wenn gesetzt, wird kein E-Mail-Feld angezeigt." },
-    "no autofocus": { type: "boolean", description: "Verhindert, dass das E-Mail-Feld beim Laden der Seite automatisch fokussiert wird." },
-    logout_redirect: { type: "integer", minimum: 1, description: "Page-ID, die als Ziel fuer das Logout-Formular verwendet wird." },
+    redirect: { type: "integer", minimum: 1, description: "Page ID to redirect already-logged-in users to automatically." },
+    history: { type: "integer", minimum: 0, description: "Number of recently used logins to display as quick-login buttons." },
+    saveLogin: { type: "boolean", description: "Shows the 'stay logged in' option in the login form." },
+    "fix user": { type: "string", description: "Fixed user identifier for this form. When set, the e-mail field is not shown." },
+    "no autofocus": { type: "boolean", description: "Prevents the e-mail field from being auto-focused on page load." },
+    logout_redirect: { type: "integer", minimum: 1, description: "Page ID used as the target for the logout form." },
   },
 };
 
@@ -42,7 +42,7 @@ async function render(node: Node): Promise<string> {
   let errorHtml = "";
   const errorT = await node.text("login failed");
   if (!(await errorT.string())) {
-    await errorT.lang("de").set("Ihr Loginversuch ist fehlgeschlagen");
+    await errorT.lang("en").set("Your login attempt failed");
   }
   if (ctx.loginError) {
     const errorText = await errorT.string();
@@ -77,7 +77,7 @@ async function render(node: Node): Promise<string> {
   ${email}
   <input name=email type=hidden value="${email}">
   ${showPwField ? `<input name=pw type=password>` : ""}
-  <button name=liveUser_login>${await app.t`login`}</button>
+  <button name=liveUser_login>${await app.t`Log in`}</button>
 </form>\n`;
       }
     }
@@ -95,7 +95,7 @@ async function render(node: Node): Promise<string> {
         ? `<tr class=-email>
       <th>${await cms.text(node, "user", {
           tag: "div",
-          initial: { de: "E-Mail:" },
+          initial: { en: "E-Mail:" },
         })}
       <td><input name=email type=text required${
           noAutofocus ? "" : " autofocus"
@@ -105,19 +105,19 @@ async function render(node: Node): Promise<string> {
     <tr class=-pw>
       <th>${await cms.text(node, "pw", {
       tag: "div",
-      initial: { de: "Passwort:" },
+      initial: { en: "Password:" },
     })}
       <td><input name=pw type=password required>
     <tr class=-login>
       <th>
-      <td><button name=liveUser_login>${await app.t`Anmelden`}</button>
+      <td><button name=liveUser_login>${await app.t`Log in`}</button>
     ${
       showSaveLogin
         ? `<tr class=-save_login>
       <th>
         ${await cms.text(node, "saveLogin", {
           tag: "div",
-          initial: { de: "Eingeloggt bleiben:" },
+          initial: { en: "Stay logged in:" },
         })}
       <td><label><input name=save_login type=checkbox value=1 class=c1-fakable><i></i></label>`
         : ""
@@ -136,7 +136,7 @@ async function render(node: Node): Promise<string> {
     }
     html += `<form method=post${action}>
   <input type=hidden name=token value="${hee(ctx.token)}">
-  <button name=liveUser_logout>${await app.t`Abmelden`}</button>
+  <button name=liveUser_logout>${await app.t`Log out`}</button>
 </form>\n`;
   }
 

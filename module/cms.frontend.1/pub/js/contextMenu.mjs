@@ -3,12 +3,13 @@
 import '../../../core/pub/js/c1/contextMenu.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 import '../../../cms/pub/js/cms.mjs';
+import { t } from '../../../core/pub/js/t.mjs';
 
-const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu('CMS Inhalt',{
+const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
 	icon: sysURL+'cms.frontend.1/pub/img/module_default.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 });
-Menu.addItem('Einstellungen', {
+Menu.addItem(t`Settings`, {
 	icon: sysURL+'cms.frontend.1/pub/img/settings.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 	onshow(e) {
@@ -20,7 +21,7 @@ Menu.addItem('Einstellungen', {
 		cms.panel.set('sidebar','settings');
 	}
 });
-Menu.addItem('Verschieben', {
+Menu.addItem(t`Move`, {
 	icon: sysURL+'cms.frontend.1/pub/img/move.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 	onshow(e) {
@@ -29,7 +30,7 @@ Menu.addItem('Verschieben', {
 	},
 	onclick() { cms.contPos.dd.start(this.activeEl);  }
 });
-Menu.addItem('Kopieren', {
+Menu.addItem(t`Copy`, {
 	icon: sysURL+'cms.frontend.1/pub/img/copy.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 	onshow(e) {
@@ -42,7 +43,7 @@ Menu.addItem('Kopieren', {
 		});
 	}
 });
-Menu.addItem('Ausschneiden', {
+Menu.addItem(t`Cut`, {
 	icon: sysURL+'cms.frontend.1/pub/img/cut.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 	onshow(e) {
@@ -57,16 +58,17 @@ Menu.addItem('Ausschneiden', {
 		});
 	}
 });
-Menu.addItem('Löschen', {
+Menu.addItem(t`Delete`, {
 	icon: sysURL+'cms.frontend.1/pub/img/delete.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 	onshow(e) {
 		this.activeEl = cms.contPos.active.el;
 		this.disabled = !cms.contPos.active.isDraggable();
+		t`Really delete this content?`; // preload text
 	},
 	onclick() {
 		const el = this.activeEl;
-		if (!confirm('Möchten Sie den Inhalt wirklich löschen?')) return;
+		if (!confirm(t`Really delete this content?`)) return;
 		const pid = cms.el.pid(el);
 		el.remove();
 		apt.cms.node(pid).delete();
@@ -74,7 +76,7 @@ Menu.addItem('Löschen', {
 });
 
 const TreeMenu = c1.globalContextMenu;
-TreeMenu.addItem('Einstellungen', {
+TreeMenu.addItem(t`Settings`, {
 	icon: sysURL+'cms.frontend.1/pub/img/settings.svg',
 	selector: '#qgCmsFrontend1 .dynatree-node',
 	onshow(e) {
@@ -90,7 +92,7 @@ TreeMenu.addItem('Einstellungen', {
 		cms.panel.set('sidebar','settings');
 	}
 });
-TreeMenu.addItem('Umbenennen', {
+TreeMenu.addItem(t`Rename`, {
 	icon: sysURL+'cms.frontend.1/pub/img/pencil.svg',
 	selector:'#qgCmsFrontend1 .dynatree-node',
 	onshow(e) {
@@ -104,7 +106,7 @@ TreeMenu.addItem('Umbenennen', {
 		cms.Tree.editNode(node);
 	}
 });
-TreeMenu.addItem('Kopieren', {
+TreeMenu.addItem(t`Copy`, {
 	icon: sysURL+'cms.frontend.1/pub/img/copy.svg',
 	selector:'#qgCmsFrontend1 .dynatree-node',
 	onshow(e) {
@@ -115,26 +117,26 @@ TreeMenu.addItem('Kopieren', {
 	},
 	onclick() {
 		const node = cms.Tree.getNodeByKey(this.lastPid);
-		cms.frontend1.dialog('Die Seite "'+node.data.title+'" kopieren?','',[
+		cms.frontend1.dialog(t`Copy page "${node.data.title}"?`,'',[
 			{
-				title:'Seite kopieren',then(){
+				title:t`Copy page`,then(){
 					apt.cms.node(node.data.key).copy.post().then(() => {
 						node.parent.reloadChildren();
 					});
 				}
 			},{
-				title:'inklusiv Unterseiten',then(){
+				title:t`including subpages`,then(){
 					apt.cms.node(node.data.key).copy.post({ deep: true }).then(() => {
 						node.parent.reloadChildren();
 					});
 				}
 			},{
-				title:'Abbrechen'
+				title:t`Cancel`
 			}
 		]);
 	}
 });
-TreeMenu.addItem('Löschen', {
+TreeMenu.addItem(t`Delete`, {
 	icon: sysURL+'cms.frontend.1/pub/img/delete.svg',
 	selector: '#qgCmsFrontend1 .dynatree-node',
 	onshow(e) {
@@ -142,10 +144,11 @@ TreeMenu.addItem('Löschen', {
 		const access = el.className.match(/-access-([0-9])/)[1];
 		this.lastPid = el.parentNode.title.replace('ID ','');
 		this.disabled = access < 2;
+		t`Really delete page "${''}"?` // preload translation
 	},
 	onclick() {
 		const n = cms.Tree.getNodeByKey(this.lastPid);
-		if (!confirm('Möchten Sie die Seite "'+n.data.title+'" wirklich löschen?')) return;
+		if (!confirm(t`Really delete page "${n.data.title}"?`)) return;
 		apt.cms.node(n.data.key).delete().then(ret => {
 			if (ret.parent_id && n.data.key==Page) {
 				location.href = "?cmspid="+ret.parent_id;

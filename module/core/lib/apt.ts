@@ -3,8 +3,8 @@ console.log('old, deprecated, not used?')
 /**
  * apt — Action Tree.
  *
- * Ein verschachtelter Baum beschreibt die gesamte API.
- * Adapter (REST, LLM-Tools, RPC) werden on the fly abgeleitet.
+ * A nested tree describes the entire API.
+ * Adapters (REST, LLM tools, RPC) are derived on the fly.
  */
 
 import { Hono, type Context } from "../../../deps.ts";

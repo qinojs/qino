@@ -13,7 +13,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.web_auth");
   if (P) {
     await P.title("en", "WebAuthn");
-    await P.title("de", "WebAuthn / Passkeys");
   }
 }
 
@@ -38,36 +37,36 @@ async function render(node: Node): Promise<string> {
     ORDER BY wac.last_used DESC LIMIT 500
   `);
 
-  const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("de") : "-";
+  const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const tableRows = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button class=u2-unstyle onclick="return confirm('${hee(String(r.name ?? r.id))} wirklich löschen?')"><u2-ico icon="delete">x</u2-ico></button></form>`;
+    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button class=u2-unstyle onclick="return confirm('Really delete ${hee(String(r.name ?? r.id))}?')"><u2-ico icon="delete">x</u2-ico></button></form>`;
     return `<tr><td>${hee(String(r.id))}<td>${hee(userName)}<br><small style="color:#888">${hee(String(r.email ?? ""))}</small><td>${hee(String(r.name ?? ""))}<td title="${hee(String(r.credential_id ?? ""))}">${hee(String(r.credential_id ?? "").slice(0, 20))}…<td>${hee(String(r.aaguid ?? ""))}<td>${hee(String(r.sign_count ?? "0"))}<td>${fmt(r.created)}<td>${fmt(r.last_used)}<td>${delBtn}`;
   }).join("\n");
 
   const empty = rows.length === 0
-    ? '<tr><td colspan="9" style="text-align:center;color:#888;padding:1em">Keine Credentials registriert.</td></tr>'
+    ? '<tr><td colspan="9" style="text-align:center;color:#888;padding:1em">No credentials registered.</td></tr>'
     : "";
 
-  const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(nicht konfiguriert)";
-  const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(nicht konfiguriert)";
+  const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(not configured)";
+  const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(not configured)";
 
   return `<div class="u2-flex">
 <div class="u2-card" style="flex:0 1 24rem">
-  <div class="-head">Konfiguration</div>
+  <div class="-head">Configuration</div>
   <table class="u2-table">
     <tr><th style="width:8em">Relying Party ID<td>${hee(rpId)}
     <tr><th>RP Name<td>${hee(rpName)}
   </table>
   <div class="-body">
-    <p style="font-size:.85em;color:#888;margin-top:.5em">Einstellungen unter <code>Einstellungen → web_auth</code>.</p>
+    <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → web_auth</code>.</p>
   </div>
 </div>
 <div class="u2-card" style="flex:1">
-  <div class="-head">Registrierte Passkeys (${rows.length})</div>
+  <div class="-head">Registered passkeys (${rows.length})</div>
   <div style="overflow:auto; padding:0">
     <table class="u2-table">
-      <thead><tr><th>ID<th>Benutzer<th>Name<th>Credential ID<th>AAGUID<th>Sign Count<th>Registriert<th>Zuletzt<th width=80>
+      <thead><tr><th>ID<th>User<th>Name<th>Credential ID<th>AAGUID<th>Sign Count<th>Registered<th>Last used<th width=80>
       <tbody>${tableRows || empty}
     </table>
   </div>

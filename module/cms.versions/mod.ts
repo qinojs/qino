@@ -40,7 +40,7 @@ export const settingsSchema = {
     properties: {
         draftmode: {
             type: "boolean",
-            description: "Aktiviert den Entwurfsmodus fur versionierte Inhalte.",
+            description: "Enables draft mode for versioned content.",
         },
     },
 };
@@ -48,7 +48,7 @@ export const settingsSchema = {
 export const api: AptTree = {
     "publish-cont": {
         post: {
-            description: "Content/Page in einen Versions-Space publizieren.",
+            description: "Publish content/page into a version space.",
             access: Access.USER,
             input: s.object({ pid: s.number(), options: s.optional(s.record()) }),
             execute: ({ pid, options }: any, ctx: any) => publishCont(ctx, pid, options ?? {}),
@@ -57,7 +57,7 @@ export const api: AptTree = {
     page: {
         ":page": {
             get: {
-                description: "Versionsprotokoll fuer Seite und Inhalte lesen.",
+                description: "Read version log for page and contents.",
                 access: Access.USER,
                 execute: ({ page }: any, ctx: any) => getForPage(ctx, page),
             },
@@ -66,7 +66,7 @@ export const api: AptTree = {
     log: {
         ":log": {
             get: {
-                description: "Details zu einem Versions-Log lesen.",
+                description: "Read details of a version log entry.",
                 access: Access.USER,
                 execute: ({ log }: any, ctx: any) => logDetails(ctx, log),
             },

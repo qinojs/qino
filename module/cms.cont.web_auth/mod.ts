@@ -7,10 +7,10 @@ export const needs = ["web_auth"];
 
 const settingsSchema = {
   properties: {
-    mode:                { type: "string", enum: ["auto", "login", "manage"], description: "auto = login wenn ausgeloggt, manage wenn eingeloggt." },
-    apiBase:             { type: "string", description: "Basis-URL der web_auth API. Standard: aus App-Pfad abgeleitet." },
-    showPasswordFallback:{ type: "boolean", description: "Zeigt zusätzlich ein klassisches Passwort-Formular." },
-    redirectAfterLogin:  { type: "integer", minimum: 1, description: "Page-ID für Weiterleitung nach Login." },
+    mode:                { type: "string", enum: ["auto", "login", "manage"], description: "auto = login when logged out, manage when logged in." },
+    apiBase:             { type: "string", description: "Base URL of the web_auth API. Default: derived from app path." },
+    showPasswordFallback:{ type: "boolean", description: "Also shows a classic password form." },
+    redirectAfterLogin:  { type: "integer", minimum: 1, description: "Page ID to redirect to after login." },
   },
 };
 
@@ -44,14 +44,14 @@ function renderLogin(apiBase: string, scriptUrl: string, showPw: boolean, redire
   const redirect = redirectUrl ? `window.location.href=${JSON.stringify(redirectUrl)}` : "window.location.reload()";
   return `<div class="web-auth-login">
   <input type="email" placeholder="E-Mail (optional)" data-web-auth-email autocomplete="username webauthn">
-  <button data-web-auth-action="login">Mit Passkey anmelden</button>
+  <button data-web-auth-action="login">Sign in with passkey</button>
   ${showPw ? `<details>
-    <summary>Mit Passwort anmelden</summary>
+    <summary>Sign in with password</summary>
     <form method="post">
       <table>
         <tr><th>E-Mail:<td><input name="email" type="email" required>
-        <tr><th>Passwort:<td><input name="pw" type="password" required>
-        <tr><th><td><button name="liveUser_login">Anmelden</button>
+        <tr><th>Password:<td><input name="pw" type="password" required>
+        <tr><th><td><button name="liveUser_login">Sign in</button>
       </table>
     </form>
   </details>` : ""}
@@ -61,7 +61,7 @@ function renderLogin(apiBase: string, scriptUrl: string, showPw: boolean, redire
     initWebAuth({
       apiBase: ${JSON.stringify(apiBase)},
       onSuccess: () => { ${redirect}; },
-      onError: (_, r) => { document.querySelector(".web-auth-login .-msg").value = "Anmeldung fehlgeschlagen: " + (r.error ?? "unbekannt"); },
+      onError: (_, r) => { document.querySelector(".web-auth-login .-msg").value = "Login failed: " + (r.error ?? "unknown"); },
     });
   </script>
 </div>`;
@@ -69,9 +69,9 @@ function renderLogin(apiBase: string, scriptUrl: string, showPw: boolean, redire
 
 function renderManage(apiBase: string, scriptUrl: string): string {
   return `<div class="web-auth-manage">
-  <div data-list>Wird geladen…</div>
-  <input type="text" data-web-auth-name placeholder="Name für diesen Authenticator">
-  <button data-web-auth-action="register">Passkey hinzufügen</button>
+  <div data-list>Loading…</div>
+  <input type="text" data-web-auth-name placeholder="Name for this authenticator">
+  <button data-web-auth-action="register">Add passkey</button>
   <output class="-msg"></output>
   <script type="module">
     import { WebAuth, initWebAuth } from ${JSON.stringify(scriptUrl)};
@@ -91,8 +91,8 @@ function renderManage(apiBase: string, scriptUrl: string): string {
               <small>\${fmt(c.created)} · \${fmt(c.lastUsed)}</small>
               <button data-web-auth-action="delete" data-web-auth-cred-id="\${c.id}">🗑</button>
             </div>\`).join("")
-          : "Keine Passkeys registriert.";
-      } catch { list.textContent = "Fehler beim Laden."; }
+          : "No passkeys registered.";
+      } catch { list.textContent = "Error loading."; }
     }
 
     loadList();
@@ -100,7 +100,7 @@ function renderManage(apiBase: string, scriptUrl: string): string {
     initWebAuth({
       apiBase: ${JSON.stringify(apiBase)},
       onSuccess: (action) => { if (action === "register") { document.querySelector("[data-web-auth-name]").value = ""; loadList(); } },
-      onError: (_, r) => { document.querySelector(".web-auth-manage .-msg").value = r.error ?? "Fehler"; },
+      onError: (_, r) => { document.querySelector(".web-auth-manage .-msg").value = r.error ?? "Error"; },
     });
   </script>
 </div>`;

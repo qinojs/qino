@@ -39,7 +39,7 @@ export class WebAuth {
   // ── Register ──────────────────────────────────────────────────────────────
 
   async register(opts = {}) {
-    if (!window.PublicKeyCredential) throw new Error("WebAuthn nicht unterstützt.");
+    if (!window.PublicKeyCredential) throw new Error("WebAuthn not supported.");
 
     const { token, publicKey } = await this.#post("/register/challenge", {});
 
@@ -71,7 +71,7 @@ export class WebAuth {
   // ── Login ─────────────────────────────────────────────────────────────────
 
   async login(opts = {}) {
-    if (!window.PublicKeyCredential) throw new Error("WebAuthn nicht unterstützt.");
+    if (!window.PublicKeyCredential) throw new Error("WebAuthn not supported.");
 
     const { token, publicKey } = await this.#post("/login/challenge", { email: opts.email ?? null });
 
@@ -177,7 +177,7 @@ export class WebAuth {
 // ── initWebAuth ───────────────────────────────────────────────────────────────
 //
 //   <button data-web-auth-action="login">Mit Passkey anmelden</button>
-//   <button data-web-auth-action="register">Passkey hinzufügen</button>
+//   <button data-web-auth-action="register">Add passkey</button>
 //   <input autocomplete="username webauthn" data-web-auth-action="conditional">
 
 export function initWebAuth(opts = {}) {

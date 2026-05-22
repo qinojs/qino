@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee } from "../../core/lib/util.ts";
 import { fieldOriginsByTable } from "../lib/analyze.ts";
+import type { App } from "../../core/server.ts";
 
 function keyBadge(key: string): string {
   if (key === "PRI") return ' <small class=u2-badge style="background:var(--yellow)">PRI</small>';
@@ -9,17 +10,17 @@ function keyBadge(key: string): string {
   return "";
 }
 
-function statusBadge(inSchema: boolean, uncovered: number): string {
-  if (!inSchema)   return '<small class=u2-badge style="background:var(--red)">kein Schema</small>';
-  if (uncovered)   return `<small class=u2-badge style="background:var(--orange)">${uncovered} ohne Schema</small>`;
+async function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<string> {
+  if (!inSchema)   return `<small class=u2-badge style="background:var(--red)">${await app.t`no schema`}</small>`;
+  if (uncovered)   return `<small class=u2-badge style="background:var(--orange)">${uncovered} ${await app.t`without schema`}</small>`;
   return "✓";
 }
 
-export function renderTables(db: any, modules: Record<string, any>, table: string): Promise<string> {
-  return table ? tableDetail(db, modules, table) : tableOverview(db);
+export function renderTables(app: App, db: any, modules: Record<string, any>, table: string): Promise<string> {
+  return table ? tableDetail(app, db, modules, table) : tableOverview(app, db);
 }
 
-async function tableOverview(db: any): Promise<string> {
+async function tableOverview(app: App, db: any): Promise<string> {
   const tables = Object.values(db.tables ?? {}) as any[];
   const schemaProps = db.schema?.properties ?? {};
 
@@ -35,7 +36,7 @@ async function tableOverview(db: any): Promise<string> {
 
       const bytes = status?.Data_length != null ? `<u2-bytes>${status.Data_length}</u2-bytes>` : "?";
       const primaries = Object.values(fields).filter((f: any) => f.isPrimary());
-      const primaryBadge = primaries.length === 0 ? '<small class=u2-badge style="background:var(--red)">keiner</small>'
+      const primaryBadge = primaries.length === 0 ? `<small class=u2-badge style="background:var(--red)">${await app.t`none`}</small>`
         : primaries.length === 1 ? `<small class=u2-badge style="background:var(--yellow)">${hee(String(primaries[0]))}</small>`
         : primaries.map((f: any) => `<small class=u2-badge>${hee(String(f))}</small>`).join(" ");
       return `<tr>
@@ -44,32 +45,32 @@ async function tableOverview(db: any): Promise<string> {
         <td style="text-align:right">${bytes}</td>
         <td style="text-align:right">${Object.keys(fields).length}</td>
         <td data-value="${primaries.length}">${primaryBadge}</td>
-        <td>${statusBadge(table.name in schemaProps, uncovered)}</td>
+        <td>${await statusBadge(app, table.name in schemaProps, uncovered)}</td>
       </tr>`;
     })
   );
 
   return `<div class="u2-card -full">
-    <div class="-head">Tabellen (${tables.length})</div>
+    <div class="-head">${await app.t`Tables`} (${tables.length})</div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead>
           <tr>
-            <th data-sort-handler>Tabelle
-            <th data-sort-handler>Zeilen
-            <th data-sort-handler>Grösse
-            <th data-sort-handler>Felder
-            <th data-sort-handler>Primary
-            <th data-sort-handler>Status
+            <th data-sort-handler>${await app.t`Table`}
+            <th data-sort-handler>${await app.t`Rows`}
+            <th data-sort-handler>${await app.t`Size`}
+            <th data-sort-handler>${await app.t`Fields`}
+            <th data-sort-handler>${await app.t`Primary`}
+            <th data-sort-handler>${await app.t`Status`}
         <tbody>${rows.join("")}</tbody>
       </table>
     </u2-table>
   </div>`;
 }
 
-async function tableDetail(db: any, modules: Record<string, any>, tableName: string): Promise<string> {
+async function tableDetail(app: App, db: any, modules: Record<string, any>, tableName: string): Promise<string> {
   const table = db.tables?.[tableName];
-  if (!table) return `<div class=u2-card><div class="-body">Tabelle <b>${hee(tableName)}</b> nicht gefunden.</div></div>`;
+  if (!table) return `<div class=u2-card><div class="-body">${await app.t`Table`} <b>${hee(tableName)}</b> ${await app.t`not found.`}</div></div>`;
 
   const fields = await table.init();
   const schemaFields: Record<string, any> = table.schema?.additionalProperties?.properties ?? {};
@@ -97,20 +98,20 @@ async function tableDetail(db: any, modules: Record<string, any>, tableName: str
   });
 
   const meta = status
-    ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.Rows ?? "?"))} Zeilen · ${hee(status.Engine ?? "")} · <u2-bytes>${status["Data_length"] ?? 0}</u2-bytes></span>`
+    ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.Rows ?? "?"))} ${await app.t`rows`} · ${hee(status.Engine ?? "")} · <u2-bytes>${status["Data_length"] ?? 0}</u2-bytes></span>`
     : "";
 
   return `<div class="u2-card -full">
-    <div class="-head"><a href="?view=tables">← Tabellen</a> &nbsp; ${hee(tableName)} ${meta}</div>
+    <div class="-head"><a href="?view=tables">← ${await app.t`Tables`}</a> &nbsp; ${hee(tableName)} ${meta}</div>
     <table class=u2-table>
       <thead>
         <tr>
-          <th>Feld
-          <th>Typ
+          <th>${await app.t`Field`}
+          <th>${await app.t`Type`}
           <th>NULL
-          <th>Default
-          <th>Schema
-          <th>Module
+          <th>${await app.t`Default`}
+          <th>${await app.t`Schema`}
+          <th>${await app.t`Module`}
       <tbody>${rows.join("")}</tbody>
     </table>
   </div>`;

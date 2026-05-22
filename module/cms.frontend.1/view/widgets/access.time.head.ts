@@ -4,5 +4,5 @@ export default async function (node: Node): Promise<string> {
   if ((await node.access()) < 2) return "";
   const online = await node.isOnline();
   const number = !online ? `<span class=-info>!</span>` : "";
-  return `<span class=-title>${await node.app.t`Terminieren`}</span> ${number}`;
+  return `<span class=-title>${await node.app.t`Schedule`}</span> ${number}`;
 }

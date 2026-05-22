@@ -9,6 +9,7 @@ import '../../../core/pub/js/c1/contextMenu.mjs';
 
 import './rte.mjs';
 import './contextMenu.mjs';
+import { t } from '../../../core/pub/js/t.mjs';
 import './ddConts.mjs';
 import './dropPasteHelper.mjs';
 import './dropPaste.mjs';
@@ -260,7 +261,7 @@ cms.console = {
 };
 
 apt.addEventListener('error', ({ detail }) => {
-	cms.console.show(detail.error?.message || 'Fehler beim API-Aufruf', 'error');
+	cms.console.show(detail.error?.message || t`Fehler beim API-Aufruf`, 'error');
 });
 
 cms.frontend1.dialog = (title,body,buttons)=>{
@@ -272,7 +273,7 @@ cms.frontend1.dialog = (title,body,buttons)=>{
 };
 
 apt.on('PUT cms/txt/:id', ({ value }) => {
-	if (value?.changed) cms.console.show('Der Text wurde gespeichert.', 'info');
+	if (value?.changed) cms.console.show(t`Der Text wurde gespeichert.`, 'info');
 });
 
 // apt.on('PUT cms/node/:id/position', async ({ params: { id } }) => {

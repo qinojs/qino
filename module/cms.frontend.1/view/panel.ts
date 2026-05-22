@@ -14,14 +14,14 @@ export default async function (node: Node): Promise<string> {
 
   ctx.html.jsData.cmsFrontend1Data = await ctx.settings["cms.frontend.1"].custom ?? {};
 
-  const tree     = await cmsFrontend1WidgetSidebar("tree",     node, await t`Struktur`,      await t`Übersicht aller Seiten, <br>Seiten erstellen, verschieben, löschen...`);
-  const settings = await cmsFrontend1WidgetSidebar("settings", node, await t`Einstellungen`, await t`Einstellungen, Dateien, Rechte der aktuellen Seite`);
-  const add      = await cmsFrontend1WidgetSidebar("add",      node, await t`Module`,        await t`Inhalte hinzufügen, z.B. ein Textfeld oder eine Tabelle`);
-  const more     = await cmsFrontend1WidgetSidebar("more",     node, await t`Weiteres`,      await t`CMS-Feedback, Passwort ändern...`);
+  const tree     = await cmsFrontend1WidgetSidebar("tree",     node, await t`Structure`,    await t`Overview of all pages, <br>create, move, delete pages...`);
+  const settings = await cmsFrontend1WidgetSidebar("settings", node, await t`Settings`,     await t`Settings, files, permissions of the current page`);
+  const add      = await cmsFrontend1WidgetSidebar("add",      node, await t`Modules`,      await t`Add content, e.g. a text field or a table`);
+  const more     = await cmsFrontend1WidgetSidebar("more",     node, await t`More`,         await t`CMS feedback, change password...`);
 
   return `<div id=qgCmsFrontend1 class="q1Rst qgCMS -open -sidebar-open">
   <div class=-sidebar>
-    <a class="-item qgCMS_editmode_switch -active" href="${hee("")}" title="Bearbeiten (E)">
+    <a class="-item qgCMS_editmode_switch -active" href="${hee("")}" title="Edit (E)">
       <div style="opacity:0"><i></i></div>
     </a>
     ${tree}

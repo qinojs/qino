@@ -101,7 +101,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
     }
     if (!found.length) return undefined;
     return {
-      info: info + " es wurden nur die ersten 20 geprüft",
+      info: info + " only the first 20 were checked",
       solutions: {
         "remove pw": {
           solve: async () => {

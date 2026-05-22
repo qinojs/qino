@@ -20,7 +20,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.settings");
   if (P) {
     await P.title("en", "Settings");
-    await P.title("de", "Einstellungen");
   }
 }
 
@@ -28,7 +27,7 @@ function render(_node: unknown, { ctx }: { ctx: RequestContext }): string {
   addSettingsEditor(ctx);
   const source = settingsSourceAttr({ kind: "app" });
   return `<div class=u2-card>
-	<div class=-head>Einstellungen</div>
+	<div class=-head>Settings</div>
 	<div class=-body>
 		<settings-editor source="${source}"></settings-editor>
 	</div>
@@ -40,7 +39,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   const count = Number(await db.one("SELECT count(*) FROM qg_setting"));
   return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>Einträge:<td>${hee(String(count))}
+  <tr><td>Entries:<td>${hee(String(count))}
 </table>
 </div>`;
 }

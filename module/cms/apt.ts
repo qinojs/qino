@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
- * cms/apt.ts — apt Action-Tree für das cms-Modul.
- * Vollständige Portierung aller Routen aus apt-exports.ts.
+ * cms/apt.ts — apt action tree for the cms module.
+ * Complete port of all routes from apt-exports.ts.
  */
 
 import { s } from "../core/lib/StandardSchema.ts";
@@ -119,6 +119,13 @@ const node = {
           description: "Render a specific HTML part of the node",
           access: nodeRead,
           input: s.object({ vars: s.optional(s.record()) }),
+          execute: async ({ node, part, vars }: any) =>
+            String(await node.htmlPart(part, vars ?? {}) || ""),
+        },
+        post: {
+          description: "Render a specific HTML part of the node (vars as JSON body)",
+          access: nodeRead,
+          input: s.object({ vars: s.optional(s.any()) }),
           execute: async ({ node, part, vars }: any) =>
             String(await node.htmlPart(part, vars ?? {}) || ""),
         },
@@ -577,10 +584,12 @@ const node = {
     post: {
       description: "Call module-specific page API",
       access: nodeRead,
-      execute: async ({ node, ...vars }: any) => {
+      execute: async ({ node }: any) => {
         try {
-          const pageApi = node.module?.cms?.node?.pageApi;
-          return typeof pageApi === "function" ? await pageApi(node, vars) ?? null : null;
+          const pageApi = node.module?.exports?.cms?.node?.pageApi;
+          if (typeof pageApi !== "function") return null;
+          const vars = getCtx().post;
+          return await pageApi(node, vars) ?? null;
         } catch (e: any) {
           if (!e?.message?.includes("Module not found")) throw e;
           return null;

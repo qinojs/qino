@@ -103,19 +103,19 @@ document.addEventListener('DOMContentLoaded', async function(){
     await wait(1);
     cms.panel.set('sidebar','settings');
     await wait(1);
-    intro.show('#qgCmsFrontend1 [itemid="settings"]', 'Hier können sie Einstellungen vornehmen');
+    intro.show('#qgCmsFrontend1 [itemid="settings"]', 'Here you can change settings');
     await wait(1);
     cms.panel.set('sidebar','add');
-    intro.show('#qgCmsFrontend1 [itemid="add"]', 'Ziehen Sie einfach neue Inhalte in Ihre Seite');
+    intro.show('#qgCmsFrontend1 [itemid="add"]', 'Drag new content onto your page');
     await wait(1);
     cms.panel.set('sidebar','');
     const el = document.querySelector('.-m-cms-cont-text');
     cms.contPos(el).mark()
-    intro.show('.-m-cms-cont-text', 'Dieser Inhalt ist ein Text-Modul');
+    intro.show('.-m-cms-cont-text', 'This content is a text module');
     await wait(1);
-    intro.show('#qgCmsContPosMenu > .-opts', 'Klicken sie hier um zu den Einstellungen zu gelangen');
+    intro.show('#qgCmsContPosMenu > .-opts', 'Click here to access the settings');
     await wait(1);
     cms.panel.set('sidebar','settings');
     await wait(1);
-    intro.show('#qgCmsFrontend1 [itemid="settings"] > [widget]', 'Hier können sie Einstellungen vornehmen');
+    intro.show('#qgCmsFrontend1 [itemid="settings"] > [widget]', 'Here you can change settings');
 });

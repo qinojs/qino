@@ -46,7 +46,7 @@ dialog {
 	color: var(--color-bg);
 	& > :is(*,#xx) { background-color:inherit; }
 }
-
+u2-ico[icon="delete"] { color: var(--red) }
 
 #container {
 	display:grid;

@@ -3,11 +3,11 @@ import { hee } from "../../../core/lib/util.ts";
 
 export default async function (node: Node): Promise<string> {
   const app = node.app;
-  const textTitle = await app.t`Titel`;
-  const textDescr = await app.t`Beschreibung`;
-  const textPrio  = await app.t`Die Priorität dieser Seite im Verhältnis zu anderen auf Ihrer Website.`;
-  const placeholderTitle = await app.t`max. 55 Zeichen` + ", " + await app.t`wichtige Wörter zuerst`;
-  const placeholderDescr = await app.t`max. 156 Zeichen`;
+  const textTitle = await app.t`Title`;
+  const textDescr = await app.t`Description`;
+  const textPrio  = await app.t`The priority of this page relative to other pages on your website.`;
+  const placeholderTitle = await app.t`max. 55 characters` + ", " + await app.t`important words first`;
+  const placeholderDescr = await app.t`max. 156 characters`;
 
   const Ttitle = await node.text("_title");
   const Tdescr  = await node.text("_meta_description");

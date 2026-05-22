@@ -9,32 +9,32 @@ const settingsSchema = {
   properties: {
     "active page by renderpath": {
       type: "boolean",
-      description: "Bestimmt die aktive Seite aus dem Renderpfad statt aus der Hauptseite des aktuellen Inhalts.",
+      description: "Determines the active page from the render path instead of the main page of the current content.",
     },
     startPage: {
       type: "integer", minimum: 1,
-      description: "Page-ID, ab der die Navigation aufgebaut wird. Leer lassen fuer die aktuelle Seite.",
+      description: "Page ID from which the navigation is built. Leave empty for the current page.",
       "x-html": { type: "qgcms-page" }
     },
     startLevel: {
       type: "integer", minimum: 0,
-      description: "Startet die Navigation bei einem Eltern-Level der aktiven Seite. Ueberschreibt startPage, wenn gesetzt.",
+      description: "Starts navigation at a parent level of the active page. Overrides startPage when set.",
     },
     filter_visible: {
       enum: ["", "visible", "hidden"],
-      description: "Filtert Navigationspunkte nach Sichtbarkeit: leer zeigt alle lesbaren Seiten, visible nur sichtbare, hidden nur versteckte.",
+      description: "Filters navigation items by visibility: empty shows all readable pages, visible only visible ones, hidden only hidden ones.",
     },
     level: {
       type: "integer", minimum: 0,
-      description: "Maximale Tiefe der Navigation. 0 oder leer bedeutet ohne explizite Tiefenbegrenzung.",
+      description: "Maximum depth of the navigation. 0 or empty means no explicit depth limit.",
     },
     pathOnly: {
       type: "boolean",
-      description: "Zeigt Unterebenen nur entlang des aktiven Pfads.",
+      description: "Shows sub-levels only along the active path.",
     },
     "include contents": {
       type: "boolean",
-      description: "Nimmt sichtbare Content-Elemente der Seiten als Navigationspunkte mit auf.",
+      description: "Includes visible content elements of pages as navigation items.",
     },
   },
 };

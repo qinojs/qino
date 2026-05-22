@@ -48,25 +48,29 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
     const post = safeJson(String(row.post || "{}"));
     const data = safeJson(post.askJSON ?? "{}");
 
+    const t = ctx.app.t.bind(ctx.app.languages);
+    const [tContentAdded, tPositionChanged, tSettingChanged, tFileOrderChanged, tFilesSorted, tFileAdded, tFileDeleted, tDuplicatesDeleted, tCopied, tDeleted, tModuleChanged, tTagAdded, tTagRemoved, tVisibilityChanged, tReverted] = await Promise.all([
+        t`Content added`, t`Position changed`, t`Setting changed`, t`File order changed`, t`Files sorted`, t`File added`, t`File deleted`, t`Duplicate files deleted`, t`Copied`, t`Deleted`, t`Module changed`, t`Tag added`, t`Tag removed`, t`Visibility changed`, t`Reverted to previous state`,
+    ]);
     const translateFn: Record<string, string> = {
-        "page::addContent":        "Inhalt hinzugefügt",
-        "page::insertBefore":      "Position geändert",
-        "page::setDefault":        "Einstellung geändert",
-        "page::setDefaultById":    "Einstellung geändert",
-        "page::FilesSort":         "Dateireihenfolge geändert",
-        "page::filesSetOrder":     "Dateien sortiert",
-        "page::FileAdd":           "Datei hinzugefügt",
-        "page::FileDelete":        "Datei gelöscht",
-        "page::filesDeleteDouble": "Doppelte Dateien gelöscht",
-        "page::copy":              "Kopiert",
-        "page::remove":            "Gelöscht",
-        "page::setModule":         "Modul geändert",
-        "page::addClass":          "Tag hinzugefügt",
-        "page::removeClass":       "Tag entfernt",
-        "page::setVisible":        "Sichtbarkeit geändert",
-        "cms_vers::rollBackCont":  "Stand zurückgesetzt",
-        "SettingsEditor::set":     "Einstellung geändert",
-        "Setting":                 "Einstellung geändert",
+        "page::addContent":        tContentAdded,
+        "page::insertBefore":      tPositionChanged,
+        "page::setDefault":        tSettingChanged,
+        "page::setDefaultById":    tSettingChanged,
+        "page::FilesSort":         tFileOrderChanged,
+        "page::filesSetOrder":     tFilesSorted,
+        "page::FileAdd":           tFileAdded,
+        "page::FileDelete":        tFileDeleted,
+        "page::filesDeleteDouble": tDuplicatesDeleted,
+        "page::copy":              tCopied,
+        "page::remove":            tDeleted,
+        "page::setModule":         tModuleChanged,
+        "page::addClass":          tTagAdded,
+        "page::removeClass":       tTagRemoved,
+        "page::setVisible":        tVisibilityChanged,
+        "cms_vers::rollBackCont":  tReverted,
+        "SettingsEditor::set":     tSettingChanged,
+        "Setting":                 tSettingChanged,
     };
     const ignoreFn: Record<string, 1> = {
         "cms_frontend_1::widget": 1,
@@ -82,7 +86,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
     const contOrPage = async (Page: any): Promise<string> => {
         const titleObj = await Page.title();
         const title = (await titleObj?.string?.() ?? "").trim();
-        const label = `${Page.vs?.type === "p" ? "Seite" : "Inhalt"} ${title ? `"${title}" ` : ""}(${Page.id})`;
+        const label = `${Page.vs?.type === "p" ? await t`Page` : await t`Content`} ${title ? `"${title}" ` : ""}(${Page.id})`;
         return `<div mark=".-pid${Page.id}">${label}</div>`;
     };
 
@@ -101,14 +105,14 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
                 );
                 if (vs) {
                     const P = await ctx.app.cms.node(vs.page_id);
-                    messages.push((await contOrPage(P)) + ` Text "${vs.name}" geändert`);
+                    messages.push((await contOrPage(P)) + ` ${await t`Text`} "${vs.name}" ${await t`changed`}`);
                 } else {
                     const vs2 = await ctx.app.db.row(
                         `SELECT id FROM page WHERE title_id = ?`, [Number(args[0])]
                     );
                     if (vs2) {
                         const P = await ctx.app.cms.node(vs2.id);
-                        messages.push((await contOrPage(P)) + " Titel geändert");
+                        messages.push((await contOrPage(P)) + " " + await t`Title changed`);
                     }
                 }
             } else if (fn === "page::insertBefore") {

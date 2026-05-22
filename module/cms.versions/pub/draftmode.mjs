@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt } from '../../core/pub/js/apt.js';
-cms.contextMenueContent.addItem('Veröffentlichen', {
+cms.contextMenueContent.addItem('Publish', {
 	icon: sysURL+'cms.versions/pub/check.png',
 	selector: '.qgCmsCont',
 	onshow(e) {
@@ -12,7 +12,7 @@ cms.contextMenueContent.addItem('Veröffentlichen', {
 	}
 });
 function publish(pid, subPages){
-	if (!confirm('Möchten Sie die aktuelle Live-Version wirklich überschreiben?')) return;
+	if (!confirm('Really overwrite the current live version?')) return;
 	apt['cms.versions']['publish-cont'].post({ pid, options: {toSpace:0, subPages} }).then(function(){
 		location.href = location.href.replace(/#.*$/,'');
 	});
@@ -32,31 +32,31 @@ var css =
 var el = c1.dom.fragment('<div class=-item itemid=publish>'+
 	'<div class=-content>'+
 		'<div class=-standalone>'+
-			'<div class=-h1>Entwurf</div>'+
-			'<div>Überschreiben Sie Ihren Entwurf mit der aktuellen Live-Version</div>'+
+			'<div class=-h1>Draft</div>'+
+			'<div>Overwrite your draft with the current live version</div>'+
 			'<div style="text-align:right">'+
-				'<button class=-versionUnPublish style="width:200px">Entwurf zurücksetzen</button><br><br>'+
-				'<label>inklusive Unterseiten <input class=-subPages type=checkbox style="vertical-align:text-bottom"></label><br>'+
+				'<button class=-versionUnPublish style="width:200px">Reset draft</button><br><br>'+
+				'<label>including subpages <input class=-subPages type=checkbox style="vertical-align:text-bottom"></label><br>'+
 			'</div>'+
 			'<br><br><br>'+
-			'<div class=-h1>Vergleichen</div>'+
-			'<div>Vergleichen Sie die Unterschiede von Entwurfs- und Live-Version</div>'+
+			'<div class=-h1>Compare</div>'+
+			'<div>Compare the differences between draft and live version</div>'+
 			'<div style="text-align:right">'+
-				'<button style="width:200px" class=-versionCompare>Vergleichen</button>'+
+				'<button style="width:200px" class=-versionCompare>Compare</button>'+
 			'</div>'+
 			'<br><br><br>'+
-			'<div class=-h1>Veröffentlichen</div>'+
-			'<div>Machen Sie Ihren Entwurf öffentlich!</div>'+
-			'<div class=qgCms_vers_page_changed hidden style="color:var(--cms-access-2);">Sie haben unveröffentlichte Änderungen!</div>'+
+			'<div class=-h1>Publish</div>'+
+			'<div>Make your draft public!</div>'+
+			'<div class=qgCms_vers_page_changed hidden style="color:var(--cms-access-2);">You have unpublished changes!</div>'+
 			'<br>'+
 			'<div style="text-align:right">'+
-				'<button class=-versionPublish style="width:200px">Veröffentlichen</button><br><br>'+
-				'<label>inklusive Unterseiten <input class=-subPages type=checkbox style="vertical-align:text-bottom"></label><br>'+
+				'<button class=-versionPublish style="width:200px">Publish</button><br><br>'+
+				'<label>including subpages <input class=-subPages type=checkbox style="vertical-align:text-bottom"></label><br>'+
 			'</div>'+
 		'</div>'+
 	'</div>'+
 	'<div class=-title style="xposition:relative">'+
-		'<div class=-text>Entwurf</div>'+
+		'<div class=-text>Draft</div>'+
 	'</div>'+
 	'<style>'+css+'</style>'+
 '</div>').firstChild;
@@ -67,7 +67,7 @@ el.querySelector('.-versionCompare').addEventListener('click', async ()=>{
 	CmsVersComparer.compare(Page,{
 		toSpace:0,
 		accept(){ publish(Page); },
-		acceptText:'Veröffentlichen'
+		acceptText:'Publish'
 	});
 });
 el.querySelector('.-versionPublish').addEventListener('click',function(){
@@ -76,7 +76,7 @@ el.querySelector('.-versionPublish').addEventListener('click',function(){
 });
 el.querySelector('.-versionUnPublish').addEventListener('click',function(){
 	let subPages = this.parentNode.querySelector('.-subPages').checked;
-	if (!confirm("Achtung! \nMöchten Sie den Entwurf wirklich überschreiben?")) return;
+	if (!confirm("Warning!\nReally overwrite the draft?")) return;
 	apt['cms.versions']['publish-cont'].post({ pid: Page, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
 		location.href = location.href.replace(/#.*$/,'');
 	});

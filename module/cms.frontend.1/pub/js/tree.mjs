@@ -1,5 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt } from '../../../core/pub/js/apt.js';
+import { t } from '../../../core/pub/js/t.mjs';
 
 window.cmsTreeInit = async (json) => {
   c1Use.able(window, "jQuery");
@@ -50,7 +51,7 @@ window.cmsTreeInit = async (json) => {
       }
       if (e.key === "Delete" && !e.ctrlKey) {
         if (node.data.myaccess < 3) return;
-        if (!confirm('Seite "' + node.data.title + '" wirklich löschen?')) {
+        if (!confirm(t`Really delete page "${node.data.title}"?`)) {
           return;
         }
         apt.cms.node(node.data.key).delete();

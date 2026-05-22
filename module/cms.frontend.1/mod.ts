@@ -18,11 +18,11 @@ export const settingsSchema = {
   properties: {
     "show urls": {
       type: "boolean",
-      description: "Blendet im Einstellungsbereich der Seite den URL-Abschnitt ein.",
+      description: "Shows the URL section in the page settings area.",
     },
     "show access.time": {
       type: "boolean",
-      description: "Blendet im Einstellungsbereich der Seite das Zeitfenster fur den Zugriff ein.",
+      description: "Shows the access time window in the page settings area.",
     },
   },
 };
@@ -59,7 +59,7 @@ export const api: AptTree = {
   widget: {
     ":widget": {
       post: {
-        description: "CMS-Frontend-Widget rendern.",
+        description: "Render CMS frontend widget.",
         access: Access.USER,
         input: s.object({ params: s.optional(s.record()) }),
         execute: ({ widget, params }: any, ctx: any) =>
@@ -69,7 +69,7 @@ export const api: AptTree = {
   },
 };
 
-/** Widget-Inhalt rendern */
+/** Render widget content */
 export async function cmsFrontend1Widget(
   widget: string,
   open: boolean,

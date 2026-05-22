@@ -2,9 +2,9 @@
  * error_report/mod.ts
  * Port of error_report/qg.php
  *
- * reporter.js läuft auf zwei Seiten:
- *  - Deno-Backend:  importiert, send() → direkt in DB schreiben
- *  - Browser:       mod.js serviert, reporterJsOptions.url → /js-error Endpoint → DB
+ * reporter.js runs on two sides:
+ *  - Deno backend:  imported, send() → write directly to DB
+ *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
 // deno-lint-ignore-file no-explicit-any
 
@@ -26,7 +26,7 @@ export const settingsSchema = {
   properties: {
     browserErrors: {
       type: "boolean",
-      description: "Schaltet clientseitiges Fehlerreporting ein oder aus.",
+      description: "Enables or disables client-side error reporting.",
     },
   },
 };
@@ -57,7 +57,7 @@ async function handleCssError(ctx: RequestContext): Promise<void> {
         report.line = lines.length;
         report.col = lines[lines.length - 1].length;
       }
-    } catch { /* Datei nicht lokal zugänglich */ }
+    } catch { /* file not locally accessible */ }
   }
   await addReport(ctx.app, report);
   ctx.responseStatus = 500;
@@ -70,7 +70,7 @@ async function handleCspError(ctx: RequestContext): Promise<void> {
     const directive = report["effective-directive"] ?? report["violated-directive"] ?? "";
     let blockedUri = report["blocked-uri"] ?? "";
     if (typeof blockedUri === "string" && /^https?:/.test(blockedUri)) {
-      try { blockedUri = new URL(blockedUri).origin; } catch { /* ungültige Browser-URL behalten */ }
+      try { blockedUri = new URL(blockedUri).origin; } catch { /* keep invalid browser URL as-is */ }
     }
     const reportOnly = report.disposition === "report";
     await addReport(ctx.app, {
@@ -105,7 +105,7 @@ async function addReport(app: any, vs: Report): Promise<void> {
     row.browser ??= ctx.req.header("user-agent");
     row.ip ??= ctx.remoteAddr;
     row.log_id ??= ctx.logId ?? null;
-  } catch { /* kein Request-Context vorhanden */ }
+  } catch { /* no request context available */ }
   if (Array.isArray(row.backtrace)) row.backtrace = JSON.stringify(row.backtrace);
   await app.db.table("m_error_report").insert(row).catch(() => {});
 }

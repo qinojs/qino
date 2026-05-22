@@ -27,12 +27,12 @@ export class FileTransformer {
     sourcePath: string,
     cacheDir: string,
     options: TransformOptions,
-    /** Bekannter MIME-Typ der Quelldatei (z.B. aus DB) – Fallback auf Extension-Erkennung */
+    /** Known MIME type of the source file (e.g. from DB) – fallback to extension detection */
     knownMime?: string,
   ): Promise<TransformResult> {
     await checkMagick();
 
-    // DPR vor der Pipeline normalisieren
+    // Normalise DPR before the pipeline
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
       opts.w &&= Math.round(opts.w * opts.dpr);
@@ -48,7 +48,7 @@ export class FileTransformer {
     try {
       stat = await Deno.stat(sourcePath);
     } catch {
-      throw new Error(`FileTransformer: Quelldatei nicht gefunden: ${sourcePath}`);
+      throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
     }
 
     const fingerprint = `${stat.mtime?.getTime() ?? 0}-${stat.size}`;
@@ -60,7 +60,7 @@ export class FileTransformer {
     const cachePath = nodePath.join(cacheDir, `tf_${cacheKey}`);
     const metaPath = `${cachePath}.mime`;
 
-    // Cache-Treffer prüfen
+    // Check cache hit
     try {
       const cacheStat = await Deno.stat(cachePath);
       if ((cacheStat.mtime?.getTime() ?? 0) >= (stat.mtime?.getTime() ?? 0)) {
@@ -68,10 +68,10 @@ export class FileTransformer {
         return { path: cachePath, mime: cachedMime, transformed: true };
       }
     } catch {
-      // Cache miss – weiter
+      // Cache miss – continue
     }
 
-    // Pipeline aufbauen und ausführen
+    // Build and run pipeline
     const pipeline = sortTransformers(FileTransformer.#transformers);
     const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
 
@@ -91,12 +91,12 @@ export class FileTransformer {
         }
       }
 
-      // Kein Transformer hat etwas verändert
+      // No transformer changed anything
       if (ctx.currentPath === sourcePath) {
         return { path: sourcePath, mime, transformed: false };
       }
 
-      // Ergebnis cachen
+      // Cache result
       await nodeFs.mkdir(cacheDir, { recursive: true });
       await nodeFs.copyFile(ctx.currentPath, cachePath);
       await Deno.writeTextFile(metaPath, ctx.mime);
@@ -112,7 +112,7 @@ export class FileTransformer {
   }
 }
 
-/** Sortiert Transformer nach Phase-Reihenfolge + `after`-Abhängigkeiten innerhalb einer Phase */
+/** Sorts transformers by phase order + `after` dependencies within a phase */
 function sortTransformers(transformers: TransformerDef[]): TransformerDef[] {
   const result: TransformerDef[] = [];
   for (const phase of PHASE_ORDER) {

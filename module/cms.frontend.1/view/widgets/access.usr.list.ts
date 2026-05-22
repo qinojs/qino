@@ -39,11 +39,11 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
 
   return `<table id=cmsUsrAccessTable class=-styled style="width:100%">
   <thead><tr class=-vertical>
-    <th style="text-align:left;width:auto">${await app.t`Benutzer`}
-    <th><span class=-access-0>${await app.t`kein Zugriff`}</span>
-    <th><span class=-access-1>${await app.t`sehen`}</span>
-    <th><span class=-access-2>${await app.t`bearbeiten`}</span>
-    <th><span class=-access-3>${await app.t`administrieren`}</span>
+    <th style="text-align:left;width:auto">${await app.t`User`}
+    <th><span class=-access-0>${await app.t`no access`}</span>
+    <th><span class=-access-1>${await app.t`view`}</span>
+    <th><span class=-access-2>${await app.t`edit`}</span>
+    <th><span class=-access-3>${await app.t`administer`}</span>
   <tbody>${trs}
 </table>
 <style>#cmsUsrAccessTable input { display:block; margin:auto; }</style>`;

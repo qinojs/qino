@@ -106,7 +106,7 @@ async function search(s_: string, ctx: any): Promise<any[]> {
 export const api: AptTree = {
     search: {
         get: {
-            description: "Dateien im CMS-Filebrowser suchen.",
+            description: "Search files in the CMS file browser.",
             access: Access.USER,
             query: s.object({ s: s.optional(s.string()) }),
             execute: ({ s: needle }: any, ctx: any) => search(needle ?? "", ctx),

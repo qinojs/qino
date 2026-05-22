@@ -11,7 +11,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.module");
   if (P) {
     await P.title("en", "Modules");
-    await P.title("de", "Module");
+    await P.title("en", "Modules");
   }
 }
 
@@ -38,7 +38,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   if (!modObj) {
     return `<div class=u2-card>
       <div class=-head><a href="?">← Module</a></div>
-      <div class=-body>Modul ${hee(modName)} nicht gefunden.</div>
+      <div class=-body>${await app.t`Module`} ${hee(modName)} ${await app.t`not found.`}</div>
     </div>`;
   }
 
@@ -92,11 +92,11 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 
   const depsHtml = needs.length
     ? needs.map(d => `<a href="?mod=${encodeURIComponent(d)}">${hee(d)}</a>`).join(" ")
-    : "<em>keine</em>";
+    : "<em>none</em>";
 
   const neededByHtml = neededBy.length
     ? neededBy.map(d => `<a href="?mod=${encodeURIComponent(d)}">${hee(d)}</a>`).join(" ")
-    : "<em>keine</em>";
+    : "<em>none</em>";
 
   // --- Files ---
   let filesHtml = "";
@@ -120,14 +120,14 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     }
     if (rows.length) {
       filesHtml = `<table class=u2-table style="width:100%;white-space:nowrap">
-        <thead><tr><th>Datei<th style="text-align:right">Größe<th>Geändert
+        <thead><tr><th>${await app.t`File`}<th style="text-align:right">${await app.t`Size`}<th>${await app.t`Modified`}
         <tbody>${rows.join("")}
       </table>`;
     } else {
-      filesHtml = "<em>keine Dateien gefunden</em>";
+      filesHtml = `<em>${await app.t`no files found`}</em>`;
     }
   } else if (modUrl) {
-    filesHtml = `<em>Remote-Modul (URL): ${hee(modUrl)}</em>`;
+    filesHtml = `<em>${await app.t`Remote module (URL):`} ${hee(modUrl)}</em>`;
   }
 
   // --- Source info ---
@@ -140,25 +140,25 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   <div class=u2-card>
     <div class=-head><a href="?">← Module</a> ${hee(modName)}</div>
     <table class=u2-table>
-      <tr><th>Quelle<td>${sourceHtml}
-      <tr><th>Exports<td>${exportBadges || "<em>keine</em>"}
-      <tr><th>needs<td>${depsHtml}
-      <tr><th>used by<td>${neededByHtml}
+      <tr><th>${await app.t`Source`}<td>${sourceHtml}
+      <tr><th>${await app.t`Exports`}<td>${exportBadges || `<em>${await app.t`none`}</em>`}
+      <tr><th>${await app.t`needs`}<td>${depsHtml}
+      <tr><th>${await app.t`used by`}<td>${neededByHtml}
     </table>
   </div>
   ${mod.settingsSchema?.properties ? `
   <div class=u2-card>
-    <div class=-head>Settings-Schema</div>
+    <div class=-head>${await app.t`Settings schema`}</div>
     <table class=u2-table>
-      <thead><tr><th>Key<th>Typ<th>Titel
+      <thead><tr><th>${await app.t`Key`}<th>${await app.t`Type`}<th>${await app.t`Title`}
       <tbody>${Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
         `<tr><td><code>${hee(k)}</code><td><code>${hee(v?.type ?? "")}</code><td>${hee(v?.title ?? "")}`
       ).join("")}
     </table>
   </div>` : ""}
-  ${mod.api ? `<div class=u2-card><div class=-head>API-Routen</div><div class=-body><pre>${hee(JSON.stringify(flattenApiRoutes(mod.api), null, 2))}</pre></div></div>` : ""}
+  ${mod.api ? `<div class=u2-card><div class=-head>${await app.t`API routes`}</div><div class=-body><pre>${hee(JSON.stringify(flattenApiRoutes(mod.api), null, 2))}</pre></div></div>` : ""}
   <div class=u2-card>
-    <div class=-head>Dateien${isSuperuser ? " (mit Editor-Links)" : ""}</div>
+    <div class=-head>${await app.t`Files`}${isSuperuser ? ` (${await app.t`with editor links`})` : ""}</div>
     ${filesHtml}
   </div>
 </div>`;
@@ -215,19 +215,19 @@ async function renderOverview(node: Node): Promise<string> {
   }
 
   return `<div class=u2-card>
-  <div class=-head>Module</div>
+  <div class=-head>${await app.t`Modules`}</div>
   <div class=-body>
-    <input type=search placeholder="suchen..." style="width:300px; max-width:100%" oninput="this.closest('.u2-card').querySelectorAll('tbody tr').forEach(tr=>tr.hidden=!tr.textContent.toLowerCase().includes(this.value.toLowerCase()))">
+    <input type=search placeholder="${await app.t`search`}..." style="width:300px; max-width:100%" oninput="this.closest('.u2-card').querySelectorAll('tbody tr').forEach(tr=>tr.hidden=!tr.textContent.toLowerCase().includes(this.value.toLowerCase()))">
   </div>
   <div style="overflow:auto; max-height:80vh; padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead>
         <tr>
           <th width=10>
-          <th>Name
-          <th title="Anzahl Abhängigkeiten">needs
-          <th title="Wird benötigt von">used by
-          <th>Exports
+          <th>${await app.t`Name`}
+          <th title="${await app.t`Number of dependencies`}">${await app.t`needs`}
+          <th title="${await app.t`Required by`}">${await app.t`used by`}
+          <th>${await app.t`Exports`}
       <tbody>
         ${rows.join("")}
     </table>
@@ -242,16 +242,16 @@ function render(node: Node): Promise<string> {
   return renderOverview(node);
 }
 
-export function backendDashboardWidget(app: App): string {
+export async function backendDashboardWidget(app: App): Promise<string> {
   const allMods = app.modules.all();
   const total = Object.keys(allMods).length;
   const withDb = Object.values(allMods).filter((m) => m.exports?.dbSchema).length;
   const withApi = Object.values(allMods).filter((m) => m.exports?.api).length;
   return `
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>Gesamt:<td>${hee(String(total))}
-  <tr><td>Mit DB-Schema:<td>${hee(String(withDb))}
-  <tr><td>Mit API:<td>${hee(String(withApi))}
+  <tr><td>${await app.t`Total`}:<td>${hee(String(total))}
+  <tr><td>${await app.t`With DB schema`}:<td>${hee(String(withDb))}
+  <tr><td>${await app.t`With API`}:<td>${hee(String(withApi))}
 </table>`;
 }
 

@@ -9,8 +9,8 @@ window.Rte = {
 	checkSelection() {
 		/*
 		 * Problem:
-		 * Es sollte auch nach neuem element geprüft werden wenn eltern elemente geändert werden
-		 * jetzt ist es so, dass die Selection und das element gleich bleiben obwohl sich die dom struktur geänder hat.
+		 * Should also check for new element when parent elements change
+		 * currently the selection and element stay the same even though the DOM structure has changed.
 		 *
 		 * In webkit ist das Element dann z.T nicht mehr das selbe. dann gehts... (ul maker)
 		 *  */

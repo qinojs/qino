@@ -46,7 +46,7 @@ export async function checkMagick(): Promise<void> {
     _identifyCmd = 'identify';
     _identifyArgs = [];
   } else {
-    throw new Error('ImageMagick nicht gefunden. Lösung: sudo apt install imagemagick');
+    throw new Error('ImageMagick not found. Solution: sudo apt install imagemagick');
   }
 
   _available = true;
@@ -68,7 +68,7 @@ export async function checkAvifSupport(): Promise<boolean> {
   return _avifSupported;
 }
 
-/** Führt convert/magick [input, ...args, output] aus */
+/** Runs convert/magick [input, ...args, output] */
 export async function magick(input: string, args: string[], output: string): Promise<void> {
   const { code, stderr, stdout } = await new Deno.Command(_convertCmd, {
     args: [input, ...args, output],
@@ -78,11 +78,11 @@ export async function magick(input: string, args: string[], output: string): Pro
   if (code !== 0) {
     const dec = new TextDecoder();
     const msg = dec.decode(stderr).trim() || dec.decode(stdout).trim() || `exit code ${code}`;
-    throw new Error(`ImageMagick Fehler: ${msg}`);
+    throw new Error(`ImageMagick error: ${msg}`);
   }
 }
 
-/** Gibt identify-Format-String zurück, z.B. "%wx%h" → "1920x1080" */
+/** Returns identify format string, e.g. "%wx%h" → "1920x1080" */
 export async function magickIdentify(input: string, format: string): Promise<string> {
   const { stdout } = await new Deno.Command(_identifyCmd, {
     args: [..._identifyArgs, '-format', format, `${input}[0]`],

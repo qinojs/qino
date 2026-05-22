@@ -8,13 +8,13 @@ export const name = "cms.cont.image2";
 const settingsSchema = {
   additionalProperties: { type: "string" },
   properties: {
-    url: { type: "string", title: "Link", description: "Ziel-URL fuer das Bild. Im Frontend wird das Bild dann als Link ausgegeben; interne CMS-URLs werden aufgeloest.", "x-html": { type: "qgcms-page" } },
-    "min-height": { type: "string", title: "Min. Hoehe", description: "Minimale Anzeigehoehe des Bildes als CSS-Wert. Nur Zahlen werden automatisch als Pixel interpretiert." },
-    "max-height": { type: "string", title: "Max. Hoehe", description: "Maximale Anzeigehoehe des Bildes als CSS-Wert. Nur Zahlen werden automatisch als Pixel interpretiert." },
-    width: { type: "integer", minimum: 1, description: "Breite, in der das Bild erzeugt bzw. ausgeliefert werden soll." },
-    height: { type: "integer", minimum: 1, description: "Hoehe, in der das Bild erzeugt bzw. ausgeliefert werden soll." },
-    contain: { type: "boolean", description: "Wenn aktiv, wird das ganze Bild eingepasst. Sonst wird es flaechendeckend zugeschnitten." },
-    quality: { type: "integer", minimum: 1, maximum: 100, description: "Bildqualitaet fuer die Ausgabe. Leer lassen, um die Standardqualitaet der Bildverarbeitung zu verwenden." },
+    url: { type: "string", title: "Link", description: "Target URL for the image. In the frontend the image is rendered as a link; internal CMS URLs are resolved.", "x-html": { type: "qgcms-page" } },
+    "min-height": { type: "string", title: "Min. height", description: "Minimum display height of the image as a CSS value. Plain numbers are automatically interpreted as pixels." },
+    "max-height": { type: "string", title: "Max. height", description: "Maximum display height of the image as a CSS value. Plain numbers are automatically interpreted as pixels." },
+    width: { type: "integer", minimum: 1, description: "Width at which the image should be generated or delivered." },
+    height: { type: "integer", minimum: 1, description: "Height at which the image should be generated or delivered." },
+    contain: { type: "boolean", description: "When active, the whole image is fitted in. Otherwise it is cropped to fill the area." },
+    quality: { type: "integer", minimum: 1, maximum: 100, description: "Image quality for output. Leave empty to use the default quality of the image processor." },
   },
 };
 
@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }) {
   let Img = null;
   let url = await node.cms.url(settings.url());
 
-  // Sprachspezifische Varianten
+  // Language-specific variants
   for (const l of node.app.languages.all) {
     const LImg = await node.file("image_" + l);
     if (ctx.lang === l && await LImg.exists()) Img = LImg;

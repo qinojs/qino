@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.system");
   if (P) {
     await P.title("en", "System");
-    await P.title("de", "System");
+    await P.title("en", "System");
   }
 }
 
@@ -37,9 +37,9 @@ async function render(node: Node): Promise<string> {
   const appPATH   = app.appPATH ?? "";
 
   const mem = Deno.memoryUsage();
-  const pid = Deno.pid; // Die Prozess-ID
+  const pid = Deno.pid;
   const appUptimeSec = performance.now() / 1000;
-  const osUptimeSec = Deno.osUptime(); // Benötigt --allow-sys
+  const osUptimeSec = Deno.osUptime(); // requires --allow-sys
   const load = Deno.loadavg();
 
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
@@ -47,18 +47,18 @@ async function render(node: Node): Promise<string> {
 
   const serverInfoHtml = `
 <div class=u2-card>
-  <div class=-head>Systeminfos</div>
+  <div class=-head>${await app.t`System info`}</div>
   <div class=-body style="padding:0">
     <table class="u2-table" style="white-space:nowrap">
-      <tr><td>Deno Version:<td>${hee(Deno.version.deno)}
-      <tr><td>PID:<td>${hee(pid)}
-      <tr><td>App Uptime:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
-      <tr><td>Server Uptime:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
-      <tr><td>System Load:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
-      <tr><td>Heap (Used/Total):<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
-      <tr><td>RSS (Echter RAM):<td><u2-bytes>${mem.rss}</u2-bytes>
-      <tr><td>Server-IP:<td>${hee(serverIP)}
-      <tr><td>APP-Path:<td>${hee(appPATH)}
+      <tr><td>${await app.t`Deno Version`}:<td>${hee(Deno.version.deno)}
+      <tr><td>${await app.t`PID`}:<td>${hee(pid)}
+      <tr><td>${await app.t`App Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+      <tr><td>${await app.t`Server Uptime`}:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
+      <tr><td>${await app.t`System Load`}:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
+      <tr><td>${await app.t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+      <tr><td>${await app.t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
+      <tr><td>${await app.t`Server-IP`}:<td>${hee(serverIP)}
+      <tr><td>${await app.t`APP-Path`}:<td>${hee(appPATH)}
     </table>
   </div>
 </div>`;
@@ -143,12 +143,12 @@ async function render(node: Node): Promise<string> {
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
 <div class="u2-card">
-  <div class="-head">Locales</div>
+  <div class="-head">${await app.t`Locales`}</div>
   <div class="-body" style="padding:0">
     <table class=u2-table>
-      <tr><td>OS<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
-      <tr><td>DB<td>${dbIso.slice(0, 19).replace("T", " ")}<td>UTC+0
-      <tr><td>Browser<script>
+      <tr><td>${await app.t`OS`}<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
+      <tr><td>${await app.t`DB`}<td>${dbIso.slice(0, 19).replace("T", " ")}<td>UTC+0
+      <tr><td>${await app.t`Browser`}<script>
           const _d = new Date(), _off = -_d.getTimezoneOffset() / 60;
           const _tr = document.currentScript.closest('tr');
           _tr.insertAdjacentHTML('beforeend', '<td>'+_d.toISOString().slice(0,19).replace('T',' ')+'<td>UTC+'+_off);
@@ -161,9 +161,9 @@ async function render(node: Node): Promise<string> {
   // ── statistics ─────────────────────────────────────────────────────────
   const statsBox = `
 <div class="u2-card">
-  <div class="-head">Statistics</div>
+  <div class="-head">${await app.t`Statistics`}</div>
   <div class="-body" data-part="statistic">
-    <button onclick="import('${getCtx().sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('statistic').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">run</button>
+    <button onclick="import('${getCtx().sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('statistic').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">${await app.t`run`}</button>
   </div>
 </div>`;
 
@@ -202,8 +202,8 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     n ? `<span style="background:${color};color:#fff;border-radius:3px;padding:1px 7px;margin-right:4px">${n} ${label}</span>` : "";
 
   const statusHtml = (errors || warnings)
-    ? badge(errors, "Fehler", "hsl(0,80%,45%)") + badge(warnings, "Warnungen", "hsl(40,90%,40%)")
-    : `<span style="color:green">&#10003; Alles OK</span>`;
+    ? badge(errors, await app.t`Errors`, "hsl(0,80%,45%)") + badge(warnings, await app.t`Warnings`, "hsl(40,90%,40%)")
+    : `<span style="color:green">&#10003; ${await app.t`All OK`}</span>`;
 
   // DB top tables
   const tables = await app.db.all("SHOW TABLE STATUS").catch(() => []);
@@ -224,29 +224,29 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 
   return `<div class=-body>${statusHtml}</div>
 <div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">` + systemInfoRows() + `</table>
+<table class="u2-table" style="white-space:nowrap">` + await systemInfoRows(app) + `</table>
 <table class="u2-table" style="white-space:nowrap;margin-top:1px">
-  <thead><tr><th>Top DB-Tabellen<th style="text-align:right">Grösse
+  <thead><tr><th>${await app.t`Top DB tables`}<th style="text-align:right">${await app.t`Size`}
   <tbody>${dbRows}
 </table>
 <table class="u2-table" style="white-space:nowrap;margin-top:1px">
-  <tr><td>Cache-Dateien:<td>${hee(String(cacheCount))}
-  <tr><td>Cache-Grösse:<td><u2-bytes>${cacheSize}</u2-bytes>
+  <tr><td>${await app.t`Cache files`}:<td>${hee(String(cacheCount))}
+  <tr><td>${await app.t`Cache size`}:<td><u2-bytes>${cacheSize}</u2-bytes>
 </table>
 </div>`;
 }
 
-function systemInfoRows(): string {
+async function systemInfoRows(app: App): Promise<string> {
   const mem = Deno.memoryUsage();
   const load = Deno.loadavg();
   const appUptimeSec = performance.now() / 1000;
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   return `
-  <tr><td>Deno:<td>${hee(Deno.version.deno)}
-  <tr><td>Uptime:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
-  <tr><td>Load (1m/5m/15m):<td>${hee(load[0].toFixed(2))} / ${hee(load[1].toFixed(2))} / ${hee(load[2].toFixed(2))}
-  <tr><td>RAM (RSS):<td><u2-bytes>${mem.rss}</u2-bytes>
-  <tr><td>Heap:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>`;
+  <tr><td>${await app.t`Deno`}:<td>${hee(Deno.version.deno)}
+  <tr><td>${await app.t`Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+  <tr><td>${await app.t`Load (1m/5m/15m)`}:<td>${hee(load[0].toFixed(2))} / ${hee(load[1].toFixed(2))} / ${hee(load[2].toFixed(2))}
+  <tr><td>${await app.t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
+  <tr><td>${await app.t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>`;
 }
 
 export const cms = {

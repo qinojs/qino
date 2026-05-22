@@ -27,7 +27,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   const rows = await db.all(sql, params);
   const publicAccess = node.vs.access;
   let trs = `<tr>
-    <td>${await app.t`Öffentlich`}
+    <td>${await app.t`Public`}
     <td><input type=radio name=public value=0 ${!publicAccess ? "checked" : ""}>
     <td><input type=radio name=public value=1 ${publicAccess ? "checked" : ""}>
     <td><td>`;
@@ -43,11 +43,11 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
 
   return `<table id=cmsGrpAccessTable class=-styled style="width:100%">
   <thead><tr class=-vertical>
-    <th style="text-align:left;width:auto">${await app.t`Gruppe`}
-    <th><span class=-access-0>${await app.t`kein Zugriff`}</span>
-    <th><span class=-access-1>${await app.t`sehen`}</span>
-    <th><span class=-access-2>${await app.t`bearbeiten`}</span>
-    <th><span class=-access-3>${await app.t`administrieren`}</span>
+    <th style="text-align:left;width:auto">${await app.t`Group`}
+    <th><span class=-access-0>${await app.t`no access`}</span>
+    <th><span class=-access-1>${await app.t`view`}</span>
+    <th><span class=-access-2>${await app.t`edit`}</span>
+    <th><span class=-access-3>${await app.t`administer`}</span>
   <tbody>${trs}
 </table>
 <style>#cmsGrpAccessTable input { display:block; margin:auto; }</style>`;

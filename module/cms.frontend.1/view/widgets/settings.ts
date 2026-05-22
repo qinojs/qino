@@ -38,21 +38,19 @@ export default async function (node: Node): Promise<string> {
     let parentTitle = (await (await Parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(Parent);
     if (parentType === "c") parentTitle += ` ${Parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
     parentHtml = `<div class=-editparent parent="${Parent}" page-type="${hee(parentType)}">
-      ${await app.t`Übergeordnet:`}
+      ${await app.t`Parent:`}
       <a href="${hee(await Parent.url())}" style="font-weight:bold;">${parentTitle}</a>
     </div>`;
   }
 
-  // Accordion-Widgets
   const showAccessTime = await app.settings["cms.frontend.1"]["show access.time"] ?? false;
   const showUrls       = await app.settings["cms.frontend.1"]["show urls"] ?? false;
 
   let accordions = "";
 
-  // options: wenn das Modul options exportiert ODER page-settings vorhanden
   const hasOptions = typeof node.module?.exports?.cms?.node?.options === "function";
   const hasPageSettings = (node.settings[$item].keys?.length ?? 0) > 0;
-  if (hasOptions || hasPageSettings) accordions += await cmsFrontend1WidgetAccordion("options", node, await app.t`Einstellungen`);
+  if (hasOptions || hasPageSettings) accordions += await cmsFrontend1WidgetAccordion("options", node, await app.t`Settings`);
 
   accordions += await cmsFrontend1WidgetAccordion("media", node);
   if (showAccessTime) accordions += await cmsFrontend1WidgetAccordion("access.time", node);
@@ -62,14 +60,14 @@ export default async function (node: Node): Promise<string> {
   }
   if (node.vs.type === "p") accordions += await cmsFrontend1WidgetAccordion("seo", node);
   if (showUrls)    accordions += await cmsFrontend1WidgetAccordion("urls", node);
-  accordions += await cmsFrontend1WidgetAccordion("extended", node, await app.t`Erweitert`);
+  accordions += await cmsFrontend1WidgetAccordion("extended", node, await app.t`Advanced`);
   if (await ctx.user?.get?.("superuser")) accordions += await cmsFrontend1WidgetAccordion("superuser", node, "Superuser");
 
   return `<div class="-standalone qgCMSFron1ContManager" pid="${node}" page-type="${hee(node.vs.type)}" style="font-size:1.2em;margin-bottom:1em">
   <div title="Nr.${node}">
     <div class=-h1>
-      ${await app.t`${node.vs.type === "p" ? "Seite" : "Inhalt"}`}:&nbsp;
-      <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="kein Titel">
+      ${node.vs.type === "p" ? await app.t`Page` : await app.t`Content`}:&nbsp;
+      <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="no title">
       <div style="margin-top:-15px">
         <svg class=-img fill="var(--cms-dark)" width="46" height="46" style="display:block">
           <use href="${svgUrl}#main" />
@@ -77,7 +75,7 @@ export default async function (node: Node): Promise<string> {
       </div>
     </div>
     <div style="display:flex;margin-bottom:4px;">
-      <span title="${hee(String(await Module.get?.("name") ?? ""))}">${node.vs.type === "p" ? "Layout" : "Modul"}: </span>
+      <span title="${hee(String(await Module.get?.("name") ?? ""))}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
       <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-4px;margin-bottom:-3px;background:transparent">
         ${moduleOptions}
       </select>

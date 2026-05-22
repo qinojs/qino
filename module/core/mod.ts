@@ -18,36 +18,36 @@ export const settingsSchema = {
     properties: {
         langs: {
             type: "string",
-            description: "Kommagetrennte Liste der verfugbaren Sprachcodes, z.B. de,en.",
+            description: "Comma-separated list of available language codes, e.g. en,de.",
         },
         uploadMaxFileSize: {
             type: "integer",
-            description: "Maximale Dateigrosse fur Uploads und Remote-Dateiimporte in Bytes.",
+            description: "Maximum file size for uploads and remote file imports in bytes.",
         },
         HSTS: {
-            description: "Einstellungen fur den Strict-Transport-Security-Header.",
+            description: "Settings for the Strict-Transport-Security header.",
             properties: {
                 "max-age": {
                     type: "integer",
-                    description: "Zeit in Sekunden, wie lange Browser HTTPS fur diese Domain erzwingen.",
+                    description: "Time in seconds that browsers enforce HTTPS for this domain.",
                 },
                 includeSubDomains: {
                     type: "boolean",
-                    description: "Bezieht die HSTS-Regel auch auf alle Subdomains.",
+                    description: "Applies the HSTS rule to all subdomains as well.",
                 },
                 preload: {
                     type: "boolean",
-                    description: "Erlaubt die Aufnahme in Browser-Preload-Listen, falls die Voraussetzungen erfullt sind.",
+                    description: "Allows inclusion in browser preload lists if requirements are met.",
                 },
             },
         },
         csp: {
-            description: "Steuert, ob und wie eine Content-Security-Policy gesendet wird.",
+            description: "Controls whether and how a Content-Security-Policy is sent.",
             properties: {
                 enable: {
                     type: "string",
                     enum: ["", "enforce", "report only"],
-                    description: "Aus, nur melden oder voll aktiv durchsetzen.",
+                    description: "Off, report only, or fully enforce.",
                 },
             },
         },

@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.module.deps");
   if (P) {
     await P.title("en", "Module Dependencies");
-    await P.title("de", "Modul-Abhängigkeiten");
+    await P.title("en", "Module Dependencies");
   }
 }
 
@@ -31,13 +31,13 @@ async function render(node: Node): Promise<string> {
   const graphData = JSON.stringify({ nodes, links });
 
   return `<div class=u2-card>
-  <div class=-head>Modul-Abhängigkeiten</div>
+  <div class=-head>${await app.t`Module Dependencies`}</div>
   <div class=-body style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <input type=search id=mod-deps-search placeholder="filtern..." style="width:220px">
+    <input type=search id=mod-deps-search placeholder="${await app.t`filter`}..." style="width:220px">
     <label style="display:flex;align-items:center;gap:4px">
-      <input type=checkbox id=mod-deps-isolate> nur verbundene zeigen
+      <input type=checkbox id=mod-deps-isolate> ${await app.t`show connected only`}
     </label>
-    <button onclick="modDepsReset()" style="margin-left:auto">Reset</button>
+    <button onclick="modDepsReset()" style="margin-left:auto">${await app.t`Reset`}</button>
   </div>
   <div id=mod-deps-wrap style="overflow:hidden;position:relative">
     <svg id=mod-deps-svg style="width:100%;height:70vh;display:block;background:#f8f9fa;border-top:1px solid #ddd"></svg>

@@ -3,8 +3,8 @@ import { magick, magickIdentify, checkAvifSupport, fileSize } from '../imagemagi
 import * as nodePath from 'node:path';
 
 /**
- * Encode-Phase: Wählt optimales Ausgabeformat (AVIF > JPEG > PNG) und setzt Qualität.
- * Läuft nur wenn Geometrie angewendet wurde oder explizit q/fmt gesetzt ist.
+ * Encode phase: selects optimal output format (AVIF > JPEG > PNG) and sets quality.
+ * Runs only when geometry has been applied or q/fmt is set explicitly.
  */
 FileTransformer.register({
   name: 'image-encode',
@@ -18,7 +18,7 @@ FileTransformer.register({
     const q = Math.min(Math.max(ctx.options.q ?? 77, 1), 100);
     const fmt = ctx.options.fmt === 'jpg' ? 'jpeg' : (ctx.options.fmt ?? 'auto');
 
-    // Explizites Format angefordert
+    // Explicit format requested
     if (fmt !== 'auto') {
       const ext = fmt === 'jpeg' ? 'jpg' : fmt;
       const out = nodePath.join(ctx.tmpDir, `out.${ext}`);
@@ -28,14 +28,14 @@ FileTransformer.register({
       return;
     }
 
-    // Alpha-Kanal prüfen
+    // Check alpha channel
     const alphaFlag = await magickIdentify(ctx.currentPath, '%A');
     ctx.meta.hasAlpha = alphaFlag === 'True';
 
     const avifAvailable = await checkAvifSupport();
 
     if (avifAvailable) {
-      // AVIF unterstützt Alpha nativ – AVIF vs JPEG, kleinere Datei gewinnt
+      // AVIF supports alpha natively – AVIF vs JPEG, smaller file wins
       const avif = nodePath.join(ctx.tmpDir, 'out.avif');
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       await Promise.all([

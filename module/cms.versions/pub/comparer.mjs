@@ -8,17 +8,17 @@ window.CmsVersComparer = {
             '<style>'+css+'</style>'+
             '<div class=-tools>'+
                 '<div style="flex:1 0 200px">'+
-                    '<button class=-mode-side>Ansicht wechseln</button> '+
-                    '<button class=-diffs>Unterschiede anzeigen</button> '+
+                    '<button class=-mode-side>Switch view</button> '+
+                    '<button class=-diffs>Show differences</button> '+
                 '</div>'+
                 '<div style="flex:auto; display:flex; align-items:center; justify-content:center">'+
                     '<span class=-toText style="flex:1 0 30px; text-align:right">Live</span>'+
                     ' &nbsp;&nbsp; <input class=-fade min=0 max=1 step=any type=range><span class=-splitter></span> &nbsp;&nbsp; '+
-                    '<span class=-fromText style="flex:1 0 30px"> &nbsp; Entwurf</span>'+
+                    '<span class=-fromText style="flex:1 0 30px"> &nbsp; Draft</span>'+
                 '</div>'+
                 '<div style="flex:1 0 200px; text-align:right">'+
-                    '<button class=-accept>veröffentlichen</button> '+
-                    '<button class=-close>schliessen</button> '+
+                    '<button class=-accept>publish</button> '+
+                    '<button class=-close>close</button> '+
                 '</div>'+
             '</div>'+
             '<div class=-views>'+
@@ -87,7 +87,7 @@ window.CmsVersComparer = {
         this._ensure();
         window.addEventListener('keydown',this.keyListener);
         pid = page_id;
-        options = Object.assign({fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Entwurf', toText:'Live', accept:null, acceptText:'Übernehmen'}, options);
+        options = Object.assign({fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Draft', toText:'Live', accept:null, acceptText:'Apply'}, options);
         // accept function
         let acceptEl = div.querySelector('.-accept');
         acceptEl.style.display = options.accept ? 'inline-block' : 'none';

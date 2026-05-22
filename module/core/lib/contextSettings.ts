@@ -31,9 +31,9 @@ export function sessSettingsItem(db: Db, sessId: string | number, schema?: any):
 
 
 /**
- * Login-Merge: Session-Settings → User-Settings übernehmen (nur wenn User noch keine hat).
+ * Login merge: copy session settings → user settings (only if user has none yet).
  *
- * Todo? "nur wenn User noch keine hat" oder nur die überschreiben welche undefined sind? macht das sinn? oder gibt das komplikationen?
+ * Todo? "only if user has none yet" or overwrite only undefined ones? does that make sense? or does it cause complications?
  */
 export async function mergeSessionSettingsToUser(db: Db, userId: number, sessId: string): Promise<void> {
     const sessSettings = await db.one("SELECT settings FROM sess WHERE id = ?", [sessId]);

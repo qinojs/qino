@@ -11,7 +11,7 @@ Deno.test("cms.backend: render shows fallback when no dashboard widgets exist", 
   const page = { children: () => new Map() };
   const node = { page: () => page };
   const out = await cms.node.render(node as any);
-  assertEquals(out.includes("Keine Widgets verfügbar."), true);
+  assertEquals(out.includes("No widgets available."), true);
 });
 
 Deno.test("cms.backend: render collects visible child widgets", async () => {

@@ -86,7 +86,7 @@ function onIntersecting(entry) {
         requestAnimationFrame(()=>{
             img.parentNode.setAttribute('loaded','');
             img.parentNode.style.backgroundImage = 'none';
-            // setTimeout(()=>{ // allfällige animation abwarten, problem:halbtransparente bilder
+            // setTimeout(()=>{ // wait for possible animation, problem: semi-transparent images
             //   img.parentNode.style.backgroundImage = 'none';
             // },400)
         })

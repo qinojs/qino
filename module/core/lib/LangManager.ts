@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 export class LangManager {
 
     #app: any;
-    #langs: string[] = [];   // alle verfügbaren Sprachen, erste = default
+    #langs: string[] = [];   // all available languages, first = default
     #txtsCache: Record<string, Record<string, string>> = {};
 
     constructor(app: any) {
@@ -20,7 +20,7 @@ export class LangManager {
     get def(): string { return this.#langs[0] ?? "en"; }
     get all(): string[] { return this.#langs; }
 
-    // Initialisiert Sprache pro Request (wie L.init)
+    // Initialises language per request (like L.init)
     async initCtx(ctx: any): Promise<void> {
         const usr = ctx.user;
 
@@ -63,7 +63,7 @@ export class LangManager {
         c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : c.langUsr;
     }
 
-    // Sprache aus dem Browser-Header ermitteln
+    // Determine language from the browser Accept-Language header
     #fromBrowser(ctx: any): string {
         const acceptLang = ctx.req.header("accept-language");
         if (!acceptLang) return this.def;
@@ -93,7 +93,7 @@ export class LangManager {
     async #getTxts(ns: string, l: string): Promise<Record<string, string>> {
         const key = `${l}::${ns}`;
         if (!this.#txtsCache[key]) {
-            await this.addLanguage(l);
+            //await this.addLanguage(l);
             this.#txtsCache[key] = await this.#app.db.indexCol(`SELECT hash, \`${l}\` as txt FROM smalltext WHERE namespace = ?`, [ns]);
         }
         return this.#txtsCache[key];
@@ -105,13 +105,17 @@ export class LangManager {
         const l = ctx.lang;
         const txts = await this.#getTxts(ns, l);
         if (!(hash in txts)) {
-            await this.#app.db.query("INSERT INTO smalltext SET namespace=?, hash=?, de=?, original=?", [ns, hash, string, string]);
-            txts[hash] = string;
+            await this.#app.db.query("INSERT INTO smalltext SET namespace=?, hash=?, original=?", [ns, hash, string]);
+            txts[hash] = "";
         }
-        return txts[hash] || string;
+        const translated = txts[hash] || string;
+        if (ctx.dev && !txts[hash]) {
+            return `*${string}*`;
+        }
+        return translated;
     }
 
-    // Shortcut: Text übersetzen (nutzt automatisch den aktuellen ctx)
+    // Shortcut: translate text (uses the current ctx automatically)
     async t(strings: TemplateStringsArray, ...values: unknown[]): Promise<string> {
         const ctx = getCtx();
         const original = strings.reduce((acc, str, i) => 
@@ -125,7 +129,8 @@ export class LangManager {
     }
 
 
-    // Sprache zur DB hinzufügen falls nicht vorhanden
+    /*
+    // Add language to the DB if not yet present
     async addLanguage(l: string): Promise<void> {
         const table = this.#app.db.table("smalltext");
         if (!table.field(l)) {
@@ -146,5 +151,6 @@ export class LangManager {
             await db.query(`UPDATE smalltext SET \`${lang}\` = ? WHERE hash = ? AND namespace = ?`, [txt, hash, ns]);
         }
     }
+    */
 
 }

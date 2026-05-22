@@ -11,8 +11,8 @@ export { dbSchema };
 
 export const settingsSchema = {
   properties: {
-    rpId:   { type: "string", description: "Relying Party ID — Domain ohne Protokoll, z.B. example.com" },
-    rpName: { type: "string", description: "Anzeigename der Anwendung im Authenticator-Dialog" },
+    rpId:   { type: "string", description: "Relying Party ID — domain without protocol, e.g. example.com" },
+    rpName: { type: "string", description: "Display name of the application in the authenticator dialog" },
   },
 };
 
@@ -215,7 +215,7 @@ function buildApi(app: App): AptTree { return {
   register: {
     challenge: {
       post: {
-        description: "WebAuthn Registrierungs-Challenge anfordern",
+        description: "Request WebAuthn registration challenge",
         access: Access.USER,
         execute: async () => {
           const ctx = getCtx();
@@ -245,7 +245,7 @@ function buildApi(app: App): AptTree { return {
 
     verify: {
       post: {
-        description: "WebAuthn Credential nach Registrierung speichern",
+        description: "Save WebAuthn credential after registration",
         access: Access.USER,
         input: s.object({
           token:             s.string(),
@@ -291,7 +291,7 @@ function buildApi(app: App): AptTree { return {
   login: {
     challenge: {
       post: {
-        description: "WebAuthn Login-Challenge anfordern",
+        description: "Request WebAuthn login challenge",
         access: Access.PUBLIC,
         input: s.object({ email: s.optional(s.string()) }),
         execute: async ({ email }: any) => {
@@ -325,7 +325,7 @@ function buildApi(app: App): AptTree { return {
 
     verify: {
       post: {
-        description: "WebAuthn Login verifizieren und Session erstellen",
+        description: "Verify WebAuthn login and create session",
         access: Access.PUBLIC,
         input: s.object({
           token:             s.string(),
@@ -366,7 +366,7 @@ function buildApi(app: App): AptTree { return {
   confirm: {
     challenge: {
       post: {
-        description: "Step-up Challenge — Identität des eingeloggten Benutzers bestätigen",
+        description: "Step-up challenge — confirm identity of the logged-in user",
         access: Access.USER,
         execute: async () => {
           const ctx   = getCtx();
@@ -389,7 +389,7 @@ function buildApi(app: App): AptTree { return {
 
     verify: {
       post: {
-        description: "Step-up Bestätigung verifizieren — setzt Session-Flag 'web_auth_confirmed'",
+        description: "Verify step-up confirmation — sets session flag 'web_auth_confirmed'",
         access: Access.USER,
         input: s.object({
           token:             s.string(),
@@ -418,7 +418,7 @@ function buildApi(app: App): AptTree { return {
 
   credentials: {
     get: {
-      description: "Eigene WebAuthn-Credentials auflisten",
+      description: "List own WebAuthn credentials",
       access: Access.USER,
       execute: async () => {
         const ctx  = getCtx();
@@ -435,7 +435,7 @@ function buildApi(app: App): AptTree { return {
     ":credId": {
       paramSchema: s.number(),
       delete: {
-        description: "WebAuthn-Credential löschen (eigenes oder als Superuser)",
+        description: "Delete WebAuthn credential (own or as superuser)",
         access: Access.USER,
         execute: async ({ credId }: any) => {
           const ctx  = getCtx();

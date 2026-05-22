@@ -82,11 +82,13 @@
 		background:var(--cms-dark);
 		color:#fff;
 	}
+	/*
 	& :is(button, .btn):disabled {
 		background:var(--cms-light);
 		color:#fff;
 		border-color:transparent;
 	}
+	*/
 	& ::-webkit-scrollbar { width: 10px; height: 10px; }
 	& ::-webkit-scrollbar-track { background: rgba(0, 0, 0, .05); }
 	& ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .25); }

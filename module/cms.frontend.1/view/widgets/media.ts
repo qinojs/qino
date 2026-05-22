@@ -10,21 +10,21 @@ export default async function (node: Node): Promise<string> {
 
   const sortSelect = Object.keys(allFiles).length > 1 ? `
     <select class=-sortFilesSelect>
-      <option value> ${await app.t`sortieren nach...`}
+      <option value> ${await app.t`sort by...`}
       <option value=name>${await app.t`Name`}
-      <option value=name_reverse>${await app.t`Name von hinten`}
-      <option value=date>${await app.t`Datum`}
-      <option value=reverse>${await app.t`umkehren`}
+      <option value=name_reverse>${await app.t`Name reversed`}
+      <option value=date>${await app.t`Date`}
+      <option value=reverse>${await app.t`reverse`}
     </select>
     <select class=-deleteFilesSelect>
-      <option> ${await app.t`löschen...`}
-      <option value=double>${await app.t`doppelte`}
-      <option value=all>${await app.t`alle`}
+      <option> ${await app.t`delete...`}
+      <option value=double>${await app.t`duplicates`}
+      <option value=all>${await app.t`all`}
     </select>` : "";
 
   return `<div cmsconf=contMedia_overview class=qgCmsFileManager pid=${node}>
-  <button class=-uploadBtn>${await app.t`hochladen`}</button>
-  <input class=-addExistingFile type=qgcms-file placeholder="${hee(await app.t`bestehende Datei`)}">
+  <button class=-uploadBtn>${await app.t`upload`}</button>
+  <input class=-addExistingFile type=qgcms-file placeholder="${hee(await app.t`existing file`)}">
   ${sortSelect}
   <br><br>
   <div cmsconf=media_list id=cmsWidgetContent_media_list>

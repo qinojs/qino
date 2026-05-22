@@ -18,13 +18,13 @@ export const settingsSchema = {
         "translation service": {
             type: "string",
             enum: ["", "google", "deepl"],
-            description: "Welcher Übersetzungsdienst fur automatische Übersetzungen verwendet wird",
+            description: "Which translation service is used for automatic translations",
         },
         deepl: {
             properties: {
                 key: {
                     type: "string",
-                    description: "API-Key fur DeepL",
+                    description: "API key for DeepL",
                 },
             },
         },
@@ -32,13 +32,13 @@ export const settingsSchema = {
             properties: {
                 key: {
                     type: "string",
-                    description: "API-Key fur Google Translate",
+                    description: "API key for Google Translate",
                 },
             },
         },
         "translate char count": {
             type: "integer",
-            description: "Mitgezahler der automatisch übersetzten Zeichen",
+            description: "Counter for automatically translated characters",
         },
     },
 };
@@ -257,7 +257,7 @@ const cmsTextService: any = {
     },
 };
 
-function service(ctx: any): any {
+export function service(ctx: any): any {
     const svc = Object.create(cmsTextService);
     svc.ctx = ctx;
     return svc;

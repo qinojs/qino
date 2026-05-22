@@ -9,8 +9,8 @@ export default async function (node: Node, _vars: unknown = {}): Promise<string>
       const result = await options(node, _vars);
       if (result !== false) return result ?? "";
     }
-  } catch { /* kein options export */ }
-  // Fallback: generischer Settings-Editor für page.settings
+  } catch { /* no options export */ }
+  // Fallback: generic settings editor for page.settings
   const ctx = getCtx();
   const { addSettingsEditor, settingsSourceAttr } = await import("../../../core/lib/settings.ts");
   addSettingsEditor(ctx);

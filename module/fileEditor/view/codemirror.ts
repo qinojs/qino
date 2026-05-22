@@ -92,7 +92,7 @@ export default async function codemirrorView(file: string): Promise<string> {
 					padding:10px 12px;
 					display:none;
 					background-image: linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5));">
-			${isWritable ? "save" : "rechte zum speichern fehlen!"}
+			${isWritable ? "save" : "no write permission!"}
 		</button>
 		<div style="height:100%; width:100%">
 			<textarea id=editor name="textareaContentCanBeCachedOnReload${Math.floor(Math.random() * 2147483647)}" mime="${hee(mime)}" line="${hee(String(line))}" col="${hee(String(col))}" style="width:100%; height:100%;">${hee(content)}</textarea>

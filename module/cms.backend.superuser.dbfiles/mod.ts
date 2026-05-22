@@ -11,7 +11,6 @@ export const needs = ["cms.backend"];
 
 export async function install({ app }: any) {
   const P = await backend.install(app, name);
-  if (P) { await P.title("en", "DB-Files"); await P.title("de", "DB-Files"); }
 }
 
 const u2time = (t: unknown) => {
@@ -61,9 +60,10 @@ const aptScript = (sysURL: string) =>
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
   const ctx = getCtx() as any;
+  const app = node.app;
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
-  const { db, dbFiles: fm } = node.app;
+  const { db, dbFiles: fm } = app;
   const get = ctx.get as Record<string, string>;
 
   if (get.id) return renderDetail(node, Number(get.id));
@@ -107,7 +107,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     trs += `<tr>
   <td class="-thumb">${await mediaPreview(f, exists as boolean)}
   <td>${row.id}
-  <td><a href="?id=${row.id}">${hee(row.name??"")}${!exists?` <small style="color:red">missing</small>`:""}</a>
+  <td><a href="?id=${row.id}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
   ${children.map((_: any,i: number) => row[`r${i}`]?`<td title="${row[`r${i}`]}x">◼`:`<td>◻`).join("")}
   <td>${u2time(row.init_time)}<br><small>${hee(row.usr_init_email??"")}</small>
@@ -115,30 +115,30 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
-  	<button data-delete="${row.id}" class="-delete" u2-confirm><u2-ico icon="delete">x</u2-ico></button>`;
+  	<button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon="delete">x</u2-ico></button>`;
   }
 
   return `
 <div class="u2-flex -m-cms-backend-superuser-dbfiles">
   <div class="u2-card -sidebar">
-    <div class="-head">Filter</div>
+    <div class="-head">${await app.t`Filter`}</div>
     <div class="-body">
-      <label>Search<br><input value="${hee(search)}" data-search></label><br><br>
-      <label>Order<br><select data-order>${orderOpts}</select></label>
+      <label>${await app.t`Search`}<br><input value="${hee(search)}" data-search></label><br><br>
+      <label>${await app.t`Order`}<br><select data-order>${orderOpts}</select></label>
     </div>
-    <div class="-head">Actions</div>
+    <div class="-head">${await app.t`Actions`}</div>
     <div class="-body">
-      <button data-action="delete_unlinked">Dateien ohne DB-Eintrag löschen</button><br>
-      <small>Dateien im Verlauf werden nicht gelöscht.</small><br><br>
-      <button data-action="delete_unlinked_db">DB-Einträge ohne Verlinkung löschen</button><br>
-      <small>Achtung: nur Dateien älter 7 Tage.</small>
+      <button data-action="delete_unlinked">${await app.t`Delete files without DB entry`}</button><br>
+      <small>${await app.t`Files in version history will not be deleted.`}</small><br><br>
+      <button data-action="delete_unlinked_db">${await app.t`Delete DB entries without link`}</button><br>
+      <small>${await app.t`Warning: only files older than 7 days.`}</small>
     </div>
   </div>
   <div class="u2-card -main">
-    <div class="-body">Total: ${rows.length}</div>
+    <div class="-body">${await app.t`Total`}: ${rows.length}</div>
     <div class="-table-wrap">
       <table class="u2-table -Sticky">
-        <thead><tr><th>File<th>ID<th>Name<th>Size${relHeaders}<th>Created<th>Changed<th>Used<th>Pub<th>
+        <thead><tr><th>${await app.t`File`}<th>${await app.t`ID`}<th>${await app.t`Name`}<th>${await app.t`Size`}${relHeaders}<th>${await app.t`Created`}<th>${await app.t`Changed`}<th>${await app.t`Used`}<th>${await app.t`Pub`}<th>
         <tbody>${trs}
       </table>
     </div>
@@ -149,13 +149,14 @@ ${aptScript(ctx.sysURL)}`;
 
 async function renderDetail(node: Node, id: number): Promise<string> {
   const ctx = getCtx();
+  const app = node.app;
   if (!await ctx.user?.get("superuser")) return "<div></div>";
 
-  const { db, dbFiles: fm } = node.app;
+  const { db, dbFiles: fm } = app;
   const get = ctx.get;
 
   const row = await db.row("SELECT * FROM file WHERE id = ?", [id]);
-  if (!row) return "<div>File not found</div>";
+  if (!row) return `<div>${await app.t`File not found`}</div>`;
 
   const f = await fm.file(id, row);
   if (get.set_name)   await f.setVs({ name: get.set_name });
@@ -167,7 +168,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: any) => {
     const rows = await db.all(`SELECT * FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)}=?`, [id]);
     return rows.map((lr: any) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
-  }))).join("") || "<div class=-body>keine</div>";
+  }))).join("") || "<div class=-body>none</div>";
 
   const dupes = await db.all("SELECT id,name FROM file WHERE id!=? AND md5=?", [id, row.md5]);
 
@@ -180,33 +181,33 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   <div class=u2-flex style="flex-direction:column; ">
     <div class="u2-card" style="flex:0 0 auto">
       <div class="-head">${hee(row.name??"")}</div>
-      ${!exists?'<div class="-body" style="color:red">file missing on disk!</div>':""}
+      ${!exists?`<div class="-body" style="color:red">${await app.t`file missing on disk!`}</div>`:""}
       <table class="u2-table -Fields">
-        <tr><th>ID<td>${row.id}
+        <tr><th>${await app.t`ID`}<td>${row.id}
         <tr>
-          <th>Name
+          <th>${await app.t`Name`}
           <td><input value="${hee(row.name??"")}" data-set="set_name">
         <tr>
-          <th>Public
+          <th>${await app.t`Public`}
           <td><input type=checkbox ${row.access?"checked":""} data-set="set_public">
         <tr>
-          <th>Mime
+          <th>${await app.t`Mime`}
           <td><input value="${hee(row.mime??"")}" data-set="set_mime">
-        <tr><th>Size<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
-        <tr><th>MD5<td><code>${hee(row.md5??"")}</code>
-        <tr><th>URL<td><a href="${hee(await f.url())}" target=_blank data-url>open</a> <a href="${hee(await f.url({dl:true}))}" download>download</a> <button data-copy-url>copy url</button>
+        <tr><th>${await app.t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
+        <tr><th>${await app.t`MD5`}<td><code>${hee(row.md5??"")}</code>
+        <tr><th>${await app.t`URL`}<td><a href="${hee(await f.url())}" target=_blank data-url>${await app.t`open`}</a> <a href="${hee(await f.url({dl:true}))}" download>${await app.t`download`}</a> <button data-copy-url>${await app.t`copy url`}</button>
       </table>
     </div>
 
     <div class="u2-card" style="flex:0 0 auto">
-      <div class=-head>Duplikate</div>
+      <div class=-head>${await app.t`Duplicates`}</div>
       ${dupes.length
-          ? `<table class=u2-table><tr><th>ID<th>Name${dupes.map((d: any)=>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
-          : "<div class=-body>keine</div>"}
+          ? `<table class=u2-table><tr><th>${await app.t`ID`}<th>${await app.t`Name`}${dupes.map((d: any)=>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
+          : `<div class=-body>${await app.t`none`}</div>`}
     </div>
 
     <div class="u2-card" style="flex:0 0 auto">
-      <div class=-head>Verknüpfungen</div>
+      <div class=-head>${await app.t`Links`}</div>
       ${linksHtml}
     </div>
   </div>

@@ -13,20 +13,20 @@ export default async function (node: Node): Promise<string> {
 
   return `<div class=qgCmsFront1AccessTimeManager pid=${node}>
   <div>
-    <div style="flex:0 1 100px">${await app.t`sichtbar`} ${await app.t`von`}:</div>
+    <div style="flex:0 1 100px">${await app.t`visible`} ${await app.t`from`}:</div>
     <div class=-accessTimeBtns>
-      <button class=-start_always  ${node.vs.online_start === 0 ? "disabled" : ""}>${await app.t`unbeschränkt`}</button>
-      <button class=-start_inherit ${node.vs.online_start === null ? "disabled" : ""}>${await app.t`vererbt`}</button>
-      <button class=-start_now>${await app.t`terminiert`}</button>
+      <button class=-start_always  ${node.vs.online_start === 0 ? "disabled" : ""}>${await app.t`unlimited`}</button>
+      <button class=-start_inherit ${node.vs.online_start === null ? "disabled" : ""}>${await app.t`inherited`}</button>
+      <button class=-start_now>${await app.t`scheduled`}</button>
       <input class=-start type=datetime-local value="${startVal}" style="width:auto" required>
     </div>
   </div>
   <div>
-    <div style="flex:0 1 100px">${await app.t`bis`}:</div>
+    <div style="flex:0 1 100px">${await app.t`until`}:</div>
     <div class=-accessTimeBtns>
-      <button class=-end_always  ${node.vs.online_end === 0 ? "disabled" : ""}>${await app.t`unbeschränkt`}</button>
-      <button class=-end_inherit ${node.vs.online_end === null ? "disabled" : ""}>${await app.t`vererbt`}</button>
-      <button class=-end_now>${await app.t`terminiert`}</button>
+      <button class=-end_always  ${node.vs.online_end === 0 ? "disabled" : ""}>${await app.t`unlimited`}</button>
+      <button class=-end_inherit ${node.vs.online_end === null ? "disabled" : ""}>${await app.t`inherited`}</button>
+      <button class=-end_now>${await app.t`scheduled`}</button>
       <input class=-end type=datetime-local value="${endVal}" style="width:auto" required>
     </div>
   </div>

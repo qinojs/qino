@@ -63,7 +63,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       // Title cell
       let titleCell: string;
       if (subAccess < 1) {
-        titleCell = '<span style="flex:1; color:#bbb">(kein Zugriff)</span>';
+        titleCell = `<span style="flex:1; color:#bbb">(${await node.app.t`no access`})</span>`;
       } else {
         const titleObj = await SubPage.title();
         const titleLang = titleObj ? await titleObj.orFallback("de") : null;
@@ -83,21 +83,21 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       const onlineStartCell = renderOnlineStart(SubPage, subAccess);
 
       // Online end column
-      const onlineEndCell = renderOnlineEnd(SubPage, subAccess, contsData.onlineEnd);
+      const onlineEndCell = await renderOnlineEnd(SubPage, subAccess, contsData.onlineEnd);
 
       // Access column
-      const accessCell = renderAccess(SubPage, subAccess, contsData.access);
+      const accessCell = await renderAccess(SubPage, subAccess, contsData.access);
 
       // Visible column
-      const visibleCell = renderVisible(SubPage, subAccess);
+      const visibleCell = await renderVisible(SubPage, subAccess);
 
       // Searchable column
-      const searchableCell = renderSearchable(SubPage, subAccess);
+      const searchableCell = await renderSearchable(SubPage, subAccess);
 
       html += `
 <tr${isCont ? ' class=-isCont' : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="als Startpunkt setzen" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
+    <a title="${await node.app.t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}
@@ -125,18 +125,18 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
     return `<span style="color:${ok ? "green" : "red"}">${date}</span>`;
   }
 
-  function renderOnlineEnd(SubPage: Node, access: number, numNotInherit: number): string {
+  async function renderOnlineEnd(SubPage: Node, access: number, numNotInherit: number): Promise<string> {
     if (access === 0) return "---";
     const onlineEnd = SubPage.vs.online_end;
     const ts = onlineEnd == null ? null : Number(onlineEnd);
     const iso = ts ? new Date(ts * 1000).toISOString() : "";
     const date = onlineEnd == null
-      ? "vererbt"
-      : (ts === 0 ? "immer" : `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
+      ? await node.app.t`inherited`
+      : (ts === 0 ? await node.app.t`always` : `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
 
     let badge = "";
     if (numNotInherit && access > 2) {
-      badge = ` <span title="Inhalte bei denen &quot;Online bis&quot; nicht vererbt wird!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
+      badge = ` <span title="Contents where &quot;online until&quot; is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
     }
 
     if (access <= 2) return `<span style="color:#8a8">${date}</span>${badge}`;
@@ -150,31 +150,31 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
     return `<span style="color:rgb(${r},${g},0)">${date}</span>${badge}`;
   }
 
-  function renderAccess(SubPage: Node, access: number, numNotInherit: number): string {
+  async function renderAccess(SubPage: Node, access: number, numNotInherit: number): Promise<string> {
     if (access === 0) return "---";
     const v = SubPage.vs.access;
-    const label = v == null ? "vererbt" : (v ? "ja" : "nein");
+    const label = v == null ? await node.app.t`inherited` : (v ? await node.app.t`yes` : await node.app.t`no`);
     let badge = "";
     if (numNotInherit && access > 2) {
-      badge = ` <span title="Inhalte bei denen der Zugriff nicht vererbt wird!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
+      badge = ` <span title="Contents where access is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
     }
     if (access <= 2) return `<span style="color:#666">${hee(label)}</span>${badge}`;
     const color = v == null ? "#aaa" : (v ? "green" : "red");
     return `<a onclick="return toggleAccess(this, ${SubPage.id})" style="color:${color}" href="">${hee(label)}</a>${badge}`;
   }
 
-  function renderVisible(SubPage: Node, access: number): string {
+  async function renderVisible(SubPage: Node, access: number): Promise<string> {
     if (access === 0) return "---";
     const v = SubPage.vs.visible;
-    const label = v ? "ja" : "nein";
+    const label = v ? await node.app.t`yes` : await node.app.t`no`;
     if (access === 1) return `<span style="color:#666">${hee(label)}</span>`;
     return `<a onclick="return toggleVisible(this, ${SubPage.id})" style="color:${v ? "green" : "red"}" href="">${hee(label)}</a>`;
   }
 
-  function renderSearchable(SubPage: Node, access: number): string {
+  async function renderSearchable(SubPage: Node, access: number): Promise<string> {
     if (access === 0) return "---";
     const v = SubPage.vs.searchable;
-    const label = v ? "ja" : "nein";
+    const label = v ? await node.app.t`yes` : await node.app.t`no`;
     if (access === 1) return `<span style="color:#666">${hee(label)}</span>`;
     return `<a onclick="return toggleSearchable(this, ${SubPage.id})" style="color:${v ? "green" : "red"}" href="">${hee(label)}</a>`;
   }

@@ -148,7 +148,7 @@ class SettingsEditorElement extends HTMLElement {
       await this.#render();
       return;
     }
-    if (!confirm("Möchten Sie die Einstellung wirklich löschen?")) return;
+    if (!confirm("Really delete this setting?")) return;
     const path = JSON.parse(id);
     try {
       await apiWrite("DELETE", this.#source, path);

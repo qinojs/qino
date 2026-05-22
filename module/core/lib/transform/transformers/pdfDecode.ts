@@ -3,8 +3,8 @@ import { magick } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
 
 /**
- * Decode-Phase: Konvertiert eine PDF-Seite zu PNG.
- * Danach kann die normale Bild-Pipeline (resize, encode) greifen.
+ * Decode phase: converts a PDF page to PNG.
+ * After this the normal image pipeline (resize, encode) can take over.
  */
 FileTransformer.register({
   name: 'pdf-decode',

@@ -36,9 +36,9 @@ export interface TransformContext {
 export interface TransformerDef {
   name: string;
   phase: Phase;
-  /** Options-Keys die dieser Transformer konsumiert – fließen in den Cache-Key ein */
+  /** Option keys consumed by this transformer – fed into the cache key */
   props: string[];
-  /** Muss nach diesem Transformer (gleiche Phase) ausgeführt werden */
+  /** Must run after this transformer (same phase) */
   after?: string;
   handles: (ctx: TransformContext) => boolean | Promise<boolean>;
   transform: (ctx: TransformContext) => Promise<void>;
@@ -47,7 +47,7 @@ export interface TransformerDef {
 export interface TransformResult {
   path: string;
   mime: string;
-  /** false = Original zurückgegeben (kein Transform oder Fehler) */
+  /** false = original returned (no transform or error) */
   transformed: boolean;
   error?: Error;
 }

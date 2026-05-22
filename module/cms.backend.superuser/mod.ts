@@ -1,7 +1,6 @@
-// deno-lint-ignore-file no-explicit-any
 import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
+import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.superuser";
@@ -11,7 +10,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser");
   if (P) {
     await P.title("en", "Superuser");
-    await P.title("de", "Superuser");
   }
 }
 

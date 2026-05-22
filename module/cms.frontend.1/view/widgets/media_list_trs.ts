@@ -49,7 +49,7 @@ export default async function (node: Node): Promise<string> {
     const vsName = F.name;
     let linkHtml = "";
     if (!exists) {
-      linkHtml = await app.t`Platzhalter`;
+      linkHtml = await app.t`Placeholder`;
     } else {
       const url = await F.url();
       const fname = hee(F.name);
@@ -60,7 +60,7 @@ export default async function (node: Node): Promise<string> {
     const sizeStr = size ? String(Math.round(size / 1024)) + " KB" : "";
 
     html += `<tr itemid="${hee(name)}">
-      <td class=-preview title="${hee(await app.t`Klicken um die Datei zu ersetzen`)}">${preview}
+      <td class=-preview title="${hee(await app.t`Click to replace the file`)}">${preview}
       <td class=-link>${linkHtml}${nameLabel}
       <td class=-size>${sizeStr}
       <td class=-handle>

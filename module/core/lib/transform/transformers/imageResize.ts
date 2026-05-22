@@ -3,8 +3,8 @@ import { magick, magickIdentify } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
 
 /**
- * Geometry-Phase: Resize + Crop mit Fokuspunkt (hpos/vpos).
- * Läuft nicht für animierte GIFs.
+ * Geometry phase: resize + crop with focus point (hpos/vpos).
+ * Does not run for animated GIFs.
  */
 FileTransformer.register({
   name: 'image-resize',
@@ -25,18 +25,18 @@ FileTransformer.register({
     const dims = await magickIdentify(ctx.currentPath, '%wx%h');
     const [origW, origH] = dims.split('x').map(Number);
 
-    // Vergrößerung verhindern
+    // Prevent upscaling
     let w = targetW ? Math.min(origW, targetW) : 0;
     let h = targetH ? Math.min(origH, targetH) : 0;
 
     const out = nodePath.join(ctx.tmpDir, 'resized');
 
     if (max || h === 0 || w === 0) {
-      // Nur skalieren, kein Crop – '>' verhindert Vergrößerung
+      // Scale only, no crop – '>' prevents upscaling
       const size = w && h ? `${w}x${h}>` : w ? `${w}>` : `x${h}>`;
       await magick(ctx.currentPath, ['-resize', size], out);
     } else {
-      // Nach Upscale-Sperre Seitenverhältnis des Ziels wiederherstellen (PHP: makeProportional vor getAutoCroped)
+      // After upscale lock, restore target aspect ratio (PHP: makeProportional before getAutoCroped)
       if (targetW / targetH > w / h) {
         h = Math.round((targetH / targetW) * w);
       } else {

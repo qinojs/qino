@@ -198,14 +198,14 @@ export class Node {
     }
 
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {
-        if (!this.#is) { console.warn("Seite existiert nicht!"); return undefined; }
+        if (!this.#is) { console.warn("Page does not exist!"); return undefined; }
 
         try {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
             return String(await this.module.exports.cms.node.render(this, {ctx:getCtx(), vars}));
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>';
+            return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${err.message}</code></div>` : '<div></div>';
         }
     }
 
@@ -219,7 +219,7 @@ export class Node {
             return new HtmlString(String(await fn(this, {ctx:getCtx(), vars})));
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return new HtmlString(this.edit ? `<div>Webmaster: das Modul ist Fehlerhaft! <code>${err.message}</code></div>` : '<div></div>');
+            return new HtmlString(this.edit ? `<div>Webmaster: module error! <code>${err.message}</code></div>` : '<div></div>');
         }
     }
 
@@ -545,7 +545,7 @@ export class Node {
         };
         const id = await this.db.table("page").insert(vs);
         const P = await this.cms.node(Number(id ?? "0"));
-        if (!id) return P; // hier? nicht zuspät?
+        if (!id) return P;
 
         const accessUsrs = await this.db.all("SELECT * FROM page_access_usr WHERE page_id = ?", [this.id]);
         for (const data of accessUsrs) await this.db.table("page_access_usr").insert({ ...data, page_id: String(P) });

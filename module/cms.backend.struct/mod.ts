@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.struct");
   if (P) {
     await P.title("en", "Pages");
-    await P.title("de", "Seiten");
+    await P.title("en", "Pages");
   }
 }
 
@@ -30,28 +30,29 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
   // Breadcrumb path to root node
   let pathHtml = "";
   for (const C of (await rootNode.path()).values()) {
-    const title = (await C.title("de")) || (await C.title("en")) || "(kein Text)";
-    pathHtml += `<a href="${hee("?rp=" + C.id)}">${hee(String(title)).trim() || "(kein Text)"}</a> > `;
+    const title = (await C.title("en")) || "(no text)";
+    pathHtml += `<a href="${hee("?rp=" + C.id)}">${hee(String(title)).trim() || "(no text)"}</a> > `;
   }
 
   const listHtml = await list(node, { ctx, vars: {} });
 
+  const app = node.app;
   return `<div class=u2-card style="flex:0 1 1200px">
-  <div class=-head>Struktur</div>
+  <div class=-head>${await app.t`Structure`}</div>
   <div class=-body>
     ${pathHtml}
   </div>
   <table class="u2-table cmsBeTree">
     <thead>
       <tr>
-        <th style="width:20px"> Nr.
-        <th style="min-width:250px"> Seite
-        <th style="width:80px"> Online ab
-        <th style="width:80px"> Online bis
-        <th style="width:80px"> Öffentlich
-        <th style="width:80px"> Sichtbar
-        <th style="width:80px"> Durchsuchbar
-        <th style="width:160px"> Layout
+        <th style="width:20px"> ${await app.t`No.`}
+        <th style="min-width:250px"> ${await app.t`Page`}
+        <th style="width:80px"> ${await app.t`Online from`}
+        <th style="width:80px"> ${await app.t`Online until`}
+        <th style="width:80px"> ${await app.t`Public`}
+        <th style="width:80px"> ${await app.t`Visible`}
+        <th style="width:80px"> ${await app.t`Searchable`}
+        <th style="width:160px"> ${await app.t`Layout`}
     <tbody data-part=list>
       ${listHtml}
   </table>
@@ -62,8 +63,8 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
     fn(!on).then(() => { el.innerHTML = labels[+!on]; el.style.color = !on ? 'green' : 'red'; });
     return false;
   }
-  globalThis.toggleVisible    = (el, pid) => toggle(el, ['unsichtbar','sichtbar'],            v => apt.cms.node(pid).visible.put({value: v}));
-  globalThis.toggleSearchable = (el, pid) => toggle(el, ['nicht durchsuchbar','durchsuchbar'], v => apt.cms.node(pid).searchable.put({value: v}));
+  globalThis.toggleVisible    = (el, pid) => toggle(el, ['hidden','visible'],          v => apt.cms.node(pid).visible.put({value: v}));
+  globalThis.toggleSearchable = (el, pid) => toggle(el, ['not searchable','searchable'], v => apt.cms.node(pid).searchable.put({value: v}));
   globalThis.toggleAccess     = (el, pid) => toggle(el, ['private','public'],                  v => apt.cms.node(pid).access.put({value: +v}));
   document.querySelector('.cmsBeTree').addEventListener('click', async e => {
     const a = e.target.closest('[data-toggle-node]');
@@ -85,9 +86,9 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   const hidden  = Number(await db.one("SELECT count(*) FROM page WHERE type='p' AND visible=0"));
   return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>Seiten gesamt:<td>${hee(String(total))}
-  <tr><td>Offline:<td>${hee(String(offline))}
-  <tr><td>Versteckt:<td>${hee(String(hidden))}
+  <tr><td>${await app.t`Pages total`}:<td>${hee(String(total))}
+  <tr><td>${await app.t`Offline`}:<td>${hee(String(offline))}
+  <tr><td>${await app.t`Hidden`}:<td>${hee(String(hidden))}
 </table>
 </div>`;
 }

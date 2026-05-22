@@ -22,12 +22,12 @@ export async function isFfmpegAvailable(): Promise<boolean> {
 
 export async function checkFfmpeg(): Promise<void> {
   if (!await isFfmpegAvailable()) {
-    throw new Error('FFmpeg nicht gefunden. Lösung: sudo apt install ffmpeg');
+    throw new Error('FFmpeg not found. Solution: sudo apt install ffmpeg');
   }
 }
 
-/** Extrahiert Cover-Art aus einer Audio-Datei und schreibt sie als PNG nach `output`.
- *  Wirft einen Fehler wenn keine Cover-Art eingebettet ist. */
+/** Extracts cover art from an audio file and writes it as PNG to `output`.
+ *  Throws an error if no cover art is embedded. */
 export async function ffmpegCoverArt(input: string, output: string): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {
     args: ['-i', input, '-an', '-vcodec', 'copy', '-y', output],
@@ -35,14 +35,14 @@ export async function ffmpegCoverArt(input: string, output: string): Promise<voi
     stderr: 'piped',
   }).output();
   if (code !== 0) {
-    throw new Error(`FFmpeg Fehler (Cover-Art): ${new TextDecoder().decode(stderr).trim()}`);
+    throw new Error(`FFmpeg error (cover art): ${new TextDecoder().decode(stderr).trim()}`);
   }
 }
 
-/** Extrahiert einen einzelnen Frame aus einem Video und schreibt ihn als PNG nach `output` */
+/** Extracts a single frame from a video and writes it as PNG to `output` */
 export async function ffmpegFrame(
   input: string,
-  frameIndex: number, // 0-basiert
+  frameIndex: number, // 0-based
   output: string,
 ): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {

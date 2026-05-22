@@ -25,12 +25,12 @@ async function render(_node: Node): Promise<string> {
     const sessionData = await ctx.session();
     const settingsData = await ctx.settings();
 
-    let usrHtml = `<em>nicht eingeloggt</em>\n`;
+    let usrHtml = `<em>not logged in</em>\n`;
     if (usr) {
         const vs = await usr.getVs();
         const grps = ((await usr.grps?.() ?? []) as number[]).join(", ") || "–";
         usrHtml = `<h3>User #${hee(String(usr))}</h3>` + vsTable(vs, ["pw"]) +
-            `<h3>Gruppen: ${hee(grps)}</h3>\n`;
+            `<h3>Groups: ${hee(grps)}</h3>\n`;
     }
 
     return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:8px;display:inline-block">

@@ -79,7 +79,6 @@ export async function install({app}: any): Promise<void> {
   const P = await backend.checkInstalled(app);
   if (P) {
     await P.title("en", "Backend");
-    await P.title("de", "Backend");
   }
 }
 
@@ -104,7 +103,7 @@ async function render(node: Node): Promise<string> {
 
   const widgetsHtml = widgets.length
     ? widgets.join("\n")
-    : `<div class="u2-card"><div class="-body" style="color:#999">Keine Widgets verfügbar.</div></div>`;
+    : `<div class="u2-card"><div class="-body" style="color:#999">No widgets available.</div></div>`;
 
   return `<div class="u2-flex">${widgetsHtml}</div>`;
 }

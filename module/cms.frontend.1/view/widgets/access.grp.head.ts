@@ -11,5 +11,5 @@ export default async function (node: Node): Promise<string> {
     if (all.access_2) number += `<span class="-info -access-2-bg">${all.access_2}</span>`;
     if (all.access_3) number += `<span class="-info -access-3-bg">${all.access_3}</span>`;
   }
-  return `<span class=-title>${await node.app.t`Gruppen-Zugriff`}</span> ${number}`;
+  return `<span class=-title>${await node.app.t`Group access`}</span> ${number}`;
 }

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
- * Minimal Standard-Schema-kompatibler Validator für apt.
- * Browser-tauglich, null Dependencies.
+ * Minimal Standard-Schema-compatible validator for apt.
+ * Browser-compatible, zero dependencies.
  * Spec: https://standardschema.dev
  */
 

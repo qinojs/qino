@@ -38,7 +38,7 @@ async function saveFile(ctx: any, file: string, content: string): Promise<number
 const api: AptTree = {
     save: {
         put: {
-            description: "Datei aus dem File-Editor speichern.",
+            description: "Save file from the file editor.",
             access: Access.USER,
             input: s.object({ file: s.string(), content: s.string() }),
             execute: ({ file, content }: any, ctx: any) => saveFile(ctx, file, content),

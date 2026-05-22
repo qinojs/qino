@@ -2,8 +2,9 @@ import { hee } from "../../core/lib/util.ts";
 import { schemaFromDb, schemaDiff } from "../../../deps.ts";
 import { sortTableNames } from "../lib/analyze.ts";
 import type { Db } from "../../core/lib/Db.ts";
+import type { App } from "../../core/server.ts";
 
-export async function renderDiff(db: Db): Promise<string> {
+export async function renderDiff(app: App, db: Db): Promise<string> {
   const mergedSchema = db.schema?.properties ?? {};
   const tables = db.tables ?? {};
 
@@ -29,21 +30,21 @@ export async function renderDiff(db: Db): Promise<string> {
   }
 
   const badges: Record<Row["status"], string> = {
-    "no-schema-table":      `<small class=u2-badge style="background:var(--red)">Tabelle ohne Schema</small>`,
-    "field-missing-db":     `<small class=u2-badge style="background:var(--orange)">fehlt in DB</small>`,
-    "field-missing-schema": `<small class=u2-badge>fehlt im Schema</small>`,
+    "no-schema-table":      `<small class=u2-badge style="background:var(--red)">${await app.t`table without schema`}</small>`,
+    "field-missing-db":     `<small class=u2-badge style="background:var(--orange)">${await app.t`missing in DB`}</small>`,
+    "field-missing-schema": `<small class=u2-badge>${await app.t`missing in schema`}</small>`,
   };
 
   const diffTable = rows.length
     ? `<table class=u2-table>
-        <thead><tr><th>Tabelle<th>Feld<th>Status</thead>
+        <thead><tr><th>${await app.t`Table`}<th>${await app.t`Field`}<th>${await app.t`Status`}</thead>
         <tbody>${rows.map(({ table, field, status }) => `<tr>
           <td>${hee(table)}</td>
           <td>${field ? hee(field) : ""}</td>
           <td>${badges[status]}</td>
         </tr>`).join("")}</tbody>
       </table>`
-    : `<div class="-body">Schema und DB stimmen überein.</div>`;
+    : `<div class="-body">Schema and DB match.</div>`;
 
   // --- schema from db ---
   const fromDb = await schemaFromDb((sql: string) => db.query(sql));
@@ -55,13 +56,14 @@ export async function renderDiff(db: Db): Promise<string> {
       ([t]) => !(t in (current.properties ?? {}))
     )
   );
+  const txtDescructive = await app.t`destructive`;
 
   const schemaRows = diffs.map((d: { path: string[]; prev?: unknown; next?: unknown; destructive?: unknown }) =>
     `<tr>
       <td>${hee(d.path.join("."))}</td>
       <td>${hee(String(d.prev ?? "–"))}</td>
       <td>${hee(String(d.next ?? "–"))}</td>
-      <td>${d.destructive ? '<span class=u2-badge style="background:var(--red)">destruktiv</span>' : ""}</td>
+      <td>${d.destructive ? `<span class=u2-badge style="background:var(--red)">${txtDescructive}</span>` : ""}</td>
     </tr>`
   ).join("");
 
@@ -72,14 +74,14 @@ export async function renderDiff(db: Db): Promise<string> {
   </div>
   ${Object.keys(missingTables).length ? `
   <div class="u2-card -full">
-    <div class="-head">Fehlende Tabellen als Schema-JSON</div>
+    <div class="-head">${await app.t`Missing tables as schema JSON`}</div>
     <div class="-body"><textarea style="width:100%;height:300px;font-family:monospace;font-size:.85em" readonly>${hee(JSON.stringify({ properties: missingTables }, null, 2))}</textarea></div>
   </div>` : ""}
   ${diffs.length ? `
   <div class="u2-card -full">
-    <div class="-head">Schema-Abweichungen aus DB (${diffs.length})</div>
+    <div class="-head">${await app.t`Schema deviations from DB`} (${diffs.length})</div>
     <table class=u2-table>
-      <thead><tr><th>Pfad<th>aktuell<th>aus DB<th></thead>
+      <thead><tr><th>${await app.t`Path`}<th>${await app.t`current`}<th>${await app.t`from DB`}<th></thead>
       <tbody>${schemaRows}</tbody>
     </table>
   </div>` : ""}`;

@@ -9,20 +9,21 @@ import type { RowDataPacket } from "../../deps.ts";
 
 export async function backendDashboardWidget(app: App): Promise<string> {
   const row = await app.db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event").catch(() => null);
-  if (!row || !Number(row.events)) return `<div class="-body">Keine Security-Events.</div>`;
+  if (!row || !Number(row.events)) return `<div class="-body">${await app.t`No security events.`}</div>`;
   const buckets = await app.db.all("SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5");
   return `<div class="-body">
-    <b>${hee(row.events)}</b> Events, <b>${hee(row.fresh ?? 0)}</b> neu, <b>${hee(row.blocked ?? 0)}</b> geblockt<br>
-    <small>Letzter Alarm: ${u2time(row.last)}</small>
+    <b>${hee(row.events)}</b> ${await app.t`Events`}, <b>${hee(row.fresh ?? 0)}</b> ${await app.t`new`}, <b>${hee(row.blocked ?? 0)}</b> ${await app.t`blocked`}<br>
+    <small>${await app.t`Last alarm:`} ${u2time(row.last)}</small>
     ${buckets.length ? `<table class="u2-table">${buckets.map((r) => `<tr><td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.reason)}`).join("")}</table>` : ""}
   </div>`;
 }
 
 export async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
   const ctx = getCtx();
+  const app = node.app;
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
-  const db = node.app.db;
-  const set = await settings(node.app);
+  const db = app.db;
+  const set = await settings(app);
   if (vars.clearEvents) await db.query("DELETE FROM m_security_event");
   if (vars.clearBuckets) await db.query("DELETE FROM m_security_bucket");
   if (vars.release) await db.table("m_security_bucket").update(vars.release, { score: 0, blocked: 0, reason: "released" });
@@ -40,24 +41,24 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const tab = String(ctx.get.tab ?? "live");
   return `<div class="-m-cms-backend-security">
     <div class="u2-flex">
-      ${statusBox(stats)}
+      ${await statusBox(app, stats)}
       ${aptScript(node)}
       <div>
         ${tabs(tab)}
         ${tab === "settings" ? settingsEditor(ctx) : ""}
-        ${tab === "buckets" ? bucketTable(buckets) : ""}
-        ${tab === "analyse" ? '<div class=u2-flex>' + topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
-        ${tab === "live" ? eventTable(events, ctx.get) : ""}
+        ${tab === "buckets" ? await bucketTable(app, buckets) : ""}
+        ${tab === "analyse" ? '<div class=u2-flex>' + await topTable(app, "Top IPs", topIps, "ip") + await topTable(app, "Top Paths", topPaths, "path") + await topTable(app, "Top Kinds", topKinds, "kind") + await topTable(app, "Top Clients", topUa, "ua") : ""}
+        ${tab === "live" ? await eventTable(app, events, ctx.get) : ""}
       </div>
     </div>
   </div>`;
 }
 
-function statusBox(stats: Record<string, unknown>) {
-  return `<div class="u2-card -kpi"><div class="-head">Status</div><div class="-body">
-    <b>${hee(stats.events ?? 0)}</b> Events<br><b>${hee(stats.fresh ?? 0)}</b> neu<br><b>${hee(stats.blocked ?? 0)}</b> Blocked<br>
-    <button data-action="clearEvents" u2-confirm>Events leeren</button>
-    <button data-action="clearBuckets" u2-confirm>Buckets leeren</button>
+async function statusBox(app: App, stats: Record<string, unknown>) {
+  return `<div class="u2-card -kpi"><div class="-head">${await app.t`Status`}</div><div class="-body">
+    <b>${hee(stats.events ?? 0)}</b> ${await app.t`Events`}<br><b>${hee(stats.fresh ?? 0)}</b> ${await app.t`new`}<br><b>${hee(stats.blocked ?? 0)}</b> ${await app.t`Blocked`}<br>
+    <button data-action="clearEvents" u2-confirm>${await app.t`Clear events`}</button>
+    <button data-action="clearBuckets" u2-confirm>${await app.t`Clear buckets`}</button>
   </div></div>`;
 }
 
@@ -75,19 +76,25 @@ function aptScript(node: Node) {
   return `<script type=module>import{apt}from'${getCtx().sysURL}core/pub/js/apt.js';globalThis.apt=apt;globalThis.securityNode=${node.id};</script>`;
 }
 
-function bucketTable(rows: Record<string, unknown>[]) {
-  return `<div class="u2-card -table"><div class="-head">Verdächtige Buckets</div><table class="u2-table -Sticky">
-    <thead><tr><th>Score<th>Scope<th>Ident<th>Count<th>Last<th>Reason<th>
+async function bucketTable(app: App, rows: Record<string, unknown>[]) {
+  const [tHead, tScore, tScope, tIdent, tCount, tLast, tReason, tRelease, tBlock] = await Promise.all([
+    app.t`Suspicious buckets`, app.t`Score`, app.t`Scope`, app.t`Ident`, app.t`Count`, app.t`Last`, app.t`Reason`, app.t`release`, app.t`block`,
+  ]);
+  return `<div class="u2-card -table"><div class="-head">${tHead}</div><table class="u2-table -Sticky">
+    <thead><tr><th>${tScore}<th>${tScope}<th>${tIdent}<th>${tCount}<th>${tLast}<th>${tReason}<th>
     <tbody>${rows.map(r => `<tr class="${r.blocked?"-blocked":""}">
-      <td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.count)}<td>${u2time(r.last_seen)}<td>${hee(r.reason)}<td><button data-release="${r.id}">frei</button> <button data-block="${r.id}">sperren</button>`).join("")}
+      <td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.count)}<td>${u2time(r.last_seen)}<td>${hee(r.reason)}<td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`).join("")}
   </table></div>`;
 }
 
-function eventTable(rows: RowDataPacket[], get: Record<string, string>) {
-  return `<div class="u2-card -table"><div class="-head">Alarme / Aufrufe</div>
-    ${eventFilter(get)}
+async function eventTable(app: App, rows: RowDataPacket[], get: Record<string, string>) {
+  const [tHead, tTime, tEvent, tScore, tAffected, tAction, tReason, tRequest, tStatus] = await Promise.all([
+    app.t`Alarms / Requests`, app.t`Time`, app.t`Event`, app.t`Score`, app.t`Affected`, app.t`Action`, app.t`Reason`, app.t`Request`, app.t`Status`,
+  ]);
+  return `<div class="u2-card -table"><div class="-head">${tHead}</div>
+    ${await eventFilter(app, get)}
     <table class="u2-table -Sticky">
-      <thead><tr><th>Zeit<th>Ereignis<th>Bewertung<th>Betroffen<th>Aktion<th>Grund<th>Request<th>Status<th>
+      <thead><tr><th>${tTime}<th>${tEvent}<th>${tScore}<th>${tAffected}<th>${tAction}<th>${tReason}<th>${tRequest}<th>${tStatus}<th>
     <tbody>${rows.map(r => `<tr class="-${hee(r.prio)}">
       <td>${u2time(r.time)}<td>${eventCell(r)}<td>${scoreCell(r)}<td>${bucketCell(r)}<td>${actionCell(r)}<td>${hee(r.reason)}<td>${requestCell(r)}<td>${stateCell(r)}<td>${eventActions(r)}`).join("")}
   </table></div>`;
@@ -98,7 +105,7 @@ function eventCell(r: RowDataPacket) {
 }
 
 function scoreCell(r: RowDataPacket) {
-  const meta = [`Konf. ${r.confidence ?? 0}`, `Härte ${r.severity ?? 0}`].join(" / ");
+  const meta = [`Conf. ${r.confidence ?? 0}`, `Severity ${r.severity ?? 0}`].join(" / ");
   return `<b>${hee(r.score)}</b><br><small>${hee(meta)}</small>`;
 }
 
@@ -126,26 +133,26 @@ function stateCell(r: RowDataPacket) {
 
 function eventActions(r: RowDataPacket) {
   if (r.prio === "notice") return "";
-  return `<button data-seen="${r.id}">gesehen</button> <button data-ignore="${r.id}">ignorieren</button>`;
+  return `<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
 }
 
-function topTable(title: string, rows: Record<string, unknown>[], key: string) {
+async function topTable(app: App, title: string, rows: Record<string, unknown>[], key: string) {
   return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">
     ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="?tab=live&q=${encodeURIComponent(String(r[key] ?? ""))}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
   </table></div>`;
 }
 
-function eventFilter(get: Record<string, string>) {
+async function eventFilter(app: App, get: Record<string, string>) {
   return `<form class="u2-flex">
     <input type="hidden" name="tab" value="live">
-    <input name="q" value="${hee(get.q ?? "")}" placeholder="IP, Pfad, Grund">
-    <select name="prio"><option value="">Bewertung</option>${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
-    <select name="kind"><option value="">Ereignis</option>${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, kindLabels)}</select>
-    <select name="scope"><option value="">Bucket</option>${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, scopeLabels)}</select>
-    <select name="blocked"><option value="">Aktion</option>${opts(["blocked","delayed"], get.blocked, actionLabels)}</select>
-    <select name="state"><option value="">Status</option>${opts(["new","seen","ignore"], get.state, stateLabels)}</select>
-    <input name="min" value="${hee(get.min ?? "")}" placeholder="min Härte">
-    <button>filtern</button>
+    <input name="q" value="${hee(get.q ?? "")}" placeholder="${await app.t`IP, path, reason`}">
+    <select name="prio"><option value="">${await app.t`Severity`}</option>${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
+    <select name="kind"><option value="">${await app.t`Event`}</option>${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, kindLabels)}</select>
+    <select name="scope"><option value="">${await app.t`Bucket`}</option>${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, scopeLabels)}</select>
+    <select name="blocked"><option value="">${await app.t`Action`}</option>${opts(["blocked","delayed"], get.blocked, actionLabels)}</select>
+    <select name="state"><option value="">${await app.t`Status`}</option>${opts(["new","seen","ignore"], get.state, stateLabels)}</select>
+    <input name="min" value="${hee(get.min ?? "")}" placeholder="${await app.t`min severity`}">
+    <button>${await app.t`filter`}</button>
   </form>`;
 }
 
@@ -162,11 +169,11 @@ function eventWhere(get: Record<string, string>): [string, unknown[]] {
   return [sql.join(" AND "), params];
 }
 
-const prioLabels: Record<string, string> = { notice: "Info", warning: "Warnung", error: "Kritisch" };
-const kindLabels: Record<string, string> = { attack: "Angriff", "path-block": "Pfadblock", probe: "Probe", login: "Login", load: "Last", throttle: "Drosselung", request: "Request" };
-const scopeLabels: Record<string, string> = { ip: "IP", range: "IP-Range", client: "Client", user: "User", path: "Pfad", "attack:ip": "Angriff/IP", "attack:range": "Angriff/Range", "attack:path": "Angriff/Pfad", "login:ip": "Login/IP", "login:range": "Login/Range", "login:user": "Login/User" };
-const stateLabels: Record<string, string> = { new: "neu", seen: "gesehen", ignore: "ignoriert" };
-const actionLabels: Record<string, string> = { blocked: "blockiert", delayed: "verzögert" };
+const prioLabels: Record<string, string> = { notice: "Info", warning: "Warning", error: "Critical" };
+const kindLabels: Record<string, string> = { attack: "Attack", "path-block": "Path block", probe: "Probe", login: "Login", load: "Load", throttle: "Throttle", request: "Request" };
+const scopeLabels: Record<string, string> = { ip: "IP", range: "IP range", client: "Client", user: "User", path: "Path", "attack:ip": "Attack/IP", "attack:range": "Attack/Range", "attack:path": "Attack/Path", "login:ip": "Login/IP", "login:range": "Login/Range", "login:user": "Login/User" };
+const stateLabels: Record<string, string> = { new: "new", seen: "seen", ignore: "ignored" };
+const actionLabels: Record<string, string> = { blocked: "blocked", delayed: "delayed" };
 
 const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => vs.map(v => `<option value="${hee(v)}"${v===active?" selected":""}>${hee(labels[v] ?? v)}</option>`).join("");
 const tag = (v: unknown) => `<span class="u2-badge">${hee(v)}</span>`;

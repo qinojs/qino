@@ -1,0 +1,25 @@
+.-m-cms-backend-smalltext {
+    [cms-part="table"] td {
+        vertical-align: baseline;
+    }
+    & textarea {
+        width: 100%;
+        height: 2lh;
+        field-sizing: content;
+        tr:has(:focus) & {
+            height: auto;
+            field-sizing: content;
+        }
+    }
+    & .-count {
+        color: #999;
+    }
+    & .-namespace { width: 3rem; }
+    & .-original {
+        max-width: 10rem;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+}

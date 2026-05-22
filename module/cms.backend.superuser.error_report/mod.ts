@@ -24,7 +24,6 @@ export async function install({ app }: any): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser.error_report");
   if (P) {
     await P.title("en", "Errors");
-    await P.title("de", "Errors");
   }
 }
 
@@ -110,31 +109,31 @@ globalThis.reloadBtn = (vars, btn) => {
 }
 </script>
 <div class="u2-card" style="flex-grow:0">
-    <div class="-head">Tools</div>
+    <div class="-head">${await node.app.t`Tools`}</div>
     <div class="-body">
         ${order === "num_ip"
-            ? `<a href="?order=max_id">nach Datum sortieren</a><br>`
-            : `<a href="?order=num_ip">nach Anzahl IPs sortieren</a><br>`}
+            ? `<a href="?order=max_id">${await node.app.t`sort by date`}</a><br>`
+            : `<a href="?order=num_ip">${await node.app.t`sort by number of IPs`}</a><br>`}
         <br>
-        Delete:<br>
-        <button onclick="reloadBtn({delete:{bot:'1',source:'404'}},this);">404 und Bots</button><br>
-        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'404'}},this);">404 und alte Browser</button><br>
-        <button onclick="reloadBtn({delete:{referer:'',source:'404'}},this);">404 kein Referer</button><br>
-        <button onclick="reloadBtn({delete:{bot:'1',source:'js'}},this);">js und Bots</button><br>
-        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'js'}},this);">js und alte Browser</button><br>
-        <button onclick="reloadBtn({delete:{file:'',source:'js'}},this);">js kein File</button><br>
-        <button onclick="reloadBtn({delete_foreign_js:true},this);">js, fremd</button><br>
-        <button onclick="reloadBtn({delete:{source:'404'}},this);">404 löschen</button><br>
-        <button onclick="reloadBtn({delete:{source:'net'}},this);">net löschen</button><br>
-        <button onclick="reloadBtn({delete:{source:'perf'}},this);">perf löschen</button><br>
-        <button onclick="reloadBtn({delete:{prio:'notice',source:'csp'}},this);">csp read-only</button><br>
-        <button onclick="reloadBtn({delete:{prio:'notice'}},this);">Notizen</button><br>
-        <button onclick="reloadBtn({deleteAll:1},this);">Alle Einträge löschen</button><br>
+        ${await node.app.t`Delete`}:<br>
+        <button onclick="reloadBtn({delete:{bot:'1',source:'404'}},this);">${await node.app.t`404 and bots`}</button><br>
+        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'404'}},this);">${await node.app.t`404 and old browsers`}</button><br>
+        <button onclick="reloadBtn({delete:{referer:'',source:'404'}},this);">${await node.app.t`404 no referer`}</button><br>
+        <button onclick="reloadBtn({delete:{bot:'1',source:'js'}},this);">${await node.app.t`js and bots`}</button><br>
+        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'js'}},this);">${await node.app.t`js and old browsers`}</button><br>
+        <button onclick="reloadBtn({delete:{file:'',source:'js'}},this);">${await node.app.t`js no file`}</button><br>
+        <button onclick="reloadBtn({delete_foreign_js:true},this);">${await node.app.t`js, foreign`}</button><br>
+        <button onclick="reloadBtn({delete:{source:'404'}},this);">${await node.app.t`delete 404`}</button><br>
+        <button onclick="reloadBtn({delete:{source:'net'}},this);">${await node.app.t`delete net`}</button><br>
+        <button onclick="reloadBtn({delete:{source:'perf'}},this);">${await node.app.t`delete perf`}</button><br>
+        <button onclick="reloadBtn({delete:{prio:'notice',source:'csp'}},this);">${await node.app.t`csp read-only`}</button><br>
+        <button onclick="reloadBtn({delete:{prio:'notice'}},this);">${await node.app.t`Notices`}</button><br>
+        <button onclick="reloadBtn({deleteAll:1},this);">${await node.app.t`Delete all entries`}</button><br>
     </div>
 </div>`;
 
     if (!rows.length && get.show !== "entries") {
-        return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">Super, bis jetzt keine Fehler!</div></div></div>`;
+        return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">${await node.app.t`Great, no errors so far!`}</div></div></div>`;
     }
 
     if (get.show === "entries") {
@@ -182,7 +181,7 @@ globalThis.reloadBtn = (vars, btn) => {
             data-col="${hee(String(row.col))}"
             src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/delete.svg"
             class="-rem"
-            alt="Löschen"
+            alt="Delete"
             style="cursor:pointer; height:20px">`;
     }
 
@@ -190,7 +189,7 @@ globalThis.reloadBtn = (vars, btn) => {
 <div class="u2-flex">
     ${tools}
     <div class="u2-card" style="max-height:88vh; overflow:auto; flex:1 1 80rem">
-        <div class="-head">Errors</div>
+        <div class="-head">${await node.app.t`Errors`}</div>
         <table class="u2-table">
             <tbody>${tableRows}
         </table>
@@ -203,7 +202,7 @@ async function renderEntryList(node: Node, ctx: any, get: Record<string, string>
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
     const [where, whereParams] = db.table("m_error_report").valuesToFragment({ source: get.source, file: get.file, line: get.line, col: get.col });
-    if (!where) return "<div>Ungültige Parameter</div>";
+    if (!where) return `<div>${await node.app.t`Invalid parameters`}</div>`;
 
     const rows = await db.all(
         `SELECT e.*, usr.email
@@ -262,7 +261,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
     const error = await db.row("SELECT * FROM m_error_report WHERE id = ?", [id]);
-    if (!error) return "<div>Error-Eintrag nicht gefunden</div>";
+    if (!error) return `<div>${await node.app.t`Error entry not found`}</div>`;
 
     const log  = error.log_id ? await db.row("SELECT * FROM log WHERE id = ?", [error.log_id]) : null;
     const sess = log?.sess_id  ? await db.row("SELECT * FROM sess WHERE id = ?", [log.sess_id]) : null;
@@ -335,7 +334,7 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
     return `
 <div class="u2-flex" style="font-size:.95em">
     <div class="u2-card" style="overflow:auto; width:auto; flex:1 1 20rem">
-        <div class="-head">Fehler</div>
+        <div class="-head">${await node.app.t`Error`}</div>
         <div class="-body">
             <p>
                 <span style="color:var(--red)">${hee(error.source)} ${hee(error.prio)}:</span>
@@ -344,13 +343,13 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
             ${fileBlock}
         </div>
         <table class="u2-table">
-            <tr><th>Id<td>${error.id}
-            <tr><th>Request<td>
+            <tr><th>${await node.app.t`Id`}<td>${error.id}
+            <tr><th>${await node.app.t`Request`}<td>
                 <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
-                <small>Referer <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
-            <tr><th>Browser<td><small>${hee(error.browser ?? "")}</small>
-            <tr><th>Time<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
-            <tr><th>IP<td>${hee(error.ip ?? "")}
+                <small>${await node.app.t`Referer`} <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
+            <tr><th>${await node.app.t`Browser`}<td><small>${hee(error.browser ?? "")}</small>
+            <tr><th>${await node.app.t`Time`}<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+            <tr><th>${await node.app.t`IP`}<td>${hee(error.ip ?? "")}
         </table>
         <div class="-body">
             ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
@@ -359,25 +358,25 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
     </div>
 
     <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
-        <div class="-head">Backtrace</div>
+        <div class="-head">${await node.app.t`Backtrace`}</div>
         <table class="u2-table">
-            <thead><tr><th>File<th>Function<th>Arguments
+            <thead><tr><th>${await node.app.t`File`}<th>${await node.app.t`Function`}<th>${await node.app.t`Arguments`}
             <tbody>${btHtml}
         </table>
     </div>
 
     <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
-        <div class="-head">User</div>
+        <div class="-head">${await node.app.t`User`}</div>
         <div class="-body">
-            ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : "(kein User)"}
+            ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : `(${await node.app.t`no user`})`}
         </div>
     </div>
 
     <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
-        <div class="-head">History</div>
-        <div class="-body" style="flex-grow:0">History of: ${historyLinks}</div>
+        <div class="-head">${await node.app.t`History`}</div>
+        <div class="-body" style="flex-grow:0">${await node.app.t`History of:`} ${historyLinks}</div>
         <table class="u2-table">
-            <thead><tr><th>Time / Session<th>URL / Referer<th>POST
+            <thead><tr><th>${await node.app.t`Time / Session`}<th>${await node.app.t`URL / Referer`}<th>${await node.app.t`POST`}
             <tbody>${historyRows}
         </table>
     </div>
@@ -398,7 +397,7 @@ export async function backendDashboardWidget(app: any): Promise<string> {
 	     LIMIT 5`
 	  ).catch(() => [] as any[]);
 
-  if (!rows.length) return `<span style="color:var(--green)">&#10003; Keine Einträge</span>`;
+  if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries</span>`;
 
   const errNode = await app.cms.nodeByModule("cms.backend.superuser.error_report");
   const baseUrl = errNode ? await errNode.url() : null;

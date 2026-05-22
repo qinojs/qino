@@ -110,12 +110,12 @@ const externMediaDialog = async function(txtEl,medias) {
 	]);
 	const dialog = new c1.dialog({
 		class:'qgCMS',
-		title:'Externe Medien',
-		body: 'Welche Dateien möchtest Du auf deinen Server kopieren? <br><br>'+
+		title:'External media',
+		body: 'Which files do you want to copy to your server? <br><br>'+
 				'<div class=-checkkboxes></div>'+
 				'<style>.cmsExtMediaHighlight {outline: 6px solid #fa0} </style>',
 		buttons: [{
-			title:'fertigstellen',then(){
+			title:'done',then(){
 				for (let [uri,media] of Object.entries(medias)) {
 					if (media.checked) {
 						apt.cms.node(pid).files.post({ file: uri }).then(v=>{

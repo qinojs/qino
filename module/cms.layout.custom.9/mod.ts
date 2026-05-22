@@ -7,7 +7,7 @@ export const name = "cms.layout.custom.9";
 
 const settingsSchema = {
   properties: {
-    "font-css-file": { type: "string", description: "URL oder Pfad zu einer zusaetzlichen CSS-Datei, die vor dem Custom-Layout eingebunden wird." },
+    "font-css-file": { type: "string", description: "URL or path to an additional CSS file included before the custom layout." },
   },
 };
 

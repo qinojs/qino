@@ -18,7 +18,6 @@ export async function install({ app }: any): Promise<void> {
   const P = await backend.install(app, "cms.backend.ai");
   if (P) {
     await P.title("en", "AI");
-    await P.title("de", "KI");
   }
 }
 
@@ -119,7 +118,7 @@ function modelRow(providerName: string, model: ProviderModel, source: string, de
         <input type=hidden name=action value=delete-model>
         <input type=hidden name=provider value="${hee(providerName)}">
         <input type=hidden name=model_id value="${hee(model.id)}">
-        <button>löschen</button>
+        <button>delete</button>
       </form>`
     : "";
   return `<tr>
@@ -142,7 +141,7 @@ function modelRows(providerName: string, builtinModels: ProviderModel[], customM
       return modelRow(providerName, m, src, true, token);
     }),
   ];
-  return rows.length ? rows.join("") : `<tr><td colspan=8><em>Noch keine Models hinterlegt.</em>`;
+  return rows.length ? rows.join("") : `<tr><td colspan=8><em>No models added yet.</em>`;
 }
 
 async function saveCustomModels(app: any, providerName: string, models: ProviderModel[]): Promise<void> {
@@ -213,13 +212,13 @@ function toProviderModel(providerName: string, data: Record<string, any>, synced
 
 async function syncProviderModels(app: any, providerName: string): Promise<Message> {
   const syncConfig = modelSyncProviders[providerName];
-  if (!syncConfig) return { type: "error", text: "Dieser Provider unterstützt keinen Sync." };
+  if (!syncConfig) return { type: "error", text: "This provider does not support sync." };
 
   const provider = providers[providerName];
   const providerSettings = app.settings.ai.provider[providerName];
   const key = String(await providerSettings.key ?? "");
   if (syncConfig.requiresKey && !key) {
-    return { type: "error", text: `${syncConfig.label} Sync braucht zuerst einen API-Key.` };
+    return { type: "error", text: `${syncConfig.label} sync requires an API key first.` };
   }
 
   const response = await fetch(provider.endpoint + "/models", {
@@ -247,25 +246,25 @@ async function syncProviderModels(app: any, providerName: string): Promise<Messa
   await saveCustomModels(app, providerName, [...models.values()]);
   providerSettings.models_synced_at = syncedAt;
 
-  return { type: "ok", text: `${syncedModels.length} ${syncConfig.label}-Models synchronisiert.` };
+  return { type: "ok", text: `${syncedModels.length} ${syncConfig.label} models synchronised.` };
 }
 
 async function handlePost(app: any, post: Record<string, unknown>, token: string): Promise<Message | null> {
   if (!("action" in post)) return null;
-  if (post.qgToken !== token) return { type: "error", text: "Ungültiges Formular-Token." };
+  if (post.qgToken !== token) return { type: "error", text: "Invalid form token." };
 
   const action = String(post.action ?? "");
 
   if (action === "save-default") {
     const provider = String(post.default_provider ?? "").trim();
-    if (!providers[provider]) return { type: "error", text: "Unbekannter Provider." };
+    if (!providers[provider]) return { type: "error", text: "Unknown provider." };
     app.settings.ai.default.provider = provider;
     app.settings.ai.default.model = String(post.default_model ?? "").trim();
-    return { type: "ok", text: "Default-Provider gespeichert." };
+    return { type: "ok", text: "Default provider saved." };
   }
 
   const provider = String(post.provider ?? "").trim();
-  if (!providers[provider]) return { type: "error", text: "Unbekannter Provider." };
+  if (!providers[provider]) return { type: "error", text: "Unknown provider." };
   const providerSettings = app.settings.ai.provider[provider];
 
   if (action === "sync-provider") return syncProviderModels(app, provider);
@@ -274,26 +273,26 @@ async function handlePost(app: any, post: Record<string, unknown>, token: string
     const key = String(post.api_key ?? "").trim();
     if (key) providerSettings.key = key;
     providerSettings.default_model = String(post.provider_default_model ?? "").trim();
-    return { type: "ok", text: `Provider ${provider} gespeichert.` };
+    return { type: "ok", text: `Provider ${provider} saved.` };
   }
 
   if (action === "add-model") {
     const model = modelFromPost(post);
-    if (!model) return { type: "error", text: "Model-ID fehlt." };
+    if (!model) return { type: "error", text: "Model ID missing." };
     const models = parseProviderModels(await providerSettings.models).filter((m) => m.id !== model.id);
     models.push(model);
     await saveCustomModels(app, provider, models);
-    return { type: "ok", text: `Model ${model.id} gespeichert.` };
+    return { type: "ok", text: `Model ${model.id} saved.` };
   }
 
   if (action === "delete-model") {
     const modelId = String(post.model_id ?? "").trim();
     const models = parseProviderModels(await providerSettings.models).filter((m) => m.id !== modelId);
     await saveCustomModels(app, provider, models);
-    return { type: "ok", text: `Model ${modelId} gelöscht.` };
+    return { type: "ok", text: `Model ${modelId} deleted.` };
   }
 
-  return { type: "error", text: "Unbekannte Aktion." };
+  return { type: "error", text: "Unknown action." };
 }
 
 async function render(node: any): Promise<string> {
@@ -340,8 +339,8 @@ async function render(node: any): Promise<string> {
   <summary class="ai-provider-summary">
     ${hee(providerName)}
     <span class=ai-summary-pills>
-      ${modelCount ? pill(`${modelCount.toLocaleString("de-DE")} Models`) : ""}
-      ${pill(key ? "Key gesetzt" : "kein Key", ` -${key ? "ok" : "error"}`)}
+      ${modelCount ? pill(`${modelCount.toLocaleString("en-US")} Models`) : ""}
+      ${pill(key ? "Key set" : "no key", ` -${key ? "ok" : "error"}`)}
       ${summaryDefaultModel ? pill(`Default: ${summaryDefaultModel}`) : ""}
     </span>
   </summary>
@@ -354,31 +353,31 @@ async function render(node: any): Promise<string> {
           <input type=hidden name=provider value="${hee(providerName)}">
           <table class="u2-table ai-kv">
             <tr><th>Endpoint<td><code>${hee(provider.endpoint)}</code>
-            <tr><th>Stärken<td>${formatList(provider.strengths)}
-            <tr><th>JSON Mode<td>${provider.jsonMode ? "ja" : "nein"}
+            <tr><th>Strengths<td>${formatList(provider.strengths)}
+            <tr><th>JSON Mode<td>${provider.jsonMode ? "yes" : "no"}
             <tr><th>API-Key<td>
               <input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" value="${hee(key)}" placeholder="API-Key">
             <tr><th>Provider-Default<td>
               <input name=provider_default_model value="${hee(providerDefaultModel)}" list="${hee(datalistId)}">
               <datalist id="${hee(datalistId)}">${modelOptionHtml(effectiveModels, providerDefaultModel)}</datalist>
-            <tr><th>Verbrauch (Tokens)<td>${hee(usedInput.toLocaleString("de-DE"))} input / ${hee(usedOutput.toLocaleString("de-DE"))} output
+            <tr><th>Usage (Tokens)<td>${hee(usedInput.toLocaleString("en-US"))} input / ${hee(usedOutput.toLocaleString("en-US"))} output
           </table>
           <div class=ai-autosave-state aria-live=polite></div>
         </form>
       </div>
     </section>
     <details class=ai-subdetails>
-      <summary>Models (${hee(modelCount.toLocaleString("de-DE"))})</summary>
+      <summary>Models (${hee(modelCount.toLocaleString("en-US"))})</summary>
       <div class=ai-subbody>${syncHtml}</div>
       <div style="overflow:auto; padding:0">
         <table class="u2-table ai-model-table">
-          <thead><tr><th>Model<th>Label<th>Stärken<th>Features<th>Limits<th>Kosten/M<th>Quelle<th>
+          <thead><tr><th>Model<th>Label<th>Strengths<th>Features<th>Limits<th>Cost/M<th>Source<th>
           <tbody>${modelRows(providerName, provider.models ?? [], customModels, ctx.token)}
         </table>
       </div>
     </details>
     <details class=ai-subdetails>
-      <summary>Model hinzufügen</summary>
+      <summary>Add model</summary>
       <div class=ai-subbody>
         <form method=post>
           <input type=hidden name=qgToken value="${hee(ctx.token)}">
@@ -387,11 +386,11 @@ async function render(node: any): Promise<string> {
           <div class=ai-grid>
             <label>Model-ID <input required name=model_id placeholder="provider/model"></label>
             <label>Label <input name=model_label></label>
-            <label>Stärken <input name=model_strengths placeholder="speed, reasoning"></label>
+            <label>Strengths <input name=model_strengths placeholder="speed, reasoning"></label>
             <label>Max Input Tokens <input name=max_input_tokens inputmode=numeric></label>
             <label>Max Output Tokens <input name=max_output_tokens inputmode=numeric></label>
-            <label>Input Kosten/M <input name=input_cost_per_m_token inputmode=decimal></label>
-            <label>Output Kosten/M <input name=output_cost_per_m_token inputmode=decimal></label>
+            <label>Input Cost/M <input name=input_cost_per_m_token inputmode=decimal></label>
+            <label>Output Cost/M <input name=output_cost_per_m_token inputmode=decimal></label>
           </div>
           <div class=ai-flex>
             <label><input type=checkbox name=supports_streaming value=1> Streaming</label>
@@ -399,7 +398,7 @@ async function render(node: any): Promise<string> {
             <label><input type=checkbox name=supports_vision value=1> Vision</label>
             <label><input type=checkbox name=supports_jsonMode value=1> JSON Mode</label>
           </div>
-          <button>Model hinzufügen</button>
+          <button>Add model</button>
         </form>
       </div>
     </details>
@@ -452,7 +451,7 @@ async function render(node: any): Promise<string> {
             ${[...modelsByProvider.entries()].map(([n, ms]) =>
               `<datalist id="ai-models-${htmlId(n)}-default">${modelOptionHtml(ms, defaultModel)}</datalist>`
             ).join("")}
-          <tr><th><td><button>Defaults speichern</button>
+          <tr><th><td><button>Save defaults</button>
         </table>
       </form>
     </div>

@@ -63,17 +63,17 @@ async function renderEditBox(node: Node, ctx: any): Promise<string> {
         "INSERT INTO page_redirect SET request = ?, redirect = ? ON DUPLICATE KEY UPDATE redirect = ?",
         [ctx.appRequestUri, redirect, redirect],
       );
-      savedMsg = `<p style="color:green">Redirect gespeichert.</p>`;
+      savedMsg = `<p style="color:green">${await node.app.t`Redirect saved.`}</p>`;
     }
   }
 
   return `<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:10px auto">
   ${savedMsg}
-  <div class=-head>Admin: Direkt-Link definieren nach:</div>
+  <div class=-head>${await node.app.t`Admin: define direct link to:`}</div>
   <form class=-body method=post style="display:flex; margin:0">
     <input type=hidden name=qgToken value="${hee(ctx.token)}">
     <input type=qgcms-page name=redirect style="flex:1 1 auto; box-sizing:border-box; border-right:0">
-    <button name=setRedirect>ok</button>
+    <button name=setRedirect>${await node.app.t`ok`}</button>
   </form>
 </div>`;
 }

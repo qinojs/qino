@@ -69,14 +69,14 @@ export default async function (node: Node): Promise<string> {
         <div class=-title title="${hee(String(P.id))}">${await (await P.title()).string()}</div>
       </div>`;
     }
-    modelsSection = `<div class=-standalone><br><br><div class=-h1><span>Vorlagen</span></div></div>
+    modelsSection = `<div class=-standalone><br><br><div class=-h1><span>Templates</span></div></div>
     <div class="cmsAddModels -module-boxes">${modelItems}</div>`;
   }
 
   return `<div class="-standalone qgCmsFront1ModuleManager">
   <div class=-h1>
-    <span>${await app.t`Module`}</span>
-    <input placeholder="${await app.t`Suchen`}..." style="width:50%">
+    <span>${await app.t`Modules`}</span>
+    <input placeholder="${await app.t`Search`}..." style="width:50%">
   </div>
   <div class="cmsAddModule -module-boxes">${moduleBoxes}</div>
   ${modelsSection}

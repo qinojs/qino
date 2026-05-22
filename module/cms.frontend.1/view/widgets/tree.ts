@@ -16,31 +16,31 @@ export default async function (node: Node): Promise<string> {
 
   return `<div class="-standalone qgCmsTreeManager" style="flex:1; margin-bottom:2em" data="${treeJson}">
   <div class=-h1>
-    <span>${await app.t`Struktur`}</span>
+    <span>${await app.t`Structure`}</span>
     <input id=cmsPageAddInp style="width:50%" type=text placeholder="${
     hee(
-      await app.t`Neue Unterseite von "${await (await node.title()).string()}"`,
+      await app.t`New subpage of "${await (await node.title()).string()}"`,
     )
   } " title="${await app
-    .t`Die neue Seite wird als Unterseite der ausgewählten Seite erstellt. Klicken Sie Enter um die Seite zu erstellen`}" c1-tooltip>
+    .t`The new page will be created as a subpage of the selected page. Press Enter to create the page`}" c1-tooltip>
   </div>
   <div id=cmsTreeContainer></div>
 </div>
 <div class=-standalone>
-  <div class=-h1>${await app.t`Legende`}</div>
+  <div class=-h1>${await app.t`Legend`}</div>
   <table class=-padding style="line-height:1">
     <tr><td><span class=-access-0 style="font-size:1.7em;">&#x2B24;</span><td>${await app
-    .t`Keine Berechtigung`}
+    .t`No permission`}
     <tr><td><span class=-access-1 style="font-size:1.7em;">&#x2B24;</span><td>${await app
-    .t`Seite ansehen`}
+    .t`View page`}
     <tr><td><span class=-access-2 style="font-size:1.7em;">&#x2B24;</span><td>${await app
-    .t`Seite bearbeiten`}
+    .t`Edit page`}
     <tr><td><span class=-access-3 style="font-size:1.7em;">&#x2B24;</span><td>${await app
-    .t`Seite bearbeiten und Berechtigungen verwalten`}
+    .t`Edit page and manage permissions`}
     <tr><td style="padding-left:2px;"><span style="font-family:'qg_cms';font-size:1.7em;">&#xe900;</span><td>${await app
-    .t`Die Seite ist nicht öffentlich zugänglich`}
+    .t`The page is not publicly accessible`}
     <tr><td style="padding-left:2px"><span style="font-family:'qg_cms';font-size:1.7em;">&#xe901;</span><td>${await app
-    .t`Die Seite ist terminiert und momentan nicht online`}
+    .t`The page is scheduled and currently not online`}
   </table>
 </div>`;
 }

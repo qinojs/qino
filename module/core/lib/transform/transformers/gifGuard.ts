@@ -2,8 +2,8 @@ import { FileTransformer } from '../FileTransformer.ts';
 import { magickIdentify } from '../imagemagick.ts';
 
 /**
- * Decode-Phase: Erkennt animierte GIFs und sperrt weitere Transformationen.
- * Animierte GIFs können nicht ohne Frame-Verlust gecroppt/resized werden.
+ * Decode phase: detects animated GIFs and blocks further transformations.
+ * Animated GIFs cannot be cropped/resized without frame loss.
  */
 FileTransformer.register({
   name: 'gif-guard',

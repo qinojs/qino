@@ -1,7 +1,7 @@
 import { apt } from '../../core/pub/js/apt.js';
 'use strict';
 c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
-    let newButton = c1.dom.fragment('<button>auswählen').firstChild;
+    let newButton = c1.dom.fragment('<button>select').firstChild;
     el.after(newButton);
     newButton.addEventListener('click', async e => {
         const fB = new cms.fileBrowser({multiple:true});

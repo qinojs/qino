@@ -23,42 +23,42 @@ export const settingsSchema = {
     properties: {
         backend: {
             type: "integer",
-            description: "Seiten-ID des zentralen Backend-Einstiegs.",
+            description: "Page ID of the central backend entry point.",
         },
         frontend: {
             type: "string",
-            description: "Name des aktiven Frontend-Moduls, z.B. cms.frontend.1.",
+            description: "Name of the active frontend module, e.g. cms.frontend.1.",
         },
         models: {
             type: "string",
-            description: "Voreingestellte Modulliste fur neue Inhalte.",
+            description: "Default module list for new content.",
         },
         pageNotFound: {
             type: "integer",
-            description: "Seiten-ID fur 404-Fehler.",
+            description: "Page ID for 404 errors.",
         },
         pageNoAccess: {
             type: "integer",
-            description: "Seiten-ID fur fehlende Zugriffsrechte.",
+            description: "Page ID for missing access rights.",
         },
         pageOffline: {
             type: "integer",
-            description: "Seiten-ID fur Offline-/Wartungsmodus.",
+            description: "Page ID for offline/maintenance mode.",
         },
         pageTrash: {
             type: "integer",
-            description: "Seiten-ID des Papierkorbs.",
+            description: "Page ID of the trash.",
         },
         feedback: {
             properties: {
                 email: {
                     type: "string",
-                    description: "Empfangeradresse fur CMS-Feedback.",
+                    description: "Recipient address for CMS feedback.",
                 },
             },
         },
         pages: {
-            description: "Modulspezifische Einstellungen einzelner Seiten.",
+            description: "Module-specific settings for individual pages.",
             additionalProperties: { type: "object" },
         },
     },
@@ -70,7 +70,7 @@ export const ctxSettingsSchema = {
         clipboard: { type: "integer" },
         models: {
             type: "string",
-            description: "Temporare Modulliste fur die aktuelle Session.",
+            description: "Temporary module list for the current session.",
         },
         last_backend_page: { type: "string" },
         last_frontend_page: { type: "string" },
@@ -155,7 +155,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one("SELECT id FROM page WHERE id = 1")) {
     await app.db.query("INSERT INTO page SET id=1, access=1, visible=1, searchable=1, module = 'cms.layout.custom.9', basis = 0, type='p'");
     await (await app.cms.node(1)).title("en", "root");
-    await (await app.cms.node(1)).title("de", "root");
   }
 
   // Import locale files
@@ -165,6 +164,6 @@ export async function install({ app }: { app: App }): Promise<void> {
     if (!match) continue;
     const lang = match[1];
     const json = await Deno.readTextFile(localeDir + entry.name);
-    await app.languages.import(lang, "cms", json);
+    //await app.languages.import(lang, "cms", json);
   }
 }

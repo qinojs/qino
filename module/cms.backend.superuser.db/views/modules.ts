@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee } from "../../core/lib/util.ts";
 import { buildModuleTableIndex } from "../lib/analyze.ts";
+import type { App } from "../../core/server.ts";
 
-export function renderModules(modules: Record<string, any>): string {
+export async function renderModules(app: App, modules: Record<string, any>): Promise<string> {
   const index = buildModuleTableIndex(modules);
   const rows = Object.keys(modules).sort().flatMap(modName => {
     const tables = index[modName];
@@ -19,12 +20,12 @@ export function renderModules(modules: Record<string, any>): string {
     return [`<tr><td style="font-family:monospace">${hee(modName)}</td><td>${groups}</td></tr>`];
   });
 
-  if (!rows.length) return `<div class=u2-card><div class="-body">Keine Module mit dbSchema.</div></div>`;
+  if (!rows.length) return `<div class=u2-card><div class="-body">${await app.t`No modules with dbSchema.`}</div></div>`;
 
   return `<div class="u2-card -full">
-    <div class="-head">Module mit DB-Schema</div>
+    <div class="-head">${await app.t`Modules with DB schema`}</div>
     <table class=u2-table>
-      <thead><tr><th>Modul<th>Felder</thead>
+      <thead><tr><th>${await app.t`Module`}<th>${await app.t`Fields`}</thead>
       <tbody>${rows.join("")}</tbody>
     </table>
   </div>`;

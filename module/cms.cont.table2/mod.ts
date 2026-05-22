@@ -18,11 +18,11 @@ export async function install({ app }: { app: App }): Promise<void> {
 const settingsSchema = {
   additionalProperties: {
     type: "string",
-    description: "Freies Zusatz-Setting. Spaltenbreiten werden z.B. als row_1, row_2 usw. gespeichert.",
+    description: "Free additional setting. Column widths are stored as row_1, row_2, etc.",
   },
   properties: {
-    cols: { type: "integer", minimum: 1, maximum: 15, description: "Anzahl der Tabellenspalten." },
-    rows: { type: "integer", minimum: 1, maximum: 300, description: "Anzahl der Tabellenzeilen." },
+    cols: { type: "integer", minimum: 1, maximum: 15, description: "Number of table columns." },
+    rows: { type: "integer", minimum: 1, maximum: 300, description: "Number of table rows." },
   },
 };
 

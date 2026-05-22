@@ -36,8 +36,8 @@ function run() {
 
     let html =
         '<div style="position:fixed; top:20px; left:0; right:0; margin:auto; width:310px; background:#fff; border:1px solid var(--cms-light); padding:20px; box-shadow:0 0 8px rgba(0,0,0,.5)" class="q1Rst qgCMS">'+
-            '<div style="font-size:1.3em; margin-bottom:1.2em">Browser vom CMS nicht unterstützt</div>' +
-            '<div>Folgende Browser sind technisch auf einem geeigneten Stand für die Verwendung des CMS</div>' +
+            '<div style="font-size:1.3em; margin-bottom:1.2em">Browser not supported by CMS</div>' +
+            '<div>The following browsers meet the technical requirements for using the CMS</div>' +
             '<div style="display:table; margin:20px 0">';
     for (const id in browsers) {
         const browser = browsers[id];
@@ -51,8 +51,8 @@ function run() {
     html +=
             '</div>'+
             '<div style="text-align:right">'+
-                '<button class=-ignoreBtn>Ignorieren</button> '+
-                '<button class=-closeBtn>Editmodus verlassen</button>'+
+                '<button class=-ignoreBtn>Ignore</button> '+
+                '<button class=-closeBtn>Leave edit mode</button>'+
             '</div>'+
         '</div>';
 

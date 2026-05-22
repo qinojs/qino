@@ -18,7 +18,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.users");
   if (P) {
     await P.title("en", "Users");
-    await P.title("de", "Benutzer");
+    await P.title("en", "Users");
   }
 }
 
@@ -32,14 +32,15 @@ function render(node: Node): Promise<string> {
 
 async function renderOverview(node: Node): Promise<string> {
   const ctx = getCtx();
-  const db = node.app.db;
+  const app = node.app;
+  const db = app.db;
 
   let addMessage = "";
   if ("add" in ctx.post && ctx.post.qgToken === ctx.token) {
     const email = String(ctx.post.email ?? "");
     const exists = email && await db.one("SELECT id FROM usr WHERE email = ?", [email]);
     if (exists) {
-      addMessage = '<div class=-body>Die E-Mail-Adresse existiert bereits!</div>';
+      addMessage = `<div class=-body>${await app.t`This e-mail address already exists!`}</div>`;
     } else {
       await db.table("usr").insert({
         active: 1,
@@ -56,7 +57,7 @@ async function renderOverview(node: Node): Promise<string> {
 
   return `<div class=u2-flex>
   <div class=u2-card style="flex-grow:0">
-    <div class=-head>Benutzer hinzufügen</div>
+    <div class=-head>${await app.t`Add user`}</div>
     ${addMessage}
     <form method=post style="padding:0">
       <input hidden name=fake1>
@@ -64,40 +65,40 @@ async function renderOverview(node: Node): Promise<string> {
       <input type=hidden name=qgToken value="${hee(ctx.token)}">
       <table class=u2-table>
         <tr>
-          <th style="width:6em"> Email:
+          <th style="width:6em"> ${await app.t`Email`}:
           <td> <input type=text name=email class=-new-email>
         <tr>
-          <th> Passwort:
+          <th> ${await app.t`Password`}:
           <td> <input type=password name=pw autocomplete=new-password>
         <tr>
-          <th> Vorname:
+          <th> ${await app.t`First name`}:
           <td> <input type=text name=firstname>
         <tr>
-          <th> Nachname:
+          <th> ${await app.t`Last name`}:
           <td> <input type=text name=lastname>
         <tr>
           <th>
-          <td> <button name=add>hinzufügen</button>
+          <td> <button name=add>${await app.t`add`}</button>
       </table>
     </form>
   </div>
 
   <div class=u2-card style="flex:1">
-    <div class=-head> Benutzer suchen </div>
+    <div class=-head> ${await app.t`Search users`} </div>
     <div class=-body>
-      <input type=search placeholder="suchen..." id=usrSearch style="width:300px; max-width:100%">
+      <input type=search placeholder="${await app.t`search`}..." id=usrSearch style="width:300px; max-width:100%">
     </div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>
         <thead>
           <tr>
             <th> ID
-            <th> Name
-            <th> Email
-            <th> Firma
-            <th> Active
-            <th> Sessions
-            <th> zuletzt online
+            <th> ${await app.t`Name`}
+            <th> ${await app.t`Email`}
+            <th> ${await app.t`Company`}
+            <th> ${await app.t`Active`}
+            <th> ${await app.t`Sessions`}
+            <th> ${await app.t`last online`}
             ${loginAsTh}
             <th width=20>
             <th width=20>
@@ -130,11 +131,11 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 
   return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>Gesamt:<td>${hee(String(total))}
-  <tr><td>Aktiv:<td>${hee(String(active))}
+  <tr><td>${await app.t`Total`}:<td>${hee(String(total))}
+  <tr><td>${await app.t`Active`}:<td>${hee(String(active))}
 </table>
 ${loginRows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
-  <thead><tr><th>Letzte Logins<th>
+  <thead><tr><th>${await app.t`Recent logins`}<th>
   <tbody>${loginRows}
 </table>` : ""}
 </div>`;
@@ -153,10 +154,11 @@ export const cms = {
 
 async function renderDetail(node: Node, id: number): Promise<string> {
   const ctx = getCtx();
-  const db = node.app.db;
+  const app = node.app;
+  const db = app.db;
 
   const vs = await db.row("SELECT * FROM usr WHERE id = ?", [id]);
-  if (!vs) return '<div class=u2-card><div class=-body>Benutzer nicht gefunden.</div></div>';
+  if (!vs) return `<div class=u2-card><div class=-body>${await app.t`User not found.`}</div></div>`;
 
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const superuserRow = isSuperuser ? `
@@ -182,28 +184,28 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   return `<div class=u2-flex itemid="${hee(String(id))}">
   <div class=u2-card style="flex:0 1 340px">
-    <div class=-head>Benutzer ${hee(String(vs.id))}</div>
+    <div class=-head>${await app.t`User`} ${hee(String(vs.id))}</div>
     <div style="overflow:auto; padding:0">
       <table class="u2-table -detail">
         <tr>
-          <th> Active:
+          <th> ${await app.t`Active`}:
           <td>
             <input type=hidden name=active value=0>
             <input type=checkbox name=active value=1 ${vs.active ? "checked" : ""}>
         <tr>
-          <th> Email:
+          <th> ${await app.t`Email`}:
           <td> <input name=email value="${hee(vs.email ?? "")}">
         <tr>
-          <th> Passwort:
+          <th> ${await app.t`Password`}:
           <td> <input name=pw autocomplete=new-password type=password>
         <tr>
-          <th> Vorname:
+          <th> ${await app.t`First name`}:
           <td> <input name=firstname value="${hee(vs.firstname ?? "")}">
         <tr>
-          <th> Nachname:
+          <th> ${await app.t`Last name`}:
           <td> <input name=lastname value="${hee(vs.lastname ?? "")}">
         <tr>
-          <th> Firma:
+          <th> ${await app.t`Company`}:
           <td> <input name=company value="${hee(vs.company ?? "")}">
         ${superuserRow}
       </table>
@@ -211,7 +213,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   </div>
 
   <div class=u2-card style="flex:0 1 auto">
-    <div class=-head>Gruppen</div>
+    <div class=-head>${await app.t`Groups`}</div>
     <table class="u2-table -set_grp" style="width:auto">
       ${grpHtml}
     </table>

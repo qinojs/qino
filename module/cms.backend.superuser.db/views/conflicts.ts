@@ -1,12 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee } from "../../core/lib/util.ts";
 import { collectConflicts } from "../lib/analyze.ts";
+import type { App } from "../../core/server.ts";
 
-export function renderConflicts(modules: Record<string, any>): string {
+export async function renderConflicts(app: App, modules: Record<string, any>): Promise<string> {
   const conflicts = collectConflicts(modules);
 
   if (!conflicts.length) {
-    return `<div class=u2-card><div class=-body>Keine Schema-Konflikte gefunden.</div></div>`;
+    return `<div class=u2-card><div class=-body>${await app.t`No schema conflicts found.`}</div></div>`;
   }
 
   const rows = conflicts.map(({ table, field, prop, values }) => {
@@ -22,9 +23,9 @@ export function renderConflicts(modules: Record<string, any>): string {
   }).join("");
 
   return `<div class="u2-card -full">
-    <div class="-head">Schema-Konflikte (${conflicts.length})</div>
+    <div class="-head">${await app.t`Schema conflicts`} (${conflicts.length})</div>
     <table class="u2-table -conflicts">
-      <thead><tr><th>Tabelle<th>Feld<th>Property<th>Werte je Modul</thead>
+      <thead><tr><th>${await app.t`Table`}<th>${await app.t`Field`}<th>${await app.t`Property`}<th>${await app.t`Values per module`}</thead>
       <tbody>${rows}</tbody>
     </table>
   </div>`;

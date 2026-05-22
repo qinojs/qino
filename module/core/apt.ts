@@ -7,6 +7,7 @@
  */
 
 import { getCtx } from "./lib/RequestContext.ts";
+import { createHash } from "node:crypto";
 import { $item, type Item } from "../../deps.ts";
 import { Access, AccessError, ConflictError, type AptTree } from "./lib/apt/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
@@ -26,6 +27,32 @@ function ctxSettingsRoot(path?: string[]): Item {
 }
 
 export const api: AptTree = {
+
+  t: {
+    post: {
+      description: "Translate an array of texts for the current language",
+      access: Access.PUBLIC,
+      input: s.object({ texts: s.array(s.string()) }),
+      execute: async ({ texts }: any) => {
+        const ctx = getCtx();
+        const { lang, langNs: ns, dev } = ctx;
+        const hashes = texts.map((text: string) => createHash("md5").update(text).digest("hex"));
+        const rows: Record<string, string> = await ctx.app.db.indexCol(
+          `SELECT hash, \`${lang}\` as txt FROM smalltext WHERE namespace = ? AND hash IN (${hashes.map(() => "?").join(",")})`,
+          [ns, ...hashes]
+        );
+        const result: Record<string, string> = {};
+        for (let i = 0; i < texts.length; i++) {
+          if (dev && !(hashes[i] in rows))
+            await ctx.app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hashes[i], texts[i]]);
+          result[texts[i]] = rows[hashes[i]] || texts[i];
+        }
+        return result;
+      },
+    },
+  },
+
+
   password: {
     put: {
       description: "Change the password of the logged-in user",
