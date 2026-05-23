@@ -33,8 +33,7 @@ async function render(node: Node): Promise<string> {
 
   // ── server info ────────────────────────────────────────────────────────
 
-  const serverIP  = 'todo'
-  const appPATH   = app.appPATH ?? "";
+  const appPATH   = app.appPATH;
 
   const mem = Deno.memoryUsage();
   const pid = Deno.pid;
@@ -57,7 +56,6 @@ async function render(node: Node): Promise<string> {
       <tr><td>${await app.t`System Load`}:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
       <tr><td>${await app.t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
       <tr><td>${await app.t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
-      <tr><td>${await app.t`Server-IP`}:<td>${hee(serverIP)}
       <tr><td>${await app.t`APP-Path`}:<td>${hee(appPATH)}
     </table>
   </div>
@@ -148,12 +146,7 @@ async function render(node: Node): Promise<string> {
     <table class=u2-table>
       <tr><td>${await app.t`OS`}<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
       <tr><td>${await app.t`DB`}<td>${dbIso.slice(0, 19).replace("T", " ")}<td>UTC+0
-      <tr><td>${await app.t`Browser`}<script>
-          const _d = new Date(), _off = -_d.getTimezoneOffset() / 60;
-          const _tr = document.currentScript.closest('tr');
-          _tr.insertAdjacentHTML('beforeend', '<td>'+_d.toISOString().slice(0,19).replace('T',' ')+'<td>UTC+'+_off);
-          document.currentScript.remove();
-          </script>
+      <tr><td>${await app.t`Browser`}<td class="-browser-time"><td class="-browser-tz">
     </table>
   </div>
 </div>`;
@@ -168,7 +161,7 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   return `
-<div class="u2-flex">
+<div class="u2-flex -m-cms-backend-system">
   <style>
     .healty_container { display:grid; grid-gap:8px; }
     .healty_item { padding:8px; background:#eee; }
@@ -176,6 +169,7 @@ async function render(node: Node): Promise<string> {
     .healty_item.-warning { background:hsl(40,100%,90%); }
     .healty_item.-notice  { background:hsl(200,100%,90%); }
   </style>
+  ${ctx.dev ? `<div style="flex:1 1 100%;background:#f90;color:#000;font-weight:bold;padding:10px 16px;font-size:1.1em">⚠ ${await app.t`Dev mode active`}</div>` : ""}
   ${serverInfoHtml}
   ${healthHtml}
   ${mysqlBox}
@@ -251,6 +245,7 @@ async function systemInfoRows(app: App): Promise<string> {
 
 export const cms = {
   node: {
+    js: ["pub/main.js"],
     render,
     pageApi,
     parts: {

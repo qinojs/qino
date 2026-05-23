@@ -1,5 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
 import { backend } from "../cms.backend/mod.ts";
+import type {} from "../mail/mod.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
 import type { Node } from "../cms/lib/Node.ts";
@@ -21,7 +21,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export async function init(app: App): Promise<void> {
   const rows = await app.db.all("SELECT name, html FROM mail_template");
   for (const row of rows) {
-    if (row.name && row.html) (app as any).mail.templates[row.name] = row.html;
+    if (row.name && row.html) app.mail.templates[row.name] = row.html;
   }
 }
 
@@ -135,7 +135,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
     if ("delete" in ctx.post) {
       await db.query("DELETE FROM mail_template WHERE id=?", [id]);
-      delete (app as any).mail.templates[row.name];
+      delete app.mail.templates[row.name];
       ctx.responseStatus = 302;
       ctx.responseHeaders.set("Location", "?");
       return "";

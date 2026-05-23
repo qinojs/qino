@@ -37,7 +37,7 @@ export const api: AptTree = {
         const ctx = getCtx();
         const { lang, langNs: ns, dev } = ctx;
         const hashes = texts.map((text: string) => createHash("md5").update(text).digest("hex"));
-        const rows: Record<string, string> = await ctx.app.db.indexCol(
+        const rows = await ctx.app.db.indexCol(
           `SELECT hash, \`${lang}\` as txt FROM smalltext WHERE namespace = ? AND hash IN (${hashes.map(() => "?").join(",")})`,
           [ns, ...hashes]
         );

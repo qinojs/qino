@@ -1,15 +1,17 @@
-// deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts";
 import { Db } from "../core/lib/Db.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { FileTransformer } from "../core/lib/transform/index.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
+import type { DbField } from "../core/lib/DbField.ts";
+import type { DbFile } from "../core/lib/DbFileManager.ts";
 
 export const name = "cms.backend.superuser.dbfiles";
 export const needs = ["cms.backend"];
 
-export async function install({ app }: any) {
+export async function install({ app }: { app: App }) {
   const P = await backend.install(app, name);
 }
 
@@ -26,12 +28,12 @@ const VID = new Set(["mp4","webm","mov","avi","mkv"]);
 const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
-async function mediaPreview(f: any, exists: boolean) {
+async function mediaPreview(f: DbFile, exists: boolean) {
   if (!exists) return `<span style="color:red">✗</span>`;
   return `<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
-async function mediaView(f: any) {
+async function mediaView(f: DbFile) {
   const ext = f.extension;
   const url = await f.url();
   let inner = "";
@@ -46,20 +48,19 @@ async function mediaView(f: any) {
   return inner ? `<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>` : "";
 }
 
-async function textView(f: any) {
+async function textView(f: DbFile) {
   if (!TXT.has(f.extension)) return "";
   return `<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${hee(String(await f.contents()))}</textarea></u2-code></div></div>`;
 }
 
 const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
-  (f: any) => f.table.name !== "log" && f.table.name !== "mail_file"
+  (f: DbField) => f.table.name !== "log" && f.table.name !== "mail_file"
 );
 
-const aptScript = (sysURL: string) =>
-  `<script type=module>import{apt}from'${sysURL}core/pub/js/apt.js';globalThis.apt=apt;</script>`;
+const aptAttrs = (sysURL: string) => `data-sys-url="${sysURL}"`;
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const ctx = getCtx() as any;
+  const ctx = getCtx();
   const app = node.app;
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
@@ -75,11 +76,11 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const search = get.search ?? "";
   const order  = get.order  ?? "not exists";
 
-  const relSubs = children.map((F: any, i: number) =>
+  const relSubs = children.map((F: DbField, i: number) =>
     `,(SELECT COUNT(*) FROM ${Db.escapeId(F.table.name)} WHERE ${Db.escapeId(F.name)}=f.id) AS r${i}`).join("");
 
   const orderSql: Record<string, string> = { newest:"f.log_id DESC", oldest:"f.log_id ASC", changed:"f.log_id_ch DESC", biggest:"f.size DESC" };
-  const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: any, i: number) => `r${i}`)].join(",");
+  const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: DbField, i: number) => `r${i}`)].join(",");
 
   let sql = `
     SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.email AS usr_init_email,ue.email AS usr_edit_email${relSubs}
@@ -98,7 +99,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
   const orderOpts = ["not exists","newest","oldest","changed","biggest"]
     .map(o => `<option${o===order?" selected":""}>${o}</option>`).join("");
-  const relHeaders = children.map((F: any) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
+  const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
 
   let trs = "";
   for (const row of rows) {
@@ -109,7 +110,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   <td>${row.id}
   <td><a href="?id=${row.id}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
-  ${children.map((_: any,i: number) => row[`r${i}`]?`<td title="${row[`r${i}`]}x">◼`:`<td>◻`).join("")}
+  ${children.map((_: DbField,i: number) => row[`r${i}`]?`<td title="${row[`r${i}`]}x">◼`:`<td>◻`).join("")}
   <td>${u2time(row.init_time)}<br><small>${hee(row.usr_init_email??"")}</small>
   <td>${u2time(row.edit_time)}<br><small>${hee(row.usr_edit_email??"")}</small>
   <td>${await f.used()?"◼":""}
@@ -119,7 +120,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   return `
-<div class="u2-flex -m-cms-backend-superuser-dbfiles">
+<div class="u2-flex -m-cms-backend-superuser-dbfiles" ${aptAttrs(ctx.sysURL)}>
   <div class="u2-card -sidebar">
     <div class="-head">${await app.t`Filter`}</div>
     <div class="-body">
@@ -143,8 +144,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       </table>
     </div>
   </div>
-</div>
-${aptScript(ctx.sysURL)}`;
+</div>`;
 }
 
 async function renderDetail(node: Node, id: number): Promise<string> {
@@ -165,9 +165,9 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const exists = await f.exists();
 
-  const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: any) => {
+  const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: DbField) => {
     const rows = await db.all(`SELECT * FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)}=?`, [id]);
-    return rows.map((lr: any) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
+    return rows.map((lr) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
   }))).join("") || "<div class=-body>none</div>";
 
   const dupes = await db.all("SELECT id,name FROM file WHERE id!=? AND md5=?", [id, row.md5]);
@@ -176,7 +176,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const text = exists ? await textView(f) : "";
 
   return `
-<div class=u2-flex>
+<div class="u2-flex -m-cms-backend-superuser-dbfiles" ${aptAttrs(ctx.sysURL)}>
 
   <div class=u2-flex style="flex-direction:column; ">
     <div class="u2-card" style="flex:0 0 auto">
@@ -202,7 +202,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <div class="u2-card" style="flex:0 0 auto">
       <div class=-head>${await app.t`Duplicates`}</div>
       ${dupes.length
-          ? `<table class=u2-table><tr><th>${await app.t`ID`}<th>${await app.t`Name`}${dupes.map((d: any)=>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
+          ? `<table class=u2-table><tr><th>${await app.t`ID`}<th>${await app.t`Name`}${dupes.map((d) =>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
           : `<div class=-body>${await app.t`none`}</div>`}
     </div>
 
@@ -216,13 +216,12 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   ${text}
 
-</div>
-${aptScript(ctx.sysURL)}`;
+</div>`;
 }
 
 async function deleteUnlinkedFs(node: Node) {
   const { db, dbFiles: fm } = node.app;
-  const dbMd5s = new Set((await db.all("SELECT md5 FROM file WHERE md5 IS NOT NULL")).map((r: any) => r.md5));
+  const dbMd5s = new Set((await db.all("SELECT md5 FROM file WHERE md5 IS NOT NULL")).map((r) => r.md5));
   let deleted = 0, size = 0;
   for await (const e of Deno.readDir(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;
@@ -237,7 +236,7 @@ async function deleteUnlinkedFs(node: Node) {
 async function deleteUnlinkedDb(node: Node) {
   const { db, dbFiles: fm } = node.app;
   const ago = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
-  const notLinked = db.table("file").children.map((F: any) =>
+  const notLinked = db.table("file").children.map((F: DbField) =>
     `file.id NOT IN (SELECT ${Db.escapeId(F.name)} FROM ${Db.escapeId(F.table.name)})`);
   const rows = await db.all(`SELECT file.id FROM file
     LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id

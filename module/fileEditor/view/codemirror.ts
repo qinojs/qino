@@ -1,16 +1,8 @@
-/**
- * fileEditor/view/codemirror.ts - CodeMirror editor view
- * Port of fileEditor/view/codemirror.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import * as nodePath from "node:path";
 import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
 import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
-//import { html } from "../../core/lib/html.ts";
 import { typeByExtension } from "../../../deps.ts";
 
 export default async function codemirrorView(file: string): Promise<string> {
@@ -61,11 +53,8 @@ export default async function codemirrorView(file: string): Promise<string> {
 
     html.title = nodePath.basename(file) + " | Editor";
 
-    ctx.html.jsData["qgToken"] = ctx.token;
-    ctx.html.jsData["appURL"] = ctx.appURL;
-
     const ext = file.replace(/.*\.([^.]+)/, "$1");
-    let mime = extToCodeMirrorMime(ext);
+    const mime = extToCodeMirrorMime(ext);
 
     let isWritable = false;
     try {
@@ -77,38 +66,26 @@ export default async function codemirrorView(file: string): Promise<string> {
     const line = ctx.get["line"] ?? "";
     const col = ctx.get["col"] ?? "";
 
-    return `<!DOCTYPE HTML>
-<html lang="${hee(ctx.langUsr)}">
-	<head>
-		${html.getHeader()}
-	<body>
-		<button
+    return `<button
 			class=q1Rst
 			id=saveButton
-			style="position:fixed;
-					right:-1px;
-					top:10px;
-					z-index:10;
-					padding:10px 12px;
-					display:none;
-					background-image: linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5));">
+			style="position:fixed;right:-1px;top:10px;z-index:10;padding:10px 12px;display:none;background-image:linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5))">
 			${isWritable ? "save" : "no write permission!"}
 		</button>
-		<div style="height:100%; width:100%">
-			<textarea id=editor name="textareaContentCanBeCachedOnReload${Math.floor(Math.random() * 2147483647)}" mime="${hee(mime)}" line="${hee(String(line))}" col="${hee(String(col))}" style="width:100%; height:100%;">${hee(content)}</textarea>
+		<div style="height:100%;width:100%">
+			<textarea id=editor name="textareaContentCanBeCachedOnReload${Date.now()}" mime="${hee(mime)}" line="${hee(String(line))}" col="${hee(String(col))}" style="width:100%;height:100%">${hee(content)}</textarea>
 		</div>`;
 }
 
 function extToCodeMirrorMime(ext: string): string {
-    const map: Record<string, string> = {
+    const overrides: Record<string, string> = {
         ts: "text/typescript",
         tsx: "text/typescript-jsx",
         mjs: "text/javascript",
         cjs: "text/javascript",
     };
-    if (map[ext]) return map[ext];
-    let mime = typeByExtension(ext) ?? "application/octet-stream";
-    if (mime === "image/svg+xml") mime = "application/xml";
-    mime = mime.replace("application/x-javascript", "text/javascript");
-    return mime;
+    if (overrides[ext]) return overrides[ext];
+    const mime = typeByExtension(ext) ?? "application/octet-stream";
+    if (mime === "image/svg+xml") return "application/xml";
+    return mime.replace("application/x-javascript", "text/javascript");
 }

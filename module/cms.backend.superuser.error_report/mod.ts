@@ -3,12 +3,12 @@
  * Port of cms.backend.superuser.error_report/index.php + detail.php
  */
 
-// deno-lint-ignore-file no-explicit-any
-
 import { hee, urlToLocalPath } from "../core/lib/util.ts";
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
+import type {} from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
 
@@ -20,7 +20,7 @@ const u2time = (t: unknown) => {
 };
 export const needs = ["cms.backend", "error_report"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser.error_report");
   if (P) {
     await P.title("en", "Errors");
@@ -99,15 +99,6 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     );
 
     const tools = `
-<script type=module>
-import { apt } from '${ctx.sysURL}core/pub/js/apt.js';
-globalThis.cmsApi = (pid, vars) => apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
-globalThis.reloadBtn = (vars, btn) => {
-    const pid = ${node.id};
-    if (btn) btn.disabled = true
-    apt.cms.node(pid).html.post({vars}).then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
-}
-</script>
 <div class="u2-card" style="flex-grow:0">
     <div class="-head">${await node.app.t`Tools`}</div>
     <div class="-body">
@@ -116,35 +107,35 @@ globalThis.reloadBtn = (vars, btn) => {
             : `<a href="?order=num_ip">${await node.app.t`sort by number of IPs`}</a><br>`}
         <br>
         ${await node.app.t`Delete`}:<br>
-        <button onclick="reloadBtn({delete:{bot:'1',source:'404'}},this);">${await node.app.t`404 and bots`}</button><br>
-        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'404'}},this);">${await node.app.t`404 and old browsers`}</button><br>
-        <button onclick="reloadBtn({delete:{referer:'',source:'404'}},this);">${await node.app.t`404 no referer`}</button><br>
-        <button onclick="reloadBtn({delete:{bot:'1',source:'js'}},this);">${await node.app.t`js and bots`}</button><br>
-        <button onclick="reloadBtn({delete:{unsupported_ua:'1',source:'js'}},this);">${await node.app.t`js and old browsers`}</button><br>
-        <button onclick="reloadBtn({delete:{file:'',source:'js'}},this);">${await node.app.t`js no file`}</button><br>
-        <button onclick="reloadBtn({delete_foreign_js:true},this);">${await node.app.t`js, foreign`}</button><br>
-        <button onclick="reloadBtn({delete:{source:'404'}},this);">${await node.app.t`delete 404`}</button><br>
-        <button onclick="reloadBtn({delete:{source:'net'}},this);">${await node.app.t`delete net`}</button><br>
-        <button onclick="reloadBtn({delete:{source:'perf'}},this);">${await node.app.t`delete perf`}</button><br>
-        <button onclick="reloadBtn({delete:{prio:'notice',source:'csp'}},this);">${await node.app.t`csp read-only`}</button><br>
-        <button onclick="reloadBtn({delete:{prio:'notice'}},this);">${await node.app.t`Notices`}</button><br>
-        <button onclick="reloadBtn({deleteAll:1},this);">${await node.app.t`Delete all entries`}</button><br>
+        <button data-reload='{"delete":{"bot":"1","source":"404"}}'>${await node.app.t`404 and bots`}</button><br>
+        <button data-reload='{"delete":{"unsupported_ua":"1","source":"404"}}'>${await node.app.t`404 and old browsers`}</button><br>
+        <button data-reload='{"delete":{"referer":"","source":"404"}}'>${await node.app.t`404 no referer`}</button><br>
+        <button data-reload='{"delete":{"bot":"1","source":"js"}}'>${await node.app.t`js and bots`}</button><br>
+        <button data-reload='{"delete":{"unsupported_ua":"1","source":"js"}}'>${await node.app.t`js and old browsers`}</button><br>
+        <button data-reload='{"delete":{"file":"","source":"js"}}'>${await node.app.t`js no file`}</button><br>
+        <button data-reload='{"delete_foreign_js":true}'>${await node.app.t`js, foreign`}</button><br>
+        <button data-reload='{"delete":{"source":"404"}}'>${await node.app.t`delete 404`}</button><br>
+        <button data-reload='{"delete":{"source":"net"}}'>${await node.app.t`delete net`}</button><br>
+        <button data-reload='{"delete":{"source":"perf"}}'>${await node.app.t`delete perf`}</button><br>
+        <button data-reload='{"delete":{"prio":"notice","source":"csp"}}'>${await node.app.t`csp read-only`}</button><br>
+        <button data-reload='{"delete":{"prio":"notice"}}'>${await node.app.t`Notices`}</button><br>
+        <button data-reload='{"deleteAll":1}'>${await node.app.t`Delete all entries`}</button><br>
     </div>
 </div>`;
 
     if (!rows.length && get.show !== "entries") {
-        return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">${await node.app.t`Great, no errors so far!`}</div></div></div>`;
+        return `<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">${tools}<div class="u2-card"><div class="-body">${await node.app.t`Great, no errors so far!`}</div></div></div>`;
     }
 
     if (get.show === "entries") {
         const entriesBox = await renderEntryList(node, ctx, get);
-        return `<div class="u2-flex">${tools}${entriesBox}</div>`;
+        return `<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">${tools}${entriesBox}</div>`;
     }
 
     const { editorLink } = makeFileHelper(ctx);
     let tableRows = "";
     for (const row of rows) {
-        const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" } as any)[row.prio] ?? "var(--gray)";
+        const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" } as Record<string, string>)[String(row.prio)] ?? "var(--gray)";
         const num     = Number(row.num)     || 0;
         const numBot  = Number(row.num_bot) || 0;
         const numUns  = Number(row.num_unsupported) || 0;
@@ -175,7 +166,7 @@ globalThis.reloadBtn = (vars, btn) => {
         <div>${hee(row.usr_email ?? "")}</div>
     <td>
         <img
-            onclick="cmsApi(${node.id},{delete:Object.assign({},this.dataset)})"
+            data-delete-entry
             data-file="${hee(row.file)}"
             data-line="${hee(String(row.line))}"
             data-col="${hee(String(row.col))}"
@@ -186,7 +177,7 @@ globalThis.reloadBtn = (vars, btn) => {
     }
 
     return `
-<div class="u2-flex">
+<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">
     ${tools}
     <div class="u2-card" style="max-height:88vh; overflow:auto; flex:1 1 80rem">
         <div class="-head">${await node.app.t`Errors`}</div>
@@ -197,7 +188,7 @@ globalThis.reloadBtn = (vars, btn) => {
 </div>`;
 }
 
-async function renderEntryList(node: Node, ctx: any, get: Record<string, string>): Promise<string> {
+async function renderEntryList(node: Node, ctx: RequestContext, get: Record<string, string>): Promise<string> {
     const db = node.app.db;
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
@@ -383,7 +374,7 @@ ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&hi
 </div>`;
 }
 
-export async function backendDashboardWidget(app: any): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<string> {
 	  const db = app.db;
 	  const rows = await db.all(
 	    `SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
@@ -395,7 +386,7 @@ export async function backendDashboardWidget(app: any): Promise<string> {
 	     JOIN m_error_report e ON e.id = g.max_id
 	     ORDER BY FIELD(e.prio,'error','warning','notice'), g.max_id DESC
 	     LIMIT 5`
-	  ).catch(() => [] as any[]);
+	  ).catch(() => []);
 
   if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries</span>`;
 
@@ -425,6 +416,7 @@ export async function backendDashboardWidget(app: any): Promise<string> {
 
 export const cms = {
   node: {
+    js: ["pub/main.js"],
     render,
   },
 };

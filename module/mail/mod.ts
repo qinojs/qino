@@ -1,8 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
 import { createHash } from "node:crypto";
 import { basename, extname } from "node:path";
 import { typeByExtension } from "../../deps.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { hee, OutputDoneError, uid } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
@@ -11,10 +10,14 @@ export const name = "mail";
 export const needs = ["core"];
 export { dbSchema };
 
-type Dict = Record<string, any>;
+declare module "../core/server.ts" {
+  interface App { mail: MailManager; }
+}
+
+type Dict = Record<string, unknown>;
 type AddressInput = string | { address?: string; email?: string; name?: string; data?: Dict; mail1_track_id?: number };
 type Template = string | ((data: TemplateData) => string | Promise<string>);
-type Transport = { send(message: unknown, options?: unknown): Promise<any>; sendMany?: (messages: unknown, options?: unknown) => AsyncIterable<any> };
+type Transport = { send(message: unknown, options?: unknown): Promise<unknown>; sendMany?: (messages: unknown, options?: unknown) => AsyncIterable<unknown>; close?(): Promise<void>; closeAllConnections?(): Promise<void> };
 
 type TemplateData = {
   app: App;
@@ -124,8 +127,8 @@ export const settingsSchema = {
 };
 
 export function init(app: App): void {
-  (app as any).mail = new MailManager(app);
-  app.on("action", ({ ctx }: any) => handleTrack(ctx));
+  app.mail = new MailManager(app);
+  app.on("action", (e) => handleTrack(e.ctx as never));
 }
 
 function addressOf(input: AddressInput, name = "", data: Dict = {}): Recipient | null {
@@ -159,7 +162,7 @@ function mergeHeaders(...headers: (HeadersInit | undefined)[]): Headers {
 }
 
 function valueAt(data: Dict, path: string): unknown {
-  return path.trim().split(".").reduce((v, key) => v?.[key], data);
+  return path.trim().split(".").reduce((v: unknown, key) => (v as Record<string, unknown>)?.[key], data as unknown);
 }
 
 function renderMarkers(tpl: string, data: Dict): string {
@@ -183,6 +186,7 @@ function htmlToText(html: string): string {
     .trim();
 }
 
+// deno-lint-ignore no-explicit-any
 async function importUpyo(pkg: string): Promise<any> {
   return await import(`jsr:@upyo/${pkg}`);
 }
@@ -215,21 +219,22 @@ function jsonDecode<T>(v: unknown, fallback: T): T {
   catch { return fallback; }
 }
 
-async function readPath(root: any, path: string[]): Promise<any> {
+async function readPath(root: unknown, path: string[]): Promise<unknown> {
   try {
-    let item = root;
-    for (const key of path) item = item[key];
+    let item = root as Record<string, unknown>;
+    for (const key of path) item = item[key] as Record<string, unknown>;
     return await item;
   } catch { return undefined; }
 }
 
-async function firstSetting(root: any, paths: string[][]): Promise<any> {
+async function firstSetting(root: unknown, paths: string[][]): Promise<unknown> {
   for (const path of paths) {
     const v = await readPath(root, path);
     if (v !== "" && v != null) return v;
   }
 }
 
+// deno-lint-ignore no-explicit-any
 async function pathAttachment(v: string, opts: Dict = {}): Promise<any> {
   const filename = opts.name ?? opts.filename ?? basename(v);
   const contentType = opts.type ?? opts.contentType ?? typeByExtension(extname(v).replace(/^\./, "")) ?? "application/octet-stream";
@@ -237,6 +242,7 @@ async function pathAttachment(v: string, opts: Dict = {}): Promise<any> {
   return clean({ filename, content: Deno.readFile(v), contentType, contentId, inline: !!opts.inline });
 }
 
+// deno-lint-ignore no-explicit-any
 async function attachmentOf(v: AttachmentInput, inline = false): Promise<any> {
   if (typeof v === "string") return await pathAttachment(v, { inline });
   if (v.path) return await pathAttachment(v.path, { ...v, inline: v.inline ?? inline });
@@ -255,14 +261,14 @@ function trackCert(secret: string, trackId: number): string {
   return createHash("sha1").update("mail1-track" + secret + trackId).digest("hex").slice(0, 8);
 }
 
-async function handleTrack(ctx: any): Promise<void> {
+async function handleTrack(ctx: RequestContext): Promise<void> {
   const raw = String(ctx.get.mail1tr ?? "");
   if (!raw) return;
   const [idRaw, cert] = raw.split("-");
   const trackId = Number(idRaw);
   if (!trackId || !cert) return;
 
-  const secret = await (ctx.app as any).mail.secure();
+  const secret = await ctx.app.mail.secure();
   if (cert !== trackCert(secret, trackId)) return;
 
   const recipient = await ctx.app.db.row("SELECT * FROM mail_recipient WHERE mail1_track_id = ?", [trackId]);
@@ -283,7 +289,7 @@ async function handleTrack(ctx: any): Promise<void> {
 
   if (ctx.appRequestUri === "blank.gif") {
     ctx.responseHeaders.set("Content-Type", "image/gif");
-    ctx.responseBody = BLANK_GIF;
+    ctx.responseBody = BLANK_GIF as never;
     throw new OutputDoneError();
   }
   if (ctx.appRequestUri === "mail-track" && url) {
@@ -341,13 +347,13 @@ export class MailManager {
   }
 
   async close(): Promise<void> {
-    const t: any = this.#transport ?? this.#builtTransport;
+    const t = this.#transport ?? this.#builtTransport;
     await t?.closeAllConnections?.();
     await t?.close?.();
   }
 
   async defaults(): Promise<Dict> {
-    const root = (this.app as any).settings;
+    const root = this.app.settings;
     return {
       sender: await firstSetting(root, [["mail", "sender"], ["qg", "mail", "defSender"]]) ?? "",
       sendername: await firstSetting(root, [["mail", "sendername"], ["qg", "mail", "defSendername"]]) ?? "",
@@ -358,11 +364,11 @@ export class MailManager {
   }
 
   async secure(): Promise<string> {
-    const root = (this.app as any).settings;
+    const root = this.app.settings;
     let secret = String(await firstSetting(root, [["qg", "_secure"], ["mail", "_secure"]]) ?? "");
     if (!secret) {
       secret = uid();
-      root.qg._secure = secret;
+      root.qg._secure(secret);
     }
     return secret;
   }
@@ -421,10 +427,10 @@ export class MailManager {
   }
 
   async transportConfig(): Promise<{ type: string; options: Dict }> {
-    const root = (this.app as any).settings;
+    const root = this.app.settings;
     let type = String(await firstSetting(root, [["mail", "transport", "type"]]) ?? "");
     if (!type && await firstSetting(root, [["mail", "transport", "host"], ["qg", "mail", "smtp", "host"]])) type = "smtp";
-    if (!type && (this.app as any).config?.dev) type = "mock";
+    if (!type && this.app.config?.dev) type = "mock";
     if (!type) throw new Error("No mail transport configured. Set mail.transport.type or inject app.mail.setTransport().");
     type = type.toLowerCase();
 
@@ -496,7 +502,7 @@ export class MailMessage {
   priority?: "high" | "normal" | "low";
   template: string | Template | false = "default";
   attachments: AttachmentInput[] = [];
-  receipts: any[] = [];
+  receipts: unknown[] = [];
   #pending: Promise<unknown>[] = [];
   #loaded = false;
 
@@ -507,21 +513,22 @@ export class MailMessage {
   }
 
   fromRow(row: Dict): this {
-    this.id = String(row.id ?? this.id);
-    this.sender = row.sender ?? "";
-    this.from = row.sender ?? "";
-    this.sendername = row.sendername ?? "";
-    this.reply_to = row.reply_to ?? "";
-    this.replyTo = row.reply_to ?? "";
-    this.subject = row.subject ?? "";
-    this.text = row.text ?? "";
-    this.html = row.html ?? "";
-    this.body = row.html ?? "";
-    this.template = row.template || false;
-    this.data = jsonDecode(row.data, {});
-    this.headers = jsonDecode(row.headers, undefined);
-    this.tags = jsonDecode(row.tags, undefined);
-    this.priority = row.priority || undefined;
+    const r = row as Record<string, string>;
+    this.id = String(r.id ?? this.id);
+    this.sender = r.sender ?? "";
+    this.from = r.sender ?? "";
+    this.sendername = r.sendername ?? "";
+    this.reply_to = r.reply_to ?? "";
+    this.replyTo = r.reply_to ?? "";
+    this.subject = r.subject ?? "";
+    this.text = r.text ?? "";
+    this.html = r.html ?? "";
+    this.body = r.html ?? "";
+    this.template = r.template as Template || false;
+    this.data = jsonDecode(r.data, {});
+    this.headers = jsonDecode(r.headers, undefined);
+    this.tags = jsonDecode(r.tags, undefined);
+    this.priority = r.priority as MailMessage["priority"] || undefined;
     return this;
   }
 
@@ -695,7 +702,7 @@ export class MailMessage {
         priority: this.priority,
       }));
       try {
-        const receipt = await transport.send(message);
+        const receipt = await transport.send(message) as { successful?: boolean; errorMessages?: string[] } | undefined;
         this.receipts.push(receipt);
         if (receipt?.successful) await this.markRecipient(recipient, { sent: Math.floor(Date.now() / 1000), error: "" });
         else await this.markRecipient(recipient, { error: receipt?.errorMessages?.join("\n") ?? "mail sending failed" });
@@ -705,7 +712,7 @@ export class MailMessage {
         await this.markRecipient(recipient, { error: String(error) });
       }
     }
-    return this.receipts.every(r => r?.successful);
+    return this.receipts.every(r => (r as { successful?: boolean })?.successful);
   }
 
   async loadParts(): Promise<this> {
@@ -753,9 +760,9 @@ export class MailMessage {
   }
 
   fromAddress(defaults: Dict): string {
-    const sender = this.sender || this.from || defaults.sender;
+    const sender = this.sender || this.from || String(defaults.sender ?? "");
     if (!sender) throw new Error("Mail has no sender. Set mail.sender or m.from.");
-    return formatAddress({ address: sender, name: this.sendername || defaults.sendername });
+    return formatAddress({ address: sender, name: this.sendername || String(defaults.sendername ?? "") });
   }
 }
 

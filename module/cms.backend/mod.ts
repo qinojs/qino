@@ -1,20 +1,12 @@
-/**
- * cms.backend/mod.ts - Backend module welcome page / dashboard
- * Port of cms.backend/index.php
- */
-
-import type { App } from "@qino/qino";
-import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
-
-// deno-lint-ignore-file no-explicit-any
+import type { App } from "../core/server.ts";
+import type { Node } from "../cms/lib/Node.ts";
 
 export const name = "cms.backend";
 export const needs = ["cms"];
 
-
 export const backend = {
-    async checkInstalled(app: App): Promise<any> {
+    async checkInstalled(app: App): Promise<Node | undefined> {
         const cms = app.cms;
         let node = await cms.nodeByModule("cms.backend");
         if (!node) {
@@ -40,12 +32,12 @@ export const backend = {
         }
         return node ? await node.page() : node;
     },
-    async install(app: App, module: string): Promise<any> {
+    async install(app: App, module: string): Promise<Node | undefined> {
         const cms = app.cms;
 
         await backend.checkInstalled(app);
         const m = module.match(/^cms\.backend\.(.+)/);
-        if (!m) return false;
+        if (!m) return;
         const parts = m[1].split(".");
         let parentModule = "cms.backend";
         for (const part of parts) {
@@ -75,7 +67,7 @@ export const backend = {
  * cms.backend install()
  * Port of cms.backend/install.php
  */
-export async function install({app}: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.checkInstalled(app);
   if (P) {
     await P.title("en", "Backend");

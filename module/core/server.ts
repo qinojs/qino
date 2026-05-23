@@ -115,6 +115,7 @@ export class App {
         const [ctx, isNew] = await makeRequestContext(this, hc);
         const initialSessionToken = ctx.sessionToken;
         hc.set("ctx", ctx);
+        const t0 = Date.now();
 
         return await requestStorage.run(ctx, async () => {
             try {
@@ -127,6 +128,7 @@ export class App {
                 hc.res = await this.#buildResponse(hc, ctx);
             } finally {
                 await ctx.cleanup();
+                console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
             }
             return hc.res;
         });
@@ -147,7 +149,10 @@ export class App {
         if (hc.res.status !== 404 || hasRoute) return;
         const ctx = getCtx();
         await this.fire("render", { ctx });
-        if (ctx.hasHtml) ctx.responseBody = ctx.html.render();
+        if (ctx.hasHtml) {
+            await this.fire("html-ready", { ctx });
+            ctx.responseBody = ctx.html.render();
+        }
         hc.res = await this.#buildResponse(hc, ctx);
     }
 
@@ -157,7 +162,7 @@ export class App {
             ctx.responseBody = JSON.stringify(e.data);
             ctx.responseStatus = e.status;
         } else if (e instanceof OutputError) {
-            ctx.responseBody = e.body;
+            ctx.responseBody = e.body as string;
         } else if (!(e instanceof RedirectError || e instanceof OutputDoneError)) {
             console.error("Error:", e);
             ctx.responseStatus = 500;

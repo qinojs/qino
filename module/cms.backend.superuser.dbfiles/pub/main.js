@@ -1,4 +1,5 @@
-cms.initCont("cms.backend.superuser.dbfiles", (el) => {
+cms.initCont("cms.backend.superuser.dbfiles", async (el) => {
+  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
   const nid = cms.el.pid(el);
 
   let debTimer;

@@ -1,12 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { matchPath, parsePathList } from "./pathlist.ts";
 import { settingsSchema, type SecuritySettings } from "./schema.ts";
+import type { App } from "../core/server.ts";
+import type { Db } from "../core/lib/Db.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const now = () => Math.floor(Date.now() / 1000);
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const bucketCache = new WeakMap<object, Map<string, { until: number; row: any }>>();
+const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();
 
-export async function settings(app: any): Promise<SecuritySettings> {
+export async function settings(app: App): Promise<SecuritySettings> {
   const s = app.settings["cms.backend.security"];
   const props = settingsSchema.properties as Record<string, { type: string; default: unknown }>;
   const result: Record<string, unknown> = {};
@@ -24,7 +27,7 @@ export async function settings(app: any): Promise<SecuritySettings> {
   return result as SecuritySettings;
 }
 
-export async function suspiciousPath(app: any, path: string) {
+export async function suspiciousPath(app: App, path: string) {
   const set = await settings(app);
   const allow = parsePathList(set.allowedPaths);
   const paths = parsePathList(set.suspiciousPaths);
@@ -33,7 +36,7 @@ export async function suspiciousPath(app: any, path: string) {
 }
 
 
-export function fastInfo(ctx: any): any {
+export function fastInfo(ctx: RequestContext): any {
   const path = short(ctx.appRequestUri || new URL(ctx.req.url).pathname, 191);
   const ip = ctx.remoteAddr || "";
   return {
@@ -43,7 +46,7 @@ export function fastInfo(ctx: any): any {
   };
 }
 
-export function reqInfo(ctx: any): any {
+export function reqInfo(ctx: RequestContext): any {
   const info = fastInfo(ctx);
   const payload = payloadText(ctx);
   return {
@@ -52,7 +55,7 @@ export function reqInfo(ctx: any): any {
   };
 }
 
-export async function hitBuckets(ctx: any, info: any, signals: any[], set: Record<string, number>) {
+export async function hitBuckets(ctx: RequestContext, info: any, signals: any[], set: Record<string, number>) {
   for (const hit of bucketHits(info, signals, set)) {
     await hitBucket(ctx.app.db, hit.scope, hit.ident, hit.score, hit.reason, info.path, set);
   }
@@ -70,7 +73,7 @@ export function bucketHits(info: any, signals: any[], set: Record<string, number
   return [...hits.values()];
 }
 
-async function hitBucket(db: any, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
+async function hitBucket(db: Db, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
   const t = now();
   const row = await getBucket(db, scope, ident, set);
   const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;
@@ -84,7 +87,7 @@ async function hitBucket(db: any, scope: string, ident: string, add: number, rea
   }
 }
 
-export async function penaltyState(db: any, info: any, set: Record<string, number>, signals: any[] = []) {
+export async function penaltyState(db: Db, info: any, set: Record<string, number>, signals: any[] = []) {
   const ids = bucketScopes(info, set).concat(...signals.map(s => bucketScopes(info, set, s))).map(([scope, ident]) => [scope, ident]).filter((x) => x[1]);
   let best: any = { score: 0, delay: 0, blocked: false, warn: false };
   for (const [scope, ident] of ids) {
@@ -102,7 +105,7 @@ export async function penaltyState(db: any, info: any, set: Record<string, numbe
   return best;
 }
 
-async function getBucket(db: any, scope: string, ident: string, set: Record<string, number>) {
+async function getBucket(db: Db, scope: string, ident: string, set: Record<string, number>) {
   const key = bucketKey(scope, ident);
   const old = bucketCache.get(db)?.get(key);
   if (old && old.until > Date.now()) return old.row;
@@ -111,7 +114,7 @@ async function getBucket(db: any, scope: string, ident: string, set: Record<stri
   return row;
 }
 
-function setBucketCache(db: any, scope: string, ident: string, row: any, set: Record<string, number>) {
+function setBucketCache(db: Db, scope: string, ident: string, row: any, set: Record<string, number>) {
   const map = bucketCache.get(db) ?? new Map();
   bucketCache.set(db, map);
   map.set(bucketKey(scope, ident), { until: Date.now() + Math.max(1, set.bucketCacheSeconds ?? 2) * 1000, row });
@@ -141,11 +144,11 @@ function bucketScopes(info: any, set: Record<string, number>, signal?: any): [st
   return scopes;
 }
 
-export async function addEvent(ctx: any, data: any) {
+export async function addEvent(ctx: RequestContext, data: Record<string, unknown>) {
   await addEventDb(ctx.app.db, { log_id: Number(ctx.logId || 0) || null, ...data });
 }
 
-export async function addEventDb(db: any, data: any) {
+export async function addEventDb(db: Db, data: Record<string, unknown>) {
   const extra = data.data ? JSON.stringify(data.data) : "";
   delete data.data;
   const event = {
@@ -158,7 +161,7 @@ export async function addEventDb(db: any, data: any) {
   await db.table("m_security_event").insert(event);
 }
 
-export async function cleanup(db: any, set: Record<string, number>) {
+export async function cleanup(db: Db, set: Record<string, number>) {
   const old = now() - set.keepDays * 86400;
   await db.query("DELETE FROM m_security_event WHERE time < ?", [old]);
   await db.query("DELETE FROM m_security_bucket WHERE last_seen < ? AND blocked = 0", [old]);
@@ -170,7 +173,7 @@ function ipRange(ip: string): string {
   return ip;
 }
 
-function payloadText(ctx: any): string {
+function payloadText(ctx: RequestContext): string {
   const entries = [...Object.entries(ctx.get ?? {}), ...Object.entries(ctx.post ?? {})]
     .filter(([k]) => !/pw|pass|password|token|secret/i.test(k))
     .map(([k, v]) => k + "=" + String(v));

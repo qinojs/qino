@@ -16,7 +16,7 @@ import { AnswerError, OutputDoneError, urlToLocalPath, assertAllowedPath } from 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
 await import(reporterPath);
 
-type Report = Record<string, any>;
+type Report = Record<string, unknown>;
 
 export const name = "error_report";
 export const needs = ["core"];
@@ -88,7 +88,7 @@ async function handleCspError(ctx: RequestContext): Promise<void> {
   throw new AnswerError({});
 }
 
-async function addReport(app: any, vs: Report): Promise<void> {
+async function addReport(app: App, vs: Report): Promise<void> {
   const row: Report = {
     file: "",
     line: "",
@@ -112,24 +112,24 @@ async function addReport(app: any, vs: Report): Promise<void> {
 
 export function init(app: App): void {
 
-  (globalThis as any).reporterJsOptions = {
+  (globalThis as typeof globalThis & { reporterJsOptions: unknown }).reporterJsOptions = {
     onError: async (data: Report) => {
       data.source ??= "deno";
       await addReport(app, data);
     },
   };
 
-  app.on("action", ({ ctx }: any) => {
+  app.on("action", (e) => { const ctx = e.ctx as RequestContext;
     if (ctx.appRequestUri === "js-error")  return handleJsError(ctx);
     if (ctx.appRequestUri === "css-error") return handleCssError(ctx);
     if (ctx.appRequestUri === "csp-error") return handleCspError(ctx);
   });
 
-  app.on("render", async ({ ctx }: any) => {
+  app.on("render", async (e) => { const ctx = e.ctx as RequestContext;
     if (!ctx.hasHtml) return;
     const browserErrorsEnabled = await ctx.app.settings.error_report.browserErrors;
     if (!browserErrorsEnabled) return;
-    ctx.html.head += `<script>window.reporterJsOptions={url:${JSON.stringify(ctx.appURL + "js-error")},max:50};</script>\n`;
+    ctx.html.jsData.reporterJsOptions = { url: ctx.appURL + "js-error", max: 50 };
     ctx.html.addJSFile(reporterPath);
     ctx.cspReportUri = ctx.appURL + "csp-error";
   });

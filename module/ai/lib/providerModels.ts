@@ -1,5 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
 import type { ProviderModel, ProviderStrength } from "../types.ts";
+import type { App } from "../../core/server.ts";
 import { providers } from "./providers.ts";
 
 function normalizeModel(value: unknown): ProviderModel | null {
@@ -55,7 +55,7 @@ export function parseProviderModels(value: unknown): ProviderModel[] {
 }
 
 export async function customProviderModels(
-  app: any,
+  app: Pick<App, "settings">,
   providerName: string,
 ): Promise<ProviderModel[]> {
   return parseProviderModels(
@@ -64,7 +64,7 @@ export async function customProviderModels(
 }
 
 export async function providerModels(
-  app: any,
+  app: Pick<App, "settings">,
   providerName: string,
 ): Promise<ProviderModel[]> {
   const provider = providers[providerName];

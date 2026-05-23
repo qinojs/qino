@@ -33,7 +33,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
     const order = sortable.includes(orderRaw) ? orderRaw : "count";
 
     const whereParts: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     if (counterActive) whereParts.push("count > 0");
     if (search) {
         const cols = ["namespace", "original", ...langs].map(c => `${c} LIKE ?`).join(" OR ");
@@ -59,7 +59,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
         let codeLogTd = "";
         if (isSuperuser) {
             const logs = await db.all("SELECT * FROM smalltext_code_log WHERE hash = ? AND namespace = ?", [row.hash, row.namespace]);
-            const links = logs.map((r: any) =>
+            const links = logs.map((r) =>
                 `<a href="${hee(r.file)}:${hee(String(r.line))}">${hee(r.file)}:${hee(String(r.line))}</a>`
             ).join("<br>");
             codeLogTd = `<td>${links}`;

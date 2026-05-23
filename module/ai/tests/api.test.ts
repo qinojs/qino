@@ -16,14 +16,14 @@ Deno.test("ai: module metadata and apt tools are wired", () => {
 });
 
 Deno.test("ai: init installs AiApi, apt tree and cms-ready hook", () => {
-  const handlers: Record<string, Function[]> = {};
+  const handlers: Record<string, ((data: Record<string, unknown>) => void)[]> = {};
   const app = {
     aptTree: {},
-    on(name: string, fn: Function) {
+    on(name: string, fn: (data: Record<string, unknown>) => void) {
       (handlers[name] ??= []).push(fn);
     },
   };
-  init(app);
+  init(app as never);
   assertEquals(typeof (app as never as { ai: unknown }).ai, "object");
   assertEquals((app.aptTree as never as Record<string, unknown>).ai, api);
 

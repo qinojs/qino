@@ -1,5 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
-import type { Bot, Tool } from "../types.ts";
+import type { Tool } from "../types.ts";
+import type { App } from "../../core/server.ts";
+import type { AiApi } from "./AiApi.ts";
+import type { RequestContext } from "../../core/lib/RequestContext.ts";
 import { chatCompletions } from "./chatCompletions.ts";
 import { providerModels } from "./providerModels.ts";
 import { providers } from "./providers.ts";
@@ -10,10 +12,10 @@ export async function chatSession(
     messages: Array<{ role: string; content: string }>;
     context?: Record<string, unknown>;
   },
-  app: any,
-  ctx: any,
+  app: Pick<App, "settings"> & { ai?: AiApi | undefined },
+  ctx: RequestContext,
 ): Promise<string | Record<string, unknown>> {
-  const bot: Bot = app.ai?.getBot(data.bot);
+  const bot = app.ai?.getBot(data.bot);
   if (!bot) return { error: `Bot not found: ${data.bot}` };
 
   const defaultProviderName = String(
@@ -78,22 +80,24 @@ export async function chatSession(
       ...(wantsStructuredOutput && !activeTools?.length
         ? { response_format: { type: "json_object" } }
         : {}),
-    }, app);
+    }, app) as Record<string, unknown>;
 
     if (result?.error) {
       const err = result.error;
       return {
         error: typeof err === "string"
           ? err
-          : (err?.message ?? JSON.stringify(err)),
+          : (err instanceof Error ? err.message : JSON.stringify(err)),
       };
     }
 
-    const message = result?.choices?.[0]?.message;
-    if (!message?.tool_calls?.length) {
-      const content = message?.content ?? "";
-      if (!String(content).trim()) {
-        const finishReason = result?.choices?.[0]?.finish_reason;
+    const choices = result?.choices as Record<string, unknown>[] | undefined;
+    const message = choices?.[0]?.message as Record<string, unknown> | undefined;
+    const toolCalls = message?.tool_calls as Record<string, unknown>[] | undefined;
+    if (!toolCalls?.length) {
+      const content = String(message?.content ?? "");
+      if (!content.trim()) {
+        const finishReason = choices?.[0]?.finish_reason;
         return {
           error: `Empty response from provider "${providerName}"${
             resolvedModel ? ` model "${resolvedModel}"` : ""
@@ -117,24 +121,25 @@ export async function chatSession(
       catch { return { response: content }; }
     }
 
-    messages.push(message);
-    for (const tc of message.tool_calls) {
-      const tool = bot.tools?.find((t: Tool) => t.name === tc.function.name);
+    if (message) messages.push(message);
+    for (const tc of toolCalls) {
+      const fn = tc.function as Record<string, unknown>;
+      const tool = bot.tools?.find((t: Tool) => t.name === fn.name);
       let toolResult: unknown;
       try {
         toolResult = tool
-          ? await tool.execute(JSON.parse(tc.function.arguments ?? "{}"), ctx)
-          : { error: `Unknown tool: ${tc.function.name}` };
+          ? await tool.execute(JSON.parse(String(fn.arguments ?? "{}")), ctx)
+          : { error: `Unknown tool: ${fn.name}` };
         console.log(
-          `[tool:${tc.function.name}] args:`,
-          tc.function.arguments,
+          `[tool:${fn.name}] args:`,
+          fn.arguments,
           "→",
           JSON.stringify(toolResult).slice(0, 200),
         );
       } catch (e) {
         console.error(
-          `[tool:${tc.function.name}] args:`,
-          tc.function.arguments,
+          `[tool:${fn.name}] args:`,
+          fn.arguments,
           e,
         );
         toolResult = { error: String(e) };

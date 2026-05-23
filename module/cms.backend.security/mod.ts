@@ -1,17 +1,17 @@
-// deno-lint-ignore-file no-explicit-any
 import { dbSchema, settingsSchema } from "./schema.ts";
 import { initSecurity } from "./guard.ts";
 import { backendDashboardWidget, render } from "./view.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.security";
 export const needs = ["cms.backend"];
 export { dbSchema, settingsSchema };
 
-export function init(app: any) {
+export function init(app: App) {
   initSecurity(app);
 }
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const mod = "../cms.backend/mod.ts";
   const { backend } = await import(mod);
   const P = await backend.install(app, name);

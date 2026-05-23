@@ -13,14 +13,14 @@ function sessionLang(initial = "") {
 }
 
 Deno.test("LangManager: setLangs normalizes languages and exposes default", () => {
-  const lm = new LangManager({});
+  const lm = new LangManager({} as never);
   lm.setLangs([" DE ", "", "EN"]);
   assertEquals(lm.all, ["de", "en"]);
   assertEquals(lm.def, "de");
 });
 
 Deno.test("LangManager: initCtx prefers URL language then browser language", async () => {
-  const lm = new LangManager({});
+  const lm = new LangManager({} as never);
   lm.setLangs(["en", "de", "fr"]);
 
   const ctx = new RequestContext();
@@ -41,7 +41,7 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
 });
 
 Deno.test("LangManager: changeLanguage query overrides stored session language", async () => {
-  const lm = new LangManager({});
+  const lm = new LangManager({} as never);
   lm.setLangs(["en", "de"]);
 
   const lang = sessionLang("en");
@@ -57,7 +57,7 @@ Deno.test("LangManager: changeLanguage query overrides stored session language",
 });
 
 Deno.test("LangManager: namespace start/stop changes active language", async () => {
-  const lm = new LangManager({});
+  const lm = new LangManager({} as never);
   lm.setLangs(["de", "en"]);
   const ctx: any = {
     langUsr: "de",
@@ -82,7 +82,7 @@ Deno.test("LangManager: namespace start/stop changes active language", async () 
 });
 
 Deno.test("LangManager: nested namespaces restore lang correctly", async () => {
-  const lm = new LangManager({});
+  const lm = new LangManager({} as never);
   lm.setLangs(["de", "en", "fr"]);
   const ctx: any = {
     langUsr: "de",
@@ -114,7 +114,7 @@ Deno.test("LangManager: t inserts new smalltext and replaces placeholders", asyn
       },
     },
   };
-  const lm = new LangManager(app);
+  const lm = new LangManager(app as never);
   lm.setLangs(["de"]);
   const ctx = new RequestContext();
   ctx.lang = "de";

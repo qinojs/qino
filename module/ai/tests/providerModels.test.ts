@@ -52,7 +52,7 @@ Deno.test("ai: providerModels merges built-in and custom models by id", async ()
     },
   };
 
-  const models = await providerModels(app, "jina.ai");
+  const models = await providerModels(app as never, "jina.ai");
   const byId = new Map(models.map((model) => [model.id, model]));
   assertEquals(byId.get("jina-embeddings-v3")?.label, "Custom Jina 3");
   assertEquals(byId.get("custom-jina")?.label, "Custom Jina");
@@ -60,5 +60,5 @@ Deno.test("ai: providerModels merges built-in and custom models by id", async ()
 });
 
 Deno.test("ai: providerModels returns empty list for unknown providers", async () => {
-  assertEquals(await providerModels({ settings: { ai: { provider: {} } } }, "missing"), []);
+  assertEquals(await providerModels({ settings: { ai: { provider: {} } } } as never, "missing"), []);
 });

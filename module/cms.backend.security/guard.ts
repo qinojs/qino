@@ -4,11 +4,14 @@ import { OutputDoneError } from "../core/lib/util.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
+import type { App } from "../core/server.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 const pathBlocks = new Map<string, number>();
 
-export function initSecurity(app: any) {
-  app.on("request-start", async ({ context }: any) => {
+export function initSecurity(app: App) {
+  app.on("request-start", async e => {
+    const context = (e.context ?? e.ctx) as any;
     const info = gateInfo(context);
     if (isPathBlocked(info)) return deny(5);
     const set = await settings(app);
@@ -20,7 +23,8 @@ export function initSecurity(app: any) {
     deny(set.pathBlockSeconds);
   });
 
-  app.on("action", async ({ ctx }: any) => {
+  app.on("action", async e => {
+    const ctx = e.ctx as RequestContext;
     const fast = fastInfo(ctx);
     if (isPathBlocked(fast)) return block(ctx, 5);
     const set = await settings(ctx.app);
@@ -52,7 +56,8 @@ export function initSecurity(app: any) {
     if (policy.delay) await sleep(policy.delay);
   });
 
-  app.on("respond", async ({ ctx }: any) => {
+  app.on("respond", async e => {
+    const ctx = e.ctx as RequestContext;
     const sec = ctx.state.security;
     if (!sec) return;
     const set = await settings(ctx.app);

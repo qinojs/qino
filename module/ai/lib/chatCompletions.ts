@@ -1,8 +1,8 @@
-// deno-lint-ignore-file no-explicit-any
+import type { App } from "../../core/server.ts";
 import { providerModels } from "./providerModels.ts";
 import { providers } from "./providers.ts";
 
-export async function chatCompletions(data: Record<string, unknown>, app: any): Promise<any> {
+export async function chatCompletions(data: Record<string, unknown>, app: Pick<App, "settings">): Promise<unknown> {
   const defaultProviderName = String(await app.settings.ai.default.provider ?? "");
   const providerName = String(data._provider ?? defaultProviderName);
 
@@ -65,13 +65,14 @@ export async function chatCompletions(data: Record<string, unknown>, app: any): 
     await new Promise((r) => setTimeout(r, Math.ceil(retryAfter * 1000) + 100));
   }
 
-  let result: any;
+  let result: Record<string, unknown>;
   try { result = await response!.json(); }
   catch { result = { error: "Invalid JSON response from provider" }; }
 
   if (!result?.error) {
-    const inTok = Number(result?.usage?.prompt_tokens ?? 0);
-    const outTok = Number(result?.usage?.completion_tokens ?? 0);
+    const usage = result?.usage as Record<string, unknown> | undefined;
+    const inTok = Number(usage?.prompt_tokens ?? 0);
+    const outTok = Number(usage?.completion_tokens ?? 0);
     const prevIn = Number(await providerSettings.used_input_tokens ?? 0);
     const prevOut = Number(await providerSettings.used_output_tokens ?? 0);
     providerSettings.used_input_tokens(prevIn + inTok);

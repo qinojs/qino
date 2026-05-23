@@ -1,6 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
 import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
+import type { Params } from "../core/lib/apt/types.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const api: AptTree = {
   "chat-completions": {
@@ -8,7 +9,7 @@ export const api: AptTree = {
       description: "Run AI chat completions",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: any, ctx: any) => ctx.app.ai.chatCompletions(data),
+      execute: ({ data }: Params, ctx: RequestContext) => ctx.app.ai.chatCompletions(data as Record<string, unknown>),
     },
   },
   "chat-session": {
@@ -16,7 +17,7 @@ export const api: AptTree = {
       description: "Run a bot chat session",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: any, ctx: any) => ctx.app.ai.chatSession(data, ctx),
+      execute: ({ data }: Params, ctx: RequestContext) => ctx.app.ai.chatSession(data as never, ctx),
     },
   },
   "embeddings": {
@@ -24,7 +25,7 @@ export const api: AptTree = {
       description: "Generate text embeddings",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: any, ctx: any) => ctx.app.ai.embeddings(data),
+      execute: ({ data }: Params, ctx: RequestContext) => ctx.app.ai.embeddings(data as never),
     },
   },
   "image-generations": {
@@ -32,7 +33,7 @@ export const api: AptTree = {
       description: "Generate an image from a text prompt",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: any, ctx: any) => ctx.app.ai.imageGenerations(data),
+      execute: ({ data }: Params, ctx: RequestContext) => ctx.app.ai.imageGenerations(data as Record<string, unknown>),
     },
   },
 };

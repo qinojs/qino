@@ -1,5 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
 import { basename, extname } from "node:path";
+import type {} from "../mail/mod.ts";
 import { typeByExtension } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
@@ -140,7 +140,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   if (!row) return `<div class=u2-card><div class=-body>${await app.t`Mail does not exist.`}</div></div>`;
 
   if (ctx.post.qgToken === ctx.token) {
-    const Mail = await (node.app as any).mail.get(id);
+    const Mail = await node.app.mail.get(id);
     if ("send" in ctx.post) await Mail.send();
     const add = String(ctx.post.add_recipient ?? "").trim();
     if (add) {
@@ -182,7 +182,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 }
 
 async function renderPreview(node: Node, id: number): Promise<string> {
-  const Mail = await (node.app as any).mail.get(id);
+  const Mail = await node.app.mail.get(id);
   let html = await Mail.getHtml(undefined, Mail.data);
   const files = await node.app.db.all("SELECT * FROM mail_attachment WHERE mail_id=? AND inline=1", [id]);
   for (const f of files) {

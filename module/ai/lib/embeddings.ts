@@ -1,10 +1,10 @@
-// deno-lint-ignore-file no-explicit-any
+import type { App } from "../../core/server.ts";
 import { providers } from "./providers.ts";
 
 export async function embeddings(
   data: { input: string | string[]; model?: string; _provider?: string },
-  app: any,
-): Promise<{ data: { index: number; embedding: number[] }[] } | { error: string }> {
+  app: Pick<App, "settings">,
+): Promise<unknown> {
   const defaultEmbeddingProvider = String(
     await app.settings.ai.default.embedding_provider ?? "jina.ai",
   );
@@ -52,7 +52,7 @@ export async function embeddings(
     return { error: error instanceof Error ? error.message : String(error) };
   }
 
-  let result: any;
+  let result: Record<string, unknown>;
   try {
     result = await response.json();
   } catch {
@@ -60,9 +60,10 @@ export async function embeddings(
   }
 
   if (!result?.error) {
-    const tokens = Number(result?.usage?.prompt_tokens ?? result?.usage?.total_tokens ?? 0);
+    const usage = result?.usage as Record<string, unknown> | undefined;
+    const tokens = Number(usage?.prompt_tokens ?? usage?.total_tokens ?? 0);
     const prev = Number(await providerSettings.used_input_tokens ?? 0);
-    providerSettings.used_input_tokens = prev + tokens;
+    providerSettings.used_input_tokens(prev + tokens);
   }
 
   return result;

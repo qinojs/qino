@@ -40,15 +40,16 @@ export class Db {
       connectionLimit: 10,
       timezone: "Z",
     });
-    this.#pool.on("connection", (c: any) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
+    this.#pool.on("connection", (c: { query(sql: string, params?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
   }
 
   async #exec<T extends RowDataPacket[] | ResultSetHeader>(sql: string, params?: unknown[], isQuery = false): Promise<T> {
     try {
+      // deno-lint-ignore no-explicit-any
       const [res] = isQuery ? await this.#pool.query<T>(sql, params) : await this.#pool.execute<T>(sql, params as any);
       return res;
-    } catch (e: any) {
-      console.error("mysql: " + e.message + "\n" + sql.replace(/\s+/g, " "), e);
+    } catch (e) {
+      console.error("mysql: " + (e instanceof Error ? e.message : e) + "\n" + sql.replace(/\s+/g, " "), e);
       throw e;
     }
   }
@@ -66,8 +67,8 @@ export class Db {
   col = async (sql: string, p?: unknown[]): Promise<unknown[]> => (await this.query(sql, p)).map((r) => Object.values(r)[0]);
   one = async (sql: string, p?: unknown[]): Promise<unknown> => Object.values(await this.row(sql, p) ?? {})[0];
 
-  async indexCol(sql: string, p?: unknown[]): Promise<Record<string, any>> {
-    return Object.fromEntries((await this.query(sql, p)).map((r) => Object.values(r) as [string, any]));
+  async indexCol(sql: string, p?: unknown[]): Promise<Record<string, unknown>> {
+    return Object.fromEntries((await this.query(sql, p)).map((r) => Object.values(r) as [string, unknown]));
   }
 
   static escapeId = mysql.escapeId;
@@ -106,7 +107,7 @@ export class Db {
   }
 
   /** @deprecated unsafe, use prepared statement parameters instead */
-  static quote(v: any): string {
+  static quote(v: unknown): string {
     if (v == null) return "NULL";
     return `'${String(v).replace(/[\0\b\t\n\r'"\\]/g, c => ({
       "\0": "\\0", "\b": "\\b", "\t": "\\t", "\n": "\\n",

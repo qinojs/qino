@@ -70,7 +70,7 @@ export class RequestContext {
   appRequestUri = "";
   csp: Record<string, Record<string, number>> = {
     "default-src": { "'self'": 1 }, "font-src": { "*": 1, "data:": 1 },
-    "img-src": { "'self'": 1, "data:": 1 }, "script-src": { "'self'": 1, "'unsafe-inline'": 1 },
+    "img-src": { "'self'": 1, "data:": 1 }, "script-src": { "'self'": 1 },
     "style-src": { "'self'": 1, "'unsafe-inline'": 1 }, "connect-src": { "'self'": 1 }, "frame-src": { "'self'": 1 },
   };
   cspReportUri: string | false = false;

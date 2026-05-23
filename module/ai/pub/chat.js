@@ -1,4 +1,5 @@
 import { apt } from '../../core/pub/js/apt.js';
+import { t } from '../../core/pub/js/t.mjs';
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 
@@ -15,7 +16,7 @@ class AiChat extends HTMLElement {
   /** Set additional context: chat.context = { page: { title, module, url }, extra: {} } */
   set context(value) { this.#context = value ?? {}; }
 
-  connectedCallback() {
+  async connectedCallback() {
     this.#bot = this.getAttribute('bot') ?? 'cms-helper';
     this.#context = {
       page: {
@@ -42,8 +43,8 @@ class AiChat extends HTMLElement {
     </style>
     <div class="msgs"></div>
     <form>
-      <input type="text" placeholder="Frage stellen…" autocomplete="off">
-      <button type="submit">Senden</button>
+      <input type="text" placeholder="${await t`Ask a question…`}" autocomplete="off">
+      <button type="submit">${await t`Send`}</button>
     </form>`;
 
     this.#messages = this.querySelector('.msgs');
@@ -82,7 +83,7 @@ class AiChat extends HTMLElement {
       }
       if ((response?.relevance ?? 1) >= 0.3) this.#history.push({ role: 'assistant', content });
     } catch (e) {
-      loading.textContent = 'Fehler: ' + e.message;
+      loading.textContent = await t`Error: ${e.message}`;
       loading.classList.remove('loading');
       this.#history.pop();
     } finally {

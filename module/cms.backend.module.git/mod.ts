@@ -1,15 +1,15 @@
-// deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { getModuleGitInfo } from "../git/mod.ts";
 import * as GitService from "../git/lib/GitService.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.module.git";
 export const needs = ["cms.backend", "git"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.module.git");
   if (P) {
     await P.title("en", "Module Git");
@@ -27,33 +27,14 @@ async function renderInstallForm(isSuperuser: boolean): Promise<string> {
         <label style="font-size:12px;color:#888;display:block;margin-bottom:4px">Git URL</label>
         <input id=git-install-url type=url placeholder="https://github.com/user/my-module.git" style="width:100%;box-sizing:border-box">
       </div>
-      <button id=git-install-btn class=c1-btn onclick="gitInstall()">Install</button>
+      <button id=git-install-btn class=c1-btn>Install</button>
     </div>
     <div id=git-install-out style="font-family:monospace;font-size:12px;color:#555;display:none;background:#f8f9fa;padding:8px;border-radius:4px;white-space:pre-wrap"></div>
   </div>
-</div>
-<script>
-async function gitInstall() {
-  const url = document.getElementById('git-install-url').value.trim();
-  const out = document.getElementById('git-install-out');
-  if (!url) return;
-  out.style.display = 'block';
-  out.textContent = 'Installing...';
-  try {
-    const r = await fetch('/api/git/install', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ gitUrl: url }) });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error ?? r.statusText);
-    out.textContent = 'Installed: ' + d.installed + '\\nPath: ' + d.path;
-    out.style.color = '#2a7';
-  } catch(e) {
-    out.textContent = 'Error: ' + e.message;
-    out.style.color = '#c33';
-  }
-}
-</script>`;
+</div>`;
 }
 
-async function renderModuleGitSection(app: any, modName: string, isSuperuser: boolean): Promise<string> {
+async function renderModuleGitSection(app: App, modName: string, isSuperuser: boolean): Promise<string> {
   const { gitRoot, info } = await getModuleGitInfo(app, modName);
   if (!gitRoot) return "";
 
@@ -92,8 +73,8 @@ async function renderModuleGitSection(app: any, modName: string, isSuperuser: bo
     </details>` : ""}
 
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class=c1-btn onclick="gitAction('pull',${encodedMod})">↓ Pull</button>
-      ${isSuperuser ? `<button class=c1-btn onclick="gitAction('push',${encodedMod})">↑ Push</button>` : ""}
+      <button class=c1-btn data-git-action="pull" data-git-mod=${encodedMod}>↓ Pull</button>
+      ${isSuperuser ? `<button class=c1-btn data-git-action="push" data-git-mod=${encodedMod}>↑ Push</button>` : ""}
     </div>
 
     ${versionOptions ? `<div style="display:flex;gap:8px;align-items:center">
@@ -101,55 +82,16 @@ async function renderModuleGitSection(app: any, modName: string, isSuperuser: bo
         <option value="">— Select version —
         ${versionOptions}
       </select>
-      ${isSuperuser ? `<button class=c1-btn onclick="gitCheckout(${encodedMod})">Check out</button>` : ""}
+      ${isSuperuser ? `<button class=c1-btn data-git-checkout=${encodedMod}>Check out</button>` : ""}
     </div>` : ""}
 
     <div id="git-out-${hee(modName)}" style="font-family:monospace;font-size:12px;display:none;background:#f8f9fa;padding:8px;border-radius:4px;white-space:pre-wrap"></div>
   </div>
-</section>
-
-<script>
-async function gitAction(action, mod) {
-  const out = document.getElementById('git-out-' + mod);
-  out.style.display = 'block';
-  out.style.color = '#555';
-  out.textContent = action + '...';
-  try {
-    const r = await fetch('/api/git/' + action, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ module: mod }) });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error ?? r.statusText);
-    out.textContent = d.output || 'OK';
-    out.style.color = '#2a7';
-  } catch(e) {
-    out.textContent = 'Error: ' + e.message;
-    out.style.color = '#c33';
-  }
-}
-async function gitCheckout(mod) {
-  const sel = document.getElementById('git-ref-' + mod);
-  const ref = sel.value;
-  if (!ref) return;
-  if (!confirm('Switch to ' + ref + '?')) return;
-  const out = document.getElementById('git-out-' + mod);
-  out.style.display = 'block';
-  out.style.color = '#555';
-  out.textContent = 'checkout ' + ref + '...';
-  try {
-    const r = await fetch('/api/git/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ module: mod, ref }) });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error ?? r.statusText);
-    out.textContent = d.output || 'OK';
-    out.style.color = '#2a7';
-  } catch(e) {
-    out.textContent = 'Error: ' + e.message;
-    out.style.color = '#c33';
-  }
-}
-</script>`;
+</section>`;
 }
 
 async function renderOverview(node: Node): Promise<string> {
-  const app = node.app as any;
+  const app = node.app;
   const ctx = getCtx();
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const allMods = app.modules.all();
@@ -175,13 +117,15 @@ async function renderOverview(node: Node): Promise<string> {
   const installForm = await renderInstallForm(isSuperuser);
 
   if (!rows.length) {
-    return `<div class=u2-card>
+    return `<div class="u2-flex -m-cms-backend-module-git">
+<div class=u2-card>
   <div class=-head>Module Git</div>
   <div class=-body>No modules with Git repository found.</div>
-</div>${installForm}`;
+</div>${installForm}</div>`;
   }
 
-  return `<div class=u2-card>
+  return `<div class="u2-flex -m-cms-backend-module-git">
+<div class=u2-card>
   <div class=-head>Module Git</div>
   <div style="overflow:auto; padding:0">
     <table class=u2-table style="white-space:nowrap;width:100%">
@@ -189,18 +133,18 @@ async function renderOverview(node: Node): Promise<string> {
       <tbody>${rows.join("")}
     </table>
   </div>
-</div>${installForm}`;
+</div>${installForm}</div>`;
 }
 
 async function renderDetail(node: Node, modName: string): Promise<string> {
-  const app = node.app as any;
+  const app = node.app;
   const ctx = getCtx();
   const isSuperuser = !!(await ctx.user?.get("superuser"));
 
   const gitSection = await renderModuleGitSection(app, modName, isSuperuser);
 
   if (!gitSection) {
-    return `<div class=u2-card>
+    return `<div class="-m-cms-backend-module-git u2-card">
   <div class=-head style="display:flex;align-items:center;gap:12px">
     <a href="?" style="font-size:13px;opacity:.7">← Module Git</a>
     <span style="font-family:monospace">${hee(modName)}</span>
@@ -209,7 +153,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 </div>`;
   }
 
-  return `<div class=u2-card>
+  return `<div class="-m-cms-backend-module-git u2-card">
   <div class=-head style="display:flex;align-items:center;gap:12px">
     <a href="?" style="font-size:13px;opacity:.7">← Module Git</a>
     <span style="font-family:monospace">${hee(modName)}</span>
@@ -228,5 +172,5 @@ async function render(node: Node): Promise<string> {
 }
 
 export const cms = {
-  node: { render },
+  node: { js: ["pub/main.js"], render },
 };

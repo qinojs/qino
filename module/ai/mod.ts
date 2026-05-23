@@ -1,15 +1,21 @@
-// deno-lint-ignore-file no-explicit-any
 import { api } from "./apt.ts";
 import { AiApi } from "./lib/AiApi.ts";
+import type { App } from "../core/server.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "ai";
 export const needs = ["core"];
 
-export function init(app: any) {
+declare module "../core/server.ts" {
+  interface App { ai: AiApi; }
+}
+
+export function init(app: Pick<App, "aptTree" | "on" | "settings"> & { ai?: AiApi }) {
   app.ai = new AiApi(app);
   app.aptTree.ai = api;
 
-  app.on("cms-ready", ({ ctx }: any) => {
+  app.on("cms-ready", e => {
+    const ctx = e.ctx as RequestContext;
     if (!ctx.state.editmode) return;
     ctx.html.addJSM(ctx.sysURL + "ai/pub/chat.js");
     ctx.html.content += `
@@ -40,18 +46,18 @@ export function init(app: any) {
   });
 }
 
-export async function install({ app }: { app: any }): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const settings = app.settings.ai;
 
-  if (!await settings.default.provider) settings.default.provider = "groq.com";
+  if (!await settings.default.provider) settings.default.provider("groq.com");
 
   const currentModel = String(await settings.default.model ?? "");
   if (!currentModel || currentModel.startsWith("moonshotai/")) {
-    settings.default.model = "llama-3.3-70b-versatile";
+    settings.default.model("llama-3.3-70b-versatile");
   }
 
-  if (!await settings.default.embedding_provider) settings.default.embedding_provider = "jina.ai";
-  if (!await settings.default.embedding_model) settings.default.embedding_model = "jina-embeddings-v3";
+  if (!await settings.default.embedding_provider) settings.default.embedding_provider("jina.ai");
+  if (!await settings.default.embedding_model) settings.default.embedding_model("jina-embeddings-v3");
 
   settings.provider["groq.com"].key;
   settings.provider["openai.com"].key;

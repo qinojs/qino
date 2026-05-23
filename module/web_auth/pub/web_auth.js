@@ -4,6 +4,8 @@
  * import { WebAuth, initWebAuth } from "/m/web_auth/pub/web_auth.js";
  */
 
+import { t } from '../../core/pub/js/t.mjs';
+
 export class WebAuth {
   constructor(opts = {}) {
     this.apiBase = opts.apiBase ?? "/api/web_auth";
@@ -196,7 +198,7 @@ export function initWebAuth(opts = {}) {
       e.preventDefault();
       const btn = e.currentTarget, prev = btn.textContent;
       btn.disabled = true;
-      btn.textContent = action === "register" ? "Registrieren…" : "Anmelden…";
+      btn.textContent = action === "register" ? await t`Registering…` : await t`Signing in…`;
 
       try {
         let result;
@@ -206,7 +208,7 @@ export function initWebAuth(opts = {}) {
           result = await wa.login({ email: container.querySelector("[data-web-auth-email]")?.value });
         } else if (action === "delete") {
           const credId = btn.dataset.webAuthCredId;
-          if (!credId || !confirm("Diesen Passkey wirklich entfernen?")) return;
+          if (!credId || !confirm(await t`Really remove this passkey?`)) return;
           result = await wa.deleteCredential(credId);
           if (result.ok) btn.closest("[data-web-auth-credential]")?.remove();
           return;
@@ -214,8 +216,8 @@ export function initWebAuth(opts = {}) {
         if (result?.ok) {
           opts.onSuccess?.(action, result) ?? window.location.reload();
         } else {
-          const label = action === "register" ? "Registrierung" : "Anmeldung";
-          opts.onError?.(action, result) ?? alert(`${label} fehlgeschlagen: ${result?.error ?? "unbekannt"}`);
+          const label = action === "register" ? await t`Registration` : await t`Sign-in`;
+          opts.onError?.(action, result) ?? alert(await t`${label} failed: ${result?.error ?? "unknown"}`);
         }
       } catch (err) {
         console.error("[web_auth]", err);

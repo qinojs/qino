@@ -1,15 +1,16 @@
-// deno-lint-ignore-file no-explicit-any
 import type { Bot } from "../types.ts";
 import { CmsHelperBot } from "../bots/cmsHelper.ts";
 import { chatCompletions } from "./chatCompletions.ts";
 import { chatSession } from "./chatSession.ts";
 import { embeddings } from "./embeddings.ts";
 import { imageGenerations } from "./imageGenerations.ts";
+import type { App } from "../../core/server.ts";
+import type { RequestContext } from "../../core/lib/RequestContext.ts";
 
 export class AiApi {
   private bots = new Map<string, Bot>();
 
-  constructor(private app: any) {
+  constructor(private app: Pick<App, "settings"> & { ai?: AiApi }) {
     this.registerBot(CmsHelperBot);
   }
 
@@ -25,7 +26,7 @@ export class AiApi {
     return chatCompletions(data, this.app);
   }
 
-  chatSession(data: Parameters<typeof chatSession>[0], ctx: any) {
+  chatSession(data: Parameters<typeof chatSession>[0], ctx: RequestContext) {
     return chatSession(data, this.app, ctx);
   }
 

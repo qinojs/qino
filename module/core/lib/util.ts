@@ -3,12 +3,12 @@
  * Port of core/lib/divers.php
  */
 
-// deno-lint-ignore-file no-explicit-any
-
 import * as nodePath from "node:path";
+import type { App } from "../server.ts";
+import type { RequestContext } from "./RequestContext.ts";
 
 /* path / url utilities */
-export function appRequestUriToLocalPath(appRequestUri: string, app: any): string | null {
+export function appRequestUriToLocalPath(appRequestUri: string, app: App): string | null {
   const matchM = appRequestUri.match(/^m\/([^/]+)\/pub\/(.*)/);
   if (matchM) {
     const mod = app.modules.get(matchM[1]);
@@ -22,7 +22,7 @@ export function appRequestUriToLocalPath(appRequestUri: string, app: any): strin
   return null;
 }
 
-export function urlToLocalPath(url: string, ctx: any): string | null {
+export function urlToLocalPath(url: string, ctx: RequestContext): string | null {
   try {
     const u = new URL(url);
     if (u.protocol === "file:") return u.pathname;
@@ -32,12 +32,12 @@ export function urlToLocalPath(url: string, ctx: any): string | null {
   return null;
 }
 
-export function assertAllowedPath(file: string, app: any): void {
+export function assertAllowedPath(file: string, app: App): void {
   if (!file || file.includes("\0")) throw new OutputError("invalid path");
   const resolved = nodePath.resolve(file);
   if (resolved !== nodePath.normalize(file) && resolved !== file) throw new OutputError("invalid path");
   const roots: string[] = [nodePath.resolve(app.appPATH)];
-  for (const mod of Object.values(app.modules.all()) as any[]) {
+  for (const mod of Object.values(app.modules.all())) {
     if (mod.dir) roots.push(nodePath.resolve(mod.dir));
   }
   if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new OutputError("invalid path");
@@ -46,7 +46,7 @@ export function assertAllowedPath(file: string, app: any): void {
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
 /** HTML utilities */
-export function hee(str: any): string {
+export function hee(str: unknown): string {
   return String(str ?? "").replace(/[&"'<>]/g, c => ({"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"})[c]!);
 }
 
@@ -89,7 +89,7 @@ export function uid(length?: number): string {
 /* Error classes for control flow */
 export class AnswerError extends Error { constructor(public data: Record<string, any>, public status = 200) { super("Answer"); } }
 export class RedirectError extends Error { constructor() { super("redirect"); } }
-export class OutputError extends Error { constructor(public body: any) { super("output"); } }
+export class OutputError extends Error { constructor(public body: unknown) { super("output"); } }
 export class OutputDoneError extends Error { constructor() { super("output done"); } }
 
 // urlize

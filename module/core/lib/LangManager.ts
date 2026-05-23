@@ -1,15 +1,14 @@
-// deno-lint-ignore-file no-explicit-any
-
-import { getCtx } from "./RequestContext.ts";
+import { getCtx, type RequestContext } from "./RequestContext.ts";
 import { createHash } from "node:crypto";
+import type { App } from "../server.ts";
 
 export class LangManager {
 
-    #app: any;
+    #app: App;
     #langs: string[] = [];   // all available languages, first = default
     #txtsCache: Record<string, Record<string, string>> = {};
 
-    constructor(app: any) {
+    constructor(app: App) {
         this.#app = app;
         this.t = this.t.bind(this);
     }
@@ -21,7 +20,7 @@ export class LangManager {
     get all(): string[] { return this.#langs; }
 
     // Initialises language per request (like L.init)
-    async initCtx(ctx: any): Promise<void> {
+    async initCtx(ctx: RequestContext): Promise<void> {
         const usr = ctx.user;
 
         ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.session.qg.lang() ?? "";
@@ -48,7 +47,7 @@ export class LangManager {
         ctx.langNsPath ??= [];
     }
 
-    nsStart(ns: string, ctx?: any): void {
+    nsStart(ns: string, ctx?: RequestContext): void {
         const c = ctx ?? getCtx();
         c.langNsPath.push(c.langNs);
         c.langNs = ns;
@@ -56,7 +55,7 @@ export class LangManager {
         c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : c.langUsr;
     }
 
-    nsStop(ctx?: any): void {
+    nsStop(ctx?: RequestContext): void {
         const c = ctx ?? getCtx();
         c.langNs = c.langNsPath.pop() ?? "";
         const nsLang = String(c.settings.core.lang_ns[c.langNs]?.() ?? "");
@@ -64,7 +63,7 @@ export class LangManager {
     }
 
     // Determine language from the browser Accept-Language header
-    #fromBrowser(ctx: any): string {
+    #fromBrowser(ctx: RequestContext): string {
         const acceptLang = ctx.req.header("accept-language");
         if (!acceptLang) return this.def;
         const accepted = acceptLang.split(/,\s*/);
@@ -94,12 +93,12 @@ export class LangManager {
         const key = `${l}::${ns}`;
         if (!this.#txtsCache[key]) {
             //await this.addLanguage(l);
-            this.#txtsCache[key] = await this.#app.db.indexCol(`SELECT hash, \`${l}\` as txt FROM smalltext WHERE namespace = ?`, [ns]);
+            this.#txtsCache[key] = await this.#app.db.indexCol(`SELECT hash, \`${l}\` as txt FROM smalltext WHERE namespace = ?`, [ns]) as Record<string, string>;
         }
         return this.#txtsCache[key];
     }
 
-    async #getTxt(string: string, ctx: any): Promise<string> {
+    async #getTxt(string: string, ctx: RequestContext): Promise<string> {
         const hash = createHash("md5").update(string).digest("hex");
         const ns = ctx.langNs;
         const l = ctx.lang;

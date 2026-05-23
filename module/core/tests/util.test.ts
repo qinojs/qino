@@ -49,10 +49,10 @@ Deno.test("util: appRequestUriToLocalPath maps module and qg public files", () =
       },
     },
   };
-  assertEquals(appRequestUriToLocalPath("m/cms.foo/pub/main.css", app), "/sys/cms.foo/pub/main.css");
-  assertEquals(appRequestUriToLocalPath("m/local.foo/pub/main.css", app), "/app/m/local.foo/pub/main.css");
-  assertEquals(appRequestUriToLocalPath("qg/custom/pub/main.css", app), "/app/qg/custom/pub/main.css");
-  assertEquals(appRequestUriToLocalPath("other/main.css", app), null);
+  assertEquals(appRequestUriToLocalPath("m/cms.foo/pub/main.css", app as never), "/sys/cms.foo/pub/main.css");
+  assertEquals(appRequestUriToLocalPath("m/local.foo/pub/main.css", app as never), "/app/m/local.foo/pub/main.css");
+  assertEquals(appRequestUriToLocalPath("qg/custom/pub/main.css", app as never), "/app/qg/custom/pub/main.css");
+  assertEquals(appRequestUriToLocalPath("other/main.css", app as never), null);
 });
 
 Deno.test("util: assertAllowedPath accepts app/module roots and rejects siblings", () => {
@@ -64,10 +64,10 @@ Deno.test("util: assertAllowedPath accepts app/module roots and rejects siblings
       },
     },
   };
-  assertAllowedPath("/var/www/workplace/qinojs/demo/qg/file/a.txt", app);
-  assertAllowedPath("/var/www/workplace/qinojs/qino/module/cms.foo/pub/a.css", app);
+  assertAllowedPath("/var/www/workplace/qinojs/demo/qg/file/a.txt", app as never);
+  assertAllowedPath("/var/www/workplace/qinojs/qino/module/cms.foo/pub/a.css", app as never);
   assertThrows(
-    () => assertAllowedPath("/var/www/workplace/qinojs/other/a.txt", app),
+    () => assertAllowedPath("/var/www/workplace/qinojs/other/a.txt", app as never),
     OutputError,
   );
 });

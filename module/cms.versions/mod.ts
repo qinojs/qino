@@ -281,7 +281,7 @@ export function init(app: App) {
     });
 
     // Inform client about changed pages after API calls (draftmode)
-    app.on("serverInterface::after", async (e: any) => {
+    app.on("serverInterface::after", async (e: any) => { // gibt es nicht mehr! etwas anderes verwenden
         const ctx = getCtx();
         if (!getCmsVers(ctx).cmsVersSpace) return;
         if (!e.fn?.startsWith("page::")) return;
@@ -295,7 +295,7 @@ export function init(app: App) {
                 `SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ?`,
                 [page_id]
             );
-            if (!versions[0] || versions[1] > versions[0]) {
+            if (!versions[0] || (versions[1] as number) > (versions[0] as number)) {
                 ctx.state.Answer["cms_vers_changed"] ??= {};
                 ctx.state.Answer["cms_vers_changed"][page_id] = true;
             }

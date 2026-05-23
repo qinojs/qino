@@ -65,7 +65,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }) {
   if (node.edit) {
     editHtml = `
         <div class="-alt-edit q1Rst qgCMS">
-            <input placeholder="Alternativer-Text (Screenreader / SEO)" cmstxt=${T.id} value="${T}">
+            <input placeholder="${await node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${T.id} value="${T}">
         </div>
         <style>
         .-m-cms-cont-image2 img { min-height:4em; }

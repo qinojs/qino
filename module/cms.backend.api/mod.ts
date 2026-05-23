@@ -1,15 +1,15 @@
-// deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/RequestContext.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { toJsonSchema, type StandardSchema } from "../core/lib/StandardSchema.ts";
 import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { VERBS, RESERVED, camelName, toTools, isStaticAccess, Access, type Method } from "../core/lib/apt/mod.ts";
+import { VERBS, RESERVED, camelName, toTools, isStaticAccess, Access, type Method, type AptNode, type Verb } from "../core/lib/apt/mod.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.api";
 export const needs = ["cms.backend"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.api");
   if (P) {
     await P.title("en", "API");
@@ -28,7 +28,7 @@ interface Route {
   accessLevel: "public" | "user" | "superuser" | "dynamic" | "none";
 }
 
-function accessLevel(action: any, ctx: any): Route["accessLevel"] {
+function accessLevel(action: Verb, ctx: RequestContext): Route["accessLevel"] {
   const { access } = action;
   if (!access) return "none";
   if (!isStaticAccess(access)) return "dynamic";
@@ -39,12 +39,12 @@ function accessLevel(action: any, ctx: any): Route["accessLevel"] {
   return access({}, ctx) ? "user" : "none";
 }
 
-function* walk(node: any, ctx: any, segments: string[] = []): Generator<Route> {
-  for (const [key, value] of Object.entries(node as object)) {
+function* walk(node: AptNode, ctx: RequestContext, segments: string[] = []): Generator<Route> {
+  for (const [key, value] of Object.entries(node)) {
     if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
     const segs = [...segments, key];
     for (const verb of VERBS) {
-      const action = (value as any)[verb];
+      const action = (value as AptNode)[verb];
       if (action && typeof action.execute === "function") {
         yield {
           method: verb,
@@ -59,7 +59,7 @@ function* walk(node: any, ctx: any, segments: string[] = []): Generator<Route> {
         };
       }
     }
-    yield* walk(value, ctx, segs);
+    yield* walk(value as AptNode, ctx, segs);
   }
 }
 
@@ -78,8 +78,9 @@ function schemaText(s: StandardSchema | undefined): string {
     case "object": {
       if (!s.shape) return "{}";
       const fields = Object.entries(s.shape).map(([k, v]) => {
-        const opt = (v as StandardSchema).kind === "optional" || (v as any).defaultValue ? "?" : "";
-        const def = (v as any).defaultValue ? `=${JSON.stringify((v as any).defaultValue())}` : "";
+        const schema = v as StandardSchema;
+        const opt = schema.kind === "optional" || schema.defaultValue ? "?" : "";
+        const def = schema.defaultValue ? `=${JSON.stringify(schema.defaultValue())}` : "";
         return `${k}${opt}: ${schemaText(v as StandardSchema)}${def}`;
       });
       return `{ ${fields.join(", ")} }`;
@@ -95,7 +96,7 @@ function schemaToFormFields(s: StandardSchema | undefined): string {
   return Object.entries(s.shape).map(([k, v]) => {
     const field = v as StandardSchema;
     const inner = field.kind === "optional" ? field.inner ?? field : field;
-    const required = field.kind !== "optional" && !(field as any).defaultValue;
+    const required = field.kind !== "optional" && !field.defaultValue;
     const jsonSchema = toJsonSchema(inner);
     const description = (field.description ?? inner.description) as string | undefined;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name: k, required });
@@ -150,7 +151,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
 
   return `
 <div class="api-route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
-  <div class="api-route-head" onclick="apiToggle(${idx})">
+  <div class="api-route-head">
     <span class="api-badge" style="background:${hee(color)}">${hee(r.method.toUpperCase())}</span>
     <code class="api-path">${hee(r.path)}</code>
     <span class="api-desc">${hee(r.description)}</span>
@@ -164,20 +165,20 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
       ${outputText ? `<div><b>Output:</b> <code>${hee(outputText)}</code></div>` : ""}
     </div>
     ${hasForm ? `
-    <form class="api-form" onsubmit="apiSubmit(event,${idx})">
+    <form class="api-form">
       ${r.pathParams.length ? `<div class="api-section">Path params${paramForm}</div>` : ""}
       ${inputForm           ? `<div class="api-section">Body${inputForm}</div>` : ""}
       ${queryForm           ? `<div class="api-section">Query${queryForm}</div>` : ""}
       <button type="submit">Send ▶</button>
-      <button type="button" onclick="apiCheckAccess(event,${idx})">Check access</button>
+      <button type="button" data-check-access="${idx}">Check access</button>
     </form>` : `
-    <form class="api-form" onsubmit="apiSubmit(event,${idx})">
+    <form class="api-form">
       <button type="submit">Send ▶</button>
-      <button type="button" onclick="apiCheckAccess(event,${idx})">Check access</button>
+      <button type="button" data-check-access="${idx}">Check access</button>
     </form>`}
     <pre class="api-result" id="api-result-${idx}" hidden></pre>
     <div class="api-tool-section">
-      <button class="api-tool-btn" type="button" onclick="apiToolToggle(${idx})">As tool: &quot;${hee(r.name)}&quot;</button>
+      <button class="api-tool-btn" type="button">As tool: &quot;${hee(r.name)}&quot;</button>
       <pre class="api-tool-json" id="api-tool-${idx}" hidden>${hee(toolJson)}</pre>
     </div>
   </div>
@@ -187,10 +188,10 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
 // ───── Main render ────────────────────────────────────────────────────────
 
 function render(): string {
-  const ctx = getCtx() as any;
+  const ctx = getCtx();
   const appURL: string = ctx.appURL ?? "/";
 
-  const aptTree = (ctx.app as any).aptTree;
+  const aptTree = ctx.app.aptTree;
   const routes = [...walk(aptTree, ctx)];
   const tools = toTools(aptTree);
   const toolJsonByName = new Map(tools.map((t) => [t.name, JSON.stringify({ name: t.name, description: t.description, parameters: t.parameters }, null, 2)]));
@@ -208,7 +209,7 @@ function render(): string {
   const routesHtml = routes.map((r, i) => routeHtml(r, i, toolJsonByName.get(r.name) ?? "{}")).join("");
 
   return `
-<div class="api-docs">
+<div class="api-docs -m-cms-backend-api" data-routes="${hee(routesJson)}" data-app-url="${hee(appURL)}">
 <style>
 .api-docs { font-family: monospace; }
 .api-filter { margin-bottom:12px; display:flex; gap:8px; align-items:center; }
@@ -242,134 +243,18 @@ function render(): string {
 </style>
 
 <div class="api-filter">
-  <input type="search" placeholder="Filter routes…" oninput="apiFilter(this.value)" id="api-search">
+  <input type="search" placeholder="Filter routes…" id="api-search">
 </div>
 
 <div id="api-list">
 ${routesHtml}
 </div>
-
-<script>
-(function(){
-  const routes = ${routesJson};
-  const appURL = ${JSON.stringify(appURL)};
-
-  window.apiToggle = function(idx) {
-    const el = document.getElementById('api-body-' + idx);
-    const route = el.closest('.api-route');
-    const hidden = el.hidden;
-    el.hidden = !hidden;
-    route.classList.toggle('open', !hidden);
-  };
-
-  window.apiToolToggle = function(idx) {
-    const el = document.getElementById('api-tool-' + idx);
-    el.hidden = !el.hidden;
-  };
-
-  window.apiFilter = function(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll('.api-route').forEach(function(el) {
-      const text = el.querySelector('.api-path').textContent.toLowerCase()
-        + ' ' + el.querySelector('.api-desc').textContent.toLowerCase()
-        + ' ' + el.querySelector('.api-badge').textContent.toLowerCase();
-      el.hidden = q && !text.includes(q);
-    });
-  };
-
-  window.apiSubmit = async function(e, idx) {
-    e.preventDefault();
-    const r = routes[idx];
-    const form = e.target;
-    const result = document.getElementById('api-result-' + idx);
-    result.hidden = false;
-    result.textContent = 'Loading…';
-    result.className = 'api-result';
-
-    try {
-      let path = r.path;
-      const body = {};
-      const query = {};
-
-      for (const el of form.elements) {
-        if (!el.name) continue;
-        let val = el.value;
-        if (val === '') continue;
-        if (el.tagName === 'SELECT' && val === '') continue;
-        if (val === 'true') val = true;
-        else if (val === 'false') val = false;
-        else if (!isNaN(val) && val !== '') val = Number(val);
-
-        if (r.pathParams.includes(el.name)) {
-          path = path.replace(':' + el.name, encodeURIComponent(val));
-        } else if (r.hasQuery && !r.hasInput) {
-          query[el.name] = val;
-        } else {
-          body[el.name] = val;
-        }
-      }
-
-      const method = r.method.toUpperCase();
-      const isBodyMethod = ['POST','PUT','PATCH'].includes(method);
-      const qs = !isBodyMethod && Object.keys(body).length
-        ? '?' + new URLSearchParams(Object.entries(body).map(([k,v]) => [k, String(v)])).toString()
-        : Object.keys(query).length
-        ? '?' + new URLSearchParams(Object.entries(query).map(([k,v]) => [k, String(v)])).toString()
-        : '';
-      const url = appURL + 'api' + path + qs;
-      const opts = {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-      };
-      if (isBodyMethod && Object.keys(body).length) {
-        opts.body = JSON.stringify(body);
-      }
-
-      const res = await fetch(url, opts);
-      const text = await res.text();
-      let pretty;
-      try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch { pretty = text; }
-      result.textContent = res.status + ' ' + res.statusText + '\\n\\n' + pretty;
-      if (!res.ok) result.className = 'api-result error';
-    } catch(err) {
-      result.textContent = String(err);
-      result.className = 'api-result error';
-    }
-  };
-
-  window.apiCheckAccess = async function(e, idx) {
-    const r = routes[idx];
-    const form = e.target.closest('form');
-    const result = document.getElementById('api-result-' + idx);
-    result.hidden = false;
-    result.className = 'api-result';
-    try {
-      let path = r.path;
-      for (const p of r.pathParams) {
-        const el = form.elements[p];
-        if (!el || !el.value) {
-          result.textContent = '⚠ fill in path param: ' + p;
-          result.className = 'api-result error';
-          return;
-        }
-        path = path.replace(':' + p, encodeURIComponent(el.value));
-      }
-      result.textContent = 'Checking…';
-      const res = await fetch(appURL + 'api' + path + '?_checkAccess=1', { method: r.method.toUpperCase(), headers: { 'Content-Type': 'application/json' } });
-      result.textContent = res.ok ? '✓ access granted' : '✗ ' + res.status + ' access denied';
-      if (!res.ok) result.className = 'api-result error';
-    } catch(err) {
-      result.textContent = String(err);
-      result.className = 'api-result error';
-    }
-  };
-})();
-</script>
 </div>`;
 }
 
 export const cms = {
   node: {
+    js: ["pub/main.js"],
     render,
   },
 };

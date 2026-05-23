@@ -25,12 +25,12 @@ Deno.test("git: init mounts git API subtree", () => {
 
 Deno.test("git: getModuleGitInfo returns nulls for modules without path", async () => {
   const app = { modules: { get: () => ({ path: undefined }) } };
-  assertEquals(await getModuleGitInfo(app, "missing"), { gitRoot: null, info: null });
+  assertEquals(await getModuleGitInfo(app as never, "missing"), { gitRoot: null, info: null });
 });
 
 Deno.test("git: addModule normalizes file URLs before adding", async () => {
   const calls: string[] = [];
   const app = { modules: { add: (path: string) => calls.push(path) } };
-  await addModule(app, new URL("file:///tmp/qino-module/mod.ts").href);
+  await addModule(app as never, new URL("file:///tmp/qino-module/mod.ts").href);
   assertEquals(calls, ["/tmp/qino-module/mod.ts"]);
 });

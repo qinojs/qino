@@ -1,33 +1,21 @@
-/**
- * fileEditor/mod.ts - File Editor module
- * Port of fileEditor/qg.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import * as nodeFs from "node:fs/promises";
 import * as nodePath from "node:path";
 import { OutputError, assertAllowedPath } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/RequestContext.ts";
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
+import type { App } from "../core/server.ts";
+import type { Params } from "../core/lib/apt/types.ts";
 import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";
 
-async function saveFile(ctx: any, file: string, content: string): Promise<number> {
+async function saveFile(ctx: RequestContext, file: string, content: string): Promise<number> {
     assertAllowedPath(file, ctx.app);
     const allowed = ctx.session.fileEditor.allow[file]();
-    const usr = ctx.user;
-    if (!allowed && !(await usr?.get('superuser'))) return 0;
+    if (!allowed && !(await ctx.user?.get('superuser'))) return 0;
 
-    const now = new Date();
-    const d = String(now.getDate()).padStart(2, "0");
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const Y = now.getFullYear();
-    const h = String(now.getHours() % 12 || 12).padStart(2, "0");
-    const i = String(now.getMinutes()).padStart(2, "0");
-    const backupName = `fileEditorBackup_${encodeURIComponent(file)}_${d}${m}${Y}${h}${i}`;
+    const backupName = `fileEditorBackup_${encodeURIComponent(file)}_${Date.now()}`;
     const backupDir = ctx.app.appPATH + "cache/tmp/pri/";
     await nodeFs.mkdir(backupDir, { recursive: true }).catch(() => {});
     await nodeFs.copyFile(file, backupDir + backupName).catch(() => {});
@@ -41,54 +29,50 @@ const api: AptTree = {
             description: "Save file from the file editor.",
             access: Access.USER,
             input: s.object({ file: s.string(), content: s.string() }),
-            execute: ({ file, content }: any, ctx: any) => saveFile(ctx, file, content),
+            execute: ({ file, content }: Params, ctx: RequestContext) => saveFile(ctx, String(file), String(content)),
         },
     },
 };
 
-export function init(app: any) {
+function editorFile(): string | null {
+    const ctx = getCtx();
+    const file = ctx.get["file"] as string;
+    return file && ctx.appRequestUri.startsWith("editor") ? file : null;
+}
+
+export function init(app: App) {
     app.aptTree.fileEditor = api;
 
-
     app.on("action", async () => {
+        const file = editorFile();
+        if (!file) return;
         const ctx = getCtx();
-        const file = ctx.get["file"] as string;
-        if (!file || !ctx.appRequestUri.startsWith("editor")) return;
         assertAllowedPath(file, ctx.app);
 
-        // access check: session must have fileEditor.allow[$file] or user must be superuser
         const allowed = ctx.session.fileEditor.allow[file]();
-        const usr = ctx.user;
-        const isSuperuser = Boolean(await usr?.get('superuser'));
-
+        const isSuperuser = Boolean(await ctx.user?.get('superuser'));
         if (!allowed && !isSuperuser) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
             throw new OutputError("no access");
         }
 
-        // create file if requested
-        if (ctx.get["create"] !== undefined) {
-            const dirName = nodePath.dirname(file);
-            await nodeFs.mkdir(dirName, { recursive: true }).catch(() => {});
-            try {
-                await nodeFs.stat(file);
-            } catch {
+        if ("create" in ctx.get) {
+            await nodeFs.mkdir(nodePath.dirname(file), { recursive: true }).catch(() => {});
+            try { await nodeFs.stat(file); } catch {
                 await nodeFs.writeFile(file, String(ctx.get["create"] ?? ""));
             }
         }
 
-        // check file exists
-        let isFile = false;
-        try {
-            const stat = await nodeFs.stat(file);
-            isFile = stat.isFile();
-        } catch { /* not found */ }
-        if (!isFile) {
+        const stat = await nodeFs.stat(file).catch(() => null);
+        if (!stat?.isFile()) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
             throw new OutputError("file does not exist");
         }
+    });
 
-        ctx.responseHeaders.set("Content-Type", "text/html; charset=utf-8");
-        throw new OutputError(await codemirrorView(file));
+    app.on("render", async () => {
+        const file = editorFile();
+        if (!file) return;
+        getCtx().html.content = await codemirrorView(file);
     });
 }

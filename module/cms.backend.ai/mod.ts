@@ -10,11 +10,13 @@ import {
 } from "../ai/lib/providerModels.ts";
 import { providers } from "../ai/lib/providers.ts";
 import { backend } from "../cms.backend/mod.ts";
+import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.ai";
 export const needs = ["cms.backend", "ai"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.ai");
   if (P) {
     await P.title("en", "AI");
@@ -144,8 +146,8 @@ function modelRows(providerName: string, builtinModels: ProviderModel[], customM
   return rows.length ? rows.join("") : `<tr><td colspan=8><em>No models added yet.</em>`;
 }
 
-async function saveCustomModels(app: any, providerName: string, models: ProviderModel[]): Promise<void> {
-  app.settings.ai.provider[providerName].models = JSON.stringify(models, null, 2);
+async function saveCustomModels(app: App, providerName: string, models: ProviderModel[]): Promise<void> {
+  app.settings.ai.provider[providerName].models(JSON.stringify(models, null, 2));
 }
 
 function inferStrengths(providerName: string, id: string, data: Record<string, any>): ProviderStrength[] {
@@ -210,7 +212,7 @@ function toProviderModel(providerName: string, data: Record<string, any>, synced
   };
 }
 
-async function syncProviderModels(app: any, providerName: string): Promise<Message> {
+async function syncProviderModels(app: App, providerName: string): Promise<Message> {
   const syncConfig = modelSyncProviders[providerName];
   if (!syncConfig) return { type: "error", text: "This provider does not support sync." };
 
@@ -244,12 +246,12 @@ async function syncProviderModels(app: any, providerName: string): Promise<Messa
   for (const m of syncedModels) models.set(m.id, m);
   for (const m of manualModels) models.set(m.id, m);
   await saveCustomModels(app, providerName, [...models.values()]);
-  providerSettings.models_synced_at = syncedAt;
+  providerSettings.models_synced_at(syncedAt);
 
   return { type: "ok", text: `${syncedModels.length} ${syncConfig.label} models synchronised.` };
 }
 
-async function handlePost(app: any, post: Record<string, unknown>, token: string): Promise<Message | null> {
+async function handlePost(app: App, post: Record<string, unknown>, token: string): Promise<Message | null> {
   if (!("action" in post)) return null;
   if (post.qgToken !== token) return { type: "error", text: "Invalid form token." };
 
@@ -258,8 +260,8 @@ async function handlePost(app: any, post: Record<string, unknown>, token: string
   if (action === "save-default") {
     const provider = String(post.default_provider ?? "").trim();
     if (!providers[provider]) return { type: "error", text: "Unknown provider." };
-    app.settings.ai.default.provider = provider;
-    app.settings.ai.default.model = String(post.default_model ?? "").trim();
+    app.settings.ai.default.provider(provider);
+    app.settings.ai.default.model(String(post.default_model ?? "").trim());
     return { type: "ok", text: "Default provider saved." };
   }
 
@@ -271,8 +273,8 @@ async function handlePost(app: any, post: Record<string, unknown>, token: string
 
   if (action === "save-provider") {
     const key = String(post.api_key ?? "").trim();
-    if (key) providerSettings.key = key;
-    providerSettings.default_model = String(post.provider_default_model ?? "").trim();
+    if (key) providerSettings.key(key);
+    providerSettings.default_model(String(post.provider_default_model ?? "").trim());
     return { type: "ok", text: `Provider ${provider} saved.` };
   }
 
@@ -295,9 +297,9 @@ async function handlePost(app: any, post: Record<string, unknown>, token: string
   return { type: "error", text: "Unknown action." };
 }
 
-async function render(node: any): Promise<string> {
+async function render(node: Node): Promise<string> {
   const ctx = getCtx();
-  const app = node.app as any;
+  const app = node.app;
   const message = await handlePost(app, ctx.post as Record<string, unknown>, ctx.token);
 
   const defaultProvider = String(await app.settings.ai.default.provider ?? "");
@@ -409,7 +411,7 @@ async function render(node: any): Promise<string> {
   const messageHtml = message ? `<div class="ai-message -${hee(message.type)}">${hee(message.text)}</div>` : "";
 
   return `
-<div class="u2-flex ai-page">
+<div class="u2-flex ai-page -m-cms-backend-ai">
   <style>
     .ai-provider-list { display:grid; gap:8px; }
     .ai-provider { border:1px solid #ddd; background:#fff; }
@@ -463,51 +465,10 @@ async function render(node: any): Promise<string> {
       ${providerBoxes}
     </div>
   </div>
-  <script>
-  (() => {
-    const timers = new WeakMap();
-    const save = async (form) => {
-      const state = form.querySelector('.ai-autosave-state');
-      if (state) { state.classList.remove('-error'); state.textContent = 'speichert...'; }
-      try {
-        const r = await fetch(location.href, { method: 'POST', body: new FormData(form), credentials: 'same-origin' });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        if (state) state.textContent = 'gespeichert';
-      } catch {
-        if (state) { state.classList.add('-error'); state.textContent = 'Fehler beim Speichern'; }
-      }
-    };
-    const schedule = (form, delay = 600) => {
-      clearTimeout(timers.get(form));
-      timers.set(form, setTimeout(() => save(form), delay));
-    };
-    for (const form of document.querySelectorAll('.ai-provider-form')) {
-      form.addEventListener('submit', (e) => { e.preventDefault(); save(form); });
-      for (const field of form.querySelectorAll('input, select, textarea')) {
-        if (field.type === 'hidden') continue;
-        field.addEventListener('input', () => schedule(form));
-        field.addEventListener('change', () => schedule(form, 0));
-      }
-    }
-  })();
-  (() => {
-    const sel = document.querySelector('select[name=default_provider]');
-    const inp = document.querySelector('input[name=default_model]');
-    if (!sel || !inp) return;
-    const update = () => {
-      inp.setAttribute('list', 'ai-models-' + sel.value.replace(/[^a-zA-Z0-9_-]/g, '-') + '-default');
-      for (const d of document.querySelectorAll('.ai-provider')) {
-        if (d.querySelector('summary')?.childNodes[0]?.textContent?.trim() === sel.value) d.open = true;
-      }
-    };
-    sel.addEventListener('change', update);
-    update();
-  })();
-  </script>
 </div>`;
 }
 
-export async function backendDashboardWidget(app: any): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<string> {
   const defaultProvider = String(await app.settings.ai.default.provider ?? "");
   const defaultModel    = String(await app.settings.ai.default.model    ?? "");
 
@@ -536,4 +497,4 @@ ${rows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
 </div>`;
 }
 
-export const cms = { node: { render } };
+export const cms = { node: { js: ["pub/main.js"], render } };

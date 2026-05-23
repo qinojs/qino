@@ -1,7 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
+import type { App } from "../../core/server.ts";
 import { providers } from "./providers.ts";
 
-export async function imageGenerations(data: Record<string, unknown>, app: any): Promise<any> {
+export async function imageGenerations(data: Record<string, unknown>, app: Pick<App, "settings">): Promise<unknown> {
   const providerName = String(data._provider ?? "x-ai");
   const provider = providers[providerName];
   if (!provider) return { error: `Unknown provider: ${providerName}` };

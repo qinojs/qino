@@ -14,7 +14,7 @@ Deno.test("security buckets apply scope weights", () => {
 Deno.test("security path buckets throttle softly and never block", async () => {
   const db = { row: () => Promise.resolve({ scope: "path", ident: "/newsletter", score: 1000, reason: "hot link" }) };
   const set = { delayStartScore: 20, delayFactorMs: 60, maxDelayMs: 6000, blockScore: 120, warnScore: 40, pathDelayStartScore: 200, pathDelayFactorMs: 10, pathMaxDelayMs: 1200 };
-  const penalty = await penaltyState(db, { path: "/newsletter" }, set);
+  const penalty = await penaltyState(db as never, { path: "/newsletter" }, set);
   assertEquals(penalty.blocked, false);
   assertEquals(penalty.delay, 1200);
 });

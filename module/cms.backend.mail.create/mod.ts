@@ -1,9 +1,9 @@
-// deno-lint-ignore-file no-explicit-any
 import { backend } from "../cms.backend/mod.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
+import type {} from "../mail/mod.ts";
 
 export const name = "cms.backend.mail.create";
 export const needs = ["cms.backend.mail"];
@@ -37,7 +37,7 @@ async function render(node: Node): Promise<string> {
     if (!subject) {
       message = `<div class="-msg -err">${await app.t`Subject is required.`}</div>`;
     } else {
-      const mail = await (app as any).mail.create({ subject, html: body, sender: sender || undefined, replyTo: replyTo || undefined });
+      const mail = await app.mail.create({ subject, html: body, sender: sender || undefined, replyTo: replyTo || undefined });
 
       const addedEmails = new Set<string>();
 
@@ -84,18 +84,18 @@ async function render(node: Node): Promise<string> {
     }
   }
 
-  const defaults = await (app as any).mail.defaults().catch(() => ({}));
+  const defaults = await app.mail.defaults().catch(() => ({} as Record<string, unknown>));
   const defaultSender = defaults.sender ? (defaults.sendername ? `${defaults.sendername} <${defaults.sender}>` : defaults.sender) : "";
 
   const users = await db.all("SELECT id, email, firstname, lastname FROM usr WHERE active=1 ORDER BY lastname, firstname, email");
   const groups = await db.all("SELECT id, name FROM grp ORDER BY name");
 
-  const userOptions = users.map((u: any) => {
+  const userOptions = users.map((u) => {
     const label = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;
     return `<option value="${hee(u.id)}">${hee(label)} &lt;${hee(u.email)}&gt;</option>`;
   }).join("");
 
-  const groupOptions = groups.map((g: any) =>
+  const groupOptions = groups.map((g) =>
     `<option value="${hee(g.id)}">${hee(g.name)}</option>`
   ).join("");
 

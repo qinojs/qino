@@ -1,10 +1,3 @@
-/**
- * cms.layout.backend/mod.ts
- * Port of cms.layout.backend/index.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import { hee } from "../core/lib/util.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
@@ -27,6 +20,8 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.addJSM(u2Root + "u2/auto.js");
 
   ctx.csp["style-src"]["https://cdn.jsdelivr.net"] = 1;
+  ctx.csp["script-src"]["https://cdn.jsdelivr.net"] = 1;
+  ctx.csp["connect-src"]["https://cdn.jsdelivr.net"] = 1;
   ctx.html.addCSSFile(u2Root + "css/norm/norm.css");
   ctx.html.addCSSFile(u2Root + "css/base/base.css");
   ctx.html.addCSSFile(u2Root + "css/classless/variables.css");
