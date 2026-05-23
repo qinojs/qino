@@ -217,7 +217,7 @@ async function renderOverview(node: Node): Promise<string> {
   return `<div class=u2-card>
   <div class=-head>${await app.t`Modules`}</div>
   <div class=-body>
-    <input type=search placeholder="${await app.t`search`}..." style="width:300px; max-width:100%" oninput="this.closest('.u2-card').querySelectorAll('tbody tr').forEach(tr=>tr.hidden=!tr.textContent.toLowerCase().includes(this.value.toLowerCase()))">
+    <input type=search placeholder="${await app.t`search`}..." style="width:300px; max-width:100%" data-module-search>
   </div>
   <div style="overflow:auto; max-height:80vh; padding:0">
     <table class=u2-table style="white-space:nowrap">

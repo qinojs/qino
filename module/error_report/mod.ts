@@ -6,7 +6,6 @@
  *  - Deno backend:  imported, send() → write directly to DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-// deno-lint-ignore-file no-explicit-any
 
 import dbSchema from "./dbschema.json" with { type: "json" };
 import type { App } from "../core/server.ts";

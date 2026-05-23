@@ -136,7 +136,7 @@ export async function init(app: App) {
             for (const [type, allowed] of Object.entries(ctx.csp)) {
                 str += type + " " + Object.keys(allowed).join(" ") + "; ";
             }
-            if (ctx.cspReportUri) str += " report-uri " + ctx.cspReportUri;
+            if (ctx.cspReportUri) str += " report-uri " + ctx.cspReportUri + "; ";
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
             ctx.responseHeaders.set(headerName, str);
         }

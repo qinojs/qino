@@ -100,8 +100,8 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
   const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
   if (Number(req.header("content-length") ?? "0") > maxSize) throw new HTTPException(413);
 
-  const rawBody: Record<string, unknown> = req.method === "POST" 
-    ? (ct.includes("application/json") ? await req.json() : await req.parseBody()) : {};
+  const rawBody: Record<string, unknown> = req.method === "POST"
+    ? (ct.includes("application/json") || ct.includes("application/csp-report") ? await req.json() : await req.parseBody()) : {};
   const post: Record<string, unknown> = {};
   const files: Record<string, unknown> = {};
 

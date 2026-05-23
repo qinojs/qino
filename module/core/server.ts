@@ -112,10 +112,10 @@ export class App {
     }
 
     async #withRequestContext(hc: Context, next: () => Promise<void>): Promise<Response> {
+        const t0 = Date.now();
         const [ctx, isNew] = await makeRequestContext(this, hc);
         const initialSessionToken = ctx.sessionToken;
         hc.set("ctx", ctx);
-        const t0 = Date.now();
 
         return await requestStorage.run(ctx, async () => {
             try {
@@ -128,7 +128,7 @@ export class App {
                 hc.res = await this.#buildResponse(hc, ctx);
             } finally {
                 await ctx.cleanup();
-                //console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
+                console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
             }
             return hc.res;
         });
