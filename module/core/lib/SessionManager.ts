@@ -37,7 +37,7 @@ export class SessionManager {
         return this.#result(row.id, token, EMPTY_SESSION, true);
     }
 
-    #touchTimer: number | undefined;
+    #touchTimer: ReturnType<typeof setTimeout> | undefined;
     touch(sessId: string | number, userId = 0): void {
         clearTimeout(this.#touchTimer);
         this.#touchTimer = setTimeout(async () => {

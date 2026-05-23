@@ -13,13 +13,20 @@ export function appRequestUriToLocalPath(appRequestUri: string, app: App): strin
   if (matchM) {
     const mod = app.modules.get(matchM[1]);
     const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
-    return base + "pub/" + matchM[2];
+    return publicPath(base, matchM[2]);
   }
   const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\/(.*)/);
   if (matchQg) {
-    return app.appPATH + "qg/" + matchQg[1] + "/pub/" + matchQg[2];
+    return publicPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]);
   }
   return null;
+}
+
+function publicPath(root: string, file: string): string | null {
+  if (!file || file.includes("\0")) return null;
+  const pub = nodePath.resolve(root, "pub"), target = nodePath.resolve(pub, file);
+  const rel = nodePath.relative(pub, target);
+  return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }
 
 export function urlToLocalPath(url: string, ctx: RequestContext): string | null {
