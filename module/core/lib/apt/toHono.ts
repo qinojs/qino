@@ -6,10 +6,11 @@ import { invoke } from "./invoke.ts";
 import { checkCollisions, walk } from "./route.ts";
 import { BODY_METHODS, type AptTree, type Method, type Params } from "./types.ts";
 
-export type ToHonoAuth = (c: Context, data: { method: string; path: string; input: Params; query: Params }) => boolean | Promise<boolean>;
+type RequestData = { method: Method; path: string; input: Params; query: Params };
+
+export type ToHonoAuth = (c: Context, data: RequestData) => boolean | Promise<boolean>;
 export type ToHonoOptions = {
   csrf?: boolean;
-  trustedOrigins?: string[];
   auth?: ToHonoAuth;
 };
 
@@ -54,22 +55,21 @@ function isJsonRequest(c: Context): boolean {
   return !type || type === "application/json" || type.endsWith("+json");
 }
 
-async function authorizeMutation(c: Context, opts: ToHonoOptions, data: { method: Method; path: string; input: Params; query: Params }): Promise<void> {
+async function authorizeMutation(c: Context, opts: ToHonoOptions, data: RequestData): Promise<void> {
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(c, data)) return;
   if (opts.csrf === false) return;
-  if (!isTrustedOrigin(c, opts)) throw new AnswerError({ error: "Forbidden" }, 403);
+  if (!isTrustedOrigin(c)) throw new AnswerError({ error: "Forbidden" }, 403);
   if (!hasValidCsrfToken(c)) throw new AnswerError({ error: "Forbidden" }, 403);
 }
 
-function isTrustedOrigin(c: Context, opts: ToHonoOptions): boolean {
+function isTrustedOrigin(c: Context): boolean {
   const target = new URL(c.req.url).origin;
-  const allowed = new Set([target, ...(opts.trustedOrigins ?? []).map(originOf).filter((v): v is string => !!v)]);
   const origin = originOf(c.req.header("origin"));
-  if (origin) return allowed.has(origin);
+  if (origin) return origin === target;
   const referer = c.req.header("referer");
   if (!referer) return false;
-  return allowed.has(originOf(referer) ?? "");
+  return originOf(referer) === target;
 }
 
 function originOf(value?: string): string | null {

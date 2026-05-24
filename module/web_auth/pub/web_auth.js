@@ -4,6 +4,9 @@
  * import { WebAuth } from "/m/web_auth/pub/web_auth.js";
  */
 
+const csrfHeaders = (method) =>
+  method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken };
+
 export class WebAuth {
   constructor(opts = {}) {
     this.apiBase = opts.apiBase ?? "/api/web_auth";
@@ -13,7 +16,7 @@ export class WebAuth {
 
   async #fetch(path, init = {}) {
     const method = (init.method ?? "GET").toUpperCase();
-    const headers = { ...(method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken }), ...(init.headers ?? {}) };
+    const headers = { ...csrfHeaders(method), ...(init.headers ?? {}) };
     const res = await fetch(this.apiBase + path, { credentials: "same-origin", ...init, headers });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

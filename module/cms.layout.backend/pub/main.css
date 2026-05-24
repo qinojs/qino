@@ -48,6 +48,16 @@ dialog {
 }
 u2-ico[icon="delete"] { color: var(--red) }
 
+u2-accordion {
+	&::part(item) {
+		background-color:var(--gray-lighter);
+		border-radius: var(--radius);
+	}
+	&::part(trigger) {
+		background-color:transparent;
+	}
+}
+
 #container {
 	display:grid;
 	grid-template-columns:auto 1fr;

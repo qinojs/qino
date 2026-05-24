@@ -2,7 +2,9 @@ const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
 const csrfHeaders = () => globalThis.qgToken ? { "X-CSRF-Token": globalThis.qgToken } : {};
 
 export class AptClient extends EventTarget {
-  #base; #handlers = []; #unwrap;
+  #base;
+  #handlers = [];
+  #unwrap;
   headers = {};
 
   constructor(base, { unwrap } = {}) {
@@ -45,7 +47,11 @@ export class AptClient extends EventTarget {
     const url = new URL(parts.map(encodeURIComponent).join("/"), this.#base);
     method = method.toUpperCase();
     const detail = { method, url, input };
-    const headers = { accept: "application/json", ...(method === "GET" ? {} : csrfHeaders()), ...this.headers };
+    const headers = {
+      accept: "application/json",
+      ...(method === "GET" ? {} : csrfHeaders()),
+      ...this.headers,
+    };
     const init = { method, headers, signal: opts.signal };
 
     if (method === "GET" || method === "DELETE") {

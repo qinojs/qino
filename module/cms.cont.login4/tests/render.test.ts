@@ -53,6 +53,7 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
   const out = await requestStorage.run(ctx, () => cms.node.render(node as any));
   assertEquals(out.includes("<form method=post>"), true);
   assertEquals(out.includes("<input name=email type=text required autofocus>"), true);
+  assertEquals(out.includes('name=token value="tok"'), true);
   assertEquals(out.includes("<input name=save_login type=checkbox value=1 class=c1-fakable>"), true);
   assertEquals(out.includes("[user]"), true);
   assertEquals(out.includes("[pw]"), true);

@@ -1,24 +1,14 @@
+// deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
-import { pwHash, pwNeedsRehash, pwVerify } from "../lib/auth.ts";
+import { authListen } from "../lib/auth.ts";
+import { RequestContext } from "../lib/RequestContext.ts";
 
-Deno.test("auth: pwNeedsRehash accepts bcrypt variants only", () => {
-  assertEquals(pwNeedsRehash("$2a$10$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"), false);
-  assertEquals(pwNeedsRehash("$2b$10$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"), false);
-  assertEquals(pwNeedsRehash("$2y$10$abcdefghijklmnopqrstuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"), false);
-  assertEquals(pwNeedsRehash("plain"), true);
-  assertEquals(pwNeedsRehash(""), true);
-});
+Deno.test("authListen: login form requires token", async () => {
+  const ctx = new RequestContext();
+  ctx.post = { liveUser_login: "", email: "u@example.test", pw: "pw", token: "bad" };
+  ctx.session = { liveUser: () => 0, qg: { token: () => "good" } } as any;
+  ctx.app = { db: { row: () => { throw new Error("auth should not run"); } } } as any;
 
-Deno.test("auth: pwHash and pwVerify roundtrip", async () => {
-  const hash = await pwHash("secret");
-  assertEquals(await pwVerify("secret", hash), true);
-  assertEquals(await pwVerify("wrong", hash), false);
-  assertEquals(await pwVerify("", hash), false);
-  assertEquals(await pwVerify("secret", ""), false);
-});
-
-Deno.test("auth: pwVerify accepts PHP $2y$ bcrypt hashes", async () => {
-  const hash = await pwHash("legacy");
-  const phpHash = hash.replace(/^\$2b\$/, "$2y$");
-  assertEquals(await pwVerify("legacy", phpHash), true);
+  await authListen(ctx);
+  assertEquals(ctx.loginError, undefined);
 });

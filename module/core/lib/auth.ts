@@ -3,6 +3,7 @@ import { bcrypt } from "../../../deps.ts";
 
 export async function authListen(ctx: RequestContext): Promise<void> {
   if ("liveUser_login" in ctx.post) {
+    if (ctx.post["token"] !== ctx.token) return;
     const saveLogin = !!ctx.post["save_login"];
     const error = await auth(ctx, String(ctx.post["email"] ?? ""), String(ctx.post["pw"] ?? ""));
     const errorMap: Record<string, string> = { "0": "password", "-1": "username", "-2": "inactive", "1": "" };

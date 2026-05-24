@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/lib/Node.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
+import { hee } from "../core/lib/util.ts";
 
 export const name = "cms.cont.web_auth";
 export const needs = ["web_auth"];
@@ -36,18 +37,19 @@ async function render(node: Node): Promise<string> {
       const P = await (node.app as any).cms?.node(redirectId);
       if (P?.is()) redirectUrl = await P.url();
     }
-    return renderLogin(node.app, apiBase, scriptUrl, tUrl, !!(settings.showPasswordFallback()), redirectUrl);
+    return renderLogin(node.app, apiBase, scriptUrl, tUrl, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.token));
   }
   return "";
 }
 
-async function renderLogin(app: any, apiBase: string, scriptUrl: string, tUrl: string, showPw: boolean, redirectUrl: string): Promise<string> {
+async function renderLogin(app: any, apiBase: string, scriptUrl: string, tUrl: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
   return `<div class="web-auth-login" data-api-base=${JSON.stringify(apiBase)} data-script-url=${JSON.stringify(scriptUrl)} data-t-url=${JSON.stringify(tUrl)} data-redirect-url=${JSON.stringify(redirectUrl)}>
   <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
   <button data-action="login">${await app.t`Sign in with passkey`}</button>
   ${showPw ? `<details>
     <summary>${await app.t`Sign in with password`}</summary>
     <form method="post">
+      <input type=hidden name=token value="${token}">
       <table>
         <tr><th>${await app.t`E-Mail`}:<td><input name="email" type="email" required>
         <tr><th>${await app.t`Password`}:<td><input name="pw" type="password" required>

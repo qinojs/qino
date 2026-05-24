@@ -1,4 +1,5 @@
-const apiHeaders = (method = "POST") => ({ "Content-Type": "application/json", ...(method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken }) });
+const apiHeaders = (method = "POST") =>
+  ({ "Content-Type": "application/json", ...(method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken }) });
 
 cms.initCont("cms.backend.api", (el) => {
   const routes = JSON.parse(el.dataset.routes);
@@ -6,76 +7,50 @@ cms.initCont("cms.backend.api", (el) => {
 
   el.querySelector("#api-search")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
-    el.querySelectorAll(".api-route").forEach((r) => {
-      const text = r.querySelector(".api-path").textContent.toLowerCase()
-        + " " + r.querySelector(".api-desc").textContent.toLowerCase()
-        + " " + r.querySelector(".api-badge").textContent.toLowerCase();
+    el.querySelectorAll(".-route").forEach((r) => {
+      const text = r.querySelector(".-path").textContent.toLowerCase()
+        + " " + r.querySelector(".-desc").textContent.toLowerCase()
+        + " " + r.querySelector(".-method").textContent.toLowerCase();
       r.hidden = q && !text.includes(q);
     });
   });
 
   el.addEventListener("click", async (e) => {
-    const head = e.target.closest(".api-route-head");
-    if (head) {
-      const idx = Number(head.closest(".api-route").dataset.idx);
-      const body = el.querySelector("#api-body-" + idx);
-      const route = body.closest(".api-route");
-      const hidden = body.hidden;
-      body.hidden = !hidden;
-      route.classList.toggle("open", !hidden);
-      return;
-    }
-
-    const toolBtn = e.target.closest(".api-tool-btn");
-    if (toolBtn) {
-      const idx = Number(toolBtn.closest(".api-route").dataset.idx);
-      const toolEl = el.querySelector("#api-tool-" + idx);
-      toolEl.hidden = !toolEl.hidden;
-      return;
-    }
-
     const checkBtn = e.target.closest("[data-check-access]");
     if (checkBtn) {
       const idx = Number(checkBtn.dataset.checkAccess);
       const r = routes[idx];
       const form = checkBtn.closest("form");
       const result = el.querySelector("#api-result-" + idx);
-      result.hidden = false;
-      result.className = "api-result";
       try {
         let path = r.path;
         for (const p of r.pathParams) {
           const field = form.elements[p];
           if (!field || !field.value) {
-            result.textContent = "⚠ fill in path param: " + p;
-            result.className = "api-result error";
+            result.value ="⚠ fill in path param: " + p;
             return;
           }
           path = path.replace(":" + p, encodeURIComponent(field.value));
         }
-        result.textContent = "Checking…";
+        result.value ="Checking…";
         const method = r.method.toUpperCase();
         const res = await fetch(appURL + "api" + path + "?_checkAccess=1", { method, headers: apiHeaders(method) });
-        result.textContent = res.ok ? "✓ access granted" : "✗ " + res.status + " access denied";
-        if (!res.ok) result.className = "api-result error";
+        result.value =res.ok ? "✓ access granted" : "✗ " + res.status + " access denied";
       } catch (err) {
-        result.textContent = String(err);
-        result.className = "api-result error";
+        result.value =String(err);
       }
       return;
     }
   });
 
   el.addEventListener("submit", async (e) => {
-    const form = e.target.closest(".api-form");
+    const form = e.target.closest(".-form");
     if (!form) return;
     e.preventDefault();
-    const idx = Number(form.closest(".api-route").dataset.idx);
+    const idx = Number(form.closest(".-route").dataset.idx);
     const r = routes[idx];
     const result = el.querySelector("#api-result-" + idx);
-    result.hidden = false;
-    result.textContent = "Loading…";
-    result.className = "api-result";
+    result.value ="Loading…";
 
     try {
       let path = r.path;
@@ -115,11 +90,9 @@ cms.initCont("cms.backend.api", (el) => {
       const text = await res.text();
       let pretty;
       try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch { pretty = text; }
-      result.textContent = res.status + " " + res.statusText + "\n\n" + pretty;
-      if (!res.ok) result.className = "api-result error";
+      result.value =res.status + " " + res.statusText + "\n\n" + pretty;
     } catch (err) {
-      result.textContent = String(err);
-      result.className = "api-result error";
+      result.value =String(err);
     }
   });
 });

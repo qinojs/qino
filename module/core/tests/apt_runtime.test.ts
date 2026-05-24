@@ -17,10 +17,10 @@ import { AnswerError } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.lang = "de";
-let qgToken = "csrf-token";
+let csrfToken = "csrf-token";
 const token = (v?: string) => {
-  if (v !== undefined) qgToken = v;
-  return qgToken;
+  if (v !== undefined) csrfToken = v;
+  return csrfToken;
 };
 ctx.session = { liveUser: () => 0, qg: { token } } as any;
 
@@ -176,14 +176,14 @@ Deno.test("apt: Hono mutations require same origin and qg token", async () => {
 
     const badOrigin = await app.request("http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://evil.test", "x-csrf-token": qgToken },
+      headers: { "content-type": "application/json", "origin": "http://evil.test", "x-csrf-token": csrfToken },
       body,
     });
     assertEquals(badOrigin.status, 403);
 
     const ok = await app.request("http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": qgToken },
+      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
       body,
     });
     assertEquals(ok.status, 200);

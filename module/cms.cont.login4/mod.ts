@@ -22,6 +22,7 @@ async function render(node: Node): Promise<string> {
   const edit = node.edit;
   const cms = node.cms;
   const settings = node.settings;
+  const token = hee(ctx.token);
 
   // Redirect if already logged in
   if (!edit && ctx.user) {
@@ -75,6 +76,7 @@ async function render(node: Node): Promise<string> {
         }
   ${email}
   <input name=email type=hidden value="${email}">
+  <input type=hidden name=token value="${token}">
   ${showPwField ? `<input name=pw type=password>` : ""}
   <button name=liveUser_login>${await app.t`Log in`}</button>
 </form>\n`;
@@ -87,6 +89,7 @@ async function render(node: Node): Promise<string> {
     const showSaveLogin = settings.saveLogin();
 
     html += `<form method=post>
+  <input type=hidden name=token value="${token}">
   ${fixUser ? `<input type=hidden name=email value="${hee(fixUser)}">` : ""}
   <table class="c1-padding c1-fieldTable">
     ${
@@ -134,7 +137,7 @@ async function render(node: Node): Promise<string> {
       }
     }
     html += `<form method=post${action}>
-  <input type=hidden name=token value="${hee(ctx.token)}">
+  <input type=hidden name=token value="${token}">
   <button name=liveUser_logout>${await app.t`Log out`}</button>
 </form>\n`;
   }
