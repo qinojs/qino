@@ -39,7 +39,7 @@ async function evalExpr(code: string, rctx: RenderCtx, extra: Record<string, unk
 async function renderAttrValue(nodes: TAttr["value"], rctx: RenderCtx, extra: Record<string, unknown> = {}): Promise<string> {
   let out = "";
   for (const n of nodes) {
-    out += n.type === "text" ? n.value : String((await evalExpr(n.code, rctx, extra)) ?? "");
+    out += n.type === "text" ? n.value : n.type === "expr" ? String((await evalExpr(n.code, rctx, extra)) ?? "") : "";
   }
   return out;
 }
