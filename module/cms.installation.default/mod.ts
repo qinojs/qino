@@ -1,8 +1,3 @@
-/**
- * cms.installation.default/mod.ts - Default CMS installation
- * Port of cms.installation.default/install.php
- */
-
 import type { App } from "../core/server.ts";
 import { pwHash } from "../core/lib/auth.ts";
 

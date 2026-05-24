@@ -1,8 +1,3 @@
-/**
- * html.ts - HTML rendering utilities
- * Port of core/lib/html.class.php
- */
-
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "./util.ts";

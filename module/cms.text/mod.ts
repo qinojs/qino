@@ -1,8 +1,3 @@
-/**
- * cms.text/mod.ts
- * Port of cms.text/qg.php
- */
-
 // deno-lint-ignore-file no-explicit-any
 
 import { s } from "../core/lib/StandardSchema.ts";
@@ -333,11 +328,6 @@ export const api: AptTree = {
     },
 };
 
-
-/**
- * cms.text install()
- * Port of cms.text/install.php
- */
 export async function install({ app }: any): Promise<void> {
     app.settings["cms.text"]["translation service"];
 }

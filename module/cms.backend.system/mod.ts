@@ -10,10 +10,6 @@ import type { App } from "../core/server.ts";
 export const name = "cms.backend.system";
 export const needs = ["cms.backend"];
 
-/**
- * cms.backend.system install()
- * Port of cms.backend.system/install.php
- */
 export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.system");
   if (P) {
@@ -28,8 +24,6 @@ async function render(node: Node): Promise<string> {
   const open   = get.open ?? null;
   const db     = node.app.db;
   const app    = node.app;
-
-
 
   // ── server info ────────────────────────────────────────────────────────
 
@@ -60,7 +54,6 @@ async function render(node: Node): Promise<string> {
     </table>
   </div>
 </div>`;
-
 
   // ── health checks ──────────────────────────────────────────────────────
   const types = await getTypes(app);
@@ -111,7 +104,6 @@ async function render(node: Node): Promise<string> {
   </div>
 </div>`;
   }
-
 
   // ── mysql config ───────────────────────────────────────────────────────
   let mysqlHtml = "";

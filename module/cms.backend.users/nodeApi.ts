@@ -1,4 +1,3 @@
-// Port of cms.backend.users/page_api.php
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx } from "../core/lib/RequestContext.ts";

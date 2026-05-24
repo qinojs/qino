@@ -1,6 +1,5 @@
 /**
  * cms.versions/lib/Vers.ts
- * Port of cms.versions/vers.class.php + vers.events.php
  *
  * Manages versioned shadow tables (_vers_<table>) and MySQL VIEWs for
  * point-in-time / draft-space reads.
@@ -60,7 +59,6 @@ export function setVers(ctx: RequestContext, spaceLog: [number, number] | null):
 
 /**
  * Ensure the _vers_<table> shadow table exists.
- * Port of vers::versTable().
  * Returns the shadow table name, or false if the table is not versioned.
  */
 export async function versTable(db: Db, tableName: string): Promise<string | false> {
@@ -123,7 +121,6 @@ export async function versTable(db: Db, tableName: string): Promise<string | fal
  * - space≠0, log=0  → VIEW of _vers_<table> at space head (log=0 rows)
  * - space≠0, log≠0  → VIEW of _vers_<table> up to that log entry (historical)
  *
- * Port of vers::view().
  * Created views are registered on ctx.state.versViews for cleanup after response.
  */
 export async function view(db: Db, tableName: string, space: number, log: number): Promise<string> {
@@ -210,10 +207,6 @@ export async function dropRequestViews(db: Db): Promise<void> {
 
 // ─── ensureSpace ────────────────────────────────────────────────────────────
 
-/**
- * Ensure a space exists in vers_space and that _vers_* tables are seeded.
- * Port of vers::ensureSpace().
- */
 export async function ensureSpace(db: Db, space: number): Promise<void> {
     if (!space) return;
     const exists = await db.row("SELECT space FROM vers_space WHERE space = ?", [space]);
@@ -234,10 +227,6 @@ export async function ensureSpace(db: Db, space: number): Promise<void> {
 
 // ─── tableEntriesCopyTo ─────────────────────────────────────────────────────
 
-/**
- * Copy entries from (fromSpace, fromLog) → toSpace.
- * Port of vers::tableEntriesCopyTo().
- */
 export async function tableEntriesCopyTo(
     db: Db,
     tableName: string,

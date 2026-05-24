@@ -1,3 +1,5 @@
+const apiHeaders = (method = "POST") => ({ "Content-Type": "application/json", ...(method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken }) });
+
 cms.initCont("cms.backend.api", (el) => {
   const routes = JSON.parse(el.dataset.routes);
   const appURL = el.dataset.appUrl;
@@ -52,7 +54,8 @@ cms.initCont("cms.backend.api", (el) => {
           path = path.replace(":" + p, encodeURIComponent(field.value));
         }
         result.textContent = "Checking…";
-        const res = await fetch(appURL + "api" + path + "?_checkAccess=1", { method: r.method.toUpperCase(), headers: { "Content-Type": "application/json" } });
+        const method = r.method.toUpperCase();
+        const res = await fetch(appURL + "api" + path + "?_checkAccess=1", { method, headers: apiHeaders(method) });
         result.textContent = res.ok ? "✓ access granted" : "✗ " + res.status + " access denied";
         if (!res.ok) result.className = "api-result error";
       } catch (err) {
@@ -105,7 +108,7 @@ cms.initCont("cms.backend.api", (el) => {
         ? "?" + new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
         : "";
       const url = appURL + "api" + path + qs;
-      const opts = { method, headers: { "Content-Type": "application/json" } };
+      const opts = { method, headers: apiHeaders(method) };
       if (isBodyMethod && Object.keys(body).length) opts.body = JSON.stringify(body);
 
       const res = await fetch(url, opts);

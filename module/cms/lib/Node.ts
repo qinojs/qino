@@ -1,8 +1,3 @@
-/**
- * Node.ts - CMS Node class
- * Port of cms/lib/Page.class.php
- */
-
 import { resolveText } from "./resolveText.ts";
 import { hee, HtmlString } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";

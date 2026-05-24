@@ -1,4 +1,5 @@
 const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
+const csrfHeaders = () => globalThis.qgToken ? { "X-CSRF-Token": globalThis.qgToken } : {};
 
 export class AptClient extends EventTarget {
   #base; #handlers = []; #unwrap;
@@ -44,7 +45,8 @@ export class AptClient extends EventTarget {
     const url = new URL(parts.map(encodeURIComponent).join("/"), this.#base);
     method = method.toUpperCase();
     const detail = { method, url, input };
-    const init = { method, headers: { accept: "application/json", ...this.headers }, signal: opts.signal };
+    const headers = { accept: "application/json", ...(method === "GET" ? {} : csrfHeaders()), ...this.headers };
+    const init = { method, headers, signal: opts.signal };
 
     if (method === "GET" || method === "DELETE") {
       for (const [k, v] of Object.entries(input || {})) {

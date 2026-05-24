@@ -45,7 +45,6 @@ export class Db {
 
   async #exec<T extends RowDataPacket[] | ResultSetHeader>(sql: string, params?: unknown[], isQuery = false): Promise<T> {
     try {
-      // deno-lint-ignore no-explicit-any
       const [res] = isQuery ? await this.#pool.query<T>(sql, params) : await this.#pool.execute<T>(sql, params as any);
       return res;
     } catch (e) {

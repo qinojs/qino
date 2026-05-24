@@ -1,7 +1,6 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 import { hee } from "../../../core/lib/util.ts"
 import { getCtx } from "../../../core/lib/RequestContext.ts";
-// deno-lint-ignore-file no-explicit-any
 
 export default async function (node: Node, vars: { param?: Record<string, string> } = {}): Promise<string> {
   const ctx = getCtx();

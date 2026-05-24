@@ -1,10 +1,3 @@
-/**
- * cms.backend.system/page_api.ts
- * Port of cms.backend.system/page_api.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import type { Node } from "../cms/lib/Node.ts";
 import { getTypes } from "./health_check.ts";
 

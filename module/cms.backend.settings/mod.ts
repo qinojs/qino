@@ -1,8 +1,3 @@
-/**
- * cms.backend.settings/mod.ts
- * Port of cms.backend.settings/index.php
- */
-
 import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
@@ -12,10 +7,6 @@ import type { App } from "../core/server.ts";
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];
 
-/**
- * cms.backend.settings install()
- * Port of cms.backend.settings/install.php
- */
 export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.settings");
   if (P) {

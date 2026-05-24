@@ -1,4 +1,3 @@
-// Port of cms.image2/qg.php
 // deno-lint-ignore-file no-explicit-any
 
 import { hee, HtmlString } from "../core/lib/util.ts";

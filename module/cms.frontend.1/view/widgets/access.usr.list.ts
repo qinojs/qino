@@ -1,5 +1,4 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-// deno-lint-ignore-file no-explicit-any
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<string> {
   const app = node.app;

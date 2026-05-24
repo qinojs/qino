@@ -1,4 +1,3 @@
-// Port of cms.cont.not_found1/index.php
 import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
 

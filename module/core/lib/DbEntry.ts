@@ -1,8 +1,3 @@
-/**
- * dbEntry.ts - Database record wrapper
- * Port of core/lib/dbEntry.class.php
- */
-
 import type { DbTable } from "./DbTable.ts";
 
 const entryClasses: Record<string, typeof DbEntry> = {};

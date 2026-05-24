@@ -1,7 +1,3 @@
-/**
- * dbTable.ts - Database table ORM
- * Port of core/lib/dbTable.class.php
- */
 // deno-lint-ignore-file no-explicit-any
 
 import { DbField } from "./DbField.ts";

@@ -1,6 +1,5 @@
 /**
  * error_report/mod.ts
- * Port of error_report/qg.php
  *
  * reporter.js runs on two sides:
  *  - Deno backend:  imported, send() → write directly to DB

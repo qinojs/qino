@@ -12,7 +12,9 @@ export class WebAuth {
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
   async #fetch(path, init = {}) {
-    const res = await fetch(this.apiBase + path, { credentials: "same-origin", ...init });
+    const method = (init.method ?? "GET").toUpperCase();
+    const headers = { ...(method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken }), ...(init.headers ?? {}) };
+    const res = await fetch(this.apiBase + path, { credentials: "same-origin", ...init, headers });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   }

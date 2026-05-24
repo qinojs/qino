@@ -1,9 +1,3 @@
-/**
- * qgEntries.ts - Global entry accessor functions
- * Port of core/lib/qgEntries.php
- */
-
-
 import { DbEntry, registerEntryClass } from "./DbEntry.ts";
 
 // === dbEntry_usr ===
@@ -29,7 +23,6 @@ class dbEntry_log extends DbEntry {
     return this.table.db.table("sess").Entry(id);
   }
 }
-
 
 // === dbEntry_sess ===
 class dbEntry_sess extends DbEntry {
@@ -58,7 +51,6 @@ class dbEntry_client extends DbEntry {
     });
   }
 }
-
 
 // === dbEntry_client_usr ===
 class dbEntry_client_usr extends DbEntry {

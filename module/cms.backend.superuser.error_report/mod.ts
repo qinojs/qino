@@ -1,8 +1,3 @@
-/**
- * cms.backend.superuser.error_report/mod.ts
- * Port of cms.backend.superuser.error_report/index.php + detail.php
- */
-
 import { hee, urlToLocalPath } from "../core/lib/util.ts";
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";

@@ -1,8 +1,3 @@
-/**
- * cms.versions/serverInterface.ts
- * Port of cms.versions/serverInterface.php
- */
-
 // deno-lint-ignore-file no-explicit-any
 
 import { versedTables, view, getCmsVers } from "./lib/Vers.ts";
@@ -135,7 +130,6 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         time:    Number(row.time ?? 0),
     };
 }
-
 
 // ─── Protocol helpers ────────────────────────────────────────────────────────
 

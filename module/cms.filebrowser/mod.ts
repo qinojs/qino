@@ -1,5 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-// Port of cms.filebrowser/qg.php
 
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { s } from "../core/lib/StandardSchema.ts";

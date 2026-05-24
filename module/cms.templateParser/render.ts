@@ -25,7 +25,6 @@ async function evalExpr(code: string, rctx: RenderCtx, extra: Record<string, unk
     ...extra,
   };
   try {
-    // deno-lint-ignore no-new-func
     const fn  = new Function(...Object.keys(scope), `"use strict"; return (${code.trim()});`);
     const result = fn(...Object.values(scope));
     return result instanceof Promise ? await result : result;

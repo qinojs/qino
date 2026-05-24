@@ -1,5 +1,3 @@
-// Port of cms.backend.struct/index.php + control.php
-
 import { hee } from "../core/lib/util.ts";
 import { list } from "./parts/list.ts";
 import type { Node } from "../cms/lib/Node.ts";
@@ -10,7 +8,6 @@ import type { App } from "../core/server.ts";
 export const name = "cms.backend.struct";
 export const needs = ["cms.backend"];
 
-// Port of cms.backend.struct/install.php
 export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.struct");
   if (P) {

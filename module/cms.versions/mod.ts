@@ -1,6 +1,5 @@
 /**
  * cms.versions/mod.ts
- * Port of cms.versions/qg.php + vers.events.php + history.php
  *
  * Versioned tables (qg_setting and page_class intentionally excluded):
  *   page, page_file, page_text, page_url, text, file
@@ -90,14 +89,12 @@ export function init(app: App) {
     versedTables["file"]       = true;
 
     // ─── Ensure _vers_* tables exist on first action ─────────────────────────
-    // Port of vers.events.php: qg::on('action', function() { versTable() })
     app.on("action", async e => {
         const ctx = e.ctx as RequestContext;
         for (const t of Object.keys(versedTables)) await versTable(ctx.app.db, t);
     });
 
     // ─── History capture: insert/update ──────────────────────────────────────
-    // Port of vers.events.php $catch_update_insert
     // Writes a REPLACE INTO _vers_* for every tracked table mutation.
     const catchInsertUpdate = async (e: any) => {
         const ctx = getCtx();
@@ -125,7 +122,6 @@ export function init(app: App) {
     app.db.on("table::insert-after", catchInsertUpdate);
 
     // ─── History capture: delete ──────────────────────────────────────────────
-    // Port of vers.events.php delete handler
     app.db.on("table::delete-after", async (e: any) => {
         const ctx = getCtx();
         if (!ctx.logId) return;
@@ -146,7 +142,6 @@ export function init(app: App) {
     });
 
     // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
-    // Port of vers.events.php: keep live table AUTO_INCREMENT ≥ shadow table
     app.db.on("table::insert-after", async (e: any) => {
         const ctx = getCtx();
         if (!ctx) return;
@@ -165,7 +160,6 @@ export function init(app: App) {
     // ─────────────────────────────────────────────────────────────────────────
     // DRAFT-MODE: space-routing for DB writes
     // TODO: uncomment to enable full draft-mode write routing.
-    // Port of vers.events.php: insert/update/delete-before space handling.
     //
     // app.on("table::update-before", async (e: any) => {
     //     const ctx = getCtx();
@@ -224,7 +218,6 @@ export function init(app: App) {
     // ─── cross-space field sync for `page` table ─────────────────────────────
     // Some `page` fields (sort, basis, access, title_id) must stay in sync
     // with the live table even when we're in a space.
-    // Port of qg.php: qg::on('table::update-before', ...) for page table.
     app.db.on("table::update-before", async (e: any) => {
         const ctx = getCtx();
         if (!ctx) return;
@@ -248,7 +241,6 @@ export function init(app: App) {
     });
 
     // ─── history.php: vers_cms_page_changed ──────────────────────────────────
-    // Port of history.php
     const onModify = async (e: any) => {
         const Page = e.Page;
         if (!Page) return;
@@ -301,7 +293,6 @@ export function init(app: App) {
     });
 
     // ─── Request init ─────────────────────────────────────────────────────────
-    // Port of qg.php bottom section: determine cmsVersSpace/cmsVersLog from
     // settings + request params.
     app.on("action", async e => {
         const ctx = e.ctx as RequestContext;
@@ -430,7 +421,6 @@ export function init(app: App) {
     });
 
     // ─── File protection: don't delete files referenced in _vers_file ────────
-    // Port of qg.php: qg::on('dbFile-remove-fs', ...)
     app.on("dbFile-remove-fs", async (e: any) => {
         const md5 = e.dbFile?.vs?.md5 ?? "";
         if (!md5) return;
@@ -453,7 +443,6 @@ export function init(app: App) {
  * 
  * cms.versions install()
  * Creates vers_space and vers_cms_page_changed tables.
- * Port of old cms.versions/dbscheme.xml
  */
 export async function install({ app }: any): Promise<void> {
     const db = app.db;

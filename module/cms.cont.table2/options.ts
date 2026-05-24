@@ -1,4 +1,3 @@
-// Port of cms.cont.table2/options.php
 import type { Node } from "../cms/lib/Node.ts";
 import { hee, uid } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";

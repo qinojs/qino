@@ -1,10 +1,3 @@
-/**
- * cms.backend.system/parts/statistic.ts
- * Port of cms.backend.system/parts/statistic.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import { hee } from "../../core/lib/util.ts";
 import type { Node } from "../../cms/lib/Node.ts";
 

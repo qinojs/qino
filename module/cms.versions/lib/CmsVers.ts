@@ -1,6 +1,5 @@
 /**
  * cms.versions/lib/CmsVers.ts
- * Port of cms.versions/cms_vers.class.php
  *
  * Higher-level CMS versioning: publishCont, page cache warming.
  * qg_setting is intentionally excluded (not versioned in Deno port).
@@ -16,7 +15,6 @@ import "../../cms/mod.ts";
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads
  * inside a specific space/log still see correct values.
- * Port of cms_vers::page_load_runtime_cache().
  */
 export async function pageLoadRuntimeCache(node: any): Promise<void> {
     await node.files();
@@ -33,7 +31,6 @@ export async function pageLoadRuntimeCache(node: any): Promise<void> {
 
 /**
  * Copy a page (and optionally sub-pages) from one space/log to another space.
- * Port of cms_vers::publishCont().
  * qg_setting copying is intentionally omitted (settings are not versioned).
  */
 export async function publishCont(
@@ -105,10 +102,6 @@ export async function publishCont(
     if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
 }
 
-/**
- * Prevent all DB writes to versioned tables (used when browsing a historical log).
- * Port of cms_vers::preventDbManipulations().
- */
 export function preventDbManipulations(app: any): void {
     const prevent = (e: any) => {
         const name: string = String(e.Table);
@@ -119,10 +112,6 @@ export function preventDbManipulations(app: any): void {
     app.db.on("table::delete-before", prevent);
 }
 
-/**
- * Set long-lived cache headers (content won't change for this log snapshot).
- * Port of cms_vers::cacheHeaders().
- */
 export function cacheHeaders(ctx: any): void {
     const maxAge = 60 * 60 * 24 * 180;
     const d = new Date(Date.now() + maxAge * 1000).toUTCString();

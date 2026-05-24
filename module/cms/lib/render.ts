@@ -1,11 +1,5 @@
-/**
- * render.ts - CMS render handler
- * Port of cms/lib/cms.class.php (render method)
- */
-
 import type { RequestContext } from "../../core/lib/RequestContext.ts";
 import type { CMS } from "./CMS.ts";
-
 
 export async function render(ctx: RequestContext): Promise<void> {
   const app = ctx.app;

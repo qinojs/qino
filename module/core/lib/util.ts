@@ -1,8 +1,3 @@
-/**
- * divers.ts - General utility functions
- * Port of core/lib/divers.php
- */
-
 import * as nodePath from "node:path";
 import type { App } from "../server.ts";
 import type { RequestContext } from "./RequestContext.ts";
@@ -83,7 +78,6 @@ html.async = async function(strings: TemplateStringsArray, ...values: unknown[])
     return i < resolved.length ? acc + str + htmlValue(resolved[i]) : acc + str;
   }, ""));
 };
-
 
 export function uid(length?: number): string {
   const bytes = new Uint8Array(16);

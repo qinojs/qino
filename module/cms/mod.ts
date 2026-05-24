@@ -1,8 +1,3 @@
-/**
- * cms/mod.ts - CMS module hooks
- * Port of cms/qg.php
- */
-
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./lib/CMS.ts";
 import { render } from "./lib/render.ts";
@@ -82,7 +77,6 @@ export const ctxSettingsSchema = {
     },
 };
 
-
 export function init(app: App) {
 
     app.cms = new CMS(app);
@@ -118,7 +112,6 @@ export function init(app: App) {
             }
         }
 
-
         // Page files as ZIP
         const zipPid = ctx.get["qgCms_page_files_as_zip"];
         if (zipPid) {
@@ -147,10 +140,6 @@ export function init(app: App) {
 
 }
 
-/**
- * cms install()
- * Port of cms/install.php
- */
 export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one("SELECT id FROM page WHERE id = 1")) {
     await app.db.query("INSERT INTO page SET id=1, access=1, visible=1, searchable=1, module = 'cms.layout.custom.9', basis = 0, type='p'");

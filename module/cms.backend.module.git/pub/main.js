@@ -1,3 +1,5 @@
+import { apt } from "../../core/pub/js/apt.js";
+
 cms.initCont("cms.backend.module.git", (el) => {
   const installUrl = el.querySelector("#git-install-url");
   const installOut = el.querySelector("#git-install-out");
@@ -11,9 +13,7 @@ cms.initCont("cms.backend.module.git", (el) => {
       installOut.textContent = "Installing...";
       installOut.style.color = "#555";
       try {
-        const r = await fetch("/api/git/install", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gitUrl: url }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error ?? r.statusText);
+        const d = await apt.git.install.post({ gitUrl: url });
         installOut.textContent = "Installed: " + d.installed + "\nPath: " + d.path;
         installOut.style.color = "#2a7";
       } catch (e) {
@@ -33,9 +33,7 @@ cms.initCont("cms.backend.module.git", (el) => {
       out.style.color = "#555";
       out.textContent = action + "...";
       try {
-        const r = await fetch("/api/git/" + action, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ module: mod }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error ?? r.statusText);
+        const d = await apt.git[action].post({ module: mod });
         out.textContent = d.output || "OK";
         out.style.color = "#2a7";
       } catch (e) {
@@ -56,9 +54,7 @@ cms.initCont("cms.backend.module.git", (el) => {
       out.style.color = "#555";
       out.textContent = "checkout " + ref + "...";
       try {
-        const r = await fetch("/api/git/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ module: mod, ref }) });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error ?? r.statusText);
+        const d = await apt.git.checkout.post({ module: mod, ref });
         out.textContent = d.output || "OK";
         out.style.color = "#2a7";
       } catch (e) {

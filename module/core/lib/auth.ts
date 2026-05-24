@@ -35,7 +35,7 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
     const usrId = String(await UsrEntry.get("id") ?? "");
     if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return login(ctx, user.id);
   }
-  if (!await pwVerify(pw, await UsrEntry.get("pw") ?? "")) return 0;
+  if (!pwVerify(pw, await UsrEntry.get("pw") ?? "")) return 0;
   if (rehash) {
     await UsrEntry.set("pw", await pwHash(pw));
     await UsrEntry.save();
@@ -74,11 +74,11 @@ export async function rememberLogin(ctx: RequestContext, doSave: boolean): Promi
   await E.set("save_login", doSave ? 1 : 0);
 }
 
-export async function pwHash(pw: string): Promise<string> {
+export function pwHash(pw: string): Promise<string> {
   return bcrypt.hash(pw, 10);
 }
 
-export async function pwVerify(pw: string, hash: string): Promise<boolean> {
+export function pwVerify(pw: string, hash: string): boolean {
   if (!pw || !hash) return false;
   // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
   return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$"));

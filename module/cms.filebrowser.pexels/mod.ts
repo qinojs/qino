@@ -1,5 +1,3 @@
-// Port of cms.filebrowser.pexels/qg.php
-
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";
 

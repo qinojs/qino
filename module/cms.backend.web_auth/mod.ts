@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";

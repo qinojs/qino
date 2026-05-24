@@ -1,6 +1,3 @@
-// Port of cms.backend.struct/parts/list.php
-// deno-lint-ignore-file no-explicit-any
-
 import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import type { Node } from "../../cms/lib/Node.ts";

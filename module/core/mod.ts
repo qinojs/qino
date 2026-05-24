@@ -1,7 +1,3 @@
-/**
- * core/mod.ts - Core module hooks
- * Port of v9/m/core/qg.php
- */
 // deno-lint-ignore-file no-explicit-any
 
 import "./lib/qgEntries.ts";
@@ -75,7 +71,6 @@ export async function init(app: App) {
 
     const langsRaw = String(await app.settings.core.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
-
 
     app.on("action", async (e) => {
         const ctx = e.ctx as RequestContext;

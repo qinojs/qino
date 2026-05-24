@@ -1,4 +1,3 @@
-// Port of cms.cont.table2/page_api.php
 import type { Node } from "../cms/lib/Node.ts";
 
 export default async function (node: Node, vars: Record<string, unknown>, self: { reload(id: string): void | Promise<void> }): Promise<void> {

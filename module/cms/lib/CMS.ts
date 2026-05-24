@@ -1,8 +1,3 @@
-/**
- * CMS.ts - CMS class
- * Port of cms/lib/cms.class.php
- */
-
 import { Node } from "./Node.ts";
 import { hee, HtmlString } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
@@ -11,7 +6,6 @@ import type { Module } from "../../core/lib/ModuleManager.ts";
 import type { Db } from "../../core/lib/Db.ts";
 import type { DbFile } from "../../core/lib/DbFileManager.ts";
 import type { DbText } from "../../core/lib/DbTextManager.ts";
-
 
 function table(name: string): string { return name; }
 
@@ -42,7 +36,6 @@ export class CMS {
         await node.init();
         return node;
     }
-
 
     async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
         const ret: Record<string, Node> = {};

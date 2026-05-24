@@ -63,10 +63,6 @@ export const backend = {
     }
 }
 
-/**
- * cms.backend install()
- * Port of cms.backend/install.php
- */
 export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.checkInstalled(app);
   if (P) {

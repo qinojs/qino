@@ -1,13 +1,7 @@
-/**
- * cms.backend.system/health_check.ts
- * Port of cms.backend.system/health_check.php
- */
-
 // deno-lint-ignore-file no-explicit-any
 
 import { hee } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
-
 
 export type Solution = {
   form?: Record<string, Record<string, unknown>>;

@@ -1,8 +1,3 @@
-/**
- * dbField.ts - Database field abstraction
- * Port of core/lib/dbField.class.php
- */
-
 import type { DbTable } from "./DbTable.ts";
 import { Db, dateTypes, stringTypes, numTypes } from "./Db.ts";
 

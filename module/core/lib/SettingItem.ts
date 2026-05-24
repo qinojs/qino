@@ -1,8 +1,3 @@
-/**
- * settingArray.ts - Settings system
- * Port of core/lib/settingArray.class.php
- */
-
 import { Item } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
 

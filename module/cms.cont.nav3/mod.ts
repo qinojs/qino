@@ -1,6 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
-// Port of cms.cont.nav3/index.php
-
 import type { Node } from "../cms/lib/Node.ts";
 
 export const name = "cms.cont.nav3";

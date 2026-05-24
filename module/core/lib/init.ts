@@ -1,8 +1,3 @@
-/**
- * init.ts - Session and logging initialization
- * Port of core/lib/init.php (liveClient, liveSess, liveLog classes)
- */
-
 import { createHash } from "node:crypto";
 import type { RequestContext } from "./RequestContext.ts";
 import { uid } from "./util.ts";
@@ -23,7 +18,6 @@ export async function initClient(ctx: RequestContext): Promise<void> {
     }
     ctx.clientId = String(clientId);
 }
-
 
 async function registerClient(ctx: RequestContext): Promise<void> {
     const hash = uid();
@@ -64,7 +58,6 @@ export async function initLog(ctx: RequestContext): Promise<void> {
     ctx.logId = String(logId);
     data.log_id = logId;
 
-
     setTimeout(async ()=>{ // background
       try {
         const url = ctx.requestUri;
@@ -84,7 +77,6 @@ export async function initLog(ctx: RequestContext): Promise<void> {
         const ua = ctx.req.header("user-agent") ?? "";
         let uaId = await db.one("SELECT id FROM log_user_agent WHERE user_agent = ?", [ua]);
         uaId ||= await db.table("log_user_agent").insert({ user_agent: ua });
-
 
         data.url_id        = urlId;
         data.referer_id    = refererId;

@@ -1,8 +1,3 @@
-/**
- * panel.ts - CMS Frontend Panel
- * Port of cms.frontend.1/view/panel.php
- */
-
 import { hee } from "../../core/lib/util.ts"
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import { cmsFrontend1WidgetSidebar, } from "../mod.ts";

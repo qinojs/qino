@@ -1,10 +1,3 @@
-/**
- * cms.backend.system/cron1.ts
- * Port of cms.backend.system/cron1.php
- */
-
-// deno-lint-ignore-file no-explicit-any
-
 import type { App } from "../core/server.ts";
 
 export async function daily(app: App): Promise<void> {

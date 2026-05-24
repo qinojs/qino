@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { backend } from "../cms.backend/mod.ts";
 import { render } from "./render.ts";
 import type { App } from "../core/server.ts";

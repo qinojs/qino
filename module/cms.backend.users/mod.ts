@@ -10,7 +10,6 @@ import api from "./nodeApi.ts";
 export const name = "cms.backend.users";
 export const needs = ["cms.backend"];
 
-// Port of cms.backend.users/install.php
 export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.users");
   if (P) {

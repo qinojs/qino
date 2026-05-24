@@ -1,8 +1,3 @@
-/**
- * cms.frontend.1/mod.ts - Frontend-1-Modul Hooks
- * Port of cms.frontend.1/qg.php
- */
-
 import { hee } from "../core/lib/util.ts"
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";

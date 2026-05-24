@@ -1,8 +1,3 @@
-/**
- * File.ts - File management
- * Port of core/lib/File.class.php
- */
-
 import * as nodeCrypto from "node:crypto";
 import { typeByExtension } from "../../../deps.ts";
 

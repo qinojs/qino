@@ -1,5 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
-
 export type Pattern = [RegExp, string, number, number];
 
 export const probes: Pattern[] = [

@@ -17,7 +17,12 @@ import { AnswerError } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.lang = "de";
-ctx.session = { liveUser: () => 0 } as any;
+let qgToken = "csrf-token";
+const token = (v?: string) => {
+  if (v !== undefined) qgToken = v;
+  return qgToken;
+};
+ctx.session = { liveUser: () => 0, qg: { token } } as any;
 
 const things = new Map<number, { id: number; title: string; writable: boolean }>([
   [1, { id: 1, title: "One", writable: true }],
@@ -153,6 +158,36 @@ Deno.test("apt: Hono GET query params are available as input", async () => {
     const res = await app.request("/search?q=abc");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { q: "abc" });
+  });
+});
+
+Deno.test("apt: Hono mutations require same origin and qg token", async () => {
+  await withCtx(async () => {
+    const app = toHono(api);
+    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    const body = JSON.stringify({ title: "Two", count: 2 });
+
+    const noCsrf = await app.request("http://qino.test/thing/1/update", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
+    assertEquals(noCsrf.status, 403);
+
+    const badOrigin = await app.request("http://qino.test/thing/1/update", {
+      method: "POST",
+      headers: { "content-type": "application/json", "origin": "http://evil.test", "x-csrf-token": qgToken },
+      body,
+    });
+    assertEquals(badOrigin.status, 403);
+
+    const ok = await app.request("http://qino.test/thing/1/update", {
+      method: "POST",
+      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": qgToken },
+      body,
+    });
+    assertEquals(ok.status, 200);
+    assertEquals(await ok.json(), { id: 1, title: "Two", count: 2, enabled: false, preview: false });
   });
 });
 
