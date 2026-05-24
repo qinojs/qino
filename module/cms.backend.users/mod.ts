@@ -1,6 +1,3 @@
-// Port of cms.backend.users/index.php + overview.php + detail.php
-// deno-lint-ignore-file no-explicit-any
-
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { pwHash } from "../core/lib/auth.ts";
@@ -8,7 +5,7 @@ import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
-import pageApi from "./page_api.ts";
+import api from "./nodeApi.ts";
 
 export const name = "cms.backend.users";
 export const needs = ["cms.backend"];
@@ -145,7 +142,7 @@ export const cms = {
   node: {
     css: ["pub/main.css"],
     render,
-    pageApi,
+    api,
     parts: {
       list,
     },

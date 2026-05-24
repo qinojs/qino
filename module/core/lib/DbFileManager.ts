@@ -263,7 +263,7 @@ export class DbFile extends File {
 
   async clone(to?: number | null): Promise<DbFile> {
     const data = { ...await this.ensureVs() };
-    let newId: number;
+let newId: number;
     if (to == null) {
       delete data["id"];
       newId = Number(await this.#manager.db.table("file").insert(data) ?? "0");

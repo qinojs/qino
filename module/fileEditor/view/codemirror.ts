@@ -10,8 +10,8 @@ export default async function codemirrorView(file: string): Promise<string> {
     const html = ctx.html;
 
     html.addCSSFile(ctx.sysURL + "core/pub/css/q1Rst.css");
-    html.addCSSFile("https://cdn.jsdelivr.net/gh/u1ui/norm.css@3.2.0/norm.min.css");
-    html.addCSSFile("https://cdn.jsdelivr.net/gh/u1ui/base.css@3.2.0/base.min.css");
+    html.addCSSFile("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css");
+    html.addCSSFile("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/base/base.css");
 
     html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
     html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");

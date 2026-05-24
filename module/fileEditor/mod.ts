@@ -1,5 +1,4 @@
 import * as nodeFs from "node:fs/promises";
-import * as nodePath from "node:path";
 import { OutputError, assertAllowedPath } from "../core/lib/util.ts"
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { Access, type AptTree } from "../core/lib/apt/mod.ts";
@@ -54,13 +53,6 @@ export function init(app: App) {
         if (!allowed && !isSuperuser) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
             throw new OutputError("no access");
-        }
-
-        if ("create" in ctx.get) {
-            await nodeFs.mkdir(nodePath.dirname(file), { recursive: true }).catch(() => {});
-            try { await nodeFs.stat(file); } catch {
-                await nodeFs.writeFile(file, String(ctx.get["create"] ?? ""));
-            }
         }
 
         const stat = await nodeFs.stat(file).catch(() => null);

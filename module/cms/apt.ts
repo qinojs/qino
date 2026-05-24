@@ -586,10 +586,10 @@ const node = {
       access: nodeRead,
       execute: async ({ node }: any) => {
         try {
-          const pageApi = node.module?.exports?.cms?.node?.pageApi;
-          if (typeof pageApi !== "function") return null;
+          const api = node.module?.exports?.cms?.node?.api;
+          if (typeof api !== "function") return null;
           const vars = getCtx().post;
-          return await pageApi(node, vars) ?? null;
+          return await api(node, vars) ?? null;
         } catch (e: any) {
           if (!e?.message?.includes("Module not found")) throw e;
           return null;

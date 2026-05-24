@@ -76,8 +76,6 @@ export const api: AptTree = {
 
 export function init(app: App) {
 
-    app.aptTree["cms.versions"] = api;
-
     // ─── Define which tables are versioned ──────────────────────────────────
     // page: only the listed fields come from the version table (rest from live)
     versedTables["page"] = {

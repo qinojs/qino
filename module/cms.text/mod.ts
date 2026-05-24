@@ -44,8 +44,6 @@ export const settingsSchema = {
 };
 
 export function init(app: App) {
-    app.aptTree["cms.text"] = api;
-
     app.on("cms-ready", e => {
         const ctx = e.ctx as RequestContext;
         if (!ctx.state.editmode) return;

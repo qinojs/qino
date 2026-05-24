@@ -9,9 +9,18 @@ import type { App } from "../core/server.ts";
 export const name = "cms.filebrowser";
 export const needs = ["cms"];
 
-export function init(app: App) {
-    app.aptTree["cms.filebrowser"] = api;
+export const api: AptTree = {
+    search: {
+        get: {
+            description: "Search files in the CMS file browser.",
+            access: Access.USER,
+            query: s.object({ s: s.optional(s.string()) }),
+            execute: ({ s: needle }: any, ctx: any) => search(needle ?? "", ctx),
+        },
+    },
+};
 
+export function init(app: App) {
     app.on("cms-ready", ({ ctx }: any) => {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.state.editmode) return;
@@ -36,7 +45,7 @@ async function search(s_: string, ctx: any): Promise<any[]> {
     const cms = ctx.app.cms;
 
     let sql =
-        " SELECT pf.page_id AS pid, f.id, f.mime, f.name, f.md5, f.access" +
+        " SELECT f.*, pf.page_id AS pid" +
         " FROM file f" +
         " LEFT JOIN page_file pf ON pf.file_id = f.id" +
         " WHERE 1";
@@ -102,14 +111,3 @@ async function search(s_: string, ctx: any): Promise<any[]> {
     }
     return items;
 }
-
-export const api: AptTree = {
-    search: {
-        get: {
-            description: "Search files in the CMS file browser.",
-            access: Access.USER,
-            query: s.object({ s: s.optional(s.string()) }),
-            execute: ({ s: needle }: any, ctx: any) => search(needle ?? "", ctx),
-        },
-    },
-};

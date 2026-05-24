@@ -1,10 +1,10 @@
-import { api } from "./apt.ts";
 import { AiApi } from "./lib/AiApi.ts";
 import type { App } from "../core/server.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "ai";
 export const needs = ["core"];
+export { api } from "./apt.ts";
 
 declare module "../core/server.ts" {
   interface App { ai: AiApi; }
@@ -12,7 +12,6 @@ declare module "../core/server.ts" {
 
 export function init(app: Pick<App, "aptTree" | "on" | "settings"> & { ai?: AiApi }) {
   app.ai = new AiApi(app);
-  app.aptTree.ai = api;
 
   app.on("cms-ready", e => {
     const ctx = e.ctx as RequestContext;

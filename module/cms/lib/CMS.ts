@@ -150,7 +150,7 @@ export class CMS {
         await P.urlSeo(ctx.lang);
         const urls = await P.urls();
         const t = urls[ctx.lang]?.target;
-        const target = t ? ` target="${t}"` : "";
+        const target = t ? ` target="${hee(t)}"` : "";
         const title = await (await P.title()).string();
         return new HtmlString(`<a${await this.link_attributes(P)}${target}>${title}</a>`);
     }
@@ -160,7 +160,7 @@ export class CMS {
         const P = await this.node(Number(node));
         await P.urlSeo(ctx.lang);
         const MainNode = this.MainNode || await this.nodeFromRequest();
-        const href = ` href="${await P.url()}"`;
+        const href = ` href="${hee(await P.url())}"`;
         const access = await P.access();
         const inside = await MainNode.in?.(P);
         const online = await P.isOnline();

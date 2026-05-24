@@ -1,0 +1,17 @@
+.-m-cms-cont-lang-choose2 {
+	display: inline-block;
+	& ul {
+		display: flex;
+	}
+	& li {
+		display: flex;
+		align-items: center;
+		&::after {
+			content: '|';
+			margin: auto .2em;
+		}
+		&:last-child::after {
+			display: none;
+		}
+	}
+}

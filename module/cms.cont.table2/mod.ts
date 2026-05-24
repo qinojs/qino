@@ -2,7 +2,7 @@
 import type { Node } from "../cms/lib/Node.ts";
 import { OutputError } from "../core/lib/util.ts";
 import options from "./options.ts";
-import pageApi from "./page_api.ts";
+import api from "./nodeApi.ts";
 import type { App } from "../core/server.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
@@ -85,7 +85,7 @@ export const cms = {
   node: {
     render,
     options,
-    pageApi,
+    api,
     settingsSchema,
   },
 };

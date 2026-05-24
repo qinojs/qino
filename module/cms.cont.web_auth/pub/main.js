@@ -1,53 +1,92 @@
 cms.initCont("cms.cont.web_auth", async (el) => {
-  const login = el.querySelector(".web-auth-login");
-  const manage = el.querySelector(".web-auth-manage");
-  const root = login || manage;
-  if (!root) return;
+  const isLogin  = el.classList.contains("web-auth-login");
+  const isManage = el.classList.contains("web-auth-manage");
+  if (!isLogin && !isManage) return;
 
-  const { scriptUrl, tUrl, apiBase, redirectUrl } = root.dataset;
-  const { initWebAuth, WebAuth } = await import(scriptUrl);
-  const { t } = await import(tUrl);
+  const { scriptUrl, tUrl, apiBase, redirectUrl } = el.dataset;
+  const [{ WebAuth }, { t }] = await Promise.all([import(scriptUrl), import(tUrl)]);
+  const wa = new WebAuth({ apiBase });
 
-  if (login) {
-    initWebAuth({
-      apiBase,
-      onSuccess: () => { redirectUrl ? (location.href = redirectUrl) : location.reload(); },
-      onError: async (_, r) => { login.querySelector(".-msg").value = await t`Login failed: ${r.error ?? "unknown"}`; },
+  // ── Login ──────────────────────────────────────────────────────────────────
+
+  if (isLogin) {
+    const msg = el.querySelector(".-msg");
+
+    el.querySelector("[data-action=login]")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const prev = btn.textContent;
+      btn.textContent = await t`Signing in…`;
+      try {
+        wa.abortConditional();
+        const result = await wa.login({ email: el.querySelector("[data-email]")?.value });
+        if (result.ok) {
+          redirectUrl ? (location.href = redirectUrl) : location.reload();
+        } else {
+          msg.value = await t`Login failed: ${result.error ?? "unknown"}`;
+        }
+      } catch (err) {
+        msg.value = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prev;
+      }
     });
+
+    wa.loginConditional().then((r) => { if (r?.ok) location.reload(); }).catch(console.error);
   }
 
-  if (manage) {
-    const wa = new WebAuth({ apiBase });
+  // ── Manage ─────────────────────────────────────────────────────────────────
 
-    const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const fmt = ts => new Date(ts * 1000).toLocaleDateString();
+  if (isManage) {
+    const msg  = el.querySelector(".-msg");
+    const list = el.querySelector("[data-list]");
 
     async function loadList() {
-      const list = manage.querySelector("[data-list]");
       if (!list) return;
       try {
         const creds = await wa.listCredentials();
+        const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const fmt = ts => new Date(ts * 1000).toLocaleDateString();
         list.innerHTML = creds.length
-          ? creds.map(c => `<div data-web-auth-credential>
+          ? creds.map(c => `<div data-credential>
               <strong>${esc(c.name)}</strong>
               <small>${fmt(c.created)} · ${fmt(c.lastUsed)}</small>
-              <button data-web-auth-action="delete" data-web-auth-cred-id="${c.id}">🗑</button>
+              <button data-action="delete" data-cred-id="${c.id}">🗑</button>
             </div>`).join("")
           : await t`No passkeys registered.`;
+        for (const btn of list.querySelectorAll("[data-action=delete]")) {
+          btn.addEventListener("click", async () => {
+            if (!confirm(await t`Really remove this passkey?`)) return;
+            const result = await wa.deleteCredential(btn.dataset.credId);
+            if (result.ok) btn.closest("[data-credential]")?.remove();
+          });
+        }
       } catch { list.textContent = await t`Error loading.`; }
     }
 
     loadList();
 
-    initWebAuth({
-      apiBase,
-      onSuccess: (action) => {
-        if (action === "register") {
-          manage.querySelector("[data-web-auth-name]").value = "";
+    el.querySelector("[data-action=register]")?.addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const prev = btn.textContent;
+      btn.textContent = await t`Registering…`;
+      try {
+        const name   = el.querySelector("[data-name]")?.value;
+        const result = await wa.register({ name: name || await wa.guessName() });
+        if (result.ok) {
+          el.querySelector("[data-name]").value = "";
           loadList();
+        } else {
+          msg.value = result.error ?? await t`Error`;
         }
-      },
-      onError: async (_, r) => { manage.querySelector(".-msg").value = r.error ?? await t`Error`; },
+      } catch (err) {
+        msg.value = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prev;
+      }
     });
   }
 });

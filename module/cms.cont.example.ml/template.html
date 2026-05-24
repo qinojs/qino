@@ -1,0 +1,48 @@
+<div style="background:{setting.color ?? 'transparent'}">
+
+  <!-- cms-text: tag wird zum wrapper, de/en sind initial-werte -->
+  <h2 cms-text=title de="Titel" en="Title" />
+
+  <!-- cms-text: mehrzeiliger inhalt als div -->
+  <div cms-text=main de="Text hier..." en="Text here..." />
+
+  <!-- cms-image: einfaches bild mit fester größe -->
+  <img cms-image=image1 width=110 height=110 fit=contain />
+
+  <!-- cms-if: nur rendern wenn setting gesetzt -->
+  <p cms-if="setting.note"><em>{setting.note}</em></p>
+
+  <!-- expression in text und attribut -->
+  <span class="lang-{lang}">Sprache: {lang}</span>
+
+  <!-- cms-each: schleife über alle files des nodes -->
+  <ul cms-if="Object.keys(files).length">
+    <li cms-each="files as file">
+      <img cms-image=_ :file="file" width=60 height=60 />
+    </li>
+  </ul>
+
+  <!-- cms-each: numerische range -->
+  <div class="-gallery">
+    <img cms-each="1..3 as i" cms-image="gallery_{i}" width=200 height=150 fit=cover />
+  </div>
+
+  <!-- cms-cont: eingebetteter sub-content node -->
+  <div cms-cont=body module=cms.cont.text />
+
+  <!-- cms-part: teaser mit datum + reload-button -->
+  <div cms-part=teaser>
+    <a href="{url}"><span cms-text=title /></a>
+    <small>{(new Date()).toISOString()}</small>
+    <button class="-reload">↺</button>
+  </div>
+
+  <!-- cms-part: card mit bild -->
+  <div cms-part=card>
+    <a href="{url}" class="-card">
+      <img cms-image=image1 width=300 height=200 fit=cover />
+      <span cms-text=title />
+    </a>
+  </div>
+
+</div>

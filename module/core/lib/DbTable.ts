@@ -147,7 +147,7 @@ export class DbTable {
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const [set, params] = this.valuesToFragment(values, undefined, true);
-    const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
+const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
     if (auto) values[String(auto)] = res.insertId;

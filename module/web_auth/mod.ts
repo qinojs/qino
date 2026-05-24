@@ -4,6 +4,7 @@ import { getCtx } from "../core/lib/RequestContext.ts";
 import { login } from "../core/lib/auth.ts";
 import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
+import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
 import type { App } from "../core/server.ts";
 
 export const name = "web_auth";
@@ -16,28 +17,23 @@ export const settingsSchema = {
   },
 };
 
-// ─── Encoding ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function b64url(buf: ArrayBuffer | Uint8Array): string {
-  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+const CHALLENGE_TTL = 5 * 60;
+const now = () => Math.floor(Date.now() / 1000);
+
+function randB64(n: number): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(n));
   let str = "";
   for (const b of bytes) str += String.fromCharCode(b);
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
-function b64urlDecode(s: string): Uint8Array {
-  const padded = s.replace(/-/g, "+").replace(/_/g, "/").padEnd(s.length + (4 - s.length % 4) % 4, "=");
-  const bin = atob(padded);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+async function getRp(app: App): Promise<{ rpId: string; rpName: string; expectedOrigin: string }> {
+  const rpId   = String(await app.settings.web_auth.rpId   ?? "") || "localhost";
+  const rpName = String(await app.settings.web_auth.rpName ?? "") || "Qino";
+  return { rpId, rpName, expectedOrigin: rpId === "localhost" ? "http://localhost" : `https://${rpId}` };
 }
-
-// ─── Challenge store ───────────────────────────────────────────────────────────
-
-const CHALLENGE_TTL = 5 * 60;
-const now = () => Math.floor(Date.now() / 1000);
-const randB64 = (n: number) => b64url(crypto.getRandomValues(new Uint8Array(n)));
 
 async function storeChallenge(db: any, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
   const token = randB64(24);
@@ -56,152 +52,39 @@ async function consumeChallenge(db: any, token: string, type: string): Promise<{
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
-// ─── WebAuthn parsing & verification ──────────────────────────────────────────
-
-function parseClientData(b64: string): Record<string, unknown> {
-  return JSON.parse(new TextDecoder().decode(b64urlDecode(b64)));
-}
-
-function verifyOrigin(clientData: Record<string, unknown>, rpId: string): boolean {
-  const origin = String(clientData.origin ?? "");
-  return origin.includes(rpId) || rpId.includes("localhost");
-}
-
-// Minimal CBOR decoder — covers the subset used by WebAuthn (uint, nint, bytes, text, array, map)
-function decodeCBOR(data: Uint8Array, offset = 0): [unknown, number] {
-  const b  = data[offset++];
-  const mt = (b >> 5) & 0x7;
-  const ai = b & 0x1f;
-  let len: number;
-  if      (ai < 24)  { len = ai; }
-  else if (ai === 24) { len = data[offset++]; }
-  else if (ai === 25) { len = (data[offset] << 8) | data[offset + 1]; offset += 2; }
-  else if (ai === 26) { len = (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3]; offset += 4; }
-  else                { len = 0; }
-
-  if (mt === 0) return [len, offset];
-  if (mt === 1) return [-(1 + len), offset];
-  if (mt === 2) return [data.slice(offset, offset + len), offset + len];
-  if (mt === 3) return [new TextDecoder().decode(data.slice(offset, offset + len)), offset + len];
-  if (mt === 4) {
-    const arr: unknown[] = [];
-    for (let i = 0; i < len; i++) { const [v, o] = decodeCBOR(data, offset); arr.push(v); offset = o; }
-    return [arr, offset];
-  }
-  const map: Record<string | number, unknown> = {};
-  for (let i = 0; i < len; i++) {
-    const [k, o1] = decodeCBOR(data, offset); offset = o1;
-    const [v, o2] = decodeCBOR(data, offset); offset = o2;
-    map[k as string | number] = v;
-  }
-  return [map, offset];
-}
-
-interface ParsedAuthData {
-  signCount: number;
-  aaguid?: string;
-  credentialId?: Uint8Array;
-  publicKeyCbor?: Uint8Array;
-}
-
-function parseAuthenticatorData(authData: Uint8Array): ParsedAuthData {
-  let o = 32; // skip rpIdHash
-  const flags     = authData[o++];
-  const signCount = (authData[o] << 24) | (authData[o + 1] << 16) | (authData[o + 2] << 8) | authData[o + 3];
-  o += 4;
-
-  if (!(flags & 0x40)) return { signCount };
-
-  const aaguidBytes = authData.slice(o, o + 16); o += 16;
-  const hex    = Array.from(aaguidBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
-  const aaguid = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
-
-  const credIdLen   = (authData[o] << 8) | authData[o + 1]; o += 2;
-  const credentialId  = authData.slice(o, o + credIdLen); o += credIdLen;
-  const publicKeyCbor = authData.slice(o);
-
-  return { signCount, aaguid, credentialId, publicKeyCbor };
-}
-
-function coseToKeyJson(coseBytes: Uint8Array): string {
-  const [cose] = decodeCBOR(coseBytes) as [Record<number, unknown>, number];
-  const kty = cose[1], alg = cose[3];
-
-  if (kty === 2 && (alg === -7 || alg === undefined)) {
-    const jwk = { kty: "EC", crv: "P-256", x: b64url(cose[-2] as Uint8Array), y: b64url(cose[-3] as Uint8Array) };
-    return JSON.stringify({ type: "EC2", jwk });
-  }
-  if (kty === 3 && alg === -257) {
-    const jwk = { kty: "RSA", alg: "RS256", n: b64url(cose[-1] as Uint8Array), e: b64url(cose[-2] as Uint8Array) };
-    return JSON.stringify({ type: "RSA", jwk });
-  }
-  throw new Error(`Unsupported COSE key type=${kty} alg=${alg}`);
-}
-
-// ECDSA signatures from authenticators are DER-encoded; Web Crypto expects raw r||s (64 bytes for P-256)
-function derToRaw(der: Uint8Array): Uint8Array {
-  let o = 2; // skip 0x30 + total length
-  if (der[1] & 0x80) o += der[1] & 0x7f; // long-form length
-  o++; // skip 0x02 (integer tag)
-  const rLen = der[o++];
-  const r = der.slice(o, o + rLen); o += rLen;
-  o++; // skip 0x02
-  const sLen = der[o++];
-  const s = der.slice(o, o + sLen);
-  // strip leading 0x00 padding, then left-pad to 32 bytes
-  const raw = new Uint8Array(64);
-  const rTrim = r[0] === 0 ? r.slice(1) : r;
-  const sTrim = s[0] === 0 ? s.slice(1) : s;
-  raw.set(rTrim, 32 - rTrim.length);
-  raw.set(sTrim, 64 - sTrim.length);
-  return raw;
-}
-
-async function verifyAssertion(db: any, rpId: string, credentialId: string, clientDataJSON: string, authenticatorData: string, signature: string, expectedType: string): Promise<{ ok: false; error: string } | { ok: true; cred: any; authDataBytes: Uint8Array }> {
-  const cd = parseClientData(clientDataJSON);
-  if (cd.type !== expectedType)      return { ok: false, error: "invalid_type" };
-
-  const cred = await db.row("SELECT * FROM web_auth_credential WHERE credential_id = ?", [credentialId]);
+async function verifyAssertion(
+  app: App,
+  { credentialId, clientDataJSON, authenticatorData, signature }: any,
+  expectedChallenge: string,
+  requireUserVerification: boolean,
+): Promise<{ ok: false; error: string } | { ok: true; cred: any; newCounter: number }> {
+  const cred = await app.db.row("SELECT * FROM web_auth_credential WHERE credential_id = ?", [credentialId]);
   if (!cred) return { ok: false, error: "credential_not_found" };
 
-  if (!verifyOrigin(cd, rpId)) return { ok: false, error: "invalid_origin" };
-
-  const authDataBytes = b64urlDecode(authenticatorData);
-  if (!await verifySignature(cred.public_key, authDataBytes, clientDataJSON, b64urlDecode(signature))) {
-    return { ok: false, error: "invalid_signature" };
+  const { rpId, expectedOrigin } = await getRp(app);
+  try {
+    const { verified, authenticationInfo } = await verifyAuthenticationResponse({
+      response: {
+        id: credentialId, rawId: credentialId,
+        response: { clientDataJSON, authenticatorData, signature },
+        type: "public-key",
+        clientExtensionResults: {},
+      },
+      expectedChallenge,
+      expectedOrigin,
+      expectedRPID: rpId,
+      credential: {
+        id: credentialId,
+        publicKey: Uint8Array.from(atob(cred.public_key.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
+        counter: Number(cred.sign_count),
+      },
+      requireUserVerification,
+    });
+    if (!verified) return { ok: false, error: "verification_failed" };
+    return { ok: true, cred, newCounter: authenticationInfo.newCounter };
+  } catch (e: any) {
+    return { ok: false, error: e.message ?? "verification_failed" };
   }
-
-  const { signCount } = parseAuthenticatorData(authDataBytes);
-  await db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [signCount, now(), cred.id]);
-
-  return { ok: true, cred, authDataBytes };
-}
-
-async function verifySignature(keyJson: string, authData: Uint8Array, clientDataJSON: string, sig: Uint8Array): Promise<boolean> {
-  const { type, jwk } = JSON.parse(keyJson);
-  const isEC    = type === "EC2";
-  const keyAlgo = isEC ? { name: "ECDSA", namedCurve: "P-256" } : { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" };
-  const sigAlgo = isEC ? { name: "ECDSA", hash: "SHA-256" }     : { name: "RSASSA-PKCS1-v1_5" };
-  const key     = await crypto.subtle.importKey("jwk", jwk, keyAlgo, false, ["verify"]);
-
-  const hash       = await crypto.subtle.digest("SHA-256", b64urlDecode(clientDataJSON).buffer as ArrayBuffer);
-  const verifyData = new Uint8Array(authData.length + hash.byteLength);
-  verifyData.set(authData);
-  verifyData.set(new Uint8Array(hash), authData.length);
-
-  const rawSig = isEC ? derToRaw(sig) : sig;
-  return crypto.subtle.verify(sigAlgo, key, rawSig.buffer as ArrayBuffer, verifyData.buffer as ArrayBuffer);
-}
-
-// ─── RP config ────────────────────────────────────────────────────────────────
-
-async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
-  const rpId   = await app.settings.web_auth.rpId;
-  const rpName = await app.settings.web_auth.rpName;
-  return {
-    rpId:   String(rpId   ?? "") || "localhost",
-    rpName: String(rpName ?? "") || "Qino",
-  };
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────
@@ -228,7 +111,7 @@ function buildApi(app: App): AptTree { return {
             publicKey: {
               rp: { id: rpId, name: rpName },
               user: {
-                id: b64url(new TextEncoder().encode(String(ctx.userId))),
+                id: btoa(String(ctx.userId)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""),
                 name: String(usr?.email ?? ctx.userId),
                 displayName: [usr?.firstname, usr?.lastname].filter(Boolean).join(" ") || String(usr?.email ?? ctx.userId),
               },
@@ -256,31 +139,48 @@ function buildApi(app: App): AptTree { return {
         execute: async ({ token, clientDataJSON, attestationObject, name }: any) => {
           const ctx    = getCtx();
           const stored = await consumeChallenge(app.db, token, "register");
-          if (!stored)                       return { ok: false, error: "challenge_expired" };
-          if (stored.usr_id !== ctx.userId)  return { ok: false, error: "user_mismatch" };
+          if (!stored)                      return { ok: false, error: "challenge_expired" };
+          if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          const cd = parseClientData(clientDataJSON);
-          if (cd.type !== "webauthn.create")     return { ok: false, error: "invalid_type" };
-          if (cd.challenge !== stored.challenge) return { ok: false, error: "challenge_mismatch" };
+          const { rpId, expectedOrigin } = await getRp(app);
+          let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>;
+          try {
+            verification = await verifyRegistrationResponse({
+              response: {
+                id: "", rawId: "",
+                response: { clientDataJSON, attestationObject },
+                type: "public-key",
+                clientExtensionResults: {},
+              },
+              expectedChallenge: stored.challenge,
+              expectedOrigin,
+              expectedRPID: rpId,
+              requireUserVerification: false,
+            });
+          } catch (e: any) {
+            return { ok: false, error: e.message ?? "verification_failed" };
+          }
 
-          const { rpId } = await getRp(app);
-          if (!verifyOrigin(cd, rpId))           return { ok: false, error: "invalid_origin" };
+          if (!verification.verified || !verification.registrationInfo) {
+            return { ok: false, error: "verification_failed" };
+          }
 
-          const [attObj] = decodeCBOR(b64urlDecode(attestationObject)) as [Record<string, unknown>, number];
-          const parsed   = parseAuthenticatorData(attObj.authData as Uint8Array);
-          if (!parsed.credentialId || !parsed.publicKeyCbor) return { ok: false, error: "no_credential_data" };
+          const { credential, aaguid } = verification.registrationInfo;
+          const credId = credential.id as string;
 
-          const credId = b64url(parsed.credentialId);
           if (await app.db.one("SELECT id FROM web_auth_credential WHERE credential_id = ?", [credId])) {
             return { ok: false, error: "already_registered" };
           }
 
           const t = now();
           await app.db.table("web_auth_credential").insert({
-            usr_id: ctx.userId, credential_id: credId,
-            public_key: coseToKeyJson(parsed.publicKeyCbor),
-            sign_count: parsed.signCount, aaguid: parsed.aaguid ?? "",
-            name: String(name ?? "Authenticator"), created: t, last_used: t,
+            usr_id: ctx.userId,
+            credential_id: credId,
+            public_key: btoa(String.fromCharCode(...credential.publicKey)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""),
+            sign_count: credential.counter,
+            aaguid: aaguid ?? "",
+            name: String(name ?? "Authenticator"),
+            created: t, last_used: t,
           });
           return { ok: true };
         },
@@ -295,9 +195,9 @@ function buildApi(app: App): AptTree { return {
         access: Access.PUBLIC,
         input: s.object({ email: s.optional(s.string()) }),
         execute: async ({ email }: any) => {
-          const { rpId }      = await getRp(app);
-          const challenge      = randB64(32);
-          let usrId            = 0;
+          const { rpId } = await getRp(app);
+          const challenge = randB64(32);
+          let usrId = 0;
           const allowCredentials: unknown[] = [];
 
           if (email) {
@@ -337,10 +237,8 @@ function buildApi(app: App): AptTree { return {
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
           const stored = await consumeChallenge(app.db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
-          if (parseClientData(clientDataJSON).challenge !== stored.challenge) return { ok: false, error: "challenge_mismatch" };
 
-          const { rpId } = await getRp(app);
-          const r = await verifyAssertion(app.db, rpId, credentialId, clientDataJSON, authenticatorData, signature, "webauthn.get");
+          const r = await verifyAssertion(app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
           if (!r.ok) return r;
 
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
@@ -348,10 +246,7 @@ function buildApi(app: App): AptTree { return {
           const usrId = Number(r.cred.usr_id);
           if (!(await app.db.row("SELECT id FROM usr WHERE id = ? AND active = 1", [usrId]))) return { ok: false, error: "user_inactive" };
 
-          // sign_count must increase — protects against cloned authenticators (0 = not supported by device)
-          const storedCount = Number(r.cred.sign_count);
-          const newCount    = parseAuthenticatorData(r.authDataBytes).signCount;
-          if (storedCount > 0 && newCount > 0 && newCount <= storedCount) return { ok: false, error: "sign_count_regression" };
+          await app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
 
           const ctx = getCtx();
           await login(ctx, usrId);
@@ -369,7 +264,7 @@ function buildApi(app: App): AptTree { return {
         description: "Step-up challenge — confirm identity of the logged-in user",
         access: Access.USER,
         execute: async () => {
-          const ctx   = getCtx();
+          const ctx = getCtx();
           const { rpId } = await getRp(app);
           const challenge = randB64(32);
           const creds = await app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [ctx.userId]);
@@ -403,12 +298,12 @@ function buildApi(app: App): AptTree { return {
           const stored = await consumeChallenge(app.db, token, "confirm");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
-          if (parseClientData(clientDataJSON).challenge !== stored.challenge) return { ok: false, error: "challenge_mismatch" };
 
-          const { rpId } = await getRp(app);
-          const r = await verifyAssertion(app.db, rpId, credentialId, clientDataJSON, authenticatorData, signature, "webauthn.get");
+          const r = await verifyAssertion(app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
           if (!r.ok) return r;
+          if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
+          await app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
           ctx.session.web_auth_confirmed(now());
           return { ok: true };
         },

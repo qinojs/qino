@@ -124,8 +124,6 @@ export async function cmsFrontend1WidgetSidebar(widget: string, node: Node, titl
 }
 
 export function init(app: App) {
-  app.aptTree["cms.frontend.1"] = api;
-
   app.on("cms-ready", async e => {
     const ctx = e.ctx as RequestContext;
     if (ctx.get.qgCmsNoFrontend) return;

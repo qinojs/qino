@@ -202,7 +202,14 @@ export class Node {
 
         try {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
-            return String(await this.module.exports.cms.node.render(this, {ctx:getCtx(), vars}));
+            let render = this.module.exports.cms?.node?.render;
+            if (!render) {
+                const e: { node: Node; render: ((node: Node, opts: Record<string, unknown>) => unknown) | null } = { node: this, render: null };
+                await this.app.fire("cms.node.render", e);
+                render = e.render ?? undefined;
+            }
+            if (!render) throw new Error(`No render function for module "${this.vs.module}"`);
+            return String(await render(this, {ctx:getCtx(), vars}));
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
             return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${err.message}</code></div>` : '<div></div>';

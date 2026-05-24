@@ -11,7 +11,7 @@ function matchCase(translated: string, original: string): string {
     return translated;
 }
 
-export default async function pageApi(node: Node, vars: any): Promise<any> {
+export default async function api(node: Node, vars: any): Promise<any> {
     const ctx = getCtx();
     if (await node.access() < 2) return false;
 

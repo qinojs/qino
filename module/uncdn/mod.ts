@@ -16,7 +16,7 @@ export const settingsSchema = {
   },
 };
 
-const PROXY_PREFIX = "prx/";
+const PROXY_PREFIX = "uncdn/";
 const CACHE_SUBDIR = "cache/uncdn/";
 
 function urlToPath(cacheDir: string, url: string): string {

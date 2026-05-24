@@ -12,6 +12,7 @@ export type ModuleExports = Record<string, any> & {
   install?(ctx: { app: App; module: ModuleExports }): void | Promise<void>;
   settingsSchema?: Record<string, unknown>;
   ctxSettingsSchema?: Record<string, unknown>;
+  api?: Record<string, unknown>;
 };
 
 function mergeSchema(a: any, b: any): any {
@@ -104,6 +105,7 @@ export class ModuleManager {
       const { exports } = this.#modules[name];
       await exports.init?.(this.#app);
       await exports.install?.({ app: this.#app, module: exports });
+      if (exports.api) this.#app.aptTree[name] = exports.api;
     }
     this.#app.settings[$item].setSchema(appSettingsSchema);
     this.#app.ctxSettingsSchema = ctxSettingsSchema;

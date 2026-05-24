@@ -1,10 +1,9 @@
-// deno-lint-ignore-file no-explicit-any
 import { hee } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
-import pageApi from "./page_api.ts";
+import api from "./nodeApi.ts";
 
 export const name = "cms.backend.smalltext";
 export const needs = ["cms.backend", "cms.text"];
@@ -146,7 +145,7 @@ export const cms = {
         css: ["pub/main.css"],
         js: ["pub/main.js"],
         render,
-        pageApi,
+        api,
         parts: { table },
     },
 };

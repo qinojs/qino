@@ -23,7 +23,7 @@ Deno.test("cms.layout.login: render adds assets and wraps main content", async (
   assertEquals(out.includes("<div id=subtitle>example.test</div>"), true);
   assertEquals(out.includes("<form>Form</form>"), true);
   assertEquals(ctx.html.meta.viewport, "width=device-width");
-  assertEquals(ctx.html.cssFiles["https://cdn.jsdelivr.net/gh/u1ui/norm.css@3.2.0/norm.min.css"], true);
+  assertEquals(ctx.html.cssFiles["https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css"], true);
   assertEquals(ctx.html.jsFiles["/m/core/pub/js/c1.js"], true);
   assertEquals(ctx.html.jsms["/m/cms/pub/js/cms.mjs"], true);
 });

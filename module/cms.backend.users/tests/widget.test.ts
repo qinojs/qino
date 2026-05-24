@@ -5,7 +5,7 @@ Deno.test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.users");
   assertEquals(needs, ["cms.backend"]);
   assertEquals(cms.node.css, ["pub/main.css"]);
-  assertEquals(typeof cms.node.pageApi, "function");
+  assertEquals(typeof cms.node.api, "function");
   assertEquals(typeof cms.node.parts.list, "function");
 });
 

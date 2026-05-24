@@ -1,15 +1,12 @@
 /**
  * web_auth.js — WebAuthn Client
  *
- * import { WebAuth, initWebAuth } from "/m/web_auth/pub/web_auth.js";
+ * import { WebAuth } from "/m/web_auth/pub/web_auth.js";
  */
-
-import { t } from '../../core/pub/js/t.mjs';
 
 export class WebAuth {
   constructor(opts = {}) {
     this.apiBase = opts.apiBase ?? "/api/web_auth";
-    this.opts    = opts;
   }
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -25,15 +22,14 @@ export class WebAuth {
   // ── Encoding ──────────────────────────────────────────────────────────────
 
   static #enc(buf) {
-    const b = new Uint8Array(buf);
     let s = "";
-    for (const x of b) s += String.fromCharCode(x);
+    for (const b of new Uint8Array(buf)) s += String.fromCharCode(b);
     return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
   }
 
   static #dec(str) {
-    const p = str.replace(/-/g, "+").replace(/_/g, "/").padEnd(str.length + (4 - str.length % 4) % 4, "=");
-    const b = atob(p), bytes = new Uint8Array(b.length);
+    const b = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+    const bytes = new Uint8Array(b.length);
     for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
     return bytes.buffer;
   }
@@ -44,7 +40,6 @@ export class WebAuth {
     if (!window.PublicKeyCredential) throw new Error("WebAuthn not supported.");
 
     const { token, publicKey } = await this.#post("/register/challenge", {});
-
     let credential;
     try {
       credential = await navigator.credentials.create({
@@ -59,15 +54,12 @@ export class WebAuth {
       throw e;
     }
 
-    const result = await this.#post("/register/verify", {
+    return this.#post("/register/verify", {
       token,
       clientDataJSON:    WebAuth.#enc(credential.response.clientDataJSON),
       attestationObject: WebAuth.#enc(credential.response.attestationObject),
-      name: opts.name ?? await this.#guessName(),
+      name: opts.name ?? await this.guessName(),
     });
-
-    result.ok ? this.opts.onSuccess?.("register", result) : this.opts.onError?.("register", result);
-    return result;
   }
 
   // ── Login ─────────────────────────────────────────────────────────────────
@@ -76,74 +68,45 @@ export class WebAuth {
     if (!window.PublicKeyCredential) throw new Error("WebAuthn not supported.");
 
     const { token, publicKey } = await this.#post("/login/challenge", { email: opts.email ?? null });
-
-    const getOptions = { ...publicKey, challenge: WebAuth.#dec(publicKey.challenge) };
-    if (publicKey.allowCredentials?.length) {
-      getOptions.allowCredentials = publicKey.allowCredentials.map((c) => ({ ...c, id: WebAuth.#dec(c.id) }));
-    }
-
-    let assertion;
-    try {
-      assertion = await navigator.credentials.get({ publicKey: getOptions });
-    } catch (e) {
-      if (e.name === "NotAllowedError") throw new Error("Abgebrochen.");
-      throw e;
-    }
-
-    const result = await this.#verify(token, assertion);
-    result.ok ? this.opts.onSuccess?.("login", result) : this.opts.onError?.("login", result);
-    return result;
+    const assertion = await this.#getAssertion(publicKey);
+    return this.#verify(token, assertion);
   }
 
   // ── Conditional UI (Autofill passkey) ─────────────────────────────────────
 
+  #conditionalAbort = null;
+
   async loginConditional() {
     if (!await WebAuth.isConditionalMediationAvailable()) return null;
+
+    this.#conditionalAbort?.abort();
+    this.#conditionalAbort = new AbortController();
 
     const { token, publicKey } = await this.#post("/login/challenge", {});
     let assertion;
     try {
       assertion = await navigator.credentials.get({
-        publicKey: { ...publicKey, challenge: WebAuth.#dec(publicKey.challenge) },
+        publicKey: this.#decodePublicKey(publicKey),
         mediation: "conditional",
+        signal: this.#conditionalAbort.signal,
       });
     } catch (e) {
       if (e.name === "AbortError") return null;
       throw e;
     }
-
-    const result = await this.#verify(token, assertion);
-    result.ok ? this.opts.onSuccess?.("login", result) : this.opts.onError?.("login", result);
-    return result;
+    return this.#verify(token, assertion);
   }
 
-  #verify(token, a) {
-    return this.#post("/login/verify", {
-      token,
-      credentialId:      WebAuth.#enc(a.rawId),
-      clientDataJSON:    WebAuth.#enc(a.response.clientDataJSON),
-      authenticatorData: WebAuth.#enc(a.response.authenticatorData),
-      signature:         WebAuth.#enc(a.response.signature),
-    });
+  abortConditional() {
+    this.#conditionalAbort?.abort();
+    this.#conditionalAbort = null;
   }
 
   // ── Step-up confirmation ──────────────────────────────────────────────────
 
   async confirm() {
     const { token, publicKey } = await this.#post("/confirm/challenge", {});
-    const getOptions = {
-      ...publicKey,
-      challenge: WebAuth.#dec(publicKey.challenge),
-      allowCredentials: publicKey.allowCredentials?.map((c) => ({ ...c, id: WebAuth.#dec(c.id) })),
-    };
-    let assertion;
-    try {
-      assertion = await navigator.credentials.get({ publicKey: getOptions });
-    } catch (e) {
-      if (e.name === "NotAllowedError") throw new Error("Abgebrochen.");
-      throw e;
-    }
-    return this.#verify(token, assertion);
+    return this.#verify(token, await this.#getAssertion(publicKey));
   }
 
   // ── Credential management ─────────────────────────────────────────────────
@@ -163,7 +126,7 @@ export class WebAuth {
     return WebAuth.isSupported() && (await PublicKeyCredential.isConditionalMediationAvailable?.() ?? false);
   }
 
-  async #guessName() {
+  async guessName() {
     try {
       if (!await WebAuth.isPlatformAuthenticatorAvailable()) return "Hardware-Key";
       const ua = navigator.userAgent;
@@ -174,60 +137,36 @@ export class WebAuth {
       return "Plattform-Authenticator";
     } catch { return "Authenticator"; }
   }
-}
 
-// ── initWebAuth ───────────────────────────────────────────────────────────────
-//
-//   <button data-web-auth-action="login">Mit Passkey anmelden</button>
-//   <button data-web-auth-action="register">Add passkey</button>
-//   <input autocomplete="username webauthn" data-web-auth-action="conditional">
+  // ── Internals ─────────────────────────────────────────────────────────────
 
-export function initWebAuth(opts = {}) {
-  const wa        = new WebAuth(opts);
-  const container = opts.container ?? document;
-
-  for (const el of container.querySelectorAll("[data-web-auth-action]")) {
-    const action = el.dataset.webAuthAction;
-
-    if (action === "conditional") {
-      wa.loginConditional().then((r) => { if (r?.ok) window.location.reload(); }).catch(console.error);
-      continue;
-    }
-
-    el.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const btn = e.currentTarget, prev = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = action === "register" ? await t`Registering…` : await t`Signing in…`;
-
-      try {
-        let result;
-        if (action === "register") {
-          result = await wa.register({ name: container.querySelector("[data-web-auth-name]")?.value });
-        } else if (action === "login") {
-          result = await wa.login({ email: container.querySelector("[data-web-auth-email]")?.value });
-        } else if (action === "delete") {
-          const credId = btn.dataset.webAuthCredId;
-          if (!credId || !confirm(await t`Really remove this passkey?`)) return;
-          result = await wa.deleteCredential(credId);
-          if (result.ok) btn.closest("[data-web-auth-credential]")?.remove();
-          return;
-        }
-        if (result?.ok) {
-          opts.onSuccess?.(action, result) ?? window.location.reload();
-        } else {
-          const label = action === "register" ? await t`Registration` : await t`Sign-in`;
-          opts.onError?.(action, result) ?? alert(await t`${label} failed: ${result?.error ?? "unknown"}`);
-        }
-      } catch (err) {
-        console.error("[web_auth]", err);
-        opts.onError?.(action, { error: err.message }) ?? alert(err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = prev;
-      }
-    });
+  #decodePublicKey(pk) {
+    return {
+      ...pk,
+      challenge: WebAuth.#dec(pk.challenge),
+      allowCredentials: pk.allowCredentials?.map((c) => ({ ...c, id: WebAuth.#dec(c.id) })),
+    };
   }
 
-  return wa;
+  async #getAssertion(publicKey) {
+    let assertion;
+    try {
+      assertion = await navigator.credentials.get({ publicKey: this.#decodePublicKey(publicKey) });
+    } catch (e) {
+      if (e.name === "NotAllowedError") throw new Error("Abgebrochen.");
+      throw e;
+    }
+    if (!assertion) throw new Error("Abgebrochen.");
+    return assertion;
+  }
+
+  #verify(token, a) {
+    return this.#post("/login/verify", {
+      token,
+      credentialId:      WebAuth.#enc(a.rawId),
+      clientDataJSON:    WebAuth.#enc(a.response.clientDataJSON),
+      authenticatorData: WebAuth.#enc(a.response.authenticatorData),
+      signature:         WebAuth.#enc(a.response.signature),
+    });
+  }
 }

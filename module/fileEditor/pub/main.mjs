@@ -27,7 +27,7 @@ function saveEvent(e){
 		e.preventDefault();
 	}
 }
-var editor = CodeMirror.fromTextArea(editorEl, {
+const editor = CodeMirror.fromTextArea(editorEl, {
 	lineNumbers: true,
 	theme:       'eclipse',
 	mode:        {name:mime, globalVars:true},
@@ -45,7 +45,7 @@ var editor = CodeMirror.fromTextArea(editorEl, {
 editor.focus();
 editor.getWrapperElement().ownerDocument.addEventListener('keydown', saveEvent, 0);
 
-editor.on('change', e=>{
+editor.on('change', ()=>{
 	btn.style.display = 'block';
 	btn.style.backgroundColor = '#faa';
 });

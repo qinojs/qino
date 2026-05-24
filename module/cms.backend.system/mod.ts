@@ -3,7 +3,7 @@ import { getCtx } from "../core/lib/RequestContext.ts";
 import { getTypes, type CheckResult, type Solution } from "./health_check.ts";
 import statistic from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
-import pageApi from "./page_api.ts";
+import api from "./nodeApi.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
 
@@ -247,7 +247,7 @@ export const cms = {
   node: {
     js: ["pub/main.js"],
     render,
-    pageApi,
+    api,
     parts: {
       statistic,
     },

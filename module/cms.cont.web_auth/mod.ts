@@ -43,8 +43,8 @@ async function render(node: Node): Promise<string> {
 
 async function renderLogin(app: any, apiBase: string, scriptUrl: string, tUrl: string, showPw: boolean, redirectUrl: string): Promise<string> {
   return `<div class="web-auth-login" data-api-base=${JSON.stringify(apiBase)} data-script-url=${JSON.stringify(scriptUrl)} data-t-url=${JSON.stringify(tUrl)} data-redirect-url=${JSON.stringify(redirectUrl)}>
-  <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-web-auth-email autocomplete="username webauthn">
-  <button data-web-auth-action="login">${await app.t`Sign in with passkey`}</button>
+  <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
+  <button data-action="login">${await app.t`Sign in with passkey`}</button>
   ${showPw ? `<details>
     <summary>${await app.t`Sign in with password`}</summary>
     <form method="post">
@@ -62,8 +62,8 @@ async function renderLogin(app: any, apiBase: string, scriptUrl: string, tUrl: s
 async function renderManage(app: any, apiBase: string, scriptUrl: string, tUrl: string): Promise<string> {
   return `<div class="web-auth-manage" data-api-base=${JSON.stringify(apiBase)} data-script-url=${JSON.stringify(scriptUrl)} data-t-url=${JSON.stringify(tUrl)}>
   <div data-list>${await app.t`Loading…`}</div>
-  <input type="text" data-web-auth-name placeholder="${await app.t`Name for this authenticator`}">
-  <button data-web-auth-action="register">${await app.t`Add passkey`}</button>
+  <input type="text" data-name placeholder="${await app.t`Name for this authenticator`}">
+  <button data-action="register">${await app.t`Add passkey`}</button>
   <output class="-msg"></output>
 </div>`;
 }
