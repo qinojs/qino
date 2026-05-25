@@ -19,9 +19,9 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   ctx.html.addJSM(u2Root + "u2/auto.js");
 
-  ctx.csp["style-src"]["https://cdn.jsdelivr.net"] = 1;
-  ctx.csp["script-src"]["https://cdn.jsdelivr.net"] = 1;
-  ctx.csp["connect-src"]["https://cdn.jsdelivr.net"] = 1;
+  ctx.csp["style-src"][u2Root] = 1;
+  ctx.csp["script-src"][u2Root] = 1;
+  //ctx.csp["connect-src"]["https://cdn.jsdelivr.net"] = 1;
   ctx.html.addCSSFile(u2Root + "css/norm/norm.css");
   ctx.html.addCSSFile(u2Root + "css/base/base.css");
   ctx.html.addCSSFile(u2Root + "css/classless/variables.css");

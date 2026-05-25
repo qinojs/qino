@@ -76,7 +76,7 @@ export class RequestContext {
   cspReportUri: string | false = false;
   get token(): string {
     const token = this.session.qg.token;
-    if (!token()) this.session.qg.token(uid(10));
+    if (!token()) this.session.qg.token(uid(11));
     return token() as string;
   }
 

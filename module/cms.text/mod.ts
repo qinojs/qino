@@ -208,9 +208,9 @@ const cmsTextService: any = {
             model: "nmt",
             key,
         });
-        const result = await fetch(
-            "https://translation.googleapis.com/language/translate/v2?" + params
-        ).then((r) => r.json());
+        const resp = await fetch("https://translation.googleapis.com/language/translate/v2?" + params);
+        if (!resp.ok) { console.error("[google_translate]", resp.status, await resp.text()); return false; }
+        const result = await resp.json();
         const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {
             console.log(await this.ctx.app.settings["cms.text"]["translate char count"]);
@@ -241,12 +241,18 @@ const cmsTextService: any = {
         return this.ctx.app.db.all(sql, [txt_id, lang, space]);
     },
 
-    async isTranslated(txt_id: any, lang: any): Promise<any> {
-        txt_id = Number(txt_id);
-        if (!await this.textAccess(txt_id)) return false;
+    async isTranslated(txt_ids: any, lang: any): Promise<any> {
+        const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number);
         lang ??= this.ctx.lang;
-        const text = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, lang]);
-        return !!(text && text !== "");
+        const placeholders = ids.map(() => "?").join(",");
+        const rows = await this.ctx.app.db.all(
+            `SELECT id, text FROM text WHERE id IN (${placeholders}) AND lang = ?`,
+            [...ids, lang]
+        );
+        const map: Record<number, boolean> = {};
+        for (const row of rows) map[row.id] = !!(row.text && row.text !== "");
+        if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;
+        return Object.fromEntries(ids.map(id => [id, map[id] ?? false]));
     },
 };
 
@@ -258,6 +264,17 @@ export function service(ctx: any): any {
 
 export const api: AptTree = {
     text: {
+        "are-translated": {
+            get: {
+                description: "Batch-check if multiple texts are translated in a language",
+                access: Access.USER,
+                query: s.object({
+                    ids: s.string().describe("Comma-separated text IDs"),
+                    lang: s.optional(s.string()).describe("Language code. Default: current language"),
+                }),
+                execute: ({ ids, lang }: any, ctx: any) => service(ctx).isTranslated(ids.split("_").map(Number), lang ?? null),
+            },
+        },
         ":text": {
             paramSchema: s.number().describe("Text-ID"),
             get: {
@@ -283,14 +300,6 @@ export const api: AptTree = {
                     access: Access.USER,
                     input: s.object({ lang: s.string().describe("Language code, e.g. \"de\"") }),
                     execute: ({ text, lang }: any, ctx: any) => service(ctx).history(text, lang),
-                },
-            },
-            "is-translated": {
-                get: {
-                    description: "Check if text is translated in a language",
-                    access: Access.USER,
-                    input: s.object({ lang: s.optional(s.string()).describe("Language code. Default: current language") }),
-                    execute: ({ text, lang }: any, ctx: any) => service(ctx).isTranslated(text, lang ?? null),
                 },
             },
         },

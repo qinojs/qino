@@ -40,7 +40,7 @@ export const api = {
     },
     log: {
       get: {
-        input: s.object({ module: s.string(), limit: s.optional(s.number()) }),
+        query: s.object({ module: s.string(), limit: s.optional(s.number()) }),
         access: Access.SUPERUSER,
         execute: async (params: Params, ctx: RequestContext) => {
           const { gitRoot } = await getModuleGitInfo(ctx.app, String(params.module));

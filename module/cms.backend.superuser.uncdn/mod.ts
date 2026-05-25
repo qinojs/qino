@@ -2,6 +2,7 @@
 import { hee } from "../core/lib/util.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
+import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy } from "../uncdn/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 
 export const name = "cms.backend.superuser.uncdn";
@@ -11,8 +12,6 @@ export async function install({ app }: any) {
   const P = await backend.install(app, name);
   if (P) await P.title("en", "UnCDN Cache");
 }
-
-const CACHE_SUBDIR = "cache/uncdn/";
 
 type TreeResult = { html: string; size: number };
 
@@ -76,10 +75,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   const { html: tree, size: totalSize } = await buildTree(cacheDir, cacheDir.length);
-  const fetchPolicy = String(await node.app.settings.uncdn.fetchPolicy ?? "superuser");
+  const policy = fetchPolicy(await node.app.settings.uncdn.fetchPolicy);
+  const maxCacheBytes = cacheByteLimit(await node.app.settings.uncdn.maxCacheBytes);
 
-  const [tCacheSize, tFetchPolicy, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached] = await Promise.all([
+  const [tCacheSize, tMaxCacheBytes, tFetchPolicy, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached] = await Promise.all([
     node.app.t`Cache size`,
+    node.app.t`Max cache bytes`,
     node.app.t`Fetch policy`,
     node.app.t`Cache path`,
     node.app.t`Actions`,
@@ -95,7 +96,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     <div class="-body">
       <table class=u2-table>
         <tr><td>${tCacheSize}<td><u2-bytes>${totalSize}</u2-bytes>
-        <tr><td>${tFetchPolicy}<td><code>${hee(fetchPolicy)}</code>
+        <tr><td>${tMaxCacheBytes}<td><u2-bytes>${maxCacheBytes}</u2-bytes>
+        <tr><td>${tFetchPolicy}<td><code>${hee(policy)}</code>
         <tr><td>${tCachePath}<td><small><code>${hee(cacheDir)}</code></small>
       </table>
     </div>

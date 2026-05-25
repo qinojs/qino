@@ -128,7 +128,7 @@ export class App {
                 hc.res = await this.#buildResponse(hc, ctx);
             } finally {
                 await ctx.cleanup();
-                console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
+                //console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
             }
             return hc.res;
         });

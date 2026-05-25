@@ -117,7 +117,6 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
   const hasForm = r.pathParams.length || !!inputForm || !!queryForm;
 
   return `
-<div class="-route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
   <h4>
     <span style="width:5rem">
       <span class="u2-badge -method -${hee(r.method)}">${hee(r.method.toUpperCase())}</span>
@@ -126,7 +125,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
     <small class="-desc">${hee(r.description)}</small>
     <span class="-access" style="color:${hee(accessColor)}">${hee(r.accessLevel)}</span>
   </h4>
-  <div class="-body">
+  <div class="-body" class="-route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
     <u2-tabs>
       <h3>Test</h3>
       <div>
@@ -144,8 +143,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
       <h3>Tool-Json</h3>
       <u2-code id="api-tool-${idx}">${hee(toolJson)}</u2-code>
     </u2-tabs>
-  </div>
-</div>`;
+  </div>`;
 }
 
 function render(): string {

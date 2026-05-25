@@ -691,10 +691,7 @@ export const api = {
           const ctx = getCtx();
           const db = ctx.app.db;
           const lang_ = lang ?? ctx.lang;
-          const row = await db.row(
-            "SELECT name, page_id FROM page_text WHERE text_id = ?",
-            [id],
-          );
+          const row = await db.row("SELECT name, page_id FROM page_text WHERE text_id = ?",[id]);
           if (row) {
             const n = await ctx.app.cms.node(row.page_id);
             if (!n.is()) throw new NotFoundError();
@@ -702,9 +699,7 @@ export const api = {
             const changed = await n.text(row.name, lang_, value);
             return { changed: changed !== false, kind: "text" };
           }
-          const pid = await db.one("SELECT id FROM page WHERE title_id = ?", [
-            id,
-          ]);
+          const pid = await db.one("SELECT id FROM page WHERE title_id = ?", [id]);
           if (pid) {
             const n = await ctx.app.cms.node(Number(pid));
             if (!n.is()) throw new NotFoundError();

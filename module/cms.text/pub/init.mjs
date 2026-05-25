@@ -127,18 +127,29 @@ setTimeout(function(){
 		'  .qgCMS-text-untranslated { animation:qgCMS-text-untranslated .8s infinite alternate; }'+
 		'</style>'
 	));
-	c1.onElement('[cmstxt]', async el=>{
+	const pendingByLang = {};
+	let batchTimer;
+	c1.onElement('[cmstxt]', el => {
 		const id = el.getAttribute('cmstxt');
 		const lang = el.getAttribute('cmslang') || activeLang;
-		const ok = await apt['cms.text'].text(id)['is-translated'].get({ lang });
-		if (ok) return;
-		el.classList.add('qgCMS-text-untranslated');
+		(pendingByLang[lang] ??= []).push({ id, el });
+		clearTimeout(batchTimer);
+		batchTimer = setTimeout(async () => {
+			for (const [lang, entries] of Object.entries(pendingByLang)) {
+				delete pendingByLang[lang];
+				const ids = entries.map(e => Number(e.id));
+				const result = await apt['cms.text'].text['are-translated'].get({ ids: ids.join('_'), lang });
+				for (const { id, el } of entries) {
+					if (!result[id]) el.classList.add('qgCMS-text-untranslated');
+				}
+			}
+		}, 50);
 	});
 	apt.on('PUT cms/txt/:id', ({ params: { id }, input }) => {
 		const txt = input?.value;
 		const setLang = input?.lang || activeLang;
 		const els = document.querySelectorAll('[cmstxt="'+id+'"]');
-		for (let el of els) {
+		for (const el of els) {
 			const elLang = el.getAttribute('cmslang') || activeLang;
 			if (setLang !== elLang) continue;
 			el.classList.toggle('qgCMS-text-untranslated', !txt);
