@@ -18,9 +18,7 @@ export async function chatSession(
   const bot = app.ai?.getBot(data.bot);
   if (!bot) return { error: `Bot not found: ${data.bot}` };
 
-  const defaultProviderName = String(
-    await app.settings.ai.default.provider ?? "",
-  );
+  const defaultProviderName = String(await app.settings.ai.default.provider ?? "");
   const providerName = String(bot.provider ?? defaultProviderName);
   const provider = providers[providerName];
   const defaultModel = String(await app.settings.ai.default.model ?? "");
@@ -30,15 +28,9 @@ export async function chatSession(
       ? defaultModel || provider?.defaultModel || models[0]?.id
       : provider?.defaultModel || models[0]?.id || defaultModel);
   const model = models.find((entry) => entry.id === resolvedModel);
-  const supportsTools = model
-    ? model.supports?.tools === true
-    : provider?.supports?.tools === true;
-  const supportsToolChoiceAuto = model
-    ? model.supports?.toolChoiceAuto === true
-    : provider?.supports?.toolChoiceAuto === true;
-  const supportsJsonMode = model
-    ? model.supports?.jsonMode === true
-    : provider?.supports?.jsonMode === true || provider?.jsonMode === true;
+  const supportsTools = model ? model.supports?.tools === true : provider?.supports?.tools === true;
+  const supportsToolChoiceAuto = model ? model.supports?.toolChoiceAuto === true : provider?.supports?.toolChoiceAuto === true;
+  const supportsJsonMode = model ? model.supports?.jsonMode === true : provider?.supports?.jsonMode === true || provider?.jsonMode === true;
   const wantsStructuredOutput = !!bot.chatSchema && supportsJsonMode;
 
   const systemPrompt = typeof bot.systemPrompt === "function"
@@ -105,9 +97,7 @@ export async function chatSession(
         };
       }
       messages.push({ role: "assistant", content });
-      console.log(
-        `\n[bot:${data.bot}] conversation:\n` +
-          messages.map((m) => {
+      console.log( `\n[bot:${data.bot}] conversation:\n` + messages.map((m) => {
             const role = String(m.role).toUpperCase();
             const body = typeof m.content === "string"
               ? m.content
@@ -130,18 +120,9 @@ export async function chatSession(
         toolResult = tool
           ? await tool.execute(JSON.parse(String(fn.arguments ?? "{}")), ctx)
           : { error: `Unknown tool: ${fn.name}` };
-        console.log(
-          `[tool:${fn.name}] args:`,
-          fn.arguments,
-          "→",
-          JSON.stringify(toolResult).slice(0, 200),
-        );
+        console.log(`[tool:${fn.name}] args:`, fn.arguments, "→", JSON.stringify(toolResult).slice(0, 200) );
       } catch (e) {
-        console.error(
-          `[tool:${fn.name}] args:`,
-          fn.arguments,
-          e,
-        );
+        console.error(`[tool:${fn.name}] args:`, fn.arguments, e );
         toolResult = { error: String(e) };
       }
       messages.push({
