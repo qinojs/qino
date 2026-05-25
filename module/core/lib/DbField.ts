@@ -1,29 +1,42 @@
-import type { DbTable } from "./DbTable.ts";
 import { Db, dateTypes, stringTypes, numTypes } from "./Db.ts";
+import type { DbTable } from "./DbTable.ts";
 
 export class DbField {
 
-  #type: string | null = null;
-  #length: string | null = null;
-  #special: string | null = null;
+  #type: string;
+  #length: string;
+  #special: string;
   #name: string;
 
   vs: Record<string, any>;
   table: DbTable;
   db: Db;
 
-  constructor(Table: DbTable, name: string, vs: Record<string, any>) {
-    this.table = Table;
-    this.db = Table.db;
+  constructor(table: DbTable, name: string, vs: Record<string, any>) {
+    this.table = table;
+    this.db = table.db;
     this.#name = name;
     this.vs = vs;
+    const match = vs.Type?.match(/^([a-z]+)(\(([^)]+)\)|.*)(.*)$/i);
+    this.#type = match?.[1].toLowerCase().trim() ?? "varchar";
+    this.#length = match?.[3]?.trim() ?? "";
+    this.#special = match?.[4]?.trim().toLowerCase() ?? "";
   }
 
-  toString(): string { return this.#name; }
   get name(): string { return this.#name; }
+  get type(): string { return this.#type; }
+  get length(): string { return this.#length; }
+  get special(): string { return this.#special; }
+  get null(): boolean { return this.vs.Null === "YES"; }
+  get default(): unknown { return this.vs.Default; }
+  get collate(): string { return this.vs.Collation ?? ""; }
   get schema(): Record<string, any> { return this.table.schema.additionalProperties?.properties?.[this.#name] ?? {}; }
   get onParentCopy(): string { return this.schema["x-qg-on-parent-copy"] ?? ""; }
   get onParentDelete(): string { return this.schema["x-qg-on-parent-delete"] ?? ""; }
+  get key(): string { return this.vs.Key ?? ""; }
+  get id(): number { return this.vs.id; }
+  isPrimary(): boolean { return this.vs.Key === "PRI"; }
+  isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 
   valueTransform(value: any): any {
     const type = this.type.toUpperCase();
@@ -44,151 +57,16 @@ export class DbField {
     return value === null ? "NULL" : Db.quote(value); // Db.quote hier behalten!
   }
 
-  isPrimary(): boolean { return this.vs.Key === "PRI"; }
-  get key(): string { return this.vs.Key ?? ""; }
-  isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 
-  #explodeTypeData(): void {
-    if (this.#type === null) {
-      const match = this.vs.Type?.match(/^([a-z]+)(\(([^)]+)\)|.*)(.*)$/i);
-      this.#type = match?.[1].toLowerCase().trim() ?? "varchar";
-      this.#length = match?.[3]?.trim() ?? "";
-      this.#special = match?.[4]?.trim().toLowerCase() ?? "";
-    }
-  }
-  // async #change(data: Record<string, any>): Promise<void> {
-  //   data.type = data.type ?? this.type;
-  //   data.length = data.length ?? this.length;
-  //   data.special = data.special ?? this.special;
-  //   data.collate = data.collate ?? this.collate;
-  //   data.null = data.null ?? this.null;
-  //   data.default = data.default ?? (this.vs.Default !== null ? this.vs.Default : false);
-  //   data.autoincrement = data.autoincrement ?? this.isAutoIncrement();
-  //   const table = Db.escapeId(String(this.table));
-  //   const field = Db.escapeId(String(this));
-
-  //   if (data.type === "text" && this.type !== "text") {
-  //     const hasIndex = await this.db.row(`SHOW INDEX FROM ${table} WHERE KEY_NAME = ?`, [String(this)]);
-  //     if (hasIndex) await this.db.query(`ALTER TABLE ${table} DROP INDEX ${field}`);
-  //   }
-
-  //   let sql = `ALTER TABLE ${table} CHANGE ${field} ${Db.escapeId(String(data.name ?? this))} ${Db._array_to_column_definition(data)}`;
-  //   if (data.after !== undefined) sql += data.after ? ` AFTER ${Db.escapeId(String(data.after))}` : " FIRST";
-  //   await this.db.query(sql);
-  //   this.#special = data.special;
-  //   await this.table.reloadFields();
-  // }
-
-  get type(): string {
-    this.#explodeTypeData();
-    return this.#type!;
-  }
-  // async setType(v: string): Promise<void> {
-  //   await this.#change({ type: v });
-  //   this.#type = v;
-  // }
-  get length(): string {
-    this.#explodeTypeData();
-    return this.#length!;
-  }
-  // async setLength(v: string): Promise<void> {
-  //   await this.#change({ length: v });
-  //   this.#length = v;
-  // }
-  get special(): string {
-    this.#explodeTypeData();
-    return this.#special!;
-  }
-  // async setSpecial(v: string): Promise<void> {
-  //   await this.#change({ special: v });
-  //   this.#special = v;
-  // }
-  get null(): boolean {
-    return this.vs.Null === "YES";
-  }
-  // async setNull(v: boolean): Promise<void> {
-  //   await this.#change({ null: v });
-  //   this.vs.Null = v ? "YES" : "NO";
-  // }
-  get default(): unknown {
-    return this.vs.Default;
-  }
-  // async setDefault(v: any): Promise<void> {
-  //   await this.#change({ default: v });
-  // }
-  get collate(): string {
-    return this.vs.Collation ?? "";
-  }
-  // async setCollate(v: string): Promise<void> {
-  //   await this.#change({ collate: v });
-  //   this.vs.Collate = v;
-  // }
-  // async setAutoincrement(v: boolean): Promise<void> {
-  //   await this.#change({ autoincrement: v });
-  // }
-
-  get id(): number {
-    return this.vs.id;
-  }
   parent(): DbTable | false {
     return this.schema["x-qg-parent"] ? this.db.table(this.schema["x-qg-parent"]) : false;
   }
   parentField(): DbField | false {
-    const P = this.parent();
-    if (!P) return false;
-    return this.schema["x-qg-parent-field"] ? P.field(this.schema["x-qg-parent-field"]) : P.primary;
+    const parent = this.parent();
+    if (!parent) return false;
+    return this.schema["x-qg-parent-field"] ? parent.field(this.schema["x-qg-parent-field"]) : parent.primary;
   }
-  // async setAfter(F: any): Promise<void> {
-  //   await this.#change({ after: F });
-  // }
-  // async setKey(type: string): Promise<void> {
-  //   type = type.toUpperCase();
-  //   if (this.key === type) return;
-  //   const table = Db.escapeId(String(this.table));
-  //   const field = Db.escapeId(String(this));
-  //   if (type === "PRI") {
-  //     await this.#setPrimary(true);
-  //   } else {
-  //     await this.#setPrimary(false);
-  //     if (this.key) {
-  //       await this.db.query(`ALTER TABLE ${table} DROP INDEX ${field}`);
-  //     }
-  //     if (type === "MUL") {
-  //       const t = this.type;
-  //       if (["text", "tinytext", "mediumtext", "longtext"].includes(t)) {
-  //         await this.db.query(`ALTER TABLE ${table} ADD FULLTEXT (${field})`);
-  //       } else {
-  //         await this.db.query(`ALTER TABLE ${table} ADD INDEX (${field})`);
-  //       }
-  //     } else if (type === "UNI") {
-  //       await this.db.query(`ALTER TABLE ${table} ADD UNIQUE (${field})`);
-  //     }
-  //   }
-  //   await this.table.reloadFields();
-  // }
-  // async #setPrimary(v: boolean): Promise<void> {
-  //   if (!!this.isPrimary() === v) return;
-  //   const ps: Record<string, string> = {};
-  //   let Auto: DbField | undefined;
-  //   for (const [field, Field] of Object.entries(this.table.primaries)) {
-  //     ps[field] = field;
-  //     if (Field.isAutoIncrement()) {
-  //       Auto = Field;
-  //       await Field.setAutoincrement(false);
-  //     }
-  //   }
-  //   if (Object.keys(ps).length) await this.db.query(`ALTER TABLE ${Db.escapeId(String(this.table))} DROP PRIMARY KEY`);
 
-  //   if (v) {
-  //     ps[String(this)] = String(this);
-  //     this.vs.Key = "PRI";
-  //   } else {
-  //     delete ps[String(this)];
-  //     this.vs.Key = "";
-  //   }
-  //   if (Object.keys(ps).length) {
-  //     await this.db.query(`ALTER TABLE ${Db.escapeId(String(this.table))} ADD PRIMARY KEY (${Object.keys(ps).map((k) => Db.escapeId(k)).join(",")})`);
-  //   }
-  //   if (Auto) await Auto.setAutoincrement(true);
-  // }
+  toString(): string { return this.#name; }
+
 }

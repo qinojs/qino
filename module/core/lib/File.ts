@@ -3,12 +3,19 @@ import { typeByExtension } from "../../../deps.ts";
 
 export class File {
   public path: string;
+  #uploadTicket?: string;
 
   constructor(path: string) {
     this.path = path;
   }
 
-  toString(): string { return this.path; }
+  get extension(): string {
+    return this.path.replace(/.*\./, "").toLowerCase();
+  }
+
+  get mime(): string {
+    return typeByExtension(this.extension) || "application/octet-stream";
+  }
 
   read(): void {
     // In Deno context: read is used to stream a file; callers use ctx.state.__fileOutput
@@ -65,20 +72,10 @@ export class File {
     }
   }
 
-  get extension(): string {
-    return this.path.replace(/.*\./, "").toLowerCase();
-  }
-
-  get mime(): string {
-    return typeByExtension(this.extension) || "application/octet-stream";
-  }
-
   url(): string | Promise<string> {
     // not universally useful in Deno context
     return this.path;
   }
-
-  #uploadTicket?: string;
 
   async md5(): Promise<string> {
     try {
@@ -104,5 +101,7 @@ export class File {
         return "";
     }
   }
+
+  toString(): string { return this.path; }
 
 }

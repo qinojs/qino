@@ -17,11 +17,12 @@ export class DbEntry {
   #vs: Record<string, any> = {};
   #eid: string | false = false;
   #changed = false;
+  #saveTimer: number | undefined;
 
-  constructor(T: DbTable, vs?: any) {
-    this.table = T;
+  constructor(table: DbTable, vs?: any) {
+    this.table = table;
     if (vs !== undefined && (Array.isArray(vs) || (vs != null && typeof vs === "object"))) {
-      this.#eid = T.entryId(vs) || false;
+      this.#eid = table.entryId(vs) || false;
       this.#vs  = vs;
     } else if (vs === undefined) {
       this.#eid = "";
@@ -91,7 +92,6 @@ export class DbEntry {
     this.#scheduleSave();
   }
 
-  #saveTimer: number | undefined;
   #scheduleSave(): void {
     if (!this.#changed) return;
     clearTimeout(this.#saveTimer);

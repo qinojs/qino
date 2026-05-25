@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
-import { DbSchema } from "./DbSchema.ts";
+import { fromFileUrl, isAbsolute, toFileUrl, $item, schemaToDb } from "../../../deps.ts";
 import type { App } from "../server.ts";
 
 export type ModuleExports = Record<string, any> & {
@@ -100,7 +99,11 @@ export class ModuleManager {
       ctxSettingsSchema.properties[name] = exports.ctxSettingsSchema;
       mergeSchema(dbSchema, exports.dbSchema);
     }
-    if (Object.keys(dbSchema.properties).length) await new DbSchema(this.#app.db).check(dbSchema);
+    if (Object.keys(dbSchema.properties).length) {
+      await schemaToDb(dbSchema, (sql: string) => this.#app.db.query(sql), { patch: true });
+      this.#app.db.schema = dbSchema;
+      await this.#app.db.init();
+    }
     for (const name of order) {
       const { exports } = this.#modules[name];
       await exports.init?.(this.#app);

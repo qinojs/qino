@@ -29,7 +29,7 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
   const user = await ctx.app.db.row("SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(?)", [email.trim()]);
   if (!user) return -1;
   if (!user.active) return -2;
-  const UsrEntry = ctx.app.db.table("usr").Entry(user.id);
+  const UsrEntry = ctx.app.db.table("usr").entry(user.id);
   const rehash = pwNeedsRehash(await UsrEntry.get("pw"));
   if (!rehash) {
     const clientUsrs = await ctx.client.users() ?? {};
@@ -71,7 +71,7 @@ export async function logout(ctx: RequestContext): Promise<void> {
 export async function rememberLogin(ctx: RequestContext, doSave: boolean): Promise<void> {
   const usr = ctx.user;
   if (!(await usr?.is())) return;
-  const E = ctx.app.db.table("client_usr").Entry({ usr_id: String(usr), client_id: String(ctx.client) });
+  const E = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });
   await E.set("save_login", doSave ? 1 : 0);
 }
 

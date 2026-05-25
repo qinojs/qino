@@ -13,11 +13,12 @@ export class LangManager {
         this.t = this.t.bind(this);
     }
 
+    get def(): string { return this.#langs[0] ?? "en"; }
+    get all(): string[] { return this.#langs; }
+
     setLangs(langs: string[]): void {
         this.#langs = langs.map(l=>l.trim().toLowerCase()).filter(Boolean);
     }
-    get def(): string { return this.#langs[0] ?? "en"; }
-    get all(): string[] { return this.#langs; }
 
     // Initialises language per request (like L.init)
     async initCtx(ctx: RequestContext): Promise<void> {

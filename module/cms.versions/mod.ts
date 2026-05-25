@@ -444,7 +444,7 @@ export function init(app: App) {
  * cms.versions install()
  * Creates vers_space and vers_cms_page_changed tables.
  */
-export async function install({ app }: any): Promise<void> {
+export async function install({app}: { app: App }): Promise<void> {
     const db = app.db;
 
     await db.query(`

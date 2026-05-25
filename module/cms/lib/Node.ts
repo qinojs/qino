@@ -333,7 +333,7 @@ export class Node {
         const value = this.edit ? raw : await resolveText(this.app, raw);
         return {
             lang: textLang.lang,
-            id: textLang.Text.id,
+            id: textLang.text.id,
             toString() { return value; },
         };
     }

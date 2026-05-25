@@ -20,21 +20,21 @@ export default async function (node: Node, vars:any): Promise<any> {
   if ("login_as" in vars) {
     const allowLoginAs = !!(node.settings.allow_login_as()) || isSuperuser;
     if (!allowLoginAs) return false;
-    const TargetUsr = db.table("usr").Entry(vars.login_as);
+    const TargetUsr = db.table("usr").entry(vars.login_as);
     if (!(await usrOk(TargetUsr))) return false;
     await login(ctx, vars.login_as);
     return 1;
   }
 
   if ("delete" in vars) {
-    const TargetUsr = db.table("usr").Entry(vars.delete);
+    const TargetUsr = db.table("usr").entry(vars.delete);
     if (!(await usrOk(TargetUsr))) return false;
     await db.table("usr").delete(vars.delete);
     return 1;
   }
 
   if ("save" in vars) {
-    const TargetUsr = db.table("usr").Entry(vars.save);
+    const TargetUsr = db.table("usr").entry(vars.save);
     if (!(await usrOk(TargetUsr))) return false;
     const allowed: Record<string, boolean> = {
       active: true, email: true, firstname: true, lastname: true,
@@ -50,7 +50,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   }
 
   if ("set_grp" in vars) {
-    const TargetUsr = db.table("usr").Entry(vars.set_grp);
+    const TargetUsr = db.table("usr").entry(vars.set_grp);
     if (!(await usrOk(TargetUsr))) return false;
     const grpId = Number(vars.grp_id);
     const usrId = Number(vars.set_grp);

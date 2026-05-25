@@ -24,7 +24,7 @@ export default async function (node: Node): Promise<string> {
     svgUrl = ctx.sysURL + "cms.frontend.1/pub/img/module_default.svg";
   }
 
-  const Module = db.table("module").Entry(node.vs.module);
+  const Module = db.table("module").entry(node.vs.module);
   const modules = node.vs.type === "p" ? await cms.getLayouts() : await cms.getModules();
   let moduleOptions = "";
   for (const name of Object.keys(modules)) {

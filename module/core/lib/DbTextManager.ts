@@ -10,12 +10,15 @@ import type { Db } from "./Db.ts";
 export class DbTextManager {
   #cache: Record<string, DbText> = {};
   #app: App;
-  #db;
+  #db: Db;
 
   constructor(app: App) {
     this.#app = app;
     this.#db = app.db;
   }
+
+  get db(): Db { return this.#db; }
+  get app(): App { return this.#app; }
 
   text(id: number | string): DbText {
     const key = String(id);
@@ -36,9 +39,6 @@ export class DbTextManager {
     const id = Number(values.id);
     return this.text(id);
   }
-
-  get db(): Db { return this.#db; }
-  get app(): App { return this.#app; }
 }
 
 export class DbText {
@@ -50,6 +50,8 @@ export class DbText {
     this.#manager = manager;
     this.id = Number(id);
   }
+
+  get manager(): DbTextManager { return this.#manager; }
 
   lang(lang?: string | null): DbTextLang {
     const l: string = lang ?? getCtx()?.lang ?? this.#manager.app.languages.def;
@@ -81,8 +83,6 @@ export class DbText {
     return newText;
   }
 
-  get manager(): DbTextManager { return this.#manager; }
-
   async string(): Promise<string | null> {
     const lang = getCtx()?.lang ?? this.#manager.app.languages.def;
     const t = await this.orFallback(lang);
@@ -94,19 +94,25 @@ export class DbText {
 }
 
 export class DbTextLang {
-  Text: DbText;
+  text: DbText;
   value: string | null = null;
   public lang: string;
 
   constructor(text: DbText, lang: string) {
-    this.Text = text;
+    this.text = text;
     this.lang = lang;
+  }
+
+  /** @deprecated use text */
+  get Text(): DbText {
+    console.warn("DbTextLang.Text is deprecated, use text", Error().stack);
+    return this.text;
   }
 
   async get(): Promise<string> {
     if (this.value === null) {
-      const db = this.Text.manager.db;
-      const value = await db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [this.Text.id, this.lang]);
+      const db = this.text.manager.db;
+      const value = await db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [this.text.id, this.lang]);
       this.value = String(value ?? "");
     }
     return this.value!;
@@ -114,13 +120,13 @@ export class DbTextLang {
 
   async set(value: any): Promise<void> {
     this.value = null;
-    const db = this.Text.manager.db;
-    const data = { id: this.Text.id, lang: this.lang, text: value };
-    const has = await db.one("SELECT id FROM text WHERE id = ? AND lang = ?", [this.Text.id, this.lang]);
+    const db = this.text.manager.db;
+    const data = { id: this.text.id, lang: this.lang, text: value };
+    const has = await db.one("SELECT id FROM text WHERE id = ? AND lang = ?", [this.text.id, this.lang]);
     if (has) await db.table("text").update(data);
     else await db.table("text").insert(data);
   }
-  toString() {
-    throw new Error("DbTextLang: toString() not implemented");
-  }
+
+  toString() { throw new Error("DbTextLang: toString() not implemented"); }
+
 }

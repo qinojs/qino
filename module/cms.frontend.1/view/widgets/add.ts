@@ -11,7 +11,7 @@ export default async function (node: Node): Promise<string> {
   let moduleBoxes = "";
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
-    const M = await app.db.table("module").Entry(name);
+    const M = await app.db.table("module").entry(name);
     const hasAccess = await M.get?.("access");
     if (!hasAccess && !isSuperuser) continue;
     if (name === "cms.cont.flexible") continue;
@@ -51,7 +51,7 @@ export default async function (node: Node): Promise<string> {
   if (models.length) {
     let modelItems = "";
     for (const P of models) {
-      const M = await app.db.table("module").Entry(P.vs.module);
+      const M = await app.db.table("module").entry(P.vs.module);
       const mAccess = await M.get?.("access");
       if (!mAccess && !isSuperuser) continue;
       const mName = String(await M.get?.("name") ?? "");

@@ -17,11 +17,14 @@ export const sqlMode = [
 ].join(",");
 
 export class Db {
+  static escapeId = mysql.escapeId;
+
   #tables: Record<string, DbTable> = {};
   #pool: Pool;
   #database: string;
   #connParams: { host: string; user: string; password: string };
   #schema: Record<string, any> = { properties: {} };
+  #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
 
   constructor(conn: string, user: string, pass: string) {
     const [, host = "localhost"] = conn.match(/host=([^;]+)/) ?? [];
@@ -42,6 +45,10 @@ export class Db {
     });
     this.#pool.on("connection", (c: { query(sql: string, params?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
   }
+
+  get tables(): Record<string, DbTable> { return this.#tables; }
+  get schema(): Record<string, any> { return this.#schema; }
+  set schema(schema: Record<string, any>) { this.#schema = schema; }
 
   async #exec<T extends RowDataPacket[] | ResultSetHeader>(sql: string, params?: unknown[], isQuery = false): Promise<T> {
     try {
@@ -70,8 +77,6 @@ export class Db {
     return Object.fromEntries((await this.query(sql, p)).map((r) => Object.values(r) as [string, unknown]));
   }
 
-  static escapeId = mysql.escapeId;
-
   async init(): Promise<void> {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
@@ -87,15 +92,10 @@ export class Db {
     }
   }
 
-  get tables(): Record<string, DbTable> { return this.#tables; }
-  get schema(): Record<string, any> { return this.#schema; }
-  set schema(schema: Record<string, any>) { this.#schema = schema; }
-
   table(name: string): DbTable { return this.#tables[name]; }
 
   close = (): Promise<void> => this.#pool.end();
 
-  #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
   on(name: string, fn: (data: Record<string, any>) => void | Promise<void>): void {
     (this.#events[name] ??= []).push(fn);
   }

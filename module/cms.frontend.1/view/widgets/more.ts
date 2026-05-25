@@ -22,7 +22,7 @@ export default async function (node: Node, vars: { param?: Record<string, string
       "Firstname": firstname,
       "Lastname":  lastname,
     };
-    // const Mail = app.db.table("mail").Entry();
+    // const Mail = app.db.table("mail").entry();
     // Mail.subject  = "CMS feedback";
     // Mail.reply_to = email;
     // Mail.html     = JSON.stringify(arr);

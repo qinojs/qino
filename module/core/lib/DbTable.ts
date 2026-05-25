@@ -22,6 +22,22 @@ export class DbTable {
   get fields(): Record<string, DbField> | null { return this.#fields; }
   get autoIncrement(): DbField | false { return this.#autoIncrement; }
   get schema(): Record<string, any> { return this.#db.schema?.properties?.[String(this)] ?? {}; }
+  get primaries(): Record<string, DbField> { return this.#primaries; }
+  get primary(): DbField | false { return Object.values(this.#primaries)[0] ?? false; }
+  get name(): string { return this.#name; }
+  get children(): DbField[] {
+    if (this.#children === null) {
+      this.#children = [];
+      for (const table of Object.values(this.#db.tables ?? {})) {
+        for (const [name, schema] of Object.entries(table.schema.additionalProperties?.properties ?? {})) {
+          if ((schema as any)["x-qg-parent"] !== String(this)) continue;
+          const field = table.field(name);
+          if (field) this.#children.push(field);
+        }
+      }
+    }
+    return this.#children;
+  }
 
   async reloadFields(): Promise<void> {
     this.#fields = null;
@@ -55,9 +71,6 @@ export class DbTable {
     }
     return this.#fields!;
   }
-
-  get primaries(): Record<string, DbField> { return this.#primaries; }
-  get primary(): DbField | false { return Object.values(this.#primaries)[0] ?? false; }
 
   getStatus(): Promise<Record<string, any> | undefined> {
     return this.#db.row("SHOW TABLE STATUS LIKE ?", [String(this)]);
@@ -248,24 +261,7 @@ const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ?
     for (const row of Object.values(rows)) await this.delete(row);
   }
 
-  get children(): DbField[] {
-    if (this.#children === null) {
-      this.#children = [];
-      for (const table of Object.values(this.#db.tables ?? {})) {
-        for (const [name, schema] of Object.entries(table.schema.additionalProperties?.properties ?? {})) {
-          if ((schema as any)["x-qg-parent"] !== String(this)) continue;
-          const field = table.field(name);
-          if (field) this.#children.push(field);
-        }
-      }
-    }
-    return this.#children;
-  }
-
-  toString(): string { return this.#name; }
-  get name(): string { return this.#name; }
-
-  Entry(id?: any): DbEntry {
+  entry(id?: any): DbEntry {
     const ctx = getCtx();
     const table = String(this);
 
@@ -293,12 +289,18 @@ const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ?
     return tableCache.get(eid) as DbEntry;
   }
 
+  /** @deprecated use entry() */
+  Entry(id?: any): DbEntry {
+    console.warn("DbTable.Entry() is deprecated, use entry()", Error().stack);
+    return this.entry(id);
+  }
+
   async selectEntries(str = ""): Promise<Record<string, any>> {
     const Es: Record<string, any> = {};
     const rows = await this.#db.query(`SELECT * FROM ${Db.escapeId(String(this))} ${str}`);
     for (const row of rows) {
-      const Entry = await this.Entry(row);
-      Es[String(Entry)] = Entry;
+      const entry = await this.entry(row);
+      Es[String(entry)] = entry;
     }
     return Es;
   }
@@ -319,6 +321,8 @@ const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ?
   valuesToSet(values: Record<string, any>, alias?: string): string {
     return this.valuesToFragment(values, alias, true)[0];
   }
+
+  toString(): string { return this.#name; }
 
   // async addField(data: string | Record<string, any>): Promise<DbField | false> {
   //   if (typeof data === "string") data = { name: data };

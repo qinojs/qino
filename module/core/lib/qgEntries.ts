@@ -20,7 +20,7 @@ class dbEntry_usr extends DbEntry {
 class dbEntry_log extends DbEntry {
   async sess(): Promise<any> {
     const id = await this.get("sess_id");
-    return this.table.db.table("sess").Entry(id);
+    return this.table.db.table("sess").entry(id);
   }
 }
 
@@ -28,7 +28,7 @@ class dbEntry_log extends DbEntry {
 class dbEntry_sess extends DbEntry {
   async user(): Promise<any> {
     const id = await this.get("usr_id")
-    return this.table.db.table("usr").Entry(id);
+    return this.table.db.table("usr").entry(id);
   }
 }
 
@@ -56,7 +56,7 @@ class dbEntry_client extends DbEntry {
 class dbEntry_client_usr extends DbEntry {
   async user(): Promise<any> {
     const id = await this.get("usr_id");
-    return this.table.db.table("usr").Entry(id);
+    return this.table.db.table("usr").entry(id);
   }
 }
 

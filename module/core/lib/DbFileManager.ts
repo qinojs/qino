@@ -15,9 +15,6 @@ export class DbFileManager {
   #directory: string;
 
   router: Hono = new Hono();
-  get app(): App { return this.#app; }
-  get db(): Db { return this.#app.db; }
-  get directory(): string { return this.#directory; }
 
   constructor(app: App, directory: string) {
     this.#app = app;
@@ -25,6 +22,10 @@ export class DbFileManager {
     this.router.all("/:path{.*}", (c) => this.#output(c.req.param("path"), c.req.raw));
     Deno.mkdir(this.#directory, { recursive: true }).catch(() => {});
   }
+
+  get app(): App { return this.#app; }
+  get db(): Db { return this.#app.db; }
+  get directory(): string { return this.#directory; }
 
   async file(id: number | string, vs?: any): Promise<DbFile> {
     const key = String(id);
@@ -139,6 +140,17 @@ export class DbFile extends File {
     this.id = Number(id);
   }
 
+  override get extension(): string { return String(this.vs?.["name"] ?? "").replace(/.*\./, "").toLowerCase(); }
+
+  override get mime(): string { return this.vs?.["mime"] ?? ""; }
+
+  get name(): string { return this.vs?.["name"] ?? ""; }
+
+  set name(value: string) {
+    if (this.vs) this.vs["name"] = value;
+    this.setVs({ name: value }).catch(console.error);
+  }
+
   setLocalVs(vs: Record<string, any>) {
     this.vs = vs;
     this.path = vs["md5"] ? this.#manager.directory + vs["md5"] : "";
@@ -179,23 +191,6 @@ export class DbFile extends File {
     await this.#manager.app.fire("dbFile::access", e);
     await this.#manager.app.fire("dbFile::access2", e);
     return e.access;
-  }
-
-  override get extension(): string {
-    return String(this.vs?.["name"] ?? "").replace(/.*\./, "").toLowerCase();
-  }
-
-  override get mime(): string {
-    return this.vs?.["mime"] ?? "";
-  }
-
-  get name(): string {
-    return this.vs?.["name"] ?? "";
-  }
-
-  set name(value: string) {
-    if (this.vs) this.vs["name"] = value;
-    this.setVs({ name: value }).catch(console.error);
   }
 
   async updateDb() {
@@ -263,7 +258,7 @@ export class DbFile extends File {
 
   async clone(to?: number | null): Promise<DbFile> {
     const data = { ...await this.ensureVs() };
-let newId: number;
+    let newId: number;
     if (to == null) {
       delete data["id"];
       newId = Number(await this.#manager.db.table("file").insert(data) ?? "0");

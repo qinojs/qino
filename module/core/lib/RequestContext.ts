@@ -23,11 +23,8 @@ export class RequestContext {
   responseBody: string = "";
   // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
-
-  get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(this); }
-  get hasHtml(): boolean { return this.#html !== null; }
   #html: HtmlBuilder | null = null;
-
+  #settingsRoot: Item | null = null;
   lang = "en";
   langUsr = "en";
   langNsPath: string[] = [];
@@ -36,33 +33,6 @@ export class RequestContext {
   clientId: string | null = null;
   sessId: string | null = null;
   logId: string | null = null;
-  
-  get userId(): number {
-    return Number(this.session.liveUser() || 0);
-  }
-  get user(): dbEntry_usr | null {
-    return this.userId ? this.app.db.table('usr').Entry(this.userId) as dbEntry_usr : null;
-  }
-  get client(): dbEntry_client {
-    if (!this.clientId) throw new Error("No client id");
-    return this.app.db.table('client').Entry(this.clientId) as dbEntry_client;
-  }
-
-  get settings(): ItemProxy {
-    if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
-    return this.#settingsRoot.proxy;
-  }
-  async initSettings(): Promise<void> {
-    this.#settingsRoot = this.user
-      ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
-      : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
-  }
-  #settingsRoot: Item | null = null;
-
-  get dev(): boolean {
-    return this.app.config.dev || !!this.settings.core.dev();
-  }
-
   entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; // braucht es den hier eigentlich?
   appURL = "/";
@@ -74,10 +44,38 @@ export class RequestContext {
     "style-src": { "'self'": 1, "'unsafe-inline'": 1 }, "connect-src": { "'self'": 1 }, "frame-src": { "'self'": 1 },
   };
   cspReportUri: string | false = false;
+
+  get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(this); }
+  get hasHtml(): boolean { return this.#html !== null; }
+  
+  get userId(): number {
+    return Number(this.session.liveUser() || 0);
+  }
+  get user(): dbEntry_usr | null {
+    return this.userId ? this.app.db.table('usr').entry(this.userId) as dbEntry_usr : null;
+  }
+  get client(): dbEntry_client {
+    if (!this.clientId) throw new Error("No client id");
+    return this.app.db.table('client').entry(this.clientId) as dbEntry_client;
+  }
+
+  get settings(): ItemProxy {
+    if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
+    return this.#settingsRoot.proxy;
+  }
+  get dev(): boolean {
+    return this.app.config.dev || !!this.settings.core.dev();
+  }
   get token(): string {
     const token = this.session.qg.token;
     if (!token()) this.session.qg.token(uid(11));
     return token() as string;
+  }
+
+  async initSettings(): Promise<void> {
+    this.#settingsRoot = this.user
+      ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
+      : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
   }
 
   async cleanup(): Promise<void> {

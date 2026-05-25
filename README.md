@@ -94,7 +94,7 @@ export const api: Tree = {
         description: "Get a user by ID",
         input: s.object({ id: s.string() }),
         execute: async ({ id }, ctx) => {
-          return await ctx.app.db.table("usr").Entry(id);
+          return await ctx.app.db.table("usr").entry(id);
         }
       }
     }

@@ -12,6 +12,7 @@ type SessionResult = { sessionToken: string; sessId: string; session: ItemProxy;
 
 export class SessionManager {
     #db: Db;
+    #touchTimer: ReturnType<typeof setTimeout> | undefined;
 
     constructor(db: Db) {
         this.#db = db;
@@ -37,7 +38,6 @@ export class SessionManager {
         return this.#result(row.id, token, EMPTY_SESSION, true);
     }
 
-    #touchTimer: ReturnType<typeof setTimeout> | undefined;
     touch(sessId: string | number, userId = 0): void {
         clearTimeout(this.#touchTimer);
         this.#touchTimer = setTimeout(async () => {

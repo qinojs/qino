@@ -15,9 +15,10 @@ export class HtmlBuilder {
     jsms: Record<string, any> = {};
     content = "";
     #jsData?: Record<string, any>;
-    get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
     constructor(private ctx: RequestContext) {}
+
+    get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
     addJSFile(v: string): void { this.jsFiles[v] = true; }
     addCSSFile(v: string): void { this.cssFiles[v] = true; }
