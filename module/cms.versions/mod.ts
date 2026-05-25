@@ -402,7 +402,7 @@ export function init(app: App) {
         const ctx = e.ctx as RequestContext;
         if (!ctx.state.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
-        ctx.html.addJSM(ctx.sysURL + "cms.versions/pub/vers.mjs");
+        ctx.html.scripts.add(ctx.sysURL + "cms.versions/pub/vers.mjs");
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (draftmode) {
             // Check if draft has changes newer than live
@@ -416,7 +416,7 @@ export function init(app: App) {
                     ctx.html.jsData.cms_vers_draft_changed = true;
                 }
             }
-            ctx.html.addJSM(ctx.sysURL + "cms.versions/pub/draftmode.mjs");
+            ctx.html.scripts.add(ctx.sysURL + "cms.versions/pub/draftmode.mjs");
         }
     });
 

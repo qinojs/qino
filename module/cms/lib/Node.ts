@@ -153,8 +153,8 @@ export class Node {
         const nodeExports = mod?.exports.cms?.node;
         const modBase = ctx.appURL + "m/" + this.vs.module + "/";
         const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
-        for (const file of nodeExports?.css ?? []) ctx.html.addCSSFile(isAbsolute(file) ? file : modBase + file);
-        for (const file of nodeExports?.js ?? [])  ctx.html.addJSM(isAbsolute(file) ? file : modBase + file);
+        for (const file of nodeExports?.css ?? []) ctx.html.styles.add(isAbsolute(file) ? file : modBase + file);
+        for (const file of nodeExports?.js ?? [])  ctx.html.scripts.add(isAbsolute(file) ? file : modBase + file);
 
         const s = await this.htmlPrepared(vars);
 

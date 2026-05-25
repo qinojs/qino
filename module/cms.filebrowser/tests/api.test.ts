@@ -34,7 +34,7 @@ Deno.test("cms.filebrowser: init registers apt tree and cms-ready asset hook", a
       get: {},
       state: { editmode: true },
       sysURL: "/m/",
-      html: { addJSM: (url: string) => added.push(url) },
+      html: { scripts: { add: (url: string) => added.push(url) } },
     },
   });
   assertEquals(added, ["/m/cms.filebrowser/pub/init.mjs"]);

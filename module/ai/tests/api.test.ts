@@ -27,10 +27,11 @@ Deno.test("ai: init installs AiApi, apt tree and cms-ready hook", () => {
   assertEquals(typeof (app as never as { ai: unknown }).ai, "object");
   assertEquals((app.aptTree as never as Record<string, unknown>).ai, api);
 
+  const html = { content: "", scripts: { add(url: string) { html.content += `[${url}]`; } } };
   const ctx = {
     state: { editmode: true },
     sysURL: "/m/",
-    html: { content: "", addJSM(url: string) { this.content += `[${url}]`; } },
+    html,
   };
   handlers["cms-ready"][0]({ ctx });
   assertEquals(ctx.html.content.includes("[/m/ai/pub/chat.js]"), true);

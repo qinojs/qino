@@ -9,47 +9,47 @@ export default async function codemirrorView(file: string): Promise<string> {
     const ctx = getCtx();
     const html = ctx.html;
 
-    html.addCSSFile(ctx.sysURL + "core/pub/css/q1Rst.css");
-    html.addCSSFile("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css");
-    html.addCSSFile("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/base/base.css");
+    html.styles.add(ctx.sysURL + "core/pub/css/q1Rst.css");
+    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css");
+    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/base/base.css");
 
-    html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
-    html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
+    html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
+    html.legacyScripts.add(ctx.sysURL + "core/pub/js/qg.js");
 
     const version = "5.65.5";
     const url = `https://cdn.jsdelivr.net/npm/codemirror@${version}`;
     const min = "min.";
 
-    html.addCSSFile(`${url}/lib/codemirror.${min}css`);
-    html.addCSSFile(`${url}/theme/eclipse.${min}css`);
+    html.styles.add(`${url}/lib/codemirror.${min}css`);
+    html.styles.add(`${url}/theme/eclipse.${min}css`);
 
-    html.addJSFile(`${url}/lib/codemirror.${min}js`);
+    html.legacyScripts.add(`${url}/lib/codemirror.${min}js`);
 
-    html.addJSFile(`${url}/addon/hint/show-hint.${min}js`);
-    html.addCSSFile(`${url}/addon/hint/show-hint.${min}css`);
-    html.addJSFile(`${url}/addon/hint/javascript-hint.${min}js`);
+    html.legacyScripts.add(`${url}/addon/hint/show-hint.${min}js`);
+    html.styles.add(`${url}/addon/hint/show-hint.${min}css`);
+    html.legacyScripts.add(`${url}/addon/hint/javascript-hint.${min}js`);
 
-    html.addJSFile(`${url}/addon/scroll/annotatescrollbar.${min}js`);
-    html.addJSFile(`${url}/addon/search/matchesonscrollbar.${min}js`);
-    html.addJSFile(`${url}/addon/search/searchcursor.${min}js`);
-    html.addJSFile(`${url}/addon/search/match-highlighter.${min}js`);
+    html.legacyScripts.add(`${url}/addon/scroll/annotatescrollbar.${min}js`);
+    html.legacyScripts.add(`${url}/addon/search/matchesonscrollbar.${min}js`);
+    html.legacyScripts.add(`${url}/addon/search/searchcursor.${min}js`);
+    html.legacyScripts.add(`${url}/addon/search/match-highlighter.${min}js`);
 
-    html.addJSFile(`${url}/addon/fold/xml-fold.${min}js`);
-    html.addJSFile(`${url}/addon/edit/matchtags.${min}js`);
+    html.legacyScripts.add(`${url}/addon/fold/xml-fold.${min}js`);
+    html.legacyScripts.add(`${url}/addon/edit/matchtags.${min}js`);
 
-    html.addJSFile(`${url}/addon/edit/trailingspace.${min}js`);
+    html.legacyScripts.add(`${url}/addon/edit/trailingspace.${min}js`);
 
-    html.addJSFile(`${url}/mode/xml/xml.${min}js`);
-    html.addJSFile(`${url}/mode/javascript/javascript.${min}js`);
-    html.addJSFile(`${url}/mode/css/css.${min}js`);
-    html.addJSFile(`${url}/mode/clike/clike.${min}js`);
-    html.addJSFile(`${url}/mode/php/php.${min}js`);
-    html.addJSFile(`${url}/mode/htmlmixed/htmlmixed.${min}js`);
+    html.legacyScripts.add(`${url}/mode/xml/xml.${min}js`);
+    html.legacyScripts.add(`${url}/mode/javascript/javascript.${min}js`);
+    html.legacyScripts.add(`${url}/mode/css/css.${min}js`);
+    html.legacyScripts.add(`${url}/mode/clike/clike.${min}js`);
+    html.legacyScripts.add(`${url}/mode/php/php.${min}js`);
+    html.legacyScripts.add(`${url}/mode/htmlmixed/htmlmixed.${min}js`);
 
-    html.addJSFile(`${url}/keymap/sublime.${min}js`);
+    html.legacyScripts.add(`${url}/keymap/sublime.${min}js`);
 
-    html.addJSM(ctx.sysURL + "fileEditor/pub/main.mjs");
-    html.addCSSFile(ctx.sysURL + "fileEditor/pub/main.css");
+    html.scripts.add(ctx.sysURL + "fileEditor/pub/main.mjs");
+    html.styles.add(ctx.sysURL + "fileEditor/pub/main.css");
 
     html.title = nodePath.basename(file) + " | Editor";
 

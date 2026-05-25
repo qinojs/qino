@@ -23,7 +23,7 @@ export function init(app: App) {
     app.on("cms-ready", ({ ctx }: any) => {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.state.editmode) return;
-        ctx.html.addJSM(ctx.sysURL + "cms.filebrowser/pub/init.mjs");
+        ctx.html.scripts.add(ctx.sysURL + "cms.filebrowser/pub/init.mjs");
     });
 
     app.on("dbFile::access2", async (e: any) => {

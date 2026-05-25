@@ -128,7 +128,7 @@ export function init(app: App): void {
     const browserErrorsEnabled = await ctx.app.settings.error_report.browserErrors;
     if (!browserErrorsEnabled) return;
     ctx.html.jsData.reporterJsOptions = { url: ctx.appURL + "js-error", max: 50 };
-    ctx.html.addJSFile(reporterPath);
+    ctx.html.legacyScripts.add(reporterPath);
     ctx.cspReportUri = ctx.appURL + "csp-error";
   });
 }

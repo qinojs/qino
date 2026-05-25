@@ -10,24 +10,24 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   const app = node.app;
 
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/jQuery.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
-  ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/dom.js");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/onElement.js");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/qg.js");
+  ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
-  ctx.html.addJSM(u2Root + "u2/auto.js");
+  ctx.html.scripts.add(u2Root + "u2/auto.js");
 
   ctx.csp["style-src"][u2Root] = 1;
   ctx.csp["script-src"][u2Root] = 1;
   //ctx.csp["connect-src"]["https://cdn.jsdelivr.net"] = 1;
-  ctx.html.addCSSFile(u2Root + "css/norm/norm.css");
-  ctx.html.addCSSFile(u2Root + "css/base/base.css");
-  ctx.html.addCSSFile(u2Root + "css/classless/variables.css");
-  ctx.html.addCSSFile(u2Root + "css/classless/classless.css");
-  ctx.html.addCSSFile(ctx.sysURL + "core/pub/css/c1/box.css");
-  ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
+  ctx.html.styles.add(u2Root + "css/norm/norm.css");
+  ctx.html.styles.add(u2Root + "css/base/base.css");
+  ctx.html.styles.add(u2Root + "css/classless/variables.css");
+  ctx.html.styles.add(u2Root + "css/classless/classless.css");
+  ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
+  ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
 
   ctx.html.meta["viewport"] = "width=device-width";
 

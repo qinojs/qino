@@ -16,7 +16,7 @@ export function init(app: Pick<App, "aptTree" | "on" | "settings"> & { ai?: AiAp
   app.on("cms-ready", e => {
     const ctx = e.ctx as RequestContext;
     if (!ctx.state.editmode) return;
-    ctx.html.addJSM(ctx.sysURL + "ai/pub/chat.js");
+    ctx.html.scripts.add(ctx.sysURL + "ai/pub/chat.js");
     ctx.html.content += `
       <style>
           .cmsChatWrapper {

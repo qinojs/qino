@@ -14,6 +14,6 @@ export function init(app: App) {
         csp["img-src"] ??= {};
         csp["connect-src"]["https://*.pexels.com"] = 1;
         csp["img-src"]["https://*.pexels.com"] = 1;
-        ctx.html.addJSM(ctx.sysURL + "cms.filebrowser.pexels/pub/init.mjs");
+        ctx.html.scripts.add(ctx.sysURL + "cms.filebrowser.pexels/pub/init.mjs");
     });
 }

@@ -10,19 +10,35 @@ export class HtmlBuilder {
     titleSuffix = "";
     meta: Record<string, string> = {};
     link: Record<string, Record<string, string>> = {};
-    jsFiles: Record<string, any> = {};
-    cssFiles: Record<string, any> = {};
-    jsms: Record<string, any> = {};
+    scripts = new Set<string>();
+    styles = new Set<string>();
+    legacyScripts = new Set<string>();
     content = "";
     #jsData?: Record<string, any>;
+    #ctx: RequestContext;
 
-    constructor(private ctx: RequestContext) {}
+    constructor(ctx: RequestContext) {
+        this.#ctx = ctx;
+    }
 
     get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
-    addJSFile(v: string): void { this.jsFiles[v] = true; }
-    addCSSFile(v: string): void { this.cssFiles[v] = true; }
-    addJSM(v: string): void { this.jsms[v] = true; }
+    /** @deprecated use scripts */
+    get jsms(): Set<string> { console.warn("HtmlBuilder.jsms is deprecated, use scripts", Error().stack); return this.scripts; }
+    set jsms(files: Set<string>) { console.warn("HtmlBuilder.jsms is deprecated, use scripts", Error().stack); this.scripts = files; }
+    /** @deprecated use styles */
+    get cssFiles(): Set<string> { console.warn("HtmlBuilder.cssFiles is deprecated, use styles", Error().stack); return this.styles; }
+    set cssFiles(files: Set<string>) { console.warn("HtmlBuilder.cssFiles is deprecated, use styles", Error().stack); this.styles = files; }
+    /** @deprecated use scripts, or legacyScripts for classic scripts */
+    get jsFiles(): Set<string> { console.warn("HtmlBuilder.jsFiles is deprecated, use scripts or legacyScripts", Error().stack); return this.legacyScripts; }
+    set jsFiles(files: Set<string>) { console.warn("HtmlBuilder.jsFiles is deprecated, use scripts or legacyScripts", Error().stack); this.legacyScripts = files; }
+
+    /** @deprecated use legacyScripts.add() */
+    addJSFile(v: string): void { console.warn("HtmlBuilder.addJSFile() is deprecated, use legacyScripts.add()", Error().stack); this.legacyScripts.add(v); }
+    /** @deprecated use styles.add() */
+    addCSSFile(v: string): void { console.warn("HtmlBuilder.addCSSFile() is deprecated, use styles.add()", Error().stack); this.styles.add(v); }
+    /** @deprecated use scripts.add() */
+    addJSM(v: string): void { console.warn("HtmlBuilder.addJSM() is deprecated, use scripts.add()", Error().stack); this.scripts.add(v); }
 
     prependContent(str: string): void {
         this.content = str + this.content;
@@ -33,17 +49,13 @@ export class HtmlBuilder {
 
         for (const [name, item] of Object.entries(this.link)) {
             ret += `<link href="${hee(name)}" `;
-            for (const [k, val] of Object.entries(item)) {
-                ret += `${k}="${hee(val)}" `;
-            }
+            for (const [k, val] of Object.entries(item)) ret += `${k}="${hee(val)}" `;
             ret += ">\n";
         }
 
         ret += this.head;
 
-        for (const url of Object.keys(this.cssFiles)) {
-            ret += `<link rel=stylesheet href="${hee(url)}">\n`;
-        }
+        for (const url of this.styles) ret += `<link rel=stylesheet href="${hee(url)}">\n`;
 
         if (this.#jsData) ret += `<script type=json/c1>${JSON.stringify(this.#jsData)}</script>\n`;
 
@@ -54,19 +66,15 @@ export class HtmlBuilder {
 
         ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 
-        for (const url of Object.keys(this.jsFiles)) {
-            ret += `<script defer src="${hee(url)}"></script>\n`;
-        }
+        for (const url of this.legacyScripts) ret += `<script defer src="${hee(url)}"></script>\n`;
 
-        for (const url of Object.keys(this.jsms)) {
-            ret += `<script type=module src="${hee(url)}"></script>\n`;
-        }
+        for (const url of this.scripts) ret += `<script type=module src="${hee(url)}"></script>\n`;
 
         return ret;
     }
 
     render(): string {
-        const ctx = this.ctx;
+        const ctx = this.#ctx;
         this.jsData["qgToken"] = ctx.token;
         this.jsData["appURL"] = ctx.appURL || "/";
         this.jsData["sysURL"] = ctx.sysURL || "/m/";

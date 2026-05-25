@@ -26,7 +26,7 @@ const settingsSchema = {
 
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
   if (node.edit) {
-    ctx.html.addJSM(node.modUrl + "pub/edit.mjs");
+    ctx.html.scripts.add(node.modUrl + "pub/edit.mjs");
   }
 
   const cols = Math.min(Math.max(1, Number(node.settings.cols()) || 2), 15);

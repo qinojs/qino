@@ -26,9 +26,9 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   html.meta.description = `A "quote" & more`;
   html.meta.empty = "";
   html.link["/feed.xml?x=1&y=2"] = { rel: "alternate", title: `"Feed"` };
-  html.addCSSFile("/style.css?x=1&y=2");
-  html.addJSFile("/main.js?x=1&y=2");
-  html.addJSM("/module.mjs?x=1&y=2");
+  html.styles.add("/style.css?x=1&y=2");
+  html.legacyScripts.add("/main.js?x=1&y=2");
+  html.scripts.add("/module.mjs?x=1&y=2");
   Object.assign(html.jsData, { hello: "<world>" });
 
   const out = html.getHeader();
@@ -55,5 +55,5 @@ Deno.test("HtmlBuilder: render injects js_data defaults and content", () => {
   assertEquals(html.jsData.sysURL, "/app/m/");
   assertEquals(html.jsData.c1UseSrc, "/app/m/core/pub/js");
   assertEquals(typeof html.jsData.qgToken, "string");
-  assertEquals(html.jsData.qgToken.length, 10);
+  assertEquals(html.jsData.qgToken.length, 11);
 });

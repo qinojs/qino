@@ -5,14 +5,14 @@ export const name = "cms.layout.login";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
-  ctx.html.addCSSFile("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css");
-  ctx.html.addCSSFile("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/base/base.css");
-  ctx.html.addCSSFile(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/onElement.js");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/c1/dom.js");
-  ctx.html.addJSM(ctx.sysURL + "cms/pub/js/cms.mjs");
-  ctx.html.addJSFile(ctx.sysURL + "core/pub/js/qg.js");
+  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css");
+  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/base/base.css");
+  ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/onElement.js");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/dom.js");
+  ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
+  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/qg.js");
 
   ctx.html.meta["viewport"] = "width=device-width";
 

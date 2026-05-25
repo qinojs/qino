@@ -26,7 +26,7 @@ export function allowSettingsEditorAssets(ctx: RequestContext): void {
 
 export function addSettingsEditor(ctx: RequestContext): void {
   allowSettingsEditorAssets(ctx);
-  ctx.html.addJSM(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
+  ctx.html.scripts.add(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
 }
 
 export async function readSettings(item: any): Promise<unknown> {

@@ -43,7 +43,7 @@ export function init(app: App) {
         const ctx = e.ctx as RequestContext;
         if (!ctx.state.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
-        ctx.html.addJSM(ctx.sysURL + "cms.text/pub/init.mjs");
+        ctx.html.scripts.add(ctx.sysURL + "cms.text/pub/init.mjs");
     });
 }
 

@@ -138,19 +138,19 @@ export function init(app: App): void {
 }
 
 export function rewriteHtml(html: HtmlBuilder, appURL: string): void {
-  const rewrite = (files: Record<string, unknown>): Record<string, unknown> => {
-    const result: Record<string, unknown> = {};
-    for (const [url, val] of Object.entries(files)) {
+  const rewrite = (files: Set<string>): Set<string> => {
+    const result = new Set<string>();
+    for (const url of files) {
       if ((url.startsWith("https://") || url.startsWith("http://")) && !/[?#]/.test(url)) {
         const path = PROXY_PREFIX + url.replace(/^https?:\/\//, "");
-        result[appURL + path] = val;
+        result.add(appURL + path);
       } else {
-        result[url] = val;
+        result.add(url);
       }
     }
     return result;
   };
-  html.jsFiles  = rewrite(html.jsFiles);
-  html.jsms     = rewrite(html.jsms);
-  html.cssFiles = rewrite(html.cssFiles);
+  html.legacyScripts = rewrite(html.legacyScripts);
+  html.scripts       = rewrite(html.scripts);
+  html.styles        = rewrite(html.styles);
 }
