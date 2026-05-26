@@ -112,6 +112,9 @@ export class LangManager {
         if (ctx.dev && !txts[hash]) {
             return `*${string}*`;
         }
+        if (await this.#app.settings.core.smalltext.counter) {
+            await this.#app.db.query("UPDATE smalltext SET count = count+1 WHERE hash = ? AND namespace = ?", [hash, ns]);
+        }
         return translated;
     }
 

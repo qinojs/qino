@@ -47,6 +47,14 @@ export const settingsSchema = {
                 },
             },
         },
+        smalltext: {
+            properties: {
+                counter: {
+                    type: "boolean",
+                    description: "Whether to count usage of smalltext entries.",
+                },
+            },
+        },
     },
 };
 

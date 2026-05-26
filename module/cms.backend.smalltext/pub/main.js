@@ -6,7 +6,7 @@ cms.initCont("cms.backend.smalltext", (el) => {
   const post = (vars) => node.html.post({ vars }).then((html) => { el.outerHTML = html; });
 
   let search = el.querySelector("[data-search]")?.value ?? "";
-  let order = "count", dir = "desc", debTimer;
+  let order = "missing", dir = "desc", debTimer;
 
   const reloadTable = () =>
     node.html.part("table").post({ vars: { search, order, dir } })

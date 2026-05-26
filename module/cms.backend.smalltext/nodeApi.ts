@@ -36,7 +36,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
     }
 
     if ("toggle_counter" in vars) {
-        settings["counter"](vars.toggle_counter ? "1" : "");
+        node.app.settings.core.smalltext.counter(vars.toggle_counter ? "1" : "");
         return true;
     }
 
