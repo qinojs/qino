@@ -12,12 +12,8 @@ class TextObj {
     this.id = id;
     this.value = value;
   }
-  string() {
-    return this.value;
-  }
-  toString() {
-    return this.value;
-  }
+  string() { return this.value; }
+  toString() { return this.value; }
 }
 
 class FakeNode {

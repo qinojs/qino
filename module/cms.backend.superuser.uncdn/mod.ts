@@ -4,11 +4,12 @@ import { getCtx } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy } from "../uncdn/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.superuser.uncdn";
 export const needs = ["cms.backend", "uncdn"];
 
-export async function install({ app }: any) {
+export async function install({ app }: { app: App }) {
   const P = await backend.install(app, name);
   if (P) await P.title("en", "UnCDN Cache");
 }
@@ -59,7 +60,7 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const ctx = getCtx() as any;
+  const ctx = getCtx();
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
   const cacheDir = node.app.appPATH + CACHE_SUBDIR;

@@ -1,30 +1,25 @@
-/**
- * cms.versions/lib/CmsVers.ts
- *
- * Higher-level CMS versioning: publishCont, page cache warming.
- * qg_setting is intentionally excluded (not versioned in Deno port).
- */
-
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx } from "../../core/lib/RequestContext.ts";
 import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
-import type { Db } from "../../core/lib/Db.ts";
 import "../../cms/mod.ts";
+import type { Db } from "../../core/lib/Db.ts";
+import type { Node } from "../../cms/lib/Node.ts";
+import type { App } from "../../core/server.ts";
 
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads
  * inside a specific space/log still see correct values.
  */
-export async function pageLoadRuntimeCache(node: any): Promise<void> {
+export async function pageLoadRuntimeCache(node: Node): Promise<void> {
     await node.files();
     const ctx = getCtx();
     for (const l of ctx.app.languages.all) {
         await node.title(l);
         await node.urlSeo(l);
         const texts = await node.texts();
-        for (const Text of Object.values(texts)) {
-            await (Text as any).lang(l).get();
+        for (const text of Object.values(texts)) {
+            await text.lang(l).get();
         }
     }
 }
@@ -102,7 +97,7 @@ export async function publishCont(
     if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
 }
 
-export function preventDbManipulations(app: any): void {
+export function preventDbManipulations(app: App): void {
     const prevent = (e: any) => {
         const name: string = String(e.Table);
         if (versedTables[name] || name.startsWith("_vers_")) e.returnValue = false;

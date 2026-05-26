@@ -60,10 +60,6 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         if (await node.access() < 3) throw new HTTPException(403);
         await (await node.parent()).removeChild(node);
     } else {
-        const pSET = await node.SET;
-        await pSET?.offsetSet("__deleted_from",   String(await node.parent()));
-        await pSET?.offsetSet("__deleted_before",  String(await node.nextSibling({ type: node.vs?.["type"] })));
-        await pSET?.offsetSet("__deleted_time",    Math.floor(Date.now() / 1000));
         const TrashNode = await ctx.app.cms.node(trash);
         await TrashNode.insertBefore(node, await TrashNode.cont("main"));
         const bough = await node.bough() ?? new Map();

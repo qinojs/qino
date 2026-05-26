@@ -10,15 +10,16 @@ import { getCtx } from "../core/lib/RequestContext.ts";
 import { $item } from "../../deps.ts";
 import { readSettings } from "../core/lib/settings.ts";
 import * as fns from "./apt-exports.ts";
+import type { Node } from "./lib/Node.ts";
 
-const nodeRead  = ({ node }: any) => node.access().then((a: number) => a >= 1);
-const nodeWrite = ({ node }: any) => node.access().then((a: number) => a >= 2);
-const nodeAdmin = ({ node }: any) => node.access().then((a: number) => a >= 3);
+const nodeRead  = ({ node }: { node: Node }) => node.access().then((a: number) => a >= 1);
+const nodeWrite = ({ node }: { node: Node }) => node.access().then((a: number) => a >= 2);
+const nodeAdmin = ({ node }: { node: Node }) => node.access().then((a: number) => a >= 3);
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
 // ───── Helpers ────────────────────────────────────────────────────────────
 
-async function slimTree(node: any): Promise<any> {
+async function slimTree(node: Node): Promise<any> {
   const title = String(await (await node.title()).string() ?? "").trim();
   const children = [
     ...((await node.children({ type: "p" })) ?? new Map()).values(),
@@ -32,7 +33,7 @@ async function slimTree(node: any): Promise<any> {
   return entry;
 }
 
-async function contentBlocks(node: any): Promise<any[]> {
+async function contentBlocks(node: Node): Promise<any[]> {
   const contents = [
     ...((await node.children({ type: "c" })) ?? new Map()).values(),
   ];
@@ -43,7 +44,7 @@ async function contentBlocks(node: any): Promise<any[]> {
     const entry: any = {
       id: Number(content.id),
       module: String(content.vs?.module ?? ""),
-      name: String(content.vs?.name ?? ""),
+      name: content.vs?.name ?? undefined,
     };
     if (title) entry.title = title;
     const children = await contentBlocks(content);
@@ -69,20 +70,20 @@ const node = {
   get: {
     description: "Read node as JSON",
     access: nodeRead,
-    execute: ({ node }: any) => fns.nodeToJson(node.id),
+    execute: ({ node }: { node: Node }) => fns.nodeToJson(node.id),
   },
 
   delete: {
     description: "Delete node (may go to trash)",
     access: nodeWrite,
-    execute: ({ node }: any) => fns.nodeRemove(node),
+    execute: ({ node }: { node: Node }) => fns.nodeRemove(node),
   },
 
   sitemap: {
     get: {
       description: "Read page tree from this node (id and title only)",
       access: nodeRead,
-      execute: ({ node }: any) => slimTree(node),
+      execute: ({ node }: { node: Node }) => slimTree(node),
     },
   },
 
@@ -333,18 +334,6 @@ const node = {
         if (!cont) throw new Error("createCont failed");
         await cont.changeUser(ctx.user, 3);
         return { id: cont.id, html: String(await cont.html()) };
-      },
-    },
-  },
-
-  defaults: {
-    put: {
-      description: "Set default settings of the page",
-      access: nodeWrite,
-      input: s.object({ value: s.optional(s.record()) }),
-      execute: async ({ node, value }: any) => {
-        await (await node.SET)?.setDefault(value);
-        return { ok: true };
       },
     },
   },

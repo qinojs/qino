@@ -1,14 +1,14 @@
-// deno-lint-ignore-file no-explicit-any
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
 import { dump } from "../../deps.ts";
+import type { App } from "@qino/qino";
 
 export const name = "cms.backend.superuser.state";
 export const needs = ["cms.backend"];
 
-export async function install({ app }: any): Promise<void> {
+export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser.state");
   if (P) {
     await P.title("en", "Server State");
@@ -16,7 +16,7 @@ export async function install({ app }: any): Promise<void> {
 }
 
 async function render(node: Node): Promise<string> {
-  const ctx = getCtx() as any;
+  const ctx = getCtx();
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
   const stateHtml = await renderState(node);
@@ -33,7 +33,7 @@ async function render(node: Node): Promise<string> {
 }
 
 async function renderState(node: Node): Promise<string> {
-  const ctx = getCtx() as any;
+  const ctx = getCtx();
   if (!await ctx.user?.get?.("superuser")) return "<div></div>";
   return `
     ${dumpBox("Server / app", node.app, 2)}
@@ -62,7 +62,7 @@ function dumpBox(title: string, value: unknown, depth: number): string {
 
 function safeRender(value: unknown): string | undefined {
   if (typeof value !== "function") return undefined;
-  return `<function>function <b>${hee((value as any).name ?? "")}</b>(${hee((value as any).length)})</function>`;
+  return `<function>function <b>${hee(value.name ?? "")}</b>(${hee(value.length)})</function>`;
 }
 
 export const cms = {

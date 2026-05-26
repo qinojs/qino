@@ -1,9 +1,9 @@
 import type { Node } from "../cms/lib/Node.ts";
 
-export default async function (node: Node, vars: Record<string, unknown>, self: { reload(id: string): void | Promise<void> }): Promise<void> {
+export default async function (node: Node, vars: Record<string, unknown>): Promise<void> {
   if (await node.access() < 2) return;
 
-  let cols = Math.min(Math.max(1, Number(node.settings.cols()) || 1), 15);
+  const cols = Math.min(Math.max(1, Number(node.settings.cols()) || 1), 15);
   let rows = Math.min(Math.max(1, Number(node.settings.rows()) || 1), 300);
 
   const { do: $do } = vars;
@@ -12,13 +12,12 @@ export default async function (node: Node, vars: Record<string, unknown>, self: 
 
   if ($do === "rowRem") {
     for (let i = 0; i < rows; i++) {
-      const r = i;
       for (let j = 0; j < cols; j++) {
-        if (r > row) {
-          const T1 = await node.text(`${r}_${j}`);
+        if (i > row) {
+          const T1 = await node.text(`${i}_${j}`);
           for (const l of node.app.languages.all) {
             const value = await T1.lang(l).get();
-            await node.text(`${r - 1}_${j}`, l, value);
+            await node.text(`${i - 1}_${j}`, l, value);
           }
         }
       }
@@ -78,5 +77,4 @@ export default async function (node: Node, vars: Record<string, unknown>, self: 
     node.settings.cols(cols + 1);
   }
 
-  await self.reload(String(node.id));
 }

@@ -522,7 +522,7 @@ c1.onElement(".qgCmsFront1DiversManager", (el) => {
     this.value && apt.cms.node(String(this.value))["insert-before"].put({ id: String(pid) });
   });
   el.c1Find(".-childXML").addEventListener("change", function () {
-    apt.cms.node(pid).defaults.put({ value: { childXML: this.value } });
+    apt.cms.node(pid).settings.childXML.put({ value: this.value });
   });
 });
 c1.onElement(".qgCmsFront1SeoManager", (el) => {
@@ -533,7 +533,7 @@ c1.onElement(".qgCmsFront1SeoManager", (el) => {
   desc.addEventListener("input", function () { checkTextarea(this); });
   checkTextarea(desc);
   el.c1Find(".-seo-prio").addEventListener("change", function () {
-    apt.cms.node(this.dataset.pid).defaults.put({ value: { _seo_priority: this.value } });
+    apt.cms.node(this.dataset.pid).settings._seo_priority.put({ value: this.value });
   });
 });
 c1.onElement(".qgCmsFront1MoreManager", (el) => {

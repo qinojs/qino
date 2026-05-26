@@ -28,7 +28,7 @@ export function init(app: App) {
 
     app.on("dbFile::access2", async (e: any) => {
         if (e.access) return;
-        const ctx = getCtx() as any;
+        const ctx = getCtx();
         const userId = ctx.userId;
         if (!userId) return;
         const row = await app.db.row(

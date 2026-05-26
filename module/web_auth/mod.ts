@@ -6,6 +6,7 @@ import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
 import type { App } from "../core/server.ts";
+import type { Db } from "../core/lib/Db.ts";
 
 export const name = "web_auth";
 export { dbSchema };
@@ -35,14 +36,14 @@ async function getRp(app: App): Promise<{ rpId: string; rpName: string; expected
   return { rpId, rpName, expectedOrigin: rpId === "localhost" ? "http://localhost" : `https://${rpId}` };
 }
 
-async function storeChallenge(db: any, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
+async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
   const token = randB64(24);
   await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: now() + CHALLENGE_TTL });
   await db.exec("DELETE FROM web_auth_challenge WHERE expires < ?", [now()]);
   return token;
 }
 
-async function consumeChallenge(db: any, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
+async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
   const row = await db.row(
     "SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ? AND type = ? AND expires > ?",
     [token, type, now()],

@@ -10,11 +10,11 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   const app = node.app;
 
+  ctx.html.scripts.add(u2Root + "u2/auto.js");
+
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
   ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
-
-  ctx.html.scripts.add(u2Root + "u2/auto.js");
 
   ctx.csp["style-src"][u2Root] = 1;
   ctx.csp["script-src"][u2Root] = 1;

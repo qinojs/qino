@@ -1,10 +1,3 @@
-/**
- * cms.versions/lib/Vers.ts
- *
- * Manages versioned shadow tables (_vers_<table>) and MySQL VIEWs for
- * point-in-time / draft-space reads.
- */
-
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx, type RequestContext } from "../../core/lib/RequestContext.ts";

@@ -125,7 +125,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
     <small class="-desc">${hee(r.description)}</small>
     <span class="-access" style="color:${hee(accessColor)}">${hee(r.accessLevel)}</span>
   </h4>
-  <div class="-body" class="-route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
+  <div class="-body -route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
     <u2-tabs>
       <h3>Test</h3>
       <div>

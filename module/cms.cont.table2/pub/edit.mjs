@@ -12,10 +12,18 @@ document.documentElement.addEventListener('focus', e => {
 	pid = cms.el.pid(active);
 }, true);
 document.addEventListener('blur', () => handles.hide(), true);
-handles.rowRemove.addEventListener('click', () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'rowRem', row: active.parentNode.rowIndex}); });
-handles.rowAdd.addEventListener('click',    () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'rowAddAfter', row: active.parentNode.rowIndex}); });
-handles.colRemove.addEventListener('click', () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'colRem', col: active.cellIndex}); });
-handles.colAdd.addEventListener('click',    () => { document.activeElement.blur(); apt.cms.node(pid).api.post({do:'colAddRight', col: active.cellIndex}); });
+const actions = {
+	rowRemove: () => ({do:'rowRem',      row: active.parentNode.rowIndex}),
+	rowAdd:    () => ({do:'rowAddAfter', row: active.parentNode.rowIndex}),
+	colRemove: () => ({do:'colRem',      col: active.cellIndex}),
+	colAdd:    () => ({do:'colAddRight', col: active.cellIndex}),
+};
+for (const [key, data] of Object.entries(actions)) {
+	handles[key].addEventListener('click', () => {
+		document.activeElement.blur();
+		apt.cms.node(pid).api.post(data()).then(() => cms.reloadNode(pid));
+	});
+}
 
 cms.initCont('cms.cont.table2', function(el) {
 	el.addEventListener('paste', e => {

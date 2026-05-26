@@ -17,7 +17,7 @@ function vsTable(vs: Record<string, unknown>, exclude: string[] = []): string {
 }
 
 async function render(_node: Node): Promise<string> {
-    const ctx = getCtx() as any;
+    const ctx = getCtx();
     const usr = ctx.user;
     const client = ctx.client;
 
