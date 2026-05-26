@@ -1,9 +1,9 @@
-// deno-lint-ignore-file no-explicit-any
 import { HTTPException } from "../../deps.ts";
 import { OutputDoneError } from "../core/lib/util.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
+import type { Context as HonoContext } from "../../deps.ts";
 import type { App } from "../core/server.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
@@ -11,7 +11,7 @@ const pathBlocks = new Map<string, number>();
 
 export function initSecurity(app: App) {
   app.on("request-start", async e => {
-    const context = (e.context ?? e.ctx) as any;
+    const context = e.context as HonoContext;
     const info = gateInfo(context);
     if (isPathBlocked(info)) return deny(5);
     const set = await settings(app);
@@ -74,7 +74,9 @@ export function initSecurity(app: App) {
   });
 }
 
-function isPathBlocked(info: any) {
+type GateInfo = { ip: string; method: string; path: string; bytes_in: number; ua: string };
+
+function isPathBlocked(info: GateInfo) {
   const key = blockKey(info);
   const until = pathBlocks.get(key) ?? 0;
   if (until > Date.now()) return true;
@@ -82,7 +84,7 @@ function isPathBlocked(info: any) {
   return false;
 }
 
-function rememberPathBlock(info: any, set: Record<string, number>) {
+function rememberPathBlock(info: GateInfo, set: Record<string, number>) {
   shrinkPathBlocks(set.pathBlockMax ?? 5000);
   pathBlocks.set(blockKey(info), Date.now() + Math.max(1, set.pathBlockSeconds ?? 900) * 1000);
 }
@@ -98,18 +100,18 @@ function shrinkPathBlocks(max: number) {
   }
 }
 
-function block(ctx: any, seconds: number) {
+function block(ctx: RequestContext, seconds: number) {
   ctx.responseStatus = 429;
   ctx.responseHeaders.set("Retry-After", String(Math.max(1, Math.ceil(seconds))));
   ctx.responseBody = "Too many requests";
   throw new OutputDoneError();
 }
 
-function blockKey(info: any) {
+function blockKey(info: GateInfo) {
   return info.ip ? "ip:" + info.ip : "path:" + info.path;
 }
 
-function gateInfo(context: any) {
+function gateInfo(context: HonoContext): GateInfo {
   const ip = context.req.header("x-forwarded-for")?.split(",").shift()?.trim() || "";
   return { ip, method: context.req.method, path: safeDecode(new URL(context.req.url).pathname).slice(0, 191), bytes_in: Number(context.req.header("content-length") ?? "0") || 0, ua: context.req.header("user-agent") ?? "" };
 }
