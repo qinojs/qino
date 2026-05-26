@@ -15,10 +15,7 @@ import './dropPasteHelper.mjs';
 import './dropPaste.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 
-cms.frontend1 = { // only used by clipboard
-	c1UseSrc: sysURL+'cms.frontend.1/pub/js/frontend1',
-	c1Use
-};
+cms.frontend1 = {};
 
 /* cms.element? */
 cms.contPos = function(el) {
@@ -264,12 +261,11 @@ apt.addEventListener('error', ({ detail }) => {
 	cms.console.show(detail.error?.message || t`Fehler beim API-Aufruf`, 'error');
 });
 
-cms.frontend1.dialog = (title,body,buttons)=>{
-	c1.c1Use('dialog',()=>{
-		const dialog = new c1.dialog({title,body,buttons,class:'qgCMS'});
-		dialog.show();
-		return dialog.element;
-	})
+cms.frontend1.dialog = async (title,body,buttons)=>{
+	await import('../../../core/pub/js/c1/dialog.mjs');
+	const dialog = new c1.dialog({title,body,buttons,class:'qgCMS'});
+	dialog.show();
+	return dialog.element;
 };
 
 apt.on('PUT cms/txt/:id', ({ value }) => {

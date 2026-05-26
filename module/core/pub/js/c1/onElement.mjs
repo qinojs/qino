@@ -1,19 +1,16 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-!function(){ 'use strict';
 
 const listeners = [];
-    //const root = document.documentElement;
 const root = document;
 let Observer;
 
-c1.onElement = function(selector, options/*, disconnectedCallback*/) {
+c1.onElement = function(selector, options) {
 	if (typeof options === 'function') {
 		options = { parsed:options }
 	}
     const listener = {
         selector: selector,
 		immediate: options.immediate,
-        //disconnectedCallback: disconnectedCallback,
         elements: new WeakSet(),
     };
 	if (options.parsed) {
@@ -45,7 +42,7 @@ c1.onElement = function(selector, options/*, disconnectedCallback*/) {
 function checkListener(listener, target) {
     const els = [];
     target?.matches?.(listener.selector) && els.push(target);
-    if (loaded) { // ok? check inside node on innerHTML - only when loaded
+    if (loaded) {
         els.push(...(target||root).querySelectorAll(listener.selector));
     }
     for (const el of els) {
@@ -69,4 +66,4 @@ function checkMutations(mutations) {
 let loaded = false;
 document.addEventListener('DOMContentLoaded', () => { loaded = true; });
 
-}();
+export default c1.onElement;

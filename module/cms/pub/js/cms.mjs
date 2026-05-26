@@ -1,4 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+import '../../../core/pub/js/c1/dom.mjs';
+import '../../../core/pub/js/c1/onElement.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 
 const cms = {};
@@ -103,10 +105,8 @@ function saveTxt(e) {
 	cleanUpEl(el);
 	apt.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
-document.addEventListener('DOMContentLoaded', () => {
-	document.body.addEventListener('blur', saveTxt, true);
-	document.body.addEventListener('input', saveTxt.c1Debounce(1600));
-});
+document.body.addEventListener('blur', saveTxt, true);
+document.body.addEventListener('input', saveTxt.c1Debounce(1600));
 
 cms.reloadNode = (pid) => {
 	return apt.cms.node(pid).html.get().then(html => {

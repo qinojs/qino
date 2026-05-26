@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
   panel.loadWidget = (widget, params, cb) => {
     const widgetEl = el.c1Find('[widget="' + widget + '"]');
     if (!widgetEl) return;
-    c1.c1Use("loading", (loading) => {
+    import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
       loading.mark(widgetEl);
       params ||= {};
       params.pid ||= cms.cont.active || Page; // neu
@@ -43,14 +43,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         el.c1ZTop();
 
-        document.querySelectorAll(".qgCMS_editmode_switch").forEach((item) =>
-          item.c1ZTop()
-        );
+        document.querySelectorAll(".qgCMS_editmode_switch").forEach((item) => item.c1ZTop() );
 
         el.classList.add("-open");
-        const load = el.c1Find(
-          '> .-sidebar > [itemid="' + e.value + '"] > .-content',
-        ).getAttribute("widget");
+        const load = el.c1Find('> .-sidebar > [itemid="' + e.value + '"] > .-content').getAttribute("widget");
         load && panel.loadWidget(e.value, { pid: cms.cont.active || Page });
       } else {
         el.classList.remove("-open");
@@ -92,14 +88,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function enterSensor() {
     el.classList.add("-sidebar-open");
   }
-  el.c1Find("> .-sidebar > .-sensor").addEventListener(
-    "mouseenter",
-    enterSensor,
-  );
-  el.c1Find("> .-sidebar > .-sensor").addEventListener(
-    "touchstart",
-    enterSensor,
-  );
+  el.c1Find("> .-sidebar > .-sensor").addEventListener("mouseenter",enterSensor);
+  el.c1Find("> .-sidebar > .-sensor").addEventListener("touchstart",enterSensor);
 
   function outsideDown(e) {
     if (e.type === "mousedown" && e.button !== 0) return;
@@ -245,7 +235,7 @@ c1.onElement(".qgCmsTreeManager", async (el) => {
 
 c1.onElement(".qgCmsFileManager", (el) => {
   const pid = el.getAttribute("pid");
-  c1.c1Use("form", function () {
+  import("../../../core/pub/js/c1/form.mjs").then(() => {
     el.c1Find(".-uploadBtn").addEventListener("click", async function () {
       const files = await c1.form.fileDialog();
       upload(files);
@@ -336,7 +326,7 @@ c1.onElement(".qgCmsFileManager", (el) => {
   }
 });
 c1.onElement(".qgCmsFront1ModuleManager", (el) => {
-  c1.c1Use(["loading" /*,'tooltip'*/]); // preload
+  import("../../../core/pub/js/c1/loading.mjs"); // preload
 
   const searchInp = el.c1Find("input");
   searchInp.addEventListener("input", function () {
@@ -354,7 +344,7 @@ c1.onElement(".qgCmsFront1ModuleManager", (el) => {
     const box = e.target.closest(".-module-boxes > [itemid]");
     if (!box) return;
     const itemid = box.getAttribute("itemid");
-    c1.c1Use("loading", (loading) => {
+    import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
       loading.mark(box);
       if (box.closest(".cmsAddModels")) {
         apt.cms.node(itemid).copy.post().then(({ id }) => {

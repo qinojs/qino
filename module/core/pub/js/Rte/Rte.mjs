@@ -149,9 +149,9 @@ document.addEventListener('DOMContentLoaded',function(){
 
 // fake Selection
 {
-	let el = c1.dom.fragment(`<style>.qgRte_fakeSelection {}</style>`).firstChild;
+	const el = c1.dom.fragment(`<style>.qgRte_fakeSelection {}</style>`).firstChild;
 	document.head.append(el);
-	let style = el.sheet.cssRules[0].style;
+	const style = el.sheet.cssRules[0].style;
 	style.background = 'rgba(150,150,150,.9)';
 	style.color = '#fff';
 	Rte.fakeSelection = {
@@ -192,7 +192,7 @@ document.addEventListener('mousedown', e =>
 
 /* force li's in contenteditable uls */
 {
-	let check = function(e){
+	const check = function(e){
 		let child;
 		for (child of Rte.active.childNodes) {
 			if (child.tagName === 'LI') continue;
@@ -271,7 +271,7 @@ document.addEventListener('keydown',function(e){
 	if (e.target.tagName === 'UL') return;
 	if (e.code === 'Enter') {
 		const br = document.createElement('br');
-		let range = getSelection().c1GetRange();
+		const range = getSelection().c1GetRange();
 		range.insertNode(br);
 		br.append(document.createTextNode(' \n\n'))
 		range.setStartAfter(br)
@@ -290,7 +290,7 @@ document.addEventListener('input',function(e){
 
 /* prevent phx inside phx */
 {
-	let PHX = {P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,};
+	const PHX = {P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,};
 	document.addEventListener('input',function(e){
 		if (!e.target.isContentEditable) return;
 		const check = function(node) {

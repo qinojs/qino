@@ -1,3 +1,5 @@
+import '../../../core/pub/js/c1/dom.mjs';
+import '../../../core/pub/js/c1/scrollSync.mjs';
 import { apt } from '../../../core/pub/js/apt.js';
 
 const editable = ('qgCmsEditmode' in window); // not available if in backend but no edit-access

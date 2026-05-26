@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 !function(w,d) { 'use strict';
-if (w.c1) return // zzz if its a module
+if (w.c1) return;
 
 
 /* Waits for the execution of the function (min) and then executes the last call, but waits maximal (max) millisecunds.
@@ -89,114 +89,6 @@ if (dataEl) {
 	c1.ext(data, w, false, true);
 }
 
-// c1Use
-const CALLBACKS = 'pseudosymbol_&/%f983';
-w.c1Use = function (prop_or_opts, cb) {
-	const scope = prop_or_opts.scope || this || self;
-	const prop = prop_or_opts.property || prop_or_opts;
-    if (prop in scope && scope[prop] !== undefined) { // loadet? // (test if it is the depencency setter)
-    	cb?.call(scope, scope[prop]);
-		return scope[prop];
-    }
-	const callbacks = scope[CALLBACKS] ||= {};
-	if (callbacks[prop] && cb) { // is it loading? (and async zzz)
-	    callbacks[prop].push(cb);
-	} else { // load!
-		const src = (prop_or_opts.from || scope.c1UseSrc) + '/' +prop;
-		callbacks[prop] = [cb];
-		const onload = e => {
-            function runCallbacks(){
-                const object = c1Use.able(scope, prop);
-				if (e.type === 'error') object.c1UseFailed = true;
-				//object.c1UseSrc = src; // neu. why? ist von c1Use.able bereits gesetzt !?
-                let fn;
-            	while (fn = callbacks[prop].shift()) fn.call(scope, object);
-            }
-            if (prop in scope || prop_or_opts.from) {
-                runCallbacks();
-            } else {
-                // script geladen, aber darin wurde die property noch nicht gesetzt
-                Object.defineProperty(scope, prop, {
-                    set(value){
-                        delete this[prop];
-                        this[prop] = value;
-                        setTimeout(runCallbacks);
-                    },
-                    configurable: true
-                });
-            }
-        };
-		loadScript(src+'.js', onload, onload);
-	}
-};
-/* multiple and path
- * extend c1Use so it can have an array as first arguments
- * */
-c1Use = function (use) {
-	return function (props, cb) {
-		let scope = this || self;
-		if (!scope.c1UseSrc) { throw new Error("c1Use: the Object needs a c1UseSrc property!"); }
-        if (Array.isArray(props)) {
-        	const returns = [];
-        	let counter = 0;
-        	props.forEach((prop, index) => {
-        		c1Use.call(scope, prop, res => {
-        			counter++;
-        			returns[index] = res;
-        			if (props.length === counter) cb.apply(scope, returns);
-        		});
-        	});
-        } else if (typeof props === 'string') {
-        	if (props.startsWith('/')) { // neu beta
-        		const parts = props.match(/(.*)\/([^\/]*)\..+$/);
-        		return use.call(scope, {from:parts[1], property:parts[2]}, cb);
-        	} else {
-                const parts = props.split('.');
-                const prop = parts.pop();
-                for (const part of parts) {
-                    c1Use.able(scope, part);
-                    scope = scope[part];
-                }
-        		return use.call(scope, prop, cb);
-        	}
-        } else {
-        	return use.call(scope, props, cb);
-        }
-	};
-} (c1Use);
-
-/* return Promise */
-c1Use = function (use) {
-	return function (props, cb) {
-        const scope = this;
-        return new Promise(resolve => {
-            use.call(scope, props, (...args) => {
-                cb?.apply(scope, args);
-                resolve(args);
-            });
-        });
-	};
-} (c1Use);
-
-/* make the object useable */
-c1Use.able = function (obj, prop) {
-    return Object.assign(obj[prop] ??= {}, {
-        c1Use,
-        c1UseSrc: obj.c1UseSrc + '/' + prop,
-    });
-};
-
-function loadScript(path, cb, eb) {
-    d.head.appendChild(Object.assign(d.createElement('script'), {
-        async: false, src: path, onload: cb, onerror: eb,
-    }));
-}
-if (!w.c1UseSrc) {
-    const scripts = d.getElementsByTagName('script');
-    w.c1UseSrc = scripts[scripts.length-1].getAttribute('src').replace(/[^\/]+$/,'');
-}
-
-c1Use.able(w,'c1');
-c1Use.able(c1,'fix');
-
 }(this,document);
+
+document.cookie = "q1_dpr=" + devicePixelRatio + "; path=/; SameSite=Strict; Secure;";

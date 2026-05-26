@@ -1,7 +1,4 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-!function() { 'use strict';
-
-//console.warn('deprecated: focusIn.js use css focus-within instead');
 
 c1.focusIn = {};
 const d = document;
@@ -14,7 +11,7 @@ function onIn(e) {
 	}
 }
 function onOut() {
-    setTimeout(() => { // wait for next focus
+    setTimeout(() => {
         const active = d.activeElement;
         for (const before of d.querySelectorAll('.c1-focusIn')) {
             !before.contains(active) && before.classList.remove('c1-focusIn');
@@ -33,8 +30,7 @@ Element.prototype.c1Focus = function() {
 		if (!candidate || !candidate.classList) break;
         el = candidate;
     } while (el.classList);
-    // d.activeElement.blur(); // used? not good for contextmenu!
 	this.focus();
 };
 
-}();
+export default c1.focusIn;

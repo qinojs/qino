@@ -1,7 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-!function(){ 'use strict';
+import './onElement.mjs';
 
-if (c1.accordion) return;
 c1.accordion = true;
 c1.onElement('.c1-accordion', accordion => {
     accordion.addEventListener('click', event => {
@@ -24,7 +23,6 @@ c1.onElement('.c1-accordion', accordion => {
         }
         let panel = document.getElementById(target.getAttribute('aria-controls'));
 
-		// new
 		if (!panel) {
 			panel = target.nextElementSibling;
             target.setAttribute('aria-controls', panel.c1Id());
@@ -34,7 +32,6 @@ c1.onElement('.c1-accordion', accordion => {
 		}
 
         panel.addEventListener('transitionend',transitionend);
-        //panel.addEventListener('transitioncancel',transitionend);
         panel.style.overflow = 'hidden';
         if (isExpanded) {
 			panel.style.height = panel.c1Find('> .-content').offsetHeight+'px';
@@ -56,9 +53,10 @@ c1.onElement('.c1-accordion', accordion => {
             },10);
 
 			if (singleMode) {
-				c1.c1Use('scroll');
 				const dur = parseFloat(getComputedStyle(panel).getPropertyValue('transition-duration'))*1000;
-				setTimeout(() => c1.c1Use('scroll', () => target.scrollIntoView({behavior:'smooth'})), dur);
+				setTimeout(() => {
+					import('./scroll.mjs').then(() => target.scrollIntoView({behavior:'smooth'}));
+				}, dur);
 			}
 
         }
@@ -67,20 +65,19 @@ c1.onElement('.c1-accordion', accordion => {
 
     accordion.addEventListener('keydown', event => {
         const target = event.target;
-        const key = event.which.toString(); // todo?
-        const ctrlModifier = (event.ctrlKey && key.match(/33|34/)); // 33 = Page Up, 34 = Page Down
+        const key = event.which.toString();
+        const ctrlModifier = (event.ctrlKey && key.match(/33|34/));
 
         if (target.matches('.c1-accordion > .-trigger')) {
             const triggers = accordion.c1FindAll('> .-trigger');
-            // Up/ Down arrow | Control + Page Up/ Page Down
-            if (/38|40/.test(key) || ctrlModifier) { // 38 = Up, 40 = Down
+            if (/38|40/.test(key) || ctrlModifier) {
                 const index = triggers.indexOf(target);
                 const direction = /34|40/.test(key) ? 1 : -1;
                 const newIndex = index + direction;
                 triggers[newIndex]?.focus();
                 event.preventDefault();
             } else if (/35|36|13|32/.test(key)) {
-                switch (key) { // 35 = End, 36 = Home, 13 = Enter, 32 = Space
+                switch (key) {
                     case '36': triggers[0].focus(); break;
                     case '35': triggers[triggers.length - 1].focus(); break;
                     case '13':
@@ -90,16 +87,12 @@ c1.onElement('.c1-accordion', accordion => {
                 event.preventDefault();
             }
         } else if (ctrlModifier) {
-            // Control + Page Up/ Page Down keyboard operations
-            // Catches events that happen inside of panels
             const panel = target.closest('.c1-accordion > .-panel');
             if (panel?.parentNode === accordion) {
                 panel.previousElementSibling.focus();
-                //panel.previousElementSibling.c1Find('button').focus();
             }
         }
     });
-	// prevent dblclick-selection
 	accordion.addEventListener('mousedown', e => {
 		if (e.detail < 2) return;
         const trigger = e.target.closest('.c1-accordion > .-trigger');
@@ -122,5 +115,4 @@ function transitionend(e){
 	e.target.style.overflow = '';
 }
 
-
-}();
+export default c1.accordion;

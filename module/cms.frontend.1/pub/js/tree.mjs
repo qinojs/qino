@@ -2,10 +2,16 @@
 import { apt } from '../../../core/pub/js/apt.js';
 import { t } from '../../../core/pub/js/t.mjs';
 
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.append(s);
+  });
+}
+
 window.cmsTreeInit = async (json) => {
-  c1Use.able(window, "jQuery");
-  c1Use.able(jQuery, "fn");
-  await jQuery.fn.c1Use("dynatree");
+  await loadScript(sysURL + 'core/pub/js/jQuery/fn/dynatree.js');
 
   // var dblClick = false;
   cms.Tree = $("#cmsTreeContainer").dynatree({

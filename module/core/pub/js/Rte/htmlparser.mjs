@@ -2,25 +2,25 @@ let startTag = /^<([\w\:\-]+)((?:\s+[\w\:\-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*'
     endTag = /^<\/([\w\:\-]+)[^>]*>/,
     attr = /([\w\:\-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
 // Empty Elements - HTML 4.01
-let empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
+const empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
 
 // Block Elements - HTML 4.01
-let block = makeMap("address,applet,blockquote,button,center,dd,del,dir,div,dl,dt,fieldset,form,frameset,hr,iframe,ins,isindex,li,map,menu,noframes,noscript,object,ol,p,pre,script,table,tbody,td,tfoot,th,thead,tr,ul");
+const block = makeMap("address,applet,blockquote,button,center,dd,del,dir,div,dl,dt,fieldset,form,frameset,hr,iframe,ins,isindex,li,map,menu,noframes,noscript,object,ol,p,pre,script,table,tbody,td,tfoot,th,thead,tr,ul");
 
 // Inline Elements - HTML 4.01
-let inline = makeMap("a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,object,q,s,samp,script,select,small,span,strike,strong,sub,sup,textarea,tt,u,var");
+const inline = makeMap("a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,object,q,s,samp,script,select,small,span,strike,strong,sub,sup,textarea,tt,u,var");
 
 // Elements that you can, intentionally, leave open
 // (and which close themselves)
-let closeSelf = makeMap("colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr");
+const closeSelf = makeMap("colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr");
 
 // Attributes that have their values filled in disabled="disabled"
-let fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected");
+const fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected");
 
 // Special Elements (can contain anything)
-let special = makeMap("script,style");
+const special = makeMap("script,style");
 
-let HTMLParser  = function(html, handler) {
+const HTMLParser  = function(html, handler) {
 	let index, chars, match, stack = [], last = html;
 	stack.last = function() {
 		return this[ this.length - 1 ];
@@ -71,7 +71,7 @@ let HTMLParser  = function(html, handler) {
 			if (chars) {
 	            //$log("HTMLParser: other ");
 				index = html.indexOf("<");
-				let text = index < 0 ? html : html.substring( 0, index );
+				const text = index < 0 ? html : html.substring( 0, index );
 				html = index < 0 ? "" : html.substring( index );
 				if (handler.chars) {
 	                //$log("HTMLParser: chars " + text);
@@ -116,10 +116,10 @@ let HTMLParser  = function(html, handler) {
 			stack.push( tagName );
 
 		if (handler.start) {
-			let attrs = [];
+			const attrs = [];
 
 			rest.replace(attr, function(match, name) {
-				let value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
+				const value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
 
 				attrs.push({
 					name: name,

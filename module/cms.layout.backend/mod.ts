@@ -12,9 +12,6 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/dom.js");
-  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/onElement.js");
-  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/qg.js");
   ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
   ctx.html.scripts.add(u2Root + "u2/auto.js");

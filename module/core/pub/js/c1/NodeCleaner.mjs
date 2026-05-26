@@ -145,6 +145,8 @@ class NodeCleaner {
 
 c1.NodeCleaner = NodeCleaner;
 
+export default NodeCleaner;
+
 function removeUnusedStyles(el) {
 	// be sure the node is attached to the document
 	var computed = getComputedStyle(el),

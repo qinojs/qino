@@ -37,3 +37,5 @@ Object.defineProperty(c1,'globalContextMenu',{
     },
     configurable: true
 });
+
+export default c1.contextMenu;

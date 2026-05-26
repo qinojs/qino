@@ -117,3 +117,5 @@ function clientDim(el) {
         width: innerWidth,
     }
 }
+
+export default c1.scrollSync;

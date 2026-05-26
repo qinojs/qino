@@ -1,4 +1,3 @@
-'use strict';
 c1.form = {
     serializeObject: function(element) {
         let els;
@@ -15,7 +14,7 @@ c1.form = {
             if (!name) return;
             const matches = name.match(/(^[^\[]+|\[[^\]]*\])/g);
             let active = object;
-            for (let i=0, match; match=matches[i++];) { // walk path (item[xy][])
+            for (let i=0, match; match=matches[i++];) {
                 if (i>1) match = match.replace(/(^\[|\]$)/g,'');
                 if (matches.length === i) {
                     if (Array.isArray(active)) active.push(value);
@@ -40,7 +39,7 @@ c1.form = {
         }
         return el.value;
     },
-    fileDialog: function(options){ // todo: polyfill and use showOpenFilePicker()
+    fileDialog: function(options){
         options = Object.assign({
             multiple: true,
             accept: '',
@@ -50,10 +49,10 @@ c1.form = {
         inp.multiple = options.multiple;
         inp.accept   = options.accept;
         inp.style.cssText = 'position:absolute; left:-999px; opacity:0.01';
-        document.body.append(inp); // ios: append to dom
-        inp.click(); // safari does not accept a delay, setTimeout needed for firefox anymore?
+        document.body.append(inp);
+        inp.click();
         return new Promise(resolve => {
-            setTimeout(() => { // bug, change sometimes not fired without this timeout (chrome tested)
+            setTimeout(() => {
                 inp.addEventListener('change', () => {
                     resolve(inp.files);
                     inp.remove();
@@ -63,8 +62,6 @@ c1.form = {
     }
 };
 
-
-// helper triggers on blur if really changed // todo: c1OnFocusChecked
 document.addEventListener('focusin', e => {
     e.target.c1OnFocusValue = e.target.value;
     e.target.c1OnFocusChecked = e.target.checked;
@@ -73,3 +70,5 @@ document.addEventListener('focusout', e => {
     if (e.target.c1OnFocusValue === e.target.value && e.target.c1OnFocusChecked === e.target.checked) return;
     e.target.dispatchEvent(new CustomEvent('c1-changed', {bubbles: true}));
 }, true);
+
+export default c1.form;

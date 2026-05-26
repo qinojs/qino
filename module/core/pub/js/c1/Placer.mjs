@@ -151,3 +151,5 @@ c1.Placer = class {
         return parent;
     }
 };
+
+export default c1.Placer;

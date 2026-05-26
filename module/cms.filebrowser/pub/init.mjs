@@ -1,5 +1,5 @@
 import { apt } from '../../core/pub/js/apt.js';
-'use strict';
+
 c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
     let newButton = c1.dom.fragment('<button>select').firstChild;
     el.after(newButton);
@@ -45,7 +45,11 @@ cms.fileBrowser = class {
         this.options = options;
     }
     async show(){
-        await c1.c1Use(['dialog','loading','form']);
+        await Promise.all([
+            import('../../core/pub/js/c1/dialog.mjs'),
+            import('../../core/pub/js/c1/loading.mjs'),
+            import('../../core/pub/js/c1/form.mjs'),
+        ]);
         const body =
         '<div>'+
             '<input type=search placeholder="suchen..."> '+

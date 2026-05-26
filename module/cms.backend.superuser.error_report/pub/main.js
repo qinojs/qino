@@ -1,5 +1,6 @@
+const { apt } = await import(sysURL + "core/pub/js/apt.js");
+
 cms.initCont("cms.backend.superuser.error_report", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
   const pid = Number(el.dataset.pid);
 
   const reload = (vars, btn) => {

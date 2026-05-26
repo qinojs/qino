@@ -165,13 +165,10 @@ export function init(app: App) {
 
     if (access < 2) return;
     ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-    ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/dom.js");
     ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/off.css");
 
     const editmode = access > 1 && Number(await settings.cms.editmode);
     if (editmode) {
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/qg.js");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/onElement.js");
       ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
       ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
       ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/ui.js");

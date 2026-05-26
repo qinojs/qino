@@ -53,7 +53,6 @@ Deno.test("HtmlBuilder: render injects js_data defaults and content", () => {
   assertEquals(out.includes("<main>Hi</main>"), true);
   assertEquals(html.jsData.appURL, "/app/");
   assertEquals(html.jsData.sysURL, "/app/m/");
-  assertEquals(html.jsData.c1UseSrc, "/app/m/core/pub/js");
   assertEquals(typeof html.jsData.qgToken, "string");
   assertEquals(html.jsData.qgToken.length, 11);
 });

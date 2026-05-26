@@ -1,24 +1,20 @@
-!function(){ 'use strict';
-
 c1.loading = {
 	mark(el, opt) {
 		if (!el.length) return c1.loading._markElement(el, opt);
 		const dones = Array.from(el).map(el=>c1.loading._markElement(el, opt))
-		return ()=>{ for (let done of dones) done(); }
+		return ()=>{ for (const done of dones) done(); }
 	},
 	_markElement(el, {delay = 0, pointerEvents = false} = {}) {
 		el.loadingTasks ??= 0;
 		el.loadingTasks++;
-		if (el.loadingTasks === 1) { // new, already loading
+		if (el.loadingTasks === 1) {
 			el.c1Loading_oldCssText = el.style.cssText;
 			clearTimeout(el.c1ShowLoadingTO);
 			el.c1ShowLoadingTO = setTimeout(()=>{
 				el.classList.add('c1Loading');
-				//if (el.hasAttribute('aria-life')) el.setAttribute('aria-busy','true');
 				if (!el.offsetHeight) el.style.minHeight = '36px';
 				if (!el.offsetWidth)  el.style.minWidth = '36px';
-				//if (el.offsetHeight <= 36) el.style.setProperty('background-size', (el.offsetHeight*.6)+'px', 'important'); // needed? makes problems in cms-panel-accorions
-				el.style.backgroundImage = 'url("data:image/svg+xml;utf8,'+encodeURIComponent(svg.replace('"currentColor"', '"'+getComputedStyle(el).color+'"'))+'")'; // use currentcolor:
+				el.style.backgroundImage = 'url("data:image/svg+xml;utf8,'+encodeURIComponent(svg.replace('"currentColor"', '"'+getComputedStyle(el).color+'"'))+'")';
 			},delay);
 			if (!pointerEvents) {
 				el.addEventListener('touchstart', this, true);
@@ -33,7 +29,6 @@ c1.loading = {
 		clearTimeout(el.c1ShowLoadingTO);
 		if (el.loadingTasks === 0) {
 			el.classList.remove('c1Loading');
-			//el.removeAttribute('aria-busy');
 			el.style.cssText = el.c1Loading_oldCssText;
 			el.c1Loading_oldCssText = undefined;
 			el.removeEventListener('touchstart', this, true);
@@ -43,7 +38,7 @@ c1.loading = {
 	},
 	handleEvent(e){
 		e.stopPropagation();
-		e.cancelable && e.preventDefault(); // prevent warnings
+		e.cancelable && e.preventDefault();
 	}
 };
 
@@ -70,7 +65,6 @@ const svg =
 
 const css =
 '.c1Loading { '+
-//'  background-image:url("data:image/svg+xml;utf8,'+encodeURIComponent(svg)+'") !important; '+// will be overwritten on element-level
 '  background-repeat: no-repeat !important; ' +
 '  background-position: 50% !important; ' +
 '  background-position-y: min(50%, 10rem) !important; '+
@@ -78,7 +72,6 @@ const css =
 '  cursor: wait !important; ' +
 '} ' +
 '.c1Loading > * { ' +
-//'  pointer-events: none !important; ' +
 '  opacity:.1; ' +
 '  cursor: wait !important; ' +
 '} ' +
@@ -102,4 +95,4 @@ const styleEl = document.createElement('style');
 styleEl.textContent = css;
 document.head.append(styleEl);
 
-}();
+export default c1.loading;

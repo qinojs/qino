@@ -23,23 +23,6 @@ export class HtmlBuilder {
 
     get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
-    /** @deprecated use scripts */
-    get jsms(): Set<string> { console.warn("HtmlBuilder.jsms is deprecated, use scripts", Error().stack); return this.scripts; }
-    set jsms(files: Set<string>) { console.warn("HtmlBuilder.jsms is deprecated, use scripts", Error().stack); this.scripts = files; }
-    /** @deprecated use styles */
-    get cssFiles(): Set<string> { console.warn("HtmlBuilder.cssFiles is deprecated, use styles", Error().stack); return this.styles; }
-    set cssFiles(files: Set<string>) { console.warn("HtmlBuilder.cssFiles is deprecated, use styles", Error().stack); this.styles = files; }
-    /** @deprecated use scripts, or legacyScripts for classic scripts */
-    get jsFiles(): Set<string> { console.warn("HtmlBuilder.jsFiles is deprecated, use scripts or legacyScripts", Error().stack); return this.legacyScripts; }
-    set jsFiles(files: Set<string>) { console.warn("HtmlBuilder.jsFiles is deprecated, use scripts or legacyScripts", Error().stack); this.legacyScripts = files; }
-
-    /** @deprecated use legacyScripts.add() */
-    addJSFile(v: string): void { console.warn("HtmlBuilder.addJSFile() is deprecated, use legacyScripts.add()", Error().stack); this.legacyScripts.add(v); }
-    /** @deprecated use styles.add() */
-    addCSSFile(v: string): void { console.warn("HtmlBuilder.addCSSFile() is deprecated, use styles.add()", Error().stack); this.styles.add(v); }
-    /** @deprecated use scripts.add() */
-    addJSM(v: string): void { console.warn("HtmlBuilder.addJSM() is deprecated, use scripts.add()", Error().stack); this.scripts.add(v); }
-
     prependContent(str: string): void {
         this.content = str + this.content;
     }
@@ -78,7 +61,6 @@ export class HtmlBuilder {
         this.jsData["qgToken"] = ctx.token;
         this.jsData["appURL"] = ctx.appURL || "/";
         this.jsData["sysURL"] = ctx.sysURL || "/m/";
-        this.jsData["c1UseSrc"] = (ctx.sysURL || "/m/") + "core/pub/js";
 
         const { lang } = ctx;
         return `<!DOCTYPE HTML>\n<html lang=${lang}>\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;

@@ -1,10 +1,9 @@
 // polyfill
+import '../focusIn.mjs';
 
 document.addEventListener('DOMContentLoaded',()=>{
 	const support = document.body.contextMenu !== undefined;
 	if (support) return;
-
-	c1.c1Use('focusIn',()=>{});
 
 	document.documentElement.addEventListener('contextmenu', e=>{
 		if (e.shiftKey) return;

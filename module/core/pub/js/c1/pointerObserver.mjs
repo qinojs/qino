@@ -1,5 +1,4 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-!function() { 'use strict';
 
 const d = document;
 let touching = false;
@@ -32,24 +31,10 @@ const Observer = function(el, options) {
 		if (self.options.touch) {
 			d.addEventListener('touchmove', move, {passive: self.options.passive});
             d.addEventListener('touchend' , stop);
-//	            d.addEventListener('touchstart', gstart);
 		}
 		self.onstart?.(e);
 		touching = true;
 	};
-/* qg todo?
-	gstart = function(e) {
-		var pointer = e.touches[0];
-		var finger2 = e.touches[1];
-		if (finger2) {
-			var deltaX = pointer.pageX - finger2.pageX;
-			var deltaY = pointer.pageY - finger2.pageY;
-			self.degStart = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-			self.distStart = Math.sqrt(deltaX*deltaX + deltaY*deltaY);
-			self.ongesturestart?.(e);
-		}
-	},
-*/
 	const move = function(e) {
 		let pointer = e;
 
@@ -93,7 +78,6 @@ const Observer = function(el, options) {
 		d.removeEventListener('dragstart', stop);
         d.removeEventListener('touchmove', move);
 		d.removeEventListener('touchend' , stop);
-//			d.removeEventListener('touchstart', gstart);
 		touching = false;
 	};
 	if (!touching) {
@@ -105,12 +89,4 @@ Observer.prototype.lastDiff  = function() { return { x: this.pos.x - this.last.x
 Observer.prototype.startDiff = function() { return { x: this.pos.x - this.posStart.x, y: this.pos.y - this.posStart.y }; };
 c1.pointerObserver = Observer;
 
-
-}();
-
-/* ussage *
-observer = new c1.pointerObserver(el,{mouse:true,touch:false});
-observer.onmove = function(e) {
-	console.log(this.pos);
-}
-/**/
+export default c1.pointerObserver;

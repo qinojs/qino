@@ -106,7 +106,7 @@ Rte.ui.setItem('Link', {
 const externMediaDialog = async function(txtEl,medias) {
 	const [pid] = await Promise.all([
 		cms.txtIdToPid( txtEl.getAttribute('cmstxt') ),
-		c1.c1Use('dialog'),
+		import('../../../core/pub/js/c1/dialog.mjs'),
 	]);
 	const dialog = new c1.dialog({
 		class:'qgCMS',

@@ -12,7 +12,7 @@ window.cms_image2 = {
 
         let img = null;
         // add image
-    	const noscript = c1Img.c1Find('>noscript');
+    	const noscript = c1Img.querySelector(':scope>noscript');
 
 		if (noscript) {
             const tpl = document.createElement('template');

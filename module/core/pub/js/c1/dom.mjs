@@ -1,6 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-!function() { 'use strict';
-if (c1.dom) return; // zzz if its a module
+
 c1.dom = {};
 
 const d = document;
@@ -37,7 +36,7 @@ const poly = {
             myZ=0;
         while (child=children[--i]) {
             let childZ = getComputedStyle(child).getPropertyValue('z-index') || 0;
-			if (child.style.zIndex > childZ) childZ = child.style.zIndex; // neu 5.16, computed after paint => check for real
+			if (child.style.zIndex > childZ) childZ = child.style.zIndex;
 			if (childZ === 'auto') childZ = 0;
             if (child === this) myZ = childZ;
 			else maxZ = Math.max(maxZ, childZ);
@@ -54,4 +53,4 @@ c1.ext(poly, Text.prototype, false, true);
 
 c1.dom.ready = new Promise(res => document.addEventListener('DOMContentLoaded', res));
 
-}();
+export default c1.dom;

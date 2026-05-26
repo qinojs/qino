@@ -14,7 +14,6 @@ export default async function codemirrorView(file: string): Promise<string> {
     html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.6/css/base/base.css");
 
     html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-    html.legacyScripts.add(ctx.sysURL + "core/pub/js/qg.js");
 
     const version = "5.65.5";
     const url = `https://cdn.jsdelivr.net/npm/codemirror@${version}`;

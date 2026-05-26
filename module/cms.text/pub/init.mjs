@@ -53,7 +53,7 @@ const showEditor = async function(el) {
         const btn = e.target;
         const target_lang = btn.closest('.-language').c1Find('>[cmstxt]').getAttribute('cmslang');
         const source_lang = btn.getAttribute('source_lang');
-        const [loading] = await c1.c1Use('loading');
+        const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
         const unmark = loading.mark(e.target.closest('.-language'));
         const done = await apt['cms.text'].text(tid).translate.post({ target_lang, source_lang });
         dialog.close();
@@ -94,7 +94,7 @@ const showEditor = async function(el) {
             const textContent = textEl.tagName === 'INPUT' ? textEl.value : textEl.innerHTML;
             
             // Restore the text
-            const [loading] = await c1.c1Use('loading');
+            const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
             const unmark = loading.mark(historyItem);
             const success = await apt.cms.txt(parseInt(tid)).put({ value: textContent, lang });
             unmark();
@@ -182,7 +182,7 @@ c1.onElement('.qgCmsFront1MoreManager', el=>{
     fragment.querySelector('form').addEventListener('submit',async e=>{
         e.preventDefault();
         //const inps = e.target.elements; zzz
-        await c1.c1Use('loading');
+        await import('../../core/pub/js/c1/loading.mjs');
 		const sourceLang = e.submitter.name;
         const done = c1.loading.mark(e.target);
         const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
