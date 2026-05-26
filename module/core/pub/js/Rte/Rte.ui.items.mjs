@@ -17,15 +17,20 @@ x.addEventListener('mousedown', function() {
 */
 import './Rte.ui.mjs';
 
+const blocklessElements = {
+    'P':1,'H1':1,'H2':1,'H3':1,'H4':1,'H5':1,'H6':1,
+    'SPAN':1,'BUTTON':1,'B':1,'I':1,'STRONG':1,'LABEL':1,'A':1,
+};
+
 Rte.ui.setItem('Bold', 					{cmd:'bold',		shortcut:'b', xenable:':not(img)'} );
 Rte.ui.setItem('Italic', 				{cmd:'italic',		shortcut:'i', xenable:':not(img)'} );
-Rte.ui.setItem('Insertunorderedlist',	{cmd:'insertunorderedlist',shortcut:'8', enable(){ return !c1.rte.blocklessElements[Rte.active.tagName]; } });
-Rte.ui.setItem('Insertorderedlist',		{cmd:'insertorderedlist',shortcut:'9', enable(){ return !c1.rte.blocklessElements[Rte.active.tagName]; } });
+Rte.ui.setItem('Insertunorderedlist',	{cmd:'insertunorderedlist',shortcut:'8', enable(){ return !blocklessElements[Rte.active.tagName]; } });
+Rte.ui.setItem('Insertorderedlist',		{cmd:'insertorderedlist',shortcut:'9', enable(){ return !blocklessElements[Rte.active.tagName]; } });
 Rte.ui.setItem('Underline', 			{cmd:'underline',	shortcut:'u', xenable:':not(img)'});
 Rte.ui.setItem('Undo', 					{cmd:'undo',	check:false});
 Rte.ui.setItem('Redo', 					{cmd:'redo',	check:false});
 Rte.ui.setItem('Unlink', 				{cmd:'unlink',	check:false});
-Rte.ui.setItem('Hr', 					{cmd:'inserthorizontalrule', check:false, enable(){ return !c1.rte.blocklessElements[Rte.active.tagName]; } });
+Rte.ui.setItem('Hr', 					{cmd:'inserthorizontalrule', check:false, enable(){ return !blocklessElements[Rte.active.tagName]; } });
 Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 
 /* Headings */
@@ -44,7 +49,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 			opts.previousElementSibling.innerHTML = Rte.element ? stat : 'Format';
 		},
 		enable(e) {
-			return !c1.rte.blocklessElements[Rte.active.tagName];
+			return !blocklessElements[Rte.active.tagName];
 		}
 	});
 	opts.innerHTML =
@@ -264,7 +269,7 @@ Rte.ui.setItem('Table', {
 		getSelection().collapse(table.c1Find('td'),0);
 	},
 	enable(){
-		return !c1.rte.blocklessElements[Rte.active.tagName];
+		return !blocklessElements[Rte.active.tagName];
 	}
 });
 /* delete Element */

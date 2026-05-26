@@ -44,16 +44,16 @@ export class TableHandles {
 		this.root.remove();
 	}
 	positionize(td) {
-		var tr = td.parentNode;
+		const tr = td.parentNode;
 		if (!tr) return;
-		var Cpos = td.getBoundingClientRect();
+		let Cpos = td.getBoundingClientRect();
 		Cpos = {
 			top:  Cpos.top + scrollY,
 			left: Cpos.left + scrollX,
 		}
-		var table = tr.closest('table');
+		const table = tr.closest('table');
 		if (!table) return;
-		var Tpos = table.getBoundingClientRect();
+		let Tpos = table.getBoundingClientRect();
 		Tpos = {
 			top:  Tpos.top + scrollY,
 			left: Tpos.left + scrollX,

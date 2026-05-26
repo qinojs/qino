@@ -46,7 +46,7 @@ cms.fileBrowser = class {
     }
     async show(){
         await c1.c1Use(['dialog','loading','form']);
-        var body =
+        const body =
         '<div>'+
             '<input type=search placeholder="suchen..."> '+
             '<button class=-browse '+(this.options.local?'':'hidden')+'>Lokale Dateien</button>'+
@@ -93,15 +93,15 @@ cms.fileBrowser = class {
             buttons.push({
                 title:'Ok',
                 then: async ()=>{
-                    let elements = Array.from(dialog.element.c1FindAll('label[itemid]')).filter(item=>item.c1Find('[type=checkbox]').checked);
-                    let items = elementsToItems(elements);
+                    const elements = Array.from(dialog.element.c1FindAll('label[itemid]')).filter(item=>item.c1Find('[type=checkbox]').checked);
+                    const items = elementsToItems(elements);
                     this.trigger('select', items);
                     dialog.hide();
                     dialog.element.remove();
                 }
             })
         }
-        var dialog = new c1.dialog({
+        const dialog = new c1.dialog({
             title:'Filebrowser',
             body,
             class:'qgCMS cmsFileBrowser',
@@ -109,16 +109,16 @@ cms.fileBrowser = class {
         });
 
         dialog.show();
-        var list = dialog.element.c1Find('.-list.-main');
+        const list = dialog.element.c1Find('.-list.-main');
 
         if (!this.options.multiple) {
 
             list.after(c1.dom.fragment('<style>.cmsFileBrowser .-list label > [type=checkbox] { display:none; }</style>'));
 
             dialog.element.addEventListener('click',e=>{
-                let target = e.target.closest('label[itemid]')
+                const target = e.target.closest('label[itemid]')
                 if (!target) return;
-                let items = elementsToItems([target]);
+                const items = elementsToItems([target]);
                 this.trigger('select',items);
                 dialog.hide();
                 dialog.element.remove();
@@ -127,9 +127,9 @@ cms.fileBrowser = class {
         }
 
         function elementsToItems(elements){
-            let items = {dbFiles:[], urls:[]};
+            const items = {dbFiles:[], urls:[]};
             Array.from(elements).forEach(item=>{
-                let type = item.getAttribute('data-type')+'s';
+                const type = item.getAttribute('data-type')+'s';
                 items[type] ||= [];
                 items[type].push(item.getAttribute('itemid'));
             });
@@ -141,19 +141,19 @@ cms.fileBrowser = class {
         }.c1Debounce(600));
 
         dialog.element.c1Find('.-browse').addEventListener('click', async e=>{
-            var files = await c1.form.fileDialog({accept:this.options.accept, multiple:this.options.multiple});
+            const files = await c1.form.fileDialog({accept:this.options.accept, multiple:this.options.multiple});
             this.trigger('select', { files, dbFiles:[], urls:[] });
             dialog.hide();
             dialog.element.remove();
         });
 
 
-        var search = needle=>{
+        const search = needle=>{
             c1.loading.mark(list);
             apt['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result=>{
                 c1.loading.done(list);
 
-                let has = {};
+                const has = {};
                 Array.from(list.children).forEach(label=>{
                     const checkbox = label.c1Find('[type=checkbox]');
                     if (checkbox?.checked) {
@@ -163,9 +163,9 @@ cms.fileBrowser = class {
                     }
                 })
 
-                for (let item of result) {
+                for (const item of result) {
                     if (has[item.id]) continue;
-                    let el = c1.dom.fragment(
+                    const el = c1.dom.fragment(
                         '<label data-type=dbFile itemid="'+item.id+'">'+
                             '<input type="checkbox" style="position:absolute; top:8px; left:8px">'+
                             '<div class=-title>'+

@@ -2,7 +2,7 @@
 'use strict';
 window.qg = {}; // needed?
 
-
+/*
 window.Ask = function(obj, opt) {
 	opt ||= {};
 	Ask.trigger('start', obj);
@@ -142,5 +142,7 @@ $fn.run = function(cb, options) {
 	return request;
 };
 c1.ext(c1.Eventer, $fn);
+
+*/
 
 document.cookie = "q1_dpr=" + devicePixelRatio + "; path=/; SameSite=Strict; Secure;";

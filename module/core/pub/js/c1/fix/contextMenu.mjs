@@ -1,5 +1,4 @@
 // polyfill
-// todo aria https://www.w3.org/WAI/GL/wiki/Using_ARIA_menus
 
 document.addEventListener('DOMContentLoaded',()=>{
 	const support = document.body.contextMenu !== undefined;

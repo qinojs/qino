@@ -5,8 +5,8 @@ export const name = "cms.layout.login";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
-  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/norm/norm.css");
-  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.5/css/base/base.css");
+  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.6/css/norm/norm.css");
+  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.6/css/base/base.css");
   ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1/onElement.js");
