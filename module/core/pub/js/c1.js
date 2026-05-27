@@ -91,4 +91,4 @@ if (dataEl) {
 
 }(this,document);
 
-document.cookie = "q1_dpr=" + devicePixelRatio + "; path=/; SameSite=Strict; Secure;";
+document.cookie = "q1_dpr=" + devicePixelRatio + "; path=/; SameSite=Strict" + (location.protocol === "https:" ? "; Secure" : "") + ";";

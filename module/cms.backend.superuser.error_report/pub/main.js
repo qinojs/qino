@@ -6,7 +6,7 @@ cms.initCont("cms.backend.superuser.error_report", async (el) => {
   const reload = (vars, btn) => {
     if (btn) btn.disabled = true;
     apt.cms.node(pid).html.post({ vars }).then((html) => {
-      el.querySelector(".-pid" + pid).outerHTML = html;
+      el.outerHTML = html;
     });
   };
 
@@ -20,7 +20,7 @@ cms.initCont("cms.backend.superuser.error_report", async (el) => {
     const del = e.target.closest("[data-delete-entry]");
     if (del) {
       apt.cms.node(pid).html.post({ vars: { delete: Object.assign({}, del.dataset) } }).then((html) => {
-        el.querySelector(".-pid" + pid).outerHTML = html;
+        el.outerHTML = html;
       });
     }
   });

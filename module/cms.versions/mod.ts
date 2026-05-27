@@ -27,7 +27,7 @@ import {
     versTable, view, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
-import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
+import { getCtx, requestStorage, type RequestContext } from "../core/lib/RequestContext.ts";
 import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
@@ -97,7 +97,7 @@ export function init(app: App) {
     // ─── History capture: insert/update ──────────────────────────────────────
     // Writes a REPLACE INTO _vers_* for every tracked table mutation.
     const catchInsertUpdate = async (e: any) => {
-        const ctx = getCtx();
+        const ctx = requestStorage.getStore();
         if (!ctx?.logId) return;
         const tableName: string = String(e.Table);
         // Handle writes directly to _vers_* (log=0 slot)
@@ -123,8 +123,8 @@ export function init(app: App) {
 
     // ─── History capture: delete ──────────────────────────────────────────────
     app.db.on("table::delete-after", async (e: any) => {
-        const ctx = getCtx();
-        if (!ctx.logId) return;
+        const ctx = requestStorage.getStore();
+        if (!ctx?.logId) return;
         const tableName: string = String(e.Table);
         if (tableName.startsWith("_vers_") && !e.data?._vers_log) return;
         const vt = await versTable(ctx.app.db, tableName);
@@ -143,7 +143,7 @@ export function init(app: App) {
 
     // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
     app.db.on("table::insert-after", async (e: any) => {
-        const ctx = getCtx();
+        const ctx = requestStorage.getStore();
         if (!ctx) return;
         if (getCmsVers(ctx).versSpace) return; // only in live space
         const tableName: string = String(e.Table);
@@ -219,7 +219,7 @@ export function init(app: App) {
     // Some `page` fields (sort, basis, access, title_id) must stay in sync
     // with the live table even when we're in a space.
     app.db.on("table::update-before", async (e: any) => {
-        const ctx = getCtx();
+        const ctx = requestStorage.getStore();
         if (!ctx) return;
         if (!getCmsVers(ctx).versSpace) return;
         if (String(e.Table) !== "page") return;
