@@ -105,7 +105,7 @@ export class LangManager {
         const l = ctx.lang;
         const txts = await this.#getTxts(ns, l);
         if (!(hash in txts)) {
-            await this.#app.db.query("INSERT INTO smalltext SET namespace=?, hash=?, original=?", [ns, hash, string]);
+            await this.#app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hash, string]);
             txts[hash] = "";
         }
         const translated = txts[hash] || string;

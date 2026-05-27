@@ -1,8 +1,6 @@
 /**
- * error_report/mod.ts
- *
  * reporter.js runs on two sides:
- *  - Deno backend:  imported, send() → write directly to DB
+ *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
 
@@ -12,6 +10,7 @@ import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { AnswerError, OutputDoneError, urlToLocalPath, assertAllowedPath } from "../core/lib/util.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
+(globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
 await import(reporterPath);
 
 type Report = Record<string, unknown>;
@@ -110,11 +109,9 @@ async function addReport(app: App, vs: Report): Promise<void> {
 
 export function init(app: App): void {
 
-  (globalThis as typeof globalThis & { reporterJsOptions: unknown }).reporterJsOptions = {
-    onError: async (data: Report) => {
-      data.source ??= "deno";
-      await addReport(app, data);
-    },
+  (globalThis as any).reporterJsOptions.onError = async (data: Report) => {
+    data.source ??= "deno";
+    await addReport(app, data);
   };
 
   app.on("action", (e) => { const ctx = e.ctx as RequestContext;

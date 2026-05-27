@@ -2,7 +2,7 @@ import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
 import { typeByExtension } from '../../../../deps.ts';
 import type { Phase, TransformerDef, TransformContext, TransformOptions, TransformResult } from './types.ts';
-import { checkMagick, checkAvifSupport, isMagickAvailable } from './imagemagick.ts';
+import { checkAvifSupport, isMagickAvailable } from './imagemagick.ts';
 import { isFfmpegAvailable } from './ffmpeg.ts';
 
 const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
@@ -30,9 +30,6 @@ export class FileTransformer {
     /** Known MIME type of the source file (e.g. from DB) – fallback to extension detection */
     knownMime?: string,
   ): Promise<TransformResult> {
-    await checkMagick();
-
-    // Normalise DPR before the pipeline
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
       opts.w &&= Math.round(opts.w * opts.dpr);
@@ -71,10 +68,8 @@ export class FileTransformer {
       // Cache miss – continue
     }
 
-    // Build and run pipeline
     const pipeline = sortTransformers(FileTransformer.#transformers);
     const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
-
     const ctx: TransformContext = {
       sourcePath,
       currentPath: sourcePath,
@@ -91,16 +86,13 @@ export class FileTransformer {
         }
       }
 
-      // No transformer changed anything
       if (ctx.currentPath === sourcePath) {
         return { path: sourcePath, mime, transformed: false };
       }
 
-      // Cache result
       await nodeFs.mkdir(cacheDir, { recursive: true });
       await nodeFs.copyFile(ctx.currentPath, cachePath);
       await Deno.writeTextFile(metaPath, ctx.mime);
-
       return { path: cachePath, mime: ctx.mime, transformed: true };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
