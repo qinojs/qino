@@ -12,6 +12,7 @@ export const backend = {
         if (!node) {
             const root = await cms.node(1);
             const P = await root.createChild({
+                id: 100,
                 visible: 0,
                 module: "cms.layout.backend",
                 access: 0,

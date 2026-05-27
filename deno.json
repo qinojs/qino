@@ -1,6 +1,6 @@
 {
   "name": "@qino/qino",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "exports": "./module/core/server.ts",
   "tasks": {
     "test": "deno test --no-check --allow-read --allow-write=/tmp,/var/www/workplace/qinojs --allow-run=git module/core/tests module/ai/tests module/cms/tests module/cms.versions/tests module/cms.cont.table2/tests module/cms.cont.text/tests module/cms.cont.flexible/tests module/cms.cont.login4/tests module/cms.image2/tests module/cms.filebrowser/tests module/cms.layout.login/tests module/cms.installation.default/tests module/cms.backend/tests module/cms.backend.settings/tests module/cms.backend.struct/tests module/cms.backend.users/tests module/web_auth/tests module/git/tests"
