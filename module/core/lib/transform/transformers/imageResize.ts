@@ -12,6 +12,7 @@ FileTransformer.register({
   props: ['w', 'h', 'vpos', 'hpos', 'zoom', 'max'],
   handles: (ctx) =>
     ctx.mime.startsWith('image/') &&
+    ctx.mime !== 'image/svg+xml' &&
     !ctx.meta.animated &&
     (!!ctx.options.w || !!ctx.options.h),
   transform: async (ctx) => {

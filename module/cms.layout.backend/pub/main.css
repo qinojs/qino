@@ -115,8 +115,9 @@ u2-accordion {
 }
 #nav .-item.-hasSub.-active:after { content: '\e800'; }
 #nav .-item:where(:hover, .-active) { background:#fff; }
-#nav ul ul .-item { padding-left:1.6rem; }
-#nav ul ul ul .-item { padding-left:3.4rem; }
+#nav ul { padding-inline-start:0; }
+#nav ul ul .-item { padding-left:3.3rem; }
+#nav ul ul ul .-item { padding-left:4.4rem; }
 
 /* content  */
 #content {

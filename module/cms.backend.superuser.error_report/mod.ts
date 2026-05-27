@@ -175,10 +175,11 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     return `
 <div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">
     ${tools}
-    <div class="u2-card" style="max-height:88vh; overflow:auto; flex:1 1 80rem">
-        <div class="-head">${await node.app.t`Errors`}</div>
-        <table class="u2-table">
-            <tbody>${tableRows}
+    <div class=u2-card style="max-height:88vh; overflow:auto; flex:1 1 80rem">
+        <div class=-head>${await node.app.t`Errors`}</div>
+        <table class=u2-table>
+            <tbody style="vertical-align:baseline">
+                ${tableRows}
         </table>
     </div>
 </div>`;
@@ -233,10 +234,11 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
     }
 
     return `
-<div class="u2-card" style="height:88vh; overflow:auto; flex:1 1 80rem">
-    <div class="-head">${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
-    <table class="u2-table">
-        <tbody>${tableRows}
+<div class=u2-card style="height:88vh; overflow:auto; flex:1 1 80rem">
+    <div class=-head>${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
+    <table class=u2-table>
+        <tbody style="vertical-align:baseline">
+            ${tableRows}
     </table>
 </div>`;
 }

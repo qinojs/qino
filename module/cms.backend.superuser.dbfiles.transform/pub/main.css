@@ -1,0 +1,5 @@
+/* cms.backend.superuser.dbfiles.transform */
+.-m-cms-backend-superuser-dbfiles-transform {
+  & .-ok u2-ico      { color: var(--green); }
+  & .-missing u2-ico { color: var(--red); }
+}
