@@ -1,9 +1,9 @@
 import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/lib/Node.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
 import { dump } from "../../deps.ts";
-import type { App } from "@qino/qino";
+import type { Node } from "../cms/lib/Node.ts";
+import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.superuser.state";
 export const needs = ["cms.backend"];

@@ -1,5 +1,6 @@
-import type { App } from "../core/server.ts";
 import { pwHash } from "../core/lib/auth.ts";
+import type { App } from "../core/server.ts";
+import "../cms/mod.ts";
 
 export const name = "cms.installation.default";
 export const needs = [
@@ -51,6 +52,7 @@ export const needs = [
 
 export async function install({app}: {app: App}): Promise<void> {
   const s = app.settings;
+  const cms = app.cms;
 
   if (!await app.settings.core.langs && !await app.settings.qg.langs) {
     app.settings.core.langs('en');
@@ -60,7 +62,7 @@ export async function install({app}: {app: App}): Promise<void> {
     const adminGrp = (await app.db.exec("INSERT INTO grp SET name = 'admin', page_access = '1'")).insertId;
     const usr = (await app.db.exec("INSERT INTO usr SET email = 'admin', pw = '', active=1, firstname='Client', lastname='Client'")).insertId;
     await app.db.query("INSERT INTO usr_grp SET usr_id = ?, grp_id = ?", [usr, adminGrp]);
-    await (await app.cms.node(1)).changeGroup(adminGrp, 2);
+    await (await cms.node(1)).changeGroup(adminGrp, 2);
   }
   // Superuser
   if (!await app.db.one("SELECT id FROM usr WHERE superuser = '1'")) {
@@ -74,64 +76,64 @@ export async function install({app}: {app: App}): Promise<void> {
 
   // Home
   if (!await app.db.one("SELECT id FROM page WHERE id = 2")) {
-    const P = await (await app.cms.node(1)).createChild({ id: 2, access: 1, visible: 1, offline: 0, searchable: 1, sort: 1 });
+    const P = await (await cms.node(1)).createChild({ id: 2, access: 1, visible: 1, offline: 0, searchable: 1, sort: 1 });
     await P.changeGroup(adminGrp, 2);
     await app.db.query("REPLACE INTO page_redirect SET request = '', redirect = '2'");
     await P.title("en", "Home");
   }
   // Service
   if (!await app.db.one("SELECT id FROM page WHERE id = 10")) {
-    const P = await (await app.cms.node(1)).createChild({ id: 10, access: 1, visible: 0, searchable: 1, sort: 4 });
+    const P = await (await cms.node(1)).createChild({ id: 10, access: 1, visible: 0, searchable: 1, sort: 4 });
     await P.changeGroup(adminGrp, 1);
     await P.title("en", "Service");
   }
   if (!await app.db.one("SELECT id FROM page WHERE id = 20")) {
-    const P = await (await app.cms.node(10)).createChild({ id: 20, visible: 1, searchable: 0 });
+    const P = await (await cms.node(10)).createChild({ id: 20, visible: 1, searchable: 0 });
     await P.changeGroup(adminGrp, 2);
     await (await P.cont("main")).cont('1', "cms.cont.search1");
     await P.title("en", "Search");
   }
 
   if (!await app.db.one("SELECT id FROM page WHERE id = 40")) {
-    const P = await (await app.cms.node(1)).createChild({ id: 40, access: 0, visible: 0, searchable: 0, sort: 8 });
+    const P = await (await cms.node(1)).createChild({ id: 40, access: 0, visible: 0, searchable: 0, sort: 8 });
     await P.changeGroup(adminGrp, 1);
     await P.title("en", "System");
   }
   if (!await app.db.one("SELECT id FROM page WHERE id = 5")) {
-    const P = await (await app.cms.node(40)).createChild({ id: 5, access: 1, offline: 0, visible: 0 });
+    const P = await (await cms.node(40)).createChild({ id: 5, access: 1, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 1);
     await P.title("en", "Layout");
   }
 
   if (!await app.db.one("SELECT id FROM page WHERE id = 50")) {
-    const P = await (await app.cms.node(40)).createChild({ id: 50, access: 0, offline: 0, visible: 0 });
+    const P = await (await cms.node(40)).createChild({ id: 50, access: 0, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont("cms.cont.trash");
     await P.title('en', "Trash");
     if (!await s.cms.pageTrash) s.cms.pageTrash(50);
   }
-  await (await app.cms.node(50)).set("module", "cms.layout.login");
-  await (await (await app.cms.node(50)).cont("main")).set("module", "cms.cont.trash");
+  await (await cms.node(50)).set("module", "cms.layout.login");
+  await (await (await cms.node(50)).cont("main")).set("module", "cms.cont.trash");
 
   if (!await app.db.one("SELECT id FROM page WHERE id = 60")) {
-    const P = await (await app.cms.node(40)).createChild({ id: 60, access: 1, offline: 0, visible: 0 });
+    const P = await (await cms.node(40)).createChild({ id: 60, access: 1, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont('1', "cms.cont.login4");
     await P.title("en", "No access");
     if (!await s.cms.pageNoAccess) s.cms.pageNoAccess(60);
   }
   if (!await app.db.one("SELECT id FROM page WHERE id = 80")) {
-    const P = await (await app.cms.node(40)).createChild({ id: 80, access: 1, offline: 0 });
+    const P = await (await cms.node(40)).createChild({ id: 80, access: 1, offline: 0 });
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont('1', "cms.cont.login4");
     await P.title("en", "Login");
     await app.db.query("REPLACE INTO page_redirect SET request = 'login', redirect = '80'");
   }
-  await (await app.cms.node(80)).set("module", "cms.layout.login");
-  await (await (await app.cms.node(80)).cont("main")).cont('1').then((c: any) => c.set("module", "cms.cont.login4"));
+  await (await cms.node(80)).set("module", "cms.layout.login");
+  await (await (await cms.node(80)).cont("main")).cont('1').then((c: any) => c.set("module", "cms.cont.login4"));
 
   if (!await app.db.one("SELECT id FROM page WHERE id = 70")) {
-    const P = await (await app.cms.node(40)).createChild({ id: 70, access: 1, offline: 0, visible: 0 });
+    const P = await (await cms.node(40)).createChild({ id: 70, access: 1, offline: 0, visible: 0 });
     await P.changeGroup(adminGrp, 2);
     await (await P.cont("main")).cont('1', "cms.cont.not_found1");
     await P.title("en", "Not found");
