@@ -1,5 +1,5 @@
 import { FileTransformer } from '../FileTransformer.ts';
-import { checkFfmpeg, ffmpegFrame } from '../ffmpeg.ts';
+import { isFfmpegAvailable, ffmpegFrame } from '../ffmpeg.ts';
 import * as nodePath from 'node:path';
 
 const VIDEO_MIMES = new Set([
@@ -21,11 +21,11 @@ FileTransformer.register({
   name: 'video-decode',
   phase: 'decode',
   props: ['frame'],
-  handles: (ctx) =>
+  handles: async (ctx) =>
+    await isFfmpegAvailable() &&
     VIDEO_MIMES.has(ctx.mime) &&
     (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.frame !== undefined || ctx.options.fmt !== undefined || ctx.options.q !== undefined),
   transform: async (ctx) => {
-    await checkFfmpeg();
     const frame = toFrameIndex(ctx.options.frame); // FFmpeg ist 0-basiert
     const out = nodePath.join(ctx.tmpDir, 'video-frame.png');
     await ffmpegFrame(ctx.currentPath, frame, out);

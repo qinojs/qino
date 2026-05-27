@@ -17,7 +17,6 @@ export default async function api(node: Node, vars: any): Promise<any> {
 
     const db = node.app.db;
     const langs = node.app.languages.all as string[];
-    const settings = node.app.settings["cms.backend.smalltext"];
 
     if ("count_clean" in vars) {
         await db.query("UPDATE smalltext SET count = 0");
@@ -37,11 +36,6 @@ export default async function api(node: Node, vars: any): Promise<any> {
 
     if ("toggle_counter" in vars) {
         node.app.settings.core.smalltext.counter(vars.toggle_counter ? "1" : "");
-        return true;
-    }
-
-    if ("toggle_code_log" in vars) {
-        settings["code_logger"](vars.toggle_code_log ? "1" : "");
         return true;
     }
 

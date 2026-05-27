@@ -1,5 +1,5 @@
 import { FileTransformer } from '../FileTransformer.ts';
-import { magick, magickIdentify } from '../imagemagick.ts';
+import { magick, magickIdentify, isMagickAvailable } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
 
 /**
@@ -10,7 +10,8 @@ FileTransformer.register({
   name: 'image-resize',
   phase: 'geometry',
   props: ['w', 'h', 'vpos', 'hpos', 'zoom', 'max'],
-  handles: (ctx) =>
+  handles: async (ctx) =>
+    await isMagickAvailable() &&
     ctx.mime.startsWith('image/') &&
     ctx.mime !== 'image/svg+xml' &&
     !ctx.meta.animated &&

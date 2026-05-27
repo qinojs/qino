@@ -108,14 +108,14 @@ function saveTxt(e) {
 document.body.addEventListener('blur', saveTxt, true);
 document.body.addEventListener('input', saveTxt.c1Debounce(1600));
 
-cms.reloadNode = (pid) => {
-	return apt.cms.node(pid).html.get().then(html => {
+cms.reloadNode = (pid, vars) => {
+	return apt.cms.node(pid).html.post({ vars }).then(html => {
 		document.querySelectorAll('.-pid' + pid).forEach(el => el.outerHTML = html);
 	});
 };
 
 cms.reloadPart = (pid, part, vars) => {
-	return apt.cms.node(pid).html.part(part).get(vars ? { vars } : undefined).then(html => {
+	return apt.cms.node(pid).html.part(part).post({ vars }).then(html => {
 		document.querySelectorAll('.-pid' + pid + ' [cms-part="' + part + '"]').forEach(el => {
 			if (el.closest('.qgCmsCont').matches('.-pid' + pid)) el.innerHTML = html;
 		});

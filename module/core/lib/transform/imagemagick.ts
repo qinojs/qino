@@ -4,10 +4,9 @@ let _checked = false;
 let _available: boolean | null = null;
 let _avifSupported: boolean | null = null;
 
-// Wird in checkMagick() gesetzt
-let _convertCmd = 'magick';         // IM6: 'convert',  IM7: 'magick'
-let _identifyCmd = 'magick';        // IM6: 'identify', IM7: 'magick'
-let _identifyArgs: string[] = ['identify']; // IM6: [],  IM7: ['identify']
+let _convertCmd = 'magick';
+let _identifyCmd = 'magick';
+let _identifyArgs: string[] = ['identify'];
 
 async function tryCommand(cmd: string, args: string[]): Promise<boolean> {
   try {
@@ -24,14 +23,7 @@ async function tryCommand(cmd: string, args: string[]): Promise<boolean> {
 
 export async function isMagickAvailable(): Promise<boolean> {
   if (_available !== null) return _available;
-  if (await tryCommand('magick', ['-version'])) {
-    _available = true;
-  } else if (await tryCommand('convert', ['-version'])) {
-    _available = true;
-  } else {
-    _available = false;
-  }
-  return _available;
+  return (await checkMagick().then(() => true).catch(() => false));
 }
 
 export async function checkMagick(): Promise<void> {
@@ -46,6 +38,7 @@ export async function checkMagick(): Promise<void> {
     _identifyCmd = 'identify';
     _identifyArgs = [];
   } else {
+    _available = false;
     throw new Error('ImageMagick not found. Solution: sudo apt install imagemagick');
   }
 
@@ -54,6 +47,8 @@ export async function checkMagick(): Promise<void> {
 }
 
 export async function checkAvifSupport(): Promise<boolean> {
+  if (_avifSupported !== null) return _avifSupported;
+  await checkMagick().catch(() => { _avifSupported = false; });
   if (_avifSupported !== null) return _avifSupported;
   try {
     const { stdout } = await new Deno.Command(_convertCmd, {
@@ -90,6 +85,15 @@ export async function magickIdentify(input: string, format: string): Promise<str
     stderr: 'piped',
   }).output();
   return new TextDecoder().decode(stdout).trim();
+}
+
+export function resetMagickCache(): void {
+  _checked = false;
+  _available = null;
+  _avifSupported = null;
+  _convertCmd = 'magick';
+  _identifyCmd = 'magick';
+  _identifyArgs = ['identify'];
 }
 
 export async function fileSize(path: string): Promise<number> {

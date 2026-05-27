@@ -2,8 +2,9 @@ import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
 import { typeByExtension } from '../../../../deps.ts';
 import type { Phase, TransformerDef, TransformContext, TransformOptions, TransformResult } from './types.ts';
-import { checkAvifSupport, isMagickAvailable } from './imagemagick.ts';
-import { isFfmpegAvailable } from './ffmpeg.ts';
+import { checkAvifSupport, isMagickAvailable, resetMagickCache } from './imagemagick.ts';
+import { isFfmpegAvailable, resetFfmpegCache } from './ffmpeg.ts';
+import { resetPngquantCache, isPngquantAvailable } from './pngquant.ts';
 
 const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 
@@ -14,7 +15,14 @@ export class FileTransformer {
     get magick(): Promise<boolean> { return isMagickAvailable(); },
     get ffmpeg(): Promise<boolean> { return isFfmpegAvailable(); },
     get avif(): Promise<boolean> { return checkAvifSupport(); },
+    get pngquant(): Promise<boolean> { return isPngquantAvailable(); },
   };
+
+  static resetCapabilityCache(): void {
+    resetMagickCache();
+    resetFfmpegCache();
+    resetPngquantCache();
+  }
 
   static register(def: TransformerDef): void {
     if (FileTransformer.#transformers.some((t) => t.name === def.name)) {
@@ -62,6 +70,9 @@ export class FileTransformer {
       const cacheStat = await Deno.stat(cachePath);
       if ((cacheStat.mtime?.getTime() ?? 0) >= (stat.mtime?.getTime() ?? 0)) {
         const cachedMime = await Deno.readTextFile(metaPath).catch(() => mime);
+        if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) {
+          Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
+        }
         return { path: cachePath, mime: cachedMime, transformed: true };
       }
     } catch {

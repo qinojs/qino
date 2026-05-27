@@ -1,5 +1,5 @@
 import { FileTransformer } from '../FileTransformer.ts';
-import { magick, magickIdentify, checkAvifSupport, fileSize } from '../imagemagick.ts';
+import { magick, magickIdentify, checkAvifSupport, fileSize, isMagickAvailable } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
 
 /**
@@ -10,7 +10,8 @@ FileTransformer.register({
   name: 'image-encode',
   phase: 'encode',
   props: ['q', 'fmt'],
-  handles: (ctx) =>
+  handles: async (ctx) =>
+    await isMagickAvailable() &&
     ctx.mime.startsWith('image/') &&
     ctx.mime !== 'image/svg+xml' &&
     (ctx.meta.geometryApplied || ctx.options.q !== undefined || ctx.options.fmt !== undefined),

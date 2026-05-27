@@ -2,6 +2,12 @@ cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
   const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
   const nid = cms.el.pid(el);
 
+  async function postVars(vars) {
+    const html = await apt.cms.node(nid).html.post({ vars });
+    const inner = new DOMParser().parseFromString(html, "text/html").querySelector(".qgCmsCont")?.innerHTML ?? html;
+    try { return JSON.parse(inner); } catch { return { error: inner }; }
+  }
+
   el.addEventListener("click", async (e) => {
     const copy = e.target.closest("[data-copy]");
     if (copy) {
@@ -19,10 +25,11 @@ cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
       const ico = install.querySelector("u2-ico");
       ico.textContent = "hourglass_top";
       try {
-        const raw = await apt.cms.node(nid).html.post({ vars: { install_binary: install.dataset.install } });
-        const { output, error } = JSON.parse(raw);
-        alert(error ? "Error:\n" + error : output);
-        if (!error) location.reload();
+        const { output, error } = await postVars({ install_binary: install.dataset.install });
+        if (error) { alert("Error:\n" + error); return; }
+        location.reload();
+      } catch (err) {
+        alert("Request failed:\n" + err);
       } finally {
         install.disabled = false;
         ico.textContent = "download_for_offline";
@@ -33,16 +40,15 @@ cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
     const clear = e.target.closest("[data-clear-cache]");
     if (clear) {
       clear.disabled = true;
-      const ico = clear.querySelector("u2-ico");
-      ico.textContent = "hourglass_top";
       try {
-        const raw = await apt.cms.node(nid).html.post({ vars: { clear_cache: 1 } });
-        const { error } = JSON.parse(raw);
+        const val = clear.dataset.clearCache;
+        const { error } = await postVars({ clear_cache: val === "true" ? true : Number(val) });
         if (error) { alert("Error:\n" + error); return; }
         cms.reloadPart(nid, "cache");
+      } catch (err) {
+        alert("Request failed:\n" + err);
       } finally {
         clear.disabled = false;
-        ico.textContent = "delete_sweep";
       }
     }
   });

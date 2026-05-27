@@ -56,16 +56,18 @@ async function cacheStats(dir: string): Promise<{ count: number; size: number }>
   return { count, size };
 }
 
-async function clearCache(dir: string): Promise<number> {
-  let deleted = 0;
+async function clearCache(dir: string, olderThanDays?: number): Promise<void> {
+  const cutoff = olderThanDays ? Date.now() - olderThanDays * 86_400_000 : Infinity;
   try {
     for await (const entry of Deno.readDir(dir)) {
       if (!entry.name.startsWith("tf_")) continue;
+      if (olderThanDays) {
+        const mtime = (await Deno.stat(dir + entry.name).catch(() => null))?.mtime?.getTime() ?? 0;
+        if (mtime > cutoff) continue;
+      }
       await Deno.remove(dir + entry.name).catch(() => {});
-      deleted++;
     }
   } catch { /* ignore */ }
-  return deleted;
 }
 
 function fmtBytes(n: number): string {
@@ -83,6 +85,7 @@ type Binary = {
   available: Promise<boolean>;
   install: Partial<Record<Platform, string>>;
   notes?: string;
+  noAutoInstall?: boolean;
 };
 
 const BINARIES: Binary[] = [
@@ -109,7 +112,7 @@ const BINARIES: Binary[] = [
   {
     id: "pngquant",
     label: "pngquant",
-    available: checkPngquant(),
+    available: FileTransformer.capabilities.pngquant,
     install: {
       debian: "apt install pngquant",
       alpine: "apk add pngquant",
@@ -121,30 +124,20 @@ const BINARIES: Binary[] = [
     label: "AVIF (libheif)",
     available: FileTransformer.capabilities.avif,
     install: {
-      debian: "apt install libheif-dev",
-      macos:  "brew install libheif",
+      debian: "apt install imagemagick-6.q16 libheif-dev",
+      macos:  "brew install imagemagick libheif",
     },
-    notes: "Requires ImageMagick compiled with libheif.",
+    noAutoInstall: true,
+    notes: "Requires ImageMagick compiled with libheif support.",
   },
 ];
 
-async function checkPngquant(): Promise<boolean> {
-  try {
-    const { code } = await new Deno.Command("pngquant", {
-      args: ["--version"],
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-    return code === 0;
-  } catch {
-    return false;
-  }
-}
 
 async function runInstall(platform: Platform, bin: Binary): Promise<string> {
   const cmd = bin.install[platform];
   if (!cmd) return `No install command for platform "${platform}"`;
   const [prog, ...args] = cmd.split(" ");
+  if (prog === "apt") args.unshift("-y");
   try {
     const { stdout, stderr, code } = await new Deno.Command(prog, {
       args,
@@ -153,33 +146,43 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
     }).output();
     const dec = new TextDecoder();
     const out = dec.decode(stdout).trim();
-    const err = dec.decode(stderr).trim();
-    return code === 0
-      ? (out || "Done.")
-      : `Error (exit ${code}):\n${err || out}`;
+    const err = dec.decode(stderr).trim()
+      .split("\n").filter(l => !l.startsWith("WARNING:")).join("\n").trim();
+    const success = code === 0 || code === 100;
+    if (!success) return `Error (exit ${code}):\n${err || out}`;
+    FileTransformer.resetCapabilityCache();
+    const lastLine = (out || err).split("\n").filter(Boolean).at(-1) ?? "Done.";
+    return lastLine;
   } catch (e) {
     return `Failed to run "${cmd}": ${e instanceof Error ? e.message : String(e)}`;
   }
 }
 
 async function resolveVersion(bin: Binary): Promise<string> {
-  const cmds: Record<string, { cmd: string; args: string[] }> = {
-    "imagemagick": { cmd: "magick",   args: ["-version"] },
-    "ffmpeg":      { cmd: "ffmpeg",   args: ["-version"] },
-    "pngquant":    { cmd: "pngquant", args: ["--version"] },
+  const cmds: Record<string, { cmd: string; args: string[]; extract?: (out: string) => string }[]> = {
+    "imagemagick": [{ cmd: "magick", args: ["-version"] }, { cmd: "convert", args: ["-version"] }],
+    "ffmpeg":      [{ cmd: "ffmpeg", args: ["-version"] }],
+    "pngquant":    [{ cmd: "pngquant", args: ["--version"] }],
+    "libheif":     [
+      { cmd: "magick",   args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
+      { cmd: "convert",  args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
+    ],
   };
-  const entry = cmds[bin.id];
-  if (!entry) return "";
-  try {
-    const { stdout } = await new Deno.Command(entry.cmd, {
-      args: entry.args,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-    return new TextDecoder().decode(stdout).split("\n")[0].trim();
-  } catch {
-    return "";
+  const entries = cmds[bin.id];
+  if (!entries) return "";
+  for (const entry of entries) {
+    try {
+      const { code, stdout } = await new Deno.Command(entry.cmd, {
+        args: entry.args,
+        stdout: "piped",
+        stderr: "piped",
+      }).output();
+      if (code !== 0) continue;
+      const out = new TextDecoder().decode(stdout);
+      return entry.extract ? entry.extract(out) : out.split("\n")[0].trim();
+    } catch { /* try next */ }
   }
+  return "";
 }
 
 const PLATFORM_LABELS: Record<Platform, string> = {
@@ -207,12 +210,12 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
     ? [[platform, primaryCmd]] as [Platform, string][]
     : (Object.entries(bin.install) as [Platform, string][]);
 
-  const installable = root && !!primaryCmd;
+  const installable = root && !!primaryCmd && !bin.noAutoInstall;
 
   return installEntries.map(([p, cmd], i) => {
     const displayCmd = root ? cmd : `sudo ${cmd}`;
     const installBtn = installable && i === 0
-      ? ` <button data-install="${hee(bin.id)}" title="Install now"><u2-ico>download_for_offline</u2-ico></button>`
+      ? ` <button data-install="${hee(bin.id)}" title="Install now" u2-confirm><u2-ico>download_for_offline</u2-ico></button>`
       : "";
     return `
     <tr class="${cls}${i > 0 ? " -extra" : ""}">
@@ -238,7 +241,14 @@ async function renderCache(app: App): Promise<string> {
     <tr><th>${await app.t`Size`}<td>${hee(fmtBytes(stats.size))}
   </table>
   <div class="-body">
-    <button data-clear-cache u2-confirm><u2-ico>delete_sweep</u2-ico> ${await app.t`Clear cache`}</button>
+    <u2-menubutton>
+      <button><u2-ico>delete_sweep</u2-ico> ${await app.t`Clear cache`} ▾</button>
+      <menu>
+        <li><button data-clear-cache="7" u2-confirm>${await app.t`Older than 1 week`}</button>
+        <li><button data-clear-cache="30" u2-confirm>${await app.t`Older than 1 month`}</button>
+        <li><button data-clear-cache="true" u2-confirm>${await app.t`All`}</button>
+      </menu>
+    </u2-menubutton>
   </div>
 </div>`;
 }
@@ -257,13 +267,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   }
 
   if (vars.clear_cache) {
-    await clearCache(cacheDir(node.app));
+    const days = vars.clear_cache === true ? undefined : Number(vars.clear_cache) || undefined;
+    await clearCache(cacheDir(node.app), days);
     return await renderCache(node.app);
   }
 
-  const [[platform, root]] = await Promise.all([
-    Promise.all([detectPlatform(), Promise.resolve(isRoot())]),
-  ]);
+  const [platform, root] = await Promise.all([detectPlatform(), Promise.resolve(isRoot())]);
 
   const rows = await Promise.all(BINARIES.map(bin => renderBinary(bin, platform, root)));
 
