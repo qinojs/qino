@@ -15,7 +15,7 @@ async function render(node: Node, { ctx }: any): Promise<string> {
   if (words) {
     const match = `MATCH (t.text) AGAINST (? IN BOOLEAN MODE)`;
     const rows = await node.app.db.all(
-      `SELECT p.id FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY ${match} DESC LIMIT 100`,
+      `SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`,
       [words, words],
     );
     let limit = 5;

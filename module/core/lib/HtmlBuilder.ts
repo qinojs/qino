@@ -1,7 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
-
 import { hee } from "./util.ts";
 import type { RequestContext } from "./RequestContext.ts";
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
 export class HtmlBuilder {
     head = "";
@@ -10,18 +10,18 @@ export class HtmlBuilder {
     titleSuffix = "";
     meta: Record<string, string> = {};
     link: Record<string, Record<string, string>> = {};
-    scripts = new Set<string>();
-    styles = new Set<string>();
-    legacyScripts = new Set<string>();
+    scripts: Set<string> = new Set<string>();
+    styles: Set<string> = new Set<string>();
+    legacyScripts: Set<string> = new Set<string>();
     content = "";
-    #jsData?: Record<string, any>;
+    #jsData?: Record<string, JsonValue>;
     #ctx: RequestContext;
 
     constructor(ctx: RequestContext) {
         this.#ctx = ctx;
     }
 
-    get jsData(): Record<string, any> { return this.#jsData ??= {}; }
+    get jsData(): Record<string, JsonValue> { return this.#jsData ??= {}; }
 
     prependContent(str: string): void {
         this.content = str + this.content;
