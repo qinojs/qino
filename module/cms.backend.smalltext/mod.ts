@@ -10,7 +10,10 @@ export const needs = ["cms.backend", "cms.text"];
 
 export async function install({ app }: { app: App }): Promise<void> {
     const P = await backend.install(app, "cms.backend.smalltext");
-    if (P) await P.title("en", "Translate");
+    if (P) {
+      await P.title("en", "Translate");
+      await P.title("de", "Übersetzen");
+    }
 }
 
 export async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<string> {
@@ -86,7 +89,8 @@ async function render(node: Node): Promise<string> {
     const counterActive = !!(await app.settings.core.smalltext.counter);
     const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
     const search = String(ctx.get.search ?? "").trim();
-    const missing = Number(await app.db.one(`SELECT count(*) FROM smalltext WHERE ${langs.map(l => `\`${l}\` = ''`).join(" OR ")}`));
+    const missingWhere = langs.map(l => `\`${l}\` = ''`).join(" OR ");
+    const missing = missingWhere ? Number(await app.db.one(`SELECT count(*) FROM smalltext WHERE ${missingWhere}`)) : 0;
 
     return `<div class=u2-card>
     <div class=-head>${await app.t`Translate`}</div>

@@ -13,6 +13,10 @@ export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }) {
   const P = await backend.install(app, name);
+  if (P) {
+    await P.title("en", "DB Files");
+    await P.title("de", "DB Dateien");
+  }
 }
 
 const u2time = (t: unknown) => {

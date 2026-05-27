@@ -12,7 +12,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.struct");
   if (P) {
     await P.title("en", "Pages");
-    await P.title("en", "Pages");
+    await P.title("de", "Seiten");
   }
 }
 

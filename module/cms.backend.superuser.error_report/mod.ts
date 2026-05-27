@@ -19,6 +19,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser.error_report");
   if (P) {
     await P.title("en", "Errors");
+    await P.title("de", "Fehler");
   }
 }
 

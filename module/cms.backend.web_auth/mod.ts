@@ -12,6 +12,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.web_auth");
   if (P) {
     await P.title("en", "WebAuthn");
+    await P.title("de", "WebAuthn");
   }
 }
 

@@ -20,6 +20,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.ai");
   if (P) {
     await P.title("en", "AI");
+    await P.title("de", "KI");
   }
 }
 

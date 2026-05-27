@@ -11,7 +11,10 @@ export const needs = ["cms.backend", "uncdn"];
 
 export async function install({ app }: { app: App }) {
   const P = await backend.install(app, name);
-  if (P) await P.title("en", "UnCDN Cache");
+  if (P) {
+    await P.title("en", "UnCDN Cache");
+    await P.title("de", "UnCDN Cache");
+  }
 }
 
 type TreeResult = { html: string; size: number };

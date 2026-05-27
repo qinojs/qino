@@ -10,6 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser");
   if (P) {
     await P.title("en", "Superuser");
+    await P.title("de", "Superuser");
   }
 }
 

@@ -12,6 +12,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   const P = await backend.install(app, "cms.backend.superuser.state");
   if (P) {
     await P.title("en", "Server State");
+    await P.title("de", "Server-Status");
   }
 }
 
