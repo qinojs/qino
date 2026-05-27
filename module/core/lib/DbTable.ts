@@ -156,7 +156,7 @@ export class DbTable {
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const [set, params] = this.valuesToFragment(values, undefined, true);
-const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
+    const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
     if (auto) values[String(auto)] = res.insertId;
@@ -289,17 +289,11 @@ const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ?
     return tableCache.get(eid) as DbEntry;
   }
 
-  /** @deprecated use entry() */
-  Entry(id?: any): DbEntry {
-    console.warn("DbTable.Entry() is deprecated, use entry()", Error().stack);
-    return this.entry(id);
-  }
-
-  async selectEntries(str = ""): Promise<Record<string, any>> {
+  async selectEntries(str = ""): Promise<Record<string, DbEntry>> {
     const Es: Record<string, any> = {};
     const rows = await this.#db.query(`SELECT * FROM ${Db.escapeId(String(this))} ${str}`);
     for (const row of rows) {
-      const entry = await this.entry(row);
+      const entry = this.entry(row);
       Es[String(entry)] = entry;
     }
     return Es;
@@ -324,22 +318,4 @@ const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ?
 
   toString(): string { return this.#name; }
 
-  // async addField(data: string | Record<string, any>): Promise<DbField | false> {
-  //   if (typeof data === "string") data = { name: data };
-  //   data = { type: "varchar", length: 255, null: false, ...data };
-  //   await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} ADD ${Db.escapeId(String(data.name))} ${Db._array_to_column_definition(data)}`);
-  //   await this.reloadFields();
-  //   return this.#fields?.[data.name] ?? false;
-  // }
-  // async remField(name: string): Promise<void> {
-  //   await this.#db.exec(`ALTER TABLE ${Db.escapeId(String(this))} DROP ${Db.escapeId(name)}`);
-  //   if (this.#fields) {
-  //     delete this.#fields[name];
-  //     delete this.#primaries[name];
-  //     if (this.#autoIncrement && String(this.#autoIncrement) === name) {
-  //       this.#autoIncrement = false;
-  //     }
-  //   }
-  //   this.#children = null;
-  // }
 }

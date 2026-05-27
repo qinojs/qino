@@ -18,28 +18,28 @@ class dbEntry_usr extends DbEntry {
 
 // === dbEntry_log ===
 class dbEntry_log extends DbEntry {
-  async sess(): Promise<any> {
+  async sess(): Promise<dbEntry_sess> {
     const id = await this.get("sess_id");
-    return this.table.db.table("sess").entry(id);
+    return this.table.db.table("sess").entry(id) as dbEntry_sess;
   }
 }
 
 // === dbEntry_sess ===
 class dbEntry_sess extends DbEntry {
-  async user(): Promise<any> {
+  async user(): Promise<dbEntry_usr> {
     const id = await this.get("usr_id")
-    return this.table.db.table("usr").entry(id);
+    return this.table.db.table("usr").entry(id) as dbEntry_usr;
   }
 }
 
 // === dbEntry_client ===
 class dbEntry_client extends DbEntry {
-  async users(): Promise<Record<string, any>> {
-    const usrs: Record<string, any> = {};
-    const rows = await this.table.db.table("client_usr").selectEntries(`WHERE client_id = '${this}' ORDER BY time DESC`);
-    for (const [, Usr] of Object.entries(rows)) {
-      const usrId = await (Usr as any).get("usr_id");
-      usrs[String(usrId)] = Usr;
+  async users(): Promise<Record<string, dbEntry_client_usr>> {
+    const usrs: Record<string, dbEntry_client_usr> = {};
+    const rows = await this.table.db.table("client_usr").selectEntries(`WHERE client_id = '${this}' ORDER BY time DESC`) as Record<string, dbEntry_client_usr>;
+    for (const [, cuser] of Object.entries(rows)) {
+      const usrId = await cuser.get("usr_id");
+      usrs[String(usrId)] = cuser;
     }
     return usrs;
   }
@@ -54,9 +54,9 @@ class dbEntry_client extends DbEntry {
 
 // === dbEntry_client_usr ===
 class dbEntry_client_usr extends DbEntry {
-  async user(): Promise<any> {
+  async user(): Promise<dbEntry_usr> {
     const id = await this.get("usr_id");
-    return this.table.db.table("usr").entry(id);
+    return this.table.db.table("usr").entry(id) as dbEntry_usr;
   }
 }
 

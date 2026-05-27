@@ -10,19 +10,44 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
   const app = node.app;
 
-  ctx.html.scripts.add(u2Root + "u2/auto.js");
-
-  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
   ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
   ctx.csp["style-src"][u2Root] = 1;
   ctx.csp["script-src"][u2Root] = 1;
-  //ctx.csp["connect-src"]["https://cdn.jsdelivr.net"] = 1;
+  ctx.csp["connect-src"][u2Root] = 1;
+
   ctx.html.styles.add(u2Root + "css/norm/norm.css");
   ctx.html.styles.add(u2Root + "css/base/base.css");
   ctx.html.styles.add(u2Root + "css/classless/variables.css");
   ctx.html.styles.add(u2Root + "css/classless/classless.css");
+  ctx.html.styles.add(u2Root + "css/classless/more.css");
+  ctx.html.styles.add(u2Root + "class/flex/flex.css");
+  ctx.html.styles.add(u2Root + "class/unstyle/unstyle.css");
+  ctx.html.styles.add(u2Root + "class/card/card.css");
+  ctx.html.styles.add(u2Root + "class/table/table.css");
+  ctx.html.styles.add(u2Root + "class/badge/badge.css");
+  ctx.html.styles.add(u2Root + "el/breadcrumb/breadcrumb.css");
+  ctx.html.styles.add(u2Root + "el/bytes/bytes.css");
+  ctx.html.styles.add(u2Root + "el/buttongroup/buttongroup.css");
+  ctx.html.styles.add(u2Root + "el/accordion/accordion.css");
+  ctx.html.styles.add(u2Root + "el/ico/ico.css");
+  ctx.html.styles.add(u2Root + "el/tabs/tabs.css");
+  ctx.html.styles.add(u2Root + "el/code/code.css");
+  // ctx.html.scripts.add(u2Root + "el/ico/ico.js");
+  // ctx.html.scripts.add(u2Root + "el/breadcrumb/breadcrumb.js");
+  // ctx.html.scripts.add(u2Root + "attr/href/href.js");
+  // ctx.html.scripts.add(u2Root + "el/time/time.js");
+  // ctx.html.scripts.add(u2Root + "attr/confirm/confirm.js");
+  // ctx.html.scripts.add(u2Root + "el/buttongroup/buttongroup.js");
+  // ctx.html.scripts.add(u2Root + "el/accordion/accordion.js");
+  // ctx.html.scripts.add(u2Root + "el/tabs/tabs.js");
+  // ctx.html.scripts.add(u2Root + "el/code/code.js");
+  // ctx.html.scripts.add(u2Root + "el/bytes/bytes.js");
+  // ctx.html.scripts.add(u2Root + "attr/movable/movable.js");
+  ctx.html.scripts.add(u2Root + "u2/auto.js");
+
+
   ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
   ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
 
