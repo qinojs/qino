@@ -2,15 +2,15 @@ import { allowedPathDefaults, suspiciousPathDefaults } from "./pathlist.ts";
 
 export const settingsSchema = {
   properties: {
-    enabled:               { type: "boolean", default: true,            description: "Security active" },
+    enabled:               { type: "boolean", default: false,           description: "Security active" },
 
-    warnScore:             { type: "integer", default: 40,              description: "Warning from score" },
-    blockScore:            { type: "integer", default: 120,             description: "Block from score" },
+    warnScore:             { type: "integer", default: 80,              description: "Warning from score" },
+    blockScore:            { type: "integer", default: 300,             description: "Block from score" },
     keepDays:              { type: "integer", default: 30,              description: "Retention (days)" },
 
-    delayStartScore:       { type: "integer", default: 20,              description: "Delay from score" },
-    delayFactorMs:         { type: "integer", default: 60,              description: "Delay factor (ms/score)" },
-    maxDelayMs:            { type: "integer", default: 6000,            description: "Max delay (ms)" },
+    delayStartScore:       { type: "integer", default: 60,              description: "Delay from score" },
+    delayFactorMs:         { type: "integer", default: 30,              description: "Delay factor (ms/score)" },
+    maxDelayMs:            { type: "integer", default: 3000,            description: "Max delay (ms)" },
     decayPerMin:           { type: "integer", default: 2,               description: "Score decay per minute" },
 
     userScorePercent:      { type: "integer", default: 50,              description: "Logged-in user factor (%)" },
