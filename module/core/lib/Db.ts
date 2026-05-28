@@ -114,46 +114,4 @@ export class Db {
     }[c]!))}'`;
   }
 
-  // static _array_to_column_definition(d: Record<string, any>): string {
-  //   d = { type: "varchar", length: false, special: "", collate: false, null: false, autoincrement: false, default: false, ...d };
-  //   d.type = String(d.type).trim().toUpperCase();
-  //   d.special = String(d.special).trim().toUpperCase();
-
-  //   if (!["VARCHAR","TINYINT","TEXT","DATE","SMALLINT","MEDIUMINT","INT","BIGINT","FLOAT","DOUBLE","DECIMAL","DATETIME","TIMESTAMP","TIME","YEAR","CHAR","TINYBLOB","TINYTEXT","BLOB","MEDIUMBLOB","MEDIUMTEXT","LONGBLOB","LONGTEXT","BOOL","BINARY"].includes(d.type)) {
-  //     throw new Error(`field type "${d.type}" not allowed`);
-  //   }
-  //   if (!["","BINARY","UNSIGNED","UNSIGNED ZEROFILL","ON UPDATE CURRENT_TIMESTAMP"].includes(d.special)) {
-  //     throw new Error(`field special "${d.special}" not allowed`);
-  //   }
-
-  //   let len = d.length ? `(${d.length})` : "";
-  //   if (["DATE","DATETIME","FLOAT","TEXT","TINYTEXT","MEDIUMTEXT","LONGTEXT"].includes(d.type)) len = "";
-  //   if (d.type === "VARCHAR" && !len) len = "(191)";
-  //   if (d.type === "DECIMAL" && d.length > 65) len = "(12,8)";
-
-  //   let def = "";
-  //   if (d.autoincrement) def = "AUTO_INCREMENT";
-  //   else if (d.default !== false) {
-  //     const defVal = String(d.default).toUpperCase();
-  //     def = "DEFAULT " + ({ NULL: 1, CURRENT_TIMESTAMP: 1, "CURRENT_TIMESTAMP()": 1, "NOW()": 1, LOCALTIME: 1, "LOCALTIME()": 1, LOCALTIMESTAMP: 1, "LOCALTIMESTAMP()": 1 }[defVal] ? defVal : "?");
-  //   }
-
-  //   if (numTypes[d.type] || dateTypes[d.type]) d.collate = false;
-  //   const col = d.collate ? `CHARACTER SET ${String(d.collate).split("_")[0]} COLLATE ${d.collate} ` : "";
-
-  //   return ` ${d.type}${len} ${d.special} ${col}${d.null ? "NULL" : "NOT NULL"} ${def}`;
-  // }
-
-  // async addTable(name: string): Promise<DbTable> {
-  //   const id = Db.escapeId(name);
-  //   await this.exec(`CREATE TABLE IF NOT EXISTS ${id} (id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci`);
-  //   await this.init();
-  //   return this.table(name);
-  // }
-
-  // async removeTable(name: string): Promise<void> {
-  //   await this.exec(`DROP TABLE IF EXISTS ${Db.escapeId(name)}`);
-  //   await this.init();
-  // }
-
 }

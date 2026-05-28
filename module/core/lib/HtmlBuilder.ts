@@ -1,7 +1,7 @@
 import { hee } from "./util.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+//export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
 export class HtmlBuilder {
     head = "";
@@ -14,14 +14,14 @@ export class HtmlBuilder {
     styles: Set<string> = new Set<string>();
     legacyScripts: Set<string> = new Set<string>();
     content = "";
-    #jsData?: Record<string, JsonValue>;
+    #jsData?: Record<string, unknown>;
     #ctx: RequestContext;
 
     constructor(ctx: RequestContext) {
         this.#ctx = ctx;
     }
 
-    get jsData(): Record<string, JsonValue> { return this.#jsData ??= {}; }
+    get jsData(): Record<string, unknown> { return this.#jsData ??= {}; }
 
     prependContent(str: string): void {
         this.content = str + this.content;

@@ -1,18 +1,20 @@
 import * as nodeCrypto from "node:crypto";
 import { typeByExtension } from "../../../deps.ts";
 
-export async function readUploadFile(file: File, opt: { maxSize?: number } = {}) {
-  const tmp = await saveStream(file.stream(), opt);
-  return {
-    name: file.name,
-    type: file.type,
-    size: tmp.size,
-    tmpPath: tmp.path,
-    md5: tmp.md5,
-  };
+export interface UploadedFile {
+  name: string;
+  type: string;
+  size: number;
+  tmpPath: string;
+  md5: string;
 }
 
-export async function fetchRemoteFile(opt: { url: string; maxSize: number }) {
+export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
+  const tmp = await saveStream(file.stream(), opt);
+  return { name: file.name, type: file.type, size: tmp.size, tmpPath: tmp.path, md5: tmp.md5};
+}
+
+export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Promise<UploadedFile> {
   const resp = await safeFetch(opt.url);
   if (!resp.ok) throw new Error(`Remote file import failed: HTTP ${resp.status}`);
   const len = parseInt(resp.headers.get("content-length") ?? "0");

@@ -1,15 +1,15 @@
 import { assertEquals, assertThrows } from "./deps.ts";
 import {
   HtmlString,
-  OutputError,
-  appRequestUriToLocalPath,
-  assertAllowedPath,
+  Output,
   ensureSlash,
   hee,
   html,
   sqlSearchHelper,
   urlize,
 } from "../lib/util.ts";
+import { RequestContext } from "../lib/RequestContext.ts";
+import { App } from "../server.ts";
 
 Deno.test("util: hee escapes HTML-sensitive characters", () => {
   assertEquals(hee(`<a href="x&y">'ok'</a>`), "&lt;a href=&quot;x&amp;y&quot;&gt;&#039;ok&#039;&lt;/a&gt;");
@@ -40,37 +40,40 @@ Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   assertEquals(res.orderParams, ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
 });
 
-Deno.test("util: appRequestUriToLocalPath maps module and qg public files", () => {
-  const app = {
-    appPATH: "/app/",
-    modules: {
-      get(name: string) {
-        return name === "cms.foo" ? { dir: "/sys/cms.foo/" } : undefined;
+Deno.test("util: ctx.urlToLocalPath maps module and qg public files", () => {
+  const ctx = Object.assign(new RequestContext(), {
+    appURL: "/",
+    app: {
+      appPATH: "/app/",
+      modules: {
+        get(name: string) {
+          return name === "cms.foo" ? { dir: "/sys/cms.foo/" } : undefined;
+        },
       },
     },
-  };
-  assertEquals(appRequestUriToLocalPath("m/cms.foo/pub/main.css", app as never), "/sys/cms.foo/pub/main.css");
-  assertEquals(appRequestUriToLocalPath("m/local.foo/pub/main.css", app as never), "/app/m/local.foo/pub/main.css");
-  assertEquals(appRequestUriToLocalPath("qg/custom/pub/main.css", app as never), "/app/qg/custom/pub/main.css");
-  assertEquals(appRequestUriToLocalPath("m/cms.foo/pub/../mod.ts", app as never), null);
-  assertEquals(appRequestUriToLocalPath("m/cms.foo/pub/../../deps.ts", app as never), null);
-  assertEquals(appRequestUriToLocalPath("qg/custom/pub/../mod.ts", app as never), null);
-  assertEquals(appRequestUriToLocalPath("other/main.css", app as never), null);
+  });
+  assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/main.css"), "/sys/cms.foo/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/m/local.foo/pub/main.css"), "/app/m/local.foo/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/qg/custom/pub/main.css"), "/app/qg/custom/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/../mod.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/../../deps.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/qg/custom/pub/../mod.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/other/main.css"), null);
 });
 
-Deno.test("util: assertAllowedPath accepts app/module roots and rejects siblings", () => {
-  const app = {
+Deno.test("util: app.assertAllowedPath accepts app/module roots and rejects siblings", () => {
+  const app = Object.assign(Object.create(App.prototype), {
     appPATH: "/var/www/workplace/qinojs/demo/",
     modules: {
       all() {
         return { "cms.foo": { dir: "/var/www/workplace/qinojs/qino/module/cms.foo/" } };
       },
     },
-  };
-  assertAllowedPath("/var/www/workplace/qinojs/demo/qg/file/a.txt", app as never);
-  assertAllowedPath("/var/www/workplace/qinojs/qino/module/cms.foo/pub/a.css", app as never);
+  }) as App;
+  app.assertAllowedPath("/var/www/workplace/qinojs/demo/qg/file/a.txt");
+  app.assertAllowedPath("/var/www/workplace/qinojs/qino/module/cms.foo/pub/a.css");
   assertThrows(
-    () => assertAllowedPath("/var/www/workplace/qinojs/other/a.txt", app as never),
-    OutputError,
+    () => app.assertAllowedPath("/var/www/workplace/qinojs/other/a.txt"),
+    Output,
   );
 });

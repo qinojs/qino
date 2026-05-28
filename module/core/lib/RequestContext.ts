@@ -2,8 +2,9 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { getCookie, basePath, HTTPException, type Item, type ItemProxy, type Context } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
 import { uid } from "./util.ts";
+import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
-import { readUploadFile } from "./fileStream.ts";
+import { readUploadFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import type { HonoRequest } from "npm:hono@4";
@@ -15,7 +16,7 @@ export class RequestContext {
   cookie: Record<string, string> = {};
   get: Record<string, string> = {};
   post: Record<string, unknown> = {};
-  files: Record<string, unknown> = {};
+  files: Record<string, UploadedFile> = {};
   requestUri = "/";
   remoteAddr = "";
   responseHeaders: Headers = new Headers();
@@ -64,7 +65,7 @@ export class RequestContext {
     return this.#settingsRoot.proxy;
   }
   get dev(): boolean {
-    return this.app.config.dev || !!this.settings.core.dev();
+    return this.app.dev || !!this.settings.core.dev();
   }
   get token(): string {
     const token = this.session.qg.token;
@@ -76,6 +77,16 @@ export class RequestContext {
     this.#settingsRoot = this.user
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
+  }
+
+  urlToLocalPath(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.protocol === "file:") return u.pathname;
+      const appRequestUri = decodeURIComponent(u.pathname.slice(this.appURL.length));
+      return appRequestUriToLocalPath(appRequestUri, this.app);
+    } catch { /* not a URL */ }
+    return null;
   }
 
   async cleanup(): Promise<void> {
@@ -101,7 +112,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
   const rawBody: Record<string, unknown> = req.method === "POST"
     ? (ct.includes("application/json") || ct.includes("application/csp-report") ? await req.json() : await req.parseBody()) : {};
   const post: Record<string, unknown> = {};
-  const files: Record<string, unknown> = {};
+  const files: Record<string, UploadedFile> = {};
 
   for (const [key, val] of Object.entries(rawBody)) {
     if (val instanceof File) {
@@ -132,6 +143,27 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
   });
 
   return [ctx, isNew];
+}
+
+function appRequestUriToLocalPath(appRequestUri: string, app: App): string | null {
+  const matchM = appRequestUri.match(/^m\/([^/]+)\/pub\/(.*)/);
+  if (matchM) {
+    const mod = app.modules.get(matchM[1]);
+    const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
+    return pubPath(base, matchM[2]);
+  }
+  const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\/(.*)/);
+  if (matchQg) {
+    return pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]);
+  }
+  return null;
+}
+
+function pubPath(root: string, file: string): string | null {
+  if (!file || file.includes("\0")) return null;
+  const pub = nodePath.resolve(root, "pub"), target = nodePath.resolve(pub, file);
+  const rel = nodePath.relative(pub, target);
+  return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }
 
 export const requestStorage = new AsyncLocalStorage<RequestContext>();

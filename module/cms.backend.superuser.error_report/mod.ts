@@ -1,4 +1,4 @@
-import { hee, urlToLocalPath } from "../core/lib/util.ts";
+import { hee } from "../core/lib/util.ts";
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
@@ -26,13 +26,13 @@ export async function install({ app }: { app: App }): Promise<void> {
 function makeFileHelper(ctx: RequestContext) {
     const appURL = ctx.appURL as string;
     function editorLink(file: string, line: unknown, col: unknown): string {
-        const localPath = urlToLocalPath(file, ctx) ?? file;
+        const localPath = ctx.urlToLocalPath(file) ?? file;
         return appURL + "editor/?file=" + encodeURIComponent(localPath)
             + "&line=" + encodeURIComponent(String(line ?? ""))
             + "&col="  + encodeURIComponent(String(col  ?? ""));
     }
     function fileDisplay(file: string): string {
-        const localPath = urlToLocalPath(file, ctx);
+        const localPath = ctx.urlToLocalPath(file);
         if (!localPath) return file;
         for (const mod of Object.values(ctx.app.modules.all())) {
             if (mod.dir && localPath.startsWith(mod.dir)) return "m/" + mod.name + "/" + localPath.slice(mod.dir.length);
@@ -259,7 +259,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     let btHtml = "";
     const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
     for (const item of bt) {
-        const isLocal = urlToLocalPath(item.file ?? "", ctx) !== null;
+        const isLocal = ctx.urlToLocalPath(item.file ?? "") !== null;
         const fileCell = isLocal
             ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target="_blank">${hee(fileDisplay(item.file ?? ""))} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span></a>`
             : `${hee(item.file ?? "")} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span>`;
@@ -311,7 +311,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 <a href="?id=${id}&history_of=ip">IP</a>
 ${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&history_of=client">Client</a>` : ""}`;
 
-    const isLocalFile = urlToLocalPath(error.file ?? "", ctx) !== null;
+    const isLocalFile = ctx.urlToLocalPath(error.file ?? "") !== null;
     const fileBlock = isLocalFile
         ? `<a style="color:inherit; text-decoration:none" target="_blank" href="${hee(editorLink(error.file, error.line, error.col))}">
                <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(String(error.line))} column: ${hee(String(error.col))}

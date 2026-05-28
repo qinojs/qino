@@ -13,7 +13,7 @@ import {
   toTools,
 } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
-import { AnswerError } from "../lib/util.ts";
+import { Output } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.lang = "de";
@@ -154,7 +154,7 @@ Deno.test("apt: Hono GET query params are available as input", async () => {
         },
       },
     });
-    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
     const res = await app.request("/search?q=abc");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { q: "abc" });
@@ -164,7 +164,7 @@ Deno.test("apt: Hono GET query params are available as input", async () => {
 Deno.test("apt: Hono mutations require same origin and qg token", async () => {
   await withCtx(async () => {
     const app = toHono(api);
-    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
     const body = JSON.stringify({ title: "Two", count: 2 });
 
     const noCsrf = await app.request("http://qino.test/thing/1/update", {
@@ -214,7 +214,7 @@ Deno.test("apt: catchall params collect remaining path segments", async () => {
       },
     };
     const app = toHono(files);
-    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
     assertEquals(await invoke(files, "GET", "/file"), { path: [] });
     assertEquals(await invoke(files, "GET", "/file/a/b"), { path: ["a", "b"] });
     assertEquals(await (await app.request("/file")).json(), { path: [] });

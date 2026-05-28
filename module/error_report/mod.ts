@@ -7,7 +7,7 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import type { App } from "../core/server.ts";
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
-import { AnswerError, OutputDoneError, urlToLocalPath, assertAllowedPath } from "../core/lib/util.ts";
+import { Output } from "../core/lib/util.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
@@ -33,7 +33,7 @@ async function handleJsError(ctx: RequestContext): Promise<void> {
   if (report.message) {
     await addReport(ctx.app, { source: "js", ...report });
   }
-  throw new AnswerError({});
+  throw new Output({});
 }
 
 async function handleCssError(ctx: RequestContext): Promise<void> {
@@ -42,10 +42,10 @@ async function handleCssError(ctx: RequestContext): Promise<void> {
   const report: Report = { source: "css", message, file, backtrace: [] };
   if (file) {
     try {
-      const localPath = urlToLocalPath(file, ctx);
+      const localPath = ctx.urlToLocalPath(file);
       if (!localPath) throw new Error("not a local file");
       if (!localPath.endsWith(".css")) throw new Error("not a css file");
-      assertAllowedPath(localPath, ctx.app);
+      ctx.app.assertAllowedPath(localPath);
       const content = await Deno.readTextFile(localPath);
       const pos = content.indexOf(message);
       if (pos >= 0) {
@@ -58,7 +58,7 @@ async function handleCssError(ctx: RequestContext): Promise<void> {
   }
   await addReport(ctx.app, report);
   ctx.responseStatus = 500;
-  throw new OutputDoneError();
+  throw new Output();
 }
 
 async function handleCspError(ctx: RequestContext): Promise<void> {
@@ -82,7 +82,7 @@ async function handleCspError(ctx: RequestContext): Promise<void> {
       prio: reportOnly ? "notice" : "warning",
     });
   }
-  throw new AnswerError({});
+  throw new Output({});
 }
 
 async function addReport(app: App, vs: Report): Promise<void> {

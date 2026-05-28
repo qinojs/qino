@@ -1,5 +1,5 @@
 import { HTTPException } from "../../deps.ts";
-import { OutputDoneError } from "../core/lib/util.ts";
+import { Output } from "../core/lib/util.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
@@ -51,7 +51,7 @@ export function initSecurity(app: App) {
       ctx.responseStatus = 429;
       ctx.responseHeaders.set("Retry-After", String(Math.ceil(policy.delay / 1000) || 5));
       ctx.responseBody = "Too many requests";
-      throw new OutputDoneError();
+      throw new Output();
     }
     if (policy.delay) await sleep(policy.delay);
   });
@@ -104,7 +104,7 @@ function block(ctx: RequestContext, seconds: number) {
   ctx.responseStatus = 429;
   ctx.responseHeaders.set("Retry-After", String(Math.max(1, Math.ceil(seconds))));
   ctx.responseBody = "Too many requests";
-  throw new OutputDoneError();
+  throw new Output();
 }
 
 function blockKey(info: GateInfo) {

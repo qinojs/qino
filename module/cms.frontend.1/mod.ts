@@ -1,10 +1,11 @@
 import { hee } from "../core/lib/util.ts"
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
-import type { App } from "../core/server.ts";
-import type { Node } from "../cms/lib/Node.ts";
 import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
 import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
+import type { App } from "../core/server.ts";
+import type { Node } from "../cms/lib/Node.ts";
+import "../cms/mod.ts";
 
 export const name = "cms.frontend.1";
 export const needs = ["cms"];
@@ -38,7 +39,7 @@ function widgetUrl(widget: string): string {
   return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
 }
 
-async function renderWidget(ctx: any, widget: string, params: Record<string, any> = {}): Promise<string | null | false> {
+async function renderWidget(ctx: RequestContext, widget: string, params: Record<string, any> = {}): Promise<string | null | false> {
   const P = await ctx.app.cms.node(params["pid"]);
   if (await P.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
@@ -57,7 +58,7 @@ export const api: AptTree = {
         description: "Render CMS frontend widget.",
         access: Access.USER,
         input: s.object({ params: s.optional(s.record()) }),
-        execute: ({ widget, params }: any, ctx: any) =>
+        execute: ({ widget, params }: any, ctx: RequestContext) =>
           renderWidget(ctx, widget, params ?? {}),
       },
     },
@@ -126,8 +127,9 @@ export function init(app: App) {
 
     const g = ctx.state;
     const settings = ctx.settings;
+    const cms = app.cms;
 
-    const node = app.cms.MainNode;
+    const node = cms.MainNode;
     if (!node) return;
     const access = await node.access();
     const inBackend = node.vs?.module === "cms.layout.backend";
@@ -138,7 +140,7 @@ export function init(app: App) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         settings.cms[lastKey](ctx.requestUri);
-        const toggleUrl = await settings.cms[otherKey] ?? "";
+        const toggleUrl = String(await settings.cms[otherKey] ?? "");
         ctx.html.jsData.cmsBackendUrl = toggleUrl;
         ctx.html.scripts.add(ctx.sysURL + "cms.frontend.1/pub/js/init.mjs");
       }
@@ -149,16 +151,16 @@ export function init(app: App) {
       g.csp["img-src"] ??= {};
       g.csp["img-src"]["blob:"] = true;
       ctx.html.jsData.Page = node.id;
-      ctx.html.jsData.qgCmsRequestedPage = app.cms.RequestedNode?.id;
-      if (await ctx.user?.get?.("superuser")) ctx.html.jsData.qino = { dev: ctx.dev || undefined };
+      ctx.html.jsData.qgCmsRequestedPage = cms.RequestedNode?.id;
+      if (await ctx.user?.get?.("superuser")) ctx.html.jsData.qino = { dev: ctx.dev || null };
       ctx.html.jsData.qgCmsEditmode = g.editmode;
 
       if (g.editmode) {
         ctx.html.jsData.cmsClipboard = Number(await settings.cms.clipboard ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
-        await app.languages.nsStart("cms");
+        app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");
-        await app.languages.nsStop();
+        app.languages.nsStop();
         ctx.html.prependContent(panelHtml);
       }
     }

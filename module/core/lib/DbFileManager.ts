@@ -6,7 +6,7 @@ import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
 import { getCtx } from "./RequestContext.ts";
-import { fetchRemoteFile } from "./fileStream.ts";
+import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "../server.ts";
 
 export class DbFileManager {
@@ -52,7 +52,7 @@ export class DbFileManager {
     const id = Number(x.shift() ?? "0");
     const name = x.pop() ?? "";
 
-    const param: Record<string, any> = {};
+    const param: Record<string, string | true> = {};
     for (const value of x) {
       const y = value.split("-");
       param[y[0]] = y[1] ?? true;
@@ -105,10 +105,9 @@ export class DbFileManager {
     headers.set("Content-Type", mime);
 
     const outputStat = await Deno.stat(outputPath).catch(() => null);
+
     const etag = "qg" + String(outputStat?.mtime?.getTime() ?? 0);
-    if (req.headers.get("if-none-match") === etag) {
-      return new Response(null, { status: 304, headers });
-    }
+    if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
     headers.set("ETag", etag);
 
     const rangeHeader = req.headers.get("range");
@@ -241,19 +240,17 @@ export class DbFile extends File {
     await this.setVs({ name: F.basename(), mime: F.mime, text: await F.getText(), md5, size: await this.size() });
   }
 
-  async replaceFromUpload(f: any) {
-    const hash = f["md5"];
-    this.path = this.#manager.directory + hash;
+  async replaceFromUpload(f: UploadedFile) {
+    this.path = this.#manager.directory + f.md5;
     await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-    await Deno.rename(f["tmpPath"], this.path);
+    await Deno.rename(f.tmpPath, this.path);
 
-    const ext = String(f["name"] ?? "").replace(/.*\./, "").toLowerCase();
-    
-    let type = String(f["type"] ?? "");
+    const ext = f.name.replace(/.*\./, "").toLowerCase();
+    let type = f.type;
     if (type === "application/octet-stream") type = typeByExtension(ext) ?? "application/octet-stream";
     type = type.replace(/;.*/, "");
 
-    await this.setVs({ name: f["name"] ?? "", mime: type, md5: hash, size: await this.size(), text: await this.getText() });
+    await this.setVs({ name: f.name, mime: type, md5: f.md5, size: await this.size(), text: await this.getText() });
   }
 
   async clone(to?: number | null): Promise<DbFile> {
@@ -271,7 +268,7 @@ export class DbFile extends File {
     return this.#manager.file(newId);
   }
 
-  async transform(param: Record<string, any>): Promise<{ path: string; mime: string }> {
+  async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string }> {
     await this.ensureVs();
     if (!this.path) return { path: this.path, mime: this.mime };
     const cacheDir = this.#manager.app.appPATH + "cache/pri/";
@@ -284,7 +281,7 @@ export class DbFile extends File {
 
 }
 
-function parseTransformOptions(param: Record<string, any>): TransformOptions {
+function parseTransformOptions(param: Record<string, unknown>): TransformOptions {
   const num = (k: string) => k in param ? Number(param[k]) : undefined;
   const bool = (k: string) => k in param ? param[k] !== 'false' && param[k] !== '0' : undefined;
   return {

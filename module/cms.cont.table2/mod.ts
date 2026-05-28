@@ -1,5 +1,5 @@
 import type { Node } from "../cms/lib/Node.ts";
-import { OutputError } from "../core/lib/util.ts";
+import { Output } from "../core/lib/util.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
 import type { App } from "../core/server.ts";
@@ -60,7 +60,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
     ctx.responseHeaders.set("Expires", "0");
     ctx.responseHeaders.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
     ctx.responseHeaders.set("Pragma", "public");
-    throw new OutputError(csv);
+    throw new Output(csv);
   }
 
   let html = `<div>\n  <table thm1-width>\n    <tbody>\n`;

@@ -2,7 +2,7 @@
 
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { RedirectError } from "./lib/util.ts";
+import { Redirect } from "./lib/util.ts";
 import { getCtx, type RequestContext } from "./lib/RequestContext.ts";
 import { api } from "./apt.ts";
 import type { App } from "./server.ts";
@@ -86,9 +86,7 @@ export async function init(app: App) {
         // HTTPS redirect
         const https = app.https;
         if (https && new URL(ctx.req.url).protocol !== "https:") {
-            ctx.responseHeaders.set("Location", "https://" + ctx.req.header("host") + ctx.requestUri);
-            ctx.responseStatus = 301;
-            throw new RedirectError();
+            throw new Redirect("https://" + ctx.req.header("host") + ctx.requestUri, 301);
         }
 
         // HSTS

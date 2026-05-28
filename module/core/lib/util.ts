@@ -1,49 +1,3 @@
-import * as nodePath from "node:path";
-import type { App } from "../server.ts";
-import type { RequestContext } from "./RequestContext.ts";
-
-/* path / url utilities */
-export function appRequestUriToLocalPath(appRequestUri: string, app: App): string | null {
-  const matchM = appRequestUri.match(/^m\/([^/]+)\/pub\/(.*)/);
-  if (matchM) {
-    const mod = app.modules.get(matchM[1]);
-    const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
-    return publicPath(base, matchM[2]);
-  }
-  const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\/(.*)/);
-  if (matchQg) {
-    return publicPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]);
-  }
-  return null;
-}
-
-function publicPath(root: string, file: string): string | null {
-  if (!file || file.includes("\0")) return null;
-  const pub = nodePath.resolve(root, "pub"), target = nodePath.resolve(pub, file);
-  const rel = nodePath.relative(pub, target);
-  return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
-}
-
-export function urlToLocalPath(url: string, ctx: RequestContext): string | null {
-  try {
-    const u = new URL(url);
-    if (u.protocol === "file:") return u.pathname;
-    const appRequestUri = decodeURIComponent(u.pathname.slice(ctx.appURL.length));
-    return appRequestUriToLocalPath(appRequestUri, ctx.app);
-  } catch { /* not a URL */ }
-  return null;
-}
-
-export function assertAllowedPath(file: string, app: App): void {
-  if (!file || file.includes("\0")) throw new OutputError("invalid path");
-  const resolved = nodePath.resolve(file);
-  if (resolved !== nodePath.normalize(file) && resolved !== file) throw new OutputError("invalid path");
-  const roots: string[] = [nodePath.resolve(app.appPATH)];
-  for (const mod of Object.values(app.modules.all())) {
-    if (mod.dir) roots.push(nodePath.resolve(mod.dir));
-  }
-  if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new OutputError("invalid path");
-}
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
@@ -87,11 +41,25 @@ export function uid(length?: number): string {
   return length ? full.slice(0, length) : full;
 }
 
-/* Error classes for control flow */
-export class AnswerError extends Error { constructor(public data: Record<string, any>, public status = 200) { super("Answer"); } }
-export class RedirectError extends Error { constructor() { super("redirect"); } }
-export class OutputError extends Error { constructor(public body: unknown) { super("output"); } }
-export class OutputDoneError extends Error { constructor() { super("output done"); } }
+/* Control flow signals */
+export class Output extends Error {
+  body: unknown;
+  status: number;
+  headers: Record<string, string>;
+  isJson: boolean;
+  constructor(body?: unknown, { status = 200, headers = {} }: { status?: number; headers?: Record<string, string> } = {}) {
+    super("output");
+    this.isJson = body !== undefined && typeof body === "object" && !(body instanceof Uint8Array);
+    this.body = this.isJson ? JSON.stringify(body) : body;
+    this.status = status;
+    this.headers = headers;
+  }
+}
+export class Redirect extends Error {
+  location: string;
+  status: number;
+  constructor(location: string, status = 302) { super("redirect"); this.location = location; this.status = status; }
+}
 
 // urlize
 const TRANSLIT: Record<string, string> = {

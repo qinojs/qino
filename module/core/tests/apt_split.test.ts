@@ -3,7 +3,7 @@ import { assertEquals } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, aptClient, invoke, toHono, toTools } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
-import { AnswerError } from "../lib/util.ts";
+import { Output } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.session = { liveUser: () => 0 } as any;
@@ -28,7 +28,7 @@ Deno.test("apt split facade mirrors invoke, Hono, tools and client", async () =>
     assertEquals(await invoke(api, "GET", "/item/3", { detail: "yes" }), { id: 3, detail: "yes" });
 
     const app = toHono(api);
-    app.onError((e) => e instanceof AnswerError ? new Response(JSON.stringify(e.data), { status: e.status }) : new Response(null, { status: 500 }));
+    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
     const res = await app.request("/item/4?detail=yes");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { id: 4, detail: "yes" });

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { basename, extname } from "node:path";
 import { typeByExtension } from "../../deps.ts";
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
-import { hee, OutputDoneError, uid } from "../core/lib/util.ts";
+import { hee, Output, uid } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
@@ -290,12 +290,12 @@ async function handleTrack(ctx: RequestContext): Promise<void> {
   if (ctx.appRequestUri === "blank.gif") {
     ctx.responseHeaders.set("Content-Type", "image/gif");
     ctx.responseBody = BLANK_GIF as never;
-    throw new OutputDoneError();
+    throw new Output();
   }
   if (ctx.appRequestUri === "mail-track" && url) {
     ctx.responseStatus = 302;
     ctx.responseHeaders.set("Location", url);
-    throw new OutputDoneError();
+    throw new Output();
   }
 }
 
@@ -430,7 +430,7 @@ export class MailManager {
     const root = this.app.settings;
     let type = String(await firstSetting(root, [["mail", "transport", "type"]]) ?? "");
     if (!type && await firstSetting(root, [["mail", "transport", "host"], ["qg", "mail", "smtp", "host"]])) type = "smtp";
-    if (!type && this.app.config?.dev) type = "mock";
+    if (!type && this.app.dev) type = "mock";
     if (!type) throw new Error("No mail transport configured. Set mail.transport.type or inject app.mail.setTransport().");
     type = type.toLowerCase();
 

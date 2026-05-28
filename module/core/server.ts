@@ -1,7 +1,8 @@
+import * as nodePath from "node:path";
 import { Hono, HTTPException, fromFileUrl, serveFile, basePath, matchedRoutes, type ItemProxy, type Context } from "../../deps.ts";
 import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./lib/RequestContext.ts";
 import { SessionManager } from "./lib/SessionManager.ts";
-import { ensureSlash, appRequestUriToLocalPath, AnswerError, RedirectError, OutputError, OutputDoneError } from "./lib/util.ts";
+import { ensureSlash, Output, Redirect } from "./lib/util.ts";
 import { Db } from "./lib/Db.ts";
 import { DbFileManager } from "./lib/DbFileManager.ts";
 import { createSettingItem } from "./lib/SettingItem.ts";
@@ -24,14 +25,11 @@ const defaultConfig = {
     dbPass: "",
 };
 
-/** Configuration options for the Qino application. */
-export type AppConfig = typeof defaultConfig;
-
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App {
-    config: AppConfig;
     appPATH: string;
     https: boolean;
+    dev: boolean;
     db: Db;
     settings: ItemProxy;
     ctxSettingsSchema: object = { properties: {} };
@@ -48,14 +46,13 @@ export class App {
 
     get apt(): AptProxy { return aptClient(this.aptTree); }
 
-    constructor(config: Partial<AppConfig> = {}) {
+    constructor(config: Partial<typeof defaultConfig> = {}) {
         const cfg = { ...defaultConfig, ...config };
-        if (cfg.appPATH.startsWith("file:")) cfg.appPATH = fromFileUrl(cfg.appPATH);
-        cfg.appPATH = ensureSlash(cfg.appPATH);
+        const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
-        this.config    = cfg;
-        this.appPATH   = cfg.appPATH;
+        this.appPATH   = ensureSlash(appPATH);
         this.https     = cfg.https;
+        this.dev       = cfg.dev;
 
         this.db        = new Db(`mysql:host=${cfg.dbHost};dbname=${cfg.dbName}`, cfg.dbUser, cfg.dbPass);
         this.settings  = createSettingItem(this.db).proxy;
@@ -84,10 +81,21 @@ export class App {
         return this.router.fetch.bind(this.router);
     }
 
-    static async create(config: Partial<AppConfig> = {}): Promise<App> {
+    static async create(config: Partial<typeof defaultConfig> = {}): Promise<App> {
         const app = new App(config);
         await app.db.init();
         return app;
+    }
+
+    assertAllowedPath(file: string): void {
+        if (!file || file.includes("\0")) throw new Output("invalid path", { status: 400 });
+        const resolved = nodePath.resolve(file);
+        if (resolved !== nodePath.normalize(file) && resolved !== file) throw new Output("invalid path", { status: 400 });
+        const roots: string[] = [nodePath.resolve(this.appPATH)];
+        for (const mod of Object.values(this.modules.all())) {
+            if (mod.dir) roots.push(nodePath.resolve(mod.dir));
+        }
+        if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
     }
 
     import(spec: string): Promise<ModuleExports> { return this.modules.import(spec); }
@@ -106,7 +114,7 @@ export class App {
 
     async #serveStatic(hc: Context, next: () => Promise<void>): Promise<Response | void> {
         const ctx = getCtx();
-        const localPath = appRequestUriToLocalPath(ctx.appRequestUri, this);
+        const localPath = ctx.urlToLocalPath(ctx.req.url);
         if (localPath) return serveFile(hc.req.raw, localPath);
         await next();
     }
@@ -157,18 +165,18 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
     }
 
     #handleError(ctx: RequestContext, e: unknown): void {
-        if (e instanceof AnswerError) {
-            ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
-            ctx.responseBody = JSON.stringify(e.data);
-            ctx.responseStatus = e.status;
-        } else if (e instanceof OutputError) {
+        if (e instanceof Output) {
+            if (e.isJson) ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
+            for (const [k, v] of Object.entries(e.headers)) ctx.responseHeaders.set(k, v);
             ctx.responseBody = e.body as string;
-        } else if (!(e instanceof RedirectError || e instanceof OutputDoneError)) {
+            ctx.responseStatus = e.status;
+        } else if (e instanceof Redirect) {
+            ctx.responseHeaders.set("Location", e.location);
+            ctx.responseStatus = e.status;
+        } else {
             console.error("Error:", e);
             ctx.responseStatus = 500;
-            ctx.responseBody = ctx.dev
-                ? "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>"
-                : "<h1>500 Internal Server Error</h1>";
+            ctx.responseBody = "<h1>500 Internal Server Error</h1>";
         }
     }
 
@@ -177,7 +185,7 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
         const ctx = requestStorage.getStore();
         if (!ctx) {
             console.error("Error:", e);
-            return new Response(this.config.dev ? "<h1>500 Internal Server Error</h1><pre>" + String(e) + "</pre>" : "<h1>500 Internal Server Error</h1>", { status: 500 });
+            return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
         }
         this.#handleError(ctx, e);
         return this.#buildResponse(hc, ctx);

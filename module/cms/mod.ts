@@ -2,7 +2,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./lib/CMS.ts";
 import { render } from "./lib/render.ts";
 import { api } from "./apt.ts";
-import { AnswerError } from "../core/lib/util.ts";
+import { Output } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 
@@ -108,7 +108,7 @@ export function init(app: App) {
                 const replace = ctx.get["replace"];
                 const File = await (replace ? P.file(replace) : P.addFile());
                 await File.replaceFromUpload(cmsPageFile);
-                throw new AnswerError({ id: String(File), url: await File.url() + "/" + await File.get("name") });
+                throw new Output({ id: String(File), url: await File.url() + "/" + await File.get("name") });
             }
         }
 

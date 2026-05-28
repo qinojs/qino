@@ -1,4 +1,4 @@
-import { OutputDoneError } from "../core/lib/util.ts";
+import { Output } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 import type { HtmlBuilder } from "../core/lib/HtmlBuilder.ts";
@@ -69,21 +69,22 @@ async function directorySize(path: string): Promise<number> {
 function done(ctx: RequestContext, status: number, body: string): never {
   ctx.responseStatus = status;
   ctx.responseBody = body;
-  throw new OutputDoneError();
+  throw new Output();
 }
 
-function serveResponse(ctx: RequestContext, mediaType: string, data: Uint8Array): never {
-  ctx.responseHeaders.set("Content-Type", mediaType);
-  ctx.responseHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
-  ctx.responseHeaders.set("X-Content-Type-Options", "nosniff");
-  if (mediaType === "image/svg+xml") ctx.responseHeaders.set("Content-Security-Policy", "script-src 'none'");
-  ctx.responseBody = data as never;
-  throw new OutputDoneError();
+function serveResponse(mediaType: string, data: Uint8Array): never {
+  const headers: Record<string, string> = {
+    "Content-Type": mediaType,
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (mediaType === "image/svg+xml") headers["Content-Security-Policy"] = "script-src 'none'";
+  throw new Output(data, { headers });
 }
 
 async function serveCached(filePath: string, mediaType: string, ctx: RequestContext): Promise<void> {
   const data = await Deno.readFile(filePath).catch(() => null);
-  if (data) serveResponse(ctx, mediaType, data);
+  if (data) serveResponse(mediaType, data);
 }
 
 async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: RequestContext): Promise<void> {
@@ -96,7 +97,7 @@ async function fetchAndCache(url: string, filePath: string, cacheDir: string, me
   if (await directorySize(cacheDir) + data.byteLength > maxCacheBytes) done(ctx, 507, "Cache full");
   await Deno.mkdir(filePath.replace(/\/[^/]+$/, ""), { recursive: true });
   await Deno.writeFile(filePath, data);
-  serveResponse(ctx, mediaType, data);
+  serveResponse(mediaType, data);
 }
 
 export function init(app: App): void {
@@ -114,7 +115,7 @@ export function init(app: App): void {
     const mediaType = mediaTypeForPath(filePath);
     if (!mediaType) done(ctx, 404, "Not allowed");
 
-    await serveCached(filePath, mediaType, ctx); // throws OutputDoneError if found
+    await serveCached(filePath, mediaType, ctx); // throws Output if found
 
     const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
 

@@ -1,5 +1,5 @@
 import * as nodeFs from "node:fs/promises";
-import { OutputError, assertAllowedPath } from "../core/lib/util.ts"
+import { Output } from "../core/lib/util.ts"
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
@@ -10,7 +10,7 @@ import codemirrorView from "./view/codemirror.ts";
 export const name = "fileEditor";
 
 async function saveFile(ctx: RequestContext, file: string, content: string): Promise<number> {
-    assertAllowedPath(file, ctx.app);
+    ctx.app.assertAllowedPath(file);
     const allowed = ctx.session.fileEditor.allow[file]();
     if (!allowed && !(await ctx.user?.get('superuser'))) return 0;
 
@@ -46,19 +46,19 @@ export function init(app: App) {
         const file = editorFile();
         if (!file) return;
         const ctx = getCtx();
-        assertAllowedPath(file, ctx.app);
+        ctx.app.assertAllowedPath(file);
 
         const allowed = ctx.session.fileEditor.allow[file]();
         const isSuperuser = Boolean(await ctx.user?.get('superuser'));
         if (!allowed && !isSuperuser) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
-            throw new OutputError("no access");
+            throw new Output("no access");
         }
 
         const stat = await nodeFs.stat(file).catch(() => null);
         if (!stat?.isFile()) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
-            throw new OutputError("file does not exist");
+            throw new Output("file does not exist");
         }
     });
 

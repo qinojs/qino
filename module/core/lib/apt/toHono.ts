@@ -1,6 +1,6 @@
 import { Hono, type Context } from "../../../../deps.ts";
 import { getCtx } from "../RequestContext.ts";
-import { AnswerError } from "../util.ts";
+import { Output } from "../util.ts";
 import { AptError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
 import { checkCollisions, walk } from "./route.ts";
@@ -25,7 +25,7 @@ export function toHono(tree: AptTree, app: Hono = new Hono(), opts: ToHonoOption
     const method = c.req.method.toLowerCase() as Method;
     const isBodyMethod = BODY_METHODS.has(method);
     if (isBodyMethod) {
-      if (!isJsonRequest(c)) throw new AnswerError({ error: "Unsupported Media Type" }, 415);
+      if (!isJsonRequest(c)) throw new Output({ error: "Unsupported Media Type" }, { status: 415 });
       const body = await c.req.json().catch(() => ({}));
       if (body && typeof body === "object") Object.assign(input, body);
     }
@@ -37,12 +37,13 @@ export function toHono(tree: AptTree, app: Hono = new Hono(), opts: ToHonoOption
     try {
       await authorizeMutation(c, opts, { method, path, input, query });
       const result = await invoke(tree, c.req.method, path, { input, query });
-      throw new AnswerError(result === undefined ? {} : result as Record<string, unknown>, result === undefined ? 204 : 200);
+      const body = result === undefined ? undefined : JSON.stringify(result);
+      throw new Output(body, { status: result === undefined ? 204 : 200, headers: { "Content-Type": "application/json; charset=UTF-8" } });
     } catch (e) {
-      if (e instanceof AnswerError) throw e;
-      if (e instanceof AptError)    throw new AnswerError({ error: e.message, ...(e.issues && { issues: e.issues }) }, e.status);
+      if (e instanceof Output) throw e;
+      if (e instanceof AptError)    throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
       console.error("[apt]", e);
-      throw new AnswerError({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" }, 500);
+      throw new Output({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" }, { status: 500 });
     }
   };
   app.all("/", handle);
@@ -59,8 +60,8 @@ async function authorizeMutation(c: Context, opts: ToHonoOptions, data: RequestD
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(c, data)) return;
   if (opts.csrf === false) return;
-  if (!isTrustedOrigin(c)) throw new AnswerError({ error: "Forbidden" }, 403);
-  if (!hasValidCsrfToken(c)) throw new AnswerError({ error: "Forbidden" }, 403);
+  if (!isTrustedOrigin(c)) throw new Output({ error: "Forbidden" }, { status: 403 });
+  if (!hasValidCsrfToken(c)) throw new Output({ error: "Forbidden" }, { status: 403 });
 }
 
 function isTrustedOrigin(c: Context): boolean {
