@@ -7,11 +7,7 @@ export const name = "cms.backend.superuser";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.superuser");
-  if (P) {
-    await P.title("en", "Superuser");
-    await P.title("de", "Superuser");
-  }
+  await backend.install(app, "cms.backend.superuser", { en: "Superuser", de: "Superuser" });
 }
 
 async function render(node: Node): Promise<string> {

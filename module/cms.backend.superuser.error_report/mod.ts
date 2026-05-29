@@ -16,11 +16,7 @@ const u2time = (t: unknown) => {
 export const needs = ["cms.backend", "error_report"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.superuser.error_report");
-  if (P) {
-    await P.title("en", "Errors");
-    await P.title("de", "Fehler");
-  }
+  await backend.install(app, "cms.backend.superuser.error_report", { en: "Errors", de: "Fehler" });
 }
 
 function makeFileHelper(ctx: RequestContext) {
@@ -161,15 +157,14 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         <small>${u2time(row.time)}</small>
         <div>${hee(row.usr_email ?? "")}</div>
     <td>
-        <img
+        <u2-ico
             data-delete-entry
             data-file="${hee(row.file)}"
             data-line="${hee(String(row.line))}"
             data-col="${hee(String(row.col))}"
-            src="${hee(ctx.sysURL)}cms.frontend.1/pub/img/delete.svg"
-            class="-rem"
-            alt="Delete"
-            style="cursor:pointer; height:20px">`;
+            icon="delete"
+            aria-label="Delete"
+            style="cursor:pointer">🗑</u2-ico>`;
     }
 
     return `

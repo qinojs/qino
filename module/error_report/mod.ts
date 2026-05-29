@@ -18,6 +18,7 @@ type Report = Record<string, unknown>;
 export const name = "error_report";
 export const needs = ["core"];
 export { dbSchema };
+export { healthChecks } from "./healthChecks.ts";
 
 export const settingsSchema = {
   properties: {

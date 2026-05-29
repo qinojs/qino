@@ -27,9 +27,6 @@ async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: s
 
 export default async function (node: Node, vars: any = {}): Promise<string> {
   const ctx = getCtx();
-
-  if (!await ctx.user?.get("superuser")) return "";
-
   const app = node.app;
 
   if (vars.param?.delete) {

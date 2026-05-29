@@ -9,11 +9,7 @@ export const name = "cms.backend.superuser.dbfiles.transform";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }) {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "Transform");
-    await P.title("de", "Transform");
-  }
+  await backend.install(app, name, { en: "Transform", de: "Transform" });
 }
 
 // --- Platform detection ---
@@ -255,7 +251,6 @@ async function renderCache(app: App): Promise<string> {
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
   const ctx = getCtx();
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
   if (vars.install_binary) {
     if (!isRoot()) return JSON.stringify({ error: "Not running as root" });
@@ -303,9 +298,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 </div>`;
 }
 
-async function renderCachePart(node: Node): Promise<string> {
-  const ctx = getCtx();
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
+function renderCachePart(node: Node): Promise<string> {
   return renderCache(node.app);
 }
 

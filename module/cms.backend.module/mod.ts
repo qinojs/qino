@@ -8,11 +8,7 @@ export const name = "cms.backend.module";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.module");
-  if (P) {
-    await P.title("en", "Modules");
-    await P.title("de", "Module");
-  }
+  await backend.install(app, "cms.backend.module", { en: "Modules", de: "Module" });
 }
 
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {

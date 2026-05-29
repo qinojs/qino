@@ -61,7 +61,15 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         await (await node.parent()).removeChild(node);
     } else {
         const TrashNode = await ctx.app.cms.node(trash);
+        const parent = await node.parent();
+        const siblings = parent ? [...(await parent.children({ type: node.vs.type })).values()] : [];
+        const idx = siblings.findIndex(s => s.id === node.id);
+        const before = siblings[idx + 1] ?? null;
         await TrashNode.insertBefore(node, await TrashNode.cont("main"));
+        node.settings["__deleted_from"]   = String(parent ?? "");
+        node.settings["__deleted_before"] = String(before ?? "");
+        node.settings["__deleted_time"]   = String(Math.floor(Date.now() / 1000));
+        node.settings["__deleted_by"]     = String(await ctx.user?.get("email") ?? "");
         const bough = await node.bough() ?? new Map();
         for (const Child of bough.values()) {
             if (Child.vs?.["access"] !== null) await Child.set("access", 0);
@@ -70,6 +78,24 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         }
     }
     return ret;
+}
+
+export async function nodeRestore(node: any): Promise<{ url: string }> {
+    const ctx   = getCtx();
+    const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
+    if (!await node.in(trash)) throw new HTTPException(400, { message: "Node is not in trash" });
+    if (await node.access() < 2) throw new HTTPException(403);
+    const fromId   = Number(await node.settings["__deleted_from"]   ?? 0);
+    const beforeId = Number(await node.settings["__deleted_before"] ?? 0);
+    const ToNode   = fromId ? await ctx.app.cms.node(fromId) : null;
+    if (!ToNode || !await ToNode.access()) throw new HTTPException(403, { message: "Original parent no longer accessible" });
+    const before = beforeId ? await ctx.app.cms.node(beforeId) : null;
+    await ToNode.insertBefore(node, before);
+    delete node.settings["__deleted_from"];
+    delete node.settings["__deleted_before"];
+    delete node.settings["__deleted_time"];
+    delete node.settings["__deleted_by"];
+    return { url: await node.url() };
 }
 
 export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<{ url: string; name: string }> {

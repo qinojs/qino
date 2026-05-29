@@ -17,11 +17,7 @@ export const name = "cms.backend.ai";
 export const needs = ["cms.backend", "ai"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.ai");
-  if (P) {
-    await P.title("en", "AI");
-    await P.title("de", "KI");
-  }
+  await backend.install(app, "cms.backend.ai", { en: "AI", de: "KI" });
 }
 
 type Message = { type: "ok" | "error"; text: string };

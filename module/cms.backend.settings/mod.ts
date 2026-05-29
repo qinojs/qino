@@ -8,11 +8,7 @@ export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.settings");
-  if (P) {
-    await P.title("en", "Settings");
-    await P.title("de", "Einstellungen");
-  }
+  await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });
 }
 
 function render(_node: unknown, { ctx }: { ctx: RequestContext }): string {

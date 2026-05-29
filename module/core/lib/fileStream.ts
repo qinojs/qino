@@ -62,16 +62,18 @@ async function writeAll(file: Deno.FsFile, chunk: Uint8Array): Promise<void> {
 
 const PRIVATE_RANGES = [
   /^127\./,
+  /^0\./,
   /^10\./,
   /^192\.168\./,
   /^172\.(1[6-9]|2\d|3[01])\./,
   /^169\.254\./,
   /^::1$/,
-  /^fc00:/i,
+  /^f[cd]/i,
   /^fe80:/i,
 ];
 
-async function assertNoSSRF(url: string) {
+/** Throws if the URL's host resolves to a private/internal IP (SSRF guard). */
+export async function assertNoSSRF(url: string) {
   const { hostname } = new URL(url);
   const [ips, ips6] = await Promise.all([
     Deno.resolveDns(hostname, "A").catch(() => [] as string[]),
@@ -82,7 +84,7 @@ async function assertNoSSRF(url: string) {
   }
 }
 
-async function safeFetch(url: string, maxRedirects = 5): Promise<Response> {
+export async function safeFetch(url: string, maxRedirects = 5): Promise<Response> {
   await assertNoSSRF(url);
   const resp = await fetch(url, { redirect: "manual" });
   if (resp.status >= 300 && resp.status < 400) {

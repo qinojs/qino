@@ -1,0 +1,35 @@
+.-m-cms-cont-trash .-toolbar {
+  margin-bottom: 10px;
+}
+.-m-cms-cont-trash .-list {
+  xdisplay: grid;
+  xgap: 10px;
+  xgrid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.-m-cms-cont-trash .-item {
+  position: relative;
+  cursor: pointer;
+  background: #fffa;
+  backdrop-filter: blur(1rem);
+}
+.-m-cms-cont-trash .-item strong {
+  display: block;
+  font-size: 1.1em;
+}
+.-m-cms-cont-trash .-item small {
+  display: block;
+  opacity: .5;
+}
+.-m-cms-cont-trash .-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.-m-cms-cont-trash .-preview {
+  width: 90vw;
+  height: 90vh;
+  padding: 0;
+  border: none;
+  &::backdrop { background: rgba(0,0,0,.6); }
+  & iframe { width: 100%; height: 100%; border: none; }
+}

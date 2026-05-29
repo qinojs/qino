@@ -79,6 +79,12 @@ const node = {
     execute: ({ node }: { node: Node }) => fns.nodeRemove(node),
   },
 
+  restore: {
+    description: "Restore node from trash to original location",
+    access: nodeWrite,
+    execute: ({ node }: { node: Node }) => fns.nodeRestore(node),
+  },
+
   sitemap: {
     get: {
       description: "Read page tree from this node (id and title only)",

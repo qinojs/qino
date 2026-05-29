@@ -53,7 +53,7 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
       : hee(vs.email ?? "");
 
     const loginAsTd = allowLoginAs
-      ? `<td class=-loginAs><img src="${hee(ctx.sysURL)}cms.backend.users/pub/change-user.svg" alt="Login as user">`
+      ? `<td class=-loginAs><u2-ico icon="switch_account" aria-label="Login as user">⇄</u2-ico>`
       : "";
 
     html += `

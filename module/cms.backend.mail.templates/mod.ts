@@ -11,11 +11,7 @@ export const needs = ["cms.backend.mail"];
 export { dbSchema };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "Mail Templates");
-    await P.title("de", "Mail-Vorlagen");
-  }
+  await backend.install(app, name, { en: "Mail Templates", de: "Mail-Vorlagen" });
 }
 
 export async function init(app: App): Promise<void> {

@@ -1,26 +1,25 @@
-.cmsBeTree .-toggle {
-	display:block;
-	height:22px;
-	width:22px;
-	display:inline-block;
-	vertical-align:middle;
-	background-position:50%;
-	background-size:75%;
-	background-repeat: no-repeat;
-}
-.cmsBeTree .-minus {
-	background-image:url(close.svg)
-}
-.cmsBeTree .-plus  {
-	background-image:url(open.svg)
-}
-#content .cmsBeTree tbody tr {
-    background: #fff;
-}
-#content .cmsBeTree tbody td {
-    border: 1px solid #ddd;
-}
-#content .cmsBeTree tbody tr.-isCont  {
-	font-size:10px;
-	background:#f0f0f0;
+.cmsBeTree {
+
+	white-space: nowrap;
+
+	& .-toggle {
+		display:inline-block;
+		vertical-align:middle;
+		width:20px;
+	}
+	& tbody tr {
+		background: #fff;
+	}
+	& tbody td {
+		border: 1px solid #ddd;
+		border-width: 1px 1px 1px 0;
+	}
+	& tbody tr.-isCont {
+		font-size:9px;
+		background:#f0f0f0;
+	}
+	& tbody td:has(> input[type=checkbox]) {
+		text-align:center;
+	}
+	u2-ico { --size:20px; }
 }

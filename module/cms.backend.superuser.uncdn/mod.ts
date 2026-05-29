@@ -10,11 +10,7 @@ export const name = "cms.backend.superuser.uncdn";
 export const needs = ["cms.backend", "uncdn"];
 
 export async function install({ app }: { app: App }) {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "UnCDN Cache");
-    await P.title("de", "UnCDN Cache");
-  }
+  await backend.install(app, name, { en: "UnCDN Cache", de: "UnCDN Cache" });
 }
 
 type TreeResult = { html: string; size: number };
@@ -64,7 +60,6 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
   const ctx = getCtx();
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
   const cacheDir = node.app.appPATH + CACHE_SUBDIR;
 

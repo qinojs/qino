@@ -1,22 +1,40 @@
 cms.initCont("cms.backend.struct", async (el) => {
   const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
+  const tree = el.querySelector(".cmsBeTree");
 
-  function toggle(btn, labels, fn) {
-    const on = btn.style.color === "green";
-    fn(!on).then(() => { btn.innerHTML = labels[+!on]; btn.style.color = !on ? "green" : "red"; });
-    return false;
+  async function reloadList(vars = {}) {
+    const html = await apt.cms.node(el.dataset.node).html.part("list").post({ vars });
+    el.querySelector("tbody[data-part=list]").innerHTML = html;
   }
 
-  globalThis.toggleVisible    = (btn, pid) => toggle(btn, ["hidden", "visible"],              v => apt.cms.node(pid).visible.put({ value: v }));
-  globalThis.toggleSearchable = (btn, pid) => toggle(btn, ["not searchable", "searchable"],   v => apt.cms.node(pid).searchable.put({ value: v }));
-  globalThis.toggleAccess     = (btn, pid) => toggle(btn, ["private", "public"],              v => apt.cms.node(pid).access.put({ value: +v }));
+  tree?.addEventListener("click", async (e) => {
+    // expand / collapse a tree node
+    const toggleNode = e.target.closest("[data-toggle-node]");
+    if (toggleNode) {
+      e.preventDefault();
+      await reloadList({ toggleOpen: toggleNode.dataset.toggleId, value: toggleNode.dataset.toggleValue });
+      return;
+    }
 
-  el.querySelector(".cmsBeTree")?.addEventListener("click", async (e) => {
-    const a = e.target.closest("[data-toggle-node]");
-    if (!a) return;
+    // cycle public access: inherited ("") -> yes (1) -> no (0) -> inherited ...
+    const btn = e.target.closest("button[data-toggle=access]");
+    if (!btn) return;
     e.preventDefault();
-    const nid = a.dataset.toggleNode, id = a.dataset.toggleId, val = a.dataset.toggleValue;
-    const html = await apt.cms.node(nid).html.part("list").get({ vars: { toggleOpen: id, value: val } });
-    a.closest("tbody[data-part=list]").innerHTML = html;
+    const cur = btn.dataset.v;
+    const next = cur === "" ? 1 : cur === "1" ? 0 : null;
+    await apt.cms.node(btn.dataset.pid).access.put(next == null ? {} : { value: next });
+    await reloadList(); // re-render: inheritance affects children
+  });
+
+  // boolean properties as checkboxes (visible / searchable)
+  tree?.addEventListener("change", (e) => {
+    const box = e.target.closest("input[type=checkbox][data-toggle]");
+    if (!box) return;
+    apt.cms.node(box.dataset.pid)[box.dataset.toggle].put({ value: box.checked });
+  });
+
+  // show/hide content elements in the tree
+  el.querySelector("[data-toggle-contents]")?.addEventListener("change", (e) => {
+    reloadList({ showContents: e.target.checked ? "1" : "0" });
   });
 });

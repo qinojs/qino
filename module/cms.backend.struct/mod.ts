@@ -1,19 +1,15 @@
 import { hee } from "../core/lib/util.ts";
 import { list } from "./parts/list.ts";
+import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
-import { backend } from "../cms.backend/mod.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.backend.struct";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.struct");
-  if (P) {
-    await P.title("en", "Pages");
-    await P.title("de", "Seiten");
-  }
+  await backend.install(app, "cms.backend.struct", { en: "Pages", de: "Seiten" });
 }
 
 async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string> {
@@ -27,17 +23,20 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
   // Breadcrumb path to root node
   let pathHtml = "";
   for (const C of (await rootNode.path()).values()) {
-    const title = (await C.title("en")) || "(no text)";
+    const title = (await C.title(ctx.lang)) || "(no text)";
     pathHtml += `<a href="${hee("?rp=" + C.id)}">${hee(String(title)).trim() || "(no text)"}</a> > `;
   }
 
   const listHtml = await list(node, { ctx, vars: {} });
 
+  const showContents = !!ctx.settings.cms.admin.showContents();
+
   const app = node.app;
-  return `<div class="u2-card -m-cms-backend-struct" style="flex:0 1 1200px" data-sys-url="${ctx.sysURL}">
+  return `<div class="u2-card -m-cms-backend-struct" style="flex:0 1 1200px" data-sys-url="${ctx.sysURL}" data-node="${node.id}">
   <div class=-head>${await app.t`Structure`}</div>
   <div class=-body>
-    ${pathHtml}
+    <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${await app.t`Show contents`}</label>
+    <div>${pathHtml}</div>
   </div>
   <table class="u2-table cmsBeTree">
     <thead>

@@ -9,11 +9,7 @@ export const name = "cms.backend.smalltext";
 export const needs = ["cms.backend", "cms.text"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-    const P = await backend.install(app, "cms.backend.smalltext");
-    if (P) {
-      await P.title("en", "Translate");
-      await P.title("de", "Übersetzen");
-    }
+    await backend.install(app, "cms.backend.smalltext", { en: "Translate", de: "Übersetzen" });
 }
 
 export async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<string> {

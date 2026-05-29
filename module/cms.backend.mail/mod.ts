@@ -11,11 +11,7 @@ export const name = "cms.backend.mail";
 export const needs = ["cms.backend", "mail"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "Mail");
-    await P.title("de", "Mail");
-  }
+  await backend.install(app, name, { en: "Mail", de: "Mail" });
 }
 
 const u2time = (t: unknown) => {

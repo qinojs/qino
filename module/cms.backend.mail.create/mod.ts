@@ -9,11 +9,7 @@ export const name = "cms.backend.mail.create";
 export const needs = ["cms.backend.mail"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "Create Mail");
-    await P.title("de", "Mail erstellen");
-  }
+  await backend.install(app, name, { en: "Create Mail", de: "Mail erstellen" });
 }
 
 async function render(node: Node): Promise<string> {

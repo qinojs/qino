@@ -11,6 +11,7 @@ declare module "../core/server.ts" {
 }
 
 export const name = "cms";
+export { healthChecks } from "./healthChecks.ts";
 export const needs = ["core"];
 export { dbSchema };
 

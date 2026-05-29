@@ -1,6 +1,9 @@
 import { hee } from "../core/lib/util.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
+import '../cms/mod.ts';
+
+export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.backend";
 export const needs = ["cms"];
@@ -33,7 +36,7 @@ export const backend = {
         }
         return node ? await node.page() : node;
     },
-    async install(app: App, module: string): Promise<Node | undefined> {
+    async install(app: App, module: string, titles?: Record<string, string>): Promise<Node | undefined> {
         const cms = app.cms;
 
         await backend.checkInstalled(app);
@@ -60,7 +63,9 @@ export const backend = {
             parentModule = mod;
         }
         const node = await cms.nodeByModule(module);
-        return node?.page();
+        const P = await node?.page();
+        if (P && titles) for (const [lang, text] of Object.entries(titles)) await P.title(lang, text);
+        return P;
     }
 }
 

@@ -1,4 +1,6 @@
+import * as nodePath from "node:path";
 import { Output } from "../core/lib/util.ts";
+import { assertNoSSRF } from "../core/lib/fileStream.ts";
 import type { App } from "../core/server.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 import type { HtmlBuilder } from "../core/lib/HtmlBuilder.ts";
@@ -36,9 +38,11 @@ const mediaTypesByExtension: Record<string, string> = {
   svg: "image/svg+xml",
 };
 
-function urlToPath(cacheDir: string, url: string): string {
+function urlToPath(cacheDir: string, url: string): string | null {
   const u = new URL(url);
-  return cacheDir + u.hostname + u.pathname;
+  const target = nodePath.resolve(cacheDir, u.hostname + u.pathname);
+  const root = nodePath.resolve(cacheDir);
+  return target.startsWith(root + nodePath.sep) ? target : null;
 }
 
 function mediaTypeForPath(filePath: string): string | null {
@@ -88,6 +92,7 @@ async function serveCached(filePath: string, mediaType: string, ctx: RequestCont
 }
 
 async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: RequestContext): Promise<void> {
+  await assertNoSSRF(url); // blocks hosts resolving to private/internal IPs
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   if (Number(res.headers.get("content-length") ?? 0) > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
@@ -112,6 +117,7 @@ export function init(app: App): void {
 
     const url = "https://" + rest;
     const filePath = urlToPath(cacheDir, url);
+    if (!filePath) done(ctx, 404, "Not allowed");
     const mediaType = mediaTypeForPath(filePath);
     if (!mediaType) done(ctx, 404, "Not allowed");
 

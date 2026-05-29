@@ -6,11 +6,7 @@ export const name = "cms.backend.superuser.db";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "DB Manager");
-    await P.title("de", "DB Manager");
-  }
+  await backend.install(app, name, { en: "DB Manager", de: "DB Manager" });
 }
 
 export const cms = {

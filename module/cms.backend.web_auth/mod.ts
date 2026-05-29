@@ -9,20 +9,12 @@ export const needs = ["cms.backend", "web_auth"];
 export const cms   = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.web_auth");
-  if (P) {
-    await P.title("en", "WebAuthn");
-    await P.title("de", "WebAuthn");
-  }
+  await backend.install(app, "cms.backend.web_auth", { en: "WebAuthn", de: "WebAuthn" });
 }
 
 async function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const db  = node.app.db;
-
-  if (!(await ctx.user?.get("superuser"))) {
-    return '<div class="u2-card"><div class="-body">Kein Zugriff.</div></div>';
-  }
 
   if ("delete_cred" in ctx.post && ctx.post.token === ctx.token) {
     const id = Number(ctx.post.delete_cred ?? "0");

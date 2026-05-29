@@ -1,7 +1,9 @@
 import { hee } from "../core/lib/util.ts"
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { getTypes, type CheckResult, type Solution } from "./health_check.ts";
+export { healthChecks } from "./healthChecks.ts";
 import statistic from "./parts/statistic.ts";
+import { details as statisticDetails } from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 import type { Node } from "../cms/lib/Node.ts";
@@ -11,23 +13,15 @@ export const name = "cms.backend.system";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.system");
-  if (P) {
-    await P.title("en", "System");
-    await P.title("de", "System");
-  }
+  await backend.install(app, "cms.backend.system", { en: "System", de: "System" });
 }
 
 async function render(node: Node): Promise<string> {
-  const ctx    = getCtx();
-  const get    = ctx.get as Record<string, string>;
-  const open   = get.open ?? null;
-  const db     = node.app.db;
-  const app    = node.app;
+  const ctx  = getCtx();
+  const db   = node.app.db;
+  const app  = node.app;
 
   // ── server info ────────────────────────────────────────────────────────
-
-  const appPATH   = app.appPATH;
 
   const mem = Deno.memoryUsage();
   const pid = Deno.pid;
@@ -50,7 +44,7 @@ async function render(node: Node): Promise<string> {
       <tr><td>${await app.t`System Load`}:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
       <tr><td>${await app.t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
       <tr><td>${await app.t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
-      <tr><td>${await app.t`APP-Path`}:<td>${hee(appPATH)}
+      <tr><td>${await app.t`APP-Path`}:<td>${hee(app.appPATH)}
     </table>
   </div>
 </div>`;
@@ -58,8 +52,9 @@ async function render(node: Node): Promise<string> {
   // ── health checks ──────────────────────────────────────────────────────
   const types = await getTypes(app);
 
-  // Collect health-check results per category
-  const sections: Record<string, string[]> = {};
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  let healthHtml = "";
   for (const [type, checks] of Object.entries(types)) {
     const items: string[] = [];
     for (const [name, checkFn] of Object.entries(checks)) {
@@ -67,64 +62,70 @@ async function render(node: Node): Promise<string> {
       try { data = await checkFn(); } catch { continue; }
       if (!data) continue;
 
+      const solutions = Object.entries(data.solutions ?? {}) as [string, Solution][];
       let solutionsHtml = "";
-      for (const [solution, solveData] of Object.entries(data.solutions ?? {}) as [string, Solution][]) {
+      if (solutions.length === 1) {
+        const [solution, solveData] = solutions[0];
         let formFields = "";
         for (const [fname, field] of Object.entries(solveData.form ?? {})) {
           const inputType = typeof field.type === "string" ? field.type : "text";
-          formFields += `<tr><td>${hee(fname.charAt(0).toUpperCase() + fname.slice(1))}:<td><input name="${hee(fname)}" type="${hee(inputType)}">`;
+          formFields += `<tr><td>${hee(cap(fname))}:<td><input name="${hee(fname)}" type="${hee(inputType)}">`;
         }
-        solutionsHtml += `
-<form style="margin:8px;">
+        solutionsHtml = `<form>
   ${formFields ? `<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
-  <button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}"
-          style="background-color:var(--cms-dark); display:block; margin-left:auto">
-    ${hee(solution.charAt(0).toUpperCase() + solution.slice(1))}
-  </button>
+  <button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}">${hee(cap(solution))}</button>
 </form>`;
+      } else if (solutions.length > 1) {
+        const menuItems = solutions.map(([solution]) =>
+          `<li><button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}">${hee(cap(solution))}</button>`
+        ).join("");
+        solutionsHtml = `<form><u2-menubutton>
+  <button type="button">solve ▾</button>
+  <menu>${menuItems}</menu>
+</u2-menubutton></form>`;
       }
 
-      items.push(`
-<div class="healty_item -${hee(type)}" data-type="${hee(type)}" data-item="${hee(name)}">
-  ${hee(name.charAt(0).toUpperCase() + name.slice(1))}<br>
-  <small>${data.info ?? ""}</small>
-  <div style="display:flex; flex-wrap:wrap; justify-content:flex-end">${solutionsHtml}</div>
+      items.push(`<div class="healty_item -${hee(type)}" data-type="${hee(type)}" data-item="${hee(name)}">
+  ${checkFn.mod ? ` <small>${hee(checkFn.mod)}</small><br>` : ""}
+  <strong>${hee(cap(name))}</strong>
+  ${data.info ? `<p>${data.info}</p>` : ""}
+  <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml}</div>
 </div>`);
     }
-    sections[type] = items;
-  }
-
-  let healthHtml = "";
-  for (const [type, items] of Object.entries(sections)) {
-    healthHtml += `
-<div class="u2-card">
-  <div class="-head">${hee(type.charAt(0).toUpperCase() + type.slice(1))}</div>
-  <div class="-body" style="max-height:700px; overflow:auto">
+    if (!items.length) continue;
+    healthHtml += `<div class="u2-card">
+  <div class="-head">${hee(cap(type))}</div>
+  <div class="-body" style="max-height:700px;overflow:auto">
     <div class="healty_container">${items.join("")}</div>
   </div>
 </div>`;
   }
 
   // ── mysql config ───────────────────────────────────────────────────────
-  let mysqlHtml = "";
-  if (open === "mysql") {
-    const vars = await db.all("SHOW VARIABLES");
-    const relevant = new Set(["max_allowed_packet"]);
-    let rows = "";
-    for (const row of vars) {
-      const name  = row.Variable_name;
-      const mark  = relevant.has(name);
-      let   value = row.Value;
-      if (name === "max_allowed_packet") value = (Number(value) / 1024).toFixed(1) + " KB";
-      rows += `<tr><td ${mark ? 'style="font-weight:bold"' : ""}>${hee(name)}<td>${hee(String(value))}`;
-    }
-    mysqlHtml = `<table class="u2-table"><tbody>${rows}</table>`;
+  const mysqlRelevant = new Set(["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"]);
+  const mysqlVars = await db.all("SHOW VARIABLES");
+  const mysqlMap = new Map(mysqlVars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
+
+  const fmtMysql = (name: string, value: string) => {
+    if (name === "max_allowed_packet" || name === "innodb_buffer_pool_size") return (Number(value) / 1024 / 1024).toFixed(1) + " MB";
+    return value;
+  };
+
+  let mysqlSummaryRows = "";
+  for (const name of mysqlRelevant) {
+    const value = mysqlMap.get(name) ?? "";
+    mysqlSummaryRows += `<tr><td>${hee(name)}<td>${hee(fmtMysql(name, value))}`;
   }
+
+  const mysqlLoadBtn = `<button onclick="import('${ctx.sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('mysql-details').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">Details</button>`;
 
   const mysqlBox = `
 <div class="u2-card">
-  <a class="-head" href="?open=mysql">mysql</a>
-  <div class="-body">${mysqlHtml}</div>
+  <div class="-head">MySQL</div>
+  <table class="u2-table" style="width:auto"><tbody>${mysqlSummaryRows}</table>
+  <div class="-body" data-part="mysql-details" style="max-width:30rem; max-height:30rem; overflow:auto">
+    ${mysqlLoadBtn}
+  </div>
 </div>`;
 
   // ── locales / time ─────────────────────────────────────────────────────
@@ -133,7 +134,7 @@ async function render(node: Node): Promise<string> {
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
 <div class="u2-card">
-  <div class="-head">${await app.t`Locales`}</div>
+  <div class="-head">${await app.t`Time`}</div>
   <div class="-body" style="padding:0">
     <table class=u2-table>
       <tr><td>${await app.t`OS`}<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
@@ -143,25 +144,30 @@ async function render(node: Node): Promise<string> {
   </div>
 </div>`;
 
-  // ── statistics ─────────────────────────────────────────────────────────
+  // ── storage ───────────────────────────────────────────────────────────
   const statsBox = `
-<div class="u2-card">
-  <div class="-head">${await app.t`Statistics`}</div>
-  <div class="-body" data-part="statistic">
-    <button onclick="import('${getCtx().sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('statistic').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">${await app.t`run`}</button>
-  </div>
+<div class="u2-card" style="flex-grow:0">
+  <div class="-head">Speicher</div>
+  ${await statistic(node)}
 </div>`;
 
   return `
-<div class="u2-flex -m-cms-backend-system">
+<div class="u2-flex -m-cms-backend-system" data-sys-url="${ctx.sysURL}">
   <style>
+    .u2-card {
+      min-width:25rem;
+    }
     .healty_container { display:grid; grid-gap:8px; }
-    .healty_item { padding:8px; background:#eee; }
-    .healty_item.-error   { background:hsl(0,100%,90%); }
-    .healty_item.-warning { background:hsl(40,100%,90%); }
-    .healty_item.-notice  { background:hsl(200,100%,90%); }
+    .healty_item {
+      padding:.5rem;
+      background:color-mix(in srgb, var(--gray), #fff 80%);
+      border-radius:var(--radius);
+      &.-error   { background: color-mix(in srgb, var(--red), #fff 80%); }
+      &.-warning { background: color-mix(in srgb, var(--orange), #fff 80%); }
+      &.-notice  { background: color-mix(in srgb, var(--blue), #fff 80%); }
+      button { background-color: var(--color-text); border-radius: .2rem; margin: 0;  }
+    }
   </style>
-  ${ctx.dev ? `<div style="flex:1 1 100%;background:#f90;color:#000;font-weight:bold;padding:10px 16px;font-size:1.1em">⚠ ${await app.t`Dev mode active`}</div>` : ""}
   ${serverInfoHtml}
   ${healthHtml}
   ${mysqlBox}
@@ -235,6 +241,16 @@ async function systemInfoRows(app: App): Promise<string> {
   <tr><td>${await app.t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>`;
 }
 
+async function mysqlDetails(node: Node): Promise<string> {
+  const db = node.app.db;
+  const vars = await db.all("SHOW VARIABLES");
+  let rows = "";
+  for (const row of vars) {
+    rows += `<tr><td>${hee(row.Variable_name)}<td>${hee(String(row.Value))}`;
+  }
+  return `<table class="u2-table"><tbody>${rows}</table>`;
+}
+
 export const cms = {
   node: {
     js: ["pub/main.js"],
@@ -242,6 +258,8 @@ export const cms = {
     api,
     parts: {
       statistic,
+      "statistic-details": statisticDetails,
+      "mysql-details": mysqlDetails,
     },
   },
 };

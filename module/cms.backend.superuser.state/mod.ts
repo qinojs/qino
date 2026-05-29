@@ -9,17 +9,10 @@ export const name = "cms.backend.superuser.state";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.install(app, "cms.backend.superuser.state");
-  if (P) {
-    await P.title("en", "Server State");
-    await P.title("de", "Server-Status");
-  }
+  await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });
 }
 
 async function render(node: Node): Promise<string> {
-  const ctx = getCtx();
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
-
   const stateHtml = await renderState(node);
 
   return `<div class=u2-flex>
@@ -33,9 +26,8 @@ async function render(node: Node): Promise<string> {
 </div>`;
 }
 
-async function renderState(node: Node): Promise<string> {
+function renderState(node: Node): string {
   const ctx = getCtx();
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
   return `
     ${dumpBox("Server / app", node.app, 2)}
     ${dumpBox("Context", ctx, 3)}`;

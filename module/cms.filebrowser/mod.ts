@@ -6,6 +6,7 @@ import { Access, type AptTree } from "../core/lib/apt/mod.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.filebrowser";
+export { healthChecks } from "./healthChecks.ts";
 export const needs = ["cms"];
 
 export const api: AptTree = {

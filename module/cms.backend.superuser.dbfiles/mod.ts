@@ -10,13 +10,10 @@ import type { DbFile } from "../core/lib/DbFileManager.ts";
 
 export const name = "cms.backend.superuser.dbfiles";
 export const needs = ["cms.backend"];
+export { healthChecks } from "./healthChecks.ts";
 
 export async function install({ app }: { app: App }) {
-  const P = await backend.install(app, name);
-  if (P) {
-    await P.title("en", "DB Files");
-    await P.title("de", "DB Dateien");
-  }
+  await backend.install(app, name, { en: "DB Files", de: "DB Dateien" });
 }
 
 const u2time = (t: unknown) => {
@@ -33,7 +30,7 @@ const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
 async function mediaPreview(f: DbFile, exists: boolean) {
-  if (!exists) return `<span style="color:red">✗</span>`;
+  if (!exists) return `<u2-ico inline icon="cancel" aria-label="not found" style="color:red">✗</u2-ico>`;
   return `<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
@@ -66,7 +63,6 @@ const aptAttrs = (sysURL: string) => `data-sys-url="${sysURL}"`;
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get?.("superuser")) return "<div></div>";
 
   const { db, dbFiles: fm } = app;
   const get = ctx.get as Record<string, string>;
@@ -74,7 +70,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   if (get.id) return renderDetail(node, Number(get.id));
   if (vars.delete) await (await fm.file(Number(vars.delete))).remove();
   if (vars.delete_unlinked)    return JSON.stringify(await deleteUnlinkedFs(node));
-  if (vars.delete_unlinked_db) return JSON.stringify(await deleteUnlinkedDb(node));
+  if (vars.delete_unlinked_db) return JSON.stringify(await deleteUnlinkedDb(node.app));
 
   const children = fileChildren(node);
   const search = get.search ?? "";
@@ -154,7 +150,6 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 async function renderDetail(node: Node, id: number): Promise<string> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get("superuser")) return "<div></div>";
 
   const { db, dbFiles: fm } = app;
   const get = ctx.get;
@@ -238,8 +233,8 @@ async function deleteUnlinkedFs(node: Node) {
   return { deleted, size };
 }
 
-async function deleteUnlinkedDb(node: Node) {
-  const { db, dbFiles: fm } = node.app;
+async function deleteUnlinkedDb(app: App) {
+  const { db, dbFiles: fm } = app;
   const ago = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
   const notLinked = db.table("file").children.map((F: DbField) =>
     `file.id NOT IN (SELECT ${Db.escapeId(F.name)} FROM ${Db.escapeId(F.table.name)})`);

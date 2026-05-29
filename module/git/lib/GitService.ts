@@ -84,21 +84,21 @@ export async function push(repoPath: string): Promise<string> {
   return stdout;
 }
 
+// reject values that git would interpret as options (argument injection)
+function assertNoOption(value: string, name: string): void {
+  if (value.startsWith("-")) throw new Error(`invalid ${name}`);
+}
+
 export async function checkout(repoPath: string, ref: string): Promise<string> {
+  assertNoOption(ref, "ref");
   const { stdout, stderr, code } = await run(["checkout", ref], repoPath);
   if (code !== 0) throw new Error(stderr || stdout);
   return stdout;
 }
 
 export async function clone(url: string, targetDir: string): Promise<string> {
-  const cmd = new Deno.Command("git", {
-    args: ["clone", url, targetDir],
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout, stderr, code } = await cmd.output();
-  const out = new TextDecoder().decode(stdout).trim();
-  const err = new TextDecoder().decode(stderr).trim();
-  if (code !== 0) throw new Error(err || out);
-  return err || out;
+  assertNoOption(url, "url");
+  const { stdout, stderr, code } = await run(["clone", "--", url, targetDir], Deno.cwd());
+  if (code !== 0) throw new Error(stderr || stdout);
+  return stdout;
 }
