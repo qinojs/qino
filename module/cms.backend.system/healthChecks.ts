@@ -8,10 +8,9 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   const db       = app.db;
   const ctx      = getCtx();
   const settings = app.settings;
-  const domain   = new URL(ctx.req.url).hostname.replace(/^www\./, "");
 
   const types: HealthTypes = { error: {}, warning: {}, notice: {}, cleanup: {}, repair: {} };
-  const { error, warning, notice, cleanup, repair } = types;
+  const { error, warning, notice, cleanup } = types;
 
   // ── duplicate settings ──────────────────────────────────────────────────
   const dupRows = await db.all(
@@ -59,27 +58,6 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
         "remove user": { solve: async () => { for (const r of found) await db.query("DELETE FROM usr WHERE id=?", [r.id]); } },
       },
     };
-  };
-
-  // ── mail settings ───────────────────────────────────────────────────────
-  notice['default "mail from" is not in this domain'] = async () => {
-    const value = String(await settings.qg?.mail?.defSender ?? "");
-    if (value.endsWith("@" + domain)) return undefined;
-    return { info: "its: " + hee(value), solutions: { [`set it to: info@${domain}`]: { solve: async () => { settings.qg.mail.defSender = "info@" + domain; } } } };
-  };
-
-  notice['mail "replay" not from this domain'] = async () => {
-    const value = String(await settings.qg?.mail?.replay ?? "");
-    if (value.endsWith("@" + domain)) return undefined;
-    return { info: "its: " + hee(value), solutions: { [`set it to: info@${domain}`]: { solve: async () => { settings.qg.mail.replay = "info@" + domain; } } } };
-  };
-
-  notice["no mail recipient on debug mode"] = async () => {
-    if (await settings.qg?.mail?.["on debugmode to"]) return undefined;
-    const usr = ctx.user;
-    if (!usr || !await usr.get("superuser")) return undefined;
-    const email = String(await usr.get("email") ?? "");
-    return { solutions: { [`set it to: ${hee(email)}`]: { solve: async () => { settings.qg.mail["on debugmode to"] = email; } } } };
   };
 
   // ── smalltext ───────────────────────────────────────────────────────────

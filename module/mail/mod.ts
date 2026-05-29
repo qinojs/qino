@@ -9,6 +9,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 export const name = "mail";
 export const needs = ["core"];
 export { dbSchema };
+export { healthChecks } from "./healthChecks.ts";
 
 declare module "../core/server.ts" {
   interface App { mail: MailManager; }
@@ -16,8 +17,13 @@ declare module "../core/server.ts" {
 
 type Dict = Record<string, unknown>;
 type AddressInput = string | { address?: string; email?: string; name?: string; data?: Dict; mail1_track_id?: number };
+type UserInput = { email?: string; firstname?: string; lastname?: string; get?: (key: string) => unknown | Promise<unknown> };
+type RecipientType = "to" | "cc" | "bcc";
 type Template = string | ((data: TemplateData) => string | Promise<string>);
 type Transport = { send(message: unknown, options?: unknown): Promise<unknown>; sendMany?: (messages: unknown, options?: unknown) => AsyncIterable<unknown>; close?(): Promise<void>; closeAllConnections?(): Promise<void> };
+type TransportCtor = new (options: Dict) => Transport;
+type SendReceipt = { successful?: boolean; error?: unknown; errorMessages?: string[] };
+type MailDefaults = { sender: string; sendername: string; reply_to: string; debug_to: string; base_url: string };
 
 type TemplateData = {
   app: App;
@@ -57,6 +63,15 @@ const transportModules: Record<string, { module: string; exportName: string }> =
   jmap:     { module: "jmap",     exportName: "JmapTransport" },
   mock:     { module: "mock",     exportName: "MockTransport" },
 };
+const transportSettingKeys: Record<string, string[]> = {
+  mailgun:  ["apiKey", "domain", "baseUrl"],
+  resend:   ["apiKey", "baseUrl"],
+  sendgrid: ["apiKey", "baseUrl"],
+  ses:      ["region", "accessKeyId", "secretAccessKey", "sessionToken"],
+  plunk:    ["apiKey", "baseUrl"],
+  jmap:     ["sessionUrl", "bearerToken", "accountId", "identityId"],
+  mock:     [],
+};
 
 export const settingsSchema = {
   properties: {
@@ -65,9 +80,10 @@ export const settingsSchema = {
     reply_to:   { type: "string", description: "Default Reply-To email address" },
     debug_to:   { type: "string", description: "Redirect all outgoing mail to this address" },
     base_url:   { type: "string", description: "Public base URL for mail tracking links" },
+    _secure:    { type: "string", description: "Secret for mail tracking signatures" },
     transport: {
       properties: {
-        type: { type: "string", enum: ["", "smtp", "mailgun", "resend", "sendgrid", "ses", "plunk", "jmap", "mock"] },
+        type: { type: "string", enum: ["", ...Object.keys(transportModules)] },
         smtp: {
           properties: {
             host: { type: "string" },
@@ -186,8 +202,7 @@ function htmlToText(html: string): string {
     .trim();
 }
 
-// deno-lint-ignore no-explicit-any
-async function importUpyo(pkg: string): Promise<any> {
+async function importUpyo(pkg: string): Promise<Record<string, unknown>> {
   return await import(`jsr:@upyo/${pkg}`);
 }
 
@@ -219,33 +234,16 @@ function jsonDecode<T>(v: unknown, fallback: T): T {
   catch { return fallback; }
 }
 
-async function readPath(root: unknown, path: string[]): Promise<unknown> {
-  try {
-    let item = root as Record<string, unknown>;
-    for (const key of path) item = item[key] as Record<string, unknown>;
-    return await item;
-  } catch { return undefined; }
-}
-
-async function firstSetting(root: unknown, paths: string[][]): Promise<unknown> {
-  for (const path of paths) {
-    const v = await readPath(root, path);
-    if (v !== "" && v != null) return v;
-  }
-}
-
-// deno-lint-ignore no-explicit-any
-async function pathAttachment(v: string, opts: Dict = {}): Promise<any> {
+function pathAttachment(v: string, opts: Dict = {}): Dict {
   const filename = opts.name ?? opts.filename ?? basename(v);
   const contentType = opts.type ?? opts.contentType ?? typeByExtension(extname(v).replace(/^\./, "")) ?? "application/octet-stream";
   const contentId = opts.contentId ?? opts.cid ?? createHash("sha1").update(v).digest("hex");
   return clean({ filename, content: Deno.readFile(v), contentType, contentId, inline: !!opts.inline });
 }
 
-// deno-lint-ignore no-explicit-any
-async function attachmentOf(v: AttachmentInput, inline = false): Promise<any> {
-  if (typeof v === "string") return await pathAttachment(v, { inline });
-  if (v.path) return await pathAttachment(v.path, { ...v, inline: v.inline ?? inline });
+function attachmentOf(v: AttachmentInput, inline = false): Dict {
+  if (typeof v === "string") return pathAttachment(v, { inline });
+  if (v.path) return pathAttachment(v.path, { ...v, inline: v.inline ?? inline });
   return clean({
     filename: v.filename ?? v.name,
     content: v.content,
@@ -352,28 +350,28 @@ export class MailManager {
     await t?.close?.();
   }
 
-  async defaults(): Promise<Dict> {
-    const root = this.app.settings;
+  async defaults(): Promise<MailDefaults> {
+    const root = this.app.settings.mail;
     return {
-      sender: await firstSetting(root, [["mail", "sender"], ["qg", "mail", "defSender"]]) ?? "",
-      sendername: await firstSetting(root, [["mail", "sendername"], ["qg", "mail", "defSendername"]]) ?? "",
-      reply_to: await firstSetting(root, [["mail", "reply_to"], ["mail", "replyTo"], ["qg", "mail", "replay"]]) ?? "",
-      debug_to: await firstSetting(root, [["mail", "debug_to"], ["qg", "mail", "on debugmode to"]]) ?? "",
-      base_url: await firstSetting(root, [["mail", "base_url"]]) ?? "",
+      sender: String(await root.sender ?? ""),
+      sendername: String(await root.sendername ?? ""),
+      reply_to: String(await root.reply_to ?? ""),
+      debug_to: String(await root.debug_to ?? ""),
+      base_url: String(await root.base_url ?? ""),
     };
   }
 
   async secure(): Promise<string> {
     const root = this.app.settings;
-    let secret = String(await firstSetting(root, [["qg", "_secure"], ["mail", "_secure"]]) ?? "");
+    let secret = String(await root.mail._secure ?? "");
     if (!secret) {
       secret = uid();
-      root.qg._secure(secret);
+      root.mail._secure(secret);
     }
     return secret;
   }
 
-  async trackHtml(mail: MailMessage, recipient: Recipient, html: string): Promise<string> {
+  async trackHtml(recipient: Recipient, html: string): Promise<string> {
     const trackId = recipient.mail1_track_id;
     if (!trackId) return html;
     const base = await this.baseURL();
@@ -419,7 +417,7 @@ export class MailManager {
     const entry = transportModules[config.type];
     if (!entry) throw new Error(`Unknown mail transport "${config.type}"`);
     const mod = await importUpyo(entry.module);
-    const TransportClass = mod[entry.exportName];
+    const TransportClass = mod[entry.exportName] as TransportCtor | undefined;
     if (!TransportClass) throw new Error(`Upyo transport export missing: ${entry.exportName}`);
     this.#builtTransport = new TransportClass(config.options);
     this.#builtKey = key;
@@ -428,37 +426,30 @@ export class MailManager {
 
   async transportConfig(): Promise<{ type: string; options: Dict }> {
     const root = this.app.settings;
-    let type = String(await firstSetting(root, [["mail", "transport", "type"]]) ?? "");
-    if (!type && await firstSetting(root, [["mail", "transport", "host"], ["qg", "mail", "smtp", "host"]])) type = "smtp";
+    let type = String(await root.mail.transport.type ?? "");
     if (!type && this.app.dev) type = "mock";
     if (!type) throw new Error("No mail transport configured. Set mail.transport.type or inject app.mail.setTransport().");
     type = type.toLowerCase();
 
-    const get = (key: string) => firstSetting(root, [
-      ["mail", "transport", type, key],
-      ["mail", "transport", key],
-    ]);
+    const get = (key: string) => root.mail.transport[type][key];
     const options: Dict = {};
 
     if (type === "smtp") {
-      const host = await firstSetting(root, [["mail", "transport", "smtp", "host"], ["mail", "transport", "host"], ["qg", "mail", "smtp", "host"]]);
-      if (!host) throw new Error("SMTP transport needs mail.transport.host");
-      const port = toInt(await firstSetting(root, [["mail", "transport", "smtp", "port"], ["mail", "transport", "port"], ["qg", "mail", "smtp", "port"]]));
-      const user = await firstSetting(root, [["mail", "transport", "smtp", "username"], ["mail", "transport", "username"], ["qg", "mail", "smtp", "username"]]);
-      const pass = await firstSetting(root, [["mail", "transport", "smtp", "password"], ["mail", "transport", "password"], ["qg", "mail", "smtp", "password"]]);
+      const host = await get("host");
+      if (!host) throw new Error("SMTP transport needs mail.transport.smtp.host");
+      const port = toInt(await get("port"));
+      const user = await get("username");
+      const pass = await get("password");
       options.host = host;
       options.port = port;
-      options.secure = toBool(await firstSetting(root, [["mail", "transport", "smtp", "secure"], ["mail", "transport", "secure"]])) ?? port === 465;
+      options.secure = toBool(await get("secure")) ?? port === 465;
       if (user || pass) options.auth = { user, pass };
       return { type, options: clean(options) };
     }
 
-    for (const key of ["apiKey", "key", "domain", "region", "baseUrl", "sessionUrl", "bearerToken", "accountId", "identityId", "timeout", "retries"]) {
+    for (const key of transportSettingKeys[type] ?? []) {
       options[key] = await get(key);
     }
-    options.apiKey ||= options.key;
-    options.timeout = toInt(options.timeout);
-    options.retries = toInt(options.retries);
     if (type === "ses") {
       const accessKeyId = await get("accessKeyId");
       const secretAccessKey = await get("secretAccessKey");
@@ -468,7 +459,6 @@ export class MailManager {
         : { type: "credentials", accessKeyId, secretAccessKey };
     }
     if (type === "mock") return { type, options: clean(options) };
-    delete options.key;
     return { type, options: clean(options) };
   }
 
@@ -502,7 +492,7 @@ export class MailMessage {
   priority?: "high" | "normal" | "low";
   template: string | Template | false = "default";
   attachments: AttachmentInput[] = [];
-  receipts: unknown[] = [];
+  receipts: SendReceipt[] = [];
   #pending: Promise<unknown>[] = [];
   #loaded = false;
 
@@ -540,14 +530,14 @@ export class MailMessage {
     const id = await this.manager.app.db.table("mail").insert(row);
     if (!id) throw new Error("Mail could not be created");
     this.id = String(id);
-    for (const r of listOf(this.to)) this.queueRecipient(r, "to");
-    for (const r of listOf(this.cc)) this.queueRecipient(r, "cc");
-    for (const r of listOf(this.bcc)) this.queueRecipient(r, "bcc");
+    for (const type of ["to", "cc", "bcc"] as const) {
+      for (const r of listOf(this[type])) this.queueRecipient(r, type);
+    }
     for (const a of this.attachments) this.queueAttachment(a);
     return this;
   }
 
-  toRow(defaults: Dict = {}): Dict {
+  toRow(defaults: Partial<MailDefaults> = {}): Dict {
     const sender = this.sender || this.from || defaults.sender || "";
     const replyTo = this.replyTo || this.reply_to || defaults.reply_to || "";
     return {
@@ -573,34 +563,28 @@ export class MailMessage {
     return this;
   }
 
-  addTo(email: AddressInput, name = "", data: Dict = {}): this {
+  #addRecipient(type: RecipientType, email: AddressInput, name = "", data: Dict = {}): this {
     const r = addressOf(email, name, data);
     if (r) {
-      this.to = [...listOf(this.to), r];
-      this.queueRecipient(r, "to");
+      this[type] = [...listOf(this[type]), r];
+      this.queueRecipient(r, type);
     }
     return this;
+  }
+
+  addTo(email: AddressInput, name = "", data: Dict = {}): this {
+    return this.#addRecipient("to", email, name, data);
   }
 
   addCc(email: AddressInput, name = "", data: Dict = {}): this {
-    const r = addressOf(email, name, data);
-    if (r) {
-      this.cc = [...listOf(this.cc), r];
-      this.queueRecipient(r, "cc");
-    }
-    return this;
+    return this.#addRecipient("cc", email, name, data);
   }
 
   addBcc(email: AddressInput, name = "", data: Dict = {}): this {
-    const r = addressOf(email, name, data);
-    if (r) {
-      this.bcc = [...listOf(this.bcc), r];
-      this.queueRecipient(r, "bcc");
-    }
-    return this;
+    return this.#addRecipient("bcc", email, name, data);
   }
 
-  queueRecipient(r: Recipient, type: "to" | "cc" | "bcc"): void {
+  queueRecipient(r: Recipient, type: RecipientType): void {
     if (!this.id) return;
     this.#pending.push((async () => {
       const existing = await this.manager.app.db.row(
@@ -626,21 +610,21 @@ export class MailMessage {
     return Number(await this.manager.app.db.one("SELECT COALESCE(MAX(mail1_track_id),0)+1 FROM mail_recipient")) || 1;
   }
 
-  async addUsr(usr: any): Promise<this> {
+  async addUsr(usr: UserInput): Promise<this> {
     const email = usr?.email ?? await usr?.get?.("email");
     const name = [
       usr?.firstname ?? await usr?.get?.("firstname"),
       usr?.lastname ?? await usr?.get?.("lastname"),
-    ].filter(Boolean).join(" ");
-    return this.addTo(email, name);
+    ].filter(Boolean).map(String).join(" ");
+    return email ? this.addTo(String(email), name) : this;
   }
 
   addFile(file: AttachmentInput, inline = false): string {
     const path = typeof file === "string" ? file : file.path ?? file.contentId ?? file.cid ?? file.filename ?? file.name ?? "";
     const cid = typeof file === "string" ? createHash("sha1").update(path).digest("hex") : file.contentId ?? file.cid ?? createHash("sha1").update(path).digest("hex");
-    if (typeof file === "string") this.attachments.push({ path: file, inline, contentId: cid });
-    else this.attachments.push({ ...file, inline: file.inline ?? inline, contentId: cid });
-    this.queueAttachment(typeof file === "string" ? { path: file, inline, contentId: cid } : { ...file, inline: file.inline ?? inline, contentId: cid });
+    const attachment = typeof file === "string" ? { path: file, inline, contentId: cid } : { ...file, inline: file.inline ?? inline, contentId: cid };
+    this.attachments.push(attachment);
+    this.queueAttachment(attachment);
     return cid;
   }
 
@@ -671,11 +655,14 @@ export class MailMessage {
     if (!recipients.length) return true;
 
     const transport = await this.manager.transport();
-    const attachments = await Promise.all(this.attachments.map(v => attachmentOf(v)));
+    const core = await importUpyo("core");
+    const createMessage = core.createMessage as ((message: Dict) => unknown) | undefined;
+    if (!createMessage) throw new Error("Upyo createMessage export missing");
+    const attachments = this.attachments.map(v => attachmentOf(v));
+    const debugTo = defaults.debug_to ? addressOf(String(defaults.debug_to)) : null;
     this.receipts = [];
 
     for (const recipient of recipients) {
-      const debugTo = defaults.debug_to && addressOf(defaults.debug_to);
       const to = debugTo ?? recipient;
       const data = { ...this.data, ...recipient.data };
       const html = this.html || this.body ? await this.getHtml(recipient, data) : "";
@@ -684,12 +671,11 @@ export class MailMessage {
       if (debugTo) {
         headers.set("X-Qino-Original-Recipient", recipient.address);
       }
-      const { createMessage } = await importUpyo("core");
       const message = createMessage(clean({
         from: this.fromAddress(defaults),
         to: formatAddress(to),
-        cc: listOf(this.cc).map(formatAddress),
-        bcc: listOf(this.bcc).map(formatAddress),
+        cc: debugTo ? [] : listOf(this.cc).map(formatAddress),
+        bcc: debugTo ? [] : listOf(this.bcc).map(formatAddress),
         replyTo: this.replyTo || this.reply_to || defaults.reply_to || undefined,
         subject: (debugTo ? "Debug! " : "") + renderMarkers(this.subject, data),
         content: clean({
@@ -702,17 +688,18 @@ export class MailMessage {
         priority: this.priority,
       }));
       try {
-        const receipt = await transport.send(message) as { successful?: boolean; errorMessages?: string[] } | undefined;
-        this.receipts.push(receipt);
-        if (receipt?.successful) await this.markRecipient(recipient, { sent: Math.floor(Date.now() / 1000), error: "" });
-        else await this.markRecipient(recipient, { error: receipt?.errorMessages?.join("\n") ?? "mail sending failed" });
+        const receipt = await transport.send(message) as SendReceipt | undefined;
+        const result = receipt ?? { successful: false, errorMessages: ["mail sending failed"] };
+        this.receipts.push(result);
+        if (result.successful) await this.markRecipient(recipient, { sent: Math.floor(Date.now() / 1000), error: "" });
+        else await this.markRecipient(recipient, { error: result.errorMessages?.join("\n") ?? "mail sending failed" });
       } catch (error) {
         console.error("mail sending failed:", error);
         this.receipts.push({ successful: false, error, errorMessages: [String(error)] });
         await this.markRecipient(recipient, { error: String(error) });
       }
     }
-    return this.receipts.every(r => (r as { successful?: boolean })?.successful);
+    return this.receipts.every(r => r.successful);
   }
 
   async loadParts(): Promise<this> {
@@ -752,15 +739,15 @@ export class MailMessage {
     const html = this.template === false
       ? main
       : await this.manager.renderTemplate(this.template, { app: this.manager.app, mail: this, main, data, recipient });
-    return recipient && this.persist ? await this.manager.trackHtml(this, recipient, html) : html;
+    return recipient && this.persist ? await this.manager.trackHtml(recipient, html) : html;
   }
 
   getText(html = "", data: Dict = {}): string {
     return renderMarkers(this.text || htmlToText(html || this.body), data);
   }
 
-  fromAddress(defaults: Dict): string {
-    const sender = this.sender || this.from || String(defaults.sender ?? "");
+  fromAddress(defaults: Partial<MailDefaults>): string {
+    const sender = this.sender || this.from || defaults.sender || "";
     if (!sender) throw new Error("Mail has no sender. Set mail.sender or m.from.");
     return formatAddress({ address: sender, name: this.sendername || String(defaults.sendername ?? "") });
   }

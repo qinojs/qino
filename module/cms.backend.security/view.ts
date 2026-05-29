@@ -46,7 +46,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
         ${tabs(tab)}
         ${tab === "settings" ? settingsEditor(ctx) : ""}
         ${tab === "buckets" ? await bucketTable(app, buckets) : ""}
-        ${tab === "analyse" ? '<div class=u2-flex>' + await topTable(app, "Top IPs", topIps, "ip") + await topTable(app, "Top Paths", topPaths, "path") + await topTable(app, "Top Kinds", topKinds, "kind") + await topTable(app, "Top Clients", topUa, "ua") : ""}
+        ${tab === "analyse" ? '<div class=u2-flex>' + topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
         ${tab === "live" ? await eventTable(app, events, ctx.get) : ""}
       </div>
     </div>
@@ -135,7 +135,7 @@ function eventActions(r: RowDataPacket) {
   return `<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
 }
 
-async function topTable(app: App, title: string, rows: Record<string, unknown>[], key: string) {
+function topTable(title: string, rows: Record<string, unknown>[], key: string) {
   return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">
     ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="?tab=live&q=${encodeURIComponent(String(r[key] ?? ""))}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
   </table></div>`;

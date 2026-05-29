@@ -25,7 +25,7 @@ cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
       const ico = install.querySelector("u2-ico");
       ico.textContent = "hourglass_top";
       try {
-        const { output, error } = await postVars({ install_binary: install.dataset.install });
+        const { error } = await postVars({ install_binary: install.dataset.install });
         if (error) { alert("Error:\n" + error); return; }
         location.reload();
       } catch (err) {

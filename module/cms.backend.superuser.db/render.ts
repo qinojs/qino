@@ -1,6 +1,5 @@
 import { getCtx } from "../core/lib/RequestContext.ts";
 import type { Node } from "../cms/lib/Node.ts";
-import type { App } from "../core/server.ts";
 import { renderTables } from "./views/tables.ts";
 import { renderDiff } from "./views/diff.ts";
 import { renderModules } from "./views/modules.ts";

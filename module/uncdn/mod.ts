@@ -86,7 +86,7 @@ function serveResponse(mediaType: string, data: Uint8Array): never {
   throw new Output(data, { headers });
 }
 
-async function serveCached(filePath: string, mediaType: string, ctx: RequestContext): Promise<void> {
+async function serveCached(filePath: string, mediaType: string): Promise<void> {
   const data = await Deno.readFile(filePath).catch(() => null);
   if (data) serveResponse(mediaType, data);
 }
@@ -121,7 +121,7 @@ export function init(app: App): void {
     const mediaType = mediaTypeForPath(filePath);
     if (!mediaType) done(ctx, 404, "Not allowed");
 
-    await serveCached(filePath, mediaType, ctx); // throws Output if found
+    await serveCached(filePath, mediaType); // throws Output if found
 
     const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
 

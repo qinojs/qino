@@ -1,5 +1,5 @@
 import { HTTPException } from "../../deps.ts";
-import { Output } from "../core/lib/util.ts";
+import { Output, clientIp } from "../core/lib/util.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
@@ -112,7 +112,7 @@ function blockKey(info: GateInfo) {
 }
 
 function gateInfo(context: HonoContext): GateInfo {
-  const ip = context.req.header("x-forwarded-for")?.split(",").shift()?.trim() || "";
+  const ip = clientIp(context.req);
   return { ip, method: context.req.method, path: safeDecode(new URL(context.req.url).pathname).slice(0, 191), bytes_in: Number(context.req.header("content-length") ?? "0") || 0, ua: context.req.header("user-agent") ?? "" };
 }
 

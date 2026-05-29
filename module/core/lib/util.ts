@@ -1,6 +1,11 @@
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
+/** Client IP from x-forwarded-for (first hop). Only trustworthy behind a trusted proxy. */
+export function clientIp(req: { header(name: string): string | undefined }): string {
+  return req.header("x-forwarded-for")?.split(",").shift()?.trim() ?? "";
+}
+
 /** HTML utilities */
 export function hee(str: unknown): string {
   return String(str ?? "").replace(/[&"'<>]/g, c => ({"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"})[c]!);
@@ -90,7 +95,7 @@ export function sqlSearchHelper(
   const orderParams: string[] = [];
   for (const s of searches) {
     wheres.push("(" + fields.map((f) => `${f} LIKE ?`).join(" OR ") + ")");
-    for (const f of fields) whereParams.push(`%${s}%`);
+    for (const _f of fields) whereParams.push(`%${s}%`);
   }
   for (const s of searches) {
     for (const f of fields) { orders.push(`${f} LIKE ? DESC`); orderParams.push(`${s}%`); }

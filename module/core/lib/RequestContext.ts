@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { getCookie, basePath, HTTPException, type Item, type ItemProxy, type Context } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
-import { uid } from "./util.ts";
+import { uid, clientIp } from "./util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { readUploadFile, type UploadedFile } from "./fileStream.ts";
@@ -139,7 +139,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
     post,
     files,
     requestUri: url.pathname + url.search,
-    remoteAddr: req.header("x-forwarded-for")?.split(",").shift()?.trim(),
+    remoteAddr: clientIp(req),
   });
 
   return [ctx, isNew];
