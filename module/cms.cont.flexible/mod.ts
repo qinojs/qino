@@ -10,17 +10,17 @@ const settingsSchema = {
 };
 
 async function render(node: Node, { vars }: any = {}): Promise<string> {
-  const conts = await node.conts();
+  let conts = await node.conts();
 
   // If no children yet, optionally init a default child module
-  if (Object.keys(conts).length === 0) {
+  if (conts.length === 0) {
     const defaultModule = node.settings["init-child-module"]();
     const initModule = vars["init-child-module"] ?? defaultModule;
-    if (initModule) await node.cont("init", initModule);
+    if (initModule) { await node.cont("init", initModule); conts = await node.conts(); }
   }
 
   let str = "";
-  for (const C of Object.values(await node.conts())) {
+  for (const C of conts) {
     str += await C.html();
   }
   return `<div>${str}</div>`;

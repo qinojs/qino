@@ -7,8 +7,7 @@ export const needs = ["cms"];
 async function render(node: Node, { ctx }: any): Promise<string> {
 
   // Extract words from request URI for fulltext search
-  const uri = ctx.appRequestUri + " " + (ctx.get?.["QUERY_STRING"] ?? "");
-  const words = (uri.match(/\p{L}+/gu) ?? []).join(" ").trim();
+  const words = (ctx.appRequestUri.match(/\p{L}+/gu) ?? []).join(" ").trim();
 
   const possiblePages: Map<string, true> = new Map();
 
