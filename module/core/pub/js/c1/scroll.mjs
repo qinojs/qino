@@ -7,7 +7,7 @@ c1.scroll = {
         onfinish:function(){},
     },
     to: function(targetX, targetY, opt) {
-        opt = c1.ext(c1.scroll.options, opt);
+        opt = Object.assign({}, c1.scroll.options, opt);
         const docEl = document.documentElement;
 		if (!opt.ignorMaxScroll) {
 			const maxScrollX = ('scrollMaxX' in window) ? scrollMaxX : (docEl.scrollWidth  - docEl.clientWidth);

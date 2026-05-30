@@ -17,7 +17,7 @@ var defaultConf = {
 
 class NodeCleaner {
 	constructor (conf) {
-		this.conf = c1.ext(defaultConf, conf);
+		this.conf = Object.assign({}, defaultConf, conf);
 	}
 	cleanContents(el, andChildren) {
 		if (!el) return;
@@ -89,7 +89,7 @@ class NodeCleaner {
 	}
 	cleanAttributes(el) {
 		if (!this.conf['attributes']) return;
-		var attributes = c1.ext(el.attributes);
+		var attributes = Array.from(el.attributes);
 		for (var i=0, attr; attr = attributes[i++];) {
 			var name = attr.name;
 			var value = attr.value;

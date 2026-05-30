@@ -3,7 +3,7 @@
 c1.Placer = class {
     constructor(el, options={}){
         this.el = el;
-        this.options = c1.ext({
+        this.options = Object.assign({
             y: 'after',
             x: 'prepend',
             margin: 0,
@@ -28,7 +28,7 @@ c1.Placer = class {
         this.positionize();
     }
     positionize(){
-        let run = this.following && this.el.parentNode && this.following.parentNode && this.el.offsetWidth && this.following.offsetWidth;
+        const run = this.following && this.el.parentNode && this.following.parentNode && this.el.offsetWidth && this.following.offsetWidth;
         if (!run) {
             this.following = null;
             clearInterval(this.followInterval);
@@ -42,7 +42,7 @@ c1.Placer = class {
         }
     }
     toElement(el) {
-        let rect = el.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
         this.toClientRect(rect);
     }
     toClientRect(rect){
@@ -70,7 +70,7 @@ c1.Placer = class {
             left: 0,
         };
         // css-position
-        let position = getComputedStyle(this.el).getPropertyValue('position');
+        const position = getComputedStyle(this.el).getPropertyValue('position');
         if (position !== 'fixed') {
             //if (position !== 'absolute') this.el.style.position = 'absolute';
             let root = c1.Placer.offsetParent(this.el);
@@ -124,8 +124,8 @@ c1.Placer = class {
 
         // move follower to stay in window
         if (this.options.stayInWindow) {
-            x = Math.c1Limit(x, -viewport.left, innerWidth  - viewport.left - layerWidth);
-            y = Math.c1Limit(y, -viewport.top,  innerHeight - viewport.top  - layerHeight);
+            x = Math.min(Math.max(-viewport.left, x), innerWidth  - viewport.left - layerWidth);
+            y = Math.min(Math.max(-viewport.top,  y), innerHeight - viewport.top  - layerHeight);
         }
 
         if (position === 'absolute') {

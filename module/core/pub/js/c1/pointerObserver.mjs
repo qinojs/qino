@@ -3,7 +3,7 @@
 const d = document;
 let touching = false;
 const Observer = function(el, options) {
-    this.options = c1.ext({mouse: true, touch: true, passive:true}, options);
+    this.options = Object.assign({mouse: true, touch: true, passive:true}, options);
     this.el   = el;
 	this.pos  = {};
 	this.last = {};

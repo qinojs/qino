@@ -24,7 +24,12 @@ window.Rte = {
 				&& newRange.endOffset === Rte.rangeStaticValues.endOffset;
 		if (same) return;
 		Rte.range = newRange;
-		Rte.rangeStaticValues = c1.ext(newRange);
+		Rte.rangeStaticValues = {
+			startContainer: newRange.startContainer,
+			startOffset:    newRange.startOffset,
+			endContainer:   newRange.endContainer,
+			endOffset:      newRange.endOffset,
+		};
 
 		/* new element? */
 		let tmp = qgSelection.element(); // todo
@@ -138,7 +143,7 @@ window.Rte = {
 		},true);
 	}
 };
-c1.ext(c1.Eventer,Rte);
+Object.assign(Rte, c1.Eventer);
 
 
 qgExecCommand('enableInlineTableEditing', false, false); // bug: if i first click in the table the nativ handles appear

@@ -654,8 +654,8 @@ function xCollection(obj) {
   this.data = {};
   obj && this.set(obj);
 }
-c1.ext(c1.Eventer, xCollection.prototype);
-c1.ext({
+Object.assign(xCollection.prototype, c1.Eventer);
+Object.assign(xCollection.prototype, {
   set(n, v) {
     if (typeof n === "object") {
       for (const key in n) {
@@ -688,4 +688,4 @@ c1.ext({
     }
     return ret;
   },
-}, xCollection.prototype);
+});

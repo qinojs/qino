@@ -75,11 +75,11 @@ cms.cont = function(id) {
 	cms.cont.all[id] = this;
 	this.id = id;
 };
-c1.ext(c1.Eventer, cms.cont);
+Object.assign(cms.cont, c1.Eventer);
 
 cms.cont.prototype = {
 	upload(File, complete, replace) {
-		const event = c1.ext(c1.Eventer);
+		const event = Object.assign({}, c1.Eventer);
 		event.pid = this.id;
 		event.File = File;
 		const progress = function(e) {

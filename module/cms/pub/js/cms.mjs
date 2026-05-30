@@ -4,7 +4,7 @@ import '../../../core/pub/js/c1/onElement.mjs';
 import { apt } from '../../../core/pub/js/qino.js';
 
 const cms = {};
-c1.ext(c1.Eventer, cms);
+Object.assign(cms, c1.Eventer);
 
 cms.modConnected = {};
 

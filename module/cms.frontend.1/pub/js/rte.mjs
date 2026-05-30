@@ -340,7 +340,7 @@ class ImageZoomer {
         };
     }
 }
-c1.ext(c1.Eventer, ImageZoomer.prototype);
+Object.assign(ImageZoomer.prototype, c1.Eventer);
 
 /*******************************/
 /* helpers *********************/

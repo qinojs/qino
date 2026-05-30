@@ -45,11 +45,11 @@ const poly = {
 	}
 };
 let autoId = 0;
-c1.ext(poly, Element.prototype, false, true);
+Object.assign(Element.prototype, poly);
 
 // not standard
 poly.closest = function(sel){ return this.parentNode.closest(sel); };
-c1.ext(poly, Text.prototype, false, true);
+Object.assign(Text.prototype, poly);
 
 c1.dom.ready = new Promise(res => document.addEventListener('DOMContentLoaded', res));
 
