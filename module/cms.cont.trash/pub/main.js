@@ -1,6 +1,6 @@
 const el      = document.querySelector('.-m-cms-cont-trash');
 const sysURL  = el.dataset.sysUrl;
-const { apt } = await import(sysURL + 'core/pub/js/apt.js');
+const { apt } = await import(sysURL + 'core/pub/js/qino.js');
 
 const dialog = el.querySelector('.-preview');
 const iframe = dialog.querySelector('iframe');

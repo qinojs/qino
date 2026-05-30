@@ -1,5 +1,5 @@
 cms.initCont("cms.backend.struct.access", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
+  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
 
   const table = el.querySelector(".cmsBeTree");
 

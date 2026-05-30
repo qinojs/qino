@@ -1,0 +1,185 @@
+import { hee } from "../core/lib/util.ts"
+import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
+import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
+import { s } from "../core/lib/StandardSchema.ts";
+import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
+import type { App } from "../core/server.ts";
+import type { Node } from "../cms/lib/Node.ts";
+import "../cms/mod.ts";
+
+export const name = "cms.frontend.2";
+export const needs = ["cms"];
+
+export const settingsSchema = {
+  properties: {
+    "show urls": {
+      type: "boolean",
+      description: "Shows the URL section in the page settings area.",
+    },
+    "show access.time": {
+      type: "boolean",
+      description: "Shows the access time window in the page settings area.",
+    },
+  },
+};
+
+export const ctxSettingsSchema = {
+  properties: {
+    custom: {
+      properties: {
+        widget: { additionalProperties: { type: "boolean" } },
+        sidebar: { type: "string" },
+        tree_show_c: { type: "boolean" },
+      },
+    },
+  },
+};
+
+function widgetUrl(widget: string): string {
+  return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
+}
+
+async function renderWidget(ctx: RequestContext, widget: string, params: Record<string, any> = {}): Promise<string | null | false> {
+  const P = await ctx.app.cms.node(params["pid"]);
+  if (await P.access() < 2) throw new AccessError();
+  if (widget.includes("/")) return null;
+  ctx.state.cmsWidgetCont = P;
+  await ctx.app.languages.nsStart("cms");
+  const mod = await import(widgetUrl(widget));
+  const html = String(await mod.default?.(P, { param: params }) ?? "");
+  ctx.app.languages.nsStop();
+  return html;
+}
+
+export const api: AptTree = {
+  widget: {
+    ":widget": {
+      post: {
+        description: "Render CMS frontend widget.",
+        access: Access.USER,
+        input: s.object({ params: s.optional(s.record()) }),
+        execute: ({ widget, params }: any, ctx: RequestContext) =>
+          renderWidget(ctx, widget, params ?? {}),
+      },
+    },
+  },
+};
+
+/** Render widget content */
+export async function cmsFrontend2Widget(
+  widget: string,
+  open: boolean,
+  node: Node,
+  cls = "-content",
+  param: Record<string, any> = {},
+): Promise<string> {
+  let inner = "";
+  if (open) {
+    const mod = await import(widgetUrl(widget));
+    inner = String(await mod.default?.(node, { param }) ?? "");
+  }
+  return `<div class="${cls}" widget=${widget}>${inner}</div>`;
+}
+
+/** Widget als Accordion */
+export async function cmsFrontend2WidgetAccordion(
+  widget: string,
+  node: Node,
+  title: string | null = null,
+  param: Record<string, any> = {},
+): Promise<string> {
+  const ctx = getCtx();
+
+  const open = !!await ctx.settings["cms.frontend.2"].custom.widget[widget];
+  const cls = "-widgetHead " + (open ? "-open" : "");
+
+  let headHtml: string;
+  try {
+    headHtml = await cmsFrontend2Widget(widget + ".head", true, node, cls, param);
+  } catch {
+    headHtml = `<div class="${cls}"><span class=-title>${
+      title ?? widget
+    }</span></div>`;
+  }
+  const contentHtml = await cmsFrontend2Widget(widget, open, node, "-content", param);
+  return headHtml + contentHtml;
+}
+
+/** Widget als Sidebar-Item */
+export async function cmsFrontend2WidgetSidebar(widget: string, node: Node, title: string, tooltip = ""): Promise<string> {
+  const ctx = getCtx();
+  const sidebarV = await ctx.settings["cms.frontend.2"].custom.sidebar;
+  const open = sidebarV === widget;
+  const content = await cmsFrontend2Widget(widget, open, node);
+  return `<div class="-item ${open ? "-open" : ""}" itemid="${widget}">
+  ${content}
+  <div class=-title>
+    <div class=-text title="${hee(tooltip)}" c1-tooltip>${title}</div>
+  </div>
+</div>`;
+}
+
+export function init(app: App) {
+  app.on("cms-ready", async e => {
+    const ctx = e.ctx as RequestContext;
+    if (ctx.get.qgCmsNoFrontend) return;
+    if (await app.settings.cms.frontend !== "cms.frontend.2") return;
+
+    const g = ctx.state;
+    const settings = ctx.settings;
+    const cms = app.cms;
+
+    const node = cms.MainNode;
+    if (!node) return;
+    const access = await node.access();
+    const inBackend = node.vs?.module === "cms.layout.backend";
+
+    if (access > 1 || inBackend) {
+      const pageNotFound = await app.settings.cms.pageNotFound ?? 0;
+      if (pageNotFound != node.id) {
+        const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
+        const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
+        settings.cms[lastKey](ctx.requestUri);
+        const toggleUrl = String(await settings.cms[otherKey] ?? "");
+        ctx.html.jsData.cmsBackendUrl = toggleUrl;
+        ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/init.mjs");
+      }
+    }
+
+    if (access > 1) {
+      g.csp ??= {};
+      g.csp["img-src"] ??= {};
+      g.csp["img-src"]["blob:"] = true;
+      ctx.html.jsData.Page = node.id;
+      ctx.html.jsData.qgCmsRequestedPage = cms.RequestedNode?.id;
+      if (await ctx.user?.get?.("superuser")) ctx.html.jsData.qino = { dev: ctx.dev || null };
+      ctx.html.jsData.qgCmsEditmode = g.editmode;
+
+      if (g.editmode) {
+        ctx.html.jsData.cmsClipboard = Number(await settings.cms.clipboard ?? "0");
+        const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
+        app.languages.nsStart("cms");
+        const panelHtml = String(await panel.default?.(node, {}) ?? "");
+        app.languages.nsStop();
+        ctx.html.prependContent(panelHtml);
+      }
+    }
+
+    if (access < 2) return;
+    ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
+    ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/off.css");
+
+    const editmode = access > 1 && Number(await settings.cms.editmode);
+    if (editmode) {
+      ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
+      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
+      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/ui.js");
+      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/fn/dynatree.js");
+      ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
+      allowSettingsEditorAssets(ctx);
+      ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/panel.mjs");
+      ctx.html.styles.add(ctx.sysURL + "core/pub/js/Rte/main.css");
+      ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/main.css");
+    }
+  });
+}

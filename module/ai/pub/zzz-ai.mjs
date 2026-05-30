@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/apt.js';
+import { apt } from '../../core/pub/js/qino.js';
 
 async function chatCompletion(data) {
     const response = await apt.ai['chat-completions'].post({ data });

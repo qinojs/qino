@@ -28,9 +28,19 @@ async function render(node: Node): Promise<string> {
 
 function renderState(node: Node): string {
   const ctx = getCtx();
+  ctx.html.scripts.add(ctx.sysURL + "cms.backend.superuser.state/pub/state.mjs");
   return `
     ${dumpBox("Server / app", node.app, 2)}
-    ${dumpBox("Context", ctx, 3)}`;
+    ${dumpBox("Context", ctx, 1)}
+    ${clientCtxBox("Client / ctx (qino.js)")}`;
+}
+
+// leere box, client-seitig via pub/state.mjs mit dump(getCtx()) gefüllt
+function clientCtxBox(title: string): string {
+  return `<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
+  <div class="-head">${hee(title)}</div>
+  <div class="-body" id="qg-client-ctx" style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
+</div>`;
 }
 
 function dumpBox(title: string, value: unknown, depth: number): string {

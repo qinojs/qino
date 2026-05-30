@@ -1,0 +1,18 @@
+import { hee } from "../../../core/lib/util.ts";
+import type { Node } from "../../../cms/lib/Node.ts";
+
+export default async function (node: Node): Promise<string> {
+  if ((await node.access()) < 2) return "";
+  const texts = await node.texts();
+  let rows = "";
+  for (const [name, T] of Object.entries(texts)) {
+    rows += `<tr><td>${hee(name)}&nbsp;<td style="width:70%"><div class=-txt cmstxt=${T.id} contenteditable>${await T.string()}</div>`;
+  }
+  return `<table id=qgCmsTxtsWindow>${rows}</table>
+  <style>
+  #qgCmsTxtsWindow { width:100%; }
+  #qgCmsTxtsWindow .-txt { max-height:1.9em; min-height:1.9em; overflow:auto; margin:2px; margin-bottom:5px; padding:6px; background:#fff; resize:vertical; transition:max-height .1s; border:1px solid var(--cms-dark); outline:none; }
+  #qgCmsTxtsWindow .-txt:hover { max-height:6em; }
+  #qgCmsTxtsWindow .-txt:focus { max-height:30em; border-color:var(--cms-color); }
+  </style>`;
+}

@@ -21,13 +21,21 @@ class MenuItem {
         item.setAttribute('icon',opt.icon);
         opt.onclick && item.addEventListener('click', opt.onclick);
         root.addEventListener('contextmenu', e=>{
-            const target = opt.selector ? e.target.closest(opt.selector) : root;
+            const target = opt.selector ? closest(e, opt.selector) : root;
             if (!target) return;
             opt.onshow?.call?.(item, {currentTarget:target});
             menu.append(item);
             setTimeout(()=>item.remove(),10);
         },true);
         return new MenuItem(item);
+    }
+}
+function closest(e, selector) {
+    for (const target of e.composedPath?.() || [e.target]) {
+        if (target?.closest) {
+            const match = target.closest(selector);
+            if (match) return match;
+        }
     }
 }
 Object.defineProperty(c1,'globalContextMenu',{

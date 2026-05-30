@@ -1,5 +1,5 @@
 cms.initCont("cms.backend.superuser.uncdn", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
+  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
   const nid = Number(el.dataset.pid);
 
   el.addEventListener("click", async (e) => {

@@ -7,7 +7,7 @@ cms.initCont("cms.backend.system", async (el) => {
     tr.querySelector(".-browser-tz").textContent = "UTC+" + off;
   }
 
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/apt.js");
+  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
   const nid = cms.el.pid(el);
 
   el.addEventListener("click", async (e) => {

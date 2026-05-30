@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import '../../core/pub/js/c1/fix/contextMenu.mjs';
 import '../../core/pub/js/c1/contextMenu.mjs';
-import { apt } from '../../core/pub/js/apt.js';
+import { apt } from '../../core/pub/js/qino.js';
 
 const activeLang = document.documentElement.lang;
 

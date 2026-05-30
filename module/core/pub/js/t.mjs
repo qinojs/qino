@@ -1,4 +1,4 @@
-import { apt } from "./apt.js";
+import { apt } from "./qino.js";
 
 const cache = new Map();
 const pending = new Map();

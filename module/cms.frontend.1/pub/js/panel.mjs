@@ -1,7 +1,7 @@
 import "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
-import { apt } from "../../../core/pub/js/apt.js";
-import { t } from "../../../core/pub/js/t.mjs";
+import { apt } from "../../../core/pub/js/qino.js";
+import { t } from "../../../core/pub/js/qino.js";
 
 function setCtxSetting(value, path) {
   const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);

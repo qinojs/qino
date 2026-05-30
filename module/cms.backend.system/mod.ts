@@ -117,7 +117,7 @@ async function render(node: Node): Promise<string> {
     mysqlSummaryRows += `<tr><td>${hee(name)}<td>${hee(fmtMysql(name, value))}`;
   }
 
-  const mysqlLoadBtn = `<button onclick="import('${ctx.sysURL}core/pub/js/apt.js').then(m=>m.apt.cms.node(${node.id}).html.part('mysql-details').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">Details</button>`;
+  const mysqlLoadBtn = `<button onclick="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(${node.id}).html.part('mysql-details').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">Details</button>`;
 
   const mysqlBox = `
 <div class="u2-card">

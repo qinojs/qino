@@ -27,7 +27,7 @@ async function render(node: Node): Promise<string> {
 
   const apiBase   = String(settings.apiBase() ?? "") || ctx.appURL + "api/web_auth";
   const scriptUrl = ctx.sysURL + "web_auth/pub/web_auth.js";
-  const tUrl      = ctx.sysURL + "core/pub/js/t.mjs";
+  const tUrl      = ctx.sysURL + "core/pub/js/qino.js";
 
   if (showManage && ctx.user) return renderManage(node.app, apiBase, scriptUrl, tUrl);
   if (showLogin) {

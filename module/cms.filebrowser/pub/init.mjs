@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/apt.js';
+import { apt } from '../../core/pub/js/qino.js';
 
 c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
     let newButton = c1.dom.fragment('<button>select').firstChild;

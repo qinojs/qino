@@ -1,5 +1,11 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { apt } from '../../core/pub/js/apt.js';
+import { apt } from '../../core/pub/js/qino.js';
+function panelRoot() {
+	return document.querySelector('qino-cms-panel')?.shadowRoot || document;
+}
+function panelEl(selector) {
+	return panelRoot().querySelector(selector);
+}
 cms.contextMenueContent.addItem('Publish', {
 	icon: sysURL+'cms.versions/pub/check.png',
 	selector: '.qgCmsCont',
@@ -17,15 +23,15 @@ function publish(pid, subPages){
 		location.href = location.href.replace(/#.*$/,'');
 	});
 }
-// frontend1 integration
+// frontend integration
 var css =
-'#qgCmsFrontend1 [itemid=publish].-HasChanges > .-title { '+
+'#qgCmsFrontend1 [itemid=publish].-HasChanges > .-title, #panel [itemid=publish].-HasChanges > .-title { '+
 '	background:var(--cms-access-2); '+
 '} '+
-'#qgCmsFrontend1 [itemid=publish].-HasChanges > .-title::before { '+
+'#qgCmsFrontend1 [itemid=publish].-HasChanges > .-title::before, #panel [itemid=publish].-HasChanges > .-title::before { '+
 '	border-right-color:var(--cms-access-2); '+
 '} '+
-'#qgCmsFrontend1 [itemid=publish].-HasChanges .qgCms_vers_page_changed { '+
+'#qgCmsFrontend1 [itemid=publish].-HasChanges .qgCms_vers_page_changed, #panel [itemid=publish].-HasChanges .qgCms_vers_page_changed { '+
 '	display:block; '+
 '} '+
 '';
@@ -59,8 +65,8 @@ var el = c1.dom.fragment('<div class=-item itemid=publish>'+
 		'<div class=-text>Draft</div>'+
 	'</div>'+
 	'<style>'+css+'</style>'+
-'</div>').firstChild;
-document.querySelector('#qgCmsFrontend1 > .-sidebar > [itemid="more"]').append(el);
+	'</div>').firstChild;
+panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.append(el);
 
 el.querySelector('.-versionCompare').addEventListener('click', async ()=>{
 	await import('./comparer.mjs');

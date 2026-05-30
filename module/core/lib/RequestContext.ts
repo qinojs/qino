@@ -44,7 +44,7 @@ export class RequestContext {
     "img-src": { "'self'": 1, "data:": 1 }, "script-src": { "'self'": 1 },
     "style-src": { "'self'": 1, "'unsafe-inline'": 1 }, "connect-src": { "'self'": 1 }, "frame-src": { "'self'": 1 },
   };
-  cspReportUri: string | false = false;
+  cspReportUri: string | false = false; // besser innerhalb csp-objekt? ctx.csp.reportUri? geht das?
 
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(this); }
   get hasHtml(): boolean { return this.#html !== null; }
@@ -64,6 +64,14 @@ export class RequestContext {
     if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
     return this.#settingsRoot.proxy;
   }
+  async initSettings(): Promise<void> { // inkonsistent: ctx.lang wird im LangManager initialisiert (LangManager.initCtx(ctx)), aber settings hier.
+    this.#settingsRoot = this.user
+      ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
+      : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
+  }
+
+
+
   get dev(): boolean {
     return this.app.dev || !!this.settings.core.dev();
   }
@@ -73,11 +81,6 @@ export class RequestContext {
     return token() as string;
   }
 
-  async initSettings(): Promise<void> {
-    this.#settingsRoot = this.user
-      ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
-      : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
-  }
 
   urlToLocalPath(url: string): string | null {
     try {

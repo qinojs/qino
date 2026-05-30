@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 //import '../../cms.frontend.1/pub/js/contextMenu.mjs';
 import '../../cms.frontend.1/pub/js/frontend.mjs';
-import { apt } from '../../core/pub/js/apt.js';
+import { apt } from '../../core/pub/js/qino.js';
 
 var css =
 ' '+
@@ -101,6 +101,13 @@ var css =
 '';
 var body = document.body;
 var htmlEl = document.documentElement;
+
+function panelRoot() {
+	return document.querySelector('qino-cms-panel')?.shadowRoot || document;
+}
+function panelEl(selector) {
+	return panelRoot().querySelector(selector);
+}
 
 var CmsVersViewer = function(){
 	this.container = c1.dom.fragment(
@@ -371,15 +378,14 @@ cms.contextMenueContent.addItem('Verlauf', {
 	}
 });
 
-// frontentd1 integration
+// frontend integration
 const sidebarItem = c1.dom.fragment(
 '<div class=-item itemid=history>'+
 	'<div class=-title>'+
 	'	<div class=-text>Verlauf</div>'+
 	'</div>'+
-	//'<style> #qgCmsFrontend1 [itemid=history] > .-title:after { content:"\\e903"; }</style>'+
 '</div>').firstChild;
-htmlEl.c1Find('#qgCmsFrontend1 > .-sidebar > [itemid="more"]').after(sidebarItem)
+panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.after(sidebarItem)
 sidebarItem.addEventListener('mousedown', e=>{
 	e.stopPropagation();
 	Viewer.show(Page)

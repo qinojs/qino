@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { apt } from '../../../core/pub/js/apt.js';
-import { t } from '../../../core/pub/js/t.mjs';
+import { apt } from '../../../core/pub/js/qino.js';
+import { t } from '../../../core/pub/js/qino.js';
 
 function loadScript(src) {
   return new Promise((res, rej) => {

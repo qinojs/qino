@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/apt.js";
+import { apt } from "../../core/pub/js/qino.js";
 
 cms.initCont("cms.backend.smalltext", (el) => {
   const nid = cms.el.pid(el);

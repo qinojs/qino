@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { apt } from '../../core/pub/js/apt.js';
+import { apt } from '../../core/pub/js/qino.js';
 import { TableHandles } from '../../core/pub/js/c1/tableHandles.mjs';
 
 const handles = new TableHandles();

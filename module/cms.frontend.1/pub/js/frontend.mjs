@@ -9,11 +9,11 @@ import '../../../core/pub/js/c1/contextMenu.mjs';
 
 import './rte.mjs';
 import './contextMenu.mjs';
-import { t } from '../../../core/pub/js/t.mjs';
+import { t } from '../../../core/pub/js/qino.js';
 import './ddConts.mjs';
 import './dropPasteHelper.mjs';
 import './dropPaste.mjs';
-import { apt } from '../../../core/pub/js/apt.js';
+import { apt } from '../../../core/pub/js/qino.js';
 
 cms.frontend1 = {};
 

@@ -1,8 +1,8 @@
-import { apt } from "./apt.js";
+import { apt, itemJsBase } from "./qino.js";
 
 const opened = new Set();
-const itemJsBase = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/";
-const itemJs = import(itemJsBase + "item.js");
+export { itemJsBase };
+export const itemJs = import(itemJsBase + "item.js");
 const itemJsHtmlRenderer = import(itemJsBase + "tools/schema/render/html.js").then((mod) => mod.toInput);
 
 const escapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
