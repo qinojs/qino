@@ -31,27 +31,20 @@ async function renderItems(item) {
     const cs = child.schema ?? {};
     const objectNode = isObjectItem(child);
     const id = JSON.stringify(child.path);
+    const eid = escapeHtml(id);
+    const key = escapeHtml(child.key);
     const isOpen = opened.has(id);
-    const title = typeof cs.description === "string" && cs.description
-      ? ` title="${escapeHtml(cs.description)}"`
-      : "";
-
-    html += "<li>";
-    html += `<span class=-row data-path="${escapeHtml(id)}">`;
-    html += "<span class=-toggle>";
-    html += objectNode
+    const title = typeof cs.description === "string" && cs.description ? ` title="${escapeHtml(cs.description)}"` : "";
+    const toggle = objectNode
       ? `<a class="toggle -${isOpen ? "minus" : "plus"}"></a>`
       : "<a class=toggle></a>";
-    html += "</span>";
-    html += `<span class=-name${title}>${escapeHtml(child.key)}</span>`;
-    html += "<span class=-inp>";
-    html += objectNode
-      ? `<input type="hidden" name="${escapeHtml(id)}">`
-      : (await itemJsHtmlRenderer)(cs, { value: child.get({ silent: true }), name: JSON.stringify(child.path) });
-    html += "</span>";
-    html += `<span class=-rem><a>x</a></span>`;
-    html += "</span>";
-    if (objectNode && isOpen) html += await renderItems(child);
+    const input = objectNode
+      ? `<input type="hidden" name="${eid}">`
+      : (await itemJsHtmlRenderer)(cs, { value: child.get({ silent: true }), name: id });
+    const sub = objectNode && isOpen ? await renderItems(child) : "";
+    html += `<li><span class=-row data-path="${eid}">` +
+      `<span class=-toggle>${toggle}</span><span class=-name${title}>${key}</span>` +
+      `<span class=-inp>${input}</span><span class=-rem><a>x</a></span></span>${sub}</li>`;
   }
   html += "</ul>";
   return html;
@@ -84,13 +77,14 @@ class SettingsEditorElement extends HTMLElement {
 
   static observedAttributes = ["source"];
 
-  connectedCallback() {
+  constructor() {
+    super();
     this.addEventListener("change", (event) => this.#saveInput(event));
-    this.addEventListener(
-      "input",
-      debounce((event) => this.#saveInput(event), 400),
-    );
+    this.addEventListener("input", debounce((event) => this.#saveInput(event), 400));
     this.addEventListener("click", (event) => this.#click(event));
+  }
+
+  connectedCallback() {
     this.#load();
   }
 
@@ -116,7 +110,7 @@ class SettingsEditorElement extends HTMLElement {
   }
 
   async #render() {
-    ensureSettingsEditorCss();
+    ensureSettingsEditorCss(this.getRootNode());
     const html = await renderItems(this.#item);
     this.innerHTML = `<div class=qgSettingsEditor>${html || "<em>Keine Einstellungen vorhanden.</em>"}</div>`;
   }
@@ -162,8 +156,9 @@ class SettingsEditorElement extends HTMLElement {
 
 customElements.define("settings-editor", SettingsEditorElement);
 
-function ensureSettingsEditorCss() {
-  if (document.getElementById("qgSettingsEditorCss")) return;
+function ensureSettingsEditorCss(root = document) {
+  root = root.getElementById ? root : document;
+  if (root.getElementById("qgSettingsEditorCss")) return;
   const css = `
 .qgSettingsEditor {
   > ul {
@@ -191,7 +186,10 @@ function ensureSettingsEditorCss() {
   .-toggle > .-plus { background-image:${svgUrl(openImgData)}; cursor:pointer; background-size:95%; }
 }
 `;
-  document.head.append(c1.dom.fragment("<style id=qgSettingsEditorCss>" + css + "</style>"));
+  const style = (root.ownerDocument || root).createElement("style");
+  style.id = "qgSettingsEditorCss";
+  style.textContent = css;
+  (root.head || root).append(style);
 }
 
 function svgUrl(svg) { return `url(data:image/svg+xml;utf8,${encodeURIComponent(svg)})`; }
@@ -204,6 +202,4 @@ const openImgData =
   '<line x1="32" y1="8" x2="32" y2="56"/>' +
   "</svg>";
 const closeImgData =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#000" stroke-width="4.6">' +
-  '<line x1="8" y1="32" x2="56" y2="32"/>' +
-  "</svg>";
+  '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#000" stroke-width="4.6"><line x1="8" y1="32" x2="56" y2="32"/></svg>';

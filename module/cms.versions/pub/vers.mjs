@@ -1,7 +1,8 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 //import '../../cms.frontend.1/pub/js/contextMenu.mjs';
-import '../../cms.frontend.1/pub/js/frontend.mjs';
 import { apt } from '../../core/pub/js/qino.js';
+
+const cmsFrontend = window.cmsFrontend || 'cms.frontend.1';
 
 var css =
 ' '+
@@ -367,7 +368,7 @@ document.addEventListener('keydown',e=>{
 });
 
 cms.contextMenueContent.addItem('Verlauf', {
-	icon: sysURL+'cms.frontend.1/pub/img/undo.svg',
+	icon: sysURL+cmsFrontend+'/pub/img/undo.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
 	onshow(e) {
 		this.activePid = cms.contPos.active.pid;

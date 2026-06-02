@@ -16,6 +16,7 @@
 	--cms-access-2: #dd8E00;
 	--cms-access-3: #aa0018;
 	--cms-background:var(--cms-color) radial-gradient(ellipse farthest-corner at -10% 40% , rgba(255,255,255,.5) 0%, rgba(0,0,0,0) 60%);
+	&:not(:defined) { display:none; }
 }
 
 .qgCMS {

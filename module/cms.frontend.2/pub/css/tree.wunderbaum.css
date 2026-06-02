@@ -1,0 +1,65 @@
+/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+/* Gleicht die wunderbaum-Engine an die schlanke CMS/dynatree-Optik an.
+ * Funktional: wunderbaums Eigen-Chrome neutralisieren. Die eigentliche Optik
+ * (Access-Punkt, Spalten, privat/offline, Ellipsis) kommt aus tree.css, weil
+ * tree.wunderbaum.mjs identisches dynatree-Markup + .dynatree-* Klassen rendert.
+ * Lädt nach wunderbaum.css -> gewinnt bei gleicher Spezifität. */
+
+#tree.wunderbaum { border: none; background: none; }
+
+/* Zeilen ohne wunderbaum-Hintergrund/Border; aktiv = fett + Pfeil (wie dynatree) */
+#tree .wb-row { border: none; background: none; }
+#tree .wb-row:hover .dynatree-title,
+#tree .wb-row.wb-active .dynatree-title { font-weight: bold; }
+#tree .wb-row.wb-active .dynatree-title::after {
+	content: '\25C0\FE0E';
+	display: inline-block;
+	margin-left: 5px;
+}
+#tree .wb-row.wb-focus,
+#tree .wb-node:focus { outline: none; }
+
+/* wunderbaums Font-Icon ausblenden – der Access-Punkt kommt aus tree.css (.dynatree-icon::after).
+ * Damit entfällt auch wunderbaums Drop-Marker (der hängt als .wb-icon::after dran); wir zeichnen
+ * ihn unten selbst sauber nach. */
+#tree .wb-icon { display: none; }
+
+/* Drop-Marker: wunderbaums Default ist ein pixeliges Pfeil-PNG. Stattdessen scharf in CSS:
+ * Linie oben/unten = davor/danach einsortieren, Rahmen = als Kind hinein ("over").
+ * currentColor -> keine eigene Farbe nötig, übernimmt die Textfarbe. */
+#tree .wb-node { position: relative; }
+#tree .wb-row.wb-drop-before .wb-node::after,
+#tree .wb-row.wb-drop-after .wb-node::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	border-top: 2px solid currentColor;
+	pointer-events: none;
+}
+#tree .wb-row.wb-drop-before .wb-node::after { top: 0; }
+#tree .wb-row.wb-drop-after .wb-node::after { bottom: 0; }
+#tree .wb-row.wb-drop-over .wb-node {
+	outline: 2px solid currentColor;
+	outline-offset: -2px;
+}
+
+/* Aufklapp-Pfeil font-frei (wunderbaums Icon-Font fehlt): Inline-SVG-Chevron als
+ * Maske statt Font-Glyph. Nimmt currentColor an; offen = um 90° gedreht. */
+#tree {
+	--wb-chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='m9 18 6-6-6-6'/%3e%3c/svg%3e");
+}
+#tree .wb-expander::before,
+#tree .wb-expander > * { display: none; }
+#tree .wb-expander::after {
+	content: '';
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	vertical-align: middle;
+	background-color: var(--color-text);
+	mask: var(--wb-chevron) center / contain no-repeat;
+	-webkit-mask: var(--wb-chevron) center / contain no-repeat;
+	transition: transform .15s;
+}
+#tree .wb-row.wb-expanded .wb-expander::after { transform: rotate(90deg); }

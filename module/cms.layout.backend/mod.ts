@@ -4,7 +4,7 @@ import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.backend";
 
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.6/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.7/";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 

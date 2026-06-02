@@ -271,11 +271,9 @@ onEl(".tree-manager", async (el) => {
   });
   const tree = JSON.parse(el.getAttribute("data"));
   await cmsTreeInit(tree);
-  // change placeholder
-  const old = cms.Tree.options.onActivate;
-  cms.Tree.options.onActivate = function (node) {
+  // change placeholder (engine-neutraler Hook; dynatree & wunderbaum rufen cms.Tree.onActivate)
+  cms.Tree.onActivate = (node) => {
     inp.placeholder = inp.placeholder.replace(/"([^"]*)"/, `"${node.data.title}"`);
-    old.apply(this, arguments);
   };
   /* go to hash-url  if (!isset(G()->ASK['serverInterface']) && G()->SET['cms.frontend.2']['custom']['tree_show_c']->v) { ?>
 	setTimeout(function(){
