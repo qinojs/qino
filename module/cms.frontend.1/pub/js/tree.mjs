@@ -11,7 +11,7 @@ function loadScript(src) {
 }
 
 window.cmsTreeInit = async (json) => {
-  await loadScript(sysURL + 'core/pub/js/jQuery/fn/dynatree.js');
+  await loadScript(sysURL + 'cms.frontend.1/pub/js/dynatree.js');
 
   // var dblClick = false;
   cms.Tree = $("#cmsTreeContainer").dynatree({

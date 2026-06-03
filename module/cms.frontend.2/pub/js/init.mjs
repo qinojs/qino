@@ -17,7 +17,9 @@ function qgCmsToggleEdit(){
 }
 
 document.addEventListener('keydown', function(e) {
-	if (e.target.isContentEditable || e.target.form !== undefined) return;
+	const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
+	if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
+	if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
 	if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
 	switch (e.key) {
 	case 'e':

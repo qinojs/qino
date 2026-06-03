@@ -172,14 +172,14 @@ export function init(app: App) {
     const editmode = access > 1 && Number(await settings.cms.editmode);
     if (editmode) {
       ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/ui.js");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/fn/dynatree.js");
+      ctx.html.legacyScripts.add(ctx.sysURL + "cms.frontend.1/pub/js/jQuery.js");
+      ctx.html.legacyScripts.add(ctx.sysURL + "cms.frontend.1/pub/js/jQuery/ui.js");
+      ctx.html.legacyScripts.add(ctx.sysURL + "cms.frontend.1/pub/js/dynatree.js");
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.1/pub/js/frontend.mjs");
       allowSettingsEditorAssets(ctx);
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.1/pub/js/panel.mjs");
       ctx.html.styles.add(ctx.sysURL + "core/pub/js/Rte/main.css");
-      ctx.html.styles.add(ctx.sysURL + "core/pub/js/jQuery/fn/dynatree/skin-vista/ui.dynatree.css");
+      ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/js/dynatree/skin-vista/ui.dynatree.css");
       ctx.html.styles.add(ctx.sysURL + "core/pub/css/q1Rst.css");
       ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
       ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");

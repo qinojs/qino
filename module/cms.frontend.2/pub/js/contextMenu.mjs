@@ -78,14 +78,12 @@ Menu.addItem(t`Delete`, {
 const TreeMenu = c1.globalContextMenu;
 TreeMenu.addItem(t`Settings`, {
 	icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
-	selector: '#panel .dynatree-node',
+	selector: '#tree .-title',
 	onshow(e) {
-		this.contextTarget = e.currentTarget;
-		this.lastPid = this.contextTarget.parentNode.title.replace('ID ','');
-		const access = e.currentTarget.className.match(/-access-([0-9])/)[1];
-		this.disabled = access < 2;
-		const n = cms.Tree.getNodeByKey(this.lastPid);
-		n.activate();
+		const node = e.currentTarget.closest('u2-tree');
+		this.lastPid = node.dataset.key;
+		this.disabled = node.data.myaccess < 2;
+		cms.Tree.activate(node);
 	},
 	onclick() {
 		cms.cont.active = this.lastPid;
@@ -94,12 +92,11 @@ TreeMenu.addItem(t`Settings`, {
 });
 TreeMenu.addItem(t`Rename`, {
 	icon: sysURL+'cms.frontend.2/pub/img/pencil.svg',
-	selector:'#panel .dynatree-node',
+	selector:'#tree .-title',
 	onshow(e) {
-		const el = e.currentTarget;
-		this.lastPid = el.parentNode.title.replace('ID ','');
-		const access = el.className.match(/-access-([0-9])/)[1];
-		this.disabled = access < 2;
+		const node = e.currentTarget.closest('u2-tree');
+		this.lastPid = node.dataset.key;
+		this.disabled = node.data.myaccess < 2;
 	},
 	onclick() {
 		const node = cms.Tree.getNodeByKey(this.lastPid);
@@ -108,12 +105,11 @@ TreeMenu.addItem(t`Rename`, {
 });
 TreeMenu.addItem(t`Copy`, {
 	icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
-	selector:'#panel .dynatree-node',
+	selector:'#tree .-title',
 	onshow(e) {
-		const el = e.currentTarget;
-		const access = el.className.match(/-access-([0-9])/)[1];
-		this.lastPid = el.parentNode.title.replace('ID ','');
-		this.disabled = access < 2;
+		const node = e.currentTarget.closest('u2-tree');
+		this.lastPid = node.dataset.key;
+		this.disabled = node.data.myaccess < 2;
 	},
 	onclick() {
 		const node = cms.Tree.getNodeByKey(this.lastPid);
@@ -121,13 +117,13 @@ TreeMenu.addItem(t`Copy`, {
 			{
 				title:t`Copy page`,then(){
 					apt.cms.node(node.data.key).copy.post().then(() => {
-						node.parent.reloadChildren();
+						cms.Tree.reloadChildren(cms.Tree.parent(node));
 					});
 				}
 			},{
 				title:t`including subpages`,then(){
 					apt.cms.node(node.data.key).copy.post({ deep: true }).then(() => {
-						node.parent.reloadChildren();
+						cms.Tree.reloadChildren(cms.Tree.parent(node));
 					});
 				}
 			},{
@@ -138,12 +134,11 @@ TreeMenu.addItem(t`Copy`, {
 });
 TreeMenu.addItem(t`Delete`, {
 	icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
-	selector: '#panel .dynatree-node',
+	selector: '#tree .-title',
 	onshow(e) {
-		const el = e.currentTarget;
-		const access = el.className.match(/-access-([0-9])/)[1];
-		this.lastPid = el.parentNode.title.replace('ID ','');
-		this.disabled = access < 2;
+		const node = e.currentTarget.closest('u2-tree');
+		this.lastPid = node.dataset.key;
+		this.disabled = node.data.myaccess < 2;
 		t`Really delete page "${''}"?` // preload translation
 	},
 	onclick() {
@@ -153,9 +148,9 @@ TreeMenu.addItem(t`Delete`, {
 			if (ret.parent_id && n.data.key==Page) {
 				location.href = "?cmspid="+ret.parent_id;
 			} else {
-				const s = n.getPrevSibling() || n.getNextSibling() || n.parent;
+				const s = cms.Tree.neighbor(n);
 				n.remove();
-				s?.activate();
+				cms.Tree.activate(s);
 			}
 		});
 	}

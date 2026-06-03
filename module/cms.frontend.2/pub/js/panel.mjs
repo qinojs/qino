@@ -3,12 +3,12 @@ import "./frontend.mjs";
 import { apt } from "../../../core/pub/js/qino.js";
 import { t } from "../../../core/pub/js/qino.js";
 
+const U2 = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.12/";
 const panelTag = "qino-cms-panel";
 const panelStyles = [
   "core/pub/css/c1/box.css",
   "cms.frontend.2/pub/css/main.css",
   "cms.frontend.2/pub/css/off.css",
-  "core/pub/js/jQuery/fn/dynatree/skin-vista/ui.dynatree.css",
   "cms.frontend.2/pub/css/panel.css",
   "cms.frontend.2/pub/css/tree.css",
 ];
@@ -28,6 +28,17 @@ const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListene
 const sel = s => s[0] === ">" ? ":scope " + s : s;
 const findEl = (el, s) => el.querySelector(sel(s));
 const findAll = (el, s) => el.querySelectorAll(sel(s));
+function setHtml(el, html) {
+  el.innerHTML = html;
+  for (const old of el.querySelectorAll("script")) {
+    console.warn("Script tag in CMS widget HTML", old);
+    const s = document.createElement("script");
+    s.async = false;
+    for (const attr of old.attributes) s.setAttribute(attr.name, attr.value);
+    s.textContent = old.textContent;
+    old.replaceWith(s);
+  }
+}
 function onEl(selector, fn) {
   const listener = { selector, fn, els: new WeakSet() };
   listeners.push(listener);
@@ -80,9 +91,8 @@ const loadWidget = (widget, params, cb) => {
     params.pid ||= cms.cont.active || Page; // neu
     apt['cms.frontend.2'].widget(widget).post({ params }).then((res) => {
       loading.done(widgetEl);
-      //widgetEl.innerHTML = res; // scripts are not executed :(
-      $(widgetEl).html(res);
-      cb?.({ target: $(widgetEl) });
+      setHtml(widgetEl, res);
+      cb?.({ target: widgetEl });
     });
   });
 };
@@ -153,7 +163,9 @@ on(document, "mousedown touchstart", e => {
 
 // shortcuts
 document.addEventListener("keydown", (e) => {
-  if (e.target.isContentEditable || e.target.form !== undefined) return;
+  const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
+  if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
+  if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
   if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
 
   if (e.key == "t") {
@@ -166,16 +178,8 @@ document.addEventListener("keydown", (e) => {
     sidebar.set("settings");
     e.preventDefault();
   }
-  if (e.key == "v") {
-    sidebar.set(sidebar.value === "add" ? "" : "add");
-    setTimeout(() => {
-      const inp = findEl(el, '[widget="add"] .-h1 > input');
-      inp?.focus();
-    }, 700);
-  }
-  if (e.key == "Escape") {
-    sidebar.set("");
-  }
+  if (e.key == "v") sidebar.set(sidebar.value === "add" ? "" : "add");
+  if (e.key == "Escape") sidebar.set("");
   if (e.key == "n") { // n
     sidebar.set("tree");
     setTimeout(() => {
@@ -271,7 +275,7 @@ onEl(".tree-manager", async (el) => {
   });
   const tree = JSON.parse(el.getAttribute("data"));
   await cmsTreeInit(tree);
-  // change placeholder (engine-neutraler Hook; dynatree & wunderbaum rufen cms.Tree.onActivate)
+  // change placeholder (engine-neutraler Hook; dynatree & u2 rufen cms.Tree.onActivate)
   cms.Tree.onActivate = (node) => {
     inp.placeholder = inp.placeholder.replace(/"([^"]*)"/, `"${node.data.title}"`);
   };
@@ -316,13 +320,17 @@ onEl(".file-manager", (el) => {
       });
     }
 
-    $(tbody).sortable({
-      handle: ".-handle",
-      axis: "y",
-      stop() {
+    // DnD-Sortierung via u2-dropzone: tbody[u2-dropzone] + tr[draggable] (Template).
+    // u2-draghandle (auf td.-handle) macht nur den Griff ziehbar. Nach dem Drop ist die
+    // DOM-Reihenfolge die neue Sortierung -> an Server.
+    import(U2 + "attr/dropzone/dropzone.js");
+    import(U2 + "attr/draghandle/draghandle.js");
+    tbody.addEventListener("u2-dropzone-drop", (e) => {
+      if (!e.detail?.add) return; // gleiche Zone feuert remove+add -> nur einmal reagieren
+      requestAnimationFrame(() => {
         const sort = Array.from(tbody.children).map((el) => el.getAttribute("itemid"));
         node.files.put({ sort });
-      },
+      });
     });
     tbody.addEventListener("click", (e) => {
       const del = e.target.closest(".-delete");
@@ -373,6 +381,7 @@ onEl(".module-manager", (el) => {
   import("../../../core/pub/js/c1/loading.mjs"); // preload
 
   const searchInp = findEl(el, "input");
+  searchInp.focus();
   searchInp.addEventListener("input", (e) => {
     for (const box of findAll(el, ".-module-boxes > *")) {
       box.style.display =

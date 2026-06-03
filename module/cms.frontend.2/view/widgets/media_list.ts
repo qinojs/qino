@@ -13,5 +13,5 @@ export default async function (node: Node): Promise<string> {
 
   const zipLink = fileCount ? `<div style="text-align:right;">${fileCount} Files | <a target=_blank href="${ctx.appURL}?qgCms_page_files_as_zip=${node}">Download ZIP</a></div>` : "";
 
-  return `<table class="-cmsFileList -styled"><tbody cmsconf=media_list_trs>${trsHtml}</table>${zipLink}`;
+  return `<table class="-cmsFileList -styled"><tbody cmsconf=media_list_trs u2-dropzone>${trsHtml}</table>${zipLink}`;
 }

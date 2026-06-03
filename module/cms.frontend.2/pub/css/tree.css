@@ -4,101 +4,61 @@
 	position:relative;
 	line-height: 1.5;
 
-	& .dynatree-container {
-		background:none;
+	/* versteckte Wurzel: nur gemeinsamer Container (single active/selection) – eigene Zeile
+	 * ausblenden und den Basis-Einzug der Top-Level-Knoten zurückholen (-1 * --indent). */
+	& > u2-tree.-root::part(row) { display: none; }
+	& > u2-tree.-root { margin-inline-start: -1rem; }
+
+	& input { color:#000; border:0; background:transparent; padding:0; margin:0; font:inherit; }
+	& .-title {
 		border:none;
-		padding:0;
-		font-size:15px;
-	}
-	& input { color:#000; }
-	& a {
-		border:none;
-		min-width:140px;
+		min-width:8.75em;
 		color:var(--cms-dark);
 		text-decoration:none;
 	}
-	& .dynatree-title > span:first-child {
+	& .-title > span:first-child {
 		overflow: hidden;
-		max-width: 200px;
+		max-width: 12.5em;
 		text-overflow: ellipsis;
 	}
-	& .dynatree-icon {
-		cursor:pointer;
-		height:auto;
-		background-image:none;
-		text-align:center;
-		vertical-align:bottom;
-	}
-	& .dynatree-icon::after {
-		vertical-align: text-bottom;
-		content: '';
-		width: 17px;
-		height: 17px;
-		background: currentColor;
-		border-radius: 50%;
-		display: inline-block;
-	}
-	& .-type-c .dynatree-icon::after {
-		width:10px;
-		height:10px;
+	& [slot="icon"] {
+		display:flex;
+		&::after {
+			content: '';
+			width: 1.2em;
+			aspect-ratio: 1;
+			background: currentColor;
+			border-radius: 50%;
+		}
+		&.-type-c::after { width: 1em; }
+		&.-invisible { opacity:.2; }
 	}
 	& .-new { animation: blink-animation .2s infinite alternate; }
-	& .-invisible .dynatree-icon { opacity:.2; }
 	& .-type-c { font-size:10px; }
-	& .-private::after {
-		font-family: 'qg_cms';
-		content:'\e900';
-		font-style:normal;
-		font-weight: normal;
-		margin-left:2px;
-	}
+	& .-private::after,
 	& .-offline::after {
 		font-family: 'qg_cms';
-		content:'\e901';
-		font-style:normal;
+		font-style: normal;
 		font-weight: normal;
-		margin-left:2px;
+		margin-left: .2em;
 	}
-	& .-col1 {
-		margin-left:10px;
+	& .-private::after { content:'\e900'; }
+	& .-offline::after { content:'\e901'; }
+	& .-col1, & .-col2 {
 		font-size:11px;
 		opacity:.7;
 	}
-	& .-col2 {
-		font-size:11px;
-		opacity:.7;
-	}
-	& .dynatree-container { font-family:inherit; }
-	& a:hover,
-	& .dynatree-active a {
-		background:none;
+	& .-col1 { margin-left:.7em; }
+	& .-title:hover,
+	& [aria-selected="true"] > .-title {
 		font-weight:bold;
 	}
-	& .dynatree-active a:after {
+	& [aria-selected="true"] > .-title::after {
 		content: '\25C0\FE0E';
 		display: inline-block;
-		margin-left: 5px;
+		margin-left: .3em;
 	}
-	& ul.dynatree-container a:focus,
-	& span.dynatree-focused a:link {
-		font-weight:bold;
-		outline:none;
-	}
-	& .dynatree-container li { line-height:1.5; }
-	& .dynatree-container .dynatree-node {
-		display:inline-block;
-	}
-	& .dynatree-container .dynatree-node > * {
-		display:inline-block;
-		vertical-align: middle;
-	}
-	& .dynatree-expander {
-		position:relative;
-		top:-1px;
-	}	
 }
-
-.dynatree-container * { background-size:initial; }
 
 @keyframes blink-animation {
 	to { opacity: .2; }

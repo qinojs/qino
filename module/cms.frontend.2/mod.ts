@@ -161,7 +161,8 @@ export function init(app: App) {
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");
         app.languages.nsStop();
-        ctx.html.prependContent(panelHtml);
+        //ctx.html.prependContent(panelHtml);
+        ctx.html.content += panelHtml;
       }
     }
 
@@ -172,9 +173,6 @@ export function init(app: App) {
     const editmode = access > 1 && Number(await settings.cms.editmode);
     if (editmode) {
       ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery.js");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/ui.js");
-      ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/jQuery/fn/dynatree.js");
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
       allowSettingsEditorAssets(ctx);
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/panel.mjs");

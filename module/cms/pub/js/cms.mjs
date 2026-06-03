@@ -81,7 +81,7 @@ function abortableCombobox(input, apiFn) {
 }
 
 document.addEventListener('focus', e => {
-	const input = e.target;
+	const input = e.composedPath()[0];
 	if (input.tagName !== 'INPUT') return;
 	let box;
 	if (input.getAttribute('type') === 'qgcms-page') box = abortableCombobox(input, apt.cms.nodes.get.bind(apt.cms.nodes));

@@ -59,11 +59,11 @@ export default async function (node: Node): Promise<string> {
     const size = exists ? (await F.size() ?? 0) : 0;
     const sizeStr = size ? String(Math.round(size / 1024)) + " KB" : "";
 
-    html += `<tr itemid="${hee(name)}">
+    html += `<tr itemid="${hee(name)}" draggable>
       <td class=-preview title="${hee(await app.t`Click to replace the file`)}">${preview}
       <td class=-link>${linkHtml}${nameLabel}
       <td class=-size>${sizeStr}
-      <td class=-handle>
+      <td class=-handle u2-draghandle>
       <td class=-delete>`;
   }
   return html;
