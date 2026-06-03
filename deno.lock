@@ -341,11 +341,15 @@
     }
   },
   "remote": {
+    "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/item.js": "76c508afae32da1815b693794e2de5d949e15e396e085e7bb3e5f5a25c120d42",
+    "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/src/AsyncDataPoint.js": "da77090db228de3dac6ad14253755b34a2cc19e1ec022f7b87666724f07e4219",
+    "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/src/Emitter.js": "74f74b7c2d6477ae5e820208165f7ccd92ce26c3471885ed85545bfd5031daf7",
     "https://cdn.jsdelivr.net/npm/dompurify@3/+esm": "045f152d3ec562412bfff4fdd428ec8e8333616fc7b3d4e4e54781eb7196c3f0",
     "https://cdn.jsdelivr.net/npm/marked@18/+esm": "6c022b7cff763280d5a8c2a0008d9a3d2aa2b99ae05cc384500bcaf6b07b0e05",
     "https://deno.land/x/bcrypt@v0.4.1/mod.ts": "ff09bdae282583cf5f7d87efe37ddcecef7f14f6d12e8b8066a3058db8c6c2f7",
     "https://deno.land/x/bcrypt@v0.4.1/src/bcrypt/base64.ts": "b8266450a4f1eb6960f60f2f7986afc4dde6b45bd2d7ee7ba10789e67e17b9f7",
     "https://deno.land/x/bcrypt@v0.4.1/src/bcrypt/bcrypt.ts": "ec221648cc6453ea5e3803bc817c01157dada06aa6f7a0ba6b9f87aae32b21e2",
-    "https://deno.land/x/bcrypt@v0.4.1/src/main.ts": "08d201b289c8d9c46f8839c69cd6625b213863db29775c7a200afc3b540e64f8"
+    "https://deno.land/x/bcrypt@v0.4.1/src/main.ts": "08d201b289c8d9c46f8839c69cd6625b213863db29775c7a200afc3b540e64f8",
+    "https://esm.sh/jsr/@nuxodin/dump@1.5.2": "7ad28af768180384baa81dd75ed988a2dd2f2106e22e0901f11a98fbee78dbe8"
   }
 }

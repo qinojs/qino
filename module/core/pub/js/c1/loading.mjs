@@ -5,6 +5,7 @@ c1.loading = {
 		return ()=>{ for (const done of dones) done(); }
 	},
 	_markElement(el, {delay = 0, pointerEvents = false} = {}) {
+		c1.loading._adoptStyles(el);
 		el.loadingTasks ??= 0;
 		el.loadingTasks++;
 		if (el.loadingTasks === 1) {
@@ -39,6 +40,12 @@ c1.loading = {
 	handleEvent(e){
 		e.stopPropagation();
 		e.cancelable && e.preventDefault();
+	},
+	_adoptStyles(el) {
+		const root = el.getRootNode();
+		if (!root.adoptedStyleSheets.includes(sheet)) {
+			root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+		}
 	}
 };
 
@@ -91,8 +98,7 @@ const css =
 '  vertical-align:middle; ' +
 '  margin-top:-.2em; ' +
 '} ';
-const styleEl = document.createElement('style');
-styleEl.textContent = css;
-document.head.append(styleEl);
+const sheet = new CSSStyleSheet();
+sheet.replaceSync(css);
 
 export default c1.loading;
