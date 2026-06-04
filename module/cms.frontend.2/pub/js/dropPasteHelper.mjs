@@ -23,12 +23,17 @@ cms.txtCleanElement = function(el,tid){
         cms.txtIdToPid(tid).then( pid => cms.imgToDbFile(el, pid) );
     }
     if (el.tagName === 'IMG' && el.src.match('dbFile/')) {
-        el.style.maxWidth = '100%';
-        el.style.width = el.offsetWidth+'px';
-        el.style.height = 'auto';
-        el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
-        el.setAttribute('width', el.offsetWidth);
-        el.setAttribute('height', el.offsetHeight);
+        const dim = () => {
+            el.style.maxWidth = '100%';
+            el.style.width = el.offsetWidth+'px';
+            el.style.height = 'auto';
+            el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
+            el.setAttribute('width', el.offsetWidth);
+            el.setAttribute('height', el.offsetHeight);
+        };
+        if (el.offsetWidth) dim();
+        else if (el.complete) requestAnimationFrame(dim);
+        else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
     }
     if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
     if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
@@ -118,51 +123,3 @@ window.onPasteFormatNode = function(node) {
 	Cleaner.cleanContents(node, true);
 };
 
-window.q9DataTransfer = class {
-    constructor(dt){
-        this.dt = dt;
-        this.types = dt.types ?? ['url','text'];
-        this.files = dt.files ?? [];
-    }
-    getData(type) {
-        return this.dt.getData(type);
-    }
-    getFileUrl() {
-        const fileurl1 = this.getData('application/x-moz-file-promise-url');
-        const html     = this.getData('text/html') || '';
-        const matches  = html.match(/.*<img src="([^"]*)".*/, '$1');
-        const fileurl2 = matches && matches[1];
-        let   url = null;
-        if (this.getData('text/x-moz-url')) {
-            url = this.getData('text/x-moz-url').split('\n')[0];
-        }
-        let fileurl3 = this.getData('url') || url || '';
-        fileurl3 = fileurl3.trim();
-        const fileurl = fileurl1 || fileurl2 || fileurl3;
-        if (fileurl.match(/^file/)) return null;
-        return fileurl1 || fileurl2 || fileurl3;
-    }
-};
-
-window.q9ClipboardData = class {
-    constructor(cd) {
-        this.items = cd.items ?? [];
-    }
-    q9GetHtml(cb) {
-        let alternative = null;
-        for (let i = 0, item; item = this.items[i++];) {
-            if (item.type === 'text/html') {
-                item.getAsString(cb);
-                return 1;
-            }
-            if (item.type === 'text/plain') alternative = item;
-        }
-        if (alternative) {
-            alternative.getAsString(text => {
-                cb( text.replace(/\n/g,'<br>') );
-            });
-            return 1;
-        }
-        return 0;
-    }
-};

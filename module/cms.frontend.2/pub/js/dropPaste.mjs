@@ -1,11 +1,16 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt } from '../../../core/pub/js/qino.js';
+import { dataTransferToUrl, readClipboardHtml } from '../../../core/pub/js/util/transfer.mjs';
+
+// an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
+let internalDrag = false;
+let draggedEl = null;
 
 const dragOver = function(e) {
 	const el = e.target.closest('[cmstxt][contenteditable]');
 	if (!el) return;
 	e.stopImmediatePropagation();
-	if (window.q9DragInside) return;
+	if (internalDrag) return;
 	e.preventDefault(); // firefox dont need this to access droped data!
 	const range = document.caretRangeFromPoint(e.clientX, e.clientY);
 	const Sel = getSelection();
@@ -19,22 +24,37 @@ const drop = async function(e) {
 	const tid = txtEl.getAttribute('cmstxt');
 	e.stopImmediatePropagation();
 	setTimeout(() => cms.txtClean(e.target, tid));
-	if (window.q9DragInside) return;
-	const dt = new q9DataTransfer(e.dataTransfer);
-	if (dt.files.length) {
+	if (internalDrag) {
+		// firefox turns any image dropped/moved into a contenteditable into a link, so we place it
+		// ourselves. draggedEl is the real dragged element (composedPath sees through the shadow panel).
+		const dragImg = draggedEl?.tagName === 'IMG' ? draggedEl : null;
+		const range = dragImg && document.caretRangeFromPoint(e.clientX, e.clientY);
+		if (range && txtEl.contains(range.startContainer)) {
+			e.preventDefault();
+			if (txtEl.contains(dragImg)) {
+				range.insertNode(dragImg); // move within the field: relocate the existing node
+			} else {
+				const img = Object.assign(document.createElement('img'), { src: dragImg.getAttribute('src') });
+				range.insertNode(img);
+				img.addEventListener('load', () => cms.txtCleanElement(img, tid), { once: true });
+			}
+		}
+		return;
+	}
+	if (e.dataTransfer.files.length) {
 		e.preventDefault();
-		for (let i=0, file; file=dt.files[i++];) {
+		for (const file of e.dataTransfer.files) {
 			if (file.name.match(/[a-z0-9]{8}\.bmp/)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
 			cms.txtAddFile(txtEl, file);
 		}
 	}
-	const fileUrl = dt.getFileUrl();
+	const fileUrl = dataTransferToUrl(e.dataTransfer);
 	if (!fileUrl) return;
 	e.preventDefault(); // before await!!
 	const pid = await cms.txtIdToPid(tid);
 	// todo: intern file
 	// Add file to awoid access problems, but its a copy!!!!
-	// we only get here if its on other winodw!! (if window.q9DragInside return)
+	// we only get here if its on other winodw!! (if internalDrag return)
 	if (fileUrl.match(location.host)) {
 		const intern = fileUrl.match(/dbFile\/([0-9]+)\//)[1];
 		if (intern) {
@@ -70,13 +90,11 @@ const paste = function(e) {
 		s.c1SetRange(r);
 		txtEl.dispatchEvent(new Event('input',{bubbles:true, cancelable: true})); // NEU 9.4.18
 	};
-	const data = new q9ClipboardData(e.clipboardData);
-	if (data.items) {
-		for (let i=0, item; item=data.items[i++];) {
-			item.kind === 'file' && cms.txtAddFile(txtEl, item.getAsFile());
-		}
-		data.q9GetHtml(addHtml) && e.preventDefault();
+	const items = e.clipboardData.items ?? [];
+	for (let i=0, item; item=items[i++];) {
+		item.kind === 'file' && cms.txtAddFile(txtEl, item.getAsFile());
 	}
+	readClipboardHtml(e.clipboardData, addHtml) && e.preventDefault();
 	setTimeout(()=>cms.txtClean(txtEl, tid), 1);
 };
 const root = document.documentElement;
@@ -84,11 +102,11 @@ root.addEventListener('dragover', dragOver);
 root.addEventListener('drop',     drop);
 root.addEventListener('paste',    paste);
 
-root.addEventListener('dragstart',  e => window.q9DragInside = true );
-root.addEventListener('mouseleave', e => window.q9DragInside = false );
+root.addEventListener('dragstart',  e => { internalDrag = true; draggedEl = e.composedPath()[0]; });
+root.addEventListener('dragend',    e => internalDrag = false );
 
 root.addEventListener('input', e => {
-	if (window.q9DragInside) {
+	if (internalDrag) {
 		// input while drop from drag inside;
 		// chrome dont fire drop if dragover is not canceled
 		const el = e.target.closest('[cmstxt]');
@@ -96,7 +114,7 @@ root.addEventListener('input', e => {
 		const tid = el.getAttribute('cmstxt');
 		cms.txtClean(e.target, tid);
 	}
-	window.q9DragInside = false;
+	internalDrag = false;
 });
 
 // contents
@@ -111,18 +129,17 @@ root.addEventListener('drop', e=>{
 	if (!pid) return;
 	e.stopPropagation();
 	e.preventDefault();
-	const dt = new q9DataTransfer(e.dataTransfer);
 	function complete() { apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; }); }
-	if (dt.files.length) {
+	if (e.dataTransfer.files.length) {
 		let hasOne = false;
-		for (let i=0, file; file=dt.files[i++];) {
+		for (const file of e.dataTransfer.files) {
 			if (file.name.match(/[a-z0-9]{8}\.bmp/)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
 			hasOne = true;
 			cms.cont(pid).upload(file,complete);
 		}
 		if (hasOne) return;
 	}
-	const fileUrl = dt.getFileUrl();
+	const fileUrl = dataTransferToUrl(e.dataTransfer);
 	if (!fileUrl) return;
 	if (fileUrl.match(location.host)) {
 		const match = fileUrl.match(/dbFile\/([0-9]+)\//);

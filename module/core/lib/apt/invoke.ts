@@ -13,8 +13,12 @@ function validate(schema: StandardSchema, data: unknown, where: string): unknown
   return res.value;
 }
 
-const pick = (obj: Params, keys: readonly string[] = []): Params =>
-  Object.fromEntries(keys.filter((k) => k in obj).map((k) => [k, obj[k]]));
+function validatePart(schema: StandardSchema | undefined, src: Params, where: string, doCoerce: boolean): Params {
+  if (!schema) return {};
+  const out: Params = {};
+  for (const [k, field] of Object.entries(shapeOf(schema))) if (k in src) out[k] = doCoerce ? coerce(src[k], field) : src[k];
+  return validate(schema, out, where) as Params;
+}
 
 export const asParams = (v: unknown): Params => v && typeof v === "object" ? v as Params : {};
 
@@ -84,15 +88,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
   if (!await verb.access(params, ctx)) throw new AccessError();
   if (rawParams._checkAccess || input._checkAccess || query._checkAccess) return { ok: true };
 
-  if (verb.input) {
-    Object.assign(params, validate(verb.input, pick(input, Object.keys(shapeOf(verb.input))), "input"));
-  }
-  if (verb.query) {
-    const queryShape = shapeOf(verb.query);
-    const picked = pick(query, Object.keys(queryShape));
-    for (const [k, fieldSchema] of Object.entries(queryShape)) if (k in picked) picked[k] = coerce(picked[k], fieldSchema);
-    Object.assign(params, validate(verb.query, picked, "query"));
-  }
+  Object.assign(params, validatePart(verb.input, input, "input", !BODY_METHODS.has(m)), validatePart(verb.query, query, "query", true));
   const result = await verb.execute(params, ctx);
 
   if (verb.output) {
