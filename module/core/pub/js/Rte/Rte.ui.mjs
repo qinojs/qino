@@ -60,7 +60,8 @@ window.Rte.ui = {
 					item.enabled = true;
 					item.el.removeAttribute('hidden');
 					if (item.check) {
-						item.el.classList.toggle('active', item.check(Rte.element));
+						const act = item.check(Rte.element) ? 'add' : 'remove';
+						item.el.classList[act]('active');
 					}
 				} else {
 					item.enabled = false;
