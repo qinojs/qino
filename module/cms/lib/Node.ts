@@ -4,7 +4,6 @@ import { getCtx } from "../../core/lib/RequestContext.ts";
 import { DbFile } from "../../core/lib/DbFileManager.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
-import type { App } from "../../core/server.ts";
 import type { DbText, DbTextLang } from "../../core/lib/DbTextManager.ts";
 import type { dbEntry_usr } from "../../core/lib/qgEntries.ts";
 import type { DbEntry } from "../../core/lib/DbEntry.ts";
@@ -17,8 +16,8 @@ function table(name: string): string { return name; }
 export class Node {
 
     cms: CMS;
-    app: App;
-    db;
+    app: CMS["app"];
+    db: CMS["app"]["db"];
 
     id: number = 0;
     vs: Record<string, string | number | null> = {};
