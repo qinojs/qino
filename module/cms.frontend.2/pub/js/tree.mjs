@@ -3,7 +3,7 @@
  * und Server-Listener. */
 import { t, apt } from "../../../core/pub/js/qino.js";
 
-const U2 = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.12/";
+const U2 = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.13/";
 
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)

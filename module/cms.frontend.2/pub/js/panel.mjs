@@ -3,7 +3,7 @@ import "./frontend.mjs";
 import { apt } from "../../../core/pub/js/qino.js";
 import { t } from "../../../core/pub/js/qino.js";
 
-const U2 = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.12/";
+const U2 = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.13/";
 const panelTag = "qino-cms-panel";
 const panelStyles = [
   "core/pub/css/c1/box.css",

@@ -3,17 +3,18 @@ import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.login";
 
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.12/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.13/";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
-  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.12/css/norm/norm.css");
-  ctx.html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.12/css/base/base.css");
+  ctx.html.styles.add(u2Root + "css/norm/norm.css");
+  ctx.html.styles.add(u2Root + "css/base/base.css");
+  ctx.html.scripts.add(u2Root + "u2/auto.js");
+  
   ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
   ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
-  ctx.html.scripts.add(u2Root + "u2/auto.js");
 
   ctx.html.meta["viewport"] = "width=device-width";
 
