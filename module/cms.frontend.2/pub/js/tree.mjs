@@ -9,7 +9,7 @@ const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: tru
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)
 
 window.cmsTreeInit = async (json) => {
-  await import(U2 + "el/tree/tree.js"); // definiert <u2-tree>
+  await import(U2 + "el/tree/tree.js");
 
   const root = cms.panelRoot;
   if (!root.querySelector("link[data-u2tree]")) {
@@ -104,7 +104,6 @@ window.cmsTreeInit = async (json) => {
   };
   for (const ev of ["mouseover", "mouseout"]) rootNode.addEventListener(ev, hover);
 
-  // capture + stopImmediatePropagation verhindert u2-trees Enter=toggle.
   rootNode.addEventListener("keydown", (e) => {
     if (e.target.closest("input, textarea, select, [contenteditable]")) return;
     const node = nodeOf(e);
@@ -117,8 +116,7 @@ window.cmsTreeInit = async (json) => {
     } else if (e.key === "F2") editNode(node);
     else return;
     e.preventDefault();
-    e.stopImmediatePropagation();
-  }, true);
+  });
 
   // Lazy-Load (nur bei aria-live-Knoten liefert u2 e.load).
   rootNode.addEventListener("u2-tree-expand", (e) => {
@@ -207,7 +205,7 @@ window.cmsTreeInit = async (json) => {
     getNodeByKey: (k) => treeEl.querySelector(`u2-tree[data-key="${k}"]`),
     activate, // ignoriert null/Wurzel selbst
     parent: (n) => asTree(n.parentNode),
-    neighbor: (n) => asTree(n.previousElementSibling) || asTree(n.nextElementSibling) || asTree(n.parentNode),
+    neighbor: (n) => n.prev() || n.next() || asTree(n.parentNode), // u2 prev/next sind slot-bewusst
     update: renderNode,
     reloadChildren,
     editNode,

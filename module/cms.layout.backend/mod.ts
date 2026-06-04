@@ -51,7 +51,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
 
   ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
-  ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
+  ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/main.css");
 
   ctx.html.meta["viewport"] = "width=device-width";
 

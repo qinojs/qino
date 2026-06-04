@@ -5,7 +5,7 @@ import "../cms/mod.ts";
 export const name = "cms.installation.default";
 export const needs = [
   "cms",
-  "cms.frontend.1",
+  "cms.frontend.2",
   "cms.backend",
   "error_report",
   "cms.versions",
@@ -142,6 +142,6 @@ export async function install({app}: {app: App}): Promise<void> {
   }
 
   // Frontend installieren
-  if (!await s.cms.frontend) s.cms.frontend("cms.frontend.1");
+  if (!await s.cms.frontend) s.cms.frontend("cms.frontend.2");
 
 }

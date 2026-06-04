@@ -50,8 +50,8 @@ async function renderEditBox(node: Node, ctx: any): Promise<string> {
   if (node.cms.MainNode === await node.cms.nodeFromRequest?.()) return "";
 
   ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
-  ctx.html.styles.add(ctx.sysURL + "cms.frontend.1/pub/css/main.css");
-  ctx.html.scripts.add(ctx.sysURL + "cms.frontend.1/pub/js/frontend.mjs");
+  ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/main.css");
+  ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
 
   let savedMsg = "";
   if ("setRedirect" in ctx.post && ctx.post.qgToken === ctx.token) {

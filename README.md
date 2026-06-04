@@ -128,7 +128,7 @@ ctx.cookie       // Cookies
 | `core` | Foundation: settings, auth, sessions, database |
 | `cms` | Content management: pages, versioning, access control |
 | `cms.backend` | Admin UI: user management, module configuration |
-| `cms.frontend.1` | Frontend rendering engine |
+| `cms.frontend.2` | Frontend rendering engine |
 | `cms.cont.text` | Rich text content |
 | `cms.cont.image2` | Image content with transforms |
 | `cms.cont.nav3` | Navigation menus |

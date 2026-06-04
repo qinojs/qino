@@ -45,7 +45,6 @@ export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
             (!opt["level"] || opt["level"] > level);
         if (shouldExpand) {
             node["children"] = await cmsGetTree(C.id, { ...opt, _level: level });
-            node["state"] = { open: true };
         }
         res.push(node);
     }

@@ -5,7 +5,7 @@ Deno.test("cms.installation.default: metadata lists required base modules", () =
   assertEquals(name, "cms.installation.default");
   for (const mod of [
     "cms",
-    "cms.frontend.1",
+    "cms.frontend.2",
     "cms.backend",
     "error_report",
     "cms.versions",

@@ -402,7 +402,7 @@ export function init(app: App) {
         const ctx = e.ctx as RequestContext;
         if (!ctx.state.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
-        const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.1");
+        const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
         ctx.html.jsData.cmsFrontend = frontend;
         ctx.html.scripts.add(ctx.sysURL + frontend + "/pub/js/frontend.mjs");
         ctx.html.scripts.add(ctx.sysURL + "cms.versions/pub/vers.mjs");
