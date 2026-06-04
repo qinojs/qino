@@ -24,7 +24,7 @@ window.Rte.ui = {
 			const config = Rte.ui.config['rteDef']; // todo
 			my.activeItems = {};
 			let appendTo = my.mainContainer;
-			const addItem = function(n) {
+			const addItem = (n) => {
 				if (!my.items[n]) return;
 				my.activeItems[n] = my.items[n];
 				appendTo.appendChild(my.items[n].el);
@@ -55,14 +55,11 @@ window.Rte.ui = {
 		//Rte.on('elementchange', function() {
 		Rte.on('selectionchange', function() { // new 10.1.18, item.enable has to check on selectionchange
 			//if (!Rte.element) return; needed?
-			for (let [name,item] of Object.entries(my.activeItems)){
+			for (const [_name, item] of Object.entries(my.activeItems)){
 				if (!item.enable || item.enable(Rte.element)) {
 					item.enabled = true;
 					item.el.removeAttribute('hidden');
-					if (item.check) {
-						const act = item.check(Rte.element) ? 'add' : 'remove';
-						item.el.classList[act]('active');
-					}
+					item.check && item.el.classList.toggle('active', !!item.check(Rte.element) );
 				} else {
 					item.enabled = false;
 					item.el.setAttribute('hidden',true);
@@ -73,9 +70,9 @@ window.Rte.ui = {
 			if (e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
 				console.log(e.key)
 				const char = e.key;
-				for (let [name,item] of Object.entries(my.activeItems)){
+				for (const [_name, item] of Object.entries(my.activeItems)){
 					if (item.enabled && item.shortcut === char) {
-						let event = new MouseEvent('mousedown',{'bubbles': true,'cancelable': true});
+						const event = new MouseEvent('mousedown',{'bubbles': true,'cancelable': true});
 						item.el.dispatchEvent(event);
 		                e.preventDefault();
 					}
@@ -126,11 +123,11 @@ window.Rte.ui = {
 	},
 	setSelect(name, opt) {
 		let timeout = null;
-		let el = c1.dom.fragment('<div class="-item -select"><div class=-state></div><div class=-options></div></div>').firstChild;
+		const el = c1.dom.fragment('<div class="-item -select"><div class=-state></div><div class=-options></div></div>').firstChild;
 		el.addEventListener('mousedown', e=> { opts.style.display = 'block'; e.preventDefault(); });
 		el.addEventListener('mouseover', e=> clearTimeout(timeout) );
 		el.addEventListener('mouseout',  e=> timeout = setTimeout(()=> opts.style.display = 'none' ,300) );
-		let opts = el.c1Find('>.-options');
+		const opts = el.c1Find('>.-options');
 		opt.el = el;
 		this.setItem(name,opt);
 		return opts;

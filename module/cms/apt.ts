@@ -12,9 +12,9 @@ import { readSettings } from "../core/lib/settings.ts";
 import * as fns from "./apt-exports.ts";
 import type { Node } from "./lib/Node.ts";
 
-const nodeRead  = ({ node }: { node: Node }) => node.access().then((a: number) => a >= 1);
-const nodeWrite = ({ node }: { node: Node }) => node.access().then((a: number) => a >= 2);
-const nodeAdmin = ({ node }: { node: Node }) => node.access().then((a: number) => a >= 3);
+const nodeRead  = ({ node }: { node: Node }) => node.access().then(a => a >= 1);
+const nodeWrite = ({ node }: { node: Node }) => node.access().then(a => a >= 2);
+const nodeAdmin = ({ node }: { node: Node }) => node.access().then(a => a >= 3);
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
 // ───── Helpers ────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g
 async function slimTree(node: Node): Promise<any> {
   const title = String(await (await node.title()).string() ?? "").trim();
   const children = [
-    ...((await node.children({ type: "p" })) ?? new Map()).values(),
+    ...(await node.children({ type: "p" })).values(),
   ];
   const entry: any = { id: Number(node.id), title: title || "-" };
   const childNodes = [];
@@ -35,7 +35,7 @@ async function slimTree(node: Node): Promise<any> {
 
 async function contentBlocks(node: Node): Promise<any[]> {
   const contents = [
-    ...((await node.children({ type: "c" })) ?? new Map()).values(),
+    ...(await node.children({ type: "c" })).values(),
   ];
   const entries = [];
   for (const content of contents) {
@@ -111,13 +111,13 @@ const node = {
       description: "Render node as HTML",
       access: nodeRead,
       input: s.object({ vars: s.optional(s.record()) }),
-      execute: async ({ node, vars }: any) => String(await node.html(vars ?? {})),
+      execute: async ({ node, vars }: any) => String(await node.html(vars)),
     },
     post: {
       description: "Render node as HTML (vars as JSON body)",
       access: nodeRead,
       input: s.object({ vars: s.optional(s.any()) }),
-      execute: async ({ node, vars }: any) => String(await node.html(vars ?? {})),
+      execute: async ({ node, vars }: any) => String(await node.html(vars)),
     },
     part: {
       ":part": {
@@ -127,14 +127,14 @@ const node = {
           access: nodeRead,
           input: s.object({ vars: s.optional(s.record()) }),
           execute: async ({ node, part, vars }: any) =>
-            String(await node.htmlPart(part, vars ?? {}) || ""),
+            String(await node.htmlPart(part, vars) || ""),
         },
         post: {
           description: "Render a specific HTML part of the node (vars as JSON body)",
           access: nodeRead,
           input: s.object({ vars: s.optional(s.any()) }),
           execute: async ({ node, part, vars }: any) =>
-            String(await node.htmlPart(part, vars ?? {}) || ""),
+            String(await node.htmlPart(part, vars) || ""),
         },
       },
     },
@@ -142,7 +142,7 @@ const node = {
 
   name: {
     put: {
-      description: "Set the internal name of the page",
+      description: "Set the internal name of the node",
       access: nodeWrite,
       input: s.object({ value: s.string() }),
       execute: async ({ node, value }: any) => {
@@ -154,7 +154,7 @@ const node = {
 
   title: {
     put: {
-      description: "Set page title (language-specific)",
+      description: "Set node title (language-specific)",
       access: nodeWrite,
       input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
       output: s.object({ changed: s.boolean() }),
@@ -169,7 +169,7 @@ const node = {
     ":name": {
       paramSchema: s.string().describe("Text field name"),
       put: {
-        description: "Set a text field of the page (language-specific)",
+        description: "Set a text field of the node (language-specific)",
         access: nodeWrite,
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),
@@ -183,7 +183,7 @@ const node = {
 
   visible: {
     put: {
-      description: "Set navigation visibility",
+      description: "Set node visibility flag",
       access: nodeWrite,
       input: s.object({ value: s.boolean() }),
       execute: async ({ node, value }: any) => {
@@ -195,7 +195,7 @@ const node = {
 
   searchable: {
     put: {
-      description: "Set page searchability",
+      description: "Set node searchability flag",
       access: nodeWrite,
       input: s.object({ value: s.boolean() }),
       execute: async ({ node, value }: any) => {
@@ -207,7 +207,7 @@ const node = {
 
   module: {
     put: {
-      description: "Set the layout module of the page",
+      description: "Set the module of the node",
       access: nodeWrite,
       input: s.object({
         module: s.string().describe("Module name, e.g. \"cms.default\""),
@@ -224,7 +224,7 @@ const node = {
           return { ok: true };
         }
         let done = 0, has = 0;
-        const bough = await node.bough({ type: "p" }) ?? new Map();
+        const bough = await node.bough({ type: "p" });
         for (const P of bough.values()) {
           has++;
           if ((await P.access()) < 2) continue;
@@ -238,7 +238,7 @@ const node = {
 
   "online-start": {
     put: {
-      description: "Set online-start time (ISO string or Unix timestamp)",
+      description: "Set node online-start time (ISO string or Unix timestamp)",
       access: nodeWrite,
       input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-01-01T00:00:00\") or Unix timestamp. Omit to remove limit.") }),
       execute: async ({ node, value }: any) => {
@@ -254,7 +254,7 @@ const node = {
 
   "online-end": {
     put: {
-      description: "Set online-end time (ISO string or Unix timestamp)",
+      description: "Set node online-end time (ISO string or Unix timestamp)",
       access: nodeWrite,
       input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-12-31T23:59:59\") or Unix timestamp. Omit to remove limit.") }),
       execute: async ({ node, value }: any) => {
@@ -277,7 +277,7 @@ const node = {
         const ctx = getCtx();
         const id = await node.createChild();
         if (!id) throw new Error("createChild failed");
-        const child = await ctx.app.cms.node(id);
+        const child = await node.cms.node(id);
         await child.title(ctx.lang, title);
         await child.changeUser(ctx.user!, 3);
         return fns.nodeToJson(id);
@@ -287,7 +287,7 @@ const node = {
 
   copy: {
     post: {
-      description: "Copy page/content",
+      description: "Copy node",
       access: nodeWrite,
       input: s.object({ deep: s.boolean().default(false).describe("If true, sub-pages are copied too") }),
       output: s.object({ id: s.string() }),
@@ -314,10 +314,10 @@ const node = {
         before: s.optional(s.string()).describe("Insert before this node-ID. Omit to append."),
       }),
       execute: async ({ node, id, before }: any) => {
-        const Child = await getCtx().app.cms.node(id);
-        if ((await Child.access()) < 2) throw new AccessError();
-        if (await node.in(Child)) throw new ConflictError("would create a loop");
-        await node.insertBefore(Child, before);
+        const child = await node.cms.node(id);
+        if ((await child.access()) < 2) throw new AccessError();
+        if (await node.in(child)) throw new ConflictError("would create a loop");
+        await node.insertBefore(child, before);
         return { ok: true };
       },
     },
@@ -325,9 +325,9 @@ const node = {
 
   contents: {
     get: {
-      description: "Read content blocks of this page (id, module, name, children)",
+      description: "Read content blocks of this node (id, module, name, children)",
       access: nodeRead,
-      execute: ({ node }: any) => contentBlocks(node),
+      execute: ({ node }: { node: Node }) => contentBlocks(node),
     },
 
     post: {
@@ -346,7 +346,7 @@ const node = {
 
   access: {
     put: {
-      description: "Set public access level of the page",
+      description: "Set public access level of the node",
       access: nodeAdmin,
       input: s.object({ value: s.optional(s.number()).describe("Access level (0 = private, 1 = public). Omit to reset.") }),
       execute: async ({ node, value }: any) => {
@@ -360,7 +360,7 @@ const node = {
       ":user": {
         paramSchema: s.number(),
         put: {
-          description: "Set a user's access level on this page",
+          description: "Set a user's access level on this node",
           access: nodeAdmin,
           input: s.object({
             access: s.number().describe("Access level (1=read, 2=write, 3=admin, 0=revoke)"),
@@ -370,7 +370,7 @@ const node = {
             await node.changeUser(user, access);
             if (!recursive) return { ok: true };
             let done = 0, has = 0;
-            const bough = await node.bough({ type: "p" }) ?? new Map();
+            const bough = await node.bough({ type: "p" });
             for (const P of bough.values()) {
               has++;
               if ((await P.access()) < 3) continue;
@@ -387,7 +387,7 @@ const node = {
       ":group": {
         paramSchema: s.number(),
         put: {
-          description: "Set a group's access level on this page",
+          description: "Set a group's access level on this node",
           access: nodeAdmin,
           input: s.object({ access: s.number().describe("Access level (1=read, 2=write, 3=admin, 0=revoke)") }),
           execute: async ({ node, group, access }: any) => {
@@ -401,13 +401,13 @@ const node = {
 
   files: {
     get: {
-      description: "List all files of the page",
+      description: "List all files of the node",
       access: nodeRead,
-      execute: ({ node }: any) => node.files().then((f: any) => f ?? {}),
+      execute: ({ node }: { node: Node }) => node.files(),
     },
 
     post: {
-      description: "Add a file to the page",
+      description: "Add a file to the node",
       access: nodeWrite,
       input: s.object({
         file: s.optional(s.string()).describe("Filename to add (from upload or server path)"),
@@ -430,11 +430,11 @@ const node = {
       delete: {
         description: "Delete duplicate files (same MD5)",
         access: nodeWrite,
-        execute: async ({ node }: any) => {
+        execute: async ({ node }: { node: Node }) => {
           const files = await node.files();
           const seen: Record<string, boolean> = {};
-          for (const [name, F] of Object.entries(files ?? {})) {
-            const md5 = (F as any).vs?.["md5"];
+          for (const [name, F] of Object.entries(files)) {
+            const md5 = F.vs?.md5;
             if (md5 && seen[md5]) await node.deleteFile(name);
             if (md5) seen[md5] = true;
           }
@@ -445,10 +445,10 @@ const node = {
 
     all: {
       delete: {
-        description: "Delete all files of the page",
+        description: "Delete all files of the node",
         access: nodeWrite,
-        execute: async ({ node }: any) => {
-          for (const name of Object.keys(await node.files() ?? {})) {
+        execute: async ({ node }: { node: Node }) => {
+          for (const name of Object.keys(await node.files())) {
             await node.deleteFile(name);
           }
           return { ok: true };
@@ -471,7 +471,7 @@ const node = {
     ":file": {
       paramSchema: s.string().describe("Filename"),
       delete: {
-        description: "Delete a file from the page",
+        description: "Delete a file from the node",
         access: nodeWrite,
         execute: ({ node, file }: any) => node.deleteFile(file),
       },
@@ -549,12 +549,12 @@ const node = {
     ":path*": {
       paramSchema: settingsPath,
       get: {
-        description: "Read page settings at path",
+        description: "Read node settings at path",
         access: nodeRead,
         query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }),
         execute: ({ node, path, schema }: any) => schema ? node.settings[$item].sub(path).schema ?? {} : readSettings(node.settings[$item].sub(path)) },
       put: {
-        description: "Set page settings at path",
+        description: "Set node settings at path",
         access: nodeWrite,
         input: s.object({ value: s.any().describe("Value to set (any JSON type)") }),
         execute: async ({ node, path, value }: any) => {
@@ -563,10 +563,10 @@ const node = {
         },
       },
       delete: {
-        description: "Delete page settings at path",
+        description: "Delete node settings at path",
         access: nodeWrite,
         execute: async ({ node, path }: any) => {
-          if (!path?.length) throw new ConflictError("Cannot delete page settings root");
+          if (!path?.length) throw new ConflictError("Cannot delete node settings root");
           await node.settings[$item].sub(path).remove();
           return { ok: true };
         },
@@ -577,9 +577,9 @@ const node = {
 
   api: {
     post: {
-      description: "Call module-specific page API",
+      description: "Call module-specific node API",
       access: nodeRead,
-      execute: async ({ node }: any) => {
+      execute: async ({ node }: { node: Node }) => {
         try {
           const api = node.module?.exports?.cms?.node?.api;
           if (typeof api !== "function") return null;
