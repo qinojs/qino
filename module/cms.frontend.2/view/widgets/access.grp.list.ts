@@ -5,11 +5,11 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   const db = app.db;
   const hasMany = vars.hasMany ?? true;
   const search  = vars.param?.search ?? "";
-  const params: unknown[] = [];
+  const params: unknown[] = [String(node)];
 
   let sql = ` SELECT grp.*, a.access
     FROM grp
-    LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = '${node}'
+    LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = ?
     WHERE page_access `;
 
   if (!hasMany) {

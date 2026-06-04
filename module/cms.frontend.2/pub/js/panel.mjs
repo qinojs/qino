@@ -261,10 +261,7 @@ onEl(".tree-manager", async (el) => {
     inp.value = "";
   }
   inp.addEventListener("blur", (e) => {
-    e.currentTarget.value &&
-      confirm(t`Create page "${e.currentTarget.value}"?`)
-      ? add()
-      : null;
+    e.currentTarget.value && confirm(t`Create page "${e.currentTarget.value}"?`) ? add() : null;
   });
   inp.addEventListener("keydown", (e) => {
     e.key === "Enter" && add();
@@ -275,16 +272,10 @@ onEl(".tree-manager", async (el) => {
   });
   const tree = JSON.parse(el.getAttribute("data"));
   await cmsTreeInit(tree);
-  // change placeholder (engine-neutraler Hook; dynatree & u2 rufen cms.Tree.onActivate)
+  // change placeholder
   cms.Tree.onActivate = (node) => {
     inp.placeholder = inp.placeholder.replace(/"([^"]*)"/, `"${node.data.title}"`);
   };
-  /* go to hash-url  if (!isset(G()->ASK['serverInterface']) && G()->SET['cms.frontend.2']['custom']['tree_show_c']->v) { ?>
-	setTimeout(function(){
-		var to = location.hash.match(/cmspid([0-9]+)/);
-		to && cms.Tree.goTo(to[1]);
-	})
-	} */
 });
 
 onEl(".file-manager", (el) => {
