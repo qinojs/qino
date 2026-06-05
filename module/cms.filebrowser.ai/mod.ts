@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 export const name = "cms.filebrowser.ai";
-export const needs = ["cms", "ai"];
+export const needs = ["cms", "ai", "cms.filebrowser"];
 
 export function init(app: any) {
     app.on("cms-ready", ({ ctx }: any) => {

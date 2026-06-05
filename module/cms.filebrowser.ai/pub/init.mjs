@@ -1,6 +1,10 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { apt, u2Base } from '../../core/pub/js/qino.js';
 
-c1.onElement('.cmsFileBrowser', el => {
+// Der Filebrowser-Dialog lebt im Shadow-DOM des CMS-Panels.
+customElements.whenDefined('qino-cms-panel').then(async () => {
+const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');
+const root = document.querySelector('qino-cms-panel').shadowRoot;
+new SelectorObserver({ on: el => {
     const mainList = el.c1Find('.-list.-main');
     const container = c1.dom.fragment(
         `<div class=-ai style="padding-top:2em;">
@@ -39,4 +43,5 @@ c1.onElement('.cmsFileBrowser', el => {
             list.textContent = err.message;
         }
     });
+}}).observe('.cmsFileBrowser', { root });
 });

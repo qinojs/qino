@@ -2,7 +2,7 @@ import type { RequestContext } from "../core/lib/RequestContext.ts";
 import type { App } from "../core/server.ts";
 
 export const name = "cms.filebrowser.pexels";
-export const needs = ["cms"];
+export const needs = ["cms", "cms.filebrowser"];
 
 export function init(app: App) {
     app.on("cms-ready", e => {

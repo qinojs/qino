@@ -1,9 +1,8 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
 import { apt } from "../../../core/pub/js/qino.js";
-import { t } from "../../../core/pub/js/qino.js";
+import { t, u2Base } from "../../../core/pub/js/qino.js";
 
-const U2 = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.13/";
 const panelTag = "qino-cms-panel";
 const panelStyles = [
   "core/pub/css/c1/box.css",
@@ -314,8 +313,8 @@ onEl(".file-manager", (el) => {
     // DnD-Sortierung via u2-dropzone: tbody[u2-dropzone] + tr[draggable] (Template).
     // u2-draghandle (auf td.-handle) macht nur den Griff ziehbar. Nach dem Drop ist die
     // DOM-Reihenfolge die neue Sortierung -> an Server.
-    import(U2 + "attr/dropzone/dropzone.js");
-    import(U2 + "attr/draghandle/draghandle.js");
+    import(u2Base + "attr/dropzone/dropzone.js");
+    import(u2Base + "attr/draghandle/draghandle.js");
     tbody.addEventListener("u2-dropzone-drop", (e) => {
       if (!e.detail?.add) return; // gleiche Zone feuert remove+add -> nur einmal reagieren
       requestAnimationFrame(() => {

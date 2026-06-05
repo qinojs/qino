@@ -147,9 +147,7 @@ export function init(app: App) {
     }
 
     if (access > 1) {
-      g.csp ??= {};
-      g.csp["img-src"] ??= {};
-      g.csp["img-src"]["blob:"] = true;
+      ctx.csp["img-src"]["blob:"] = 1;
       ctx.html.jsData.Page = node.id;
       ctx.html.jsData.qgCmsRequestedPage = cms.RequestedNode?.id;
       if (await ctx.user?.get?.("superuser")) ctx.html.jsData.qino = { dev: ctx.dev || null };

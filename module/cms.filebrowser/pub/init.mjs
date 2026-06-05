@@ -1,42 +1,44 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { apt, u2Base } from '../../core/pub/js/qino.js';
 
-c1.onElement('.qgCmsFileManager .-addExistingFile', el=>{
-    let newButton = c1.dom.fragment('<button>select').firstChild;
-    el.after(newButton);
-    newButton.addEventListener('click', async e => {
-        const fB = new cms.fileBrowser({multiple:true});
-        fB.show();
-        fB.on('select', async e=>{
-            const pid = cms.cont.active || Page;
-            for (const id of e.dbFiles) await apt.cms.node(pid).files.post({ file: String(id) });
-            for (const url of e.urls) await apt.cms.node(pid).files.post({ file: url });
-            //apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+// Das CMS-Panel (cms.frontend.2) lebt im Shadow-DOM von <qino-cms-panel>.
+// SelectorObserver mit {root} sieht dort hinein, c1.onElement (nur document) nicht.
+const panelRoot = customElements.whenDefined('qino-cms-panel').then(() => document.querySelector('qino-cms-panel').shadowRoot);
+
+panelRoot.then(async root => {
+    const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');
+    new SelectorObserver({ on: el => {
+        const button = c1.dom.fragment('<button>select').firstChild;
+        el.after(button);
+        button.addEventListener('click', () => {
+            const fB = new cms.fileBrowser({ multiple:true });
+            fB.show();
+            fB.on('select', async e => {
+                const pid = cms.cont.active || Page;
+                for (const id of e.dbFiles) await apt.cms.node(pid).files.post({ file: String(id) });
+                for (const url of e.urls) await apt.cms.node(pid).files.post({ file: url });
+            });
         });
-    });
-    el.style.display = 'none';
-});
+        el.style.display = 'none';
+    }}).observe('.file-manager .-addExistingFile', { root });
 
-// replace file placeholders
-c1.onElement('.qgCmsFileManager .-preview', el=>{
-    el.addEventListener('click', async e => {
-        e.stopImmediatePropagation();
-        const replace = e.target.closest('tr').getAttribute('itemid');
-        const fB = new cms.fileBrowser({multiple:false,local:1});
-        fB.show();
-        fB.on('select', async e=>{
-            const pid = cms.cont.active || Page;
-            const item = e.dbFiles[0] || e.urls[0];
-            if (item) {
-                await apt.cms.node(pid).files.post({ file: String(item), replace });
-                cms.reloadNode(pid);
-            }
-            if (e.files) {
-                cms.cont(pid).upload(e.files[0], function(){
+    // replace file placeholders
+    new SelectorObserver({ on: el => {
+        el.addEventListener('click', e => {
+            e.stopImmediatePropagation();
+            const replace = e.target.closest('tr').getAttribute('itemid');
+            const fB = new cms.fileBrowser({ multiple:false, local:1 });
+            fB.show();
+            fB.on('select', async e => {
+                const pid = cms.cont.active || Page;
+                const item = e.dbFiles[0] || e.urls[0];
+                if (item) {
+                    await apt.cms.node(pid).files.post({ file: String(item), replace });
                     cms.reloadNode(pid);
-                }, replace);
-            }
+                }
+                if (e.files) cms.cont(pid).upload(e.files[0], () => cms.reloadNode(pid), replace);
+            });
         });
-    });
+    }}).observe('.file-manager .-preview', { root });
 });
 
 
@@ -46,18 +48,26 @@ cms.fileBrowser = class {
     }
     async show(){
         await Promise.all([
-            import('../../core/pub/js/c1/dialog.mjs'),
             import('../../core/pub/js/c1/loading.mjs'),
             import('../../core/pub/js/c1/form.mjs'),
         ]);
-        const body =
-        '<div>'+
-            '<input type=search placeholder="suchen..."> '+
-            '<button class=-browse '+(this.options.local?'':'hidden')+'>Lokale Dateien</button>'+
-            '<div class="-list -main"></div>'+
+        const root = await panelRoot;
+        const dialog = document.createElement('dialog');
+        dialog.className = 'qgCMS cmsFileBrowser';
+        dialog.innerHTML =
+            '<header>Filebrowser</header>'+
+            '<div>'+
+                '<input type=search placeholder="suchen..."> '+
+                '<button class=-browse '+(this.options.local?'':'hidden')+'>Lokale Dateien</button>'+
+                '<div class="-list -main"></div>'+
+            '</div>'+
+            '<footer>'+
+                '<button class=-cancel>Abbrechen</button>'+
+                (this.options.multiple ? '<button class=-ok>Ok</button>' : '')+
+            '</footer>'+
             '<style>'+
             '.cmsFileBrowser {'+
-                'width:900px; left:50%; transform:translateX(-50%); top:20px; max-height:calc(100vh - 40px);'+
+                'width:900px; max-width:calc(100vw - 40px); max-height:calc(100vh - 40px);'+
             '} '+
             '.cmsFileBrowser .-list {'+
                 'min-height:40px; margin-top:1em; display: grid; grid-gap: 3px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr) ); '+
@@ -67,105 +77,70 @@ cms.fileBrowser = class {
                 'transition:transform .15s linear; '+
             '} '+
             '.cmsFileBrowser .-list label:hover {'+
-                'transform:scale(1.2);'+
-                'z-index:1;'+
+                'transform:scale(1.2); z-index:1;'+
             '} '+
             '.cmsFileBrowser .-list label > .-title {'+
-                'position:absolute;'+
-				'bottom:0;'+
-				'right:0;'+
-				'left:0;'+
-				'background:rgba(0,0,0,.8);'+
-				'color:#fff;'+
-				'padding:10px;'+
-				'word-break:break-all;'+
-				'opacity:1;'+
-                'transition:opacity .6s;'+
+                'position:absolute; bottom:0; right:0; left:0; background:rgba(0,0,0,.8); color:#fff;'+
+                'padding:10px; word-break:break-all; opacity:1; transition:opacity .6s;'+
             '} '+
             '.cmsFileBrowser .-list label:hover > .-title {'+
                 'opacity:0;'+
             '} '+
-            '</style>'+
-        '</div>';
-        const buttons = [
-            // {title:'vom Computer', async then(){
-            //     var files = await c1.form.fileDialog(); // must be in click event loop
-            // }},
-            {title:'Abbrechen'},
-        ]
-        if (this.options.multiple) {
-            buttons.push({
-                title:'Ok',
-                then: async ()=>{
-                    const elements = Array.from(dialog.element.c1FindAll('label[itemid]')).filter(item=>item.c1Find('[type=checkbox]').checked);
-                    const items = elementsToItems(elements);
-                    this.trigger('select', items);
-                    dialog.hide();
-                    dialog.element.remove();
-                }
-            })
-        }
-        const dialog = new c1.dialog({
-            title:'Filebrowser',
-            body,
-            class:'qgCMS cmsFileBrowser',
-            buttons
+            (this.options.multiple ? '' : '.cmsFileBrowser .-list label > [type=checkbox] { display:none; } ')+
+            '</style>';
+        root.append(dialog);
+        dialog.showModal();
+        dialog.addEventListener('close', () => dialog.remove());
+
+        const list = dialog.querySelector('.-list.-main');
+
+        const select = elements => {
+            this.trigger('select', elementsToItems(elements));
+            dialog.close();
+        };
+
+        dialog.querySelector('.-cancel').addEventListener('click', () => dialog.close());
+        dialog.querySelector('.-ok')?.addEventListener('click', () => {
+            const elements = [...dialog.querySelectorAll('label[itemid]')].filter(el => el.querySelector('[type=checkbox]').checked);
+            select(elements);
         });
 
-        dialog.show();
-        const list = dialog.element.c1Find('.-list.-main');
-
         if (!this.options.multiple) {
-
-            list.after(c1.dom.fragment('<style>.cmsFileBrowser .-list label > [type=checkbox] { display:none; }</style>'));
-
-            dialog.element.addEventListener('click',e=>{
-                const target = e.target.closest('label[itemid]')
-                if (!target) return;
-                const items = elementsToItems([target]);
-                this.trigger('select',items);
-                dialog.hide();
-                dialog.element.remove();
-                //},{once:true}) // otherwise its triggered twice!!!! why!?
+            dialog.addEventListener('click', e => {
+                const target = e.target.closest('label[itemid]');
+                if (target) select([target]);
             });
         }
 
         function elementsToItems(elements){
             const items = {dbFiles:[], urls:[]};
-            Array.from(elements).forEach(item=>{
-                const type = item.getAttribute('data-type')+'s';
-                items[type] ||= [];
-                items[type].push(item.getAttribute('itemid'));
-            });
+            for (const el of elements) {
+                const type = el.getAttribute('data-type')+'s';
+                (items[type] ||= []).push(el.getAttribute('itemid'));
+            }
             return items;
         }
 
-        dialog.element.c1Find('[type=search]').addEventListener('input',function(e){
-            search(e.target.value);
+        dialog.querySelector('[type=search]').addEventListener('input', function(){
+            search(this.value);
         }.c1Debounce(600));
 
-        dialog.element.c1Find('.-browse').addEventListener('click', async e=>{
-            const files = await c1.form.fileDialog({accept:this.options.accept, multiple:this.options.multiple});
+        dialog.querySelector('.-browse').addEventListener('click', async () => {
+            const files = await c1.form.fileDialog({ accept:this.options.accept, multiple:this.options.multiple });
             this.trigger('select', { files, dbFiles:[], urls:[] });
-            dialog.hide();
-            dialog.element.remove();
+            dialog.close();
         });
 
-
-        const search = needle=>{
+        const search = needle => {
             c1.loading.mark(list);
-            apt['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result=>{
+            apt['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result => {
                 c1.loading.done(list);
 
                 const has = {};
-                Array.from(list.children).forEach(label=>{
-                    const checkbox = label.c1Find('[type=checkbox]');
-                    if (checkbox?.checked) {
-                        has[label.getAttribute('itemid')] = 1;
-                    } else {
-                        label.remove();
-                    }
-                })
+                for (const label of [...list.children]) {
+                    if (label.querySelector('[type=checkbox]')?.checked) has[label.getAttribute('itemid')] = 1;
+                    else label.remove();
+                }
 
                 for (const item of result) {
                     if (has[item.id]) continue;
@@ -192,7 +167,7 @@ cms.fileBrowser = class {
                 }
             });
         }
-		search();
+        search();
     }
 }
 Object.assign(cms.fileBrowser.prototype, c1.Eventer);
