@@ -159,23 +159,17 @@
 		display:block;
 		animation: qgcms_trash_activate .3s;
 	}
-	& > :not(svg) {
-		display:none;
-	}
+	& > :not(svg) { display:none; }
 	& > svg {
 		fill:var(--cms-access-2);
 		transition:fill .5s;
 	}
-	&.-full > svg {
-		fill:var(--cms-color);
-	}
+	&.-full > svg { fill:var(--cms-color); }
 	& > svg .-lis {
 		transform:rotate(0deg);
 		transition:transform .5s;
 	}
-	&.-full > svg .-lis {
-		transform:rotate(-20deg) translateX(-2px);
-	}	
+	&.-full > svg .-lis { transform:rotate(-20deg) translateX(-2px); }	
 }
 
 /* contpos-menu */

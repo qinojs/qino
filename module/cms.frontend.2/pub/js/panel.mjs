@@ -5,6 +5,8 @@ import { t, u2Base } from "../../../core/pub/js/qino.js";
 
 const panelTag = "qino-cms-panel";
 const panelStyles = [
+  u2Base + "css/norm/norm.css",
+  u2Base + "css/base/base.css",
   "core/pub/css/c1/box.css",
   "cms.frontend.2/pub/css/main.css",
   "cms.frontend.2/pub/css/off.css",
@@ -16,7 +18,7 @@ customElements.define(panelTag, class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
     const root = this.attachShadow({ mode: "open" });
-    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: sysURL + href }));
+    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : sysURL + href }));
     while (this.firstChild) root.append(this.firstChild);
   }
 });
