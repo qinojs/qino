@@ -96,7 +96,7 @@ export function init(app: App) {
         const editmode = ctx.get.qgCms_editmode;
         if (editmode !== undefined) settings.cms.editmode(editmode);
 
-        ctx.state.editmode = Number(await settings.cms.editmode) || 0;
+        ctx.state.editmode = Number(settings.cms.editmode()) || 0;
 
         // File upload
         const cmsPageFile = ctx.files["cmsPageFile"];

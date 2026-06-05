@@ -1,7 +1,7 @@
 import { backend } from "../cms.backend/mod.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
-import { dump } from "../../deps.ts";
+import { dump, $item } from "../../deps.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
 
@@ -65,6 +65,7 @@ function dumpBox(title: string, value: unknown, depth: number): string {
 
 function safeRender(value: unknown): string | undefined {
   if (typeof value !== "function") return undefined;
+  if ((value as unknown as Record<symbol, unknown>)[$item]) return `<em>[item.js proxy]</em>`; // .name/.length nicht lesen → kein autoviv
   return `<function>function <b>${hee(value.name ?? "")}</b>(${hee(value.length)})</function>`;
 }
 

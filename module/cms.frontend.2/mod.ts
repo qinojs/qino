@@ -140,7 +140,7 @@ export function init(app: App) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         settings.cms[lastKey](ctx.requestUri);
-        const toggleUrl = String(await settings.cms[otherKey] ?? "");
+        const toggleUrl = String(settings.cms[otherKey]() ?? "");
         ctx.html.jsData.cmsBackendUrl = toggleUrl;
         ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/init.mjs");
       }
@@ -154,7 +154,7 @@ export function init(app: App) {
       ctx.html.jsData.qgCmsEditmode = g.editmode;
 
       if (g.editmode) {
-        ctx.html.jsData.cmsClipboard = Number(await settings.cms.clipboard ?? "0");
+        ctx.html.jsData.cmsClipboard = Number(settings.cms.clipboard() ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");
@@ -168,7 +168,7 @@ export function init(app: App) {
     ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
     ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/off.css");
 
-    const editmode = access > 1 && Number(await settings.cms.editmode);
+    const editmode = access > 1 && Number(settings.cms.editmode());
     if (editmode) {
       ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
