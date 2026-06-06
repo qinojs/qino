@@ -116,17 +116,16 @@
 	}
 	& table.-styled {
 		border-collapse:collapse;
-
 		& > tbody > tr:hover,
 		& > tbody > tr.active { background-color:#fafafa; }
-
 		& > * > tr > * {
 			border:1px solid #ddd;
 			border-width:1px 0;
-			padding:8px;
+			padding:.6em;
 			vertical-align:middle;
 		}
 		&.-noborder > * > tr > * { border-width:0; }
+		& > * > tr > * > :is(input, textarea, select, button) { margin:0; }
 		& > * > tr > *:first-child { padding-inline:0; }
 		& > * > tr > *:last-child { padding-right:0; }
 		& > * > tr > th { border:none; }
