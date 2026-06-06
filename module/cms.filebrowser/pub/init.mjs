@@ -67,30 +67,50 @@ cms.fileBrowser = class {
             '</footer>'+
             '<style>'+
             '.cmsFileBrowser {'+
-                'width:900px; max-width:calc(100vw - 40px); max-height:calc(100vh - 40px);'+
+                'width:80rem;'+
+                'max-width:calc(100vw - 40px);'+
+                'max-height:calc(100vh - 40px);'+
+                '& .-list {'+
+                    'min-height:40px;'+
+                    'margin-top:1em;'+
+                    'display:grid;'+
+                    'grid-gap:3px;'+
+                    'grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));'+
+                    '& label {'+
+                        'position:relative;'+
+                        'height:120px;'+
+                        'border:1px solid #ddd;'+
+                        'background:var(--cms-light) 50%/contain no-repeat;'+
+                        'cursor:pointer;'+
+                        'transition:transform .15s linear;'+
+                        '&:hover {'+
+                            'transform:scale(1.2);'+
+                            'z-index:1;'+
+                        '} '+
+                        '& > .-title {'+
+                            'position:absolute;'+
+                            'bottom:0;'+
+                            'right:0;'+
+                            'left:0;'+
+                            'background:rgba(0,0,0,.8);'+
+                            'color:#fff;'+
+                            'padding:10px;'+
+                            'word-break:break-all;'+
+                            'opacity:1;'+
+                            'transition:opacity .6s;'+
+                        '} '+
+                        '&:hover > .-title {'+
+                            'opacity:0;'+
+                        '} '+
+                        (this.options.multiple ? '' : '& > [type=checkbox] { display:none; } ')+
+                    '} '+
+                '} '+
             '} '+
-            '.cmsFileBrowser .-list {'+
-                'min-height:40px; margin-top:1em; display: grid; grid-gap: 3px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr) ); '+
-            '} '+
-            '.cmsFileBrowser .-list label {'+
-                'position:relative; height:120px; border:1px solid #ddd; background:var(--cms-light) 50%/contain no-repeat; cursor:pointer; '+
-                'transition:transform .15s linear; '+
-            '} '+
-            '.cmsFileBrowser .-list label:hover {'+
-                'transform:scale(1.2); z-index:1;'+
-            '} '+
-            '.cmsFileBrowser .-list label > .-title {'+
-                'position:absolute; bottom:0; right:0; left:0; background:rgba(0,0,0,.8); color:#fff;'+
-                'padding:10px; word-break:break-all; opacity:1; transition:opacity .6s;'+
-            '} '+
-            '.cmsFileBrowser .-list label:hover > .-title {'+
-                'opacity:0;'+
-            '} '+
-            (this.options.multiple ? '' : '.cmsFileBrowser .-list label > [type=checkbox] { display:none; } ')+
             '</style>';
         root.append(dialog);
         dialog.showModal();
         dialog.addEventListener('close', () => dialog.remove());
+        dialog.addEventListener('mousedown', e => e.stopPropagation());
 
         const list = dialog.querySelector('.-list.-main');
 

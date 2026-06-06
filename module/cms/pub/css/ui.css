@@ -146,10 +146,23 @@
 		&::backdrop { background:rgba(0,0,0,.4); }
 		& > * { padding:1.2em; }
 		& > :is(header, .-head) {
+			padding-block: .8em;
 			background:var(--cms-dark);
 			color:var(--cms-light);
 			display:flex;
 			flex:0 0 auto;
+			position: sticky;
+			top:0;
+			z-index:1;
+		}
+		& > :is(footer, .-foot) {
+			margin:0;
+			flex:0 0 auto;
+			position: sticky;
+			bottom:0;
+			z-index:1;
+			display:flex;
+			gap: calc(var(--gap) / 2);
 		}
 	}
 

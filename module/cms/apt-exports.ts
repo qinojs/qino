@@ -2,12 +2,13 @@
 import { HTTPException } from "../../deps.ts";
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
-
+import type { Node } from "./lib/Node.ts";
+import './mod.ts';
 // ─── business logic used by REST ──────────────
 
-export async function nodeToJson(pid: any, type = "*"): Promise<any> {
+export async function nodeToJson(nid: any, type = "*"): Promise<any> {
     const app = getCtx().app.cms;
-    const Page = await app.node(pid);
+    const Page = await app.node(nid);
     const titleObj = await Page.title();
     const titleStr = String(await titleObj.string() ?? "").trim();
     return {
@@ -36,7 +37,7 @@ export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
         Cs = [await ctx.app.cms.node(1)];
     } else {
         const P = await ctx.app.cms.node(start);
-        Cs = [...(await P.children({ type: filter }) ?? new Map()).values()];
+        Cs = [...(await P.children({ type: filter })).values()];
     }
     for (const C of Cs) {
         const node: any = await nodeToJson(C.id, filter);
@@ -69,7 +70,7 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         node.settings["__deleted_before"] = String(before ?? "");
         node.settings["__deleted_time"]   = String(Math.floor(Date.now() / 1000));
         node.settings["__deleted_by"]     = String(await ctx.user?.get("email") ?? "");
-        const bough = await node.bough() ?? new Map();
+        const bough = await node.bough();
         for (const Child of bough.values()) {
             if (Child.vs?.["access"] !== null) await Child.set("access", 0);
             await ctx.app.db.query("DELETE FROM page_access_usr WHERE page_id = ? AND access < 2", [String(Child)]);
@@ -97,7 +98,7 @@ export async function nodeRestore(node: any): Promise<{ url: string }> {
     return { url: await node.url() };
 }
 
-export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<{ url: string; name: string }> {
+export async function nodeFileAdd(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
     const ctx = getCtx();
     let File: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
@@ -120,12 +121,12 @@ export async function nodeFileAdd(node: any, file: any, replace?: any): Promise<
 
 export async function filesSetOrder(node: any, by: string): Promise<void> {
     const db  = getCtx().app.db;
-    const pid = String(node.id);
+    const nid = String(node.id);
     let sorted: string[];
     if (by === "name" || by === "name_reverse") {
         const rows = await db.all(
             " SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY f.name ",
-            [pid],
+            [nid],
         );
         const vs: Record<string, string> = {};
         for (const row of rows) vs[row["name"]] = row["fname"];
@@ -137,7 +138,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
         const sql = by === "date"
             ? " SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY f.log_id"
             : " SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY pf.sort DESC";
-        sorted = (await db.all(sql, [pid])).map((r: any) => r["name"]);
+        sorted = (await db.all(sql, [nid])).map((r: any) => r["name"]);
     }
     await node.sortFiles(sorted);
 }
@@ -204,7 +205,7 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
         if (md5) used[md5] = true;
         const ext   = F.extension;
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(ext);
-        const imgSrc = isImg ? (await F.url()) + "/w-32/h-32/img.jpg" : "about:blank";
+        const imgSrc = isImg ? await F.url({w: 32, h: 32}) : "about:blank";
         res.push({
             html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
                    `<b>${hee(vs["name"])}</b><br><i>${hee(await (await (await node.page()).title()).string() ?? "")}</i>`,

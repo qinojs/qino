@@ -10,7 +10,7 @@ const mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/
 
 const inp = c1.dom.fragment('<input placeholder=url spellcheck=false type=qgcms-page>').firstChild;
 const end = function() {
-	let el = Rte.element.closest('a');
+	const el = Rte.element.closest('a');
 	if (!el) return;
 
 	const selection = window.getSelection(); // todo: WebKit has a bug where links forces the caret to go after the link when typing
@@ -116,25 +116,25 @@ const externMediaDialog = async function(txtEl,medias) {
 				'<style>.cmsExtMediaHighlight {outline: 6px solid #fa0} </style>',
 		buttons: [{
 			title:'done',then(){
-				for (let [uri,media] of Object.entries(medias)) {
+				for (const [uri,media] of Object.entries(medias)) {
 					if (media.checked) {
 						apt.cms.node(pid).files.post({ file: uri }).then(v=>{
 							if (!v.url) return;
-							for (let el of media.els) {
-								let att = el.hasAttribute('src') ? 'src' : 'href';
+							for (const el of media.els) {
+								const att = el.hasAttribute('src') ? 'src' : 'href';
 								el.setAttribute(att, v.url+'/'+media.basename);
 							}
 							txtEl.dispatchEvent(new Event('input',{'bubbles':true}));
 							txtEl.focus();
 						});
 					} else {
-						for (let el of media.els) el.classList.add('externMedia')
+						for (const el of media.els) el.classList.add('externMedia')
 					}
 				}
 			}
 		}]
 	});
-	for (let [,media] of Object.entries(medias))  {
+	for (const [,media] of Object.entries(medias))  {
 		//let file = new URL(uri).pathname.replace(/.*\//,'');
 		const label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
 		label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
@@ -146,9 +146,9 @@ const externMediaDialog = async function(txtEl,medias) {
 }
 const checkMedia = function(root) {
 	const medias = {}; let has=0;
-	for (let el of root.c1FindAll('a, img')) {
+	for (const el of root.c1FindAll('a, img')) {
 		if (el.classList.contains('externMedia')) continue;
-		for (let attr of ['src','href']) {
+		for (const attr of ['src','href']) {
 			if (!el.hasAttribute(attr)) continue;
 			const uri = new URL(el[attr]);
 			if (location.host === uri.host) continue;
@@ -191,15 +191,8 @@ document.addEventListener('qgResize',e=>{
 		el.setAttribute('height',height);
 		if (el.style.display === 'inline-block') el.style.display = '';
 
-		el.removeAttribute('draggable'); // todo: needed?
-
-		const url = el.src;
-		el.src = '';
-		setTimeout(()=>{
-			el.src = url;
-			//Rte.trigger('input');
-			el.closest('[contenteditable]').dispatchEvent(new Event('input', {bubbles:true})); // save
-		},30)
+		el.removeAttribute('draggable');
+		el.closest('[contenteditable]').dispatchEvent(new Event('input', {bubbles:true})); // save
 	}
 });
 
@@ -230,14 +223,14 @@ addEventListener('dblclick', function(e) {
 				img.dispatchEvent(new Event('qgResize',{bubbles:true}));
             };
             Zoomer.on('change',change.c1Debounce(500));
-			let pos = img.getBoundingClientRect();
-			let left = pos.left + scrollX;
-	        let top  = pos.top  + scrollY;
+			const pos = img.getBoundingClientRect();
+			const left = pos.left + scrollX;
+	        const top  = pos.top  + scrollY;
             Zoomer.canvas.style.cssText = 'outline:3px solid red; cursor:move; position:absolute; top:'+top+'px; left:'+left+'px';
             Zoomer.setDimension( pos.width, pos.height );
 
             /* set clip */
-            const f = clip.zoom || Math.max( Zoomer.img.height/Zoomer.ctx.height, Zoomer.img.width/Zoomer.ctx.width );
+            const f = clip.zoom || Math.min( Zoomer.img.height/Zoomer.ctx.height, Zoomer.img.width/Zoomer.ctx.width );
             Zoomer.w = pos.width  * f;
             Zoomer.h = pos.height * f;
             Zoomer.x = (clip.hpos/100) * (Zoomer.img.width  - Zoomer.w ) || 0;
@@ -278,45 +271,44 @@ class ImageZoomer {
         return this.w / this.ctx.width;
     }
     activate() {
-        const self = this;
-        self.canvas.addEventListener('wheel', function(e) {
+        this.canvas.addEventListener('wheel', e => {
             eventStop(e);
-            const oldF = self.factor();
+            const oldF = this.factor();
             let f = oldF * wheelIntervalToFaktor(e);
-            f = Math.min( self.img.height/self.ctx.height, self.img.width/self.ctx.width,  f ); // limit
+            f = Math.min( this.img.height/this.ctx.height, this.img.width/this.ctx.width,  f ); // limit
             f = Math.max(1,f);
 
-            const offset = self.mouseOffsetCloserToCenter(e);
+            const offset = this.mouseOffsetCloserToCenter(e);
 
             // offset transformed to image
-            self.x = oldF * offset.x + self.x;
-            self.y = oldF * offset.y + self.y;
+            this.x = oldF * offset.x + this.x;
+            this.y = oldF * offset.y + this.y;
 
-            self.w = self.ctx.width  * f;
-            self.h = self.ctx.height * f;
-            self.x -= self.w/2;
-            self.y -= self.h/2;
+            this.w = this.ctx.width  * f;
+            this.h = this.ctx.height * f;
+            this.x -= this.w/2;
+            this.y -= this.h/2;
 
-            self.draw();
+            this.draw();
         });
 
-        let mousePos = {};
-        self.canvas.addEventListener('mousedown', e => {
+		let mousePos = {};
+        this.canvas.addEventListener('mousedown', e => {
             e.preventDefault();
             e.stopPropagation();
             mousePos = {x: e.pageX, y: e.pageY};
             document.addEventListener('mousemove', move);
             document.addEventListener('mouseup', up);
         });
-        function move(e) {
-            const f = self.factor();
+        const move = (e) => {
+            const f = this.factor();
             const diff = {x: mousePos.x - e.pageX, y: mousePos.y - e.pageY};
             mousePos = {x: e.pageX, y: e.pageY};
-            self.w = self.ctx.width  * f;
-            self.h = self.ctx.height * f;
-            self.x += diff.x;
-            self.y += diff.y;
-            self.draw();
+            this.w = this.ctx.width  * f;
+            this.h = this.ctx.height * f;
+            this.x += diff.x;
+            this.y += diff.y;
+            this.draw();
         }
         function up() {
             document.removeEventListener('mousemove', move);
