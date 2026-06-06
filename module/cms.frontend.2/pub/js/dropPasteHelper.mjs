@@ -30,8 +30,7 @@ cms.txtCleanElement = function(el,tid){
     if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
     if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
     el.removeAttribute('cmstxt');
-    el.classList.remove('qgCmsCont');
-    el.classList.remove('qgCmsPage');
+    el.classList.remove('qgCmsCont', 'qgCmsPage');
 };
 cms.txtClean = function(el,tid) {
 	el = el.data ? el.parentNode : el;
