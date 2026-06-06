@@ -2,34 +2,29 @@
 import '../focusIn.mjs';
 
 document.addEventListener('DOMContentLoaded',()=>{
-	const support = document.body.contextMenu !== undefined;
-	if (support) return;
+	if (document.body.contextMenu !== undefined) return;
 
 	document.documentElement.addEventListener('contextmenu', e=>{
 		if (e.shiftKey) return;
-		var base = e.target.closest('[contextmenu]');
-		if (base) {
-			var id = base.getAttribute('contextmenu');
-			var mEl = document.getElementById(id);
-			if (mEl?.children.length) {
-				e.preventDefault();
-				parse(mEl, poly);
-				poly.style.display = 'block';
-				var top  = e.clientY;
-				var left = e.clientX;
-				top  = Math.min(innerHeight - poly.offsetHeight, top);
-				left = Math.min(innerWidth  - poly.offsetWidth, left);
-				poly.style.top  = top+'px';
-				poly.style.left = left+'px';
-				poly.c1ZTop();
-				poly.focus();
-			}
-		}
+		const base = e.target.closest('[contextmenu]');
+		if (!base) return;
+		const mEl = document.getElementById(base.getAttribute('contextmenu'));
+		if (!mEl?.children.length) return;
+		e.preventDefault();
+		parse(mEl, poly);
+		poly.style.display = 'block';
+		poly.showPopover();
+		const top  = Math.min(innerHeight - poly.offsetHeight, e.clientY);
+		const left = Math.min(innerWidth  - poly.offsetWidth, e.clientX);
+		poly.style.top  = top+'px';
+		poly.style.left = left+'px';
+		poly.focus();
 	});
-	const poly = c1.dom.fragment('<ul id=contextMenuePolyfill tabindex=0>').firstChild;
+	const poly = c1.dom.fragment('<ul id=contextMenuePolyfill popover=manual tabindex=0>').firstChild;
 	document.body.append(poly);
 	poly.addEventListener('focusout',e=>{
 		if (poly.contains(e.relatedTarget)) return;
+		poly.hidePopover();
 		poly.style.display = 'none';
 	});
 	function parse(mEl, poly) {
@@ -46,21 +41,16 @@ document.addEventListener('DOMContentLoaded',()=>{
 			e.preventDefault();
 		})
 		poly.innerHTML = '';
-		for (let mChild of mEl.children) {
-			let polyChild = c1.dom.fragment('<li>'+mChild.getAttribute('label')).firstChild;
-			let icon = mChild.getAttribute('icon');
+		for (const mChild of mEl.children) {
+			const polyChild = c1.dom.fragment('<li>'+mChild.getAttribute('label')).firstChild;
+			const icon = mChild.getAttribute('icon');
 			if (icon) polyChild.style.backgroundImage = 'url('+icon+')';
-			let disabled = mChild.hasAttribute('disabled') || mChild.disabled; // todo: check value of attribute
+			const disabled = mChild.hasAttribute('disabled') || mChild.disabled; // todo: check value of attribute
 			if (disabled) {
 				polyChild.classList.add('-disabled');
 				polyChild.disabled = true;
 			}
-			polyChild.addEventListener('mouseenter',e=>{
-				clearTimeout(openTimeout);
-				openTimeout = setTimeout(()=>{
-					open(polyChild)
-				}, 250)
-			})
+			polyChild.addEventListener('mouseenter',()=>{ clearTimeout(openTimeout); openTimeout = setTimeout(()=>open(polyChild), 250); })
 			polyChild.addEventListener('click', e=>{
 				if (e.target !== polyChild) return;
 				if (open(polyChild)) return;
@@ -76,14 +66,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 			mChild.c1RealElement = polyChild;
 			if (mChild.children.length) {
 				polyChild.classList.add('-sub');
-				let ul = c1.dom.fragment('<ul tabindex=0>').firstChild;
+				const ul = c1.dom.fragment('<ul tabindex=0>').firstChild;
 				ul.c1Placer = new c1.Placer(ul, {x:'after',y:'prepend',margin:{top:1,right:-3,bottom:1,left:-3}});
 				polyChild.append(ul)
 				parse(mChild, ul);
 			}
 		}
 		if (poly.id === 'contextMenuePolyfill') {
-			var fragment = c1.dom.fragment('<li style="font-size:12px; padding:5px" class=-disabled>shift + rightclick to show the<br> native menu');
+			const fragment = c1.dom.fragment('<li style="font-size:12px; padding:5px" class=-disabled>shift + rightclick to show the<br> native menu');
 			poly.append(fragment);
 		}
 	}
@@ -93,24 +83,25 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 		polyChild.parentNode.focus();
 
-		let ul = polyChild.c1Find('>ul');
+		const ul = polyChild.c1Find('>ul');
 		if (ul) {
 			ul.classList.add('c1-focusIn'); // show before position+focus (display:none blocks both)
-			ul.c1ZTop();
 			ul.c1Placer.follow(polyChild);
 			ul.focus();
 			return true;
 		}
 	}
-	var arrow = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" fill="none" viewBox="0 0 16 32"><path stroke="#000" stroke-width="2" d="M2 2l12 12L2 26" stroke-linecap="round"/></svg>';
+	const arrow = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" fill="none" viewBox="0 0 16 32"><path stroke="#000" stroke-width="2" d="M2 2l12 12L2 26" stroke-linecap="round"/></svg>';
 
-	var css =
+	const css =
 	'menu[type=context] {'+
 	'	display:none; '+
 	'}'+
 	'#contextMenuePolyfill, #contextMenuePolyfill ul { '+
 	'	position:fixed; '+
 	'	display:none; '+
+	'	inset:auto; '+
+	'	overflow:visible; '+
 	'	background:#fff; '+
 	'	box-shadow:0 0 8px rgba(0,0,0,.3); '+
 	'	list-style:none; '+
@@ -123,6 +114,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	'	cursor:default; '+
 	'	border: 1px solid #aaa; '+
 	'} '+
+	'#contextMenuePolyfill:popover-open { display:block; opacity:1; transition:none; } '+
 	'#contextMenuePolyfill ul.c1-focusIn , '+
 	'#contextMenuePolyfill ul:focus-within { '+
 	'	display:block; '+

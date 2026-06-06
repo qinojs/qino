@@ -49,7 +49,7 @@ if (!widgets.filled) widgets.set({});
 
 cms.panel = { state: uiState, sidebar, widgets };
 const el = document.querySelector("qino-cms").shadowRoot.getElementById("panel");
-el.showPopover?.();
+el.showPopover();
 const root = cms.panelRoot = el.getRootNode();
 const [
   { SelectorObserver },
