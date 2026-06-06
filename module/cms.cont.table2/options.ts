@@ -23,10 +23,10 @@ export default async function (node: Node, _vars: unknown): Promise<string> {
   }
 
   return `
-<input type=number value="${hee(String(rows))}" min=1 max=300 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.rows.put({value:this.value}))" style="width:80px; font-size:18px;">
+<input type=number value="${hee(String(rows))}" min=1 max=300 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.rows.put({value:this.value}))" style="width:5em;">
 ${await node.app.t`Rows (max: 300)`}<br>
 <br>
-<input type=number value="${hee(String(cols))}" min=1 max=15 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.cols.put({value:this.value})); cms.cont(cms.cont.active).showWidget('options')" style="width:80px; font-size:18px;">
+<input type=number value="${hee(String(cols))}" min=1 max=15 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.cols.put({value:this.value})); cms.cont(cms.cont.active).showWidget('options')" style="width:5em;">
 ${await node.app.t`Columns (max: 15)`}<br>
 
 <br>
