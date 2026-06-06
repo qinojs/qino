@@ -17,7 +17,7 @@ window.Rte.ui = {
 		my.div.appendChild(my.mainContainer);
 
 		my.moreContainer = document.createElement('div');
-		my.moreContainer.className = '-more q1Rst';
+		my.moreContainer.className = '-more';
 		my.div.appendChild(my.moreContainer);
 
 		Rte.on('activate', function() {

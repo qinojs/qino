@@ -1,8 +1,8 @@
 import { apt, u2Base } from '../../core/pub/js/qino.js';
 
-// Das CMS-Panel (cms.frontend.2) lebt im Shadow-DOM von <qino-cms-panel>.
+// Das CMS-Panel (cms.frontend.2) lebt im Shadow-DOM von <qino-cms>.
 // SelectorObserver mit {root} sieht dort hinein, c1.onElement (nur document) nicht.
-const panelRoot = customElements.whenDefined('qino-cms-panel').then(() => document.querySelector('qino-cms-panel').shadowRoot);
+const panelRoot = customElements.whenDefined('qino-cms').then(() => document.querySelector('qino-cms').shadowRoot);
 
 panelRoot.then(async root => {
     const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');

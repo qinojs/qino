@@ -1,5 +1,6 @@
 cms.initCont("cms.backend.superuser.dbfiles", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+  const { apt, u2Base } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+  const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 
   let debTimer;
@@ -35,7 +36,7 @@ cms.initCont("cms.backend.superuser.dbfiles", async (el) => {
       action.disabled = true;
       const r = await apt.cms.node(nid).html.post({ vars: { [action.dataset.action]: 1 } });
       action.disabled = false;
-      alert(JSON.stringify(JSON.parse(r), null, 2));
+      await alert(JSON.stringify(JSON.parse(r), null, 2));
       return;
     }
     if (e.target.closest("[data-copy-url]")) {

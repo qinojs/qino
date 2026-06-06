@@ -166,9 +166,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
             <td colspan=2>
               <div class=-actions>
                 <button name=save>${await app.t`Save`}</button>
-                <button name=delete type=submit formnovalidate
-                  onclick="return confirm('${await app.t`Really delete this template?`}')"
-                >${await app.t`Delete`}</button>
+                <button name=delete type=submit formnovalidate u2-confirm="${hee(await app.t`Really delete this template?`)}">${await app.t`Delete`}</button>
                 <a href="?">${await app.t`Back`}</a>
               </div>
         </table>

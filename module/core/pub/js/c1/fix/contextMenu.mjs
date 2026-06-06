@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 			}
 		}
 	});
-	var poly = c1.dom.fragment('<ul id=contextMenuePolyfill tabindex=0 class=q1Rst>').firstChild;
+	const poly = c1.dom.fragment('<ul id=contextMenuePolyfill tabindex=0>').firstChild;
 	document.body.append(poly);
 	poly.addEventListener('focusout',e=>{
 		if (poly.contains(e.relatedTarget)) return;

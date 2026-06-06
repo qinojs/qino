@@ -1,10 +1,11 @@
-import type { Node } from "../cms/lib/Node.ts";
 import { hee } from "../core/lib/util.ts";
+import type { Node } from "../cms/lib/Node.ts";
+import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.cont.not_found1";
 export const needs = ["cms"];
 
-async function render(node: Node, { ctx }: any): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
 
   // Extract words from request URI for fulltext search
   const words = (ctx.appRequestUri.match(/\p{L}+/gu) ?? []).join(" ").trim();
@@ -44,13 +45,13 @@ async function render(node: Node, { ctx }: any): Promise<string> {
 </div>`;
 }
 
-async function renderEditBox(node: Node, ctx: any): Promise<string> {
+async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   if (!node.edit) return "";
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
   if (node.cms.MainNode === await node.cms.nodeFromRequest?.()) return "";
 
   ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
-  ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/main.css");
+  ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
   ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
 
   let savedMsg = "";

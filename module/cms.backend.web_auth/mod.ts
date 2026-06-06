@@ -32,7 +32,7 @@ async function render(node: Node): Promise<string> {
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const tableRows = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button class=u2-unstyle onclick="return confirm('Really delete ${hee(String(r.name ?? r.id))}?')"><u2-ico icon="delete">x</u2-ico></button></form>`;
+    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button class=u2-unstyle u2-confirm="${hee(`Really delete ${String(r.name ?? r.id)}?`)}"><u2-ico icon="delete">x</u2-ico></button></form>`;
     return `<tr><td>${hee(String(r.id))}<td>${hee(userName)}<br><small style="color:#888">${hee(String(r.email ?? ""))}</small><td>${hee(String(r.name ?? ""))}<td title="${hee(String(r.credential_id ?? ""))}">${hee(String(r.credential_id ?? "").slice(0, 20))}…<td>${hee(String(r.aaguid ?? ""))}<td>${hee(String(r.sign_count ?? "0"))}<td>${fmt(r.created)}<td>${fmt(r.last_used)}<td>${delBtn}`;
   }).join("\n");
 

@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt } from '../../core/pub/js/qino.js';
 function panelRoot() {
-	return document.querySelector('qino-cms-panel')?.shadowRoot || document;
+	return document.querySelector('qino-cms')?.shadowRoot || document;
 }
 function panelEl(selector) {
 	return panelRoot().querySelector(selector);

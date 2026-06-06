@@ -1,5 +1,6 @@
 cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+  const { apt, u2Base } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+  const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 
   async function postVars(vars) {
@@ -26,10 +27,10 @@ cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
       ico.textContent = "hourglass_top";
       try {
         const { error } = await postVars({ install_binary: install.dataset.install });
-        if (error) { alert("Error:\n" + error); return; }
+        if (error) { await alert("Error:\n" + error); return; }
         location.reload();
       } catch (err) {
-        alert("Request failed:\n" + err);
+        await alert("Request failed:\n" + err);
       } finally {
         install.disabled = false;
         ico.textContent = "download_for_offline";
@@ -43,10 +44,10 @@ cms.initCont("cms.backend.superuser.dbfiles.transform", async (el) => {
       try {
         const val = clear.dataset.clearCache;
         const { error } = await postVars({ clear_cache: val === "true" ? true : Number(val) });
-        if (error) { alert("Error:\n" + error); return; }
+        if (error) { await alert("Error:\n" + error); return; }
         cms.reloadPart(nid, "cache");
       } catch (err) {
-        alert("Request failed:\n" + err);
+        await alert("Request failed:\n" + err);
       } finally {
         clear.disabled = false;
       }

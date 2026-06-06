@@ -104,7 +104,7 @@ var body = document.body;
 var htmlEl = document.documentElement;
 
 function panelRoot() {
-	return document.querySelector('qino-cms-panel')?.shadowRoot || document;
+	return document.querySelector('qino-cms')?.shadowRoot || document;
 }
 function panelEl(selector) {
 	return panelRoot().querySelector(selector);
@@ -112,7 +112,7 @@ function panelEl(selector) {
 
 var CmsVersViewer = function(){
 	this.container = c1.dom.fragment(
-		'<div id=qgCms_vers tabindex=-1 class="q1Rst qgCMS">'+
+		'<div id=qgCms_vers tabindex=-1 class="qgCMS">'+
 			'<div class=-preview></div>'+
 			'<div class=-control>'+
 				'<div class=-head>'+

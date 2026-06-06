@@ -7,7 +7,8 @@ cms.initCont("cms.backend.system", async (el) => {
     tr.querySelector(".-browser-tz").textContent = "UTC+" + off;
   }
 
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+  const { apt, u2Base } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+  const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 
   el.addEventListener("click", async (e) => {
@@ -27,8 +28,8 @@ cms.initCont("cms.backend.system", async (el) => {
     if (result?.done) {
       btn.closest(".healty_item").remove();
     } else {
-      alert("failed?");
+      await alert("failed?");
     }
-    if (result?.response) alert(result.response);
+    if (result?.response) await alert(result.response);
   });
 });

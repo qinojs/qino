@@ -1,4 +1,6 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { apt, u2Base } from "../../core/pub/js/qino.js";
+
+const confirm = async (text) => (await import(u2Base + "js/dialog/dialog.js")).confirm(text);
 
 cms.initCont("cms.backend.module.git", (el) => {
   const installUrl = el.querySelector("#git-install-url");
@@ -48,7 +50,7 @@ cms.initCont("cms.backend.module.git", (el) => {
       const sel = el.querySelector("#git-ref-" + mod);
       const ref = sel.value;
       if (!ref) return;
-      if (!confirm("Switch to " + ref + "?")) return;
+      if (!await confirm("Switch to " + ref + "?")) return;
       const out = el.querySelector("#git-out-" + mod);
       out.style.display = "block";
       out.style.color = "#555";

@@ -1,20 +1,18 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
-import { apt } from "../../../core/pub/js/qino.js";
-import { t, u2Base } from "../../../core/pub/js/qino.js";
+import { apt, t, u2Base } from "../../../core/pub/js/qino.js";
 
-const panelTag = "qino-cms-panel";
 const panelStyles = [
   u2Base + "css/norm/norm.css",
   u2Base + "css/base/base.css",
   "core/pub/css/c1/box.css",
-  "cms.frontend.2/pub/css/main.css",
+  "cms/pub/css/ui.css",
   "cms.frontend.2/pub/css/off.css",
   "cms.frontend.2/pub/css/panel.css",
   "cms.frontend.2/pub/css/tree.css",
 ];
 
-customElements.define(panelTag, class extends HTMLElement {
+customElements.define("qino-cms", class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
     const root = this.attachShadow({ mode: "open" });
@@ -23,8 +21,6 @@ customElements.define(panelTag, class extends HTMLElement {
   }
 });
 
-const listeners = [];
-let observer;
 const on = (el, events, fn) => events.split(" ").forEach(e => el.addEventListener(e, fn));
 const sel = s => s[0] === ">" ? ":scope " + s : s;
 const findEl = (el, s) => el.querySelector(sel(s));
@@ -40,33 +36,6 @@ function setHtml(el, html) {
     old.replaceWith(s);
   }
 }
-function onEl(selector, fn) {
-  const listener = { selector, fn, els: new WeakSet() };
-  listeners.push(listener);
-  check(listener, root);
-  if (observer) return;
-  observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (node.nodeType === 1) {
-          for (const listener of listeners) check(listener, node);
-        }
-      }
-    }
-  });
-  observer.observe(root, { childList: true, subtree: true });
-}
-function check(listener, target) {
-  const els = [];
-  target?.matches?.(listener.selector) && els.push(target);
-  els.push(...target.querySelectorAll(listener.selector));
-  for (const el of els) {
-    if (listener.els.has(el)) continue;
-    listener.els.add(el);
-    requestAnimationFrame(() => listener.fn(el));
-  }
-}
-
 function setSetting(value, path) {
   const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);
   return apt.core["ctx-settings"](p).put({ value });
@@ -79,8 +48,21 @@ const widgets = uiState.item("widget");
 if (!widgets.filled) widgets.set({});
 
 cms.panel = { state: uiState, sidebar, widgets };
-const el = document.querySelector(panelTag).shadowRoot.getElementById("panel");
+const el = document.querySelector("qino-cms").shadowRoot.getElementById("panel");
 const root = cms.panelRoot = el.getRootNode();
+const [
+  { SelectorObserver },
+  { scope: dialogScope },
+] = await Promise.all([
+  import(u2Base + "js/SelectorObserver/SelectorObserver.js"),
+  import(u2Base + "js/dialog/dialog.js"),
+]);
+const dialogs = dialogScope({ root });
+const alert = async (text) => dialogs.alert(await text);
+const confirm = async (text) => dialogs.confirm(await text);
+function onEl(selector, fn) {
+  new SelectorObserver({ on: el => requestAnimationFrame(() => fn(el)) }).observe(selector, { root });
+}
 
 /* sidebar */
 const loadWidget = (widget, params, cb) => {
@@ -261,8 +243,8 @@ onEl(".tree-manager", async (el) => {
     v && cms.Tree.addPage(v);
     inp.value = "";
   }
-  inp.addEventListener("blur", (e) => {
-    e.currentTarget.value && confirm(t`Create page "${e.currentTarget.value}"?`) ? add() : null;
+  inp.addEventListener("blur", async (e) => {
+    if (e.currentTarget.value && await confirm(t`Create page "${e.currentTarget.value}"?`)) add();
   });
   inp.addEventListener("keydown", (e) => {
     e.key === "Enter" && add();
@@ -324,11 +306,11 @@ onEl(".file-manager", (el) => {
         node.files.put({ sort });
       });
     });
-    tbody.addEventListener("click", (e) => {
+    tbody.addEventListener("click", async (e) => {
       const del = e.target.closest(".-delete");
       if (del) {
         const tr = del.closest("tr");
-        confirm(t`Really delete this file?`) && node.files(tr.getAttribute("itemid")).delete().then(() => tr.remove());
+        if (await confirm(t`Really delete this file?`)) node.files(tr.getAttribute("itemid")).delete().then(() => tr.remove());
         return;
       }
       const preview = e.target.closest(".-preview");
@@ -362,10 +344,10 @@ onEl(".file-manager", (el) => {
     findEl(el, ".-sortFilesSelect").addEventListener("change", (e) => {
       e.currentTarget.value && node.files.order.post({ by: e.currentTarget.value }).then(reload);
     });
-    findEl(el, ".-deleteFilesSelect").addEventListener("change", (e) => {
+    findEl(el, ".-deleteFilesSelect").addEventListener("change", async (e) => {
       const val = e.currentTarget.options[e.currentTarget.selectedIndex].value;
       if (val === "double") node.files.doubles.delete().then(reload);
-      if (val === "all" && confirm(t`Really delete all files?`)) node.files.all.delete().then(reload);
+      if (val === "all" && await confirm(t`Really delete all files?`)) node.files.all.delete().then(reload);
     });
   }
 });
@@ -600,26 +582,17 @@ onEl(".more-manager", (el) => {
     }).c1Debounce(200),
   );
   // change password
-  findEl(el, ".-pwchange").addEventListener("submit", (e) => {
+  findEl(el, ".-pwchange").addEventListener("submit", async (e) => {
     e.preventDefault();
     const oldpw = findEl(e.currentTarget, "[name=old]").value;
     const pw = findEl(e.currentTarget, "[name=new]").value;
     const pw2 = findEl(e.currentTarget, "[name=new2]").value;
-    if (pw2 !== pw) alert(t`Passwords do not match`);
+    if (pw2 !== pw) await alert(t`Passwords do not match`);
     else {
-      apt.core.password.put({ oldpw, pw }).then((res) => {
-        switch (res) {
-          case 1:
-            alert(t`Password changed successfully.`);
-            break;
-          case -1:
-            alert(t`The old password is incorrect.`);
-            break;
-          case -2:
-            alert(t`The password is too short.`);
-            break;
-        }
-      });
+      const res = await apt.core.password.put({ oldpw, pw });
+      if (res === 1) await alert(t`Password changed successfully.`);
+      if (res === -1) await alert(t`The old password is incorrect.`);
+      if (res === -2) await alert(t`The password is too short.`);
     }
   });
   findEl(el, ".-changelang").addEventListener("change", (e) => {
@@ -635,13 +608,7 @@ onEl(".more-manager", (el) => {
         location.href = location.href.replace(/#.*$/, "");
       });
   });
-  // show editables
-  // findEl(el, '.-showEditables').addEventListener('mouseenter', e=>{
-  // 	document.documentElement.classList.add('cmsShowEditables');
-  // });
-  // findEl(el, '.-showEditables').addEventListener('mouseleave', e=>{
-  // 	document.documentElement.classList.remove('cmsShowEditables');
-  // });
+
 });
 
 onEl(".content-manager", (el) => {
@@ -680,14 +647,14 @@ onEl(".superuser-manager", (el) => {
     const scope = e.target.closest("[scope]").getAttribute("scope");
     loadWidget("superuser", { pid, create: create.value, in: scope });
   });
-  el.addEventListener("click", (e) => {
+  el.addEventListener("click", async (e) => {
     const scopeEl = e.target.closest("[scope]");
     if (!scopeEl) return;
     //const scope = scopeEl.getAttribute('scope');
     const remove = e.target.closest(".-remove");
     if (remove) {
       const file = remove.parentNode.getAttribute("itemid");
-      confirm(t`Really delete this file?`) && loadWidget("superuser", { pid, delete: file });
+      if (await confirm(t`Really delete this file?`)) loadWidget("superuser", { pid, delete: file });
     }
   });
 });

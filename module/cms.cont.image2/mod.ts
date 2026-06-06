@@ -63,7 +63,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }) {
   let editHtml = "";
   if (node.edit) {
     editHtml = `
-        <div class="-alt-edit q1Rst qgCMS">
+        <div class="-alt-edit qgCMS">
             <input placeholder="${await node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${T.id} value="${T}">
         </div>
         <style>

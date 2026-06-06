@@ -3,7 +3,6 @@ import '../c1/Placer.mjs';
 
 var doc = document;
 var dialog = doc.createElement('div');
-dialog.classList.add('q1Rst');
 dialog.classList.add('c1Dialog');
 dialog.classList.add('c1Select');
 dialog.addEventListener('mousedown', e=>{

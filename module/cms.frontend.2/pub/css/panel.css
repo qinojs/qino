@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-#panel {
+:where(#panel) {
 	position:fixed;
 	top:0;
 	right:0;
@@ -39,7 +39,6 @@
 	}
 	& > .-sidebar > .-item > .-title > .-text {
 		writing-mode: vertical-lr;
-		display:table; /* ugly, ff */
 		font-size:1.3em;
 		font-weight:bold;
 		letter-spacing: .06em;
@@ -58,8 +57,6 @@
 	& > .-sidebar > .-item.-open > .-title:before {
 		opacity:1;
 	}
-	
-	
 	& > .-sidebar > .-item > .-content {
 		display:flex;
 		flex-direction:column;
@@ -78,7 +75,6 @@
 		max-width:calc(100vw - 100%);
 		overflow:auto;
 		overscroll-behavior: none;
-	
 		will-change: transform;
 	}
 	& > .-sidebar > .-item > .-content > * {
@@ -150,6 +146,7 @@
 		display:inline-flex;
 		align-items: center;
 		justify-content: center;
+		background:var(--cms-color);
 	}
 	
 	/* vertical */
@@ -160,7 +157,6 @@
 	}
 	& tr.-vertical > * > span {
 		white-space:nowrap;
-		-webkit-writing-mode: vertical-rl;
 		writing-mode: vertical-rl;
 	}
 	& .-module-boxes {
@@ -226,21 +222,17 @@
 		white-space: nowrap;
 	}
 	& .-cmsFileList .-handle {
-		width:12px;
+		width:22px;
 		background:center no-repeat url(../img/drag1.svg);
 		cursor:n-resize;
 	}
 	& .-cmsFileList .-delete {
 		cursor:pointer;
-		width:12px;
+		width:22px;
 		padding-right:6px;
 		background:center no-repeat url(../img/delete.svg);
 	}
 	
-}
-
-.qgCMS .-info {
-	background:var(--cms-color);
 }
 
 @media (max-width:860px) {

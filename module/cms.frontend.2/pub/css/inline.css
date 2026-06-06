@@ -1,0 +1,145 @@
+/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+
+/* Inline-CMS — editing overlays on the live page (frontend, editmode only).
+   Content containers, editable text-fields, drag/drop, trash, contpos-menu.
+   Generic CMS chrome (forms, box, console, tokens) lives in cms/pub/css/ui.css. */
+
+/* trash */
+#qgCmsContTrash {
+	position:fixed;
+	left:10px;
+	top:8px;
+	display:none;
+	overflow:hidden;
+	box-shadow:none;
+	border:none;
+	filter: drop-shadow(black 0 0 1px);
+	&.-dropTarget {
+		display:block;
+		animation: qgcms_trash_activate .3s;
+	}
+	& > :not(svg) { display:none; }
+	& > svg {
+		fill:var(--cms-access-2);
+		transition:fill .5s;
+	}
+	&.-full > svg { fill:var(--cms-color); }
+	& > svg .-lis {
+		transform:rotate(0deg);
+		transition:transform .5s;
+	}
+	&.-full > svg .-lis { transform:rotate(-20deg) translateX(-2px); }
+}
+
+/* contpos-menu */
+#qgCmsContPosMenu {
+	position:absolute;
+	display:none;
+    align-items:center;
+	padding:4px 7px 2px 7px;
+    border-radius:4px;
+    scale:1.001;
+	font-size:13px;
+	background:var(--cms-color);
+    color:#fff;
+
+	& > div {
+		width:18px;
+		margin:1px 1px 2px 1px;
+        & > svg {
+            display:block;
+            fill:currentColor;
+            width: 100%;
+        }
+	}
+	& > .-opts { cursor:pointer; }
+	& > .-mod  { width:auto; margin:1px 5px 0 3px; }
+
+    &::after {
+        content:'';
+        position:absolute;
+        inset:-5px;
+        background:#0000;
+        z-index:-1;
+    }
+}
+
+
+
+/* text-fields */
+a[cmstxt][contenteditable]:empty, span[cmstxt][contenteditable]:empty { display:inline-block; } /* new, 8.8.18, ok? */
+:hover [cmstxt][contenteditable] { min-height:.8em; min-width:1em; }
+:hover :not(.qgCmsCont)[cmstxt][contenteditable] 	   { outline:1px solid rgba(255,50,0,.3); }
+:hover :not(.qgCmsCont)[cmstxt][contenteditable]:hover { outline:1px solid rgba(255,50,0,.5); }
+:hover :not(.qgCmsCont)[cmstxt][contenteditable]:focus { outline:2px solid rgba(255,50,0,.8); }
+:hover .qgCmsCont[cmstxt][contenteditable]       { box-shadow:0 0 0 1px rgba(255,50,0,.3); }
+:hover .qgCmsCont[cmstxt][contenteditable]:hover { box-shadow:0 0 0 1px rgba(255,50,0,.5); }
+:hover .qgCmsCont[cmstxt][contenteditable]:focus { box-shadow:0 0 0 2px rgba(255,50,0,.8); }
+
+
+/* text-fields placeholder */
+[cmstxt][cmstxt-placeholder]:empty::before { content: '\00a0'; }
+[cmstxt][cmstxt-placeholder]:empty:hover::before { /* :not(:focus)? */
+	content: attr(cmstxt-placeholder);
+	text-transform: capitalize;
+	opacity:.4;
+}
+
+
+/* Cont */
+.qgCmsCont {
+	outline-offset:1px;
+	min-height:12px;
+	min-width:12px;
+	transition:min-height .5s linear;
+	transition-property:box-shadow, min-height, background-color;
+}
+
+a.cmsOffline { text-decoration: line-through !important; }
+
+:hover .qgCmsCont.-e { outline: 1px solid var(--cms-color); }
+:hover .qgCmsCont.qgCMS-dropTarget { outline:none; }
+
+
+.qgCmsCont.qgCmsMarked.qgCmsMarked {
+	outline:3px solid var(--cms-color);
+}
+.qgCmsCont.qgCmsMarked.qgCmsMarked.qgCMS-offline {
+	outline-color:var(--cms-access-2);
+}
+
+
+.qgCmsCont.-moving {
+	display: block;
+	padding:6px;
+	width:auto;
+	max-width:30vw;
+	min-height:30px;
+	min-width:100px;
+	background-color:#fff;
+	pointer-events:none;
+	box-shadow:0 0 10px rgba(0,0,0,.9);
+	opacity:.8;
+}
+
+.qgCmsCont.dropTarget.-e {
+	outline:3px solid red;
+	min-width:50px;
+}
+.qgCmsCont.-moving .qgCmsCont.dropTarget.-e {
+	outline-width:0px;
+}
+
+
+/* rte */
+img::selection { background: rgba(0,0,0,.2); }
+
+@keyframes qgcms_trash_activate {
+	0%   { transform:scale(1); }
+	50%  { transform:scale(1.3); }
+	100% { transform:scale(1); }
+}
+@keyframes qgcms_fadeInOut {
+	0%   { opacity:0; }
+	50%  { opacity:1; }
+}

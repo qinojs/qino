@@ -9,13 +9,6 @@ td, th { padding: calc(var(--gap) / 4); }
 
 small { color: var(--gray); }
 
-dialog {
-	border-radius: var(--radius);
-	border-width: 1px;
-	box-shadow: var(--shadow);
-	&::backdrop { background: rgba(0,0,0,.4); }
-}
-
 .u2-card {
 	background:var(--color-bg);
 	flex-grow:1;
@@ -133,8 +126,6 @@ u2-accordion {
 	position: relative;
 	z-index: 0;
 }
-x#content > * { flex:1 1 auto; }
-
 
 thead [l1\:order]:after {
 	margin-left:.4em;

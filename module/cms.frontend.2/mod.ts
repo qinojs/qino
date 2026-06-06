@@ -175,7 +175,8 @@ export function init(app: App) {
       allowSettingsEditorAssets(ctx);
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/panel.mjs");
       ctx.html.styles.add(ctx.sysURL + "core/pub/js/Rte/main.css");
-      ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/main.css");
+      ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
+      ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/inline.css");
     }
   });
 }

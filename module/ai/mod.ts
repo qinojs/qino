@@ -37,7 +37,7 @@ export function init(app: Pick<App, "aptTree" | "on" | "settings"> & { ai?: AiAp
           }
       </style>
       <div xonmousedown="event.stopPropagation();">
-        <div u2-movable class="cmsChatWrapper q1Rst qgCMS" style="position:fixed;top:80px;left:16px;">
+        <div u2-movable class="cmsChatWrapper qgCMS" style="position:fixed;top:80px;left:16px;">
           <div u2-movable-handler style="background:var(--cms-color); color:#fff; padding:.5rem; cursor:move">CMS Helper</div>
           <ai-chat bot="cms-helper"></ai-chat>
         </div>

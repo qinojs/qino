@@ -4,7 +4,7 @@ import type { RequestContext } from "../core/lib/RequestContext.ts";
 
 export const name = "cms.layout.backend";
 
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.15/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
@@ -51,7 +51,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
 
 
   ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
-  ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/main.css");
+  ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
 
   ctx.html.meta["viewport"] = "width=device-width";
 

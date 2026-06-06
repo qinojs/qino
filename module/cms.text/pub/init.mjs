@@ -17,7 +17,7 @@ const showEditor = async function(el) {
     const tid = el.getAttribute('cmstxt');
     const data = await apt['cms.text'].text(tid).get();
     const dialog = document.createElement('dialog');
-    dialog.className = 'qgCMS q1Rst';
+    dialog.className = 'qgCMS';
     let body = '<div style="display:flex">';
     for (const row of data) {
         let source_lang = null;
@@ -66,7 +66,7 @@ const showEditor = async function(el) {
         const history = await apt['cms.text'].text(tid).history.get({ lang });
         const hDialog = document.createElement('dialog');
 
-        hDialog.className = 'qgCMS q1Rst';
+        hDialog.className = 'qgCMS';
         let body = '<div style="display:flex;">';
         for (let row of history) {
             const date = new Date(row.log_time*1000).toLocaleString(false, {dateStyle: 'short', timeStyle: 'short'});

@@ -60,13 +60,13 @@ async function renderOverview(node: Node): Promise<string> {
 
   const rows = await listRows(node, search);
   const superuserActions = isSuperuser ? `
-    <form method=post style="display:inline" onsubmit="return confirm('${await app.t`Really delete all?`}')">
+    <form method=post style="display:inline">
       ${hiddenToken(ctx.token)}
-      <button name=delete_all>${await app.t`Delete all`}</button>
+      <button name=delete_all u2-confirm="${hee(await app.t`Really delete all?`)}">${await app.t`Delete all`}</button>
     </form>
-    <form method=post style="display:inline" onsubmit="return confirm('${await app.t`Really delete all older than 1 year?`}')">
+    <form method=post style="display:inline">
       ${hiddenToken(ctx.token)}
-      <button name=delete_before1year>${await app.t`Delete older than 1 year`}</button>
+      <button name=delete_before1year u2-confirm="${hee(await app.t`Really delete all older than 1 year?`)}">${await app.t`Delete older than 1 year`}</button>
     </form>` : "";
 
   return `<div class=u2-card>
@@ -165,7 +165,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       <tr><td>${await app.t`Reply to`}<td>${hee(row.reply_to ?? "")}
       <tr><td>${await app.t`Send`}<td>
         ${todo
-          ? `<form method=post style="display:inline" onsubmit="return confirm('${await app.t`Send the e-mails?`}')">${hiddenToken(ctx.token)}<button name=send>${await app.t`Send`} (${todo})</button></form>`
+          ? `<form method=post style="display:inline">${hiddenToken(ctx.token)}<button name=send u2-confirm="${hee(await app.t`Send the e-mails?`)}">${await app.t`Send`} (${todo})</button></form>`
           : await app.t`all sent`}
         <form method=post style="display:inline; margin-left:10px">
           ${hiddenToken(ctx.token)}

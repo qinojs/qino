@@ -233,7 +233,7 @@ document.addEventListener('mousedown', e=>{
 	};
 	let itemCss = ';position:absolute; background-color:#fff; border:1px solid black; height:12px; width:12px; box-sizing:border-box';
 	let cont = c1.dom.fragment(
-	'<div class=q1Rst style="position:absolute; top:0; left:0; width:100%; height:0">'+
+	'<div style="position:absolute; top:0; left:0; width:100%; height:0">'+
 		'<div class=-x  style="cursor:e-resize '+itemCss+'"></div>'+
 		'<div class=-y  style="cursor:s-resize '+itemCss+'"></div>'+
 		'<div class=-xy style="cursor:se-resize'+itemCss+'" title="press ctrl to disable aspect ratio"></div>'+

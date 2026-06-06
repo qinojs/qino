@@ -9,9 +9,8 @@ export default async function codemirrorView(file: string): Promise<string> {
     const ctx = getCtx();
     const html = ctx.html;
 
-    html.styles.add(ctx.sysURL + "core/pub/css/q1Rst.css");
-    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.15/css/norm/norm.css");
-    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.15/css/base/base.css");
+    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/css/norm/norm.css");
+    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/css/base/base.css");
 
     html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
 
@@ -65,9 +64,7 @@ export default async function codemirrorView(file: string): Promise<string> {
     const line = ctx.get["line"] ?? "";
     const col = ctx.get["col"] ?? "";
 
-    return `<button
-			class=q1Rst
-			id=saveButton
+    return `<button id=saveButton
 			style="position:fixed;right:-1px;top:10px;z-index:10;padding:10px 12px;display:none;background-image:linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5))">
 			${isWritable ? "save" : "no write permission!"}
 		</button>

@@ -35,7 +35,7 @@ function run() {
     if (OS !== 'Mac') delete browsers.Safari;
 
     let html =
-        '<div style="position:fixed; top:20px; left:0; right:0; margin:auto; width:310px; background:#fff; border:1px solid var(--cms-light); padding:20px; box-shadow:0 0 8px rgba(0,0,0,.5)" class="q1Rst qgCMS">'+
+        '<div style="position:fixed; top:20px; left:0; right:0; margin:auto; width:310px; background:#fff; border:1px solid var(--cms-light); padding:20px; box-shadow:0 0 8px rgba(0,0,0,.5)" class="qgCMS">'+
             '<div style="font-size:1.3em; margin-bottom:1.2em">Browser not supported by CMS</div>' +
             '<div>The following browsers meet the technical requirements for using the CMS</div>' +
             '<div style="display:table; margin:20px 0">';

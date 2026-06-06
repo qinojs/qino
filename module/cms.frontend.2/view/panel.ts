@@ -14,7 +14,7 @@ export default async function (node: Node): Promise<string> {
   const add      = await cmsFrontend2WidgetSidebar("add",      node, await t`Modules`,      await t`Add content, e.g. a text field or a table`);
   const more     = await cmsFrontend2WidgetSidebar("more",     node, await t`More`,         await t`CMS feedback, change password...`);
 
-  return `<qino-cms-panel>
+  return `<qino-cms>
 <div id=panel class="qgCMS -open -sidebar-open">
   <div class=-sidebar>
     <a class="-item qgCMS_editmode_switch -active" href="${hee("")}" title="Edit (E)">
@@ -27,5 +27,5 @@ export default async function (node: Node): Promise<string> {
     <div class=-sensor></div>
   </div>
 </div>
-</qino-cms-panel>`;
+</qino-cms>`;
 }

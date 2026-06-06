@@ -114,7 +114,6 @@ body {
 #container .-m-cms-cont-login4 tr.-email input,
 #container .-m-cms-cont-login4 tr.-pw input {
 	border:none;
-	xpadding:13px 13px 13px 5px !important;
 }
 #container .-m-cms-cont-login4 tr.-email > th > div,
 #container .-m-cms-cont-login4 tr.-pw    > th > div {

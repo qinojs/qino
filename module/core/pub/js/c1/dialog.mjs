@@ -50,7 +50,7 @@ c1.onElement('.c1-dialog', el => {
 
 c1.dialog = function(options){
     const str =
-    '<form class="c1-dialog c1-box q1Rst" tabindex=0>'+
+    '<form class="c1-dialog c1-box" tabindex=0>'+
     '	<div class=-head>'+
     '		<div class=-title>'+options.title+'</div>'+
     '	</div>'+
