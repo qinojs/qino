@@ -2,14 +2,6 @@
 import './../../../core/pub/js/c1/NodeCleaner.mjs';
 import { apt } from '../../../core/pub/js/qino.js';
 
-if (!document.caretRangeFromPoint) { // polyfill for ff
-    document.caretRangeFromPoint = function(x,y){
-        const caretP = document.caretPositionFromPoint(x,y);
-        const range = document.createRange();
-        range.setStart(caretP.offsetNode, caretP.offset);
-        return range;
-    };
-}
 // txt-id to page-id
 const txtIds = {};
 cms.txtIdToPid = async function(tid) {
