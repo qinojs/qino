@@ -1,10 +1,10 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 :where(#panel) {
-	position:fixed;
-	top:0;
-	right:0;
-	bottom:0;
-	z-index:2;
+	inset:0 0 0 auto;
+	height:auto;
+	padding:0;
+	border:0;
+	overflow:visible;
 	transform:translateX(100%);
 	transition:all .12s ease-in-out;
 	will-change:transform, opacity;
@@ -264,5 +264,3 @@
 		height:48px;
 	}
 }
-
-

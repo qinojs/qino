@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<string> {
   const more     = await cmsFrontend2WidgetSidebar("more",     node, await t`More`,         await t`CMS feedback, change password...`);
 
   return `<qino-cms>
-<div id=panel class="qgCMS -open -sidebar-open">
+<div id=panel popover=manual class="qgCMS -open -sidebar-open">
   <div class=-sidebar>
     <a class="-item qgCMS_editmode_switch -active" href="${hee("")}" title="Edit (E)">
       <div style="opacity:0"><i></i></div>

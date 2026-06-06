@@ -49,6 +49,7 @@ if (!widgets.filled) widgets.set({});
 
 cms.panel = { state: uiState, sidebar, widgets };
 const el = document.querySelector("qino-cms").shadowRoot.getElementById("panel");
+el.showPopover?.();
 const root = cms.panelRoot = el.getRootNode();
 const [
   { SelectorObserver },
@@ -93,13 +94,6 @@ function syncSidebar(value = sidebar.value) {
     if (!item) return;
     item.classList.add("-open");
     item.focus();
-
-    el.c1ZTop();
-
-    [
-      ...document.querySelectorAll(".qgCMS_editmode_switch"),
-      ...root.querySelectorAll(".qgCMS_editmode_switch"),
-    ].forEach((item) => item.c1ZTop() );
 
     el.classList.add("-open");
     const content = findEl(el, '> .-sidebar > [itemid="' + value + '"] > .-content');
