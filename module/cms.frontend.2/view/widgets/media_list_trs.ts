@@ -1,6 +1,5 @@
 import type { Node } from "../../../cms/lib/Node.ts";
-import { hee } from "../../../core/lib/util.ts";
-import { FileTransformer } from "../../../core/lib/transform/index.ts";
+import { hee, FileTransformer } from "../../../core/mod.ts";
 
 export default async function (node: Node): Promise<string> {
   const app = node.app;

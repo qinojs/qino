@@ -2,9 +2,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./lib/CMS.ts";
 import { render } from "./lib/render.ts";
 import { api } from "./apt.ts";
-import { Output } from "../core/lib/util.ts";
-import type { App } from "../core/server.ts";
-import type { RequestContext } from "../core/lib/RequestContext.ts";
+import { Output, type App, type RequestContext } from "../core/mod.ts";
 
 declare module "../core/server.ts" {
   interface App { cms: CMS; }

@@ -11,12 +11,46 @@ export const name = "core";
 export { dbSchema };
 
 // ───── Public API ──────────────────────────────────────────────────────────
-// Curated surface for other modules. Import from here instead of core/lib/* —
-// so you depend on the stable contract, not the file layout.
+// Curated surface for other modules / the future @qino/core package.
+// Consumers import from here (or "@qino/core") instead of reaching into
+// core/lib/* — so they depend on this stable contract, not the file layout.
+// NOTE: core-internal files must NOT import from this barrel; they import their
+// siblings in ./lib/* directly, to avoid import cycles.
+
+// App + request context
+export { App } from "./server.ts";
+export { getCtx, RequestContext } from "./lib/RequestContext.ts";
+
+// HTML & general utilities
+export { hee, HtmlString, html, Output, uid, urlize, clientIp, sqlSearchHelper, itemReadDeep } from "./lib/util.ts";
+
+// Schema
 export { s } from "./lib/StandardSchema.ts";
-export { getCtx } from "./lib/RequestContext.ts";
-export { Access, AccessError, ConflictError, NotFoundError } from "./lib/apt/mod.ts";
-export { itemReadDeep } from "./lib/util.ts";
+
+// apt framework: action tree, errors, adapters
+export {
+  Access, AccessError, ConflictError, NotFoundError, ValidationError,
+  invoke, toHono, toTools,
+} from "./lib/apt/mod.ts";
+export type { AptTree } from "./lib/apt/mod.ts";
+
+// Database
+export { Db } from "./lib/Db.ts";
+export { DbEntry } from "./lib/DbEntry.ts";
+export { DbField } from "./lib/DbField.ts";
+export { DbFile } from "./lib/DbFileManager.ts";
+export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
+export type { dbEntry_usr } from "./lib/qgEntries.ts";
+
+// Modules
+export { Module } from "./lib/ModuleManager.ts";
+
+// Auth
+export { login, pwHash } from "./lib/auth.ts";
+
+// File transforms
+export { FileTransformer } from "./lib/transform/index.ts";
+
 
 export const settingsSchema = {
     properties: {

@@ -1,8 +1,4 @@
-import { hee } from "../core/lib/util.ts"
-import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
-import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
-import { s } from "../core/lib/StandardSchema.ts";
-import type { App } from "../core/server.ts";
+import { hee, getCtx, Access, AccessError, s, type RequestContext, type AptTree, type App } from "../core/mod.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import "../cms/mod.ts";
 

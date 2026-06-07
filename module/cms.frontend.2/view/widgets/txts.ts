@@ -1,4 +1,4 @@
-import { hee } from "../../../core/lib/util.ts";
+import { hee } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/lib/Node.ts";
 
 export default async function (node: Node): Promise<string> {

@@ -52,7 +52,6 @@ class CtxSetting extends Item {
 const appURL = globalThis.appURL ?? "/";
 
 export const ctx = {
-  // reihenfolge wie serverseitig ctx (RequestContext): app, lang, appURL/sysURL, dann getter settings/dev/token
   app: { apt, t },         // serverseitig: ctx.app → app.apt / app.t
   lang: document.documentElement.getAttribute("lang"),
   appURL,

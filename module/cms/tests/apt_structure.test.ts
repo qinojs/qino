@@ -1,5 +1,5 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toTools } from "../../core/lib/apt/mod.ts";
+import { toTools } from "../../core/mod.ts";
 import { api } from "../apt.ts";
 
 const verbs = new Set(["get", "post", "put", "delete", "patch"]);

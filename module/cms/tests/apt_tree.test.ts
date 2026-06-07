@@ -1,5 +1,5 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toHono, toTools } from "../../core/lib/apt/mod.ts";
+import { toHono, toTools } from "../../core/mod.ts";
 import { api } from "../apt.ts";
 
 Deno.test("cms apt tree: mounts through Hono adapter without setup errors", () => {

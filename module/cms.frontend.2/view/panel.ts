@@ -1,5 +1,4 @@
-import { hee } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/RequestContext.ts";
+import { hee, getCtx } from "../../core/mod.ts";
 import { cmsFrontend2WidgetSidebar, } from "../mod.ts";
 import type { Node } from "../../cms/lib/Node.ts";
 

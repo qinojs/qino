@@ -1,11 +1,5 @@
 import { Node } from "./Node.ts";
-import { hee, HtmlString } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/RequestContext.ts";
-import type { App } from "../../core/server.ts";
-import type { Module } from "../../core/lib/ModuleManager.ts";
-import type { Db } from "../../core/lib/Db.ts";
-import type { DbFile } from "../../core/lib/DbFileManager.ts";
-import type { DbText } from "../../core/lib/DbTextManager.ts";
+import { hee, HtmlString, getCtx, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 function table(name: string): string { return name; }
 

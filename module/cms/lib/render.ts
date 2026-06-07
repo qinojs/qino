@@ -1,4 +1,4 @@
-import type { RequestContext } from "../../core/lib/RequestContext.ts";
+import type { RequestContext } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
 import "../mod.ts";
 

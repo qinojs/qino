@@ -1,12 +1,7 @@
 import { resolveText } from "./resolveText.ts";
-import { hee, HtmlString } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/RequestContext.ts";
-import { DbFile } from "../../core/lib/DbFileManager.ts";
+import { hee, HtmlString, getCtx, urlize, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
-import type { DbText, DbTextLang } from "../../core/lib/DbTextManager.ts";
-import type { dbEntry_usr } from "../../core/lib/qgEntries.ts";
-import type { DbEntry } from "../../core/lib/DbEntry.ts";
 
 function table(name: string): string { return name; }
 
@@ -503,7 +498,6 @@ export class Node {
         if (this.vs.type === "c") return "#cmspid" + this;
         const parent = await this.parent();
         const parentUrl = !parent || String(parent) === "1" ? lang : await parent.urlSeo(lang);
-        const { urlize } = await import("../../core/lib/util.ts");
         const titleT = await this.title();
         const titleStr = titleT ? await titleT.orFallback(lang).then((t: any) => t.get()) ?? "" : "";
         const part = urlize(titleStr);

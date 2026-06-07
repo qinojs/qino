@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import "../mod.ts";
 import { assertEquals } from "../../core/tests/deps.ts";
-import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
+import { RequestContext } from "../../core/mod.ts";
+import { requestStorage } from "../../core/lib/RequestContext.ts";
 import { Node } from "../lib/Node.ts";
 
 Deno.test("Node.htmlPrepared keeps module name inside class attribute", async () => {

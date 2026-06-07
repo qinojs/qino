@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { HTTPException } from "../../deps.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
-import { hee } from "../core/lib/util.ts";
+import { getCtx, hee } from "../core/mod.ts";
 import type { Node } from "./lib/Node.ts";
 import './mod.ts';
 // ─── business logic used by REST ──────────────

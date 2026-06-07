@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { invoke } from "../../core/lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
+import { invoke, RequestContext } from "../../core/mod.ts";
+import { requestStorage } from "../../core/lib/RequestContext.ts";
 import { api } from "../../cms.text/mod.ts";
 
 class FakeText {
