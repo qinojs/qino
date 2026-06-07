@@ -148,7 +148,7 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
         touchSession(ctx);
         await ctx.initSettings();
         await this.languages.initCtx(ctx);
-        await initLog(ctx);
+        initLog(ctx);
     }
 
     async #handleAppFallback(hc: Context, next: () => Promise<void>): Promise<void> {

@@ -33,7 +33,7 @@ export class RequestContext {
   req!: HonoRequest;
   clientId: string | null = null;
   sessId: string | null = null;
-  logId: string | null = null;
+  logId: Promise<string | null> = Promise.resolve(null);
   entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; // braucht es den hier eigentlich?
   appURL = "/";

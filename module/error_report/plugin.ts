@@ -102,7 +102,7 @@ async function addReport(app: App, vs: Report): Promise<void> {
     row.referer ??= ctx.req.header("referer");
     row.browser ??= ctx.req.header("user-agent");
     row.ip ??= ctx.remoteAddr;
-    row.log_id ??= ctx.logId ?? null;
+    row.log_id ??= await ctx.logId;
   } catch { /* no request context available */ }
   if (Array.isArray(row.backtrace)) row.backtrace = JSON.stringify(row.backtrace);
   await app.db.table("m_error_report").insert(row).catch(() => {});

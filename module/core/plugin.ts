@@ -104,9 +104,14 @@ export async function init(app: App) {
 
     });
 
-    const logId = () => { try { return getCtx().logId; } catch { return null; } };
-    app.db.on("table::insert-before", (e: any) => { const id = logId(); if (id) e.data.log_id = id; });
-    app.db.on("table::update-before", (e: any) => { const id = logId(); if (id) e.data.log_id_ch = id; });
+    // stamp the current request's logId onto every write — except the log tables themselves
+    // (the log insert would otherwise await its own pending logId → deadlock)
+    const stampLogId = (field: string) => async (e: any) => {
+      if (/^log(_|$)/.test(String(e.Table))) return;
+      try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
+    };
+    app.db.on("table::insert-before", stampLogId("log_id"));
+    app.db.on("table::update-before", stampLogId("log_id_ch"));
 
     app.on("login", async (data: any) => {
       const ctx = getCtx();

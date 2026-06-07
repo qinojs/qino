@@ -145,7 +145,8 @@ function bucketScopes(info: any, set: Record<string, number>, signal?: any): [st
 }
 
 export async function addEvent(ctx: RequestContext, data: Record<string, unknown>) {
-  await addEventDb(ctx.app.db, { log_id: Number(ctx.logId || 0) || null, ...data });
+  const logId = await ctx.logId;
+  await addEventDb(ctx.app.db, { log_id: Number(logId || 0) || null, ...data });
 }
 
 export async function addEventDb(db: Db, data: Record<string, unknown>) {

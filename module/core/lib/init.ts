@@ -37,8 +37,8 @@ export function touchSession(ctx: RequestContext): void {
     if (ctx.sessId) ctx.app.sessions.touch(ctx.sessId, ctx.userId);
 };
 
-export async function initLog(ctx: RequestContext): Promise<void> {
-    
+export function initLog(ctx: RequestContext): void {
+
     const db = ctx.app.db;
 
     const data: Record<string, unknown> = {
@@ -54,11 +54,17 @@ export async function initLog(ctx: RequestContext): Promise<void> {
     data.post = post;
     data.client_id     = ctx.clientId;
 
-    const logId = await db.table("log").insert(data);
-    ctx.logId = String(logId);
-    data.log_id = logId;
+    // insert runs in the background; consumers await ctx.logId only when they actually need the id
+    ctx.logId = (async () => {
+      try {
+        const logId = await db.table("log").insert(data);
+        data.log_id = logId;
+        return logId === false ? null : String(logId);
+      } catch (e) { console.error("initLog insert error:", e); return null; }
+    })();
 
     setTimeout(async ()=>{ // background
+      await ctx.logId; // ensure the insert finished so data.id exists for the update below
       try {
         const url = ctx.requestUri;
         const urlHash = createHash("md5").update(url).digest("hex");

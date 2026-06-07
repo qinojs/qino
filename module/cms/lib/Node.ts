@@ -577,7 +577,7 @@ export class Node {
 
         const titleCopy = await (await this.title())!.copy();
         const ctx = getCtx();
-        await P.set({ log_id: ctx.logId ?? null, title_id: titleCopy.id });
+        await P.set({ log_id: await ctx.logId, title_id: titleCopy.id });
         P.#title = titleCopy;
 
         const texts = await this.texts();

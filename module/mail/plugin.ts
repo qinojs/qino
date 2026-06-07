@@ -272,7 +272,7 @@ async function handleTrack(ctx: RequestContext): Promise<void> {
     track_id: trackId,
     url,
     time: Math.floor(Date.now() / 1000),
-    log_id: ctx.logId ?? null,
+    log_id: await ctx.logId,
   });
   if (!recipient.opened) {
     await ctx.app.db.table("mail_recipient").update(

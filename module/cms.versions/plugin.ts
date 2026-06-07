@@ -98,18 +98,22 @@ export function init(app: App) {
     // Writes a REPLACE INTO _vers_* for every tracked table mutation.
     const catchInsertUpdate = async (e: any) => {
         const ctx = requestStorage.getStore();
-        if (!ctx?.logId) return;
+        if (!ctx) return;
         const tableName: string = String(e.Table);
         // Handle writes directly to _vers_* (log=0 slot)
         if (tableName.startsWith("_vers_") && !e.data?._vers_log) return;  // already writing to vers table – just let it through
         const vt = await versTable(ctx.app.db, tableName);
         if (!vt) return;
+        // await logId only after we know it's a versioned table: awaiting earlier deadlocks
+        // during the log insert's own insert-after (it would wait on its own pending logId)
+        const logId = await ctx.logId;
+        if (!logId) return;
         // Build field list from _vers_* table to ensure correct column order
         const versCols = await ctx.app.db.all(`SHOW COLUMNS FROM \`${vt}\``);
         const selects = versCols.map((c: any) => {
             const f = c.Field;
             if (f === "_vers_space")   return `${getCmsVers(ctx).versSpace}`;
-            if (f === "_vers_log")     return ctx.logId;
+            if (f === "_vers_log")     return logId;
             if (f === "_vers_deleted") return "0";
             if (f === "offset")        return "`offset`";
             return `\`${f}\``;
@@ -124,15 +128,17 @@ export function init(app: App) {
     // ─── History capture: delete ──────────────────────────────────────────────
     app.db.on("table::delete-after", async (e: any) => {
         const ctx = requestStorage.getStore();
-        if (!ctx?.logId) return;
+        if (!ctx) return;
         const tableName: string = String(e.Table);
         if (tableName.startsWith("_vers_") && !e.data?._vers_log) return;
         const vt = await versTable(ctx.app.db, tableName);
         if (!vt) return;
+        const logId = await ctx.logId; // after vt-check: see catchInsertUpdate note (deadlock guard)
+        if (!logId) return;
         const ids = e.Table.entryId2Array(e.id) ?? {};
         const data: Record<string, any> = {
             ...ids,
-            _vers_log:     ctx.logId,
+            _vers_log:     logId,
             _vers_space:   getCmsVers(ctx).versSpace,
             _vers_deleted: 1,
         };
