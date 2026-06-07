@@ -577,7 +577,7 @@ const node = {
       access: nodeRead,
       execute: async ({ node }: { node: Node }) => {
         try {
-          const api = node.module?.exports?.cms?.node?.api;
+          const api = node.module?.plugin?.cms?.node?.api;
           if (typeof api !== "function") return null;
           const vars = getCtx().post;
           return await api(node, vars) ?? null;

@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { AccessError, invoke, toTools } from "../../core/lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
-import { name, routes, settingsSchema } from "../mod.ts";
+import { AccessError, invoke, toTools } from "../../core/mod.ts";
+import { RequestContext, requestStorage } from "../../core/mod.ts";
+import { name, routes, settingsSchema } from "../plugin.ts";
 
 function makeApp() {
   const challenges: Record<string, unknown>[] = [];

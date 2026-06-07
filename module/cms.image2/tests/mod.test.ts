@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
 import { cms_image2 } from "../mod.ts";
-import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
+import { RequestContext, requestStorage } from "../../core/mod.ts";
 
 Deno.test("cms.image2: cms_image2 renders escaped image component from cached data", async () => {
   const dir = await Deno.makeTempDir();

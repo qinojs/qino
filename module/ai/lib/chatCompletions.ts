@@ -1,4 +1,4 @@
-import type { App } from "../../core/server.ts";
+import type { App } from "../../core/mod.ts";
 import { providerModels } from "./providerModels.ts";
 import { providers } from "./providers.ts";
 

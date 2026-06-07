@@ -1,8 +1,8 @@
-import type { Node } from "../../../cms/lib/Node.ts";
+import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node, _vars: unknown = {}): Promise<string> {
   try {
-    const options = node.module?.exports?.cms?.node?.options;
+    const options = node.module?.plugin?.cms?.node?.options;
     if (typeof options === "function") {
       const result = await options(node, _vars);
       if (result !== false) return result ?? "";

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name } from "../mod.ts";
-import { RequestContext, requestStorage } from "../../core/lib/RequestContext.ts";
+import { cms, name } from "../plugin.ts";
+import { RequestContext, requestStorage } from "../../core/mod.ts";
 
 function settings(values: Record<string, unknown> = {}) {
   return new Proxy({}, {

@@ -59,7 +59,7 @@ export class Node {
         ).proxy;
 
         try {
-            const schema = this.module?.exports.cms?.node?.settingsSchema;
+            const schema = this.module?.plugin.cms?.node?.settingsSchema;
             if (schema) this.settings[$item].setSchema(schema);
         } catch {/**/}
 
@@ -144,7 +144,7 @@ export class Node {
         renderPath.add(this.id);
 
         const mod = this.module;
-        const nodeExports = mod?.exports.cms?.node;
+        const nodeExports = mod?.plugin.cms?.node;
         const modBase = ctx.appURL + "m/" + this.vs.module + "/";
         const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
         for (const file of nodeExports?.css ?? []) ctx.html.styles.add(isAbsolute(file) ? file : modBase + file);
@@ -191,7 +191,7 @@ export class Node {
 
         try {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
-            let render = this.module.exports.cms?.node?.render;
+            let render = this.module.plugin.cms?.node?.render;
             if (!render) {
                 const e: { node: Node; render: ((node: Node, opts: Record<string, unknown>) => unknown) | null } = { node: this, render: null };
                 await this.app.fire("cms.node.render", e);
@@ -207,7 +207,7 @@ export class Node {
 
     async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | false> {
         if (/[/\\]/.test(part)) return false;
-        const parts = this.module?.exports.cms?.node?.parts ?? {};
+        const parts = this.module?.plugin.cms?.node?.parts ?? {};
         const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : false;
         if (!fn) return false;
 

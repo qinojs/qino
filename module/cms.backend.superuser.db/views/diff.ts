@@ -1,8 +1,8 @@
-import { hee } from "../../core/lib/util.ts";
+import { hee } from "../../core/mod.ts";
 import { schemaFromDb, schemaDiff } from "../../../deps.ts";
 import { sortTableNames } from "../lib/analyze.ts";
-import type { Db } from "../../core/lib/Db.ts";
-import type { App } from "../../core/server.ts";
+import type { Db } from "../../core/mod.ts";
+import type { App } from "../../core/mod.ts";
 
 export async function renderDiff(app: App, db: Db): Promise<string> {
   const mergedSchema = db.schema?.properties ?? {};

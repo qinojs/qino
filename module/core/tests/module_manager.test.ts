@@ -16,11 +16,11 @@ Deno.test({
     await Deno.mkdir(appPATH + "private/private.js/", { recursive: true });
     await Deno.mkdir(appPATH + "remote-ish/", { recursive: true });
 
-    await Deno.writeTextFile(localModDir + "local.foo/mod.ts", `
+    await Deno.writeTextFile(localModDir + "local.foo/plugin.ts", `
     export const name = "local.foo";
     export const value = "local";
   `);
-    await Deno.writeTextFile(appPATH + "private/private.foo/mod.ts", `
+    await Deno.writeTextFile(appPATH + "private/private.foo/plugin.ts", `
     export const name = "private.foo";
     export const needs = ["local.foo"];
     export const value = "private";
@@ -28,11 +28,11 @@ Deno.test({
       app.installed.push(name);
     }
   `);
-    await Deno.writeTextFile(appPATH + "remote-ish/mod.ts", `
+    await Deno.writeTextFile(appPATH + "remote-ish/plugin.ts", `
     export const name = "remote-ish";
     export const value = "file-url";
   `);
-    await Deno.writeTextFile(appPATH + "private/private.js/mod.js", `
+    await Deno.writeTextFile(appPATH + "private/private.js/plugin.js", `
     export const name = "private.js";
     export const value = "js";
   `);
@@ -51,8 +51,8 @@ Deno.test({
     await modules.importAll(toFileUrl(localModDir).href);
     const local = modules.get("local.foo")!;
     assertEquals(local.name, "local.foo");
-    assertEquals(local.exports.value, "local");
-    assert(local.path?.endsWith("/local.foo/mod.ts"));
+    assertEquals(local.plugin.value, "local");
+    assert(local.path?.endsWith("/local.foo/plugin.ts"));
 
     await assertRejects(
       () => modules.import("./private/private.foo/"),
@@ -60,21 +60,21 @@ Deno.test({
       "Use app.import(import.meta.resolve",
     );
 
-    const privateModule = await modules.import(toFileUrl(appPATH + "private/private.foo/mod.ts").href);
+    const privateModule = await modules.import(toFileUrl(appPATH + "private/private.foo/plugin.ts").href);
     assertEquals(privateModule.name, "private.foo");
-    assertEquals(privateModule.exports.value, "private");
+    assertEquals(privateModule.plugin.value, "private");
     assert(modules.get("local.foo"));
 
-    const jsModule = await modules.import(toFileUrl(appPATH + "private/private.js/mod.js").href);
+    const jsModule = await modules.import(toFileUrl(appPATH + "private/private.js/plugin.js").href);
     assertEquals(jsModule.name, "private.js");
-    assertEquals(jsModule.exports.value, "js");
+    assertEquals(jsModule.plugin.value, "js");
 
-    const fileUrlModule = await modules.import(toFileUrl(appPATH + "remote-ish/mod.ts").href);
+    const fileUrlModule = await modules.import(toFileUrl(appPATH + "remote-ish/plugin.ts").href);
     assertEquals(fileUrlModule.name, "remote-ish");
-    assertEquals(fileUrlModule.exports.value, "file-url");
+    assertEquals(fileUrlModule.plugin.value, "file-url");
 
-    assertEquals(modules.get("private.foo")?.exports.value, "private");
-    assert(modules.get("private.foo")?.path?.endsWith("/private.foo/mod.ts"));
+    assertEquals(modules.get("private.foo")?.plugin.value, "private");
+    assert(modules.get("private.foo")?.path?.endsWith("/private.foo/plugin.ts"));
     await modules.init();
     assertEquals(events, ["init"]);
     assertEquals(app.installed, ["private.foo"]);
@@ -83,27 +83,28 @@ Deno.test({
   },
 });
 
-Deno.test("ModuleManager rejects invalid module exports", async () => {
+Deno.test("ModuleManager rejects invalid plugins", async () => {
   const root = await Deno.makeTempDir();
   try {
-    await Deno.writeTextFile(root + "/no-name.ts", `export const value = 1;`);
-    await Deno.writeTextFile(root + "/bad-needs.ts", `export const name = "bad.needs"; export const needs = "core";`);
+    await Deno.mkdir(root + "/bad/", { recursive: true });
+    await Deno.writeTextFile(root + "/plugin.ts", `export const value = 1;`);
+    await Deno.writeTextFile(root + "/bad/plugin.ts", `export const name = "bad.needs"; export const needs = "core";`);
 
     const modules = new ModuleManager({} as any);
     await assertRejects(
-      () => modules.import(toFileUrl(root + "/no-name.ts").href),
+      () => modules.import(toFileUrl(root + "/plugin.ts").href),
       Error,
-      "Module has no exported name",
+      "Plugin has no exported name",
     );
     await assertRejects(
-      () => modules.import(toFileUrl(root + "/bad-needs.ts").href),
+      () => modules.import(toFileUrl(root + "/bad/plugin.ts").href),
       Error,
       "exported needs must be an array",
     );
     await assertRejects(
       () => modules.import(toFileUrl(root + "/").href),
       Error,
-      "Module import needs a file",
+      "Plugin import needs a file",
     );
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -113,15 +114,18 @@ Deno.test("ModuleManager rejects invalid module exports", async () => {
 Deno.test("ModuleManager init reports missing and circular dependencies", async () => {
   const root = await Deno.makeTempDir();
   try {
-    await Deno.writeTextFile(root + "/missing.ts", `
+    await Deno.mkdir(root + "/missing/", { recursive: true });
+    await Deno.mkdir(root + "/a/", { recursive: true });
+    await Deno.mkdir(root + "/b/", { recursive: true });
+    await Deno.writeTextFile(root + "/missing/plugin.ts", `
       export const name = "missing.dep";
       export const needs = ["not.imported"];
     `);
-    await Deno.writeTextFile(root + "/a.ts", `
+    await Deno.writeTextFile(root + "/a/plugin.ts", `
       export const name = "cycle.a";
       export const needs = ["cycle.b"];
     `);
-    await Deno.writeTextFile(root + "/b.ts", `
+    await Deno.writeTextFile(root + "/b/plugin.ts", `
       export const name = "cycle.b";
       export const needs = ["cycle.a"];
     `);
@@ -133,7 +137,7 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     };
 
     const missing = new ModuleManager(app as any);
-    await missing.import(toFileUrl(root + "/missing.ts").href);
+    await missing.import(toFileUrl(root + "/missing/plugin.ts").href);
     await assertRejects(
       () => missing.init(),
       Error,
@@ -141,8 +145,8 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     );
 
     const cyclic = new ModuleManager(app as any);
-    await cyclic.import(toFileUrl(root + "/a.ts").href);
-    await cyclic.import(toFileUrl(root + "/b.ts").href);
+    await cyclic.import(toFileUrl(root + "/a/plugin.ts").href);
+    await cyclic.import(toFileUrl(root + "/b/plugin.ts").href);
     await assertRejects(
       () => cyclic.init(),
       Error,

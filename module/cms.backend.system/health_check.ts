@@ -24,7 +24,7 @@ export async function getTypes(app: any): Promise<HealthTypes> {
   };
 
   for (const mod of Object.values(app.modules.all()) as any[]) {
-    const hc = mod.exports.healthChecks;
+    const hc = mod.plugin.healthChecks;
     if (!hc) continue;
     const checks = typeof hc === "function" ? await hc(app) : typeof hc.get === "function" ? await hc.get(app) : hc;
     for (const [type, items] of Object.entries(checks) as any[]) {

@@ -7,7 +7,7 @@ import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
 import { getCtx } from "./RequestContext.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
-import type { App } from "../server.ts";
+import type { App } from "./App.ts";
 
 export class DbFileManager {
   #cache: Record<string, DbFile> = {};

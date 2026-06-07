@@ -40,7 +40,7 @@ The `App` class is the central hub. It manages the database connection, module s
 const app = await App.create({ dbName, dbUser, dbPass, https? });
 
 await app.importAll(path);          // Load all modules from a directory
-await app.import(moduleUrl);        // Load a single module
+await app.import(pluginUrl);        // Load a single Qino plugin
 
 app.router   // Hono instance — mount this into your server
 app.db       // MySQL database connection
@@ -49,10 +49,10 @@ app.settings // Hierarchical app-wide settings (backed by item.js)
 
 ### Modules
 
-Modules are the building blocks of a Qino application. Each module is a `.ts` file that exports a standard interface:
+Modules are the building blocks of a Qino application. A module exposes its public API through `mod.ts`. Its optional Qino integration lives in `plugin.ts` and exports the plugin contract:
 
 ```ts
-// my-module/mod.ts
+// my-module/plugin.ts
 export const name = "my-module";
 export const needs = ["core"];       // Dependencies
 

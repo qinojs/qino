@@ -1,5 +1,5 @@
 import type { ProviderModel, ProviderStrength } from "../types.ts";
-import type { App } from "../../core/server.ts";
+import type { App } from "../../core/mod.ts";
 import { providers } from "./providers.ts";
 
 function normalizeModel(value: unknown): ProviderModel | null {

@@ -1,14 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, $item, schemaToDb } from "../../../deps.ts";
-import type { App } from "../server.ts";
+import type { App } from "./App.ts";
 
-export type ModuleExports = Record<string, any> & {
+export type Plugin = Record<string, any> & {
   name: string;
   needs?: string[];
   routes?(app: App): void;
   dbSchema?: Record<string, unknown>;
   init?(app: App): void | Promise<void>;
-  install?(ctx: { app: App; module: ModuleExports }): void | Promise<void>;
+  install?(ctx: { app: App; module: Plugin }): void | Promise<void>;
   settingsSchema?: Record<string, unknown>;
   ctxSettingsSchema?: Record<string, unknown>;
   api?: Record<string, unknown>;
@@ -27,13 +27,13 @@ export class Module {
   readonly name: string;
   readonly url: string;
   readonly path: string | undefined;
-  readonly exports: ModuleExports;
+  readonly plugin: Plugin;
 
-  constructor(exports: ModuleExports, url: string, path?: string) {
-    this.name = exports.name;
+  constructor(plugin: Plugin, url: string, path?: string) {
+    this.name = plugin.name;
     this.url = url;
     this.path = path;
-    this.exports = exports;
+    this.plugin = plugin;
   }
   get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
   toString(): string { return this.name; }
@@ -58,19 +58,20 @@ export class ModuleManager {
 
   async import(spec: string): Promise<Module> {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported. Use app.import(import.meta.resolve("${spec}"))`);
-    if (spec.endsWith("/")) throw new Error(`Module import needs a file, not a directory: ${spec}`);
+    if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
+    if (!/\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts, plugin.js, or plugin.mjs file: ${spec}`);
     const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
     const url = path ? toFileUrl(path).href : spec;
-    const exports = await import(url);
-    const name = exports.name;
-    if (typeof name !== "string" || !name) throw new Error(`Module has no exported name: ${url}`);
+    const plugin = await import(url);
+    const name = plugin.name;
+    if (typeof name !== "string" || !name) throw new Error(`Plugin has no exported name: ${url}`);
     if (this.#modules[name]) return this.#modules[name];
 
-    if (!Array.isArray(exports.needs ?? [])) throw new Error(`Module ${name}: exported needs must be an array`);
+    if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
 
-    const mod = new Module(exports, url, path);
+    const mod = new Module(plugin, url, path);
     this.#modules[name] = mod;
-    exports.routes?.(this.#app);
+    plugin.routes?.(this.#app);
     return mod;
   }
 
@@ -83,8 +84,9 @@ export class ModuleManager {
     entries.sort();
     for (const name of entries) {
       const dir = base + name + "/";
-      if (await fileExists(dir + "mod.ts")) await this.import(dir + "mod.ts");
-      else if (await fileExists(dir + "mod.js")) await this.import(dir + "mod.js");
+      if (await fileExists(dir + "plugin.ts")) await this.import(dir + "plugin.ts");
+      else if (await fileExists(dir + "plugin.js")) await this.import(dir + "plugin.js");
+      else if (await fileExists(dir + "plugin.mjs")) await this.import(dir + "plugin.mjs");
     }
   }
 
@@ -94,10 +96,10 @@ export class ModuleManager {
     const order = this.#initOrder();
     const dbSchema = { properties: {} };
     for (const name of order) {
-      const { exports } = this.#modules[name];
-      appSettingsSchema.properties[name] = exports.settingsSchema;
-      ctxSettingsSchema.properties[name] = exports.ctxSettingsSchema;
-      mergeSchema(dbSchema, exports.dbSchema);
+      const { plugin } = this.#modules[name];
+      appSettingsSchema.properties[name] = plugin.settingsSchema;
+      ctxSettingsSchema.properties[name] = plugin.ctxSettingsSchema;
+      mergeSchema(dbSchema, plugin.dbSchema);
     }
     if (Object.keys(dbSchema.properties).length) {
       await schemaToDb(dbSchema, (sql: string) => this.#app.db.query(sql), { patch: true });
@@ -105,10 +107,10 @@ export class ModuleManager {
       await this.#app.db.init();
     }
     for (const name of order) {
-      const { exports } = this.#modules[name];
-      await exports.init?.(this.#app);
-      await exports.install?.({ app: this.#app, module: exports });
-      if (exports.api) this.#app.aptTree[name] = exports.api;
+      const { plugin } = this.#modules[name];
+      await plugin.init?.(this.#app);
+      await plugin.install?.({ app: this.#app, module: plugin });
+      if (plugin.api) this.#app.aptTree[name] = plugin.api;
     }
     this.#app.settings[$item].setSchema(appSettingsSchema);
     this.#app.ctxSettingsSchema = ctxSettingsSchema;
@@ -124,7 +126,7 @@ export class ModuleManager {
       const mod = this.#modules[name];
       if (!mod) throw new Error(`Module "${name}" is not imported`);
       seen[name] = "visiting";
-      for (const need of mod.exports.needs ?? []) {
+      for (const need of mod.plugin.needs ?? []) {
         if (!this.#modules[need]) throw new Error(`Module "${name}" needs "${need}", but it is not imported`);
         visit(need);
       }

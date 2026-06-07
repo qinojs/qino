@@ -1,4 +1,4 @@
-import type { Node } from "../../../cms/lib/Node.ts";
+import type { Node } from "../../../cms/mod.ts";
 
 function toDatetimeLocal(ts: string | number | null): string {
   if (!ts) return "";

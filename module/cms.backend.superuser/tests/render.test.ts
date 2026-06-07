@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name, needs } from "../mod.ts";
+import { cms, name, needs } from "../plugin.ts";
 
 Deno.test("cms.backend.superuser: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser");

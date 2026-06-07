@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx } from "../core/lib/RequestContext.ts";
-import type { Node } from "../cms/lib/Node.ts";
+import { getCtx } from "../core/mod.ts";
+import type { Node } from "../cms/mod.ts";
 import { service as cmsTextService } from "../cms.text/mod.ts";
 
 function matchCase(translated: string, original: string): string {

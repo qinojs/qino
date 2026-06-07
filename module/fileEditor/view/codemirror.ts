@@ -1,8 +1,8 @@
 import * as nodePath from "node:path";
 import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
-import { hee } from "../../core/lib/util.ts"
-import { getCtx } from "../../core/lib/RequestContext.ts";
+import { hee } from "../../core/mod.ts"
+import { getCtx } from "../../core/mod.ts";
 import { typeByExtension } from "../../../deps.ts";
 
 export default async function codemirrorView(file: string): Promise<string> {

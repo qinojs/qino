@@ -1,11 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, HtmlString } from "../core/lib/util.ts";
-import { magickIdentify, isMagickAvailable } from "../core/lib/transform/imagemagick.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
-import type { DbFile } from "../core/lib/DbFileManager.ts";
-
-export const name = "cms.image2";
+import { hee, HtmlString } from "../core/mod.ts";
+import { magickIdentify, isMagickAvailable } from "../core/mod.ts";
+import { getCtx } from "../core/mod.ts";
+import type { DbFile } from "../core/mod.ts";
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();

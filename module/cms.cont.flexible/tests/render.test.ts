@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name } from "../mod.ts";
+import { cms, name } from "../plugin.ts";
 
 Deno.test("cms.cont.flexible: metadata is wired", () => {
   assertEquals(name, "cms.cont.flexible");

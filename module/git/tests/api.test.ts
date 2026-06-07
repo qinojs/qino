@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toTools } from "../../core/lib/apt/mod.ts";
-import { addModule, api, getModuleGitInfo, init, name, needs } from "../mod.ts";
+import { toTools } from "../../core/mod.ts";
+import { addModule, api, init, name, needs } from "../plugin.ts";
+import { getModuleGitInfo } from "../mod.ts";
 
 Deno.test("git: module metadata and apt tools are wired", () => {
   assertEquals(name, "git");
@@ -28,9 +29,9 @@ Deno.test("git: getModuleGitInfo returns nulls for modules without path", async 
   assertEquals(await getModuleGitInfo(app as never, "missing"), { gitRoot: null, info: null });
 });
 
-Deno.test("git: addModule normalizes file URLs before adding", async () => {
+Deno.test("git: addModule imports the plugin", async () => {
   const calls: string[] = [];
-  const app = { modules: { add: (path: string) => calls.push(path) } };
-  await addModule(app as never, new URL("file:///tmp/qino-module/mod.ts").href);
-  assertEquals(calls, ["/tmp/qino-module/mod.ts"]);
+  const app = { modules: { import: (path: string) => calls.push(path) } };
+  await addModule(app as never, new URL("file:///tmp/qino-module/plugin.ts").href);
+  assertEquals(calls, ["file:///tmp/qino-module/plugin.ts"]);
 });

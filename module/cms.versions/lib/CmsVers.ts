@@ -1,11 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../../core/lib/RequestContext.ts";
+import { getCtx } from "../../core/mod.ts";
 import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
-import "../../cms/mod.ts";
-import type { Db } from "../../core/lib/Db.ts";
-import type { Node } from "../../cms/lib/Node.ts";
-import type { App } from "../../core/server.ts";
+import type { Db } from "../../core/mod.ts";
+import type { Node } from "../../cms/mod.ts";
+import type { App } from "../../core/mod.ts";
 
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads

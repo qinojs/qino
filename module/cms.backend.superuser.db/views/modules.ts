@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee } from "../../core/lib/util.ts";
+import { hee } from "../../core/mod.ts";
 import { buildModuleTableIndex } from "../lib/analyze.ts";
-import type { App } from "../../core/server.ts";
+import type { App } from "../../core/mod.ts";
 
 export async function renderModules(app: App, modules: Record<string, any>): Promise<string> {
   const index = buildModuleTableIndex(modules);

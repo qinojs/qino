@@ -5,7 +5,7 @@ import { uid, clientIp } from "./util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { readUploadFile, type UploadedFile } from "./fileStream.ts";
-import type { App } from "../server.ts";
+import type { App } from "./App.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import type { HonoRequest } from "npm:hono@4";
 

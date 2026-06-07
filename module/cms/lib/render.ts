@@ -1,6 +1,6 @@
 import type { RequestContext } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
-import "../mod.ts";
+import type {} from "../mod.ts";
 
 export async function render(ctx: RequestContext): Promise<void> {
   const app = ctx.app;

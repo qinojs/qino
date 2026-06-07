@@ -1,7 +1,7 @@
 import type { Tool } from "../types.ts";
-import type { App } from "../../core/server.ts";
+import type { App } from "../../core/mod.ts";
 import type { AiApi } from "./AiApi.ts";
-import type { RequestContext } from "../../core/lib/RequestContext.ts";
+import type { RequestContext } from "../../core/mod.ts";
 import { chatCompletions } from "./chatCompletions.ts";
 import { providerModels } from "./providerModels.ts";
 import { providers } from "./providers.ts";

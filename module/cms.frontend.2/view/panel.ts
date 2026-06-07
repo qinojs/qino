@@ -1,6 +1,6 @@
 import { hee, getCtx } from "../../core/mod.ts";
 import { cmsFrontend2WidgetSidebar, } from "../mod.ts";
-import type { Node } from "../../cms/lib/Node.ts";
+import type { Node } from "../../cms/mod.ts";
 
 export default async function (node: Node): Promise<string> {
   const ctx = getCtx();

@@ -19,7 +19,7 @@ type FieldVisitor = (modName: string, table: string, field: string, fieldSchema:
 
 function iterateSchemaFields(modules: Record<string, any>, visit: FieldVisitor): void {
   for (const [modName, mod] of Object.entries(modules)) {
-    const tables = mod.exports?.dbSchema?.properties;
+    const tables = mod.plugin?.dbSchema?.properties;
     if (!tables) continue;
     for (const [table, tableSchema] of Object.entries(tables as Record<string, any>)) {
       const fields = tableSchema?.additionalProperties?.properties ?? {};

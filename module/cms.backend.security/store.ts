@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { matchPath, parsePathList } from "./pathlist.ts";
 import { settingsSchema, type SecuritySettings } from "./schema.ts";
-import type { App } from "../core/server.ts";
-import type { Db } from "../core/lib/Db.ts";
-import type { RequestContext } from "../core/lib/RequestContext.ts";
+import type { App } from "../core/mod.ts";
+import type { Db } from "../core/mod.ts";
+import type { RequestContext } from "../core/mod.ts";
 
 export const now = () => Math.floor(Date.now() / 1000);
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -1,5 +1,5 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { backendDashboardWidget, cms, name, needs } from "../mod.ts";
+import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
 
 Deno.test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.users");

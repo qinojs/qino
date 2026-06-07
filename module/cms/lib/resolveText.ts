@@ -1,5 +1,5 @@
 import type { App } from "../../core/mod.ts";
-import '../mod.ts';
+import type {} from "../mod.ts";
 
 export async function resolveText(app: App, value: string): Promise<string> {
     value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));

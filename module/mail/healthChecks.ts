@@ -1,6 +1,6 @@
-import { hee } from "../core/lib/util.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
-import type { App } from "../core/server.ts";
+import { hee } from "../core/mod.ts";
+import { getCtx } from "../core/mod.ts";
+import type { App } from "../core/mod.ts";
 import type { HealthTypes } from "../cms.backend.system/health_check.ts";
 
 export function healthChecks(app: App): HealthTypes {

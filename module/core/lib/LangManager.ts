@@ -1,6 +1,6 @@
 import { getCtx, type RequestContext } from "./RequestContext.ts";
 import { createHash } from "node:crypto";
-import type { App } from "../server.ts";
+import type { App } from "./App.ts";
 
 export class LangManager {
 

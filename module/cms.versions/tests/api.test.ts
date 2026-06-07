@@ -1,6 +1,6 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toTools } from "../../core/lib/apt/mod.ts";
-import { api, name, needs, settingsSchema } from "../mod.ts";
+import { toTools } from "../../core/mod.ts";
+import { api, name, needs, settingsSchema } from "../plugin.ts";
 
 Deno.test("cms.versions: module metadata is wired", () => {
   assertEquals(name, "cms.versions");

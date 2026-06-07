@@ -1,0 +1,348 @@
+// deno-lint-ignore-file no-explicit-any
+import dbSchema from "./dbschema.json" with { type: "json" };
+import { getCtx } from "../core/mod.ts";
+import { login } from "../core/mod.ts";
+import { Access, AccessError, type AptTree } from "../core/mod.ts";
+import { s } from "../core/mod.ts";
+import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
+import type { App } from "../core/mod.ts";
+import type { Db } from "../core/mod.ts";
+
+export const name = "web_auth";
+export { dbSchema };
+
+export const settingsSchema = {
+  properties: {
+    rpId:   { type: "string", description: "Relying Party ID — domain without protocol, e.g. example.com" },
+    rpName: { type: "string", description: "Display name of the application in the authenticator dialog" },
+  },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const CHALLENGE_TTL = 5 * 60;
+const now = () => Math.floor(Date.now() / 1000);
+
+function randB64(n: number): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(n));
+  let str = "";
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+async function getRp(app: App): Promise<{ rpId: string; rpName: string; expectedOrigin: string }> {
+  const rpId   = String(await app.settings.web_auth.rpId   ?? "") || "localhost";
+  const rpName = String(await app.settings.web_auth.rpName ?? "") || "Qino";
+  return { rpId, rpName, expectedOrigin: rpId === "localhost" ? "http://localhost" : `https://${rpId}` };
+}
+
+async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
+  const token = randB64(24);
+  await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: now() + CHALLENGE_TTL });
+  await db.exec("DELETE FROM web_auth_challenge WHERE expires < ?", [now()]);
+  return token;
+}
+
+async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
+  const row = await db.row(
+    "SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ? AND type = ? AND expires > ?",
+    [token, type, now()],
+  );
+  if (!row) return null;
+  await db.exec("DELETE FROM web_auth_challenge WHERE token = ?", [token]);
+  return { challenge: row.challenge, usr_id: Number(row.usr_id) };
+}
+
+async function verifyAssertion(
+  app: App,
+  { credentialId, clientDataJSON, authenticatorData, signature }: any,
+  expectedChallenge: string,
+  requireUserVerification: boolean,
+): Promise<{ ok: false; error: string } | { ok: true; cred: any; newCounter: number }> {
+  const cred = await app.db.row("SELECT * FROM web_auth_credential WHERE credential_id = ?", [credentialId]);
+  if (!cred) return { ok: false, error: "credential_not_found" };
+
+  const { rpId, expectedOrigin } = await getRp(app);
+  try {
+    const { verified, authenticationInfo } = await verifyAuthenticationResponse({
+      response: {
+        id: credentialId, rawId: credentialId,
+        response: { clientDataJSON, authenticatorData, signature },
+        type: "public-key",
+        clientExtensionResults: {},
+      },
+      expectedChallenge,
+      expectedOrigin,
+      expectedRPID: rpId,
+      credential: {
+        id: credentialId,
+        publicKey: Uint8Array.from(atob(cred.public_key.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
+        counter: Number(cred.sign_count),
+      },
+      requireUserVerification,
+    });
+    if (!verified) return { ok: false, error: "verification_failed" };
+    return { ok: true, cred, newCounter: authenticationInfo.newCounter };
+  } catch (e: any) {
+    return { ok: false, error: e.message ?? "verification_failed" };
+  }
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+
+export function routes(app: App): void {
+  app.aptTree.web_auth = buildApi(app);
+}
+
+function buildApi(app: App): AptTree { return {
+
+  register: {
+    challenge: {
+      post: {
+        description: "Request WebAuthn registration challenge",
+        access: Access.USER,
+        execute: async () => {
+          const ctx = getCtx();
+          const { rpId, rpName } = await getRp(app);
+          const challenge = randB64(32);
+          const token     = await storeChallenge(app.db, challenge, ctx.userId, "register");
+          const usr       = await app.db.row("SELECT email, firstname, lastname FROM usr WHERE id = ?", [ctx.userId]);
+          return {
+            token,
+            publicKey: {
+              rp: { id: rpId, name: rpName },
+              user: {
+                id: btoa(String(ctx.userId)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""),
+                name: String(usr?.email ?? ctx.userId),
+                displayName: [usr?.firstname, usr?.lastname].filter(Boolean).join(" ") || String(usr?.email ?? ctx.userId),
+              },
+              challenge,
+              pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+              timeout: CHALLENGE_TTL * 1000,
+              attestation: "none",
+              authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "preferred", userVerification: "preferred" },
+            },
+          };
+        },
+      },
+    },
+
+    verify: {
+      post: {
+        description: "Save WebAuthn credential after registration",
+        access: Access.USER,
+        input: s.object({
+          token:             s.string(),
+          clientDataJSON:    s.string(),
+          attestationObject: s.string(),
+          name:              s.optional(s.string()),
+        }),
+        execute: async ({ token, clientDataJSON, attestationObject, name }: any) => {
+          const ctx    = getCtx();
+          const stored = await consumeChallenge(app.db, token, "register");
+          if (!stored)                      return { ok: false, error: "challenge_expired" };
+          if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
+
+          const { rpId, expectedOrigin } = await getRp(app);
+          let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>;
+          try {
+            verification = await verifyRegistrationResponse({
+              response: {
+                id: "", rawId: "",
+                response: { clientDataJSON, attestationObject },
+                type: "public-key",
+                clientExtensionResults: {},
+              },
+              expectedChallenge: stored.challenge,
+              expectedOrigin,
+              expectedRPID: rpId,
+              requireUserVerification: false,
+            });
+          } catch (e: any) {
+            return { ok: false, error: e.message ?? "verification_failed" };
+          }
+
+          if (!verification.verified || !verification.registrationInfo) {
+            return { ok: false, error: "verification_failed" };
+          }
+
+          const { credential, aaguid } = verification.registrationInfo;
+          const credId = credential.id as string;
+
+          if (await app.db.one("SELECT id FROM web_auth_credential WHERE credential_id = ?", [credId])) {
+            return { ok: false, error: "already_registered" };
+          }
+
+          const t = now();
+          await app.db.table("web_auth_credential").insert({
+            usr_id: ctx.userId,
+            credential_id: credId,
+            public_key: btoa(String.fromCharCode(...credential.publicKey)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""),
+            sign_count: credential.counter,
+            aaguid: aaguid ?? "",
+            name: String(name ?? "Authenticator"),
+            created: t, last_used: t,
+          });
+          return { ok: true };
+        },
+      },
+    },
+  },
+
+  login: {
+    challenge: {
+      post: {
+        description: "Request WebAuthn login challenge",
+        access: Access.PUBLIC,
+        input: s.object({ email: s.optional(s.string()) }),
+        execute: async ({ email }: any) => {
+          const { rpId } = await getRp(app);
+          const challenge = randB64(32);
+          let usrId = 0;
+          const allowCredentials: unknown[] = [];
+
+          if (email) {
+            const usr = await app.db.row("SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(?) AND active = 1", [String(email).trim()]);
+            if (usr) {
+              usrId = Number(usr.id);
+              const creds = await app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [usrId]);
+              for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
+            }
+          }
+
+          const token = await storeChallenge(app.db, challenge, usrId, "login");
+          return {
+            token,
+            publicKey: {
+              rpId, challenge,
+              timeout: CHALLENGE_TTL * 1000,
+              userVerification: "preferred",
+              allowCredentials: allowCredentials.length ? allowCredentials : undefined,
+            },
+          };
+        },
+      },
+    },
+
+    verify: {
+      post: {
+        description: "Verify WebAuthn login and create session",
+        access: Access.PUBLIC,
+        input: s.object({
+          token:             s.string(),
+          credentialId:      s.string(),
+          clientDataJSON:    s.string(),
+          authenticatorData: s.string(),
+          signature:         s.string(),
+        }),
+        execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
+          const stored = await consumeChallenge(app.db, token, "login");
+          if (!stored) return { ok: false, error: "challenge_expired" };
+
+          const r = await verifyAssertion(app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
+          if (!r.ok) return r;
+
+          if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
+
+          const usrId = Number(r.cred.usr_id);
+          if (!(await app.db.row("SELECT id FROM usr WHERE id = ? AND active = 1", [usrId]))) return { ok: false, error: "user_inactive" };
+
+          await app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
+
+          const ctx = getCtx();
+          await login(ctx, usrId);
+          app.sessions.setCookie(ctx);
+          await app.fire("web_auth:login", { usr_id: usrId });
+          return { ok: true };
+        },
+      },
+    },
+  },
+
+  confirm: {
+    challenge: {
+      post: {
+        description: "Step-up challenge — confirm identity of the logged-in user",
+        access: Access.USER,
+        execute: async () => {
+          const ctx = getCtx();
+          const { rpId } = await getRp(app);
+          const challenge = randB64(32);
+          const creds = await app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [ctx.userId]);
+          const token = await storeChallenge(app.db, challenge, ctx.userId, "confirm");
+          return {
+            token,
+            publicKey: {
+              rpId, challenge,
+              timeout: CHALLENGE_TTL * 1000,
+              userVerification: "required",
+              allowCredentials: creds.map((c: any) => ({ id: c.credential_id, type: "public-key" })),
+            },
+          };
+        },
+      },
+    },
+
+    verify: {
+      post: {
+        description: "Verify step-up confirmation — sets session flag 'web_auth_confirmed'",
+        access: Access.USER,
+        input: s.object({
+          token:             s.string(),
+          credentialId:      s.string(),
+          clientDataJSON:    s.string(),
+          authenticatorData: s.string(),
+          signature:         s.string(),
+        }),
+        execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
+          const ctx    = getCtx();
+          const stored = await consumeChallenge(app.db, token, "confirm");
+          if (!stored)                      return { ok: false, error: "challenge_expired" };
+          if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
+
+          const r = await verifyAssertion(app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
+          if (!r.ok) return r;
+          if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
+
+          await app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
+          ctx.session.web_auth_confirmed(now());
+          return { ok: true };
+        },
+      },
+    },
+  },
+
+  credentials: {
+    get: {
+      description: "List own WebAuthn credentials",
+      access: Access.USER,
+      execute: async () => {
+        const ctx  = getCtx();
+        const rows = await app.db.all(
+          "SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ? ORDER BY created DESC",
+          [ctx.userId],
+        );
+        return rows.map((r: any) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
+      },
+    },
+  },
+
+  credential: {
+    ":credId": {
+      paramSchema: s.number(),
+      delete: {
+        description: "Delete WebAuthn credential (own or as superuser)",
+        access: Access.USER,
+        execute: async ({ credId }: any) => {
+          const ctx  = getCtx();
+          const cred = await app.db.row("SELECT usr_id FROM web_auth_credential WHERE id = ?", [credId]);
+          if (!cred) return { ok: false, error: "not_found" };
+          if (Number(cred.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
+          await app.db.exec("DELETE FROM web_auth_credential WHERE id = ?", [credId]);
+          return { ok: true };
+        },
+      },
+    },
+  },
+
+}; }

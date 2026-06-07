@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name, needs } from "../mod.ts";
+import { cms, name, needs } from "../plugin.ts";
 
 Deno.test("cms.backend: metadata is wired", () => {
   assertEquals(name, "cms.backend");
@@ -20,7 +20,7 @@ Deno.test("cms.backend: render collects visible child widgets", async () => {
     url: () => "/backend/settings",
     title: () => ({ string: () => "Settings" }),
     conts: () => [{
-      module: { exports: { backendDashboardWidget: () => "<table><tr><td>OK</table>" } },
+      module: { plugin: { backendDashboardWidget: () => "<table><tr><td>OK</table>" } },
     }],
   };
   const page = { children: () => new Map([[1, child]]) };
@@ -37,7 +37,7 @@ Deno.test("cms.backend: render escapes child links and titles", async () => {
     url: () => `/backend?q="><script>x</script>`,
     title: () => ({ string: () => `Settings"><script>x</script>` }),
     conts: () => [{
-      module: { exports: { backendDashboardWidget: () => "OK" } },
+      module: { plugin: { backendDashboardWidget: () => "OK" } },
     }],
   };
   const page = { children: () => new Map([[1, child]]) };

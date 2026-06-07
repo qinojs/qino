@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import "../mod.ts";
+import "../plugin.ts";
 import { assertEquals } from "../../core/tests/deps.ts";
 import { RequestContext } from "../../core/mod.ts";
-import { requestStorage } from "../../core/lib/RequestContext.ts";
+import { requestStorage } from "../../core/mod.ts";
 import { Node } from "../lib/Node.ts";
 
 Deno.test("Node.htmlPrepared keeps module name inside class attribute", async () => {
@@ -13,7 +13,7 @@ Deno.test("Node.htmlPrepared keeps module name inside class attribute", async ()
         modules: {
             get: () => ({
                 name: moduleName,
-                exports: { cms: { node: { render: () => "<section></section>" } } },
+                plugin: { cms: { node: { render: () => "<section></section>" } } },
             }),
         },
     } as any;

@@ -1,7 +1,7 @@
-import { Access, type AptTree } from "../core/lib/apt/mod.ts";
-import { s } from "../core/lib/StandardSchema.ts";
-import type { Params } from "../core/lib/apt/types.ts";
-import type { RequestContext } from "../core/lib/RequestContext.ts";
+import { Access, type AptTree } from "../core/mod.ts";
+import { s } from "../core/mod.ts";
+import type { Params } from "../core/mod.ts";
+import type { RequestContext } from "../core/mod.ts";
 
 export const api: AptTree = {
   "chat-completions": {

@@ -1,5 +1,5 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { name, needs } from "../mod.ts";
+import { name, needs } from "../plugin.ts";
 
 Deno.test("cms.installation.default: metadata lists required base modules", () => {
   assertEquals(name, "cms.installation.default");

@@ -1,4 +1,4 @@
-import type { App } from "../../core/server.ts";
+import type { App } from "../../core/mod.ts";
 import { providers } from "./providers.ts";
 
 export async function imageGenerations(data: Record<string, unknown>, app: Pick<App, "settings">): Promise<unknown> {

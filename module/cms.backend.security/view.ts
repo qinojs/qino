@@ -1,9 +1,6 @@
-import { getCtx } from "../core/lib/RequestContext.ts";
-import { hee } from "../core/lib/util.ts";
+import { getCtx, hee, type App, type RequestContext } from "../core/mod.ts";
 import { settings } from "./store.ts";
-import type { Node } from "../cms/lib/Node.ts";
-import type { App } from "../core/server.ts";
-import type { RequestContext } from "../core/lib/RequestContext.ts";
+import type { Node } from "../cms/mod.ts";
 import type { RowDataPacket } from "../../deps.ts";
 
 export async function backendDashboardWidget(app: App): Promise<string> {

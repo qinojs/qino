@@ -1,6 +1,6 @@
 import { hee, getCtx } from "../../../core/mod.ts";
 import { cmsFrontend2WidgetAccordion } from "../../mod.ts";
-import type { Node } from "../../../cms/lib/Node.ts";
+import type { Node } from "../../../cms/mod.ts";
 import { $item } from "../../../../deps.ts";
 
 export default async function (node: Node): Promise<string> {
@@ -47,7 +47,7 @@ export default async function (node: Node): Promise<string> {
 
   let accordions = "";
 
-  const hasOptions = typeof node.module?.exports?.cms?.node?.options === "function";
+  const hasOptions = typeof node.module?.plugin?.cms?.node?.options === "function";
   const hasPageSettings = (node.settings[$item].keys?.length ?? 0) > 0;
   if (hasOptions || hasPageSettings) accordions += await cmsFrontend2WidgetAccordion("options", node, await app.t`Settings`);
 

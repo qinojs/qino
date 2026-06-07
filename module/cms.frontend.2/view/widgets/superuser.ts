@@ -1,9 +1,9 @@
-import type { Node } from "../../../cms/lib/Node.ts";
+import type { Node } from "../../../cms/mod.ts";
 import { hee, getCtx } from "../../../core/mod.ts";
 
 function moduleDir(node: Node): string | null {
   const path = node.app.modules.get(String(node.vs.module ?? ""))?.path;
-  return path?.replace(/\/?mod\.[jt]s$/, "") ?? null;
+  return path?.replace(/\/?(mod|plugin)\.[jt]s$/, "") ?? null;
 }
 
 async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: string }> {

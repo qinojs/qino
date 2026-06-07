@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name } from "../mod.ts";
-import { RequestContext } from "../../core/lib/RequestContext.ts";
+import { cms, name } from "../plugin.ts";
+import { RequestContext } from "../../core/mod.ts";
 
 Deno.test("cms.layout.login: metadata is wired", () => {
   assertEquals(name, "cms.layout.login");

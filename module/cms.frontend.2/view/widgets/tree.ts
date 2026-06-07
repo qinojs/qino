@@ -1,4 +1,4 @@
-import type { Node } from "../../../cms/lib/Node.ts";
+import type { Node } from "../../../cms/mod.ts";
 import { hee, getCtx } from "../../../core/mod.ts";
 import { cmsGetTree } from "../../../cms/apt-exports.ts";
 

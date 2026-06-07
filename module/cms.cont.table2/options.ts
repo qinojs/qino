@@ -1,6 +1,6 @@
-import type { Node } from "../cms/lib/Node.ts";
-import { hee, uid } from "../core/lib/util.ts"
-import { getCtx } from "../core/lib/RequestContext.ts";
+import type { Node } from "../cms/mod.ts";
+import { hee, uid } from "../core/mod.ts"
+import { getCtx } from "../core/mod.ts";
 
 export default async function (node: Node, _vars: unknown): Promise<string> {
   const cols = Math.max(1, Number(node.settings.cols()) || 1);

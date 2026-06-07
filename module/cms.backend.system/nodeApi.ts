@@ -1,4 +1,4 @@
-import type { Node } from "../cms/lib/Node.ts";
+import type { Node } from "../cms/mod.ts";
 import { getTypes } from "./health_check.ts";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {

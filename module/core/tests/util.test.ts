@@ -9,7 +9,7 @@ import {
   urlize,
 } from "../lib/util.ts";
 import { RequestContext } from "../lib/RequestContext.ts";
-import { App } from "../server.ts";
+import { App } from "../lib/App.ts";
 
 Deno.test("util: hee escapes HTML-sensitive characters", () => {
   assertEquals(hee(`<a href="x&y">'ok'</a>`), "&lt;a href=&quot;x&amp;y&quot;&gt;&#039;ok&#039;&lt;/a&gt;");

@@ -1,4 +1,4 @@
-import type { App } from "../core/server.ts";
+import type { App } from "../core/mod.ts";
 
 export async function daily(app: App): Promise<void> {
   const db      = app.db;

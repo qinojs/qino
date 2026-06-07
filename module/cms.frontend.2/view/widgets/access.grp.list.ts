@@ -1,4 +1,4 @@
-import type { Node } from "../../../cms/lib/Node.ts";
+import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<string> {
   const app = node.app;

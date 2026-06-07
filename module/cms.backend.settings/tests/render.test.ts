@@ -1,6 +1,6 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { RequestContext } from "../../core/lib/RequestContext.ts";
-import { backendDashboardWidget, cms, name, needs } from "../mod.ts";
+import { RequestContext } from "../../core/mod.ts";
+import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
 
 Deno.test("cms.backend.settings: metadata is wired", () => {
   assertEquals(name, "cms.backend.settings");
