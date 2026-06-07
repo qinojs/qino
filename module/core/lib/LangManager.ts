@@ -38,7 +38,7 @@ export class LangManager {
         ctx.langUsr ||= this.#fromBrowser(ctx);
 
         if (usr) {
-            await usr.set("lang", ctx.langUsr);
+            usr.set("lang", ctx.langUsr); // save is debounced, no need to await
         } else {
             ctx.session.qg.lang(ctx.langUsr);
         }
