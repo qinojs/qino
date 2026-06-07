@@ -1,6 +1,5 @@
 import { getCtx } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
-import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import type { App } from "../core/server.ts";
@@ -66,9 +65,8 @@ function tabs(active: string) {
 }
 
 function settingsEditor(ctx: RequestContext) {
-  addSettingsEditor(ctx);
-  const source = settingsSourceAttr({ kind: "app", path: ["cms.backend.security"] });
-  return `<div class="u2-card"><settings-editor source="${source}"></settings-editor></div>`;
+  ctx.html.scripts.add(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
+  return `<div class="u2-card"><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
 }
 
 function aptScript(node: Node) {

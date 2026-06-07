@@ -4,11 +4,8 @@
  * Complete port of all routes from apt-exports.ts.
  */
 
-import { s } from "../core/lib/StandardSchema.ts";
-import { Access, AccessError, ConflictError, NotFoundError } from "../core/lib/apt/mod.ts";
-import { getCtx } from "../core/lib/RequestContext.ts";
+import { s, Access, AccessError, ConflictError, NotFoundError, getCtx, itemReadDeep } from "../core/mod.ts";
 import { $item } from "../../deps.ts";
-import { readSettings } from "../core/lib/settings.ts";
 import * as fns from "./apt-exports.ts";
 import type { Node } from "./lib/Node.ts";
 
@@ -552,7 +549,7 @@ const node = {
         description: "Read node settings at path",
         access: nodeRead,
         query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }),
-        execute: ({ node, path, schema }: any) => schema ? node.settings[$item].sub(path).schema ?? {} : readSettings(node.settings[$item].sub(path)) },
+        execute: ({ node, path, schema }: any) => schema ? node.settings[$item].sub(path).schema ?? {} : itemReadDeep(node.settings[$item].sub(path)) },
       put: {
         description: "Set node settings at path",
         access: nodeWrite,
@@ -573,7 +570,6 @@ const node = {
       },
     },
   },
-
 
   api: {
     post: {

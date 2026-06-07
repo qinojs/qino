@@ -10,6 +10,14 @@ import type { App } from "./server.ts";
 export const name = "core";
 export { dbSchema };
 
+// ───── Public API ──────────────────────────────────────────────────────────
+// Curated surface for other modules. Import from here instead of core/lib/* —
+// so you depend on the stable contract, not the file layout.
+export { s } from "./lib/StandardSchema.ts";
+export { getCtx } from "./lib/RequestContext.ts";
+export { Access, AccessError, ConflictError, NotFoundError } from "./lib/apt/mod.ts";
+export { itemReadDeep } from "./lib/util.ts";
+
 export const settingsSchema = {
     properties: {
         langs: {

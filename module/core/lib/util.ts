@@ -102,3 +102,20 @@ export function sqlSearchHelper(
   }
   return { where: wheres.join(" AND "), order: orders.join(", "), whereParams, orderParams };
 }
+
+/**
+ * Recursively materializes an item.js item into a plain object.
+ * read() only loads one level — itemReadDeep forces read() on every level and
+ * assembles the whole subtree. Unlike .get() (synchronous, returns only
+ * already-loaded values), itemReadDeep also fetches lazy/async subtrees.
+ */
+// deno-lint-ignore no-explicit-any
+export async function itemReadDeep(item: any): Promise<unknown> {
+  await item.read();
+  if (item.keys?.length) {
+    const data: Record<string, unknown> = {};
+    for (const key of item.keys) data[key] = await itemReadDeep(item.item(key));
+    return data;
+  }
+  return item.get() ?? null;
+}

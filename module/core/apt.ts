@@ -12,7 +12,7 @@ import { $item, type Item } from "../../deps.ts";
 import { Access, AccessError, ConflictError, type AptTree } from "./lib/apt/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
-import { readSettings } from "./lib/settings.ts";
+import { itemReadDeep } from "./lib/util.ts";
 
 const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"]");
 
@@ -52,7 +52,6 @@ export const api: AptTree = {
     },
   },
 
-
   password: {
     put: {
       description: "Change the password of the logged-in user",
@@ -89,7 +88,7 @@ export const api: AptTree = {
   settings: {
     ":path*": {
       paramSchema: pathParam,
-      get: { description: "Read app settings at path", access: Access.SUPERUSER, query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }), execute: async ({ path, schema }: any) => schema ? (await appSettingsRoot(path)).schema ?? {} : readSettings(await appSettingsRoot(path)) },
+      get: { description: "Read app settings at path", access: Access.SUPERUSER, query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }), execute: async ({ path, schema }: any) => schema ? (await appSettingsRoot(path)).schema ?? {} : itemReadDeep(await appSettingsRoot(path)) },
       put: {
         description: "Set app settings at path",
         access: Access.SUPERUSER,
@@ -118,7 +117,7 @@ export const api: AptTree = {
         description: "Read user/session settings at path",
         access: Access.USER,
         query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }),
-        execute: ({ path, schema }: any) => schema ? ctxSettingsRoot(path).schema ?? {} : readSettings(ctxSettingsRoot(path)) },
+        execute: ({ path, schema }: any) => schema ? ctxSettingsRoot(path).schema ?? {} : itemReadDeep(ctxSettingsRoot(path)) },
       put: {
         description: "Set user/session settings at path",
         access: Access.USER,

@@ -2,7 +2,6 @@ import { hee } from "../core/lib/util.ts"
 import { getCtx, type RequestContext } from "../core/lib/RequestContext.ts";
 import { Access, AccessError, type AptTree } from "../core/lib/apt/mod.ts";
 import { s } from "../core/lib/StandardSchema.ts";
-import { allowSettingsEditorAssets } from "../core/lib/settings.ts";
 import type { App } from "../core/server.ts";
 import type { Node } from "../cms/lib/Node.ts";
 import "../cms/mod.ts";
@@ -172,7 +171,6 @@ export function init(app: App) {
     if (editmode) {
       ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
-      allowSettingsEditorAssets(ctx);
       ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/panel.mjs");
       ctx.html.styles.add(ctx.sysURL + "core/pub/js/Rte/main.css");
       ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");

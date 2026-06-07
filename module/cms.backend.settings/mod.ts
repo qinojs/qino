@@ -1,4 +1,3 @@
-import { addSettingsEditor, settingsSourceAttr } from "../core/lib/settings.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { RequestContext } from "../core/lib/RequestContext.ts";
 import { hee } from "../core/lib/util.ts";
@@ -12,12 +11,11 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function render(_node: unknown, { ctx }: { ctx: RequestContext }): string {
-  addSettingsEditor(ctx);
-  const source = settingsSourceAttr({ kind: "app" });
+  ctx.html.scripts.add(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
   return `<div class=u2-card>
 	<div class=-head>Settings</div>
 	<div class=-body>
-		<settings-editor source="${source}"></settings-editor>
+		<settings-editor source="/api/core/settings"></settings-editor>
 	</div>
 </div>`;
 }

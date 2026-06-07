@@ -1,7 +1,6 @@
 import type { Node } from "../../../cms/lib/Node.ts";
 import { hee } from "../../../core/lib/util.ts"
 import { getCtx } from "../../../core/lib/RequestContext.ts";
-import { addSettingsEditor, settingsSourceAttr } from "../../../core/lib/settings.ts";
 
 function moduleDir(node: Node): string | null {
   const path = node.app.modules.get(String(node.vs.module ?? ""))?.path;
@@ -70,13 +69,9 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   const module = node.vs.module;
   let globalSettings = "";
   if (module && module in app.settings) {
-    addSettingsEditor(ctx);
-    const source = settingsSourceAttr({
-      kind: "app",
-      path: [String(module)],
-    });
+    // SettingsEditor.mjs is loaded by panel.mjs
     globalSettings = `<div class="-widgetHead c1-focusIn -open" tabindex="0"><span class=-title>Global Settings</span></div>
-    <div class=-content><settings-editor source="${source}"></settings-editor></div>`;
+    <div class=-content><settings-editor source="/api/core/settings/${hee(module)}"></settings-editor></div>`;
   }
 
   return `
