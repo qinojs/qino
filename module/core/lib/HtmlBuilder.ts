@@ -13,7 +13,7 @@ export class HtmlBuilder {
     scripts: Set<string> = new Set<string>();
     styles: Set<string> = new Set<string>();
     legacyScripts: Set<string> = new Set<string>();
-    importMap = new Map<string, string>();
+    importMap: Map<string, string> = new Map<string, string>();
     content = "";
     #jsData?: Record<string, unknown>;
     #ctx: RequestContext;
