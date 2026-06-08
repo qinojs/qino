@@ -65,10 +65,7 @@ c1.Placer = class {
                 width:  rect.width + margin.left + margin.right,
             };
         }
-        let viewport = { // viewport relative to the layer
-            top: 0,
-            left: 0,
-        };
+        let viewport = {top: 0, left: 0}; // viewport relative to the layer
         // css-position
         const position = getComputedStyle(this.el).getPropertyValue('position');
         if (position !== 'fixed') {

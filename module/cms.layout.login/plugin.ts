@@ -15,9 +15,6 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
   ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
-
-  ctx.html.meta["viewport"] = "width=device-width";
-
   const host = ctx.req.header("host") ?? "";
   const titleObj = await node.title();
   const title = await titleObj.string();

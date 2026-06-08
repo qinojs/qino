@@ -53,8 +53,6 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
   ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
 
-  ctx.html.meta["viewport"] = "width=device-width";
-
   const Page = await node.page();
 
   // Create default cont if none exists
