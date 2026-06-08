@@ -15,8 +15,8 @@ export class HtmlString {
   #html: string;
   constructor(html: unknown) { this.#html = String(html ?? ""); }
   get html(): string { return this.#html; }
-  escaped() { return new HtmlString(hee(this.#html)); }
-  toString() { return this.#html; }
+  escaped(): HtmlString { return new HtmlString(hee(this.#html)); }
+  toString(): string { return this.#html; }
 }
 
 function htmlValue(v: unknown): string {

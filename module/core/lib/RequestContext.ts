@@ -169,7 +169,7 @@ function pubPath(root: string, file: string): string | null {
   return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }
 
-export const requestStorage = new AsyncLocalStorage<RequestContext>();
+export const requestStorage: AsyncLocalStorage<RequestContext> = new AsyncLocalStorage();
 
 export function getCtx(): RequestContext {
   const ctx = requestStorage.getStore();

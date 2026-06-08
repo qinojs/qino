@@ -72,13 +72,13 @@ function err(path: PropertyKey[], message: string): StandardIssue[] {
 // ───── Builder `s` ────────────────────────────────────────────────────────
 
 export const s = {
-  string: () => new StandardSchema<string>("string", (v, p) =>
+  string: (): StandardSchema<string> => new StandardSchema<string>("string", (v, p) =>
     typeof v === "string" ? { value: v } : { issues: err(p, "expected string") }),
 
-  number: () => new StandardSchema<number>("number", (v, p) =>
+  number: (): StandardSchema<number> => new StandardSchema<number>("number", (v, p) =>
     typeof v === "number" && !Number.isNaN(v) ? { value: v } : { issues: err(p, "expected number") }),
 
-  boolean: () => new StandardSchema<boolean>("boolean", (v, p) =>
+  boolean: (): StandardSchema<boolean> => new StandardSchema<boolean>("boolean", (v, p) =>
     typeof v === "boolean" ? { value: v } : { issues: err(p, "expected boolean") }),
 
   object: <Shape extends Record<string, StandardSchema<any>>>(shape: Shape): StandardSchema<InferObject<Shape>> => {

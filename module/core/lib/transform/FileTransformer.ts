@@ -11,7 +11,7 @@ const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 export class FileTransformer {
   static readonly #transformers: TransformerDef[] = [];
 
-  static readonly capabilities = {
+  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return isMagickAvailable(); },
     get ffmpeg(): Promise<boolean> { return isFfmpegAvailable(); },
     get avif(): Promise<boolean> { return checkAvifSupport(); },
