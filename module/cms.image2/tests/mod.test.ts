@@ -44,6 +44,7 @@ Deno.test("cms.image2: cms_image2 renders escaped image component from cached da
     assertEquals(out.includes(' loading="lazy"'), true);
     assertEquals(out.includes('src="/dbFile?w=320&amp;h=180&amp;vpos=45&amp;hpos=55&amp;q=85"'), true);
     assertEquals(out.includes('alt="&lt;Alt&gt;"'), true);
+    assertEquals([...ctx.html.legacyScripts], ["/m/core/pub/js/c1.js", "/m/cms.image2/pub/cms-image2.js"]);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

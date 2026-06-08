@@ -1,7 +1,9 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+import '../../core/pub/js/c1.js';
 import '../../core/pub/js/c1/fix/contextMenu.mjs';
 import '../../core/pub/js/c1/contextMenu.mjs';
-import { apt } from '../../core/pub/js/qino.js';
+import '../../core/pub/js/c1/onElement.mjs';
+import { apt, u2Base } from '../../core/pub/js/qino.js';
 
 const activeLang = document.documentElement.lang;
 
@@ -166,7 +168,7 @@ function hee(string){
 
 
 /* translate hole page */
-c1.onElement('.qgCmsFront1MoreManager', el=>{
+const addTranslateWidget = el=>{
     const lang = document.documentElement.getAttribute('lang');
     const fragment = c1.dom.fragment(`
         <div class="-widgetHead -open" tabindex="0"><span class="-title">Translate</span></div>
@@ -194,4 +196,11 @@ c1.onElement('.qgCmsFront1MoreManager', el=>{
         result.count && location.reload();
     });
     el.append(fragment);
+};
+c1.onElement('.qgCmsFront1MoreManager', addTranslateWidget);
+customElements.whenDefined('qino-cms').then(async () => {
+    const root = document.querySelector('qino-cms')?.shadowRoot;
+    if (!root) return;
+    const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');
+    new SelectorObserver({ on: addTranslateWidget }).observe('.more-manager', { root });
 });

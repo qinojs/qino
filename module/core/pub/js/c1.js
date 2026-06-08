@@ -1,13 +1,12 @@
 !function(w,d) { 'use strict';
 
-if (w.c1) return;
 w.c1 ||= {};
 
 
 /* Waits for the execution of the function (min) and then executes the last call, but waits maximal (max) millisecunds.
 *  If the function-scope changes, the function executes immediatly (good for event-delegation)
 */
-Function.prototype.c1Debounce = function(options) {
+Function.prototype.c1Debounce ||= function(options) {
 	if (typeof options === 'number') options = {min:options, max:options*2};
 	let inst,
 		args,
@@ -38,7 +37,7 @@ Function.prototype.c1Debounce = function(options) {
 };
 
 /* eventer */
-c1.Eventer = {
+c1.Eventer ||= {
     _getEvents : function(n) {
         this._Es ||= {};
         this._Es[n] ||= [];
@@ -70,6 +69,6 @@ if (dataEl) {
 	}
 }
 
-}(this,document);
+}(globalThis,document);
 
 document.cookie = "q1_dpr=" + devicePixelRatio + "; path=/; SameSite=Strict" + (location.protocol === "https:" ? "; Secure" : "") + ";";
