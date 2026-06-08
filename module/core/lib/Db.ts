@@ -40,7 +40,7 @@ export class Db {
       charset: "utf8mb4",
       multipleStatements: false,
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 4,
       timezone: "Z",
     });
     this.#pool.on("connection", (c: { query(sql: string, params?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
