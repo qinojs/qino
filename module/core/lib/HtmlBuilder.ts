@@ -24,12 +24,15 @@ export class HtmlBuilder {
 
     get jsData(): Record<string, unknown> { return this.#jsData ??= {}; }
 
-    prependContent(str: string): void {
-        this.content = str + this.content;
-    }
-
     getHeader(): string {
         let ret = '<meta charset="utf-8">\n';
+
+        for (const [name, value] of Object.entries(this.meta)) {
+            if (value === "") continue;
+            ret += `<meta name=${hee(name)} content="${hee(value)}">\n`;
+        }
+
+        ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 
         if (this.importMap.size) {
             const json = JSON.stringify({ imports: Object.fromEntries(this.importMap) }).replace(/</g, "\\u003c");
@@ -48,12 +51,6 @@ export class HtmlBuilder {
 
         if (this.#jsData) ret += `<script type=json/c1>${JSON.stringify(this.#jsData)}</script>\n`;
 
-        for (const [name, value] of Object.entries(this.meta)) {
-            if (value === "") continue;
-            ret += `<meta name=${hee(name)} content="${hee(value)}">\n`;
-        }
-
-        ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 
         for (const url of this.legacyScripts) ret += `<script defer src="${hee(url)}"></script>\n`;
 
@@ -67,6 +64,8 @@ export class HtmlBuilder {
         this.jsData["qgToken"] = ctx.token;
         this.jsData["appURL"] = ctx.appURL || "/";
         this.jsData["sysURL"] = ctx.sysURL || "/m/";
+        this.meta["viewport"] = "width=device-width";
+
 
         const { lang } = ctx;
         return `<!DOCTYPE HTML>\n<html lang=${lang}>\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;

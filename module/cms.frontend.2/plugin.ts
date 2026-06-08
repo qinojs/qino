@@ -99,7 +99,6 @@ export function init(app: App) {
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");
         app.languages.nsStop();
-        //ctx.html.prependContent(panelHtml);
         ctx.html.content += panelHtml;
       }
     }

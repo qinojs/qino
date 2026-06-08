@@ -99,15 +99,16 @@ function cleanUpEl(el) {
 		if (src?.startsWith(location.origin)) img.setAttribute('src', src.replace(location.origin, ''));
 	});
 }
-function saveTxt(e) {
-	if (!e.target.hasAttribute('cmstxt')) return;
-	const el = e.target;
+function saveTxt(el) {
+	if (!el?.hasAttribute?.('cmstxt')) return;
 	if (!el.isContentEditable && el.form === undefined) return;
 	cleanUpEl(el);
 	apt.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
-document.body.addEventListener('blur', saveTxt, true);
-document.body.addEventListener('input', saveTxt.c1Debounce(1600));
+// composedPath()[0] (read sync, before debounce) resolves the target inside the qino-cms shadow root too
+const saveTxtDebounced = saveTxt.c1Debounce(1600);
+document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
+document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
 
 cms.reloadNode = (pid, vars) => {
 	return apt.cms.node(pid).html.post({ vars }).then(html => {
