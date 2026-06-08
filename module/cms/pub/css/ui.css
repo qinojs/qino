@@ -9,8 +9,7 @@
 	font-style: normal;
 }
 :root, qino-cms {
-	--cms-color: #906adf;
-
+	--cms-color: #a06aef;
 	--cms-dark: #222;
 	--cms-light: #e8e8e8;
 	--cms-access-0: #3c3c3b;
@@ -22,15 +21,12 @@
 }
 
 :host, .qgCMS {
+	--color: var(--cms-color);
+	color: var(--cms-dark);
+	accent-color: var(--color);
 	font-family: Arial, sans-serif;
 	font-size:13px;
 	text-align:left;
-
-	color: var(--cms-dark);
-
-	--color: var(--cms-color);
-
-	accent-color: var(--color);
 
 	& *, & {
 		scrollbar-color: rgba(0,0,0,.2) rgba(0,0,0,0.009);
@@ -69,23 +65,15 @@
 		background:var(--cms-dark);
 		color:#fff;
 	}
-	& ::-webkit-scrollbar { width: 10px; height: 10px; }
-	& ::-webkit-scrollbar-track { background: rgba(0, 0, 0, .05); }
-	& ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .25); }
 
 	& input:is([type=checkbox], [type=radio]) {
-		width:1.6em;
-		height:1.6em;
+		width:1.5em;
+		height:1.5em;
 		margin:0 2px;
 		min-width:1em;
 		min-height:1em;
 		vertical-align: text-bottom;
 	}
-	& input:is([type=checkbox], [type=radio]):focus { border-color:var(--cms-color); }
-	& input:is([type=checkbox], [type=radio]):checked {
-		background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MTIiIGhlaWdodD0iNjEyIj4NCiAgPHBhdGggZD0iTTYxMiAzNi4wMDRMNTc2LjUyLjYwNCAzMDYgMjcwLjYwNyAzNS40NzguNjAzIDAgMzYuMDAzIDI3MC41MjIgMzA2LjAxIDAgNTc2bDM1LjQ3OCAzNS40TDMwNiAzNDEuNDFsMjcwLjUyIDI2OS45ODcgMzUuNDgtMzUuNEwzNDEuNDYgMzA2LjAxIi8+DQo8L3N2Zz4=);
-	}
-	& input[type=radio] { border-radius:50%; }
 
 	& .-access-0 { color:var(--cms-access-0); }
 	& .-access-1 { color:var(--cms-access-1); }
@@ -165,6 +153,12 @@
 		}
 	}
 
+	u2-alert {
+		background: color-mix(var(--color), #fff 88%);
+		border-radius: var(--radius);
+	}
+
+
 }
 
 #cmsConsole {
@@ -195,69 +189,3 @@
 	&[data-type=warning] { background:var(--cms-access-2); }
 	&[data-type=error]   { background:var(--cms-access-3); }
 }
-
-
-
-
-
-
-
-
-
-/* cms-box (modal) *
-.qgCMS.-Box {
-	top:20px;
-	max-height:calc(100% - 40px);
-	left:0;
-	right:0;
-	margin:auto;
-	max-width:500px;
-	display:flex;
-	flex-flow:column;
-	box-shadow:0 0 10px rgba(0,0,0,.4);
-}
-.qgCMS.-Box > .-head {
-	font-size: 16px;
-	background:var(--cms-dark);
-	color:#fff;
-	display:flex;
-	flex:0 0 auto;
-}
-.qgCMS.-Box > .-head > * {
-	margin:0;
-	flex:0 0 auto;
-}
-.qgCMS.-Box > .-head > .-title {
-	padding: .8em 1.2em .7em 1.2em;
-	flex:1 1 auto;
-}
-
-.qgCMS.-Box > .-head > .-close {
-	content:'x';
-	width:45px;
-	cursor:pointer;
-	padding-top:13px;
-}
-.qgCMS.-Box > .-head > .-close:hover {
-	font-weight:bold;
-}
-.qgCMS.-Box > .-head > .-close:after {
-	display:block;
-	content: "\e900";
-	font-family:'qg_cms';
-	font-size:16px;
-	text-align:center;
-	border-left:1px solid #fff;
-}
-
-.qgCMS.-Box > .-body {
-	padding: 1.2em;
-	flex:1 1 auto;
-	overflow:auto;
-}
-.qgCMS.-Box > .-foot {
-	padding: 1.2em;
-	flex:0 0 auto;
-	overflow:auto;
-}
-*/

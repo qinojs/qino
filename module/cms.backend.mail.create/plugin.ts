@@ -31,7 +31,7 @@ async function render(node: Node): Promise<string> {
     const toCustom = String(ctx.post.to_custom ?? "").trim();
 
     if (!subject) {
-      message = `<div class="-msg -err">${await app.t`Subject is required.`}</div>`;
+      message = `<u2-alert open variant=danger>${await app.t`Subject is required.`}</u2-alert>`;
     } else {
       const mail = await app.mail.create({ subject, html: body, sender: sender || undefined, replyTo: replyTo || undefined });
 
@@ -73,9 +73,9 @@ async function render(node: Node): Promise<string> {
 
       if ("send" in ctx.post) {
         await mail.send();
-        message = `<div class="-msg -ok">${await app.t`Mail created and sent`} (${addedEmails.size} ${await app.t`recipients`}). <a href="../?id=${savedId}">${await app.t`View`}</a></div>`;
+        message = `<u2-alert open variant=success style="margin:0">${await app.t`Mail created and sent`} (${addedEmails.size} ${await app.t`recipients`}). <a href="../?id=${savedId}">${await app.t`View`}</a></u2-alert>`;
       } else {
-        message = `<div class="-msg -ok">${await app.t`Mail saved`} (${addedEmails.size} ${await app.t`recipients`}). <a href="../?id=${savedId}">${await app.t`View`}</a></div>`;
+        message = `<u2-alert open variant=success>${await app.t`Mail saved`} (${addedEmails.size} ${await app.t`recipients`}). <a href="../?id=${savedId}">${await app.t`View`}</a></u2-alert>`;
       }
     }
   }
@@ -95,7 +95,7 @@ async function render(node: Node): Promise<string> {
     `<option value="${hee(g.id)}">${hee(g.name)}</option>`
   ).join("");
 
-  return `<div class="u2-card -m-mail-create">
+  return `<div class="u2-card">
   <div class=-head>${await app.t`Create Mail`}</div>
   <div class=-body>
     ${message}
@@ -103,7 +103,7 @@ async function render(node: Node): Promise<string> {
       <input type=hidden name=qgToken value="${hee(ctx.token)}">
       <table class=u2-table>
         <tr>
-          <th style="width:110px">${await app.t`Subject`}
+          <th style="width:6.875rem">${await app.t`Subject`}
           <td><input name=subject style="width:100%" placeholder="${await app.t`Mail subject`}" required>
         <tr>
           <th>${await app.t`Sender`}
@@ -111,37 +111,38 @@ async function render(node: Node): Promise<string> {
             <label><input type=radio name=sender_mode value=default checked> ${await app.t`Default`} <small>(${hee(defaultSender || await app.t`not configured`)})</small></label>
             &nbsp;
             <label><input type=radio name=sender_mode value=custom> ${await app.t`Custom`}</label>
-            <input name=sender_custom type=email class=-sender-custom placeholder="name@example.com">
+            <input name=sender_custom type=email hidden style="margin-top:.25rem;width:100%" placeholder="name@example.com">
         <tr>
           <th>${await app.t`Reply-To`}
           <td><input name=reply_to style="width:100%">
         <tr>
           <th>${await app.t`Recipients`}
           <td>
-            <div class=-recipient-section>
-              <div>
-                <label><strong>${await app.t`Users`}</strong></label><br>
-                <select name="to_users[]" multiple class=-recipient-select>
+            <div class=u2-grid style="--u2-Items-width: 25rem;">
+              <label>
+                <strong>${await app.t`Users`}</strong>
+                <select name="to_users[]" multiple size=8 style="width:100%">
                   ${userOptions || `<option disabled>${await app.t`No users found`}</option>`}
                 </select>
-              </div>
-              <div>
-                <label><strong>${await app.t`Groups`}</strong></label><br>
-                <select name="to_groups[]" multiple class=-recipient-select>
+              </label>
+              <label>
+                <strong>${await app.t`Groups`}</strong>
+                <select name="to_groups[]" multiple size=8 style="width:100%">
                   ${groupOptions || `<option disabled>${await app.t`No groups found`}</option>`}
                 </select>
-              </div>
-              <div>
-                <label><strong>${await app.t`Custom addresses`}</strong></label><br>
-                <textarea name=to_custom style="width:100%; height:160px; resize:vertical" placeholder="${await app.t`One per line, or comma-separated`}"></textarea>
-              </div>
+              </label>
+              <label>
+                <strong>${await app.t`Custom addresses`}</strong>
+                <textarea name=to_custom rows=6 style="width:100%;resize:vertical" placeholder="${await app.t`One per line, or comma-separated`}"></textarea>
+              </label>
             </div>
         <tr>
           <th>${await app.t`Body (HTML)`}
-          <td><textarea name=body class=-body-editor placeholder="<p>${await app.t`Your message here`}</p>"></textarea>
+          <td>
+            <textarea name=body class=-body-editor rows=12 placeholder="<p>${await app.t`Your message here`}</p>"></textarea>
         <tr>
           <td colspan=2>
-            <div class=-actions>
+            <div class=u2-flex style="justify-content:flex-end">
               <button name=save>${await app.t`Save draft`}</button>
               <button name=send>${await app.t`Save &amp; send now`}</button>
             </div>

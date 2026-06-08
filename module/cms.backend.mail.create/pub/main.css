@@ -1,11 +1,3 @@
-.-m-mail-create {
-  & .-msg { padding: 8px 12px; border-radius: 3px; margin-bottom: 10px; }
-  & .-msg.-ok { background: #d4edda; }
-  & .-msg.-err { background: #f8d7da; }
-  & .-recipient-section { display: flex; gap: 12px; flex-wrap: wrap; }
-  & .-recipient-section > * { flex: 1 1 200px; }
-  & .-recipient-select { width: 100%; height: 160px; }
-  & .-sender-custom { display: none; margin-top: 4px; width: 100%; }
-  & .-body-editor { width: 100%; min-height: 260px; font-family: monospace; resize: vertical; }
-  & .-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.-m-cms-backend-mail-create {
+  & .-body-editor { width: 100%; font-family: monospace; resize: vertical; }
 }
