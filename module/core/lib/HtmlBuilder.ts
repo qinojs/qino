@@ -13,6 +13,7 @@ export class HtmlBuilder {
     scripts: Set<string> = new Set<string>();
     styles: Set<string> = new Set<string>();
     legacyScripts: Set<string> = new Set<string>();
+    importMap = new Map<string, string>();
     content = "";
     #jsData?: Record<string, unknown>;
     #ctx: RequestContext;
@@ -29,6 +30,11 @@ export class HtmlBuilder {
 
     getHeader(): string {
         let ret = '<meta charset="utf-8">\n';
+
+        if (this.importMap.size) {
+            const json = JSON.stringify({ imports: Object.fromEntries(this.importMap) }).replace(/</g, "\\u003c");
+            ret += `<script type=importmap>${json}</script>\n`;
+        }
 
         for (const [name, item] of Object.entries(this.link)) {
             ret += `<link href="${hee(name)}" `;

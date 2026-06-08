@@ -29,10 +29,13 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   html.styles.add("/style.css?x=1&y=2");
   html.legacyScripts.add("/main.js?x=1&y=2");
   html.scripts.add("/module.mjs?x=1&y=2");
+  html.importMap.set("@qino/test", "/module.mjs");
+  html.importMap.set("@qino/unsafe", "</script>");
   Object.assign(html.jsData, { hello: "<world>" });
 
   const out = html.getHeader();
   assertEquals(out.includes('<meta charset="utf-8">'), true);
+  assertEquals(out.includes('<script type=importmap>{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
   assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;" >'), true);
   assertEquals(out.includes('<link rel=stylesheet href="/style.css?x=1&amp;y=2">'), true);
   assertEquals(out.includes('<script type=json/c1>{"hello":"<world>"}</script>'), true);
@@ -41,6 +44,7 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   assertEquals(out.includes('<title>Pre &lt;Title&gt; &amp; Suf</title>'), true);
   assertEquals(out.includes('<script defer src="/main.js?x=1&amp;y=2"></script>'), true);
   assertEquals(out.includes('<script type=module src="/module.mjs?x=1&amp;y=2"></script>'), true);
+  assertEquals(out.indexOf("<script type=importmap>") < out.indexOf("<script type=module"), true);
 });
 
 Deno.test("HtmlBuilder: render injects js_data defaults and content", () => {

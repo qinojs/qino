@@ -13,12 +13,12 @@
 // läuft über den bestehenden apt-endpoint  core/ctx-settings/:path*  (Access.USER).
 
 // zentrale item.js-version; konsumenten laden via import(itemJsBase + "...")
-export const itemJsBase = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/";
+export const itemJsBase = import.meta.resolve("@qino/item/");
 
 // zentrale u2-version; konsumenten laden via import(u2Base + "...")
-export const u2Base = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/";
+export const u2Base = import.meta.resolve("@qino/u2/");
 
-import { Item } from "https://cdn.jsdelivr.net/gh/nuxodin/item.js@0.5.6/item.js"; // statischer import braucht literal (== itemJsBase + "item.js")
+import { Item } from "@qino/item/item.js";
 import { AptClient } from "./AptClient.js";
 import { t } from "./t.mjs";
 

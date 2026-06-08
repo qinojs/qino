@@ -7,6 +7,7 @@ import type { HtmlBuilder } from "../core/mod.ts";
 import { CACHE_SUBDIR, DEFAULT_FETCH_POLICY, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
 
 export const name = "uncdn";
+export const needs = ["core"];
 
 export const settingsSchema = {
   properties: {
@@ -135,18 +136,12 @@ export function init(app: App): void {
 }
 
 export function rewriteHtml(html: HtmlBuilder, appURL: string): void {
-  const rewrite = (files: Set<string>): Set<string> => {
-    const result = new Set<string>();
-    for (const url of files) {
-      if ((url.startsWith("https://") || url.startsWith("http://")) && !/[?#]/.test(url)) {
-        const path = PROXY_PREFIX + url.replace(/^https?:\/\//, "");
-        result.add(appURL + path);
-      } else {
-        result.add(url);
-      }
-    }
-    return result;
+  const rewriteUrl = (url: string): string => {
+    if (!/^https?:\/\//.test(url) || /[?#]/.test(url)) return url;
+    return appURL + PROXY_PREFIX + url.replace(/^https?:\/\//, "");
   };
+  const rewrite = (files: Set<string>) => new Set([...files].map(rewriteUrl));
+  for (const [name, url] of html.importMap) html.importMap.set(name, rewriteUrl(url));
   html.legacyScripts = rewrite(html.legacyScripts);
   html.scripts       = rewrite(html.scripts);
   html.styles        = rewrite(html.styles);

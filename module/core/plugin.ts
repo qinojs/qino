@@ -78,6 +78,12 @@ export async function init(app: App) {
 
     app.aptTree.core = api;
 
+    app.on("html-ready", e => {
+        const ctx = e.ctx as RequestContext;
+        ctx.html.importMap.set("@qino/item/", "https://jsr.io/@nuxodin/item/0.5.8/");
+        ctx.html.importMap.set("@qino/u2/", "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/");
+    });
+
     const langsRaw = String(await app.settings.core.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
 

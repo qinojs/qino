@@ -42,7 +42,7 @@ function setSetting(value, path) {
   return apt.core["ctx-settings"](p).put({ value });
 }
 
-const { item, effect } = await itemJs;
+const { item } = await itemJs;
 const uiState = item(cmsFrontend2Data ?? {});
 const sidebar = uiState.item("sidebar");
 const widgets = uiState.item("widget");
@@ -104,8 +104,7 @@ function syncSidebar(value = sidebar.value) {
     el.classList.remove("-open");
   }
 }
-effect(() => syncSidebar(sidebar.value));
-sidebar.addEventListener("set", e => e.value === e.oldValue && syncSidebar(e.value));
+sidebar.addEventListener("set", e => syncSidebar(e.value)); // nur bei Wechsel laden; Initialzustand kommt aus dem SSR
 
 el.addEventListener("click", (e) => {
   const titelEl = e.target.closest(".-sidebar > .-item > .-title");
