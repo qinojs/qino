@@ -1,25 +1,8 @@
-// deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { HtmlBuilder } from "../lib/HtmlBuilder.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
-
-function ctx() {
-  const c = new RequestContext();
-  let tokenValue = "";
-  const token = (v?: string) => {
-    if (v !== undefined) tokenValue = v;
-    return tokenValue;
-  };
-  c.session = { qg: { token } } as any;
-  c.appURL = "/app/";
-  c.sysURL = "/app/m/";
-  c.lang = "de";
-  return c;
-}
 
 Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
-  const c = ctx();
-  const html = new HtmlBuilder(c);
+  const html = new HtmlBuilder();
   html.titlePrefix = "Pre ";
   html.title = `<Title>`;
   html.titleSuffix = " & Suf";
@@ -36,10 +19,10 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   const out = html.getHeader();
   assertEquals(out.includes('<meta charset="utf-8">'), true);
   assertEquals(out.includes('<script type=importmap>{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
-  assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;" >'), true);
+  assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;">'), true);
   assertEquals(out.includes('<link rel=stylesheet href="/style.css?x=1&amp;y=2">'), true);
-  assertEquals(out.includes('<script type=json/c1>{"hello":"<world>"}</script>'), true);
-  assertEquals(out.includes('<meta name=description content="A &quot;quote&quot; &amp; more">'), true);
+  assertEquals(out.includes('<script type=json/c1>{"hello":"\\u003cworld>"}</script>'), true);
+  assertEquals(out.includes('<meta name="description" content="A &quot;quote&quot; &amp; more">'), true);
   assertEquals(out.includes("name=empty"), false);
   assertEquals(out.includes('<title>Pre &lt;Title&gt; &amp; Suf</title>'), true);
   assertEquals(out.includes('<script defer src="/main.js?x=1&amp;y=2"></script>'), true);
@@ -47,16 +30,13 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   assertEquals(out.indexOf("<script type=importmap>") < out.indexOf("<script type=module"), true);
 });
 
-Deno.test("HtmlBuilder: render injects js_data defaults and content", () => {
-  const c = ctx();
-  const html = new HtmlBuilder(c);
+Deno.test("HtmlBuilder: render emits lang and content", () => {
+  const html = new HtmlBuilder();
+  html.lang = "de";
   html.content = "<main>Hi</main>";
 
   const out = html.render();
-  assertEquals(out.startsWith("<!DOCTYPE HTML>\n<html lang=de>"), true);
+  assertEquals(out.startsWith('<!DOCTYPE HTML>\n<html lang="de">'), true);
   assertEquals(out.includes("<main>Hi</main>"), true);
-  assertEquals(html.jsData.appURL, "/app/");
-  assertEquals(html.jsData.sysURL, "/app/m/");
-  assertEquals(typeof html.jsData.qgToken, "string");
-  assertEquals((html.jsData.qgToken as string).length, 11);
+  assertEquals(out.includes('<meta name="viewport" content="width=device-width">'), true);
 });

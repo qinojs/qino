@@ -46,7 +46,7 @@ export class RequestContext {
   };
   cspReportUri: string | false = false; // besser innerhalb csp-objekt? ctx.csp.reportUri? geht das?
 
-  get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(this); }
+  get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
   get hasHtml(): boolean { return this.#html !== null; }
   
   get userId(): number {

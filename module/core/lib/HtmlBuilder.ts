@@ -1,14 +1,14 @@
 import { hee } from "./util.ts";
-import type { RequestContext } from "./RequestContext.ts";
 
 //export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 
 export class HtmlBuilder {
+    lang = "en";
     head = "";
     title = "";
     titlePrefix = "";
     titleSuffix = "";
-    meta: Record<string, string> = {};
+    meta: Record<string, string> = { viewport: "width=device-width" };
     link: Record<string, Record<string, string>> = {};
     scripts: Set<string> = new Set<string>();
     styles: Set<string> = new Set<string>();
@@ -16,11 +16,6 @@ export class HtmlBuilder {
     importMap: Map<string, string> = new Map<string, string>();
     content = "";
     #jsData?: Record<string, unknown>;
-    #ctx: RequestContext;
-
-    constructor(ctx: RequestContext) {
-        this.#ctx = ctx;
-    }
 
     get jsData(): Record<string, unknown> { return this.#jsData ??= {}; }
 
@@ -29,19 +24,18 @@ export class HtmlBuilder {
 
         for (const [name, value] of Object.entries(this.meta)) {
             if (value === "") continue;
-            ret += `<meta name=${hee(name)} content="${hee(value)}">\n`;
+            ret += `<meta name="${hee(name)}" content="${hee(value)}">\n`;
         }
 
         ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 
         if (this.importMap.size) {
-            const json = JSON.stringify({ imports: Object.fromEntries(this.importMap) }).replace(/</g, "\\u003c");
-            ret += `<script type=importmap>${json}</script>\n`;
+            ret += `<script type=importmap>${jsonScript({ imports: Object.fromEntries(this.importMap) })}</script>\n`;
         }
 
         for (const [name, item] of Object.entries(this.link)) {
-            ret += `<link href="${hee(name)}" `;
-            for (const [k, val] of Object.entries(item)) ret += `${k}="${hee(val)}" `;
+            ret += `<link href="${hee(name)}"`;
+            for (const [k, val] of Object.entries(item)) ret += ` ${k}="${hee(val)}"`;
             ret += ">\n";
         }
 
@@ -49,8 +43,7 @@ export class HtmlBuilder {
 
         for (const url of this.styles) ret += `<link rel=stylesheet href="${hee(url)}">\n`;
 
-        if (this.#jsData) ret += `<script type=json/c1>${JSON.stringify(this.#jsData)}</script>\n`;
-
+        if (this.#jsData) ret += `<script type=json/c1>${jsonScript(this.#jsData)}</script>\n`;
 
         for (const url of this.legacyScripts) ret += `<script defer src="${hee(url)}"></script>\n`;
 
@@ -60,14 +53,12 @@ export class HtmlBuilder {
     }
 
     render(): string {
-        const ctx = this.#ctx;
-        this.jsData["qgToken"] = ctx.token;
-        this.jsData["appURL"] = ctx.appURL || "/";
-        this.jsData["sysURL"] = ctx.sysURL || "/m/";
-        this.meta["viewport"] = "width=device-width";
-
-
-        const { lang } = ctx;
-        return `<!DOCTYPE HTML>\n<html lang=${lang}>\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;
+        return `<!DOCTYPE HTML>\n<html lang="${hee(this.lang)}">\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;
     }
+}
+
+
+/** JSON serialized safely for inlining into a <script> element (escapes `<` so `</script>` can't break out). */
+function jsonScript(value: unknown): string {
+    return JSON.stringify(value).replace(/</g, "\\u003c");
 }

@@ -159,7 +159,12 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
         await this.fire("render", { ctx });
         if (ctx.hasHtml) {
             await this.fire("html-ready", { ctx });
-            ctx.responseBody = ctx.html.render();
+            const html = ctx.html;
+            html.lang = ctx.lang;
+            html.jsData["qgToken"] = ctx.token;
+            html.jsData["appURL"] = ctx.appURL || "/";
+            html.jsData["sysURL"] = ctx.sysURL || "/m/";
+            ctx.responseBody = html.render();
         }
         hc.res = await this.#buildResponse(hc, ctx);
     }
