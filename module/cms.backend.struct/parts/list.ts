@@ -75,7 +75,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       }
 
       const pageUrl = await SubPage.url();
-      const linkCell = `<a style="vertical-align:middle" href="${hee(pageUrl)}" title="open"><u2-ico icon="open_in_new">↗</u2-ico></a>`;
+      const linkCell = `<a style="vertical-align:middle" href="${hee(pageUrl)}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`;
 
       // Online start column
       const onlineStartCell = renderOnlineStart(SubPage, subAccess);

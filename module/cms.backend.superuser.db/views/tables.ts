@@ -12,7 +12,7 @@ function keyBadge(key: string): string {
 async function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<string> {
   if (!inSchema)   return `<small class=u2-badge style="background:var(--red)">${await app.t`no schema`}</small>`;
   if (uncovered)   return `<small class=u2-badge style="background:var(--orange)">${uncovered} ${await app.t`without schema`}</small>`;
-  return `<u2-ico inline icon="check_circle" aria-label="ok" style="color:var(--green)">✓</u2-ico>`;
+  return `<u2-ico inline icon=check_circle aria-label="ok" style="color:var(--green)">✓</u2-ico>`;
 }
 
 export function renderTables(app: App, db: any, modules: Record<string, any>, table: string): Promise<string> {

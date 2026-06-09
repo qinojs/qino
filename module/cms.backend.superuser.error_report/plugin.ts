@@ -159,7 +159,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
             data-file="${hee(row.file)}"
             data-line="${hee(String(row.line))}"
             data-col="${hee(String(row.col))}"
-            icon="delete"
+            icon=delete
             aria-label="Delete"
             style="cursor:pointer">✕</u2-ico>`;
     }

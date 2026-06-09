@@ -24,7 +24,7 @@ const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
 async function mediaPreview(f: DbFile, exists: boolean) {
-  if (!exists) return `<u2-ico inline icon="cancel" aria-label="not found" style="color:red">✗</u2-ico>`;
+  if (!exists) return `<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
   return `<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
@@ -110,7 +110,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
-  	<button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon="delete">✕</u2-ico></button>`;
+  	<button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
   }
 
   return `

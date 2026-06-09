@@ -51,7 +51,7 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
       : hee(vs.email ?? "");
 
     const loginAsTd = allowLoginAs
-      ? `<td class=-loginAs><u2-ico icon="switch_account" aria-label="Login as user">⇄</u2-ico>`
+      ? `<td class=-loginAs><u2-ico icon=switch_account aria-label="Login as user">⇄</u2-ico>`
       : "";
 
     html += `
@@ -70,7 +70,7 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
       <u2-ico icon=edit>🖉</u2-ico>
     </a>
   <td class=-delete>
-    <button class=u2-unstyle><u2-ico icon="delete">✕</u2-ico></button>`;
+    <button class=u2-unstyle><u2-ico icon=delete>✕</u2-ico></button>`;
   }
 
   return html;
