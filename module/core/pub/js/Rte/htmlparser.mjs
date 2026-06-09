@@ -21,7 +21,9 @@ const fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple
 const special = makeMap("script,style");
 
 const HTMLParser  = function(html, handler) {
-	let index, chars, match, stack = [], last = html;
+	let index, chars, match, last = html;
+	const stack = [];
+
 	stack.last = function() {
 		return this[ this.length - 1 ];
 	};
