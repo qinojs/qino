@@ -69,7 +69,7 @@ window.cmsTreeInit = async (json) => {
     if (activeNode !== node) {
       activeNode = node;
       node.select(); // setzt aria-selected (CSS hängt daran), räumt alte Auswahl selbst auf
-      try { node.setFocus(); } catch {}
+      try { node.setFocus(); } catch { /* egal */ }
     }
     cms.Tree?.onActivate?.(node);
     const inp = root.getElementById("page-add"), off = node.data.myaccess < 2 || node.data.ptype === "c";

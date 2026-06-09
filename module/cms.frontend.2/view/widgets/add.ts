@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<string> {
     if (!hasAccess && !isSuperuser) continue;
     if (name === "cms.cont.flexible") continue;
     let desc = "";
-    try { if (modDir) desc = await Deno.readTextFile(modDir + "description.txt"); } catch {}
+    try { if (modDir) desc = await Deno.readTextFile(modDir + "description.txt"); } catch { /* egal */ }
     let title = name.replace("cms.cont.", "");
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
     let svgHtml: string;

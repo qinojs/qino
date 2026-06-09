@@ -59,7 +59,7 @@ window.getPossibleClasses = function (el) { /* eventuell better performance? */
 		if (sheet.href === null) {
 			try {
 				if (sheet.ownerNode.innerHTML === '') continue; // adblock chrome
-			} catch { }
+			} catch { /* egal */ }
 		}
         try { // (not same domain) security error in ff
 			if (sheet.cssRules)

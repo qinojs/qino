@@ -241,7 +241,7 @@ function nodeReplaceCombiningDiaeresis(textNode){
 	//textNode.data = textNode.data.normalize(); todo!
 
 	const string = textNode.data
-	for (let [char,regexp] of combininedChars) {
+	for (const [char,regexp] of combininedChars) {
 		if (string.match(regexp)) { // only replace string if found => otherways cursor position will no be restored
 			textNode.data = string.replace(regexp, char);
 		}

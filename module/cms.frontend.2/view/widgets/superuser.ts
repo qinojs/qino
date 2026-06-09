@@ -28,13 +28,13 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   const app = node.app;
 
   if (vars.param?.delete) {
-    try { await Deno.remove(vars.param.delete); } catch {}
+    try { await Deno.remove(vars.param.delete); } catch { /* egal */ }
   }
   if (vars.param?.create) {
     const root = vars.param.in === "app" ? (moduleDir(node) ?? "") + "/" : app.appPATH + "qg/" + node.vs.module + "/";
     const file = root + vars.param.create;
-    try { await Deno.mkdir(file.replace(/\/[^/]+$/, ""), { recursive: true }); } catch {}
-    try { await Deno.writeTextFile(file, ""); } catch {}
+    try { await Deno.mkdir(file.replace(/\/[^/]+$/, ""), { recursive: true }); } catch { /* egal */ }
+    try { await Deno.writeTextFile(file, ""); } catch { /* egal */ }
   }
 
   const customPath = app.appPATH + "qg/" + node.vs.module;

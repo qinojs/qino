@@ -16,7 +16,7 @@ window.qgExecCommand = function(com,x,val) {
 	if (!_.cmdUsed) {
 		try {
 			document.execCommand("styleWithCSS", false, false);
-		} catch {}
+		} catch { /* egal */ }
 		_.cmdUsed = true;
 	}
 	switch (com) {
@@ -27,7 +27,7 @@ window.qgExecCommand = function(com,x,val) {
 		default:
 			try {
 				document.execCommand(com,x,val);
-			} catch {}
+			} catch { /* egal */ }
 	}
 };
 
@@ -82,7 +82,7 @@ window.qgSelection = {
 	collapse(where) {
 		try { // firefox has an error
 			where === 'start' ? getSelection().collapseToStart() : getSelection().collapseToEnd();
-		} catch {}
+		} catch { /* egal */ }
 	},
 	rect() {
 		const r = getSelection().c1GetRange();
@@ -109,7 +109,7 @@ document.addEventListener('click', e=>{
 		if (e.explicitOriginalTarget?.isContentEditable) {
 			e.preventDefault();
 		}
-	} catch {}
+	} catch { /* egal */ }
 });
 // prevent (Firefox) placing cursor incorrectly
 document.addEventListener('mousedown', e=>{
