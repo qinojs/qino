@@ -1,4 +1,4 @@
-let startTag = /^<([\w\:\-]+)((?:\s+[\w\:\-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
+const startTag = /^<([\w\:\-]+)((?:\s+[\w\:\-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
     endTag = /^<\/([\w\:\-]+)[^>]*>/,
     attr = /([\w\:\-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
 // Empty Elements - HTML 4.01
@@ -80,7 +80,7 @@ const HTMLParser  = function(html, handler) {
 			}
 		} else {
 	        //$log("HTMLParser: special ");
-			html = html.replace(new RegExp("(.*)<\/" + stack.last() + "[^>]*>"), function(all, text) {
+			html = html.replace(new RegExp("(.*)<\/" + stack.last() + "[^>]*>"), function(_all, text) {
 				text = text.replace(/<!--(.*?)-->/g, "$1").
 					replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
 				if (handler.chars) {
@@ -98,7 +98,7 @@ const HTMLParser  = function(html, handler) {
 	// Clean up any remaining tags
 	parseEndTag();
 
-	function parseStartTag(tag, tagName, rest, unary) {
+	function parseStartTag(_tag, tagName, rest, unary) {
 		tagName = tagName.toLowerCase();
 		if (block[ tagName ]) {
 			while ( stack.last() && inline[ stack.last() ]) {
@@ -118,7 +118,7 @@ const HTMLParser  = function(html, handler) {
 		if (handler.start) {
 			const attrs = [];
 
-			rest.replace(attr, function(match, name) {
+			rest.replace(attr, function(_match, name) {
 				const value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
 
 				attrs.push({
@@ -135,7 +135,7 @@ const HTMLParser  = function(html, handler) {
 		}
 	}
 
-	function parseEndTag(tag, tagName) {
+	function parseEndTag(_tag, tagName) {
 	  let pos;
 		// If no tag name is provided, clean shop
 		if (!tagName) {
@@ -164,7 +164,7 @@ const HTMLParser  = function(html, handler) {
 	}
 };
 function makeMap(str) {
-	let obj = {}, items = str.split(",");
+	const obj = {}, items = str.split(",");
 	for (let i = 0; i < items.length; i++ )
 		obj[ items[i] ] = true;
 	return obj;

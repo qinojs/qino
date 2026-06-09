@@ -35,20 +35,20 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 
 /* Headings */
 {
-	let opts = Rte.ui.setSelect('Format',{
+	const opts = Rte.ui.setSelect('Format',{
 		click(e) {
-			let tag = e.target.getAttribute('value');
+			const tag = e.target.getAttribute('value');
 			tag && qgExecCommand('formatblock',false,tag);
-			let stat = qgQueryCommandValue('formatblock');
-			for (let el of opts.children) {
+			const stat = qgQueryCommandValue('formatblock');
+			for (const el of opts.children) {
 				el.className = el.tagName.toLowerCase()===stat ? '-selected' : '';
 			}
 		},
 		check() {
-			let stat = qgQueryCommandValue('formatblock');
+			const stat = qgQueryCommandValue('formatblock');
 			opts.previousElementSibling.innerHTML = Rte.element ? stat : 'Format';
 		},
-		enable(e) {
+		enable() {
 			return !blocklessElements[Rte.active.tagName];
 		}
 	});
@@ -63,31 +63,31 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 }
 /* CSS classes */
 {
-	function useClass(cl) { return cl.match(/^[A-Z]/); };
+	const useClass = cl => cl.match(/^[A-Z]/);
 	let hasClasses; /* check if this-handle is used */
-	let check = function(el) {
-		let classes = getPossibleClasses(el);
-		for (let cl of Object.keys(classes)) {
+	const check = function(el) {
+		const classes = getPossibleClasses(el);
+		for (const cl of Object.keys(classes)) {
 			hasClasses ||= useClass(cl);
 		}
 		sopts.parentElement.style.display = hasClasses ? '' : 'none';
 	}.c1Debounce(150);
 
-	let sopts = Rte.ui.setSelect('Style', {
+	const sopts = Rte.ui.setSelect('Style', {
 		check() {
 			check();
-			let classes = Rte.element?.className?.split(' ').filter(useClass).join(' ') || 'Style';
+			const classes = Rte.element?.className?.split(' ').filter(useClass).join(' ') || 'Style';
 			sopts.previousElementSibling.innerHTML = classes;
 		},
 		click() {
 			sopts.innerHTML = '';
 			let el = qgSelection.isElement() || getSelection().isCollapsed ? Rte.element : null;
 			// if (el === Rte.active) return;
-			let classes = getPossibleClasses(el);
-			for (let sty of Object.keys(classes)) {
+			const classes = getPossibleClasses(el);
+			for (const sty of Object.keys(classes)) {
 				if (!useClass(sty)) return;
-				let has = el?.classList?.contains(sty);
-				let d = c1.dom.fragment('<div class="'+sty+'">'+sty+'</div>').firstChild;
+				const has = el?.classList?.contains(sty);
+				const d = c1.dom.fragment('<div class="'+sty+'">'+sty+'</div>').firstChild;
 				sopts.append(d);
 				has && d.classList.add('-selected');
 				d.onmousedown = function() {
@@ -137,7 +137,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 /* clean / remove format */
 {
 	const removeTags = ['FONT','O:P','SDFIELD','SPAN'].reduce((obj, item)=>{ obj[item]=1; return obj; }, {});
-	function cleanNode(node) {
+	const cleanNode = function(node) {
 	    if (!node) return;
 		cleanContents(node);
 	    node.nodeType === Node.COMMENT_NODE && node.remove();
@@ -158,19 +158,19 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 			}
 		}
 	}
-	function cleanContents(node){
-		if (node.childNodes) for (let child of node.childNodes) cleanNode(child);
+	const cleanContents = function(node){
+		if (node.childNodes) for (const child of node.childNodes) cleanNode(child);
 	}
 	Rte.ui.setItem('Removeformat', {
 		click(e) {
-			let root = e.ctrlKey ? Rte.element : Rte.active;
+			const root = e.ctrlKey ? Rte.element : Rte.active;
 			cleanContents(root);
 		}
 		,shortcut:'space'
 	});
 }
 { /* code */
-	let wrapper = c1.dom.fragment(
+	const wrapper = c1.dom.fragment(
 		'<div id=qgRteHtml>'+
 			'<textarea spellcheck=false class=c1Rst></textarea>'+
 			'<style>'+
@@ -184,7 +184,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 
 
 	let tO = null;
-	function makeInvisible(){
+	const makeInvisible = function(){
 		clearTimeout(tO);
 		wrapper.classList.remove('-Invisible');
 		tO = setTimeout(()=>{
@@ -194,16 +194,16 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 	wrapper.addEventListener('keydown', makeInvisible);
 	wrapper.addEventListener('mousemove', makeInvisible);
 
-	let html = wrapper.firstChild;
-	let el = Rte.ui.setItem('Code', {
+	const html = wrapper.firstChild;
+	const el = Rte.ui.setItem('Code', {
 		click() {
-			let el = Rte.active;
-			let sel = window.getSelection();
+			const el = Rte.active;
+			const sel = getSelection();
 			let code;
 	        if (sel.rangeCount > 0) {
-				let range = sel.getRangeAt(0);
-	            let startTextNode = document.createTextNode('marker_start_so9df8as0f0');
-	            let endTextNode   = document.createTextNode('marker_end_laseg08a0egga');
+				const range = sel.getRangeAt(0);
+	            const startTextNode = document.createTextNode('marker_start_so9df8as0f0');
+	            const endTextNode   = document.createTextNode('marker_end_laseg08a0egga');
 				let tmpRange = range.cloneRange();
 	            tmpRange.collapse(false);
 	            tmpRange.insertNode(endTextNode);
@@ -215,18 +215,18 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 				startTextNode.remove();
 				endTextNode.remove();
 
-				let start = code.indexOf('marker_start_so9df8as0f0');
+				const start = code.indexOf('marker_start_so9df8as0f0');
 				code = code.replace('marker_start_so9df8as0f0','');
-				let end = code.indexOf('marker_end_laseg08a0egga');
+				const end = code.indexOf('marker_end_laseg08a0egga');
 				code = code.replace('marker_end_laseg08a0egga','');
 
-				let brsTotal = (code.match(/\n/g)||[]).length;
-				let brs 	 = brsTotal && (code.slice(0,start).match(/\n/g)||[]).length;
+				const brsTotal = (code.match(/\n/g)||[]).length;
+				const brs 	 = brsTotal && (code.slice(0,start).match(/\n/g)||[]).length;
 
 				setTimeout(()=>{
 					html.focus();
 
-					let y = parseInt((html.scrollHeight / brsTotal)*brs - 250);
+					const y = parseInt((html.scrollHeight / brsTotal)*brs - 250);
 					brs && (html.scrollTop = y);
 
 					html.setSelectionRange(start, end);
@@ -262,8 +262,8 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 /* insert table */
 Rte.ui.setItem('Table', {
 	click() {
-		let table = c1.dom.fragment('<table><tr><td>&nbsp;<td>&nbsp;<tr><td>&nbsp;<td>&nbsp;</table>').firstChild;
-		let r = getSelection().getRangeAt(0);
+		const table = c1.dom.fragment('<table><tr><td>&nbsp;<td>&nbsp;<tr><td>&nbsp;<td>&nbsp;</table>').firstChild;
+		const r = getSelection().getRangeAt(0);
 		r.deleteContents();
 		r.insertNode(table);
 		getSelection().collapse(table.c1Find('td'),0);
@@ -274,7 +274,7 @@ Rte.ui.setItem('Table', {
 });
 /* delete Element */
 Rte.ui.setItem('Del',{
-	click(el) { Rte.element.removeNode(); },
+	click() { Rte.element.removeNode(); },
 	el: c1.dom.fragment('<a style="color:red">Delete element</a>').firstChild
 });
 /* Target */
@@ -282,12 +282,12 @@ Rte.ui.setItem('LinkTarget', {
 	enable:'a, a > *',
 	check(el) {
 		el = el.closest('a');
-		let target = el.getAttribute('target');
+		const target = el.getAttribute('target');
 		return target && target !== '_self';
 	},
 	click(){
-		let el = Rte.element.closest('a');
-		let active = this.el.classList.contains('active');
+		const el = Rte.element.closest('a');
+		const active = this.el.classList.contains('active');
 		el.setAttribute('target', active?'_self':'_blank');
 		Rte.trigger('input');
 		Rte.active.focus();
@@ -312,14 +312,14 @@ Rte.ui.setItem('LinkTarget', {
 	});
 }
 /* Image Attributes */ {
-	let inp = c1.dom.fragment(
+	const inp = c1.dom.fragment(
 		'<table>'+
 			'<tr><td style="width:84px">Width:<td><input class=-x>'+
 			'<tr><td>Height:<td><input class=-y>'+
 			'<tr><td title="Alternativer Text">Alt-Text:<td><input class=-alt>'+
 		'</table>').firstChild;
 	inp.addEventListener('keyup',e=>{
-		let img = Rte.element;
+		const img = Rte.element;
 		img.style.width  = inp.c1Find('.-x').value+'px';
 		img.style.height = inp.c1Find('.-y').value+'px';
 		img.setAttribute('alt', inp.c1Find('.-alt').value);
@@ -341,10 +341,10 @@ Rte.ui.setItem('LinkTarget', {
 }
 
 
-var imgSizeCache = {};
+const imgSizeCache = {};
 function ImageRealSize(url, cb) {
 	if (!imgSizeCache[url]) {
-		var nImg = new Image();
+		const nImg = new Image();
 		nImg.src = url;
 		nImg.onload = function() {
 			cb.apply(null, imgSizeCache[url] = [nImg.width, nImg.height]);
@@ -358,9 +358,9 @@ function ImageRealSize(url, cb) {
 /* original image */
 Rte.ui.setItem('ImgOriginal', {
 	enable: 'img',
-	click(e) {
-		let img = Rte.element;
-		let url = img.getAttribute('src').replace(/\/(w|h|zoom|vpos|hpos|dpr)-[^\/]+/g,'');
+	click() {
+		const img = Rte.element;
+		const url = img.getAttribute('src').replace(/\/(w|h|zoom|vpos|hpos|dpr)-[^\/]+/g,'');
 		ImageRealSize(url, function(w,h) {
 			w /= 2; h /= 2; // the server is told via cookie to deliver double resolution
 			make(w,h);
@@ -384,10 +384,10 @@ Rte.ui.setItem('ImgOriginal', {
 import {TableHandles} from '../c1/tableHandles.mjs';
 {
 	let td, tr, table, index;
-	let handles = new TableHandles();
+	const handles = new TableHandles();
 	Rte.on('deactivate',() => handles.hide() );
-	function positionize() {
-		let e = Rte.element;
+	const positionize = function() {
+		const e = Rte.element;
 		if (!e) return;
 		td = e.closest('td');
 		if (Rte.active?.contains(td)) {
@@ -442,7 +442,7 @@ Rte.ui.config = {
 
 { // show shy, todo: deprecated? css hyphens and text-wrap:balance are widely supported
 	Rte.ui.setItem('Shy',{
-		click(el) {
+		click() {
 			Rte.range.deleteContents();
 			Rte.range.insertNode(document.createTextNode('\u00AD'));
 console.warn('needed? shoud it be deprecated?');
@@ -457,26 +457,26 @@ console.warn('needed? shoud it be deprecated?');
 		'</style>')
 	);
 
-	function addMarks(){
+	const addMarks = function (){
 		// remove
-		var anchor = getSelection().anchorNode;
+		const anchor = getSelection().anchorNode;
 		if (!anchor) return;
 		anchor.parentNode.querySelectorAll('.qgRte-mark-char').forEach(function(marker){
 			if (!marker.firstChild) marker.remove();
 		});
 
 		//matchText(Rte.active, new RegExp('\u00AD|\u00a0', 'g'), function(node, match, offset) {
-		matchText(Rte.active, new RegExp('\u00AD', 'g'), function(node, match, offset) {
+		matchText(Rte.active, new RegExp('\u00AD', 'g'), function(node, match) {
 			if (node.parentNode.classList.contains('qgRte-mark-char')) return false;
-			var span = document.createElement('span');
+			const span = document.createElement('span');
 			span.className = 'qgRte-mark-char';
 			if (match === '\u00AD') span.className += ' -Shy';
 			//if (match === '\u00a0') span.className += ' -Nbsp';
 			span.textContent = match;
 			return span;
 		});
-	}
-	function removeMarks(){
+	};
+	const removeMarks = function (){
 		Rte.active.querySelectorAll('.qgRte-mark-char').forEach(el=>el.removeNode())
 		Rte.active.normalize();
 	}
@@ -485,22 +485,22 @@ console.warn('needed? shoud it be deprecated?');
 	Rte.on('deactivate',removeMarks);
 
 
-	var matchText = function(node, regex, callback, excludeElements) {
+	const matchText = function(node, regex, callback, excludeElements) {
 		excludeElements ||= ['script', 'style', 'iframe', 'canvas'];
-		var child = node.firstChild;
+		let child = node.firstChild;
 		while (child) {
 			if (child.nodeType === 1) {
 				if (excludeElements.includes(child.tagName.toLowerCase())) break;
 				matchText(child, regex, callback, excludeElements);
 			}
 			if (child.nodeType === 3) {
-				var bk = 0;
+				let bk = 0;
 				child.data.replace(regex, function(str) {
-					var args = [].slice.call(arguments);
-					var tag = callback.apply(window, [child].concat(args));
+					const args = [].slice.call(arguments);
+					const tag = callback.apply(window, [child].concat(args));
 					if (!tag) return false;
-					var offset = args[args.length - 2];
-					var newTextNode = child.splitText(offset+bk);
+					const offset = args[args.length - 2];
+					const newTextNode = child.splitText(offset+bk);
 					bk -= child.data.length + str.length;
 					newTextNode.data = newTextNode.data.slice(str.length);
 					child.parentNode.insertBefore(tag, newTextNode);

@@ -34,7 +34,7 @@ const poly = {
             maxZ=0,
             child,
             myZ=0;
-        while (child=children[--i]) {
+        while ((child=children[--i])) {
             let childZ = getComputedStyle(child).getPropertyValue('z-index') || 0;
 			if (child.style.zIndex > childZ) childZ = child.style.zIndex;
 			if (childZ === 'auto') childZ = 0;

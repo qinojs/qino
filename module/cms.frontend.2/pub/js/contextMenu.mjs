@@ -15,7 +15,7 @@ const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`
 Menu.addItem(t`Settings`, {
 	icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
-	onshow(e) {
+	onshow() {
 		this.activePid = cms.contPos.active.pid;
 		this.disabled = !cms.contPos.active.el.classList.contains('-e');
 	},
@@ -27,7 +27,7 @@ Menu.addItem(t`Settings`, {
 Menu.addItem(t`Move`, {
 	icon: sysURL+'cms.frontend.2/pub/img/move.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
-	onshow(e) {
+	onshow() {
 		this.activeEl = cms.contPos.active.el;
 		this.disabled = !cms.contPos.active.isDraggable();
 	},
@@ -36,7 +36,7 @@ Menu.addItem(t`Move`, {
 Menu.addItem(t`Copy`, {
 	icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
-	onshow(e) {
+	onshow() {
 		this.activePid = cms.contPos.active.pid;
 		this.disabled = !cms.contPos.active.el.classList.contains('-e');
 	},
@@ -49,7 +49,7 @@ Menu.addItem(t`Copy`, {
 Menu.addItem(t`Cut`, {
 	icon: sysURL+'cms.frontend.2/pub/img/cut.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
-	onshow(e) {
+	onshow() {
 		this.activePid = cms.contPos.active.pid;
 		this.disabled = !cms.contPos.active.el.classList.contains('-e');
 	},
@@ -64,7 +64,7 @@ Menu.addItem(t`Cut`, {
 Menu.addItem(t`Delete`, {
 	icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
 	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
-	onshow(e) {
+	onshow() {
 		this.activeEl = cms.contPos.active.el;
 		this.disabled = !cms.contPos.active.isDraggable();
 		t`Really delete this content?`; // preload text

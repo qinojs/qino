@@ -42,7 +42,7 @@ cms.initCont("cms.cont.web_auth", async (el) => {
     const msg  = el.querySelector(".-msg");
     const list = el.querySelector("[data-list]");
 
-    async function loadList() {
+    const loadList = async () => {
       if (!list) return;
       try {
         const creds = await wa.listCredentials();
@@ -63,7 +63,7 @@ cms.initCont("cms.cont.web_auth", async (el) => {
           });
         }
       } catch { list.textContent = await t`Error loading.`; }
-    }
+    };
 
     loadList();
 

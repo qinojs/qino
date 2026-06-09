@@ -72,7 +72,7 @@ const showEditor = async function(el) {
 
         hDialog.className = 'qgCMS';
         let body = '<div style="display:flex;">';
-        for (let row of history) {
+        for (const row of history) {
             const date = new Date(row.log_time*1000).toLocaleString(false, {dateStyle: 'short', timeStyle: 'short'});
             body +=
             '<div class=-language style="padding:1rem; min-width:15rem; border-right:1px solid">'+

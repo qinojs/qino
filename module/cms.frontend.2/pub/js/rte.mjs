@@ -13,7 +13,7 @@ const end = function() {
 	const el = Rte.element.closest('a');
 	if (!el) return;
 
-	const selection = window.getSelection(); // todo: WebKit has a bug where links forces the caret to go after the link when typing
+	const selection = getSelection(); // todo: WebKit has a bug where links forces the caret to go after the link when typing
 	const range = document.createRange();
 	range.selectNodeContents(el);
 	selection.removeAllRanges();
@@ -69,7 +69,7 @@ Rte.ui.setItem('Link', {
 			exists.removeNode();
 		} else {
 			//let el = qgSelection.surroundContents(document.createElement('a')); // todo: selection on multiple elements
-			const range = window.getSelection().c1GetRange();
+			const range = getSelection().c1GetRange();
 			const el = document.createElement('a');
 			el.appendChild(range.extractContents());
 			range.insertNode(el);

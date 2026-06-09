@@ -14,7 +14,7 @@ c1.form = {
             if (!name) return;
             const matches = name.match(/(^[^\[]+|\[[^\]]*\])/g);
             let active = object;
-            for (let i=0, match; match=matches[i++];) {
+            for (let i=0, match; (match=matches[i++]);) {
                 if (i>1) match = match.replace(/(^\[|\]$)/g,'');
                 if (matches.length === i) {
                     if (Array.isArray(active)) active.push(value);
@@ -30,7 +30,7 @@ c1.form = {
         if (el.type === 'radio') {
             const form = el.form;
             const radios = document.getElementsByName(el.name);
-            for (let i = 0, radio; radio = radios[i++];) {
+            for (let i = 0, radio; (radio = radios[i++]);) {
                 if (form !== radio.form) continue;
                 if (!radio.checked) continue;
                 return radio.value;

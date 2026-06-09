@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
-var defaultConf = {
+const defaultConf = {
 	tags                   :null,
 	tagsRemove             :null,
 	styles                 :null,
@@ -52,48 +52,45 @@ class NodeCleaner {
 	cleanTag(el) {
 		el = modernize(el);
 
-		var display = getComputedStyle(el).getPropertyValue('display');
-
+		const cs = getComputedStyle(el);
+		const display = cs.getPropertyValue('display');
+		
 		if (this.conf['removeEmptyElements']
 			&& !{IMG:1,BR:1,HR:1}[el.tagName]
-			&& el.textContent.trim() === '' // trim ok?
-			&& !el.querySelector('img') // no textContent nevertheless can have img!
+			&& !el.textContent.trim()
+			&& !el.querySelector('img')
 		) { el.remove(); return; }
-		if (this.conf['removeHiddenElements'] && display==='none'                   ) { el.remove(); return; }
-		if (this.conf['tagsRemove']           && this.conf['tagsRemove'][el.tagName]) { el.remove(); return; }
 
-		if (!this.conf['tags'])            return el;
+		if (this.conf['removeHiddenElements'] && display === 'none')    { el.remove(); return; }
+		if (this.conf['tagsRemove']?.[el.tagName])                      { el.remove(); return; }
+		if (!this.conf['tags'])       return el;
 		if (this.conf['tags'][el.tagName]) return el;
 
-		display ||= blockLikeTags[el.tagName] ? 'block' : 'inline';
+		const before = Object.fromEntries([...cs].map(p => [p, cs.getPropertyValue(p)]));
 
-		var nEl = notInline[display] ? document.createElement('div') : document.createElement('span');
-		/* dont loose computed styles. Problem?: links keep colored */
-		var computed = getComputedStyle(el);
-		var beforeComputed = {};
-		for (var i=0, style; style = computed[i++];) {
-			beforeComputed[style] = computed.getPropertyValue(style);
-		}
-		el.hasAttribute('class') && nEl.setAttribute('class', el.getAttribute('class'));
-		nEl.className = el.className; // copy each attribute?
+		const effectiveDisplay = display || (blockLikeTags[el.tagName] ? 'block' : 'inline');
+		const nEl = document.createElement(notInline[effectiveDisplay] ? 'div' : 'span');
+
+		if (el.hasAttribute('class')) nEl.className = el.className;
+
 		el.replaceWith(nEl);
-		nEl.appendChild(el);
+		nEl.append(el);
 		el.removeNode();
-		computed = getComputedStyle(nEl);
-		for (i=0; style = computed[i++];) {
-			if (beforeComputed[style] !== computed.getPropertyValue(style)) {
-				nEl.style.setProperty(style, beforeComputed[style]);
-			}
+		// restore styles that changed due to tag replacement
+		const after = getComputedStyle(nEl);
+		for (const prop of after) {
+			if (before[prop] !== after.getPropertyValue(prop))
+				nEl.style.setProperty(prop, before[prop]);
 		}
 		return nEl;
 	}
 	cleanAttributes(el) {
 		if (!this.conf['attributes']) return;
-		var attributes = Array.from(el.attributes);
-		for (var i=0, attr; attr = attributes[i++];) {
-			var name = attr.name;
-			var value = attr.value;
-			var allowed = this.conf['attributes'][name];
+		const attributes = Array.from(el.attributes);
+		for (let i=0, attr; (attr = attributes[i++]);) {
+			const name = attr.name;
+			const value = attr.value;
+			const allowed = this.conf['attributes'][name];
 			if (!allowed) { el.removeAttribute(name); continue; }
 			if (allowed === true || allowed === 1) continue;
 			// values allowed
@@ -106,14 +103,14 @@ class NodeCleaner {
 	}
 	cleanStyle(el) {
 		if (!this.conf['styles']) return;
-		for (var i=0, style; style = el.style[i++];) {
-			var allowed = this.conf['styles'][style];
+		for (let i=0, style; (style = el.style[i++]);) {
+			const allowed = this.conf['styles'][style];
 			if (!allowed) {
 				el.style.removeProperty(style); continue;
 			}
 			if (allowed === true || allowed === 1) continue;
 			// values allowed
-			var value = el.style.getPropertyValue(style);
+			let value = el.style.getPropertyValue(style);
 			if (style === 'font-family') value = value.replace(/^["']/,'').replace(/["']$/,'');
 			//if (allowed.includes) { // isArray (array with allowed values)
 				if (allowed[value] || allowed.includes(value)) {
@@ -153,7 +150,7 @@ function removeUnusedStyles(el) {
 		beforeOriginal = {},
 		beforeComputed = {},
 		i=0, style;
-	while (style = el.style[i++]) {
+	while ((style = el.style[i++])) {
 		beforeOriginal[style] = el.style.getPropertyValue(style);
 		if ({IMG:1,VIDEO:1}[el.tagName] && {width:1,'max-width':1,height:1}[style]) continue; // reponsive, leave this styles
 		beforeComputed[style] = computed.getPropertyValue(style);
@@ -176,7 +173,7 @@ function removeUnusedAttributes(el) {
 }
 function removeEmptyInlineSpans(el) {
 	if (el.attributes.length) return;
-	var display = getComputedStyle(el).getPropertyValue('display');
+	const display = getComputedStyle(el).getPropertyValue('display');
 	if (display === 'inline' && el.tagName === 'SPAN') {
 		 el.removeNode();
 	}
@@ -188,7 +185,7 @@ function removeUnusedElements(el) {
 	// divs containing only block-likes
 	if (el.attributes.length === 0 && el.tagName === 'DIV') {
 		let onlyBlocks = true;
-		for (let child of el.childNodes) {
+		for (const child of el.childNodes) {
 			//if (child.nodeType === 2) continue; // comment
 			if (child.nodeType === 3) {
 				if (child.data.trim() === '') continue;
@@ -243,7 +240,7 @@ function nodeReplaceCombiningDiaeresis(textNode){
 
 	//textNode.data = textNode.data.normalize(); todo!
 
-	var string = textNode.data
+	const string = textNode.data
 	for (let [char,regexp] of combininedChars) {
 		if (string.match(regexp)) { // only replace string if found => otherways cursor position will no be restored
 			textNode.data = string.replace(regexp, char);

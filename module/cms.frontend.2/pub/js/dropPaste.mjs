@@ -68,7 +68,7 @@ const drop = async function(e) {
 	img.src = res.url+'/'+res.name;
 	const r = getSelection().getRangeAt(0);
 	r.insertNode(img);
-	img.addEventListener('load',e=>{
+	img.addEventListener('load',()=>{
 		cms.txtCleanElement(img,tid);
 	},{once:true});
 }
@@ -91,7 +91,7 @@ const paste = function(e) {
 		txtEl.dispatchEvent(new Event('input',{bubbles:true, cancelable: true})); // NEU 9.4.18
 	};
 	const items = e.clipboardData.items ?? [];
-	for (let i=0, item; item=items[i++];) {
+	for (let i=0, item; (item=items[i++]);) {
 		item.kind === 'file' && cms.txtAddFile(txtEl, item.getAsFile());
 	}
 	readClipboardHtml(e.clipboardData, addHtml) && e.preventDefault();
@@ -103,7 +103,7 @@ root.addEventListener('drop',     drop);
 root.addEventListener('paste',    paste);
 
 root.addEventListener('dragstart',  e => { internalDrag = true; draggedEl = e.composedPath()[0]; });
-root.addEventListener('dragend',    e => internalDrag = false );
+root.addEventListener('dragend',    () => internalDrag = false );
 
 root.addEventListener('input', e => {
 	if (internalDrag) {

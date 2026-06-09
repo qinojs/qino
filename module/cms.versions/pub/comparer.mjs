@@ -7,7 +7,7 @@ let div, iframe1, iframe2, pid, view1;
 window.CmsVersComparer = {
     _ensure(){
         if (div) return;
-        let html =
+        const html =
         '<div id=qgCmsVersionComparer class=qgCMS>'+
             '<style>'+css+'</style>'+
             '<div class=-tools>'+
@@ -38,7 +38,7 @@ window.CmsVersComparer = {
             view1.style.opacity = this.value;
         });
         div.querySelector('.-mode-side').addEventListener('click',function(){
-            let has = div.classList.toggle('-Mode-side');
+            const has = div.classList.toggle('-Mode-side');
             has && div.classList.remove('-Diffs');
         });
         div.querySelector('.-diffs').addEventListener('click',function(){
@@ -47,9 +47,9 @@ window.CmsVersComparer = {
         div.querySelector('.-close').addEventListener('click',this.close);
 
         function initFrame(){
-            let other = this === iframe1 ? iframe2 : iframe1;
-            let win = this.contentWindow;
-            let doc1 = win.document;
+            const other = this === iframe1 ? iframe2 : iframe1;
+            const win = this.contentWindow;
+            const doc1 = win.document;
 
             // scrollSync
             import(sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
@@ -58,9 +58,9 @@ window.CmsVersComparer = {
                 // sync clicks
                 win.addEventListener('click',function(e){
                     if (e.c1Synced) return;
-                    let selector = c1.scrollSync.getSelector(e.target);
-                    let otherEl = other.contentWindow.document.querySelector(selector);
-                    var event = new MouseEvent('click', {
+                    const selector = c1.scrollSync.getSelector(e.target);
+                    const otherEl = other.contentWindow.document.querySelector(selector);
+                    const event = new MouseEvent('click', {
                         'view': window,
                         'bubbles': true,
                         'cancelable': true
@@ -72,11 +72,11 @@ window.CmsVersComparer = {
 
             // mousemove  => opacity
             doc1.addEventListener('mousemove',function(e){
-                let opacity = e.clientX / win.innerWidth;
+                const opacity = e.clientX / win.innerWidth;
                 div.querySelector('.-fade').value = opacity;
                 view1.style.opacity = opacity;
             });
-            let prevent = e => e.preventDefault() && e.stopPropagation();
+            const prevent = e => e.preventDefault() && e.stopPropagation();
             doc1.addEventListener('mousedown', prevent);
             doc1.addEventListener('click', prevent);
             doc1.addEventListener('touchstart', prevent);
@@ -89,11 +89,11 @@ window.CmsVersComparer = {
     },
     compare(page_id, options) {
         this._ensure();
-        window.addEventListener('keydown',this.keyListener);
+        addEventListener('keydown',this.keyListener);
         pid = page_id;
         options = Object.assign({fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Draft', toText:'Live', accept:null, acceptText:'Apply'}, options);
         // accept function
-        let acceptEl = div.querySelector('.-accept');
+        const acceptEl = div.querySelector('.-accept');
         acceptEl.style.display = options.accept ? 'inline-block' : 'none';
         if (options.accept) {
             acceptEl.onclick   = options.accept;
@@ -107,7 +107,7 @@ window.CmsVersComparer = {
         div.c1ZTop();
     },
     close(){
-        window.removeEventListener('keydown',this.keyListener);
+        removeEventListener('keydown',this.keyListener);
         div.remove();
     },
     setMain(space, log) {
@@ -117,7 +117,7 @@ window.CmsVersComparer = {
         iframe2.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend';
     }
 };
-let css =
+const css =
 '#qgCmsVersionComparer { '+
 '    position:fixed; '+
 '    top:0; '+

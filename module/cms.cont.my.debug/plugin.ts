@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
 import { hee, getCtx } from "../core/mod.ts";
 import { dump } from "../../deps.ts";

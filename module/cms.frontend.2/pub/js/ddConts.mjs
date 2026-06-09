@@ -152,7 +152,7 @@ function getBeforeElement(e, inside) {
 function getBeforeElement(e, el) {
 	let min=null, winner;
 	if (el.children.length) {
-		for (let i=0,child; child=el.children[i++];) {
+		for (let i=0,child; (child=el.children[i++]);) {
 			if (child === active || child === ghost) continue;
 			const pos = child.getBoundingClientRect();
 			const x = pos.left+(pos.width/2);

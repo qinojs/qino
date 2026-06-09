@@ -19,7 +19,7 @@ c1.onElement = function(selector, options) {
 	let els;
 	try {
 	    els = root.querySelectorAll(listener.selector);
-	} catch(e) {
+	} catch {
 		console.error('invalid selector: "'+listener.selector+'"');
 		return;
 	}

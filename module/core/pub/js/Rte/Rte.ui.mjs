@@ -68,7 +68,6 @@ window.Rte.ui = {
 		});
 		const shortcutListener = function(e) {
 			if (e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
-				console.log(e.key)
 				const char = e.key;
 				for (const [_name, item] of Object.entries(my.activeItems)){
 					if (item.enabled && item.shortcut === char) {
@@ -125,8 +124,8 @@ window.Rte.ui = {
 		let timeout = null;
 		const el = c1.dom.fragment('<div class="-item -select"><div class=-state></div><div class=-options></div></div>').firstChild;
 		el.addEventListener('mousedown', e=> { opts.style.display = 'block'; e.preventDefault(); });
-		el.addEventListener('mouseover', e=> clearTimeout(timeout) );
-		el.addEventListener('mouseout',  e=> timeout = setTimeout(()=> opts.style.display = 'none' ,300) );
+		el.addEventListener('mouseover', ()=> clearTimeout(timeout) );
+		el.addEventListener('mouseout',  ()=> timeout = setTimeout(()=> opts.style.display = 'none' ,300) );
 		const opts = el.c1Find('>.-options');
 		opt.el = el;
 		this.setItem(name,opt);

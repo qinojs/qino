@@ -23,7 +23,7 @@ export function dataTransferToUrl(dt) {
 export function readClipboardHtml(cd, cb) {
 	const items = cd.items ?? [];
 	let alternative = null;
-	for (let i = 0, item; item = items[i++];) {
+	for (let i = 0, item; (item = items[i++]);) {
 		if (item.type === 'text/html') {
 			item.getAsString(cb);
 			return 1;

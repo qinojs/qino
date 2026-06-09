@@ -85,11 +85,11 @@ c1.Placer = class {
             }
         }
         // start
-        var placeY = this.options.y;
-        var placeX = this.options.x;
+        let placeY = this.options.y;
+        let placeX = this.options.x;
 
-        var innerWidth  = document.documentElement.clientWidth;
-        var innerHeight = document.documentElement.clientHeight;
+        const innerWidth  = document.documentElement.clientWidth;
+        const innerHeight = document.documentElement.clientHeight;
 
         // if (1 || this.options.setMaxHeight) {
         //     var toBottom = document.documentElement.clientHeight - rect.bottom;
@@ -98,11 +98,11 @@ c1.Placer = class {
         //     this.el.style.maxHeight = spaceX + 'px';
         // }
 
-        var layerWidth  = this.el.offsetWidth; // scrollWidth?
-        var layerHeight = this.el.offsetHeight;
+        const layerWidth  = this.el.offsetWidth; // scrollWidth?
+        const layerHeight = this.el.offsetHeight;
 
-        var x = 0;
-        var y = 0;
+        let x = 0;
+        let y = 0;
         if (placeX==='prepend') x = rect.left;
         if (placeX==='after')   x = rect.right;
         if (this.options.switchSide && x + layerWidth + viewport.left > innerWidth) placeX = placeX === 'prepend' ? 'append' : 'before';
@@ -138,9 +138,9 @@ c1.Placer = class {
         }
     }
     static offsetParent(el){
-        var parent = el.offsetParent;
+        let parent = el.offsetParent;
         if (parent === document.body) {
-            let position = getComputedStyle(parent).getPropertyValue('position');
+            const position = getComputedStyle(parent).getPropertyValue('position');
             if (position === 'static') {
                 parent = null;
             }

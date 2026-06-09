@@ -6,9 +6,9 @@ window.domCodeIndent = function(str) {
 	let ind = '';
 	let pre = false;
 	str = str.replace(/\n|\t/g, ' ').replace(/<([\/a-zA-Z0-9]+)/g, function(a) { return a.toLowerCase(); });
-	var makeStartTag = function(tag, attrs, unary) {
+	const makeStartTag = function(tag, attrs, unary) {
 		let str = '<' + tag;
-		for (var i = 0, att; att = attrs[i++];) {
+		for (let i = 0, att; (att = attrs[i++]);) {
 			str += ' ' + att.name + '="' + att.escaped + '"';
 		}
 		str += (unary?'/':'')+'>';
@@ -43,27 +43,27 @@ window.domCodeIndent = function(str) {
 };
 
 window.getPossibleClasses = function (el) { /* eventuell better performance? */
-	var ret = {};
+	const ret = {};
 	function test(sel) {
 		sel = sel.trim();
 		if (!~sel.indexOf('.')) return;
 		if (!sel.match(/\.[A-Z]/)) return;
-		var reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
+		const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
 		if (sel.match(reg)) {
-			var x = sel.replace(/^(.*\.)([^: ]*)(.*)$/, function(m, a1, a2) { return a2; });
+			const x = sel.replace(/^(.*\.)([^: ]*)(.*)$/, function(_m, _a1, a2) { return a2; });
 			ret[x] = sel;
 		}
 	}
-	for (let sheet of document.styleSheets) {
+	for (const sheet of document.styleSheets) {
 		if (sheet.href && !sheet.href.includes(location.host)) continue; // only inline and same domain
 		if (sheet.href === null) {
 			try {
 				if (sheet.ownerNode.innerHTML === '') continue; // adblock chrome
-			} catch(e) { }
+			} catch { }
 		}
         try { // (not same domain) security error in ff
 			if (sheet.cssRules)
-				for (let rule of sheet.cssRules) {
+				for (const rule of sheet.cssRules) {
 					if (!rule.selectorText) continue;
 	    			rule.selectorText.split(',').forEach(test);
 				}

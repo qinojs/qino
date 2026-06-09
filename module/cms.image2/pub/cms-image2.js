@@ -47,7 +47,7 @@ function onIntersecting(entry) {
     const rect = entry.boundingClientRect;
 	if (rect.width === 0 || rect.height === 0) return; // if event is fired but no dimensions
     const margin = 190; // must be smaller then rootMargin
-    const partVisible = (rect.bottom > -margin && rect.top < window.innerHeight+margin) && (rect.right > -margin && rect.left < window.innerWidth+margin);
+    const partVisible = (rect.bottom > -margin && rect.top < innerHeight+margin) && (rect.right > -margin && rect.left < window.innerWidth+margin);
     if (!partVisible) return;
     observer.unobserve(img);
 

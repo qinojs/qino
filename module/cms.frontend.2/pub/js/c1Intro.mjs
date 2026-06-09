@@ -23,13 +23,13 @@ class Masker {
         //let self = this;
         document.body.append(this.svg);
     }
-    show(element){
+    show(){
         this.svg.removeAttribute('hidden');
         this.svg.c1ZTop();
         this.svg.style.height = document.innerHeight+'px';
         this.svg.style.width  = document.innerWidth+'px';
     }
-    hide(element){
+    hide(){
         this.svg.hidden = true;
     }
 }

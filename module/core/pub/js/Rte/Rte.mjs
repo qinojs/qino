@@ -123,7 +123,7 @@ window.Rte = {
 			if (e.key === 'Escape') {
 				document.body.focus();
 				document.activeElement.blur();
-				window.getSelection().removeAllRanges();
+				getSelection().removeAllRanges();
 				return;
 			}
 	        Rte.checkSelection();
@@ -197,7 +197,7 @@ document.addEventListener('mousedown', e =>
 
 /* force li's in contenteditable uls */
 {
-	const check = function(e){
+	const check = function(){
 		let child;
 		for (child of Rte.active.childNodes) {
 			if (child.tagName === 'LI') continue;
@@ -206,7 +206,7 @@ document.addEventListener('mousedown', e =>
 				child.removeNode();
 				continue;
 			}
-			let li = document.createElement('li');
+			const li = document.createElement('li');
 			child.before(li);
 			li.append(child);
 		}
@@ -290,7 +290,7 @@ document.addEventListener('input',function(e){
 	if (!e.target.isContentEditable) return;
 	if (!e.target.closest('A')) return;
 	let a;
-	while (a = e.target.c1Find('a')) a.removeNode();
+	while ((a = e.target.c1Find('a'))) a.removeNode();
 });
 
 /* prevent phx inside phx */

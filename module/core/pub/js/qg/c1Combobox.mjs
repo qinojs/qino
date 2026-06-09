@@ -1,8 +1,8 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import '../c1/Placer.mjs';
 
-var doc = document;
-var dialog = doc.createElement('div');
+const doc = document;
+const dialog = doc.createElement('div');
 dialog.classList.add('c1Dialog');
 dialog.classList.add('c1Select');
 dialog.setAttribute('popover', 'manual'); // top-layer: liegt über dem cms-panel (selbst popover) und dessen shadow-dom
@@ -13,7 +13,7 @@ dialog.addEventListener('mousedown', e=>{
 dialog.addEventListener('touchstart', e=>{
 	e.stopPropagation(); // prevent closing cms-panel
 });
-var Placer = new c1.Placer(dialog);
+const Placer = new c1.Placer(dialog);
 
 if (!CSS.supports('overscroll-behavior','contain')) { // zzz if supports
 	// console.warn('used?') safari 15.5
@@ -56,8 +56,8 @@ c1Combobox.prototype = {
 	}.c1Debounce(150),
 	setOptions(array){
 		dialog.innerHTML = '';
-		var el, i=0, item;
-		for (;item = array[i++];) {
+		let el, i=0, item;
+		for (;(item = array[i++]);) {
 			el = doc.createElement('div');
 			el.innerHTML = item.html;
 			el.setAttribute('value', item.value);
@@ -96,11 +96,11 @@ c1Combobox.prototype = {
 			this.showDialog();
 			this.searchOptions();
 			dialog.onmouseover = e=>{ // neu
-				var el = e.target.closest('[value]');
+				const el = e.target.closest('[value]');
 				this.mark(el);
 			};
 			dialog.onmouseup = e=>{
-				var el = e.target.closest('[value]');
+				const el = e.target.closest('[value]');
 				this.select(el);
 				this.hideDialog(); // neu
 				this.input.dispatchEvent(new CustomEvent('select_by_pointer')); // new
@@ -137,7 +137,7 @@ c1Combobox.prototype = {
 	}
 };
 
-var css =
+const css =
 '.c1Select { \
 	position: fixed; \
 	inset: auto; \
@@ -169,6 +169,6 @@ var css =
 .c1Select::-webkit-scrollbar-track { background: rgba(0, 0, 0, .05); } \
 .c1Select::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .25); } \
 ';
-var sEl = document.createElement('style');
+const sEl = document.createElement('style');
 sEl.appendChild(document.createTextNode(css));
 document.head.append(sEl);

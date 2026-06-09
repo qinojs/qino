@@ -4,19 +4,19 @@
 window.qgQueryCommandState = function(cmd) {
 	try{
 		return document.queryCommandState(cmd);
-	} catch(e) { /*zzz*/ }
+	} catch { /*zzz*/ }
 };
 window.qgQueryCommandValue = function(cmd) {
 	try{
 		return document.queryCommandValue(cmd);
-	} catch(e) { /*zzz*/ }
+	} catch { /*zzz*/ }
 };
 window.qgExecCommand = function(com,x,val) {
-	let _ = qgExecCommand;
+	const _ = qgExecCommand;
 	if (!_.cmdUsed) {
 		try {
 			document.execCommand("styleWithCSS", false, false);
-		} catch (e) {}
+		} catch {}
 		_.cmdUsed = true;
 	}
 	switch (com) {
@@ -27,7 +27,7 @@ window.qgExecCommand = function(com,x,val) {
 		default:
 			try {
 				document.execCommand(com,x,val);
-			} catch(e) {}
+			} catch {}
 	}
 };
 
@@ -46,7 +46,7 @@ window.qgSelection = {
 	element() {
 		let el;
 		if (!getSelection().rangeCount) return;
-		let r = getSelection().getRangeAt(0);
+		const r = getSelection().getRangeAt(0);
 		if (!r.collapsed && r.startContainer.childNodes.length) { // images
 			el = r.startContainer.childNodes[r.startOffset];
 		} else {
@@ -59,22 +59,22 @@ window.qgSelection = {
 		return getSelection().c1GetRange().toString();
 	},
 	isElement() {
-		let el = this.element();
-		let text = el.textContent || el.innerText || '';
+		const el = this.element();
+		const text = el.textContent || el.innerText || '';
 		return text === this.text();
 	},
 	toElement(el) {
-		let r = document.createRange();
+		const r = document.createRange();
 		r.selectNode(el);
 		getSelection().c1SetRange(r);
 	},
 	toChildren(el) {
-		let r = document.createRange();
+		const r = document.createRange();
 		r.selectNodeContents(el);
 		getSelection().c1SetRange(r);
 	},
 	surroundContents(el) {
-		let range = getSelection().c1GetRange();
+		const range = getSelection().c1GetRange();
 		range.surroundContents(el);
 		qgSelection.toChildren(el);
 		return el;
@@ -82,13 +82,13 @@ window.qgSelection = {
 	collapse(where) {
 		try { // firefox has an error
 			where === 'start' ? getSelection().collapseToStart() : getSelection().collapseToEnd();
-		} catch(e) {}
+		} catch {}
 	},
 	rect() {
-		let r = getSelection().c1GetRange();
+		const r = getSelection().c1GetRange();
 		let pos = r.getBoundingClientRect();
 		if (r.collapsed && pos.top===0 && pos.left ===0) { // bug in chrome, webkit
-			let tmpNode = document.createTextNode('\ufeff');
+			const tmpNode = document.createTextNode('\ufeff');
 			r.insertNode(tmpNode);
 			pos = r.getBoundingClientRect();
 			r.setStartAfter(tmpNode);
@@ -135,13 +135,13 @@ document.addEventListener('keydown', e=>{
 	if (!e.target.isContentEditable) return;
 	if (!e.target.closest('button')) return;
 	let inputEvent = false;
-	function checkInput(e){ inputEvent = true }
+	function checkInput(){ inputEvent = true }
 	e.target.addEventListener('input',checkInput);
 	setTimeout(()=>{
 		e.target.removeEventListener('input',checkInput);
 		if (!inputEvent) {
-			let range = getSelection().getRangeAt(0);
-			let node = document.createTextNode(" ");
+			const range = getSelection().getRangeAt(0);
+			const node = document.createTextNode(" ");
 			range.insertNode(node);
 			range.setStartAfter(node);
 			range.collapse(true);
@@ -168,7 +168,7 @@ document.addEventListener('mousedown', e=>{
 	let img = null;
 	window.qgImageResizeUi = function(e) {
 		img = e.target;
-		let hide = function(e) {
+		const hide = function(e) {
 			if (!e || e.target!==img) {
 				cont.remove();
 				document.removeEventListener('mousedown',hide);
@@ -184,8 +184,8 @@ document.addEventListener('mousedown', e=>{
 		clearInterval(checkIntr);
 		checkIntr = setInterval(check, 100);
 	};
-	let positionize = function() {
-		let c      = img.getBoundingClientRect(), // todo: fastdom
+	const positionize = function() {
+		const c      = img.getBoundingClientRect(), // todo: fastdom
 			body   = document.documentElement.getBoundingClientRect(),
 			bottom = c.bottom - body.top  - 6,
 			right  = c.right  - body.left - 6;
@@ -196,11 +196,11 @@ document.addEventListener('mousedown', e=>{
 			info.style.left = right + 16 + 'px';                  info.style.top = bottom + 16 + 'px';
 		});
 	};
-	let startFn = function(e) {
-		let startM   = {x: e.pageX, y: e.pageY};
-		let startDim = {x: img.offsetWidth, y: img.offsetHeight};
-		let dragger = e.target;
-		let moveFn = function(e) {
+	const startFn = function(e) {
+		const startM   = {x: e.pageX, y: e.pageY};
+		const startDim = {x: img.offsetWidth, y: img.offsetHeight};
+		const dragger = e.target;
+		const moveFn = function(e) {
 			let w = dragger === Y ? startDim.x : Math.max(1, startDim.x + e.pageX - startM.x);
 			let h = dragger === X ? startDim.y : Math.max(1, startDim.y + e.pageY - startM.y);
 			if (!e.ctrlKey && dragger === XY) {
@@ -210,8 +210,8 @@ document.addEventListener('mousedown', e=>{
 					w = parseInt(startDim.x / startDim.y * h);
 				}
 			}
-			let dh = parseFloat(h - startDim.y);
-			let dw = parseFloat(w - startDim.x);
+			const dh = parseFloat(h - startDim.y);
+			const dw = parseFloat(w - startDim.x);
 			requestAnimationFrame(()=>{
 				img.style.width  = w + 'px';
 				img.style.height = h + 'px';
@@ -221,7 +221,7 @@ document.addEventListener('mousedown', e=>{
 			})
 			positionize();
 		};
-		let stopFn = function() {
+		const stopFn = function() {
 			img.dispatchEvent(new Event('qgResize',{bubbles:true}));
 			document.removeEventListener('mousemove', moveFn);
 			document.removeEventListener('mouseup', stopFn);
@@ -231,18 +231,18 @@ document.addEventListener('mousedown', e=>{
 		e.preventDefault();
 		e.stopPropagation();
 	};
-	let itemCss = ';position:absolute; background-color:#fff; border:1px solid black; height:12px; width:12px; box-sizing:border-box';
-	let cont = c1.dom.fragment(
+	const itemCss = ';position:absolute; background-color:#fff; border:1px solid black; height:12px; width:12px; box-sizing:border-box';
+	const cont = c1.dom.fragment(
 	'<div style="position:absolute; top:0; left:0; width:100%; height:0">'+
 		'<div class=-x  style="cursor:e-resize '+itemCss+'"></div>'+
 		'<div class=-y  style="cursor:s-resize '+itemCss+'"></div>'+
 		'<div class=-xy style="cursor:se-resize'+itemCss+'" title="press ctrl to disable aspect ratio"></div>'+
 		'<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 3px; font-size:11px; color:#333; padding:2px 4px; border-radius:2px"></div>'+
 	'</div>').firstChild;
-	let X  = cont.c1Find('>.-x');
-	let Y  = cont.c1Find('>.-y');
-	let XY = cont.c1Find('>.-xy');
-	let info = cont.c1Find('>.-info');
+	const X  = cont.c1Find('>.-x');
+	const Y  = cont.c1Find('>.-y');
+	const XY = cont.c1Find('>.-xy');
+	const info = cont.c1Find('>.-info');
 	cont.addEventListener('mousedown', startFn);
 }
 
@@ -250,7 +250,7 @@ document.addEventListener('mousedown', e=>{
 /* contenteditable focus bug */
 if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent) && document.caretRangeFromPoint) {
     document.addEventListener('DOMContentLoaded', function(){
-        let fixEl = document.createElement('input');
+        const fixEl = document.createElement('input');
         fixEl.style.cssText = 'width:1px;height:1px;border:none;margin:0;padding:0; position:fixed; top:0; left:0';
         fixEl.tabIndex = -1;
         let shouldNotFocus = null;
@@ -264,9 +264,9 @@ if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent) && document.caretRangeFrom
         }
         function checkMouseEvent(e){
             if (e.target.isContentEditable) return;
-            let range = document.caretRangeFromPoint(e.clientX, e.clientY);
+            const range = document.caretRangeFromPoint(e.clientX, e.clientY);
 			if (!range) return;
-            let wouldFocus = getContentEditableRoot(range.commonAncestorContainer);
+            const wouldFocus = getContentEditableRoot(range.commonAncestorContainer);
             if (!wouldFocus || wouldFocus.contains(e.target)) return;
             shouldNotFocus = wouldFocus;
             setTimeout(function(){
@@ -301,7 +301,7 @@ function getContentEditableRoot(el) {
     if (el.nodeType === 3) el = el.parentNode;
     if (!el.isContentEditable) return false;
     while (el) {
-        let next = el.parentNode;
+        const next = el.parentNode;
         if (next.isContentEditable) {
             el = next;
             continue

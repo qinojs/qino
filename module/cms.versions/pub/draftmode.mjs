@@ -27,7 +27,7 @@ function publish(pid, subPages){
 	});
 }
 // frontend integration
-var css =
+const css =
 '#qgCmsFrontend1 [itemid=publish].-HasChanges > .-title, #panel [itemid=publish].-HasChanges > .-title { '+
 '	background:var(--cms-access-2); '+
 '} '+
@@ -38,7 +38,7 @@ var css =
 '	display:block; '+
 '} '+
 '';
-var el = c1.dom.fragment('<div class=-item itemid=publish>'+
+const el = c1.dom.fragment('<div class=-item itemid=publish>'+
 	'<div class=-content>'+
 		'<div class=-standalone>'+
 			'<div class=-h1>Draft</div>'+
@@ -80,11 +80,11 @@ el.querySelector('.-versionCompare').addEventListener('click', async ()=>{
 	});
 });
 el.querySelector('.-versionPublish').addEventListener('click',function(){
-	let subPages = this.parentNode.querySelector('.-subPages').checked;
+	const subPages = this.parentNode.querySelector('.-subPages').checked;
 	publish(Page, subPages);
 });
 el.querySelector('.-versionUnPublish').addEventListener('click',function(){
-	let subPages = this.parentNode.querySelector('.-subPages').checked;
+	const subPages = this.parentNode.querySelector('.-subPages').checked;
 	if (!confirm("Warning!\nReally overwrite the draft?")) return;
 	apt['cms.versions']['publish-cont'].post({ pid: Page, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
 		location.href = location.href.replace(/#.*$/,'');
