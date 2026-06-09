@@ -165,9 +165,11 @@ function render(): string {
   <div class="u2-flex -filter -head">
     API <input type="search" placeholder="Filter routes…" id="api-search">
   </div>
-  <u2-accordion id="api-list">
-    ${routesHtml}
-  </u2-accordion>
+  <div>
+    <u2-accordion id="api-list">
+      ${routesHtml}
+    </u2-accordion>
+  </div>
 </div>`;
 }
 

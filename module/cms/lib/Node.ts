@@ -25,7 +25,7 @@ export class Node {
     #filesAll: Record<string, DbFile> | null = null;
     #urls: Record<string, Record<string, string>> | null = null;
 
-    #children: Map<number, Node> | null = null;
+    #children: Promise<Map<number, Node>> | null = null;
     #named: Record<string, Record<string, Node>> = {};
     #conts: Node[] | null = null;
 
@@ -267,22 +267,22 @@ export class Node {
     get modUrl(): string { return getCtx().sysURL + this.vs.module + "/"; }
 
     /* Tree traversal */
-    async children(filter?: any): Promise<Map<number, Node>> {
-        //await this.app.fire("page::children", { Page: this });
-        if (this.#children === null) {
-            this.#children = new Map();
+    children(filter?: any): Promise<Map<number, Node>> {
+        this.#children ??= (async () => {
+            const map: Map<number, Node> = new Map();
             const rows = await this.db.all(`SELECT * FROM ${table("page")} WHERE basis = ? ORDER BY type DESC, sort, id DESC`, [this.id]);
             for (const row of rows) {
                 const id = Number(row.id);
                 const Child = await this.cms.node(id, row);
-                this.#children.set(id, Child);
+                map.set(id, Child);
                 if (row.name) {
                     this.#named[row.type] ??= {};
                     this.#named[row.type][row.name] = Child;
                 }
             }
-        }
-        if (filter) return this.cms.filter(this.#children, filter);
+            return map;
+        })();
+        if (filter) return this.#children.then((map) => this.cms.filter(map, filter));
         return this.#children;
     }
 

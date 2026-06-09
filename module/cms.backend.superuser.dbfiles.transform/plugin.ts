@@ -189,7 +189,7 @@ const PLATFORM_LABELS: Record<Platform, string> = {
 async function renderBinary(bin: Binary, platform: Platform, root: boolean): Promise<string> {
   const ok = await bin.available;
   const cls  = ok ? "-ok" : "-missing";
-  const icon = ok ? `<u2-ico inline>check_circle</u2-ico>` : `<u2-ico inline>cancel</u2-ico>`;
+  const icon = ok ? `<u2-ico icon=check_circle inline>✓</u2-ico>` : `<u2-ico icon=cancel inline>✗</u2-ico>`;
   const notes = bin.notes ? `<br><small>${hee(bin.notes)}</small>` : "";
   const label = `${icon} ${hee(bin.label)}${notes}`;
 
