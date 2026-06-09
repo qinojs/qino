@@ -29,9 +29,12 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const allMods = app.modules.all();
   const modObj = allMods[modName];
 
+  const back = ctx.url; back.searchParams.delete("mod");
+  const backHref = hee(back.search);
+
   if (!modObj) {
     return `<div class=u2-card>
-      <div class=-head><a href="?">← Module</a></div>
+      <div class=-head><a href="${backHref}">← Module</a></div>
       <div class=-body>${await app.t`Module`} ${hee(modName)} ${await app.t`not found.`}</div>
     </div>`;
   }
@@ -84,13 +87,10 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     .map(([n]) => n)
     .sort();
 
-  const depsHtml = needs.length
-    ? needs.map(d => `<a href="?mod=${encodeURIComponent(d)}">${hee(d)}</a>`).join(" ")
-    : "<em>none</em>";
-
-  const neededByHtml = neededBy.length
-    ? neededBy.map(d => `<a href="?mod=${encodeURIComponent(d)}">${hee(d)}</a>`).join(" ")
-    : "<em>none</em>";
+  const u = ctx.url;
+  const modLink = (d: string) => { u.searchParams.set("mod", d); return `<a href="${hee(u.search)}">${hee(d)}</a>`; };
+  const depsHtml = needs.length ? needs.map(modLink).join(" ") : "<em>none</em>";
+  const neededByHtml = neededBy.length ? neededBy.map(modLink).join(" ") : "<em>none</em>";
 
   // --- Files ---
   let filesHtml = "";
@@ -132,7 +132,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 
   return `<div class=u2-flex>
   <div class=u2-card>
-    <div class=-head><a href="?">← Module</a> ${hee(modName)}</div>
+    <div class=-head><a href="${backHref}">← Module</a> ${hee(modName)}</div>
     <table class=u2-table>
       <tr><th>${await app.t`Source`}<td>${sourceHtml}
       <tr><th>${await app.t`Exports`}<td>${exportBadges || `<em>${await app.t`none`}</em>`}
@@ -179,6 +179,7 @@ async function renderOverview(node: Node): Promise<string> {
   const allMods = app.modules.all();
   const modules = Object.keys(allMods).sort();
 
+  const u = ctx.url;
   for (const name of modules) {
     const modObj = allMods[name];
     const mod = modObj.plugin;
@@ -200,9 +201,10 @@ async function renderOverview(node: Node): Promise<string> {
       ? `<svg style="display:block" width=16 height=16><use href="${ctx.sysURL}${name}/pub/module.svg#main"/></svg>`
       : "";
 
+    u.searchParams.set("mod", name);
     rows.push(`<tr>
       <td style="padding-right:0">${iconHtml}
-      <td><a href="?mod=${encodeURIComponent(name)}">${hee(name)}</a>
+      <td><a href="${hee(u.search)}">${hee(name)}</a>
       <td style="text-align:center">${needs.length}
       <td style="text-align:center">${neededBy}
       <td>${hee(exports)}`);

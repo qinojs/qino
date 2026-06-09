@@ -175,7 +175,7 @@ export class DbFile extends File {
     }
   }
 
-  override async url(params: Record<string, any> = {}): Promise<string> {
+  async url(params: Record<string, any> = {}): Promise<string> {
     const vs = await this.ensureVs();
     const u = `u-${String(vs["md5"] ?? "").slice(0, 5)}`;
     const parts = [u, ...Object.entries(params).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];

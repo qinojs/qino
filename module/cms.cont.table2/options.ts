@@ -8,8 +8,9 @@ export default async function (node: Node, _vars: unknown): Promise<string> {
   const errorID = uid(7);
 
   const ctx = getCtx();
-  const { requestUri } = ctx;
-  const exportUrl = requestUri + (requestUri.includes("?") ? "&" : "?") + `export_table=${node.id}`;
+  const u = ctx.url;
+  u.searchParams.set("export_table", String(node.id));
+  const exportUrl = u.pathname + u.search;
 
   let colWidths = "";
   for (let i = 1; i <= cols; i++) {

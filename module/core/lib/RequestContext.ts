@@ -48,6 +48,8 @@ export class RequestContext {
 
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
   get hasHtml(): boolean { return this.#html !== null; }
+
+  get url(): URL { return new URL(this.req.url); }
   
   get userId(): number {
     return Number(this.session.liveUser() || 0);

@@ -16,7 +16,7 @@ export async function render(ctx: RequestContext): Promise<void> {
       let url: string;
       if (!isNaN(Number(redirect))) {
         const P = await cms.node(Number(redirect));
-        url = new URL(ctx.req.url).origin + (await P.url());
+        url = ctx.url.origin + (await P.url());
       } else {
         url = String(redirect);
       }

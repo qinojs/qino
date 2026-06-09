@@ -117,11 +117,13 @@ async function listRows(node: Node, search: string): Promise<string> {
 
   const tMoreLabel = await node.app.t`more`;
   const tNoSubject = await node.app.t`no subject`;
+  const u = getCtx().url;
   return rows.map(row => {
     const more = Number(row.num ?? 0) > 1 ? ` <small>${Number(row.num) - 1} ${tMoreLabel}</small>` : "";
+    u.searchParams.set("id", String(row.id));
     return `<tr u2-href>
       <td>${u2time(row.time)}
-      <td><a href="?id=${hee(row.id)}">${hee(row.subject || `-- ${tNoSubject} --`)}</a>
+      <td><a href="${hee(u.search)}">${hee(row.subject || `-- ${tNoSubject} --`)}</a>
       <td>${hee(row.sender ?? "")}
       <td>${hee(row.recipient ?? "")}${more}
       <td>${row.sent || "-"}

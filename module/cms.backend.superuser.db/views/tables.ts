@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee, type App } from "../../core/mod.ts";
+import { hee, getCtx, type App } from "../../core/mod.ts";
 import { fieldOriginsByTable } from "../lib/analyze.ts";
 
 function keyBadge(key: string): string {
@@ -23,6 +23,7 @@ async function tableOverview(app: App, db: any): Promise<string> {
   const tables = Object.values(db.tables ?? {}) as any[];
   const schemaProps = db.schema?.properties ?? {};
 
+  const u = getCtx().url; u.searchParams.set("view", "tables");
   const rows = await Promise.all(
     [...tables].sort((a, b) => {
       const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
@@ -38,8 +39,9 @@ async function tableOverview(app: App, db: any): Promise<string> {
       const primaryBadge = primaries.length === 0 ? `<small class=u2-badge style="background:var(--red)">${await app.t`none`}</small>`
         : primaries.length === 1 ? `<small class=u2-badge style="background:var(--yellow)">${hee(String(primaries[0]))}</small>`
         : primaries.map((f: any) => `<small class=u2-badge>${hee(String(f))}</small>`).join(" ");
+      u.searchParams.set("table", table.name);
       return `<tr>
-        <td><a href="?view=tables&table=${hee(table.name)}">${hee(table.name)}</a></td>
+        <td><a href="${hee(u.search)}">${hee(table.name)}</a></td>
         <td style="text-align:right">${hee(String(status?.Rows ?? "?"))}</td>
         <td style="text-align:right">${bytes}</td>
         <td style="text-align:right">${Object.keys(fields).length}</td>
@@ -100,8 +102,9 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
     ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.Rows ?? "?"))} ${await app.t`rows`} · ${hee(status.Engine ?? "")} · <u2-bytes>${status["Data_length"] ?? 0}</u2-bytes></span>`
     : "";
 
+  const u = getCtx().url; u.searchParams.set("view", "tables"); u.searchParams.delete("table");
   return `<div class="u2-card -full">
-    <div class="-head"><a href="?view=tables">← ${await app.t`Tables`}</a> &nbsp; ${hee(tableName)} ${meta}</div>
+    <div class="-head"><a href="${hee(u.search)}">← ${await app.t`Tables`}</a> &nbsp; ${hee(tableName)} ${meta}</div>
     <table class=u2-table>
       <thead>
         <tr>

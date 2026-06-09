@@ -1,4 +1,4 @@
-import { getCtx } from "../core/mod.ts";
+import { getCtx, hee } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { renderTables } from "./views/tables.ts";
 import { renderDiff } from "./views/diff.ts";
@@ -31,9 +31,12 @@ export async function render(node: Node): Promise<string> {
     conflicts: () => renderConflicts(app, modules),
   };
 
-  const nav = await Promise.all(VIEWS.map(async ({ key, label }) =>
-    `<a class="-nav-item${view === key ? " -active" : ""}" href="?view=${key}">${await app.t`${label}`}</a>`
-  )).then(a => a.join(""));
+  const u = ctx.url; u.searchParams.delete("table");
+  const nav = await Promise.all(VIEWS.map(async ({ key, label }) => {
+    u.searchParams.set("view", key);
+    const href = hee(u.search);
+    return `<a class="-nav-item${view === key ? " -active" : ""}" href="${href}">${await app.t`${label}`}</a>`;
+  })).then(a => a.join(""));
 
   const content = await (dispatch[view] ?? dispatch.tables)();
 

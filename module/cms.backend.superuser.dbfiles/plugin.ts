@@ -96,13 +96,15 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
 
   let trs = "";
+  const u = ctx.url;
   for (const row of rows) {
     const f = await fm.file(row.id, row);
     const exists = await f.exists();
+    u.searchParams.set("id", String(row.id));
     trs += `<tr>
   <td class="-thumb">${await mediaPreview(f, exists as boolean)}
   <td>${row.id}
-  <td><a href="?id=${row.id}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
+  <td><a href="${hee(u.search)}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
   ${children.map((_: DbField,i: number) => row[`r${i}`]?`<td title="${row[`r${i}`]}x">◼`:`<td>◻`).join("")}
   <td>${u2time(row.init_time)}<br><small>${hee(row.usr_init_email??"")}</small>
@@ -165,6 +167,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   }))).join("") || "<div class=-body>none</div>";
 
   const dupes = await db.all("SELECT id,name FROM file WHERE id!=? AND md5=?", [id, row.md5]);
+  const dupeU = ctx.url;
 
   const preview = exists ? await mediaView(f) : "";
   const text = exists ? await textView(f) : "";
@@ -196,7 +199,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <div class="u2-card" style="flex:0 0 auto">
       <div class=-head>${await app.t`Duplicates`}</div>
       ${dupes.length
-          ? `<table class=u2-table><tr><th>${await app.t`ID`}<th>${await app.t`Name`}${dupes.map((d) =>`<tr><td><a href="?id=${d.id}">${d.id}</a><td>${hee(d.name)}`).join("")}</table>`
+          ? `<table class=u2-table><tr><th>${await app.t`ID`}<th>${await app.t`Name`}${dupes.map((d) => { dupeU.searchParams.set("id", String(d.id)); return `<tr><td><a href="${hee(dupeU.search)}">${d.id}</a><td>${hee(d.name)}`; }).join("")}</table>`
           : `<div class=-body>${await app.t`none`}</div>`}
     </div>
 

@@ -49,13 +49,15 @@ async function render(node: Node): Promise<string> {
 
   const rows = await db.all("SELECT id, name, description, updated FROM mail_template ORDER BY name");
 
+  const u = ctx.url;
   const trs = rows.length
     ? rows.map((r: any) => {
         const d = new Date(typeof r.updated === "number" ? r.updated * 1000 : String(r.updated));
         const iso = isNaN(d.getTime()) ? "" : d.toISOString();
         const time = iso ? `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "-";
+        u.searchParams.set("id", String(r.id));
         return `<tr u2-href>
-        <td><a href="?id=${hee(r.id)}">${hee(r.name)}</a>
+        <td><a href="${hee(u.search)}">${hee(r.name)}</a>
         <td>${hee(r.description ?? "")}
         <td>${time}`;
       }).join("")
@@ -99,6 +101,9 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const row = await db.row("SELECT * FROM mail_template WHERE id=?", [id]);
   if (!row) return `<div class=u2-card><div class=-body>${await app.t`Template not found.`}</div></div>`;
+
+  const back = ctx.url; back.searchParams.delete("id");
+  const backHref = hee(back.search);
 
   let message = "";
 
@@ -165,7 +170,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
               <div class=-actions>
                 <button name=save>${await app.t`Save`}</button>
                 <button name=delete type=submit formnovalidate u2-confirm="${hee(await app.t`Really delete this template?`)}">${await app.t`Delete`}</button>
-                <a href="?">${await app.t`Back`}</a>
+                <a href="${backHref}">${await app.t`Back`}</a>
               </div>
         </table>
       </form>

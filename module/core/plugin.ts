@@ -92,7 +92,7 @@ export async function init(app: App) {
 
         // HTTPS redirect
         const https = app.https;
-        if (https && new URL(ctx.req.url).protocol !== "https:") {
+        if (https && ctx.url.protocol !== "https:") {
             throw new Redirect("https://" + ctx.req.header("host") + ctx.requestUri, 301);
         }
 

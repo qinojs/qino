@@ -87,13 +87,16 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
          ORDER BY ${orderSql}`
     );
 
+    const sortU = ctx.url; sortU.searchParams.delete("id");
+    const sortHref = (o: string) => { sortU.searchParams.set("order", o); return hee(sortU.search); };
+
     const tools = `
 <div class="u2-card" style="flex-grow:0">
     <div class="-head">${await node.app.t`Tools`}</div>
     <div class="-body">
         ${order === "num_ip"
-            ? `<a href="?order=max_id">${await node.app.t`sort by date`}</a><br>`
-            : `<a href="?order=num_ip">${await node.app.t`sort by number of IPs`}</a><br>`}
+            ? `<a href="${sortHref("max_id")}">${await node.app.t`sort by date`}</a><br>`
+            : `<a href="${sortHref("num_ip")}">${await node.app.t`sort by number of IPs`}</a><br>`}
         <br>
         ${await node.app.t`Delete`}:<br>
         <button data-reload='{"delete":{"bot":"1","source":"404"}}'>${await node.app.t`404 and bots`}</button><br>
@@ -194,6 +197,7 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
     );
 
     let tableRows = "";
+    const u = ctx.url;
     for (const row of rows) {
         const eUrl = editorLink(row.file ?? "", row.line, row.col);
 
@@ -206,10 +210,11 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
     <td>${hee(item.args ? JSON.stringify(item.args) : "")}`;
         }
 
+        u.searchParams.set("id", String(row.id));
         tableRows += `
 <tr style="white-space:nowrap">
     <td>
-        <a href="?id=${hee(String(row.id))}">${u2time(row.time)} <br> ${hee(String(row.log_id ?? ""))}</a>
+        <a href="${hee(u.search)}">${u2time(row.time)} <br> ${hee(String(row.log_id ?? ""))}</a>
         <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
     <td>
         <b>${hee(row.message ?? "")}</b><br>
@@ -281,12 +286,14 @@ async function renderDetail(node: Node, id: number): Promise<string> {
             [...historyParams, error.log_id]
         ).catch(() => []);
 
+        const eu = ctx.url; eu.searchParams.delete("history_of");
         for (const item of logs) {
             const errorItems = await db.all("SELECT * FROM m_error_report WHERE log_id = ? ORDER BY id DESC", [item.id]).catch(() => []);
             let errorLinks = "";
             for (const eItem of errorItems) {
                 const active = eItem.id === error.id ? "&#x25B6;&#xFE0E;" : "";
-                errorLinks += `<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:3px 0; margin-bottom:-1px; display:block" href="?id=${hee(String(eItem.id))}">${active} ${hee(eItem.message)}</a>`;
+                eu.searchParams.set("id", String(eItem.id));
+                errorLinks += `<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:3px 0; margin-bottom:-1px; display:block" href="${hee(eu.search)}">${active} ${hee(eItem.message)}</a>`;
             }
             historyRows += `
 <tr>
@@ -299,9 +306,11 @@ async function renderDetail(node: Node, id: number): Promise<string> {
         }
     }
 
+    const hu = ctx.url; hu.searchParams.set("id", String(id));
+    const histHref = (h: string) => { hu.searchParams.set("history_of", h); return hee(hu.search); };
     const historyLinks = `
-<a href="?id=${id}&history_of=ip">IP</a>
-${log ? `<a href="?id=${id}&history_of=sess">Session</a> | <a href="?id=${id}&history_of=client">Client</a>` : ""}`;
+<a href="${histHref("ip")}">IP</a>
+${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client")}">Client</a>` : ""}`;
 
     const isLocalFile = ctx.urlToLocalPath(error.file ?? "") !== null;
     const fileBlock = isLocalFile

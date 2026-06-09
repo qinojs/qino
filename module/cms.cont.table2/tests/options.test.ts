@@ -12,6 +12,7 @@ function makeNode(settings: Record<string, unknown>) {
   return {
     id: 77,
     toString: () => "77",
+    app: { t: (s: TemplateStringsArray, ...v: unknown[]) => s.reduce((a, p, i) => a + p + (v[i] ?? ""), "") },
     settings: new Proxy({}, {
       get(_target, prop: string) {
         return callable(settings[prop]);
@@ -23,7 +24,7 @@ function makeNode(settings: Record<string, unknown>) {
 Deno.test("cms.cont.table2: options renders bounded rows/cols and export URL", async () => {
   const ctx = new RequestContext();
   ctx.sysURL = "/m/";
-  ctx.requestUri = "/page?x=1";
+  ctx.req = { url: "http://localhost/page?x=1" } as any;
   const node = makeNode({ rows: 3, cols: 2, row_1: "40%", row_2: "60%" });
 
   const out = await requestStorage.run(ctx, () => options(node as any, {}));
@@ -37,7 +38,7 @@ Deno.test("cms.cont.table2: options renders bounded rows/cols and export URL", a
 Deno.test("cms.cont.table2: options falls back to at least one row and column", async () => {
   const ctx = new RequestContext();
   ctx.sysURL = "/m/";
-  ctx.requestUri = "/page";
+  ctx.req = { url: "http://localhost/page" } as any;
   const node = makeNode({ rows: 0, cols: 0, row_1: `<bad>` });
 
   const out = await requestStorage.run(ctx, () => options(node as any, {}));
