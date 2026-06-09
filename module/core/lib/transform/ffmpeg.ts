@@ -28,7 +28,8 @@ export async function checkFfmpeg(): Promise<void> {
   }
 }
 
-/** Extracts cover art from an audio file and writes it as PNG to `output`.
+/** Extracts the embedded cover art from an audio file and writes it to `output`
+ *  in its original format (`-vcodec copy`, typically JPEG).
  *  Throws an error if no cover art is embedded. */
 export async function ffmpegCoverArt(input: string, output: string): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {
@@ -41,7 +42,8 @@ export async function ffmpegCoverArt(input: string, output: string): Promise<voi
   }
 }
 
-/** Extracts a single frame from a video and writes it as PNG to `output` */
+/** Extracts a single frame from a video and writes it to `output`;
+ *  the image format is derived from the `output` file extension. */
 export async function ffmpegFrame(
   input: string,
   frameIndex: number, // 0-based
@@ -60,7 +62,7 @@ export async function ffmpegFrame(
   }).output();
   if (code !== 0) {
     throw new Error(
-      `FFmpeg Fehler: ${new TextDecoder().decode(stderr).trim()}`,
+      `FFmpeg Error: ${new TextDecoder().decode(stderr).trim()}`,
     );
   }
 }

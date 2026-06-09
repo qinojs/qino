@@ -17,11 +17,6 @@ export class File {
     return typeByExtension(this.extension) || "application/octet-stream";
   }
 
-  read(): void {
-    // In Deno context: read is used to stream a file; callers use ctx.state.__fileOutput
-    // This method exists for API compatibility
-  }
-
   async contents(set?: string | Uint8Array | null): Promise<string | number> {
     if (set == null) return Deno.readTextFile(this.path);
     await (typeof set === "string" ? Deno.writeTextFile(this.path, set) : Deno.writeFile(this.path, set));
@@ -70,11 +65,6 @@ export class File {
     } catch {
       return 0;
     }
-  }
-
-  url(): string | Promise<string> {
-    // not universally useful in Deno context
-    return this.path;
   }
 
   async md5(): Promise<string> {
