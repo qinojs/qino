@@ -1,5 +1,4 @@
-import type { RequestContext } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
+import type { RequestContext, App } from "../core/mod.ts";
 
 export const name = "cms.filebrowser.pexels";
 export const needs = ["cms", "cms.filebrowser"];

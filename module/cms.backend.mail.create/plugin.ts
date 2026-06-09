@@ -1,8 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx } from "../core/mod.ts";
-import { hee } from "../core/mod.ts";
+import { getCtx, hee, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { App } from "../core/mod.ts";
 import type {} from "../mail/mod.ts";
 
 export const name = "cms.backend.mail.create";

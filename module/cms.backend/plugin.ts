@@ -1,5 +1,4 @@
-import { hee } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
+import { hee, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export { healthChecks } from "./healthChecks.ts";

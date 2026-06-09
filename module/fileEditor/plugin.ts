@@ -1,10 +1,5 @@
 import * as nodeFs from "node:fs/promises";
-import { Output } from "../core/mod.ts"
-import { getCtx, type RequestContext } from "../core/mod.ts";
-import { Access, type AptTree } from "../core/mod.ts";
-import { s } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
-import type { Params } from "../core/mod.ts";
+import { Output, getCtx, type RequestContext, Access, type AptTree, s, type App, type Params } from "../core/mod.ts";
 import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";

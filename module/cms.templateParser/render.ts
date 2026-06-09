@@ -1,7 +1,6 @@
 import type { TNode, TAttr } from "./parse.ts";
 import type { Node } from "../cms/mod.ts";
-import { hee } from "../core/mod.ts";
-import { getCtx } from "../core/mod.ts";
+import { hee, getCtx } from "../core/mod.ts";
 
 const VOID_ELEMENTS = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
 const LANG_CODES    = new Set(["de","en","fr","it","es","nl","pl","cz","pt"]);

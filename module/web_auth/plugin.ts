@@ -1,12 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx } from "../core/mod.ts";
-import { login } from "../core/mod.ts";
-import { Access, AccessError, type AptTree } from "../core/mod.ts";
-import { s } from "../core/mod.ts";
+import { getCtx, login, Access, AccessError, type AptTree, s, type App, type Db } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
-import type { App } from "../core/mod.ts";
-import type { Db } from "../core/mod.ts";
 
 export const name = "web_auth";
 export { dbSchema };

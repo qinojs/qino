@@ -1,7 +1,5 @@
 import { backend } from "../cms.backend/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
-import { hee } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
+import { hee, type RequestContext, type App } from "../core/mod.ts";
 
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];

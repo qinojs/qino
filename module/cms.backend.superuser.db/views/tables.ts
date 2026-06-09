@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee } from "../../core/mod.ts";
+import { hee, type App } from "../../core/mod.ts";
 import { fieldOriginsByTable } from "../lib/analyze.ts";
-import type { App } from "../../core/mod.ts";
 
 function keyBadge(key: string): string {
   if (key === "PRI") return ' <small class=u2-badge style="background:var(--yellow)">PRI</small>';

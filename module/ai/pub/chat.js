@@ -1,5 +1,4 @@
-import { apt } from '../../core/pub/js/qino.js';
-import { t } from '../../core/pub/js/qino.js';
+import { apt, t } from "../../core/pub/js/qino.js";
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 

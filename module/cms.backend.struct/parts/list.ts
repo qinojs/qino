@@ -1,7 +1,5 @@
-import { hee } from "../../core/mod.ts"
-import { getCtx } from "../../core/mod.ts";
+import { hee, getCtx, type RequestContext } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
-import type { RequestContext } from "../../core/mod.ts";
 
 export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();

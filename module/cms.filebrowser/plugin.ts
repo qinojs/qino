@@ -1,9 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, type RequestContext } from "../core/mod.ts";
-import { s } from "../core/mod.ts";
-import { Access, type AptTree } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
+import { getCtx, type RequestContext, s, Access, type AptTree, type App } from "../core/mod.ts";
 
 export const name = "cms.filebrowser";
 export { healthChecks } from "./healthChecks.ts";

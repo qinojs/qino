@@ -1,9 +1,7 @@
-import { hee } from "../core/mod.ts";
+import { hee, type RequestContext, type App } from "../core/mod.ts";
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.struct";
 export const needs = ["cms.backend"];

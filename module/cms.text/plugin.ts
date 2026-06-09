@@ -1,9 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { s } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
-import { Access, type AptTree } from "../core/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
+import { s, Access, type AptTree, type App, type RequestContext } from "../core/mod.ts";
 
 export const name = "cms.text";
 export const needs = ["cms"];

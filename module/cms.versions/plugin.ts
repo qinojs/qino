@@ -20,16 +20,13 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import type { App } from "../core/mod.ts";
+import { getCtx, requestStorage, type RequestContext, Access, type AptTree, s, type App } from "../core/mod.ts";
 import {
     versedTables,
     setSpace, setLog, setVers, getCmsVers,
     versTable, view, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
-import { getCtx, requestStorage, type RequestContext } from "../core/mod.ts";
-import { Access, type AptTree } from "../core/mod.ts";
-import { s } from "../core/mod.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
 
 export const name = "cms.versions";

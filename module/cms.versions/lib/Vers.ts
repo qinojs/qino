@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, type RequestContext } from "../../core/mod.ts";
-import type { Db } from "../../core/mod.ts";
+import { getCtx, type RequestContext, type Db } from "../../core/mod.ts";
 
 // Tables (and optional field-subset) that are versioned.
 // true  = version all fields

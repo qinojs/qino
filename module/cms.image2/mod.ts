@@ -1,9 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, HtmlString } from "../core/mod.ts";
-import { magickIdentify, isMagickAvailable } from "../core/mod.ts";
-import { getCtx } from "../core/mod.ts";
-import type { DbFile } from "../core/mod.ts";
+import { hee, HtmlString, magickIdentify, isMagickAvailable, getCtx, type DbFile } from "../core/mod.ts";
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
@@ -112,5 +109,9 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
 }
 
 function name2alt(name: string): string {
-  return name.replace(/_/g, " ").replace(/\.[^.]+$/, "").trim();
+  return name
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim();
 }

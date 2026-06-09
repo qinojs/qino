@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { hee } from "../core/mod.ts"
-import { getCtx } from "../core/mod.ts";
+import { hee, getCtx } from "../core/mod.ts";
 import { dump } from "../../deps.ts";
 
 export const name = "cms.cont.my.debug";

@@ -1,5 +1,4 @@
-import { hee } from "../core/mod.ts";
-import { getCtx } from "../core/mod.ts";
+import { hee, getCtx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.trash";

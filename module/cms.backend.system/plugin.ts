@@ -1,13 +1,10 @@
-import { hee } from "../core/mod.ts"
-import { getCtx } from "../core/mod.ts";
+import { hee, getCtx, type App } from "../core/mod.ts";
 import { getTypes, type CheckResult, type Solution } from "./health_check.ts";
 export { healthChecks } from "./healthChecks.ts";
-import statistic from "./parts/statistic.ts";
-import { details as statisticDetails } from "./parts/statistic.ts";
+import statistic, { details as statisticDetails } from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 import type { Node } from "../cms/mod.ts";
-import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.system";
 export const needs = ["cms.backend"];

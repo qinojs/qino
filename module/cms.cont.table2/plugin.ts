@@ -1,9 +1,7 @@
 import type { Node } from "../cms/mod.ts";
-import { Output } from "../core/mod.ts";
+import { Output, type App, type RequestContext } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
-import type { App } from "../core/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
 
 export const name = "cms.cont.table2";
 export const needs = ["cms"];

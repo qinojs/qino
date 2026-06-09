@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../core/mod.ts";
-import { login, pwHash } from "../core/mod.ts";
+import { getCtx, login, pwHash } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export default async function (node: Node, vars:any): Promise<any> {

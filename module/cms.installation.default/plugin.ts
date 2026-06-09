@@ -1,5 +1,4 @@
-import { pwHash } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
+import { pwHash, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 export const name = "cms.installation.default";

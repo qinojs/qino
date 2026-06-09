@@ -1,12 +1,6 @@
-import { hee } from "../core/mod.ts";
-import { Db } from "../core/mod.ts";
-import { getCtx } from "../core/mod.ts";
+import { hee, Db, getCtx, FileTransformer, type App, type DbField, type DbFile } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { FileTransformer } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { App } from "../core/mod.ts";
-import type { DbField } from "../core/mod.ts";
-import type { DbFile } from "../core/mod.ts";
 
 export const name = "cms.backend.superuser.dbfiles";
 export const needs = ["cms.backend"];

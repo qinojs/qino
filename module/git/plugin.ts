@@ -1,9 +1,5 @@
 import { GitService, getModuleGitInfo } from "./mod.ts";
-import { s } from "../core/mod.ts";
-import { Access } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
-import type { Params } from "../core/mod.ts";
+import { s, Access, type App, type RequestContext, type Params } from "../core/mod.ts";
 
 export const name = "git";
 export const needs: string[] = [];

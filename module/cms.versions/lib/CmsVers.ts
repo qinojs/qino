@@ -1,10 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../../core/mod.ts";
+import { getCtx, type Db, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
-import type { Db } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
-import type { App } from "../../core/mod.ts";
 
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads

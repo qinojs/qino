@@ -1,6 +1,5 @@
-import { hee } from "../core/mod.ts";
+import { hee, type RequestContext } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
 
 export const name = "cms.layout.backend";
 
@@ -23,6 +22,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   ctx.html.styles.add(u2Root + "css/classless/classless.css");
   ctx.html.styles.add(u2Root + "css/classless/more.css");
   ctx.html.styles.add(u2Root + "class/flex/flex.css");
+  ctx.html.styles.add(u2Root + "class/grid/grid.css");
   ctx.html.styles.add(u2Root + "class/unstyle/unstyle.css");
   ctx.html.styles.add(u2Root + "class/card/card.css");
   ctx.html.styles.add(u2Root + "class/table/table.css");

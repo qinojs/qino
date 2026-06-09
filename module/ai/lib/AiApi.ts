@@ -4,8 +4,7 @@ import { chatCompletions } from "./chatCompletions.ts";
 import { chatSession } from "./chatSession.ts";
 import { embeddings } from "./embeddings.ts";
 import { imageGenerations } from "./imageGenerations.ts";
-import type { App } from "../../core/mod.ts";
-import type { RequestContext } from "../../core/mod.ts";
+import type { App, RequestContext } from "../../core/mod.ts";
 
 export class AiApi {
   private bots = new Map<string, Bot>();

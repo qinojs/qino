@@ -1,10 +1,7 @@
 // Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
-import { hee } from "../core/mod.ts";
-import { getCtx } from "../core/mod.ts";
+import { hee, getCtx, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
-import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.struct.access";
 export const needs = ["cms.backend", "cms.backend.struct"];

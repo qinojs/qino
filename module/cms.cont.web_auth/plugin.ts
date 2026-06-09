@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { getCtx } from "../core/mod.ts";
-import { hee } from "../core/mod.ts";
+import { getCtx, hee } from "../core/mod.ts";
 
 export const name = "cms.cont.web_auth";
 export const needs = ["web_auth"];

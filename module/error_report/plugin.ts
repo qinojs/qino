@@ -5,9 +5,7 @@
  */
 
 import dbSchema from "./dbschema.json" with { type: "json" };
-import type { App } from "../core/mod.ts";
-import { getCtx, type RequestContext } from "../core/mod.ts";
-import { Output } from "../core/mod.ts";
+import { getCtx, type RequestContext, Output, type App } from "../core/mod.ts";
 
 const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };

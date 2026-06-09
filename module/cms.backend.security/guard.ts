@@ -1,11 +1,8 @@
-import { HTTPException } from "../../deps.ts";
-import { Output, clientIp } from "../core/mod.ts";
+import { HTTPException, type Context as HonoContext } from "../../deps.ts";
+import { Output, clientIp, type App, type RequestContext } from "../core/mod.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
-import type { Context as HonoContext } from "../../deps.ts";
-import type { App } from "../core/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
 
 const pathBlocks = new Map<string, number>();
 

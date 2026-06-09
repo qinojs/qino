@@ -1,8 +1,6 @@
-import { hee } from "../core/mod.ts";
-import { getCtx, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
 

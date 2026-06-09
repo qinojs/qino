@@ -1,6 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { getCtx } from "../core/mod.ts";
-import { hee } from "../core/mod.ts";
+import { getCtx, hee } from "../core/mod.ts";
 
 export const name = "cms.cont.lang.choose2";
 

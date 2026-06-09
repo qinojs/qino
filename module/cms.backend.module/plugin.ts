@@ -1,8 +1,6 @@
-import { hee } from "../core/mod.ts"
-import { getCtx } from "../core/mod.ts";
+import { hee, getCtx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.module";
 export const needs = ["cms.backend"];

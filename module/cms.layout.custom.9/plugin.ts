@@ -1,7 +1,5 @@
-import { hee } from "../core/mod.ts";
-import type { CMS } from "../cms/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
+import { hee, type RequestContext } from "../core/mod.ts";
+import type { CMS, Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.custom.9";
 
