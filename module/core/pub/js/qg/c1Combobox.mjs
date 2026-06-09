@@ -5,6 +5,7 @@ var doc = document;
 var dialog = doc.createElement('div');
 dialog.classList.add('c1Dialog');
 dialog.classList.add('c1Select');
+dialog.setAttribute('popover', 'manual'); // top-layer: liegt über dem cms-panel (selbst popover) und dessen shadow-dom
 dialog.addEventListener('mousedown', e=>{
 	e.preventDefault();
 	e.stopPropagation(); // prevent closing cms-panel
@@ -31,20 +32,18 @@ window.c1Combobox = function(input){
 	input.setAttribute('autocomplete','off');
 	input.addEventListener('input', this);
 	input.addEventListener('keydown', this);
-	input.addEventListener('mouseover', this);
-	input.addEventListener('mousedown', this);
 	input.addEventListener('blur', this);
 	this.input = input;
 };
 c1Combobox.prototype = {
 	showDialog(){
-		doc.body.appendChild(dialog);
-		dialog.c1ZTop();
+		if (dialog.parentNode !== doc.body) doc.body.appendChild(dialog);
+		if (!dialog.matches(':popover-open')) dialog.showPopover(); // top-layer statt z-index, sonst hinter dem panel-popover
 		dialog.style.minWidth = this.input.offsetWidth + 'px';
 		Placer.follow(this.input);
 	},
 	hideDialog(){
-		dialog.offsetWidth && dialog.remove();
+		if (dialog.matches(':popover-open')) dialog.hidePopover();
 	},
 	initOptions(){
 		this.mark(dialog.firstElementChild);
@@ -117,9 +116,6 @@ c1Combobox.prototype = {
 		this.showDialog();
 		this.searchOptionsDebounced();
 	},
-	onmousedown(){
-		//dialog.offsetWidth ? this.hideDialog() : this.showDialog(); // firefox freezing input!!
-	},
 	onkeydown(e) {
 		if (e.defaultPrevented) return;
 		switch (e.key) {
@@ -144,6 +140,9 @@ c1Combobox.prototype = {
 var css =
 '.c1Select { \
 	position: fixed; \
+	inset: auto; \
+	margin: 0; \
+	padding: 0; \
 	font-size: 13px; \
 	background-color:#fff; \
 	border: 1px solid #aaa; \
@@ -155,7 +154,6 @@ var css =
 	box-shadow: 0 0 8px rgba(0,0,0,.3); \
 	min-height: 10px; \
 	max-height: 50vh; \
-	background: #fff; \
 	box-sizing:border-box; \
 	cursor:pointer; \
 } \

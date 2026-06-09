@@ -2,7 +2,7 @@
 import { ctx } from '../../core/pub/js/qino.js';
 
 const { appURL, sysURL } = ctx;
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 let div, iframe1, iframe2, pid, view1;
 window.CmsVersComparer = {
     _ensure(){

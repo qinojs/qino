@@ -98,7 +98,7 @@ export class Node {
         const ctx = getCtx();
         user ??= ctx.user;
         const usrId = Number(user);
-        const cache: Record<string, number> = ctx.state.cmsAccessCache ??= {};
+        const cache = ctx.cms.accessCache;
         const key = `${this.id}:${usrId}`;
         cache[key] ??= await this.#calcUsrAccess(user);
         return cache[key];
@@ -137,7 +137,7 @@ export class Node {
     async html(vars: Record<string, any> = {}): Promise<HtmlString> {
         if (!(await this.isReadable())) return new HtmlString("");
         const ctx = getCtx();
-        const renderPath: Set<number> = ctx.state.cmsRenderPath ??= new Set();
+        const renderPath = ctx.cms.renderPath;
         if (renderPath.has(this.id)) {
             return new HtmlString(this.edit ? `<div class="qgCmsCont -pid${this}">Recursion, Content ${this.id} again!</div>` : "");
         }
@@ -252,9 +252,9 @@ export class Node {
     get edit(): boolean {
         const ctx = getCtx();
         const usrId = Number(ctx.user);
-        const cache: Record<string, number> = ctx.state.cmsAccessCache ?? {};
+        const cache = ctx.cms.accessCache;
         const cachedAccess = cache[`${this.id}:${usrId}`] ?? 0;
-        return cachedAccess > 1 && !!ctx.state.editmode;
+        return cachedAccess > 1 && !!ctx.cms.editmode;
     }
 
     async page(): Promise<Node> {

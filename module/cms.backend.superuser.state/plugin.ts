@@ -6,7 +6,7 @@ import type { Node } from "../cms/mod.ts";
 export const name = "cms.backend.superuser.state";
 export const needs = ["cms.backend"];
 
-const dumpJs = "https://esm.sh/@jsr/nuxodin__dump@1.5.2/es2022/nuxodin__dump.mjs";
+const dumpJs = "https://jsr.io/@nuxodin/dump/1.5.2/mod.js";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });
@@ -32,7 +32,7 @@ function renderState(node: Node): string {
   ctx.html.importMap.set(dumpJs, dumpJs);
   return `
     ${dumpBox("Server / app", node.app, 2)}
-    ${dumpBox("Context", ctx, 1)}
+    ${dumpBox("Context", ctx, 2)}
     ${clientCtxBox("Client / ctx (qino.js)")}`;
 }
 

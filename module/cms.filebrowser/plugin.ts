@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx, type RequestContext, s, Access, type AptTree, type App } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
 
 export const name = "cms.filebrowser";
 export { healthChecks } from "./healthChecks.ts";
@@ -21,7 +22,7 @@ export function init(app: App) {
     app.on("cms-ready", e => {
         const ctx = e.ctx as RequestContext;
         if (ctx.get.qgCmsNoFrontend) return;
-        if (!ctx.state.editmode) return;
+        if (!ctx.cms.editmode) return;
         ctx.html.scripts.add(ctx.sysURL + "cms.filebrowser/pub/init.mjs");
     });
 

@@ -1,4 +1,5 @@
 import type { Node } from "../cms/mod.ts";
+import type { RequestContext } from "../core/mod.ts";
 
 export const name = "cms.cont.nav3";
 
@@ -36,7 +37,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, _vars: unknown = {}): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
   const cms = node.cms;
   const settings = node.settings;
 
@@ -48,11 +49,11 @@ async function render(node: Node, _vars: unknown = {}): Promise<string> {
   //await activeByRenderPath.setType("bool");
   let ActivePage: Node;
   if (activeByRenderPath) {
-    const firstId = cms.RenderPath.values().next().value;
+    const firstId = ctx.cms.renderPath.values().next().value;
     const firstPage = firstId ? await cms.node(firstId) : null;
-    ActivePage = firstPage ? await firstPage.page() : cms.MainNode;
+    ActivePage = firstPage ? await firstPage.page() : ctx.cms.mainNode;
   } else {
-    ActivePage = cms.MainNode;
+    ActivePage = ctx.cms.mainNode;
   }
 
   // Determine start page

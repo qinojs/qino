@@ -21,7 +21,7 @@ class AiChat extends HTMLElement {
       page: {
         title: document.title,
         url: location.href,
-        id: ctx.cms?.page ?? null,
+        id: globalThis.qino?.cms?.nodeId ?? null,
       },
     };
     this.innerHTML = `<style>

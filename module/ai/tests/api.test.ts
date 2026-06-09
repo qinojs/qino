@@ -28,7 +28,7 @@ Deno.test("ai: init installs AiApi, apt tree and cms-ready hook", () => {
 
   const html = { content: "", scripts: { add(url: string) { html.content += `[${url}]`; } } };
   const ctx = {
-    state: { editmode: true },
+    cms: { editmode: true },
     sysURL: "/m/",
     html,
   };

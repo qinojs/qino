@@ -2,7 +2,7 @@ import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
 import { apt, t, u2Base, ctx } from "../../../core/pub/js/qino.js";
 
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 
 const panelStyles = [
   u2Base + "css/norm/norm.css",

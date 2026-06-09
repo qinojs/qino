@@ -3,7 +3,7 @@
  * und Server-Listener. */
 import { t, apt, u2Base, ctx } from "../../../core/pub/js/qino.js";
 
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)
 

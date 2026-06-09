@@ -65,11 +65,9 @@ export function init(app: App) {
     if (ctx.get.qgCmsNoFrontend) return;
     if (await app.settings.cms.frontend !== "cms.frontend.2") return;
 
-    const g = ctx.state;
     const settings = ctx.settings;
-    const cms = app.cms;
 
-    const node = cms.MainNode;
+    const node = ctx.cms.mainNode;
     if (!node) return;
     const access = await node.access();
     const inBackend = node.vs?.module === "cms.layout.backend";
@@ -91,12 +89,12 @@ export function init(app: App) {
     if (access > 1) {
       ctx.csp["img-src"]["blob:"] = 1;
       qino.cms ??= {};
-      qino.cms.page = node.id;
-      qino.cms.requestedPage = cms.RequestedNode?.id;
+      qino.cms.nodeId = node.id;
+      qino.cms.requestedNodeId = ctx.cms.requestedNodeId;
       if (await ctx.user?.get?.("superuser")) qino.dev = ctx.dev || null;
-      qino.cms.editmode = g.editmode;
+      qino.cms.editmode = ctx.cms.editmode;
 
-      if (g.editmode) {
+      if (ctx.cms.editmode) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");

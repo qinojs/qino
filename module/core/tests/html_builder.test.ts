@@ -1,7 +1,7 @@
 import { assertEquals } from "./deps.ts";
 import { HtmlBuilder } from "../lib/HtmlBuilder.ts";
 
-Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
+Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () => {
   const html = new HtmlBuilder();
   html.titlePrefix = "Pre ";
   html.title = `<Title>`;
@@ -16,7 +16,7 @@ Deno.test("HtmlBuilder: getHeader renders escaped metadata and assets", () => {
   html.importMap.set("@qino/unsafe", "</script>");
   Object.assign(html.jsData, { hello: "<world>" });
 
-  const out = html.getHeader();
+  const out = html.render();
   assertEquals(out.includes('<meta charset="utf-8">'), true);
   assertEquals(out.includes('<script type=importmap>{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
   assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;">'), true);

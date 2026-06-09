@@ -59,10 +59,9 @@ export const ctx = {
   settings: new CtxSetting().proxy,
   dev: !!globalThis.qino?.dev,
   token: globalThis.qino?.token,
-  cms: globalThis.qino?.cms,   // nur clientseitig: CMS-Seitenkontext { page, requestedPage, editmode, beUrl, clipboard }
 };
 
 // serverseitig: import { getCtx } ... — clientseitig gibt es nur den einen ctx
-export function getCtx() { return ctx; }
+export function getCtx() { console.log(Error().stack); return ctx; }
 
 export { t };

@@ -30,8 +30,8 @@ export async function render(ctx: RequestContext): Promise<void> {
     Page = await cms.node(Number(notFoundId));
   }
 
-  cms.MainNode = Page;
-  cms.RequestedNode = Page;
+  ctx.cms.mainNode = Page;
+  ctx.cms.requestedNode = Page;
 
   // Set editmode early so Node.edit (sync getter) works during render
   const access = await Page.access();
@@ -39,15 +39,15 @@ export async function render(ctx: RequestContext): Promise<void> {
   if (!access) {
     ctx.responseStatus = 401;
     const noAccessId = await app.settings.cms.pageNoAccess ?? 0;
-    cms.MainNode = await cms.node(Number(noAccessId));
+    ctx.cms.mainNode = await cms.node(Number(noAccessId));
   }
-  if (!(await cms.MainNode.isReadable())) {
+  if (!(await ctx.cms.mainNode.isReadable())) {
     ctx.responseStatus = 401;
     const offlineId = await app.settings.cms.pageOffline;
-    cms.MainNode = await cms.node(Number(offlineId ?? "0"));
+    ctx.cms.mainNode = await cms.node(Number(offlineId ?? "0"));
   }
 
-  const mainNode = cms.MainNode;
+  const mainNode = ctx.cms.mainNode;
   const PageObj = await mainNode.page();
   const titleT = await PageObj.text("_title");
   const title = titleT ? String(await titleT.string()).replace(/<[^>]+>/g, "") : "";

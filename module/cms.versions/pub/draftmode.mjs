@@ -2,7 +2,7 @@
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 function panelRoot() {
 	return document.querySelector('qino-cms')?.shadowRoot || document;
 }

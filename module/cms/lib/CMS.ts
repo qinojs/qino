@@ -15,12 +15,6 @@ export class CMS {
         this.db = app.db;
     }
 
-    get MainNode(): Node { return getCtx().state.cmsMainPage; }
-    set MainNode(v: Node) { getCtx().state.cmsMainPage = v; }
-    get RequestedNode(): Node { return getCtx().state.cmsRequestedPage; }
-    set RequestedNode(v: Node) { getCtx().state.cmsRequestedPage = v; }
-    get RenderPath(): Set<number> { return getCtx().state.cmsRenderPath ??= new Set(); }
-
     async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
         id = Number(id);
         if (this.#nodes.has(id)) return this.#nodes.get(id)!;
@@ -146,7 +140,7 @@ export class CMS {
         const ctx = getCtx();
         const P = await this.node(Number(node));
         await P.urlSeo(ctx.lang);
-        const MainNode = this.MainNode || await this.nodeFromRequest();
+        const MainNode = ctx.cms.mainNode || await this.nodeFromRequest();
         const href = ` href="${hee(await P.url())}"`;
         const access = await P.access();
         const inside = await MainNode.in?.(P);

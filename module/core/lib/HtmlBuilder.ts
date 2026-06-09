@@ -1,7 +1,5 @@
 import { hee } from "./util.ts";
 
-//export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
-
 export class HtmlBuilder {
     lang = "en";
     head = "";
@@ -22,7 +20,7 @@ export class HtmlBuilder {
     // deno-lint-ignore no-explicit-any
     get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
-    getHeader(): string {
+    #renderHead(): string {
         let ret = '<meta charset="utf-8">\n';
 
         for (const [name, value] of Object.entries(this.meta)) {
@@ -56,7 +54,7 @@ export class HtmlBuilder {
     }
 
     render(): string {
-        return `<!DOCTYPE HTML>\n<html lang="${hee(this.lang)}">\n\t<head>${this.getHeader()}\n\t<body>\n${this.content}\n`;
+        return `<!DOCTYPE HTML>\n<html lang="${hee(this.lang)}">\n\t<head>${this.#renderHead()}\n\t<body>\n${this.content}\n`;
     }
 }
 

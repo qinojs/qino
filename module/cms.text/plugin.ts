@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { s, Access, type AptTree, type App, type RequestContext } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
 
 export const name = "cms.text";
 export const needs = ["cms"];
@@ -38,7 +39,7 @@ export const settingsSchema = {
 export function init(app: App) {
     app.on("cms-ready", e => {
         const ctx = e.ctx as RequestContext;
-        if (!ctx.state.editmode) return;
+        if (!ctx.cms.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
         ctx.html.scripts.add(ctx.sysURL + "cms.text/pub/init.mjs");
     });

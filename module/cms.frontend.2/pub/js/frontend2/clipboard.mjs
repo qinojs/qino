@@ -1,11 +1,12 @@
 import { apt } from '../../../../core/pub/js/qino.js';
 
 cms.frontend2.clipboard = pid => {
+    const els = () => document.querySelectorAll('.-pid'+pid);
     function close() {
         apt.cms.clipboard.put({ value: 0 });
-        $('.-pid'+pid).css({opacity: 1});
+        els().forEach(el => el.style.opacity = 1);
     }
-    $('.-pid'+pid).css({opacity: 0.4});
+    els().forEach(el => el.style.opacity = 0.4);
     apt.cms.node(pid).get().then(res => {
         cms.frontend2.dialog(
             'Paste from clipboard',
@@ -17,7 +18,7 @@ cms.frontend2.clipboard = pid => {
             [{
                 title: 'Paste on this page', then() {
                     cms.cont(pid).addPosition();
-                    $('.-pid'+pid).remove();
+                    els().forEach(el => el.remove());
                     close();
                 }
             },{

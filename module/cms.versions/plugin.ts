@@ -21,6 +21,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx, requestStorage, type RequestContext, Access, type AptTree, s, type App } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
 import {
     versedTables,
     setSpace, setLog, setVers, getCmsVers,
@@ -306,7 +307,7 @@ export function init(app: App) {
         // Determine space from draftmode setting
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (draftmode) {
-            vs.cmsVersSpace = ctx.state.editmode ? 1 : 0;
+            vs.cmsVersSpace = ctx.cms.editmode ? 1 : 0;
         }
 
         // Override from request params
@@ -403,7 +404,7 @@ export function init(app: App) {
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────
     app.on("cms-ready", async (e) => {
         const ctx = e.ctx as RequestContext;
-        if (!ctx.state.editmode) return;
+        if (!ctx.cms.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
         ctx.html.jsData.cmsFrontend = frontend;
@@ -412,7 +413,7 @@ export function init(app: App) {
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (draftmode) {
             // Check if draft has changes newer than live
-            const MainNode = (ctx.app as any).cms.MainNode;
+            const MainNode = ctx.cms.mainNode;
             if (MainNode) {
                 const versions = await ctx.app.db.indexCol(
                     `SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ?`,

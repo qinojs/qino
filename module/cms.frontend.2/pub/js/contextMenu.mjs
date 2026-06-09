@@ -6,7 +6,7 @@ import '../../../cms/pub/js/cms.mjs';
 import { t } from '../../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 
 const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
 	icon: sysURL+'cms.frontend.2/pub/img/module_default.svg',

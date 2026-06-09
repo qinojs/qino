@@ -1,5 +1,6 @@
 import { AiApi } from "./mod.ts";
 import type { App, RequestContext } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
 
 export const name = "ai";
 export const needs = ["core"];
@@ -10,7 +11,7 @@ export function init(app: Pick<App, "aptTree" | "on" | "settings"> & { ai?: AiAp
 
   app.on("cms-ready", e => {
     const ctx = e.ctx as RequestContext;
-    if (!ctx.state.editmode) return;
+    if (!ctx.cms.editmode) return;
     ctx.html.scripts.add(ctx.sysURL + "ai/pub/chat.js");
     ctx.html.content += `
       <style>

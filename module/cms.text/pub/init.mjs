@@ -6,7 +6,7 @@ import '../../core/pub/js/c1/onElement.mjs';
 import { apt, u2Base, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 const activeLang = document.documentElement.lang;
 
 // contextmenu

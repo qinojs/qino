@@ -32,7 +32,7 @@ Deno.test("cms.filebrowser: init registers apt tree and cms-ready asset hook", a
   await handlers["cms-ready"][0]({
     ctx: {
       get: {},
-      state: { editmode: true },
+      cms: { editmode: true },
       sysURL: "/m/",
       html: { scripts: { add: (url: string) => added.push(url) } },
     },

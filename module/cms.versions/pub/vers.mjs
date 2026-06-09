@@ -3,7 +3,7 @@
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
-const Page = ctx.cms?.page;
+const Page = globalThis.qino?.cms?.nodeId;
 const cmsFrontend = window.cmsFrontend || 'cms.frontend.2';
 
 var css =

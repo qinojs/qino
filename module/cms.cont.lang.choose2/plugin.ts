@@ -49,7 +49,7 @@ async function render(node: Node): Promise<string> {
   const langs = node.app.languages.all;
   if (langs.length < 2) return "<span></span>";
 
-  const Page = toPageId ? await cms.node(Number(toPageId)) : cms.MainNode;
+  const Page = toPageId ? await cms.node(Number(toPageId)) : ctx.cms.mainNode;
 
   if (type === "select") {
     const options = await Promise.all(langs.map(async (l) => {
