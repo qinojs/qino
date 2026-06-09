@@ -24,8 +24,8 @@ import { getCtx, requestStorage, type RequestContext, Access, type AptTree, s, t
 import type {} from "../cms/mod.ts";
 import {
     versedTables,
-    setSpace, setLog, setVers, getCmsVers,
-    versTable, view, ensureSpace, dropRequestViews,
+    setVers, getCmsVers,
+    versTable, ensureSpace, dropRequestViews,
 } from "./lib/Vers.ts";
 import { pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForPage, logDetails, publishCont } from "./serverInterface.ts";

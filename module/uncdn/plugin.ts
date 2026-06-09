@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { Output, assertNoSSRF, type App, type RequestContext, type HtmlBuilder } from "../core/mod.ts";
-import { CACHE_SUBDIR, DEFAULT_FETCH_POLICY, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
+import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
 
 export const name = "uncdn";
 export const needs = ["core"];

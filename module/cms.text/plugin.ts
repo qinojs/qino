@@ -1,6 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
-
-import { s, Access, type AptTree, type App, type RequestContext } from "../core/mod.ts";
+import type { App, RequestContext } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 export const name = "cms.text";
@@ -47,6 +45,6 @@ export function init(app: App) {
 
 export { api } from "./api.ts";
 
-export async function install({ app }: any): Promise<void> {
+export function install({ app }: { app: App }): void {
     app.settings["cms.text"]["translation service"];
 }

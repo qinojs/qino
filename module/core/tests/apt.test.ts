@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects, assertThrows } from "./deps.ts";
+import { assertEquals } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 
 // ───── Schema tests ───────────────────────────────────────────────────────

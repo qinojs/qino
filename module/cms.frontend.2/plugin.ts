@@ -1,5 +1,5 @@
-import { hee, getCtx, Access, AccessError, s, type RequestContext, type AptTree, type App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { Access, AccessError, s, type RequestContext, type AptTree, type App } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
 
 export const name = "cms.frontend.2";
 export const needs = ["cms"];
