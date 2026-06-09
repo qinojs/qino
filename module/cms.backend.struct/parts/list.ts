@@ -55,7 +55,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       const hasChildren = (await SubPage.children({ type: treeType })).size > 0;
       let toggleBtn = '<span class=-toggle></span>';
       if (hasChildren) {
-        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${SubPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}"></u2-ico></button>`;
+        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${SubPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`;
       }
 
       // Title cell
@@ -75,7 +75,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       }
 
       const pageUrl = await SubPage.url();
-      const linkCell = `<a style="vertical-align:middle" href="${hee(pageUrl)}" title="open"><u2-ico icon="open_in_new"></u2-ico></a>`;
+      const linkCell = `<a style="vertical-align:middle" href="${hee(pageUrl)}" title="open"><u2-ico icon="open_in_new">↗</u2-ico></a>`;
 
       // Online start column
       const onlineStartCell = renderOnlineStart(SubPage, subAccess);

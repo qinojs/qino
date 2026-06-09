@@ -102,13 +102,13 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       const hasChildren = (await SubPage.children({ type: treeType })).size > 0;
       let toggleBtn = "<span class=-toggle></span>";
       if (hasChildren) {
-        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}"></u2-ico></button>`;
+        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`;
       }
 
       const titleObj = await SubPage.title();
       const titleStr = titleObj ? String(await (await titleObj.orFallback(ctx!.lang)).get() ?? "") : "";
       const titleCell = access >= 1
-        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(String(SubPage.vs.name ?? ""))}</span></span><a style="vertical-align:middle" href="${hee(await SubPage.url())}" title="open"><u2-ico icon="open_in_new"></u2-ico></a>`
+        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(String(SubPage.vs.name ?? ""))}</span></span><a style="vertical-align:middle" href="${hee(await SubPage.url())}" title="open"><u2-ico icon="open_in_new">↗</u2-ico></a>`
         : `<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
 
       // "Public" cell — toggles this page's own access (null = inherited)
