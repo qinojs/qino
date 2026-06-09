@@ -161,7 +161,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
             data-col="${hee(String(row.col))}"
             icon="delete"
             aria-label="Delete"
-            style="cursor:pointer">🗑</u2-ico>`;
+            style="cursor:pointer">✕</u2-ico>`;
     }
 
     return `

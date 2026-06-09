@@ -1,5 +1,5 @@
 const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
-const csrfHeaders = () => globalThis.qgToken ? { "X-CSRF-Token": globalThis.qgToken } : {};
+const csrfHeaders = () => globalThis.qino?.token ? { "X-CSRF-Token": globalThis.qino.token } : {};
 
 export class AptClient extends EventTarget {
   #base;

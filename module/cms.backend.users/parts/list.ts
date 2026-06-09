@@ -67,10 +67,10 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
     ${loginAsTd}
   <td>
     <a href="${hee(detailUrl)}">
-      <u2-ico icon="edit">Edit</u2-ico>
+      <u2-ico icon=edit>🖉</u2-ico>
     </a>
   <td class=-delete>
-    <button class=u2-unstyle><u2-ico icon="delete">x</u2-ico></button>`;
+    <button class=u2-unstyle><u2-ico icon="delete">✕</u2-ico></button>`;
   }
 
   return html;

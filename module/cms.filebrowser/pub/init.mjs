@@ -1,5 +1,7 @@
-import { apt, u2Base } from '../../core/pub/js/qino.js';
+import { apt, u2Base, ctx } from '../../core/pub/js/qino.js';
 import { cms } from '../../cms/pub/js/cms.mjs';
+
+const Page = ctx.cms?.page;
 
 // Das CMS-Panel (cms.frontend.2) lebt im Shadow-DOM von <qino-cms>.
 // SelectorObserver mit {root} sieht dort hinein, c1.onElement (nur document) nicht.

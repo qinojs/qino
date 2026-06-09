@@ -31,10 +31,10 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
         return {
           size: sub.size,
           html: `<u2-tree>
-            <u2-ico slot=icon>folder</u2-ico>
+            <u2-ico slot=icon icon=folder>🗀</u2-ico>
             ${hee(e.name)}
             <small style="margin-left:auto"><u2-bytes>${sub.size}</u2-bytes></small>
-            <button data-delete=${JSON.stringify(rel + "/")} class="u2-unstyle" u2-confirm><u2-ico>delete</u2-ico></button>
+            <button data-delete=${JSON.stringify(rel + "/")} class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
             ${sub.html}
           </u2-tree>`,
         };
@@ -43,10 +43,10 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
         return {
           size: fileSize,
           html: `<u2-tree>
-            <u2-ico slot=icon>description</u2-ico>
+            <u2-ico slot=icon icon=description>🗎</u2-ico>
             <code>${hee(e.name)}</code>
             <small style="margin-left:auto"><u2-bytes>${fileSize}</u2-bytes></small>
-            <button data-delete=${JSON.stringify(rel)} class="u2-unstyle" u2-confirm><u2-ico>delete</u2-ico></button>
+            <button data-delete=${JSON.stringify(rel)} class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
           </u2-tree>`,
         };
       }
@@ -100,13 +100,13 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     </div>
     <div class="-head">${tActions}</div>
     <div class="-body">
-      <button data-reload='{"deleteAll":1}' u2-confirm><u2-ico>delete</u2-ico> ${tDeleteAll}</button>
+      <button data-reload='{"deleteAll":1}' u2-confirm><u2-ico icon=delete>✕</u2-ico> ${tDeleteAll}</button>
     </div>
   </div>
   <div class="u2-card" style="flex:1">
     <div class="-head">${tCachedFiles}</div>
     <div class="-body">
-      ${tree ? `<u2-tree aria-expanded="true"><u2-ico slot=icon>folder</u2-ico>root ${tree}</u2-tree>` : `<em>${tNoCached}</em>`}
+      ${tree ? `<u2-tree aria-expanded="true"><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : `<em>${tNoCached}</em>`}
     </div>
   </div>
 </div>`;

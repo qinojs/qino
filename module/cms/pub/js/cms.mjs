@@ -2,7 +2,7 @@
 import '../../../core/pub/js/c1.js';
 import '../../../core/pub/js/c1/dom.mjs';
 import '../../../core/pub/js/c1/onElement.mjs';
-import { apt } from '../../../core/pub/js/qino.js';
+import { apt, ctx } from '../../../core/pub/js/qino.js';
 
 export const cms = {};
 Object.assign(cms, c1.Eventer);
@@ -43,7 +43,7 @@ const proto = {
 			src += '/' + part;
 			if (this.parts[part] !== undefined) src += '-' + this.parts[part];
 		}
-		return appURL + 'dbFile/' + this.id + src + '/' + this.name;
+		return ctx.appURL + 'dbFile/' + this.id + src + '/' + this.name;
 	},
 };
 

@@ -1,8 +1,9 @@
 /* CMS-Seitenbaum auf Basis von u2-tree.
  * Einstieg: window.cmsTreeInit(json); cms.Tree ist die Fassade für Panel, contextMenu.mjs
  * und Server-Listener. */
-import { t, apt, u2Base } from "../../../core/pub/js/qino.js";
+import { t, apt, u2Base, ctx } from "../../../core/pub/js/qino.js";
 
+const Page = ctx.cms?.page;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)
 

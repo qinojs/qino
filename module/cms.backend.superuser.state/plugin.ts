@@ -6,7 +6,7 @@ import type { Node } from "../cms/mod.ts";
 export const name = "cms.backend.superuser.state";
 export const needs = ["cms.backend"];
 
-const dumpJs = "https://esm.sh/jsr/@nuxodin/dump@1.5.2";
+const dumpJs = "https://esm.sh/@jsr/nuxodin__dump@1.5.2/es2022/nuxodin__dump.mjs";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });

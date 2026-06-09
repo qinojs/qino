@@ -13,7 +13,9 @@ import { t } from '../../../core/pub/js/qino.js';
 import './ddConts.mjs';
 import './dropPasteHelper.mjs';
 import './dropPaste.mjs';
-import { apt } from '../../../core/pub/js/qino.js';
+import { apt, ctx } from '../../../core/pub/js/qino.js';
+
+const Page = ctx.cms?.page;
 
 cms.frontend2 = {};
 
@@ -231,7 +233,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	});
 	cms.contPos.on('unmark', () => menu.style.display = 'none' );
 	setTimeout(() => document.activeElement.blur());
-	window.cmsClipboard && import(sysURL+'cms.frontend.2/pub/js/frontend2/clipboard.mjs').then(()=>cms.frontend2.clipboard(cmsClipboard));
+	ctx.cms?.clipboard && import(ctx.sysURL+'cms.frontend.2/pub/js/frontend2/clipboard.mjs').then(()=>cms.frontend2.clipboard(ctx.cms.clipboard));
 });
 
 cms.console = {

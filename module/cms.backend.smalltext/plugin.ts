@@ -57,7 +57,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
             <td>${hee(String(row.count))}
             ${codeLogTd}
             <td><button class=u2-unstyle data-action="translate_entry"><u2-ico icon=translate>↻</u2-ico></button>
-            <td><button class=u2-unstyle data-action="delete_entry"><u2-ico icon=delete>x</u2-ico></button>
+            <td><button class=u2-unstyle data-action="delete_entry"><u2-ico icon=delete>✕</u2-ico></button>
         `;
     }
 

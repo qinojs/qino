@@ -1,6 +1,8 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
-import { apt, t, u2Base } from "../../../core/pub/js/qino.js";
+import { apt, t, u2Base, ctx } from "../../../core/pub/js/qino.js";
+
+const Page = ctx.cms?.page;
 
 const panelStyles = [
   u2Base + "css/norm/norm.css",
@@ -16,7 +18,7 @@ customElements.define("qino-cms", class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
     const root = this.attachShadow({ mode: "open" });
-    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : sysURL + href }));
+    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : ctx.sysURL + href }));
     while (this.firstChild) root.append(this.firstChild);
     requestAnimationFrame(() => this.hidden = false);
   }

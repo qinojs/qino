@@ -15,9 +15,12 @@ export class HtmlBuilder {
     legacyScripts: Set<string> = new Set<string>();
     importMap: Map<string, string> = new Map<string, string>();
     content = "";
-    #jsData?: Record<string, unknown>;
+    // deno-lint-ignore no-explicit-any
+    #jsData?: Record<string, any>;
 
-    get jsData(): Record<string, unknown> { return this.#jsData ??= {}; }
+    // `any`: jsData ist ein dynamischer JSON-Bag (verschachtelt: qino.cms.*) — so bleibt das Befüllen cast-frei.
+    // deno-lint-ignore no-explicit-any
+    get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
     getHeader(): string {
         let ret = '<meta charset="utf-8">\n';

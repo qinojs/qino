@@ -74,6 +74,8 @@ export function init(app: App) {
     const access = await node.access();
     const inBackend = node.vs?.module === "cms.layout.backend";
 
+    const qino = ctx.html.jsData.qino ??= {};
+
     if (access > 1 || inBackend) {
       const pageNotFound = await app.settings.cms.pageNotFound ?? 0;
       if (pageNotFound != node.id) {
@@ -81,20 +83,21 @@ export function init(app: App) {
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         settings.cms[lastKey](ctx.requestUri);
         const toggleUrl = String(settings.cms[otherKey]() ?? "");
-        ctx.html.jsData.cmsBackendUrl = toggleUrl;
+        (qino.cms ??= {}).beUrl = toggleUrl;
         ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/init.mjs");
       }
     }
 
     if (access > 1) {
       ctx.csp["img-src"]["blob:"] = 1;
-      ctx.html.jsData.Page = node.id;
-      ctx.html.jsData.qgCmsRequestedPage = cms.RequestedNode?.id;
-      if (await ctx.user?.get?.("superuser")) ctx.html.jsData.qino = { dev: ctx.dev || null };
-      ctx.html.jsData.qgCmsEditmode = g.editmode;
+      qino.cms ??= {};
+      qino.cms.page = node.id;
+      qino.cms.requestedPage = cms.RequestedNode?.id;
+      if (await ctx.user?.get?.("superuser")) qino.dev = ctx.dev || null;
+      qino.cms.editmode = g.editmode;
 
       if (g.editmode) {
-        ctx.html.jsData.cmsClipboard = Number(settings.cms.clipboard() ?? "0");
+        qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");

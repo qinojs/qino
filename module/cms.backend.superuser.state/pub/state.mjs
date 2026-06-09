@@ -1,7 +1,7 @@
 // dump des client-seitigen ctx aus qino.js — zum vergleich mit den server-boxen.
 // gleiche dump()-lib wie serverseitig (jsr:@nuxodin/dump), gleiche optionen.
 import { getCtx } from "../../core/pub/js/qino.js";
-import { dump } from "https://esm.sh/jsr/@nuxodin/dump@1.5.2";
+import { dump } from "https://esm.sh/@jsr/nuxodin__dump@1.5.2/es2022/nuxodin__dump.mjs";
 
 const mount = document.getElementById("qg-client-ctx");
 if (mount) {

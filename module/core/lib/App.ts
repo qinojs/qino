@@ -161,9 +161,9 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
             await this.fire("html-ready", { ctx });
             const html = ctx.html;
             html.lang = ctx.lang;
-            html.jsData["qgToken"] = ctx.token;
-            html.jsData["appURL"] = ctx.appURL || "/";
-            html.jsData["sysURL"] = ctx.sysURL || "/m/";
+            const qino = html.jsData.qino ??= {};
+            qino.token = ctx.token;
+            qino.appURL = ctx.appURL || "/";
             ctx.responseBody = html.render();
         }
         hc.res = await this.#buildResponse(hc, ctx);

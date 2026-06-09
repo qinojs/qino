@@ -3,8 +3,10 @@ import '../../core/pub/js/c1.js';
 import '../../core/pub/js/c1/fix/contextMenu.mjs';
 import '../../core/pub/js/c1/contextMenu.mjs';
 import '../../core/pub/js/c1/onElement.mjs';
-import { apt, u2Base } from '../../core/pub/js/qino.js';
+import { apt, u2Base, ctx } from '../../core/pub/js/qino.js';
 
+const sysURL = ctx.sysURL;
+const Page = ctx.cms?.page;
 const activeLang = document.documentElement.lang;
 
 // contextmenu

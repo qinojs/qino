@@ -110,7 +110,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
-  	<button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon="delete">x</u2-ico></button>`;
+  	<button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon="delete">✕</u2-ico></button>`;
   }
 
   return `

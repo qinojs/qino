@@ -24,8 +24,8 @@ import { t } from "./t.mjs";
 
 function defaultBase() {
   const el = document.querySelector('script[type="json/c1"]');
-  let appURL = globalThis.appURL;
-  if (!appURL && el?.textContent) try { appURL = JSON.parse(el.textContent).appURL; } catch { /* not json */ }
+  let appURL = globalThis.qino?.appURL;
+  if (!appURL && el?.textContent) try { appURL = JSON.parse(el.textContent)?.qino?.appURL; } catch { /* not json */ }
   return new URL("api/", location.origin + (appURL ?? "/"));
 }
 
@@ -49,7 +49,7 @@ class CtxSetting extends Item {
   };
 }
 
-const appURL = globalThis.appURL ?? "/";
+const appURL = globalThis.qino?.appURL ?? "/";
 
 export const ctx = {
   app: { apt, t },         // serverseitig: ctx.app → app.apt / app.t
@@ -58,7 +58,8 @@ export const ctx = {
   sysURL: appURL + "m/",   // wie serverseitig: appURL + "m/"
   settings: new CtxSetting().proxy,
   dev: !!globalThis.qino?.dev,
-  token: globalThis.qgToken,
+  token: globalThis.qino?.token,
+  cms: globalThis.qino?.cms,   // nur clientseitig: CMS-Seitenkontext { page, requestedPage, editmode, beUrl, clipboard }
 };
 
 // serverseitig: import { getCtx } ... — clientseitig gibt es nur den einen ctx

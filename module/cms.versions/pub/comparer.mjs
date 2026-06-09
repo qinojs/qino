@@ -1,4 +1,8 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+import { ctx } from '../../core/pub/js/qino.js';
+
+const { appURL, sysURL } = ctx;
+const Page = ctx.cms?.page;
 let div, iframe1, iframe2, pid, view1;
 window.CmsVersComparer = {
     _ensure(){

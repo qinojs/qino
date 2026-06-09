@@ -1,4 +1,4 @@
-const { apt } = await import(sysURL + "core/pub/js/qino.js");
+const { apt } = await import((globalThis.qino?.appURL ?? "/") + "m/core/pub/js/qino.js");
 
 cms.initCont("cms.backend.superuser.error_report", async (el) => {
   const pid = Number(el.dataset.pid);

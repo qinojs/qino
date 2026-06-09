@@ -208,7 +208,7 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
   return installEntries.map(([p, cmd], i) => {
     const displayCmd = root ? cmd : `sudo ${cmd}`;
     const installBtn = installable && i === 0
-      ? ` <button data-install="${hee(bin.id)}" title="Install now" u2-confirm><u2-ico>download_for_offline</u2-ico></button>`
+      ? ` <button data-install="${hee(bin.id)}" title="Install now" u2-confirm><u2-ico icon=download_for_offline>⤓</u2-ico></button>`
       : "";
     return `
     <tr class="${cls}${i > 0 ? " -extra" : ""}">
@@ -216,7 +216,7 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
       <td style="white-space:nowrap">${hee(PLATFORM_LABELS[p] || p)}
       <td>
         <code>${hee(displayCmd)}</code>
-        <button class=u2-unstyle data-copy="${hee(displayCmd)}" title="Copy"><u2-ico>content_copy</u2-ico></button>${installBtn}`;
+        <button class=u2-unstyle data-copy="${hee(displayCmd)}" title="Copy"><u2-ico icon=content_copy>⧉</u2-ico></button>${installBtn}`;
   }).join("");
 }
 
@@ -235,7 +235,7 @@ async function renderCache(app: App): Promise<string> {
   </table>
   <div class="-body">
     <u2-menubutton>
-      <button><u2-ico>delete_sweep</u2-ico> ${await app.t`Clear cache`} ▾</button>
+      <button><u2-ico icon=delete_sweep>✕</u2-ico> ${await app.t`Clear cache`} ▾</button>
       <menu>
         <li><button data-clear-cache="7" u2-confirm>${await app.t`Older than 1 week`}</button>
         <li><button data-clear-cache="30" u2-confirm>${await app.t`Older than 1 month`}</button>

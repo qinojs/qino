@@ -5,7 +5,7 @@
  */
 
 const csrfHeaders = (method) =>
-  method === "GET" || !globalThis.qgToken ? {} : { "X-CSRF-Token": globalThis.qgToken };
+  method === "GET" || !globalThis.qino?.token ? {} : { "X-CSRF-Token": globalThis.qino.token };
 
 export class WebAuth {
   constructor(opts = {}) {

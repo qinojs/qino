@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import './../../../core/pub/js/c1/NodeCleaner.mjs';
-import { apt } from '../../../core/pub/js/qino.js';
+import { apt, ctx } from '../../../core/pub/js/qino.js';
 
 // txt-id to page-id
 const txtIds = {};
@@ -27,8 +27,8 @@ cms.txtCleanElement = function(el,tid){
         else if (el.complete) requestAnimationFrame(dim);
         else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
     }
-    if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
-    if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
+    if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = ctx.appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
+    if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = ctx.appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
     el.removeAttribute('cmstxt');
     el.classList.remove('qgCmsCont', 'qgCmsPage');
 };
