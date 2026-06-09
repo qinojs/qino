@@ -21,7 +21,7 @@ export default async function (node: Node): Promise<string> {
       await app.t`New subpage of "${await (await node.title()).string()}"`,
     )
   } " title="${await app
-    .t`The new page will be created as a subpage of the selected page. Press Enter to create the page`}" c1-tooltip>
+    .t`The new page will be created as a subpage of the selected page. Press Enter to create the page`}">
   </div>
   <div id=tree></div>
 </div>

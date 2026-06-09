@@ -56,7 +56,7 @@ export async function cmsFrontend2WidgetSidebar(widget: string, node: Node, titl
   return `<div class="-item ${open ? "-open" : ""}" itemid="${widget}">
   ${content}
   <div class=-title>
-    <div class=-text title="${hee(tooltip)}" c1-tooltip>${title}</div>
+    <div class=-text title="${hee(tooltip)}">${title}</div>
   </div>
 </div>`;
 }

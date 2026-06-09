@@ -26,7 +26,7 @@ export default async function (node: Node): Promise<string> {
     } catch {
       svgHtml = `<use href="${ctx.sysURL}cms.frontend.2/pub/img/module_default.svg#main" />`;
     }
-    moduleBoxes += `<div itemid="${hee(name)}" title="${hee(desc)}" todo_c1-tooltip style="--c1-tooltip-delay:.5">
+    moduleBoxes += `<div itemid="${hee(name)}" title="${hee(desc)}">
       <div class=-title title="${hee(String(await M.get?.("name") ?? name))}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
     </div>`;
