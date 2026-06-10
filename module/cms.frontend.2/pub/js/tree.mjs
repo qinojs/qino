@@ -74,7 +74,7 @@ window.cmsTreeInit = async (json) => {
     cms.Tree?.onActivate?.(node);
     const inp = root.getElementById("page-add"), off = node.data.myaccess < 2 || node.data.ptype === "c";
     if (inp) { inp.disabled = off; inp.style.opacity = off ? 0.2 : 1; }
-    const el = document.querySelector(".-pid" + node.dataset.key);
+    const el = document.querySelector('[qcms-id="' + node.dataset.key + '"]');
     el && cms.contPos(el).mark();
   }
 
@@ -96,7 +96,7 @@ window.cmsTreeInit = async (json) => {
   const hover = (e) => { // Baumzeile -> Inhaltsblock auf der Seite markieren
     const node = nodeOf(e);
     if (!node) return;
-    const el = document.querySelector(".-pid" + node.dataset.key);
+    const el = document.querySelector('[qcms-id="' + node.dataset.key + '"]');
     if (!el) return;
     if (e.type === "mouseover") cms.contPos.active?.el !== el && cms.contPos(el).mark();
     else cms.contPos(el).unmark();

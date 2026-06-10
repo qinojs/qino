@@ -407,7 +407,7 @@ async function render(node: Node): Promise<string> {
   const messageHtml = message ? `<div class="ai-message -${hee(message.type)}">${hee(message.text)}</div>` : "";
 
   return `
-<div class="u2-flex ai-page -m-cms-backend-ai">
+<div class="u2-flex ai-page">
   <style>
     .ai-provider-list { display:grid; gap:8px; }
     .ai-provider { border:1px solid #ddd; background:#fff; }

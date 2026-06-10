@@ -35,7 +35,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const topUa = await db.all("SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10");
   const stats: Record<string, unknown> = await db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event") ?? {};
   const tab = String(ctx.get.tab ?? "live");
-  return `<div class="-m-cms-backend-security" data-security-node="${node.id}">
+  return `<div>
     <div class="u2-flex">
       ${await statusBox(app, stats)}
       <div>

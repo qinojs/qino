@@ -25,7 +25,7 @@ cms.contPos = function(el) {
 	el.cmsContPos = this;
 
 	this.el = el;
-	this.pid = el.className.replace(/.*-pid([0-9]+).*/, '$1'); // used
+	this.pid = el.getAttribute('qcms-id'); // used
 	el.addEventListener('mouseleave',this.unmarkDelay.bind(this));
 };
 Object.assign(cms.contPos, c1.Eventer);
@@ -34,7 +34,7 @@ cms.contPos.prototype = {
 	isDraggable() {
 		if (this.el.classList.contains('-draggable')) return true;
 		const p = this.el.parentNode;
-		return p.classList.contains('-e') && p.classList.contains('qgCMS-dropTarget');
+		return p.hasAttribute('qcms-edit') && p.hasAttribute('qcms-drop');
 	},
 	mark(e) {
 		const _ = cms.contPos;
@@ -63,7 +63,7 @@ cms.contPos.active = null;
 
 function contMarkListener(e) {
 	if (e.target.nodeType !== 1) return; // firefox on dragenter
-	const target = e.target.closest('.qgCmsCont.-e');
+	const target = e.target.closest('[qcms-edit]');
 	target && cms.contPos(target).mark(e);
 }
 document.addEventListener('mouseover',contMarkListener);
@@ -160,8 +160,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 	cms.contPos.dd = dd;
 	dd.on('start',e=>{
 		const el = e.target;
-		dd.targets = document.querySelectorAll('.qgCMS-dropTarget.-e, #qgCmsContTrash');
-		document.querySelectorAll('.qgCMS-dropTarget').forEach(el=>el.classList.add('dropTarget'))
+		dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
+		document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
 		p.moving = true;
 		menu.style.display = 'none';
 		el.classList.add('-moving');
@@ -172,14 +172,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 		trash.classList[[(e.target.id==='qgCmsContTrash'?'add':'remove')]]('-full');
 	})
 	dd.on('stop',el=>{
-		document.querySelectorAll('.qgCMS-dropTarget').forEach(el=>el.classList.remove('dropTarget'))
+		document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.remove('dropTarget'))
 		p.moving = null;
 		el.classList.remove('-moving');
-		if (!cms.el.pid(el.parentNode)) { // trash
-			apt.cms.node(cms.el.pid(el)).delete();
+		if (!cms.el.nid(el.parentNode)) { // trash
+			apt.cms.node(cms.el.nid(el)).delete();
 		} else {
-			const next = el.nextElementSibling ? cms.el.pid(el.nextElementSibling) : null;
-			apt.cms.node(cms.el.pid(el.parentNode))["insert-before"].put({ id: String(cms.el.pid(el)), before: next ? String(next) : undefined });
+			const next = el.nextElementSibling ? cms.el.nid(el.nextElementSibling) : null;
+			apt.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
 		}
 		trash.classList.remove('-dropTarget');
 	})
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	let startX, startY, ddEl;
 	function move(e) {
 		if (e.ctrlKey) {
-			const pid = cms.el.pid(ddEl);
+			const pid = cms.el.nid(ddEl);
 			apt.cms.node(pid).copy.post().then(({ id }) => {
 				cms.cont(id).addPosition();
 			});
@@ -215,16 +215,16 @@ document.addEventListener('DOMContentLoaded',()=>{
 	cms.contPos.on('mark', obj=>{
 		menu.style.display = 'flex'; // todo
 		const isDraggable = obj.isDraggable(),
-			mod     = obj.el.className.replace(/.*-m-([^\s]+).*/,'$1').replace(/-/g,'.');
+			mod     = obj.el.getAttribute('qcms-mod') ?? '';
 		Placer.follow(obj.el);
 
-		menu.mod.innerHTML = mod.replace(/^cms\.cont\./,'');
+		menu.mod.innerHTML = mod.replace(/^cont\./,'');
 		menu.mod.setAttribute('title',mod+' ('+obj.pid+')');
 		menu.drag.style.display = isDraggable ? 'block' : 'none';
-		menu.opts.style.display = obj.el.classList.contains('-e') ? 'block' : 'none';
+		menu.opts.style.display = obj.el.hasAttribute('qcms-edit') ? 'block' : 'none';
 		menu.style.cursor = (isDraggable?'move':'default');
 
-		if (obj.el.classList.contains('qgCMS-offline')) {
+		if (obj.el.hasAttribute('qcms-offline')) {
 			menu.mod.append(c1.dom.fragment('<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>'))
 		}
 		menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
@@ -286,7 +286,7 @@ apt.on('PUT|PATCH|DELETE cms/node/:id/*', async ({ params: { id } }) => {
 // 		document.querySelectorAll('.-pid' + id).forEach(el => el.remove());
 // 		const parent = document.querySelector('.-pid' + id)?.closest('.qgCmsPage');
 // 		if (parent) {
-// 			const pid = cms.el.pid(parent);
+// 			const pid = cms.el.nid(parent);
 // 			const res = await apt.cms.node(pid).html.get();
 // 			document.querySelector('.-pid' + pid).outerHTML = res;
 // 		}

@@ -1,6 +1,6 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.system", (el) => {
+cms.initNode("backend.system", (el) => {
   const d = new Date();
   const off = -d.getTimezoneOffset() / 60;
   const tr = el.querySelector(".-browser-time")?.closest("tr");
@@ -10,7 +10,7 @@ cms.initCont("cms.backend.system", (el) => {
   }
 
   const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);
-  const nid = cms.el.pid(el);
+  const nid = cms.el.nid(el);
 
   el.addEventListener("click", async (e) => {
     const load = e.target.closest("button[data-load-part]");

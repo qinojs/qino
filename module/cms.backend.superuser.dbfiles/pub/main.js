@@ -1,8 +1,8 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.superuser.dbfiles", (el) => {
+cms.initNode("backend.superuser.dbfiles", (el) => {
   const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);
-  const nid = cms.el.pid(el);
+  const nid = cms.el.nid(el);
 
   let debTimer;
   el.querySelector("[data-search]")?.addEventListener("input", (e) => {

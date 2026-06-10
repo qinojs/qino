@@ -1,31 +1,31 @@
-.-m-cms-cont-trash .-toolbar {
+[qcms-mod="cont.trash"] .-toolbar {
   margin-bottom: 10px;
 }
-.-m-cms-cont-trash .-list {
+[qcms-mod="cont.trash"] .-list {
   xdisplay: grid;
   xgap: 10px;
   xgrid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
-.-m-cms-cont-trash .-item {
+[qcms-mod="cont.trash"] .-item {
   position: relative;
   cursor: pointer;
   background: #fffa;
   backdrop-filter: blur(1rem);
 }
-.-m-cms-cont-trash .-item strong {
+[qcms-mod="cont.trash"] .-item strong {
   display: block;
   font-size: 1.1em;
 }
-.-m-cms-cont-trash .-item small {
+[qcms-mod="cont.trash"] .-item small {
   display: block;
   opacity: .5;
 }
-.-m-cms-cont-trash .-actions {
+[qcms-mod="cont.trash"] .-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
 }
-.-m-cms-cont-trash .-preview {
+[qcms-mod="cont.trash"] .-preview {
   width: 90vw;
   height: 90vh;
   padding: 0;

@@ -1,7 +1,7 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.smalltext", (el) => {
-  const nid = cms.el.pid(el);
+cms.initNode("backend.smalltext", (el) => {
+  const nid = cms.el.nid(el);
   const node = apt.cms.node(nid);
   const post = (vars) => node.html.post({ vars }).then((html) => { el.outerHTML = html; });
 

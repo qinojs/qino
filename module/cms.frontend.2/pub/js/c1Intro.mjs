@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', async function(){
     intro.show('#panel [itemid="add"]', 'Drag new content onto your page');
     await wait(1);
     cms.panel.sidebar.set('');
-    const el = document.querySelector('.-m-cms-cont-text');
+    const el = document.querySelector('[qcms-mod="cont.text"]');
     cms.contPos(el).mark()
-    intro.show('.-m-cms-cont-text', 'This content is a text module');
+    intro.show('[qcms-mod="cont.text"]', 'This content is a text module');
     await wait(1);
     intro.show('#qgCmsContPosMenu > .-opts', 'Click here to access the settings');
     await wait(1);

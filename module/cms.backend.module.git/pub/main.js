@@ -10,7 +10,7 @@ const run = async (out, pending, fn) => {
   catch (e) { set(out, "Error: " + e.message, "err"); }
 };
 
-cms.initCont("cms.backend.module.git", (el) => {
+cms.initNode("backend.module.git", (el) => {
   const installOut = el.querySelector("#git-install-out");
   const installBtn = el.querySelector("#git-install-btn");
 

@@ -4,7 +4,7 @@ import { assertEquals } from "../../core/tests/deps.ts";
 import { RequestContext, requestStorage } from "../../core/mod.ts";
 import { Node } from "../lib/Node.ts";
 
-Deno.test("Node.htmlPrepared keeps module name inside class attribute", async () => {
+Deno.test("Node.htmlPrepared escapes module name inside qcms-mod attribute", async () => {
     const moduleName = `bad" onclick="alert(1) x="`;
     const ctx = new RequestContext();
     ctx.session = { liveUser: () => 0 } as any;
@@ -22,7 +22,7 @@ Deno.test("Node.htmlPrepared keeps module name inside class attribute", async ()
     await requestStorage.run(ctx, async () => {
         assertEquals(
             String(await node.htmlPrepared()),
-            '<section class="qgCmsCont -pid1 -m-badonclickalert1x"></section>',
+            '<section qcms-id=1 qcms-mod="bad&quot; onclick=&quot;alert(1) x=&quot;"></section>',
         );
     });
 });

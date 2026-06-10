@@ -1,4 +1,4 @@
-.-m-cms-backend-security {
+[qcms-mod="backend.security"] {
   & .-kpi { flex: 0 0 14rem; }
   & .-table { flex: 1 1 42rem; overflow: auto; max-height: 75vh; }
   & .-toplist { flex-basis: 24rem; max-height: 20rem; }

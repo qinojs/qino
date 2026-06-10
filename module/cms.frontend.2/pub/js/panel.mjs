@@ -204,7 +204,7 @@ cms.cont.prototype.showWidget = function (what, reload) {
   cms.Tree?.goTo(this.id);
 };
 
-!document.querySelector(".-e.qgCMS-dropTarget") &&
+!document.querySelector("[qcms-edit][qcms-drop]") &&
   findEl(el, "> .-sidebar > [itemid=add]").setAttribute("hidden", "hidden");
 
 const switches = [
@@ -618,7 +618,7 @@ onEl(".content-manager", (el) => {
       if (type === "p") location.href = location.href.replace(/#.*$/, "");
     });
     if (type !== "p") {
-      node.html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; });
+      node.html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; });
       sidebar.set("settings");
     }
   });

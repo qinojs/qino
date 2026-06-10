@@ -56,77 +56,77 @@ body {
 
 
 /* login */
-#container .-m-cms-cont-login4 table {
+#container [qcms-mod="cont.login4"] table {
 	width:100%;
 }
-#container .-m-cms-cont-login4 td,
-#container .-m-cms-cont-login4 th {
+#container [qcms-mod="cont.login4"] td,
+#container [qcms-mod="cont.login4"] th {
 	font-weight:normal;
 	padding:0;
 	flex:1 1 auto;
 	padding:8px 4px;
 }
-#container .-m-cms-cont-login4 th {
+#container [qcms-mod="cont.login4"] th {
 	text-align:right;
 }
 
-#container .-m-cms-cont-login4 tr.-email > th,
-#container .-m-cms-cont-login4 tr.-login > th,
-#container .-m-cms-cont-login4 tr.-pw > th {
+#container [qcms-mod="cont.login4"] tr.-email > th,
+#container [qcms-mod="cont.login4"] tr.-login > th,
+#container [qcms-mod="cont.login4"] tr.-pw > th {
 	display:none;
 }
 
-#container .-m-cms-cont-login4 tr.-save_login {
+#container [qcms-mod="cont.login4"] tr.-save_login {
 	font-size:12px;
 	display:block;
 	text-align: right;
 }
-#container .-m-cms-cont-login4 tr.-save_login > * {
+#container [qcms-mod="cont.login4"] tr.-save_login > * {
 	display:inline-block;
 	vertical-align: middle;
 	padding-left:6px;
 }
 
 /* neu */
-#container .-m-cms-cont-login4 tr {
+#container [qcms-mod="cont.login4"] tr {
 	display:flex;
 	align-items:stretch;
 	margin:17px 0;
 }
-#container .-m-cms-cont-login4 td {
+#container [qcms-mod="cont.login4"] td {
 	padding:0;
 }
-#container .-m-cms-cont-login4 input {
+#container [qcms-mod="cont.login4"] input {
 	margin:0;
 }
 
-#container .-m-cms-cont-login4 tr.-email,
-#container .-m-cms-cont-login4 tr.-pw {
+#container [qcms-mod="cont.login4"] tr.-email,
+#container [qcms-mod="cont.login4"] tr.-pw {
 	border:1px solid #fff;
 	border-width:0 0 1px 0;
 	background:var(--cms-color);
 }
-#container .-m-cms-cont-login4 tr.-email > *,
-#container .-m-cms-cont-login4 tr.-pw > * {
+#container [qcms-mod="cont.login4"] tr.-email > *,
+#container [qcms-mod="cont.login4"] tr.-pw > * {
 	display:flex !important;
 	background:var(--cms-color);
 }
-#container .-m-cms-cont-login4 tr.-email input,
-#container .-m-cms-cont-login4 tr.-pw input {
+#container [qcms-mod="cont.login4"] tr.-email input,
+#container [qcms-mod="cont.login4"] tr.-pw input {
 	border:none;
 }
-#container .-m-cms-cont-login4 tr.-email > th > div,
-#container .-m-cms-cont-login4 tr.-pw    > th > div {
+#container [qcms-mod="cont.login4"] tr.-email > th > div,
+#container [qcms-mod="cont.login4"] tr.-pw    > th > div {
 	display:none;
 }
-#container .-m-cms-cont-login4 tr.-email > th,
-#container .-m-cms-cont-login4 tr.-pw    > th {
+#container [qcms-mod="cont.login4"] tr.-email > th,
+#container [qcms-mod="cont.login4"] tr.-pw    > th {
 	display:flex !important;
 	align-items:center;
 	flex:0;
 }
-#container .-m-cms-cont-login4 tr.-email > th:after,
-#container .-m-cms-cont-login4 tr.-pw    > th:after {
+#container [qcms-mod="cont.login4"] tr.-email > th:after,
+#container [qcms-mod="cont.login4"] tr.-pw    > th:after {
 	content:'';
 	display: block;
 	font-family: 'qg_cms';
@@ -134,10 +134,10 @@ body {
 	font-size: 20px;
 	text-align: center;
 }
-#container .-m-cms-cont-login4 tr.-email > th:after { content: "\e600"; }
-#container .-m-cms-cont-login4 tr.-pw    > th:after { content: "\e900"; }
+#container [qcms-mod="cont.login4"] tr.-email > th:after { content: "\e600"; }
+#container [qcms-mod="cont.login4"] tr.-pw    > th:after { content: "\e900"; }
 
-#container .-m-cms-cont-login4 button {
+#container [qcms-mod="cont.login4"] button {
 	padding:9px;
 	padding-top:10px;
 }

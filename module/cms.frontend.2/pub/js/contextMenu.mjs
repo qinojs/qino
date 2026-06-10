@@ -10,14 +10,14 @@ const Page = globalThis.qino?.cms?.nodeId;
 
 const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
 	icon: sysURL+'cms.frontend.2/pub/img/module_default.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 });
 Menu.addItem(t`Settings`, {
 	icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 	onshow() {
 		this.activePid = cms.contPos.active.pid;
-		this.disabled = !cms.contPos.active.el.classList.contains('-e');
+		this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
 	},
 	onclick() {
 		cms.cont.active = this.activePid;
@@ -26,7 +26,7 @@ Menu.addItem(t`Settings`, {
 });
 Menu.addItem(t`Move`, {
 	icon: sysURL+'cms.frontend.2/pub/img/move.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 	onshow() {
 		this.activeEl = cms.contPos.active.el;
 		this.disabled = !cms.contPos.active.isDraggable();
@@ -35,10 +35,10 @@ Menu.addItem(t`Move`, {
 });
 Menu.addItem(t`Copy`, {
 	icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 	onshow() {
 		this.activePid = cms.contPos.active.pid;
-		this.disabled = !cms.contPos.active.el.classList.contains('-e');
+		this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
 	},
 	onclick() {
 		apt.cms.node(this.activePid).copy.post().then(({ id }) => {
@@ -48,22 +48,22 @@ Menu.addItem(t`Copy`, {
 });
 Menu.addItem(t`Cut`, {
 	icon: sysURL+'cms.frontend.2/pub/img/cut.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 	onshow() {
 		this.activePid = cms.contPos.active.pid;
-		this.disabled = !cms.contPos.active.el.classList.contains('-e');
+		this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
 	},
 	onclick() {
 		const pid = this.activePid;
 		apt.cms.clipboard.put({ value: parseInt(pid) }).then(() => {
-			const els = document.querySelectorAll('.-pid'+pid);
+			const els = document.querySelectorAll('[qcms-id="'+pid+'"]');
 			for (const el of els) el.style.opacity = .3;
 		});
 	}
 });
 Menu.addItem(t`Delete`, {
 	icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 	onshow() {
 		this.activeEl = cms.contPos.active.el;
 		this.disabled = !cms.contPos.active.isDraggable();
@@ -72,7 +72,7 @@ Menu.addItem(t`Delete`, {
 	onclick() {
 		const el = this.activeEl;
 		if (!confirm(t`Really delete this content?`)) return;
-		const pid = cms.el.pid(el);
+		const pid = cms.el.nid(el);
 		el.remove();
 		apt.cms.node(pid).delete();
 	}

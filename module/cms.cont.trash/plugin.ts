@@ -44,10 +44,10 @@ async function render(node: Node): Promise<string> {
 </div>`;
   }
 
-  if (!listHtml) return `<div class="-m-cms-cont-trash"><p>Der Papierkorb ist leer.</p></div>`;
+  if (!listHtml) return `<div><p>Der Papierkorb ist leer.</p></div>`;
 
   return `
-<div class="-m-cms-cont-trash">
+<div>
   <div class="-toolbar">
     <button class="-removeAll">Papierkorb leeren</button>
   </div>

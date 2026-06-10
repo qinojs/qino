@@ -114,7 +114,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   return `
-<div class="u2-flex -m-cms-backend-superuser-dbfiles">
+<div class="u2-flex">
   <div class="u2-card -sidebar">
     <div class="-head">${await app.t`Filter`}</div>
     <div class="-body">
@@ -171,7 +171,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const text = exists ? await textView(f) : "";
 
   return `
-<div class="u2-flex -m-cms-backend-superuser-dbfiles">
+<div class="u2-flex">
 
   <div class=u2-flex style="flex-direction:column; ">
     <div class="u2-card" style="flex:0 0 auto">

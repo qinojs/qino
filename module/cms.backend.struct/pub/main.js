@@ -1,10 +1,10 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.struct", (el) => {
+cms.initNode("backend.struct", (el) => {
   const tree = el.querySelector(".cmsBeTree");
 
   async function reloadList(vars = {}) {
-    const html = await apt.cms.node(el.dataset.node).html.part("list").post({ vars });
+    const html = await apt.cms.node(cms.el.nid(el)).html.part("list").post({ vars });
     el.querySelector("tbody[data-part=list]").innerHTML = html;
   }
 

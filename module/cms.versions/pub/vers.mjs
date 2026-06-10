@@ -274,7 +274,7 @@ CmsVersViewer.prototype = {
 			const ready = ()=>{
 				if (!doc.body) return;
 				doc.documentElement.scrollTop = doc.body.scrollTop = scrollTop;
-				const els = doc.querySelectorAll('.-pid'+this.pid);
+				const els = doc.querySelectorAll('[qcms-id="'+this.pid+'"]');
 				let el;
 				for (el of els) el.style.outline = '3px solid red';
 				el?.scrollIntoView();
@@ -366,10 +366,10 @@ document.addEventListener('keydown',e=>{
 
 cms.contextMenueContent.addItem('Verlauf', {
 	icon: sysURL+cmsFrontend+'/pub/img/undo.svg',
-	selector: '.qgCmsCont.-e, #qgCmsContPosMenu',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
 	onshow() {
 		this.activePid = cms.contPos.active.pid;
-		this.disabled = !cms.contPos.active.el.classList.contains('-e');
+		this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
 	},
 	onclick() {
 		Viewer.show(this.activePid);

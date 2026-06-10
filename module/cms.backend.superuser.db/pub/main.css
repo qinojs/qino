@@ -1,4 +1,4 @@
-.-m-cms-backend-superuser-db {
+[qcms-mod="backend.superuser.db"] {
   & .-nav { display: flex; gap: 4px; padding: 0 8px 8px; flex-wrap: wrap; }
   & .-nav-item { padding: 2px 10px; text-decoration: none; border-radius: 3px; }
   & .-nav-item.-active { font-weight: bold; text-decoration: underline; }

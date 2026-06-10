@@ -40,7 +40,7 @@ export async function render(node: Node): Promise<string> {
 
   const content = await (dispatch[view] ?? dispatch.tables)();
 
-  return `<div class="-m-cms-backend-superuser-db">
+  return `<div>
   <div class=u2-card>
     <div class="-head">DB Manager</div>
     <nav class="-nav">${nav}</nav>

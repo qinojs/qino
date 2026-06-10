@@ -35,7 +35,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 
   const showContents = !!ctx.settings.cms.admin.showContents();
 
-  return `<div class="u2-card -m-cms-backend-struct-access" style="flex:0 1 1200px" data-node="${node.id}">
+  return `<div class="u2-card" style="flex:0 1 1200px">
   <div class=-head>${await app.t`Access`}</div>
   <div class=-body style="display:flex; justify-content:space-between; align-items:center">
     <div>

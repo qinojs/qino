@@ -30,7 +30,7 @@ cms.txtCleanElement = function(el,tid){
     if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = ctx.appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
     if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = ctx.appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
     el.removeAttribute('cmstxt');
-    el.classList.remove('qgCmsCont', 'qgCmsPage');
+    for (const a of ['qcms-id', 'qcms-mod', 'qcms-edit', 'qcms-drop', 'qcms-offline', 'qcms-name']) el.removeAttribute(a);
 };
 cms.txtClean = function(el,tid) {
 	el = el.data ? el.parentNode : el;

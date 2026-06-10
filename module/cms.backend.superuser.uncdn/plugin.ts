@@ -85,7 +85,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     node.app.t`No cached files yet.`,
   ]);
 
-  return `<div class="u2-flex -m-cms-backend-superuser-uncdn" data-pid="${node.id}">
+  return `<div class="u2-flex">
   <div class="u2-card -sidebar" style="flex:0 0 auto">
     <div class="-head">${tInfo}</div>
     <div class="-body">

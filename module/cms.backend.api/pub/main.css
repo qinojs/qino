@@ -1,4 +1,4 @@
-.-m-cms-backend-api {
+[qcms-mod="backend.api"] {
   & .-method {
     &.-get    { background: var(--blue);   }
     &.-post   { background: var(--green);  }

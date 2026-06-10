@@ -9,17 +9,17 @@ Object.assign(cms, c1.Eventer);
 
 cms.modConnected = {};
 
-cms.initCont = function(module, fn) {
+cms.initNode = function(module, fn) {
 	if (cms.modConnected[module]) return;
 	cms.modConnected[module] = fn;
-	for (const el of document.querySelectorAll('.qgCmsPage .-m-'+module.replace(/\./g,'-'))) {
+	for (const el of document.querySelectorAll('[qcms-mod="'+module+'"]')) {
 		if (el.__cms_initialized) continue;
 		fn(el);
 		el.__cms_initialized = true;
 	}
 };
 
-c1.onElement('.qgCmsPage .qgCmsCont', function(el) {
+c1.onElement('[qcms-id]', function(el) {
 	if (el.__cms_initialized) return;
 	const module = cms.el.module(el);
 	const fn = cms.modConnected[module];
@@ -27,9 +27,9 @@ c1.onElement('.qgCmsPage .qgCmsCont', function(el) {
 });
 
 cms.el = {
-	root(el)   { return el.closest('.qgCmsCont'); },
-	pid(el)    { const root = el.closest('.qgCmsCont'); return root && root.className.replace(/.*-pid([0-9]+).*/, '$1'); },
-	module(el) { const root = el.closest('.qgCmsCont'); return root && root.className.replace(/.*-m-([^ ]+).*/, '$1').replace(/-/g, '.'); },
+	root(el)   { return el.closest('[qcms-id]'); },
+	nid(el)    { return el.closest('[qcms-id]')?.getAttribute('qcms-id') ?? null; },
+	module(el) { return el.closest('[qcms-mod]')?.getAttribute('qcms-mod') ?? null; },
 };
 
 // dbFile
@@ -110,16 +110,16 @@ const saveTxtDebounced = saveTxt.c1Debounce(1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
 document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
 
-cms.reloadNode = (pid, vars) => {
-	return apt.cms.node(pid).html.post({ vars }).then(html => {
-		document.querySelectorAll('.-pid' + pid).forEach(el => el.outerHTML = html);
+cms.reloadNode = (nid, vars) => {
+	return apt.cms.node(nid).html.post({ vars }).then(html => {
+		document.querySelectorAll('[qcms-id="' + nid + '"]').forEach(el => el.outerHTML = html);
 	});
 };
 
-cms.reloadPart = (pid, part, vars) => {
-	return apt.cms.node(pid).html.part(part).post({ vars }).then(html => {
-		document.querySelectorAll('.-pid' + pid + ' [cms-part="' + part + '"]').forEach(el => {
-			if (el.closest('.qgCmsCont').matches('.-pid' + pid)) el.innerHTML = html;
+cms.reloadPart = (nid, part, vars) => {
+	return apt.cms.node(nid).html.part(part).post({ vars }).then(html => {
+		document.querySelectorAll('[qcms-id="' + nid + '"] [cms-part="' + part + '"]').forEach(el => {
+			if (el.closest('[qcms-id]').matches('[qcms-id="' + nid + '"]')) el.innerHTML = html;
 		});
 	});
 };

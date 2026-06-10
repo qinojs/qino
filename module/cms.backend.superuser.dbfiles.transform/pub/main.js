@@ -1,12 +1,12 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.superuser.dbfiles.transform", (el) => {
+cms.initNode("backend.superuser.dbfiles.transform", (el) => {
   const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);
-  const nid = cms.el.pid(el);
+  const nid = cms.el.nid(el);
 
   async function postVars(vars) {
     const html = await apt.cms.node(nid).html.post({ vars });
-    const inner = new DOMParser().parseFromString(html, "text/html").querySelector(".qgCmsCont")?.innerHTML ?? html;
+    const inner = new DOMParser().parseFromString(html, "text/html").querySelector("[qcms-id]")?.innerHTML ?? html;
     try { return JSON.parse(inner); } catch { return { error: inner }; }
   }
 

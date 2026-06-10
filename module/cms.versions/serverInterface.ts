@@ -82,7 +82,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         const titleObj = await Page.title();
         const title = (await titleObj?.string?.() ?? "").trim();
         const label = `${Page.vs?.type === "p" ? await t`Page` : await t`Content`} ${title ? `"${title}" ` : ""}(${Page.id})`;
-        return `<div mark=".-pid${Page.id}">${label}</div>`;
+        return `<div mark="[qcms-id='${Page.id}']">${label}</div>`;
     };
 
     const messages: string[] = [];

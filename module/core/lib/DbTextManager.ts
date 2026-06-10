@@ -50,8 +50,6 @@ export class DbText {
   get manager(): DbTextManager { return this.#manager; }
 
   lang(lang: string): DbTextLang {
-    if (!lang) console.warn("DbText.lang: no lang provided, falling back to request lang or default app lang", Error().stack);
-    //const l: string = lang ?? getCtx()?.lang ?? this.#manager.app.languages.def;
     if (!this.#langCache.has(lang)) this.#langCache.set(lang, new DbTextLang(this, lang));
     return this.#langCache.get(lang)!;
   }

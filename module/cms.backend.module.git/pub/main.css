@@ -1,5 +1,5 @@
 /* cms.backend.module.git */
-.-m-cms-backend-module-git {
+[qcms-mod="backend.module.git"] {
 
   & .-install { display: grid; gap: 12px; }
   & .-install-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }

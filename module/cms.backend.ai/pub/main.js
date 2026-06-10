@@ -1,4 +1,4 @@
-cms.initCont("cms.backend.ai", (el) => {
+cms.initNode("backend.ai", (el) => {
   const timers = new WeakMap();
   const save = async (form) => {
     const state = form.querySelector(".ai-autosave-state");

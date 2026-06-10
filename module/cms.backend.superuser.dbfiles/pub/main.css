@@ -1,5 +1,5 @@
 /* cms.backend.superuser.dbfiles */
-.-m-cms-backend-superuser-dbfiles {
+[qcms-mod="backend.superuser.dbfiles"] {
   align-items: start;
 
   & .-sidebar { flex: 0 0 auto; overflow: auto; }

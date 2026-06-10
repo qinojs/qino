@@ -32,7 +32,7 @@
 	.c1-fieldTable > * > * {
 		display: block;
 	}
-	.qgCmsPage .c1-fieldTable > * > * > * {
+	[qcms-mod^="layout."] .c1-fieldTable > * > * > * {
 		display: block;
 		width: auto;
 	}

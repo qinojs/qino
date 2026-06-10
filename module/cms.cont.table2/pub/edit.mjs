@@ -12,11 +12,11 @@ document.addEventListener('input', e => {
 	});
 });
 document.documentElement.addEventListener('focus', e => {
-	const el = e.target.closest('.-m-cms-cont-table2 > table > tbody > tr > td');
+	const el = e.target.closest('[qcms-mod="cont.table2"] > table > tbody > tr > td');
 	if (!el) return;
 	active = el;
 	handles.showTd(active);
-	pid = cms.el.pid(active);
+	pid = cms.el.nid(active);
 }, true);
 document.addEventListener('blur', () => handles.hide(), true);
 const actions = {
@@ -32,7 +32,7 @@ for (const [key, data] of Object.entries(actions)) {
 	});
 }
 
-cms.initCont('cms.cont.table2', function(el) {
+cms.initNode('cont.table2', function(el) {
 	el.addEventListener('paste', e => {
 		if (!e.clipboardData.types.includes('text/html')) return;
 		let html = e.clipboardData.getData('text/html');
@@ -42,7 +42,7 @@ cms.initCont('cms.cont.table2', function(el) {
 		if (table && table.tagName !== 'TABLE') return;
 		e.preventDefault(); // not working!
 		setTimeout(function() {
-			let targetTd = e.target.closest('.qgCmsCont > table > * > tr > td');
+			let targetTd = e.target.closest('[qcms-id] > table > * > tr > td');
 			const startCellIndex = targetTd.cellIndex;
 			for (const tbody of table.children) {
 				for (const tr of tbody.children) {

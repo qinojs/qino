@@ -1,7 +1,7 @@
 import { WebAuth } from "../../web_auth/pub/web_auth.js";
 import { t } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.cont.web_auth", async (el) => {
+cms.initNode("cont.web_auth", async (el) => {
   const isLogin  = el.classList.contains("web-auth-login");
   const isManage = el.classList.contains("web-auth-manage");
   if (!isLogin && !isManage) return;

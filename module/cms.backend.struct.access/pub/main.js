@@ -1,6 +1,6 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.struct.access", (el) => {
+cms.initNode("backend.struct.access", (el) => {
   const table = el.querySelector(".cmsBeTree");
 
   async function reloadList(nid, vars = {}) {
@@ -36,12 +36,12 @@ cms.initCont("cms.backend.struct.access", (el) => {
     }
 
     // reload the tree so inheritance changes propagate
-    await reloadList(el.dataset.node);
+    await reloadList(cms.el.nid(el));
   });
 
   // show/hide content elements in the tree
   el.querySelector("[data-toggle-contents]")?.addEventListener("change", (e) => {
-    reloadList(el.dataset.node, { showContents: e.target.checked ? "1" : "0" });
+    reloadList(cms.el.nid(el), { showContents: e.target.checked ? "1" : "0" });
   });
 
   // highlight the page a row inherits its access from

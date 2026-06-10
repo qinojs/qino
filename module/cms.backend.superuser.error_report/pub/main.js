@@ -1,7 +1,7 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.superuser.error_report", (el) => {
-  const pid = Number(el.dataset.pid);
+cms.initNode("backend.superuser.error_report", (el) => {
+  const pid = Number(cms.el.nid(el));
 
   const reload = (vars, btn) => {
     if (btn) btn.disabled = true;

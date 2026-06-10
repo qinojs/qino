@@ -139,7 +139,7 @@ export class Node {
         const ctx = getCtx();
         const renderPath = ctx.cms.renderPath;
         if (renderPath.has(this.id)) {
-            return new HtmlString(this.edit ? `<div class="qgCmsCont -pid${this}">Recursion, Content ${this.id} again!</div>` : "");
+            return new HtmlString(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
         }
         renderPath.add(this.id);
 
@@ -156,34 +156,35 @@ export class Node {
         return s;
     }
 
+
+    // Todo: generate something like this
+    // <div qcms-id=170 qcms-mod="cont.text" qcms-name="main" qcms-drop qcms-edit qcms-offline>
+
     async htmlPrepared(vars: Record<string, any> = {}): Promise<HtmlString> {
         const ctx = getCtx();
 
         let str = (await this.htmlRaw(vars) ?? "").trim();
         str ||= "<div></div>";
 
-        const type = this.vs.type === "c" ? "Cont" : "Page";
+        let attr = "";
+
         const moduleName = this.module?.name ?? "";
-        let cls = `qgCms${type} -pid${this.id} -m-${moduleName.replace(/\./g, "-").replace(/[^\w-]/g, "")}`;
+        attr += ` qcms-id=${this.id} qcms-mod="${hee(moduleName.replace(/^cms\./, ""))}"`;
 
         if (this.edit) {
-            cls += " -e";
-            if (moduleName.startsWith("cms.cont.flexible")) cls += " qgCMS-dropTarget";
-            if (!(await this.isOnline())) cls += " qgCMS-offline";
+            attr += " qcms-edit";
+            if (moduleName.startsWith("cms.cont.flexible")) attr += " qcms-drop";
+            if (!(await this.isOnline())) attr += " qcms-offline";
         }
 
-        let attr = "";
         if (this.vs.type === "c" && this.vs.visible) {
-            attr = ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
+            attr += ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
         }
-        if (this.vs.name) attr += ` vcms-name="${hee(this.vs.name)}"`;
+        if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
 
-        // Try to inject class into first HTML element
-        const ret1 = str.replace(/^<([^>]+)class=("([^"]*)"|([^\s>]*))/, `<$1class="$3$4 ${cls}"${attr}`);
-        if (ret1 !== str) return new HtmlString(ret1);
-        const ret2 = str.replace(/^<([^\s>]+)([\s]?)/, `<$1 class="${cls}"${attr}$2`);
+        const ret2 = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
         if (ret2 !== str) return new HtmlString(ret2);
-        return new HtmlString(`<div class="${cls}"${attr}>${str}</div>`);
+        return new HtmlString(`<div${attr}>${str}</div>`);
     }
 
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {

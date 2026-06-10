@@ -1,7 +1,7 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-cms.initCont("cms.backend.superuser.uncdn", (el) => {
-  const nid = Number(el.dataset.pid);
+cms.initNode("backend.superuser.uncdn", (el) => {
+  const nid = Number(cms.el.nid(el));
 
   el.addEventListener("click", async (e) => {
     const reload = e.target.closest("[data-reload]");

@@ -1,7 +1,7 @@
 import { apt } from '../../../../core/pub/js/qino.js';
 
 cms.frontend2.clipboard = pid => {
-    const els = () => document.querySelectorAll('.-pid'+pid);
+    const els = () => document.querySelectorAll('[qcms-id="'+pid+'"]');
     function close() {
         apt.cms.clipboard.put({ value: 0 });
         els().forEach(el => el.style.opacity = 1);

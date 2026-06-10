@@ -105,14 +105,14 @@ async function renderOverview(node: Node): Promise<string> {
   const installForm = renderInstallForm(isSuperuser);
 
   if (!rows.length) {
-    return `<div class="u2-flex -m-cms-backend-module-git">
+    return `<div class="u2-flex">
 <div class=u2-card>
   <div class=-head>Module Git</div>
   <div class=-body>No modules with Git repository found.</div>
 </div>${installForm}</div>`;
   }
 
-  return `<div class="u2-flex -m-cms-backend-module-git">
+  return `<div class="u2-flex">
 <div class=u2-card>
   <div class=-head>Module Git</div>
   <div class=-table-wrap>
@@ -135,7 +135,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const backHref = hee(u.search);
 
   if (!gitSection) {
-    return `<div class="-m-cms-backend-module-git u2-card">
+    return `<div class="u2-card">
   <div class="-head -detail-head">
     <a href="${backHref}" class=-back>← Module Git</a>
     <span class=-mono>${hee(modName)}</span>
@@ -144,7 +144,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 </div>`;
   }
 
-  return `<div class="-m-cms-backend-module-git u2-card">
+  return `<div class="u2-card">
   <div class="-head -detail-head">
     <a href="${backHref}" class=-back>← Module Git</a>
     <span class=-mono>${hee(modName)}</span>

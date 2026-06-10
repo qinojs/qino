@@ -1,4 +1,4 @@
-.-m-cms-backend-smalltext {
+[qcms-mod="backend.smalltext"] {
     [cms-part="table"] td {
         vertical-align: baseline;
     }

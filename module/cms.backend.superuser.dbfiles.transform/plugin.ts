@@ -271,7 +271,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     : "";
 
   return `
-<div class="-m-cms-backend-superuser-dbfiles-transform">
+<div>
   <div class="u2-flex">
 
     <div cms-part="cache">${await renderCache(node.app)}</div>

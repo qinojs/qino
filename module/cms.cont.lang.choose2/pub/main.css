@@ -1,4 +1,4 @@
-.-m-cms-cont-lang-choose2 {
+[qcms-mod="cont.lang.choose2"] {
 	display: inline-block;
 	& ul {
 		display: flex;

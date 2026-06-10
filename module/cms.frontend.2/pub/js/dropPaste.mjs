@@ -119,17 +119,17 @@ root.addEventListener('input', e => {
 
 // contents
 root.addEventListener('dragover', e=>{
-	const el = e.target.closest('.qgCmsCont');
+	const el = e.target.closest('[qcms-id]');
 	if (!el) return;
 	e.stopPropagation();
 	e.preventDefault();
 });
 root.addEventListener('drop', e=>{
-	const pid = cms.el.pid(e.target);
+	const pid = cms.el.nid(e.target);
 	if (!pid) return;
 	e.stopPropagation();
 	e.preventDefault();
-	function complete() { apt.cms.node(pid).html.get().then(html => { document.querySelector('.-pid'+pid).outerHTML = html; }); }
+	function complete() { apt.cms.node(pid).html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; }); }
 	if (e.dataTransfer.files.length) {
 		let hasOne = false;
 		for (const file of e.dataTransfer.files) {

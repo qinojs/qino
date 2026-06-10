@@ -1,6 +1,6 @@
 import { apt } from "../../core/pub/js/qino.js";
 
-const el      = document.querySelector('.-m-cms-cont-trash');
+const el      = document.querySelector('[qcms-mod="cont.trash"]');
 
 const dialog = el.querySelector('.-preview');
 const iframe = dialog.querySelector('iframe');

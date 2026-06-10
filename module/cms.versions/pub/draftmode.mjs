@@ -11,10 +11,10 @@ function panelEl(selector) {
 }
 cms.contextMenueContent.addItem('Publish', {
 	icon: sysURL+'cms.versions/pub/check.png',
-	selector: '.qgCmsCont',
+	selector: '[qcms-id]',
 	onshow(e) {
 		this.activePid = cms.contPos.active.pid;
-		this.disabled = !e.currentTarget.classList.contains('-e');
+		this.disabled = !e.currentTarget.hasAttribute('qcms-edit');
 	},
 	onclick() {
 		publish(this.activePid);
