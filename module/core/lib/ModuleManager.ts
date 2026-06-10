@@ -104,7 +104,7 @@ export class ModuleManager {
     if (Object.keys(dbSchema.properties).length) {
       await schemaToDb(dbSchema, (sql: string) => this.#app.db.query(sql), { patch: true });
       this.#app.db.schema = dbSchema;
-      await this.#app.db.init();
+      await this.#app.db.loadTables();
     }
     for (const name of order) {
       const { plugin } = this.#modules[name];

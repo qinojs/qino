@@ -77,13 +77,18 @@ export class Db {
     return Object.fromEntries((await this.query(sql, p)).map((r) => Object.values(r) as [string, unknown]));
   }
 
-  async init(): Promise<void> {
+  /** Create the database if missing. Must run before any schema migration queries against it. */
+  async ensureDatabase(): Promise<void> {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
       await tmp.query(`CREATE DATABASE IF NOT EXISTS ${Db.escapeId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
     } finally {
       await tmp.end();
     }
+  }
+
+  /** Introspect the current tables into memory. Run after the schema is migrated. */
+  async loadTables(): Promise<void> {
     const tables = await this.col("SHOW TABLES") as string[];
     this.#tables = {};
     for (const table of tables) {

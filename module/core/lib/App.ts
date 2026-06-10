@@ -43,7 +43,6 @@ export class App {
     languages: LangManager;
     t: LangManager["t"];
     aptTree: AptTree = {};
-    #initPromise: Promise<void> | null = null;
     #events: Record<string, ((data: Record<string, unknown>) => void | Promise<void>)[]> = {};
 
     get apt(): AptProxy { return aptClient(this.aptTree); }
@@ -72,10 +71,11 @@ export class App {
         return (req) => this.handle(req);
     }
 
-    static async create(config: Partial<typeof defaultConfig> = {}): Promise<App> {
-        const app = new App(config);
-        await app.db.init();
-        return app;
+    /** Mandatory boot step, after all modules are imported: ensures the database, migrates the
+     *  schema (DDL), and runs module init. Call once before serving — keeps DDL out of the request path. */
+    async init(): Promise<void> {
+        await this.db.ensureDatabase();  // DB must exist before migration queries run against it
+        await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
     }
 
     assertAllowedPath(file: string): void {
@@ -108,7 +108,6 @@ export class App {
         const req = new Req(request);
         let ctx: RequestContext, isNew: boolean;
         try {
-            await (this.#initPromise ??= this.modules.init());
             await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
             [ctx, isNew] = await makeRequestContext(this, req, basePath || "/");
         } catch (e: unknown) {
