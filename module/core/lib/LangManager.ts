@@ -105,13 +105,12 @@ export class LangManager {
         const l = ctx.lang;
         const txts = await this.#getTxts(ns, l);
         if (!(hash in txts)) {
-            await this.#app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hash, string]);
+            //await this.#app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hash, string]);
+            await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string });
             txts[hash] = "";
         }
         const translated = txts[hash] || string;
-        if (ctx.dev && !txts[hash]) {
-            return `*${string}*`;
-        }
+        if (ctx.dev && !txts[hash]) return `*${string}*`;
         if (await this.#app.settings.core.smalltext.counter) {
             await this.#app.db.query("UPDATE smalltext SET count = count+1 WHERE hash = ? AND namespace = ?", [hash, ns]);
         }

@@ -58,9 +58,10 @@ export class SessionManager {
     async #create() {
         const token = uid();
         const time = unixTime();
-        const res = await this.#db.exec("INSERT INTO sess SET token = ?, time = ?, `access` = ?, data = ?", [token, time, time, EMPTY_SESSION]);
-        if (!res.insertId) throw new Error("Could not create session");
-        return this.#result(res.insertId, token, EMPTY_SESSION, true);
+        //const res = await this.#db.exec("INSERT INTO sess SET token = ?, time = ?, `access` = ?, data = ?", [token, time, time, EMPTY_SESSION]);
+        const id = await this.#db.table('sess').insert({ token, time, access: time, data: EMPTY_SESSION });
+        if (!id) throw new Error("Could not create session");
+        return this.#result(id, token, EMPTY_SESSION, true);
     }
 
     #result(sessId: string | number, token: string, data: string | null, isNew: boolean): SessionResult {

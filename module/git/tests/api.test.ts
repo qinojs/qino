@@ -1,13 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
 import { toTools } from "../../core/mod.ts";
-import { addModule, api, init, name, needs } from "../plugin.ts";
+import { addModule, api, name, needs } from "../plugin.ts";
 import { getModuleGitInfo } from "../mod.ts";
 
 Deno.test("git: module metadata and apt tools are wired", () => {
   assertEquals(name, "git");
   assertEquals(needs, []);
-  assertEquals(toTools(api).map((tool) => tool.name), [
+  // The module name becomes the first path segment (aptTree.git = api), so tools are git/*.
+  assertEquals(toTools({ git: api }).map((tool) => tool.name), [
     "get_git_status",
     "get_git_log",
     "get_git_tags",
@@ -16,12 +17,6 @@ Deno.test("git: module metadata and apt tools are wired", () => {
     "post_git_checkout",
     "post_git_install",
   ]);
-});
-
-Deno.test("git: init mounts git API subtree", () => {
-  const app = { aptTree: {} };
-  init(app as any);
-  assertEquals((app.aptTree as any).git, api.git);
 });
 
 Deno.test("git: getModuleGitInfo returns nulls for modules without path", async () => {

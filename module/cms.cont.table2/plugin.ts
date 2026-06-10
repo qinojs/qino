@@ -8,7 +8,8 @@ export const needs = ["cms"];
 
 export async function install({ app }: { app: App }): Promise<void> {
   const exists = await app.db.one(`SELECT name FROM module WHERE name = 'cms.cont.table2'`);
-  if (!exists) await app.db.query(`INSERT INTO module SET access = '1', name = 'cms.cont.table2'`);
+  //if (!exists) await app.db.query(`INSERT INTO module SET access = '1', name = 'cms.cont.table2'`);
+  if (!exists) await app.db.table('module').insert({ access: '1', name: 'cms.cont.table2' });
 }
 
 const settingsSchema = {

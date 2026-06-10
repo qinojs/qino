@@ -17,7 +17,7 @@ async function saveFile(ctx: RequestContext, file: string, content: string): Pro
     return 1;
 }
 
-const api: AptTree = {
+export const api: AptTree = {
     save: {
         put: {
             description: "Save file from the file editor.",
@@ -35,8 +35,6 @@ function editorFile(): string | null {
 }
 
 export function init(app: App) {
-    app.aptTree.fileEditor = api;
-
     app.on("action", async () => {
         const file = editorFile();
         if (!file) return;

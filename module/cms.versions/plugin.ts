@@ -107,7 +107,7 @@ export function init(app: App) {
         const logId = await ctx.logId;
         if (!logId) return;
         // Build field list from _vers_* table to ensure correct column order
-        const versCols = await ctx.app.db.all(`SHOW COLUMNS FROM \`${vt}\``);
+        const versCols = await ctx.app.db.columns(vt);
         const selects = versCols.map((c: any) => {
             const f = c.Field;
             if (f === "_vers_space")   return `${getCmsVers(ctx).versSpace}`;

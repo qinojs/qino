@@ -25,6 +25,7 @@ const defaultConfig = {
     dbName: "",
     dbUser: "",
     dbPass: "",
+    db: "", // full connection string override, e.g. "sqlite:/path/db.sqlite" or "sqlite::memory:"
 };
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
@@ -56,7 +57,7 @@ export class App {
         this.https     = cfg.https;
         this.dev       = cfg.dev;
 
-        this.db        = new Db(`mysql:host=${cfg.dbHost};dbname=${cfg.dbName}`, cfg.dbUser, cfg.dbPass);
+        this.db        = new Db(cfg.db || `mysql:host=${cfg.dbHost};dbname=${cfg.dbName}`, cfg.dbUser, cfg.dbPass);
         this.settings  = createSettingItem(this.db).proxy;
         this.dbFiles   = new DbFileManager(this, this.appPATH + "qg/file/");
         this.dbTexts   = new DbTextManager(this);
@@ -117,7 +118,7 @@ export class App {
     }
 
     async #run(ctx: RequestContext, isNew: boolean): Promise<Response> {
-        const t0 = Date.now();
+        const t0 = performance.now();
         const initialSessionToken = ctx.sessionToken;
         try {
             await this.#initRequest(ctx);
@@ -129,7 +130,7 @@ export class App {
             return await this.#buildResponse(ctx);
         } finally {
             await ctx.cleanup();
-            if (this.dev) console.log(`${ctx.req.method} ${ctx.req.path} ${Date.now() - t0}ms`);
+            if (this.dev) console.log(`${ctx.req.method} ${ctx.req.path} ${(performance.now() - t0).toFixed(1)}ms`);
         }
     }
 

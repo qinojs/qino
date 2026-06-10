@@ -43,8 +43,11 @@ export const api: AptTree = {
         );
         const result: Record<string, string> = {};
         for (let i = 0; i < texts.length; i++) {
-          if (dev && !(hashes[i] in rows))
-            await ctx.app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hashes[i], texts[i]]);
+          if (dev && !(hashes[i] in rows)) {
+            //await ctx.app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hashes[i], texts[i]]);
+            await ctx.app.db.table('smalltext').insert({ namespace: ns, hash: hashes[i], original: texts[i] });
+
+          }
           result[texts[i]] = rows[hashes[i]] || texts[i];
         }
         return result;

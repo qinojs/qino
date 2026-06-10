@@ -53,12 +53,7 @@ export class DbTable {
 
   async init(): Promise<Record<string, DbField>> {
     if (this.#fields === null) {
-      const fields: Record<string, any>[] = [];
-
-      const columns = await this.#db.query(`SHOW FULL COLUMNS FROM ${Db.escapeId(String(this))}`);
-      for (const values of columns) {
-        fields.push(values);
-      }
+      const fields = await this.#db.columns(String(this));
       this.#fields = {};
       this.#primaries = {};
       this.#autoIncrement = false;
@@ -159,8 +154,11 @@ export class DbTable {
     const eBefore: any = { Table: this, data: values, returnValue: undefined };
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const [set, params] = this.valuesToFragment(values, undefined, true);
-    const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))}${set ? " SET " + set : " () VALUES ()"}`, params);
+    const cols = Object.keys(this.#fields!).filter((f) => f in values);
+    const params = cols.map((f) => this.#fields![f].valueTransform(values[f]));
+    // Standard `(cols) VALUES (?)`, portable; empty-row `() VALUES ()` stays MySQL-only.
+    const into = cols.length ? `(${cols.map((f) => Db.escapeId(f)).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})` : "() VALUES ()";
+    const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))} ${into}`, params);
     if (!res.affectedRows) return false;
     const auto = this.autoIncrement;
     if (auto) values[String(auto)] = res.insertId;

@@ -5,7 +5,7 @@ import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect } from "./lib/util.ts";
 import { getCtx, type RequestContext } from "./lib/RequestContext.ts";
-import { api } from "./apt.ts";
+export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
 
 export const name = "core";
@@ -76,11 +76,9 @@ export const ctxSettingsSchema = {
 
 export async function init(app: App) {
 
-    app.aptTree.core = api;
-
     app.on("html-ready", e => {
         const ctx = e.ctx as RequestContext;
-        ctx.html.importMap.set("@qino/item/", "https://jsr.io/@nuxodin/item/0.5.8/");
+        ctx.html.importMap.set("@qino/item/", "https://jsr.io/@nuxodin/item/0.5.9/");
         ctx.html.importMap.set("@qino/u2/", "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/");
     });
 

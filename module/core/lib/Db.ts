@@ -1,71 +1,44 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, type Pool, type ResultSetHeader, type RowDataPacket } from "../../../deps.ts";
+import { mysql, type RowDataPacket } from "../../../deps.ts";
+import { type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
 export const numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
-export const sqlMode = [
-  "ONLY_FULL_GROUP_BY",
-  // "STRICT_ALL_TABLES",     // future: requires explicit defaults for all required fields
-  "NO_ZERO_IN_DATE",
-  "NO_ZERO_DATE",
-  "ERROR_FOR_DIVISION_BY_ZERO",
-  "NO_ENGINE_SUBSTITUTION",
-  // "ANSI_QUOTES",          // future: use "..." for identifiers only, closer to SQL standard
-  // "NO_BACKSLASH_ESCAPES", // future: standard string escaping; requires replacing Db.quote()
-].join(",");
 
 export class Db {
+  // Backtick identifiers; accepted by both MySQL and SQLite.
   static escapeId = mysql.escapeId;
 
   #tables: Record<string, DbTable> = {};
-  #pool: Pool;
-  #database: string;
-  #connParams: { host: string; user: string; password: string };
+  #driver: Driver;
   #schema: Record<string, any> = { properties: {} };
   #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
 
   constructor(conn: string, user: string, pass: string) {
-    const [, host = "localhost"] = conn.match(/host=([^;]+)/) ?? [];
-    const [, database = user] = conn.match(/dbname=([^;]+)/) ?? [];
-    this.#database = database;
-    this.#connParams = { host, user, password: pass };
-
-    this.#pool = mysql.createPool({
-      host,
-      user,
-      password: pass,
-      database,
-      charset: "utf8mb4",
-      multipleStatements: false,
-      waitForConnections: true,
-      connectionLimit: 4,
-      timezone: "Z",
-    });
-    this.#pool.on("connection", (c: { query(sql: string, params?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
+    this.#driver = makeDriver(conn, user, pass);
   }
 
   get tables(): Record<string, DbTable> { return this.#tables; }
   get schema(): Record<string, any> { return this.#schema; }
   set schema(schema: Record<string, any>) { this.#schema = schema; }
 
-  async #exec<T extends RowDataPacket[] | ResultSetHeader>(sql: string, params?: unknown[], isQuery = false): Promise<T> {
+  async #run<T>(fn: () => Promise<T>, sql: string): Promise<T> {
     try {
-      const [res] = isQuery ? await this.#pool.query<T>(sql, params) : await this.#pool.execute<T>(sql, params as any);
-      return res;
+      return await fn();
     } catch (e) {
-      console.error("mysql: " + (e instanceof Error ? e.message : e) + "\n" + sql.replace(/\s+/g, " "), e);
+      console.error("db: " + (e instanceof Error ? e.message : e) + "\n" + sql.replace(/\s+/g, " "), e);
       throw e;
     }
   }
 
   query(sql: string, params?: unknown[]): Promise<RowDataPacket[]> {
-    return this.#exec<RowDataPacket[]>(sql, params, true);
+    return this.#run(() => this.#driver.query(sql, params), sql) as Promise<RowDataPacket[]>;
   }
 
-  exec(sql: string, params?: unknown[]): Promise<ResultSetHeader> {
-    return this.#exec<ResultSetHeader>(sql, params, false);
+  exec(sql: string, params?: unknown[]): Promise<ExecResult> {
+    return this.#run(() => this.#driver.exec(sql, params), sql);
   }
 
   all = (sql: string, p?: unknown[]): Promise<RowDataPacket[]> => this.query(sql, p);
@@ -78,18 +51,23 @@ export class Db {
   }
 
   /** Create the database if missing. Must run before any schema migration queries against it. */
-  async ensureDatabase(): Promise<void> {
-    const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
-    try {
-      await tmp.query(`CREATE DATABASE IF NOT EXISTS ${Db.escapeId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
-    } finally {
-      await tmp.end();
-    }
+  ensureDatabase(): Promise<void> {
+    return this.#driver.ensureDatabase();
+  }
+
+  /** Migrate the database to match an item JSON-schema (dialect-specific DDL). */
+  migrate(schema: unknown, opts?: MigrateOptions): Promise<void> {
+    return this.#driver.migrate(schema, opts);
+  }
+
+  /** Column metadata for a table, in MySQL `SHOW FULL COLUMNS` shape. */
+  columns(table: string): Promise<Record<string, any>[]> {
+    return this.#driver.columns(table);
   }
 
   /** Introspect the current tables into memory. Run after the schema is migrated. */
   async loadTables(): Promise<void> {
-    const tables = await this.col("SHOW TABLES") as string[];
+    const tables = await this.#driver.listTables();
     this.#tables = {};
     for (const table of tables) {
       this.#tables[table] = new DbTable(this, table);
@@ -99,7 +77,7 @@ export class Db {
 
   table(name: string): DbTable { return this.#tables[name]; }
 
-  close = (): Promise<void> => this.#pool.end();
+  close = (): Promise<void> => this.#driver.close();
 
   on(name: string, fn: (data: Record<string, any>) => void | Promise<void>): void {
     (this.#events[name] ??= []).push(fn);

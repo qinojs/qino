@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl, $item, schemaToDb } from "../../../deps.ts";
+import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
 import type { App } from "./App.ts";
 
 export type Plugin = Record<string, any> & {
@@ -102,7 +102,7 @@ export class ModuleManager {
       mergeSchema(dbSchema, plugin.dbSchema);
     }
     if (Object.keys(dbSchema.properties).length) {
-      await schemaToDb(dbSchema, (sql: string) => this.#app.db.query(sql), { patch: true });
+      await this.#app.db.migrate(dbSchema, { patch: true });
       this.#app.db.schema = dbSchema;
       await this.#app.db.loadTables();
     }

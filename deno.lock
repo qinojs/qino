@@ -2,8 +2,8 @@
   "version": "5",
   "specifiers": {
     "jsr:@nuxodin/dump@^1.5.2": "1.5.2",
-    "jsr:@nuxodin/item@*": "0.5.8",
-    "jsr:@nuxodin/item@~0.5.8": "0.5.8",
+    "jsr:@nuxodin/item@*": "0.5.9",
+    "jsr:@nuxodin/item@~0.5.9": "0.5.9",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/cli@^1.0.29": "1.0.29",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
@@ -32,7 +32,7 @@
     "@nuxodin/dump@1.5.2": {
       "integrity": "0e5af5667b22edecb40555e17331c9597096c2f3485a18c12bed86c30673de32"
     },
-    "@nuxodin/item@0.5.8": {
+    "@nuxodin/item@0.5.9": {
       "integrity": "0a776774b50a5515631c434f2a375d5ab6f55679a3e66dd1d171b6bcad68a81c"
     },
     "@std/assert@1.0.19": {

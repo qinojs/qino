@@ -647,7 +647,8 @@
             "x-qg-on-parent-delete": "setnull"
           },
           "active": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           },
           "email": {
             "type": "string",
@@ -669,7 +670,8 @@
             "x-index": true
           },
           "superuser": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           },
           "lang": {
             "type": "string",

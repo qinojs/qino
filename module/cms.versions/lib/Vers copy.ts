@@ -58,18 +58,47 @@ export async function versTable(db: Db, tableName: string): Promise<string | fal
     const vt = `_vers_${tableName}`;
     if (versTableCreated.has(vt)) return vt;
 
-    // Derive the shadow schema from the source table and let migrate() build it. migrate is
-    // dialect-neutral and idempotent — it both creates the table and patches in any new
-    // columns, so no existence check or per-dialect DDL is needed.
-    const source = db.schema.properties?.[tableName];
-    if (!source) throw new Error(`versTable: no schema for "${tableName}"`);
-    const shadow = structuredClone(source);
-    const props = shadow.additionalProperties.properties as Record<string, any>;
-    for (const p of Object.values(props)) delete p["x-autoincrement"]; // composite PK, not auto-increment
-    props._vers_log     = { type: "integer", default: 0, "x-index": "primary" };
-    props._vers_space   = { type: "integer", default: 0, "x-index": "primary" };
-    props._vers_deleted = { type: "boolean", default: false, "x-index": true };
-    await db.migrate({ properties: { [vt]: shadow } }, { patch: true });
+    // Create shadow table if not present
+    const exists = await db.one(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
+        [vt]
+    );
+    if (!exists) {
+        await db.query(`CREATE TABLE ${vt} LIKE ${tableName}`);
+
+        // Remove AUTO_INCREMENT from PK columns (shadow table uses composite PK)
+        const pkCols: string[] = [];
+        const cols = await db.all(`SHOW COLUMNS FROM ${vt}`);
+        for (const col of cols) {
+            if (col.Key === "PRI") pkCols.push(col.Field);
+            if (col.Extra?.includes("auto_increment")) {
+                await db.query(`ALTER TABLE ${vt} MODIFY ${col.Field} ${col.Type} NOT NULL`);
+            }
+        }
+
+        // Add versioning columns and extend PK
+        const allPk = [...pkCols, "_vers_log", "_vers_space"].map(c => `\`${c}\``).join(", ");
+        await db.query(
+            `ALTER TABLE ${vt}
+             DROP PRIMARY KEY,
+             ADD COLUMN \`_vers_log\`     INT UNSIGNED NOT NULL DEFAULT 0,
+             ADD COLUMN \`_vers_space\`   INT UNSIGNED NOT NULL DEFAULT 0,
+             ADD COLUMN \`_vers_deleted\` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+             ADD PRIMARY KEY (${allPk}),
+             ADD INDEX (\`_vers_deleted\`)`
+        );
+    } else {
+        // Ensure new columns from the live table exist in the shadow table
+        const liveCols  = new Set((await db.all(`SHOW COLUMNS FROM ${tableName}`)).map((c: any) => c.Field));
+        const versCols  = new Set((await db.all(`SHOW COLUMNS FROM ${vt}`)).map((c: any) => c.Field));
+        for (const col of liveCols) {
+            if (!versCols.has(col)) {
+                const def = (await db.row(`SHOW COLUMNS FROM ${tableName} WHERE Field = ?`, [col])) as any;
+                const nullable = def.Null === "YES" ? "NULL" : "NOT NULL DEFAULT ''";
+                await db.query(`ALTER TABLE ${vt} ADD COLUMN \`${col}\` ${def.Type} ${nullable}`);
+            }
+        }
+    }
 
     versTableCreated.add(vt);
     return vt;

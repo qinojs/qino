@@ -1,7 +1,7 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./mod.ts";
 import { render } from "./lib/render.ts";
-import { api } from "./apt.ts";
+export { api } from "./apt.ts";
 import { Output, type App, type RequestContext } from "../core/mod.ts";
 
 export const name = "cms";
@@ -75,7 +75,6 @@ export const ctxSettingsSchema = {
 export function init(app: App) {
 
     app.cms = new CMS(app);
-    app.aptTree.cms = api;
 
     app.on("render", async (e) => {
         await render(e.ctx as RequestContext);
@@ -137,7 +136,8 @@ export function init(app: App) {
 
 export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one("SELECT id FROM page WHERE id = 1")) {
-    await app.db.query("INSERT INTO page SET id=1, access=1, visible=1, searchable=1, module = 'cms.layout.custom.9', basis = 0, type='p'");
+    //await app.db.query("INSERT INTO page SET id=1, access=1, visible=1, searchable=1, module = 'cms.layout.custom.9', basis = 0, type='p'");
+    await app.db.table('page').insert({ id: 1, access: 1, visible: 1, searchable: 1, module: "cms.layout.custom.9", basis: 0, type: "p" });
     await (await app.cms.node(1)).title("en", "root");
   }
 
