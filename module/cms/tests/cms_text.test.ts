@@ -45,7 +45,7 @@ function ctxWith(app: any) {
   ctx.session = { liveUser: () => 1 } as any;
   ctx.lang = "de";
   app.db ??= {};
-  app.db.table ??= () => ({ Entry: () => ({ id: 1 }) });
+  app.db.table ??= () => ({ entry: () => ({ id: 1 }) });
   ctx.app = app;
   return ctx;
 }
@@ -83,6 +83,7 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
   globalThis.fetch = ((url: string | URL) => {
     const params = new URL(String(url)).searchParams;
     return Promise.resolve({
+      ok: true,
       json: () => Promise.resolve({
         data: { translations: [{ translatedText: `${params.get("source")}-${params.get("target")}:${params.get("q")}` }] },
       }),

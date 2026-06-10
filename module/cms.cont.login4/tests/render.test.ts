@@ -25,7 +25,7 @@ function makeCtx(loggedIn = false) {
   ctx.app = {
     db: {
       table: (name: string) => ({
-        Entry: () => name === "usr" ? { get: (key: string) => key === "superuser" ? false : "user@example.test" } : null,
+        entry: () => name === "usr" ? { get: (key: string) => key === "superuser" ? false : "user@example.test" } : null,
       }),
     },
   } as any;

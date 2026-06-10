@@ -9,10 +9,10 @@ Deno.test("cms.cont.flexible: metadata is wired", () => {
 Deno.test("cms.cont.flexible: render concatenates child html", async () => {
   const node = {
     settings: { "init-child-module": () => "" },
-    conts: () => ({
-      a: { html: () => "<p>A</p>" },
-      b: { html: () => "<p>B</p>" },
-    }),
+    conts: () => [
+      { html: () => "<p>A</p>" },
+      { html: () => "<p>B</p>" },
+    ],
   };
   assertEquals(await cms.node.render(node as any, { vars: {} }), "<div><p>A</p><p>B</p></div>");
 });
@@ -22,7 +22,7 @@ Deno.test("cms.cont.flexible: render initializes default child when empty", asyn
   let initialized = false;
   const node = {
     settings: { "init-child-module": () => "cms.cont.text" },
-    conts: () => initialized ? { init: { html: () => "<p>Init</p>" } } : {},
+    conts: () => initialized ? [{ html: () => "<p>Init</p>" }] : [],
     cont: (_name: string, module: string) => {
       calls.push(module);
       initialized = true;

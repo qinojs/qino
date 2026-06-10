@@ -16,10 +16,11 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
       one: async () => oneValues.shift(),
       all: async () => [{ email: "user@example.test", access: 1700000000 }],
     },
+    t: (s: TemplateStringsArray) => s.join(""),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];
   const out = await backendDashboardWidget(app);
-  assertEquals(out.includes("Gesamt:<td>7"), true);
-  assertEquals(out.includes("Aktiv:<td>5"), true);
+  assertEquals(out.includes("Total:<td>7"), true);
+  assertEquals(out.includes("Active:<td>5"), true);
   assertEquals(out.includes("user@example.test"), true);
   assertEquals(out.includes("2023-11-14T22:13:20.000Z"), true);
 });

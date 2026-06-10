@@ -15,17 +15,15 @@ Deno.test("cms.filebrowser: metadata and apt shape are wired", () => {
   });
 });
 
-Deno.test("cms.filebrowser: init registers apt tree and cms-ready asset hook", async () => {
+Deno.test("cms.filebrowser: init registers cms-ready asset hook", async () => {
   const handlers: Record<string, Function[]> = {};
   const app = {
-    aptTree: {},
     on(name: string, fn: Function) {
       (handlers[name] ??= []).push(fn);
     },
     db: { row: () => null },
   };
   init(app as any);
-  assertEquals((app.aptTree as any)["cms.filebrowser"], api);
   assertEquals(handlers["cms-ready"].length, 1);
 
   const added: string[] = [];

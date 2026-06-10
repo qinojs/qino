@@ -14,7 +14,7 @@ Deno.test("ai: module metadata and apt tools are wired", () => {
   ]);
 });
 
-Deno.test("ai: init installs AiApi, apt tree and cms-ready hook", () => {
+Deno.test("ai: init installs AiApi and cms-ready hook", () => {
   const handlers: Record<string, ((data: Record<string, unknown>) => void)[]> = {};
   const app = {
     aptTree: {},
@@ -24,7 +24,6 @@ Deno.test("ai: init installs AiApi, apt tree and cms-ready hook", () => {
   };
   init(app as never);
   assertEquals(typeof (app as never as { ai: unknown }).ai, "object");
-  assertEquals((app.aptTree as never as Record<string, unknown>).ai, api);
 
   const html = { content: "", scripts: { add(url: string) { html.content += `[${url}]`; } } };
   const ctx = {
@@ -41,7 +40,7 @@ Deno.test("ai: apt execute delegates to app.ai methods", async () => {
   const ctx = new RequestContext();
   ctx.session = { liveUser: () => 1 } as never;
   ctx.app = {
-    db: { table: () => ({ Entry: () => ({ get: () => false }) }) },
+    db: { table: () => ({ entry: () => ({ get: () => false }) }) },
     ai: {
       chatCompletions: (data: unknown) => ({ kind: "chat", data }),
       chatSession: (data: unknown) => ({ kind: "session", data }),

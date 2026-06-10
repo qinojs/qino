@@ -13,7 +13,7 @@ function makeApp() {
       all: () => [],
       exec: (sql: string, params: unknown[]) => execs.push([sql, params]),
       table: (name: string) => ({
-        Entry: (id: number) => name === "usr" && id ? { id, get: () => false } : null,
+        entry: (id: number) => name === "usr" && id ? { id, get: () => false } : null,
         insert: (row: Record<string, unknown>) => challenges.push(row),
       }),
     },

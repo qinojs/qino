@@ -6,7 +6,7 @@ export default async function (node: Node): Promise<string> {
   const ctx = getCtx();
   const isSuperuser = await ctx.user?.get?.("superuser");
 
-  const modules = await node.cms.getModules();
+  const modules = await node.cms.getModules(); // TODO
   let moduleBoxes = "";
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;

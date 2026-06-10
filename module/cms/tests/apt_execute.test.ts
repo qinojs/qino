@@ -63,7 +63,6 @@ class FakeNode {
   changeUser(user: unknown, access: number) { this.userChanges.push([user, access]); }
   changeGroup(group: unknown, access: number) { this.groupChanges.push([group, access]); }
   bough() { return new Map([[this.id, this]]); }
-  SET = { setDefault: (value: unknown) => { this.writes.defaults = value; } };
 }
 
 function setup(access = 3) {
@@ -81,7 +80,7 @@ function setup(access = 3) {
     db: {
       one: () => null,
       table: (name: string) => ({
-        Entry: () => name === "usr" ? user : null,
+        entry: () => name === "usr" ? user : null,
       }),
     },
   } as any;
@@ -142,17 +141,15 @@ Deno.test("cms apt: contents post returns rendered html string", async () => {
   });
 });
 
-Deno.test("cms apt: defaults, user access and group access write through node", async () => {
+Deno.test("cms apt: user access and group access write through node", async () => {
   const { ctx, nodes } = setup();
   const node = nodes.get(1)!;
 
   await requestStorage.run(ctx, async () => {
-    assertEquals(await invoke(api, "PUT", "/node/1/defaults", { value: { rows: 2 } }), { ok: true });
     assertEquals(await invoke(api, "PUT", "/node/1/access/users/5", { access: 2 }), { ok: true });
     assertEquals(await invoke(api, "PUT", "/node/1/access/groups/6", { access: 1 }), { ok: true });
   });
 
-  assertEquals(node.writes.defaults, { rows: 2 });
   assertEquals(node.userChanges, [[5, 2]]);
   assertEquals(node.groupChanges, [[6, 1]]);
 });

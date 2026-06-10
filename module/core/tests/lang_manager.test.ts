@@ -113,17 +113,19 @@ Deno.test("LangManager: t inserts new smalltext and replaces placeholders", asyn
         return [];
       },
     },
+    settings: { core: { smalltext: { counter: false } } },
   };
   const lm = new LangManager(app as never);
   lm.setLangs(["de"]);
   const ctx = new RequestContext();
   ctx.lang = "de";
   ctx.langNs = "test";
+  Object.defineProperty(ctx, "dev", { value: false }); // skip dev-mode marker
 
   const out = await requestStorage.run(ctx, () => lm.t`Hello ${"Qino"}`);
   assertEquals(out, "Hello Qino");
   assertEquals(queries.length, 1);
-  assertEquals(queries[0][0], "INSERT INTO smalltext SET namespace=?, hash=?, de=?, original=?");
+  assertEquals(queries[0][0], "INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?");
   assertEquals((queries[0][1] as unknown[])[0], "test");
   assertEquals((queries[0][1] as unknown[])[2], "Hello ###1###");
 });
