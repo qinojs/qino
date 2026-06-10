@@ -1,13 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { getCookie, basePath, HTTPException, type Item, type ItemProxy, type Context } from "../../../deps.ts";
+import type { Item, ItemProxy } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
-import { uid, clientIp } from "./util.ts";
+import { uid, clientIp, Output } from "./util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { readUploadFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "./App.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
-import type { HonoRequest } from "npm:hono@4";
+import type { Req } from "./Req.ts";
 
 export class RequestContext {
   app!: App;
@@ -30,11 +30,10 @@ export class RequestContext {
   langUsr = "en";
   langNsPath: string[] = [];
   langNs = "";
-  req!: HonoRequest;
+  req!: Req;
   clientId: string | null = null;
   sessId: string | null = null;
   logId: Promise<string | null> = Promise.resolve(null);
-  entryCache: Map<string, Map<string, unknown>> = new Map();
   loginError: string | undefined; // braucht es den hier eigentlich?
   appURL = "/";
   sysURL = "/m/";
@@ -102,24 +101,22 @@ export class RequestContext {
   }
 }
 
-export async function makeRequestContext(app: App, c: Context): Promise<[RequestContext, boolean]> {
+export async function makeRequestContext(app: App, req: Req, basePath: string): Promise<[RequestContext, boolean]> {
 
-  const bPath = basePath(c);
-  const appURL = bPath.endsWith("/") ? bPath : bPath + "/";
-  const req = c.req;
+  const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
   const url = new URL(req.url);
 
   const ct = req.header("content-type") ?? "";
-  
-  const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
-  if (Number(req.header("content-length") ?? "0") > maxSize) throw new HTTPException(413);
 
-  const rawBody: Record<string, unknown> = req.method === "POST"
+  const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
+  if (Number(req.header("content-length") ?? "0") > maxSize) throw new Output("Payload Too Large", { status: 413 });
+
+  const rawBody: unknown = req.method === "POST"
     ? (ct.includes("application/json") || ct.includes("application/csp-report") ? await req.json() : await req.parseBody()) : {};
   const post: Record<string, unknown> = {};
   const files: Record<string, UploadedFile> = {};
 
-  for (const [key, val] of Object.entries(rawBody)) {
+  for (const [key, val] of Object.entries(rawBody && typeof rawBody === "object" ? rawBody as Record<string, unknown> : {})) {
     if (val instanceof File) {
       files[key] = await readUploadFile(val, { maxSize });
     } else {
@@ -127,7 +124,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
     }
   }
 
-  const { sessionToken, sessId, session, isNew } = await app.sessions.loadFromRequest(c, app.https);
+  const { sessionToken, sessId, session, isNew } = await app.sessions.loadFromRequest(req, app.https);
 
   const ctx = new RequestContext();
   Object.assign(ctx, {
@@ -139,7 +136,7 @@ export async function makeRequestContext(app: App, c: Context): Promise<[Request
     session,
     sessionToken,
     sessId,
-    cookie: getCookie(c),
+    cookie: req.cookies(),
     get: req.query(),
     post,
     files,

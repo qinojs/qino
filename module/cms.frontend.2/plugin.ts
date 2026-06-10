@@ -79,9 +79,8 @@ export function init(app: App) {
       if (pageNotFound != node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-        settings.cms[lastKey](ctx.requestUri);
-        const toggleUrl = String(settings.cms[otherKey]() ?? "");
-        (qino.cms ??= {}).beUrl = toggleUrl;
+        settings.cms[lastKey](ctx.requestUri.slice(ctx.appURL.length));
+        (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
         ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/init.mjs");
       }
     }

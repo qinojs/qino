@@ -29,7 +29,7 @@ document.addEventListener('keydown', function(e) {
 		apt.core['ctx-settings']('core', 'dev').put({value: !ctx.dev}).then(() => location.reload());
 		break;
 	case 'b':
-		if (globalThis.qino.cms?.beUrl) location.href = globalThis.qino.cms.beUrl;
+		if (globalThis.qino.cms?.beUrl) location.href = ctx.appURL + globalThis.qino.cms.beUrl.replace(/^\/+/, '');
 		break;
 	}
 });

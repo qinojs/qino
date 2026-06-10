@@ -1,5 +1,4 @@
-import { HTTPException, type Context as HonoContext } from "../../deps.ts";
-import { Output, clientIp, type App, type RequestContext } from "../core/mod.ts";
+import { Output, clientIp, type App, type Req, type RequestContext } from "../core/mod.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
@@ -8,8 +7,7 @@ const pathBlocks = new Map<string, number>();
 
 export function initSecurity(app: App) {
   app.on("request-start", async e => {
-    const context = e.context as HonoContext;
-    const info = gateInfo(context);
+    const info = gateInfo(e.req as Req);
     if (isPathBlocked(info)) return deny(5);
     const set = await settings(app);
     if (!set.enabled) return;
@@ -108,13 +106,13 @@ function blockKey(info: GateInfo) {
   return info.ip ? "ip:" + info.ip : "path:" + info.path;
 }
 
-function gateInfo(context: HonoContext): GateInfo {
-  const ip = clientIp(context.req);
-  return { ip, method: context.req.method, path: safeDecode(new URL(context.req.url).pathname).slice(0, 191), bytes_in: Number(context.req.header("content-length") ?? "0") || 0, ua: context.req.header("user-agent") ?? "" };
+function gateInfo(req: Req): GateInfo {
+  const ip = clientIp(req);
+  return { ip, method: req.method, path: safeDecode(new URL(req.url).pathname).slice(0, 191), bytes_in: Number(req.header("content-length") ?? "0") || 0, ua: req.header("user-agent") ?? "" };
 }
 
-function deny(seconds: number) {
-  throw new HTTPException(429, { res: new Response("Too many requests", { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil(seconds))) } }) });
+function deny(seconds: number): never {
+  throw new Output("Too many requests", { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil(seconds))) } });
 }
 
 function safeDecode(s: string) {

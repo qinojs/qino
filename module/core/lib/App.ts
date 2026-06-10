@@ -1,6 +1,7 @@
 import * as nodePath from "node:path";
-import { Hono, HTTPException, fromFileUrl, serveFile, basePath, matchedRoutes, type ItemProxy, type Context } from "../../../deps.ts";
-import { getCtx, makeRequestContext, requestStorage, type RequestContext } from "./RequestContext.ts";
+import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
+import { makeRequestContext, requestStorage, type RequestContext } from "./RequestContext.ts";
+import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output, Redirect } from "./util.ts";
 import { Db } from "./Db.ts";
@@ -9,7 +10,7 @@ import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
 import { ModuleManager, type Module } from "./ModuleManager.ts";
 import { LangManager } from "./LangManager.ts";
-import { toHono, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
+import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
 import { initClient, initLog, touchSession } from "./init.ts";
 import { authListen } from "./auth.ts";
 
@@ -17,6 +18,7 @@ const mainDir:string = fromFileUrl(new URL(".", Deno.mainModule));
 
 const defaultConfig = {
     appPATH: mainDir,
+    basePath: "",
     https: false,
     dev: false,
     dbHost: "localhost",
@@ -28,6 +30,7 @@ const defaultConfig = {
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App {
     appPATH: string;
+    basePath: string;
     https: boolean;
     dev: boolean;
     db: Db;
@@ -35,7 +38,6 @@ export class App {
     ctxSettingsSchema: object = { properties: {} };
     dbFiles: DbFileManager;
     dbTexts: DbTextManager;
-    router: Hono = new Hono();
     sessions: SessionManager;
     modules: ModuleManager;
     languages: LangManager;
@@ -51,6 +53,7 @@ export class App {
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
         this.appPATH   = ensureSlash(appPATH);
+        this.basePath  = cfg.basePath;
         this.https     = cfg.https;
         this.dev       = cfg.dev;
 
@@ -62,23 +65,11 @@ export class App {
         this.modules   = new ModuleManager(this);
         this.languages = new LangManager(this);
         this.t         = this.languages.t;
-
-        this.router.onError((e, hc) => this.#handleHonoError(hc, e));
-        this.router.use("*", async (context, next) => {
-            await (this.#initPromise ??= this.modules.init());
-            await this.fire("request-start", { context });
-            await next();
-        });
-        this.router.use("*", (hc, next) => this.#withRequestContext(hc, next));
-        this.router.use("*", (hc, next) => this.#serveStatic(hc, next));
-        this.router.route("/dbFile", this.dbFiles.router);
-        this.router.route("/api", toHono(this.aptTree));
-        this.router.use("*", (hc, next) => this.#handleAppFallback(hc, next));
-        this.router.get("/favicon.ico", () => new Response(null, { status: 204 }));
     }
 
-    get fetch(): (req: Request) => Response | Promise<Response> {
-        return this.router.fetch.bind(this.router);
+    /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
+    get fetch(): (req: Request) => Promise<Response> {
+        return (req) => this.handle(req);
     }
 
     static async create(config: Partial<typeof defaultConfig> = {}): Promise<App> {
@@ -112,34 +103,54 @@ export class App {
         for (const event of this.#events[name]) await event(data);
     }
 
-    async #serveStatic(hc: Context, next: () => Promise<void>): Promise<Response | void> {
-        const ctx = getCtx();
-        const localPath = ctx.urlToLocalPath(ctx.req.url);
-        if (localPath) return serveFile(hc.req.raw, localPath);
-        await next();
+    /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
+    async handle(request: Request, basePath: string = this.basePath): Promise<Response> {
+        const req = new Req(request);
+        let ctx: RequestContext, isNew: boolean;
+        try {
+            await (this.#initPromise ??= this.modules.init());
+            await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
+            [ctx, isNew] = await makeRequestContext(this, req, basePath || "/");
+        } catch (e: unknown) {
+            return this.#earlyError(e);
+        }
+        return requestStorage.run(ctx, () => this.#run(ctx, isNew));
     }
 
-    async #withRequestContext(hc: Context, next: () => Promise<void>): Promise<Response> {
+    async #run(ctx: RequestContext, isNew: boolean): Promise<Response> {
         const t0 = Date.now();
-        const [ctx, isNew] = await makeRequestContext(this, hc);
         const initialSessionToken = ctx.sessionToken;
-        hc.set("ctx", ctx);
+        try {
+            await this.#initRequest(ctx);
+            if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(ctx);
+            await this.fire("action", { ctx });
+            return await this.#route(ctx);
+        } catch (e: unknown) {
+            this.#handleError(ctx, e);
+            return await this.#buildResponse(ctx);
+        } finally {
+            await ctx.cleanup();
+            if (this.dev) console.log(`${ctx.req.method} ${ctx.req.path} ${Date.now() - t0}ms`);
+        }
+    }
 
-        return await requestStorage.run(ctx, async () => {
-            try {
-                await this.#initRequest(ctx);
-                if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(ctx);
-                await this.fire("action", { ctx });
-                await next();
-            } catch (e: unknown) {
-                this.#handleError(ctx, e);
-                hc.res = await this.#buildResponse(hc, ctx);
-            } finally {
-                await ctx.cleanup();
-console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
-            }
-            return hc.res;
-        });
+    /** Explicit, ordered dispatch over the request path — the one routing model. */
+    #route(ctx: RequestContext): Response | Promise<Response> {
+        const uri = ctx.appRequestUri;
+
+        const localPath = ctx.urlToLocalPath(ctx.req.url);
+        if (localPath) return serveFile(ctx.req.raw, localPath);
+
+        if (uri === "favicon.ico") return new Response(null, { status: 204 });
+
+        if (uri === "dbFile" || uri.startsWith("dbFile/"))
+            return this.dbFiles.output(uri.slice("dbFile/".length), ctx.req.raw);
+
+        // apt always signals via thrown Output (success or error) — caught in #run.
+        if (uri === "api" || uri.startsWith("api/"))
+            return aptFetch(ctx.req, this.aptTree, uri.slice("api".length) || "/");
+
+        return this.#renderFallback(ctx);
     }
 
     async #initRequest(ctx: RequestContext): Promise<void> {
@@ -151,11 +162,8 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
         initLog(ctx);
     }
 
-    async #handleAppFallback(hc: Context, next: () => Promise<void>): Promise<void> {
-        await next();
-        const hasRoute = matchedRoutes(hc).some((route) => route.path && route.path !== basePath(hc).replace(/\/$/, "") + "/*");
-        if (hc.res.status !== 404 || hasRoute) return;
-        const ctx = getCtx();
+    /** Fallback for paths that aren't static/dbFile/api: fire the render hooks and build the response. */
+    async #renderFallback(ctx: RequestContext): Promise<Response> {
         await this.fire("render", { ctx });
         if (ctx.hasHtml) {
             await this.fire("html-ready", { ctx });
@@ -166,9 +174,10 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
             qino.appURL = ctx.appURL || "/";
             ctx.responseBody = html.render();
         }
-        hc.res = await this.#buildResponse(hc, ctx);
+        return this.#buildResponse(ctx);
     }
 
+    /** Map a control-flow signal onto the request context's pending response. */
     #handleError(ctx: RequestContext, e: unknown): void {
         if (e instanceof Output) {
             if (e.isJson) ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
@@ -185,29 +194,28 @@ console.log(`${hc.req.method} ${hc.req.path} ${Date.now() - t0}ms`);
         }
     }
 
-    async #handleHonoError(hc: Context, e: Error): Promise<Response> {
-        if (e instanceof HTTPException) return e.getResponse();
-        const ctx = requestStorage.getStore();
-        if (!ctx) {
-            console.error("Error:", e);
-            return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
+    /** Errors raised before a request context exists (init, pre-filter, 413). */
+    #earlyError(e: unknown): Response {
+        if (e instanceof Output) {
+            const headers = new Headers(e.headers);
+            if (e.isJson) headers.set("Content-Type", "application/json; charset=UTF-8");
+            return new Response(e.body as string, { status: e.status, headers });
         }
-        this.#handleError(ctx, e);
-        return this.#buildResponse(hc, ctx);
+        if (e instanceof Redirect) return new Response(null, { status: e.status, headers: { Location: e.location } });
+        console.error("Error:", e);
+        return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
     }
 
-    async #buildResponse(hc: Context, ctx: RequestContext): Promise<Response> {
+    async #buildResponse(ctx: RequestContext): Promise<Response> {
         await this.fire("respond", { ctx });
 
         const headers = new Headers(ctx.responseHeaders);
+        if (headers.has("Location")) return new Response(null, { status: ctx.responseStatus, headers });
 
-        if (headers.has("Location")) return hc.newResponse(null, new Response(null, { status: ctx.responseStatus, headers }));
-
-        const body = ctx.responseBody;
         if (!headers.get("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("X-Content-Type-Options", "nosniff");
-        return hc.newResponse(body, new Response(null, { status: ctx.responseStatus, headers }));
+        return new Response(ctx.responseBody, { status: ctx.responseStatus, headers });
     }
 
 }

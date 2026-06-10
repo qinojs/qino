@@ -2,7 +2,6 @@
 
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
-import { getCtx } from "./RequestContext.ts";
 import { Db, numTypes } from "./Db.ts";
 
 export class DbTable {
@@ -12,6 +11,11 @@ export class DbTable {
   #db: Db;
   #name: string;
   #children: DbField[] | null = null;
+  // Per-table identity map; WeakRef lets the GC reclaim unreferenced entries, finalizer drops the dead key.
+  #entries = new Map<string, WeakRef<DbEntry>>();
+  #entryFinalizer = new FinalizationRegistry<string>((eid) => {
+    if (!this.#entries.get(eid)?.deref()) this.#entries.delete(eid);
+  });
 
   constructor(db: Db, name: string) {
     this.#db = db;
@@ -262,20 +266,14 @@ export class DbTable {
   }
 
   entry(id?: any): DbEntry {
-    const ctx = getCtx();
     const table = String(this);
-
-    if (!ctx.entryCache.has(table)) ctx.entryCache.set(table, new Map());
-    const tableCache = ctx.entryCache.get(table)!;
-
     const Cl = getEntryClass(table);
 
     if (id instanceof Cl) return id;
     if (id === undefined) {
       throw new Error("not working sync without id (generate)");
       // const Entry = new Cl(this);
-      // const eid = String(Entry);
-      // tableCache.set(eid, Entry);
+      // this.#entries.set(String(Entry), new WeakRef(Entry));
       // return Entry;
     }
 
@@ -283,10 +281,13 @@ export class DbTable {
     const values = isCompositeId ? id : this.entryId2Array(id);
     const eid = isCompositeId ? String(this.entryId(id)) : String(id);
 
-    if (!tableCache.has(eid)) {
-      tableCache.set(eid, new Cl(this, values));
-    }
-    return tableCache.get(eid) as DbEntry;
+    const hit = this.#entries.get(eid)?.deref();
+    if (hit) return hit;
+
+    const entry = new Cl(this, values);
+    this.#entries.set(eid, new WeakRef(entry));
+    this.#entryFinalizer.register(entry, eid);
+    return entry;
   }
 
   async selectEntries(str = ""): Promise<Record<string, DbEntry>> {

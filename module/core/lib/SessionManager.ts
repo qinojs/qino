@@ -1,6 +1,7 @@
-import { getCookie, bildJsonItem, type Context, type ItemProxy } from "../../../deps.ts";
+import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
 import { uid } from "./util.ts";
 import type { Db } from "./Db.ts";
+import type { Req } from "./Req.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
 const EMPTY_SESSION = "{}";
@@ -18,8 +19,8 @@ export class SessionManager {
         this.#db = db;
     }
 
-    loadFromRequest(c: Context, https: boolean): Promise<SessionResult> {
-        return this.load(getCookie(c, hostCookieName(https)));
+    loadFromRequest(req: Req, https: boolean): Promise<SessionResult> {
+        return this.load(req.cookie(hostCookieName(https)));
     }
 
     async load(cookieSessionToken?: string): Promise<SessionResult> {

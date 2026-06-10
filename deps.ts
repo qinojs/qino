@@ -1,8 +1,7 @@
+// Hono is only used by the optional mount adapters (lib/hono.ts, apt/toHono.ts).
 export { Hono } from "npm:hono@^4";
 export type { Context } from "npm:hono@^4";
-export { getCookie } from "npm:hono@^4/cookie";
-export { HTTPException } from "npm:hono@^4/http-exception";
-export { basePath, matchedRoutes } from "npm:hono@^4/route";
+export { basePath } from "npm:hono@^4/route";
 export { default as mysql } from "npm:mysql2@^3/promise";
 export type { Pool, ResultSetHeader, RowDataPacket } from "npm:mysql2@^3/promise";
 export { default as bcrypt } from "npm:bcryptjs@^3";

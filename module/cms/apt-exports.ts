@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { HTTPException } from "../../deps.ts";
-import { getCtx, hee } from "../core/mod.ts";
+import { getCtx, hee, Output } from "../core/mod.ts";
 import type { Node } from "./mod.ts";
 // ─── business logic used by REST ──────────────
 
@@ -55,7 +54,7 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
     const ret  = { parent_id: Number(await node.parent()) };
     const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
     if (await node.in(trash)) {
-        if (await node.access() < 3) throw new HTTPException(403);
+        if (await node.access() < 3) throw new Output({ error: "Forbidden" }, { status: 403 });
         await (await node.parent()).removeChild(node);
     } else {
         const TrashNode = await ctx.app.cms.node(trash);
@@ -81,12 +80,12 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
 export async function nodeRestore(node: any): Promise<{ url: string }> {
     const ctx   = getCtx();
     const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
-    if (!await node.in(trash)) throw new HTTPException(400, { message: "Node is not in trash" });
-    if (await node.access() < 2) throw new HTTPException(403);
+    if (!await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
+    if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
     const fromId   = Number(await node.settings["__deleted_from"]   ?? 0);
     const beforeId = Number(await node.settings["__deleted_before"] ?? 0);
     const ToNode   = fromId ? await ctx.app.cms.node(fromId) : null;
-    if (!ToNode || !await ToNode.access()) throw new HTTPException(403, { message: "Original parent no longer accessible" });
+    if (!ToNode || !await ToNode.access()) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
     const before = beforeId ? await ctx.app.cms.node(beforeId) : null;
     await ToNode.insertBefore(node, before);
     delete node.settings["__deleted_from"];
@@ -101,7 +100,7 @@ export async function nodeFileAdd(node: Node, file: any, replace?: any): Promise
     let File: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
         const dbF = await ctx.app.dbFiles.file(Number(file));
-        if (!await dbF.access()) throw new HTTPException(403);
+        if (!await dbF.access()) throw new Output({ error: "Forbidden" }, { status: 403 });
         if (replace) {
             const existing = await node.file(replace);
             File = await dbF.clone(existing?.id);
@@ -110,7 +109,7 @@ export async function nodeFileAdd(node: Node, file: any, replace?: any): Promise
         }
     } else {
         if (file != null && !/^https?:\/\//.test(String(file))) {
-            throw new HTTPException(403);
+            throw new Output({ error: "Forbidden" }, { status: 403 });
         }
         File = await node.addFile(file, replace);
     }

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import * as nodeFs from "node:fs/promises";
-import { Hono, typeByExtension } from "../../../deps.ts";
+import { typeByExtension } from "../../../deps.ts";
 import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
@@ -14,12 +14,9 @@ export class DbFileManager {
   #app: App;
   #directory: string;
 
-  router: Hono = new Hono();
-
   constructor(app: App, directory: string) {
     this.#app = app;
     this.#directory = directory.endsWith("/") ? directory : directory + "/";
-    this.router.all("/:path{.*}", (c) => this.#output(c.req.param("path"), c.req.raw));
     Deno.mkdir(this.#directory, { recursive: true }).catch(() => {});
   }
 
@@ -47,7 +44,7 @@ export class DbFileManager {
     return f;
   }
 
-  async #output(request: string, req: Request): Promise<Response> {
+  async output(request: string, req: Request): Promise<Response> {
     const x = request.split("/");
     const id = Number(x.shift() ?? "0");
     const name = x.pop() ?? "";
