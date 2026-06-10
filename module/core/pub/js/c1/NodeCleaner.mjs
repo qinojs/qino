@@ -146,10 +146,8 @@ export default NodeCleaner;
 
 function removeUnusedStyles(el) {
 	// be sure the node is attached to the document
-	var computed = getComputedStyle(el),
-		beforeOriginal = {},
-		beforeComputed = {},
-		i=0, style;
+	const computed = getComputedStyle(el), beforeOriginal = {}, beforeComputed = {};
+	let i=0, style;
 	while ((style = el.style[i++])) {
 		beforeOriginal[style] = el.style.getPropertyValue(style);
 		if ({IMG:1,VIDEO:1}[el.tagName] && {width:1,'max-width':1,height:1}[style]) continue; // reponsive, leave this styles

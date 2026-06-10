@@ -116,12 +116,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 </div>`;
 
     if (!rows.length && get.show !== "entries") {
-        return `<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">${tools}<div class="u2-card"><div class="-body">${await node.app.t`Great, no errors so far!`}</div></div></div>`;
+        return `<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}">${tools}<div class="u2-card"><div class="-body">${await node.app.t`Great, no errors so far!`}</div></div></div>`;
     }
 
     if (get.show === "entries") {
         const entriesBox = await renderEntryList(node, ctx, get);
-        return `<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">${tools}${entriesBox}</div>`;
+        return `<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}">${tools}${entriesBox}</div>`;
     }
 
     const { editorLink } = makeFileHelper(ctx);
@@ -168,7 +168,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     }
 
     return `
-<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">
+<div class="u2-flex -m-cms-backend-superuser-error_report .-pid${node.id}" data-pid="${node.id}">
     ${tools}
     <div class=u2-card style="max-height:88vh; overflow:auto; flex:1 1 80rem">
         <div class=-head>${await node.app.t`Errors`}</div>

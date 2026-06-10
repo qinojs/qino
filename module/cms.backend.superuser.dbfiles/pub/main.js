@@ -1,5 +1,6 @@
-cms.initCont("cms.backend.superuser.dbfiles", async (el) => {
-  const { apt, u2Base } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+import { apt, u2Base } from "../../core/pub/js/qino.js";
+
+cms.initCont("cms.backend.superuser.dbfiles", (el) => {
   const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 

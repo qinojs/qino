@@ -47,7 +47,7 @@ async function render(node: Node): Promise<string> {
   if (!listHtml) return `<div class="-m-cms-cont-trash"><p>Der Papierkorb ist leer.</p></div>`;
 
   return `
-<div class="-m-cms-cont-trash" data-sys-url="${hee(ctx.sysURL)}">
+<div class="-m-cms-cont-trash">
   <div class="-toolbar">
     <button class="-removeAll">Papierkorb leeren</button>
   </div>

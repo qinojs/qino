@@ -1,4 +1,4 @@
-import { hee, getCtx, FileTransformer, type App } from "../core/mod.ts";
+import { hee, FileTransformer, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -247,8 +247,6 @@ async function renderCache(app: App): Promise<string> {
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
-  const ctx = getCtx();
-
   if (vars.install_binary) {
     if (!isRoot()) return JSON.stringify({ error: "Not running as root" });
     const bin = BINARIES.find(b => b.id === vars.install_binary);
@@ -273,7 +271,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     : "";
 
   return `
-<div class="-m-cms-backend-superuser-dbfiles-transform" data-sys-url="${hee(ctx.sysURL)}">
+<div class="-m-cms-backend-superuser-dbfiles-transform">
   <div class="u2-flex">
 
     <div cms-part="cache">${await renderCache(node.app)}</div>

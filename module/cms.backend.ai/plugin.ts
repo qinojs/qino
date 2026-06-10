@@ -142,7 +142,7 @@ function modelRows(providerName: string, builtinModels: ProviderModel[], customM
   return rows.length ? rows.join("") : `<tr><td colspan=8><em>No models added yet.</em>`;
 }
 
-async function saveCustomModels(app: App, providerName: string, models: ProviderModel[]): Promise<void> {
+function saveCustomModels(app: App, providerName: string, models: ProviderModel[]): void {
   app.settings.ai.provider[providerName].models(JSON.stringify(models, null, 2));
 }
 

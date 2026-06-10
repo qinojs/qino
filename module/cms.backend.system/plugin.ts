@@ -149,7 +149,7 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   return `
-<div class="u2-flex -m-cms-backend-system" data-sys-url="${ctx.sysURL}">
+<div class="u2-flex -m-cms-backend-system">
   <style>
     .u2-card {
       min-width:25rem;

@@ -1,5 +1,6 @@
-cms.initCont("cms.backend.security", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+import { apt } from "../../core/pub/js/qino.js";
+
+cms.initCont("cms.backend.security", (el) => {
   const nid = Number(el.dataset.securityNode) || cms.el.pid(el);
 
   const post = (vars) => apt.cms.node(nid).html.post({ vars }).then((html) => {

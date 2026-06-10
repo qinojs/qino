@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee, getCtx, type App } from "../core/mod.ts";
+import { hee, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy } from "../uncdn/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -57,8 +57,6 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const ctx = getCtx();
-
   const cacheDir = node.app.appPATH + CACHE_SUBDIR;
 
   if (vars.delete) {
@@ -87,7 +85,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     node.app.t`No cached files yet.`,
   ]);
 
-  return `<div class="u2-flex -m-cms-backend-superuser-uncdn" data-pid="${node.id}" data-sys-url="${ctx.sysURL}">
+  return `<div class="u2-flex -m-cms-backend-superuser-uncdn" data-pid="${node.id}">
   <div class="u2-card -sidebar" style="flex:0 0 auto">
     <div class="-head">${tInfo}</div>
     <div class="-body">

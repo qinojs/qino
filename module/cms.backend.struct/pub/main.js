@@ -1,5 +1,6 @@
-cms.initCont("cms.backend.struct", async (el) => {
-  const { apt } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
+import { apt } from "../../core/pub/js/qino.js";
+
+cms.initCont("cms.backend.struct", (el) => {
   const tree = el.querySelector(".cmsBeTree");
 
   async function reloadList(vars = {}) {

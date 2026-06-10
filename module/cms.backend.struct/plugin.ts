@@ -30,7 +30,7 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
   const showContents = !!ctx.settings.cms.admin.showContents();
 
   const app = node.app;
-  return `<div class="u2-card -m-cms-backend-struct" style="flex:0 1 1200px" data-sys-url="${ctx.sysURL}" data-node="${node.id}">
+  return `<div class="u2-card -m-cms-backend-struct" style="flex:0 1 1200px" data-node="${node.id}">
   <div class=-head>${await app.t`Structure`}</div>
   <div class=-body>
     <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${await app.t`Show contents`}</label>

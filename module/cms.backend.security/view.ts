@@ -35,7 +35,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const topUa = await db.all("SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10");
   const stats: Record<string, unknown> = await db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event") ?? {};
   const tab = String(ctx.get.tab ?? "live");
-  return `<div class="-m-cms-backend-security" ${aptScript(node)}>
+  return `<div class="-m-cms-backend-security" data-security-node="${node.id}">
     <div class="u2-flex">
       ${await statusBox(app, stats)}
       <div>
@@ -64,10 +64,6 @@ function tabs(active: string) {
 function settingsEditor(ctx: RequestContext) {
   ctx.html.scripts.add(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
   return `<div class="u2-card"><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
-}
-
-function aptScript(node: Node) {
-  return `data-sys-url="${getCtx().sysURL}" data-security-node="${node.id}"`;
 }
 
 async function bucketTable(app: App, rows: Record<string, unknown>[]) {

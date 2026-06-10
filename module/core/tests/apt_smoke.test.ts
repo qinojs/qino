@@ -15,7 +15,7 @@ const mockPages = new Map<string, { id: string; title: string; access: () => num
 const api = {
   page: {
     ":page": {
-      resolve: async (id: string) => {
+      resolve: (id: string) => {
         const p = mockPages.get(id);
         if (!p) throw new NotFoundError(`page ${id}`);
         if (p.access() < 1) throw new AccessError(`no view on ${id}`);

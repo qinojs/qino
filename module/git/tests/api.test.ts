@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
 import { toTools } from "../../core/mod.ts";
 import { addModule, api, name, needs } from "../plugin.ts";

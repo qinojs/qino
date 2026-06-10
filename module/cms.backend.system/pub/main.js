@@ -1,4 +1,6 @@
-cms.initCont("cms.backend.system", async (el) => {
+import { apt, u2Base } from "../../core/pub/js/qino.js";
+
+cms.initCont("cms.backend.system", (el) => {
   const d = new Date();
   const off = -d.getTimezoneOffset() / 60;
   const tr = el.querySelector(".-browser-time")?.closest("tr");
@@ -7,7 +9,6 @@ cms.initCont("cms.backend.system", async (el) => {
     tr.querySelector(".-browser-tz").textContent = "UTC+" + off;
   }
 
-  const { apt, u2Base } = await import(el.dataset.sysUrl + "core/pub/js/qino.js");
   const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 
