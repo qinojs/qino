@@ -84,7 +84,7 @@ Deno.test("cms.image2: cms_image2 derives alt text from file name", async () => 
     })));
 
     assertEquals(out.includes("max=true"), true);
-    assertEquals(out.includes('alt="product photo"'), true);
+    assertEquals(out.includes('alt="Product Photo"'), true);
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

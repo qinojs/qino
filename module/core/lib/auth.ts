@@ -81,8 +81,7 @@ export function pwHash(pw: string): Promise<string> {
 
 export async function pwVerify(pw: string, hash: string): Promise<boolean> {
   if (!pw || !hash) return false;
-  // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
-  return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$"));
+  return await bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
 }
 
 export function pwNeedsRehash(hash: string): boolean {

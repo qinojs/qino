@@ -1,8 +1,17 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { s, Access, type AptTree } from "../core/mod.ts";
+import { s, Access, type AptTree, type RequestContext } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
 
-const cmsTextService: any = {
+class CmsTextService {
+
+    #ctx: RequestContext;
+
+    constructor(ctx: RequestContext) {
+        this.#ctx = ctx;
+    }
+
+    get ctx() { return this.#ctx; }
 
     async textAccess(text_id: any): Promise<boolean> {
         text_id = Number(text_id);
@@ -11,7 +20,7 @@ const cmsTextService: any = {
         const P = await this.ctx.app.cms.node(pid);
         if ((await P.access()) < 2) return false;
         return true;
-    },
+    }
 
     async get(txt_id: any): Promise<any> {
         txt_id = Number(txt_id);
@@ -23,7 +32,7 @@ const cmsTextService: any = {
             return_.push({ lang: l, text });
         }
         return return_;
-    },
+    }
 
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
@@ -44,7 +53,7 @@ const cmsTextService: any = {
             await this.ctx.app.db.table("text").insert({ id: txt_id, lang: target_lang, text: output });
         }
         return true;
-    },
+    }
 
     async translatePageAllLangs(pid: any, ifNeeded: boolean, subpages: boolean): Promise<{ count: number; fail: number }> {
         const return_ = { count: 0, fail: 0 };
@@ -54,7 +63,7 @@ const cmsTextService: any = {
             return_.fail += result.fail;
         }
         return return_;
-    },
+    }
 
     async translatePage(
         pid: any,
@@ -75,7 +84,7 @@ const cmsTextService: any = {
             return_.fail += result.fail;
         }
         return return_;
-    },
+    }
 
     async translateCont(pid: any, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number | false> {
         const node = await this.ctx.app.cms.node(pid);
@@ -88,7 +97,7 @@ const cmsTextService: any = {
             count += await this.translateText((Text as any).id, target_lang, source_lang, ifNeeded);
         }
         return count;
-    },
+    }
 
     async translateText(tid: number, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number> {
         const Text = this.ctx.app.dbTexts.text(tid);
@@ -117,7 +126,7 @@ const cmsTextService: any = {
         }
         await Text.lang(target_lang).set(text);
         return 1;
-    },
+    }
 
     async transl(text: string, target_lang: string, source_lang: string): Promise<string | false> {
         const service = String(await this.ctx.app.settings["cms.text"]["translation service"] ?? "");
@@ -126,7 +135,7 @@ const cmsTextService: any = {
             case "deepl":  return this.deepl_translate(text, source_lang, target_lang);
         }
         return false;
-    },
+    }
 
     async deepl_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         console.warn("deprecated? deepl used");
@@ -146,10 +155,10 @@ const cmsTextService: any = {
         const translation: string | false = resp?.translations?.[0]?.text ?? false;
         if (translation) {
             const prev = Number(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0");
-            this.ctx.app.settings["cms.text"]["translate char count"] = prev + text.length;
+            this.ctx.app.settings["cms.text"]["translate char count"](prev + text.length);
         }
         return translation;
-    },
+    }
 
     async google_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         const key =
@@ -170,10 +179,10 @@ const cmsTextService: any = {
         if (translation) {
             console.log(await this.ctx.app.settings["cms.text"]["translate char count"]);
             const prev = Number(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0");
-            this.ctx.app.settings["cms.text"]["translate char count"] = prev + text.length;
+            this.ctx.app.settings["cms.text"]["translate char count"](prev + text.length);
         }
         return translation;
-    },
+    }
 
     async history(txt_id: any, lang: string): Promise<any> {
         txt_id = Number(txt_id);
@@ -194,7 +203,7 @@ const cmsTextService: any = {
             " ORDER BY text._vers_log DESC " +
             " LIMIT 100 ";
         return this.ctx.app.db.all(sql, [txt_id, lang, space]);
-    },
+    }
 
     async isTranslated(txt_ids: any, lang: any): Promise<any> {
         const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number);
@@ -208,14 +217,10 @@ const cmsTextService: any = {
         for (const row of rows) map[row.id] = !!(row.text && row.text !== "");
         if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;
         return Object.fromEntries(ids.map(id => [id, map[id] ?? false]));
-    },
-};
-
-export function service(ctx: any): any {
-    const svc = Object.create(cmsTextService);
-    svc.ctx = ctx;
-    return svc;
+    }
 }
+
+export const service = (ctx: RequestContext): CmsTextService => new CmsTextService(ctx);
 
 export const api: AptTree = {
     text: {
@@ -227,7 +232,7 @@ export const api: AptTree = {
                     ids: s.string().describe("Comma-separated text IDs"),
                     lang: s.optional(s.string()).describe("Language code. Default: current language"),
                 }),
-                execute: ({ ids, lang }: any, ctx: any) => service(ctx).isTranslated(ids.split("_").map(Number), lang ?? null),
+                execute: ({ ids, lang }: any, ctx: RequestContext) => service(ctx).isTranslated(ids.split("_").map(Number), lang ?? null),
             },
         },
         ":text": {
@@ -235,7 +240,7 @@ export const api: AptTree = {
             get: {
                 description: "Read text in all languages",
                 access: Access.USER, // fine-grained check via textAccess() in execute
-                execute: ({ text }: any, ctx: any) => service(ctx).get(text),
+                execute: ({ text }: any, ctx: RequestContext) => service(ctx).get(text),
             },
             translate: {
                 post: {
@@ -245,7 +250,7 @@ export const api: AptTree = {
                         target_lang: s.string().describe("Target language code, e.g. \"en\""),
                         source_lang: s.string().describe("Source language code, e.g. \"de\""),
                     }),
-                    execute: ({ text, target_lang, source_lang }: any, ctx: any) =>
+                    execute: ({ text, target_lang, source_lang }: any, ctx: RequestContext) =>
                         service(ctx).translate(text, target_lang, source_lang),
                 },
             },
@@ -254,7 +259,7 @@ export const api: AptTree = {
                     description: "Read text history for a language",
                     access: Access.USER,
                     input: s.object({ lang: s.string().describe("Language code, e.g. \"de\"") }),
-                    execute: ({ text, lang }: any, ctx: any) => service(ctx).history(text, lang),
+                    execute: ({ text, lang }: any, ctx: RequestContext) => service(ctx).history(text, lang),
                 },
             },
         },
@@ -272,7 +277,7 @@ export const api: AptTree = {
                         ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
                         subpages: s.optional(s.boolean()).describe("Include sub-pages"),
                     }),
-                    execute: ({ page, target_lang, source_lang, ifNeeded, subpages }: any, ctx: any) =>
+                    execute: ({ page, target_lang, source_lang, ifNeeded, subpages }: any, ctx: RequestContext) =>
                         service(ctx).translatePage(page, target_lang, source_lang ?? "auto", ifNeeded ?? true, subpages ?? false),
                 },
             },
@@ -284,11 +289,10 @@ export const api: AptTree = {
                         ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
                         subpages: s.optional(s.boolean()).describe("Include sub-pages"),
                     }),
-                    execute: ({ page, ifNeeded, subpages }: any, ctx: any) =>
+                    execute: ({ page, ifNeeded, subpages }: any, ctx: RequestContext) =>
                         service(ctx).translatePageAllLangs(page, ifNeeded ?? true, subpages ?? false),
                 },
             },
         },
     },
 };
-

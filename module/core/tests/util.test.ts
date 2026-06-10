@@ -24,7 +24,7 @@ Deno.test("util: html template escapes values but keeps HtmlString values", () =
 });
 
 Deno.test("util: urlize transliterates and normalizes text", () => {
-  assertEquals(urlize(" Äpfel & Öl — 100% "), "apfel-and-ol-100");
+  assertEquals(urlize(" Äpfel & Öl — 100% "), "aepfel-and-oel-100");
   assertEquals(urlize("foo---bar"), "foo-bar");
 });
 

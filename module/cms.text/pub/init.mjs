@@ -33,6 +33,7 @@ const showEditor = async function(el) {
         }
 		const text = (row.text===false?'':row.text);
 		const style = 'border:2px solid var(--cms-dark); padding:.2rem; display:block; '+(row.lang===activeLang?'border-color:var(--cms-access-2)':'');
+        const tag = el.tagName === 'TD' ? 'div' : el.tagName;
         body +=
         '<div class=-language style="padding:1rem; min-width:20rem; border-right:1px solid">'+
             '<div style="display:flex; align-items:center; margin-bottom:.5rem">'+
@@ -42,9 +43,9 @@ const showEditor = async function(el) {
                 '<button class=-history style="margin-left:.2em">history</button>'+
                 //'<button class=-continueAi style="margin-left:.2em" title="Is this useful? Feedback welcome!">AI extend (beta)</button>'+
             '</div>'+
-			(el.tagName === 'INPUT'
-				? '<'+el.tagName+' cmstxt='+tid+' cmslang="'+row.lang+'" style="'+style+'" value="'+hee(text)+'">'
-			 	: '<'+el.tagName+' cmstxt='+tid+' cmslang="'+row.lang+'" contenteditable style="'+style+'">'+text+'</'+el.tagName+'>'
+			(tag === 'INPUT'
+				? '<'+tag+' cmstxt='+tid+' cmslang="'+row.lang+'" style="'+style+'" value="'+hee(text)+'">'
+			 	: '<'+tag+' cmstxt='+tid+' cmslang="'+row.lang+'" contenteditable style="'+style+'">'+text+'</'+tag+'>'
 			)+
         '</div>';
     }

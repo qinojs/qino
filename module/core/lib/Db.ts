@@ -105,7 +105,6 @@ export class Db {
     for (const fn of this.#events[name]) await fn(data);
   }
 
-  /** @deprecated unsafe, use prepared statement parameters instead */
   static quote(v: unknown): string {
     if (v == null) return "NULL";
     return `'${String(v).replace(/[\0\b\t\n\r'"\\]/g, c => ({

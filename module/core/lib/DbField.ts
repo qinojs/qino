@@ -51,7 +51,6 @@ export class DbField {
     return String(value ?? "");
   }
 
-  /** @deprecated unsafe, use valueTransform with prepared statements */
   valueToSql(value: any): string {
     value = this.valueTransform(value);
     return value === null ? "NULL" : Db.quote(value); // Db.quote hier behalten!

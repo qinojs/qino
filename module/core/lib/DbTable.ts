@@ -300,7 +300,6 @@ export class DbTable {
     return Es;
   }
 
-  /** @deprecated unsafe, use valuesToFragment */
   valuesToWhere(values: Record<string, any>, alias?: string): string {
     const sqls: string[] = [];
     for (const [field, Field] of Object.entries(this.#fields!)) {
@@ -312,9 +311,15 @@ export class DbTable {
     }
     return sqls.join(" AND ");
   }
-  /** @deprecated unsafe, use valuesToFragment */
   valuesToSet(values: Record<string, any>, alias?: string): string {
-    return this.valuesToFragment(values, alias, true)[0];
+    console.warn('zzz used?')
+    const sqls: string[] = [];
+    for (const [field, Field] of Object.entries(this.#fields!)) {
+      if (!(field in values)) continue;
+      const f = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
+      sqls.push(`${f} = ${Field.valueToSql(values[field])}`);
+    }
+    return sqls.join(", ");
   }
 
   toString(): string { return this.#name; }

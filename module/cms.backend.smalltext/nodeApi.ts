@@ -61,7 +61,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
             for (const targetLang of langs) {
                 if (row[targetLang]?.trim()) continue;
                 const source = row[sourceLang] || row.original;
-                const translated = matchCase(await svc.transl(source, targetLang, sourceLang) ?? "", row.original);
+                const translated = matchCase(await svc.transl(source, targetLang, sourceLang) || "", row.original);
                 if (!translated) continue;
                 await db.query(`UPDATE smalltext SET ${targetLang} = ? WHERE hash = ? AND namespace = ?`, [translated, row.hash, row.namespace]);
                 count++;
@@ -89,7 +89,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
         let count = 0;
         for (const targetLang of langs) {
             if (row[targetLang]?.trim()) continue;
-            const translated = matchCase(await svc.transl(row[sourceLang], targetLang, sourceLang) ?? "", row.original);
+            const translated = matchCase(await svc.transl(row[sourceLang], targetLang, sourceLang) || "", row.original);
             if (!translated) continue;
             await db.query(
                 `UPDATE smalltext SET ${targetLang} = ? WHERE hash = ? AND namespace = ?`,

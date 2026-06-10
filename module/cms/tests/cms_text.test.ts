@@ -50,6 +50,17 @@ function ctxWith(app: any) {
   return ctx;
 }
 
+function setting<T>(initial: T) {
+  let value = initial;
+  const item = function(next?: T) {
+    if (arguments.length) value = next as T;
+    return value;
+  } as any;
+  item.then = (resolve: (value: T) => unknown, reject: (reason: unknown) => unknown) =>
+    Promise.resolve(value).then(resolve, reject);
+  return item;
+}
+
 Deno.test("cms.text: missing and empty texts are returned as untranslated", async () => {
   const ctx = ctxWith({
     languages: { all: ["de", "en", "fr"] },
@@ -98,7 +109,7 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
       "cms.text": {
         "translation service": "google",
         google: { key: "" },
-        "translate char count": 0,
+        "translate char count": setting(0),
       },
       "cms.backend.webmaster": { "google.api.key": "" },
     },
