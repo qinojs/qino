@@ -1,18 +1,18 @@
 /* CMS-Seitenbaum auf Basis von u2-tree.
  * Einstieg: window.cmsTreeInit(json); cms.Tree ist die Fassade für Panel, contextMenu.mjs
  * und Server-Listener. */
-import { t, apt, u2Base } from "../../../core/pub/js/qino.js";
+import { t, apt } from "../../../core/pub/js/qino.js";
 
 const Page = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)
 
 window.cmsTreeInit = async (json) => {
-  await import(u2Base + "el/tree/tree.js");
+  await import("@qino/u2/el/tree/tree.js");
 
   const root = cms.panelRoot;
   if (!root.querySelector("link[data-u2tree]")) {
-    const u2css = Object.assign(document.createElement("link"), { rel: "stylesheet", href: u2Base + "el/tree/tree.css" });
+    const u2css = Object.assign(document.createElement("link"), { rel: "stylesheet", href: import.meta.resolve("@qino/u2/el/tree/tree.css") });
     u2css.dataset.u2tree = "";
     root.append(u2css); // u2-Basis-CSS; CMS-Optik kommt aus tree.css (panelStyles)
   }

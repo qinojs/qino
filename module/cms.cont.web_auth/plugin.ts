@@ -25,10 +25,8 @@ async function render(node: Node): Promise<string> {
   const showLogin  = mode === "login"  || (mode === "auto" && !ctx.user);
 
   const apiBase   = String(settings.apiBase() ?? "") || ctx.appURL + "api/web_auth";
-  const scriptUrl = ctx.sysURL + "web_auth/pub/web_auth.js";
-  const tUrl      = ctx.sysURL + "core/pub/js/qino.js";
 
-  if (showManage && ctx.user) return renderManage(node.app, apiBase, scriptUrl, tUrl);
+  if (showManage && ctx.user) return renderManage(node.app, apiBase);
   if (showLogin) {
     const redirectId = Number(settings.redirectAfterLogin() ?? 0);
     let redirectUrl  = "";
@@ -36,13 +34,13 @@ async function render(node: Node): Promise<string> {
       const P = await (node.app as any).cms?.node(redirectId);
       if (P?.is()) redirectUrl = await P.url();
     }
-    return renderLogin(node.app, apiBase, scriptUrl, tUrl, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.token));
+    return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.token));
   }
   return "";
 }
 
-async function renderLogin(app: any, apiBase: string, scriptUrl: string, tUrl: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
-  return `<div class="web-auth-login" data-api-base=${JSON.stringify(apiBase)} data-script-url=${JSON.stringify(scriptUrl)} data-t-url=${JSON.stringify(tUrl)} data-redirect-url=${JSON.stringify(redirectUrl)}>
+async function renderLogin(app: any, apiBase: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
+  return `<div class="web-auth-login" data-api-base=${JSON.stringify(apiBase)} data-redirect-url=${JSON.stringify(redirectUrl)}>
   <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
   <button data-action="login">${await app.t`Sign in with passkey`}</button>
   ${showPw ? `<details>
@@ -60,8 +58,8 @@ async function renderLogin(app: any, apiBase: string, scriptUrl: string, tUrl: s
 </div>`;
 }
 
-async function renderManage(app: any, apiBase: string, scriptUrl: string, tUrl: string): Promise<string> {
-  return `<div class="web-auth-manage" data-api-base=${JSON.stringify(apiBase)} data-script-url=${JSON.stringify(scriptUrl)} data-t-url=${JSON.stringify(tUrl)}>
+async function renderManage(app: any, apiBase: string): Promise<string> {
+  return `<div class="web-auth-manage" data-api-base=${JSON.stringify(apiBase)}>
   <div data-list>${await app.t`Loading…`}</div>
   <input type="text" data-name placeholder="${await app.t`Name for this authenticator`}">
   <button data-action="register">${await app.t`Add passkey`}</button>

@@ -1,4 +1,4 @@
-import { hee, getCtx } from "../../core/mod.ts";
+import { hee } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 async function dirSize(dir: string): Promise<number> {
@@ -61,8 +61,7 @@ export default async function summary(node: Node): Promise<string> {
   const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", appPATH] }).output();
   const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop() ?? "0");
 
-  const { sysURL } = getCtx();
-  const loadBtn = `<button onclick="import('${sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(${node.id}).html.part('statistic-details').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">Details</button>`;
+  const loadBtn = `<button data-load-part="statistic-details">Details</button>`;
 
   return `
 <table class="u2-table" style="width:auto;">

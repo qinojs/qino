@@ -1,7 +1,7 @@
-import { apt, u2Base } from "../../core/pub/js/qino.js";
+import { apt } from "../../core/pub/js/qino.js";
 
 cms.initCont("cms.backend.superuser.dbfiles", (el) => {
-  const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
+  const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 
   let debTimer;

@@ -1,8 +1,8 @@
-import { apt, u2Base } from '../../core/pub/js/qino.js';
+import { apt } from '../../core/pub/js/qino.js';
 
 // Der Filebrowser-Dialog lebt im Shadow-DOM des CMS-Panels.
 customElements.whenDefined('qino-cms').then(async () => {
-const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');
+const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 const root = document.querySelector('qino-cms').shadowRoot;
 new SelectorObserver({ on: el => {
     const mainList = el.c1Find('.-list.-main');

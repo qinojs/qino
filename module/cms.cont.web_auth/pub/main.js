@@ -1,10 +1,12 @@
+import { WebAuth } from "../../web_auth/pub/web_auth.js";
+import { t } from "../../core/pub/js/qino.js";
+
 cms.initCont("cms.cont.web_auth", async (el) => {
   const isLogin  = el.classList.contains("web-auth-login");
   const isManage = el.classList.contains("web-auth-manage");
   if (!isLogin && !isManage) return;
 
-  const { scriptUrl, tUrl, apiBase, redirectUrl } = el.dataset;
-  const [{ WebAuth }, { t }] = await Promise.all([import(scriptUrl), import(tUrl)]);
+  const { apiBase, redirectUrl } = el.dataset;
   const wa = new WebAuth({ apiBase });
 
   // ── Login ──────────────────────────────────────────────────────────────────

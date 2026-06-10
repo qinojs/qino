@@ -1,5 +1,4 @@
 import '../../../core/pub/js/c1/dom.mjs';
-import '../../../core/pub/js/c1/scrollSync.mjs';
 import { apt, ctx } from '../../../core/pub/js/qino.js';
 
 const editable = globalThis.qino?.cms?.editmode !== undefined; // not available if in backend but no edit-access
@@ -8,7 +7,7 @@ function qgCmsToggleEdit(){
 	const url = new URL(location.href);
 	url.searchParams.set('qgCms_editmode', globalThis.qino.cms.editmode?0:1);
 	url.searchParams.set('cmspid', globalThis.qino.cms.requestedNodeId);
-	import(ctx.sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
+	import('../../../core/pub/js/c1/scrollSync.mjs').then(function(){
 		c1.scrollSync.reevaluate(globalThis);
 		const config = c1.scrollSync.getConfig(globalThis);
 		localStorage.setItem('cmsLastScrollPosition', JSON.stringify(config));
@@ -37,7 +36,7 @@ document.addEventListener('keydown', function(e) {
 const savedScroll = localStorage.getItem('cmsLastScrollPosition');
 if (savedScroll) {
 	localStorage.removeItem('cmsLastScrollPosition');
-	import(ctx.sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
+	import('../../../core/pub/js/c1/scrollSync.mjs').then(function(){
 		c1.scrollSync.restoreIn(JSON.parse(savedScroll), globalThis);
 	});
 }

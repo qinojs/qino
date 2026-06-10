@@ -1,4 +1,4 @@
-import { apt, u2Base } from "../../core/pub/js/qino.js";
+import { apt } from "../../core/pub/js/qino.js";
 
 cms.initCont("cms.backend.system", (el) => {
   const d = new Date();
@@ -9,10 +9,17 @@ cms.initCont("cms.backend.system", (el) => {
     tr.querySelector(".-browser-tz").textContent = "UTC+" + off;
   }
 
-  const alert = async (text) => (await import(u2Base + "js/dialog/dialog.js")).alert(text);
+  const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);
   const nid = cms.el.pid(el);
 
   el.addEventListener("click", async (e) => {
+    const load = e.target.closest("button[data-load-part]");
+    if (load) {
+      load.disabled = true;
+      load.closest("[data-part]").innerHTML = await apt.cms.node(nid).html.part(load.dataset.loadPart).get();
+      return;
+    }
+
     const btn = e.target.closest("button[data-solution]");
     if (!btn) return;
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { apt, u2Base } from '../../core/pub/js/qino.js';
+import { apt } from '../../core/pub/js/qino.js';
 import { cms } from '../../cms/pub/js/cms.mjs';
 
 const Page = globalThis.qino?.cms?.nodeId;
@@ -8,7 +8,7 @@ const Page = globalThis.qino?.cms?.nodeId;
 const panelRoot = customElements.whenDefined('qino-cms').then(() => document.querySelector('qino-cms').shadowRoot);
 
 panelRoot.then(async root => {
-    const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');
+    const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
     new SelectorObserver({ on: el => {
         const button = c1.dom.fragment('<button>select').firstChild;
         el.after(button);

@@ -1,6 +1,6 @@
-import { apt, u2Base } from "../../core/pub/js/qino.js";
+import { apt } from "../../core/pub/js/qino.js";
 
-const confirm = async (text) => (await import(u2Base + "js/dialog/dialog.js")).confirm(text);
+const confirm = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).confirm(text);
 
 const set = (out, text, state) => { out.textContent = text; out.dataset.state = state ?? ""; };
 

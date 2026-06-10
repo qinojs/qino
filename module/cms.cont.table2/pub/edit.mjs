@@ -4,6 +4,13 @@ import { TableHandles } from '../../core/pub/js/c1/tableHandles.mjs';
 
 const handles = new TableHandles();
 let active, pid;
+document.addEventListener('input', e => {
+	const input = e.target.closest('[data-table2-setting]');
+	if (!input) return;
+	apt.cms.node(input.dataset.node).settings[input.dataset.key].put({value:input.value}).then(() => {
+		if (input.hasAttribute('data-reload-options')) cms.cont(cms.cont.active).showWidget('options');
+	});
+});
 document.documentElement.addEventListener('focus', e => {
 	const el = e.target.closest('.-m-cms-cont-table2 > table > tbody > tr > td');
 	if (!el) return;

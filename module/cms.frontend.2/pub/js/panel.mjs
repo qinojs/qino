@@ -1,12 +1,12 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
-import { apt, t, u2Base, ctx } from "../../../core/pub/js/qino.js";
+import { apt, t, ctx } from "../../../core/pub/js/qino.js";
 
 const Page = globalThis.qino?.cms?.nodeId;
 
 const panelStyles = [
-  u2Base + "css/norm/norm.css",
-  u2Base + "css/base/base.css",
+  import.meta.resolve("@qino/u2/css/norm/norm.css"),
+  import.meta.resolve("@qino/u2/css/base/base.css"),
   "core/pub/css/c1/box.css",
   "cms/pub/css/ui.css",
   "cms.frontend.2/pub/css/off.css",
@@ -58,8 +58,8 @@ const [
   { SelectorObserver },
   { scope: dialogScope },
 ] = await Promise.all([
-  import(u2Base + "js/SelectorObserver/SelectorObserver.js"),
-  import(u2Base + "js/dialog/dialog.js"),
+  import("@qino/u2/js/SelectorObserver/SelectorObserver.js"),
+  import("@qino/u2/js/dialog/dialog.js"),
 ]);
 const dialogs = dialogScope({ root });
 const alert = async (text) => dialogs.alert(await text);
@@ -293,8 +293,8 @@ onEl(".file-manager", (el) => {
     // DnD-Sortierung via u2-dropzone: tbody[u2-dropzone] + tr[draggable] (Template).
     // u2-draghandle (auf td.-handle) macht nur den Griff ziehbar. Nach dem Drop ist die
     // DOM-Reihenfolge die neue Sortierung -> an Server.
-    import(u2Base + "attr/dropzone/dropzone.js");
-    import(u2Base + "attr/draghandle/draghandle.js");
+    import("@qino/u2/attr/dropzone/dropzone.js");
+    import("@qino/u2/attr/draghandle/draghandle.js");
     tbody.addEventListener("u2-dropzone-drop", (e) => {
       if (!e.detail?.add) return; // gleiche Zone feuert remove+add -> nur einmal reagieren
       requestAnimationFrame(() => {

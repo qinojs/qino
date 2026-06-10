@@ -18,15 +18,15 @@ export default async function (node: Node, _vars: unknown): Promise<string> {
     colWidths += `
     <div style="width:${percent}%; text-align:center;">
       ${i}<br>
-      <input value="${hee(val)}" data-node="${node}" data-key="${"row_" + i}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.put({value:{[this.dataset.key]:this.value}}))" style="width:93%; text-align:center" placeholder="50%"/>
+      <input value="${hee(val)}" data-node="${node}" data-key="${"row_" + i}" data-table2-setting style="width:93%; text-align:center" placeholder="50%"/>
     </div>`;
   }
 
   return `
-<input type=number value="${hee(String(rows))}" min=1 max=300 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.rows.put({value:this.value}))" style="width:5em;">
+<input type=number value="${hee(String(rows))}" min=1 max=300 data-node="${node}" data-key="rows" data-table2-setting style="width:5em;">
 ${await node.app.t`Rows (max: 300)`}<br>
 <br>
-<input type=number value="${hee(String(cols))}" min=1 max=15 data-node="${node}" oninput="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(this.dataset.node).settings.cols.put({value:this.value})); cms.cont(cms.cont.active).showWidget('options')" style="width:5em;">
+<input type=number value="${hee(String(cols))}" min=1 max=15 data-node="${node}" data-key="cols" data-table2-setting data-reload-options style="width:5em;">
 ${await node.app.t`Columns (max: 15)`}<br>
 
 <br>

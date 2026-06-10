@@ -12,12 +12,6 @@
 // ctx.settings == serverseitig ctx.settings (NICHT app.settings — die sind server-only).
 // läuft über den bestehenden apt-endpoint  core/ctx-settings/:path*  (Access.USER).
 
-// zentrale item.js-version; konsumenten laden via import(itemJsBase + "...")
-export const itemJsBase = import.meta.resolve("@qino/item/");
-
-// zentrale u2-version; konsumenten laden via import(u2Base + "...")
-export const u2Base = import.meta.resolve("@qino/u2/");
-
 import { Item } from "@qino/item/item.js";
 import { AptClient } from "./AptClient.js";
 import { t } from "./t.mjs";

@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { ctx } from '../../core/pub/js/qino.js';
 
-const { appURL, sysURL } = ctx;
+const { appURL } = ctx;
 const Page = globalThis.qino?.cms?.nodeId;
 let div, iframe1, iframe2, pid, view1;
 window.CmsVersComparer = {
@@ -52,7 +52,7 @@ window.CmsVersComparer = {
             const doc1 = win.document;
 
             // scrollSync
-            import(sysURL+'core/pub/js/c1/scrollSync.mjs').then(function(){
+            import('../../core/pub/js/c1/scrollSync.mjs').then(function(){
                 // sync scroll
                 c1.scrollSync.syncWindows(win, other.contentWindow);
                 // sync clicks

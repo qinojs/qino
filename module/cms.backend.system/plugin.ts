@@ -1,4 +1,4 @@
-import { hee, getCtx, type App } from "../core/mod.ts";
+import { hee, type App } from "../core/mod.ts";
 import { getTypes, type CheckResult, type Solution } from "./health_check.ts";
 export { healthChecks } from "./healthChecks.ts";
 import statistic, { details as statisticDetails } from "./parts/statistic.ts";
@@ -14,7 +14,6 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 async function render(node: Node): Promise<string> {
-  const ctx  = getCtx();
   const db   = node.app.db;
   const app  = node.app;
 
@@ -114,7 +113,7 @@ async function render(node: Node): Promise<string> {
     mysqlSummaryRows += `<tr><td>${hee(name)}<td>${hee(fmtMysql(name, value))}`;
   }
 
-  const mysqlLoadBtn = `<button onclick="import('${ctx.sysURL}core/pub/js/qino.js').then(m=>m.apt.cms.node(${node.id}).html.part('mysql-details').get()).then(h=>{this.closest('[data-part]').innerHTML=h})">Details</button>`;
+  const mysqlLoadBtn = `<button data-load-part="mysql-details">Details</button>`;
 
   const mysqlBox = `
 <div class="u2-card">

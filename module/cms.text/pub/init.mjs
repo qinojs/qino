@@ -3,7 +3,7 @@ import '../../core/pub/js/c1.js';
 import '../../core/pub/js/c1/fix/contextMenu.mjs';
 import '../../core/pub/js/c1/contextMenu.mjs';
 import '../../core/pub/js/c1/onElement.mjs';
-import { apt, u2Base, ctx } from '../../core/pub/js/qino.js';
+import { apt, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
 const Page = globalThis.qino?.cms?.nodeId;
@@ -204,6 +204,6 @@ c1.onElement('.qgCmsFront1MoreManager', addTranslateWidget);
 customElements.whenDefined('qino-cms').then(async () => {
     const root = document.querySelector('qino-cms')?.shadowRoot;
     if (!root) return;
-    const { SelectorObserver } = await import(u2Base + 'js/SelectorObserver/SelectorObserver.js');
+    const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
     new SelectorObserver({ on: addTranslateWidget }).observe('.more-manager', { root });
 });
