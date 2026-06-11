@@ -22,12 +22,6 @@ export async function isFfmpegAvailable(): Promise<boolean> {
 
 export function resetFfmpegCache(): void { _available = null; }
 
-export async function checkFfmpeg(): Promise<void> {
-  if (!await isFfmpegAvailable()) {
-    throw new Error('FFmpeg not found. Solution: sudo apt install ffmpeg');
-  }
-}
-
 /** Extracts the embedded cover art from an audio file and writes it to `output`
  *  in its original format (`-vcodec copy`, typically JPEG).
  *  Throws an error if no cover art is embedded. */

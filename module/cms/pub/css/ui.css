@@ -80,7 +80,6 @@
 	& .-access-2 { color:var(--cms-access-2); }
 	& .-access-3 { color:var(--cms-access-3); }
 
-	& .-access-0-bg { background-color:var(--cms-access-0); }
 	& .-access-1-bg { background-color:var(--cms-access-1); }
 	& .-access-2-bg { background-color:var(--cms-access-2); }
 	& .-access-3-bg { background-color:var(--cms-access-3); }

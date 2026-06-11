@@ -90,7 +90,7 @@ async function render(node: Node): Promise<string> {
     html += `<form method=post>
   <input type=hidden name=token value="${token}">
   ${fixUser ? `<input type=hidden name=email value="${hee(fixUser)}">` : ""}
-  <table class="c1-padding c1-fieldTable">
+  <table>
     ${
       !fixUser
         ? `<tr class=-email>

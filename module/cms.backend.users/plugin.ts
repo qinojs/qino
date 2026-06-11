@@ -132,7 +132,6 @@ ${loginRows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px"
 
 export const cms = {
   node: {
-    css: ["pub/main.css"],
     render,
     api,
     parts: {

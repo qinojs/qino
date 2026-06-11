@@ -30,7 +30,7 @@
 			background: currentColor;
 			border-radius: 50%;
 		}
-		&.-type-c::after { width: 1em; }
+		&.-type-c::after { width: .9em; }
 		&.-invisible { opacity:.2; }
 	}
 	& .-new { animation: blink-animation .2s infinite alternate; }
