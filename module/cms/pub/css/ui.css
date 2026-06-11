@@ -130,6 +130,7 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow);
 		padding:0;
+		min-width:20rem;
 		&::backdrop { background:rgba(0,0,0,.4); }
 		& > * { padding:1.2em; }
 		& > :is(header, .-head) {

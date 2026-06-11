@@ -60,9 +60,13 @@ const showEditor = async function(el) {
         const source_lang = btn.getAttribute('source_lang');
         const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
         const unmark = loading.mark(e.target.closest('.-language'));
-        const done = await apt['cms.text'].text(tid).translate.post({ target_lang, source_lang });
-        dialog.close();
-        done ? showEditor(el) : alert('Failed');
+        try {
+            await apt['cms.text'].text(tid).translate.post({ target_lang, source_lang });
+            dialog.close();
+            showEditor(el);
+        } catch (err) {
+            alert(err.message);
+        }
         unmark();
     });
     dialog.addEventListener('click',async e=>{
@@ -190,13 +194,15 @@ const addTranslateWidget = el=>{
         await import('../../core/pub/js/c1/loading.mjs');
 		const sourceLang = e.submitter.name;
         const done = c1.loading.mark(e.target);
-        const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
-        //const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: 'auto', ifNeeded: inps.if_needed.checked, subpages: inps.subpages.checked });
-        //await apt['cms.text'].page(Page)['translate-all-langs'].post({ ifNeeded: inps.if_needed.checked, subpages: inps.subpages.checked });
-        alert('translated texts: '+result.count);
-        if (result.fail) alert('not allowed on '+result.fail+' pages');
+        try {
+            const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
+            alert('translated texts: '+result.count);
+            if (result.fail) alert('not allowed on '+result.fail+' pages');
+            result.count && location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
         done();
-        result.count && location.reload();
     });
     el.append(fragment);
 };

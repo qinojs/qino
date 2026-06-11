@@ -18,11 +18,14 @@ export const settingsSchema = {
 const CHALLENGE_TTL = 5 * 60;
 const now = () => Math.floor(Date.now() / 1000);
 
+/** base64url (RFC 4648) — no padding, URL-safe alphabet. */
+const b64url = (bytes: Uint8Array | string): string =>
+  btoa(typeof bytes === "string" ? bytes : String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+const unb64url = (str: string) =>
+  Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
 function randB64(n: number): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(n));
-  let str = "";
-  for (const b of bytes) str += String.fromCharCode(b);
-  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return b64url(crypto.getRandomValues(new Uint8Array(n)));
 }
 
 async function getRp(app: App): Promise<{ rpId: string; rpName: string; expectedOrigin: string }> {
@@ -71,7 +74,7 @@ async function verifyAssertion(
       expectedRPID: rpId,
       credential: {
         id: credentialId,
-        publicKey: Uint8Array.from(atob(cred.public_key.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
+        publicKey: unb64url(cred.public_key),
         counter: Number(cred.sign_count),
       },
       requireUserVerification,
@@ -85,11 +88,7 @@ async function verifyAssertion(
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
-export function routes(app: App): void {
-  app.aptTree.web_auth = buildApi(app);
-}
-
-function buildApi(app: App): AptTree { return {
+export const api: AptTree = {
 
   register: {
     challenge: {
@@ -98,16 +97,16 @@ function buildApi(app: App): AptTree { return {
         access: Access.USER,
         execute: async () => {
           const ctx = getCtx();
-          const { rpId, rpName } = await getRp(app);
+          const { rpId, rpName } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const token     = await storeChallenge(app.db, challenge, ctx.userId, "register");
-          const usr       = await app.db.row("SELECT email, firstname, lastname FROM usr WHERE id = ?", [ctx.userId]);
+          const token     = await storeChallenge(ctx.app.db, challenge, ctx.userId, "register");
+          const usr       = await ctx.app.db.row("SELECT email, firstname, lastname FROM usr WHERE id = ?", [ctx.userId]);
           return {
             token,
             publicKey: {
               rp: { id: rpId, name: rpName },
               user: {
-                id: btoa(String(ctx.userId)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""),
+                id: b64url(String(ctx.userId)),
                 name: String(usr?.email ?? ctx.userId),
                 displayName: [usr?.firstname, usr?.lastname].filter(Boolean).join(" ") || String(usr?.email ?? ctx.userId),
               },
@@ -134,11 +133,11 @@ function buildApi(app: App): AptTree { return {
         }),
         execute: async ({ token, clientDataJSON, attestationObject, name }: any) => {
           const ctx    = getCtx();
-          const stored = await consumeChallenge(app.db, token, "register");
+          const stored = await consumeChallenge(ctx.app.db, token, "register");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          const { rpId, expectedOrigin } = await getRp(app);
+          const { rpId, expectedOrigin } = await getRp(ctx.app);
           let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>;
           try {
             verification = await verifyRegistrationResponse({
@@ -164,15 +163,15 @@ function buildApi(app: App): AptTree { return {
           const { credential, aaguid } = verification.registrationInfo;
           const credId = credential.id as string;
 
-          if (await app.db.one("SELECT id FROM web_auth_credential WHERE credential_id = ?", [credId])) {
+          if (await ctx.app.db.one("SELECT id FROM web_auth_credential WHERE credential_id = ?", [credId])) {
             return { ok: false, error: "already_registered" };
           }
 
           const t = now();
-          await app.db.table("web_auth_credential").insert({
+          await ctx.app.db.table("web_auth_credential").insert({
             usr_id: ctx.userId,
             credential_id: credId,
-            public_key: btoa(String.fromCharCode(...credential.publicKey)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ""),
+            public_key: b64url(credential.publicKey),
             sign_count: credential.counter,
             aaguid: aaguid ?? "",
             name: String(name ?? "Authenticator"),
@@ -191,21 +190,22 @@ function buildApi(app: App): AptTree { return {
         access: Access.PUBLIC,
         input: s.object({ email: s.optional(s.string()) }),
         execute: async ({ email }: any) => {
-          const { rpId } = await getRp(app);
+          const ctx = getCtx();
+          const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
           let usrId = 0;
           const allowCredentials: unknown[] = [];
 
           if (email) {
-            const usr = await app.db.row("SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(?) AND active = 1", [String(email).trim()]);
+            const usr = await ctx.app.db.row("SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(?) AND active = 1", [String(email).trim()]);
             if (usr) {
               usrId = Number(usr.id);
-              const creds = await app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [usrId]);
+              const creds = await ctx.app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [usrId]);
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             }
           }
 
-          const token = await storeChallenge(app.db, challenge, usrId, "login");
+          const token = await storeChallenge(ctx.app.db, challenge, usrId, "login");
           return {
             token,
             publicKey: {
@@ -231,23 +231,23 @@ function buildApi(app: App): AptTree { return {
           signature:         s.string(),
         }),
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
-          const stored = await consumeChallenge(app.db, token, "login");
+          const ctx = getCtx();
+          const stored = await consumeChallenge(ctx.app.db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
 
-          const r = await verifyAssertion(app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
+          const r = await verifyAssertion(ctx.app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
           if (!r.ok) return r;
 
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
-          if (!(await app.db.row("SELECT id FROM usr WHERE id = ? AND active = 1", [usrId]))) return { ok: false, error: "user_inactive" };
+          if (!(await ctx.app.db.row("SELECT id FROM usr WHERE id = ? AND active = 1", [usrId]))) return { ok: false, error: "user_inactive" };
 
-          await app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
+          await ctx.app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
 
-          const ctx = getCtx();
           await login(ctx, usrId);
-          app.sessions.setCookie(ctx);
-          await app.fire("web_auth:login", { usr_id: usrId });
+          ctx.app.sessions.setCookie(ctx);
+          await ctx.app.fire("web_auth:login", { usr_id: usrId });
           return { ok: true };
         },
       },
@@ -261,10 +261,10 @@ function buildApi(app: App): AptTree { return {
         access: Access.USER,
         execute: async () => {
           const ctx = getCtx();
-          const { rpId } = await getRp(app);
+          const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const creds = await app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [ctx.userId]);
-          const token = await storeChallenge(app.db, challenge, ctx.userId, "confirm");
+          const creds = await ctx.app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [ctx.userId]);
+          const token = await storeChallenge(ctx.app.db, challenge, ctx.userId, "confirm");
           return {
             token,
             publicKey: {
@@ -291,15 +291,15 @@ function buildApi(app: App): AptTree { return {
         }),
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
           const ctx    = getCtx();
-          const stored = await consumeChallenge(app.db, token, "confirm");
+          const stored = await consumeChallenge(ctx.app.db, token, "confirm");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          const r = await verifyAssertion(app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
+          const r = await verifyAssertion(ctx.app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          await app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
+          await ctx.app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
           ctx.session.web_auth_confirmed(now());
           return { ok: true };
         },
@@ -313,7 +313,7 @@ function buildApi(app: App): AptTree { return {
       access: Access.USER,
       execute: async () => {
         const ctx  = getCtx();
-        const rows = await app.db.all(
+        const rows = await ctx.app.db.all(
           "SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ? ORDER BY created DESC",
           [ctx.userId],
         );
@@ -330,14 +330,14 @@ function buildApi(app: App): AptTree { return {
         access: Access.USER,
         execute: async ({ credId }: any) => {
           const ctx  = getCtx();
-          const cred = await app.db.row("SELECT usr_id FROM web_auth_credential WHERE id = ?", [credId]);
+          const cred = await ctx.app.db.row("SELECT usr_id FROM web_auth_credential WHERE id = ?", [credId]);
           if (!cred) return { ok: false, error: "not_found" };
           if (Number(cred.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
-          await app.db.exec("DELETE FROM web_auth_credential WHERE id = ?", [credId]);
+          await ctx.app.db.exec("DELETE FROM web_auth_credential WHERE id = ?", [credId]);
           return { ok: true };
         },
       },
     },
   },
 
-}; }
+};

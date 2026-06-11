@@ -127,7 +127,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
         );
         const vs: Record<string, string> = {};
         for (const row of rows) vs[row["name"]] = row["fname"];
-        if (by === "name_reverse") for (const n in vs) vs[n] = vs[n].split("").reverse().join("");
+        if (by === "name_reverse") for (const n in vs) vs[n] = String(vs[n] ?? '').split("").reverse().join("");
         sorted = Object.keys(vs).sort((a, b) =>
             vs[a].localeCompare(vs[b], undefined, { numeric: true, sensitivity: "base" }),
         );

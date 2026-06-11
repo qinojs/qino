@@ -2,6 +2,7 @@ import { hee } from "./util.ts";
 
 export class HtmlBuilder {
     lang = "en";
+    class = new Set<string>();
     head = "";
     title = "";
     titlePrefix = "";
@@ -15,8 +16,6 @@ export class HtmlBuilder {
     content = "";
     // deno-lint-ignore no-explicit-any
     #jsData?: Record<string, any>;
-
-    // `any`: jsData ist ein dynamischer JSON-Bag (verschachtelt: qino.cms.*) — so bleibt das Befüllen cast-frei.
     // deno-lint-ignore no-explicit-any
     get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
@@ -54,7 +53,7 @@ export class HtmlBuilder {
     }
 
     render(): string {
-        return `<!DOCTYPE HTML>\n<html lang="${hee(this.lang)}">\n\t<head>${this.#renderHead()}\n\t<body>\n${this.content}\n`;
+        return `<!DOCTYPE HTML>\n<html lang="${hee(this.lang)}"${this.class.size ? ` class="${hee([...this.class].join(" "))}"` : ""}>\n\t<head>${this.#renderHead()}\n\t<body>\n${this.content}\n`;
     }
 }
 

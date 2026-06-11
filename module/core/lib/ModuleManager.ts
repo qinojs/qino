@@ -5,7 +5,6 @@ import type { App } from "./App.ts";
 export type Plugin = Record<string, any> & {
   name: string;
   needs?: string[];
-  routes?(app: App): void;
   dbSchema?: Record<string, unknown>;
   init?(app: App): void | Promise<void>;
   install?(ctx: { app: App; module: Plugin }): void | Promise<void>;
@@ -71,7 +70,6 @@ export class ModuleManager {
 
     const mod = new Module(plugin, url, path);
     this.#modules[name] = mod;
-    plugin.routes?.(this.#app);
     return mod;
   }
 

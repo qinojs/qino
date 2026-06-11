@@ -79,7 +79,7 @@ export class DbText {
   }
 
   async string(): Promise<string | null> {
-    const lang = getCtx()?.lang ?? this.#manager.app.languages.def;
+    const lang = getCtx().lang;
     const t = await this.orFallback(lang);
     return t.get();
   }

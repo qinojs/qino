@@ -46,7 +46,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const modDir  = modPath?.replace(/\/?[^/]+$/, "") ?? null;
 
   // --- Exports ---
-  const SKIP = new Set(["name", "needs", "cms", "install", "init", "routes", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
+  const SKIP = new Set(["name", "needs", "cms", "install", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
   const knownKeys: { key: string; label: string }[] = [
     { key: "needs",             label: "needs" },
@@ -57,7 +57,6 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     { key: "cms",               label: "cms" },
     { key: "init",              label: "init()" },
     { key: "install",           label: "install()" },
-    { key: "routes",            label: "routes()" },
     ...extraExports.map(k => ({ key: k, label: k })),
   ];
   const presentExports = knownKeys.filter(({ key }) => mod[key] !== undefined);
@@ -188,7 +187,6 @@ async function renderOverview(node: Node): Promise<string> {
     const exports = [
       mod.init && "init",
       mod.install && "install",
-      mod.routes && "routes",
       mod.api && "api",
       mod.cms && "cms",
       mod.settingsSchema && "settings",

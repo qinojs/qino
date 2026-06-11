@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { s, Access, type AptTree, type RequestContext } from "../core/mod.ts";
+import { s, Access, AptError, type AptTree, type RequestContext } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 class CmsTextService {
@@ -36,11 +36,11 @@ class CmsTextService {
 
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
-        if (!await this.textAccess(txt_id)) return false;
+        if (!await this.textAccess(txt_id)) throw new AptError(403, "No access to this text");
         const input = String(await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, source_lang]) ?? "");
-        if (!input.trim()) return false;
+        if (!input.trim()) throw new AptError(400, "Source text is empty");
         let output = await this.transl(input, target_lang, source_lang);
-        if (output === false) return false;
+        if (!output) throw new AptError(502, "Translation service returned nothing");
 
         if (input && /^[A-Z]/.test(input[0] ?? "")) {
             output = output.charAt(0).toUpperCase() + output.slice(1);
@@ -130,11 +130,9 @@ class CmsTextService {
 
     async transl(text: string, target_lang: string, source_lang: string): Promise<string | false> {
         const service = String(await this.ctx.app.settings["cms.text"]["translation service"] ?? "");
-        switch (service) {
-            case "google": return this.google_translate(text, source_lang, target_lang);
-            case "deepl":  return this.deepl_translate(text, source_lang, target_lang);
-        }
-        return false;
+        if (service === "google") return this.google_translate(text, source_lang, target_lang);
+        if (service === "deepl")  return this.deepl_translate(text, source_lang, target_lang);
+        throw new AptError(400, "No translation service configured");
     }
 
     async deepl_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
@@ -173,7 +171,7 @@ class CmsTextService {
             key,
         });
         const resp = await fetch("https://translation.googleapis.com/language/translate/v2?" + params);
-        if (!resp.ok) { console.error("[google_translate]", resp.status, await resp.text()); return false; }
+        if (!resp.ok) { console.error("[google_translate]", resp.status, await resp.text()); throw new AptError(502, "Translation service request failed"); }
         const result = await resp.json();
         const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {

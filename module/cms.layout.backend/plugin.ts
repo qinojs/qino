@@ -8,50 +8,53 @@ const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/";
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
   const app = node.app;
-
-  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-  ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
+  const html = ctx.html;
+  
+  html.class.add("qgCMS");
+  html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
+  html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
   ctx.csp["style-src"][u2Root] = 1;
   ctx.csp["script-src"][u2Root] = 1;
   ctx.csp["connect-src"][u2Root] = 1;
 
-  ctx.html.styles.add(u2Root + "css/norm/norm.css");
-  ctx.html.styles.add(u2Root + "css/base/base.css");
-  ctx.html.styles.add(u2Root + "css/classless/variables.css");
-  ctx.html.styles.add(u2Root + "css/classless/classless.css");
-  ctx.html.styles.add(u2Root + "css/classless/more.css");
-  ctx.html.styles.add(u2Root + "class/flex/flex.css");
-  ctx.html.styles.add(u2Root + "class/grid/grid.css");
-  ctx.html.styles.add(u2Root + "class/unstyle/unstyle.css");
-  ctx.html.styles.add(u2Root + "class/card/card.css");
-  ctx.html.styles.add(u2Root + "class/table/table.css");
-  ctx.html.styles.add(u2Root + "class/badge/badge.css");
-  ctx.html.styles.add(u2Root + "el/breadcrumb/breadcrumb.css");
-  ctx.html.styles.add(u2Root + "el/bytes/bytes.css");
-  ctx.html.styles.add(u2Root + "el/buttongroup/buttongroup.css");
-  ctx.html.styles.add(u2Root + "el/accordion/accordion.css");
-  ctx.html.styles.add(u2Root + "el/ico/ico.css");
-  ctx.html.styles.add(u2Root + "el/tabs/tabs.css");
-  ctx.html.styles.add(u2Root + "el/code/code.css");
-  ctx.html.styles.add(u2Root + "el/menubutton/menubutton.css");
-  // ctx.html.scripts.add(u2Root + "el/ico/ico.js");
-  // ctx.html.scripts.add(u2Root + "el/breadcrumb/breadcrumb.js");
-  // ctx.html.scripts.add(u2Root + "attr/href/href.js");
-  // ctx.html.scripts.add(u2Root + "el/time/time.js");
-  // ctx.html.scripts.add(u2Root + "attr/confirm/confirm.js");
-  // ctx.html.scripts.add(u2Root + "el/buttongroup/buttongroup.js");
-  // ctx.html.scripts.add(u2Root + "el/accordion/accordion.js");
-  // ctx.html.scripts.add(u2Root + "el/tabs/tabs.js");
-  // ctx.html.scripts.add(u2Root + "el/code/code.js");
-  // ctx.html.scripts.add(u2Root + "el/bytes/bytes.js");
-  // ctx.html.scripts.add(u2Root + "attr/movable/movable.js");
-  // ctx.html.scripts.add(u2Root + "el/menubutton/menubutton.js");
-  ctx.html.scripts.add(u2Root + "u2/auto.js");
+  html.styles.add(u2Root + "css/norm/norm.css");
+  html.styles.add(u2Root + "css/base/base.css");
+  html.styles.add(u2Root + "css/classless/variables.css");
+  html.styles.add(u2Root + "css/classless/classless.css");
+  html.styles.add(u2Root + "css/classless/more.css");
+  html.styles.add(u2Root + "class/flex/flex.css");
+  html.styles.add(u2Root + "class/grid/grid.css");
+  html.styles.add(u2Root + "class/unstyle/unstyle.css");
+  html.styles.add(u2Root + "class/card/card.css");
+  html.styles.add(u2Root + "class/table/table.css");
+  html.styles.add(u2Root + "class/badge/badge.css");
+  html.styles.add(u2Root + "el/breadcrumb/breadcrumb.css");
+  html.styles.add(u2Root + "el/bytes/bytes.css");
+  html.styles.add(u2Root + "el/buttongroup/buttongroup.css");
+  html.styles.add(u2Root + "el/accordion/accordion.css");
+  html.styles.add(u2Root + "el/ico/ico.css");
+  html.styles.add(u2Root + "el/tabs/tabs.css");
+  html.styles.add(u2Root + "el/code/code.css");
+  html.styles.add(u2Root + "el/menubutton/menubutton.css");
+  html.styles.add(u2Root + "el/tree/tree.css");
+  // html.scripts.add(u2Root + "el/ico/ico.js");
+  // html.scripts.add(u2Root + "el/breadcrumb/breadcrumb.js");
+  // html.scripts.add(u2Root + "attr/href/href.js");
+  // html.scripts.add(u2Root + "el/time/time.js");
+  // html.scripts.add(u2Root + "attr/confirm/confirm.js");
+  // html.scripts.add(u2Root + "el/buttongroup/buttongroup.js");
+  // html.scripts.add(u2Root + "el/accordion/accordion.js");
+  // html.scripts.add(u2Root + "el/tabs/tabs.js");
+  // html.scripts.add(u2Root + "el/code/code.js");
+  // html.scripts.add(u2Root + "el/bytes/bytes.js");
+  // html.scripts.add(u2Root + "attr/movable/movable.js");
+  // html.scripts.add(u2Root + "el/menubutton/menubutton.js");
+  html.scripts.add(u2Root + "u2/auto.js");
 
 
-  ctx.html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
-  ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
+  html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
+  html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
 
   const Page = await node.page();
 

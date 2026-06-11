@@ -7,6 +7,22 @@ export const name = "cms.filebrowser";
 export { healthChecks } from "./healthChecks.ts";
 export const needs = ["cms"];
 
+// Per-user file access grants (legacy `usr_file` table).
+export const dbSchema = {
+    properties: {
+        usr_file: {
+            additionalProperties: {
+                properties: {
+                    usr_id: { type: "integer", "x-index": "primary", "x-qg-parent": "usr", "x-qg-on-parent-delete": "cascade" },
+                    file_id: { type: "integer", "x-index": "primary", "x-qg-parent": "file", "x-qg-on-parent-delete": "cascade" },
+                    added: { type: "string", format: "date-time", "x-index": true },
+                },
+                required: ["usr_id", "file_id", "added"],
+            },
+        },
+    },
+};
+
 export const api: AptTree = {
     search: {
         get: {

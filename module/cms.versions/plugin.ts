@@ -141,8 +141,14 @@ export function init(app: App) {
             _vers_deleted: 1,
         };
         const VT = ctx.app.db.table(vt);
-        const [set, params] = VT.valuesToFragment(data, undefined, true);
-        await ctx.app.db.exec(`REPLACE INTO \`${vt}\` SET ${set}`, params);
+
+        // const [set, params] = VT.valuesToFragment(data, undefined, true);
+        // await ctx.app.db.exec(`REPLACE INTO \`${vt}\` SET ${set}`, params);
+        // SQLite has no REPLACE ... SET; use the portable (cols) VALUES (?) form (mirrors DbTable.insert).
+        const cols = Object.keys(VT.fields!).filter((f) => f in data);
+        const params = cols.map((f) => VT.fields![f].valueTransform(data[f]));
+        const into = `(${cols.map((c) => `\`${c}\``).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`;
+        await ctx.app.db.exec(`REPLACE INTO \`${vt}\` ${into}`, params);
     });
 
     // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────

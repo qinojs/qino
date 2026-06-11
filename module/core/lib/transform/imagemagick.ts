@@ -63,10 +63,10 @@ export async function checkAvifSupport(): Promise<boolean> {
   return _avifSupported;
 }
 
-/** Runs convert/magick [input, ...args, output] */
-export async function magick(input: string, args: string[], output: string): Promise<void> {
+/** Runs convert/magick [...preArgs, input, ...args, output]. preArgs are input-settings that must precede the file (e.g. -density for PDF rasterization). */
+export async function magick(input: string, args: string[], output: string, preArgs: string[] = []): Promise<void> {
   const { code, stderr, stdout } = await new Deno.Command(_convertCmd, {
-    args: [input, ...args, output],
+    args: [...preArgs, input, ...args, output],
     stdout: 'piped',
     stderr: 'piped',
   }).output();

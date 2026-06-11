@@ -17,6 +17,7 @@ Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () 
   Object.assign(html.jsData, { hello: "<world>" });
 
   const out = html.render();
+  assertEquals(out.startsWith('<!DOCTYPE HTML>\n<html lang="en">'), true);
   assertEquals(out.includes('<meta charset="utf-8">'), true);
   assertEquals(out.includes('<script type=importmap>{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
   assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;">'), true);
@@ -30,13 +31,15 @@ Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () 
   assertEquals(out.indexOf("<script type=importmap>") < out.indexOf("<script type=module"), true);
 });
 
-Deno.test("HtmlBuilder: render emits lang and content", () => {
+Deno.test("HtmlBuilder: render emits lang, classes and content", () => {
   const html = new HtmlBuilder();
   html.lang = "de";
+  html.class.add("theme");
+  html.class.add(`unsafe"`);
   html.content = "<main>Hi</main>";
 
   const out = html.render();
-  assertEquals(out.startsWith('<!DOCTYPE HTML>\n<html lang="de">'), true);
+  assertEquals(out.startsWith('<!DOCTYPE HTML>\n<html lang="de" class="theme unsafe&quot;">'), true);
   assertEquals(out.includes("<main>Hi</main>"), true);
   assertEquals(out.includes('<meta name="viewport" content="width=device-width">'), true);
 });

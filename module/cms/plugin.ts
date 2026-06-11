@@ -2,7 +2,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./mod.ts";
 import { render } from "./lib/render.ts";
 export { api } from "./apt.ts";
-import { Output, type App, type RequestContext } from "../core/mod.ts";
+import { Output, type App, type RequestContext, type DbFile } from "../core/mod.ts";
 
 export const name = "cms";
 export { healthChecks } from "./healthChecks.ts";
@@ -122,7 +122,8 @@ export function init(app: App) {
     // File access check
     app.on("dbFile::access2", async (e) => {
         if (e.access) return;
-        const rows = await app.db.all("SELECT page_id FROM page_file WHERE file_id = ?", [e.File]);
+        const File = e.File as DbFile;
+        const rows = await app.db.all("SELECT page_id FROM page_file WHERE file_id = ?", [File.id]);
         for (const vs of rows) {
             const P = await app.cms.node(vs.page_id);
             if (await P.isReadable()) {

@@ -112,7 +112,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
   return `
   <h4>
     <span style="width:5rem">
-      <span class="u2-badge -method -${hee(r.method)}">${hee(r.method.toUpperCase())}</span>
+      <small class="u2-badge -method -${hee(r.method)}">${hee(r.method.toUpperCase())}</small>
     </span>
     <code class="-path">${hee(r.path)}</code>
     <small class="-desc">${hee(r.description)}</small>

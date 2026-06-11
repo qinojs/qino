@@ -1,12 +1,11 @@
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { AccessError, invoke, toTools, RequestContext, requestStorage } from "../../core/mod.ts";
-import { name, routes, settingsSchema } from "../plugin.ts";
+import { name, api, settingsSchema } from "../plugin.ts";
 
 function makeApp() {
   const challenges: Record<string, unknown>[] = [];
   const execs: Array<[string, unknown[]]> = [];
   const app = {
-    aptTree: {},
     settings: { web_auth: { rpId: "localhost", rpName: "Qino" } },
     db: {
       row: () => null,
@@ -17,8 +16,8 @@ function makeApp() {
         insert: (row: Record<string, unknown>) => challenges.push(row),
       }),
     },
+    aptTree: { web_auth: api },
   };
-  routes(app as any);
   return { app, challenges, execs };
 }
 
@@ -34,10 +33,8 @@ Deno.test("web_auth: module metadata is wired", () => {
   assertEquals(settingsSchema.properties.rpName.type, "string");
 });
 
-Deno.test("web_auth: routes installs expected apt endpoints", () => {
-  const app = { aptTree: {} };
-  routes(app as any);
-  const tools = toTools((app as any).aptTree.web_auth);
+Deno.test("web_auth: api exposes expected apt endpoints", () => {
+  const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "post_register_challenge",
     "post_register_verify",

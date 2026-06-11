@@ -12,12 +12,13 @@ FileTransformer.register({
   props: ['page'],
   handles: (ctx) => ctx.mime === 'application/pdf' && (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.page !== undefined || ctx.options.fmt !== undefined || ctx.options.q !== undefined),
   transform: async (ctx) => {
-    const page = (ctx.options.page ?? 1) - 1; // ImageMagick ist 0-basiert
+    const page = (ctx.options.page ?? 1) - 1; // ImageMagick is 0-based
     const out = nodePath.join(ctx.tmpDir, 'pdf-page.png');
     await magick(
       `${ctx.currentPath}[${page}]`,
-      ['-density', '150', '-background', 'white', '-flatten'],
+      ['-background', 'white', '-flatten'],
       out,
+      ['-density', '300'], // pre-input: sets the Ghostscript render DPI (default 72 = blurry)
     );
     ctx.currentPath = out;
     ctx.mime = 'image/png';
