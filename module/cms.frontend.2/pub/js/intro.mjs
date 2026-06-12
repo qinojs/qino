@@ -2,7 +2,6 @@ import { ctx, t } from "../../../core/pub/js/qino.js";
 
 const root = cms.panelRoot;
 const find = selector => root.querySelector(selector);
-const tourUrl = "/u2/js/Tour/Tour.js"; // temporary, until Tour is released
 
 function waitFor(selector, old) {
   const el = find(selector);
@@ -42,7 +41,7 @@ const mark = (el, target = el) => async () => {
 let tour;
 
 export async function start() {
-  const { Tour } = await import(tourUrl);
+  const { Tour } = await import('@qino/u2/js/Tour/Tour.js');
   tour?.stop();
   const editable = document.querySelector("[cmstxt][contenteditable]");
   const module = document.querySelector('[qcms-mod]:not([qcms-mod^="layout."])[qcms-edit]');

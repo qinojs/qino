@@ -3,7 +3,7 @@ import type { RequestContext } from "../core/mod.ts";
 
 export const name = "cms.layout.login";
 
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.16/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.17/";
 
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
