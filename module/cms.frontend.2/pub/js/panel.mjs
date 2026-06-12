@@ -562,6 +562,7 @@ onEl(".seo-manager", (el) => {
   });
 });
 onEl(".more-manager", (el) => {
+  findEl(el, ".-tour").onclick = () => import("./intro.mjs").then(({ start }) => start());
   // feedback-formular
   findEl(el, ".-feedbackform").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -654,3 +655,7 @@ onEl(".superuser-manager", (el) => {
     }
   });
 });
+
+if (!await ctx.settings["cms.frontend.2"].tour_seen) {
+  import("./intro.mjs").then(({ start }) => start());
+}

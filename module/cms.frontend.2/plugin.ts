@@ -19,6 +19,7 @@ export const settingsSchema = {
 
 export const ctxSettingsSchema = {
   properties: {
+    tour_seen: { type: "boolean" },
     custom: {
       properties: {
         widget: { additionalProperties: { type: "boolean" } },

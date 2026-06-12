@@ -45,7 +45,10 @@ export default async function (node: Node, vars: { param?: Record<string, string
   <div class=-standalone>
     <div class=-h1>
       <span>${await app.t`Logged in as:`} ${hee(firstname + " " + lastname)}</span>
-      <form method=post action="${logoutUrl}" style="margin:0"><input type=hidden name=token value="${hee(ctx.token)}"><button name=liveUser_logout>${await app.t`log out`}</button></form>
+      <div>
+        <button class=-tour>${await app.t`Start CMS tour`}</button>
+        <form method=post action="${logoutUrl}" style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><button name=liveUser_logout>${await app.t`log out`}</button></form>
+      </div>
     </div>
   </div>
   ${feedbackConfirmation}

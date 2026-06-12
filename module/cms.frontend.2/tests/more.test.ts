@@ -46,6 +46,7 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
   assertEquals(values.replyTo, "ada@example.test");
   assert(String(values.html).includes("&lt;b&gt;Hello&lt;/b&gt;<br>World"));
   assert(html.includes("Thank you for your feedback."));
+  assert(html.includes("class=-tour"));
 });
 
 Deno.test("cms.frontend.2 more: keeps feedback draft when sending fails", async () => {
