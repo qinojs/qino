@@ -4,7 +4,7 @@ import { ctx } from '../../core/pub/js/qino.js';
 const { appURL } = ctx;
 const Page = globalThis.qino?.cms?.nodeId;
 let div, iframe1, iframe2, pid, view1;
-window.CmsVersComparer = {
+export const CmsVersComparer = {
     _ensure(){
         if (div) return;
         const html =
@@ -76,7 +76,7 @@ window.CmsVersComparer = {
                 div.querySelector('.-fade').value = opacity;
                 view1.style.opacity = opacity;
             });
-            const prevent = e => e.preventDefault() && e.stopPropagation();
+            const prevent = e => { e.preventDefault(); e.stopPropagation(); };
             doc1.addEventListener('mousedown', prevent);
             doc1.addEventListener('click', prevent);
             doc1.addEventListener('touchstart', prevent);
@@ -111,10 +111,10 @@ window.CmsVersComparer = {
         div.remove();
     },
     setMain(space, log) {
-        iframe1.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend';
+        iframe1.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend=1';
     },
     setSecond(space, log) {
-        iframe2.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend';
+        iframe2.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend=1';
     }
 };
 const css =
@@ -163,7 +163,7 @@ const css =
 '}'+
 '#qgCmsVersionComparer.-Mode-side .-diffs { display:none; }'+
 '#qgCmsVersionComparer.-Mode-side .-fade { display:none; }'+
-'#qgCmsVersionComparer.-Mode-side .-splitter { display:inlinb-block; height:2em; border-left:2px solid #000; }'+
+'#qgCmsVersionComparer.-Mode-side .-splitter { display:inline-block; height:2em; border-left:2px solid #000; }'+
 '#qgCmsVersionComparer.-Mode-side .-i1 { border-left: 1px solid #000; }'+
 '#qgCmsVersionComparer.-Mode-side .-i2 { border-right:1px solid #000; }'+
 '#qgCmsVersionComparer.-Diffs .-views { '+

@@ -1,8 +1,23 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, type Db, type App } from "../../core/mod.ts";
-import { versedTables, setVers, view, tableEntriesCopyTo } from "./Vers.ts";
+import { getCtx, requestStorage, type RequestContext, type Db, type App } from "../../core/mod.ts";
+import { versedTables, setVers, view } from "./Vers.ts";
+import { tableEntriesCopyTo } from "./Spaces.ts";
 import type { Node } from "../../cms/mod.ts";
+
+// ─── Per-request state: the cms-selected space/log (draftmode/request params) ─
+
+export interface CmsVersState {
+    space: number;
+    log: number;
+}
+
+const STATE_KEY = "cms.versions";
+
+export function getCmsVers(ctx: RequestContext): CmsVersState {
+    ctx.state[STATE_KEY] ??= { space: 0, log: 0 };
+    return ctx.state[STATE_KEY] as CmsVersState;
+}
 
 /**
  * Pre-load all page data into the runtime cache so that subsequent reads
@@ -94,10 +109,17 @@ export async function publishCont(
     if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
 }
 
+/**
+ * Block writes to versioned tables while a log-mode snapshot is rendered.
+ * Registered once at init — the per-request log check happens in the handler
+ * (registering per request would leak permanent app.db listeners).
+ */
 export function preventDbManipulations(app: App): void {
     const prevent = (e: any) => {
+        const ctx = requestStorage.getStore();
+        if (!ctx || !getCmsVers(ctx).log) return; // only in log-mode requests
         const name: string = String(e.Table);
-        if (versedTables[name] || name.startsWith("_vers_")) e.returnValue = false;
+        if (versedTables(app.db)[name] || name.startsWith("_vers_")) e.returnValue = false;
     };
     app.db.on("table::insert-before", prevent);
     app.db.on("table::update-before", prevent);
@@ -108,6 +130,6 @@ export function cacheHeaders(ctx: any): void {
     const maxAge = 60 * 60 * 24 * 180;
     const d = new Date(Date.now() + maxAge * 1000).toUTCString();
     ctx.responseHeaders.set("Expires", d);
-    ctx.responseHeaders.set("Cache-Control", `store, cache, max-age=${maxAge}, private`);
+    ctx.responseHeaders.set("Cache-Control", `private, max-age=${maxAge}`);
     ctx.responseHeaders.set("Pragma", "private");
 }

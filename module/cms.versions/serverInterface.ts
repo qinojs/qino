@@ -1,13 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { versedTables, view, getCmsVers } from "./lib/Vers.ts";
-import { publishCont as doPublishCont } from "./lib/CmsVers.ts";
+import { versedTables, view } from "./lib/Vers.ts";
+import { getCmsVers, publishCont as doPublishCont } from "./lib/CmsVers.ts";
 
 export async function publishCont(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = Number(pid);
     const Page = await ctx.app.cms.node(id);
     if ((await Page.access()) < 2) return false;
-    const cmsVersSpace = getCmsVers(ctx).cmsVersSpace;
+    const cmsVersSpace = getCmsVers(ctx).space;
     options = {
         fromSpace: cmsVersSpace,
         fromLog:   0,
@@ -94,7 +94,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
             if (fn === "cms::setTxt") {
                 const vs = await ctx.app.db.row(
                     `SELECT name, page_id FROM _vers_page_text WHERE text_id = ? AND _vers_space = ?`,
-                    [Number(args[0]), getCmsVers(ctx).cmsVersSpace]
+                    [Number(args[0]), getCmsVers(ctx).space]
                 ) ?? await ctx.app.db.row(
                     `SELECT name, page_id FROM page_text WHERE text_id = ?`, [Number(args[0])]
                 );
@@ -144,7 +144,7 @@ async function versProtocolForPageAndConts(ctx: any, pid: number): Promise<any[]
 }
 
 async function versProtocolForPage(ctx: any, pid: number): Promise<any[]> {
-    const space = getCmsVers(ctx).cmsVersSpace;
+    const space = getCmsVers(ctx).space;
     const spaceView = (t: string) => view(ctx.app.db, t, space, 0);
 
     const results = await Promise.all([
@@ -158,7 +158,7 @@ async function versProtocolForPage(ctx: any, pid: number): Promise<any[]> {
 }
 
 async function versProtocol(ctx: any, table: string, where: string): Promise<any[]> {
-    if (!versedTables[table]) return [];
+    if (!versedTables(ctx.app.db)[table]) return [];
     const sql =
         `SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.email ` +
         `FROM \`_vers_${table}\` t ` +
@@ -167,7 +167,7 @@ async function versProtocol(ctx: any, table: string, where: string): Promise<any
         `LEFT JOIN usr   ON sess.usr_id = usr.id ` +
         `WHERE t._vers_space = ? AND t._vers_log > 0 AND ${where} ` +
         `ORDER BY t._vers_log`;
-    const rows = await ctx.app.db.all(sql, [getCmsVers(ctx).cmsVersSpace]);
+    const rows = await ctx.app.db.all(sql, [getCmsVers(ctx).space]);
     return rows.map((r: any) => ({
         vers: r._vers_log,
         time: Number(r.time ?? 0),

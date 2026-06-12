@@ -254,7 +254,7 @@ CmsVersViewer.prototype = {
 		src.hash = '';
 		src.searchParams.append('qgCmsVersLog',vers+1)
 		src.searchParams.append('qgCmsVersPage',this.pid)
-		src.searchParams.append('qgCmsNoFrontend','');
+		src.searchParams.append('qgCmsNoFrontend','1');
 		this.activeIframe.src = src;
 
 		this.activeIframe.style.opacity = 0;
@@ -328,7 +328,7 @@ Viewer.on('before-load',function(e){
 		});
 	};
 	more.c1Find('.-compareActive').onclick = async function(){
-		await import('./comparer.mjs');
+		const { CmsVersComparer } = await import('./comparer.mjs');
 		CmsVersComparer.compare(Viewer.pid, {
 			fromLog: e.vers+1,
 			fromText: li.c1Find('.-date').innerHTML,

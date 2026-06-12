@@ -12,6 +12,7 @@ export function init(app: Pick<App, "aptTree" | "on" | "settings"> & { ai?: AiAp
   app.on("cms-ready", e => {
     const ctx = e.ctx as RequestContext;
     if (!ctx.cms.editmode) return;
+    if (ctx.get.qgCmsNoFrontend) return;
     ctx.html.scripts.add(ctx.sysURL + "ai/pub/chat.js");
     ctx.html.content += `
       <style>

@@ -1,44 +1,60 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, type RequestContext, type Db } from "../../core/mod.ts";
+// Generic versioning core (cms-agnostic): table registry, per-request state,
+// _vers_* shadow tables and (space,log)-views.
+// History capture lives in History.ts, space handling in Spaces.ts.
+
+import type { RequestContext, App, Db } from "../../core/mod.ts";
+
+// ─── Per-Db state ────────────────────────────────────────────────────────────
+// Keyed by Db instance — module globals would leak between App instances (multi-tenant).
+
+interface DbVersState {
+    tables: Record<string, true | Record<string, 1>>;
+    created: Set<string>;               // which _vers_* tables exist (this process)
+    views: Map<string, Promise<void>>;  // (space,log)-views created this process
+}
+const dbStates = new WeakMap<Db, DbVersState>();
+function dbState(db: Db): DbVersState {
+    let s = dbStates.get(db);
+    if (!s) dbStates.set(db, s = { tables: {}, created: new Set(), views: new Map() });
+    return s;
+}
 
 // Tables (and optional field-subset) that are versioned.
-// true  = version all fields
-// array = only version these fields (rest come from live table)
-export const versedTables: Record<string, true | Record<string, 1>> = {};
-
-// App-level cache: which _vers_* tables have been created this process.
-const versTableCreated = new Set<string>();
+// true   = version all fields
+// record = only version these fields (rest come from live table)
+export function versedTables(db: Db): DbVersState["tables"] {
+    return dbState(db).tables;
+}
 
 // ─── Per-request state ───────────────────────────────────────────────────────
 
-export interface CmsVersState {
-    versSpace: number;
-    versLog: number;
-    versTableEntriesCopying: boolean;
-    cmsVersSpace: number;
-    cmsVersLog: number;
+export interface VersState {
+    space: number;
+    log: number;
+    tableEntriesCopying: boolean;
 }
 
-const STATE_KEY = "cms.versions";
+const STATE_KEY = "vers";
 
-export function getCmsVers(ctx: RequestContext): CmsVersState {
-    ctx.state[STATE_KEY] ??= { versSpace: 0, versLog: 0, versTableEntriesCopying: false, cmsVersSpace: 0, cmsVersLog: 0 };
-    return ctx.state[STATE_KEY] as CmsVersState;
+export function getVers(ctx: RequestContext): VersState {
+    ctx.state[STATE_KEY] ??= { space: 0, log: 0, tableEntriesCopying: false };
+    return ctx.state[STATE_KEY] as VersState;
 }
 
 // ─── State helpers (replace PHP static vars) ────────────────────────────────
 
 export function setSpace(ctx: RequestContext, space: number): number {
-    const s = getCmsVers(ctx);
-    const old = s.versSpace;
-    s.versSpace = space;
+    const s = getVers(ctx);
+    const old = s.space;
+    s.space = space;
     return old;
 }
 export function setLog(ctx: RequestContext, log: number): number {
-    const s = getCmsVers(ctx);
-    const old = s.versLog;
-    s.versLog = log;
+    const s = getVers(ctx);
+    const old = s.log;
+    s.log = log;
     return old;
 }
 /** setVers(ctx, [space,log]) — returns [oldSpace,oldLog] */
@@ -54,9 +70,9 @@ export function setVers(ctx: RequestContext, spaceLog: [number, number] | null):
  * Returns the shadow table name, or false if the table is not versioned.
  */
 export async function versTable(db: Db, tableName: string): Promise<string | false> {
-    if (!versedTables[tableName]) return false;
+    if (!versedTables(db)[tableName]) return false;
     const vt = `_vers_${tableName}`;
-    if (versTableCreated.has(vt)) return vt;
+    if (dbState(db).created.has(vt)) return vt;
 
     // Derive the shadow schema from the source table and let migrate() build it. migrate is
     // dialect-neutral and idempotent — it both creates the table and patches in any new
@@ -71,7 +87,7 @@ export async function versTable(db: Db, tableName: string): Promise<string | fal
     props._vers_deleted = { type: "boolean", default: false, "x-index": true };
     await db.migrate({ properties: { [vt]: shadow } }, { patch: true });
 
-    versTableCreated.add(vt);
+    dbState(db).created.add(vt);
     return vt;
 }
 
@@ -84,141 +100,91 @@ export async function versTable(db: Db, tableName: string): Promise<string | fal
  * - space≠0, log=0  → VIEW of _vers_<table> at space head (log=0 rows)
  * - space≠0, log≠0  → VIEW of _vers_<table> up to that log entry (historical)
  *
- * Created views are registered on ctx.state.versViews for cleanup after response.
+ * Views are created once per process and left in the db (definitions are
+ * deterministic); the first use after boot recreates them. The pending-promise
+ * cache also dedupes concurrent first uses.
  */
 export async function view(db: Db, tableName: string, space: number, log: number): Promise<string> {
-    if (!versedTables[tableName]) return tableName;
+    if (!versedTables(db)[tableName]) return tableName;
     if (space === 0 && log === 0) return tableName;
 
     const vt   = `_vers_${tableName}`;
     const name = `_vers_${log}_space_${space}_${tableName}`;
 
-    const ctx = getCtx();
-    ctx.state.versViews ??= new Set<string>();
-
-    if (!ctx.state.versViews.has(name)) {
-        // Build field list: versioned fields from shadow table, rest from live table.
-        const liveFields = await db.all(`SHOW COLUMNS FROM ${tableName}`);
-        const fieldSpec   = versedTables[tableName];
-        const selects: string[] = [];
-        const pkJoins:  string[] = [];
-        const origJoins: string[] = [];
-
-        for (const col of liveFields) {
-            const f = col.Field as string;
-            if (fieldSpec === true || (fieldSpec as Record<string,1>)[f]) {
-                selects.push(`m.\`${f}\``);
-            } else {
-                selects.push(`original.\`${f}\``);
-            }
-            if (col.Key === "PRI") {
-                pkJoins.push(`mm.\`${f}\` = m.\`${f}\``);
-                origJoins.push(`m.\`${f}\` = original.\`${f}\``);
-            }
-        }
-
-        // Add vers_space annotation used by page::construct
-        selects.push(`${space} AS vers_space`);
-
-        let sql: string;
-        if (log) {
-            // Historical view: most recent entry up to (log-1)
-            sql =
-                `CREATE VIEW \`${name}\` AS ` +
-                `SELECT ${selects.join(", ")} ` +
-                `FROM ${vt} m ` +
-                `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} ` +
-                `WHERE !m._vers_deleted ` +
-                `  AND m._vers_space = ${space} ` +
-                `  AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
-                `  AND NOT EXISTS ( ` +
-                `    SELECT 1 FROM ${vt} mm ` +
-                `    WHERE mm._vers_space = ${space} ` +
-                `      AND mm._vers_log BETWEEN 1 AND ${log - 1} ` +
-                `      AND mm._vers_log > m._vers_log ` +
-                `      AND ${pkJoins.join(" AND ")} ` +
-                `    LIMIT 1 ` +
-                `  )`;
-        } else {
-            // Space head view (log=0 = current draft)
-            sql =
-                `CREATE VIEW \`${name}\` AS ` +
-                `SELECT ${selects.join(", ")} ` +
-                `FROM ${vt} m ` +
-                `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} ` +
-                `WHERE m._vers_space = ${space} AND m._vers_log = 0`;
-        }
-
-        await db.query(`DROP VIEW IF EXISTS \`${name}\``);
-        await db.query(sql);
-        ctx.state.versViews.add(name);
+    const views = dbState(db).views;
+    if (!views.has(name)) {
+        const creating = createView(db, tableName, vt, name, space, log);
+        creating.catch(() => views.delete(name)); // allow retry after failure
+        views.set(name, creating);
     }
+    await views.get(name);
     return name;
 }
 
-/**
- * Drop all views created during this request.
- * Call this after the response has been sent (port of register_shutdown_function).
- */
-export async function dropRequestViews(db: Db): Promise<void> {
-    const ctx = getCtx();
-    if (!ctx.state.versViews?.size) return;
-    for (const name of ctx.state.versViews) {
-        await db.query(`DROP VIEW IF EXISTS \`${name}\``).catch(() => {/* ignore */});
+async function createView(db: Db, tableName: string, vt: string, name: string, space: number, log: number): Promise<void> {
+    // Build field list: versioned fields from shadow table, rest from live table.
+    const liveFields = await db.all(`SHOW COLUMNS FROM ${tableName}`);
+    const fieldSpec   = versedTables(db)[tableName];
+    const selects: string[] = [];
+    const pkJoins:  string[] = [];
+    const origJoins: string[] = [];
+
+    for (const col of liveFields) {
+        const f = col.Field as string;
+        if (fieldSpec === true || (fieldSpec as Record<string,1>)[f]) {
+            selects.push(`m.\`${f}\``);
+        } else {
+            selects.push(`original.\`${f}\``);
+        }
+        if (col.Key === "PRI") {
+            pkJoins.push(`mm.\`${f}\` = m.\`${f}\``);
+            origJoins.push(`m.\`${f}\` = original.\`${f}\``);
+        }
     }
+
+    // Add vers_space annotation used by page::construct
+    selects.push(`${space} AS vers_space`);
+
+    let sql: string;
+    if (log) {
+        // Historical view: most recent entry up to (log-1)
+        sql =
+            `CREATE VIEW \`${name}\` AS ` +
+            `SELECT ${selects.join(", ")} ` +
+            `FROM ${vt} m ` +
+            `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} ` +
+            `WHERE !m._vers_deleted ` +
+            `  AND m._vers_space = ${space} ` +
+            `  AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
+            `  AND NOT EXISTS ( ` +
+            `    SELECT 1 FROM ${vt} mm ` +
+            `    WHERE mm._vers_space = ${space} ` +
+            `      AND mm._vers_log BETWEEN 1 AND ${log - 1} ` +
+            `      AND mm._vers_log > m._vers_log ` +
+            `      AND ${pkJoins.join(" AND ")} ` +
+            `    LIMIT 1 ` +
+            `  )`;
+    } else {
+        // Space head view (log=0 = current draft)
+        sql =
+            `CREATE VIEW \`${name}\` AS ` +
+            `SELECT ${selects.join(", ")} ` +
+            `FROM ${vt} m ` +
+            `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} ` +
+            `WHERE m._vers_space = ${space} AND m._vers_log = 0`;
+    }
+
+    await db.query(`DROP VIEW IF EXISTS \`${name}\``);
+    await db.query(sql);
 }
 
-// ─── ensureSpace ────────────────────────────────────────────────────────────
+// ─── App wiring (core) ───────────────────────────────────────────────────────
 
-export async function ensureSpace(db: Db, space: number): Promise<void> {
-    if (!space) return;
-    const exists = await db.row("SELECT space FROM vers_space WHERE space = ?", [space]);
-    if (exists) return;
+export function initVers(app: App) {
 
-    // Seed each versioned table with live data
-    for (const tableName of Object.keys(versedTables)) {
-        const vt = await versTable(db, tableName);
-        if (!vt) continue;
-        await db.query(`DELETE FROM \`${vt}\` WHERE _vers_space = ?`, [space]);
-        await db.query(`INSERT INTO \`${vt}\` SELECT *, 0, ?, 0 FROM \`${tableName}\``, [space]);
-    }
-    await db.table("vers_space").insert({ space, time_created: new Date() });
-    // fire so other modules (like history.php) can react
-    const ctx = getCtx();
-    await ctx.app.fire("vers::createSpace", { space });
-}
-
-// ─── tableEntriesCopyTo ─────────────────────────────────────────────────────
-
-export async function tableEntriesCopyTo(
-    db: Db,
-    tableName: string,
-    filter: Record<string, any>,
-    fromSpace: number,
-    fromLog: number,
-    toSpace: number,
-): Promise<void> {
-    const Table   = db.table(tableName);
-    const [where, whereParams] = Table.valuesToFragment(filter);
-    const fromView = await view(db, tableName, fromSpace, fromLog);
-    const toView   = await view(db, tableName, toSpace, 0);
-
-    const oldEntries: Record<string, any> = {};
-    const newEntries: Record<string, any> = {};
-
-    for (const e of await db.all(`SELECT * FROM \`${toView}\` WHERE ${where}`, whereParams))   oldEntries[Table.entryId(e) as string] = e;
-    for (const e of await db.all(`SELECT * FROM \`${fromView}\` WHERE ${where}`, whereParams)) newEntries[Table.entryId(e) as string] = e;
-
-    const ctx = getCtx();
-    const s = getCmsVers(ctx);
-    const oldVers = setVers(ctx, [toSpace, 0]);
-    s.versTableEntriesCopying = true;
-    for (const [id, entry] of Object.entries(newEntries)) {
-        oldEntries[id] ? await Table.update(entry) : await Table.ensure(entry);
-    }
-    for (const [id, entry] of Object.entries(oldEntries)) {
-        if (!newEntries[id]) await Table.delete(entry);
-    }
-    s.versTableEntriesCopying = false;
-    setVers(ctx, oldVers);
+    // ─── Ensure _vers_* tables exist on first action ─────────────────────────
+    app.on("action", async e => {
+        const ctx = e.ctx as RequestContext;
+        for (const t of Object.keys(versedTables(ctx.app.db))) await versTable(ctx.app.db, t);
+    });
 }
