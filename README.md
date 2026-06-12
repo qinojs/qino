@@ -152,12 +152,6 @@ cd qino/demo
 deno task dev
 ```
 
-To use a local version of [item.js](https://github.com/nuxodin/item.js) during development:
-
-```sh
-deno task dev:local
-```
-
 ## License
 
 MIT

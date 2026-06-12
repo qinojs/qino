@@ -1,15 +1,15 @@
 import * as nodePath from "node:path";
 import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
-import { hee, getCtx } from "../../core/mod.ts";
+import { hee, getCtx, u2Root } from "../../core/mod.ts";
 import { typeByExtension } from "../../../deps.ts";
 
 export default async function codemirrorView(file: string): Promise<string> {
     const ctx = getCtx();
     const html = ctx.html;
 
-    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.17/css/norm/norm.css");
-    html.styles.add("https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.17/css/base/base.css");
+    html.styles.add(u2Root + "css/norm/norm.css");
+    html.styles.add(u2Root + "css/base/base.css");
 
     html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
 
