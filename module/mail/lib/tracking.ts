@@ -1,0 +1,41 @@
+import { Output, type RequestContext } from "../../core/mod.ts";
+import { sha1 } from "./helpers.ts";
+
+const BLANK_GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), c => c.charCodeAt(0));
+
+export const trackCert = (secret: string, trackId: number) => sha1("mail1-track" + secret + trackId).slice(0, 8);
+
+export async function handleTrack(ctx: RequestContext): Promise<void> {
+  const [idRaw, cert] = String(ctx.get.mail1tr ?? "").split("-");
+  const trackId = Number(idRaw);
+  if (!trackId || !cert || cert !== trackCert(await ctx.app.mail.secure(), trackId)) return;
+
+  const recipient = await ctx.app.db.row("SELECT * FROM mail_recipient WHERE mail1_track_id = ?", [trackId]);
+  if (!recipient) return;
+
+  const url = String(ctx.get.url ?? "");
+  await ctx.app.db.table("mail1_track").insert({
+    track_id: trackId,
+    url,
+    time: Math.floor(Date.now() / 1000),
+    log_id: await ctx.logId,
+  });
+  if (!recipient.opened) {
+    await ctx.app.db.table("mail_recipient").update({
+      mail_id: recipient.mail_id,
+      email: recipient.email,
+      opened: Math.floor(Date.now() / 1000),
+    });
+  }
+
+  if (ctx.appRequestUri === "blank.gif") {
+    ctx.responseHeaders.set("Content-Type", "image/gif");
+    ctx.responseBody = BLANK_GIF as never;
+    throw new Output();
+  }
+  if (ctx.appRequestUri === "mail-track" && url) {
+    ctx.responseStatus = 302;
+    ctx.responseHeaders.set("Location", url);
+    throw new Output();
+  }
+}

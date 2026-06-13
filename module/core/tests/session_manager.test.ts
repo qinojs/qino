@@ -20,6 +20,14 @@ function fakeDb() {
       calls.push([sql, params]);
       return { insertId: insertId++, affectedRows: 1 };
     },
+    table(name: string) {
+      return {
+        insert(values: Record<string, unknown>) {
+          calls.push([`INSERT INTO ${name}`, [values]]);
+          return String(insertId++);
+        },
+      };
+    },
   };
 }
 
@@ -43,7 +51,11 @@ Deno.test("SessionManager: load creates session without valid cookie", async () 
   assertEquals(res.sessId, "1");
   assertEquals(res.isNew, true);
   assertEquals(res.sessionToken.length > 10, true);
-  assertEquals(db.calls[0][0], "INSERT INTO sess SET token = ?, time = ?, `access` = ?, data = ?");
+  assertEquals(db.calls[0][0], "INSERT INTO sess");
+  const values = db.calls[0][1]?.[0] as Record<string, unknown>;
+  assertEquals(values.token, res.sessionToken);
+  assertEquals(values.access, values.time);
+  assertEquals(values.data, "{}");
 });
 
 Deno.test("SessionManager: regenerateId resets an existing session", async () => {

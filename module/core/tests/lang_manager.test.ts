@@ -104,9 +104,13 @@ Deno.test("LangManager: nested namespaces restore lang correctly", async () => {
 
 Deno.test("LangManager: t inserts new smalltext and replaces placeholders", async () => {
   const queries: Array<[string, unknown[] | undefined]> = [];
+  const inserts: Record<string, unknown>[] = [];
   const app = {
     db: {
-      table: () => ({ field: () => true }),
+      table: () => ({
+        field: () => true,
+        insert: (values: Record<string, unknown>) => { inserts.push(values); },
+      }),
       indexCol: () => ({}),
       query: (sql: string, params?: unknown[]) => {
         queries.push([sql, params]);
@@ -124,8 +128,10 @@ Deno.test("LangManager: t inserts new smalltext and replaces placeholders", asyn
 
   const out = await requestStorage.run(ctx, () => lm.t`Hello ${"Qino"}`);
   assertEquals(out, "Hello Qino");
-  assertEquals(queries.length, 1);
-  assertEquals(queries[0][0], "INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?");
-  assertEquals((queries[0][1] as unknown[])[0], "test");
-  assertEquals((queries[0][1] as unknown[])[2], "Hello ###1###");
+  assertEquals(queries.length, 0);
+  assertEquals(inserts, [{
+    namespace: "test",
+    hash: "42155de5f888ca446f310e6f78affb94",
+    original: "Hello ###1###",
+  }]);
 });

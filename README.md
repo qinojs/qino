@@ -90,7 +90,7 @@ export const api: Tree = {
     get: {
       description: "List all users",
       execute: async (_, ctx) => {
-        return await ctx.app.db.table("usr").all();
+        return ctx.app.db.table("usr").all();
       }
     },
     ":id": {
@@ -98,7 +98,7 @@ export const api: Tree = {
         description: "Get a user by ID",
         input: s.object({ id: s.string() }),
         execute: async ({ id }, ctx) => {
-          return await ctx.app.db.table("usr").entry(id);
+          return ctx.app.db.table("usr").entry(id);
         }
       }
     }

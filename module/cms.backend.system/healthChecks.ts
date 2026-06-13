@@ -63,13 +63,13 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   warning["smalltexts-counter is enabled"] = async () => {
     if (!await settings.qg?.smalltext?.counter) return undefined;
     if (!await ctx.user?.get("superuser")) return undefined;
-    return { solutions: { disable: { solve: async () => { settings.qg.smalltext.counter = 0; } } } };
+    return { solutions: { disable: { solve: async () => { await settings.qg.smalltext.counter(0); } } } };
   };
 
   warning["smalltext code-logger is enabled"] = async () => {
     if (!await settings.qg?.smalltext?.code_logger) return undefined;
     if (!await ctx.user?.get("superuser")) return undefined;
-    return { solutions: { disable: { solve: async () => { settings.qg.smalltext.code_logger = 0; } } } };
+    return { solutions: { disable: { solve: async () => { await settings.qg.smalltext.code_logger(0); } } } };
   };
 
   // ── users ────────────────────────────────────────────────────────────────
@@ -78,21 +78,21 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
       "SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000"
     );
     if (!usrs.length) return undefined;
-    return { info: usrs.map((e: string) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: async () => "nothing" } } };
+    return { info: usrs.map((e: string) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
   };
 
   // ── debug / https ────────────────────────────────────────────────────────
-  notice["debugmode is active"] = async () => {
+  notice["debugmode is active"] = () => {
     if (!app.debug) return undefined;
     return { info: "change it in the app config" };
   };
 
-  warning["dev mode is active"] = async () => {
+  warning["dev mode is active"] = () => {
     if (!app.dev) return undefined;
     return { info: "set dev: false in the app config" };
   };
 
-  warning["https not enforced"] = async () => {
+  warning["https not enforced"] = () => {
     if (app.https) return undefined;
     return { info: "set https: true in the app config" };
   };

@@ -555,7 +555,7 @@ const node = {
         access: nodeWrite,
         input: s.object({ value: s.any().describe("Value to set (any JSON type)") }),
         execute: async ({ node, path, value }: any) => {
-          node.settings[$item].sub(path).set(value);
+          await node.settings[$item].sub(path).set(value);
           return { ok: true };
         },
       },

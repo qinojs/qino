@@ -155,7 +155,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
 </div>`;
 }
 
-async function render(node: Node): Promise<string> {
+function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const modName = ctx.get.mod ? String(ctx.get.mod) : "";
   if (modName) return renderDetail(node, modName);

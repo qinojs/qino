@@ -36,7 +36,7 @@ export class Node {
     }
 
     async init(): Promise<this> {
-        if (!this.vs || Object.keys(this.vs).length === 0) {
+        if (!this.vs || !Object.keys(this.vs).length) {
             const row = await this.db.row(`SELECT * FROM ${tableRef("page")} WHERE id = ?`, [this.id]);
             if (!row) {
                 this.vs = { id: this.id, basis: 0, type: "p" };

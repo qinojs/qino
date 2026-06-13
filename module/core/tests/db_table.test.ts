@@ -11,6 +11,9 @@ function db() {
     events,
     tables: {},
     table: () => undefined,
+    columns(table: string) {
+      return this.query(`SHOW FULL COLUMNS FROM \`${table}\``);
+    },
     query(sql: string, params?: unknown[]) {
       calls.push([sql, params]);
       if (sql.startsWith("SHOW FULL COLUMNS")) return [
@@ -75,6 +78,9 @@ Deno.test("DbTable: schema fields and children come from db schema", async () =>
         },
       },
     },
+    columns(table: string) {
+      return this.query(`SHOW FULL COLUMNS FROM \`${table}\``);
+    },
     query(sql: string, params?: unknown[]) {
       calls.push([sql, params]);
       if (sql.includes("`parent`")) return [
@@ -106,7 +112,7 @@ Deno.test("DbTable: select, insert, update and delete build parameterized SQL", 
   assertEquals(await table.update("10", { name: "Ten" }), "10");
   assertEquals(await table.delete("10"), true);
 
-  assertEquals(fake.calls.some(([sql]) => sql === "INSERT INTO `thing` SET `name` = ?"), true);
+  assertEquals(fake.calls.some(([sql]) => sql === "INSERT INTO `thing` (`name`) VALUES (?)"), true);
   assertEquals(fake.calls.some(([sql]) => sql === "UPDATE `thing` SET `name` = ? WHERE `id` = ?"), true);
   assertEquals(fake.calls.some(([sql]) => sql === "DELETE FROM `thing` WHERE `id` = ?"), true);
   assertEquals(fake.events.map(([name]) => name), [

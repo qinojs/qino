@@ -28,17 +28,18 @@ function htmlValue(v: unknown): string {
   return hee(v);
 }
 
-export function html(strings: TemplateStringsArray, ...values: unknown[]): HtmlString {
+function buildHtml(strings: TemplateStringsArray, values: unknown[]): HtmlString {
   return new HtmlString(strings.reduce((acc, str, i) => {
     return i < values.length ? acc + str + htmlValue(values[i]) : acc + str;
   }, ""));
 }
 
+export function html(strings: TemplateStringsArray, ...values: unknown[]): HtmlString {
+  return buildHtml(strings, values);
+}
+
 html.async = async function(strings: TemplateStringsArray, ...values: unknown[]): Promise<HtmlString> {
-  const resolved = await Promise.all(values.map(v => v));
-  return new HtmlString(strings.reduce((acc, str, i) => {
-    return i < resolved.length ? acc + str + htmlValue(resolved[i]) : acc + str;
-  }, ""));
+  return buildHtml(strings, await Promise.all(values));
 };
 
 export function uid(length?: number): string {

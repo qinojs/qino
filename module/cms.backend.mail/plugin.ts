@@ -30,7 +30,7 @@ function hiddenToken(token: string): string {
   return `<input type=hidden name=qgToken value="${hee(token)}">`;
 }
 
-async function render(node: Node): Promise<string> {
+function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const id = Number(ctx.get.id ?? 0);
   if (id) return renderDetail(node, id);

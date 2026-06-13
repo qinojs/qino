@@ -28,6 +28,7 @@ Deno.test("ai: init installs AiApi and cms-ready hook", () => {
   const html = { content: "", scripts: { add(url: string) { html.content += `[${url}]`; } } };
   const ctx = {
     cms: { editmode: true },
+    get: {},
     sysURL: "/m/",
     html,
   };

@@ -259,7 +259,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   if (vars.clear_cache) {
     const days = vars.clear_cache === true ? undefined : Number(vars.clear_cache) || undefined;
     await clearCache(cacheDir(node.app), days);
-    return await renderCache(node.app);
+    return renderCache(node.app);
   }
 
   const [platform, root] = await Promise.all([detectPlatform(), Promise.resolve(isRoot())]);

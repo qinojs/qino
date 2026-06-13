@@ -27,7 +27,7 @@ export const backend = {
             }
             node = await cms.nodeByModule("cms.backend");
         }
-        return node ? await node.page() : node;
+        return node?.page();
     },
     async install(app: App, module: string, titles?: Record<string, string>): Promise<Node | undefined> {
         const cms = app.cms;

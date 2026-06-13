@@ -64,7 +64,7 @@ function setting<T>(initial: T) {
 Deno.test("cms.text: missing and empty texts are returned as untranslated", async () => {
   const ctx = ctxWith({
     languages: { all: ["de", "en", "fr"] },
-    apt: { cms: { "node-id-from-txt-id": { get: () => ({ id: 1 }) } } },
+    apt: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
     cms: { node: () => ({ access: () => 3 }) },
     db: {
       one: (_sql: string, args: unknown[]) => {

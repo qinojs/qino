@@ -70,22 +70,19 @@ export class CMS {
     }
 
     async getModules(): Promise<Record<string, Module>> {
-        const modules = Object.keys(this.app.modules.all());
-        modules.sort();
-        const ret: Record<string, Module> = {};
-        for (const module of modules) {
-            if (!module.startsWith("cms.cont.")) continue;
-            ret[module] = this.app.modules.get(module)!;
-        }
-        return ret;
+        return this.#modules("cms.cont.");
     }
 
     async getLayouts(): Promise<Record<string, Module>> {
+        return this.#modules("cms.layout.");
+    }
+
+    #modules(prefix: string): Record<string, Module> {
         const modules = Object.keys(this.app.modules.all());
         modules.sort();
         const ret: Record<string, Module> = {};
         for (const module of modules) {
-            if (!module.startsWith("cms.layout.")) continue;
+            if (!module.startsWith(prefix)) continue;
             ret[module] = this.app.modules.get(module)!;
         }
         return ret;
@@ -93,12 +90,13 @@ export class CMS {
 
     // deno-lint-ignore no-explicit-any
     async filter(Pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
-        filter = Array.isArray(filter) ? filter : { ...filter };
-        if (!Array.isArray(filter)) filter.type ||= "p";
+        const tags = Array.isArray(filter) ? filter : undefined;
+        filter = tags ?? { ...filter };
+        if (!tags) filter.type ||= "p";
         const ret: Map<number, Node> = new Map();
         for (const [id, C] of Pages) {
             const vs = C.vs;
-            if (!Array.isArray(filter)) {
+            if (!tags) {
                 if (filter.type && filter.type !== "*") {
                     if (vs.type !== filter.type) continue;
                 }
@@ -113,14 +111,14 @@ export class CMS {
                     if ((await C.access()) < filter.access) continue;
                 }
             }
-            if (Array.isArray(filter) && filter.includes("navi")) {
+            if (tags?.includes("navi")) {
                 const titleObj = await C.title();
                 if (!vs.visible || !(await C.isReadable()) || !(await titleObj.string() || C.edit)) continue;
             }
-            if (Array.isArray(filter) && filter.includes("access")) {
+            if (tags?.includes("access")) {
                 if (!(await C.access())) continue;
             }
-            if (Array.isArray(filter) && filter.includes("readable")) {
+            if (tags?.includes("readable")) {
                 if (!(await C.isReadable())) continue;
             }
             ret.set(id, C);
