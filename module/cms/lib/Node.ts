@@ -1,9 +1,7 @@
 import { resolveText } from "./resolveText.ts";
-import { hee, HtmlString, getCtx, urlize, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
+import { hee, HtmlString, getCtx, urlize, tableRef, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
-
-function table(name: string): string { return name; }
 
 /** Node class
  * represents both "Page" (type "p") and "Cont"/"Content" (type "c") entries in the database
@@ -39,7 +37,7 @@ export class Node {
 
     async init(): Promise<this> {
         if (!this.vs || Object.keys(this.vs).length === 0) {
-            const row = await this.db.row(`SELECT * FROM ${table("page")} WHERE id = ?`, [this.id]);
+            const row = await this.db.row(`SELECT * FROM ${tableRef("page")} WHERE id = ?`, [this.id]);
             if (!row) {
                 this.vs = { id: this.id, basis: 0, type: "p" };
                 this.#is = false;
@@ -54,7 +52,7 @@ export class Node {
             this.vs.settings as string | null | undefined,
             async (json: string) => {
                 this.vs = { ...this.vs, settings: json };
-                await this.db.query("UPDATE page SET settings = ? WHERE id = ?", [json, this.id]);
+                await this.db.table("page").update(this.id, { settings: json });
             },
         ).proxy;
 
@@ -68,10 +66,6 @@ export class Node {
             await this.set("title_id", T.id);
         }
         return this;
-    }
-
-    sql(sql: string): string { // this.app.fire("page::sql", { Page: this, sql });
-        return sql;
     }
 
     is(): boolean { return this.#is; }
@@ -271,7 +265,7 @@ export class Node {
     children(filter?: any): Promise<Map<number, Node>> {
         this.#children ??= (async () => {
             const map: Map<number, Node> = new Map();
-            const rows = await this.db.all(`SELECT * FROM ${table("page")} WHERE basis = ? ORDER BY type DESC, sort, id DESC`, [this.id]);
+            const rows = await this.db.all(`SELECT * FROM ${tableRef("page")} WHERE basis = ? ORDER BY type DESC, sort, id DESC`, [this.id]);
             for (const row of rows) {
                 const id = Number(row.id);
                 const Child = await this.cms.node(id, row);
@@ -345,7 +339,7 @@ export class Node {
 
     async texts(): Promise<Record<string, any>> {
         if (this.#texts === null) {
-            const rows = await this.db.indexCol(this.sql(`SELECT name, text_id FROM ${table("page_text")} WHERE page_id = ?`), [this.id]);
+            const rows = await this.db.indexCol(`SELECT name, text_id FROM ${tableRef("page_text")} WHERE page_id = ?`, [this.id]);
             this.#texts = {};
             for (const [name, id] of Object.entries(rows ?? {})) {
                 const T = this.app.dbTexts.text(Number(id));
@@ -398,11 +392,11 @@ export class Node {
                 const sql =
                     " SELECT f.*, pf.name as pf_name " +
                     " FROM " +
-                    `   ${table("page_file")} pf ` +
-                    `   LEFT JOIN ${table("file")} f ON f.id = pf.file_id ` +
+                    `   ${tableRef("page_file")} pf ` +
+                    `   LEFT JOIN ${tableRef("file")} f ON f.id = pf.file_id ` +
                     " WHERE pf.page_id = ? " +
                     " ORDER BY sort ";
-                const rows = await this.db.all(this.sql(sql), [this.id]);
+                const rows = await this.db.all(sql, [this.id]);
                 for (const vs of rows) {
                     const F = await this.app.dbFiles.file(vs.id, vs);
                     this.#filesAll![vs.pf_name] = F;
@@ -431,7 +425,7 @@ export class Node {
 
         const row: Record<string, string | number> = { page_id: String(this), file_id: String(File) };
         if (!name) {
-            const minSort = await this.db.one(this.sql("SELECT min(sort) FROM page_file WHERE page_id = ?"), [this.id]);
+            const minSort = await this.db.one(`SELECT min(sort) FROM ${tableRef("page_file")} WHERE page_id = ?`, [this.id]);
             row.sort = (Number(minSort ?? "0") || 0) - 1;
             name = "_" + Math.random().toString(36).slice(2, 9);
         }
@@ -468,7 +462,7 @@ export class Node {
     async urls(): Promise<Record<string, any>> {
         if (this.#urls === null) {
             this.#urls = {};
-            const rows = await this.db.all(this.sql(`SELECT lang, url, target FROM ${table("page_url")} WHERE page_id = ?`), [this.id]);
+            const rows = await this.db.all(`SELECT lang, url, target FROM ${tableRef("page_url")} WHERE page_id = ?`, [this.id]);
             for (const row of rows) this.#urls[row.lang] = row;
         }
         return this.#urls;
@@ -490,7 +484,7 @@ export class Node {
 
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
         data = { page_id: this.id, lang, ...data };
-        const row = await this.db.row(this.sql("SELECT * FROM page_url WHERE page_id = ? AND lang = ?"), [this.id, lang]);
+        const row = await this.db.row(`SELECT * FROM ${tableRef("page_url")} WHERE page_id = ? AND lang = ?`, [this.id, lang]);
         await this.db.table("page_url")[row ? "update" : "insert"](data);
         this.#urls = null; // neu
     }
@@ -504,7 +498,7 @@ export class Node {
         const part = urlize(titleStr);
         const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
         let url = base + part;
-        const exists = await this.db.one(this.sql("SELECT page_id FROM page_url WHERE url = ? AND NOT (page_id = ? AND lang = ?)"), [url, this.id, lang]);
+        const exists = await this.db.one(`SELECT page_id FROM ${tableRef("page_url")} WHERE url = ? AND NOT (page_id = ? AND lang = ?)`, [url, this.id, lang]);
         if ((await Deno.stat(this.app.appPATH + url).catch(() => null)) || exists) {
             url += "-" + lang + this;
         }
@@ -512,7 +506,7 @@ export class Node {
     }
 
     async urlSeoGen(lang: string): Promise<string> {
-        const row = await this.db.row(this.sql("SELECT * FROM page_url WHERE page_id = ? AND lang = ?"), [this.id, lang]);
+        const row = await this.db.row(`SELECT * FROM ${tableRef("page_url")} WHERE page_id = ? AND lang = ?`, [this.id, lang]);
         const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
         await this.urlSet(lang, { url });
         for (const C of (await this.children({ type: "*" })).values()) {

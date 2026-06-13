@@ -1,0 +1,28 @@
+import { apt } from "../../core/pub/js/qino.js";
+
+cms.initNode("backend.superuser.versions", (el) => {
+  const nid = cms.el.nid(el);
+  const alert = async (t) => (await import("@qino/u2/js/dialog/dialog.js")).alert(t);
+
+  el.addEventListener("click", async (e) => {
+    const thin = e.target.closest("button.-thin");
+    const delSpace = e.target.closest("button.-del-space");
+    const purge = e.target.closest("button.-purge");
+
+    if (thin) {
+      thin.disabled = true;
+      const res = await apt.cms.node(nid).api.post({ thin: 1 });
+      await alert((res?.deleted ?? 0) + " entries deleted");
+      location.reload();
+    } else if (delSpace) {
+      const space = delSpace.dataset.space;
+      if (!confirm("Delete space " + space + " (draft + its history)?")) return;
+      await apt.cms.node(nid).api.post({ deleteSpace: space });
+      location.reload();
+    } else if (purge) {
+      if (!confirm("Delete the ENTIRE version history? This cannot be undone.")) return;
+      await apt.cms.node(nid).api.post({ purge: 1 });
+      location.reload();
+    }
+  });
+});

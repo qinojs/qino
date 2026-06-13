@@ -23,7 +23,7 @@ export function getCmsVers(ctx: RequestContext): CmsVersState {
  * Pre-load all page data into the runtime cache so that subsequent reads
  * inside a specific space/log still see correct values.
  */
-export async function pageLoadRuntimeCache(node: Node): Promise<void> {
+export async function nodeLoadRuntimeCache(node: Node): Promise<void> {
     await node.files();
     const ctx = getCtx();
     for (const l of ctx.app.languages.all) {
@@ -38,9 +38,9 @@ export async function pageLoadRuntimeCache(node: Node): Promise<void> {
 
 /**
  * Copy a page (and optionally sub-pages) from one space/log to another space.
- * qg_setting copying is intentionally omitted (settings are not versioned).
+ * Used for publish (draft → live) and rollback (old log → live).
  */
-export async function publishCont(
+export async function copyNode(
     db: Db,
     pid: number,
     fromSpace: number,
@@ -92,11 +92,11 @@ export async function publishCont(
     // Switch to fromSpace so Page.access() reads correct data
     const oldVers = setVers(ctx, [fromSpace, fromLog]);
     // Clear CMS page cache so space change takes effect
-    if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
+    ctx.app.cms.clearCache();
     await generate(pid);
 
     // Regenerate URLs in toSpace
-    if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
+    ctx.app.cms.clearCache();
     setVers(ctx, [toSpace, 0]);
     const P = await ctx.app.cms.node(pid);
     for (const l of ctx.app.languages.all) {
@@ -106,7 +106,10 @@ export async function publishCont(
     }
 
     setVers(ctx, oldVers);
-    if (ctx.app.cms) (ctx.app.cms as any)._Pages = {};
+    // The copy wrote rows past the managers — drop all derived caches
+    ctx.app.cms.clearCache();
+    ctx.app.dbTexts.clearCache();
+    ctx.app.dbFiles.clearCache();
 }
 
 /**

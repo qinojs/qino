@@ -24,8 +24,13 @@ export async function renderConflicts(app: App, modules: Record<string, any>): P
   return `<div class="u2-card -full">
     <div class="-head">${await app.t`Schema conflicts`} (${conflicts.length})</div>
     <table class="u2-table -conflicts">
-      <thead><tr><th>${await app.t`Table`}<th>${await app.t`Field`}<th>${await app.t`Property`}<th>${await app.t`Values per module`}</thead>
-      <tbody>${rows}</tbody>
+      <thead>
+        <tr>
+          <th>${await app.t`Table`}
+          <th>${await app.t`Field`}
+          <th>${await app.t`Property`}
+          <th>${await app.t`Values per module`}
+      <tbody>${rows}
     </table>
   </div>`;
 }

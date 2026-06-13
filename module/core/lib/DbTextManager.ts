@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "./RequestContext.ts";
+import { tableRef, scopeCache } from "./dbScope.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./Db.ts";
 
@@ -18,7 +19,8 @@ export class DbTextManager {
 
   text(id: number | string): DbText {
     const key = String(id);
-    return this.#cache[key] ??= new DbText(this, id);
+    const cache = scopeCache(this.#cache, "dbTexts", () => ({} as Record<string, DbText>));
+    return cache[key] ??= new DbText(this, id);
   }
 
   clearCache(id?: number | string) {
@@ -32,7 +34,8 @@ export class DbTextManager {
   async generate(): Promise<DbText> {
     const values: Record<string, unknown> = { lang: this.#app.languages.def, text: "" };
     await this.#db.table("text").insert(values);
-    const id = Number(values.id);
+    // insert can be prevented (e.g. read-only history render) → id 0, never NaN
+    const id = Number(values.id ?? "0") || 0;
     return this.text(id);
   }
 }
@@ -107,7 +110,7 @@ export class DbTextLang {
   async get(): Promise<string> {
     if (this.value === null) {
       const db = this.text.manager.db;
-      const value = await db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [this.text.id, this.lang]);
+      const value = await db.one(`SELECT text FROM \`${tableRef("text")}\` WHERE id = ? AND lang = ?`, [this.text.id, this.lang]);
       this.value = String(value ?? "");
     }
     return this.value!;

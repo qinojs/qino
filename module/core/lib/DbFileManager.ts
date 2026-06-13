@@ -6,6 +6,7 @@ import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
 import { getCtx } from "./RequestContext.ts";
+import { tableRef, scopeCache } from "./dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "./App.ts";
 
@@ -26,10 +27,11 @@ export class DbFileManager {
 
   async file(id: number | string, vs?: any): Promise<DbFile> {
     const key = String(id);
-    this.#cache[key] ??= new DbFile(this, id);
-    if (vs) this.#cache[key].setLocalVs(vs);
-    else await this.#cache[key].ensureVs();
-    return this.#cache[key];
+    const cache = scopeCache(this.#cache, "dbFiles", () => ({} as Record<string, DbFile>));
+    cache[key] ??= new DbFile(this, id);
+    if (vs) cache[key].setLocalVs(vs);
+    else await cache[key].ensureVs();
+    return cache[key];
   }
 
   clearCache(id?: number | string) {
@@ -154,7 +156,7 @@ export class DbFile extends File {
 
   async ensureVs(): Promise<Record<string, any>> {
     if (this.id && !this.vs) {
-      this.vs = await this.#manager.db.row(`SELECT * FROM file WHERE id = ?`, [this.id]) ?? {};
+      this.vs = await this.#manager.db.row(`SELECT * FROM \`${tableRef("file")}\` WHERE id = ?`, [this.id]) ?? {};
       if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
     }
     return this.vs!;

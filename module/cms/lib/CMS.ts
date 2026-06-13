@@ -1,12 +1,10 @@
 import { Node } from "./Node.ts";
-import { hee, HtmlString, getCtx, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
-
-function table(name: string): string { return name; }
+import { hee, HtmlString, getCtx, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 export class CMS {
     app: App;
     db: Db;
-    
+
     #nodes: Map<number, Node> = new Map();
     #layouts: Record<string, string> | null = null;
 
@@ -17,17 +15,22 @@ export class CMS {
 
     async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
         id = Number(id);
-        if (this.#nodes.has(id)) return this.#nodes.get(id)!;
+        const nodes = scopeCache(this.#nodes, "cms.nodes", () => new Map<number, Node>());
+        if (nodes.has(id)) return nodes.get(id)!;
         const node = new Node(this, id, vs);
-        this.#nodes.set(id, node);
+        nodes.set(id, node);
         //if (!vs) await node.init();
         await node.init();
         return node;
     }
 
+    clearCache(id?: number) {
+        id === undefined ? this.#nodes.clear() : this.#nodes.delete(Number(id));
+    }
+
     async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
         const ret: Record<string, Node> = {};
-        const rows = await this.db.all(`SELECT * FROM ${table("page")} WHERE module = ?`, [moduleName]);
+        const rows = await this.db.all(`SELECT * FROM ${tableRef("page")} WHERE module = ?`, [moduleName]);
         for (const vs of rows) {
             ret[vs.id] = await this.node(vs.id, vs);
         }
@@ -36,7 +39,7 @@ export class CMS {
 
     // async nodesByName(name: string): Promise<Record<string, Node>> {
     //     const ret: Record<string, Node> = {};
-    //     const rows = await this.db.all(`SELECT * FROM ${table("page")} WHERE type = 'p' AND name = ?`, [name]);
+    //     const rows = await this.db.all(`SELECT * FROM ${tableRef("page")} WHERE type = 'p' AND name = ?`, [name]);
     //     for (const vs of rows) {
     //         ret[vs.id] = await this.node(vs.id, vs);
     //     }
@@ -60,7 +63,7 @@ export class CMS {
         if (cmspid) {
             pid = Number(cmspid);
         } else {
-            const id = await this.db.one(`SELECT page_id FROM ${table("page_url")} WHERE url = ?`, [ctx.appRequestUri]);
+            const id = await this.db.one(`SELECT page_id FROM ${tableRef("page_url")} WHERE url = ?`, [ctx.appRequestUri]);
             pid = Number(id ?? "0") || 0;
         }
         return this.node(pid);

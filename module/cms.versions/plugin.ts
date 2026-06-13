@@ -9,7 +9,7 @@
  *     written to the corresponding _vers_* shadow table (lib/History.ts).
  *   - Log-mode (historical view): qgCmsVersLog + qgCmsVersPage render a
  *     frozen snapshot of the page at that log entry.
- *   - serverInterface: getForPage, logDetails, publishCont.
+ *   - serverInterface: getForNode, logDetails, publishNode.
  *
  * lib/Vers.ts + History.ts + Spaces.ts are the generic, cms-agnostic
  * versioning engine — keep them that way.
@@ -18,14 +18,15 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { type RequestContext, Access, type AptTree, s, type App } from "../core/mod.ts";
+import { type RequestContext, type DbScope, Access, type AptTree, s, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
-import { versedTables, setVers, initVers } from "./lib/Vers.ts";
+import { versedTables, view, initVers } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { ensureSpace, initSpaces, installSpaces } from "./lib/Spaces.ts";
-import { getCmsVers, pageLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
-import { getForPage, logDetails, publishCont } from "./serverInterface.ts";
+import { getCmsVers, nodeLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
+import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
 import { applyDraftSpace, initDraftmode, installDraftmode } from "./draftmode.ts";
+export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.versions";
 export const needs = ["cms"];
@@ -40,20 +41,20 @@ export const settingsSchema = {
 };
 
 export const api: AptTree = {
-    "publish-cont": {
+    "publish-node": {
         post: {
-            description: "Publish content/page into a version space.",
+            description: "Publish a node (page/content) into a version space.",
             access: Access.USER,
             input: s.object({ pid: s.number(), options: s.optional(s.record()) }),
-            execute: ({ pid, options }: any, ctx: any) => publishCont(ctx, pid, options ?? {}),
+            execute: ({ pid, options }: any, ctx: any) => publishNode(ctx, pid, options ?? {}),
         },
     },
-    page: {
-        ":page": {
+    node: {
+        ":node": {
             get: {
-                description: "Read version log for page and contents.",
+                description: "Read version log for a node and its contents.",
                 access: Access.USER,
-                execute: ({ page }: any, ctx: any) => getForPage(ctx, page),
+                execute: ({ node }: any, ctx: any) => getForNode(ctx, node),
             },
         },
     },
@@ -76,7 +77,7 @@ export function init(app: App) {
     versed["page"] = {
         id: 1, log_id: 1, log_id_ch: 1, type: 1, basis: 1,
         sort: 1, module: 1, visible: 1, searchable: 1, title_id: 1,
-        name: 1, _cache: 1,
+        name: 1, settings: 1, _cache: 1,
     };
     versed["page_file"]  = true;
     versed["page_text"]  = true;
@@ -114,22 +115,28 @@ export function init(app: App) {
             const pid = Number(ctx.get.qgCmsVersPage ?? "0");
             cacheHeaders(ctx);
 
-            // Disable editmode for the historical view
-            ctx.settings.cms.editmode(0);
+            // Disable editmode for the historical view — request-only override;
+            // writing ctx.settings would persist it for the whole session
+            ctx.cms.editmode = 0;
 
-            // Load page data into cache for the requested log
+            // Route reads through the historical views and give the request its
+            // own caches (core dbScope) — the shared app caches stay untouched.
+            const db = ctx.app.db;
+            const tables: Record<string, string> = {};
+            for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, vs.space, vs.log);
+            const scope: DbScope = ctx.state.dbScope = { tables, cache: {} };
+
+            // Pre-load the viewed page (incl. conts) from the views into the
+            // request cache; the rest of the request (layout, nav) renders live.
             const generate = async (id: number): Promise<void> => {
                 const node = await ctx.app.cms.node(id);
                 for (const SubCont of await node.conts()) await generate(SubCont.id);
                 if ((await node.access()) < 2) return;
-                (node.vs as any).online_start = (node.vs as any).online_end = 0;
-                await pageLoadRuntimeCache(node);
+                (node.vs as any).online_start = (node.vs as any).online_end = 0; // request-scoped node — safe
+                await nodeLoadRuntimeCache(node);
             };
-
-            const oldVers = setVers(ctx, [vs.space, vs.log]);
-            if ((ctx.app as any).cms) ((ctx.app as any).cms as any)._Pages = {};
             await generate(pid);
-            setVers(ctx, oldVers);
+            delete scope.tables; // stop routing — the pre-loaded request cache stays
         }
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────

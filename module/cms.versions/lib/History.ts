@@ -69,7 +69,10 @@ export function initHistory(app: App) {
         await ctx.app.db.exec(`REPLACE INTO \`${vt}\` ${into}`, params);
     });
 
-    // ─── File protection: don't delete files referenced in _vers_file ────────
+    // ─── File protection: don't delete blobs referenced in _vers_file ────────
+    // Blobs are the only unrecoverable data (rows can be rebuilt from snapshots).
+    // TODO: dbFile output should fall back to the _vers_file snapshot when the
+    // live row is gone, so history views can still serve these preserved blobs.
     app.on("dbFile-remove-fs", async (e: any) => {
         const md5 = e.dbFile?.vs?.md5 ?? "";
         if (!md5) return;

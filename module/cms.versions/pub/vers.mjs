@@ -215,7 +215,7 @@ CmsVersViewer.prototype = {
 		this.container.style.pointerEvents = 'none';
 		setTimeout(()=> { this.container.style.pointerEvents = ''; } ,900)
 		body.style.overflow = htmlEl.style.overflow = 'hidden';
-		apt['cms.versions'].page(pid).get().then(rows=>{
+		apt['cms.versions'].node(pid).get().then(rows=>{
 			let activeRow = null;
 			this.container.c1Find('.-list').innerHTML = '';
 			rows.forEach(row=>{
@@ -323,7 +323,7 @@ Viewer.on('before-load',function(e){
 	});
 	more.c1Find('.-reactivate').onclick = function(){
 		body.style.opacity = 0.3;
-		apt['cms.versions']['publish-cont'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(function(){
+		apt['cms.versions']['publish-node'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(function(){
 			location.href = location.href.replace(/#.*$/,'');
 		});
 	};

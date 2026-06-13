@@ -22,7 +22,7 @@ cms.contextMenueContent.addItem('Publish', {
 });
 function publish(pid, subPages){
 	if (!confirm('Really overwrite the current live version?')) return;
-	apt['cms.versions']['publish-cont'].post({ pid, options: {toSpace:0, subPages} }).then(function(){
+	apt['cms.versions']['publish-node'].post({ pid, options: {toSpace:0, subPages} }).then(function(){
 		location.href = location.href.replace(/#.*$/,'');
 	});
 }
@@ -86,7 +86,7 @@ el.querySelector('.-versionPublish').addEventListener('click',function(){
 el.querySelector('.-versionUnPublish').addEventListener('click',function(){
 	const subPages = this.parentNode.querySelector('.-subPages').checked;
 	if (!confirm("Warning!\nReally overwrite the draft?")) return;
-	apt['cms.versions']['publish-cont'].post({ pid: Page, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
+	apt['cms.versions']['publish-node'].post({ pid: Page, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
 		location.href = location.href.replace(/#.*$/,'');
 	});
 });

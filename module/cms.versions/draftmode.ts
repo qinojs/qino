@@ -2,7 +2,7 @@
  * cms.versions/draftmode.ts
  *
  * Draft-mode (space routing): with the `draftmode` setting on, editmode
- * works in space 1 while visitors see live (space 0); `publish-cont`
+ * works in space 1 while visitors see live (space 0); `publish-node`
  * copies draft → live.
  *
  * What is active:
@@ -190,7 +190,7 @@ export function initDraftmode(app: App) {
     //     }
     //     if (Page.vs && spaceNeeded) {
     //         const oldSpace = setSpace(ctx, spaceNeeded);
-    //         await pageLoadRuntimeCache(Page);
+    //         await nodeLoadRuntimeCache(Page);
     //         setSpace(ctx, oldSpace);
     //     }
     // });

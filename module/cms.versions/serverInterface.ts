@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { versedTables, view } from "./lib/Vers.ts";
-import { getCmsVers, publishCont as doPublishCont } from "./lib/CmsVers.ts";
+import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
-export async function publishCont(ctx: any, pid: any, options: any = {}): Promise<any> {
+export async function publishNode(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = Number(pid);
     const Page = await ctx.app.cms.node(id);
     if ((await Page.access()) < 2) return false;
@@ -15,11 +15,11 @@ export async function publishCont(ctx: any, pid: any, options: any = {}): Promis
         subPages:  false,
         ...options,
     };
-    await doPublishCont(ctx.app.db, id, options.fromSpace, options.fromLog, options.toSpace, options.subPages);
+    await copyNode(ctx.app.db, id, options.fromSpace, options.fromLog, options.toSpace, options.subPages);
 }
 
-export async function getForPage(ctx: any, pid: any): Promise<any[]> {
-    const data = await versProtocolForPageAndConts(ctx, Number(pid));
+export async function getForNode(ctx: any, pid: any): Promise<any[]> {
+    const data = await versProtocolForNodeTree(ctx, Number(pid));
     const map: Record<number, any> = {};
     for (const row of data) map[row.vers] = row;
     return Object.values(map).sort((a, b) => a.vers - b.vers);
@@ -133,17 +133,17 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 
 // ─── Protocol helpers ────────────────────────────────────────────────────────
 
-async function versProtocolForPageAndConts(ctx: any, pid: number): Promise<any[]> {
+async function versProtocolForNodeTree(ctx: any, pid: number): Promise<any[]> {
     const P = await ctx.app.cms.node(pid);
     const conts = await P.Conts?.() ?? [];
     const [data, ...subs] = await Promise.all([
-        versProtocolForPage(ctx, pid),
-        ...conts.map((C: any) => versProtocolForPageAndConts(ctx, C.id)),
+        versProtocolForNode(ctx, pid),
+        ...conts.map((C: any) => versProtocolForNodeTree(ctx, C.id)),
     ]);
     return [...data, ...subs.flat()];
 }
 
-async function versProtocolForPage(ctx: any, pid: number): Promise<any[]> {
+async function versProtocolForNode(ctx: any, pid: number): Promise<any[]> {
     const space = getCmsVers(ctx).space;
     const spaceView = (t: string) => view(ctx.app.db, t, space, 0);
 

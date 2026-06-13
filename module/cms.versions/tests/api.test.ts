@@ -11,8 +11,8 @@ Deno.test("cms.versions: module metadata is wired", () => {
 Deno.test("cms.versions: apt API exposes publish/page/log endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
-    "post_publishCont",
-    "get_page",
+    "post_publishNode",
+    "get_node",
     "get_log",
   ]);
 

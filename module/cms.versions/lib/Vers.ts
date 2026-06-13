@@ -12,12 +12,13 @@ import type { RequestContext, App, Db } from "../../core/mod.ts";
 interface DbVersState {
     tables: Record<string, true | Record<string, 1>>;
     created: Set<string>;               // which _vers_* tables exist (this process)
+    baselined: Set<string>;             // baseline checked this process
     views: Map<string, Promise<void>>;  // (space,log)-views created this process
 }
 const dbStates = new WeakMap<Db, DbVersState>();
 function dbState(db: Db): DbVersState {
     let s = dbStates.get(db);
-    if (!s) dbStates.set(db, s = { tables: {}, created: new Set(), views: new Map() });
+    if (!s) dbStates.set(db, s = { tables: {}, created: new Set(), baselined: new Set(), views: new Map() });
     return s;
 }
 
@@ -147,7 +148,10 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
 
     let sql: string;
     if (log) {
-        // Historical view: most recent entry up to (log-1)
+        // Historical view: most recent entry up to (log-1).
+        // Completeness (every live row has ≥1 capture) is guaranteed by
+        // baselineTable(), so no live fallback is needed — keeping the view
+        // UNION-free lets MySQL merge it (index pushdown on queries).
         sql =
             `CREATE VIEW \`${name}\` AS ` +
             `SELECT ${selects.join(", ")} ` +
@@ -178,13 +182,37 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
     await db.query(sql);
 }
 
+// ─── Baseline ────────────────────────────────────────────────────────────────
+
+/**
+ * Give rows that predate versioning one capture entry, so historical views
+ * are complete (invariant: every live row has ≥1 _vers_ entry — keeps the
+ * views UNION-free/mergeable). Idempotent, checked once per process.
+ */
+async function baselineTable(db: Db, tableName: string, vt: string, logId: number): Promise<void> {
+    if (dbState(db).baselined.has(vt)) return;
+    const pks = (await db.all(`SHOW COLUMNS FROM ${tableName}`)).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
+    const join = pks.map((f) => `v.\`${f}\` = t.\`${f}\``).join(" AND ");
+    await db.query(
+        `INSERT INTO \`${vt}\` SELECT t.*, ${logId}, 0, 0 FROM \`${tableName}\` t ` +
+        `WHERE NOT EXISTS (SELECT 1 FROM \`${vt}\` v WHERE v._vers_space = 0 AND ${join})`,
+    );
+    dbState(db).baselined.add(vt);
+}
+
 // ─── App wiring (core) ───────────────────────────────────────────────────────
 
 export function initVers(app: App) {
 
-    // ─── Ensure _vers_* tables exist on first action ─────────────────────────
+    // ─── Ensure _vers_* tables exist + baseline on first action ──────────────
     app.on("action", async e => {
         const ctx = e.ctx as RequestContext;
-        for (const t of Object.keys(versedTables(ctx.app.db))) await versTable(ctx.app.db, t);
+        const db = ctx.app.db;
+        for (const t of Object.keys(versedTables(db))) {
+            const vt = await versTable(db, t);
+            if (!vt) continue;
+            const logId = Number(await ctx.logId) || 0;
+            if (logId) await baselineTable(db, t, vt, logId);
+        }
     });
 }
