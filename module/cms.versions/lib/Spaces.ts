@@ -18,11 +18,15 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
     for (const tableName of Object.keys(versedTables(db))) {
         const vt = await versTable(db, tableName);
         if (!vt) continue;
+        // Build the select onto the shadow's own column order (not positional *,0,?,0),
+        // so it stays correct even when the shadow's column order diverged from the live table.
+        const selects = (await db.columns(vt)).map((c: any) =>
+            c.Field === "_vers_space" ? "?" : c.Field.startsWith("_vers_") ? "0" : `\`${c.Field}\``);
         await db.query(`DELETE FROM \`${vt}\` WHERE _vers_space = ?`, [space]);
-        await db.query(`INSERT INTO \`${vt}\` SELECT *, 0, ?, 0 FROM \`${tableName}\``, [space]);
+        await db.query(`INSERT INTO \`${vt}\` SELECT ${selects.join(", ")} FROM \`${tableName}\``, [space]);
     }
     await db.table("vers_space").insert({ space, time_created: new Date() });
-    // fire so other modules (like history.php) can react
+    // fire so other modules can react
     await app.fire("vers::createSpace", { space });
 }
 

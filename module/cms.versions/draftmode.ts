@@ -13,7 +13,7 @@
  * What is commented out (TODO – space-mode write/read routing):
  *   - table::insert/update/delete-before space routing
  *   - page::construct / page::children space-aware read overrides
- *   - page::sql SQL-rewrite hook (complex regex approach from PHP)
+ *   - page::sql SQL-rewrite hook (complex regex approach)
  */
 
 // deno-lint-ignore-file no-explicit-any
@@ -115,7 +115,7 @@ export function initDraftmode(app: App) {
         await ctx.app.db.exec(`UPDATE _vers_page SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
     });
 
-    // ─── history.php: vers_cms_page_changed ──────────────────────────────────
+    // ─── vers_cms_page_changed tracking ──────────────────────────────────────
     const onModify = async (e: any) => {
         const Page = e.Page;
         if (!Page) return;
@@ -172,7 +172,7 @@ export function initDraftmode(app: App) {
     //
     // To enable full draft-mode reads, uncomment the following blocks AND
     // implement space-aware SQL rewriting in cms/lib/Node.ts's sql()
-    // method (port of the page::sql event in qg.php).
+    // method (the page::sql event).
     //
     // app.on("page::construct", async ({ Page }) => {
     //     const ctx = getCtx();

@@ -10,7 +10,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     return { done: true, deleted: await thinHistory(db) };
   }
 
-  // Delete one non-live space (history + space rows). Port of PHP deleteSpace.
+  // Delete one non-live space (history + space rows).
   if ("deleteSpace" in vars) {
     const space = Number(vars.deleteSpace);
     if (!space) return false; // never the live space (0)
@@ -23,7 +23,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     return { done: true };
   }
 
-  // Nuclear reset: drop all history (live + spaces). Port of PHP deleteAll.
+  // Nuclear reset: drop all history (live + spaces).
   if ("purge" in vars) {
     for (const t of Object.keys(versedTables(db))) {
       const vt = await versTable(db, t);

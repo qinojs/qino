@@ -10,20 +10,27 @@ import { getVers, versTable } from "./Vers.ts";
 
 export function initHistory(app: App) {
 
+    // Resolve request ctx + shadow table + logId for a tracked mutation, or null to skip.
+    // logId is awaited only after the versioned-table check: awaiting earlier deadlocks
+    // during the log insert's own insert-after (it would wait on its own pending logId).
+    const track = async (e: any): Promise<{ ctx: any; tableName: string; vt: string; logId: any } | null> => {
+        const ctx = requestStorage.getStore();
+        if (!ctx) return null;
+        const tableName: string = String(e.Table);
+        if (tableName.startsWith("_vers_") && !e.data?._vers_log) return null; // writing to vers table – let through
+        const vt = await versTable(ctx.app.db, tableName);
+        if (!vt) return null;
+        const logId = await ctx.logId;
+        if (!logId) return null;
+        return { ctx, tableName, vt, logId };
+    };
+
     // ─── History capture: insert/update ──────────────────────────────────────
     // Writes a REPLACE INTO _vers_* for every tracked table mutation.
     const catchInsertUpdate = async (e: any) => {
-        const ctx = requestStorage.getStore();
-        if (!ctx) return;
-        const tableName: string = String(e.Table);
-        // Handle writes directly to _vers_* (log=0 slot)
-        if (tableName.startsWith("_vers_") && !e.data?._vers_log) return;  // already writing to vers table – just let it through
-        const vt = await versTable(ctx.app.db, tableName);
-        if (!vt) return;
-        // await logId only after we know it's a versioned table: awaiting earlier deadlocks
-        // during the log insert's own insert-after (it would wait on its own pending logId)
-        const logId = await ctx.logId;
-        if (!logId) return;
+        const t = await track(e);
+        if (!t) return;
+        const { ctx, tableName, vt, logId } = t;
         // Build field list from _vers_* table to ensure correct column order
         const versCols = await ctx.app.db.columns(vt);
         const selects = versCols.map((c: any) => {
@@ -43,14 +50,9 @@ export function initHistory(app: App) {
 
     // ─── History capture: delete ──────────────────────────────────────────────
     app.db.on("table::delete-after", async (e: any) => {
-        const ctx = requestStorage.getStore();
-        if (!ctx) return;
-        const tableName: string = String(e.Table);
-        if (tableName.startsWith("_vers_") && !e.data?._vers_log) return;
-        const vt = await versTable(ctx.app.db, tableName);
-        if (!vt) return;
-        const logId = await ctx.logId; // after vt-check: see catchInsertUpdate note (deadlock guard)
-        if (!logId) return;
+        const t = await track(e);
+        if (!t) return;
+        const { ctx, vt, logId } = t;
         const ids = e.Table.entryId2Array(e.id) ?? {};
         const data: Record<string, any> = {
             ...ids,

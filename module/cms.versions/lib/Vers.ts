@@ -44,7 +44,7 @@ export function getVers(ctx: RequestContext): VersState {
     return ctx.state[STATE_KEY] as VersState;
 }
 
-// ─── State helpers (replace PHP static vars) ────────────────────────────────
+// ─── State helpers ──────────────────────────────────────────────────────────
 
 export function setSpace(ctx: RequestContext, space: number): number {
     const s = getVers(ctx);
@@ -146,40 +146,22 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
     // Add vers_space annotation used by page::construct
     selects.push(`${space} AS vers_space`);
 
-    let sql: string;
-    if (log) {
-        // Historical view: most recent entry up to (log-1).
-        // Completeness (every live row has ≥1 capture) is guaranteed by
-        // baselineTable(), so no live fallback is needed — keeping the view
-        // UNION-free lets MySQL merge it (index pushdown on queries).
-        sql =
-            `CREATE VIEW \`${name}\` AS ` +
-            `SELECT ${selects.join(", ")} ` +
-            `FROM ${vt} m ` +
-            `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} ` +
-            `WHERE !m._vers_deleted ` +
-            `  AND m._vers_space = ${space} ` +
-            `  AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
-            `  AND NOT EXISTS ( ` +
-            `    SELECT 1 FROM ${vt} mm ` +
-            `    WHERE mm._vers_space = ${space} ` +
-            `      AND mm._vers_log BETWEEN 1 AND ${log - 1} ` +
-            `      AND mm._vers_log > m._vers_log ` +
-            `      AND ${pkJoins.join(" AND ")} ` +
-            `    LIMIT 1 ` +
-            `  )`;
-    } else {
-        // Space head view (log=0 = current draft)
-        sql =
-            `CREATE VIEW \`${name}\` AS ` +
-            `SELECT ${selects.join(", ")} ` +
-            `FROM ${vt} m ` +
-            `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} ` +
-            `WHERE m._vers_space = ${space} AND m._vers_log = 0`;
-    }
+    const head =
+        `CREATE VIEW \`${name}\` AS SELECT ${selects.join(", ")} FROM ${vt} m ` +
+        `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} WHERE `;
+    // log: historical view = most recent entry up to (log-1). Completeness (every live row
+    // has ≥1 capture) is guaranteed by baselineTable(), so no live fallback is needed —
+    // keeping the view UNION-free lets MySQL merge it (index pushdown on queries).
+    // else: space head view (log=0 = current draft).
+    const where = log
+        ? `!m._vers_deleted AND m._vers_space = ${space} AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
+          `AND NOT EXISTS ( SELECT 1 FROM ${vt} mm WHERE mm._vers_space = ${space} ` +
+          `AND mm._vers_log BETWEEN 1 AND ${log - 1} AND mm._vers_log > m._vers_log ` +
+          `AND ${pkJoins.join(" AND ")} LIMIT 1 )`
+        : `m._vers_space = ${space} AND m._vers_log = 0`;
 
     await db.query(`DROP VIEW IF EXISTS \`${name}\``);
-    await db.query(sql);
+    await db.query(head + where);
 }
 
 // ─── Baseline ────────────────────────────────────────────────────────────────
@@ -191,10 +173,14 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
  */
 async function baselineTable(db: Db, tableName: string, vt: string, logId: number): Promise<void> {
     if (dbState(db).baselined.has(vt)) return;
-    const pks = (await db.all(`SHOW COLUMNS FROM ${tableName}`)).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
+    const pks = (await db.columns(tableName)).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
     const join = pks.map((f) => `v.\`${f}\` = t.\`${f}\``).join(" AND ");
+    // Map values onto the shadow's own column order (not positional t.*,…), so it stays
+    // correct even when the shadow's column order has diverged from the live table.
+    const selects = (await db.columns(vt)).map((c: any) =>
+        c.Field === "_vers_log" ? `${logId}` : c.Field.startsWith("_vers_") ? "0" : `t.\`${c.Field}\``);
     await db.query(
-        `INSERT INTO \`${vt}\` SELECT t.*, ${logId}, 0, 0 FROM \`${tableName}\` t ` +
+        `INSERT INTO \`${vt}\` SELECT ${selects.join(", ")} FROM \`${tableName}\` t ` +
         `WHERE NOT EXISTS (SELECT 1 FROM \`${vt}\` v WHERE v._vers_space = 0 AND ${join})`,
     );
     dbState(db).baselined.add(vt);

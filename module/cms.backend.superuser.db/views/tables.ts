@@ -40,7 +40,7 @@ async function tableOverview(app: App, db: any): Promise<string> {
         : primaries.length === 1 ? `<small class=u2-badge style="background:var(--yellow)">${hee(String(primaries[0]))}</small>`
         : primaries.map((f: any) => `<small class=u2-badge>${hee(String(f))}</small>`).join(" ");
       u.searchParams.set("table", table.name);
-      return `<tr>
+      return `<tr data-table-name="${hee(table.name)}">
         <td><a href="${hee(u.search)}">${hee(table.name)}</a>
         <td style="text-align:right">${hee(String(status?.Rows ?? "?"))}
         <td style="text-align:right">${bytes}
@@ -52,6 +52,7 @@ async function tableOverview(app: App, db: any): Promise<string> {
 
   return `<div class="u2-card -full">
     <div class="-head">${await app.t`Tables`} (${tables.length})</div>
+    <div class="-body"><input type=search data-table-search placeholder="${await app.t`Search`}..." style="width:300px;max-width:100%"></div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead>
