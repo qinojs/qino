@@ -44,8 +44,10 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   // ── spaces (vers_space holds non-live spaces; 0 = live, deletable) ──────────
-  const spaceRows = (await db.all("SELECT space, time_created FROM vers_space ORDER BY space").catch(() => []))
-    .map((s) => `<tr><td>${hee(String(s.space))}<td>${hee(String(s.time_created ?? ""))}<td><button class=-del-space data-space="${hee(String(s.space))}">✕</button>`).join("");
+  const spaceRows = (await Promise.all(
+    (await db.all("SELECT space, time_created FROM vers_space ORDER BY space").catch(() => []))
+      .map(async (s) => `<tr><td>${hee(String(s.space))}<td>${hee(String(s.time_created ?? ""))}<td><button class=-del-space data-space="${hee(String(s.space))}" u2-confirm="${await app.t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
+  )).join("");
   const spacesBox = `
 <div class=u2-card style="flex-grow:0">
   <div class=-head>${await app.t`Spaces`}</div>
@@ -68,7 +70,7 @@ async function render(node: Node): Promise<string> {
     <button class=-thin ${thinnable ? "" : "disabled"}>${await app.t`Thin out`}</button>
     <hr>
     <p><small>${await app.t`Delete the entire version history (live + all spaces).`}</small></p>
-    <button class=-purge>${await app.t`Delete all history`}</button>
+    <button class=-purge u2-confirm="${await app.t`Delete the entire version history?`}">${await app.t`Delete all history`}</button>
   </div>
 </div>`;
 

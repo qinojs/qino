@@ -56,7 +56,7 @@ async function render(node: Node): Promise<string> {
       const url = hee(await Page.url(l));
       const label = hee(longText ? (long[l] ?? l) : l);
       const selected = l === ctx.lang ? " selected" : "";
-      return `<option${selected} value="${url}" lang="${hee(l)}" class="-${hee(l)}">${label}</option>`;
+      return `<option${selected} value="${url}" lang="${hee(l)}" class="-${hee(l)}">${label}`;
     }));
     return `<select onchange="location.href=this.value+location.hash">${options.join("")}</select>`;
   }
@@ -70,7 +70,7 @@ async function render(node: Node): Promise<string> {
     const ariaLabel = !longText ? ` aria-label="${hee(long[l] ?? l)}"` : "";
     const ariaCurrent = isActive ? " aria-current=page" : "";
     const label = longText ? (long[l] ?? l) : l;
-    return `<li><a href="${url}" onclick="event.preventDefault();location.href=this.href+location.hash" class="${cls}" lang="${hee(l)}" hreflang="${hee(l)}"${ariaLabel}${ariaCurrent}><span>${label}</span></a></li>`;
+    return `<li><a href="${url}" onclick="event.preventDefault();location.href=this.href+location.hash" class="${cls}" lang="${hee(l)}" hreflang="${hee(l)}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
   }));
 
   const filteredItems = items.filter(Boolean).join("");

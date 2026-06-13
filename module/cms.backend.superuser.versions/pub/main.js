@@ -15,12 +15,9 @@ cms.initNode("backend.superuser.versions", (el) => {
       await alert((res?.deleted ?? 0) + " entries deleted");
       location.reload();
     } else if (delSpace) {
-      const space = delSpace.dataset.space;
-      if (!confirm("Delete space " + space + " (draft + its history)?")) return;
-      await apt.cms.node(nid).api.post({ deleteSpace: space });
+      await apt.cms.node(nid).api.post({ deleteSpace: delSpace.dataset.space });
       location.reload();
     } else if (purge) {
-      if (!confirm("Delete the ENTIRE version history? This cannot be undone.")) return;
       await apt.cms.node(nid).api.post({ purge: 1 });
       location.reload();
     }

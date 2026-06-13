@@ -35,12 +35,15 @@ export async function renderDiff(app: App, db: Db): Promise<string> {
 
   const diffTable = rows.length
     ? `<table class=u2-table>
-        <thead><tr><th>${await app.t`Table`}<th>${await app.t`Field`}<th>${await app.t`Status`}</thead>
+        <thead>
+          <tr>
+            <th>${await app.t`Table`}
+            <th>${await app.t`Field`}
+            <th>${await app.t`Status`}
         <tbody>${rows.map(({ table, field, status }) => `<tr>
-          <td>${hee(table)}</td>
-          <td>${field ? hee(field) : ""}</td>
-          <td>${badges[status]}</td>
-        </tr>`).join("")}</tbody>
+          <td>${hee(table)}
+          <td>${field ? hee(field) : ""}
+          <td>${badges[status]}`).join("")}
       </table>`
     : `<div class="-body">Schema and DB match.</div>`;
 
@@ -58,11 +61,10 @@ export async function renderDiff(app: App, db: Db): Promise<string> {
 
   const schemaRows = diffs.map((d: { path: string[]; prev?: unknown; next?: unknown; destructive?: unknown }) =>
     `<tr>
-      <td>${hee(d.path.join("."))}</td>
-      <td>${hee(String(d.prev ?? "–"))}</td>
-      <td>${hee(String(d.next ?? "–"))}</td>
-      <td>${d.destructive ? `<span class=u2-badge style="background:var(--red)">${txtDescructive}</span>` : ""}</td>
-    </tr>`
+      <td>${hee(d.path.join("."))}
+      <td>${hee(String(d.prev ?? "–"))}
+      <td>${hee(String(d.next ?? "–"))}
+      <td>${d.destructive ? `<span class=u2-badge style="background:var(--red)">${txtDescructive}</span>` : ""}`
   ).join("");
 
   return `
@@ -79,8 +81,13 @@ export async function renderDiff(app: App, db: Db): Promise<string> {
   <div class="u2-card -full">
     <div class="-head">${await app.t`Schema deviations from DB`} (${diffs.length})</div>
     <table class=u2-table>
-      <thead><tr><th>${await app.t`Path`}<th>${await app.t`current`}<th>${await app.t`from DB`}<th></thead>
-      <tbody>${schemaRows}</tbody>
+      <thead>
+        <tr>
+          <th>${await app.t`Path`}
+          <th>${await app.t`current`}
+          <th>${await app.t`from DB`}
+          <th>
+      <tbody>${schemaRows}
     </table>
   </div>` : ""}`;
 }

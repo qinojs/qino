@@ -90,7 +90,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const rows = await db.all(sql, params);
 
   const orderOpts = ["not exists","newest","oldest","changed","biggest"]
-    .map(o => `<option${o===order?" selected":""}>${o}</option>`).join("");
+    .map(o => `<option${o===order?" selected":""}>${o}`).join("");
   const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
 
   let trs = "";

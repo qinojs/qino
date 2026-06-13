@@ -86,11 +86,11 @@ async function render(node: Node): Promise<string> {
 
   const userOptions = users.map((u) => {
     const label = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;
-    return `<option value="${hee(u.id)}">${hee(label)} &lt;${hee(u.email)}&gt;</option>`;
+    return `<option value="${hee(u.id)}">${hee(label)} &lt;${hee(u.email)}&gt;`;
   }).join("");
 
   const groupOptions = groups.map((g) =>
-    `<option value="${hee(g.id)}">${hee(g.name)}</option>`
+    `<option value="${hee(g.id)}">${hee(g.name)}`
   ).join("");
 
   return `<div class="u2-card">
@@ -120,13 +120,13 @@ async function render(node: Node): Promise<string> {
               <label>
                 <strong>${await app.t`Users`}</strong>
                 <select name="to_users[]" multiple size=8 style="width:100%">
-                  ${userOptions || `<option disabled>${await app.t`No users found`}</option>`}
+                  ${userOptions || `<option disabled>${await app.t`No users found`}`}
                 </select>
               </label>
               <label>
                 <strong>${await app.t`Groups`}</strong>
                 <select name="to_groups[]" multiple size=8 style="width:100%">
-                  ${groupOptions || `<option disabled>${await app.t`No groups found`}</option>`}
+                  ${groupOptions || `<option disabled>${await app.t`No groups found`}`}
                 </select>
               </label>
               <label>

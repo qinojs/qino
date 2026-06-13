@@ -41,13 +41,12 @@ async function tableOverview(app: App, db: any): Promise<string> {
         : primaries.map((f: any) => `<small class=u2-badge>${hee(String(f))}</small>`).join(" ");
       u.searchParams.set("table", table.name);
       return `<tr>
-        <td><a href="${hee(u.search)}">${hee(table.name)}</a></td>
-        <td style="text-align:right">${hee(String(status?.Rows ?? "?"))}</td>
-        <td style="text-align:right">${bytes}</td>
-        <td style="text-align:right">${Object.keys(fields).length}</td>
-        <td data-value="${primaries.length}">${primaryBadge}</td>
-        <td>${await statusBadge(app, table.name in schemaProps, uncovered)}</td>
-      </tr>`;
+        <td><a href="${hee(u.search)}">${hee(table.name)}</a>
+        <td style="text-align:right">${hee(String(status?.Rows ?? "?"))}
+        <td style="text-align:right">${bytes}
+        <td style="text-align:right">${Object.keys(fields).length}
+        <td data-value="${primaries.length}">${primaryBadge}
+        <td>${await statusBadge(app, table.name in schemaProps, uncovered)}`;
     })
   );
 
@@ -63,7 +62,7 @@ async function tableOverview(app: App, db: any): Promise<string> {
             <th data-sort-handler>${await app.t`Fields`}
             <th data-sort-handler>${await app.t`Primary`}
             <th data-sort-handler>${await app.t`Status`}
-        <tbody>${rows.join("")}</tbody>
+        <tbody>${rows.join("")}
       </table>
     </u2-table>
   </div>`;
@@ -89,13 +88,12 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
     const originsCell = (origins[fname] ?? []).map(m => `<small class=u2-badge>${hee(m)}</small>`).join(" ");
 
     return `<tr${props ? "" : ' class=-no-schema-row'}>
-      <td style="font-family:monospace">${hee(fname)}${keyBadge(field.vs?.Key ?? "")}</td>
-      <td style="font-family:monospace;font-size:.9em">${hee(field.vs?.Type ?? "")}</td>
-      <td>${field.vs?.Null === "YES" ? "NULL" : ""}</td>
-      <td><code>${field.vs?.Default != null ? hee(String(field.vs.Default)) : ""}</code></td>
-      <td style="font-size:.82em">${schemaCell}</td>
-      <td>${originsCell}</td>
-    </tr>`;
+      <td style="font-family:monospace">${hee(fname)}${keyBadge(field.vs?.Key ?? "")}
+      <td style="font-family:monospace;font-size:.9em">${hee(field.vs?.Type ?? "")}
+      <td>${field.vs?.Null === "YES" ? "NULL" : ""}
+      <td><code>${field.vs?.Default != null ? hee(String(field.vs.Default)) : ""}</code>
+      <td style="font-size:.82em">${schemaCell}
+      <td>${originsCell}`;
   });
 
   const meta = status
@@ -114,7 +112,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
           <th>${await app.t`Default`}
           <th>${await app.t`Schema`}
           <th>${await app.t`Module`}
-      <tbody>${rows.join("")}</tbody>
+      <tbody>${rows.join("")}
     </table>
   </div>`;
 }

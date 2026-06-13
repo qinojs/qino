@@ -280,12 +280,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       <div class="-head">${await node.app.t`Transform Binaries`}</div>
       <div class="-body">${rootHint}</div>
       <table class="u2-table -transform-table">
-        <thead><tr>
-          <th>${await node.app.t`Binary`}
-          <th>${await node.app.t`Platform`}
-          <th>${await node.app.t`Install command`}
-        </thead>
-        <tbody>${rows.join("")}</tbody>
+        <thead>
+          <tr>
+            <th>${await node.app.t`Binary`}
+            <th>${await node.app.t`Platform`}
+            <th>${await node.app.t`Install command`}
+        <tbody>${rows.join("")}
       </table>
     </div>
 

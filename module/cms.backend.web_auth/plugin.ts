@@ -35,7 +35,7 @@ async function render(node: Node): Promise<string> {
   }).join("\n");
 
   const empty = rows.length === 0
-    ? '<tr><td colspan="9" style="text-align:center;color:#888;padding:1em">No credentials registered.</td></tr>'
+    ? '<tr><td colspan="9" style="text-align:center;color:#888;padding:1em">No credentials registered.'
     : "";
 
   const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(not configured)";

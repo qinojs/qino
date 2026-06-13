@@ -27,10 +27,7 @@
 	font-family: Arial, sans-serif;
 	font-size:13px;
 	text-align:left;
-
-	& *, & {
-		scrollbar-color: rgba(0,0,0,.2) rgba(0,0,0,0.009);
-	}
+	xscrollbar-color: rgba(0,0,0,.2) rgba(0,0,0,0.009);
 
 	& a { color: var(--cms-color); text-decoration:none; }
 	& a:hover { text-decoration:underline; }

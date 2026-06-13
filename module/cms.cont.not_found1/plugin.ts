@@ -30,7 +30,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 
   let listItems = "";
   for (const pid of possiblePages.keys()) {
-    listItems += `<li>${await node.cms.link(await node.cms.node(Number(pid)))}</li>`;
+    listItems += `<li>${await node.cms.link(await node.cms.node(Number(pid)))}`;
   }
 
   const editBox = await renderEditBox(node, ctx);

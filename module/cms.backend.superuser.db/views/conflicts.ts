@@ -14,11 +14,10 @@ export async function renderConflicts(app: App, modules: Record<string, any>): P
       `<div><b>${hee(m)}</b>: <code>${hee(JSON.stringify(value))}</code></div>`
     ).join("");
     return `<tr>
-      <td>${hee(table)}</td>
-      <td>${hee(field)}</td>
-      <td><code>${hee(prop)}</code></td>
-      <td>${valCells}</td>
-    </tr>`;
+      <td>${hee(table)}
+      <td>${hee(field)}
+      <td><code>${hee(prop)}</code>
+      <td>${valCells}`;
   }).join("");
 
   return `<div class="u2-card -full">
