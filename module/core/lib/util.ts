@@ -4,6 +4,12 @@ export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.17/";
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
+/** Safe Content-Disposition value: ASCII fallback + RFC 5987 filename* (no header injection). */
+export function contentDisposition(type: "inline" | "attachment", name: string): string {
+  const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
+  return `${type}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+}
+
 /** Client IP from x-forwarded-for (first hop). Only trustworthy behind a trusted proxy. */
 export function clientIp(req: { header(name: string): string | undefined }): string {
   return req.header("x-forwarded-for")?.split(",").shift()?.trim() ?? "";

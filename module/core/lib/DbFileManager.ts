@@ -9,6 +9,7 @@ import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "./App.ts";
+import { contentDisposition } from "./util.ts";
 
 export class DbFileManager {
   #cache: Record<string, DbFile> = {};
@@ -81,7 +82,7 @@ export class DbFileManager {
 
     if (/\.pdf$/.test(name) || mime === "application/pdf") {
       mime = "application/pdf";
-      headers.set("Content-Disposition", `inline; filename="${F.name}"`);
+      headers.set("Content-Disposition", contentDisposition("inline", F.name));
       headers.set("Expires", "0");
       headers.set("Cache-Control", "must-revalidate");
     }
@@ -90,7 +91,7 @@ export class DbFileManager {
       mime = "application/force-download";
       headers.set("Expires", "0");
       headers.set("Cache-Control", "private, must-revalidate");
-      headers.set("Content-Disposition", `attachment; filename="${F.name}"`);
+      headers.set("Content-Disposition", contentDisposition("attachment", F.name));
       headers.set("Content-Transfer-Encoding", "binary");
     }
 

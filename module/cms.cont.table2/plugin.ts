@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { Output, type App, type RequestContext } from "../core/mod.ts";
+import { Output, contentDisposition, type App, type RequestContext } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
 
@@ -52,10 +52,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
     const csv = lines.join("\r\n");
 
     ctx.responseHeaders.set("Content-Type", "application/x-msdownload");
-    ctx.responseHeaders.set(
-      "Content-Disposition",
-      `inline; filename="${titleStr}_${dateStr}.xls"`,
-    );
+    ctx.responseHeaders.set("Content-Disposition", contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
     ctx.responseHeaders.set("Expires", "0");
     ctx.responseHeaders.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
     ctx.responseHeaders.set("Pragma", "public");
