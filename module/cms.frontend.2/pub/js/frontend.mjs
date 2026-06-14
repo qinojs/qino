@@ -238,9 +238,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 cms.console = {
 	show(msg, type) {
 		const el = this.el();
+		if (!el.matches(':popover-open')) el.showPopover(); // top layer, replaces zTop (guard: re-show throws)
 		el.classList.add('-active');
 		el.setAttribute('data-type',type);
-		c1.zTop(el);
 		el.firstElementChild.textContent = msg;
 		clearTimeout(this.timeout);
 		this.timeout = setTimeout(()=>el.classList.remove('-active'), 2200);
@@ -251,7 +251,7 @@ cms.console = {
 		let el = document.getElementById('cmsConsole');
 		if (!el) {
 			document.body.insertAdjacentHTML('beforeend',
-			'<div id=cmsConsole class="qgCMS"><div class=-msg></div></div>');
+			'<div id=cmsConsole class="qgCMS" popover=manual><div class=-msg></div></div>');
 			el = document.getElementById('cmsConsole');
 		}
 		return el;

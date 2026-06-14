@@ -165,8 +165,11 @@ qino-cms:not(:defined) { display:none; }
 	padding:4px 18px;
 	left:0;
 	right:0;
-	bottom:3px;
+	top:auto;        /* reset [popover] UA inset:0 */
+	bottom:.5rem;
 	margin:auto;
+	border:0;        /* reset [popover] UA border */
+	overflow:visible;/* don't clip the .-new scale pop */
 	background:var(--cms-color);
 	border-radius:15px;
 	text-align:center;
