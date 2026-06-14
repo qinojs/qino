@@ -1,13 +1,16 @@
 // add files
 
+// scoped query helper
+const find = (el, sel) => el.querySelector(':scope '+sel);
+
 // Der Filebrowser-Dialog lebt im Shadow-DOM des CMS-Panels.
 customElements.whenDefined('qino-cms').then(async () => {
 const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 const root = document.querySelector('qino-cms').shadowRoot;
 new SelectorObserver({ on: el=>{
 
-    const search = el.c1Find('[type=search]');
-    const mainList = el.c1Find('.-list.-main');
+    const search = find(el, '[type=search]');
+    const mainList = find(el, '.-list.-main');
     const container = c1.dom.fragment(
         `<div class=-pexels style="padding-top:2em;" hidden>
             <h3>
@@ -19,9 +22,9 @@ new SelectorObserver({ on: el=>{
     ).firstChild;
     mainList.after(container);
 
-    const list = container.c1Find('.-list');
+    const list = find(container, '.-list');
 
-    search.addEventListener('input',async function(e){
+    search.addEventListener('input',c1.debounce(async function(e){
         const hasPixabay = el.querySelector('.-pixabay');
         const API_KEY = '563492ad6f917000010000011de0136108e248e08b32b1cc22561149'; // todo: from server
         const url = 'https://api.pexels.com/v1/search?per_page=50&page=1&query='+encodeURIComponent(e.target.value);
@@ -45,7 +48,7 @@ new SelectorObserver({ on: el=>{
             list.append(el);
         }
         container.hidden = !item;
-    }.c1Debounce(1500));
+    }, 1500));
 
 }}).observe('.cmsFileBrowser', { root });
 });

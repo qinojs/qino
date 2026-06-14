@@ -71,7 +71,7 @@ function run() {
 
     document.body.append(div);
     div.style.position = 'fixed';
-    div.c1ZTop();
+    c1.zTop(div);
 }
 
 run();

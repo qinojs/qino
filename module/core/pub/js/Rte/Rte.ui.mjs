@@ -39,7 +39,7 @@ window.Rte.ui = {
 				my.div.style.pointerEvents = 'none';
 				Rte.ui.mouseover = 0;
 				setTimeout(()=>{
-					my.div.c1ZTop();
+					c1.zTop(my.div);
 					my.div.style.opacity = '1';
 					my.div.style.pointerEvents = '';
 				},100);
@@ -126,7 +126,7 @@ window.Rte.ui = {
 		el.addEventListener('mousedown', e=> { opts.style.display = 'block'; e.preventDefault(); });
 		el.addEventListener('mouseover', ()=> clearTimeout(timeout) );
 		el.addEventListener('mouseout',  ()=> timeout = setTimeout(()=> opts.style.display = 'none' ,300) );
-		const opts = el.c1Find('>.-options');
+		const opts = el.querySelector(':scope >.-options');
 		opt.el = el;
 		this.setItem(name,opt);
 		return opts;

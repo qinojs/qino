@@ -1,4 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+// scoped query helper
+const find = (el, sel) => el.querySelector(':scope '+sel);
+
 export class TableHandles {
 	constructor() {
 		const remImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#ee3c3c" stroke-width="14"><line x1="4" y1="4" x2="60" y2="60"/><line x1="4" y1="60" x2="60" y2="4"/></svg>')+'\'';
@@ -25,16 +28,16 @@ export class TableHandles {
 			</style>
 		</div>`).firstChild;
 				
-		this.rowRemove = this.root.c1Find('.-rowRemove');
-		this.rowAdd    = this.root.c1Find('.-rowAdd');
-		this.colAdd    = this.root.c1Find('.-colAdd');
-		this.colRemove = this.root.c1Find('.-colRemove');
+		this.rowRemove = find(this.root, '.-rowRemove');
+		this.rowAdd    = find(this.root, '.-rowAdd');
+		this.colAdd    = find(this.root, '.-colAdd');
+		this.colRemove = find(this.root, '.-colRemove');
 		this.root.addEventListener('mousedown',e=>e.preventDefault());
 	}
 	showTd(td) {
 		this.active = td;
 		document.body.append(this.root);
-		this.root.c1ZTop();
+		c1.zTop(this.root);
 		this.positionize(td);
 		clearInterval(this.checkIntr);
 		this.checkIntr = setInterval(this.handleEvent.bind(this), 100);

@@ -10,7 +10,7 @@ cms.contDrag = function() {
 		updatePosition(e, self);
 	};
 
-	const updatePosition = function(e, self){
+	const updatePosition = c1.debounce(function(e, self){
 		if (!active) return;
 		const newDropCont   = getNearestElement2(e, self.targets, active);
 		const newDropBefore = getBeforeElement(e,newDropCont);
@@ -20,7 +20,7 @@ cms.contDrag = function() {
 			dropCont.insertBefore(ghost,dropBefore);
 			self.trigger('change',{target:dropCont,before:dropBefore});
 		}
-	}.c1Debounce(40);
+	}, 40);
 
 	function up() {
 		moveToTargetEffect(active);
@@ -44,7 +44,7 @@ cms.contDrag = function() {
 		active = el;
 		oldCss = active.style.cssText;
 		active.style.position  = 'fixed';
-		active.c1ZTop();
+		c1.zTop(active);
 		document.body.appendChild(active);
 		e && move(e);
 	};

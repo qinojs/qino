@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 		polyChild.parentNode.focus();
 
-		const ul = polyChild.c1Find('>ul');
+		const ul = polyChild.querySelector(':scope >ul');
 		if (ul) {
 			ul.classList.add('c1-focusIn'); // show before position+focus (display:none blocks both)
 			ul.c1Placer.follow(polyChild);

@@ -45,7 +45,7 @@ export class HtmlBuilder {
 
         if (this.#jsData) ret += `<script type=json/c1>${jsonScript(this.#jsData)}</script>\n`;
 
-        for (const url of this.legacyScripts) ret += `<script defer src="${hee(url)}"></script>\n`;
+        for (const url of this.legacyScripts) ret += `<script xdefer src="${hee(url)}"></script>\n`;
 
         for (const url of this.scripts) ret += `<script type=module src="${hee(url)}"></script>\n`;
 

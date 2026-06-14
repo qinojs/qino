@@ -51,9 +51,9 @@ c1Combobox.prototype = {
 	searchOptions(){
 		console.warn('not implemented');
 	},
-	searchOptionsDebounced:function(){
+	searchOptionsDebounced:c1.debounce(function(){
 		this.searchOptions();
-	}.c1Debounce(150),
+	}, 150),
 	setOptions(array){
 		dialog.innerHTML = '';
 		let el, i=0, item;

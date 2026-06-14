@@ -1,4 +1,4 @@
-import '../../../core/pub/js/c1/dom.mjs';
+import '../../../core/pub/js/c1.js';
 import { apt, ctx } from '../../../core/pub/js/qino.js';
 
 const editable = globalThis.qino?.cms?.editmode !== undefined; // not available if in backend but no edit-access

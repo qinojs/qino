@@ -1,11 +1,14 @@
 import { apt } from '../../core/pub/js/qino.js';
 
+// scoped query helper
+const find = (el, sel) => el.querySelector(':scope '+sel);
+
 // Der Filebrowser-Dialog lebt im Shadow-DOM des CMS-Panels.
 customElements.whenDefined('qino-cms').then(async () => {
 const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
 const root = document.querySelector('qino-cms').shadowRoot;
 new SelectorObserver({ on: el => {
-    const mainList = el.c1Find('.-list.-main');
+    const mainList = find(el, '.-list.-main');
     const container = c1.dom.fragment(
         `<div class=-ai style="padding-top:2em;">
             <h3>AI Image Generation</h3>
@@ -18,9 +21,9 @@ new SelectorObserver({ on: el => {
     ).firstChild;
     mainList.after(container);
 
-    const list = container.c1Find('.-list');
+    const list = find(container, '.-list');
 
-    container.c1Find('form').addEventListener('submit', async e => {
+    find(container, 'form').addEventListener('submit', async e => {
         e.preventDefault();
         const prompt = e.target.prompt.value.trim();
         if (!prompt) return;

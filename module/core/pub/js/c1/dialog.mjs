@@ -63,7 +63,7 @@ c1.dialog = function(options){
     '</form>';
     const element = this.element = c1.dom.fragment(str).firstChild;
     if (options.class) element.className += ' '+options.class;
-    const btnCont = element.c1Find('>.-foot>.-buttons');
+    const btnCont = element.querySelector(':scope >.-foot>.-buttons');
     element.addEventListener('submit', e => e.preventDefault());
     options.buttons?.forEach((btn, i) => {
         const el = document.createElement('button');
@@ -84,7 +84,7 @@ c1.dialog.prototype = {
     show:function(){
         const element = this.element;
         document.body.appendChild(element);
-        element.c1ZTop();
+        c1.zTop(element);
         element.c1Focus();
         return new Promise(resolve => {
             element.addEventListener('c1-dialog-close', e => {
@@ -125,7 +125,7 @@ c1.dialog.prompt = function(title) {
             title:'ok', then:() => { dialog.value = input.value; }
         },{title:'schliessen'}]
     });
-    const input = dialog.element.c1Find('input');
+    const input = dialog.element.querySelector('input');
     setTimeout(() => input.focus());
     dialog.value = null;
     return dialog.show();
@@ -140,13 +140,13 @@ const backdrop = {
     for:function(el){
         clearTimeout(bdTimeout);
         el.before(bdDiv);
-        bdDiv.c1ZTop();
+        c1.zTop(bdDiv);
         bdDiv.style.opacity = 0;
         requestAnimationFrame(() => {
             bdDiv.style.pointerEvents = '';
             bdDiv.style.opacity = 1;
         });
-        el.c1ZTop();
+        c1.zTop(el);
     },
     hide:function(){
         bdDiv.style.opacity = 0;

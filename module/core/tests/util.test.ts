@@ -23,6 +23,24 @@ Deno.test("util: html template escapes values but keeps HtmlString values", () =
   assertEquals(String(out.escaped()), "&lt;p&gt;&amp;lt;b&amp;gt;x&amp;lt;/b&amp;gt;&lt;br&gt;&lt;/p&gt;");
 });
 
+Deno.test("util: html keeps duck-typed { html } objects raw, coerces HtmlString input", () => {
+  assertEquals(String(html`<p>${{ html: "<b>raw</b>" }}</p>`), "<p><b>raw</b></p>");
+  assertEquals(new HtmlString(null).html, "");
+  assertEquals(new HtmlString(42).html, "42");
+});
+
+Deno.test("util: html.async awaits promises, escapes plain values, keeps HtmlString", async () => {
+  const out = await html.async`<p>${Promise.resolve("<b>x</b>")} ${Promise.resolve(new HtmlString("<br>"))} ${null}</p>`;
+  assertEquals(String(out), "<p>&lt;b&gt;x&lt;/b&gt; <br> </p>");
+});
+
+Deno.test("util: html.async renders renderable values (Node-like .html()) recursively", async () => {
+  const node = { html: () => Promise.resolve(new HtmlString("<i>raw</i>")) }; // like a cms Node/cont
+  const textNode = { html: () => Promise.resolve("<plain>") };                // html() returning a string is still escaped
+  const out = await html.async`<p>${node}|${Promise.resolve(node)}|${textNode}</p>`;
+  assertEquals(String(out), "<p><i>raw</i>|<i>raw</i>|&lt;plain&gt;</p>");
+});
+
 Deno.test("util: urlize transliterates and normalizes text", () => {
   assertEquals(urlize(" Äpfel & Öl — 100% "), "aepfel-and-oel-100");
   assertEquals(urlize("foo---bar"), "foo-bar");

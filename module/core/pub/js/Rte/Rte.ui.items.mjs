@@ -1,4 +1,8 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
+// scoped query helpers
+const find    = (el, sel) => el.querySelector(':scope '+sel);
+const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
+const unwrap  = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 /*
 let x = my.setItem('Bold',
 	{
@@ -65,13 +69,13 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 {
 	const useClass = cl => cl.match(/^[A-Z]/);
 	let hasClasses; /* check if this-handle is used */
-	const check = function(el) {
+	const check = c1.debounce(function(el) {
 		const classes = getPossibleClasses(el);
 		for (const cl of Object.keys(classes)) {
 			hasClasses ||= useClass(cl);
 		}
 		sopts.parentElement.style.display = hasClasses ? '' : 'none';
-	}.c1Debounce(150);
+	}, 150);
 
 	const sopts = Rte.ui.setSelect('Style', {
 		check() {
@@ -151,7 +155,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 			node.removeAttribute('cellpadding');
 			node.removeAttribute('cellspacing');
 			node.removeAttribute('bgcolor');
-			removeTags[node.tagName] && node.removeNode();
+			removeTags[node.tagName] && unwrap(node);
 			if (node.tagName !== 'IMG') {
 				node.removeAttribute('width');
 				node.removeAttribute('height');
@@ -240,7 +244,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 				el.dispatchEvent(new Event('input',{'bubbles':true,'cancelable':true}));
 			}
 			document.body.append(wrapper);
-			wrapper.c1ZTop();
+			c1.zTop(wrapper);
 
 			function hide(e) {
 				if (e.key==='Escape' || e.target !== html) {
@@ -266,7 +270,7 @@ Rte.ui.setItem('Table', {
 		const r = getSelection().getRangeAt(0);
 		r.deleteContents();
 		r.insertNode(table);
-		getSelection().collapse(table.c1Find('td'),0);
+		getSelection().collapse(find(table, 'td'),0);
 	},
 	enable(){
 		return !blocklessElements[Rte.active.tagName];
@@ -274,7 +278,7 @@ Rte.ui.setItem('Table', {
 });
 /* delete Element */
 Rte.ui.setItem('Del',{
-	click() { Rte.element.removeNode(); },
+	click() { unwrap(Rte.element); },
 	el: c1.dom.fragment('<a style="color:red">Delete element</a>').firstChild
 });
 /* Target */
@@ -298,7 +302,7 @@ Rte.ui.setItem('LinkTarget', {
 /* Titletag *
 {
 	let el = c1.dom.fragment('<table style="clear:both"><tr><td style="width:84px">Titel<td><input>').firstChild;
-	let inp = el.c1Find('input');
+	let inp = find(el, 'input');
 	inp.addEventListener('keyup', function() {
 		Rte.element.setAttribute('title',inp.value);
 		!inp.value && Rte.element.removeAttribute('title');
@@ -320,9 +324,9 @@ Rte.ui.setItem('LinkTarget', {
 		'</table>').firstChild;
 	inp.addEventListener('keyup',e=>{
 		const img = Rte.element;
-		img.style.width  = inp.c1Find('.-x').value+'px';
-		img.style.height = inp.c1Find('.-y').value+'px';
-		img.setAttribute('alt', inp.c1Find('.-alt').value);
+		img.style.width  = find(inp, '.-x').value+'px';
+		img.style.height = find(inp, '.-y').value+'px';
+		img.setAttribute('alt', find(inp, '.-alt').value);
 		if (e.target.classList.contains('-x') || e.target.classList.contains('-y')) {
 			Rte.element.dispatchEvent(new Event('qgResize',{bubbles:true}));
 		}
@@ -331,9 +335,9 @@ Rte.ui.setItem('LinkTarget', {
 	})
 	Rte.ui.setItem('ImageDimension', {
 		check(el) {
-			inp.c1Find('.-x').value = el.offsetWidth;
-			inp.c1Find('.-y').value = el.offsetHeight;
-			inp.c1Find('.-alt').value = el.getAttribute('alt');
+			find(inp, '.-x').value = el.offsetWidth;
+			find(inp, '.-y').value = el.offsetHeight;
+			find(inp, '.-alt').value = el.getAttribute('alt');
 		},
 		el:inp,
 		enable:'img'
@@ -409,17 +413,17 @@ import {TableHandles} from '../c1/tableHandles.mjs';
 			tr.after(tr2)
 		}
 		if (e.target.classList.contains('-colRemove')) {
-			const trs = table.c1FindAll('> * > tr');
+			const trs = findAll(table, '> * > tr');
 			for (const tr of trs) tr.children[index].remove();
 		}
 		if (e.target.classList.contains('-colAdd')) {
-			const trs = table.c1FindAll('> * > tr');
+			const trs = findAll(table, '> * > tr');
 			for (const tr of trs) {
 				const td = c1.dom.fragment('<td><br>'); // firefox needs <br> to be able to navigate to the cell
 				tr.children[index].after(td);
 			}
 		}
-		const hasTds = table.c1FindAll('> * > tr > *').length;
+		const hasTds = findAll(table, '> * > tr > *').length;
 		!hasTds && table.remove();
 		getSelection().modify('move', 'right', 'character'); // chrome bug
 		getSelection().modify('move', 'left', 'character');
@@ -477,7 +481,7 @@ console.warn('needed? shoud it be deprecated?');
 		});
 	};
 	const removeMarks = function (){
-		Rte.active.querySelectorAll('.qgRte-mark-char').forEach(el=>el.removeNode())
+		Rte.active.querySelectorAll('.qgRte-mark-char').forEach(el=>unwrap(el))
 		Rte.active.normalize();
 	}
 	Rte.on('activate',addMarks);

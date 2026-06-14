@@ -1,0 +1,122 @@
+/* claude1 frontend layout. Brand color lives in --color; u2 derives the rest. */
+
+#container {
+	/* Change this one value to re-theme the whole site. */
+	--color: #2f6f9e;
+
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	background:
+		radial-gradient(120% 60% at 100% 0%, var(--color-lightest), transparent 60%),
+		var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-1);
+	-webkit-font-smoothing: antialiased;
+}
+
+/* Header --------------------------------------------------------------- */
+#head {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	padding-block: .9rem;
+	background: color-mix(in srgb, var(--color-bg), transparent 25%);
+	backdrop-filter: blur(14px) saturate(1.4);
+	border-bottom: 1px solid color-mix(in srgb, var(--color-line), transparent 88%);
+	box-shadow: 0 .4rem 1.2rem color-mix(in srgb, var(--color), transparent 92%);
+}
+#head .u2-flex { align-items: center; }
+
+#logo {
+	font-size: 1.5rem;
+	font-weight: 800;
+	letter-spacing: -.03em;
+	color: var(--color-dark);
+	text-decoration: none;
+}
+#logo img { display: block; }
+#logo::after { /* accent dot for a bit of character */
+	content: ".";
+	color: var(--accent);
+}
+#logo:has(img)::after { content: none; }
+
+/* Burger (mobile only, toggles #nav via the hidden checkbox) ------------ */
+#burger {
+	display: none;
+	cursor: pointer;
+	color: var(--color-dark);
+}
+#burger .-close { display: none; }
+#navtoggle:checked ~ #burger .-menu { display: none; }
+#navtoggle:checked ~ #burger .-close { display: inline; }
+
+/* Nav (cms.cont.nav3 markup) ------------------------------------------- */
+#nav ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .15rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+#nav ul ul { display: none; } /* keep the header to a single row */
+
+#nav a {
+	display: block;
+	padding: .45rem .9rem;
+	border-radius: 2rem;
+	font-weight: 500;
+	color: var(--color-text);
+	text-decoration: none;
+	transition: background .18s, color .18s;
+}
+#nav a:hover { background: color-mix(in srgb, var(--accent), transparent 90%); }
+#nav :is(.cmsActive, .cmsInside) > a {
+	background: var(--accent);
+	color: var(--accent-lightest);
+	box-shadow: 0 .3rem .8rem color-mix(in srgb, var(--accent), transparent 65%);
+}
+
+/* Main ----------------------------------------------------------------- */
+#content {
+	flex: 1;
+	padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+/* Footer --------------------------------------------------------------- */
+#foot {
+	margin-top: 5rem;
+	padding-block: 3rem;
+	/* brand-tinted dark, not flat black */
+	background: linear-gradient(var(--color-darker), var(--color-darkest));
+	border-top: 3px solid var(--accent);
+	color: color-mix(in srgb, var(--color-lightest), transparent 20%);
+	line-height: 1.7;
+}
+#foot a {
+	color: var(--color-lighter);
+	text-underline-offset: .2em;
+}
+#foot a:hover { color: #fff; }
+
+/* Mobile: collapse nav into a burger dropdown --------------------------- */
+@media (max-width: 720px) {
+	#burger { display: inline-flex; }
+
+	#nav {
+		display: none;
+		position: absolute;
+		inset: 100% 0 auto 0;
+		padding: .75rem 1rem 1.25rem;
+		background: var(--color-bg);
+		border-bottom: 1px solid var(--color-area);
+		box-shadow: var(--shadow);
+	}
+	#navtoggle:checked ~ #nav { display: block; }
+
+	#nav ul { flex-direction: column; gap: .15rem; }
+	#nav ul ul { display: block; padding-left: 1rem; } /* show sub-levels in the drawer */
+	#nav a { border-radius: var(--radius); }
+}

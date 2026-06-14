@@ -5,6 +5,11 @@
 import '../../../core/pub/js/Rte/index.mjs';
 import { apt } from '../../../core/pub/js/qino.js';
 
+// scoped query helpers
+const find    = (el, sel) => el.querySelector(':scope '+sel);
+const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
+const unwrap  = el => el.replaceWith(...el.childNodes); // remove element, keep its children
+
 const urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 const mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
@@ -22,7 +27,7 @@ const end = function() {
 
 	let v = inp.value;
 	if (v.trim() === '') {
-		el.removeNode();
+		unwrap(el);
 		Rte.trigger('input');
 		return;
 	} else if (!isNaN(v)) {
@@ -66,7 +71,7 @@ Rte.ui.setItem('Link', {
 		const cEl = Rte.element;
 		const exists = cEl?.closest('a');
 		if (exists) {
-			exists.removeNode();
+			unwrap(exists);
 		} else {
 			//let el = qgSelection.surroundContents(document.createElement('a')); // todo: selection on multiple elements
 			const range = getSelection().c1GetRange();
@@ -139,14 +144,14 @@ const externMediaDialog = async function(txtEl,medias) {
 		const label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
 		label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
 		label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
-		label.c1Find('input').addEventListener('change',function(){ media.checked = this.checked; });
-		dialog.element.c1Find('.-checkkboxes').append(label);
+		find(label, 'input').addEventListener('change',function(){ media.checked = this.checked; });
+		find(dialog.element, '.-checkkboxes').append(label);
 	}
 	dialog.show();
 }
 const checkMedia = function(root) {
 	const medias = {}; let has=0;
-	for (const el of root.c1FindAll('a, img')) {
+	for (const el of findAll(root, 'a, img')) {
 		if (el.classList.contains('externMedia')) continue;
 		for (const attr of ['src','href']) {
 			if (!el.hasAttribute(attr)) continue;
@@ -222,7 +227,7 @@ addEventListener('dblclick', function(e) {
                 new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', Zoomer.factor() );
 				img.dispatchEvent(new Event('qgResize',{bubbles:true}));
             };
-            Zoomer.on('change',change.c1Debounce(500));
+            Zoomer.on('change',c1.debounce(change, 500));
 			const pos = img.getBoundingClientRect();
 			const left = pos.left + scrollX;
 	        const top  = pos.top  + scrollY;

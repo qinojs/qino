@@ -5,7 +5,7 @@ if (window.cms_image2) return;
 const InitializedSet = new WeakSet();
 
 window.cms_image2 = {
-    init: function(c1Img){
+    init(c1Img){
         // init once
         if (InitializedSet.has(c1Img)) return;
         InitializedSet.add(c1Img);
@@ -22,7 +22,7 @@ window.cms_image2 = {
 
 		if (!img) { // sometimes immediate is to fast and noscript.innerHTML is not complete (firefox 71)
 			//console.warn('immediate was too fast');
-			requestAnimationFrame(function(){
+			requestAnimationFrame(() => {
 		        InitializedSet.delete(c1Img);
 				cms_image2.init(c1Img);
 			});
@@ -47,7 +47,7 @@ function onIntersecting(entry) {
     const rect = entry.boundingClientRect;
 	if (rect.width === 0 || rect.height === 0) return; // if event is fired but no dimensions
     const margin = 190; // must be smaller then rootMargin
-    const partVisible = (rect.bottom > -margin && rect.top < innerHeight+margin) && (rect.right > -margin && rect.left < window.innerWidth+margin);
+    const partVisible = (rect.bottom > -margin && rect.top < innerHeight+margin) && (rect.right > -margin && rect.left < innerWidth+margin);
     if (!partVisible) return;
     observer.unobserve(img);
 
@@ -55,9 +55,9 @@ function onIntersecting(entry) {
 	// add Resize eventListener, to reovserve intersection
     c1UglyResize.add(img);
     if (!img.c1UgliResizeBoundEventListener) {
-        img.c1UgliResizeBoundEventListener = function(){
+        img.c1UgliResizeBoundEventListener = debounce(() => {
             observer.observe(img); // re-observe on resize
-        }.c1Debounce({min:150,max:2000});
+        }, 150, 2000);
 	    img.addEventListener('c1UglyResize',img.c1UgliResizeBoundEventListener);
     }
 
@@ -70,7 +70,7 @@ function onIntersecting(entry) {
     img.__futuerSrc = src;
     
     img.__abort?.();
-    img.__abort = loadImage(src, function(done){
+    img.__abort = loadImage(src, (done) => {
         
         img.__abort = null; // gc
 
@@ -101,6 +101,17 @@ function roundImgSize(v){
     const intervall = v > 400 ? 50 : 30;
     return Math.ceil(v/intervall) * intervall;
 }
+// run after `min`ms idle, but at latest `max`ms after the first call
+function debounce(fn, min, max){
+    let tMin, tMax, self, args;
+    function run(){ clearTimeout(tMin); clearTimeout(tMax); tMax = 0; fn.apply(self, args); }
+    return function(){
+        self = this; args = arguments;
+        clearTimeout(tMin);
+        tMin = setTimeout(run, min);
+        tMax ||= setTimeout(run, max);
+    };
+}
 function loadImage(url, cb) {
     const img = new Image();
     let aborted = false;
@@ -123,13 +134,13 @@ const c1UglyResize = {};
     //window.c1UglyResize = {};
 
     let latestEl = null; // prevent (chrome?) from dispatch imediatly on observe
-    c1UglyResize.add = function(el){
+    c1UglyResize.add = (el) => {
         latestEl = el;
-        setTimeout(function(){ latestEl = null; },10); // not needed if if (src === img._latestSrc) return; check
+        setTimeout(() => { latestEl = null; }, 10); // not needed if if (src === img._latestSrc) return; check
         observer.observe(el);
     };
-    const observer = new ResizeObserver(function(entries){
-        entries.forEach(function(entry){
+    const observer = new ResizeObserver((entries) => {
+        entries.forEach((entry) => {
             if (latestEl === entry.target) return;
             entry.target.dispatchEvent(new CustomEvent('c1UglyResize'));
         });

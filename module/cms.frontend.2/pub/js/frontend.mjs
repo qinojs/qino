@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 		menu.style.display = 'none';
 		el.classList.add('-moving');
 		trash.classList.add('-dropTarget');
-		trash.c1ZTop();
+		c1.zTop(trash);
 	})
 	dd.on('change',e=>{
 		trash.classList[[(e.target.id==='qgCmsContTrash'?'add':'remove')]]('-full');
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 			menu.mod.append(c1.dom.fragment('<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>'))
 		}
 		menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
-		menu.c1ZTop();
+		c1.zTop(menu);
 	});
 	cms.contPos.on('unmark', () => menu.style.display = 'none' );
 	setTimeout(() => document.activeElement.blur());
@@ -240,7 +240,7 @@ cms.console = {
 		const el = this.el();
 		el.classList.add('-active');
 		el.setAttribute('data-type',type);
-		el.c1ZTop();
+		c1.zTop(el);
 		el.firstElementChild.textContent = msg;
 		clearTimeout(this.timeout);
 		this.timeout = setTimeout(()=>el.classList.remove('-active'), 2200);

@@ -1,11 +1,10 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import '../../../core/pub/js/c1.js';
-import '../../../core/pub/js/c1/dom.mjs';
 import '../../../core/pub/js/c1/onElement.mjs';
 import { apt, ctx } from '../../../core/pub/js/qino.js';
 
 export const cms = {};
-Object.assign(cms, c1.Eventer);
+//Object.assign(cms, c1.Eventer);
 
 cms.modConnected = {};
 
@@ -106,7 +105,7 @@ function saveTxt(el) {
 	apt.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
 // composedPath()[0] (read sync, before debounce) resolves the target inside the qino-cms shadow root too
-const saveTxtDebounced = saveTxt.c1Debounce(1600);
+const saveTxtDebounced = c1.debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
 document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
 

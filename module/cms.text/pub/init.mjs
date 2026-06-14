@@ -56,7 +56,7 @@ const showEditor = async function(el) {
     dialog.addEventListener('click',async e=>{
         if (!e.target.classList.contains('-translate')) return;
         const btn = e.target;
-        const target_lang = btn.closest('.-language').c1Find('>[cmstxt]').getAttribute('cmslang');
+        const target_lang = btn.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
         const source_lang = btn.getAttribute('source_lang');
         const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
         const unmark = loading.mark(e.target.closest('.-language'));
@@ -71,7 +71,7 @@ const showEditor = async function(el) {
     });
     dialog.addEventListener('click',async e=>{
         if (!e.target.classList.contains('-history')) return;
-        const lang = e.target.closest('.-language').c1Find('>[cmstxt]').getAttribute('cmslang');
+        const lang = e.target.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
         const history = await apt['cms.text'].text(tid).history.get({ lang });
         const hDialog = document.createElement('dialog');
 

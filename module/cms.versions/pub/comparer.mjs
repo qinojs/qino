@@ -104,7 +104,7 @@ export const CmsVersComparer = {
         this.setMain  (options.fromSpace, options.fromLog);
         this.setSecond(options.toSpace,   options.toLog);
         document.body.append(div);
-        div.c1ZTop();
+        c1.zTop(div);
     },
     close(){
         removeEventListener('keydown',this.keyListener);

@@ -1,5 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
+const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
+
 const defaultConf = {
 	tags                   :null,
 	tagsRemove             :null,
@@ -75,7 +77,7 @@ class NodeCleaner {
 
 		el.replaceWith(nEl);
 		nEl.append(el);
-		el.removeNode();
+		unwrap(el);
 		// restore styles that changed due to tag replacement
 		const after = getComputedStyle(nEl);
 		for (const prop of after) {
@@ -173,12 +175,12 @@ function removeEmptyInlineSpans(el) {
 	if (el.attributes.length) return;
 	const display = getComputedStyle(el).getPropertyValue('display');
 	if (display === 'inline' && el.tagName === 'SPAN') {
-		 el.removeNode();
+		 unwrap(el);
 	}
 }
 function removeUnusedElements(el) {
 	if (el.tagName === 'A' && el.innerHTML.trim().length) {
-		//el.removeNode(); return;
+		//unwrap(el); return;
 	}
 	// divs containing only block-likes
 	if (el.attributes.length === 0 && el.tagName === 'DIV') {
@@ -191,7 +193,7 @@ function removeUnusedElements(el) {
 			}
 			if (!blockLikeTags[child.tagName]) { onlyBlocks = false; break; }
 		}
-		if (onlyBlocks) { el.removeNode(); return; };
+		if (onlyBlocks) { unwrap(el); return; };
 	}
 	// single col tables
 	if (el.tagName === 'TABLE') {
@@ -203,18 +205,18 @@ function removeUnusedElements(el) {
 					Array.from(tr.children).forEach(td => {
 						replaceNode(td, document.createElement('div'));
 					});
-					tr.removeNode();
+					unwrap(tr);
 				});
-				tbody.removeNode();
+				unwrap(tbody);
 			});
-			el.removeNode();
+			unwrap(el);
 			return;
 		}
 	}
 	// remove Ps inside LIs, todo:better solution?
 	if (el.tagName === 'P') {
 		if (el.parentNode.tagName === 'LI') {
-			el.removeNode();
+			unwrap(el);
 			return;
 		}
 	}
@@ -261,7 +263,7 @@ function modernize(n) {
 		size  && (span.style.fontSize = (parseInt(size)+0.6)/2+'em');
 		n.after(span);
 		span.append(n);
-		n.removeNode();
+		unwrap(n);
 		return span;
 	}
 	if (n.tagName==='CENTER') {
@@ -269,7 +271,7 @@ function modernize(n) {
 		div.style.textAlign = 'center';
 		n.after(div);
 		div.append(n);
-		n.removeNode();
+		unwrap(n);
 		return div;
 	}
 	return n;
@@ -320,5 +322,5 @@ if (n.style.position==='absolute') { n.style.position = ''; }
 function replaceNode(el, newEl){
 	el.replaceWith(newEl);
 	newEl.appendChild(el);
-	el.removeNode();
+	unwrap(el);
 }

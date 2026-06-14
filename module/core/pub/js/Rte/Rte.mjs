@@ -2,6 +2,8 @@
 import '../c1/NodeCleaner.mjs';
 import './crossbrowser.mjs';
 
+const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
+
 window.Rte = {
 	range : {},
 	rangeStaticValues : {},
@@ -203,7 +205,7 @@ document.addEventListener('mousedown', e =>
 			if (child.tagName === 'LI') continue;
 			if (child.nodeType === 3 && !child.textContent.trim()) continue;
 			if (child.nodeName === 'UL') {
-				child.removeNode();
+				unwrap(child);
 				continue;
 			}
 			const li = document.createElement('li');
@@ -243,7 +245,7 @@ document.addEventListener('input',function(e){
 		const p = document.createElement('p');
 		div.after(p);
 		p.append(div)
-		div.removeNode();
+		unwrap(div);
 		range.setStart(text, offset);
 		sel.c1SetRange(range);
 	}
@@ -262,7 +264,7 @@ document.addEventListener('input',function(e){
 	const p = ul.parentNode;
 	if (p.tagName !== 'P') return;
 	if (p.childNodes.length !== 1) return;
-	p.removeNode();
+	unwrap(p);
 	range.setStart(text, offset);
 	sel.c1SetRange(range);
 });
@@ -290,7 +292,7 @@ document.addEventListener('input',function(e){
 	if (!e.target.isContentEditable) return;
 	if (!e.target.closest('A')) return;
 	let a;
-	while ((a = e.target.c1Find('a'))) a.removeNode();
+	while ((a = e.target.querySelector('a'))) unwrap(a);
 });
 
 /* prevent phx inside phx */
@@ -304,7 +306,7 @@ document.addEventListener('input',function(e){
 				if (node.nextElementSibling) {
 					node.after(document.createElement('br'));
 				}
-				node.removeNode();
+				unwrap(node);
 			}
 		}
 		function isPHX (node){

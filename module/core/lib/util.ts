@@ -34,18 +34,26 @@ function htmlValue(v: unknown): string {
   return hee(v);
 }
 
-function buildHtml(strings: TemplateStringsArray, values: unknown[]): HtmlString {
-  return new HtmlString(strings.reduce((acc, str, i) => {
-    return i < values.length ? acc + str + htmlValue(values[i]) : acc + str;
-  }, ""));
+// Like htmlValue but awaits promises and renders "renderable" values (anything
+// with an async html() method, e.g. a cms Node) recursively. Lets templates
+// embed conts directly: html.async`<div>${node.cont("main")}</div>`.
+async function htmlValueAsync(v: unknown): Promise<string> {
+  v = await v;
+  const r = v as { html?: unknown };
+  if (typeof r?.html === "function") return htmlValueAsync((r.html as () => unknown)());
+  return htmlValue(v);
+}
+
+function joinHtml(strings: TemplateStringsArray, parts: string[]): HtmlString {
+  return new HtmlString(strings.reduce((acc, str, i) => i < parts.length ? acc + str + parts[i] : acc + str, ""));
 }
 
 export function html(strings: TemplateStringsArray, ...values: unknown[]): HtmlString {
-  return buildHtml(strings, values);
+  return joinHtml(strings, values.map(htmlValue));
 }
 
 html.async = async function(strings: TemplateStringsArray, ...values: unknown[]): Promise<HtmlString> {
-  return buildHtml(strings, await Promise.all(values));
+  return joinHtml(strings, await Promise.all(values.map(htmlValueAsync)));
 };
 
 export function uid(length?: number): string {

@@ -6,7 +6,7 @@ w.c1 ||= {};
 /* Waits for the execution of the function (min) and then executes the last call, but waits maximal (max) millisecunds.
 *  If the function-scope changes, the function executes immediatly (good for event-delegation)
 */
-Function.prototype.c1Debounce ||= function(options) {
+c1.debounce ||= function(fn, options) {
 	if (typeof options === 'number') options = {min:options, max:options*2};
 	let inst,
 		args,
@@ -18,7 +18,7 @@ Function.prototype.c1Debounce ||= function(options) {
         clearTimeout(timerMax);
         clearTimeout(timerMin);
         timerMax = 0;
-        this.apply(inst, args);
+        fn.apply(inst, args);
     };
     const wrapped = function() {
         inst !== this && !triggered && trigger();
@@ -58,6 +58,35 @@ c1.Eventer ||= {
             this._getEvents(n).forEach(fn => fn.call(this, e));
     	}
     }
+};
+
+
+/* dom: fragment builder + helpers */
+c1.dom ||= {};
+c1.dom.fragment = function(html){
+	const tmpl = d.createElement('template');
+	tmpl.innerHTML = html;
+	return tmpl.content;
+};
+/* raise element's z-index above its siblings */
+c1.zTop = function(el) {
+	if (!el.parentNode) return;
+	const children = el.parentNode.children;
+	let i = children.length, maxZ = 0, child, myZ = 0;
+	while ((child = children[--i])) {
+		let childZ = getComputedStyle(child).getPropertyValue('z-index') || 0;
+		if (child.style.zIndex > childZ) childZ = child.style.zIndex;
+		if (childZ === 'auto') childZ = 0;
+		if (child === el) myZ = childZ;
+		else maxZ = Math.max(maxZ, childZ);
+	}
+	if (myZ <= maxZ) el.style.zIndex = maxZ+1;
+};
+
+// text nodes lack native closest; warn to find out if this polyfill is still used anywhere
+Text.prototype.closest = function(sel){
+	console.warn('Text.closest polyfill used', sel, this);
+	return this.parentNode.closest(sel);
 };
 
 

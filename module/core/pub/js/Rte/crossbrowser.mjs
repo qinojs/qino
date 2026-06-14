@@ -1,6 +1,9 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 // firefox resize images: enableObjectResizing
 
+// scoped query helper
+const find = (el, sel) => el.querySelector(':scope '+sel);
+
 window.qgQueryCommandState = function(cmd) {
 	try{
 		return document.queryCommandState(cmd);
@@ -176,7 +179,7 @@ document.addEventListener('mousedown', e=>{
 		};
 		document.addEventListener('mousedown',hide);
 		document.body.append(cont);
-		cont.c1ZTop();
+		c1.zTop(cont);
 		positionize();
 		function check() {
 			cont.parentNode && img.offsetHeight ? positionize() : (hide(), clearInterval(checkIntr));
@@ -217,7 +220,7 @@ document.addEventListener('mousedown', e=>{
 				img.style.height = h + 'px';
 				info.innerHTML = w+' x '+h+' ('+(dw>0?'+'+dw:dw)+','+(dh>0?'+'+dh:dh)+')';
 				info.style.display = 'block';
-				info.c1ZTop();
+				c1.zTop(info);
 			})
 			positionize();
 		};
@@ -239,10 +242,10 @@ document.addEventListener('mousedown', e=>{
 		'<div class=-xy style="cursor:se-resize'+itemCss+'" title="press ctrl to disable aspect ratio"></div>'+
 		'<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 3px; font-size:11px; color:#333; padding:2px 4px; border-radius:2px"></div>'+
 	'</div>').firstChild;
-	const X  = cont.c1Find('>.-x');
-	const Y  = cont.c1Find('>.-y');
-	const XY = cont.c1Find('>.-xy');
-	const info = cont.c1Find('>.-info');
+	const X  = find(cont, '>.-x');
+	const Y  = find(cont, '>.-y');
+	const XY = find(cont, '>.-xy');
+	const info = find(cont, '>.-info');
 	cont.addEventListener('mousedown', startFn);
 }
 

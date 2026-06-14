@@ -2,6 +2,10 @@
 //import '../../cms.frontend.2/pub/js/contextMenu.mjs';
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
+// scoped query helpers
+const find    = (el, sel) => el.querySelector(':scope '+sel);
+const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
+
 const sysURL = ctx.sysURL;
 const Page = globalThis.qino?.cms?.nodeId;
 const cmsFrontend = window.cmsFrontend || 'cms.frontend.2';
@@ -185,15 +189,15 @@ const CmsVersViewer = function(){
 	this.iframe1 = document.createElement('iframe');
 	this.iframe2 = document.createElement('iframe');
 	this.iframe1.sandbox = this.iframe2.sandbox = 'allow-same-origin allow-scripts';
-	this.container.c1Find('.-preview').append(this.iframe1);
-	this.container.c1Find('.-preview').append(this.iframe2);
-	this.container.c1Find('.-control > .-head').addEventListener('click', ()=>{
+	find(this.container, '.-preview').append(this.iframe1);
+	find(this.container, '.-preview').append(this.iframe2);
+	find(this.container, '.-control > .-head').addEventListener('click', ()=>{
 		this.hide();
 	});
 	this.keydownListener = e=>{
 		if (e.key === 'Escape') this.hide();
 		if (e.which !== 40 && e.which !== 38) return;
-		const active = this.container.c1Find('.-list > li.-active');
+		const active = find(this.container, '.-list > li.-active');
 		const next = active.nextElementSibling;
 		const prev = active.previousElementSibling;
 		if (e.which === 40 && next) this.load(next.getAttribute('v'));
@@ -211,26 +215,26 @@ CmsVersViewer.prototype = {
 			this.container.requestFullscreen?.();
 		}
 		this.container.focus()
-		this.container.c1ZTop();
+		c1.zTop(this.container);
 		this.container.style.pointerEvents = 'none';
 		setTimeout(()=> { this.container.style.pointerEvents = ''; } ,900)
 		body.style.overflow = htmlEl.style.overflow = 'hidden';
 		apt['cms.versions'].node(pid).get().then(rows=>{
 			let activeRow = null;
-			this.container.c1Find('.-list').innerHTML = '';
+			find(this.container, '.-list').innerHTML = '';
 			rows.forEach(row=>{
 				const li = c1.dom.fragment(
 					'<li v='+row.vers+'>'+
 							'<div class=-date>'+relativeDate(row.time)+'</div>'+
 							'<div class=-usr>'+row.usr+'</div>'
 				).firstChild;
-				li.c1Find('.-date').title = exactDate.format(row.time*1000);
+				find(li, '.-date').title = exactDate.format(row.time*1000);
 				li.addEventListener('mouseover',()=>{
 					if (activeRow === row.vers) return;
 					activeRow = row.vers;
 					this.load(row.vers);
 				});
-				this.container.c1Find('.-list').prepend(li);
+				find(this.container, '.-list').prepend(li);
 			});
 			rows.length && this.load(rows[rows.length-1].vers);
 		});
@@ -240,7 +244,7 @@ CmsVersViewer.prototype = {
 		body.style.overflow = htmlEl.style.overflow = '';
 		htmlEl.scrollTop = body.scrollTop = this.initialScrolltop;
 	},
-	load: function(vers){
+	load: c1.debounce(function(vers){
 		vers = parseInt(vers);
 		let scrollTop = this.initialScrolltop;
 		if (this.activeIframe) {
@@ -259,15 +263,15 @@ CmsVersViewer.prototype = {
 
 		this.activeIframe.style.opacity = 0;
 
-		this.container.c1Find('.-preview').classList.add('-loading');
+		find(this.container, '.-preview').classList.add('-loading');
 
-		for (const li of this.container.c1FindAll('.-list > li')) li.classList.remove('-active');
-		const li = this.container.c1Find('.-list > li[v="'+vers+'"]');
+		for (const li of findAll(this.container, '.-list > li')) li.classList.remove('-active');
+		const li = find(this.container, '.-list > li[v="'+vers+'"]');
 		li.classList.add('-active','-loading');
 
 		this.activeIframe.onload = ()=>{
-			this.container.c1Find('.-preview').classList.remove('-loading');
-			this.activeIframe.c1ZTop();
+			find(this.container, '.-preview').classList.remove('-loading');
+			c1.zTop(this.activeIframe);
 			this.activeIframe.style.opacity = 1;
 			const doc = this.activeIframe.contentWindow.document;
 			doc.addEventListener('keydown', this.keydownListener);
@@ -283,7 +287,7 @@ CmsVersViewer.prototype = {
 			li.classList.remove('-loading');
 		};
 		this.trigger('before-load', {vers});
-	}.c1Debounce({min:200, max:500}),
+	}, {min:200, max:500}),
 };
 Object.assign(CmsVersViewer.prototype, c1.Eventer);
 
@@ -298,16 +302,16 @@ const more = c1.dom.fragment(
 	'<div class=-txt></div>'+
 '</div>').firstChild;
 const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
-Viewer.container.c1Find('.-control').append(more);
-Viewer.container.c1Find('.-control').append(pointer);
+find(Viewer.container, '.-control').append(more);
+find(Viewer.container, '.-control').append(pointer);
 Viewer.on('before-load',function(e){
-	const li = this.container.c1Find('.-list > li[v="'+e.vers+'"]');
+	const li = find(this.container, '.-list > li[v="'+e.vers+'"]');
 	const pos = li.getBoundingClientRect();
 	let top = pos.top;
 	pointer.style.transform = 'translateY('+top+'px) rotate(45deg)';
 	top = Math.min(top, innerHeight - 260);
 	more.style.transform = 'translateY('+top+'px)';
-	more.c1Find('.-txt').innerHTML = 'please wait...';
+	find(more, '.-txt').innerHTML = 'please wait...';
 	apt['cms.versions'].log(e.vers).get().then(function(data){
 		const date = new Date(data.time * 1000);
 		let str = '';
@@ -319,21 +323,21 @@ Viewer.on('before-load',function(e){
 		'<div class=-usr>'+data.usr+'</div>'+
 		'<div class=-device title="'+data.user_agent+'">'+data.browser+' | '+data.ip+'</div>'+
 		'';
-		more.c1Find('.-txt').innerHTML = str;
+		find(more, '.-txt').innerHTML = str;
 	});
-	more.c1Find('.-reactivate').onclick = function(){
+	find(more, '.-reactivate').onclick = function(){
 		body.style.opacity = 0.3;
 		apt['cms.versions']['publish-node'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(function(){
 			location.href = location.href.replace(/#.*$/,'');
 		});
 	};
-	more.c1Find('.-compareActive').onclick = async function(){
+	find(more, '.-compareActive').onclick = async function(){
 		const { CmsVersComparer } = await import('./comparer.mjs');
 		CmsVersComparer.compare(Viewer.pid, {
 			fromLog: e.vers+1,
-			fromText: li.c1Find('.-date').innerHTML,
+			fromText: find(li, '.-date').innerHTML,
 			toText: 'aktuell',
-			accept(){ more.c1Find('.-reactivate').onclick(); },
+			accept(){ find(more, '.-reactivate').onclick(); },
 			acceptText:'Stand wiederherstellen',
 		});
 	};

@@ -392,9 +392,9 @@ onEl(".access-groups-manager", (el) => {
   const searchInp = findEl(el, ".-search");
   searchInp?.addEventListener(
     "keyup",
-    ((e) => {
+    c1.debounce((e) => {
       loadWidget("access.grp.list", { pid, search: e.target.value });
-    }).c1Debounce(150),
+    }, 150),
   );
   // change grp access
   el.addEventListener("change", (e) => {
@@ -413,9 +413,9 @@ onEl(".access-users-manager", (el) => {
   const searchInp = findEl(el, ".-search");
   searchInp?.addEventListener(
     "keyup",
-    ((e) => {
+    c1.debounce((e) => {
       loadWidget("access.usr.list", { pid, search: e.target.value });
-    }).c1Debounce(150),
+    }, 150),
   );
   // change usr access
   el.addEventListener("change", (e) => {
@@ -506,11 +506,11 @@ onEl(".url-manager", (el) => {
   });
 
   const addInp = findEl(el, ".-add_inp");
-  addInp.addEventListener("keyup", ((e) => {
+  addInp.addEventListener("keyup", c1.debounce((e) => {
       apt.cms["request-used"].get({ url: e.target.value }).then(({ used }) => {
         e.target.style.border = used ? "1px solid red" : "1px solid green";
       });
-    }).c1Debounce(200),
+    }, 200),
   );
   addInp.addEventListener("keydown", (e) => e.key === "Enter" && cmsRequestSet() );
   findEl(el, ".-add").addEventListener("click", cmsRequestSet);
@@ -532,9 +532,9 @@ onEl(".advanced-manager", (el) => {
   });
   findEl(el, ".-name").addEventListener(
     "input",
-    ((e) => {
+    c1.debounce((e) => {
       node.name.put({ value: e.target.value });
-    }).c1Debounce(400),
+    }, 400),
   );
   findEl(el, ".-name").addEventListener("change", (e) => {
     node.name.put({ value: e.currentTarget.value });
@@ -574,9 +574,9 @@ onEl(".more-manager", (el) => {
   });
   findEl(el, ".-feedbackform [name=msg]").addEventListener(
     "input",
-    ((e) => {
+    c1.debounce((e) => {
       setSetting(e.target.value, ["cms", "feedback", "text"]);
-    }).c1Debounce(200),
+    }, 200),
   );
   // change password
   findEl(el, ".-pwchange").addEventListener("submit", async (e) => {
