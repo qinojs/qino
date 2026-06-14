@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 // firefox resize images: enableObjectResizing
 
 // scoped query helper

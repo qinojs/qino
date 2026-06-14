@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 //import '../../cms.frontend.2/pub/js/contextMenu.mjs';
 import { apt, ctx } from '../../core/pub/js/qino.js';
 

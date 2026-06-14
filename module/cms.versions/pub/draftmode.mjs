@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;

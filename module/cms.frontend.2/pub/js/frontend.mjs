@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
 import '../../../core/pub/js/c1/Placer.mjs';
 import '../../../core/pub/js/qg/c1Combobox.mjs';

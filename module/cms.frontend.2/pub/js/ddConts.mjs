@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 let active, dropCont, dropBefore, oldCss;
 const ghost = document.createElement('div');
 ghost.style.cssText = 'background:#ff5; outline:#ff5 3px solid; min-height:8px; margin:2px; box-shadow:0 0 30px 3px rgba(0,0,0,.8); min-width:20px; z-index:999; position:relative; overflow:hidden; opacity:.9';

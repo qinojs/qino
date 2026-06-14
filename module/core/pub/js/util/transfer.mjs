@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 
 // Extract the url of a dragged image/file from a DataTransfer, across the differing browser formats
 // (firefox: x-moz-file-promise / x-moz-url, chrome: text/uri-list / text/html). Returns null for local files.

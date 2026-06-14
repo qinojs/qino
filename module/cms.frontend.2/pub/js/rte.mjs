@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 // todo? // externe Seiten http://github.com/codepo8/GooHooBi/blob/master/multisearch.html
 //import '../../../core/pub/js/Rte/Rte.ui.items.mjs';
 

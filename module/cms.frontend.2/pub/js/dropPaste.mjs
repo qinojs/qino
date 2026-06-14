@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { apt } from '../../../core/pub/js/qino.js';
 import { dataTransferToUrl, readClipboardHtml } from '../../../core/pub/js/util/transfer.mjs';
 

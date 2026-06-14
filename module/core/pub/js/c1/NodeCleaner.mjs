@@ -1,5 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-
 const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
 const defaultConf = {
