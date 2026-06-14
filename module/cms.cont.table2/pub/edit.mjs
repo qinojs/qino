@@ -41,7 +41,7 @@ cms.initNode('cont.table2', function(el) {
 		const table = c1.dom.fragment(html).firstElementChild;
 		if (table && table.tagName !== 'TABLE') return;
 		e.preventDefault(); // not working!
-		setTimeout(function() {
+		setTimeout(() => {
 			let targetTd = e.target.closest('[qcms-id] > table > * > tr > td');
 			const startCellIndex = targetTd.cellIndex;
 			for (const tbody of table.children) {

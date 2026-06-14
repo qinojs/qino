@@ -1,50 +1,50 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { ctx } from '../../core/pub/js/qino.js';
 
 const { appURL } = ctx;
 const Page = globalThis.qino?.cms?.nodeId;
 let div, iframe1, iframe2, pid, view1;
+
+const frameSrc = (space, log) => `${appURL}?cmspid=${Page}&qgCmsVersSpace=${space}&qgCmsVersLog=${log}&qgCmsVersPage=${pid}&qgCmsNoFrontend=1`;
+
 export const CmsVersComparer = {
     _ensure(){
         if (div) return;
-        const html =
-        '<div id=qgCmsVersionComparer class=qgCMS>'+
-            '<style>'+css+'</style>'+
-            '<div class=-tools>'+
-                '<div style="flex:1 0 200px">'+
-                    '<button class=-mode-side>Switch view</button> '+
-                    '<button class=-diffs>Show differences</button> '+
-                '</div>'+
-                '<div style="flex:auto; display:flex; align-items:center; justify-content:center">'+
-                    '<span class=-toText style="flex:1 0 30px; text-align:right">Live</span>'+
-                    ' &nbsp;&nbsp; <input class=-fade min=0 max=1 step=any type=range><span class=-splitter></span> &nbsp;&nbsp; '+
-                    '<span class=-fromText style="flex:1 0 30px"> &nbsp; Draft</span>'+
-                '</div>'+
-                '<div style="flex:1 0 200px; text-align:right">'+
-                    '<button class=-accept>publish</button> '+
-                    '<button class=-close>close</button> '+
-                '</div>'+
-            '</div>'+
-            '<div class=-views>'+
-                '<div class=-v2><iframe class=-i2></iframe></div>'+
-                '<div class=-v1><iframe class=-i1></iframe></div>'+
-            '</div>'+
-        '</div>';
-        div = c1.dom.fragment(html).firstChild;
+        const html = `
+        <div id=qgCmsVersionComparer class=qgCMS popover=manual>
+            <style>${css}</style>
+            <div class=-tools>
+                <div style="flex:1 0 200px">
+                    <button class=-mode-side>Switch view</button>
+                    <button class=-diffs>Show differences</button>
+                </div>
+                <div style="flex:auto; display:flex; align-items:center; justify-content:center">
+                    <span class=-toText style="flex:1 0 30px; text-align:right">Live</span>
+                    &nbsp;&nbsp; <input class=-fade min=0 max=1 step=any type=range><span class=-splitter></span> &nbsp;&nbsp;
+                    <span class=-fromText style="flex:1 0 30px"> &nbsp; Draft</span>
+                </div>
+                <div style="flex:1 0 200px; text-align:right">
+                    <button class=-accept>publish</button>
+                    <button class=-close>close</button>
+                </div>
+            </div>
+            <div class=-views>
+                <div class=-v2><iframe class=-i2></iframe></div>
+                <div class=-v1><iframe class=-i1></iframe></div>
+            </div>
+        </div>`;
+        div = c1.dom.fragment(html).firstElementChild;
         iframe1 = div.querySelector('.-i1');
         iframe2 = div.querySelector('.-i2');
         view1   = div.querySelector('.-v1');
-        div.querySelector('.-fade').addEventListener('input',function(){
-            view1.style.opacity = this.value;
+        div.querySelector('.-fade').addEventListener('input', e => {
+            view1.style.opacity = e.target.value;
         });
-        div.querySelector('.-mode-side').addEventListener('click',function(){
+        div.querySelector('.-mode-side').addEventListener('click', () => {
             const has = div.classList.toggle('-Mode-side');
             has && div.classList.remove('-Diffs');
         });
-        div.querySelector('.-diffs').addEventListener('click',function(){
-            div.classList.toggle('-Diffs');
-        });
-        div.querySelector('.-close').addEventListener('click',this.close);
+        div.querySelector('.-diffs').addEventListener('click', () => div.classList.toggle('-Diffs'));
+        div.querySelector('.-close').addEventListener('click', () => this.close());
 
         function initFrame(){
             const other = this === iframe1 ? iframe2 : iframe1;
@@ -52,26 +52,22 @@ export const CmsVersComparer = {
             const doc1 = win.document;
 
             // scrollSync
-            import('../../core/pub/js/c1/scrollSync.mjs').then(function(){
+            import('../../core/pub/js/c1/scrollSync.mjs').then(() => {
                 // sync scroll
                 c1.scrollSync.syncWindows(win, other.contentWindow);
                 // sync clicks
-                win.addEventListener('click',function(e){
+                win.addEventListener('click', e => {
                     if (e.c1Synced) return;
                     const selector = c1.scrollSync.getSelector(e.target);
                     const otherEl = other.contentWindow.document.querySelector(selector);
-                    const event = new MouseEvent('click', {
-                        'view': window,
-                        'bubbles': true,
-                        'cancelable': true
-                    });
+                    const event = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
                     event.c1Synced = true;
                     otherEl.dispatchEvent(event);
-                },true);
-    		});
+                }, true);
+            });
 
             // mousemove  => opacity
-            doc1.addEventListener('mousemove',function(e){
+            doc1.addEventListener('mousemove', e => {
                 const opacity = e.clientX / win.innerWidth;
                 div.querySelector('.-fade').value = opacity;
                 view1.style.opacity = opacity;
@@ -91,7 +87,7 @@ export const CmsVersComparer = {
         this._ensure();
         addEventListener('keydown',this.keyListener);
         pid = page_id;
-        options = Object.assign({fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Draft', toText:'Live', accept:null, acceptText:'Apply'}, options);
+        options = {fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Draft', toText:'Live', accept:null, acceptText:'Apply', ...options};
         // accept function
         const acceptEl = div.querySelector('.-accept');
         acceptEl.style.display = options.accept ? 'inline-block' : 'none';
@@ -104,74 +100,63 @@ export const CmsVersComparer = {
         this.setMain  (options.fromSpace, options.fromLog);
         this.setSecond(options.toSpace,   options.toLog);
         document.body.append(div);
-        c1.zTop(div);
+        if (!div.matches(':popover-open')) div.showPopover(); // top layer, replaces zTop
     },
     close(){
         removeEventListener('keydown',this.keyListener);
-        div.remove();
+        div.remove(); // removing from DOM closes the popover
     },
-    setMain(space, log) {
-        iframe1.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend=1';
-    },
-    setSecond(space, log) {
-        iframe2.src = appURL+'?cmspid='+Page+'&qgCmsVersSpace='+space+'&qgCmsVersLog='+log+'&qgCmsVersPage='+pid+'&qgCmsNoFrontend=1';
-    }
+    setMain(space, log)   { iframe1.src = frameSrc(space, log); },
+    setSecond(space, log) { iframe2.src = frameSrc(space, log); }
 };
-const css =
-'#qgCmsVersionComparer { '+
-'    position:fixed; '+
-'    top:0; '+
-'    left:0; '+
-'    right:0; '+
-'    bottom:0; '+
-'    background:#fff; '+
-'    display:flex; '+
-'    flex-flow:column; '+
-'}'+
-'#qgCmsVersionComparer .-tools { '+
-'    display:flex; '+
-'    border-bottom:2px solid #000; '+
-'}'+
-'#qgCmsVersionComparer .-tools > * { '+
-'    margin:10px; '+
-'}'+
-'#qgCmsVersionComparer .-views { '+
-'    display:flex; '+
-'    position:relative; '+
-'    flex:auto; '+
-'}'+
-'#qgCmsVersionComparer .-views > div { '+
-'    position:absolute; '+
-'    inset:0; '+
-'    background:#fff; '+
-'    flex:auto; '+
-'} '+
-'#qgCmsVersionComparer .-v1 { '+
-'    opacity:.5; '+
-'}'+
-'#qgCmsVersionComparer iframe { '+
-'    border:none; '+
-'    position:absolute; '+
-'    inset:0; '+
-'    width:100%; '+
-'    height:100%; '+
-'    box-sizing:border-box; '+
-'}'+
-'#qgCmsVersionComparer.-Mode-side .-views > div { '+
-'    position:relative; '+
-'    opacity:1 !important; '+
-'}'+
-'#qgCmsVersionComparer.-Mode-side .-diffs { display:none; }'+
-'#qgCmsVersionComparer.-Mode-side .-fade { display:none; }'+
-'#qgCmsVersionComparer.-Mode-side .-splitter { display:inline-block; height:2em; border-left:2px solid #000; }'+
-'#qgCmsVersionComparer.-Mode-side .-i1 { border-left: 1px solid #000; }'+
-'#qgCmsVersionComparer.-Mode-side .-i2 { border-right:1px solid #000; }'+
-'#qgCmsVersionComparer.-Diffs .-views { '+
-'    filter:invert(100%); '+
-'}'+
-'#qgCmsVersionComparer.-Diffs .-views > .-v1 { '+
-'    mix-blend-mode:difference; '+
-'    opacity:1 !important; '+
-'}'+
-'#qgCmsVersionComparer.-Diffs .-fade { display:none; }'+
-'';
+
+const css = `
+#qgCmsVersionComparer {
+    position:fixed;
+    inset:0;
+    width:auto; height:auto;
+    margin:0; border:0; padding:0;
+    xoverflow:visible;
+    background:#fff;
+    display:flex;
+    flex-flow:column;
+
+    .-tools {
+        display:flex;
+        border-bottom:2px solid #000;
+        > * { margin:10px; }
+    }
+    .-views {
+        display:flex;
+        position:relative;
+        flex:auto;
+        > div {
+            position:absolute;
+            inset:0;
+            background:#fff;
+            flex:auto;
+        }
+    }
+    .-v1 { opacity:.5; }
+    iframe {
+        border:none;
+        position:absolute;
+        inset:0;
+        width:100%;
+        height:100%;
+        box-sizing:border-box;
+    }
+    &.-Mode-side {
+        .-views > div { position:relative; opacity:1 !important; }
+        .-diffs    { display:none; }
+        .-fade     { display:none; }
+        .-splitter { display:inline-block; height:2em; border-left:2px solid #000; }
+        .-i1 { border-left:1px solid #000; }
+        .-i2 { border-right:1px solid #000; }
+    }
+    &.-Diffs {
+        .-views { filter:invert(100%); }
+        .-views > .-v1 { mix-blend-mode:difference; opacity:1 !important; }
+        .-fade { display:none; }
+    }
+}`;

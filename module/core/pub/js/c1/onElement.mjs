@@ -64,6 +64,6 @@ function checkMutations(mutations) {
 }
 
 let loaded = false;
-document.addEventListener('DOMContentLoaded', () => { loaded = true; });
+document.addEventListener('DOMContentLoaded', () => loaded = true);
 
 export default c1.onElement;

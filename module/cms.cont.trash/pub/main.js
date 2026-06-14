@@ -5,10 +5,10 @@ const el      = document.querySelector('[qcms-mod="cont.trash"]');
 const dialog = el.querySelector('.-preview');
 const iframe = dialog.querySelector('iframe');
 
-dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+dialog.addEventListener('click', e => e.target === dialog && dialog.close());
 iframe.addEventListener('load', () => {
   try {
-    iframe.contentDocument.addEventListener('keydown', e => { if (e.key === 'Escape') dialog.close(); });
+    iframe.contentDocument.addEventListener('keydown', e => e.key === 'Escape' && dialog.close());
   } catch { /* cross-origin */ }
 });
 

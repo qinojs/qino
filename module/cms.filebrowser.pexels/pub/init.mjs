@@ -24,7 +24,7 @@ new SelectorObserver({ on: el=>{
 
     const list = find(container, '.-list');
 
-    search.addEventListener('input',c1.debounce(async function(e){
+    search.addEventListener('input',c1.debounce(async e => {
         const hasPixabay = el.querySelector('.-pixabay');
         const API_KEY = '563492ad6f917000010000011de0136108e248e08b32b1cc22561149'; // todo: from server
         const url = 'https://api.pexels.com/v1/search?per_page=50&page=1&query='+encodeURIComponent(e.target.value);

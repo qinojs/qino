@@ -5,8 +5,8 @@ window.domCodeIndent = function(str) {
 	let res = '';
 	let ind = '';
 	let pre = false;
-	str = str.replace(/\n|\t/g, ' ').replace(/<([\/a-zA-Z0-9]+)/g, function(a) { return a.toLowerCase(); });
-	const makeStartTag = function(tag, attrs, unary) {
+	str = str.replace(/\n|\t/g, ' ').replace(/<([\/a-zA-Z0-9]+)/g, a => a.toLowerCase());
+	const makeStartTag = (tag, attrs, unary) => {
 		let str = '<' + tag;
 		for (let i = 0, att; (att = attrs[i++]);) {
 			str += ' ' + att.name + '="' + att.escaped + '"';
@@ -30,8 +30,8 @@ window.domCodeIndent = function(str) {
 		},
 		chars(text) {
 			!pre && (res += ind);
-			if (!text.match(/^\s/)) text = '\uFEFF'+text; // mark if no whitespace
-			if (!text.match(/\s$/)) text += '\uFEFF';
+			if (!/^\s/.test(text)) text = '\uFEFF'+text; // mark if no whitespace
+			if (!/\s$/.test(text)) text += '\uFEFF';
 			res += text;
 			!pre && (res+='\n');
 		},
@@ -46,11 +46,11 @@ window.getPossibleClasses = function (el) { /* eventuell better performance? */
 	const ret = {};
 	function test(sel) {
 		sel = sel.trim();
-		if (!~sel.indexOf('.')) return;
-		if (!sel.match(/\.[A-Z]/)) return;
+		if (!sel.includes('.')) return;
+		if (!/\.[A-Z]/.test(sel)) return;
 		const reg = el ? new RegExp('(^'+el.tagName+'|^)\\.[^ ]+$', 'i') : new RegExp('^\\.[^ ]+$');
-		if (sel.match(reg)) {
-			const x = sel.replace(/^(.*\.)([^: ]*)(.*)$/, function(_m, _a1, a2) { return a2; });
+		if (reg.test(sel)) {
+			const x = sel.replace(/^(.*\.)([^: ]*)(.*)$/, (_m, _a1, a2) => a2);
 			ret[x] = sel;
 		}
 	}

@@ -23,7 +23,7 @@ class NodeCleaner {
 	}
 	cleanContents(el, andChildren) {
 		if (!el) return;
-		Array.from(el.childNodes).forEach(child => this.clean(child, andChildren))
+		for (const child of Array.from(el.childNodes)) this.clean(child, andChildren);
 		//for (let child of el.childNodes) this.clean(child, andChildren);
 
 	}
@@ -167,8 +167,8 @@ function removeUnusedAttributes(el) {
 	el.hasAttribute('class') && el.getAttribute('class').trim() === '' && el.removeAttribute('class');
 	/* bugs ie8/9/10? */
 	if (el.tagName === 'IMG') {
-		if (!(el.getAttribute('height')+'').match(/^[0-9]+/)) { el.removeAttribute('height'); }
-		if (!(el.getAttribute('width')+'') .match(/^[0-9]+/)) { el.removeAttribute('width');  }
+		if (!/^[0-9]+/.test(el.getAttribute('height'))) { el.removeAttribute('height'); }
+		if (!/^[0-9]+/.test(el.getAttribute('width')))  { el.removeAttribute('width');  }
 	}
 }
 function removeEmptyInlineSpans(el) {
@@ -200,15 +200,13 @@ function removeUnusedElements(el) {
 		const tr = el.firstElementChild.firstElementChild;
 		if (tr.children.length === 1) {
 			console.log(el)
-			Array.from(el.children).forEach(tbody => {
-				Array.from(tbody.children).forEach(tr => {
-					Array.from(tr.children).forEach(td => {
-						replaceNode(td, document.createElement('div'));
-					});
+			for (const tbody of Array.from(el.children)) {
+				for (const tr of Array.from(tbody.children)) {
+					for (const td of Array.from(tr.children)) replaceNode(td, document.createElement('div'));
 					unwrap(tr);
-				});
+				}
 				unwrap(tbody);
-			});
+			}
 			unwrap(el);
 			return;
 		}

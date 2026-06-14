@@ -10,12 +10,250 @@ const sysURL = ctx.sysURL;
 const Page = globalThis.qino?.cms?.nodeId;
 const cmsFrontend = window.cmsFrontend || 'cms.frontend.2';
 
-const css = `
+const body = document.body;
+const htmlEl = document.documentElement;
+
+function panelEl(selector) {
+	const root = document.querySelector('qino-cms')?.shadowRoot || document;
+	return root.querySelector(selector);
+}
+
+const CmsVersViewer = function(){
+	this.container = c1.dom.fragment(`
+		<div id=qgCms_vers tabindex=-1 class=qgCMS popover=manual>
+			<div class=-preview></div>
+			<div class=-control>
+				<div class=-head>Verlauf</div>
+				<ul class=-list></ul>
+			</div>
+			<style id=x>${css()}</style>
+		</div>`
+	).firstElementChild;
+	this.iframe1 = document.createElement('iframe');
+	this.iframe2 = document.createElement('iframe');
+	this.iframe1.sandbox = this.iframe2.sandbox = 'allow-same-origin allow-scripts';
+	find(this.container, '.-preview').append(this.iframe1);
+	find(this.container, '.-preview').append(this.iframe2);
+	find(this.container, '.-control > .-head').addEventListener('click', ()=>{
+		this.hide();
+	});
+	this.keydownListener = e=>{
+		if (e.key === 'Escape') this.hide();
+		if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+		const active = find(this.container, '.-list > li.-active');
+		const next = active.nextElementSibling;
+		const prev = active.previousElementSibling;
+		if (e.key === 'ArrowDown' && next) this.load(next.getAttribute('v'));
+		if (e.key === 'ArrowUp' && prev) this.load(prev.getAttribute('v'));
+	};
+	this.container.addEventListener('keydown',this.keydownListener);
+};
+CmsVersViewer.prototype = {
+	show: function(pid){
+		this.pid = pid;
+		this.initialScrolltop = htmlEl.scrollTop || body.scrollTop;
+		body.append(this.container);
+		if (!this.container.matches(':popover-open')) this.container.showPopover(); // top layer, replaces zTop
+		if (innerWidth < 900) {
+			this.container.webkitRequestFullscreen?.();
+			this.container.requestFullscreen?.();
+		}
+		this.container.focus()
+		this.container.style.pointerEvents = 'none';
+		setTimeout(()=> { this.container.style.pointerEvents = ''; } ,900)
+		body.style.overflow = htmlEl.style.overflow = 'hidden';
+		apt['cms.versions'].node(pid).get().then(rows=>{
+			let activeRow = null;
+			const list = find(this.container, '.-list');
+			list.innerHTML = '';
+			rows.forEach(row=>{
+				const li = c1.dom.fragment(
+					`<li v=${row.vers}><div class=-date>${relativeDate(row.time)}</div><div class=-usr>${row.usr}</div>`
+				).firstElementChild;
+				find(li, '.-date').title = exactDate.format(row.time*1000);
+				li.addEventListener('mouseover',()=>{
+					if (activeRow === row.vers) return;
+					activeRow = row.vers;
+					this.load(row.vers);
+				});
+				list.prepend(li);
+			});
+			rows.length && this.load(rows[rows.length-1].vers);
+		});
+	},
+	hide: function(){
+		this.container.remove();
+		body.style.overflow = htmlEl.style.overflow = '';
+		htmlEl.scrollTop = body.scrollTop = this.initialScrolltop;
+	},
+	load: c1.debounce(function(vers){
+		vers = parseInt(vers);
+		let scrollTop = this.initialScrolltop;
+		if (this.activeIframe) {
+			const doc = this.activeIframe.contentWindow.document;
+			if (doc.body) scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
+			this.activeIframe.style.opacity = 1;
+		}
+		this.activeIframe = this.activeIframe === this.iframe1 ? this.iframe2 : this.iframe1;
+
+		const src = new URL(location.href);
+		src.hash = '';
+		src.searchParams.append('qgCmsVersLog',vers+1)
+		src.searchParams.append('qgCmsVersPage',this.pid)
+		src.searchParams.append('qgCmsNoFrontend','1');
+		this.activeIframe.src = src;
+
+		this.activeIframe.style.opacity = 0;
+
+		find(this.container, '.-preview').classList.add('-loading');
+
+		for (const li of findAll(this.container, '.-list > li')) li.classList.remove('-active');
+		const li = find(this.container, `.-list > li[v="${vers}"]`);
+		li.classList.add('-active','-loading');
+
+		this.activeIframe.onload = ()=>{
+			find(this.container, '.-preview').classList.remove('-loading');
+			this.iframe1.style.zIndex = this.activeIframe === this.iframe1 ? 1 : 0;
+			this.iframe2.style.zIndex = this.activeIframe === this.iframe2 ? 1 : 0;
+			this.activeIframe.style.opacity = 1;
+			const doc = this.activeIframe.contentWindow.document;
+			doc.addEventListener('keydown', this.keydownListener);
+			const ready = ()=>{
+				if (!doc.body) return;
+				doc.documentElement.scrollTop = doc.body.scrollTop = scrollTop;
+				const els = doc.querySelectorAll('[qcms-id="'+this.pid+'"]');
+				let el;
+				for (el of els) el.style.outline = '3px solid red';
+				el?.scrollIntoView();
+			}
+			document.readyState === 'complete' ? ready() : doc.addEventListener('DOMContentLoaded',ready);
+			li.classList.remove('-loading');
+		};
+		this.trigger('before-load', {vers});
+	}, {min:200, max:500}),
+};
+Object.assign(CmsVersViewer.prototype, c1.Eventer);
+
+/* create Viewer */
+const Viewer = new CmsVersViewer();
+
+/* more */
+const more = c1.dom.fragment(`
+	<div class=-more>
+		<button class=-compareActive>Mit Aktuell vergleichen</button>
+		<button class=-reactivate>Stand wiederherstellen</button>
+		<div class=-txt></div>
+	</div>`).firstElementChild;
+const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
+find(Viewer.container, '.-control').append(more);
+find(Viewer.container, '.-control').append(pointer);
+Viewer.on('before-load',function(e){
+	const li = find(this.container, `.-list > li[v="${e.vers}"]`);
+	const pos = li.getBoundingClientRect();
+	let top = pos.top;
+	pointer.style.transform = `translateY(${top}px) rotate(45deg)`;
+	top = Math.min(top, innerHeight - 260);
+	more.style.transform = `translateY(${top}px)`;
+	find(more, '.-txt').innerHTML = 'please wait...';
+	apt['cms.versions'].log(e.vers).get().then(data => {
+		const date = new Date(data.time * 1000);
+		let str = '';
+		for (const msg of data.messages) {
+			str += `<div style="padding:5px 0 5px 8px; margin:8px 0; border-left:1px solid #fff; background:#555">${msg}</div>`;
+		}
+		str +=
+			`<div class=-date>${exactDate.format(date)}</div>` +
+			`<div class=-usr>${data.usr}</div>` +
+			`<div class=-device title="${data.user_agent}">${data.browser} | ${data.ip}</div>`;
+		find(more, '.-txt').innerHTML = str;
+	});
+	find(more, '.-reactivate').onclick = () => {
+		body.style.opacity = 0.3;
+		apt['cms.versions']['publish-node'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(() => {
+			location.href = location.href.replace(/#.*$/,'');
+		});
+	};
+	find(more, '.-compareActive').onclick = async () => {
+		const { CmsVersComparer } = await import('./comparer.mjs');
+		CmsVersComparer.compare(Viewer.pid, {
+			fromLog: e.vers+1,
+			fromText: find(li, '.-date').innerHTML,
+			toText: 'aktuell',
+			accept(){ find(more, '.-reactivate').onclick(); },
+			acceptText:'Stand wiederherstellen',
+		});
+	};
+});
+more.addEventListener('mouseover', e => {
+	const mark = e.target.getAttribute('mark');
+	if (!mark) return;
+	const all = Viewer.activeIframe.contentWindow.document.querySelectorAll(mark);
+	for (const el of all) {
+		el.style.outline = '10px dotted red';
+		el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		Viewer.activeIframe.contentWindow.scrollBy(-100,-100)
+	}
+});
+
+/* ui */
+document.addEventListener('keydown',e=>{
+	const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
+	if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
+	if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
+	if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
+	if (e.code === 'KeyH') {
+		Viewer.show(Page);
+		e.preventDefault();
+	}
+});
+
+cms.contextMenueContent.addItem('Verlauf', {
+	icon: sysURL+cmsFrontend+'/pub/img/undo.svg',
+	selector: '[qcms-edit], #qgCmsContPosMenu',
+	onshow() {
+		this.activePid = cms.contPos.active.pid;
+		this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
+	},
+	onclick() {
+		Viewer.show(this.activePid);
+	}
+});
+
+// frontend integration
+const sidebarItem = c1.dom.fragment(`
+	<div class=-item itemid=history>
+		<div class=-title>
+			<div class=-text>Verlauf</div>
+		</div>
+	</div>`).firstElementChild;
+panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.after(sidebarItem)
+sidebarItem.addEventListener('mousedown', e=>{
+	e.stopPropagation();
+	Viewer.show(Page)
+});
+
+
+const locale = document.documentElement.lang || navigator.language;
+const relativeFormat = new Intl.RelativeTimeFormat(locale, {numeric:'auto'});
+const exactDate = new Intl.DateTimeFormat(locale, {dateStyle:'medium', timeStyle:'medium'});
+const relativeUnits = [[60, 'second'], [60, 'minute'], [24, 'hour'], [30, 'day'], [12, 'month'], [Infinity, 'year']];
+function relativeDate(timestamp) {
+	let value = timestamp - Date.now()/1000;
+	for (const [limit, unit] of relativeUnits) {
+		if (Math.abs(value) < limit) return relativeFormat.format(Math.round(value), unit);
+		value /= limit;
+	}
+}
+
+function css(){
+	return `
 #qgCms_vers {
 	display:flex;
 	position:fixed;
 	inset:0;
-	z-index:13;
+	width:auto; height:auto;       /* override [popover] UA fit-content */
+	margin:0; border:0; padding:0; /* reset [popover] UA box */
+	overflow:visible;              /* reset [popover] UA overflow:auto */
 	background:#fff;
 
 	> .-control {
@@ -163,245 +401,4 @@ const css = `
 }
 @keyframes spin { to { transform:rotate(360deg); } }
 `;
-const body = document.body;
-const htmlEl = document.documentElement;
-
-function panelRoot() {
-	return document.querySelector('qino-cms')?.shadowRoot || document;
-}
-function panelEl(selector) {
-	return panelRoot().querySelector(selector);
-}
-
-const CmsVersViewer = function(){
-	this.container = c1.dom.fragment(
-		'<div id=qgCms_vers tabindex=-1 class="qgCMS">'+
-			'<div class=-preview></div>'+
-			'<div class=-control>'+
-				'<div class=-head>'+
-					'Verlauf'+
-				'</div>'+
-				'<ul class=-list></ul>'+
-			'</div>'+
-			`<style id=x>${css}</style>`+
-		'</div>'
-	).firstChild;
-	this.iframe1 = document.createElement('iframe');
-	this.iframe2 = document.createElement('iframe');
-	this.iframe1.sandbox = this.iframe2.sandbox = 'allow-same-origin allow-scripts';
-	find(this.container, '.-preview').append(this.iframe1);
-	find(this.container, '.-preview').append(this.iframe2);
-	find(this.container, '.-control > .-head').addEventListener('click', ()=>{
-		this.hide();
-	});
-	this.keydownListener = e=>{
-		if (e.key === 'Escape') this.hide();
-		if (e.which !== 40 && e.which !== 38) return;
-		const active = find(this.container, '.-list > li.-active');
-		const next = active.nextElementSibling;
-		const prev = active.previousElementSibling;
-		if (e.which === 40 && next) this.load(next.getAttribute('v'));
-		if (e.which === 38 && prev) this.load(prev.getAttribute('v'));
-	};
-	this.container.addEventListener('keydown',this.keydownListener);
-};
-CmsVersViewer.prototype = {
-	show: function(pid){
-		this.pid = pid;
-		this.initialScrolltop = htmlEl.scrollTop || body.scrollTop;
-		body.appendChild(this.container);
-		if (innerWidth < 900) {
-			this.container.webkitRequestFullscreen?.();
-			this.container.requestFullscreen?.();
-		}
-		this.container.focus()
-		c1.zTop(this.container);
-		this.container.style.pointerEvents = 'none';
-		setTimeout(()=> { this.container.style.pointerEvents = ''; } ,900)
-		body.style.overflow = htmlEl.style.overflow = 'hidden';
-		apt['cms.versions'].node(pid).get().then(rows=>{
-			let activeRow = null;
-			find(this.container, '.-list').innerHTML = '';
-			rows.forEach(row=>{
-				const li = c1.dom.fragment(
-					'<li v='+row.vers+'>'+
-							'<div class=-date>'+relativeDate(row.time)+'</div>'+
-							'<div class=-usr>'+row.usr+'</div>'
-				).firstChild;
-				find(li, '.-date').title = exactDate.format(row.time*1000);
-				li.addEventListener('mouseover',()=>{
-					if (activeRow === row.vers) return;
-					activeRow = row.vers;
-					this.load(row.vers);
-				});
-				find(this.container, '.-list').prepend(li);
-			});
-			rows.length && this.load(rows[rows.length-1].vers);
-		});
-	},
-	hide: function(){
-		this.container.remove();
-		body.style.overflow = htmlEl.style.overflow = '';
-		htmlEl.scrollTop = body.scrollTop = this.initialScrolltop;
-	},
-	load: c1.debounce(function(vers){
-		vers = parseInt(vers);
-		let scrollTop = this.initialScrolltop;
-		if (this.activeIframe) {
-			const doc = this.activeIframe.contentWindow.document;
-			if (doc.body) scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
-			this.activeIframe.style.opacity = 1;
-		}
-		this.activeIframe = this.activeIframe === this.iframe1 ? this.iframe2 : this.iframe1;
-
-		const src = new URL(location.href);
-		src.hash = '';
-		src.searchParams.append('qgCmsVersLog',vers+1)
-		src.searchParams.append('qgCmsVersPage',this.pid)
-		src.searchParams.append('qgCmsNoFrontend','1');
-		this.activeIframe.src = src;
-
-		this.activeIframe.style.opacity = 0;
-
-		find(this.container, '.-preview').classList.add('-loading');
-
-		for (const li of findAll(this.container, '.-list > li')) li.classList.remove('-active');
-		const li = find(this.container, '.-list > li[v="'+vers+'"]');
-		li.classList.add('-active','-loading');
-
-		this.activeIframe.onload = ()=>{
-			find(this.container, '.-preview').classList.remove('-loading');
-			c1.zTop(this.activeIframe);
-			this.activeIframe.style.opacity = 1;
-			const doc = this.activeIframe.contentWindow.document;
-			doc.addEventListener('keydown', this.keydownListener);
-			const ready = ()=>{
-				if (!doc.body) return;
-				doc.documentElement.scrollTop = doc.body.scrollTop = scrollTop;
-				const els = doc.querySelectorAll('[qcms-id="'+this.pid+'"]');
-				let el;
-				for (el of els) el.style.outline = '3px solid red';
-				el?.scrollIntoView();
-			}
-			document.readyState === 'complete' ? ready() : doc.addEventListener('DOMContentLoaded',ready);
-			li.classList.remove('-loading');
-		};
-		this.trigger('before-load', {vers});
-	}, {min:200, max:500}),
-};
-Object.assign(CmsVersViewer.prototype, c1.Eventer);
-
-/* create Viewer */
-const Viewer = new CmsVersViewer();
-
-/* more */
-const more = c1.dom.fragment(
-'<div class=-more>'+
-	'<button class=-compareActive>Mit Aktuell vergleichen</button>'+
-	'<button class=-reactivate>Stand wiederherstellen</button>'+
-	'<div class=-txt></div>'+
-'</div>').firstChild;
-const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
-find(Viewer.container, '.-control').append(more);
-find(Viewer.container, '.-control').append(pointer);
-Viewer.on('before-load',function(e){
-	const li = find(this.container, '.-list > li[v="'+e.vers+'"]');
-	const pos = li.getBoundingClientRect();
-	let top = pos.top;
-	pointer.style.transform = 'translateY('+top+'px) rotate(45deg)';
-	top = Math.min(top, innerHeight - 260);
-	more.style.transform = 'translateY('+top+'px)';
-	find(more, '.-txt').innerHTML = 'please wait...';
-	apt['cms.versions'].log(e.vers).get().then(function(data){
-		const date = new Date(data.time * 1000);
-		let str = '';
-		for (const msg of data.messages) {
-			str += '<div style="padding:5px 0 5px 8px; margin:8px 0; border-left:1px solid #fff; background:#555">'+msg+'</div>';
-		}
-		str +=
-		'<div class=-date>'+exactDate.format(date)+'</div>' +
-		'<div class=-usr>'+data.usr+'</div>'+
-		'<div class=-device title="'+data.user_agent+'">'+data.browser+' | '+data.ip+'</div>'+
-		'';
-		find(more, '.-txt').innerHTML = str;
-	});
-	find(more, '.-reactivate').onclick = function(){
-		body.style.opacity = 0.3;
-		apt['cms.versions']['publish-node'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(function(){
-			location.href = location.href.replace(/#.*$/,'');
-		});
-	};
-	find(more, '.-compareActive').onclick = async function(){
-		const { CmsVersComparer } = await import('./comparer.mjs');
-		CmsVersComparer.compare(Viewer.pid, {
-			fromLog: e.vers+1,
-			fromText: find(li, '.-date').innerHTML,
-			toText: 'aktuell',
-			accept(){ find(more, '.-reactivate').onclick(); },
-			acceptText:'Stand wiederherstellen',
-		});
-	};
-});
-more.addEventListener('mouseover',function(e){
-	const mark = e.target.getAttribute('mark');
-	if (!mark) return;
-	const all = Viewer.activeIframe.contentWindow.document.querySelectorAll(mark);
-	for (const el of all) {
-		el.style.outline = '10px dotted red';
-		el.scrollIntoView({
-		    behavior: 'smooth',
-		    block:    'start',
-		});
-		Viewer.activeIframe.contentWindow.scrollBy(-100,-100)
-	}
-});
-
-/* ui */
-document.addEventListener('keydown',e=>{
-	const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
-	if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
-	if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
-	if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
-	if (e.which == 72) { // H
-		Viewer.show(Page);
-		e.preventDefault();
-	}
-});
-
-cms.contextMenueContent.addItem('Verlauf', {
-	icon: sysURL+cmsFrontend+'/pub/img/undo.svg',
-	selector: '[qcms-edit], #qgCmsContPosMenu',
-	onshow() {
-		this.activePid = cms.contPos.active.pid;
-		this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
-	},
-	onclick() {
-		Viewer.show(this.activePid);
-	}
-});
-
-// frontend integration
-const sidebarItem = c1.dom.fragment(
-'<div class=-item itemid=history>'+
-	'<div class=-title>'+
-	'	<div class=-text>Verlauf</div>'+
-	'</div>'+
-'</div>').firstChild;
-panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.after(sidebarItem)
-sidebarItem.addEventListener('mousedown', e=>{
-	e.stopPropagation();
-	Viewer.show(Page)
-});
-
-
-const locale = document.documentElement.lang || navigator.language;
-const relativeFormat = new Intl.RelativeTimeFormat(locale, {numeric:'auto'});
-const exactDate = new Intl.DateTimeFormat(locale, {dateStyle:'medium', timeStyle:'medium'});
-const relativeUnits = [[60, 'second'], [60, 'minute'], [24, 'hour'], [30, 'day'], [12, 'month'], [Infinity, 'year']];
-function relativeDate(timestamp) {
-	let value = timestamp - Date.now()/1000;
-	for (const [limit, unit] of relativeUnits) {
-		if (Math.abs(value) < limit) return relativeFormat.format(Math.round(value), unit);
-		value /= limit;
-	}
 }

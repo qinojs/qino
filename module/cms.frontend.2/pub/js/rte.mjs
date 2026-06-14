@@ -14,7 +14,7 @@ const urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 const mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
 const inp = c1.dom.fragment('<input placeholder=url spellcheck=false type=qgcms-page>').firstChild;
-const end = function() {
+const end = () => {
 	const el = Rte.element.closest('a');
 	if (!el) return;
 
@@ -32,15 +32,15 @@ const end = function() {
 		return;
 	} else if (!isNaN(v)) {
 		v = 'cmspid://'+v;
-	} else if (v.match(mailRegexp)) {
+	} else if (mailRegexp.test(v)) {
 		v = 'mailto:'+v;
-	} else if (v.match(urlRegexp)) {
+	} else if (urlRegexp.test(v)) {
 		v = 'http://'+v;
 	}
 	inp.value = v;
 	el.setAttribute('href',v);
 
-	if (v.match(/^https?:\/\//)) {
+	if (/^https?:\/\//.test(v)) {
 		el.setAttribute('rel','noopener');
 	} else {
 		el.removeAttribute('rel','noopener');
@@ -48,7 +48,7 @@ const end = function() {
 
 
 	if (!el.hasAttribute('target')) {
-		el.setAttribute('target', v.match(/^(cmspid|mailto)/) || v[0] === '#' ? '_self' : '_blank');
+		el.setAttribute('target', /^(cmspid|mailto)/.test(v) || v[0] === '#' ? '_self' : '_blank');
 	}
 	Rte.active?.focus(); // always false? needed?
 	Rte.trigger('input');
@@ -76,7 +76,7 @@ Rte.ui.setItem('Link', {
 			//let el = qgSelection.surroundContents(document.createElement('a')); // todo: selection on multiple elements
 			const range = getSelection().c1GetRange();
 			const el = document.createElement('a');
-			el.appendChild(range.extractContents());
+			el.append(range.extractContents());
 			range.insertNode(el);
 			qgSelection.toChildren(el);
 
@@ -84,7 +84,7 @@ Rte.ui.setItem('Link', {
 			// set initial value
 			inp.value = '';
 			const txt = el.textContent.trim();
-			if (txt.match(/^http[^\s]+$/) || txt.match(urlRegexp) || txt.match(mailRegexp)) {
+			if (/^http[^\s]+$/.test(txt) || urlRegexp.test(txt) || mailRegexp.test(txt)) {
 				inp.value = txt;
 				el.setAttribute('href',txt);
 			} else {
@@ -96,9 +96,7 @@ Rte.ui.setItem('Link', {
 			}
 			setTimeout(()=>{
 				el.classList.add('qgRte_fakeSelection');
-				inp.addEventListener('blur',function(){
-					el.classList.remove('qgRte_fakeSelection');
-				},{once:true})
+				inp.addEventListener('blur', () => el.classList.remove('qgRte_fakeSelection'), {once:true})
 				inp.focus();
 			},1); // todo: why timeout?
 		}
@@ -144,12 +142,12 @@ const externMediaDialog = async function(txtEl,medias) {
 		const label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
 		label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
 		label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
-		find(label, 'input').addEventListener('change',function(){ media.checked = this.checked; });
+		find(label, 'input').addEventListener('change', e => media.checked = e.currentTarget.checked);
 		find(dialog.element, '.-checkkboxes').append(label);
 	}
 	dialog.show();
 }
-const checkMedia = function(root) {
+const checkMedia = root => {
 	const medias = {}; let has=0;
 	for (const el of findAll(root, 'a, img')) {
 		if (el.classList.contains('externMedia')) continue;
@@ -170,7 +168,7 @@ const checkMedia = function(root) {
 	}
 	has && externMediaDialog(root,medias);
 };
-document.addEventListener('paste',function(e){
+document.addEventListener('paste', e => {
 	if (!e.target.contentEditable) return;
 	const txtEl = e.target.closest('[cmstxt]');
 	if (!txtEl) return;
@@ -181,7 +179,7 @@ document.addEventListener('paste',function(e){
 document.addEventListener('qgResize',e=>{
 	const el = e.target;
 	if (!el.isContentEditable) return;
-	if (el.tagName === 'IMG' && el.src.match('dbFile/')) {
+	if (el.tagName === 'IMG' && el.src.includes('dbFile/')) {
 		const width = el.width;
 		const height = el.height;
 
@@ -202,7 +200,7 @@ document.addEventListener('qgResize',e=>{
 });
 
 // dbclick zoomer
-addEventListener('dblclick', function(e) {
+addEventListener('dblclick', e => {
     const img = e.target;
     if (img.isContentEditable && img.tagName === 'IMG' && img.src.match(/\/dbFile/)) {
         e.stopPropagation();
@@ -218,10 +216,10 @@ addEventListener('dblclick', function(e) {
                 default: return match;
             }
         });
-        zoomImg.onload = function() {
+        zoomImg.onload = () => {
             const Zoomer = new ImageZoomer(zoomImg);
             Zoomer.activate();
-            const change = function() {
+            const change = () => {
                 const vpos = Zoomer.y / ( Zoomer.img.height - Zoomer.h ) || 0;
                 const hpos = Zoomer.x / ( Zoomer.img.width  - Zoomer.w ) || 0;
                 new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', Zoomer.factor() );
@@ -243,8 +241,8 @@ addEventListener('dblclick', function(e) {
 
             Zoomer.draw();
 
-            const deactivate = function() {
-                document.body.removeChild(Zoomer.canvas);
+            const deactivate = () => {
+                Zoomer.canvas.remove();
                 document.removeEventListener('mousedown', deactivate);
                 change();
             };
@@ -266,7 +264,7 @@ class ImageZoomer {
         this.canvas.setAttribute('tabindex','0');
         this.ctx = this.canvas.getContext("2d");
         this.setDimension(img.width,img.height);
-        document.body.appendChild(this.canvas);
+        document.body.append(this.canvas);
 	}
 	setDimension(w,h) {
         this.ctx.width = this.canvas.width = w;

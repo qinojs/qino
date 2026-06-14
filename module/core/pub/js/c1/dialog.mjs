@@ -76,14 +76,14 @@ c1.dialog = function(options){
             element.blur();
             element.remove();
         });
-        btnCont.appendChild(el);
+        btnCont.append(el);
         if (i === 0) setTimeout(() => el.focus());
     });
 };
 c1.dialog.prototype = {
     show:function(){
         const element = this.element;
-        document.body.appendChild(element);
+        document.body.append(element);
         c1.zTop(element);
         element.c1Focus();
         return new Promise(resolve => {

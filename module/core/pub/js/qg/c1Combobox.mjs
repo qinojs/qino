@@ -10,17 +10,15 @@ dialog.addEventListener('mousedown', e=>{
 	e.preventDefault();
 	e.stopPropagation(); // prevent closing cms-panel
 });
-dialog.addEventListener('touchstart', e=>{
-	e.stopPropagation(); // prevent closing cms-panel
-});
+dialog.addEventListener('touchstart', e => e.stopPropagation()); // prevent closing cms-panel
 const Placer = new c1.Placer(dialog);
 
 if (!CSS.supports('overscroll-behavior','contain')) { // zzz if supports
 	// console.warn('used?') safari 15.5
-	dialog.addEventListener('wheel', function(e){
-		if (e.wheelDelta > 0 && this.scrollTop === 0) {
+	dialog.addEventListener('wheel', e => {
+		if (e.wheelDelta > 0 && dialog.scrollTop === 0) {
 			e.preventDefault();
-		} else if (e.wheelDelta < 0 && this.scrollHeight < this.scrollTop + this.offsetHeight) {
+		} else if (e.wheelDelta < 0 && dialog.scrollHeight < dialog.scrollTop + dialog.offsetHeight) {
 			e.preventDefault();
 		}
 	});
@@ -37,7 +35,7 @@ window.c1Combobox = function(input){
 };
 c1Combobox.prototype = {
 	showDialog(){
-		if (dialog.parentNode !== doc.body) doc.body.appendChild(dialog);
+		if (dialog.parentNode !== doc.body) doc.body.append(dialog);
 		if (!dialog.matches(':popover-open')) dialog.showPopover(); // top-layer statt z-index, sonst hinter dem panel-popover
 		dialog.style.minWidth = this.input.offsetWidth + 'px';
 		Placer.follow(this.input);
@@ -170,5 +168,5 @@ const css =
 .c1Select::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, .25); } \
 ';
 const sEl = document.createElement('style');
-sEl.appendChild(document.createTextNode(css));
+sEl.textContent = css;
 document.head.append(sEl);

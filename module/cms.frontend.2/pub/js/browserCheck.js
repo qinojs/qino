@@ -64,9 +64,9 @@ function run() {
         url.searchParams.set('qgCms_editmode', '0');
         location.href = url;
     });
-    div.querySelector('.-ignoreBtn').addEventListener('click', function() {
+    div.querySelector('.-ignoreBtn').addEventListener('click', e => {
         document.cookie = 'qgCMS_browserCheck_ignore=1; max-age=300';
-        this.closest('.qgCMS').remove();
+        e.currentTarget.closest('.qgCMS').remove();
     });
 
     document.body.append(div);

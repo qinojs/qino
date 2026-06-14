@@ -61,10 +61,9 @@ cms.initNode("backend.api", (el) => {
         if (!field.name) continue;
         let val = field.value;
         if (val === "") continue;
-        if (field.tagName === "SELECT" && val === "") continue;
         if (val === "true") val = true;
         else if (val === "false") val = false;
-        else if (!isNaN(val) && val !== "") val = Number(val);
+        else if (!isNaN(val)) val = Number(val);
 
         if (r.pathParams.includes(field.name)) {
           path = path.replace(":" + field.name, encodeURIComponent(val));

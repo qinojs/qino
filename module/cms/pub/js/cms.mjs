@@ -18,7 +18,7 @@ cms.initNode = function(module, fn) {
 	}
 };
 
-c1.onElement('[qcms-id]', function(el) {
+c1.onElement('[qcms-id]', el => {
 	if (el.__cms_initialized) return;
 	const module = cms.el.module(el);
 	const fn = cms.modConnected[module];
@@ -109,11 +109,10 @@ const saveTxtDebounced = c1.debounce(saveTxt, 1600);
 document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
 document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
 
-cms.reloadNode = (nid, vars) => {
-	return apt.cms.node(nid).html.post({ vars }).then(html => {
-		document.querySelectorAll('[qcms-id="' + nid + '"]').forEach(el => el.outerHTML = html);
-	});
-};
+cms.reloadNode = (nid, vars) =>
+	apt.cms.node(nid).html.post({ vars }).then(html =>
+		document.querySelectorAll('[qcms-id="' + nid + '"]').forEach(el => el.outerHTML = html)
+	);
 
 cms.reloadPart = (nid, part, vars) => {
 	return apt.cms.node(nid).html.part(part).post({ vars }).then(html => {

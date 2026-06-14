@@ -67,9 +67,9 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 }
 /* CSS classes */
 {
-	const useClass = cl => cl.match(/^[A-Z]/);
+	const useClass = cl => /^[A-Z]/.test(cl);
 	let hasClasses; /* check if this-handle is used */
-	const check = c1.debounce(function(el) {
+	const check = c1.debounce(el => {
 		const classes = getPossibleClasses(el);
 		for (const cl of Object.keys(classes)) {
 			hasClasses ||= useClass(cl);
@@ -94,7 +94,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 				const d = c1.dom.fragment('<div class="'+sty+'">'+sty+'</div>').firstChild;
 				sopts.append(d);
 				has && d.classList.add('-selected');
-				d.onmousedown = function() {
+				d.onmousedown = () => {
 					Rte.manipulate(()=>{
 						el ||= qgSelection.surroundContents(document.createElement('span'));
 						el.classList.toggle(sty, !has);
@@ -141,7 +141,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 /* clean / remove format */
 {
 	const removeTags = ['FONT','O:P','SDFIELD','SPAN'].reduce((obj, item)=>{ obj[item]=1; return obj; }, {});
-	const cleanNode = function(node) {
+	const cleanNode = node => {
 	    if (!node) return;
 		cleanContents(node);
 	    node.nodeType === Node.COMMENT_NODE && node.remove();
@@ -162,7 +162,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 			}
 		}
 	}
-	const cleanContents = function(node){
+	const cleanContents = node => {
 		if (node.childNodes) for (const child of node.childNodes) cleanNode(child);
 	}
 	Rte.ui.setItem('Removeformat', {
@@ -188,7 +188,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 
 
 	let tO = null;
-	const makeInvisible = function(){
+	const makeInvisible = () => {
 		clearTimeout(tO);
 		wrapper.classList.remove('-Invisible');
 		tO = setTimeout(()=>{
@@ -239,7 +239,7 @@ Rte.ui.setItem('Strikethrough', 		{cmd:'strikethrough', xenable:':not(img)'});
 				code = domCodeIndent(el.innerHTML);
 			}
 			html.value = code;
-			html.onkeyup = html.onblur = function(){
+			html.onkeyup = html.onblur = () => {
 				el.innerHTML = html.value.replace(/\s*\uFEFF\s*/g,'');
 				el.dispatchEvent(new Event('input',{'bubbles':true,'cancelable':true}));
 			}
@@ -350,7 +350,7 @@ function ImageRealSize(url, cb) {
 	if (!imgSizeCache[url]) {
 		const nImg = new Image();
 		nImg.src = url;
-		nImg.onload = function() {
+		nImg.onload = () => {
 			cb.apply(null, imgSizeCache[url] = [nImg.width, nImg.height]);
 		};
 	} else {
@@ -365,7 +365,7 @@ Rte.ui.setItem('ImgOriginal', {
 	click() {
 		const img = Rte.element;
 		const url = img.getAttribute('src').replace(/\/(w|h|zoom|vpos|hpos|dpr)-[^\/]+/g,'');
-		ImageRealSize(url, function(w,h) {
+		ImageRealSize(url, (w,h) => {
 			w /= 2; h /= 2; // the server is told via cookie to deliver double resolution
 			make(w,h);
 		});
@@ -390,7 +390,7 @@ import {TableHandles} from '../c1/tableHandles.mjs';
 	let td, tr, table, index;
 	const handles = new TableHandles();
 	Rte.on('deactivate',() => handles.hide() );
-	const positionize = function() {
+	const positionize = () => {
 		const e = Rte.element;
 		if (!e) return;
 		td = e.closest('td');
@@ -461,16 +461,14 @@ console.warn('needed? shoud it be deprecated?');
 		'</style>')
 	);
 
-	const addMarks = function (){
+	const addMarks = () => {
 		// remove
 		const anchor = getSelection().anchorNode;
 		if (!anchor) return;
-		anchor.parentNode.querySelectorAll('.qgRte-mark-char').forEach(function(marker){
-			if (!marker.firstChild) marker.remove();
-		});
+		anchor.parentNode.querySelectorAll('.qgRte-mark-char').forEach(marker => !marker.firstChild && marker.remove());
 
 		//matchText(Rte.active, new RegExp('\u00AD|\u00a0', 'g'), function(node, match, offset) {
-		matchText(Rte.active, new RegExp('\u00AD', 'g'), function(node, match) {
+		matchText(Rte.active, new RegExp('\u00AD', 'g'), (node, match) => {
 			if (node.parentNode.classList.contains('qgRte-mark-char')) return false;
 			const span = document.createElement('span');
 			span.className = 'qgRte-mark-char';
@@ -480,7 +478,7 @@ console.warn('needed? shoud it be deprecated?');
 			return span;
 		});
 	};
-	const removeMarks = function (){
+	const removeMarks = () => {
 		Rte.active.querySelectorAll('.qgRte-mark-char').forEach(el=>unwrap(el))
 		Rte.active.normalize();
 	}
@@ -489,7 +487,7 @@ console.warn('needed? shoud it be deprecated?');
 	Rte.on('deactivate',removeMarks);
 
 
-	const matchText = function(node, regex, callback, excludeElements) {
+	const matchText = (node, regex, callback, excludeElements) => {
 		excludeElements ||= ['script', 'style', 'iframe', 'canvas'];
 		let child = node.firstChild;
 		while (child) {

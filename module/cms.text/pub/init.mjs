@@ -17,7 +17,7 @@ c1.globalContextMenu.addItem('CMS Text',{
 	onclick() { showEditor(this.qgCurrentTarget); }
 });
 
-const showEditor = async function(el) {
+const showEditor = async el => {
     const tid = el.getAttribute('cmstxt');
     const data = await apt['cms.text'].text(tid).get();
     const dialog = document.createElement('dialog');
@@ -116,20 +116,16 @@ const showEditor = async function(el) {
                 alert('Failed to restore');
             }
         });        
-        hDialog.addEventListener('close', () => {
-            setTimeout(()=>hDialog.remove(),2000);
-        });
+        hDialog.addEventListener('close', () => setTimeout(() => hDialog.remove(), 2000));
         hDialog.showModal();
     });
-    dialog.addEventListener('close', () => {
-        setTimeout(()=>dialog.remove(),2000);
-    });
+    dialog.addEventListener('close', () => setTimeout(() => dialog.remove(), 2000));
     document.body.append(dialog);
 	dialog.showModal();
 }
 
 // mark untranslated / void texts
-setTimeout(function(){
+setTimeout(() => {
 	document.head.append(c1.dom.fragment(
 		'<style>'+
 		'  @keyframes qgCMS-text-untranslated { 0% { background-color: rgba(255,240,0,.4) } 50% {  } 100% {  } }'+
@@ -168,9 +164,7 @@ setTimeout(function(){
 
 
 function hee(string){
-	return string.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
-	   return '&#'+i.charCodeAt(0)+';';
-	});
+	return string.replace(/[\u00A0-\u9999<>\&]/gim, i => '&#'+i.charCodeAt(0)+';');
 }
 
 

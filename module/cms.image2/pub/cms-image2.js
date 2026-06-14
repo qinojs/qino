@@ -94,7 +94,9 @@ function onIntersecting(entry) {
 
 }
 // listen
-const observer = new IntersectionObserver((entries)=>entries.forEach(onIntersecting), {root:null, rootMargin:'150px', threshold:0});
+const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) onIntersecting(entry);
+}, {root:null, rootMargin:'150px', threshold:0});
 
 // helper
 function roundImgSize(v){
@@ -140,10 +142,10 @@ const c1UglyResize = {};
         observer.observe(el);
     };
     const observer = new ResizeObserver((entries) => {
-        entries.forEach((entry) => {
-            if (latestEl === entry.target) return;
+        for (const entry of entries) {
+            if (latestEl === entry.target) continue;
             entry.target.dispatchEvent(new CustomEvent('c1UglyResize'));
-        });
+        }
     });
 }();
 

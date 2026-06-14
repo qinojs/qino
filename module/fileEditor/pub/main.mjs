@@ -8,17 +8,15 @@ const cmCol  = editorEl.getAttribute('col')-1;
 
 function saveFile(content){
 	btn.style.backgroundColor = '#fea';
-	apt.fileEditor.save.put({ file, content }).then(function(asw){
+	apt.fileEditor.save.put({ file, content }).then(asw => {
 		if (asw) {
 			btn.style.backgroundColor = '';
 			btn.style.display = 'none';
 		}
 	});
-};
+}
 
-btn.addEventListener('click',()=>{
-	saveFile(editor.getValue());
-});
+btn.addEventListener('click', () => saveFile(editor.getValue()));
 
 
 function saveEvent(e){

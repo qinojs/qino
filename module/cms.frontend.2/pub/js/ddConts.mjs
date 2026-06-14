@@ -25,7 +25,7 @@ cms.contDrag = function() {
 	function up() {
 		moveToTargetEffect(active);
 		if (!dropCont) return; // neu
-		dropCont.removeChild(ghost);
+		ghost.remove();
 		dropCont.insertBefore(active,dropBefore);
 		active.style.cssText = oldCss;
 		active.style.opacity = 0; // moveToTargetEffect!!
@@ -45,7 +45,7 @@ cms.contDrag = function() {
 		oldCss = active.style.cssText;
 		active.style.position  = 'fixed';
 		c1.zTop(active);
-		document.body.appendChild(active);
+		document.body.append(active);
 		e && move(e);
 	};
 
@@ -120,9 +120,7 @@ function elementDistances(e, els) {
 			distance,
 		});
 	}
-	return items.sort(function(a, b) {
-	    return a.distance - b.distance;
-	});
+	return items.sort((a, b) => a.distance - b.distance);
 }
 function getNearestElement2(e, els, notInside) {
 	els = Array.prototype.filter.call(els, el => !notInside.contains(el) )
@@ -177,7 +175,7 @@ function getBeforeElement(e, el) {
 
 function moveToTargetEffect(element) {
 	const clone = element.cloneNode(true);
-	document.body.appendChild(clone);
+	document.body.append(clone);
 	clone.style.cssText +=
 	'width:'+clone.offsetWidth+'px; '+
 	'height:'+clone.offsetHeight+'px; '+

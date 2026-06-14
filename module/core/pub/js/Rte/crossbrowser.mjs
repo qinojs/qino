@@ -171,7 +171,7 @@ document.addEventListener('mousedown', e=>{
 	let img = null;
 	window.qgImageResizeUi = function(e) {
 		img = e.target;
-		const hide = function(e) {
+		const hide = e => {
 			if (!e || e.target!==img) {
 				cont.remove();
 				document.removeEventListener('mousedown',hide);
@@ -187,7 +187,7 @@ document.addEventListener('mousedown', e=>{
 		clearInterval(checkIntr);
 		checkIntr = setInterval(check, 100);
 	};
-	const positionize = function() {
+	const positionize = () => {
 		const c      = img.getBoundingClientRect(), // todo: fastdom
 			body   = document.documentElement.getBoundingClientRect(),
 			bottom = c.bottom - body.top  - 6,
@@ -199,11 +199,11 @@ document.addEventListener('mousedown', e=>{
 			info.style.left = right + 16 + 'px';                  info.style.top = bottom + 16 + 'px';
 		});
 	};
-	const startFn = function(e) {
+	const startFn = e => {
 		const startM   = {x: e.pageX, y: e.pageY};
 		const startDim = {x: img.offsetWidth, y: img.offsetHeight};
 		const dragger = e.target;
-		const moveFn = function(e) {
+		const moveFn = e => {
 			let w = dragger === Y ? startDim.x : Math.max(1, startDim.x + e.pageX - startM.x);
 			let h = dragger === X ? startDim.y : Math.max(1, startDim.y + e.pageY - startM.y);
 			if (!e.ctrlKey && dragger === XY) {
@@ -224,7 +224,7 @@ document.addEventListener('mousedown', e=>{
 			})
 			positionize();
 		};
-		const stopFn = function() {
+		const stopFn = () => {
 			img.dispatchEvent(new Event('qgResize',{bubbles:true}));
 			document.removeEventListener('mousemove', moveFn);
 			document.removeEventListener('mouseup', stopFn);
@@ -252,18 +252,16 @@ document.addEventListener('mousedown', e=>{
 
 /* contenteditable focus bug */
 if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent) && document.caretRangeFromPoint) {
-    document.addEventListener('DOMContentLoaded', function(){
+    document.addEventListener('DOMContentLoaded', () => {
         const fixEl = document.createElement('input');
         fixEl.style.cssText = 'width:1px;height:1px;border:none;margin:0;padding:0; position:fixed; top:0; left:0';
         fixEl.tabIndex = -1;
         let shouldNotFocus = null;
         function fixSelection(){
-            document.body.appendChild(fixEl);
+            document.body.append(fixEl);
             fixEl.focus();
             fixEl.setSelectionRange(0,0);
-            setTimeout(function(){
-                document.body.removeChild(fixEl);
-            },100)
+            setTimeout(() => fixEl.remove(),100)
         }
         function checkMouseEvent(e){
             if (e.target.isContentEditable) return;
@@ -272,31 +270,27 @@ if (/AppleWebKit\/([\d.]+)/.exec(navigator.userAgent) && document.caretRangeFrom
             const wouldFocus = getContentEditableRoot(range.commonAncestorContainer);
             if (!wouldFocus || wouldFocus.contains(e.target)) return;
             shouldNotFocus = wouldFocus;
-            setTimeout(function(){
-                shouldNotFocus = null;
-            });
+            setTimeout(() => shouldNotFocus = null);
             if (e.type === 'mousedown') {
                 document.addEventListener('mousemove', checkMouseEvent, false);
             }
         }
         document.addEventListener('mousedown', checkMouseEvent, false);
-        document.addEventListener('mouseup', function(){
-                document.removeEventListener('mousemove', checkMouseEvent, false);
-        }, false);
-        document.addEventListener('focus', function(e){
+        document.addEventListener('mouseup', () => document.removeEventListener('mousemove', checkMouseEvent, false), false);
+        document.addEventListener('focus', e => {
             if (e.target !== shouldNotFocus) return;
             if (!e.target.isContentEditable) return;
             fixSelection();
         }, true);
-        document.addEventListener('blur', function(e){
-			if (e.target !== shouldNotFocus) return;
-        	if (!e.target.isContentEditable) return;
-        	setTimeout(function(){
-        		if (document.activeElement === e.target) return;
-        		if (!e.target.contains(getSelection().baseNode)) return;
+        document.addEventListener('blur', e => {
+            if (e.target !== shouldNotFocus) return;
+            if (!e.target.isContentEditable) return;
+            setTimeout(() => {
+                if (document.activeElement === e.target) return;
+                if (!e.target.contains(getSelection().baseNode)) return;
                 fixSelection();
-        	})
-	    }, true);
+            })
+        }, true);
     });
 }
 

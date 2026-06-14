@@ -83,19 +83,15 @@ cms.cont.prototype = {
 		const event = Object.assign({}, c1.Eventer);
 		event.pid = this.id;
 		event.File = File;
-		const progress = function(e) {
-			event.trigger('progress', e);
-		};
-		const wrapComplete = function(res) {
-			res = JSON.parse(res);
-			res.error && alert(res.error);
-			complete && setTimeout(function(){ complete(res); }, 700); // firefox problem?
-			event.trigger('complete', res);
-		};
 		qgfileUpload(File, 'cmsPageFile', {
 			url: location.pathname+'?cmspid='+this.id+'&replace='+(replace||''),
-			progress: progress,
-			complete: wrapComplete
+			progress: e => event.trigger('progress', e),
+			complete: res => {
+				res = JSON.parse(res);
+				res.error && alert(res.error);
+				complete && setTimeout(() => complete(res), 700); // firefox problem?
+				event.trigger('complete', res);
+			},
 		});
 		cms.cont.trigger('upload', event);
 	},
@@ -168,9 +164,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 		trash.classList.add('-dropTarget');
 		c1.zTop(trash);
 	})
-	dd.on('change',e=>{
-		trash.classList[[(e.target.id==='qgCmsContTrash'?'add':'remove')]]('-full');
-	})
+	dd.on('change', e => trash.classList.toggle('-full', e.target.id === 'qgCmsContTrash'));
 	dd.on('stop',el=>{
 		document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.remove('dropTarget'))
 		p.moving = null;
@@ -258,9 +252,7 @@ cms.console = {
 	}
 };
 
-apt.addEventListener('error', ({ detail }) => {
-	cms.console.show(detail.error?.message || t`Fehler beim API-Aufruf`, 'error');
-});
+apt.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`Fehler beim API-Aufruf`, 'error'));
 
 cms.frontend2.dialog = async (title,body,buttons)=>{
 	await import('../../../core/pub/js/c1/dialog.mjs');

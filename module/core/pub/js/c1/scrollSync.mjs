@@ -43,9 +43,7 @@ c1.scrollSync = {
             el.style.scrollBehavior = '';
         }
         win.clearTimeout(win.c1ScrollSyncPreventFeedbackTimeout); // todo: outside loop?
-        win.c1ScrollSyncPreventFeedbackTimeout = win.setTimeout(()=>{
-            win.c1ScrollSyncPreventFeedback = false;
-        },100);
+        win.c1ScrollSyncPreventFeedbackTimeout = win.setTimeout(() => win.c1ScrollSyncPreventFeedback = false, 100);
     },
     syncWindows(fromWindow, toWindow){
         const doc = fromWindow.document;
@@ -73,9 +71,7 @@ function scrollListener(e) {
     const doc = el.ownerDocument;
     if (doc.defaultView.c1ScrollSyncPreventFeedback) return;
     if (doc.c1ScrollSyncTargetWindows) {
-        doc.c1ScrollSyncTargetWindows.forEach(win=>{
-            c1.scrollSync.restoreIn(config, win);
-        });
+        doc.c1ScrollSyncTargetWindows.forEach(win => c1.scrollSync.restoreIn(config, win));
     }
     // localStorage // better use sessionStorage?
     //localStorage.setItem('c1.scrollSync', JSON.stringify(c1.scrollSync.config));

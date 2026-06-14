@@ -15,7 +15,7 @@ export function dataTransferToUrl(dt) {
 	let fileurl3 = getData('url') || url || '';
 	fileurl3 = fileurl3.trim();
 	const fileurl = fileurl1 || fileurl2 || fileurl3;
-	if (fileurl.match(/^file/)) return null;
+	if (fileurl.startsWith('file')) return null;
 	return fileurl1 || fileurl2 || fileurl3;
 }
 
@@ -31,9 +31,7 @@ export function readClipboardHtml(cd, cb) {
 		if (item.type === 'text/plain') alternative = item;
 	}
 	if (alternative) {
-		alternative.getAsString(text => {
-			cb( text.replace(/\n/g,'<br>') );
-		});
+		alternative.getAsString(text => cb(text.replace(/\n/g,'<br>')));
 		return 1;
 	}
 	return 0;

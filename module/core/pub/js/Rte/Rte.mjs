@@ -48,7 +48,7 @@ window.Rte = {
 		Rte.trigger('selectionchange');
 	},
 	manipulate(fn) {
-		setTimeout(function() {
+		setTimeout(() => {
 			getSelection().c1SetRange(Rte.range);
 			fn?.();
 			Rte.checkSelection();
@@ -84,9 +84,9 @@ window.Rte = {
 	},
 	*/
 	addUiElement(el) { // really needed?
-		const activate = function(e) {
+		const activate = e => {
 			Rte.dontBlur = true;
-			const gMousedown = function(e) {
+			const gMousedown = e => {
 				if (el.contains(e.target)) return;
 				document.removeEventListener('mousedown',gMousedown);
 				Rte.dontBlur = false;
@@ -149,9 +149,7 @@ Object.assign(Rte, c1.Eventer);
 
 
 qgExecCommand('enableInlineTableEditing', false, false); // bug: if i first click in the table the nativ handles appear
-document.addEventListener('DOMContentLoaded',function(){
-	qgExecCommand('enableObjectResizing', false, false);
-});
+document.addEventListener('DOMContentLoaded', () => qgExecCommand('enableObjectResizing', false, false));
 
 
 // fake Selection
@@ -191,7 +189,7 @@ document.addEventListener('mousedown', e =>
 /* cleaner */
 {
 	let Cleaner;
-	Rte.on('input', function() {
+	Rte.on('input', () => {
 		Cleaner ||= new c1.NodeCleaner();
 		Cleaner.cleanContents(Rte.active, true);
 	});
@@ -199,7 +197,7 @@ document.addEventListener('mousedown', e =>
 
 /* force li's in contenteditable uls */
 {
-	const check = function(){
+	const check = () => {
 		let child;
 		for (child of Rte.active.childNodes) {
 			if (child.tagName === 'LI') continue;
@@ -224,7 +222,7 @@ document.addEventListener('mousedown', e =>
 	});
 }
 /* force p tag inside contenteditable divs */
-document.addEventListener('input',function(e){
+document.addEventListener('input', e => {
 	if (!e.target.isContentEditable) return;
 	if (e.target.tagName !== 'DIV') return;
 	const sel = getSelection();
@@ -251,7 +249,7 @@ document.addEventListener('input',function(e){
 	}
 });
 /* force p's to not contain a ul */
-document.addEventListener('input',function(e){
+document.addEventListener('input', e => {
 	if (!e.target.isContentEditable) return;
 	if (e.target.tagName !== 'DIV') return;
 	const sel = getSelection();
@@ -270,7 +268,7 @@ document.addEventListener('input',function(e){
 });
 
 /* force br's tag inside contenteditable if not a DIV/TD/TH/UL, (todo, should it be p,h1,h2...?) */
-document.addEventListener('keydown',function(e){
+document.addEventListener('keydown', e => {
 	if (!e.target.isContentEditable) return;
 	if (e.target.tagName === 'DIV') return;
 	if (e.target.tagName === 'TD') return;
@@ -288,7 +286,7 @@ document.addEventListener('keydown',function(e){
 });
 
 /* prevent links inside links */
-document.addEventListener('input',function(e){
+document.addEventListener('input', e => {
 	if (!e.target.isContentEditable) return;
 	if (!e.target.closest('A')) return;
 	let a;
@@ -298,9 +296,9 @@ document.addEventListener('input',function(e){
 /* prevent phx inside phx */
 {
 	const PHX = {P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,};
-	document.addEventListener('input',function(e){
+	document.addEventListener('input', e => {
 		if (!e.target.isContentEditable) return;
-		const check = function(node) {
+		const check = node => {
 			Array.from(node.children).forEach(check); // for of will skip nodes (if some removed)
 			if (isPHX(node.parentNode) && isPHX(node)) {
 				if (node.nextElementSibling) {

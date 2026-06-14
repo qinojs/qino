@@ -13,9 +13,7 @@ cms.initNode("backend.superuser.dbfiles", (el) => {
     }, 400);
   });
 
-  el.querySelector("[data-order]")?.addEventListener("change", (e) => {
-    location.search = "?order=" + e.target.value;
-  });
+  el.querySelector("[data-order]")?.addEventListener("change", (e) => location.search = "?order=" + e.target.value);
 
   el.addEventListener("change", (e) => {
     const set = e.target.closest("[data-set]");

@@ -11,10 +11,10 @@ cms.txtIdToPid = async function(tid) {
 // clean texts
 cms.txtCleanElement = function(el,tid){
     if (el.tagName === 'IMG') el.setAttribute('loading','lazy');
-    if (el.tagName === 'IMG' && el.src.match(/^data:/)) {
+    if (el.tagName === 'IMG' && el.src.startsWith('data:')) {
         cms.txtIdToPid(tid).then( pid => cms.imgToDbFile(el, pid) );
     }
-    if (el.tagName === 'IMG' && el.src.match('dbFile/')) {
+    if (el.tagName === 'IMG' && el.src.includes('dbFile/')) {
         const dim = () => {
             el.style.maxWidth = '100%';
             el.style.width = el.offsetWidth+'px';
@@ -27,22 +27,20 @@ cms.txtCleanElement = function(el,tid){
         else if (el.complete) requestAnimationFrame(dim);
         else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
     }
-    if (el.src?.match?.('dbFile/')  && el.src .match(location.host)) { el.src  = ctx.appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
-    if (el.href?.match?.('dbFile/') && el.href.match(location.host)) { el.href = ctx.appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
+    if (el.src?.includes('dbFile/')  && el.src .includes(location.host)) { el.src  = ctx.appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
+    if (el.href?.includes('dbFile/') && el.href.includes(location.host)) { el.href = ctx.appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
     el.removeAttribute('cmstxt');
     for (const a of ['qcms-id', 'qcms-mod', 'qcms-edit', 'qcms-drop', 'qcms-offline', 'qcms-name']) el.removeAttribute(a);
 };
 cms.txtClean = function(el,tid) {
 	el = el.data ? el.parentNode : el;
-    el.querySelectorAll('*').forEach(function(el) {
-        cms.txtCleanElement(el,tid);
-	});
+    el.querySelectorAll('*').forEach(el => cms.txtCleanElement(el,tid));
 };
 // text add file from fs
 cms.txtAddFile = async function(txtEl, f) {
     const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
 	const ph = fileGetPreview(f);
-	const complete = function(r) {
+	const complete = r => {
 		if (f.c1IsImage()) {
 			const load = function() {
 				const file = new dbFile(this);
@@ -72,8 +70,8 @@ cms.txtAddFile = async function(txtEl, f) {
 
 // img to dbfile
 cms.imgToDbFile = function(img, pid, cb) {
-	const complete = function(r) {
-		const load = function() {
+	const complete = r => {
+		const load = () => {
             img.removeEventListener('load',load);
 			cb?.(img);
 		};
@@ -113,4 +111,3 @@ const Cleaner = new c1.NodeCleaner(cms.NodeCleanerConf_ForeignContent);
 window.onPasteFormatNode = function(node) {
 	Cleaner.cleanContents(node, true);
 };
-

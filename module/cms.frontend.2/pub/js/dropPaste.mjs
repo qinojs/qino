@@ -6,7 +6,7 @@ import { dataTransferToUrl, readClipboardHtml } from '../../../core/pub/js/util/
 let internalDrag = false;
 let draggedEl = null;
 
-const dragOver = function(e) {
+const dragOver = e => {
 	const el = e.target.closest('[cmstxt][contenteditable]');
 	if (!el) return;
 	e.stopImmediatePropagation();
@@ -18,7 +18,7 @@ const dragOver = function(e) {
 	Sel.addRange(range);
 };
 
-const drop = async function(e) {
+const drop = async e => {
 	const txtEl = e.target.closest('[cmstxt][contenteditable]');
 	if (!txtEl) return;
 	const tid = txtEl.getAttribute('cmstxt');
@@ -44,7 +44,7 @@ const drop = async function(e) {
 	if (e.dataTransfer.files.length) {
 		e.preventDefault();
 		for (const file of e.dataTransfer.files) {
-			if (file.name.match(/[a-z0-9]{8}\.bmp/)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
+			if (/[a-z0-9]{8}\.bmp/.test(file.name)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
 			cms.txtAddFile(txtEl, file);
 		}
 	}
@@ -55,7 +55,7 @@ const drop = async function(e) {
 	// todo: intern file
 	// Add file to awoid access problems, but its a copy!!!!
 	// we only get here if its on other winodw!! (if internalDrag return)
-	if (fileUrl.match(location.host)) {
+	if (fileUrl.includes(location.host)) {
 		const intern = fileUrl.match(/dbFile\/([0-9]+)\//)[1];
 		if (intern) {
 			apt.cms.node(pid).files.post({ file: intern });
@@ -63,20 +63,18 @@ const drop = async function(e) {
 		}
 	}
 	const res = await apt.cms.node(pid).files.post({ file: fileUrl });
-	if (!fileUrl.match(/(jpg|jpeg|gif|png)$/i)) return;
+	if (!/(jpg|jpeg|gif|png)$/i.test(fileUrl)) return;
 	const img = document.createElement('img');
 	img.src = res.url+'/'+res.name;
 	const r = getSelection().getRangeAt(0);
 	r.insertNode(img);
-	img.addEventListener('load',()=>{
-		cms.txtCleanElement(img,tid);
-	},{once:true});
+	img.addEventListener('load', () => cms.txtCleanElement(img, tid), {once:true});
 }
-const paste = function(e) {
+const paste = e => {
 	const txtEl = e.target.closest('[cmstxt][contenteditable]');
 	if (!txtEl) return;
 	const tid = txtEl.getAttribute('cmstxt');
-	const addHtml = function(html) {
+	const addHtml = html => {
 		const s = getSelection();
 		const r = s.c1GetRange();
 		html = html.replace(/[^]*<!--StartFragment-->/i, '');
@@ -133,7 +131,7 @@ root.addEventListener('drop', e=>{
 	if (e.dataTransfer.files.length) {
 		let hasOne = false;
 		for (const file of e.dataTransfer.files) {
-			if (file.name.match(/[a-z0-9]{8}\.bmp/)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
+			if (/[a-z0-9]{8}\.bmp/.test(file.name)) continue; // ignore chrome generated bmp's when draging a html image, prefere the url
 			hasOne = true;
 			cms.cont(pid).upload(file,complete);
 		}
@@ -141,7 +139,7 @@ root.addEventListener('drop', e=>{
 	}
 	const fileUrl = dataTransferToUrl(e.dataTransfer);
 	if (!fileUrl) return;
-	if (fileUrl.match(location.host)) {
+	if (fileUrl.includes(location.host)) {
 		const match = fileUrl.match(/dbFile\/([0-9]+)\//);
 		if (match) {
 			apt.cms.node(pid).files.post({ file: match[1] }).then(complete);

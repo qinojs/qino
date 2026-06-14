@@ -22,7 +22,7 @@ cms.contextMenueContent.addItem('Publish', {
 });
 function publish(pid, subPages){
 	if (!confirm('Really overwrite the current live version?')) return;
-	apt['cms.versions']['publish-node'].post({ pid, options: {toSpace:0, subPages} }).then(function(){
+	apt['cms.versions']['publish-node'].post({ pid, options: {toSpace:0, subPages} }).then(() => {
 		location.href = location.href.replace(/#.*$/,'');
 	});
 }

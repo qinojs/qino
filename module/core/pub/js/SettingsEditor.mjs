@@ -56,8 +56,7 @@ function isObjectItem(item) {
 
 function readInput(el) {
   if (el.type === "checkbox") return el.checked;
-  if (el.type === "number") { const n = Number(el.value); return el.value === "" || isNaN(n) ? el.value : n; }
-  if (el.tagName === "SELECT") return el.options[el.selectedIndex].value;
+  if (el.type === "number") { const n = Number(el.value); return el.value === "" || Number.isNaN(n) ? el.value : n; }
   return el.value;
 }
 

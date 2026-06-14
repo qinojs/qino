@@ -57,7 +57,7 @@ export class AptClient extends EventTarget {
     if (method === "GET" || method === "DELETE") {
       for (const [k, v] of Object.entries(input || {})) {
         if (v == null) continue;
-        if (Array.isArray(v)) v.forEach(item => url.searchParams.append(k, item));
+        if (Array.isArray(v)) for (const item of v) url.searchParams.append(k, item);
         else url.searchParams.set(k, v);
       }
     } else {

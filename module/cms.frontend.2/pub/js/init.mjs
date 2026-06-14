@@ -7,7 +7,7 @@ function qgCmsToggleEdit(){
 	const url = new URL(location.href);
 	url.searchParams.set('qgCms_editmode', globalThis.qino.cms.editmode?0:1);
 	url.searchParams.set('cmspid', globalThis.qino.cms.requestedNodeId);
-	import('../../../core/pub/js/c1/scrollSync.mjs').then(function(){
+	import('../../../core/pub/js/c1/scrollSync.mjs').then(() => {
 		c1.scrollSync.reevaluate(globalThis);
 		const config = c1.scrollSync.getConfig(globalThis);
 		localStorage.setItem('cmsLastScrollPosition', JSON.stringify(config));
@@ -15,7 +15,7 @@ function qgCmsToggleEdit(){
 	});
 }
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', e => {
 	const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
 	if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
 	if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
@@ -36,7 +36,7 @@ document.addEventListener('keydown', function(e) {
 const savedScroll = localStorage.getItem('cmsLastScrollPosition');
 if (savedScroll) {
 	localStorage.removeItem('cmsLastScrollPosition');
-	import('../../../core/pub/js/c1/scrollSync.mjs').then(function(){
+	import('../../../core/pub/js/c1/scrollSync.mjs').then(() => {
 		c1.scrollSync.restoreIn(JSON.parse(savedScroll), globalThis);
 	});
 }
@@ -44,8 +44,8 @@ if (savedScroll) {
 if (editable) {
 	const editToggle = c1.dom.fragment('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Bearbeiten (E)"><div><i></i></div></a>').firstChild;
 	document.body.append(editToggle);
-	editToggle.addEventListener('click',function(){
+	editToggle.addEventListener('click', e => {
 		qgCmsToggleEdit();
-		this.classList.toggle('-active');
+		e.currentTarget.classList.toggle('-active');
 	});
 }

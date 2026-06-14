@@ -82,16 +82,12 @@ window.Rte.ui = {
 		let moreTimeout = null;
 		my.div.addEventListener('mouseenter',()=>{
 			clearTimeout(moreTimeout);
-			moreTimeout = setTimeout(()=>{
-				Rte.ui.div.querySelector('.-more').classList.add('-show');
-			},300);
+			moreTimeout = setTimeout(() => Rte.ui.div.querySelector('.-more').classList.add('-show'), 300);
 			Rte.ui.mouseover = 1;
 		});
 		my.div.addEventListener('mouseleave',()=>{
 			clearTimeout(moreTimeout);
-			moreTimeout = setTimeout(()=>{
-				Rte.ui.div.querySelector('.-more').classList.remove('-show');
-			},300);
+			moreTimeout = setTimeout(() => Rte.ui.div.querySelector('.-more').classList.remove('-show'), 300);
 			Rte.ui.mouseover = 0;
 		});
 	},

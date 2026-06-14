@@ -7,8 +7,8 @@
 /* trash */
 #qgCmsContTrash {
 	position:fixed;
-	left:10px;
-	top:8px;
+	inset:8px auto auto 10px; /* top/left; cancels [popover] UA inset:0 */
+	margin:0; padding:0;      /* reset [popover] UA box */
 	display:none;
 	overflow:hidden;
 	box-shadow:none;
@@ -33,8 +33,11 @@
 
 /* contpos-menu */
 #qgCmsContPosMenu {
-	position:absolute;
+	position:fixed;            /* top-layer popover: viewport coords (Placer 'fixed' branch) */
 	display:none;
+	inset:auto;               /* cancel [popover] UA inset:0; Placer sets top/left */
+	margin:0; border:0;       /* reset [popover] UA box */
+	overflow:visible;         /* don't clip the ::after hit-area (inset:-5px) */
     align-items:center;
 	padding:4px 7px 2px 7px;
     border-radius:4px;
@@ -42,6 +45,8 @@
 	font-size:13px;
 	background:var(--cms-color);
     color:#fff;
+
+	&:popover-open { display:flex; }
 
 	& > div {
 		width:18px;
