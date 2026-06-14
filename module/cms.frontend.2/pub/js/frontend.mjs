@@ -80,7 +80,7 @@ Object.assign(cms.cont, c1.Eventer);
 
 cms.cont.prototype = {
 	upload(File, complete, replace) {
-		const event = Object.assign({}, c1.Eventer);
+		const event = { ...c1.Eventer };
 		event.pid = this.id;
 		event.File = File;
 		qgfileUpload(File, 'cmsPageFile', {

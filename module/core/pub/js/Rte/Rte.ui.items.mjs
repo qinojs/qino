@@ -499,7 +499,7 @@ console.warn('needed? shoud it be deprecated?');
 				let bk = 0;
 				child.data.replace(regex, function(str) {
 					const args = [].slice.call(arguments);
-					const tag = callback.apply(window, [child].concat(args));
+					const tag = callback.apply(globalThis, [child].concat(args));
 					if (!tag) return false;
 					const offset = args[args.length - 2];
 					const newTextNode = child.splitText(offset+bk);

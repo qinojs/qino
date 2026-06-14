@@ -98,4 +98,4 @@ el.querySelector('.-versionUnPublish').addEventListener('click',function(){
 // 		pid == Page && el.classList.add('-HasChanges');
 // 	}
 // });
-window.cms_vers_draft_changed && el.classList.add('-HasChanges');
+globalThis.cms_vers_draft_changed && el.classList.add('-HasChanges');

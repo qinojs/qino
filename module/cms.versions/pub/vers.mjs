@@ -8,7 +8,7 @@ const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 
 const sysURL = ctx.sysURL;
 const Page = globalThis.qino?.cms?.nodeId;
-const cmsFrontend = window.cmsFrontend || 'cms.frontend.2';
+const cmsFrontend = globalThis.cmsFrontend || 'cms.frontend.2';
 
 const body = document.body;
 const htmlEl = document.documentElement;

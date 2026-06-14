@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-window.qgfileUpload = async function(f, name, opt) {
+globalThis.qgfileUpload = async function(f, name, opt) {
 	const fileName = f.name || 'file.'+f.type.replace(/.*\/([^ ;]+).*/,'$1');
 	if (f.c1IsImage() && f.size > qgfileUpload.clientResizeSize) {
 		const img = await f.c1ToImage();

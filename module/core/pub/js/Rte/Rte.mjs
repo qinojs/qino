@@ -4,7 +4,7 @@ import './crossbrowser.mjs';
 
 const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
-window.Rte = {
+globalThis.Rte = {
 	range : {},
 	rangeStaticValues : {},
 	checkSelection() {
@@ -104,7 +104,7 @@ window.Rte = {
 		return el.isContentEditable && el.tagName!=='INPUT' && el.tagName!=='TEXTAREA' && el.tagName!=='SELECT';
 	},
 	init() {
-		const root = window;
+		const root = globalThis;
 		root.addEventListener('focus',e=>{
 	        if (!Rte.isTarget(e.target)) return;
 	        if (Rte.active !== e.target) {
@@ -299,7 +299,7 @@ document.addEventListener('input', e => {
 	document.addEventListener('input', e => {
 		if (!e.target.isContentEditable) return;
 		const check = node => {
-			Array.from(node.children).forEach(check); // for of will skip nodes (if some removed)
+			[...node.children].forEach(check); // for of will skip nodes (if some removed)
 			if (isPHX(node.parentNode) && isPHX(node)) {
 				if (node.nextElementSibling) {
 					node.after(document.createElement('br'));

@@ -7,7 +7,7 @@ const Page = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)
 
-window.cmsTreeInit = async (json) => {
+globalThis.cmsTreeInit = async (json) => {
   await import("@qino/u2/el/tree/tree.js");
 
   const root = cms.panelRoot;

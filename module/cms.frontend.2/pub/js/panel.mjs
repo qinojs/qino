@@ -298,7 +298,7 @@ onEl(".file-manager", (el) => {
     tbody.addEventListener("u2-dropzone-drop", (e) => {
       if (!e.detail?.add) return; // gleiche Zone feuert remove+add -> nur einmal reagieren
       requestAnimationFrame(() => {
-        const sort = Array.from(tbody.children).map((el) => el.getAttribute("itemid"));
+        const sort = [...tbody.children].map((el) => el.getAttribute("itemid"));
         node.files.put({ sort });
       });
     });

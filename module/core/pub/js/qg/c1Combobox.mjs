@@ -24,7 +24,7 @@ if (!CSS.supports('overscroll-behavior','contain')) { // zzz if supports
 	});
 }
 
-window.c1Combobox = function(input){
+globalThis.c1Combobox = function(input){
 	if (input.c1Combobox) return input.c1Combobox;
 	input.c1Combobox = this;
 	input.setAttribute('autocomplete','off');

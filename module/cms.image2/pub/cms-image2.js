@@ -1,10 +1,10 @@
 !function(){
 'use strict';
-if (window.cms_image2) return;
+if (globalThis.cms_image2) return;
 
 const InitializedSet = new WeakSet();
 
-window.cms_image2 = {
+globalThis.cms_image2 = {
     init(c1Img){
         // init once
         if (InitializedSet.has(c1Img)) return;

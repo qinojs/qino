@@ -7,11 +7,11 @@ c1.scroll = {
         onfinish:function(){},
     },
     to: function(targetX, targetY, opt) {
-        opt = Object.assign({}, c1.scroll.options, opt);
+        opt = { ...c1.scroll.options, ...opt };
         const docEl = document.documentElement;
 		if (!opt.ignorMaxScroll) {
-			const maxScrollX = ('scrollMaxX' in window) ? scrollMaxX : (docEl.scrollWidth  - docEl.clientWidth);
-			const maxScrollY = ('scrollMaxY' in window) ? scrollMaxY : (docEl.scrollHeight - docEl.clientHeight);
+			const maxScrollX = ('scrollMaxX' in globalThis) ? scrollMaxX : (docEl.scrollWidth  - docEl.clientWidth);
+			const maxScrollY = ('scrollMaxY' in globalThis) ? scrollMaxY : (docEl.scrollHeight - docEl.clientHeight);
 			targetX = Math.max(Math.min(maxScrollX, targetX), 0);
 			targetY = Math.max(Math.min(maxScrollY, targetY), 0);
 		}
@@ -27,7 +27,7 @@ c1.scroll = {
     		onFinish: opt.onfinish,
     		startTime: Date.now(),
     	};
-        window.__c1_scroll_running = obj;
+        globalThis.__c1_scroll_running = obj;
 		document.scrollingElement.style.scrollBehavior = 'auto';
 		setTimeout(()=>{
 	    	requestAnimationFrame(step.bind(obj));
@@ -41,7 +41,7 @@ c1.scroll = {
 	}
 };
 function step () {
-    if (window.__c1_scroll_running !== this) {
+    if (globalThis.__c1_scroll_running !== this) {
 		return;
 	}
 	const tDiff = Date.now() - this.startTime;

@@ -4,17 +4,17 @@
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);
 
-window.qgQueryCommandState = function(cmd) {
+globalThis.qgQueryCommandState = function(cmd) {
 	try{
 		return document.queryCommandState(cmd);
 	} catch { /*zzz*/ }
 };
-window.qgQueryCommandValue = function(cmd) {
+globalThis.qgQueryCommandValue = function(cmd) {
 	try{
 		return document.queryCommandValue(cmd);
 	} catch { /*zzz*/ }
 };
-window.qgExecCommand = function(com,x,val) {
+globalThis.qgExecCommand = function(com,x,val) {
 	const _ = qgExecCommand;
 	if (!_.cmdUsed) {
 		try {
@@ -45,7 +45,7 @@ Selection.prototype.c1SetRange = function(range) {
 	this.addRange(range);
 };
 
-window.qgSelection = {
+globalThis.qgSelection = {
 	element() {
 		let el;
 		if (!getSelection().rangeCount) return;
@@ -169,7 +169,7 @@ document.addEventListener('mousedown', e=>{
 {
 	let checkIntr;
 	let img = null;
-	window.qgImageResizeUi = function(e) {
+	globalThis.qgImageResizeUi = function(e) {
 		img = e.target;
 		const hide = e => {
 			if (!e || e.target!==img) {

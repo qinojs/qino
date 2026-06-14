@@ -1,7 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import {HTMLParser} from './htmlparser.mjs';
 
-window.domCodeIndent = function(str) {
+globalThis.domCodeIndent = function(str) {
 	let res = '';
 	let ind = '';
 	let pre = false;
@@ -42,7 +42,7 @@ window.domCodeIndent = function(str) {
 	return res;
 };
 
-window.getPossibleClasses = function (el) { /* eventuell better performance? */
+globalThis.getPossibleClasses = function (el) { /* eventuell better performance? */
 	const ret = {};
 	function test(sel) {
 		sel = sel.trim();

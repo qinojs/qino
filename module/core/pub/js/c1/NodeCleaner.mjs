@@ -19,11 +19,11 @@ const defaultConf = {
 
 class NodeCleaner {
 	constructor (conf) {
-		this.conf = Object.assign({}, defaultConf, conf);
+		this.conf = { ...defaultConf, ...conf };
 	}
 	cleanContents(el, andChildren) {
 		if (!el) return;
-		for (const child of Array.from(el.childNodes)) this.clean(child, andChildren);
+		for (const child of [...el.childNodes]) this.clean(child, andChildren);
 		//for (let child of el.childNodes) this.clean(child, andChildren);
 
 	}
@@ -88,7 +88,7 @@ class NodeCleaner {
 	}
 	cleanAttributes(el) {
 		if (!this.conf['attributes']) return;
-		const attributes = Array.from(el.attributes);
+		const attributes = [...el.attributes];
 		for (let i=0, attr; (attr = attributes[i++]);) {
 			const name = attr.name;
 			const value = attr.value;
@@ -96,11 +96,8 @@ class NodeCleaner {
 			if (!allowed) { el.removeAttribute(name); continue; }
 			if (allowed === true || allowed === 1) continue;
 			// values allowed
-			if (allowed[value] || allowed.includes(value)) {
-				continue;
-			} else {
-				el.removeAttribute(name);
-			}
+			if (allowed[value] || allowed.includes(value)) continue;
+			el.removeAttribute(name);
 		}
 	}
 	cleanStyle(el) {
@@ -115,11 +112,8 @@ class NodeCleaner {
 			let value = el.style.getPropertyValue(style);
 			if (style === 'font-family') value = value.replace(/^["']/,'').replace(/["']$/,'');
 			//if (allowed.includes) { // isArray (array with allowed values)
-				if (allowed[value] || allowed.includes(value)) {
-					continue;
-				} else {
-					el.style.removeProperty(style);
-				}
+				if (allowed[value] || allowed.includes(value)) continue;
+				el.style.removeProperty(style);
 			//}
 		}
 	}
@@ -200,9 +194,9 @@ function removeUnusedElements(el) {
 		const tr = el.firstElementChild.firstElementChild;
 		if (tr.children.length === 1) {
 			console.log(el)
-			for (const tbody of Array.from(el.children)) {
-				for (const tr of Array.from(tbody.children)) {
-					for (const td of Array.from(tr.children)) replaceNode(td, document.createElement('div'));
+			for (const tbody of [...el.children]) {
+				for (const tr of [...tbody.children]) {
+					for (const td of [...tr.children]) replaceNode(td, document.createElement('div'));
 					unwrap(tr);
 				}
 				unwrap(tbody);

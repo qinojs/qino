@@ -60,7 +60,7 @@ export const CmsVersComparer = {
                     if (e.c1Synced) return;
                     const selector = c1.scrollSync.getSelector(e.target);
                     const otherEl = other.contentWindow.document.querySelector(selector);
-                    const event = new MouseEvent('click', { view: window, bubbles: true, cancelable: true });
+                    const event = new MouseEvent('click', { view: globalThis, bubbles: true, cancelable: true });
                     event.c1Synced = true;
                     otherEl.dispatchEvent(event);
                 }, true);

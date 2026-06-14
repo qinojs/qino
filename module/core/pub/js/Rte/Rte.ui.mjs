@@ -2,7 +2,7 @@
 //import '../c1/Placer.mjs';
 import './Rte.mjs';
 
-window.Rte.ui = {
+globalThis.Rte.ui = {
 	init() {
 		const my = this;
 		my.div = document.createElement('div');

@@ -34,15 +34,13 @@ export class WebAuth {
 
   static #dec(str) {
     const b = atob(str.replaceAll("-", "+").replaceAll("_", "/"));
-    const bytes = new Uint8Array(b.length);
-    for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
-    return bytes.buffer;
+    return Uint8Array.from(b, (c) => c.charCodeAt(0)).buffer;
   }
 
   // ── Register ──────────────────────────────────────────────────────────────
 
   async register(opts = {}) {
-    if (!window.PublicKeyCredential) throw new Error("WebAuthn not supported.");
+    if (!globalThis.PublicKeyCredential) throw new Error("WebAuthn not supported.");
 
     const { token, publicKey } = await this.#post("/register/challenge", {});
     let credential;
@@ -70,7 +68,7 @@ export class WebAuth {
   // ── Login ─────────────────────────────────────────────────────────────────
 
   async login(opts = {}) {
-    if (!window.PublicKeyCredential) throw new Error("WebAuthn not supported.");
+    if (!globalThis.PublicKeyCredential) throw new Error("WebAuthn not supported.");
 
     const { token, publicKey } = await this.#post("/login/challenge", { email: opts.email ?? null });
     const assertion = await this.#getAssertion(publicKey);
@@ -121,7 +119,7 @@ export class WebAuth {
 
   // ── Static helpers ────────────────────────────────────────────────────────
 
-  static isSupported() { return !!window.PublicKeyCredential; }
+  static isSupported() { return !!globalThis.PublicKeyCredential; }
 
   static isPlatformAuthenticatorAvailable() {
     return WebAuth.isSupported() && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
