@@ -108,9 +108,5 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
 }
 
 function name2alt(name: string): string {
-  return name
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
+  return name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
 }
