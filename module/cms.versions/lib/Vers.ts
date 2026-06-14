@@ -124,7 +124,7 @@ export async function view(db: Db, tableName: string, space: number, log: number
 
 async function createView(db: Db, tableName: string, vt: string, name: string, space: number, log: number): Promise<void> {
     // Build field list: versioned fields from shadow table, rest from live table.
-    const liveFields = await db.all(`SHOW COLUMNS FROM ${tableName}`);
+    const liveFields = await db.columns(tableName);
     const fieldSpec   = versedTables(db)[tableName];
     const selects: string[] = [];
     const pkJoins:  string[] = [];
@@ -154,7 +154,7 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
     // keeping the view UNION-free lets MySQL merge it (index pushdown on queries).
     // else: space head view (log=0 = current draft).
     const where = log
-        ? `!m._vers_deleted AND m._vers_space = ${space} AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
+        ? `m._vers_deleted = 0 AND m._vers_space = ${space} AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
           `AND NOT EXISTS ( SELECT 1 FROM ${vt} mm WHERE mm._vers_space = ${space} ` +
           `AND mm._vers_log BETWEEN 1 AND ${log - 1} AND mm._vers_log > m._vers_log ` +
           `AND ${pkJoins.join(" AND ")} LIMIT 1 )`
