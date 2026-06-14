@@ -147,7 +147,7 @@ const externMediaDialog = async function(txtEl,medias) {
 	dialog.show();
 }
 const checkMedia = root => {
-	const medias = {}; let has=0;
+	const medias = {}; let has = false;
 	for (const el of findAll(root, 'a, img')) {
 		if (el.classList.contains('externMedia')) continue;
 		for (const attr of ['src','href']) {
@@ -157,11 +157,9 @@ const checkMedia = root => {
 			const ext = uri.pathname.replace(/.*\./,'');
 			if (!ext) continue;
 			if (el.tagName === 'IMG' || ['pdf','doc','xls','jpg','png','gif'].includes(ext)) {
-				medias[uri] ||= {els:[]};
-				medias[uri].els.push(el);
-				medias[uri].basename = uri.pathname.replace(/.*\//,'');
-				medias[uri].checked = true;
-				has=1;
+				const media = medias[uri] ||= {els:[], basename:uri.pathname.replace(/.*\//,''), checked:true};
+				media.els.push(el);
+				has = true;
 			}
 		}
 	}

@@ -9,22 +9,22 @@ cms.txtIdToPid = async function(tid) {
 };
 // clean texts
 cms.txtCleanElement = function(el,tid){
-    if (el.tagName === 'IMG') el.setAttribute('loading','lazy');
-    if (el.tagName === 'IMG' && el.src.startsWith('data:')) {
-        cms.txtIdToPid(tid).then( pid => cms.imgToDbFile(el, pid) );
-    }
-    if (el.tagName === 'IMG' && el.src.includes('dbFile/')) {
-        const dim = () => {
-            el.style.maxWidth = '100%';
-            el.style.width = el.offsetWidth+'px';
-            el.style.height = 'auto';
-            el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
-            el.setAttribute('width', el.offsetWidth);
-            el.setAttribute('height', el.offsetHeight);
-        };
-        if (el.offsetWidth) dim();
-        else if (el.complete) requestAnimationFrame(dim);
-        else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
+    if (el.tagName === 'IMG') {
+        el.setAttribute('loading','lazy');
+        if (el.src.startsWith('data:')) cms.txtIdToPid(tid).then(pid => cms.imgToDbFile(el, pid));
+        if (el.src.includes('dbFile/')) {
+            const dim = () => {
+                el.style.maxWidth = '100%';
+                el.style.width = el.offsetWidth+'px';
+                el.style.height = 'auto';
+                el.style.setProperty('--shape-outside-url', 'url("'+el.getAttribute('src')+'")');
+                el.setAttribute('width', el.offsetWidth);
+                el.setAttribute('height', el.offsetHeight);
+            };
+            if (el.offsetWidth) dim();
+            else if (el.complete) requestAnimationFrame(dim);
+            else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
+        }
     }
     if (el.src?.includes('dbFile/')  && el.src .includes(location.host)) { el.src  = ctx.appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
     if (el.href?.includes('dbFile/') && el.href.includes(location.host)) { el.href = ctx.appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }

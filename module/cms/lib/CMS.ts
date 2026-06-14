@@ -78,8 +78,7 @@ export class CMS {
     }
 
     #modules(prefix: string): Record<string, Module> {
-        const modules = Object.keys(this.app.modules.all());
-        modules.sort();
+        const modules = Object.keys(this.app.modules.all()).sort();
         const ret: Record<string, Module> = {};
         for (const module of modules) {
             if (!module.startsWith(prefix)) continue;

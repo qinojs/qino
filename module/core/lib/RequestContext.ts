@@ -155,10 +155,7 @@ function appRequestUriToLocalPath(appRequestUri: string, app: App): string | nul
     return pubPath(base, matchM[2]);
   }
   const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\/(.*)/);
-  if (matchQg) {
-    return pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]);
-  }
-  return null;
+  return matchQg ? pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]) : null;
 }
 
 function pubPath(root: string, file: string): string | null {

@@ -25,10 +25,7 @@ export class File {
 
   basename(suffix = ""): string {
     const base = this.path.split(/[\\/]/).pop() ?? "";
-    if (suffix && base.endsWith(suffix)) {
-      return base.slice(0, -suffix.length);
-    }
-    return base;
+    return suffix && base.endsWith(suffix) ? base.slice(0, -suffix.length) : base;
   }
 
   async copyTo(dest: string): Promise<boolean> {

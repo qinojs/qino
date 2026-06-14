@@ -86,8 +86,7 @@ class NodeCleaner {
 	}
 	cleanAttributes(el) {
 		if (!this.conf['attributes']) return;
-		const attributes = [...el.attributes];
-		for (let i=0, attr; (attr = attributes[i++]);) {
+		for (const attr of [...el.attributes]) {
 			const name = attr.name;
 			const value = attr.value;
 			const allowed = this.conf['attributes'][name];
@@ -155,8 +154,8 @@ function removeUnusedStyles(el) {
 	}
 }
 function removeUnusedAttributes(el) {
-	el.hasAttribute('style') && el.getAttribute('style').trim() === '' && el.removeAttribute('style');
-	el.hasAttribute('class') && el.getAttribute('class').trim() === '' && el.removeAttribute('class');
+	el.getAttribute('style')?.trim() === '' && el.removeAttribute('style');
+	el.getAttribute('class')?.trim() === '' && el.removeAttribute('class');
 	/* bugs ie8/9/10? */
 	if (el.tagName === 'IMG') {
 		if (!/^[0-9]+/.test(el.getAttribute('height'))) { el.removeAttribute('height'); }
@@ -218,7 +217,6 @@ const blockLikeTags = {DIV:1,P:1,UL:1,OL:1,TABLE:1,HR:1,H1:1,H2:1,H3:1,H4:1,H5:1
 // todo: rename to problematic chars
 const combininedChars = [
 	['ü','u\u0308'], // COMBINING DIAERESIS (combined chars)
-	['ü','u\u0308'],
 	['Ü','U\u0308'],
 	['ä','a\u0308'],
 	['Ä','A\u0308'],

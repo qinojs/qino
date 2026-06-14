@@ -88,7 +88,7 @@ const paste = e => {
 		txtEl.dispatchEvent(new Event('input',{bubbles:true, cancelable: true})); // NEU 9.4.18
 	};
 	const items = e.clipboardData.items ?? [];
-	for (let i=0, item; (item=items[i++]);) {
+	for (const item of items) {
 		item.kind === 'file' && cms.txtAddFile(txtEl, item.getAsFile());
 	}
 	readClipboardHtml(e.clipboardData, addHtml) && e.preventDefault();
