@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 	const p = cms.contPos;
 	const menu = c1.dom.fragment(
-		'<div id=qgCmsContPosMenu>'+
+		'<div id=qgCmsContPosMenu popover=manual>'+
 		    '<div class=-opts title="Einstellungen">'+
                 '<svg width="24" height="24" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z"></path></svg>'+
             '</div>'+
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	menu.addEventListener('mousedown', e => e.stopPropagation() );
 
 	const trash = c1.dom.fragment(
-		'<div id=qgCmsContTrash>'+
+		'<div id=qgCmsContTrash popover=manual>'+
 		'	<svg width="50" height="60" viewBox="0 -5 26 30">'+
 		'	  <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
 		'	  <path d="M3.83 21.988c0 1.97 1.612 3.582 3.583 3.582H18.16c1.97 0 3.58-1.612 3.58-3.582V6.466H3.83v15.522zm12.537-11.94c0-.66.535-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.193 1.193s-1.193-.534-1.193-1.192v-11.94zm-4.775 0c0-.66.534-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193s-1.194-.534-1.194-1.192v-11.94zm-4.777 0c0-.66.534-1.194 1.193-1.194.66 0 1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193-.66 0-1.193-.534-1.193-1.192v-11.94z"/>'+
@@ -159,10 +159,10 @@ document.addEventListener('DOMContentLoaded',()=>{
 		dd.targets = document.querySelectorAll('[qcms-drop][qcms-edit], #qgCmsContTrash');
 		document.querySelectorAll('[qcms-drop]').forEach(el=>el.classList.add('dropTarget'))
 		p.moving = true;
-		menu.style.display = 'none';
+		if (menu.matches(':popover-open')) menu.hidePopover();
 		el.classList.add('-moving');
 		trash.classList.add('-dropTarget');
-		c1.zTop(trash);
+		if (!trash.matches(':popover-open')) trash.showPopover(); // top layer, replaces zTop
 	})
 	dd.on('change', e => trash.classList.toggle('-full', e.target.id === 'qgCmsContTrash'));
 	dd.on('stop',el=>{
@@ -176,6 +176,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 			apt.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
 		}
 		trash.classList.remove('-dropTarget');
+		if (trash.matches(':popover-open')) trash.hidePopover();
 	})
 
 	let startX, startY, ddEl;
@@ -207,7 +208,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	//let Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
 	const Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
 	cms.contPos.on('mark', obj=>{
-		menu.style.display = 'flex'; // todo
+		if (!menu.matches(':popover-open')) menu.showPopover(); // top layer, replaces zTop + display toggle
 		const isDraggable = obj.isDraggable(),
 			mod     = obj.el.getAttribute('qcms-mod') ?? '';
 		Placer.follow(obj.el);
@@ -222,9 +223,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 			menu.mod.append(c1.dom.fragment('<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>'))
 		}
 		menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
-		c1.zTop(menu);
 	});
-	cms.contPos.on('unmark', () => menu.style.display = 'none' );
+	cms.contPos.on('unmark', () => menu.matches(':popover-open') && menu.hidePopover() );
 	setTimeout(() => document.activeElement.blur());
 	globalThis.qino?.cms?.clipboard && import('./frontend2/clipboard.mjs').then(()=>cms.frontend2.clipboard(globalThis.qino.cms.clipboard));
 });
