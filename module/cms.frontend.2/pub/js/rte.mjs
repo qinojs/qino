@@ -137,7 +137,7 @@ const externMediaDialog = async function(txtEl,medias) {
 			}
 		}]
 	});
-	for (const [,media] of Object.entries(medias))  {
+	for (const media of Object.values(medias)) {
 		//let file = new URL(uri).pathname.replace(/.*\//,'');
 		const label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
 		label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
@@ -202,7 +202,7 @@ document.addEventListener('qgResize',e=>{
 // dbclick zoomer
 addEventListener('dblclick', e => {
     const img = e.target;
-    if (img.isContentEditable && img.tagName === 'IMG' && img.src.match(/\/dbFile/)) {
+    if (img.isContentEditable && img.tagName === 'IMG' && img.src.includes('/dbFile')) {
         e.stopPropagation();
         e.preventDefault();
 

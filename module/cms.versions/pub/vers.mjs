@@ -53,7 +53,7 @@ CmsVersViewer.prototype = {
 		this.pid = pid;
 		this.initialScrolltop = htmlEl.scrollTop || body.scrollTop;
 		body.append(this.container);
-		if (!this.container.matches(':popover-open')) this.container.showPopover(); // top layer, replaces zTop
+		if (!this.container.matches(':popover-open')) this.container.showPopover();
 		if (innerWidth < 900) {
 			this.container.webkitRequestFullscreen?.();
 			this.container.requestFullscreen?.();

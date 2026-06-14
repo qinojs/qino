@@ -199,9 +199,8 @@ export class DbTable {
     const where = whereValues ? this.valuesToFragment(whereValues) : null;
     if (where?.[0] && await this.#db.row(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1])) {
       return this.update(values);
-    } else {
-      return this.insert(values);
     }
+    return this.insert(values);
   }
 
   async copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | false> {

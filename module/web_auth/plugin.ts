@@ -20,9 +20,9 @@ const now = () => Math.floor(Date.now() / 1000);
 
 /** base64url (RFC 4648) — no padding, URL-safe alphabet. */
 const b64url = (bytes: Uint8Array | string): string =>
-  btoa(typeof bytes === "string" ? bytes : String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  btoa(typeof bytes === "string" ? bytes : String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 const unb64url = (str: string) =>
-  Uint8Array.from(atob(str.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  Uint8Array.from(atob(str.replaceAll("-", "+").replaceAll("_", "/")), (c) => c.charCodeAt(0));
 
 function randB64(n: number): string {
   return b64url(crypto.getRandomValues(new Uint8Array(n)));

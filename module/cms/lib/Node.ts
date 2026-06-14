@@ -594,7 +594,7 @@ export class Node {
 
         if (Object.keys(old2new).length) {
             const newTexts = await P.texts();
-            for (const [, Text] of Object.entries(newTexts)) {
+            for (const Text of Object.values(newTexts)) {
                 for (const l of this.app.languages.all) {
                     const tl = Text.lang(l);
                     let text = await tl.get();

@@ -85,5 +85,5 @@ export async function pwVerify(pw: string, hash: string): Promise<boolean> {
 }
 
 export function pwNeedsRehash(hash: string): boolean {
-  return !hash?.match(/^\$2[aby]\$/);
+  return !/^\$2[aby]\$/.test(hash);
 }

@@ -100,11 +100,11 @@ export const CmsVersComparer = {
         this.setMain  (options.fromSpace, options.fromLog);
         this.setSecond(options.toSpace,   options.toLog);
         document.body.append(div);
-        if (!div.matches(':popover-open')) div.showPopover(); // top layer, replaces zTop
+        if (!div.matches(':popover-open')) div.showPopover();
     },
     close(){
         removeEventListener('keydown',this.keyListener);
-        div.remove(); // removing from DOM closes the popover
+        div.remove();
     },
     setMain(space, log)   { iframe1.src = frameSrc(space, log); },
     setSecond(space, log) { iframe2.src = frameSrc(space, log); }

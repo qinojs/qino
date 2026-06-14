@@ -29,11 +29,11 @@ export class WebAuth {
   static #enc(buf) {
     let s = "";
     for (const b of new Uint8Array(buf)) s += String.fromCharCode(b);
-    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    return btoa(s).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
   }
 
   static #dec(str) {
-    const b = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+    const b = atob(str.replaceAll("-", "+").replaceAll("_", "/"));
     const bytes = new Uint8Array(b.length);
     for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
     return bytes.buffer;

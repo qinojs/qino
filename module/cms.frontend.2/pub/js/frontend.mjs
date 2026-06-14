@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 		if (menu.matches(':popover-open')) menu.hidePopover();
 		el.classList.add('-moving');
 		trash.classList.add('-dropTarget');
-		if (!trash.matches(':popover-open')) trash.showPopover(); // top layer, replaces zTop
+		if (!trash.matches(':popover-open')) trash.showPopover();
 	})
 	dd.on('change', e => trash.classList.toggle('-full', e.target.id === 'qgCmsContTrash'));
 	dd.on('stop',el=>{
@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 	//let Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:-.4,left:4,bottom:1,right:0} });/* firefox: top:-.4 */
 	const Placer = new c1.Placer(menu, {x:'prepend',y:'before', margin:{top:1,left:4,bottom:1,right:0} });
 	cms.contPos.on('mark', obj=>{
-		if (!menu.matches(':popover-open')) menu.showPopover(); // top layer, replaces zTop + display toggle
+		if (!menu.matches(':popover-open')) menu.showPopover();
 		const isDraggable = obj.isDraggable(),
 			mod     = obj.el.getAttribute('qcms-mod') ?? '';
 		Placer.follow(obj.el);
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 cms.console = {
 	show(msg, type) {
 		const el = this.el();
-		if (!el.matches(':popover-open')) el.showPopover(); // top layer, replaces zTop (guard: re-show throws)
+		if (!el.matches(':popover-open')) el.showPopover();
 		el.classList.add('-active');
 		el.setAttribute('data-type',type);
 		el.firstElementChild.textContent = msg;

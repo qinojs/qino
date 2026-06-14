@@ -37,7 +37,7 @@ class dbEntry_client extends DbEntry {
   async users(): Promise<Record<string, dbEntry_client_usr>> {
     const usrs: Record<string, dbEntry_client_usr> = {};
     const rows = await this.table.db.table("client_usr").selectEntries(`WHERE client_id = '${this}' ORDER BY time DESC`) as Record<string, dbEntry_client_usr>;
-    for (const [, cuser] of Object.entries(rows)) {
+    for (const cuser of Object.values(rows)) {
       const usrId = await cuser.get("usr_id");
       usrs[String(usrId)] = cuser;
     }

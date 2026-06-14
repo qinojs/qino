@@ -60,7 +60,7 @@ export function uid(length?: number): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   const full = btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    .replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
   return length ? full.slice(0, length) : full;
 }
 

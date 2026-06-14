@@ -100,7 +100,8 @@ c1.scrollSync.getSelector = function(el){
     return selector;
 };
 function countPrevSiblings(el){
-    let i=0, checked = el, tag = el.tagName;
+    let i=0, checked = el;
+    const tag = el.tagName;
     while (checked) {
         if (checked.tagName === tag) i++;
         checked = checked.previousElementSibling;
