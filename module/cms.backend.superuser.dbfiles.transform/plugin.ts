@@ -144,8 +144,7 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
     const success = code === 0 || code === 100;
     if (!success) return `Error (exit ${code}):\n${err || out}`;
     FileTransformer.resetCapabilityCache();
-    const lastLine = (out || err).split("\n").filter(Boolean).at(-1) ?? "Done.";
-    return lastLine;
+    return (out || err).split("\n").findLast(Boolean) ?? "Done.";
   } catch (e) {
     return `Failed to run "${cmd}": ${e instanceof Error ? e.message : String(e)}`;
   }

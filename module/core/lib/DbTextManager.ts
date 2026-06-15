@@ -53,8 +53,9 @@ export class DbText {
   get manager(): DbTextManager { return this.#manager; }
 
   lang(lang: string): DbTextLang {
-    if (!this.#langCache.has(lang)) this.#langCache.set(lang, new DbTextLang(this, lang));
-    return this.#langCache.get(lang)!;
+    let cached = this.#langCache.get(lang);
+    if (!cached) this.#langCache.set(lang, cached = new DbTextLang(this, lang));
+    return cached;
   }
 
   /** Returns the best available translation, falling back to any other lang */

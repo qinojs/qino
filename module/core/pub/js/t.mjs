@@ -22,15 +22,15 @@ function flush() {
 export function t(strings, ...values) {
   const original = strings.reduce((acc, str, i) =>
     acc + str + (i < strings.length - 1 ? `###${i + 1}###` : ""), "");
-  if (!cache.has(original)) {
-    const entry = { translated: null };
+  let entry = cache.get(original);
+  if (!entry) {
+    entry = { translated: null };
     entry.promise = new Promise((resolve, reject) => {
       pending.set(original, { resolve, reject });
     }).then(translated => { entry.translated = translated; });
     cache.set(original, entry);
     if (!scheduled) { scheduled = true; Promise.resolve().then(flush); }
   }
-  const entry = cache.get(original);
   const p = entry.promise.then(() => interpolate(entry.translated ?? original, values));
   p.toString = () => interpolate(entry.translated ?? original, values);
   return p;

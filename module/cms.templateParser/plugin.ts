@@ -52,14 +52,14 @@ export function init(app: App) {
     const modName  = node.module?.name ?? "";
     const exports_ = node.module?.plugin ?? {};
 
-    if (!cache.has(modName)) {
-      const parsed = await loadTemplate(dir);
-      if (!parsed) return;
-      cache.set(modName, parsed);
+    let parsed = cache.get(modName);
+    if (!parsed) {
+      const loaded = await loadTemplate(dir);
+      if (!loaded) return;
+      cache.set(modName, parsed = loaded);
       watchTemplate(modName, dir + "template.html", exports_);
     }
 
-    const parsed = cache.get(modName)!;
     (e as Record<string, unknown>).render = parsed.render;
     injectParts(exports_, parsed);
   });

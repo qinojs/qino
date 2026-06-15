@@ -53,7 +53,7 @@ async function render(node: Node): Promise<string> {
   const trs = rows.length
     ? rows.map((r: any) => {
         const d = new Date(typeof r.updated === "number" ? r.updated * 1000 : String(r.updated));
-        const iso = isNaN(d.getTime()) ? "" : d.toISOString();
+        const iso = Number.isNaN(d.getTime()) ? "" : d.toISOString();
         const time = iso ? `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "-";
         u.searchParams.set("id", String(r.id));
         return `<tr u2-href>

@@ -16,7 +16,8 @@ export class CMS {
     async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
         id = Number(id);
         const nodes = scopeCache(this.#nodes, "cms.nodes", () => new Map<number, Node>());
-        if (nodes.has(id)) return nodes.get(id)!;
+        const existing = nodes.get(id);
+        if (existing) return existing;
         const node = new Node(this, id, vs);
         nodes.set(id, node);
         //if (!vs) await node.init();

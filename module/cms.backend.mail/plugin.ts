@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 const u2time = (t: unknown) => {
   if (!t) return "-";
   const d = new Date(typeof t === "number" ? t * 1000 : String(t));
-  if (isNaN(d.getTime())) return "-";
+  if (Number.isNaN(d.getTime())) return "-";
   const iso = d.toISOString();
   return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 };

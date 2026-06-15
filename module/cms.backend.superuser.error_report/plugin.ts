@@ -6,7 +6,7 @@ export const name = "cms.backend.superuser.error_report";
 
 const u2time = (t: unknown) => {
   const d = t instanceof Date ? t : typeof t === "number" ? new Date(t * 1000) : typeof t === "string" ? new Date(t) : null;
-  if (!d || isNaN(d.getTime())) return "";
+  if (!d || Number.isNaN(d.getTime())) return "";
   const iso = d.toISOString();
   return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 };

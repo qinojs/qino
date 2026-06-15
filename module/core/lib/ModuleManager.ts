@@ -64,7 +64,8 @@ export class ModuleManager {
     const plugin = await import(url);
     const name = plugin.name;
     if (typeof name !== "string" || !name) throw new Error(`Plugin has no exported name: ${url}`);
-    if (this.#modules[name]) return this.#modules[name];
+    const existing = this.#modules[name];
+    if (existing) return existing;
 
     if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
 
