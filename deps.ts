@@ -9,18 +9,18 @@ export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
 export { typeByExtension } from "jsr:@std/media-types@^1";
 
-export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@0.5.9/item.js";
-export { bildJsonItem } from "jsr:@nuxodin/item@0.5.9/tools/jsonDataItem.js";
+export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@0.5.10/item.js";
+export { bildJsonItem } from "jsr:@nuxodin/item@0.5.10/tools/jsonDataItem.js";
 // For local item.js development: swap each jsr line for the commented file:// line below.
-export { schemaToDb as schemaToDbMysql } from "jsr:@nuxodin/item@0.5.9/tools/schema/db/mysql/to-db.js";
-export { schemaToDb as schemaToDbSqlite } from "jsr:@nuxodin/item@0.5.9/tools/schema/db/sqlite/to-db.js";
-export { schemaFromDb } from "jsr:@nuxodin/item@0.5.9/tools/schema/db/mysql/from-db.js";
+export { schemaToDb as schemaToDbMysql } from "jsr:@nuxodin/item@0.5.10/tools/schema/db/mysql/to-db.js";
+export { schemaToDb as schemaToDbSqlite } from "jsr:@nuxodin/item@0.5.10/tools/schema/db/sqlite/to-db.js";
+export { schemaFromDb } from "jsr:@nuxodin/item@0.5.10/tools/schema/db/mysql/from-db.js";
 
 // export { schemaToDb as schemaToDbMysql } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/mysql/to-db.js";
 // export { schemaToDb as schemaToDbSqlite } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/sqlite/to-db.js";
 // export { schemaFromDb } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/mysql/from-db.js";
 
-export { schemaDiff } from "jsr:@nuxodin/item@0.5.9/tools/schema/diff.js";
-export { toInput } from "jsr:@nuxodin/item@0.5.9/tools/schema/render/html.js";
+export { schemaDiff } from "jsr:@nuxodin/item@0.5.10/tools/schema/diff.js";
+export { toInput } from "jsr:@nuxodin/item@0.5.10/tools/schema/render/html.js";
 
 export { dump } from "jsr:@nuxodin/dump@^1.5.2";

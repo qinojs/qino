@@ -52,11 +52,6 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<Htm
   const brand = String(LPage.settings.logoText() ?? "") || (ctx.req.header("host") ?? "");
   const logoInner = logo ? html`<img src="${logo}" alt="${brand}" height=32>` : brand;
 
-  // Document title: page title, branded with the site name.
-  const pageTitle = await (await node.title()).string();
-  ctx.html.title = pageTitle || brand;
-  if (pageTitle && brand) ctx.html.titleSuffix = ` · ${brand}`;
-
   return html.async`<div id=container u2-skin${skin}>
   <header id=head role=banner>
     <div class=u2-width>
