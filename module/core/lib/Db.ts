@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { mysql, type RowDataPacket } from "../../../deps.ts";
-import { type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
+import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
@@ -20,6 +20,8 @@ export class Db {
     this.#driver = makeDriver(conn, user, pass);
   }
 
+  get dialect(): DbDialect { return this.#driver.dialect; }
+  get emptyInsert(): string { return this.#driver.emptyInsert; }
   get tables(): Record<string, DbTable> { return this.#tables; }
   get schema(): Record<string, any> { return this.#schema; }
   set schema(schema: Record<string, any>) { this.#schema = schema; }
@@ -37,8 +39,11 @@ export class Db {
     return this.#run(() => this.#driver.query(sql, params), sql) as Promise<RowDataPacket[]>;
   }
 
-  exec(sql: string, params?: unknown[]): Promise<ExecResult> {
-    return this.#run(() => this.#driver.exec(sql, params), sql);
+  exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult> {
+    return this.#run(() => this.#driver.exec(sql, params, returning), sql);
+  }
+  syncAutoIncrement(table: string, field: string, value: number): Promise<void> {
+    return this.#driver.syncAutoIncrement(table, field, value);
   }
 
   all = (sql: string, p?: unknown[]): Promise<RowDataPacket[]> => this.query(sql, p);
@@ -76,6 +81,7 @@ export class Db {
   }
 
   table(name: string): DbTable { return this.#tables[name]; }
+  escapeId(id: string): string { return this.#driver.escapeId(id); }
 
   close = (): Promise<void> => this.#driver.close();
 

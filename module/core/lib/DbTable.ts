@@ -121,12 +121,12 @@ export class DbTable {
     if (!values) return;
     const [where, params] = this.valuesToFragment(values);
     if (!where) return;
-    const rows = await this.#db.all(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${where}`, params);
+    const rows = await this.#db.all(`SELECT * FROM ${this.#db.escapeId(String(this))} WHERE ${where}`, params);
     return rows[0];
   }
-  async select(v = "1", params: unknown[] = []): Promise<Record<string, Record<string, any>>> {
+  async select(v = "TRUE", params: unknown[] = []): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
-    const rows = await this.#db.all(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${v}`, params);
+    const rows = await this.#db.all(`SELECT * FROM ${this.#db.escapeId(String(this))} WHERE ${v}`, params);
     for (const entry of rows) {
       const eid = this.entryId(entry);
       if (eid !== false) ret[eid] = entry;
@@ -139,7 +139,7 @@ export class DbTable {
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
       const value = Field.valueTransform(values[field]);
-      const ref = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
+      const ref = alias ? `${this.#db.escapeId(alias)}.${this.#db.escapeId(field)}` : this.#db.escapeId(field);
       if (!isSet && value === null) {
         sqls.push(`${ref} IS NULL`);
         continue;
@@ -156,11 +156,12 @@ export class DbTable {
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const cols = Object.keys(this.#fields!).filter((f) => f in values);
     const params = cols.map((f) => this.#fields![f].valueTransform(values[f]));
-    // Standard `(cols) VALUES (?)`, portable; empty-row `() VALUES ()` stays MySQL-only.
-    const into = cols.length ? `(${cols.map((f) => Db.escapeId(f)).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})` : "() VALUES ()";
-    const res = await this.#db.exec(`INSERT INTO ${Db.escapeId(String(this))} ${into}`, params);
-    if (!res.affectedRows) return false;
+    // Standard `(cols) VALUES (?)`; the driver supplies its dialect-specific empty-row fragment.
+    const into = cols.length ? `(${cols.map((f) => this.#db.escapeId(f)).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})` : this.#db.emptyInsert;
     const auto = this.autoIncrement;
+    const res = await this.#db.exec(`INSERT INTO ${this.#db.escapeId(String(this))} ${into}`, params, String(auto || this.primary || ""));
+    if (!res.affectedRows) return false;
+    if (auto && String(auto) in values) await this.#db.syncAutoIncrement(String(this), String(auto), Number(values[String(auto)]));
     if (auto) values[String(auto)] = res.insertId;
     else if (res.insertId && this.primary && !(String(this.primary) in values)) values[String(this.primary)] = res.insertId;
     const id = this.entryId(values);
@@ -185,7 +186,7 @@ export class DbTable {
       if (!whereValues) return false;
       const [where, whereParams] = this.valuesToFragment(whereValues);
       if (!where) return false;
-      const rows = await this.#db.exec(`UPDATE ${Db.escapeId(String(this))} SET ${set} WHERE ${where}`, [...setParams, ...whereParams]) as any;
+      const rows = await this.#db.exec(`UPDATE ${this.#db.escapeId(String(this))} SET ${set} WHERE ${where}`, [...setParams, ...whereParams]) as any;
       if (!rows) return false;
       if (!rows.affectedRows) return String(id);
       await this.#db.fire("table::update-after", { Table: this, id, data: values });
@@ -197,7 +198,7 @@ export class DbTable {
   async ensure(values: Record<string, any> = {}): Promise<string | false | undefined> {
     const whereValues = this.entryId2Array(values);
     const where = whereValues ? this.valuesToFragment(whereValues) : null;
-    return where?.[0] && await this.#db.row(`SELECT * FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1])
+    return where?.[0] && await this.#db.row(`SELECT * FROM ${this.#db.escapeId(String(this))} WHERE ${where[0]}`, where[1])
       ? this.update(values)
       : this.insert(values);
   }
@@ -218,7 +219,7 @@ export class DbTable {
     for (const Field of this.children) {
       if (Field.onParentCopy !== "cascade") continue;
       const childRows = await this.#db.all(
-        `SELECT * FROM ${Db.escapeId(String(Field.table))} WHERE ${Db.escapeId(String(Field))} = ?`, [id],
+        `SELECT * FROM ${this.#db.escapeId(String(Field.table))} WHERE ${this.#db.escapeId(String(Field))} = ?`, [id],
       );
       for (const childRow of childRows) await Field.table.copy(childRow, { [String(Field)]: newId }, visiting);
     }
@@ -233,13 +234,13 @@ export class DbTable {
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const where = values ? this.valuesToFragment(values) : null;
     if (!where?.[0]) return false;
-    const rows = await this.#db.exec(`DELETE FROM ${Db.escapeId(String(this))} WHERE ${where[0]}`, where[1]) as any;
+    const rows = await this.#db.exec(`DELETE FROM ${this.#db.escapeId(String(this))} WHERE ${where[0]}`, where[1]) as any;
     if (!rows?.affectedRows) return undefined;
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
     for (const Field of this.children) {
       if (Field.onParentDelete === "cascade") {
         const childRows = await this.#db.all(
-          `SELECT * FROM ${Db.escapeId(String(Field.table))} WHERE ${Db.escapeId(String(Field))} = ?`,
+          `SELECT * FROM ${this.#db.escapeId(String(Field.table))} WHERE ${this.#db.escapeId(String(Field))} = ?`,
           [id],
         );
         for (const row of childRows) {
@@ -288,7 +289,7 @@ export class DbTable {
 
   async selectEntries(str = ""): Promise<Record<string, DbEntry>> {
     const Es: Record<string, any> = {};
-    const rows = await this.#db.query(`SELECT * FROM ${Db.escapeId(String(this))} ${str}`);
+    const rows = await this.#db.query(`SELECT * FROM ${this.#db.escapeId(String(this))} ${str}`);
     for (const row of rows) {
       const entry = this.entry(row);
       Es[String(entry)] = entry;
@@ -301,7 +302,7 @@ export class DbTable {
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
       const v = Field.valueToSql(values[field]);
-      const f = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
+      const f = alias ? `${this.#db.escapeId(alias)}.${this.#db.escapeId(field)}` : this.#db.escapeId(field);
       const equal = v === "NULL" ? " IS " : " = ";
       sqls.push(f + equal + v);
     }
@@ -312,7 +313,7 @@ export class DbTable {
     const sqls: string[] = [];
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
-      const f = alias ? `${Db.escapeId(alias)}.${Db.escapeId(field)}` : Db.escapeId(field);
+      const f = alias ? `${this.#db.escapeId(alias)}.${this.#db.escapeId(field)}` : this.#db.escapeId(field);
       sqls.push(`${f} = ${Field.valueToSql(values[field])}`);
     }
     return sqls.join(", ");

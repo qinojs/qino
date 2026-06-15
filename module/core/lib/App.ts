@@ -25,7 +25,7 @@ const defaultConfig = {
     dbName: "",
     dbUser: "",
     dbPass: "",
-    db: "", // full connection string override, e.g. "sqlite:/path/db.sqlite" or "sqlite::memory:"
+    db: "", // full connection string override, e.g. "sqlite:/path/db.sqlite" or "postgresql://user:pass@host/db"
 };
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */

@@ -42,6 +42,7 @@ export class DbField {
     const type = this.type.toUpperCase();
     if (this.null && value === null) return null;
     if (this.null && value === "" && !stringTypes[type]) return null;
+    if (type === "BOOLEAN") return value === true || value === 1 || value === "1" || value === "true";
     if (typeof value === "number" && dateTypes[type]) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }

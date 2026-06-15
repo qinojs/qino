@@ -200,7 +200,7 @@ export class DbFile extends File {
 
   async used(): Promise<boolean> {
     for (const Field of this.#manager.db.table("file").children) {
-      const sql = `SELECT 1 FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)} = ? LIMIT 1`;
+      const sql = `SELECT 1 FROM ${this.#manager.db.escapeId(Field.table.name)} WHERE ${this.#manager.db.escapeId(Field.name)} = ? LIMIT 1`;
       if (await this.#manager.db.one(sql, [this.id])) return true;
     }
     const e = { dbFile: this, used: false };

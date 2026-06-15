@@ -4,13 +4,18 @@ import { DbTable } from "../lib/DbTable.ts";
 
 function db() {
   const calls: Array<[string, unknown[] | undefined]> = [];
+  const returns: Array<string | undefined> = [];
   const events: Array<[string, Record<string, unknown>]> = [];
   const rows = [{ id: 1, name: "One", parent: null }];
   const fake = {
     calls,
+    returns,
     events,
     tables: {},
+    emptyInsert: "() VALUES ()",
+    escapeId: (id: string) => `\`${id}\``,
     table: () => undefined,
+    syncAutoIncrement() {},
     columns(table: string) {
       return this.query(`SHOW FULL COLUMNS FROM \`${table}\``);
     },
@@ -31,8 +36,9 @@ function db() {
       calls.push([sql, params]);
       return undefined;
     },
-    exec(sql: string, params?: unknown[]) {
+    exec(sql: string, params?: unknown[], returning?: string) {
       calls.push([sql, params]);
+      returns.push(returning);
       return { affectedRows: 1, insertId: 10 };
     },
     fire(name: string, data: Record<string, unknown>) {
@@ -67,6 +73,8 @@ Deno.test("DbTable: schema fields and children come from db schema", async () =>
   const calls: Array<[string, unknown[] | undefined]> = [];
   const fake: any = {
     tables: {},
+    emptyInsert: "() VALUES ()",
+    escapeId: (id: string) => `\`${id}\``,
     schema: {
       properties: {
         child: {
@@ -108,11 +116,14 @@ Deno.test("DbTable: select, insert, update and delete build parameterized SQL", 
   await table.init();
 
   assertEquals(await table.select("`id` = ?", [1]), { "1": { id: 1, name: "One", parent: null } });
+  await table.select();
   assertEquals(await table.insert({ name: "Two" }), "10");
   assertEquals(await table.update("10", { name: "Ten" }), "10");
   assertEquals(await table.delete("10"), true);
 
   assertEquals(fake.calls.some(([sql]) => sql === "INSERT INTO `thing` (`name`) VALUES (?)"), true);
+  assertEquals(fake.calls.some(([sql]) => sql === "SELECT * FROM `thing` WHERE TRUE"), true);
+  assertEquals(fake.returns[0], "id");
   assertEquals(fake.calls.some(([sql]) => sql === "UPDATE `thing` SET `name` = ? WHERE `id` = ?"), true);
   assertEquals(fake.calls.some(([sql]) => sql === "DELETE FROM `thing` WHERE `id` = ?"), true);
   assertEquals(fake.events.map(([name]) => name), [

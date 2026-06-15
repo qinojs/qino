@@ -84,7 +84,7 @@ export async function versTable(db: Db, tableName: string): Promise<string | fal
     for (const p of Object.values(props)) delete p["x-autoincrement"]; // composite PK, not auto-increment
     props._vers_log     = { type: "integer", default: 0, "x-index": "primary" };
     props._vers_space   = { type: "integer", default: 0, "x-index": "primary" };
-    props._vers_deleted = { type: "boolean", default: false, "x-index": true };
+    props._vers_deleted = { type: "integer", default: 0, "x-index": true };
     await db.migrate({ properties: { [vt]: shadow } }, { patch: true });
 
     dbState(db).created.add(vt);
