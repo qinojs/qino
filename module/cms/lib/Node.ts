@@ -1,4 +1,5 @@
 import { resolveText } from "./resolveText.ts";
+import { parseXml, type XmlNode } from "./parseXml.ts";
 import { hee, HtmlString, getCtx, urlize, tableRef, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
@@ -545,6 +546,15 @@ export class Node {
         await P.texts();
         await P.files();
 
+        // Apply this node's "subpage definition" (childXML) to the new page child; tolerate malformed user input
+        if (vs.type === "p" && "childXML" in this.settings) {
+            try {
+                await P.fromXml(String(this.settings.childXML() ?? ""));
+            } catch (e) {
+                console.warn(`childXML of node ${this.id} could not be applied:`, e);
+            }
+        }
+
         // Re-sort children so the new child gets a proper sort position
         this.#children = this.#conts = null;
         this.#named = {};
@@ -559,6 +569,26 @@ export class Node {
     createCont(vs: Record<string, string | number | boolean | null> = {}): Promise<Node> {
         vs = { type: "c", module: "cms.cont.flexible", visible: "", online_start: null, access: null, ...vs };
         return this.createChild(vs);
+    }
+
+    /** childXML attributes that map directly to a node column */
+    static #xmlAttrs = new Set(["module", "online_end", "online_start", "visible", "public", "name"]);
+    /** Build descendant nodes from a "subpage definition" (childXML template). */
+    async fromXml(xml: string): Promise<void> {
+        const root = parseXml(xml);
+        if (root) await this.#fromXmlNode(root);
+    }
+    async #fromXmlNode(node: XmlNode): Promise<void> {
+        const langs = this.app.languages.all;
+        for (const [name, value] of Object.entries(node.attrs)) {
+            if (langs.includes(name)) { await this.title(name, value); continue; }
+            if (!Node.#xmlAttrs.has(name)) continue;
+            await this.set(name, value); // IMPORTANT: module access rights still need to be clarified — currently every module is allowed
+        }
+        for (const child of [...node.children].reverse()) {
+            const C = child.tag === "cont" ? await this.createCont() : child.tag === "page" ? await this.createChild() : null;
+            if (C) await C.#fromXmlNode(child);
+        }
     }
 
     async copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | false> {
