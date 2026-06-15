@@ -38,7 +38,7 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const feedbackEmail = await app.settings.cms.feedback.email ?? "";
   const feedbackText = ctx.settings.cms.feedback.text() ?? "";
 
-  const treeShowC = ctx.settings["cms.frontend.2"].custom.tree_show_c();
+  const treeShowC = ctx.settings["cms.frontend.2"].ui.tree_show_c();
   const langVal = String(ctx.settings.core.lang_ns.cms() ?? "");
 
   return `<div class=more-manager>

@@ -6,7 +6,7 @@ export default async function (node: Node): Promise<string> {
   const ctx = getCtx();
   const t = ctx.app.t;
 
-  ctx.html.jsData.cmsFrontend2Data = (await ctx.settings["cms.frontend.2"].custom) ?? {};
+  ctx.html.jsData.cmsFrontend2Data = (await ctx.settings["cms.frontend.2"].ui) ?? {};
 
   const tree     = await cmsFrontend2WidgetSidebar("tree",     node, await t`Structure`,    await t`Overview. Create, move, delete pages...`);
   const settings = await cmsFrontend2WidgetSidebar("settings", node, await t`Settings`,     await t`Settings, files, permissions of the current page`);

@@ -32,7 +32,7 @@ export async function cmsFrontend2WidgetAccordion(
 ): Promise<string> {
   const ctx = getCtx();
 
-  const open = !!await ctx.settings["cms.frontend.2"].custom.widget[widget];
+  const open = !!await ctx.settings["cms.frontend.2"].ui.widget[widget];
   const cls = "-widgetHead " + (open ? "-open" : "");
 
   let headHtml: string;
@@ -50,7 +50,7 @@ export async function cmsFrontend2WidgetAccordion(
 /** Widget als Sidebar-Item */
 export async function cmsFrontend2WidgetSidebar(widget: string, node: Node, title: string, tooltip = ""): Promise<string> {
   const ctx = getCtx();
-  const sidebarV = await ctx.settings["cms.frontend.2"].custom.sidebar;
+  const sidebarV = await ctx.settings["cms.frontend.2"].ui.sidebar;
   const open = sidebarV === widget;
   const content = await cmsFrontend2Widget(widget, open, node);
   return `<div class="-item ${open ? "-open" : ""}" itemid="${widget}">

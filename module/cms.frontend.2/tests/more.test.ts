@@ -16,7 +16,7 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
         feedback: { text: (value?: string) => value === undefined ? draft : draft = value },
       },
       core: { lang_ns: { cms: () => "" } },
-      "cms.frontend.2": { custom: { tree_show_c: () => false } },
+      "cms.frontend.2": { ui: { tree_show_c: () => false } },
     },
   } as unknown as RequestContext;
   const app = {
@@ -58,7 +58,7 @@ Deno.test("cms.frontend.2 more: keeps feedback draft when sending fails", async 
     settings: {
       cms: { feedback: { text: (value?: string) => value === undefined ? draft : draft = value } },
       core: { lang_ns: { cms: () => "" } },
-      "cms.frontend.2": { custom: { tree_show_c: () => false } },
+      "cms.frontend.2": { ui: { tree_show_c: () => false } },
     },
   } as unknown as RequestContext;
   const node = { app: {

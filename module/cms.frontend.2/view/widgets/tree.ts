@@ -5,7 +5,7 @@ import { cmsGetTree } from "../../../cms/apt-exports.ts";
 export default async function (node: Node): Promise<string> {
   const app = node.app;
   const ctx = getCtx();
-  const treeShowC = await ctx.settings["cms.frontend.2"].custom.tree_show_c;
+  const treeShowC = await ctx.settings["cms.frontend.2"].ui.tree_show_c;
 
   const treeData = await cmsGetTree(0, {
     in: node,

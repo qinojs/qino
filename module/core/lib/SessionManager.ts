@@ -67,7 +67,7 @@ export class SessionManager {
     #result(sessId: string | number, token: string, data: string | null, isNew: boolean): SessionResult {
         const root = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
             await this.#db.exec("UPDATE sess SET data = ? WHERE id = ?", [json, sessId]);
-        });
+        }, {debounce: 0});
         return { sessionToken: token, sessId: String(sessId), session: root.proxy, isNew };
     }
 

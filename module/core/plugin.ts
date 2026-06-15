@@ -78,7 +78,7 @@ export async function init(app: App) {
 
     app.on("html-ready", e => {
         const ctx = e.ctx as RequestContext;
-        ctx.html.importMap.set("@qino/item/", "https://jsr.io/@nuxodin/item/0.5.10/");
+        ctx.html.importMap.set("@qino/item/", "https://jsr.io/@nuxodin/item/0.5.11/");
         ctx.html.importMap.set("@qino/u2/", u2Root);
     });
 

@@ -8,7 +8,7 @@ async function buildRoot(
     save: (json: string) => Promise<void>,
     schema?: any,
 ): Promise<any> {
-    const root = bildJsonItem(await load(), save);
+    const root = bildJsonItem(await load(), save, {debounce:0});
     if (schema) root.setSchema(schema);
     return root;
 }

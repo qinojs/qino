@@ -86,7 +86,7 @@ const loadWidget = (widget, params, cb) => {
 
 
 uiState.addEventListener("changeIn", () => {
-  setSetting(uiState.get({ silent: true }), ["cms.frontend.2", "custom"]); // why silent? should we debounce?
+  setSetting(uiState.get({ silent: true }), ["cms.frontend.2", "ui"]); // why silent? should we debounce?
 });
 
 function syncSidebar(value = sidebar.value) {
@@ -600,7 +600,7 @@ onEl(".more-manager", (el) => {
     });
   });
   findEl(el, ".-tree-show-c").addEventListener("change", (e) => {
-    setSetting(e.currentTarget.checked, ["cms.frontend.2", "custom", "tree_show_c"])
+    setSetting(e.currentTarget.checked, ["cms.frontend.2", "ui", "tree_show_c"])
       .then(() => {
         location.href = location.href.replace(/#.*$/, "");
       });
