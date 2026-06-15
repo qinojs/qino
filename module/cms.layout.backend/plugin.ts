@@ -50,8 +50,6 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   // html.scripts.add(u2Root + "el/menubutton/menubutton.js");
   html.scripts.add(u2Root + "u2/auto.js");
 
-
-  html.styles.add(ctx.sysURL + "core/pub/css/c1/box.css");
   html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
 
   const Page = await node.page();

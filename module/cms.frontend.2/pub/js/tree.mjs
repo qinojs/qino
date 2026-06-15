@@ -103,14 +103,14 @@ globalThis.cmsTreeInit = async (json) => {
   };
   for (const ev of ["mouseover", "mouseout"]) rootNode.addEventListener(ev, hover);
 
-  rootNode.addEventListener("keydown", (e) => {
+  rootNode.addEventListener("keydown", async (e) => {
     if (e.target.closest("input, textarea, select, [contenteditable]")) return;
     const node = nodeOf(e);
     if (!node) return;
     if (e.key === "Enter") node.data.url && (location.href = node.data.url);
     else if (e.key === "Delete" && !e.ctrlKey) {
       if (node.data.myaccess < 3) return;
-      if (!confirm(t`Really delete page "${node.data.title}"?`)) return;
+      if (!await cms.dialogs.confirm(t`Really delete page "${node.data.title}"?`)) return;
       apt.cms.node(node.dataset.key).delete();
     } else if (e.key === "F2") editNode(node);
     else return;

@@ -1,0 +1,19 @@
+[qcms-mod="backend.superuser.db.query"] {
+  & .-console { position: relative; }
+  & .-editor { display: block; min-height: 8em; padding: 1em; font-family: monospace; border: thin solid; }
+  & .-bar { display: flex; align-items: center; gap: .5em; margin-top: .25em; }
+  & .-prompt { flex: 1; }
+  & .-result { margin: .5em 0; }
+  & .-null { opacity: .5; }
+  & td code { font-family: monospace; }
+
+  /* autocomplete dropdown anchored at the caret (absolute within the relative .-console) */
+  & .-suggest { position: absolute; z-index: 5; display: flex; flex-direction: column; border: thin solid; background: Canvas; color: CanvasText; max-height: 14em; min-width: 8em; overflow: auto; }
+  & .-suggest .-opt { font-family: monospace; text-align: left; border: 0; background: none; color: inherit; cursor: pointer; padding: .1em .5em; }
+  & .-suggest .-opt.-on { background: Highlight; color: HighlightText; }
+
+  & .-helper .-tables { display: flex; flex-direction: column; gap: .15em; max-height: 50vh; overflow: auto; }
+  & .-helper .-fields { display: flex; flex-wrap: wrap; gap: .25em; padding: .15em 0 .4em 1em; }
+  /* table/field tokens are plain clickable text, not chrome buttons */
+  & .-tname, & .-field { font: inherit; font-family: monospace; color: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
+}

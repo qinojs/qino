@@ -7,7 +7,6 @@ const Page = globalThis.qino?.cms?.nodeId;
 const panelStyles = [
   import.meta.resolve("@qino/u2/css/norm/norm.css"),
   import.meta.resolve("@qino/u2/css/base/base.css"),
-  "core/pub/css/c1/box.css",
   "cms/pub/css/ui.css",
   "cms.frontend.2/pub/css/off.css",
   "cms.frontend.2/pub/css/panel.css",
@@ -61,9 +60,18 @@ const [
   import("@qino/u2/js/SelectorObserver/SelectorObserver.js"),
   import("@qino/u2/js/dialog/dialog.js"),
 ]);
-const dialogs = dialogScope({ root });
-const alert = async (text) => dialogs.alert(await text);
-const confirm = async (text) => dialogs.confirm(await text);
+// isolate dialog interactions (incl. backdrop) from page-level handlers: content marking, context menu, …
+const isolate = el => ['click','mousedown','touchstart'].forEach(type =>
+	el.addEventListener(type, e => e.stopPropagation()));
+const scoped = dialogScope({ root, init: isolate }); // central scoped dialogs (panel shadow root)
+// t`` returns a thenable -> await text, else u2 treats the promise as the options object (body becomes "undefined")
+cms.dialogs = {
+	...scoped,
+	alert:   async (text)          => scoped.alert(await text),
+	confirm: async (text)          => scoped.confirm(await text),
+	prompt:  async (text, initial) => scoped.prompt(await text, initial),
+};
+const { alert, confirm } = cms.dialogs;
 function onEl(selector, fn) {
   new SelectorObserver({ on: el => requestAnimationFrame(() => fn(el)) }).observe(selector, { root });
 }

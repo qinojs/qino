@@ -106,45 +106,40 @@ Rte.ui.setItem('Link', {
 
 
 const externMediaDialog = async function(txtEl,medias) {
-	const [pid] = await Promise.all([
-		cms.txtIdToPid( txtEl.getAttribute('cmstxt') ),
-		import('../../../core/pub/js/c1/dialog.mjs'),
-	]);
-	const dialog = new c1.dialog({
-		class:'qgCMS',
-		title:'External media',
-		body: 'Which files do you want to copy to your server? <br><br>'+
-				'<div class=-checkkboxes></div>'+
-				'<style>.cmsExtMediaHighlight {outline: 6px solid #fa0} </style>',
-		buttons: [{
-			title:'done',then(){
-				for (const [uri,media] of Object.entries(medias)) {
-					if (media.checked) {
-						apt.cms.node(pid).files.post({ file: uri }).then(v=>{
-							if (!v.url) return;
-							for (const el of media.els) {
-								const att = el.hasAttribute('src') ? 'src' : 'href';
-								el.setAttribute(att, v.url+'/'+media.basename);
-							}
-							txtEl.dispatchEvent(new Event('input',{'bubbles':true}));
-							txtEl.focus();
-						});
-					} else {
-						for (const el of media.els) el.classList.add('externMedia')
-					}
-				}
-			}
-		}]
-	});
+	const pid = await cms.txtIdToPid( txtEl.getAttribute('cmstxt') );
+	const dialog = document.createElement('dialog');
+	dialog.innerHTML =
+		'<form method=dialog style="display:flex; flex-flow:column; gap:1em">'+
+			'<p style="margin:0">Which files do you want to copy to your server?</p>'+
+			'<div class=-files style="display:flex; flex-flow:column"></div>'+
+			'<menu style="display:flex; justify-content:flex-end; margin:0; padding:0">'+
+				'<button value=done>done</button>'+
+			'</menu>'+
+		'</form>'+
+		'<style>.cmsExtMediaHighlight {outline: 6px solid #fa0}</style>';
+	const list = find(dialog, '.-files');
 	for (const media of Object.values(medias)) {
-		//let file = new URL(uri).pathname.replace(/.*\//,'');
-		const label = c1.dom.fragment('<label style="display:block; padding:2px 6px"><input type=checkbox checked> '+media.basename+'</label>').firstChild;
+		const label = c1.dom.fragment('<label><input type=checkbox checked> '+media.basename+'</label>').firstChild;
 		label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
 		label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
 		find(label, 'input').addEventListener('change', e => media.checked = e.currentTarget.checked);
-		find(dialog.element, '.-checkkboxes').append(label);
+		list.append(label);
 	}
-	dialog.show();
+	dialog.addEventListener('click', e => e.target === dialog && dialog.close()); // backdrop
+	dialog.addEventListener('close', () => {
+		if (dialog.returnValue === 'done') for (const [uri,media] of Object.entries(medias)) {
+			if (!media.checked) { media.els.forEach(el=>el.classList.add('externMedia')); continue; }
+			apt.cms.node(pid).files.post({ file: uri }).then(v=>{
+				if (!v.url) return;
+				for (const el of media.els) el.setAttribute(el.hasAttribute('src')?'src':'href', v.url+'/'+media.basename);
+				txtEl.dispatchEvent(new Event('input',{bubbles:true}));
+				txtEl.focus();
+			});
+		}
+		dialog.remove();
+	});
+	document.body.append(dialog);
+	dialog.showModal();
 }
 const checkMedia = root => {
 	const medias = {}; let has = false;

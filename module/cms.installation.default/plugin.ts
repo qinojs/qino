@@ -26,6 +26,7 @@ export const needs = [
     // optional: cms.cont.not_found1
     // optional: cms.backend.superuser
     // optional: cms.backend.superuser.db
+    // optional: cms.backend.superuser.db.query
     // optional: cms.backend.superuser.db-clean
     // optional: cms.backend.superuser.dbfile_clean
     // optional: cms.backend.superuser.vers

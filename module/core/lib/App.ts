@@ -130,7 +130,7 @@ export class App {
             return await this.#buildResponse(ctx);
         } finally {
             await ctx.cleanup();
-            if (this.dev) console.log(`${ctx.req.method} ${ctx.req.path} ${(performance.now() - t0).toFixed(1)}ms`);
+            console.log(`${ctx.req.method} ${ctx.req.path} ${(performance.now() - t0).toFixed(1)}ms`);
         }
     }
 

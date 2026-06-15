@@ -30,7 +30,7 @@ async function render(node: Node): Promise<string> {
       if (!body) continue;
       const url = hee(await child.url());
       const title = hee(await (await child.title()).string());
-      widgets.push(`<div class="xc1-box u2-card"><a class="-head" href="${url}">${title}</a>${body}</div>`);
+      widgets.push(`<div class=u2-card><a class="-head" href="${url}">${title}</a>${body}</div>`);
     } catch (e) { console.error(e) }
   }
 

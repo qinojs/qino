@@ -68,9 +68,9 @@ Menu.addItem(t`Delete`, {
 		this.disabled = !cms.contPos.active.isDraggable();
 		t`Really delete this content?`; // preload text
 	},
-	onclick() {
+	async onclick() {
 		const el = this.activeEl;
-		if (!confirm(t`Really delete this content?`)) return;
+		if (!await cms.dialogs.confirm(t`Really delete this content?`)) return;
 		const pid = cms.el.nid(el);
 		el.remove();
 		apt.cms.node(pid).delete();
@@ -143,9 +143,9 @@ TreeMenu.addItem(t`Delete`, {
 		this.disabled = node.data.myaccess < 2;
 		t`Really delete page "${''}"?` // preload translation
 	},
-	onclick() {
+	async onclick() {
 		const n = cms.Tree.getNodeByKey(this.lastPid);
-		if (!confirm(t`Really delete page "${n.data.title}"?`)) return;
+		if (!await cms.dialogs.confirm(t`Really delete page "${n.data.title}"?`)) return;
 		apt.cms.node(n.data.key).delete().then(ret => {
 			if (ret.parent_id && n.data.key==Page) {
 				location.href = "?cmspid="+ret.parent_id;

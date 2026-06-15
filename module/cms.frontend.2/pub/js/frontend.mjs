@@ -87,7 +87,7 @@ cms.cont.prototype = {
 			progress: e => event.trigger('progress', e),
 			complete: res => {
 				res = JSON.parse(res);
-				res.error && alert(res.error);
+				res.error && cms.dialogs.alert(res.error);
 				complete && setTimeout(() => complete(res), 700); // firefox problem?
 				event.trigger('complete', res);
 			},
@@ -253,12 +253,11 @@ cms.console = {
 
 apt.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`Fehler beim API-Aufruf`, 'error'));
 
-cms.frontend2.dialog = async (title,body,buttons)=>{
-	await import('../../../core/pub/js/c1/dialog.mjs');
-	const dialog = new c1.dialog({title,body,buttons,class:'qgCMS'});
-	dialog.show();
-	return dialog.element;
-};
+cms.frontend2.dialog = (title,body,buttons) =>
+	cms.dialogs.modal({
+		body: (title ? '<p>'+title+'</p>' : '') + body,
+		buttons: buttons?.map(b => ({ ...b, action: b.then })), // c1 used `then`, u2 uses `action`, todo: use action everywhere and remove this mapping
+	});
 
 apt.on('PUT cms/txt/:id', ({ value }) => {
 	if (value?.changed) cms.console.show(t`Der Text wurde gespeichert.`, 'info');
