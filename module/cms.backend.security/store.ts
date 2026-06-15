@@ -113,8 +113,7 @@ async function getBucket(db: Db, scope: string, ident: string, set: Record<strin
 }
 
 function setBucketCache(db: Db, scope: string, ident: string, row: any, set: Record<string, number>) {
-  let map = bucketCache.get(db);
-  if (!map) bucketCache.set(db, map = new Map());
+  const map = bucketCache.getOrInsertComputed(db, () => new Map());
   map.set(bucketKey(scope, ident), { until: Date.now() + Math.max(1, set.bucketCacheSeconds ?? 2) * 1000, row });
   if (map.size > 5000) map.delete(map.keys().next().value!);
 }

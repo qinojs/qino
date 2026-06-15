@@ -17,9 +17,9 @@ interface DbVersState {
 }
 const dbStates = new WeakMap<Db, DbVersState>();
 function dbState(db: Db): DbVersState {
-    let s = dbStates.get(db);
-    if (!s) dbStates.set(db, s = { tables: {}, created: new Set(), baselined: new Set(), views: new Map() });
-    return s;
+    return dbStates.getOrInsertComputed(db, () => ({
+        tables: {}, created: new Set(), baselined: new Set(), views: new Map(),
+    }));
 }
 
 // Tables (and optional field-subset) that are versioned.
@@ -112,12 +112,11 @@ export async function view(db: Db, tableName: string, space: number, log: number
     const name = `_vers_${log}_space_${space}_${tableName}`;
 
     const views = dbState(db).views;
-    let creating = views.get(name);
-    if (!creating) {
-        creating = createView(db, tableName, vt, name, space, log);
+    const creating = views.getOrInsertComputed(name, () => {
+        const creating = createView(db, tableName, vt, name, space, log);
         creating.catch(() => views.delete(name)); // allow retry after failure
-        views.set(name, creating);
-    }
+        return creating;
+    });
     await creating;
     return name;
 }
