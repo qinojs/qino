@@ -40,8 +40,7 @@ export interface VersState {
 const STATE_KEY = "vers";
 
 export function getVers(ctx: RequestContext): VersState {
-    ctx.state[STATE_KEY] ??= { space: 0, log: 0, tableEntriesCopying: false };
-    return ctx.state[STATE_KEY] as VersState;
+    return (ctx.state[STATE_KEY] ??= { space: 0, log: 0, tableEntriesCopying: false }) as VersState;
 }
 
 // ─── State helpers ──────────────────────────────────────────────────────────
@@ -113,12 +112,13 @@ export async function view(db: Db, tableName: string, space: number, log: number
     const name = `_vers_${log}_space_${space}_${tableName}`;
 
     const views = dbState(db).views;
-    if (!views.has(name)) {
-        const creating = createView(db, tableName, vt, name, space, log);
+    let creating = views.get(name);
+    if (!creating) {
+        creating = createView(db, tableName, vt, name, space, log);
         creating.catch(() => views.delete(name)); // allow retry after failure
         views.set(name, creating);
     }
-    await views.get(name);
+    await creating;
     return name;
 }
 

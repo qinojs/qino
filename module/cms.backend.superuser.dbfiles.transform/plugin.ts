@@ -262,7 +262,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     return renderCache(node.app);
   }
 
-  const [platform, root] = await Promise.all([detectPlatform(), Promise.resolve(isRoot())]);
+  const [platform, root] = await Promise.all([detectPlatform(), isRoot()]);
 
   const rows = await Promise.all(BINARIES.map(bin => renderBinary(bin, platform, root)));
 

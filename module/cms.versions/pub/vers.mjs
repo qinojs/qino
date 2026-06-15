@@ -77,7 +77,7 @@ CmsVersViewer.prototype = {
 				});
 				list.prepend(li);
 			});
-			rows.length && this.load(rows[rows.length-1].vers);
+			rows.length && this.load(rows.at(-1).vers);
 		});
 	},
 	hide: function(){

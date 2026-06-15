@@ -177,7 +177,7 @@ function humanBytes(n: number) {
 
 function u2time(t: unknown) {
   const d = new Date(Number(t) * 1000);
-  if (isNaN(d.getTime())) return "-";
+  if (Number.isNaN(d.getTime())) return "-";
   const iso = d.toISOString();
   return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 }
