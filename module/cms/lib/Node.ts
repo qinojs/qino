@@ -230,7 +230,8 @@ export class Node {
     async isOnline(): Promise<boolean> {
         const start = await this.onlineStart();
         const end = await this.onlineEnd();
-        const now = Math.floor(Date.now() / 1000) + 32;
+        // small grace window so a freshly set online_start/end takes effect despite clock skew
+        const now = Math.floor(Date.now() / 1000) + 99;
         return (start === 0 || now > start) && (end === 0 || now < end);
     }
     async isReadable(): Promise<boolean> {

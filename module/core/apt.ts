@@ -61,7 +61,7 @@ export const api: AptTree = {
       access: Access.USER,
       input: s.object({
         oldpw: s.string().describe("Current password"),
-        pw: s.string().describe("New password (min 5 chars)"),
+        pw: s.string().describe("New password (min 8 chars)"),
       }),
       execute: async ({ oldpw, pw }: any) => {
         const ctx = getCtx();
@@ -69,7 +69,7 @@ export const api: AptTree = {
         if (!usr) return 0;
         const currentHash = String(await usr.get("pw") ?? "");
         if (!await pwVerify(oldpw, currentHash)) return -1;
-        if (String(pw ?? "").length < 5) return -2;
+        if (String(pw ?? "").length < 8) return -2;
         await usr.set("pw", await pwHash(pw));
         await usr.save();
         return 1;
