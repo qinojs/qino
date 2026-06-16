@@ -1,6 +1,6 @@
 
 /** Single source of truth for the u2 CDN root (version pin). */
-export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.18/";
+export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.19/";
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
@@ -10,9 +10,11 @@ export function contentDisposition(type: "inline" | "attachment", name: string):
   return `${type}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
 }
 
-/** Client IP from x-forwarded-for (first hop). Only trustworthy behind a trusted proxy. */
-export function clientIp(req: { header(name: string): string | undefined }): string {
-  return req.header("x-forwarded-for")?.split(",").shift()?.trim() ?? "";
+/** Client IP. Trusts `hops` proxies from the right of x-forwarded-for; 0 = peer addr only (XFF ignored, unspoofable). */
+export function clientIp(req: { header(name: string): string | undefined; peerAddr: string }, hops = 0): string {
+  if (hops <= 0) return req.peerAddr;
+  const xff = req.header("x-forwarded-for")?.split(",").map(s => s.trim()).filter(Boolean) ?? [];
+  return xff[xff.length - hops] ?? req.peerAddr;
 }
 
 /** HTML utilities */

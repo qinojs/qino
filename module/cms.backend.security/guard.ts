@@ -7,7 +7,7 @@ const pathBlocks = new Map<string, number>();
 
 export function initSecurity(app: App) {
   app.on("request-start", async e => {
-    const info = gateInfo(e.req as Req);
+    const info = gateInfo(e.req as Req, app.trustedProxyHops);
     if (isPathBlocked(info)) return deny(5);
     const set = await settings(app);
     if (!set.enabled) return;
@@ -106,8 +106,8 @@ function blockKey(info: GateInfo) {
   return info.ip ? "ip:" + info.ip : "path:" + info.path;
 }
 
-function gateInfo(req: Req): GateInfo {
-  const ip = clientIp(req);
+function gateInfo(req: Req, hops: number): GateInfo {
+  const ip = clientIp(req, hops);
   return { ip, method: req.method, path: safeDecode(new URL(req.url).pathname).slice(0, 191), bytes_in: Number(req.header("content-length") ?? "0") || 0, ua: req.header("user-agent") ?? "" };
 }
 

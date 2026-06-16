@@ -141,7 +141,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     post,
     files,
     requestUri: url.pathname + url.search,
-    remoteAddr: clientIp(req),
+    remoteAddr: clientIp(req, app.trustedProxyHops),
   });
 
   return [ctx, isNew];

@@ -7,14 +7,17 @@ export class Req {
   readonly raw: Request;
   readonly url: string;
   readonly method: string;
+  /** Direct TCP peer address (from the runtime), the only unspoofable IP source. */
+  readonly peerAddr: string;
   readonly #url: URL;
   #json: Promise<unknown> | undefined;
   #form: Promise<FormData> | undefined;
 
-  constructor(raw: Request) {
+  constructor(raw: Request, peerAddr = "") {
     this.raw = raw;
     this.url = raw.url;
     this.method = raw.method;
+    this.peerAddr = peerAddr;
     this.#url = new URL(raw.url);
   }
 

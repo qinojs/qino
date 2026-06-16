@@ -21,6 +21,7 @@ const defaultConfig = {
     basePath: "",
     https: false,
     dev: false,
+    trustedProxyHops: 0, // proxies in front of the app; 0 = none, x-forwarded-for ignored
     dbHost: "localhost",
     dbName: "",
     dbUser: "",
@@ -34,6 +35,7 @@ export class App {
     basePath: string;
     https: boolean;
     dev: boolean;
+    trustedProxyHops: number;
     db: Db;
     settings: ItemProxy;
     ctxSettingsSchema: object = { properties: {} };
@@ -56,6 +58,7 @@ export class App {
         this.basePath  = cfg.basePath;
         this.https     = cfg.https;
         this.dev       = cfg.dev;
+        this.trustedProxyHops = cfg.trustedProxyHops;
 
         this.db        = new Db(cfg.db || `mysql:host=${cfg.dbHost};dbname=${cfg.dbName}`, cfg.dbUser, cfg.dbPass);
         this.settings  = createSettingItem(this.db).proxy;
@@ -68,8 +71,8 @@ export class App {
     }
 
     /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
-    get fetch(): (req: Request) => Promise<Response> {
-        return (req) => this.handle(req);
+    get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
+        return (req, info) => this.handle(req, this.basePath, info?.remoteAddr?.hostname);
     }
 
     /** Mandatory boot step, after all modules are imported: ensures the database, migrates the
@@ -105,8 +108,8 @@ export class App {
     }
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
-    async handle(request: Request, basePath: string = this.basePath): Promise<Response> {
-        const req = new Req(request);
+    async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
+        const req = new Req(request, peerAddr);
         let ctx: RequestContext, isNew: boolean;
         try {
             await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
