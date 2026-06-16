@@ -127,6 +127,7 @@
           },
           "type": {
             "type": "string",
+            "default": "",
             "maxLength": 100
           },
           "name": {
@@ -134,7 +135,7 @@
             "maxLength": 191
           }
         },
-        "required": ["id", "usr_id", "type", "name"]
+        "required": ["id", "type", "name"]
       }
     },
     "log": {
@@ -379,7 +380,7 @@
             "x-qg-on-parent-delete": "setnull"
           }
         },
-        "required": ["name", "access", "title_id"]
+        "required": ["name", "access"]
       }
     },
     "qg_hashaction": {
@@ -447,16 +448,20 @@
           "type": {
             "type": "integer",
             "minimum": -128,
-            "maximum": 127
+            "maximum": 127,
+            "default": 0
           },
           "handler": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "options": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "w": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           }
         },
         "required": ["id", "basis", "offset", "value", "type", "handler", "options", "w"]
@@ -686,7 +691,7 @@
             "type": "string"
           }
         },
-        "required": ["id", "active", "pw", "firstname", "lastname", "superuser", "lang", "company"]
+        "required": ["id", "active", "pw", "firstname", "lastname", "superuser"]
       }
     },
     "usr_grp": {
@@ -711,7 +716,7 @@
             "x-qg-on-parent-delete": "setnull"
           }
         },
-        "required": ["usr_id", "grp_id", "log_id"]
+        "required": ["usr_id", "grp_id"]
       }
     }
   }

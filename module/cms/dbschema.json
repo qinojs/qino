@@ -34,6 +34,7 @@
             "type": "integer",
             "minimum": -32768,
             "maximum": 32767,
+            "default": 0,
             "x-index": true
           },
           "module": {
@@ -79,7 +80,7 @@
             "type": "string"
           }
         },
-        "required": ["id", "log_id", "log_id_ch", "type", "basis", "sort", "module", "visible", "searchable", "title_id"]
+        "required": ["id", "type", "basis", "sort", "module", "visible", "searchable"]
       }
     },
     "page_access_grp": {
@@ -223,13 +224,14 @@
             "x-index": true
           },
           "custom": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           },
           "target": {
             "type": "string"
           }
         },
-        "required": ["page_id", "lang", "url", "custom", "target"]
+        "required": ["page_id", "lang", "url", "custom"]
       }
     },
     "grp": {

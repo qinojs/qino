@@ -309,7 +309,6 @@ export class DbTable {
     return sqls.join(" AND ");
   }
   valuesToSet(values: Record<string, any>, alias?: string): string {
-    console.warn('zzz used?')
     const sqls: string[] = [];
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
