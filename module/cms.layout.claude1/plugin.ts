@@ -30,9 +30,9 @@ const settingsSchema = {
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<HtmlString> {
-  ctx.csp["style-src"][u2Root] = 1;
-  ctx.csp["script-src"][u2Root] = 1;
-  ctx.csp["connect-src"][u2Root] = 1;
+  ctx.csp["style-src"][u2Root] = true;
+  ctx.csp["script-src"][u2Root] = true;
+  ctx.csp["connect-src"][u2Root] = true;
 
   for (const f of u2css) ctx.html.styles.add(u2Root + f);
   ctx.html.scripts.add(u2Root + "u2/auto.js");

@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Item, ItemProxy } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
+import { Csp } from "./Csp.ts";
 import { uid, clientIp, Output } from "./util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
@@ -38,13 +39,8 @@ export class RequestContext {
   loginError?: LoginError;
   appURL = "/";
   sysURL = "/m/";
-  appRequestUri = "";
-  csp: Record<string, Record<string, number>> = {
-    "default-src": { "'self'": 1 }, "font-src": { "*": 1, "data:": 1 },
-    "img-src": { "'self'": 1, "data:": 1 }, "script-src": { "'self'": 1 },
-    "style-src": { "'self'": 1, "'unsafe-inline'": 1 }, "connect-src": { "'self'": 1 }, "frame-src": { "'self'": 1 },
-  };
-  cspReportUri: string | false = false; // besser innerhalb csp-objekt? ctx.csp.reportUri? geht das?
+  appRequestPath = "";
+  csp = new Csp();
 
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
   get hasHtml(): boolean { return this.#html !== null; }
@@ -85,8 +81,8 @@ export class RequestContext {
     try {
       const u = new URL(url);
       if (u.protocol === "file:") return u.pathname;
-      const appRequestUri = decodeURIComponent(u.pathname.slice(this.appURL.length));
-      return appRequestUriToLocalPath(appRequestUri, this.app);
+      const appRequestPath = decodeURIComponent(u.pathname.slice(this.appURL.length));
+      return appRequestPathToLocalPath(appRequestPath, this.app);
     } catch { /* not a URL */ }
     return null;
   }
@@ -130,7 +126,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     app,
     appURL,
     sysURL: appURL + "m/",
-    appRequestUri: decodeURIComponent(req.path.slice(appURL.length)),
+    appRequestPath: decodeURIComponent(req.path.slice(appURL.length)),
     session,
     sessionToken,
     sessId,
@@ -145,14 +141,14 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
   return [ctx, isNew];
 }
 
-function appRequestUriToLocalPath(appRequestUri: string, app: App): string | null {
-  const matchM = appRequestUri.match(/^m\/([^/]+)\/pub\/(.*)/);
+function appRequestPathToLocalPath(appRequestPath: string, app: App): string | null {
+  const matchM = appRequestPath.match(/^m\/([^/]+)\/pub\/(.*)/);
   if (matchM) {
     const mod = app.modules.get(matchM[1]);
     const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
     return pubPath(base, matchM[2]);
   }
-  const matchQg = appRequestUri.match(/^qg\/([^/]+)\/pub\/(.*)/);
+  const matchQg = appRequestPath.match(/^qg\/([^/]+)\/pub\/(.*)/);
   return matchQg ? pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]) : null;
 }
 

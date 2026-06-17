@@ -96,7 +96,7 @@ async function addReport(app: App, vs: Report): Promise<void> {
   };
   try {
     const ctx = getCtx();
-    row.request ??= ctx.appURL + ctx.appRequestUri;
+    row.request ??= ctx.appURL + ctx.appRequestPath;
     row.referer ??= ctx.req.header("referer");
     row.browser ??= ctx.req.header("user-agent");
     row.ip ??= ctx.remoteAddr;
@@ -114,9 +114,9 @@ export function init(app: App): void {
   };
 
   app.on("action", (e) => { const ctx = e.ctx as RequestContext;
-    if (ctx.appRequestUri === "js-error")  return handleJsError(ctx);
-    if (ctx.appRequestUri === "css-error") return handleCssError(ctx);
-    if (ctx.appRequestUri === "csp-error") return handleCspError(ctx);
+    if (ctx.appRequestPath === "js-error")  return handleJsError(ctx);
+    if (ctx.appRequestPath === "css-error") return handleCssError(ctx);
+    if (ctx.appRequestPath === "csp-error") return handleCspError(ctx);
   });
 
   app.on("render", async (e) => { const ctx = e.ctx as RequestContext;
@@ -125,6 +125,6 @@ export function init(app: App): void {
     if (!browserErrorsEnabled) return;
     ctx.html.jsData.reporterJsOptions = { url: ctx.appURL + "js-error", max: 50 };
     ctx.html.legacyScripts.add(reporterPath);
-    ctx.cspReportUri = ctx.appURL + "csp-error";
+    ctx.csp.reportUri = ctx.appURL + "csp-error";
   });
 }

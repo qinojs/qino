@@ -139,7 +139,7 @@ export class App {
 
     /** Explicit, ordered dispatch over the request path — the one routing model. */
     #route(ctx: RequestContext): Response | Promise<Response> {
-        const uri = ctx.appRequestUri;
+        const uri = ctx.appRequestPath;
 
         const localPath = ctx.urlToLocalPath(ctx.req.url);
         if (localPath) return serveFile(ctx.req.raw, localPath);

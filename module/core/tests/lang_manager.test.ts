@@ -24,7 +24,7 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
   lm.setLangs(["en", "de", "fr"]);
 
   const ctx = new RequestContext();
-  ctx.appRequestUri = "fr/page";
+  ctx.appRequestPath = "fr/page";
   ctx.get = {};
   ctx.req = { header: () => "de;q=1" } as any;
   ctx.session = { liveUser: () => 0, qg: { lang: sessionLang() } } as any;
@@ -32,7 +32,7 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
   assertEquals(ctx.langUsr, "fr");
   assertEquals(ctx.lang, "fr");
 
-  ctx.appRequestUri = "page";
+  ctx.appRequestPath = "page";
   ctx.get = {};
   ctx.session = { liveUser: () => 0, qg: { lang: sessionLang() } } as any;
   ctx.req = { header: () => "fr-CH;q=0.9,de;q=0.8,en;q=0.7" } as any;
@@ -46,7 +46,7 @@ Deno.test("LangManager: changeLanguage query overrides stored session language",
 
   const lang = sessionLang("en");
   const ctx = new RequestContext();
-  ctx.appRequestUri = "page";
+  ctx.appRequestPath = "page";
   ctx.get = { changeLanguage: "de" };
   ctx.req = { header: () => "" } as any;
   ctx.session = { liveUser: () => 0, qg: { lang } } as any;

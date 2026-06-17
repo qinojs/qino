@@ -28,12 +28,12 @@ export async function handleTrack(ctx: RequestContext): Promise<void> {
     });
   }
 
-  if (ctx.appRequestUri === "blank.gif") {
+  if (ctx.appRequestPath === "blank.gif") {
     ctx.responseHeaders.set("Content-Type", "image/gif");
     ctx.responseBody = BLANK_GIF as never;
     throw new Output();
   }
-  if (ctx.appRequestUri === "mail-track" && url) {
+  if (ctx.appRequestPath === "mail-track" && url) {
     ctx.responseStatus = 302;
     ctx.responseHeaders.set("Location", url);
     throw new Output();

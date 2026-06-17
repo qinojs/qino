@@ -64,7 +64,7 @@ export class CMS {
         if (cmspid) {
             pid = Number(cmspid);
         } else {
-            const id = await this.db.one(`SELECT page_id FROM ${tableRef("page_url")} WHERE url = ?`, [ctx.appRequestUri]);
+            const id = await this.db.one(`SELECT page_id FROM ${tableRef("page_url")} WHERE url = ?`, [ctx.appRequestPath]);
             pid = Number(id ?? "0") || 0;
         }
         return this.node(pid);

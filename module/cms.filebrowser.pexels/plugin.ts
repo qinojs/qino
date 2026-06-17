@@ -10,10 +10,8 @@ export function init(app: App) {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.cms.editmode) return;
         const csp = ctx.csp;
-        csp["connect-src"] ??= {};
-        csp["img-src"] ??= {};
-        csp["connect-src"]["https://*.pexels.com"] = 1;
-        csp["img-src"]["https://*.pexels.com"] = 1;
+        csp["connect-src"]["https://*.pexels.com"] = true;
+        csp["img-src"]["https://*.pexels.com"] = true;
         ctx.html.scripts.add(ctx.sysURL + "cms.filebrowser.pexels/pub/init.mjs");
     });
 }

@@ -13,7 +13,7 @@ Deno.test("cms.frontend.2: stores request URI without base path", async () => {
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
   const ctx = {
-    appRequestUri: "backend/page",
+    appRequestPath: "backend/page",
     appURL: "/cms1/",
     requestUri: "/cms1/backend/page?tab=settings",
     cms: { mainNode: { id: 1, vs: { module: "cms.layout.backend" }, access: () => 1 } },
@@ -41,7 +41,7 @@ Deno.test("cms.frontend.2: exposes stored app path unchanged", async () => {
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
   const ctx = {
-    appRequestUri: "backend/page",
+    appRequestPath: "backend/page",
     appURL: "/cms1/",
     requestUri: "/cms1/backend/page",
     cms: { mainNode: { id: 1, vs: { module: "cms.layout.backend" }, access: () => 1 } },

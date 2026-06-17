@@ -30,7 +30,7 @@ export class LangManager {
         if (urlLang) {
             ctx.langUsr = urlLang;
         } else {
-            const match = ctx.appRequestUri?.match(/^([a-z][a-z])(\/|$|\?)/);
+            const match = ctx.appRequestPath?.match(/^([a-z][a-z])(\/|$|\?)/);
             if (match) ctx.langUsr = match[1];
         }
 

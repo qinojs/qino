@@ -136,20 +136,8 @@ export async function init(app: App) {
             : (enableRaw && enableRaw !== "0" && enableRaw !== "false" ? "enforce" : "");
 
         if (enable) {
-            ctx.csp["script-src"]["'report-sample'"] = 1;
-            ctx.csp["style-src"]["'report-sample'"] = 1;
-
-            if (ctx.csp["default-src"]["'none'"] && Object.keys(ctx.csp["default-src"]).length > 1) {
-                delete ctx.csp["default-src"]["'none'"];
-            }
-
-            let str = "";
-            for (const [type, allowed] of Object.entries(ctx.csp)) {
-                str += type + " " + Object.keys(allowed).join(" ") + "; ";
-            }
-            if (ctx.cspReportUri) str += " report-uri " + ctx.cspReportUri + "; ";
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
-            ctx.responseHeaders.set(headerName, str);
+            ctx.responseHeaders.set(headerName, ctx.csp.toHeader());
         }
     });
 }

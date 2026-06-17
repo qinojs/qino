@@ -8,7 +8,6 @@ export function init(app: any) {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.cms.editmode) return;
         const csp = ctx.csp;
-        csp["img-src"] ??= {};
         csp["img-src"]["https://image.pollinations.ai"] = true;
         ctx.html.scripts.add(ctx.sysURL + "cms.filebrowser.ai/pub/init.mjs");
     });

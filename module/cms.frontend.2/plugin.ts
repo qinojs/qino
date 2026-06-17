@@ -87,7 +87,7 @@ export function init(app: App) {
     }
 
     if (access > 1) {
-      ctx.csp["img-src"]["blob:"] = 1;
+      ctx.csp["img-src"]["blob:"] = true;
       qino.cms ??= {};
       qino.cms.nodeId = node.id;
       qino.cms.requestedNodeId = ctx.cms.requestedNodeId;

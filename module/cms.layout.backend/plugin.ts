@@ -12,9 +12,9 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
   html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
 
-  ctx.csp["style-src"][u2Root] = 1;
-  ctx.csp["script-src"][u2Root] = 1;
-  ctx.csp["connect-src"][u2Root] = 1;
+  ctx.csp["style-src"][u2Root] = true;
+  ctx.csp["script-src"][u2Root] = true;
+  ctx.csp["connect-src"][u2Root] = true;
 
   html.styles.add(u2Root + "css/norm/norm.css");
   html.styles.add(u2Root + "css/base/base.css");

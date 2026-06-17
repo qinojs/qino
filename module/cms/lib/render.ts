@@ -11,7 +11,7 @@ export async function render(ctx: RequestContext): Promise<void> {
 
   if (!Page.is()) {
     // Search for redirect
-    const redirect = await db.one("SELECT redirect FROM page_redirect WHERE request = ?", [ctx.appRequestUri]);
+    const redirect = await db.one("SELECT redirect FROM page_redirect WHERE request = ?", [ctx.appRequestPath]);
     if (redirect) {
       let url: string;
       if (!isNaN(Number(redirect))) {

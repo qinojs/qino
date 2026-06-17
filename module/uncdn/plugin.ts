@@ -97,8 +97,8 @@ export function init(app: App): void {
 
   app.on("action", async e => {
     const ctx = e.ctx as RequestContext;
-    if (!ctx.appRequestUri.startsWith(PROXY_PREFIX)) return;
-    const rest = ctx.appRequestUri.slice(PROXY_PREFIX.length);
+    if (!ctx.appRequestPath.startsWith(PROXY_PREFIX)) return;
+    const rest = ctx.appRequestPath.slice(PROXY_PREFIX.length);
     if (!rest) return;
     if (Object.keys(ctx.get ?? {}).length) done(ctx, 404, "Not allowed");
 

@@ -7,7 +7,7 @@ export const needs = ["cms"];
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
 
   // Extract words from request URI for fulltext search
-  const words = (ctx.appRequestUri.match(/\p{L}+/gu) ?? []).join(" ").trim();
+  const words = (ctx.appRequestPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
 
   const possiblePages: Map<string, true> = new Map();
 
@@ -58,7 +58,7 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
     if (redirect) {
       await node.app.db.query(
         "INSERT INTO page_redirect SET request = ?, redirect = ? ON DUPLICATE KEY UPDATE redirect = ?",
-        [ctx.appRequestUri, redirect, redirect],
+        [ctx.appRequestPath, redirect, redirect],
       );
       savedMsg = `<p style="color:green">${await node.app.t`Redirect saved.`}</p>`;
     }

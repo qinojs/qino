@@ -35,7 +35,7 @@ export async function suspiciousPath(app: App, path: string) {
 
 
 export function fastInfo(ctx: RequestContext): any {
-  const path = short(ctx.appRequestUri || ctx.url.pathname, 191);
+  const path = short(ctx.appRequestPath || ctx.url.pathname, 191);
   const ip = ctx.remoteAddr || "";
   return {
     time: now(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sessId || 0) || null,
