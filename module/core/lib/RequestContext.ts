@@ -72,8 +72,6 @@ export class RequestContext {
       : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
   }
 
-
-
   get dev(): boolean {
     return this.app.dev || !!this.settings.core.dev();
   }
@@ -82,7 +80,6 @@ export class RequestContext {
     if (!token()) this.session.qg.token(uid(11));
     return token() as string;
   }
-
 
   urlToLocalPath(url: string): string | null {
     try {
