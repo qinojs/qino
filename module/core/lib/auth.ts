@@ -1,13 +1,17 @@
 import type { RequestContext } from "./RequestContext.ts";
 import { bcrypt } from "../../../deps.ts";
 
+// Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
+// response timing can't reveal whether an e-mail is registered (user enumeration).
+const dummyHash = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi";
+
+export type LoginError = "username" | "inactive" | "password";
+
 export async function authListen(ctx: RequestContext): Promise<void> {
   if ("liveUser_login" in ctx.post) {
     if (ctx.post["token"] !== ctx.token) return;
     const saveLogin = !!ctx.post["save_login"];
-    const error = await auth(ctx, String(ctx.post["email"] ?? ""), String(ctx.post["pw"] ?? ""));
-    const errorMap: Record<string, string> = { "0": "password", "-1": "username", "-2": "inactive", "1": "" };
-    ctx.loginError = errorMap[String(error)];
+    ctx.loginError = await auth(ctx, String(ctx.post["email"] ?? ""), String(ctx.post["pw"] ?? "")) || undefined;
     await rememberLogin(ctx, saveLogin);
   }
   if ("liveUser_logout" in ctx.post) {
@@ -24,24 +28,23 @@ export async function authListen(ctx: RequestContext): Promise<void> {
   }
 }
 
-export async function auth(ctx: RequestContext, email: string, pw = ""): Promise<number | boolean> {
+export async function auth(ctx: RequestContext, email: string, pw = ""): Promise<LoginError | ""> {
   await ctx.app.fire("auth-before", { email, pw });
   const user = await ctx.app.db.row("SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(?)", [email.trim()]);
-  if (!user) return -1;
-  if (!user.active) return -2;
+  if (!user || !user.active) { await pwVerify(pw, dummyHash); return user ? "inactive" : "username"; }
   const UsrEntry = ctx.app.db.table("usr").entry(user.id);
   const rehash = pwNeedsRehash(await UsrEntry.get("pw"));
   if (!rehash) {
     const clientUsrs = await ctx.client.users() ?? {};
     const usrId = String(await UsrEntry.get("id") ?? "");
-    if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return login(ctx, user.id);
+    if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return await login(ctx, user.id) ? "" : "username";
   }
-  if (!await pwVerify(pw, await UsrEntry.get("pw") ?? "")) return 0;
+  if (!await pwVerify(pw, await UsrEntry.get("pw") ?? "")) return "password";
   if (rehash) {
     await UsrEntry.set("pw", await pwHash(pw));
     await UsrEntry.save();
   }
-  return login(ctx, user.id);
+  return await login(ctx, user.id) ? "" : "username";
 }
 
 export async function login(ctx: RequestContext, id: number | string): Promise<boolean> {

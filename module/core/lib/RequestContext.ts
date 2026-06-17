@@ -8,6 +8,7 @@ import { readUploadFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "./App.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import type { Req } from "./Req.ts";
+import type { LoginError } from "./auth.ts";
 
 export class RequestContext {
   app!: App;
@@ -34,7 +35,7 @@ export class RequestContext {
   clientId: string | null = null;
   sessId: string | null = null;
   logId: Promise<string | null> = Promise.resolve(null);
-  loginError: string | undefined; // braucht es den hier eigentlich?
+  loginError?: LoginError;
   appURL = "/";
   sysURL = "/m/";
   appRequestUri = "";
