@@ -3,10 +3,7 @@ import { apt } from "../../core/pub/js/qino.js";
 cms.initNode("backend.struct.access", (el) => {
   const table = el.querySelector(".cmsBeTree");
 
-  async function reloadList(nid, vars = {}) {
-    const html = await apt.cms.node(nid).html.part("list").post({ vars });
-    el.querySelector("tbody[data-part=list]").innerHTML = html;
-  }
+  const reloadList = (nid, vars = {}) => cms.reloadPart(nid, "list", vars);
 
   table?.addEventListener("click", async (e) => {
     // expand/collapse a tree node

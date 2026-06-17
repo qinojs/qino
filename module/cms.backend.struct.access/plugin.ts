@@ -55,7 +55,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
         <th style="min-width:250px; width:100%"> ${await app.t`Page`}
         <th style="width:30px"><div>${await app.t`Public`}</div>
         ${head}
-    <tbody data-part=list>
+    <tbody cms-part=list>
       ${listHtml}
   </table>
 </div>`;

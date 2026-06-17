@@ -1,6 +1,6 @@
 
 /** Single source of truth for the u2 CDN root (version pin). */
-export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.3.19/";
+export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/";
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 

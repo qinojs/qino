@@ -244,4 +244,13 @@ async function deleteUnlinkedDb(app: App) {
   return { deleted };
 }
 
+export async function backendDashboardWidget(app: App): Promise<string> {
+  const r = await app.db.row("SELECT count(*) AS n, sum(size) AS bytes FROM file").catch(() => undefined);
+  const n = Number(r?.n ?? 0), bytes = Number(r?.bytes ?? 0);
+  return `<div class=-body>
+    <b>${n.toLocaleString("de-CH")}</b> ${await app.t`files`}<br>
+    <small><u2-bytes>${bytes}</u2-bytes></small>
+  </div>`;
+}
+
 export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render } };

@@ -91,7 +91,7 @@ async function renderOverview(node: Node): Promise<string> {
             ${loginAsTh}
             <th width=20>
             <th width=20>
-        <tbody data-part=list>
+        <tbody cms-part=list>
           ${ await list(node, {ctx, vars: {}}) }
       </table>
     </div>
@@ -132,6 +132,7 @@ ${loginRows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px"
 
 export const cms = {
   node: {
+    js: ["pub/main.js"],
     render,
     api,
     parts: {

@@ -250,5 +250,5 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 }
 
 export const cms = {
-  node: { render },
+  node: { js: ["pub/main.js"], render },
 };

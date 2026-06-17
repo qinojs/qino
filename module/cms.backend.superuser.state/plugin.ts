@@ -70,6 +70,16 @@ function safeRender(value: unknown): string | undefined {
   return `<function>function <b>${hee(value.name ?? "")}</b>(${hee(value.length)})</function>`;
 }
 
+export async function backendDashboardWidget(app: App): Promise<string> {
+  const rss = Deno.memoryUsage().rss;
+  const upSec = Math.floor(performance.now() / 1000);
+  const h = Math.floor(upSec / 3600), m = Math.floor((upSec % 3600) / 60);
+  return `<div class=-body>
+    <b><u2-bytes>${rss}</u2-bytes></b> ${await app.t`memory`}<br>
+    <small>${await app.t`uptime`} ${h}h ${m}m</small>
+  </div>`;
+}
+
 export const cms = {
   node: {
     render,

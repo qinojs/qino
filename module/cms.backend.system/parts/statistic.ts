@@ -69,7 +69,7 @@ export default async function summary(node: Node): Promise<string> {
   <tr><td>Daten auf Disk<td style="text-align:right"><u2-bytes>${diskTotal}</u2-bytes>
   <tr><td>Freier Speicher<td style="text-align:right"><u2-bytes>${diskFree}</u2-bytes>
 </table>
-<div class="-body" data-part="statistic-details">${loadBtn}</div>`;
+<div class="-body" cms-part="statistic-details">${loadBtn}</div>`;
 }
 
 export async function details(node: Node): Promise<string> {

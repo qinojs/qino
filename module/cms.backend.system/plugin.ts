@@ -119,7 +119,7 @@ async function render(node: Node): Promise<string> {
 <div class="u2-card">
   <div class="-head">MySQL</div>
   <table class="u2-table" style="width:auto"><tbody>${mysqlSummaryRows}</table>
-  <div class="-body" data-part="mysql-details" style="max-width:30rem; max-height:30rem; overflow:auto">
+  <div class="-body" cms-part="mysql-details" style="max-width:30rem; max-height:30rem; overflow:auto">
     ${mysqlLoadBtn}
   </div>
 </div>`;

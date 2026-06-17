@@ -16,7 +16,7 @@ cms.initNode("backend.system", (el) => {
     const load = e.target.closest("button[data-load-part]");
     if (load) {
       load.disabled = true;
-      load.closest("[data-part]").innerHTML = await apt.cms.node(nid).html.part(load.dataset.loadPart).get();
+      cms.reloadPart(nid, load.dataset.loadPart);
       return;
     }
 
