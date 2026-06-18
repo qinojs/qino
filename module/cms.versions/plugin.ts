@@ -150,6 +150,7 @@ export function init(app: App) {
             };
             await generate(pid);
             delete scope.tables; // stop routing — the pre-loaded request cache stays
+            for (const v of Object.values(tables)) await db.query(`DROP VIEW IF EXISTS \`${v}\``); // historical views are one-shot
         }
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────

@@ -92,9 +92,10 @@ export function shadowSchema(source: any): any {
  * - space≠0, log=0  → VIEW of _vers_<table> at space head (log=0 rows)
  * - space≠0, log≠0  → VIEW of _vers_<table> up to that log entry (historical)
  *
- * Views are created once per process and left in the db (definitions are
- * deterministic); the first use after boot recreates them. The pending-promise
- * cache also dedupes concurrent first uses.
+ * Head views (log=0) are cached per process and left in the db (deterministic
+ * definitions; first use after boot recreates them). Historical views (log≠0)
+ * are one-shot: not cached, and the caller drops them after use (else one set
+ * accumulates per browsed log entry).
  */
 export async function view(db: Db, tableName: string, space: number, log: number): Promise<string> {
     if (!versedTables(db)[tableName]) return tableName;
@@ -102,6 +103,11 @@ export async function view(db: Db, tableName: string, space: number, log: number
 
     const vt   = `_vers_${tableName}`;
     const name = `_vers_${log}_space_${space}_${tableName}`;
+
+    if (log !== 0) { // one-shot, caller drops it
+        await createView(db, tableName, vt, name, space, log);
+        return name;
+    }
 
     const views = dbState(db).views;
     const creating = views.getOrInsertComputed(name, () => {
