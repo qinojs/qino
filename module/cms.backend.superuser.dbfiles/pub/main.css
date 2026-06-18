@@ -3,8 +3,8 @@
   align-items: start;
 
   & .-sidebar { flex: 0 0 auto; overflow: auto; }
-  & .-main { flex: 1 1 auto; overflow: auto; }
-  & .-table-wrap { padding: 0; overflow: auto; max-height: 80vh; }
+  & .-main { flex: 1 1 auto; overflow: auto; max-height: 80vh; }
+  & .-main > table { padding: 0; }
   & .-thumb { width: 75px; }
   & .-thumb img { display: block; max-width: 70px; max-height: 40px; }
   & .-preview-img {

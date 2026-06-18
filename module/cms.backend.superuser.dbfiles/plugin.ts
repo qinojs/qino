@@ -1,4 +1,4 @@
-import { hee, Db, getCtx, FileTransformer, type App, type DbField, type DbFile } from "../core/mod.ts";
+import { hee, Db, getCtx, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -52,21 +52,19 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
   (f: DbField) => f.table.name !== "log" && f.table.name !== "mail_file"
 );
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const ctx = getCtx();
+// "not exists" sorts by the correlated relation-count subqueries → scans the whole table,
+// so it is selectable but never the default; the others are index-backed (log_id / size).
+const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
+
+// list (filterable part): total + table rows, reloaded on search/order change
+async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars?: Record<string, any> } = {}): Promise<string> {
+  ctx ??= getCtx();
   const app = node.app;
-
   const { db, dbFiles: fm } = app;
-  const get = ctx.get as Record<string, string>;
-
-  if (get.id) return renderDetail(node, Number(get.id));
-  if (vars.delete) await (await fm.file(Number(vars.delete))).remove();
-  if (vars.delete_unlinked)    return JSON.stringify(await deleteUnlinkedFs(node));
-  if (vars.delete_unlinked_db) return JSON.stringify(await deleteUnlinkedDb(node.app));
 
   const children = fileChildren(node);
-  const search = get.search ?? "";
-  const order  = get.order  ?? "not exists";
+  const search = String(vars.search ?? "");
+  const order  = String(vars.order  ?? "newest");
 
   const relSubs = children.map((F: DbField, i: number) =>
     `,(SELECT COUNT(*) FROM ${Db.escapeId(F.table.name)} WHERE ${Db.escapeId(F.name)}=f.id) AS r${i}`).join("");
@@ -82,15 +80,26 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     WHERE 1`;
   const params: unknown[] = [];
   if (search) {
-    sql += ` AND (f.name LIKE ? OR f.id LIKE ? OR f.md5 LIKE ? OR ui.email=? OR ue.email=?)`;
-    params.push(`%${search}%`, `${search}%`, `${search}%`, search, search);
+    const s = search.trim();
+    // one indexed path per input shape (never an OR across joined tables, which would full-scan):
+    // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name fulltext
+    if (/^\d+$/.test(s)) {
+      sql += ` AND f.id = ?`; params.push(Number(s));
+    } else if (/^[0-9a-f]{32}$/i.test(s)) {
+      sql += ` AND f.md5 = ?`; params.push(s);
+    } else if (s.includes("@")) {
+      const sub = `SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.email=?`;
+      sql += ` AND (f.log_id IN (${sub}) OR f.log_id_ch IN (${sub}))`; params.push(s, s);
+    } else if (db.dialect === "mysql") {
+      sql += ` AND MATCH(f.name) AGAINST (? IN BOOLEAN MODE)`; params.push(s + "*");
+    } else {
+      sql += ` AND f.name LIKE ?`; params.push(`%${s}%`);
+    }
   }
   sql += ` ORDER BY ${orderBy} LIMIT 1000`;
 
   const rows = await db.all(sql, params);
 
-  const orderOpts = ["not exists","newest","oldest","changed","biggest"]
-    .map(o => `<option${o===order?" selected":""}>${o}`).join("");
   const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
 
   let trs = "";
@@ -99,7 +108,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const f = await fm.file(row.id, row);
     const exists = await f.exists();
     u.searchParams.set("id", String(row.id));
-    trs += `<tr>
+    trs += `<tr u2-href>
   <td class="-thumb">${await mediaPreview(f, exists as boolean)}
   <td>${row.id}
   <td><a href="${hee(u.search)}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
@@ -114,29 +123,56 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   return `
+<caption>${await app.t`Total`}: ${rows.length}</caption>
+<thead><tr><th>${await app.t`File`}<th>${await app.t`ID`}<th>${await app.t`Name`}<th>${await app.t`Size`}${relHeaders}<th>${await app.t`Created`}<th>${await app.t`Changed`}<th>${await app.t`Used`}<th>${await app.t`Pub`}<th>
+<tbody>${trs}`;
+}
+
+async function runAction(node: Node, doName: string): Promise<string> {
+  if (doName === "delete_unlinked") {
+    const r = await deleteUnlinkedFs(node);
+    return `${r.deleted} ${await node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;
+  }
+  if (doName === "delete_unlinked_db") {
+    const r = await deleteUnlinkedDb(node.app);
+    return `${r.deleted} ${await node.app.t`DB entries deleted`}`;
+  }
+  return "";
+}
+
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
+  const ctx = getCtx();
+  const app = node.app;
+  const { dbFiles: fm } = app;
+  const get = ctx.get as Record<string, string>;
+
+  if (get.id) return renderDetail(node, Number(get.id));
+  if (vars.delete) await (await fm.file(Number(vars.delete))).remove();
+
+  const message = vars.do ? await runAction(node, String(vars.do)) : "";
+  const orderOpts = ORDERS.map(o => `<option>${o}`).join("");
+
+  return `
 <div class="u2-flex">
   <div class="u2-card -sidebar">
     <div class="-head">${await app.t`Filter`}</div>
     <div class="-body">
-      <label>${await app.t`Search`}<br><input value="${hee(search)}" data-search></label><br><br>
-      <label>${await app.t`Order`}<br><select data-order>${orderOpts}</select></label>
+      <form data-filter>
+        <label>${await app.t`Search`}<br><input name=search></label><br><br>
+        <label>${await app.t`Order`}<br><select name=order>${orderOpts}</select></label>
+      </form>
     </div>
     <div class="-head">${await app.t`Actions`}</div>
     <div class="-body">
-      <button data-action="delete_unlinked">${await app.t`Delete files without DB entry`}</button><br>
+      ${message ? `<p>${message}</p>` : ""}
+      <button data-reload='{"do":"delete_unlinked"}'>${await app.t`Delete files without DB entry`}</button><br>
       <small>${await app.t`Files in version history will not be deleted.`}</small><br><br>
-      <button data-action="delete_unlinked_db">${await app.t`Delete DB entries without link`}</button><br>
+      <button data-reload='{"do":"delete_unlinked_db"}'>${await app.t`Delete DB entries without link`}</button><br>
       <small>${await app.t`Warning: only files older than 7 days.`}</small>
     </div>
   </div>
-  <div class="u2-card -main">
-    <div class="-body">${await app.t`Total`}: ${rows.length}</div>
-    <div class="-table-wrap">
-      <table class="u2-table -Sticky">
-        <thead><tr><th>${await app.t`File`}<th>${await app.t`ID`}<th>${await app.t`Name`}<th>${await app.t`Size`}${relHeaders}<th>${await app.t`Created`}<th>${await app.t`Changed`}<th>${await app.t`Used`}<th>${await app.t`Pub`}<th>
-        <tbody>${trs}
-      </table>
-    </div>
+  <div class="u2-card -main" style="max-height:90vh">
+    <table class="u2-table -Sticky" cms-part=list>${await list(node, { ctx, vars: {} })}</table>
   </div>
 </div>`;
 }
@@ -233,9 +269,10 @@ async function deleteUnlinkedDb(app: App) {
   const ago = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
   const notLinked = db.table("file").children.map((F: DbField) =>
     `file.id NOT IN (SELECT ${Db.escapeId(F.name)} FROM ${Db.escapeId(F.table.name)})`);
+  console.log(notLinked)
   const rows = await db.all(`SELECT file.id FROM file
     LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id
-    WHERE log_i.time<${ago} AND log_e.time<${ago}${notLinked.length?" AND "+notLinked.join(" AND "):""}`);
+    WHERE (log_i.id IS NULL OR log_i.time<${ago}) AND (log_e.id IS NULL OR log_e.time<${ago})${notLinked.length?" AND "+notLinked.join(" AND "):""}`);
   let deleted = 0;
   for (const row of rows) {
     const f = await fm.file(row.id);
@@ -253,4 +290,4 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   </div>`;
 }
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render } };
+export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { list } } };

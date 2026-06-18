@@ -1,26 +1,14 @@
 import { apt } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.dbfiles", (el) => {
-  const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);
-  const nid = cms.el.nid(el);
+  const nid = Number(cms.el.nid(el));
 
-  let debTimer;
-  el.querySelector("[data-search]")?.addEventListener("input", (e) => {
-    clearTimeout(debTimer);
-    debTimer = setTimeout(() => {
-      const order = el.querySelector("[data-order]").value;
-      location.href = "?search=" + encodeURIComponent(e.target.value) + "&order=" + order;
-    }, 400);
-  });
-
-  el.querySelector("[data-order]")?.addEventListener("change", (e) => location.search = "?order=" + e.target.value);
-
-  el.addEventListener("change", (e) => {
-    const set = e.target.closest("[data-set]");
-    if (!set) return;
-    const val = set.type === "checkbox" ? (set.checked ? 1 : 0) : set.value;
-    apt.cms.node(nid).html.post({ vars: { [set.dataset.set]: val } });
-  });
+  // live search/order → reload only the list part
+  const filterForm = el.querySelector("[data-filter]");
+  const reloadList = () => cms.reloadPart(nid, "list", Object.fromEntries(new FormData(filterForm)));
+  let timer;
+  filterForm?.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(reloadList, 300); });
+  filterForm?.addEventListener("submit", (e) => e.preventDefault());
 
   el.addEventListener("click", async (e) => {
     const del = e.target.closest("[data-delete]");
@@ -30,16 +18,18 @@ cms.initNode("backend.superuser.dbfiles", (el) => {
       del.closest("tr").remove();
       return;
     }
-    const action = e.target.closest("[data-action]");
-    if (action) {
-      action.disabled = true;
-      const r = await apt.cms.node(nid).html.post({ vars: { [action.dataset.action]: 1 } });
-      action.disabled = false;
-      await alert(JSON.stringify(JSON.parse(r), null, 2));
-      return;
-    }
-    if (e.target.closest("[data-copy-url]")) {
-      navigator.clipboard.writeText(el.querySelector("[data-url]").href);
-    }
+    // maintenance action → reload whole node, result shown inline
+    const action = e.target.closest("[data-reload]");
+    if (action) { action.disabled = true; cms.reloadNode(nid, JSON.parse(action.dataset.reload)); return; }
+
+    if (e.target.closest("[data-copy-url]")) navigator.clipboard.writeText(el.querySelector("[data-url]").href);
+  });
+
+  // detail: save field on change
+  el.addEventListener("change", (e) => {
+    const set = e.target.closest("[data-set]");
+    if (!set) return;
+    const val = set.type === "checkbox" ? (set.checked ? 1 : 0) : set.value;
+    apt.cms.node(nid).html.post({ vars: { [set.dataset.set]: val } });
   });
 });

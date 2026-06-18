@@ -2,7 +2,7 @@ globalThis.qgfileUpload = async function(f, name, opt) {
 	const fileName = f.name || 'file.'+f.type.replace(/.*\/([^ ;]+).*/,'$1');
 	if (f.c1IsImage() && f.size > qgfileUpload.clientResizeSize) {
 		const img = await f.c1ToImage();
-		await img.c1ScaleToArea(3000*3000);
+		await scaleToArea(img, 3000*3000);
 		img.c1ToBlob(f.type, 1).then(upload);
 	} else {
 		upload(f);
@@ -29,14 +29,15 @@ Blob.prototype.c1ToImage = function(img = document.createElement('img')) {
 		img.src = url;
 	});
 };
-HTMLImageElement.prototype.c1ScaleToArea = async function(area) {
-	const f = Math.min(Math.sqrt(area/(this.width*this.height)), 1);
-	const canvas = new OffscreenCanvas(Math.floor(this.width*f), Math.floor(this.height*f));
-	canvas.getContext('2d').drawImage(this, 0, 0, canvas.width, canvas.height);
-	await (await canvas.convertToBlob()).c1ToImage(this);
-};
 HTMLImageElement.prototype.c1ToBlob = function(type, quality) {
 	const canvas = new OffscreenCanvas(this.width, this.height);
 	canvas.getContext('2d').drawImage(this, 0, 0);
 	return canvas.convertToBlob({ type, quality });
 };
+
+async function scaleToArea(img, area) {
+	const f = Math.min(Math.sqrt(area/(img.width*img.height)), 1);
+	const canvas = new OffscreenCanvas(Math.floor(img.width*f), Math.floor(img.height*f));
+	canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+	await (await canvas.convertToBlob()).c1ToImage(img);
+}

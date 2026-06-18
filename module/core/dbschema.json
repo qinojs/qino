@@ -71,7 +71,7 @@
           "name": {
             "type": "string",
             "maxLength": 255,
-            "x-index": true
+            "x-index": "fulltext"
           },
           "text": {
             "type": "string",
