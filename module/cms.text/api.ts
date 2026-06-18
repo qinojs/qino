@@ -129,6 +129,7 @@ class CmsTextService {
     }
 
     async transl(text: string, target_lang: string, source_lang: string): Promise<string | false> {
+        if (source_lang && source_lang === target_lang) return text; // nothing to translate
         const service = String(await this.ctx.app.settings["cms.text"]["translation service"] ?? "");
         if (service === "google") return this.google_translate(text, source_lang, target_lang);
         if (service === "deepl")  return this.deepl_translate(text, source_lang, target_lang);
