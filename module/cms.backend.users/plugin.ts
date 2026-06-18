@@ -52,7 +52,7 @@ async function renderOverview(node: Node): Promise<string> {
       <input hidden name=fake1>
       <input hidden name=fake2 type=password>
       <input type=hidden name=qgToken value="${hee(ctx.token)}">
-      <table class=u2-table>
+      <table class=u2-table style="white-space:nowrap">
         <tr>
           <th style="width:6em"> ${await app.t`Email`}:
           <td> <input type=text name=email class=-new-email>

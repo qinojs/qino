@@ -18,7 +18,7 @@ export function initHistory(app: App) {
         if (!ctx) return null;
         const tableName: string = String(e.Table);
         if (tableName.startsWith("_vers_") && !e.data?._vers_log) return null; // writing to vers table – let through
-        const vt = await versTable(ctx.app.db, tableName);
+        const vt = versTable(ctx.app.db, tableName);
         if (!vt) return null;
         const logId = await ctx.logId;
         if (!logId) return null;

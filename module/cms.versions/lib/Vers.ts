@@ -11,14 +11,13 @@ import type { RequestContext, App, Db } from "../../core/mod.ts";
 
 interface DbVersState {
     tables: Record<string, true | Record<string, 1>>;
-    created: Set<string>;               // which _vers_* tables exist (this process)
     baselined: Set<string>;             // baseline checked this process
     views: Map<string, Promise<void>>;  // (space,log)-views created this process
 }
 const dbStates = new WeakMap<Db, DbVersState>();
 function dbState(db: Db): DbVersState {
     return dbStates.getOrInsertComputed(db, () => ({
-        tables: {}, created: new Set(), baselined: new Set(), views: new Map(),
+        tables: {}, baselined: new Set(), views: new Map(),
     }));
 }
 
@@ -65,30 +64,23 @@ export function setVers(ctx: RequestContext, spaceLog: [number, number] | null):
 
 // ─── Table management ───────────────────────────────────────────────────────
 
-/**
- * Ensure the _vers_<table> shadow table exists.
- * Returns the shadow table name, or false if the table is not versioned.
- */
-export async function versTable(db: Db, tableName: string): Promise<string | false> {
-    if (!versedTables(db)[tableName]) return false;
-    const vt = `_vers_${tableName}`;
-    if (dbState(db).created.has(vt)) return vt;
+/** Shadow table name for a versioned table, or false if it is not versioned.
+ *  The _vers_* tables are created centrally via the schema (see plugin.ts
+ *  extendDbSchema), so this is a pure lookup. */
+export function versTable(db: Db, tableName: string): string | false {
+    return versedTables(db)[tableName] ? `_vers_${tableName}` : false;
+}
 
-    // Derive the shadow schema from the source table and let migrate() build it. migrate is
-    // dialect-neutral and idempotent — it both creates the table and patches in any new
-    // columns, so no existence check or per-dialect DDL is needed.
-    const source = db.schema.properties?.[tableName];
-    if (!source) throw new Error(`versTable: no schema for "${tableName}"`);
+/** Derive the _vers_<table> shadow item-schema from a live table's schema:
+ *  all fields (composite PK, no auto-increment) plus the _vers_ bookkeeping columns. */
+export function shadowSchema(source: any): any {
     const shadow = structuredClone(source);
     const props = shadow.additionalProperties.properties as Record<string, any>;
     for (const p of Object.values(props)) delete p["x-autoincrement"]; // composite PK, not auto-increment
     props._vers_log     = { type: "integer", default: 0, "x-index": "primary" };
     props._vers_space   = { type: "integer", default: 0, "x-index": "primary" };
     props._vers_deleted = { type: "integer", default: 0, "x-index": true };
-    await db.migrate({ properties: { [vt]: shadow } }, { patch: true });
-
-    dbState(db).created.add(vt);
-    return vt;
+    return shadow;
 }
 
 // ─── View management ────────────────────────────────────────────────────────
@@ -189,12 +181,12 @@ async function baselineTable(db: Db, tableName: string, vt: string, logId: numbe
 
 export function initVers(app: App) {
 
-    // ─── Ensure _vers_* tables exist + baseline on first action ──────────────
+    // ─── Baseline versioned rows on first action ─────────────────────────────
     app.on("action", async e => {
         const ctx = e.ctx as RequestContext;
         const db = ctx.app.db;
         for (const t of Object.keys(versedTables(db))) {
-            const vt = await versTable(db, t);
+            const vt = versTable(db, t);
             if (!vt) continue;
             const logId = Number(await ctx.logId) || 0;
             if (logId) await baselineTable(db, t, vt, logId);

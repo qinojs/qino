@@ -2,10 +2,14 @@
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
 import type { App } from "./App.ts";
 
+type DbSchema = { properties: Record<string, unknown> };
+
 export type Plugin = Record<string, any> & {
   name: string;
   needs?: string[];
-  dbSchema?: Record<string, unknown>;
+  // Object = static schema. Function = computed from the merged schema (runs after all
+  // static ones), e.g. for tables derived from other modules' tables.
+  dbSchema?: DbSchema | ((merged: DbSchema) => DbSchema);
   init?(app: App): void | Promise<void>;
   install?(ctx: { app: App; module: Plugin }): void | Promise<void>;
   settingsSchema?: Record<string, unknown>;
@@ -98,7 +102,12 @@ export class ModuleManager {
       const { plugin } = this.#modules[name];
       appSettingsSchema.properties[name] = plugin.settingsSchema;
       ctxSettingsSchema.properties[name] = plugin.ctxSettingsSchema;
-      mergeSchema(dbSchema, plugin.dbSchema);
+      if (typeof plugin.dbSchema !== "function") mergeSchema(dbSchema, plugin.dbSchema);
+    }
+    // Function-form dbSchema runs after the static merge — for tables derived from other modules.
+    for (const name of order) {
+      const { plugin } = this.#modules[name];
+      if (typeof plugin.dbSchema === "function") mergeSchema(dbSchema, plugin.dbSchema(dbSchema));
     }
     if (Object.keys(dbSchema.properties).length) {
       await this.#app.db.migrate(dbSchema, { patch: true });

@@ -38,7 +38,7 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
 
     let count = 0;
     for (const t of Object.keys(versedTables(db))) {
-        const vt = await versTable(db, t);
+        const vt = versTable(db, t);
         if (!vt) continue;
         const pks = (await db.all(`SHOW COLUMNS FROM ${t}`)).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
         const join = pks.map((f: string) => `mm.\`${f}\` = m.\`${f}\``).join(" AND ");

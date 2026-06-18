@@ -16,7 +16,7 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
 
     // Seed each versioned table with live data
     for (const tableName of Object.keys(versedTables(db))) {
-        const vt = await versTable(db, tableName);
+        const vt = versTable(db, tableName);
         if (!vt) continue;
         // Build the select onto the shadow's own column order (not positional *,0,?,0),
         // so it stays correct even when the shadow's column order diverged from the live table.

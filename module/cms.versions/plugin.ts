@@ -20,7 +20,7 @@
 
 import { type RequestContext, type DbScope, Access, type AptTree, s, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
-import { versedTables, view, initVers } from "./lib/Vers.ts";
+import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { ensureSpace, initSpaces, installSpaces } from "./lib/Spaces.ts";
 import { getCmsVers, nodeLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
@@ -30,6 +30,30 @@ export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.versions";
 export const needs = ["cms"];
+
+// Which cms tables are versioned (qg_setting and page_class intentionally excluded).
+// true = version all fields; record = only these fields come from the version table
+// (rest come from the live table).
+const VERSED: Record<string, true | Record<string, 1>> = {
+    page: {
+        id: 1, log_id: 1, log_id_ch: 1, type: 1, basis: 1,
+        sort: 1, module: 1, visible: 1, searchable: 1, title_id: 1,
+        name: 1, settings: 1, _cache: 1,
+    },
+    page_file: true, page_text: true, page_url: true, text: true, file: true,
+};
+
+// Derive the _vers_* shadow tables from the merged schema (function-form dbSchema runs
+// after the static merge), so they are created in one pass and visible to all modules.
+export function dbSchema(merged: { properties: Record<string, any> }) {
+    const properties: Record<string, any> = {};
+    for (const t of Object.keys(VERSED)) {
+        const source = merged.properties[t];
+        if (!source) throw new Error(`cms.versions: no schema for versioned table "${t}"`);
+        properties[`_vers_${t}`] = shadowSchema(source);
+    }
+    return { properties };
+}
 
 export const settingsSchema = {
     properties: {
@@ -71,19 +95,8 @@ export const api: AptTree = {
 
 export function init(app: App) {
 
-    // ─── Define which cms tables are versioned ───────────────────────────────
-    // page: only the listed fields come from the version table (rest from live)
-    const versed = versedTables(app.db);
-    versed["page"] = {
-        id: 1, log_id: 1, log_id_ch: 1, type: 1, basis: 1,
-        sort: 1, module: 1, visible: 1, searchable: 1, title_id: 1,
-        name: 1, settings: 1, _cache: 1,
-    };
-    versed["page_file"]  = true;
-    versed["page_text"]  = true;
-    versed["page_url"]   = true;
-    versed["text"]       = true;
-    versed["file"]       = true;
+    // Register versioned tables for the runtime engine (schema is wired via extendDbSchema).
+    Object.assign(versedTables(app.db), VERSED);
 
     // Generic engine (lib/): core shadow tables/views, history capture, spaces
     initVers(app);
