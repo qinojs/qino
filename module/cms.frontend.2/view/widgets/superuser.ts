@@ -69,14 +69,14 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   let globalSettings = "";
   if (module && module in app.settings) {
     // SettingsEditor.mjs is loaded by panel.mjs
-    globalSettings = `<div class="-widgetHead c1-focusIn -open" tabindex="0"><span class=-title>Global Settings</span></div>
+    globalSettings = `<div class="-widgetHead -open" tabindex="0"><span class=-title>Global Settings</span></div>
     <div class=-content><settings-editor source="/api/core/settings/${hee(module)}"></settings-editor></div>`;
   }
 
   return `
   <div class=superuser-manager pid="${node}" style="display:flex;flex-flow:wrap;margin:-2px;">
     <div scope=custom style="margin:2px;flex:1 1 auto">
-      <div class="-widgetHead c1-focusIn -open">Custom Files</div>
+      <div class="-widgetHead -open">Custom Files</div>
       <div class=-content>
         <table class=-styled style="width:100%">
           <th colspan=3><input class=-create placeholder=create style="width:100%">
@@ -85,7 +85,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
       </div>
     </div>
     <div scope=app style="margin:2px;flex:1 1 auto">
-      <div class="-widgetHead c1-focusIn -open">App Files</div>
+      <div class="-widgetHead -open">App Files</div>
       <div class=-content>
         <table class=-styled style="width:100%">
           <tr><th colspan=3><input class=-create placeholder=create style="width:100%">
