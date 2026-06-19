@@ -16,8 +16,8 @@ export class Db {
   #schema: Record<string, any> = { properties: {} };
   #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
 
-  constructor(conn: string, user: string, pass: string) {
-    this.#driver = makeDriver(conn, user, pass);
+  constructor(conn: string) {
+    this.#driver = makeDriver(conn);
   }
 
   get dialect(): DbDialect { return this.#driver.dialect; }

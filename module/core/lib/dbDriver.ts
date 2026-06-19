@@ -32,11 +32,24 @@ const sqlMode = [
   "NO_ENGINE_SUBSTITUTION",
 ].join(",");
 
-/** Pick a backend from the connection string scheme: `sqlite:`, `postgres:`/`postgresql:`, else mysql. */
-export function makeDriver(conn: string, user: string, pass: string): Driver {
+/** Pick a backend from the connection string scheme. */
+export function makeDriver(conn: string): Driver {
   if (conn.startsWith("sqlite:")) return new SqliteDriver(conn.slice("sqlite:".length) || ":memory:");
-  if (/^postgres(ql)?:/i.test(conn)) return new PostgresDriver(conn, user, pass);
-  return new MysqlDriver(conn, user, pass);
+  if (/^mysql:\/\//i.test(conn)) return new MysqlDriver(conn);
+  if (/^postgres(ql)?:\/\//i.test(conn)) return new PostgresDriver(conn);
+  throw new Error(`Unsupported database connection string: ${conn || "(empty)"}`);
+}
+
+function dbUrl(conn: string): URL {
+  try {
+    return new URL(conn);
+  } catch {
+    throw new Error(`Invalid database connection string: ${conn}`);
+  }
+}
+
+function dbName(url: URL): string {
+  return decodeURIComponent(url.pathname.replace(/^\/+/, ""));
 }
 
 class MysqlDriver implements Driver {
@@ -44,15 +57,19 @@ class MysqlDriver implements Driver {
   emptyInsert = "() VALUES ()";
   #pool: Pool;
   #database: string;
-  #connParams: { host: string; user: string; password: string };
+  #connParams: { host: string; port?: number; user: string; password: string };
 
-  constructor(conn: string, user: string, pass: string) {
-    const [, host = "localhost"] = conn.match(/host=([^;]+)/) ?? [];
-    const [, database = user] = conn.match(/dbname=([^;]+)/) ?? [];
-    this.#database = database;
-    this.#connParams = { host, user, password: pass };
+  constructor(conn: string) {
+    const url = dbUrl(conn);
+    const host = url.hostname || "localhost";
+    const port = url.port ? Number(url.port) : undefined;
+    const user = decodeURIComponent(url.username);
+    const password = decodeURIComponent(url.password);
+    this.#database = dbName(url);
+    if (!this.#database) throw new Error(`MySQL connection string needs a database: ${conn}`);
+    this.#connParams = { host, ...(port && { port }), user, password };
     this.#pool = mysql.createPool({
-      host, user, password: pass, database,
+      ...this.#connParams, database: this.#database,
       charset: "utf8mb4", multipleStatements: false,
       waitForConnections: true, connectionLimit: 4, timezone: "Z",
     });
@@ -179,18 +196,6 @@ export function toPostgresSql(sql: string): string {
     .replace(/\bDATETIME\b/gi, "TIMESTAMP");
 }
 
-function pgParams(conn: string, user: string, password: string): Record<string, unknown> {
-  if (/^postgres(ql)?:\/\//i.test(conn)) return { connectionString: conn };
-  const ret: Record<string, unknown> = { user, password };
-  for (const part of conn.replace(/^postgres(ql)?:/i, "").split(";")) {
-    const [key, ...value] = part.split("=");
-    if (!value.length) continue;
-    const name = key === "dbname" ? "database" : key;
-    ret[name] = value.join("=");
-  }
-  return ret;
-}
-
 class PostgresDriver implements Driver {
   dialect = "postgres" as const;
   emptyInsert = "DEFAULT VALUES";
@@ -198,17 +203,12 @@ class PostgresDriver implements Driver {
   #database: string;
   #adminParams: Record<string, unknown>;
 
-  constructor(conn: string, user: string, pass: string) {
-    const params = pgParams(conn, user, pass);
-    if (params.connectionString) {
-      const url = new URL(String(params.connectionString));
-      this.#database = decodeURIComponent(url.pathname.slice(1));
-      url.pathname = "/postgres";
-      this.#adminParams = { connectionString: url.href };
-    } else {
-      this.#database = String(params.database ?? "");
-      this.#adminParams = { ...params, database: "postgres" };
-    }
+  constructor(conn: string) {
+    const url = dbUrl(conn);
+    this.#database = dbName(url);
+    url.pathname = "/postgres";
+    this.#adminParams = { connectionString: url.href };
+    const params = { connectionString: conn };
     this.#pool = new postgres.Pool(params);
   }
 

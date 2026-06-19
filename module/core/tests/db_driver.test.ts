@@ -1,4 +1,4 @@
-import { assertEquals } from "./deps.ts";
+import { assertEquals, assertThrows } from "./deps.ts";
 import { makeDriver, toPostgresSql } from "../lib/dbDriver.ts";
 
 Deno.test("PostgreSQL SQL adapter converts placeholders and identifiers", () => {
@@ -24,9 +24,21 @@ Deno.test("PostgreSQL SQL adapter converts simple MySQL DDL types", () => {
 });
 
 Deno.test("PostgreSQL driver exposes its dialect", async () => {
-  const driver = makeDriver("postgres:host=localhost;dbname=qino", "qino", "secret");
+  const driver = makeDriver("postgresql://qino:secret@localhost/qino");
   assertEquals(driver.dialect, "postgres");
   assertEquals(driver.emptyInsert, "DEFAULT VALUES");
   assertEquals(driver.escapeId('a"b'), '"a""b"');
   await driver.close();
+});
+
+Deno.test("MySQL driver exposes its dialect from URL", async () => {
+  const driver = makeDriver("mysql://qino:secret@localhost/qino");
+  assertEquals(driver.dialect, "mysql");
+  assertEquals(driver.emptyInsert, "() VALUES ()");
+  assertEquals(driver.escapeId("a`b"), "`a``b`");
+  await driver.close();
+});
+
+Deno.test("DB driver rejects unsupported connection strings", () => {
+  assertThrows(() => makeDriver("mysql:host=localhost;dbname=qino"));
 });

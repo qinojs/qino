@@ -15,9 +15,7 @@ import { Hono } from "npm:hono@^4";
 import { App, honoAdapter } from "jsr:@qino/qino";
 
 const app = new App({
-  dbName: "myapp",
-  dbUser: "admin",
-  dbPass: "secret",
+  db: "mysql://admin:secret@localhost/myapp",
 });
 
 // Load all built-in modules
@@ -40,15 +38,23 @@ Deno.serve({ port: 8080 }, hono.fetch);
 The `App` class is the central hub. It manages the database connection, module system, session handling, settings, and HTTP routing.
 
 ```ts
-const app = new App({ dbName, dbUser, dbPass, https? });
+const app = new App({ db, https? });
 
 await app.importAll(path);          // Load all modules from a directory
 await app.import(pluginUrl);        // Load a single Qino plugin
 await app.init();                   // Boot: ensure DB, migrate schema, init modules
 
 app.fetch    // Web-standard handler — Deno.serve({}, app.fetch), or honoAdapter(app) to mount in Hono
-app.db       // MySQL database connection
+app.db       // Database connection (MySQL, PostgreSQL or SQLite)
 app.settings // Hierarchical app-wide settings (backed by item.js)
+```
+
+Supported database connection strings:
+
+```ts
+new App({ db: "mysql://user:pass@localhost/myapp" });
+new App({ db: "postgresql://user:pass@localhost:5432/myapp" });
+new App({ db: "sqlite:/absolute/path/myapp.sqlite" });
 ```
 
 ### Modules

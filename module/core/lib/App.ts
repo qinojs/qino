@@ -22,12 +22,10 @@ const defaultConfig = {
     https: false,
     dev: false,
     trustedProxyHops: 0, // proxies in front of the app; 0 = none, x-forwarded-for ignored
-    dbHost: "localhost",
-    dbName: "",
-    dbUser: "",
-    dbPass: "",
-    db: "", // full connection string override, e.g. "sqlite:/path/db.sqlite" or "postgresql://user:pass@host/db"
+    db: "", // connection string: mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
 };
+
+export type AppConfig = Partial<typeof defaultConfig>;
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App {
@@ -50,7 +48,7 @@ export class App {
 
     get apt(): AptProxy { return aptClient(this.aptTree); }
 
-    constructor(config: Partial<typeof defaultConfig> = {}) {
+    constructor(config: AppConfig = {}) {
         const cfg = { ...defaultConfig, ...config };
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
@@ -60,7 +58,7 @@ export class App {
         this.dev       = cfg.dev;
         this.trustedProxyHops = cfg.trustedProxyHops;
 
-        this.db        = new Db(cfg.db || `mysql:host=${cfg.dbHost};dbname=${cfg.dbName}`, cfg.dbUser, cfg.dbPass);
+        this.db        = new Db(cfg.db || `sqlite:${this.appPATH}qino.sqlite`);
         this.settings  = createSettingItem(this.db).proxy;
         this.dbFiles   = new DbFileManager(this, this.appPATH + "qg/file/");
         this.dbTexts   = new DbTextManager(this);
