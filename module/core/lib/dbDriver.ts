@@ -40,18 +40,6 @@ export function makeDriver(conn: string): Driver {
   throw new Error(`Unsupported database connection string: ${conn || "(empty)"}`);
 }
 
-function dbUrl(conn: string): URL {
-  try {
-    return new URL(conn);
-  } catch {
-    throw new Error(`Invalid database connection string: ${conn}`);
-  }
-}
-
-function dbName(url: URL): string {
-  return decodeURIComponent(url.pathname.replace(/^\/+/, ""));
-}
-
 class MysqlDriver implements Driver {
   dialect = "mysql" as const;
   emptyInsert = "() VALUES ()";
@@ -60,14 +48,10 @@ class MysqlDriver implements Driver {
   #connParams: { host: string; port?: number; user: string; password: string };
 
   constructor(conn: string) {
-    const url = dbUrl(conn);
-    const host = url.hostname || "localhost";
-    const port = url.port ? Number(url.port) : undefined;
-    const user = decodeURIComponent(url.username);
-    const password = decodeURIComponent(url.password);
-    this.#database = dbName(url);
+    const url = new URL(conn), port = url.port ? Number(url.port) : undefined;
+    this.#database = decodeURIComponent(url.pathname.slice(1));
     if (!this.#database) throw new Error(`MySQL connection string needs a database: ${conn}`);
-    this.#connParams = { host, ...(port && { port }), user, password };
+    this.#connParams = { host: url.hostname || "localhost", ...(port && { port }), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password) };
     this.#pool = mysql.createPool({
       ...this.#connParams, database: this.#database,
       charset: "utf8mb4", multipleStatements: false,
@@ -204,12 +188,11 @@ class PostgresDriver implements Driver {
   #adminParams: Record<string, unknown>;
 
   constructor(conn: string) {
-    const url = dbUrl(conn);
-    this.#database = dbName(url);
+    const url = new URL(conn);
+    this.#database = decodeURIComponent(url.pathname.slice(1));
     url.pathname = "/postgres";
     this.#adminParams = { connectionString: url.href };
-    const params = { connectionString: conn };
-    this.#pool = new postgres.Pool(params);
+    this.#pool = new postgres.Pool({ connectionString: conn });
   }
 
   escapeId(id: string) { return `"${id.replaceAll('"', '""')}"`; }

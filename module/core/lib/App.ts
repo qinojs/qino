@@ -22,10 +22,8 @@ const defaultConfig = {
     https: false,
     dev: false,
     trustedProxyHops: 0, // proxies in front of the app; 0 = none, x-forwarded-for ignored
-    db: "", // connection string: mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
+    db: "", // mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
 };
-
-export type AppConfig = Partial<typeof defaultConfig>;
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App {
@@ -48,7 +46,7 @@ export class App {
 
     get apt(): AptProxy { return aptClient(this.aptTree); }
 
-    constructor(config: AppConfig = {}) {
+    constructor(config: Partial<typeof defaultConfig> = {}) {
         const cfg = { ...defaultConfig, ...config };
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 

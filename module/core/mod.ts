@@ -6,7 +6,6 @@
 
 // App + request context
 export { App } from "./lib/App.ts";
-export type { AppConfig } from "./lib/App.ts";
 export { Req } from "./lib/Req.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, RequestContext, requestStorage } from "./lib/RequestContext.ts";
