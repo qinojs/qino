@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import type { HealthTypes } from "../cms.backend.system/health_check.ts";
+import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 
 export const healthChecks = {
   get(app: any): HealthTypes {

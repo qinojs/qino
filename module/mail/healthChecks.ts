@@ -1,5 +1,5 @@
 import { hee, getCtx, type App } from "../core/mod.ts";
-import type { HealthTypes } from "../cms.backend.system/health_check.ts";
+import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 
 export function healthChecks(app: App): HealthTypes {
   const ctx      = getCtx();

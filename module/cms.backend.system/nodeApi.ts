@@ -1,11 +1,11 @@
 import type { Node } from "../cms/mod.ts";
-import { getTypes } from "./health_check.ts";
+import { getHealthTypes } from "./healthRegistry.ts";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars?.solve_health_item) return;
 
   const app = node.app;
-  const types = await getTypes(app);
+  const types = await getHealthTypes(app);
 
   const itemData = vars.solve_health_item;
   if (!itemData || typeof itemData !== "object") return;

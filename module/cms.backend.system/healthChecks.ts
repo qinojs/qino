@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee, getCtx } from "../core/mod.ts";
-import type { HealthTypes, Solution } from "./health_check.ts";
+import type { HealthTypes, Solution } from "./healthRegistry.ts";
 
 export async function healthChecks(app: any): Promise<HealthTypes> {
   const db       = app.db;

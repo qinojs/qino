@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import type { HealthTypes } from "../cms.backend.system/health_check.ts";
+import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 
 /**
  * Backend pages are protected purely via node access (groups/users), not via

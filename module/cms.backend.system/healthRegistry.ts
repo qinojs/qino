@@ -14,7 +14,7 @@ export type CheckFn = { (): Promise<CheckResult> | CheckResult; mod?: string };
 
 export type HealthTypes = Record<string, Record<string, CheckFn>>;
 
-export async function getTypes(app: any): Promise<HealthTypes> {
+export async function getHealthTypes(app: any): Promise<HealthTypes> {
   const types: HealthTypes = {
     error:   {},
     warning: {},

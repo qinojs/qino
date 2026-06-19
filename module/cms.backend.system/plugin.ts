@@ -1,5 +1,5 @@
 import { hee, type App } from "../core/mod.ts";
-import { getTypes, type CheckResult, type Solution } from "./health_check.ts";
+import { getHealthTypes, type CheckResult, type Solution } from "./healthRegistry.ts";
 export { healthChecks } from "./healthChecks.ts";
 import statistic, { details as statisticDetails } from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
@@ -46,7 +46,7 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   // ── health checks ──────────────────────────────────────────────────────
-  const types = await getTypes(app);
+  const types = await getHealthTypes(app);
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -173,7 +173,7 @@ async function render(node: Node): Promise<string> {
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const types = await getTypes(app);
+  const types = await getHealthTypes(app);
 
   let errors = 0, warnings = 0;
   for (const [type, checks] of Object.entries(types)) {
