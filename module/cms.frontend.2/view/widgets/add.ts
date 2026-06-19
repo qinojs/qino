@@ -4,7 +4,7 @@ import { hee, getCtx } from "../../../core/mod.ts";
 export default async function (node: Node): Promise<string> {
   const app = node.app;
   const ctx = getCtx();
-  const isSuperuser = await ctx.user?.get?.("superuser");
+  const isSuperuser = await ctx.user?.get("superuser");
 
   const modules = await node.cms.getModules(); // TODO
   let moduleBoxes = "";

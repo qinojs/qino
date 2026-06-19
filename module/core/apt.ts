@@ -18,7 +18,7 @@ const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"
 
 async function appSettingsRoot(path?: string[]): Promise<Item> {
   const ctx = getCtx();
-  if (!(await ctx.user?.get?.("superuser"))) throw new AccessError();
+  if (!(await ctx.user?.get("superuser"))) throw new AccessError();
   return ctx.app.settings[$item].sub(path ?? []);
 }
 

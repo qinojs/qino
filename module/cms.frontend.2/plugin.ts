@@ -91,7 +91,7 @@ export function init(app: App) {
       qino.cms ??= {};
       qino.cms.nodeId = node.id;
       qino.cms.requestedNodeId = ctx.cms.requestedNodeId;
-      if (await ctx.user?.get?.("superuser")) qino.dev = ctx.dev || null;
+      if (await ctx.user?.get("superuser")) qino.dev = ctx.dev || null;
       qino.cms.editmode = ctx.cms.editmode;
 
       if (ctx.cms.editmode) {

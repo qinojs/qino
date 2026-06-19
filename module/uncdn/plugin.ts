@@ -114,7 +114,7 @@ export function init(app: App): void {
 
     const denied =
       policy === "none" ? "fetchPolicy=none" :
-      policy === "superuser" && !await ctx.user?.get?.("superuser") ? "fetchPolicy=superuser but no superuser session" :
+      policy === "superuser" && !await ctx.user?.get("superuser") ? "fetchPolicy=superuser but no superuser session" :
       null;
     if (denied) {
       console.warn(`[uncdn] ${denied}, not fetching: ${url}`);

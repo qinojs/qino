@@ -60,7 +60,7 @@ export default async function (node: Node): Promise<string> {
   if (node.vs.type === "p") accordions += await cmsFrontend2WidgetAccordion("seo", node);
   if (showUrls)    accordions += await cmsFrontend2WidgetAccordion("urls", node);
   accordions += await cmsFrontend2WidgetAccordion("extended", node, await app.t`Advanced`);
-  if (await ctx.user?.get?.("superuser")) accordions += await cmsFrontend2WidgetAccordion("superuser", node, "Superuser");
+  if (await ctx.user?.get("superuser")) accordions += await cmsFrontend2WidgetAccordion("superuser", node, "Superuser");
 
   return `<div class="-standalone content-manager" pid="${node}" page-type="${hee(node.vs.type)}" style="font-size:1.2em;margin-bottom:1em">
   <div title="Nr.${node}">

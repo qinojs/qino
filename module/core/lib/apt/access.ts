@@ -13,5 +13,5 @@ export function isStaticAccess(fn: NonNullable<Verb["access"]>): boolean {
 export const Access: Record<"PUBLIC" | "USER" | "SUPERUSER", NonNullable<Verb["access"]>> = {
   PUBLIC:    staticAccess(() => true),
   USER:      staticAccess((_: Params, ctx) => ctx.user !== null),
-  SUPERUSER: staticAccess((_: Params, ctx) => ctx.user?.get?.("superuser").then(Boolean) ?? Promise.resolve(false)),
+  SUPERUSER: staticAccess((_: Params, ctx) => ctx.user?.get("superuser").then(Boolean) ?? Promise.resolve(false)),
 };

@@ -19,7 +19,7 @@ const join = (parts: Array<HtmlString | string>): HtmlString => new HtmlString(p
 export async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get?.("superuser")) return raw("<div></div>");
+  if (!await ctx.user?.get("superuser")) return raw("<div></div>");
 
   const tables = await buildSchema(app);
   const token = ctx.post.qgToken === ctx.token;
