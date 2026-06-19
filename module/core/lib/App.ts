@@ -3,7 +3,7 @@ import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
 import { makeRequestContext, requestStorage, type RequestContext } from "./RequestContext.ts";
 import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
-import { ensureSlash, Output, Redirect } from "./util.ts";
+import { ensureSlash, Output } from "./util.ts";
 import { Db } from "./Db.ts";
 import { DbFileManager } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
@@ -187,9 +187,6 @@ export class App {
             for (const [k, v] of Object.entries(e.headers)) ctx.responseHeaders.set(k, v);
             ctx.responseBody = e.body as string;
             ctx.responseStatus = e.status;
-        } else if (e instanceof Redirect) {
-            ctx.responseHeaders.set("Location", e.location);
-            ctx.responseStatus = e.status;
         } else {
             console.error("Error:", e);
             ctx.responseStatus = 500;
@@ -204,7 +201,6 @@ export class App {
             if (e.isJson) headers.set("Content-Type", "application/json; charset=UTF-8");
             return new Response(e.body as string, { status: e.status, headers });
         }
-        if (e instanceof Redirect) return new Response(null, { status: e.status, headers: { Location: e.location } });
         console.error("Error:", e);
         return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
     }

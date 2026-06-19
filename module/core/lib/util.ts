@@ -80,10 +80,8 @@ export class Output extends Error {
     this.headers = headers;
   }
 }
-export class Redirect extends Error {
-  location: string;
-  status: number;
-  constructor(location: string, status = 302) { super("redirect"); this.location = location; this.status = status; }
+export class Redirect extends Output {
+  constructor(location: string, status = 302) { super(undefined, { status, headers: { Location: location } }); }
 }
 
 // urlize
