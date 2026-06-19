@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "./deps.ts";
+import { aptRequest, assertEquals } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
-import { Access, aptClient, invoke, toHono, toTools } from "../lib/apt/mod.ts";
+import { Access, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
-import { Output } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.session = { liveUser: () => 0 } as any;
@@ -23,13 +22,11 @@ const api = {
   },
 };
 
-Deno.test("apt split facade mirrors invoke, Hono, tools and client", async () => {
+Deno.test("apt split facade mirrors invoke, fetch, tools and client", async () => {
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/item/3", { detail: "yes" }), { id: 3, detail: "yes" });
 
-    const app = toHono(api);
-    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
-    const res = await app.request("/item/4?detail=yes");
+    const res = await aptRequest(api, "/item/4?detail=yes");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { id: 4, detail: "yes" });
 

@@ -12,7 +12,7 @@ import { App } from "jsr:@qino/qino";
 
 ```ts
 import { Hono } from "npm:hono@^4";
-import { App } from "jsr:@qino/qino";
+import { App, honoAdapter } from "jsr:@qino/qino";
 
 const app = new App({
   dbName: "myapp",
@@ -26,9 +26,9 @@ await app.importAll(import.meta.resolve("./module/"));
 // Boot: ensure DB, migrate schema, init modules — once, before serving
 await app.init();
 
-// Mount into Hono
+// Mount into Hono under a path prefix
 const hono = new Hono();
-hono.route("/cms", app.router);
+hono.route("/cms", honoAdapter(app));
 
 Deno.serve({ port: 8080 }, hono.fetch);
 ```
@@ -46,7 +46,7 @@ await app.importAll(path);          // Load all modules from a directory
 await app.import(pluginUrl);        // Load a single Qino plugin
 await app.init();                   // Boot: ensure DB, migrate schema, init modules
 
-app.router   // Hono instance — mount this into your server
+app.fetch    // Web-standard handler — Deno.serve({}, app.fetch), or honoAdapter(app) to mount in Hono
 app.db       // MySQL database connection
 app.settings // Hierarchical app-wide settings (backed by item.js)
 ```

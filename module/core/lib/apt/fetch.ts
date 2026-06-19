@@ -1,18 +1,16 @@
-import { Hono, type Context } from "../../../../deps.ts";
 import { getCtx } from "../RequestContext.ts";
-import { Req } from "../Req.ts";
+import type { Req } from "../Req.ts";
 import { Output } from "../util.ts";
 import { AptError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
-import { checkCollisions, walk } from "./route.ts";
 import { BODY_METHODS, type AptTree, type Method, type Params } from "./types.ts";
 
 type RequestData = { method: Method; path: string; input: Params; query: Params };
 
-export type ToHonoAuth = (req: Req, data: RequestData) => boolean | Promise<boolean>;
-export type ToHonoOptions = {
+export type AptFetchAuth = (req: Req, data: RequestData) => boolean | Promise<boolean>;
+export type AptFetchOptions = {
   csrf?: boolean;
-  auth?: ToHonoAuth;
+  auth?: AptFetchAuth;
 };
 
 const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
@@ -21,7 +19,7 @@ const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
  * Run an apt request from a `Req`. Result is thrown as an `Output` signal (on both
  * success and error) so the host builds the `Response`. `path` is within the tree, e.g. `/user/5`.
  */
-export async function aptFetch(req: Req, tree: AptTree, path: string, opts: ToHonoOptions = {}): Promise<never> {
+export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptFetchOptions = {}): Promise<never> {
   const input: Params = {};
   const query: Params = {};
   const method = req.method.toLowerCase() as Method;
@@ -48,21 +46,12 @@ export async function aptFetch(req: Req, tree: AptTree, path: string, opts: ToHo
   }
 }
 
-/** Optional adapter: expose an apt tree as a mountable Hono app. */
-export function toHono(tree: AptTree, app: Hono = new Hono(), opts: ToHonoOptions = {}): Hono {
-  for (const r of walk(tree)) checkCollisions(r);
-  const handle = (c: Context): Promise<never> => aptFetch(new Req(c.req.raw), tree, "/" + (c.req.param("path") ?? ""), opts);
-  app.all("/", handle);
-  app.all("/:path{.*}", handle);
-  return app;
-}
-
 function isJsonRequest(req: Req): boolean {
   const type = req.header("content-type")?.split(";")[0].trim().toLowerCase();
   return !type || type === "application/json" || type.endsWith("+json");
 }
 
-async function authorizeMutation(req: Req, opts: ToHonoOptions, data: RequestData): Promise<void> {
+async function authorizeMutation(req: Req, opts: AptFetchOptions, data: RequestData): Promise<void> {
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;

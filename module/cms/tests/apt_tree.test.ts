@@ -1,10 +1,9 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { toHono, toTools } from "../../core/mod.ts";
+import { checkCollisions, toTools, walk } from "../../core/mod.ts";
 import { api } from "../apt.ts";
 
-Deno.test("cms apt tree: mounts through Hono adapter without setup errors", () => {
-  const app = toHono(api);
-  assertEquals(typeof app.fetch, "function");
+Deno.test("cms apt tree: has no route collisions", () => {
+  for (const r of walk(api)) checkCollisions(r);
 });
 
 Deno.test("cms apt tree: exposes expected stable tool names", () => {

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertRejects, assertThrows } from "./deps.ts";
+import { aptRequest, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import {
   Access,
@@ -9,11 +9,9 @@ import {
   aptClient,
   invoke,
   isStaticAccess,
-  toHono,
   toTools,
 } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
-import { Output } from "../lib/util.ts";
 
 const ctx = new RequestContext();
 ctx.lang = "de";
@@ -143,9 +141,9 @@ Deno.test("apt: _checkAccess returns before input validation", async () => {
   });
 });
 
-Deno.test("apt: Hono GET query params are available as input", async () => {
+Deno.test("apt: GET query params are available as input", async () => {
   await withCtx(async () => {
-    const app = toHono({
+    const tree = {
       search: {
         get: {
           access: Access.PUBLIC,
@@ -153,35 +151,32 @@ Deno.test("apt: Hono GET query params are available as input", async () => {
           execute: ({ q }: any) => ({ q }),
         },
       },
-    });
-    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
-    const res = await app.request("/search?q=abc");
+    };
+    const res = await aptRequest(tree, "/search?q=abc");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { q: "abc" });
   });
 });
 
-Deno.test("apt: Hono mutations require same origin and qg token", async () => {
+Deno.test("apt: mutations require same origin and qg token", async () => {
   await withCtx(async () => {
-    const app = toHono(api);
-    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
     const body = JSON.stringify({ title: "Two", count: 2 });
 
-    const noCsrf = await app.request("http://qino.test/thing/1/update", {
+    const noCsrf = await aptRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body,
     });
     assertEquals(noCsrf.status, 403);
 
-    const badOrigin = await app.request("http://qino.test/thing/1/update", {
+    const badOrigin = await aptRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json", "origin": "http://evil.test", "x-csrf-token": csrfToken },
       body,
     });
     assertEquals(badOrigin.status, 403);
 
-    const ok = await app.request("http://qino.test/thing/1/update", {
+    const ok = await aptRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
       body,
@@ -213,12 +208,10 @@ Deno.test("apt: catchall params collect remaining path segments", async () => {
         },
       },
     };
-    const app = toHono(files);
-    app.onError((e) => e instanceof Output ? new Response(e.body as string, { status: e.status }) : new Response(null, { status: 500 }));
     assertEquals(await invoke(files, "GET", "/file"), { path: [] });
     assertEquals(await invoke(files, "GET", "/file/a/b"), { path: ["a", "b"] });
-    assertEquals(await (await app.request("/file")).json(), { path: [] });
-    assertEquals(await (await app.request("/file/a/b")).json(), { path: ["a", "b"] });
+    assertEquals(await (await aptRequest(files, "/file")).json(), { path: [] });
+    assertEquals(await (await aptRequest(files, "/file/a/b")).json(), { path: ["a", "b"] });
     assertEquals(toTools(files)[0].parameters, {
       type: "object",
       properties: { path: { type: "array", items: { type: "string" } } },
