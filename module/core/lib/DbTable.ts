@@ -203,7 +203,10 @@ export class DbTable {
       : this.insert(values);
   }
 
-  async copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | false> {
+  copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | false> {
+    return this.#db.transaction(() => this.#copy(id, override, visiting));
+  }
+  async #copy(id: any, override: Record<string, any>, visiting: Set<string>): Promise<string | false> {
     id = this.entryId(id);
     if (id === false) return false;
     const key = `${this}:${id}`;
@@ -226,7 +229,10 @@ export class DbTable {
     return newId;
   }
 
-  async delete(id: any): Promise<boolean | undefined> {
+  delete(id: any): Promise<boolean | undefined> {
+    return this.#db.transaction(() => this.#delete(id));
+  }
+  async #delete(id: any): Promise<boolean | undefined> {
     id = this.entryId(id);
     const values = this.entryId2Array(id);
     const eBefore: any = { Table: this, data: values, id, returnValue: undefined };
@@ -251,7 +257,10 @@ export class DbTable {
     return true;
   }
 
-  async deleteWhere(values: Record<string, any> | string): Promise<void> {
+  deleteWhere(values: Record<string, any> | string): Promise<void> {
+    return this.#db.transaction(() => this.#deleteWhere(values));
+  }
+  async #deleteWhere(values: Record<string, any> | string): Promise<void> {
     let rows: Record<string, Record<string, any>>;
     if (typeof values === "string") {
       rows = await this.select(values);

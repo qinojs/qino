@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { mysql, postgres, type Pool, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../deps.ts";
 import { DatabaseSync } from "node:sqlite";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface ExecResult { insertId: number; affectedRows: number; }
 export interface MigrateOptions { patch?: boolean; force?: boolean; }
@@ -14,6 +15,8 @@ export interface Driver {
   escapeId(id: string): string;
   query(sql: string, params?: unknown[]): Promise<Row[]>;
   exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
+  /** Run fn in a transaction; nested calls join the outer one. */
+  transaction<T>(fn: () => Promise<T>): Promise<T>;
   syncAutoIncrement(table: string, field: string, value: number): Promise<void>;
   listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
@@ -44,6 +47,7 @@ class MysqlDriver implements Driver {
   dialect = "mysql" as const;
   emptyInsert = "() VALUES ()";
   #pool: Pool;
+  #tx = new AsyncLocalStorage<any>();
   #database: string;
   #connParams: { host: string; port?: number; user: string; password: string };
 
@@ -61,13 +65,22 @@ class MysqlDriver implements Driver {
   }
 
   escapeId(id: string) { return mysql.escapeId(id); }
+  #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
-    const [res] = await this.#pool.query(sql, params);
+    const [res] = await this.#conn().query(sql, params);
     return res as Row[];
   }
   async exec(sql: string, params?: unknown[], _returning?: string) {
-    const [res] = await this.#pool.execute(sql, params as any);
+    const [res] = await this.#conn().execute(sql, params as any);
     return res as unknown as ExecResult;
+  }
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.#tx.getStore()) return fn();
+    const conn = await this.#pool.getConnection();
+    await conn.beginTransaction();
+    try { const r = await this.#tx.run(conn, fn); await conn.commit(); return r; }
+    catch (e) { await conn.rollback(); throw e; }
+    finally { conn.release(); }
   }
   syncAutoIncrement(_table: string, _field: string, _value: number) { return Promise.resolve(); }
   async listTables() {
@@ -94,6 +107,7 @@ class SqliteDriver implements Driver {
   dialect = "sqlite" as const;
   emptyInsert = "DEFAULT VALUES";
   #db: DatabaseSync;
+  #inTx = false;
 
   constructor(path: string) {
     this.#db = new DatabaseSync(path);
@@ -107,6 +121,18 @@ class SqliteDriver implements Driver {
   exec(sql: string, params: unknown[] = [], _returning?: string) {
     const r = this.#db.prepare(sql).run(...params as any[]);
     return Promise.resolve({ insertId: Number(r.lastInsertRowid), affectedRows: Number(r.changes) });
+  }
+  // One shared connection: re-entrancy via a flag, no per-call routing needed.
+  // Caveat: with concurrent requests, queries from other requests at await points
+  // inside fn run on this same connection — they join this transaction and roll back
+  // with it. Fine for single-user dev/demo; prod uses MySQL with per-tx connections.
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.#inTx) return fn();
+    this.#inTx = true;
+    this.#db.exec("BEGIN");
+    try { const r = await fn(); this.#db.exec("COMMIT"); return r; }
+    catch (e) { this.#db.exec("ROLLBACK"); throw e; }
+    finally { this.#inTx = false; }
   }
   syncAutoIncrement(_table: string, _field: string, _value: number) { return Promise.resolve(); }
   listTables() {
@@ -184,6 +210,7 @@ class PostgresDriver implements Driver {
   dialect = "postgres" as const;
   emptyInsert = "DEFAULT VALUES";
   #pool: any;
+  #tx = new AsyncLocalStorage<any>();
   #database: string;
   #adminParams: Record<string, unknown>;
 
@@ -196,17 +223,26 @@ class PostgresDriver implements Driver {
   }
 
   escapeId(id: string) { return `"${id.replaceAll('"', '""')}"`; }
+  #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
-    return (await this.#pool.query(toPostgresSql(sql), params)).rows as Row[];
+    return (await this.#conn().query(toPostgresSql(sql), params)).rows as Row[];
   }
   async exec(sql: string, params?: unknown[], returning?: string) {
     let pgSql = toPostgresSql(sql);
     if (/^\s*insert\b/i.test(pgSql) && !/\breturning\b/i.test(pgSql)) {
       pgSql = pgSql.replace(/;\s*$/, "") + ` RETURNING ${returning ? this.escapeId(returning) : "*"}`;
     }
-    const res = await this.#pool.query(pgSql, params);
+    const res = await this.#conn().query(pgSql, params);
     const row = res.rows?.[0] ?? {};
     return { insertId: Number(returning ? row[returning] : Object.values(row)[0] ?? 0), affectedRows: Number(res.rowCount ?? 0) };
+  }
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.#tx.getStore()) return fn();
+    const client = await this.#pool.connect();
+    await client.query("BEGIN");
+    try { const r = await this.#tx.run(client, fn); await client.query("COMMIT"); return r; }
+    catch (e) { await client.query("ROLLBACK"); throw e; }
+    finally { client.release(); }
   }
   async syncAutoIncrement(table: string, field: string, value: number) {
     if (value < 1) return;

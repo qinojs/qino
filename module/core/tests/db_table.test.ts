@@ -41,6 +41,9 @@ function db() {
       returns.push(returning);
       return { affectedRows: 1, insertId: 10 };
     },
+    transaction(fn: () => Promise<unknown>) {
+      return fn();
+    },
     fire(name: string, data: Record<string, unknown>) {
       events.push([name, data]);
     },

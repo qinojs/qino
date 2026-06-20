@@ -42,6 +42,10 @@ export class Db {
   exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult> {
     return this.#run(() => this.#driver.exec(sql, params, returning), sql);
   }
+  /** Run fn atomically; nested calls join the outer transaction. */
+  transaction<T>(fn: () => Promise<T>): Promise<T> {
+    return this.#driver.transaction(fn);
+  }
   syncAutoIncrement(table: string, field: string, value: number): Promise<void> {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
