@@ -78,17 +78,6 @@ export class App {
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
     }
 
-    assertAllowedPath(file: string): void {
-        if (!file || file.includes("\0")) throw new Output("invalid path", { status: 400 });
-        const resolved = nodePath.resolve(file);
-        if (resolved !== nodePath.normalize(file) && resolved !== file) throw new Output("invalid path", { status: 400 });
-        const roots: string[] = [nodePath.resolve(this.appPATH)];
-        for (const mod of Object.values(this.modules.all())) {
-            if (mod.dir) roots.push(nodePath.resolve(mod.dir));
-        }
-        if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
-    }
-
     import(spec: string): Promise<Module> { return this.modules.import(spec); }
 
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
@@ -213,4 +202,15 @@ export class App {
         return new Response(ctx.responseBody, { status: ctx.responseStatus, headers });
     }
 
+
+    assertAllowedPath(file: string): void {
+        if (!file || file.includes("\0")) throw new Output("invalid path", { status: 400 });
+        const resolved = nodePath.resolve(file);
+        if (resolved !== nodePath.normalize(file) && resolved !== file) throw new Output("invalid path", { status: 400 });
+        const roots: string[] = [nodePath.resolve(this.appPATH)];
+        for (const mod of Object.values(this.modules.all())) {
+            if (mod.dir) roots.push(nodePath.resolve(mod.dir));
+        }
+        if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
+    }    
 }
