@@ -96,15 +96,6 @@ export async function chatSession(
         };
       }
       messages.push({ role: "assistant", content });
-      console.log( `\n[bot:${data.bot}] conversation:\n` + messages.map((m) => {
-            const role = String(m.role).toUpperCase();
-            const body = typeof m.content === "string"
-              ? m.content
-              : JSON.stringify(m.content);
-            return `--- ${role} ---\n${body}`;
-          }).join("\n") +
-          "\n",
-      );
       if (!wantsStructuredOutput) return content;
       try { return JSON.parse(content); }
       catch { return { response: content }; }
@@ -119,9 +110,7 @@ export async function chatSession(
         toolResult = tool
           ? await tool.execute(JSON.parse(String(fn.arguments ?? "{}")), ctx)
           : { error: `Unknown tool: ${fn.name}` };
-        console.log(`[tool:${fn.name}] args:`, fn.arguments, "→", JSON.stringify(toolResult).slice(0, 200) );
       } catch (e) {
-        console.error(`[tool:${fn.name}] args:`, fn.arguments, e );
         toolResult = { error: String(e) };
       }
       messages.push({
