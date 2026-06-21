@@ -20,7 +20,7 @@ const token = (v?: string) => {
   if (v !== undefined) csrfToken = v;
   return csrfToken;
 };
-ctx.session = { liveUser: () => 0, qg: { token } } as any;
+ctx.sess = { data: { liveUser: () => 0, qg: { token } } } as any;
 
 const things = new Map<number, { id: number; title: string; writable: boolean }>([
   [1, { id: 1, title: "One", writable: true }],

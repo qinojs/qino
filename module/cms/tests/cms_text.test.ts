@@ -42,7 +42,7 @@ class FakeNode {
 
 function ctxWith(app: any) {
   const ctx = new RequestContext();
-  ctx.session = { liveUser: () => 1 } as any;
+  ctx.sess = { data: { liveUser: () => 1 } } as any;
   ctx.lang = "de";
   app.db ??= {};
   app.db.table ??= () => ({ entry: () => ({ id: 1 }) });

@@ -38,7 +38,7 @@ export function fastInfo(ctx: RequestContext): any {
   const path = short(ctx.appRequestPath || ctx.url.pathname, 191);
   const ip = ctx.remoteAddr || "";
   return {
-    time: now(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sessId || 0) || null,
+    time: now(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sess?.id || 0) || null,
     usr_id: Number(ctx.userId || 0) || null, method: ctx.req.method, path, status: 0, duration_ms: 0,
     bytes_in: Number(ctx.req.header("content-length") ?? "0") || 0, bytes_out: 0, ua: ctx.req.header("user-agent") ?? "",
   };

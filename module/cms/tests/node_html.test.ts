@@ -7,7 +7,7 @@ import { Node } from "../lib/Node.ts";
 Deno.test("Node.htmlPrepared escapes module name inside qcms-mod attribute", async () => {
     const moduleName = `bad" onclick="alert(1) x="`;
     const ctx = new RequestContext();
-    ctx.session = { liveUser: () => 0 } as any;
+    ctx.sess = { data: { liveUser: () => 0 } } as any;
     ctx.app = {
         modules: {
             get: () => ({

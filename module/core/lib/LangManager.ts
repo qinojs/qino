@@ -24,7 +24,7 @@ export class LangManager {
     async initCtx(ctx: RequestContext): Promise<void> {
         const usr = ctx.user;
 
-        ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.session.qg.lang() ?? "";
+        ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.qg.lang() ?? "";
 
         const urlLang = ctx.get.changeLanguage;
         if (urlLang) {
@@ -40,7 +40,7 @@ export class LangManager {
         if (usr) {
             usr.set("lang", ctx.langUsr); // save is debounced, no need to await
         } else {
-            ctx.session.qg.lang(ctx.langUsr);
+            ctx.sess.data.qg.lang(ctx.langUsr);
         }
 
         ctx.lang = ctx.langUsr;

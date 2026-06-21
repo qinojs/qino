@@ -119,9 +119,9 @@ export async function init(app: App) {
 
     app.on("login", async (data: any) => {
       const ctx = getCtx();
-      if (!ctx.sessId) return;
+      if (!ctx.sess) return;
       const { mergeSessionSettingsToUser } = await import("./lib/contextSettings.ts");
-      await mergeSessionSettingsToUser(app.db, data.id, ctx.sessId);
+      await mergeSessionSettingsToUser(app.db, data.id, ctx.sess.id);
       await ctx.initSettings();
     });
 

@@ -300,7 +300,7 @@ export const api: AptTree = {
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
           await ctx.app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
-          ctx.session.web_auth_confirmed(now());
+          ctx.sess.data.web_auth_confirmed(now());
           return { ok: true };
         },
       },

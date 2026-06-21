@@ -20,7 +20,7 @@ async function render(_node: Node): Promise<string> {
     const client = ctx.client;
 
     const clientVs = client ? await client.getVs() : {};
-    const sessionData = await ctx.session();
+    const sessionData = await ctx.sess.data();
     const settingsData = await ctx.settings();
 
     let usrHtml = `<em>not logged in</em>\n`;

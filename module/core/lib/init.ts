@@ -34,7 +34,7 @@ async function registerClient(ctx: RequestContext): Promise<void> {
 };
 
 export function touchSession(ctx: RequestContext): void {
-    if (ctx.sessId) ctx.app.sessions.touch(ctx.sessId, ctx.userId);
+    if (ctx.sess) ctx.sess.touch(ctx.userId);
 };
 
 export function initLog(ctx: RequestContext): void {
@@ -43,7 +43,7 @@ export function initLog(ctx: RequestContext): void {
 
     const data: Record<string, unknown> = {
       time: Math.floor(Date.now() / 1000),
-      sess_id: ctx.sessId,
+      sess_id: ctx.sess?.id,
     };
 
     // redact secrets by key name

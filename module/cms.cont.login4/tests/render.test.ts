@@ -20,7 +20,7 @@ function textObj(value = "") {
 
 function makeCtx(loggedIn = false) {
   const ctx = new RequestContext();
-  ctx.session = { liveUser: () => loggedIn ? 7 : 0, qg: { token: () => "tok" } } as any;
+  ctx.sess = { data: { liveUser: () => loggedIn ? 7 : 0, qg: { token: () => "tok" } } } as any;
   ctx.clientId = "client-1";
   ctx.app = {
     db: {
@@ -107,7 +107,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   assertEquals(login.includes("<script>"), false);
 
   const userCtx = makeCtx(true);
-  userCtx.session = { liveUser: () => 7, qg: { token: () => `t"><script>x</script>` } } as any;
+  userCtx.sess = { data: { liveUser: () => 7, qg: { token: () => `t"><script>x</script>` } } } as any;
   const userNode = {
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "Abmelden" },

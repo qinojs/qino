@@ -50,14 +50,12 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
 export async function login(ctx: RequestContext, id: number | string): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one("SELECT id FROM usr WHERE id = ?", [id])) return false;
-  const oldSession = ctx.session;
+  const oldSession = ctx.sess.data;
   await logout(ctx);
   // neue Session-ID nach Logout verhindert Session-Fixation
-  const { sessionToken, sessId, session } = await ctx.app.sessions.regenerateId(ctx.sessionToken);
-  ctx.sessionToken = sessionToken;
-  ctx.sessId = sessId;
-  ctx.session = session;
-  ctx.session.liveUser(id);
+  const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
+  ctx.sess = session;
+  ctx.sess.data.liveUser(id);
   await ctx.client.addUsr(id);
   await ctx.client.set("usr_id", id);
   await ctx.app.fire("login", { session_old: oldSession, id });
@@ -67,7 +65,7 @@ export async function login(ctx: RequestContext, id: number | string): Promise<b
 export async function logout(ctx: RequestContext): Promise<void> {
   await rememberLogin(ctx, false);
   ctx.client.set("usr_id", 0);
-  ctx.session({});
+  ctx.sess.data({});
   await ctx.app.fire("logout");
 }
 

@@ -6,7 +6,7 @@ export const name = "fileEditor";
 
 async function saveFile(ctx: RequestContext, file: string, content: string): Promise<number> {
     ctx.app.assertAllowedPath(file);
-    const allowed = ctx.session.fileEditor.allow[file]();
+    const allowed = ctx.sess.data.fileEditor.allow[file]();
     if (!allowed && !(await ctx.user?.get('superuser'))) return 0;
 
     const backupName = `fileEditorBackup_${encodeURIComponent(file)}_${Date.now()}`;
@@ -41,7 +41,7 @@ export function init(app: App) {
         const ctx = getCtx();
         ctx.app.assertAllowedPath(file);
 
-        const allowed = ctx.session.fileEditor.allow[file]();
+        const allowed = ctx.sess.data.fileEditor.allow[file]();
         const isSuperuser = Boolean(await ctx.user?.get('superuser'));
         if (!allowed && !isSuperuser) {
             ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");

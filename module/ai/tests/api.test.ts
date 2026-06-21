@@ -39,7 +39,7 @@ Deno.test("ai: init installs AiApi and cms-ready hook", () => {
 
 Deno.test("ai: apt execute delegates to app.ai methods", async () => {
   const ctx = new RequestContext();
-  ctx.session = { liveUser: () => 1 } as never;
+  ctx.sess = { data: { liveUser: () => 1 } } as never;
   ctx.app = {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
     ai: {

@@ -107,10 +107,10 @@ export class App {
 
     async #run(ctx: RequestContext, isNew: boolean): Promise<Response> {
         const t0 = performance.now();
-        const initialSessionToken = ctx.sessionToken;
+        const initialSessionToken = ctx.sess.token;
         try {
             await this.#initRequest(ctx);
-            if (isNew || ctx.sessionToken !== initialSessionToken) this.sessions.setCookie(ctx);
+            if (isNew || ctx.sess.token !== initialSessionToken) this.sessions.setCookie(ctx);
             await this.fire("action", { ctx });
             return await this.#route(ctx);
         } catch (e: unknown) {

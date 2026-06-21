@@ -5,7 +5,7 @@ import { Access, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
 
 const ctx = new RequestContext();
-ctx.session = { liveUser: () => 0 } as any;
+ctx.sess = { data: { liveUser: () => 0 } } as any;
 
 const api = {
   item: {

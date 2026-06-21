@@ -6,7 +6,7 @@ import { RequestContext } from "../lib/RequestContext.ts";
 Deno.test("authListen: login form requires token", async () => {
   const ctx = new RequestContext();
   ctx.post = { liveUser_login: "", email: "u@example.test", pw: "pw", token: "bad" };
-  ctx.session = { liveUser: () => 0, qg: { token: () => "good" } } as any;
+  ctx.sess = { data: { liveUser: () => 0, qg: { token: () => "good" } } } as any;
   ctx.app = { db: { row: () => { throw new Error("auth should not run"); } } } as any;
 
   await authListen(ctx);

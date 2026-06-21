@@ -9,12 +9,12 @@ import { readUploadFile, type UploadedFile } from "./fileStream.ts";
 import type { App } from "./App.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import type { Req } from "./Req.ts";
+import type { Session } from "./SessionManager.ts";
 import type { LoginError } from "./auth.ts";
 
 export class RequestContext {
   app!: App;
-  session: ItemProxy = null!;
-  sessionToken = "";
+  sess: Session = null!;
   cookie: Record<string, string> = {};
   get: Record<string, string> = {};
   post: Record<string, unknown> = {};
@@ -34,7 +34,6 @@ export class RequestContext {
   langNs = "";
   req!: Req;
   clientId: string | null = null;
-  sessId: string | null = null;
   logId: Promise<string | null> = Promise.resolve(null);
   loginError?: LoginError;
   appURL = "/";
@@ -46,9 +45,9 @@ export class RequestContext {
   get hasHtml(): boolean { return this.#html !== null; }
 
   get url(): URL { return new URL(this.req.url); }
-  
+
   get userId(): number {
-    return Number(this.session.liveUser() || 0);
+    return Number(this.sess.data.liveUser() || 0);
   }
   get user(): dbEntry_usr | null {
     return this.userId ? this.app.db.table('usr').entry(this.userId) as dbEntry_usr : null;
@@ -65,15 +64,16 @@ export class RequestContext {
   async initSettings(): Promise<void> { // inkonsistent: ctx.lang wird im LangManager initialisiert (LangManager.initCtx(ctx)), aber settings hier.
     this.#settingsRoot = this.user
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
-      : await sessSettingsItem(this.app.db, this.sessId!, this.app.ctxSettingsSchema);
+      : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
   }
 
   get dev(): boolean {
     return this.app.dev || !!this.settings.core.dev();
   }
+  /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get token(): string {
-    const token = this.session.qg.token;
-    if (!token()) this.session.qg.token(uid(11));
+    const token = this.sess.data.qg.token;
+    if (!token()) this.sess.data.qg.token(uid(11));
     return token() as string;
   }
 
@@ -118,7 +118,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     }
   }
 
-  const { sessionToken, sessId, session, isNew } = await app.sessions.loadFromRequest(req, app.https);
+  const session = await app.sessions.loadFromRequest(req, app.https);
 
   const ctx = new RequestContext();
   Object.assign(ctx, {
@@ -127,9 +127,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     appURL,
     sysURL: appURL + "m/",
     appRequestPath: decodeURIComponent(req.path.slice(appURL.length)),
-    session,
-    sessionToken,
-    sessId,
+    sess: session,
     cookie: req.cookies(),
     get: req.query(),
     post,
@@ -138,7 +136,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     remoteAddr: clientIp(req, app.trustedProxyHops),
   });
 
-  return [ctx, isNew];
+  return [ctx, session.isNew];
 }
 
 function appRequestPathToLocalPath(appRequestPath: string, app: App): string | null {
