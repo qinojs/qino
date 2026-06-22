@@ -97,36 +97,13 @@ async function render(node: Node): Promise<string> {
 </div>`;
   }
 
-  // ── mysql config ───────────────────────────────────────────────────────
-  const mysqlRelevant = new Set(["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"]);
-  const mysqlVars = await db.all("SHOW VARIABLES");
-  const mysqlMap = new Map(mysqlVars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
 
-  const fmtMysql = (name: string, value: string) => {
-    if (name === "max_allowed_packet" || name === "innodb_buffer_pool_size") return (Number(value) / 1024 / 1024).toFixed(1) + " MB";
-    return value;
-  };
-
-  let mysqlSummaryRows = "";
-  for (const name of mysqlRelevant) {
-    const value = mysqlMap.get(name) ?? "";
-    mysqlSummaryRows += `<tr><td>${hee(name)}<td>${hee(fmtMysql(name, value))}`;
-  }
-
-  const mysqlLoadBtn = `<button data-load-part="mysql-details">Details</button>`;
-
-  const mysqlBox = `
-<div class="u2-card">
-  <div class="-head">MySQL</div>
-  <table class="u2-table" style="width:auto"><tbody>${mysqlSummaryRows}</table>
-  <div class="-body" cms-part="mysql-details" style="max-width:30rem; max-height:30rem; overflow:auto">
-    ${mysqlLoadBtn}
-  </div>
-</div>`;
+  // ── db config (per dialect) ──────────────────────────────────────────────
+  const dbBox = await renderDbBox(node);
 
   // ── locales / time ─────────────────────────────────────────────────────
   const osIso   = new Date().toISOString();
-  const dbRaw   = await db.one("SELECT UTC_TIMESTAMP()");
+  const dbRaw   = await db.one(dbUtcNowSql(db.dialect));
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
 <div class="u2-card">
@@ -166,7 +143,7 @@ async function render(node: Node): Promise<string> {
   </style>
   ${serverInfoHtml}
   ${healthHtml}
-  ${mysqlBox}
+  ${dbBox}
   ${localesBox}
   ${statsBox}
 </div>`;
@@ -237,14 +214,79 @@ async function systemInfoRows(app: App): Promise<string> {
   <tr><td>${await app.t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>`;
 }
 
-async function mysqlDetails(node: Node): Promise<string> {
+// SQL for "now in UTC" per dialect (MySQL gives 'YYYY-MM-DD HH:MM:SS', others ISO).
+function dbUtcNowSql(dialect: string): string {
+  if (dialect === "postgres") return "SELECT now() AT TIME ZONE 'UTC'";
+  if (dialect === "sqlite") return "SELECT strftime('%Y-%m-%dT%H:%M:%SZ','now')";
+  return "SELECT UTC_TIMESTAMP()";
+}
+
+const kvTable = (rows: [string, string][]) =>
+  `<table class="u2-table"><tbody>${rows.map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(v)}`).join("")}</table>`;
+
+// Summary card with a "Details" button that lazy-loads the dialect-specific `db-details` part.
+function dbCard(title: string, summaryRows: string): string {
+  return `
+<div class="u2-card">
+  <div class="-head">${hee(title)}</div>
+  <table class="u2-table" style="width:auto"><tbody>${summaryRows}</table>
+  <div class="-body" cms-part="db-details" style="max-width:30rem; max-height:30rem; overflow:auto">
+    <button data-load-part="db-details">Details</button>
+  </div>
+</div>`;
+}
+
+function renderDbBox(node: Node): Promise<string> {
+  if (node.app.db.dialect === "postgres") return postgresBox(node);
+  if (node.app.db.dialect === "sqlite") return sqliteBox(node);
+  return mysqlBox(node);
+}
+
+async function mysqlBox(node: Node): Promise<string> {
   const db = node.app.db;
+  const relevant = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
   const vars = await db.all("SHOW VARIABLES");
-  let rows = "";
-  for (const row of vars) {
-    rows += `<tr><td>${hee(row.Variable_name)}<td>${hee(String(row.Value))}`;
+  const map = new Map(vars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
+  const fmt = (name: string, value: string) =>
+    (name === "max_allowed_packet" || name === "innodb_buffer_pool_size")
+      ? (Number(value) / 1024 / 1024).toFixed(1) + " MB" : value;
+  const rows = relevant.map((n) => `<tr><td>${hee(n)}<td>${hee(fmt(n, map.get(n) ?? ""))}`).join("");
+  return dbCard("MySQL", rows);
+}
+
+async function postgresBox(node: Node): Promise<string> {
+  const db = node.app.db;
+  const names = ["server_version", "max_connections", "shared_buffers", "work_mem"];
+  const rows = await db.all(`SELECT name, setting, unit FROM pg_settings WHERE name IN (${names.map(() => "?").join(",")}) ORDER BY name`, names);
+  const body = rows.map((r: Record<string, string>) => `<tr><td>${hee(r.name)}<td>${hee(r.setting + (r.unit ? " " + r.unit : ""))}`).join("");
+  return dbCard("PostgreSQL", body);
+}
+
+async function sqliteBox(node: Node): Promise<string> {
+  const db = node.app.db;
+  const pragmas = ["journal_mode", "page_size", "foreign_keys"];
+  let rows = `<tr><td>version<td>${hee(String(await db.one("SELECT sqlite_version()") ?? ""))}`;
+  for (const p of pragmas) {
+    const r = await db.row(`PRAGMA ${p}`);
+    rows += `<tr><td>${hee(p)}<td>${hee(String(r ? Object.values(r)[0] : ""))}`;
   }
-  return `<table class="u2-table"><tbody>${rows}</table>`;
+  return dbCard("SQLite", rows);
+}
+
+async function dbDetails(node: Node): Promise<string> {
+  const db = node.app.db;
+  if (db.dialect === "postgres") {
+    const rows = await db.all("SELECT name, setting FROM pg_settings ORDER BY name");
+    return kvTable(rows.map((r: Record<string, string>) => [r.name, String(r.setting)]));
+  }
+  if (db.dialect === "sqlite") {
+    const pragmas = ["journal_mode", "page_size", "cache_size", "foreign_keys", "synchronous", "auto_vacuum"];
+    const rows: [string, string][] = [];
+    for (const p of pragmas) { const r = await db.row(`PRAGMA ${p}`); rows.push([p, String(r ? Object.values(r)[0] : "")]); }
+    return kvTable(rows);
+  }
+  const vars = await db.all("SHOW VARIABLES");
+  return kvTable(vars.map((r: Record<string, string>) => [r.Variable_name, String(r.Value)]));
 }
 
 export const cms = {
@@ -255,7 +297,7 @@ export const cms = {
     parts: {
       statistic,
       "statistic-details": statisticDetails,
-      "mysql-details": mysqlDetails,
+      "db-details": dbDetails,
     },
   },
 };
