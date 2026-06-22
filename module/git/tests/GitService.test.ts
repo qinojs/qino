@@ -25,6 +25,11 @@ Deno.test("git: GitService reads status, root, log and tags", async () => {
     status = await getStatus(root);
     assertEquals(status.dirty, false);
 
+    // unstaged modification: porcelain " M README.md" has a leading column that must survive parsing
+    await Deno.writeTextFile(root + "/README.md", "hello again\n");
+    status = await getStatus(root);
+    assertEquals(status.files, [{ status: "M", path: "README.md" }]);
+
     const sub = root + "/sub";
     await Deno.mkdir(sub);
     assertEquals(await findGitRoot(sub), root);

@@ -151,7 +151,7 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
     const ctx = getCtx();
     search = search.replace(/^cmspid:\/\//, "");
     const sql =
-        " SELECT p.id AS id FROM page p, text t WHERE 1" +
+        " SELECT p.id AS id FROM page p, text t WHERE true" +
         " AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id" +
         " AND ( p.id = ? OR t.text LIKE ? ) GROUP BY p.id ORDER BY" +
         " p.id = ? DESC, t.lang = '" + ctx.lang + "' DESC," +
@@ -183,7 +183,7 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
     const s   = search;
     const sql =
         " SELECT pf.page_id AS pid, f.*" +
-        " FROM page_file pf, file f WHERE 1 AND pf.file_id = f.id" +
+        " FROM page_file pf, file f WHERE true AND pf.file_id = f.id" +
         " AND ( f.id = ? OR f.name LIKE ? OR f.text LIKE ? )" +
         " ORDER BY f.id = ? DESC, f.name = ? DESC, f.name LIKE ? DESC," +
         " f.name LIKE ? DESC, f.text = ? DESC, f.text LIKE ? DESC, f.name ASC";

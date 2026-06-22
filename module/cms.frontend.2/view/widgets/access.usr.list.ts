@@ -10,7 +10,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   let sql = ` SELECT usr.*, a.access
     FROM usr
     LEFT JOIN page_access_usr a ON usr.id = a.usr_id AND a.page_id = ?
-    WHERE 1 `;
+    WHERE true `;
 
   if (!hasMany) {
     sql += " ORDER BY a.access DESC ";

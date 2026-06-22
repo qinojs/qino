@@ -39,7 +39,8 @@
             "x-qg-on-parent-delete": "cascade"
           },
           "save_login": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           },
           "time": {
             "type": "integer"
@@ -424,25 +425,32 @@
           "count": {
             "type": "integer",
             "minimum": -32768,
-            "maximum": 32767
+            "maximum": 32767,
+            "default": 0
           },
           "de": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "fr": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "en": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "it": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "pl": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           },
           "zh": {
-            "type": "string"
+            "type": "string",
+            "default": ""
           }
         },
         "required": ["hash", "namespace", "original", "count", "de", "fr", "en", "it", "pl", "zh"]

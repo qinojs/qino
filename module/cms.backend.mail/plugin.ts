@@ -96,7 +96,7 @@ async function renderOverview(node: Node): Promise<string> {
 async function listRows(node: Node, search: string): Promise<string> {
   const db = node.app.db;
   const params: unknown[] = [];
-  let where = "1";
+  let where = "true";
   if (search) {
     where = "(m.id = ? OR m.sender = ? OR m.subject LIKE ? OR m.html LIKE ? OR m.text LIKE ?)";
     params.push(search, search, `%${search}%`, `%${search}%`, `%${search}%`);

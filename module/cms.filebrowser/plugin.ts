@@ -63,7 +63,7 @@ async function search(s_: string, ctx: RequestContext): Promise<any[]> {
         " SELECT f.*, pf.page_id AS pid" +
         " FROM file f" +
         " LEFT JOIN page_file pf ON pf.file_id = f.id" +
-        " WHERE 1";
+        " WHERE true";
 
     const params: any[] = [];
 

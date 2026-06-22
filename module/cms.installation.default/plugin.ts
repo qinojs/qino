@@ -7,7 +7,7 @@ export const needs = [
   "cms.frontend.2",
   "cms.backend",
   "error_report",
-  "cms.versions",
+  //"cms.versions",
   "cms.backend.superuser.error_report",
   "cms.backend.settings",
   "cms.backend.users",
@@ -83,7 +83,7 @@ export async function install({app}: {app: App}): Promise<void> {
   if (!await app.db.one("SELECT id FROM page WHERE id = 2")) {
     const P = await (await cms.node(1)).createChild({ id: 2, access: 1, visible: 1, offline: 0, searchable: 1, sort: 1 });
     await P.changeGroup(adminGrp, 2);
-    await app.db.query("REPLACE INTO page_redirect (request, redirect) VALUES ('', '2')");
+    await app.db.query("INSERT INTO page_redirect (request, redirect) VALUES ('', '2')");
     await P.title("en", "Home");
   }
   // Service
@@ -132,7 +132,7 @@ export async function install({app}: {app: App}): Promise<void> {
     await P.changeGroup(adminGrp, 1);
     await (await P.cont("main")).cont('1', "cms.cont.login4");
     await P.title("en", "Login");
-    await app.db.query("REPLACE INTO page_redirect (request, redirect) VALUES ('login', '80')");
+    await app.db.query("INSERT INTO page_redirect (request, redirect) VALUES ('login', '80')");
   }
   await (await cms.node(80)).set("module", "cms.layout.login");
   await (await (await cms.node(80)).cont("main")).cont('1').then((c: any) => c.set("module", "cms.cont.login4"));

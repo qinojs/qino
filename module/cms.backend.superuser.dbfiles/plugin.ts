@@ -77,7 +77,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars
     FROM file f
       LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
       LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
-    WHERE 1`;
+    WHERE true`;
   const params: unknown[] = [];
   if (search) {
     const s = search.trim();

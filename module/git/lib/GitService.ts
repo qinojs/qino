@@ -18,7 +18,8 @@ async function run(args: string[], cwd: string): Promise<{ stdout: string; stder
   const cmd = new Deno.Command("git", { args, cwd, stdout: "piped", stderr: "piped" });
   const { stdout, stderr, code } = await cmd.output();
   return {
-    stdout: new TextDecoder().decode(stdout).trim(),
+    // trimEnd only: porcelain status lines start with a significant leading column
+    stdout: new TextDecoder().decode(stdout).replace(/\s+$/, ""),
     stderr: new TextDecoder().decode(stderr).trim(),
     code,
   };
