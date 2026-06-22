@@ -94,7 +94,7 @@ export class Db {
   }
   async fire(name: string, data: Record<string, any> = {}): Promise<void> {
     if (!this.#events[name]) return;
-    data["event_type"] = name;
+    data["eventType"] = name;
     for (const fn of this.#events[name]) await fn(data);
   }
 

@@ -88,7 +88,7 @@ export class App {
 
     async fire(name: string, data: Record<string, unknown> = {}): Promise<void> {
         if (!this.#events[name]) return;
-        data["event_type"] = name;
+        data["eventType"] = name;
         for (const event of this.#events[name]) await event(data);
     }
 
