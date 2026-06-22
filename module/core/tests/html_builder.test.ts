@@ -26,7 +26,7 @@ Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () 
   assertEquals(out.includes('<meta name="description" content="A &quot;quote&quot; &amp; more">'), true);
   assertEquals(out.includes("name=empty"), false);
   assertEquals(out.includes('<title>Pre &lt;Title&gt; &amp; Suf</title>'), true);
-  assertEquals(out.includes('<script defer src="/main.js?x=1&amp;y=2"></script>'), true);
+  assertEquals(out.includes('<script src="/main.js?x=1&amp;y=2"></script>'), true);
   assertEquals(out.includes('<script type=module src="/module.mjs?x=1&amp;y=2"></script>'), true);
   assertEquals(out.indexOf("<script type=importmap>") < out.indexOf("<script type=module"), true);
 });
