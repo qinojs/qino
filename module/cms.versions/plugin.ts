@@ -22,10 +22,10 @@ import { type RequestContext, type DbScope, Access, type AptTree, s, type App } 
 import type {} from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
-import { ensureSpace, initSpaces, installSpaces } from "./lib/Spaces.ts";
+import { ensureSpace, initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
 import { getCmsVers, nodeLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
-import { applyDraftSpace, initDraftmode, installDraftmode } from "./draftmode.ts";
+import { applyDraftSpace, initDraftmode, versPageChangedSchema } from "./draftmode.ts";
 export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.versions";
@@ -46,7 +46,10 @@ const VERSED: Record<string, true | Record<string, 1>> = {
 // Derive the _vers_* shadow tables from the merged schema (function-form dbSchema runs
 // after the static merge), so they are created in one pass and visible to all modules.
 export function dbSchema(merged: { properties: Record<string, any> }) {
-    const properties: Record<string, any> = {};
+    const properties: Record<string, any> = {
+        vers_space: versSpaceSchema,                  // generic (Spaces.ts)
+        vers_cms_page_changed: versPageChangedSchema, // draftmode.ts
+    };
     for (const t of Object.keys(VERSED)) {
         const source = merged.properties[t];
         if (!source) throw new Error(`cms.versions: no schema for versioned table "${t}"`);
@@ -175,12 +178,9 @@ export function init(app: App) {
 
 /**
  * cms.versions install()
- * Creates vers_space (generic) and vers_cms_page_changed (draftmode) tables.
+ * Tables (vers_space, vers_cms_page_changed) are created via dbSchema/migrate.
  */
-export async function install({app}: { app: App }): Promise<void> {
-    await installSpaces(app.db);
-    await installDraftmode(app.db);
-
+export function install({app}: { app: App }): void {
     // Autovivify settings
     app.settings["cms.versions"].draftmode;
 }

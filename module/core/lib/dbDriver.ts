@@ -15,8 +15,7 @@ export interface Driver {
   escapeId(id: string): string;
   query(sql: string, params?: unknown[]): Promise<Row[]>;
   exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
-  /** Run fn in a transaction; nested calls join the outer one. */
-  transaction<T>(fn: () => Promise<T>): Promise<T>;
+  transaction<T>(fn: () => Promise<T>): Promise<T>; /** Run fn in a transaction; nested calls join the outer one. */
   syncAutoIncrement(table: string, field: string, value: number): Promise<void>;
   listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
@@ -201,9 +200,7 @@ export function toPostgresSql(sql: string): string {
     if (c === "?") { out += "$" + ++param; continue; }
     out += c;
   }
-  return out
-    .replace(/\bINT\s*\(\s*\d+\s*\)/gi, "BIGINT")
-    .replace(/\bDATETIME\b/gi, "TIMESTAMP");
+  return out;
 }
 
 class PostgresDriver implements Driver {

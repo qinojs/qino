@@ -19,10 +19,6 @@ Deno.test("PostgreSQL SQL adapter converts MySQL escaped string literals", () =>
   assertEquals(toPostgresSql("SELECT 'a\\'b\\\\c\\n'"), "SELECT 'a''b\\c\n'");
 });
 
-Deno.test("PostgreSQL SQL adapter converts simple MySQL DDL types", () => {
-  assertEquals(toPostgresSql("CREATE TABLE t (id INT(11), changed DATETIME)"), "CREATE TABLE t (id BIGINT, changed TIMESTAMP)");
-});
-
 Deno.test("PostgreSQL driver exposes its dialect", async () => {
   const driver = makeDriver("postgresql://qino:secret@localhost/qino");
   assertEquals(driver.dialect, "postgres");

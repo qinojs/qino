@@ -18,7 +18,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, requestStorage, type RequestContext, type App, type Db } from "../core/mod.ts";
+import { getCtx, requestStorage, type RequestContext, type App } from "../core/mod.ts";
 import { getVers } from "./lib/Vers.ts";
 import { getCmsVers } from "./lib/CmsVers.ts";
 
@@ -239,16 +239,15 @@ export function initDraftmode(app: App) {
     });
 }
 
-/** Creates the vers_cms_page_changed table. TODO: should be in dbSchema and not by hand */
-export async function installDraftmode(db: Db): Promise<void> {
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS vers_cms_page_changed (
-            page_id       INT(11)  NOT NULL,
-            space         INT(11)  NOT NULL,
-            changed_inside DATETIME DEFAULT NULL,
-            changed_page   DATETIME DEFAULT NULL,
-            changed        DATETIME DEFAULT NULL,
-            PRIMARY KEY (page_id, space)
-        )
-    `);
-}
+/** vers_cms_page_changed table (draftmode). Merged into the module dbSchema. */
+export const versPageChangedSchema = {
+    additionalProperties: {
+        properties: {
+            page_id:        { type: "integer", "x-index": "primary" },
+            space:          { type: "integer", "x-index": "primary" },
+            changed_inside: { type: "string", format: "date-time" },
+            changed_page:   { type: "string", format: "date-time" },
+            changed:        { type: "string", format: "date-time" },
+        },
+    },
+};

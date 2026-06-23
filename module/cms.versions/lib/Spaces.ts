@@ -86,13 +86,12 @@ export function initSpaces(app: App) {
     });
 }
 
-/** Creates the vers_space table. TODO: should be in dbSchema and not by hand */
-export async function installSpaces(db: Db): Promise<void> {
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS vers_space (
-            space        INT(11)  NOT NULL,
-            time_created DATETIME DEFAULT NULL,
-            PRIMARY KEY (space)
-        )
-    `);
-}
+/** vers_space table (cms-agnostic). Merged into the module dbSchema. */
+export const versSpaceSchema = {
+    additionalProperties: {
+        properties: {
+            space:        { type: "integer", "x-index": "primary" },
+            time_created: { type: "string", format: "date-time" },
+        },
+    },
+};
