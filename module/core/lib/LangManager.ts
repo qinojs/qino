@@ -1,5 +1,6 @@
 import { getCtx, type RequestContext } from "./RequestContext.ts";
 import { createHash } from "node:crypto";
+import { sql } from "./sql.ts";
 import type { App } from "./App.ts";
 
 export class LangManager {
@@ -94,7 +95,7 @@ export class LangManager {
         const key = `${l}::${ns}`;
         if (!this.#txtsCache[key]) {
             //await this.addLanguage(l);
-            this.#txtsCache[key] = await this.#app.db.indexCol(`SELECT hash, \`${l}\` as txt FROM smalltext WHERE namespace = ?`, [ns]) as Record<string, string>;
+            this.#txtsCache[key] = await this.#app.db.indexCol`SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}` as Record<string, string>;
         }
         return this.#txtsCache[key];
     }

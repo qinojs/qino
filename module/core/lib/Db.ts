@@ -2,6 +2,7 @@
 import { mysql, type RowDataPacket } from "../../../deps.ts";
 import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
+import { Sql, sql, isTemplate } from "./sql.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
@@ -35,12 +36,39 @@ export class Db {
     }
   }
 
-  query(sql: string, params?: unknown[]): Promise<RowDataPacket[]> {
-    return this.#run(() => this.#driver.query(sql, params), sql) as Promise<RowDataPacket[]>;
+  /** Render a fragment / tag / legacy string to this dialect's [sql, params]. */
+  #sql(a: TemplateStringsArray | Sql | string, rest: unknown[]): [string, unknown[]] {
+    if (isTemplate(a)) a = sql(a, ...rest);
+    if (a instanceof Sql) {
+      let text = "";
+      const params: unknown[] = [];
+      for (const p of a.parts) {
+        if ("text" in p) text += p.text;
+        else if ("id" in p) text += this.#driver.escapeId(p.id);
+        else { params.push(p.param); text += this.#driver.placeholder(params.length); }
+      }
+      return [text, params];
+    }
+    return [this.#driver.translateLegacy(a), (rest[0] as unknown[]) ?? []]; // deprecated string path
   }
 
-  exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult> {
-    return this.#run(() => this.#driver.exec(sql, params, returning), sql);
+  query(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket[]>;
+  query(frag: Sql): Promise<RowDataPacket[]>;
+  /** @deprecated Use the sql`` tag: db.query`…`. */
+  query(sql: string, params?: unknown[]): Promise<RowDataPacket[]>;
+  query(a: TemplateStringsArray | Sql | string, ...rest: unknown[]): Promise<RowDataPacket[]> {
+    const [text, params] = this.#sql(a, rest);
+    return this.#run(() => this.#driver.query(text, params), text) as Promise<RowDataPacket[]>;
+  }
+
+  exec(strings: TemplateStringsArray, ...values: unknown[]): Promise<ExecResult>;
+  exec(frag: Sql, returning?: string): Promise<ExecResult>;
+  /** @deprecated Use the sql`` tag: db.exec`…`. */
+  exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
+  exec(a: TemplateStringsArray | Sql | string, ...rest: unknown[]): Promise<ExecResult> {
+    const returning = isTemplate(a) ? undefined : a instanceof Sql ? rest[0] as string : rest[1] as string;
+    const [text, params] = this.#sql(a, rest);
+    return this.#run(() => this.#driver.exec(text, params, returning), text);
   }
   /** Run fn atomically; nested calls join the outer transaction. */
   transaction<T>(fn: () => Promise<T>): Promise<T> {
@@ -50,13 +78,36 @@ export class Db {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 
-  all = (sql: string, p?: unknown[]): Promise<RowDataPacket[]> => this.query(sql, p);
-  row = async (sql: string, p?: unknown[]): Promise<RowDataPacket | undefined> => (await this.query(sql, p))[0];
-  col = async (sql: string, p?: unknown[]): Promise<unknown[]> => (await this.query(sql, p)).map((r) => Object.values(r)[0]);
-  one = async (sql: string, p?: unknown[]): Promise<unknown> => Object.values(await this.row(sql, p) ?? {})[0];
+  all(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket[]>;
+  all(frag: Sql): Promise<RowDataPacket[]>;
+  /** @deprecated Use the sql`` tag. */
+  all(sql: string, params?: unknown[]): Promise<RowDataPacket[]>;
+  all(a: any, ...rest: any[]): Promise<RowDataPacket[]> { return this.query(a, ...rest); }
 
-  async indexCol(sql: string, p?: unknown[]): Promise<Record<string, unknown>> {
-    return Object.fromEntries((await this.query(sql, p)).map((r) => Object.values(r) as [string, unknown]));
+  row(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket | undefined>;
+  row(frag: Sql): Promise<RowDataPacket | undefined>;
+  /** @deprecated Use the sql`` tag. */
+  row(sql: string, params?: unknown[]): Promise<RowDataPacket | undefined>;
+  async row(a: any, ...rest: any[]): Promise<RowDataPacket | undefined> { return (await this.query(a, ...rest))[0]; }
+
+  col(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown[]>;
+  col(frag: Sql): Promise<unknown[]>;
+  /** @deprecated Use the sql`` tag. */
+  col(sql: string, params?: unknown[]): Promise<unknown[]>;
+  async col(a: any, ...rest: any[]): Promise<unknown[]> { return (await this.query(a, ...rest)).map((r) => Object.values(r)[0]); }
+
+  one(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown>;
+  one(frag: Sql): Promise<unknown>;
+  /** @deprecated Use the sql`` tag. */
+  one(sql: string, params?: unknown[]): Promise<unknown>;
+  async one(a: any, ...rest: any[]): Promise<unknown> { return Object.values(await this.row(a, ...rest) ?? {})[0]; }
+
+  indexCol(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, unknown>>;
+  indexCol(frag: Sql): Promise<Record<string, unknown>>;
+  /** @deprecated Use the sql`` tag. */
+  indexCol(sql: string, params?: unknown[]): Promise<Record<string, unknown>>;
+  async indexCol(a: any, ...rest: any[]): Promise<Record<string, unknown>> {
+    return Object.fromEntries((await this.query(a, ...rest)).map((r) => Object.values(r) as [string, unknown]));
   }
 
   /** Create the database if missing. Must run before any schema migration queries against it. */

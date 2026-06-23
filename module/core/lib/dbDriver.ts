@@ -13,6 +13,11 @@ export interface Driver {
   dialect: DbDialect;
   emptyInsert: string;
   escapeId(id: string): string;
+  /** Bound-parameter marker for the n-th param (1-based): "?" or "$n". */
+  placeholder(n: number): string;
+  /** @deprecated Transitional: translate a legacy `?`/backtick SQL string to this dialect. */
+  translateLegacy(sql: string): string;
+  /** Receives final dialect SQL (rendered by Db) — does not translate. */
   query(sql: string, params?: unknown[]): Promise<Row[]>;
   exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
   transaction<T>(fn: () => Promise<T>): Promise<T>; /** Run fn in a transaction; nested calls join the outer one. */
@@ -64,6 +69,8 @@ class MysqlDriver implements Driver {
   }
 
   escapeId(id: string) { return mysql.escapeId(id); }
+  placeholder(_n: number) { return "?"; }
+  translateLegacy(sql: string) { return sql; }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     const [res] = await this.#conn().query(sql, params);
@@ -114,6 +121,8 @@ class SqliteDriver implements Driver {
   }
 
   escapeId(id: string) { return mysql.escapeId(id); }
+  placeholder(_n: number) { return "?"; }
+  translateLegacy(sql: string) { return sql; }
   query(sql: string, params: unknown[] = []) {
     return Promise.resolve(this.#db.prepare(sql).all(...params as any[]) as Row[]);
   }
@@ -220,12 +229,14 @@ class PostgresDriver implements Driver {
   }
 
   escapeId(id: string) { return `"${id.replaceAll('"', '""')}"`; }
+  placeholder(n: number) { return "$" + n; }
+  translateLegacy(sql: string) { return toPostgresSql(sql); }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
-    return (await this.#conn().query(toPostgresSql(sql), params)).rows as Row[];
+    return (await this.#conn().query(sql, params)).rows as Row[];
   }
   async exec(sql: string, params?: unknown[], returning?: string) {
-    let pgSql = toPostgresSql(sql);
+    let pgSql = sql;
     if (/^\s*insert\b/i.test(pgSql) && !/\breturning\b/i.test(pgSql)) {
       pgSql = pgSql.replace(/;\s*$/, "") + ` RETURNING ${returning ? this.escapeId(returning) : "*"}`;
     }
@@ -278,7 +289,7 @@ class PostgresDriver implements Driver {
         c.column_default AS "Default",
         CASE WHEN c.is_identity = 'YES' OR c.column_default LIKE 'nextval(%' THEN 'auto_increment' ELSE '' END AS "Extra"
       FROM information_schema.columns c
-      WHERE c.table_schema = current_schema() AND c.table_name = ?
+      WHERE c.table_schema = current_schema() AND c.table_name = $1
       ORDER BY c.ordinal_position
     `, [table]);
   }
