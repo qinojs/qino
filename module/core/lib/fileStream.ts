@@ -67,17 +67,20 @@ const PRIVATE_RANGES = [
   /^192\.168\./,
   /^172\.(1[6-9]|2\d|3[01])\./,
   /^169\.254\./,
-  /^::1$/,
+  /^::1?$/,
+  /^::ffff:/i,
   /^f[cd]/i,
   /^fe80:/i,
 ];
 
 /** Throws if the URL's host resolves to a private/internal IP (SSRF guard). */
 export async function assertNoSSRF(url: string) {
-  const { hostname } = new URL(url);
+  // URL parsing normalizes decimal/hex/octal IPv4 forms to dotted notation.
+  const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+  if (PRIVATE_RANGES.some((r) => r.test(host))) throw new Error(`SSRF blocked: ${host}`);
   const [ips, ips6] = await Promise.all([
-    Deno.resolveDns(hostname, "A").catch(() => [] as string[]),
-    Deno.resolveDns(hostname, "AAAA").catch(() => [] as string[]),
+    Deno.resolveDns(host, "A").catch(() => [] as string[]),
+    Deno.resolveDns(host, "AAAA").catch(() => [] as string[]),
   ]);
   for (const ip of [...ips, ...ips6]) {
     if (PRIVATE_RANGES.some((r) => r.test(ip))) throw new Error(`SSRF blocked: ${ip}`);
