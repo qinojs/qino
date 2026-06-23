@@ -149,7 +149,7 @@ export function toJsonSchema(schema: StandardSchema): Record<string, unknown> {
     case "number":   return { type: "number", ...desc };
     case "boolean":  return { type: "boolean", ...desc };
     case "array":    return { type: "array", items: schema.inner ? toJsonSchema(schema.inner) : {}, ...desc };
-    case "record":   return { type: "object", ...desc };
+    case "record":   return { type: "object", additionalProperties: schema.inner ? toJsonSchema(schema.inner) : true, ...desc };
     case "optional": return schema.inner ? { ...toJsonSchema(schema.inner), ...desc } : { ...desc };
     case "object": {
       const properties: Record<string, unknown> = {};

@@ -36,6 +36,11 @@ Deno.test("StandardSchema: record validates values and reports keyed paths", () 
   assertEquals(res.issues, [{ message: "expected number", path: ["b"] }]);
 });
 
+Deno.test("StandardSchema: toJsonSchema maps record value schema to additionalProperties", () => {
+  assertEquals(toJsonSchema(s.record(s.string())), { type: "object", additionalProperties: { type: "string" } });
+  assertEquals(toJsonSchema(s.record()), { type: "object", additionalProperties: true });
+});
+
 Deno.test("StandardSchema: toJsonSchema keeps descriptions and required fields", () => {
   const Schema = s.object({
     title: s.string().describe("Title"),
