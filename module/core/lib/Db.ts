@@ -84,7 +84,7 @@ export class Db {
     }
   }
 
-  table(name: string): DbTable { return this.#tables[name]; }
+  table(name: string): DbTable | undefined { return this.#tables[name]; }
   escapeId(id: string): string { return this.#driver.escapeId(id); }
 
   close = (): Promise<void> => this.#driver.close();
