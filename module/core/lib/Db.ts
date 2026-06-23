@@ -84,7 +84,11 @@ export class Db {
     }
   }
 
-  table(name: string): DbTable | undefined { return this.#tables[name]; }
+  table(name: string): DbTable {
+    const table = this.#tables[name];
+    if (!table) throw new Error(`unknown table: ${name}`);
+    return table;
+  }
   escapeId(id: string): string { return this.#driver.escapeId(id); }
 
   close = (): Promise<void> => this.#driver.close();
