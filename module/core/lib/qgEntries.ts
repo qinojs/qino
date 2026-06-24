@@ -67,4 +67,3 @@ registerEntryClass("client", dbEntry_client);
 registerEntryClass("client_usr", dbEntry_client_usr);
 
 export type { dbEntry_usr, dbEntry_log, dbEntry_sess, dbEntry_client, dbEntry_client_usr };
-
