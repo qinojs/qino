@@ -2,7 +2,7 @@
 import { mysql, type RowDataPacket } from "../../../deps.ts";
 import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
-import { sql, isTemplate, type Sql } from "./sql.ts";
+import { sql, isTemplate, render, type Sql } from "../../../deps.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
@@ -14,11 +14,16 @@ export class Db {
 
   #tables: Record<string, DbTable> = {};
   #driver: Driver;
+  #dialect: { quoteId(id: string): string; placeholder(n: number): string };
   #schema: Record<string, any> = { properties: {} };
   #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
 
   constructor(conn: string) {
     this.#driver = makeDriver(conn);
+    this.#dialect = {
+      quoteId: (id) => this.#driver.escapeId(id),
+      placeholder: (n) => this.#driver.placeholder(n),
+    };
   }
 
   get dialect(): DbDialect { return this.#driver.dialect; }
@@ -39,13 +44,7 @@ export class Db {
   /** Render a fragment / tag to this dialect's [sql, params]. */
   #sql(a: TemplateStringsArray | Sql, rest: unknown[]): [string, unknown[]] {
     const frag = isTemplate(a) ? sql(a, ...rest) : a;
-    let text = "";
-    const params: unknown[] = [];
-    for (const p of frag.parts) {
-      if ("text" in p) text += p.text;
-      else if ("id" in p) text += this.#driver.escapeId(p.id);
-      else { params.push(p.param); text += this.#driver.placeholder(params.length); }
-    }
+    const { text, params } = render(frag, this.#dialect);
     return [text, params];
   }
 

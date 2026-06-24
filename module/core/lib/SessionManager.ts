@@ -1,6 +1,6 @@
 import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
 import { uid } from "./util.ts";
-import { sql } from "./sql.ts";
+import { sql } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
 import type { Req } from "./Req.ts";
 import type { RequestContext } from "./RequestContext.ts";

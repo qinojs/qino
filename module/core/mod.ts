@@ -22,7 +22,7 @@ export * from "./lib/apt/mod.ts";
 
 // Database
 export { Db } from "./lib/Db.ts";
-export { Sql, sql } from "./lib/sql.ts";
+export { Sql, sql } from "../../deps.ts";
 export { dbScope, tableRef, scopeCache } from "./lib/dbScope.ts";
 export type { DbScope } from "./lib/dbScope.ts";
 export { DbEntry } from "./lib/DbEntry.ts";

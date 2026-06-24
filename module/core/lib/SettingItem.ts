@@ -1,5 +1,5 @@
 import { Item } from "../../../deps.ts";
-import { sql } from "./sql.ts";
+import { sql } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
 
 class SettingItem extends Item<SettingItem> {

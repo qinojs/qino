@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Sql, sql, isTemplate } from "../lib/sql.ts";
+import { Sql, sql, isTemplate } from "../../../deps.ts";
 
 /** Render a tag / fragment / legacy-string db call to MySQL-style [sql, params] for test fakes. */
 export function fakeRender(a: any, rest: any[]): [string, unknown[]] {

@@ -5,7 +5,7 @@ import { typeByExtension } from "../../../deps.ts";
 import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
-import { sql } from "./sql.ts";
+import { sql } from "../../../deps.ts";
 import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";

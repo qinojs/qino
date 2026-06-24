@@ -1,4 +1,4 @@
-import { sql, type Sql } from "./sql.ts";
+import { sql, type Sql } from "../../../deps.ts";
 
 /** Single source of truth for the u2 CDN root (version pin). */
 export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/";

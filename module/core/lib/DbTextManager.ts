@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./dbScope.ts";
-import { sql } from "./sql.ts";
+import { sql } from "../../../deps.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./Db.ts";
 

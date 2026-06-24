@@ -3,7 +3,7 @@
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { numTypes, type Db } from "./Db.ts";
-import { Sql, sql } from "./sql.ts";
+import { Sql, sql } from "../../../deps.ts";
 
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
