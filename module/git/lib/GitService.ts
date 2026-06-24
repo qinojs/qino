@@ -19,7 +19,7 @@ async function run(args: string[], cwd: string): Promise<{ stdout: string; stder
   const { stdout, stderr, code } = await cmd.output();
   return {
     // trimEnd only: porcelain status lines start with a significant leading column
-    stdout: new TextDecoder().decode(stdout).replace(/\s+$/, ""),
+    stdout: new TextDecoder().decode(stdout).trimEnd(),
     stderr: new TextDecoder().decode(stderr).trim(),
     code,
   };
@@ -48,8 +48,8 @@ export async function getStatus(repoPath: string): Promise<GitStatus> {
   let ahead = 0, behind = 0;
   if (aheadBehindRes.code === 0 && aheadBehindRes.stdout) {
     const parts = aheadBehindRes.stdout.split(/\s+/);
-    ahead = parseInt(parts[0]) || 0;
-    behind = parseInt(parts[1]) || 0;
+    ahead = parseInt(parts[0], 10) || 0;
+    behind = parseInt(parts[1], 10) || 0;
   }
 
   return { branch, dirty: files.length > 0, ahead, behind, files };

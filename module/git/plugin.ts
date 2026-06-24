@@ -8,6 +8,12 @@ export async function addModule(app: App, modulePath: string): Promise<void> {
   await app.modules.import(modulePath);
 }
 
+async function requireGitRoot(app: App, module: unknown): Promise<string> {
+  const { gitRoot } = await getModuleGitInfo(app, String(module));
+  if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
+  return gitRoot;
+}
+
 export const api: AptTree = {
   status: {
     get: {
@@ -24,8 +30,7 @@ export const api: AptTree = {
       query: s.object({ module: s.string(), limit: s.optional(s.number()) }),
       access: Access.SUPERUSER,
       execute: async (params: Params, ctx: RequestContext) => {
-        const { gitRoot } = await getModuleGitInfo(ctx.app, String(params.module));
-        if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
+        const gitRoot = await requireGitRoot(ctx.app, params.module);
         return GitService.getLog(gitRoot, Number(params.limit ?? 20));
       },
     },
@@ -35,8 +40,7 @@ export const api: AptTree = {
       input: s.object({ module: s.string() }),
       access: Access.SUPERUSER,
       execute: async (params: Params, ctx: RequestContext) => {
-        const { gitRoot } = await getModuleGitInfo(ctx.app, String(params.module));
-        if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
+        const gitRoot = await requireGitRoot(ctx.app, params.module);
         return GitService.getTags(gitRoot);
       },
     },
@@ -46,8 +50,7 @@ export const api: AptTree = {
       input: s.object({ module: s.string() }),
       access: Access.SUPERUSER,
       execute: async (params: Params, ctx: RequestContext) => {
-        const { gitRoot } = await getModuleGitInfo(ctx.app, String(params.module));
-        if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
+        const gitRoot = await requireGitRoot(ctx.app, params.module);
         const output = await GitService.pull(gitRoot);
         return { output };
       },
@@ -58,8 +61,7 @@ export const api: AptTree = {
       input: s.object({ module: s.string() }),
       access: Access.SUPERUSER,
       execute: async (params: Params, ctx: RequestContext) => {
-        const { gitRoot } = await getModuleGitInfo(ctx.app, String(params.module));
-        if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
+        const gitRoot = await requireGitRoot(ctx.app, params.module);
         const output = await GitService.push(gitRoot);
         return { output };
       },
@@ -70,8 +72,7 @@ export const api: AptTree = {
       input: s.object({ module: s.string(), ref: s.string() }),
       access: Access.SUPERUSER,
       execute: async (params: Params, ctx: RequestContext) => {
-        const { gitRoot } = await getModuleGitInfo(ctx.app, String(params.module));
-        if (!gitRoot) throw new Error("Kein Git-Repo gefunden");
+        const gitRoot = await requireGitRoot(ctx.app, params.module);
         const output = await GitService.checkout(gitRoot, String(params.ref));
         return { output };
       },

@@ -1,4 +1,4 @@
-import { sql, type RequestContext } from "../../core/mod.ts";
+import { type RequestContext } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
 import type {} from "../mod.ts";
 

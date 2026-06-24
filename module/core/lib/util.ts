@@ -125,8 +125,6 @@ export function sqlSearchHelper(
   const orders: Sql[] = [];
   for (const s of searches) {
     wheres.push(sql`(${sql.join(fields.map((f) => sql`${sql.id(f)} LIKE ${"%" + esc(s) + "%"} ESCAPE '!'`), " OR ")})`);
-  }
-  for (const s of searches) {
     for (const f of fields) orders.push(sql`${sql.id(f)} LIKE ${esc(s) + "%"} ESCAPE '!' DESC`);
   }
   return { where: sql.join(wheres, " AND "), order: sql.join(orders, ", ") };
