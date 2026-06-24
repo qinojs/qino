@@ -96,10 +96,11 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991,
+            "default": 0,
             "x-index": true
           }
         },
-        "required": ["id", "name", "text", "mime", "access", "md5", "size"]
+        "required": ["id"]
       }
     },
     "grp": {

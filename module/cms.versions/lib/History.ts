@@ -52,19 +52,24 @@ export function initHistory(app: App) {
         const t = await track(e);
         if (!t) return;
         const { ctx, vt, logId } = t;
-        const ids = e.Table.entryId2Array(e.id) ?? {};
-        const data: Record<string, any> = {
-            ...ids,
-            _vers_log:     logId,
-            _vers_space:   getVers(ctx).space,
-            _vers_deleted: 1,
-        };
-        const VT = ctx.app.db.table(vt);
-
-        // SQLite has no REPLACE ... SET; use the portable (cols) VALUES (?) form (mirrors DbTable.insert).
-        const cols = Object.keys(VT.fields!).filter((f) => f in data);
-        const into = sql`(${sql.join(cols.map((c) => sql.id(c)))}) VALUES (${sql.join(cols.map((f) => sql`${VT.fields![f].valueTransform(data[f])}`))})`;
-        await ctx.app.db.exec`REPLACE INTO ${sql.id(vt)} ${into}`;
+        const where = e.Table.entryId2where(e.id);
+        if (!where) return;
+        // The live row is gone, so copy its most recent snapshot and flip _vers_deleted.
+        // This keeps every (NOT NULL) column populated, mirroring the insert/update capture above —
+        // a partial VALUES insert would break on data columns that have no default.
+        const space = getVers(ctx).space;
+        const versCols = await ctx.app.db.columns(vt);
+        const selects = versCols.map((c: any) => {
+            const f = c.Field;
+            if (f === "_vers_space")   return sql`${space}`;
+            if (f === "_vers_log")     return sql`${logId}`;
+            if (f === "_vers_deleted") return sql.raw("1");
+            return sql.id(f);
+        });
+        await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM (
+            SELECT * FROM ${sql.id(vt)} WHERE ${sql.raw(where)} AND _vers_space = ${space}
+            ORDER BY _vers_log DESC LIMIT 1
+        ) AS src`;
     });
 
     // ─── File protection: don't delete blobs referenced in _vers_file ────────
