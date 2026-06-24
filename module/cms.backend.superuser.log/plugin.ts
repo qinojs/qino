@@ -72,7 +72,7 @@ function logRefColumns(db: App["db"]): { table: string; col: string }[] {
 
 // ── list (filterable part) ────────────────────────────────────────────────
 async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
-  const db = node.app.db;
+  const { t, db } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
 
   const where: Sql[] = [sql.raw("1")];
@@ -144,9 +144,9 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?
   // returns only the table's inner content — the <table cms-part=list> wrapper lives in render()
   return `
 <thead><tr style="vertical-align:top">
-    <th>${await node.app.t`Time`}<th>${await node.app.t`Url / Referer`}<th>${await node.app.t`Client`}
-    <th>${await node.app.t`User`}<th>${await node.app.t`IP`}<th>${await node.app.t`POST`}<th>ID
-<tbody style="vertical-align:top">${body || `<tr><td colspan=7>${await node.app.t`No entries`}`}`;
+    <th>${await t`Time`}<th>${await t`Url / Referer`}<th>${await t`Client`}
+    <th>${await t`User`}<th>${await t`IP`}<th>${await t`POST`}<th>ID
+<tbody style="vertical-align:top">${body || `<tr><td colspan=7>${await t`No entries`}`}`;
 }
 
 // ── stats + maintenance ─────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ async function tableStats(node: Node): Promise<{ rows: number; mb: number | null
 }
 
 async function runTool(node: Node, doName: string, data: Record<string, unknown>): Promise<string> {
-  const db = node.app.db;
+  const { t, db } = node.app;
   const before = Number(data.before) || 0;
   const limit = Number(data.limit) || 0;
   const t0 = performance.now();
@@ -172,7 +172,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
   if (doName === "clean_data") {
     // blank stored POST bodies, keep the request rows
     const r = await db.exec`UPDATE log SET post = '' WHERE post != ''${before ? sql` AND time < ${before}` : sql.raw("")}`;
-    msg = `${r.affectedRows} ${await node.app.t`entries processed`}`;
+    msg = `${r.affectedRows} ${await t`entries processed`}`;
   } else if (doName === "clean_items") {
     const cond: Sql[] = [sql.raw("1")];
     if (before) cond.push(sql`time < ${before}`);
@@ -185,11 +185,11 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
     }
     const inner = sql`SELECT id FROM log WHERE ${sql.join(cond, " AND ")} ORDER BY id DESC${limit ? sql` LIMIT ${limit}` : sql.raw("")}`;
     const r = await db.exec`DELETE FROM log WHERE id IN (SELECT id FROM (${inner}) x)`;
-    msg = `${r.affectedRows} ${await node.app.t`entries processed`}`;
+    msg = `${r.affectedRows} ${await t`entries processed`}`;
   } else if (doName === "optimize") {
-    if (db.dialect === "mysql") { await db.exec`OPTIMIZE TABLE log`; msg = await node.app.t`Table optimized`; }
-    else if (db.dialect === "sqlite") { await db.exec`VACUUM`; msg = await node.app.t`Table optimized`; }
-    else msg = await node.app.t`Not supported for this database`;
+    if (db.dialect === "mysql") { await db.exec`OPTIMIZE TABLE log`; msg = await t`Table optimized`; }
+    else if (db.dialect === "sqlite") { await db.exec`VACUUM`; msg = await t`Table optimized`; }
+    else msg = await t`Not supported for this database`;
   }
   return `${msg}<br><small>${((performance.now() - t0) / 1000).toFixed(2)} sec.</small>`;
 }
@@ -197,7 +197,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   if (ctx.get.id) return renderDetail(node, Number(ctx.get.id));
-  //todo: const {t} = node.app;
+  const { t } = node.app;
 
   const message = vars.do ? await runTool(node, String(vars.do), (vars.data ?? {}) as Record<string, unknown>) : "";
   const stats = await tableStats(node);
@@ -206,12 +206,12 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; var
   const DAY = 86400;
   const now = Math.floor(Date.now() / 1000);
   const ages = [
-    [now - DAY * 366 * 5, await node.app.t`older than 5 years`],
-    [now - DAY * 366, await node.app.t`older than 1 year`],
-    [now - DAY * 183, await node.app.t`older than 6 months`],
-    [now - DAY * 31, await node.app.t`older than 1 month`],
-    [now - DAY * 7, await node.app.t`older than 1 week`],
-    ["", await node.app.t`all`],
+    [now - DAY * 366 * 5, await t`older than 5 years`],
+    [now - DAY * 366, await t`older than 1 year`],
+    [now - DAY * 183, await t`older than 6 months`],
+    [now - DAY * 31, await t`older than 1 month`],
+    [now - DAY * 7, await t`older than 1 week`],
+    ["", await t`all`],
   ] as const;
   const ageOptions = (sel: number) =>
     ages.map((a, i) => `<option value="${a[0]}"${i === sel ? " selected" : ""}>${hee(String(a[1]))}`).join("");
@@ -225,42 +225,42 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; var
   return `<div class=u2-flex>
     <style>[cms-part=list] .-url { display:block; max-width:40rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden }</style>
     <div class=u2-card style="flex:1 1 100%">
-        <div class=-head>${await node.app.t`Filter`}</div>
+        <div class=-head>${await t`Filter`}</div>
         <div class=-body>
             <form data-filter class=u2-flex style="gap:.5em 1em; align-items:end">
-                <label>${await node.app.t`Search`}<br><input name=search value="${hee(initSearch)}" placeholder="${await node.app.t`URL, IP, ID`}"></label>
+                <label>${await t`Search`}<br><input name=search value="${hee(initSearch)}" placeholder="${await t`URL, IP, ID`}"></label>
                 <label>ID<br><input type=number name=id></label>
-                <label>${await node.app.t`Logged in`}<br><select name=loggedin><option value=""><option value=yes>${await node.app.t`yes`}<option value=no>${await node.app.t`no`}</select></label>
-                <label>${await node.app.t`from`}<br><input type=datetime-local name=from></label>
-                <label>${await node.app.t`to`}<br><input type=datetime-local name=to></label>
-                <label><input type=checkbox name=not_my_client value=1> ${await node.app.t`not my client`}</label>
+                <label>${await t`Logged in`}<br><select name=loggedin><option value=""><option value=yes>${await t`yes`}<option value=no>${await t`no`}</select></label>
+                <label>${await t`from`}<br><input type=datetime-local name=from></label>
+                <label>${await t`to`}<br><input type=datetime-local name=to></label>
+                <label><input type=checkbox name=not_my_client value=1> ${await t`not my client`}</label>
             </form>
         </div>
     </div>
 
     <div class=u2-card style="flex:0 0 auto; max-height:88vh; overflow:auto">
-        <div class=-head>${await node.app.t`Tools`}</div>
+        <div class=-head>${await t`Tools`}</div>
         <div class=-body style="flex-grow:0">
             ${message ? `<p>${message}</p><hr>` : ""}
             <table class=u2-table>
-                <tr><td>${await node.app.t`Entries`}<td style="text-align:right">${int(stats.rows)}
-                ${stats.mb == null ? "" : `<tr><td>${await node.app.t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
+                <tr><td>${await t`Entries`}<td style="text-align:right">${int(stats.rows)}
+                ${stats.mb == null ? "" : `<tr><td>${await t`Size`}<td style="text-align:right">${int(stats.mb)} MB`}
             </table>
             <hr>
             <form data-tool=clean_data>
-                <b>${await node.app.t`Delete POST data`}</b><br>
+                <b>${await t`Delete POST data`}</b><br>
                 <select name=before>${ageOptions(3)}</select><br>
-                <button style="width:100%">${await node.app.t`Delete POST data`}</button>
+                <button style="width:100%">${await t`Delete POST data`}</button>
             </form>
             <hr>
             <form data-tool=clean_items>
-                <b>${await node.app.t`Delete entries`}</b><br>
+                <b>${await t`Delete entries`}</b><br>
                 <select name=before>${ageOptions(3)}</select><br>
-                <label><input type=checkbox name=check_if_used value=1 checked> ${await node.app.t`keep if referenced`}</label><br>
-                <button style="width:100%">${await node.app.t`Delete entries`}</button>
+                <label><input type=checkbox name=check_if_used value=1 checked> ${await t`keep if referenced`}</label><br>
+                <button style="width:100%">${await t`Delete entries`}</button>
             </form>
             <hr>
-            <button data-reload='{"do":"optimize"}'>${await node.app.t`Optimize table`}</button>
+            <button data-reload='{"do":"optimize"}'>${await t`Optimize table`}</button>
         </div>
     </div>
 
@@ -273,10 +273,9 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; var
 
 // ── detail ──────────────────────────────────────────────────────────────────
 async function renderDetail(node: Node, id: number): Promise<string> {
-  // todo: const {t, db} = node.app;
-  const db = node.app.db;
+  const { t, db } = node.app;
   const ctx = getCtx();
-  if (!id) return `<div>${await node.app.t`Not found`}</div>`;
+  if (!id) return `<div>${await t`Not found`}</div>`;
 
   const log = await db.row`
     SELECT log.*, url.url AS url, referer.url AS referer, ip.ip AS ip, ua.user_agent AS user_agent
@@ -286,7 +285,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
         LEFT JOIN log_ip ip         ON log.ip_id         = ip.id
         LEFT JOIN log_user_agent ua ON log.user_agent_id = ua.id
      WHERE log.id = ${id}`;
-  if (!log) return `<div>${await node.app.t`Not found`}</div>`;
+  if (!log) return `<div>${await t`Not found`}</div>`;
 
   const sess = log.sess_id ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr = sess?.usr_id ? await db.row`SELECT * FROM usr WHERE id = ${sess.usr_id}` : null;
@@ -336,26 +335,26 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>Log ${id}</div>
         <table class=u2-table>
-            <tr><th>${await node.app.t`Request`}<td><a href="${hee(log.url ?? "")}" target=_blank>${hee(log.url ?? "")}</a><br><small>Referer <a href="${hee(log.referer ?? "")}" target=_blank>${hee(log.referer ?? "")}</a></small>
-            <tr><th>${await node.app.t`Browser`}<td>${hee(info.browser)} ${hee(info.version)} ${info.bot ? '<small class=u2-badge>bot</small>' : ""}<br><small>${hee(log.user_agent ?? "")}</small>
-            <tr><th>${await node.app.t`Time`}<td>${u2time(log.time)}
-            <tr><th style="color:${uniqueColor(log.ip)}">${await node.app.t`IP`}<td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}
-            <tr><th>${await node.app.t`Client`}<td><a href="${searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${hee(String(log.client_id ?? ""))}</a>
-            <tr><th>${await node.app.t`Session`}<td><a href="${searchLink(log.sess_id)}">${hee(String(log.sess_id ?? ""))}</a>
-            <tr><th>${await node.app.t`User`}<td>${usr ? `${hee((usr.firstname ?? "") + " " + (usr.lastname ?? ""))} <small>#${usr.id}</small><br><small>${hee(usr.email ?? "")}</small>` : "guest"}
+            <tr><th>${await t`Request`}<td><a href="${hee(log.url ?? "")}" target=_blank>${hee(log.url ?? "")}</a><br><small>Referer <a href="${hee(log.referer ?? "")}" target=_blank>${hee(log.referer ?? "")}</a></small>
+            <tr><th>${await t`Browser`}<td>${hee(info.browser)} ${hee(info.version)} ${info.bot ? '<small class=u2-badge>bot</small>' : ""}<br><small>${hee(log.user_agent ?? "")}</small>
+            <tr><th>${await t`Time`}<td>${u2time(log.time)}
+            <tr><th style="color:${uniqueColor(log.ip)}">${await t`IP`}<td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}
+            <tr><th>${await t`Client`}<td><a href="${searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${hee(String(log.client_id ?? ""))}</a>
+            <tr><th>${await t`Session`}<td><a href="${searchLink(log.sess_id)}">${hee(String(log.sess_id ?? ""))}</a>
+            <tr><th>${await t`User`}<td>${usr ? `${hee((usr.firstname ?? "") + " " + (usr.lastname ?? ""))} <small>#${usr.id}</small><br><small>${hee(usr.email ?? "")}</small>` : "guest"}
             <tr><th>POST<td><div style="max-width:40rem; max-height:30rem; overflow:auto">${dumpData(log.post)}</div>
         </table>
     </div>
 
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
-        <div class=-head>${await node.app.t`Relations`}</div>
-        <table class=u2-table><tbody style="vertical-align:top">${relations || `<tr><td>${await node.app.t`No entries`}`}</table>
+        <div class=-head>${await t`Relations`}</div>
+        <table class=u2-table><tbody style="vertical-align:top">${relations || `<tr><td>${await t`No entries`}`}</table>
     </div>
 
     <div class=u2-card style="flex:1 1 40rem; max-height:88vh; overflow:auto">
-        <div class=-head>${await node.app.t`History`}</div>
-        <div class=-body style="flex-grow:0">${await node.app.t`History of:`}
-            ${histLink("sess", await node.app.t`Session`)} | ${histLink("client", await node.app.t`Client`)} | ${histLink("ip", "IP")}</div>
+        <div class=-head>${await t`History`}</div>
+        <div class=-body style="flex-grow:0">${await t`History of:`}
+            ${histLink("sess", await t`Session`)} | ${histLink("client", await t`Client`)} | ${histLink("ip", "IP")}</div>
         <table class=u2-table><tbody style="vertical-align:top">${historyRows}</table>
     </div>
 </div>`;

@@ -25,11 +25,9 @@ export class DbTextManager {
   }
 
   clearCache(id?: number | string) {
-    if (id !== undefined) {
-      delete this.#cache[String(id)];
-    } else {
-      this.#cache = {};
-    }
+    const cache = scopeCache(this.#cache, "dbTexts", () => ({} as Record<string, DbText>));
+    if (id !== undefined) delete cache[String(id)];
+    else for (const k in cache) delete cache[k];
   }
 
   async generate(): Promise<DbText> {

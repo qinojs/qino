@@ -70,19 +70,21 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   const { html: tree, size: totalSize } = await buildTree(cacheDir, cacheDir.length);
-  const policy = fetchPolicy(await node.app.settings.uncdn.fetchPolicy);
-  const maxCacheBytes = cacheByteLimit(await node.app.settings.uncdn.maxCacheBytes);
+  const su = node.app.settings.uncdn;
+  const policy = fetchPolicy(await su.fetchPolicy);
+  const maxCacheBytes = cacheByteLimit(await su.maxCacheBytes);
 
+  const t = node.app.t;
   const [tCacheSize, tMaxCacheBytes, tFetchPolicy, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached] = await Promise.all([
-    node.app.t`Cache size`,
-    node.app.t`Max cache bytes`,
-    node.app.t`Fetch policy`,
-    node.app.t`Cache path`,
-    node.app.t`Actions`,
-    node.app.t`Delete all`,
-    node.app.t`Info`,
-    node.app.t`Cached files`,
-    node.app.t`No cached files yet.`,
+    t`Cache size`,
+    t`Max cache bytes`,
+    t`Fetch policy`,
+    t`Cache path`,
+    t`Actions`,
+    t`Delete all`,
+    t`Info`,
+    t`Cached files`,
+    t`No cached files yet.`,
   ]);
 
   return `<div class="u2-flex">

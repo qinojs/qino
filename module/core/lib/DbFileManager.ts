@@ -37,8 +37,9 @@ export class DbFileManager {
   }
 
   clearCache(id?: number | string) {
-    if (id !== undefined) delete this.#cache[String(id)];
-    else this.#cache = {};
+    const cache = scopeCache(this.#cache, "dbFiles", () => ({} as Record<string, DbFile>));
+    if (id !== undefined) delete cache[String(id)];
+    else for (const k in cache) delete cache[k];
   }
 
   async add(path?: string): Promise<DbFile> {

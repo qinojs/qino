@@ -39,8 +39,7 @@ function render(node: Node): Promise<string> {
 
 async function renderOverview(node: Node): Promise<string> {
   const ctx = getCtx();
-  const app = node.app;
-  const db = app.db;
+  const { t, db } = node.app;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const search = String(ctx.get.search ?? "").trim();
 
@@ -57,33 +56,33 @@ async function renderOverview(node: Node): Promise<string> {
   const superuserActions = isSuperuser ? `
     <form method=post style="display:inline">
       ${hiddenToken(ctx.token)}
-      <button name=delete_all u2-confirm="${hee(await app.t`Really delete all?`)}">${await app.t`Delete all`}</button>
+      <button name=delete_all u2-confirm="${hee(await t`Really delete all?`)}">${await t`Delete all`}</button>
     </form>
     <form method=post style="display:inline">
       ${hiddenToken(ctx.token)}
-      <button name=delete_before1year u2-confirm="${hee(await app.t`Really delete all older than 1 year?`)}">${await app.t`Delete older than 1 year`}</button>
+      <button name=delete_before1year u2-confirm="${hee(await t`Really delete all older than 1 year?`)}">${await t`Delete older than 1 year`}</button>
     </form>` : "";
 
   return `<div class=u2-card>
-  <div class=-head>${await app.t`E-Mails`}</div>
+  <div class=-head>${await t`E-Mails`}</div>
   <div class=-body>
-    ${await app.t`Maximum 1000 are shown.`}
+    ${await t`Maximum 1000 are shown.`}
     <form method=get style="margin-top:10px">
-      <input type=search name=search value="${hee(search)}" placeholder="${await app.t`Search...`}">
-      <button>${await app.t`Search`}</button>
+      <input type=search name=search value="${hee(search)}" placeholder="${await t`Search...`}">
+      <button>${await t`Search`}</button>
     </form>
     ${superuserActions ? `<div style="margin-top:10px">${superuserActions}</div>` : ""}
   </div>
   <div style="max-height:85vh; overflow:auto; padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead><tr>
-        <th>${await app.t`Created`}
-        <th>${await app.t`Subject`}
-        <th>${await app.t`Sender`}
-        <th>${await app.t`Recipient`}
-        <th>${await app.t`Sent`}
-        <th>${await app.t`Opened`}
-        <th>${await app.t`first time`}
+        <th>${await t`Created`}
+        <th>${await t`Subject`}
+        <th>${await t`Sender`}
+        <th>${await t`Recipient`}
+        <th>${await t`Sent`}
+        <th>${await t`Opened`}
+        <th>${await t`first time`}
       <tbody>${rows}
     </table>
   </div>
@@ -129,10 +128,9 @@ async function listRows(node: Node, search: string): Promise<string> {
 
 async function renderDetail(node: Node, id: number): Promise<string> {
   const ctx = getCtx();
-  const app = node.app;
-  const db = app.db;
+  const { t, db } = node.app;
   const row = await db.row`SELECT m.*, l.time FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE m.id=${id}`;
-  if (!row) return `<div class=u2-card><div class=-body>${await app.t`Mail does not exist.`}</div></div>`;
+  if (!row) return `<div class=u2-card><div class=-body>${await t`Mail does not exist.`}</div></div>`;
 
   if (ctx.post.qgToken === ctx.token) {
     const Mail = await node.app.mail.get(id);
@@ -152,20 +150,20 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   return `<div class=u2-flex>
   <div class=u2-card style="flex-basis:800px">
-    <div class=-head>${await app.t`Mail details`}</div>
+    <div class=-head>${await t`Mail details`}</div>
     <table class=u2-table>
-      <tr><td style="width:100px">${await app.t`Date`}<td>${u2time(row.time)} <small>${hee(row.log_id ?? "")}</small>
-      <tr><td>${await app.t`Subject`}<td>${hee(row.subject ?? "")}
-      <tr><td>${await app.t`Sender`}<td>${hee(row.sender ?? "")}
-      <tr><td>${await app.t`Reply to`}<td>${hee(row.reply_to ?? "")}
-      <tr><td>${await app.t`Send`}<td>
+      <tr><td style="width:100px">${await t`Date`}<td>${u2time(row.time)} <small>${hee(row.log_id ?? "")}</small>
+      <tr><td>${await t`Subject`}<td>${hee(row.subject ?? "")}
+      <tr><td>${await t`Sender`}<td>${hee(row.sender ?? "")}
+      <tr><td>${await t`Reply to`}<td>${hee(row.reply_to ?? "")}
+      <tr><td>${await t`Send`}<td>
         ${todo
-          ? `<form method=post style="display:inline">${hiddenToken(ctx.token)}<button name=send u2-confirm="${hee(await app.t`Send the e-mails?`)}">${await app.t`Send`} (${todo})</button></form>`
-          : await app.t`all sent`}
+          ? `<form method=post style="display:inline">${hiddenToken(ctx.token)}<button name=send u2-confirm="${hee(await t`Send the e-mails?`)}">${await t`Send`} (${todo})</button></form>`
+          : await t`all sent`}
         <form method=post style="display:inline; margin-left:10px">
           ${hiddenToken(ctx.token)}
-          <input type=email name=add_recipient placeholder="${await app.t`Add recipient`}">
-          <button>${await app.t`add`}</button>
+          <input type=email name=add_recipient placeholder="${await t`Add recipient`}">
+          <button>${await t`add`}</button>
         </form>
       <tr><td colspan=2 style="padding:10px">${preview}
     </table>
@@ -207,6 +205,7 @@ async function renderAttachments(node: Node, id: number): Promise<string> {
 }
 
 async function renderRecipients(node: Node, id: number): Promise<string> {
+  const t = node.app.t;
   const rows = await node.app.db.all`SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.email WHERE r.mail_id=${id} ORDER BY r.email`;
   const trs = rows.map(r => {
     const data = parseData(r.data);
@@ -220,10 +219,10 @@ async function renderRecipients(node: Node, id: number): Promise<string> {
       <td><div style="overflow:auto; max-height:60px; font-size:10px">${dataHtml}</div>`;
   }).join("");
   return `<div class=u2-card style="flex:1 1 500px">
-    <div class=-head>${await node.app.t`Recipients`}</div>
+    <div class=-head>${await t`Recipients`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">
-        <thead><tr><th>${await node.app.t`Recipient`}<th>${await node.app.t`Type`}<th>${await node.app.t`Sent`}<th>${await node.app.t`Opened`}<th>${await node.app.t`Error`}<th>${await node.app.t`Data`}
+        <thead><tr><th>${await t`Recipient`}<th>${await t`Type`}<th>${await t`Sent`}<th>${await t`Opened`}<th>${await t`Error`}<th>${await t`Data`}
         <tbody>${trs}
       </table>
     </div>
@@ -231,6 +230,7 @@ async function renderRecipients(node: Node, id: number): Promise<string> {
 }
 
 async function renderTracking(node: Node, id: number): Promise<string> {
+  const t = node.app.t;
   const rows = await node.app.db.all`
     SELECT t.url, count(t.id) num, max(t.time) last_time
     FROM mail1_track t
@@ -245,10 +245,10 @@ async function renderTracking(node: Node, id: number): Promise<string> {
     <td>${u2time(r.last_time)}
   `).join("");
   return `<div class=u2-card style="flex:1 1 500px">
-    <div class=-head>${await node.app.t`Tracking`}</div>
+    <div class=-head>${await t`Tracking`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">
-        <thead><tr><th>${await node.app.t`Link`}<th>${await node.app.t`Views`}<th>${await node.app.t`Last`}
+        <thead><tr><th>${await t`Link`}<th>${await t`Views`}<th>${await t`Last`}
         <tbody>${trs}
       </table>
     </div>
@@ -256,14 +256,15 @@ async function renderTracking(node: Node, id: number): Promise<string> {
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one`SELECT count(*) FROM mail`.catch(() => 0));
-  const unsent = Number(await app.db.one`SELECT count(*) FROM mail_recipient WHERE sent=0`.catch(() => 0));
-  const errors = Number(await app.db.one`SELECT count(*) FROM mail_recipient WHERE error!=''`.catch(() => 0));
+  const { t, db } = app;
+  const total = Number(await db.one`SELECT count(*) FROM mail`.catch(() => 0));
+  const unsent = Number(await db.one`SELECT count(*) FROM mail_recipient WHERE sent=0`.catch(() => 0));
+  const errors = Number(await db.one`SELECT count(*) FROM mail_recipient WHERE error!=''`.catch(() => 0));
   return `<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>${await app.t`Mails`}:<td>${hee(String(total))}
-  <tr><td>${await app.t`Pending`}:<td>${hee(String(unsent))}
-  <tr><td>${await app.t`Errors`}:<td>${hee(String(errors))}
+  <tr><td>${await t`Mails`}:<td>${hee(String(total))}
+  <tr><td>${await t`Pending`}:<td>${hee(String(unsent))}
+  <tr><td>${await t`Errors`}:<td>${hee(String(errors))}
 </table>
 </div>`;
 }

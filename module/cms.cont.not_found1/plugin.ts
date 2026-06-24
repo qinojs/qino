@@ -43,6 +43,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 
 async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   if (!node.edit) return "";
+  const t = node.app.t;
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
   if (ctx.cms.mainNode === await node.cms.nodeFromRequest?.()) return "";
 
@@ -54,17 +55,17 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
     const redirect = String(ctx.post.redirect ?? "").trim();
     if (redirect) {
       await node.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${ctx.appRequestPath}, ${redirect}) ON DUPLICATE KEY UPDATE redirect = ${redirect}`;
-      savedMsg = `<p style="color:green">${await node.app.t`Redirect saved.`}</p>`;
+      savedMsg = `<p style="color:green">${await t`Redirect saved.`}</p>`;
     }
   }
 
   return `<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:10px auto">
   ${savedMsg}
-  <div class=-head>${await node.app.t`Admin: define direct link to:`}</div>
+  <div class=-head>${await t`Admin: define direct link to:`}</div>
   <form class=-body method=post style="display:flex; margin:0">
     <input type=hidden name=qgToken value="${hee(ctx.token)}">
     <input type=qgcms-page name=redirect style="flex:1 1 auto; box-sizing:border-box; border-right:0">
-    <button name=setRedirect>${await node.app.t`ok`}</button>
+    <button name=setRedirect>${await t`ok`}</button>
   </form>
 </div>`;
 }

@@ -37,7 +37,7 @@ function makeFileHelper(ctx: RequestContext) {
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-    const db  = node.app.db;
+    const { t, db } = node.app;
     const ctx = getCtx();
     const get = ctx.get;
 
@@ -88,31 +88,31 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
     const tools = `
 <div class="u2-card" style="flex-grow:0">
-    <div class="-head">${await node.app.t`Tools`}</div>
+    <div class="-head">${await t`Tools`}</div>
     <div class="-body">
         ${order === "num_ip"
-            ? `<a href="${sortHref("max_id")}">${await node.app.t`sort by date`}</a><br>`
-            : `<a href="${sortHref("num_ip")}">${await node.app.t`sort by number of IPs`}</a><br>`}
+            ? `<a href="${sortHref("max_id")}">${await t`sort by date`}</a><br>`
+            : `<a href="${sortHref("num_ip")}">${await t`sort by number of IPs`}</a><br>`}
         <br>
-        ${await node.app.t`Delete`}:<br>
-        <button data-reload='{"delete":{"bot":"1","source":"404"}}'>${await node.app.t`404 and bots`}</button><br>
-        <button data-reload='{"delete":{"unsupported_ua":"1","source":"404"}}'>${await node.app.t`404 and old browsers`}</button><br>
-        <button data-reload='{"delete":{"referer":"","source":"404"}}'>${await node.app.t`404 no referer`}</button><br>
-        <button data-reload='{"delete":{"bot":"1","source":"js"}}'>${await node.app.t`js and bots`}</button><br>
-        <button data-reload='{"delete":{"unsupported_ua":"1","source":"js"}}'>${await node.app.t`js and old browsers`}</button><br>
-        <button data-reload='{"delete":{"file":"","source":"js"}}'>${await node.app.t`js no file`}</button><br>
-        <button data-reload='{"delete_foreign_js":true}'>${await node.app.t`js, foreign`}</button><br>
-        <button data-reload='{"delete":{"source":"404"}}'>${await node.app.t`delete 404`}</button><br>
-        <button data-reload='{"delete":{"source":"net"}}'>${await node.app.t`delete net`}</button><br>
-        <button data-reload='{"delete":{"source":"perf"}}'>${await node.app.t`delete perf`}</button><br>
-        <button data-reload='{"delete":{"prio":"notice","source":"csp"}}'>${await node.app.t`csp read-only`}</button><br>
-        <button data-reload='{"delete":{"prio":"notice"}}'>${await node.app.t`Notices`}</button><br>
-        <button data-reload='{"deleteAll":1}'>${await node.app.t`Delete all entries`}</button><br>
+        ${await t`Delete`}:<br>
+        <button data-reload='{"delete":{"bot":"1","source":"404"}}'>${await t`404 and bots`}</button><br>
+        <button data-reload='{"delete":{"unsupported_ua":"1","source":"404"}}'>${await t`404 and old browsers`}</button><br>
+        <button data-reload='{"delete":{"referer":"","source":"404"}}'>${await t`404 no referer`}</button><br>
+        <button data-reload='{"delete":{"bot":"1","source":"js"}}'>${await t`js and bots`}</button><br>
+        <button data-reload='{"delete":{"unsupported_ua":"1","source":"js"}}'>${await t`js and old browsers`}</button><br>
+        <button data-reload='{"delete":{"file":"","source":"js"}}'>${await t`js no file`}</button><br>
+        <button data-reload='{"delete_foreign_js":true}'>${await t`js, foreign`}</button><br>
+        <button data-reload='{"delete":{"source":"404"}}'>${await t`delete 404`}</button><br>
+        <button data-reload='{"delete":{"source":"net"}}'>${await t`delete net`}</button><br>
+        <button data-reload='{"delete":{"source":"perf"}}'>${await t`delete perf`}</button><br>
+        <button data-reload='{"delete":{"prio":"notice","source":"csp"}}'>${await t`csp read-only`}</button><br>
+        <button data-reload='{"delete":{"prio":"notice"}}'>${await t`Notices`}</button><br>
+        <button data-reload='{"deleteAll":1}'>${await t`Delete all entries`}</button><br>
     </div>
 </div>`;
 
     if (!rows.length && get.show !== "entries") {
-        return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">${await node.app.t`Great, no errors so far!`}</div></div></div>`;
+        return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">${await t`Great, no errors so far!`}</div></div></div>`;
     }
 
     if (get.show === "entries") {
@@ -167,7 +167,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 <div class="u2-flex">
     ${tools}
     <div class=u2-card style="max-height:88vh; overflow:auto; flex:1 1 80rem">
-        <div class=-head>${await node.app.t`Errors`}</div>
+        <div class=-head>${await t`Errors`}</div>
         <table class=u2-table>
             <tbody style="vertical-align:baseline">
                 ${tableRows}
@@ -236,13 +236,13 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
 }
 
 async function renderDetail(node: Node, id: number): Promise<string> {
-    const db  = node.app.db;
+    const { t, db } = node.app;
     const ctx = getCtx();
     const get = ctx.get as Record<string, string>;
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
     const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;
-    if (!error) return `<div>${await node.app.t`Error entry not found`}</div>`;
+    if (!error) return `<div>${await t`Error entry not found`}</div>`;
 
     const log  = error.log_id ? await db.row`SELECT * FROM log WHERE id = ${error.log_id}` : null;
     const sess = log?.sess_id  ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
@@ -316,7 +316,7 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
     return `
 <div class="u2-flex" style="font-size:.95em">
     <div class="u2-card" style="overflow:auto; width:auto; flex:1 1 20rem">
-        <div class="-head">${await node.app.t`Error`}</div>
+        <div class="-head">${await t`Error`}</div>
         <div class="-body">
             <p>
                 <span style="color:var(--red)">${hee(error.source)} ${hee(error.prio)}:</span>
@@ -325,13 +325,13 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
             ${fileBlock}
         </div>
         <table class="u2-table">
-            <tr><th>${await node.app.t`Id`}<td>${error.id}
-            <tr><th>${await node.app.t`Request`}<td>
+            <tr><th>${await t`Id`}<td>${error.id}
+            <tr><th>${await t`Request`}<td>
                 <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
-                <small>${await node.app.t`Referer`} <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
-            <tr><th>${await node.app.t`Browser`}<td><small>${hee(error.browser ?? "")}</small>
-            <tr><th>${await node.app.t`Time`}<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
-            <tr><th>${await node.app.t`IP`}<td>${hee(error.ip ?? "")}
+                <small>${await t`Referer`} <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
+            <tr><th>${await t`Browser`}<td><small>${hee(error.browser ?? "")}</small>
+            <tr><th>${await t`Time`}<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+            <tr><th>${await t`IP`}<td>${hee(error.ip ?? "")}
         </table>
         <div class="-body">
             ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
@@ -340,25 +340,25 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
     </div>
 
     <div class="u2-card" style="overflow:auto;">
-        <div class="-head">${await node.app.t`Backtrace`}</div>
+        <div class="-head">${await t`Backtrace`}</div>
         <table class="u2-table">
-            <thead><tr><th>${await node.app.t`File`}<th>${await node.app.t`Function`}<th>${await node.app.t`Arguments`}
+            <thead><tr><th>${await t`File`}<th>${await t`Function`}<th>${await t`Arguments`}
             <tbody>${btHtml}
         </table>
     </div>
 
     <div class="u2-card" style="overflow:auto;">
-        <div class="-head">${await node.app.t`User`}</div>
+        <div class="-head">${await t`User`}</div>
         <div class="-body">
-            ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : `(${await node.app.t`no user`})`}
+            ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : `(${await t`no user`})`}
         </div>
     </div>
 
     <div class="u2-card" style="overflow:auto;">
-        <div class="-head">${await node.app.t`History`}</div>
-        <div class="-body" style="flex-grow:0">${await node.app.t`History of:`} ${historyLinks}</div>
+        <div class="-head">${await t`History`}</div>
+        <div class="-body" style="flex-grow:0">${await t`History of:`} ${historyLinks}</div>
         <table class="u2-table">
-            <thead><tr><th>${await node.app.t`Time / Session`}<th>${await node.app.t`URL / Referer`}<th>${await node.app.t`POST`}
+            <thead><tr><th>${await t`Time / Session`}<th>${await t`URL / Referer`}<th>${await t`POST`}
             <tbody>${historyRows}
         </table>
     </div>

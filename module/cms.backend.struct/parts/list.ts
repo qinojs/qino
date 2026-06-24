@@ -3,6 +3,7 @@ import type { Node } from "../../cms/mod.ts";
 
 export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
+  const t = node.app.t;
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
@@ -61,7 +62,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       // Title cell
       let titleCell: string;
       if (subAccess < 1) {
-        titleCell = `<span style="flex:1; color:#bbb">(${await node.app.t`no access`})</span>`;
+        titleCell = `<span style="flex:1; color:#bbb">(${await t`no access`})</span>`;
       } else {
         const titleObj = await SubPage.title();
         const titleLang = titleObj ? await titleObj.orFallback(ctx!.lang) : null;
@@ -95,7 +96,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
       html += `
 <tr${isCont ? ' class=-isCont' : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${await node.app.t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
+    <a title="${await t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}
@@ -129,8 +130,8 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
     const ts = onlineEnd == null ? null : Number(onlineEnd);
     const iso = ts ? new Date(ts * 1000).toISOString() : "";
     const date = onlineEnd == null
-      ? await node.app.t`inherited`
-      : (ts === 0 ? await node.app.t`always` : `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
+      ? await t`inherited`
+      : (ts === 0 ? await t`always` : `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
 
     let badge = "";
     if (numNotInherit && access > 2) {
@@ -151,7 +152,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
   async function renderAccess(SubPage: Node, access: number, numNotInherit: number): Promise<string> {
     if (access === 0) return "---";
     const v = SubPage.vs.access;
-    const label = v == null ? await node.app.t`inherited` : (v ? await node.app.t`yes` : await node.app.t`no`);
+    const label = v == null ? await t`inherited` : (v ? await t`yes` : await t`no`);
     let badge = "";
     if (numNotInherit && access > 2) {
       badge = ` <span title="Contents where access is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
