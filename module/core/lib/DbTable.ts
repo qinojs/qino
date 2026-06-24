@@ -3,7 +3,7 @@
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { numTypes, type Db } from "./Db.ts";
-import { Sql, sql } from "../../../deps.ts";
+import { Sql, sql, isTemplate } from "../../../deps.ts";
 
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
@@ -284,9 +284,12 @@ export class DbTable {
     return entry;
   }
 
-  async selectEntries(str = ""): Promise<Record<string, DbEntry>> {
+  selectEntries(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, DbEntry>>;
+  selectEntries(tail?: Sql): Promise<Record<string, DbEntry>>;
+  async selectEntries(a?: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<Record<string, DbEntry>> {
+    const tail = a == null ? sql.raw("") : isTemplate(a) ? sql(a, ...rest) : a;
     const Es: Record<string, any> = {};
-    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} ${sql.raw(str)}`;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} ${tail}`;
     for (const row of rows) {
       const entry = this.entry(row);
       Es[String(entry)] = entry;
