@@ -1,4 +1,4 @@
-import { hee, type App } from "../core/mod.ts";
+import { hee, sql, type App } from "../core/mod.ts";
 import { getHealthTypes, type CheckResult, type Solution } from "./healthRegistry.ts";
 export { healthChecks } from "./healthChecks.ts";
 import statistic, { details as statisticDetails } from "./parts/statistic.ts";
@@ -103,7 +103,7 @@ async function render(node: Node): Promise<string> {
 
   // ── locales / time ─────────────────────────────────────────────────────
   const osIso   = new Date().toISOString();
-  const dbRaw   = await db.one(dbUtcNowSql(db.dialect));
+  const dbRaw   = await db.one(sql.raw(dbUtcNowSql(db.dialect)));
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
 <div class="u2-card">
@@ -171,7 +171,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     : `<span style="color:green">&#10003; ${await app.t`All OK`}</span>`;
 
   // DB top tables
-  const tables = await app.db.all("SHOW TABLE STATUS").catch(() => []);
+  const tables = await app.db.all`SHOW TABLE STATUS`.catch(() => []);
   tables.sort((a, b) => ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0)));
   const dbRows = tables.slice(0, 3).map((t) => {
     const size = (t.Data_length ?? 0) + (t.Index_length ?? 0);
@@ -245,7 +245,7 @@ function renderDbBox(node: Node): Promise<string> {
 async function mysqlBox(node: Node): Promise<string> {
   const db = node.app.db;
   const relevant = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
-  const vars = await db.all("SHOW VARIABLES");
+  const vars = await db.all`SHOW VARIABLES`;
   const map = new Map(vars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
   const fmt = (name: string, value: string) =>
     (name === "max_allowed_packet" || name === "innodb_buffer_pool_size")
@@ -257,7 +257,7 @@ async function mysqlBox(node: Node): Promise<string> {
 async function postgresBox(node: Node): Promise<string> {
   const db = node.app.db;
   const names = ["server_version", "max_connections", "shared_buffers", "work_mem"];
-  const rows = await db.all(`SELECT name, setting, unit FROM pg_settings WHERE name IN (${names.map(() => "?").join(",")}) ORDER BY name`, names);
+  const rows = await db.all`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(names.map((n) => sql`${n}`))}) ORDER BY name`;
   const body = rows.map((r: Record<string, string>) => `<tr><td>${hee(r.name)}<td>${hee(r.setting + (r.unit ? " " + r.unit : ""))}`).join("");
   return dbCard("PostgreSQL", body);
 }
@@ -265,9 +265,9 @@ async function postgresBox(node: Node): Promise<string> {
 async function sqliteBox(node: Node): Promise<string> {
   const db = node.app.db;
   const pragmas = ["journal_mode", "page_size", "foreign_keys"];
-  let rows = `<tr><td>version<td>${hee(String(await db.one("SELECT sqlite_version()") ?? ""))}`;
+  let rows = `<tr><td>version<td>${hee(String(await db.one`SELECT sqlite_version()` ?? ""))}`;
   for (const p of pragmas) {
-    const r = await db.row(`PRAGMA ${p}`);
+    const r = await db.row`PRAGMA ${sql.raw(p)}`;
     rows += `<tr><td>${hee(p)}<td>${hee(String(r ? Object.values(r)[0] : ""))}`;
   }
   return dbCard("SQLite", rows);
@@ -276,16 +276,16 @@ async function sqliteBox(node: Node): Promise<string> {
 async function dbDetails(node: Node): Promise<string> {
   const db = node.app.db;
   if (db.dialect === "postgres") {
-    const rows = await db.all("SELECT name, setting FROM pg_settings ORDER BY name");
+    const rows = await db.all`SELECT name, setting FROM pg_settings ORDER BY name`;
     return kvTable(rows.map((r: Record<string, string>) => [r.name, String(r.setting)]));
   }
   if (db.dialect === "sqlite") {
     const pragmas = ["journal_mode", "page_size", "cache_size", "foreign_keys", "synchronous", "auto_vacuum"];
     const rows: [string, string][] = [];
-    for (const p of pragmas) { const r = await db.row(`PRAGMA ${p}`); rows.push([p, String(r ? Object.values(r)[0] : "")]); }
+    for (const p of pragmas) { const r = await db.row`PRAGMA ${sql.raw(p)}`; rows.push([p, String(r ? Object.values(r)[0] : "")]); }
     return kvTable(rows);
   }
-  const vars = await db.all("SHOW VARIABLES");
+  const vars = await db.all`SHOW VARIABLES`;
   return kvTable(vars.map((r: Record<string, string>) => [r.Variable_name, String(r.Value)]));
 }
 

@@ -1,3 +1,4 @@
+import { sql, Sql } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<string> {
@@ -5,27 +6,24 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   const db = app.db;
   const hasMany = vars.hasMany ?? true;
   const search  = vars.param?.search ?? "";
-  const params: unknown[] = [String(node)];
-
-  let sql = ` SELECT usr.*, a.access
-    FROM usr
-    LEFT JOIN page_access_usr a ON usr.id = a.usr_id AND a.page_id = ?
-    WHERE true `;
-
+  let tail: Sql;
   if (!hasMany) {
-    sql += " ORDER BY a.access DESC ";
+    tail = sql` ORDER BY a.access DESC `;
   } else if (search) {
-    sql += ` AND (usr.lastname LIKE ? OR usr.firstname LIKE ? OR usr.email LIKE ?)
-      ORDER BY usr.firstname = ? DESC, usr.lastname = ? DESC, usr.email = ? DESC,
-               usr.firstname LIKE ? DESC, usr.lastname LIKE ? DESC, usr.email LIKE ? DESC,
-               usr.firstname LIKE ? DESC, usr.lastname LIKE ? DESC, usr.email LIKE ? DESC `;
-    params.push("%" + search + "%", "%" + search + "%", "%" + search + "%", search, search, search, search + "%", search + "%", search + "%", "%" + search + "%", "%" + search + "%", "%" + search + "%");
+    const pre = search + "%", like = "%" + search + "%";
+    tail = sql` AND (usr.lastname LIKE ${like} OR usr.firstname LIKE ${like} OR usr.email LIKE ${like})
+      ORDER BY usr.firstname = ${search} DESC, usr.lastname = ${search} DESC, usr.email = ${search} DESC,
+               usr.firstname LIKE ${pre} DESC, usr.lastname LIKE ${pre} DESC, usr.email LIKE ${pre} DESC,
+               usr.firstname LIKE ${like} DESC, usr.lastname LIKE ${like} DESC, usr.email LIKE ${like} DESC `;
   } else {
-    sql += " AND NOT ISNULL(a.access) ORDER BY a.access DESC ";
+    tail = sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC `;
   }
-  sql += ", usr.firstname LIMIT 100";
 
-  const rows = await db.all(sql, params);
+  const rows = await db.all`
+    SELECT usr.*, a.access
+    FROM usr
+    LEFT JOIN page_access_usr a ON usr.id = a.usr_id AND a.page_id = ${String(node)}
+    WHERE true ${tail}, usr.firstname LIMIT 100`;
   let trs = "";
   for (const vs of rows) {
     trs += `<tr>

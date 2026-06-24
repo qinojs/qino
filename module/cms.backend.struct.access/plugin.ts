@@ -12,7 +12,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 /** Groups that participate in page access (grp.page_access flag). */
 function accessGroups(app: App): Promise<Record<string, string | number>[]> {
-  return app.db.all("SELECT id, name FROM grp WHERE page_access ORDER BY name");
+  return app.db.all`SELECT id, name FROM grp WHERE page_access ORDER BY name`;
 }
 
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
@@ -146,10 +146,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
 async function pageGroupAccess(db: App["db"], page: Node, groups: Record<string, string | number>[]): Promise<Record<string, number>> {
   const ret: Record<string, number> = {};
   if (!groups.length) return ret;
-  const rows = await db.all(
-    "SELECT grp_id, access FROM page_access_grp WHERE page_id = ?",
-    [String(page)],
-  );
+  const rows = await db.all`SELECT grp_id, access FROM page_access_grp WHERE page_id = ${String(page)}`;
   for (const r of rows) ret[String(r.grp_id)] = Number(r.access) || 0;
   return ret;
 }

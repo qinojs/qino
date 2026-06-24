@@ -4,7 +4,7 @@
 // _vers_* shadow tables and (space,log)-views.
 // History capture lives in History.ts, space handling in Spaces.ts.
 
-import type { RequestContext, App, Db } from "../../core/mod.ts";
+import { sql, type RequestContext, type App, type Db } from "../../core/mod.ts";
 
 // ─── Per-Db state ────────────────────────────────────────────────────────────
 // Keyed by Db instance — module globals would leak between App instances (multi-tenant).
@@ -157,8 +157,8 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
           `AND ${pkJoins.join(" AND ")} LIMIT 1 )`
         : `m._vers_space = ${space} AND m._vers_log = 0`;
 
-    await db.query(`DROP VIEW IF EXISTS \`${name}\``);
-    await db.query(head + where);
+    await db.query`DROP VIEW IF EXISTS ${sql.id(name)}`;
+    await db.query(sql.raw(head + where));
 }
 
 // ─── Baseline ────────────────────────────────────────────────────────────────
@@ -175,11 +175,10 @@ async function baselineTable(db: Db, tableName: string, vt: string, logId: numbe
     // Map values onto the shadow's own column order (not positional t.*,…), so it stays
     // correct even when the shadow's column order has diverged from the live table.
     const selects = (await db.columns(vt)).map((c: any) =>
-        c.Field === "_vers_log" ? `${logId}` : c.Field.startsWith("_vers_") ? "0" : `t.\`${c.Field}\``);
-    await db.query(
-        `INSERT INTO \`${vt}\` SELECT ${selects.join(", ")} FROM \`${tableName}\` t ` +
-        `WHERE NOT EXISTS (SELECT 1 FROM \`${vt}\` v WHERE v._vers_space = 0 AND ${join})`,
-    );
+        c.Field === "_vers_log" ? sql`${logId}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql`t.${sql.id(c.Field)}`);
+    await db.query`
+        INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} t
+        WHERE NOT EXISTS (SELECT 1 FROM ${sql.id(vt)} v WHERE v._vers_space = 0 AND ${sql.raw(join)})`;
     dbState(db).baselined.add(vt);
 }
 

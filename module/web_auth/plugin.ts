@@ -37,17 +37,14 @@ async function getRp(app: App): Promise<{ rpId: string; rpName: string; expected
 async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
   const token = randB64(24);
   await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: now() + CHALLENGE_TTL });
-  await db.exec("DELETE FROM web_auth_challenge WHERE expires < ?", [now()]);
+  await db.exec`DELETE FROM web_auth_challenge WHERE expires < ${now()}`;
   return token;
 }
 
 async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
-  const row = await db.row(
-    "SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ? AND type = ? AND expires > ?",
-    [token, type, now()],
-  );
+  const row = await db.row`SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ${token} AND type = ${type} AND expires > ${now()}`;
   if (!row) return null;
-  await db.exec("DELETE FROM web_auth_challenge WHERE token = ?", [token]);
+  await db.exec`DELETE FROM web_auth_challenge WHERE token = ${token}`;
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
@@ -57,7 +54,7 @@ async function verifyAssertion(
   expectedChallenge: string,
   requireUserVerification: boolean,
 ): Promise<{ ok: false; error: string } | { ok: true; cred: any; newCounter: number }> {
-  const cred = await app.db.row("SELECT * FROM web_auth_credential WHERE credential_id = ?", [credentialId]);
+  const cred = await app.db.row`SELECT * FROM web_auth_credential WHERE credential_id = ${credentialId}`;
   if (!cred) return { ok: false, error: "credential_not_found" };
 
   const { rpId, expectedOrigin } = await getRp(app);
@@ -100,7 +97,7 @@ export const api: AptTree = {
           const { rpId, rpName } = await getRp(ctx.app);
           const challenge = randB64(32);
           const token     = await storeChallenge(ctx.app.db, challenge, ctx.userId, "register");
-          const usr       = await ctx.app.db.row("SELECT email, firstname, lastname FROM usr WHERE id = ?", [ctx.userId]);
+          const usr       = await ctx.app.db.row`SELECT email, firstname, lastname FROM usr WHERE id = ${ctx.userId}`;
           return {
             token,
             publicKey: {
@@ -163,7 +160,7 @@ export const api: AptTree = {
           const { credential, aaguid } = verification.registrationInfo;
           const credId = credential.id as string;
 
-          if (await ctx.app.db.one("SELECT id FROM web_auth_credential WHERE credential_id = ?", [credId])) {
+          if (await ctx.app.db.one`SELECT id FROM web_auth_credential WHERE credential_id = ${credId}`) {
             return { ok: false, error: "already_registered" };
           }
 
@@ -197,10 +194,10 @@ export const api: AptTree = {
           const allowCredentials: unknown[] = [];
 
           if (email) {
-            const usr = await ctx.app.db.row("SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(?) AND active = 1", [String(email).trim()]);
+            const usr = await ctx.app.db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = 1`;
             if (usr) {
               usrId = Number(usr.id);
-              const creds = await ctx.app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [usrId]);
+              const creds = await ctx.app.db.all`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             }
           }
@@ -241,9 +238,9 @@ export const api: AptTree = {
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
-          if (!(await ctx.app.db.row("SELECT id FROM usr WHERE id = ? AND active = 1", [usrId]))) return { ok: false, error: "user_inactive" };
+          if (!(await ctx.app.db.row`SELECT id FROM usr WHERE id = ${usrId} AND active = 1`)) return { ok: false, error: "user_inactive" };
 
-          await ctx.app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
+          await ctx.app.db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${now()} WHERE id = ${r.cred.id}`;
 
           await login(ctx, usrId);
           ctx.app.sessions.setCookie(ctx);
@@ -263,7 +260,7 @@ export const api: AptTree = {
           const ctx = getCtx();
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const creds = await ctx.app.db.all("SELECT credential_id FROM web_auth_credential WHERE usr_id = ?", [ctx.userId]);
+          const creds = await ctx.app.db.all`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${ctx.userId}`;
           const token = await storeChallenge(ctx.app.db, challenge, ctx.userId, "confirm");
           return {
             token,
@@ -299,7 +296,7 @@ export const api: AptTree = {
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          await ctx.app.db.exec("UPDATE web_auth_credential SET sign_count = ?, last_used = ? WHERE id = ?", [r.newCounter, now(), r.cred.id]);
+          await ctx.app.db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${now()} WHERE id = ${r.cred.id}`;
           ctx.sess.data.web_auth_confirmed(now());
           return { ok: true };
         },
@@ -313,10 +310,7 @@ export const api: AptTree = {
       access: Access.USER,
       execute: async () => {
         const ctx  = getCtx();
-        const rows = await ctx.app.db.all(
-          "SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ? ORDER BY created DESC",
-          [ctx.userId],
-        );
+        const rows = await ctx.app.db.all`SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
         return rows.map((r: any) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
       },
     },
@@ -330,10 +324,10 @@ export const api: AptTree = {
         access: Access.USER,
         execute: async ({ credId }: any) => {
           const ctx  = getCtx();
-          const cred = await ctx.app.db.row("SELECT usr_id FROM web_auth_credential WHERE id = ?", [credId]);
+          const cred = await ctx.app.db.row`SELECT usr_id FROM web_auth_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
           if (Number(cred.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
-          await ctx.app.db.exec("DELETE FROM web_auth_credential WHERE id = ?", [credId]);
+          await ctx.app.db.exec`DELETE FROM web_auth_credential WHERE id = ${credId}`;
           return { ok: true };
         },
       },

@@ -16,16 +16,15 @@ async function render(node: Node): Promise<string> {
 
   if ("delete_cred" in ctx.post && ctx.post.token === ctx.token) {
     const id = Number(ctx.post.delete_cred ?? "0");
-    if (id) await db.exec("DELETE FROM web_auth_credential WHERE id = ?", [id]);
+    if (id) await db.exec`DELETE FROM web_auth_credential WHERE id = ${id}`;
   }
 
-  const rows = await db.all(`
+  const rows = await db.all`
     SELECT wac.id, wac.name, wac.aaguid, wac.sign_count, wac.created, wac.last_used, wac.credential_id,
            u.id AS usr_id, u.email, u.firstname, u.lastname
     FROM web_auth_credential wac
     LEFT JOIN usr u ON u.id = wac.usr_id
-    ORDER BY wac.last_used DESC LIMIT 500
-  `);
+    ORDER BY wac.last_used DESC LIMIT 500`;
 
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const tableRows = rows.map((r) => {

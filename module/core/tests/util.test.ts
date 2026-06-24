@@ -10,6 +10,7 @@ import {
 } from "../lib/util.ts";
 import { RequestContext } from "../lib/RequestContext.ts";
 import { App } from "../lib/App.ts";
+import { fakeRender } from "./sqlFake.ts";
 
 Deno.test("util: hee escapes HTML-sensitive characters", () => {
   assertEquals(hee(`<a href="x&y">'ok'</a>`), "&lt;a href=&quot;x&amp;y&quot;&gt;&#039;ok&#039;&lt;/a&gt;");
@@ -53,9 +54,10 @@ Deno.test("util: small string helpers", () => {
 
 Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   const res = sqlSearchHelper(" alpha beta gamma delta epsilon ", ["title", "body"]);
-  assertEquals(res.where, "(title LIKE ? OR body LIKE ?) AND (title LIKE ? OR body LIKE ?) AND (title LIKE ? OR body LIKE ?) AND (title LIKE ? OR body LIKE ?)");
-  assertEquals(res.whereParams, ["%alpha%", "%alpha%", "%beta%", "%beta%", "%gamma%", "%gamma%", "%delta%", "%delta%"]);
-  assertEquals(res.orderParams, ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
+  const [whereSql, whereParams] = fakeRender(res.where, []);
+  assertEquals(whereSql, "(`title` LIKE ? OR `body` LIKE ?) AND (`title` LIKE ? OR `body` LIKE ?) AND (`title` LIKE ? OR `body` LIKE ?) AND (`title` LIKE ? OR `body` LIKE ?)");
+  assertEquals(whereParams, ["%alpha%", "%alpha%", "%beta%", "%beta%", "%gamma%", "%gamma%", "%delta%", "%delta%"]);
+  assertEquals(fakeRender(res.order, [])[1], ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
 });
 
 Deno.test("util: ctx.urlToLocalPath maps module and qg public files", () => {

@@ -56,9 +56,9 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
   const now = Math.floor(Date.now() / 1000);
-  const total   = Number(await db.one("SELECT count(*) FROM page WHERE type='p'"));
-  const offline = Number(await db.one(`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`));
-  const hidden  = Number(await db.one("SELECT count(*) FROM page WHERE type='p' AND visible=0"));
+  const total   = Number(await db.one`SELECT count(*) FROM page WHERE type='p'`);
+  const offline = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`);
+  const hidden  = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND visible=0`);
   return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
   <tr><td>${await app.t`Pages total`}:<td>${hee(String(total))}

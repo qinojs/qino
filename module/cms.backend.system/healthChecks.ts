@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, getCtx } from "../core/mod.ts";
+import { hee, getCtx, sql } from "../core/mod.ts";
 import type { HealthTypes, Solution } from "./healthRegistry.ts";
 
 export async function healthChecks(app: any): Promise<HealthTypes> {
@@ -12,24 +12,22 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   const { error, warning, notice, cleanup } = types;
 
   // ── duplicate settings ──────────────────────────────────────────────────
-  const dupRows = await db.all(
-    "SELECT `offset`, basis, count(id) as count FROM qg_setting GROUP BY basis, `offset` HAVING count(id) > 1"
-  );
+  const dupRows = await db.all`SELECT ${sql.id("offset")}, basis, count(id) as count FROM qg_setting GROUP BY basis, ${sql.id("offset")} HAVING count(id) > 1`;
   for (const row of dupRows) {
     const { basis, offset } = row;
     warning[`duplicate settings "${offset}" basis:${basis}`] = async () => {
       const solutions: Record<string, Solution> = {
         "remove all without value": {
           solve: async () => {
-            await db.query("DELETE FROM qg_setting WHERE basis=? AND `offset` = ? AND value = ''", [basis, offset]);
+            await db.query`DELETE FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset} AND value = ''`;
           },
         },
       };
-      const rows = await db.all("SELECT * FROM qg_setting WHERE basis=? AND `offset` = ?", [basis, offset]);
+      const rows = await db.all`SELECT * FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset}`;
       for (const r of rows) {
-        const countChilds = await db.one("SELECT count(*) FROM qg_setting WHERE basis=?", [r.id]);
+        const countChilds = await db.one`SELECT count(*) FROM qg_setting WHERE basis=${r.id}`;
         solutions[`remove ${r.id} value:"${r.value}" childs:${countChilds}`] = {
-          solve: async () => { await db.query("DELETE FROM qg_setting WHERE id = ?", [r.id]); },
+          solve: async () => { await db.query`DELETE FROM qg_setting WHERE id = ${r.id}`; },
         };
       }
       return { solutions };
@@ -39,7 +37,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   // ── superuser default password ──────────────────────────────────────────
   const { compare } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
   error["superuser default password"] = async () => {
-    const usrs = await db.all("SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20");
+    const usrs = await db.all`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20`;
     const found: typeof usrs = [];
     let info = "";
     for (const row of usrs) {
@@ -53,8 +51,8 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
     return {
       info: info + " only the first 20 were checked",
       solutions: {
-        "remove pw":   { solve: async () => { for (const r of found) await db.query("UPDATE usr SET pw='' WHERE id=?", [r.id]); } },
-        "remove user": { solve: async () => { for (const r of found) await db.query("DELETE FROM usr WHERE id=?", [r.id]); } },
+        "remove pw":   { solve: async () => { for (const r of found) await db.query`UPDATE usr SET pw='' WHERE id=${r.id}`; } },
+        "remove user": { solve: async () => { for (const r of found) await db.query`DELETE FROM usr WHERE id=${r.id}`; } },
       },
     };
   };
@@ -74,9 +72,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
 
   // ── users ────────────────────────────────────────────────────────────────
   warning["users with old password-hash"] = async () => {
-    const usrs = await db.col(
-      "SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000"
-    );
+    const usrs = await db.col`SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
     if (!usrs.length) return undefined;
     return { info: usrs.map((e: string) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
   };
@@ -99,7 +95,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
 
   // ── db-time vs os-time ───────────────────────────────────────────────────
   notice["db-time unlike os-time"] = async () => {
-    const dbTime = Number(await db.one("SELECT UNIX_TIMESTAMP() as time"));
+    const dbTime = Number(await db.one`SELECT UNIX_TIMESTAMP() as time`);
     const osTime = Math.floor(Date.now() / 1000);
     if (dbTime === osTime) return undefined;
     return { info: `db: ${new Date(dbTime * 1000).toISOString()}<br>os: ${new Date(osTime * 1000).toISOString()}` };
@@ -107,9 +103,9 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
 
   // ── texts with no lang ───────────────────────────────────────────────────
   notice["texts with no lang"] = async () => {
-    const num = Number(await db.one("SELECT count(*) FROM text WHERE lang = ''"));
+    const num = Number(await db.one`SELECT count(*) FROM text WHERE lang = ''`);
     if (!num) return undefined;
-    return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.query("DELETE FROM text WHERE lang = ''"); } } } };
+    return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.query`DELETE FROM text WHERE lang = ''`; } } } };
   };
 
   // ── orphaned settings ────────────────────────────────────────────────────
@@ -178,19 +174,19 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
           const monthAgo = Math.floor((Date.now() / 1000) - 60 * 60 * 24 * 30);
           let msg = "";
 
-          const logRes = await db.exec("DELETE FROM log WHERE time < ? LIMIT 1000000", [monthAgo]);
-          await db.query("OPTIMIZE TABLE log");
+          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} LIMIT 1000000`;
+          await db.query`OPTIMIZE TABLE log`;
           msg += logRes.affectedRows + " log-rows deleted\n";
 
-          const clientRes = await db.exec("DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL) LIMIT 1000000");
-          await db.query("OPTIMIZE TABLE client");
+          const clientRes = await db.exec`DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL) LIMIT 1000000`;
+          await db.query`OPTIMIZE TABLE client`;
           msg += clientRes.affectedRows + " client-rows deleted\n";
 
-          const sessClearRes = await db.exec("UPDATE sess SET token = NULL, data = '' WHERE access < ? AND token IS NOT NULL LIMIT 1000000", [monthAgo]);
+          const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${monthAgo} AND token IS NOT NULL LIMIT 1000000`;
           msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
 
-          const sessRes = await db.exec("DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL) LIMIT 1000000");
-          await db.query("OPTIMIZE TABLE sess");
+          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL) LIMIT 1000000`;
+          await db.query`OPTIMIZE TABLE sess`;
           msg += sessRes.affectedRows + " sess-rows deleted\n";
 
           msg += "duration: " + ((Date.now() - start) / 1000).toFixed(2) + " seconds";
@@ -203,16 +199,16 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   cleanup["not linked texts"] = async () => {
     const children = app.db.table("text").children;
     if (!children.length) return undefined;
-    const where = children.map((f: any) => `id NOT IN (SELECT DISTINCT ${f.name} FROM ${f.table} WHERE ${f.name} IS NOT NULL)`).join(" AND ");
-    const count = Number(await db.one(`SELECT count(DISTINCT id) FROM text WHERE ${where}`));
+    const where = sql.join(children.map((f: any) => sql`id NOT IN (SELECT DISTINCT ${sql.id(String(f.name))} FROM ${sql.id(String(f.table))} WHERE ${sql.id(String(f.name))} IS NOT NULL)`), " AND ");
+    const count = Number(await db.one`SELECT count(DISTINCT id) FROM text WHERE ${where}`);
     if (!count) return undefined;
     return {
       info: "found " + count,
       solutions: {
         run: {
           solve: async () => {
-            const res = await db.exec(`DELETE FROM text WHERE ${where} ORDER BY id DESC LIMIT 1000000`);
-            await db.query("OPTIMIZE TABLE text");
+            const res = await db.exec`DELETE FROM text WHERE ${where} ORDER BY id DESC LIMIT 1000000`;
+            await db.query`OPTIMIZE TABLE text`;
             return res.affectedRows + " rows deleted\n";
           },
         },

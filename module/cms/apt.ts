@@ -212,7 +212,7 @@ const node = {
       }),
       execute: async ({ node, module, recursive }: any) => {
         const ctx = getCtx();
-        const access = await ctx.app.db.one("SELECT access FROM module WHERE name = ?", [module]);
+        const access = await ctx.app.db.one`SELECT access FROM module WHERE name = ${module}`;
         if (!access && !(await ctx.user?.get("superuser"))) {
           throw new AccessError();
         }
@@ -520,10 +520,7 @@ const node = {
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any) => {
         if (await fns.cmsRequestUsed(url)) throw new Error("URL already in use");
-        await getCtx().app.db.query(
-          "INSERT INTO page_redirect SET request = ?, redirect = ?",
-          [url, node.id],
-        );
+        await getCtx().app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${url}, ${node.id})`;
         return { ok: true };
       },
     },
@@ -533,10 +530,7 @@ const node = {
       access: nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any) => {
-        await getCtx().app.db.query(
-          "DELETE FROM page_redirect WHERE request = ? AND redirect = ?",
-          [url, node.id],
-        );
+        await getCtx().app.db.query`DELETE FROM page_redirect WHERE request = ${url} AND redirect = ${node.id}`;
         return { ok: true };
       },
     },
@@ -657,14 +651,9 @@ export const api = {
       input: s.object({ id: s.number() }),
       execute: async ({ id }: any) => {
         const db = getCtx().app.db;
-        const pid = await db.one(
-          "SELECT page_id FROM page_text WHERE text_id = ?",
-          [id],
-        );
+        const pid = await db.one`SELECT page_id FROM page_text WHERE text_id = ${id}`;
         if (pid) return { id: pid };
-        const pid2 = await db.one("SELECT id FROM page WHERE title_id = ?", [
-          id,
-        ]);
+        const pid2 = await db.one`SELECT id FROM page WHERE title_id = ${id}`;
         if (pid2) return { id: pid2 };
         throw new NotFoundError(`no page for text_id ${id}`);
       },
@@ -682,7 +671,7 @@ export const api = {
           const ctx = getCtx();
           const db = ctx.app.db;
           const lang_ = lang ?? ctx.lang;
-          const row = await db.row("SELECT name, page_id FROM page_text WHERE text_id = ?",[id]);
+          const row = await db.row`SELECT name, page_id FROM page_text WHERE text_id = ${id}`;
           if (row) {
             const n = await ctx.app.cms.node(row.page_id);
             if (!n.is()) throw new NotFoundError();
@@ -690,7 +679,7 @@ export const api = {
             const changed = await n.text(row.name, lang_, value);
             return { changed: changed !== false, kind: "text" };
           }
-          const pid = await db.one("SELECT id FROM page WHERE title_id = ?", [id]);
+          const pid = await db.one`SELECT id FROM page WHERE title_id = ${id}`;
           if (pid) {
             const n = await ctx.app.cms.node(Number(pid));
             if (!n.is()) throw new NotFoundError();

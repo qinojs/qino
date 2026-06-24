@@ -1,3 +1,4 @@
+import { sql, type Sql } from "./sql.ts";
 
 /** Single source of truth for the u2 CDN root (version pin). */
 export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/";
@@ -102,23 +103,20 @@ export function urlize(str: string): string {
 export function sqlSearchHelper(
   search: string,
   fields: string[],
-): { where: string; order: string; whereParams: string[]; orderParams: string[] } {
+): { where: Sql; order: Sql } {
   const searches = (search ?? "").trim().split(/\s+/).slice(0, 4).filter(Boolean);
   if (!searches.length || !fields.length) {
-    return { where: "1", order: "1", whereParams: [], orderParams: [] };
+    return { where: sql.raw("1"), order: sql.raw("1") };
   }
-  const wheres: string[] = [];
-  const orders: string[] = [];
-  const whereParams: string[] = [];
-  const orderParams: string[] = [];
+  const wheres: Sql[] = [];
+  const orders: Sql[] = [];
   for (const s of searches) {
-    wheres.push("(" + fields.map((f) => `${f} LIKE ?`).join(" OR ") + ")");
-    for (const _f of fields) whereParams.push(`%${s}%`);
+    wheres.push(sql`(${sql.join(fields.map((f) => sql`${sql.id(f)} LIKE ${"%" + s + "%"}`), " OR ")})`);
   }
   for (const s of searches) {
-    for (const f of fields) { orders.push(`${f} LIKE ? DESC`); orderParams.push(`${s}%`); }
+    for (const f of fields) orders.push(sql`${sql.id(f)} LIKE ${s + "%"} DESC`);
   }
-  return { where: wheres.join(" AND "), order: orders.join(", "), whereParams, orderParams };
+  return { where: sql.join(wheres, " AND "), order: sql.join(orders, ", ") };
 }
 
 /**

@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
+import { sql } from "../core/mod.ts";
 import { versedTables, view } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
@@ -27,16 +28,14 @@ export async function getForNode(ctx: any, pid: any): Promise<any[]> {
 
 export async function logDetails(ctx: any, id: any): Promise<any> {
     id = Number(id);
-    const row = await ctx.app.db.row(
-        " SELECT log.time, log.post, log_ip.ip, log_user_agent.user_agent, usr.email " +
-        " FROM log " +
-        "   LEFT JOIN log_ip           ON log.ip_id         = log_ip.id " +
-        "   LEFT JOIN log_user_agent   ON log.user_agent_id = log_user_agent.id " +
-        "   LEFT JOIN sess             ON log.sess_id       = sess.id " +
-        "   LEFT JOIN usr              ON sess.usr_id       = usr.id " +
-        " WHERE log.id = ?",
-        [id]
-    );
+    const row = await ctx.app.db.row`
+        SELECT log.time, log.post, log_ip.ip, log_user_agent.user_agent, usr.email
+        FROM log
+          LEFT JOIN log_ip           ON log.ip_id         = log_ip.id
+          LEFT JOIN log_user_agent   ON log.user_agent_id = log_user_agent.id
+          LEFT JOIN sess             ON log.sess_id       = sess.id
+          LEFT JOIN usr              ON sess.usr_id       = usr.id
+        WHERE log.id = ${id}`;
     if (!row) return null;
 
     const safeJson = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
@@ -92,19 +91,13 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
             const args = call.args ?? [];
             if (ignoreFn[fn]) continue;
             if (fn === "cms::setTxt") {
-                const vs = await ctx.app.db.row(
-                    `SELECT name, page_id FROM _vers_page_text WHERE text_id = ? AND _vers_space = ?`,
-                    [Number(args[0]), getCmsVers(ctx).space]
-                ) ?? await ctx.app.db.row(
-                    `SELECT name, page_id FROM page_text WHERE text_id = ?`, [Number(args[0])]
-                );
+                const vs = await ctx.app.db.row`SELECT name, page_id FROM _vers_page_text WHERE text_id = ${Number(args[0])} AND _vers_space = ${getCmsVers(ctx).space}`
+                ?? await ctx.app.db.row`SELECT name, page_id FROM page_text WHERE text_id = ${Number(args[0])}`;
                 if (vs) {
                     const P = await ctx.app.cms.node(vs.page_id);
                     messages.push((await contOrPage(P)) + ` ${await t`Text`} "${vs.name}" ${await t`changed`}`);
                 } else {
-                    const vs2 = await ctx.app.db.row(
-                        `SELECT id FROM page WHERE title_id = ?`, [Number(args[0])]
-                    );
+                    const vs2 = await ctx.app.db.row`SELECT id FROM page WHERE title_id = ${Number(args[0])}`;
                     if (vs2) {
                         const P = await ctx.app.cms.node(vs2.id);
                         messages.push((await contOrPage(P)) + " " + await t`Title changed`);
@@ -159,15 +152,14 @@ async function versProtocolForNode(ctx: any, pid: number): Promise<any[]> {
 
 async function versProtocol(ctx: any, table: string, where: string): Promise<any[]> {
     if (!versedTables(ctx.app.db)[table]) return [];
-    const sql =
-        `SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.email ` +
-        `FROM \`_vers_${table}\` t ` +
-        `LEFT JOIN log l ON t._vers_log = l.id ` +
-        `LEFT JOIN sess  ON l.sess_id = sess.id ` +
-        `LEFT JOIN usr   ON sess.usr_id = usr.id ` +
-        `WHERE t._vers_space = ? AND t._vers_log > 0 AND ${where} ` +
-        `ORDER BY t._vers_log`;
-    const rows = await ctx.app.db.all(sql, [getCmsVers(ctx).space]);
+    const rows = await ctx.app.db.all`
+        SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.email
+        FROM ${sql.id("_vers_" + table)} t
+        LEFT JOIN log l ON t._vers_log = l.id
+        LEFT JOIN sess  ON l.sess_id = sess.id
+        LEFT JOIN usr   ON sess.usr_id = usr.id
+        WHERE t._vers_space = ${getCmsVers(ctx).space} AND t._vers_log > 0 AND ${sql.raw(where)}
+        ORDER BY t._vers_log`;
     return rows.map((r: any) => ({
         vers: r._vers_log,
         time: Number(r.time ?? 0),

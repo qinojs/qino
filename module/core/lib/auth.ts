@@ -22,7 +22,7 @@ export async function authListen(ctx: RequestContext): Promise<void> {
     const uidVal = await ctx.client.get("usr_id");
     const uid = uidVal ? Number(uidVal) : 0;
     if (uid) {
-      const row = await ctx.app.db.row("SELECT email FROM usr WHERE id = ?", [uid]);
+      const row = await ctx.app.db.row`SELECT email FROM usr WHERE id = ${uid}`;
       if (row?.email) await auth(ctx, row.email);
     }
   }
@@ -30,7 +30,7 @@ export async function authListen(ctx: RequestContext): Promise<void> {
 
 export async function auth(ctx: RequestContext, email: string, pw = ""): Promise<LoginError | ""> {
   await ctx.app.fire("auth-before", { email, pw });
-  const user = await ctx.app.db.row("SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(?)", [email.trim()]);
+  const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, dummyHash); return user ? "inactive" : "username"; }
   const UsrEntry = ctx.app.db.table("usr").entry(user.id);
   const rehash = pwNeedsRehash(await UsrEntry.get("pw"));
@@ -49,7 +49,7 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
 
 export async function login(ctx: RequestContext, id: number | string): Promise<boolean> {
   id = Number(id);
-  if (!await ctx.app.db.one("SELECT id FROM usr WHERE id = ?", [id])) return false;
+  if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id}`) return false;
   const oldSession = ctx.sess.data;
   await logout(ctx);
   // neue Session-ID nach Logout verhindert Session-Fixation

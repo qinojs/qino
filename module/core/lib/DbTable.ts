@@ -2,7 +2,8 @@
 
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
-import { Db, numTypes } from "./Db.ts";
+import { numTypes, type Db } from "./Db.ts";
+import { Sql, sql } from "./sql.ts";
 
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
@@ -72,7 +73,7 @@ export class DbTable {
   }
 
   getStatus(): Promise<Record<string, any> | undefined> {
-    return this.#db.row("SHOW TABLE STATUS LIKE ?", [String(this)]);
+    return this.#db.row`SHOW TABLE STATUS LIKE ${String(this)}`;
   }
   async getNextId(): Promise<number> {
     const s = await this.getStatus();
@@ -119,14 +120,15 @@ export class DbTable {
   async selectByID(id: any): Promise<Record<string, any> | undefined> {
     const values = this.entryId2Array(id);
     if (!values) return;
-    const [where, params] = this.valuesToFragment(values);
-    if (!where) return;
-    const rows = await this.#db.all(`SELECT * FROM ${this.#db.escapeId(String(this))} WHERE ${where}`, params);
+    const where = this.valuesToFragment(values);
+    if (!where.parts.length) return;
+    const rows = await this.#db.all`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
     return rows[0];
   }
-  async select(v = "TRUE", params: unknown[] = []): Promise<Record<string, Record<string, any>>> {
+  async select(v: string | Sql = "TRUE"): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
-    const rows = await this.#db.all(`SELECT * FROM ${this.#db.escapeId(String(this))} WHERE ${v}`, params);
+    const where = v instanceof Sql ? v : sql.raw(v);
+    const rows = await this.#db.all`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
     for (const entry of rows) {
       const eid = this.entryId(entry);
       if (eid !== false) ret[eid] = entry;
@@ -134,20 +136,16 @@ export class DbTable {
     return ret;
   }
 
-  valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): [string, unknown[]] {
-    const sqls: string[] = [], params: unknown[] = [];
+  valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): Sql {
+    const frags: Sql[] = [];
     for (const [field, Field] of Object.entries(this.#fields!)) {
       if (!(field in values)) continue;
       const value = Field.valueTransform(values[field]);
-      const ref = alias ? `${this.#db.escapeId(alias)}.${this.#db.escapeId(field)}` : this.#db.escapeId(field);
-      if (!isSet && value === null) {
-        sqls.push(`${ref} IS NULL`);
-        continue;
-      }
-      sqls.push(`${ref} = ?`);
-      params.push(value);
+      const ref = alias ? sql`${sql.id(alias)}.${sql.id(field)}` : sql.id(field);
+      if (!isSet && value === null) { frags.push(sql`${ref} IS NULL`); continue; }
+      frags.push(sql`${ref} = ${value}`);
     }
-    return [isSet ? sqls.join(", ") : sqls.join(" AND "), params];
+    return sql.join(frags, isSet ? ", " : " AND ");
   }
 
   async insert(values: Record<string, any> = {}): Promise<string | false> {
@@ -155,11 +153,12 @@ export class DbTable {
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const cols = Object.keys(this.#fields!).filter((f) => f in values);
-    const params = cols.map((f) => this.#fields![f].valueTransform(values[f]));
     // Standard `(cols) VALUES (?)`; the driver supplies its dialect-specific empty-row fragment.
-    const into = cols.length ? `(${cols.map((f) => this.#db.escapeId(f)).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})` : this.#db.emptyInsert;
+    const into = cols.length
+      ? sql`(${sql.join(cols.map((f) => sql.id(f)))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields![f].valueTransform(values[f])}`))})`
+      : sql.raw(this.#db.emptyInsert);
     const auto = this.autoIncrement;
-    const res = await this.#db.exec(`INSERT INTO ${this.#db.escapeId(String(this))} ${into}`, params, String(auto || this.primary || ""));
+    const res = await this.#db.exec(sql`INSERT INTO ${sql.id(String(this))} ${into}`, String(auto || this.primary || ""));
     if (!res.affectedRows) return false;
     if (auto && String(auto) in values) await this.#db.syncAutoIncrement(String(this), String(auto), Number(values[String(auto)]));
     if (auto) values[String(auto)] = res.insertId;
@@ -180,13 +179,13 @@ export class DbTable {
     const eBefore: any = { Table: this, id, data: values, returnValue: undefined };
     await this.#db.fire("table::update-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const [set, setParams] = this.valuesToFragment(values!, undefined, true);
-    if (set) {
+    const set = this.valuesToFragment(values!, undefined, true);
+    if (set.parts.length) {
       const whereValues = this.entryId2Array(id);
       if (!whereValues) return false;
-      const [where, whereParams] = this.valuesToFragment(whereValues);
-      if (!where) return false;
-      const rows = await this.#db.exec(`UPDATE ${this.#db.escapeId(String(this))} SET ${set} WHERE ${where}`, [...setParams, ...whereParams]) as any;
+      const where = this.valuesToFragment(whereValues);
+      if (!where.parts.length) return false;
+      const rows = await this.#db.exec`UPDATE ${sql.id(String(this))} SET ${set} WHERE ${where}` as any;
       if (!rows) return false;
       if (!rows.affectedRows) return String(id);
       await this.#db.fire("table::update-after", { Table: this, id, data: values });
@@ -198,7 +197,7 @@ export class DbTable {
   async ensure(values: Record<string, any> = {}): Promise<string | false | undefined> {
     const whereValues = this.entryId2Array(values);
     const where = whereValues ? this.valuesToFragment(whereValues) : null;
-    return where?.[0] && await this.#db.row(`SELECT * FROM ${this.#db.escapeId(String(this))} WHERE ${where[0]}`, where[1])
+    return where?.parts.length && await this.#db.row`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`
       ? this.update(values)
       : this.insert(values);
   }
@@ -221,9 +220,7 @@ export class DbTable {
 
     for (const Field of this.children) {
       if (Field.onParentCopy !== "cascade") continue;
-      const childRows = await this.#db.all(
-        `SELECT * FROM ${this.#db.escapeId(String(Field.table))} WHERE ${this.#db.escapeId(String(Field))} = ?`, [id],
-      );
+      const childRows = await this.#db.all`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
       for (const childRow of childRows) await Field.table.copy(childRow, { [String(Field)]: newId }, visiting);
     }
     return newId;
@@ -239,16 +236,13 @@ export class DbTable {
     await this.#db.fire("table::delete-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const where = values ? this.valuesToFragment(values) : null;
-    if (!where?.[0]) return false;
-    const rows = await this.#db.exec(`DELETE FROM ${this.#db.escapeId(String(this))} WHERE ${where[0]}`, where[1]) as any;
+    if (!where?.parts.length) return false;
+    const rows = await this.#db.exec`DELETE FROM ${sql.id(String(this))} WHERE ${where}` as any;
     if (!rows?.affectedRows) return undefined;
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
     for (const Field of this.children) {
       if (Field.onParentDelete === "cascade") {
-        const childRows = await this.#db.all(
-          `SELECT * FROM ${this.#db.escapeId(String(Field.table))} WHERE ${this.#db.escapeId(String(Field))} = ?`,
-          [id],
-        );
+        const childRows = await this.#db.all`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
         for (const row of childRows) {
           await Field.table.delete(row);
         }
@@ -265,8 +259,8 @@ export class DbTable {
     if (typeof values === "string") {
       rows = await this.select(values);
     } else {
-      const [where, params] = this.valuesToFragment(values);
-      rows = where ? await this.select(where, params) : {};
+      const where = this.valuesToFragment(values);
+      rows = where.parts.length ? await this.select(where) : {};
     }
     for (const row of Object.values(rows)) await this.delete(row);
   }
@@ -298,7 +292,7 @@ export class DbTable {
 
   async selectEntries(str = ""): Promise<Record<string, DbEntry>> {
     const Es: Record<string, any> = {};
-    const rows = await this.#db.query(`SELECT * FROM ${this.#db.escapeId(String(this))} ${str}`);
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} ${sql.raw(str)}`;
     for (const row of rows) {
       const entry = this.entry(row);
       Es[String(entry)] = entry;

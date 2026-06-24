@@ -2,7 +2,7 @@ import { basename, extname } from "node:path";
 import type {} from "../mail/mod.ts";
 import { typeByExtension } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, hee, type App } from "../core/mod.ts";
+import { getCtx, hee, sql, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.mail";
@@ -46,13 +46,10 @@ async function renderOverview(node: Node): Promise<string> {
 
   if (ctx.post.qgToken === ctx.token && isSuperuser) {
     if ("delete_all" in ctx.post) {
-      await db.query("DELETE FROM mail");
+      await db.query`DELETE FROM mail`;
     }
     if ("delete_before1year" in ctx.post) {
-      await db.query(
-        "DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ?",
-        [Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 365],
-      );
+      await db.query`DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ${Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 365}`;
     }
   }
 
@@ -95,13 +92,11 @@ async function renderOverview(node: Node): Promise<string> {
 
 async function listRows(node: Node, search: string): Promise<string> {
   const db = node.app.db;
-  const params: unknown[] = [];
-  let where = "true";
-  if (search) {
-    where = "(m.id = ? OR m.sender = ? OR m.subject LIKE ? OR m.html LIKE ? OR m.text LIKE ?)";
-    params.push(search, search, `%${search}%`, `%${search}%`, `%${search}%`);
-  }
-  const rows = await db.all(`
+  const like = `%${search}%`;
+  const where = search
+    ? sql`(m.id = ${search} OR m.sender = ${search} OR m.subject LIKE ${like} OR m.html LIKE ${like} OR m.text LIKE ${like})`
+    : sql.raw("true");
+  const rows = await db.all`
     SELECT m.id,m.log_id,m.subject,m.sender,l.time,
       s.recipient,s.num,s.sent,s.opened,s.opened_min
     FROM mail m
@@ -113,7 +108,7 @@ async function listRows(node: Node, search: string): Promise<string> {
       ) s ON s.mail_id=m.id
     WHERE ${where}
     ORDER BY m.id DESC
-    LIMIT 1000`, params);
+    LIMIT 1000`;
 
   const tMoreLabel = await node.app.t`more`;
   const tNoSubject = await node.app.t`no subject`;
@@ -136,7 +131,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const ctx = getCtx();
   const app = node.app;
   const db = app.db;
-  const row = await db.row("SELECT m.*, l.time FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE m.id=?", [id]);
+  const row = await db.row`SELECT m.*, l.time FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE m.id=${id}`;
   if (!row) return `<div class=u2-card><div class=-body>${await app.t`Mail does not exist.`}</div></div>`;
 
   if (ctx.post.qgToken === ctx.token) {
@@ -149,7 +144,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     }
   }
 
-  const todo = Number(await db.one("SELECT count(*) FROM mail_recipient WHERE mail_id=? AND sent=0 AND COALESCE(type,'to')='to'", [id]));
+  const todo = Number(await db.one`SELECT count(*) FROM mail_recipient WHERE mail_id=${id} AND sent=0 AND COALESCE(type,'to')='to'`);
   const attachments = await renderAttachments(node, id);
   const recipients = await renderRecipients(node, id);
   const tracking = await renderTracking(node, id);
@@ -184,7 +179,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 async function renderPreview(node: Node, id: number): Promise<string> {
   const Mail = await node.app.mail.get(id);
   let html = await Mail.getHtml(undefined, Mail.data);
-  const files = await node.app.db.all("SELECT * FROM mail_attachment WHERE mail_id=? AND inline=1", [id]);
+  const files = await node.app.db.all`SELECT * FROM mail_attachment WHERE mail_id=${id} AND inline=1`;
   for (const f of files) {
     if (!f.path || !f.hash) continue;
     try {
@@ -198,7 +193,7 @@ async function renderPreview(node: Node, id: number): Promise<string> {
 }
 
 async function renderAttachments(node: Node, id: number): Promise<string> {
-  const files = await node.app.db.all("SELECT * FROM mail_attachment WHERE mail_id=?", [id]);
+  const files = await node.app.db.all`SELECT * FROM mail_attachment WHERE mail_id=${id}`;
   if (!files.length) return "";
   const rows = files.map(f => `<div style="padding:7px 0">
     ${hee(f.name || basename(f.path || ""))}
@@ -212,10 +207,7 @@ async function renderAttachments(node: Node, id: number): Promise<string> {
 }
 
 async function renderRecipients(node: Node, id: number): Promise<string> {
-  const rows = await node.app.db.all(
-    "SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.email WHERE r.mail_id=? ORDER BY r.email",
-    [id],
-  );
+  const rows = await node.app.db.all`SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.email WHERE r.mail_id=${id} ORDER BY r.email`;
   const trs = rows.map(r => {
     const data = parseData(r.data);
     const dataHtml = Object.entries(data).map(([k, v]) => `${hee(k)}: ${hee(String(v))}<br>`).join("");
@@ -239,13 +231,13 @@ async function renderRecipients(node: Node, id: number): Promise<string> {
 }
 
 async function renderTracking(node: Node, id: number): Promise<string> {
-  const rows = await node.app.db.all(`
+  const rows = await node.app.db.all`
     SELECT t.url, count(t.id) num, max(t.time) last_time
     FROM mail1_track t
       INNER JOIN mail_recipient r ON r.mail1_track_id=t.track_id
-    WHERE r.mail_id=?
+    WHERE r.mail_id=${id}
     GROUP BY t.url
-    ORDER BY last_time DESC`, [id]).catch(() => []);
+    ORDER BY last_time DESC`.catch(() => []);
   if (!rows.length) return "";
   const trs = rows.map(r => `<tr>
     <td><a href="${hee(r.url ?? "")}" target=_blank>${hee(r.url || "(open)")}</a>
@@ -264,9 +256,9 @@ async function renderTracking(node: Node, id: number): Promise<string> {
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one("SELECT count(*) FROM mail").catch(() => 0));
-  const unsent = Number(await app.db.one("SELECT count(*) FROM mail_recipient WHERE sent=0").catch(() => 0));
-  const errors = Number(await app.db.one("SELECT count(*) FROM mail_recipient WHERE error!=''").catch(() => 0));
+  const total = Number(await app.db.one`SELECT count(*) FROM mail`.catch(() => 0));
+  const unsent = Number(await app.db.one`SELECT count(*) FROM mail_recipient WHERE sent=0`.catch(() => 0));
+  const errors = Number(await app.db.one`SELECT count(*) FROM mail_recipient WHERE error!=''`.catch(() => 0));
   return `<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
   <tr><td>${await app.t`Mails`}:<td>${hee(String(total))}

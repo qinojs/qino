@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, requestStorage, type RequestContext, type Db, type App } from "../../core/mod.ts";
+import { getCtx, requestStorage, sql, type RequestContext, type Db, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view } from "./Vers.ts";
 import { tableEntriesCopyTo } from "./Spaces.ts";
 import type { Node } from "../../cms/mod.ts";
@@ -63,29 +63,26 @@ export async function copyNode(
 
         // Copy title text
         const toPageView = await view(db, "page", toSpace, 0);
-        const titleId = await db.one(`SELECT title_id FROM \`${toPageView}\` WHERE id = ?`, [id]);
+        const titleId = await db.one`SELECT title_id FROM ${sql.id(toPageView)} WHERE id = ${id}`;
         if (titleId) await tableEntriesCopyTo(db, "text", { id: titleId }, fromSpace, fromLog, toSpace);
 
         // Copy content texts
         const toTextView = await view(db, "page_text", toSpace, 0);
-        const textIds = await db.col(`SELECT text_id FROM \`${toTextView}\` WHERE page_id = ?`, [id]);
+        const textIds = await db.col`SELECT text_id FROM ${sql.id(toTextView)} WHERE page_id = ${id}`;
         for (const tid of textIds) {
             await tableEntriesCopyTo(db, "text", { id: tid }, fromSpace, fromLog, toSpace);
         }
 
         // Copy files
         const toFileView = await view(db, "page_file", toSpace, 0);
-        const fileIds = await db.col(`SELECT file_id FROM \`${toFileView}\` WHERE page_id = ?`, [id]);
+        const fileIds = await db.col`SELECT file_id FROM ${sql.id(toFileView)} WHERE page_id = ${id}`;
         for (const fid of fileIds) {
             await tableEntriesCopyTo(db, "file", { id: fid }, fromSpace, fromLog, toSpace);
         }
 
         // Recurse into children
         const childView = await view(db, "page", toSpace, 0);
-        const childIds = await db.col(
-            `SELECT id FROM \`${childView}\` WHERE basis = ? ${subPages ? "" : "AND type = 'c'"}`,
-            [id]
-        );
+        const childIds = await db.col`SELECT id FROM ${sql.id(childView)} WHERE basis = ${id} ${sql.raw(subPages ? "" : "AND type = 'c'")}`;
         for (const cid of childIds) await generate(Number(cid));
     };
 

@@ -1,6 +1,6 @@
 import { resolveText } from "./resolveText.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { hee, HtmlString, getCtx, urlize, tableRef, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
+import { hee, HtmlString, getCtx, urlize, sql, tableRef, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
 
@@ -38,7 +38,7 @@ export class Node {
 
     async init(): Promise<this> {
         if (!this.vs || !Object.keys(this.vs).length) {
-            const row = await this.db.row(`SELECT * FROM ${tableRef("page")} WHERE id = ?`, [this.id]);
+            const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${this.id}`;
             if (!row) {
                 this.vs = { id: this.id, basis: 0, type: "p" };
                 this.#is = false;
@@ -112,20 +112,15 @@ export class Node {
         const access = Math.max(Number(this.vs.access ?? "0"), await this.#usrAccessOnly(Usr));
         if (access === 3) return 3;
         const grps = await Usr.grps?.() ?? [0];
-        const placeholders = grps.map(() => "?").join(", ");
-        const sql =
-            " SELECT max(access) AS access " +
-            " FROM page_access_grp " +
-            " WHERE grp_id != 0 AND " +
-            "   page_id = ? AND " +
-            `   grp_id IN(${placeholders}) `;
-        const grpAccess = Number(await this.db.one(sql, [this.id, ...grps]) ?? "0") || 0;
+        const grpAccess = Number(await this.db.one`
+            SELECT max(access) AS access FROM page_access_grp
+            WHERE grp_id != 0 AND page_id = ${this.id}
+              AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})` ?? "0") || 0;
         return Math.max(access, grpAccess);
     }
 
     async #usrAccessOnly(Usr?: dbEntry_usr | null): Promise<number> {
-        const sql = " SELECT access FROM page_access_usr WHERE page_id = ? AND usr_id = ? ";
-        return Number(await this.db.one(sql, [this.id, String(Usr)]) ?? "0") || 0;
+        return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(Usr)}` ?? "0") || 0;
     }
 
     /* Render */
@@ -267,7 +262,7 @@ export class Node {
     children(filter?: any): Promise<Map<number, Node>> {
         this.#children ??= (async () => {
             const map: Map<number, Node> = new Map();
-            const rows = await this.db.all(`SELECT * FROM ${tableRef("page")} WHERE basis = ? ORDER BY type DESC, sort, id DESC`, [this.id]);
+            const rows = await this.db.all`SELECT * FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} ORDER BY type DESC, sort, id DESC`;
             for (const row of rows) {
                 const id = Number(row.id);
                 const Child = await this.cms.node(id, row);
@@ -341,7 +336,7 @@ export class Node {
 
     async texts(): Promise<Record<string, any>> {
         if (this.#texts === null) {
-            const rows = await this.db.indexCol(`SELECT name, text_id FROM ${tableRef("page_text")} WHERE page_id = ?`, [this.id]);
+            const rows = await this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`;
             this.#texts = {};
             for (const [name, id] of Object.entries(rows ?? {})) {
                 const T = this.app.dbTexts.text(Number(id));
@@ -391,14 +386,12 @@ export class Node {
             this.#filesAll = {};
             this.#files = (async () => {
                 const files: Record<string, DbFile> = {};
-                const sql =
-                    " SELECT f.*, pf.name as pf_name " +
-                    " FROM " +
-                    `   ${tableRef("page_file")} pf ` +
-                    `   LEFT JOIN ${tableRef("file")} f ON f.id = pf.file_id ` +
-                    " WHERE pf.page_id = ? " +
-                    " ORDER BY sort ";
-                const rows = await this.db.all(sql, [this.id]);
+                const rows = await this.db.all`
+                    SELECT f.*, pf.name as pf_name
+                    FROM ${sql.id(tableRef("page_file"))} pf
+                      LEFT JOIN ${sql.id(tableRef("file"))} f ON f.id = pf.file_id
+                    WHERE pf.page_id = ${this.id}
+                    ORDER BY sort`;
                 for (const vs of rows) {
                     const F = await this.app.dbFiles.file(vs.id, vs);
                     this.#filesAll![vs.pf_name] = F;
@@ -427,7 +420,7 @@ export class Node {
 
         const row: Record<string, string | number> = { page_id: String(this), file_id: String(File) };
         if (!name) {
-            const minSort = await this.db.one(`SELECT min(sort) FROM ${tableRef("page_file")} WHERE page_id = ?`, [this.id]);
+            const minSort = await this.db.one`SELECT min(sort) FROM ${sql.id(tableRef("page_file"))} WHERE page_id = ${this.id}`;
             row.sort = (Number(minSort ?? "0") || 0) - 1;
             name = "_" + Math.random().toString(36).slice(2, 9);
         }
@@ -464,7 +457,7 @@ export class Node {
     async urls(): Promise<Record<string, any>> {
         if (this.#urls === null) {
             this.#urls = {};
-            const rows = await this.db.all(`SELECT lang, url, target FROM ${tableRef("page_url")} WHERE page_id = ?`, [this.id]);
+            const rows = await this.db.all`SELECT lang, url, target FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id}`;
             for (const row of rows) this.#urls[row.lang] = row;
         }
         return this.#urls;
@@ -486,7 +479,7 @@ export class Node {
 
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
         data = { page_id: this.id, lang, ...data };
-        const row = await this.db.row(`SELECT * FROM ${tableRef("page_url")} WHERE page_id = ? AND lang = ?`, [this.id, lang]);
+        const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
         await this.db.table("page_url")[row ? "update" : "insert"](data);
         this.#urls = null; // neu
     }
@@ -500,7 +493,7 @@ export class Node {
         const part = urlize(titleStr);
         const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
         let url = base + part;
-        const exists = await this.db.one(`SELECT page_id FROM ${tableRef("page_url")} WHERE url = ? AND NOT (page_id = ? AND lang = ?)`, [url, this.id, lang]);
+        const exists = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${this.id} AND lang = ${lang})`;
         if ((await Deno.stat(this.app.appPATH + url).catch(() => null)) || exists) {
             url += "-" + lang + this;
         }
@@ -508,7 +501,7 @@ export class Node {
     }
 
     async urlSeoGen(lang: string): Promise<string> {
-        const row = await this.db.row(`SELECT * FROM ${tableRef("page_url")} WHERE page_id = ? AND lang = ?`, [this.id, lang]);
+        const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
         const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
         await this.urlSet(lang, { url });
         for (const C of (await this.children({ type: "*" })).values()) {
@@ -539,9 +532,9 @@ export class Node {
         const P = await this.cms.node(Number(id ?? "0"));
         if (!id) return P;
 
-        const accessUsrs = await this.db.all("SELECT * FROM page_access_usr WHERE page_id = ?", [this.id]);
+        const accessUsrs = await this.db.all`SELECT * FROM page_access_usr WHERE page_id = ${this.id}`;
         for (const data of accessUsrs) await this.db.table("page_access_usr").insert({ ...data, page_id: String(P) });
-        const accessGrps = await this.db.all("SELECT * FROM page_access_grp WHERE page_id = ?", [this.id]);
+        const accessGrps = await this.db.all`SELECT * FROM page_access_grp WHERE page_id = ${this.id}`;
         for (const data of accessGrps) await this.db.table("page_access_grp").insert({ ...data, page_id: String(P) });
 
         await P.texts();

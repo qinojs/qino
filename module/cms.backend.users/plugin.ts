@@ -27,7 +27,7 @@ async function renderOverview(node: Node): Promise<string> {
   let addMessage = "";
   if ("add" in ctx.post && ctx.post.qgToken === ctx.token) {
     const email = String(ctx.post.email ?? "");
-    const exists = email && await db.one("SELECT id FROM usr WHERE email = ?", [email]);
+    const exists = email && await db.one`SELECT id FROM usr WHERE email = ${email}`;
     if (exists) {
       addMessage = `<div class=-body>${await app.t`This e-mail address already exists!`}</div>`;
     } else {
@@ -101,16 +101,15 @@ async function renderOverview(node: Node): Promise<string> {
 
 export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
-  const total  = Number(await db.one("SELECT count(*) FROM usr"));
-  const active = Number(await db.one("SELECT count(*) FROM usr WHERE active = 1"));
+  const total  = Number(await db.one`SELECT count(*) FROM usr`);
+  const active = Number(await db.one`SELECT count(*) FROM usr WHERE active = 1`);
 
-  const logins = await db.all(
-    `SELECT usr.email, sess.access
+  const logins = await db.all`
+    SELECT usr.email, sess.access
      FROM sess
      LEFT JOIN usr ON sess.usr_id = usr.id
      WHERE sess.usr_id IS NOT NULL AND sess.access IS NOT NULL
-     ORDER BY sess.access DESC LIMIT 5`
-  ).catch(() => []);
+     ORDER BY sess.access DESC LIMIT 5`.catch(() => []);
 
   let loginRows = "";
   for (const row of logins) {
@@ -146,7 +145,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const app = node.app;
   const db = app.db;
 
-  const vs = await db.row("SELECT * FROM usr WHERE id = ?", [id]);
+  const vs = await db.row`SELECT * FROM usr WHERE id = ${id}`;
   if (!vs) return `<div class=u2-card><div class=-body>${await app.t`User not found.`}</div></div>`;
 
   const isSuperuser = !!(await ctx.user?.get("superuser"));
@@ -157,10 +156,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
             <input type=hidden name=superuser value=0>
             <input type=checkbox name=superuser value=1 ${vs.superuser ? "checked" : ""}>` : "";
 
-  const grpRows = await db.all(
-    "SELECT grp.*, usr_grp.usr_id as has FROM grp LEFT JOIN usr_grp ON grp.id = usr_grp.grp_id AND usr_grp.usr_id = ? ORDER BY grp.name",
-    [id]
-  );
+  const grpRows = await db.all`SELECT grp.*, usr_grp.usr_id as has FROM grp LEFT JOIN usr_grp ON grp.id = usr_grp.grp_id AND usr_grp.usr_id = ${id} ORDER BY grp.name`;
 
   let grpHtml = "";
   for (const g of grpRows) {

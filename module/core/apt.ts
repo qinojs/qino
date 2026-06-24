@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { $item, type Item } from "../../deps.ts";
 import { Access, AccessError, ConflictError, type AptTree } from "./lib/apt/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
+import { sql } from "./lib/sql.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
 import { itemReadDeep } from "./lib/util.ts";
 
@@ -37,14 +38,11 @@ export const api: AptTree = {
         const ctx = getCtx();
         const { lang, langNs: ns, dev } = ctx;
         const hashes = texts.map((text: string) => createHash("md5").update(text).digest("hex"));
-        const rows = await ctx.app.db.indexCol(
-          `SELECT hash, \`${lang}\` as txt FROM smalltext WHERE namespace = ? AND hash IN (${hashes.map(() => "?").join(",")})`,
-          [ns, ...hashes]
-        );
+        const rows = await ctx.app.db.indexCol`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND hash IN (${sql.join(hashes.map((h: string) => sql`${h}`))})`;
         const result: Record<string, string> = {};
         for (let i = 0; i < texts.length; i++) {
           if (dev && !(hashes[i] in rows)) {
-            //await ctx.app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hashes[i], texts[i]]);
+            //await ctx.app.db.query`INSERT IGNORE INTO smalltext (namespace, hash, original) VALUES (${ns}, ${hashes[i]}, ${texts[i]})`;
             await ctx.app.db.table('smalltext').insert({ namespace: ns, hash: hashes[i], original: texts[i] });
 
           }

@@ -13,7 +13,7 @@ export default async function (node: Node, vars:any): Promise<any> {
     !!(await U.is()) && (!(await U.get("superuser")) || isSuperuser);
 
   if ("email_used" in vars) {
-    return db.one("SELECT id FROM usr WHERE email = ?", [vars.email_used]) ?? false;
+    return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}` ?? false;
   }
 
   if ("login_as" in vars) {
@@ -55,9 +55,9 @@ export default async function (node: Node, vars:any): Promise<any> {
     const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;
     if (vars.add) {
-      await db.query("REPLACE INTO usr_grp SET grp_id = ?, usr_id = ?", [grpId, usrId]);
+      await db.query`REPLACE INTO usr_grp (grp_id, usr_id) VALUES (${grpId}, ${usrId})`;
     } else {
-      await db.query("DELETE FROM usr_grp WHERE grp_id = ? AND usr_id = ?", [grpId, usrId]);
+      await db.query`DELETE FROM usr_grp WHERE grp_id = ${grpId} AND usr_id = ${usrId}`;
     }
     return 1;
   }

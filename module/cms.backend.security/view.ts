@@ -1,12 +1,12 @@
-import { getCtx, hee, type App, type RequestContext } from "../core/mod.ts";
+import { getCtx, hee, sql, Sql, type App, type RequestContext } from "../core/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
 import type { RowDataPacket } from "../../deps.ts";
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const row = await app.db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event").catch(() => null);
+  const row = await app.db.row`SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event`.catch(() => null);
   if (!row || !Number(row.events)) return `<div class="-body">${await app.t`No security events.`}</div>`;
-  const buckets = await app.db.all("SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5");
+  const buckets = await app.db.all`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
   return `<div class="-body">
     <b>${hee(row.events)}</b> ${await app.t`Events`}, <b>${hee(row.fresh ?? 0)}</b> ${await app.t`new`}, <b>${hee(row.blocked ?? 0)}</b> ${await app.t`blocked`}<br>
     <small>${await app.t`Last alarm:`} ${u2time(row.last)}</small>
@@ -20,20 +20,20 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   if (!await ctx.user?.get("superuser")) return "<div></div>";
   const db = app.db;
   const set = await settings(app);
-  if (vars.clearEvents) await db.query("DELETE FROM m_security_event");
-  if (vars.clearBuckets) await db.query("DELETE FROM m_security_bucket");
+  if (vars.clearEvents) await db.query`DELETE FROM m_security_event`;
+  if (vars.clearBuckets) await db.query`DELETE FROM m_security_bucket`;
   if (vars.release) await db.table("m_security_bucket").update(vars.release, { score: 0, blocked: 0, reason: "released" });
   if (vars.block) await db.table("m_security_bucket").update(vars.block, { score: set.blockScore, blocked: 1, reason: "manual block" });
   if (vars.seen) await db.table("m_security_event").update(vars.seen, { state: "seen" });
   if (vars.ignore) await db.table("m_security_event").update(vars.ignore, { state: "ignore" });
-  const buckets = await db.all("SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80");
-  const [where, params] = eventWhere(ctx.get);
-  const events = await db.all(`SELECT * FROM m_security_event ${where ? "WHERE " + where : ""} ORDER BY id DESC LIMIT 120`, params);
-  const topIps = await db.all("SELECT ip, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ip!='' GROUP BY ip ORDER BY num DESC,last DESC LIMIT 10");
-  const topPaths = await db.all("SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10");
-  const topKinds = await db.all("SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10");
-  const topUa = await db.all("SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10");
-  const stats: Record<string, unknown> = await db.row("SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event") ?? {};
+  const buckets = await db.all`SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80`;
+  const where = eventWhere(ctx.get);
+  const events = await db.all`SELECT * FROM m_security_event ${where.parts.length ? sql`WHERE ${where}` : sql.raw("")} ORDER BY id DESC LIMIT 120`;
+  const topIps = await db.all`SELECT ip, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ip!='' GROUP BY ip ORDER BY num DESC,last DESC LIMIT 10`;
+  const topPaths = await db.all`SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10`;
+  const topKinds = await db.all`SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10`;
+  const topUa = await db.all`SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10`;
+  const stats: Record<string, unknown> = await db.row`SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event` ?? {};
   const tab = String(ctx.get.tab ?? "live");
   return `<div>
     <div class="u2-flex">
@@ -146,17 +146,17 @@ async function eventFilter(app: App, get: Record<string, string>) {
   </form>`;
 }
 
-function eventWhere(get: Record<string, string>): [string, unknown[]] {
-  const sql: string[] = [], params: unknown[] = [];
-  if (get.prio) { sql.push("prio = ?"); params.push(get.prio); }
-  if (get.kind) { sql.push("kind = ?"); params.push(get.kind); }
-  if (get.scope) { sql.push("scope = ?"); params.push(get.scope); }
-  if (get.blocked === "blocked") sql.push("blocked = 1");
-  if (get.blocked === "delayed") sql.push("delay_ms > 0");
-  if (get.state) { sql.push("state = ?"); params.push(get.state); }
-  if (get.min) { sql.push("severity >= ?"); params.push(Number(get.min) || 0); }
-  if (get.q) { sql.push("(ip LIKE ? OR path LIKE ? OR reason LIKE ? OR ident LIKE ?)"); params.push(...Array(4).fill("%" + get.q + "%")); }
-  return [sql.join(" AND "), params];
+function eventWhere(get: Record<string, string>): Sql {
+  const parts: Sql[] = [];
+  if (get.prio) parts.push(sql`prio = ${get.prio}`);
+  if (get.kind) parts.push(sql`kind = ${get.kind}`);
+  if (get.scope) parts.push(sql`scope = ${get.scope}`);
+  if (get.blocked === "blocked") parts.push(sql.raw("blocked = 1"));
+  if (get.blocked === "delayed") parts.push(sql.raw("delay_ms > 0"));
+  if (get.state) parts.push(sql`state = ${get.state}`);
+  if (get.min) parts.push(sql`severity >= ${Number(get.min) || 0}`);
+  if (get.q) { const like = "%" + get.q + "%"; parts.push(sql`(ip LIKE ${like} OR path LIKE ${like} OR reason LIKE ${like} OR ident LIKE ${like})`); }
+  return sql.join(parts, " AND ");
 }
 
 const prioLabels: Record<string, string> = { notice: "Info", warning: "Warning", error: "Critical" };

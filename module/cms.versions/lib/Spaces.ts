@@ -3,7 +3,7 @@
 // Spaces (cms-agnostic): parallel working copies of the versioned tables
 // (space 0 = live). Space lifecycle + copying entries between spaces.
 
-import { getCtx, requestStorage, type App, type Db } from "../../core/mod.ts";
+import { getCtx, requestStorage, sql, type App, type Db } from "../../core/mod.ts";
 import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
 
 // ─── ensureSpace ────────────────────────────────────────────────────────────
@@ -11,7 +11,7 @@ import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
 export async function ensureSpace(app: App, space: number): Promise<void> {
     if (!space) return;
     const db = app.db;
-    const exists = await db.row("SELECT space FROM vers_space WHERE space = ?", [space]);
+    const exists = await db.row`SELECT space FROM vers_space WHERE space = ${space}`;
     if (exists) return;
 
     // Seed each versioned table with live data
@@ -21,9 +21,9 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
         // Build the select onto the shadow's own column order (not positional *,0,?,0),
         // so it stays correct even when the shadow's column order diverged from the live table.
         const selects = (await db.columns(vt)).map((c: any) =>
-            c.Field === "_vers_space" ? "?" : c.Field.startsWith("_vers_") ? "0" : `\`${c.Field}\``);
-        await db.query(`DELETE FROM \`${vt}\` WHERE _vers_space = ?`, [space]);
-        await db.query(`INSERT INTO \`${vt}\` SELECT ${selects.join(", ")} FROM \`${tableName}\``, [space]);
+            c.Field === "_vers_space" ? sql`${space}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql.id(c.Field));
+        await db.query`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
+        await db.query`INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
     }
     await db.table("vers_space").insert({ space, time_created: new Date() });
     // fire so other modules can react
@@ -41,15 +41,15 @@ export async function tableEntriesCopyTo(
     toSpace: number,
 ): Promise<void> {
     const Table   = db.table(tableName);
-    const [where, whereParams] = Table.valuesToFragment(filter);
+    const where   = Table.valuesToFragment(filter);
     const fromView = await view(db, tableName, fromSpace, fromLog);
     const toView   = await view(db, tableName, toSpace, 0);
 
     const oldEntries: Record<string, any> = {};
     const newEntries: Record<string, any> = {};
 
-    for (const e of await db.all(`SELECT * FROM \`${toView}\` WHERE ${where}`, whereParams))   oldEntries[Table.entryId(e) as string] = e;
-    for (const e of await db.all(`SELECT * FROM \`${fromView}\` WHERE ${where}`, whereParams)) newEntries[Table.entryId(e) as string] = e;
+    for (const e of await db.all`SELECT * FROM ${sql.id(toView)} WHERE ${where}`)   oldEntries[Table.entryId(e) as string] = e;
+    for (const e of await db.all`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[Table.entryId(e) as string] = e;
 
     const ctx = getCtx();
     const s = getVers(ctx);
@@ -82,7 +82,7 @@ export function initSpaces(app: App) {
         const ids = e.Table.entryId2Array(e.id) ?? {};
         const value = Number(ids[String(auto)]);
         if (!value) return;
-        await ctx.app.db.query(`ALTER TABLE \`${originalTable}\` AUTO_INCREMENT=${value + 1}`);
+        await ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;
     });
 }
 

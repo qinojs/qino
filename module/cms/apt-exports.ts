@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, hee, Output } from "../core/mod.ts";
+import { getCtx, hee, Output, sql } from "../core/mod.ts";
 import type { Node } from "./mod.ts";
 // ─── business logic used by REST ──────────────
 
@@ -70,8 +70,8 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         const bough = await node.bough();
         for (const Child of bough.values()) {
             if (Child.vs?.["access"] !== null) await Child.set("access", 0);
-            await ctx.app.db.query("DELETE FROM page_access_usr WHERE page_id = ? AND access < 2", [String(Child)]);
-            await ctx.app.db.query("DELETE FROM page_access_grp WHERE page_id = ? AND access < 2", [String(Child)]);
+            await ctx.app.db.query`DELETE FROM page_access_usr WHERE page_id = ${String(Child)} AND access < 2`;
+            await ctx.app.db.query`DELETE FROM page_access_grp WHERE page_id = ${String(Child)} AND access < 2`;
         }
     }
     return ret;
@@ -121,10 +121,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
     const nid = String(node.id);
     let sorted: string[];
     if (by === "name" || by === "name_reverse") {
-        const rows = await db.all(
-            " SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY f.name ",
-            [nid],
-        );
+        const rows = await db.all`SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY f.name`;
         const vs: Record<string, string> = {};
         for (const row of rows) vs[row["name"]] = row["fname"];
         if (by === "name_reverse") for (const n in vs) vs[n] = String(vs[n] ?? '').split("").reverse().join("");
@@ -132,33 +129,29 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
             vs[a].localeCompare(vs[b], undefined, { numeric: true, sensitivity: "base" }),
         );
     } else {
-        const sql = by === "date"
-            ? " SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY f.log_id"
-            : " SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ? ORDER BY pf.sort DESC";
-        sorted = (await db.all(sql, [nid])).map((r: any) => r["name"]);
+        const order = by === "date" ? sql`f.log_id` : sql`pf.sort DESC`;
+        sorted = (await db.all`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r: any) => r["name"]);
     }
     await node.sortFiles(sorted);
 }
 
 export async function cmsRequestUsed(v: string): Promise<boolean> {
     const db = getCtx().app.db;
-    const r  = await db.one("SELECT count(*) FROM page_redirect WHERE request = ?", [v]);
-    const u  = await db.one("SELECT count(*) FROM page_url WHERE url = ?", [v]);
+    const r  = await db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`;
+    const u  = await db.one`SELECT count(*) FROM page_url WHERE url = ${v}`;
     return !!(r || u);
 }
 
 export async function cmsSearchNodes(search: string): Promise<any[]> {
     const ctx = getCtx();
     search = search.replace(/^cmspid:\/\//, "");
-    const sql =
-        " SELECT p.id AS id FROM page p, text t WHERE true" +
-        " AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id" +
-        " AND ( p.id = ? OR t.text LIKE ? ) GROUP BY p.id ORDER BY" +
-        " p.id = ? DESC, t.lang = '" + ctx.lang + "' DESC," +
-        " t.text = ? DESC, t.text LIKE ? DESC, t.text LIKE ? DESC, t.text ASC LIMIT 20";
-    const params = [search, "%" + search + "%", search, search, search + "%", "% " + search + "%"];
     const res: any[] = [];
-    for (const vs of await ctx.app.db.all(sql, params)) {
+    for (const vs of await ctx.app.db.all`
+        SELECT p.id AS id FROM page p, text t WHERE true
+        AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id
+        AND ( p.id = ${search} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
+        p.id = ${search} DESC, t.lang = ${ctx.lang} DESC,
+        t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
         const Page = await ctx.app.cms.node(vs.id);
         if (!await Page.access()) continue;
         const titleStr = String(await (await Page.title()).string() ?? "").trim();
@@ -181,17 +174,15 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
     const ctx = getCtx();
     const db  = ctx.app.db;
     const s   = search;
-    const sql =
-        " SELECT pf.page_id AS pid, f.*" +
-        " FROM page_file pf, file f WHERE true AND pf.file_id = f.id" +
-        " AND ( f.id = ? OR f.name LIKE ? OR f.text LIKE ? )" +
-        " ORDER BY f.id = ? DESC, f.name = ? DESC, f.name LIKE ? DESC," +
-        " f.name LIKE ? DESC, f.text = ? DESC, f.text LIKE ? DESC, f.name ASC";
-    const params = [s, "%" + s + "%", s + "%", s, s, s + "%", "% " + s + "%", s, s + "%"];
     const res: any[] = [];
     let i = 0;
     const used: Record<string, boolean> = {};
-    for (const vs of await db.all(sql, params)) {
+    for (const vs of await db.all`
+        SELECT pf.page_id AS pid, f.*
+        FROM page_file pf, file f WHERE true AND pf.file_id = f.id
+        AND ( f.id = ${s} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )
+        ORDER BY f.id = ${s} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
+        f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
         const node = await ctx.app.cms.node(vs["pid"]);
         if ((await node.access()) < 2) continue;
         const F = await ctx.app.dbFiles.file(vs.id, vs);

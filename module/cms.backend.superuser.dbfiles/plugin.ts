@@ -1,4 +1,4 @@
-import { hee, Db, getCtx, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, sql, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -66,39 +66,32 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars
   const search = String(vars.search ?? "");
   const order  = String(vars.order  ?? "newest");
 
-  const relSubs = children.map((F: DbField, i: number) =>
-    `,(SELECT COUNT(*) FROM ${Db.escapeId(F.table.name)} WHERE ${Db.escapeId(F.name)}=f.id) AS r${i}`).join("");
+  const relSubs = sql.join(children.map((F: DbField, i: number) =>
+    sql`,(SELECT COUNT(*) FROM ${sql.id(F.table.name)} WHERE ${sql.id(F.name)}=f.id) AS ${sql.raw("r" + i)}`), "");
 
   const orderSql: Record<string, string> = { newest:"f.log_id DESC", oldest:"f.log_id ASC", changed:"f.log_id_ch DESC", biggest:"f.size DESC" };
   const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: DbField, i: number) => `r${i}`)].join(",");
 
-  let sql = `
+  // one indexed path per input shape (never an OR across joined tables, which would full-scan):
+  // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name fulltext
+  let cond = sql.raw("");
+  if (search) {
+    const s = search.trim();
+    const emailSub = (col: string) => sql`${sql.raw(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.email=${s})`;
+    if (/^\d+$/.test(s)) cond = sql` AND f.id = ${Number(s)}`;
+    else if (/^[0-9a-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
+    else if (s.includes("@")) cond = sql` AND (${emailSub("f.log_id")} OR ${emailSub("f.log_id_ch")})`;
+    else if (db.dialect === "mysql") cond = sql` AND MATCH(f.name) AGAINST (${s + "*"} IN BOOLEAN MODE)`;
+    else cond = sql` AND f.name LIKE ${"%" + s + "%"}`;
+  }
+
+  const rows = await db.all`
     SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.email AS usr_init_email,ue.email AS usr_edit_email${relSubs}
     FROM file f
       LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
       LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
-    WHERE true`;
-  const params: unknown[] = [];
-  if (search) {
-    const s = search.trim();
-    // one indexed path per input shape (never an OR across joined tables, which would full-scan):
-    // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name fulltext
-    if (/^\d+$/.test(s)) {
-      sql += ` AND f.id = ?`; params.push(Number(s));
-    } else if (/^[0-9a-f]{32}$/i.test(s)) {
-      sql += ` AND f.md5 = ?`; params.push(s);
-    } else if (s.includes("@")) {
-      const sub = `SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.email=?`;
-      sql += ` AND (f.log_id IN (${sub}) OR f.log_id_ch IN (${sub}))`; params.push(s, s);
-    } else if (db.dialect === "mysql") {
-      sql += ` AND MATCH(f.name) AGAINST (? IN BOOLEAN MODE)`; params.push(s + "*");
-    } else {
-      sql += ` AND f.name LIKE ?`; params.push(`%${s}%`);
-    }
-  }
-  sql += ` ORDER BY ${orderBy} LIMIT 1000`;
-
-  const rows = await db.all(sql, params);
+    WHERE true${cond}
+    ORDER BY ${sql.raw(orderBy)} LIMIT 1000`;
 
   const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
 
@@ -184,7 +177,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const { db, dbFiles: fm } = app;
   const get = ctx.get;
 
-  const row = await db.row("SELECT * FROM file WHERE id = ?", [id]);
+  const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
 	console.log(row)
   if (!row) return `<div>${await app.t`File not found`}</div>`;
 
@@ -196,11 +189,11 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const exists = await f.exists();
 
   const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: DbField) => {
-    const rows = await db.all(`SELECT * FROM ${Db.escapeId(Field.table.name)} WHERE ${Db.escapeId(Field.name)}=?`, [id]);
+    const rows = await db.all`SELECT * FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)}=${id}`;
     return rows.map((lr) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
   }))).join("") || "<div class=-body>none</div>";
 
-  const dupes = await db.all("SELECT id,name FROM file WHERE id!=? AND md5=?", [id, row.md5]);
+  const dupes = await db.all`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.url;
 
   const preview = exists ? await mediaView(f) : "";
@@ -252,7 +245,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
 async function deleteUnlinkedFs(node: Node) {
   const { db, dbFiles: fm } = node.app;
-  const dbMd5s = new Set((await db.all("SELECT md5 FROM file WHERE md5 IS NOT NULL")).map((r) => r.md5));
+  const dbMd5s = new Set((await db.all`SELECT md5 FROM file WHERE md5 IS NOT NULL`).map((r) => r.md5));
   let deleted = 0, size = 0;
   for await (const e of Deno.readDir(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;
@@ -268,11 +261,10 @@ async function deleteUnlinkedDb(app: App) {
   const { db, dbFiles: fm } = app;
   const ago = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
   const notLinked = db.table("file").children.map((F: DbField) =>
-    `file.id NOT IN (SELECT ${Db.escapeId(F.name)} FROM ${Db.escapeId(F.table.name)})`);
-  console.log(notLinked)
-  const rows = await db.all(`SELECT file.id FROM file
+    sql`file.id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`);
+  const rows = await db.all`SELECT file.id FROM file
     LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id
-    WHERE (log_i.id IS NULL OR log_i.time<${ago}) AND (log_e.id IS NULL OR log_e.time<${ago})${notLinked.length?" AND "+notLinked.join(" AND "):""}`);
+    WHERE (log_i.id IS NULL OR log_i.time<${ago}) AND (log_e.id IS NULL OR log_e.time<${ago})${notLinked.length ? sql` AND ${sql.join(notLinked, " AND ")}` : sql.raw("")}`;
   let deleted = 0;
   for (const row of rows) {
     const f = await fm.file(row.id);
@@ -282,7 +274,7 @@ async function deleteUnlinkedDb(app: App) {
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const r = await app.db.row("SELECT count(*) AS n, sum(size) AS bytes FROM file").catch(() => undefined);
+  const r = await app.db.row`SELECT count(*) AS n, sum(size) AS bytes FROM file`.catch(() => undefined);
   const n = Number(r?.n ?? 0), bytes = Number(r?.bytes ?? 0);
   return `<div class=-body>
     <b>${n.toLocaleString("de-CH")}</b> ${await app.t`files`}<br>

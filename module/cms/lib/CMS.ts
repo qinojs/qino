@@ -1,5 +1,5 @@
 import { Node } from "./Node.ts";
-import { hee, HtmlString, getCtx, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
+import { hee, HtmlString, getCtx, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 export class CMS {
     app: App;
@@ -31,7 +31,7 @@ export class CMS {
 
     async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
         const ret: Record<string, Node> = {};
-        const rows = await this.db.all(`SELECT * FROM ${tableRef("page")} WHERE module = ?`, [moduleName]);
+        const rows = await this.db.all`SELECT * FROM ${sql.id(tableRef("page"))} WHERE module = ${moduleName}`;
         for (const vs of rows) {
             ret[vs.id] = await this.node(vs.id, vs);
         }
@@ -40,7 +40,7 @@ export class CMS {
 
     // async nodesByName(name: string): Promise<Record<string, Node>> {
     //     const ret: Record<string, Node> = {};
-    //     const rows = await this.db.all(`SELECT * FROM ${tableRef("page")} WHERE type = 'p' AND name = ?`, [name]);
+    //     const rows = await this.db.all`SELECT * FROM ${sql.id(tableRef("page"))} WHERE type = 'p' AND name = ${name}`;
     //     for (const vs of rows) {
     //         ret[vs.id] = await this.node(vs.id, vs);
     //     }
@@ -64,7 +64,7 @@ export class CMS {
         if (cmspid) {
             pid = Number(cmspid);
         } else {
-            const id = await this.db.one(`SELECT page_id FROM ${tableRef("page_url")} WHERE url = ?`, [ctx.appRequestPath]);
+            const id = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${ctx.appRequestPath}`;
             pid = Number(id ?? "0") || 0;
         }
         return this.node(pid);

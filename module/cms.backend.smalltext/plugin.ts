@@ -1,4 +1,4 @@
-import { hee, getCtx, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
@@ -23,18 +23,15 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
     const sortable = ["namespace", "original", "count", "missing", ...langs];
     const order = sortable.includes(orderRaw) ? orderRaw : "missing";
 
-    const whereParts: string[] = [];
-    const params: unknown[] = [];
-    if (search) {
-        whereParts.push(`(${["namespace", "original", ...langs].map(c => `${c} LIKE ?`).join(" OR ")})`);
-        params.push(...Array(2 + langs.length).fill(`%${search}%`));
-    }
-    const where = whereParts.length ? "WHERE " + whereParts.join(" AND ") : "";
+    const like = `%${search}%`;
+    const where = search
+        ? sql`WHERE (${sql.join(["namespace", "original", ...langs].map(c => sql`${sql.id(c)} LIKE ${like}`), " OR ")})`
+        : sql.raw("");
 
-    const missingExpr = langs.map(l => `CASE WHEN \`${l}\` = '' THEN 1 ELSE 0 END`).join(" + ");
-    const orderExpr = order === "missing" ? `(${missingExpr})` : order;
-    const rows = await db.all(`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${dir} LIMIT 100`, params);
-    const total = Number(await db.one("SELECT count(*) FROM smalltext"));
+    const missingExpr = sql.join(langs.map(l => sql`CASE WHEN ${sql.id(l)} = '' THEN 1 ELSE 0 END`), " + ");
+    const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);
+    const rows = await db.all`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
+    const total = Number(await db.one`SELECT count(*) FROM smalltext`);
 
     const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
     const sortMark = (col: string) => col === order ? (dir === "ASC" ? " ↑" : " ↓") : "";
@@ -47,7 +44,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
         const langTds = langs.map(l => `<td><textarea data-lang="${hee(l)}">${hee(row[l] ?? "")}</textarea>`).join("");
         let codeLogTd = "";
         if (isSuperuser) {
-            const logs = await db.all("SELECT * FROM smalltext_code_log WHERE hash = ? AND namespace = ?", [row.hash, row.namespace]);
+            const logs = await db.all`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
             codeLogTd = `<td>${logs.map(r => `<a href="${hee(r.file)}:${hee(String(r.line))}">${hee(r.file)}:${hee(String(r.line))}</a>`).join("<br>")}`;
         }
         rowsHtml += `<tr data-hash="${hee(String(row.hash))}" data-ns="${hee(String(row.namespace))}">
@@ -83,8 +80,8 @@ async function render(node: Node): Promise<string> {
     const counterActive = !!(await app.settings.core.smalltext.counter);
     const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
     const search = String(ctx.get.search ?? "").trim();
-    const missingWhere = langs.map(l => `\`${l}\` = ''`).join(" OR ");
-    const missing = missingWhere ? Number(await app.db.one(`SELECT count(*) FROM smalltext WHERE ${missingWhere}`)) : 0;
+    const missingWhere = sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " OR ");
+    const missing = missingWhere.parts.length ? Number(await app.db.one`SELECT count(*) FROM smalltext WHERE ${missingWhere}`) : 0;
 
     return `<div class=u2-card>
     <div class=-head>${await app.t`Translate`}</div>
@@ -112,8 +109,8 @@ async function render(node: Node): Promise<string> {
 export async function backendDashboardWidget(app: App): Promise<string> {
     const db = app.db;
     const langs = app.languages.all as string[];
-    const total = Number(await db.one("SELECT count(*) FROM smalltext"));
-    const missing = Number(await db.one(`SELECT count(*) FROM smalltext WHERE ${langs.map(l => `\`${l}\` = ''`).join(" OR ")}`));
+    const total = Number(await db.one`SELECT count(*) FROM smalltext`);
+    const missing = Number(await db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " OR ")}`);
     return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
     <tr><td>${await app.t`Entries`}:<td>${hee(String(total))}

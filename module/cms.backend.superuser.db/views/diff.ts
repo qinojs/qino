@@ -1,4 +1,4 @@
-import { hee, type Db, type App } from "../../core/mod.ts";
+import { hee, sql, type Db, type App } from "../../core/mod.ts";
 import { schemaFromDb, schemaDiff } from "../../../deps.ts";
 import { sortTableNames } from "../lib/analyze.ts";
 
@@ -48,7 +48,7 @@ export async function renderDiff(app: App, db: Db): Promise<string> {
     : `<div class="-body">Schema and DB match.</div>`;
 
   // --- schema from db ---
-  const fromDb = await schemaFromDb((sql: string) => db.query(sql));
+  const fromDb = await schemaFromDb((text: string) => db.query(sql.raw(text)));
   const current = db.schema ?? { properties: {} };
   const diffs = schemaDiff(fromDb, current);
 

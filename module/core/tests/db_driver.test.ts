@@ -1,37 +1,21 @@
 import { assertEquals, assertThrows } from "./deps.ts";
-import { makeDriver, toPostgresSql } from "../lib/dbDriver.ts";
+import { makeDriver } from "../lib/dbDriver.ts";
 
-Deno.test("PostgreSQL SQL adapter converts placeholders and identifiers", () => {
-  assertEquals(
-    toPostgresSql("SELECT `id`, '?' AS literal FROM `thing` WHERE `name` = ? AND `id` = ?"),
-    "SELECT \"id\", '?' AS literal FROM \"thing\" WHERE \"name\" = $1 AND \"id\" = $2",
-  );
-});
-
-Deno.test("PostgreSQL SQL adapter leaves comments and quoted question marks untouched", () => {
-  assertEquals(
-    toPostgresSql("SELECT ? -- ?\n/* ? */ WHERE value = 'it''s ?'"),
-    "SELECT $1 -- ?\n/* ? */ WHERE value = 'it''s ?'",
-  );
-});
-
-Deno.test("PostgreSQL SQL adapter converts MySQL escaped string literals", () => {
-  assertEquals(toPostgresSql("SELECT 'a\\'b\\\\c\\n'"), "SELECT 'a''b\\c\n'");
-});
-
-Deno.test("PostgreSQL driver exposes its dialect", async () => {
+Deno.test("PostgreSQL driver exposes its dialect and renders $n placeholders", async () => {
   const driver = makeDriver("postgresql://qino:secret@localhost/qino");
   assertEquals(driver.dialect, "postgres");
   assertEquals(driver.emptyInsert, "DEFAULT VALUES");
   assertEquals(driver.escapeId('a"b'), '"a""b"');
+  assertEquals([driver.placeholder(1), driver.placeholder(2)], ["$1", "$2"]);
   await driver.close();
 });
 
-Deno.test("MySQL driver exposes its dialect from URL", async () => {
+Deno.test("MySQL driver exposes its dialect and renders ? placeholders", async () => {
   const driver = makeDriver("mysql://qino:secret@localhost/qino");
   assertEquals(driver.dialect, "mysql");
   assertEquals(driver.emptyInsert, "() VALUES ()");
   assertEquals(driver.escapeId("a`b"), "`a``b`");
+  assertEquals(driver.placeholder(1), "?");
   await driver.close();
 });
 

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { s, Access, AptError, type AptTree, type RequestContext } from "../core/mod.ts";
+import { s, Access, AptError, sql, type AptTree, type RequestContext } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 class CmsTextService {
@@ -27,7 +27,7 @@ class CmsTextService {
         if (!await this.textAccess(txt_id)) return false;
         const return_: any[] = [];
         for (const l of this.ctx.app.languages.all) {
-            let text = await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, l]);
+            let text = await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${l}`;
             if (text == null || text === "") text = false;
             return_.push({ lang: l, text });
         }
@@ -37,7 +37,7 @@ class CmsTextService {
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) throw new AptError(403, "No access to this text");
-        const input = String(await this.ctx.app.db.one("SELECT text FROM text WHERE id = ? AND lang = ?", [txt_id, source_lang]) ?? "");
+        const input = String(await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${source_lang}` ?? "");
         if (!input.trim()) throw new AptError(400, "Source text is empty");
         let output = await this.transl(input, target_lang, source_lang);
         if (!output) throw new AptError(502, "Translation service returned nothing");
@@ -46,7 +46,7 @@ class CmsTextService {
             output = output.charAt(0).toUpperCase() + output.slice(1);
         }
 
-        const exists = await this.ctx.app.db.one("SELECT id FROM text WHERE id = ? AND lang = ?", [txt_id, target_lang]);
+        const exists = await this.ctx.app.db.one`SELECT id FROM text WHERE id = ${txt_id} AND lang = ${target_lang}`;
         if (exists) {
             await this.ctx.app.db.table("text").update({ id: txt_id, lang: target_lang, text: output });
         } else {
@@ -187,31 +187,26 @@ class CmsTextService {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const space = 0; // cms_vers::$space — cms.versions not ported yet
-        const sql =
-            " SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email " +
-            " FROM " +
-            "  _vers_text text " +
-            "  LEFT JOIN log ON text._vers_log = log.id " +
-            "  LEFT JOIN sess ON log.sess_id = sess.id " +
-            "  LEFT JOIN usr ON sess.usr_id = usr.id " +
-            " WHERE " +
-            "   text._vers_log " +
-            "   AND text.id = ? " +
-            "   AND text.lang = ? " +
-            "   AND text._vers_space = ? " +
-            " ORDER BY text._vers_log DESC " +
-            " LIMIT 100 ";
-        return this.ctx.app.db.all(sql, [txt_id, lang, space]);
+        return this.ctx.app.db.all`
+            SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email
+            FROM
+             _vers_text text
+             LEFT JOIN log ON text._vers_log = log.id
+             LEFT JOIN sess ON log.sess_id = sess.id
+             LEFT JOIN usr ON sess.usr_id = usr.id
+            WHERE
+              text._vers_log
+              AND text.id = ${txt_id}
+              AND text.lang = ${lang}
+              AND text._vers_space = ${space}
+            ORDER BY text._vers_log DESC
+            LIMIT 100`;
     }
 
     async isTranslated(txt_ids: any, lang: any): Promise<any> {
         const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number);
         lang ??= this.ctx.lang;
-        const placeholders = ids.map(() => "?").join(",");
-        const rows = await this.ctx.app.db.all(
-            `SELECT id, text FROM text WHERE id IN (${placeholders}) AND lang = ?`,
-            [...ids, lang]
-        );
+        const rows = await this.ctx.app.db.all`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
         const map: Record<number, boolean> = {};
         for (const row of rows) map[row.id] = !!(row.text && row.text !== "");
         if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;

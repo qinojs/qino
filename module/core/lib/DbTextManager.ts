@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./dbScope.ts";
+import { sql } from "./sql.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./Db.ts";
 
@@ -71,10 +72,10 @@ export class DbText {
   async copy(): Promise<DbText> {
     const db = this.#manager.db;
     const newText = await this.#manager.generate();
-    const rows = await db.all("SELECT * FROM text WHERE id = ?", [this.id]);
+    const rows = await db.all`SELECT * FROM text WHERE id = ${this.id}`;
     for (const row of rows) {
       row.id = newText.id;
-      const exists = await db.one("SELECT id FROM text WHERE id = ? AND lang = ?", [row.id, row.lang]);
+      const exists = await db.one`SELECT id FROM text WHERE id = ${row.id} AND lang = ${row.lang}`;
       await (exists ? db.table("text").update(row) : db.table("text").insert(row));
     }
     return newText;
@@ -109,7 +110,7 @@ export class DbTextLang {
   async get(): Promise<string> {
     if (this.value === null) {
       const db = this.text.manager.db;
-      const value = await db.one(`SELECT text FROM \`${tableRef("text")}\` WHERE id = ? AND lang = ?`, [this.text.id, this.lang]);
+      const value = await db.one`SELECT text FROM ${sql.id(tableRef("text"))} WHERE id = ${this.text.id} AND lang = ${this.lang}`;
       this.value = String(value ?? "");
     }
     return this.value!;
@@ -119,7 +120,7 @@ export class DbTextLang {
     this.value = null;
     const db = this.text.manager.db;
     const data = { id: this.text.id, lang: this.lang, text: value };
-    const has = await db.one("SELECT id FROM text WHERE id = ? AND lang = ?", [this.text.id, this.lang]);
+    const has = await db.one`SELECT id FROM text WHERE id = ${this.text.id} AND lang = ${this.lang}`;
     if (has) await db.table("text").update(data);
     else await db.table("text").insert(data);
   }

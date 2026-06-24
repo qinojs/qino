@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, html, HtmlString, type App } from "../core/mod.ts";
+import { getCtx, html, HtmlString, sql, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { askDbAi } from "./lib/ai.ts";
 
@@ -67,14 +67,14 @@ function renderAi(app: App, question: string, note: string): Promise<HtmlString>
   </form>`;
 }
 
-async function runQuery(app: App, sql: string): Promise<HtmlString> {
+async function runQuery(app: App, text: string): Promise<HtmlString> {
   const t0 = performance.now();
   try {
-    if (READ_RE.test(sql)) {
-      const rows = await app.db.query(sql);
+    if (READ_RE.test(text)) {
+      const rows = await app.db.query(sql.raw(text));
       return await renderRows(app, rows, performance.now() - t0);
     }
-    const res = await app.db.exec(sql);
+    const res = await app.db.exec(sql.raw(text));
     const ms = (performance.now() - t0).toFixed(1);
     const insert = res.insertId ? ` · insertId ${res.insertId}` : "";
     return await html.async`<u2-alert open variant=success class=-result>${res.affectedRows} ${app.t`rows affected`}${insert} · ${ms} ms</u2-alert>`;
@@ -147,7 +147,7 @@ async function schemaText(app: App): Promise<string> {
 // Approximate row counts for all tables in a single fast query (no COUNT(*) scan). MySQL only; other dialects → empty.
 async function rowCounts(app: App): Promise<Record<string, number>> {
   if (app.db.dialect !== "mysql") return {};
-  const rows = await app.db.query("SELECT table_name AS t, table_rows AS n FROM information_schema.tables WHERE table_schema = DATABASE()");
+  const rows = await app.db.query`SELECT table_name AS t, table_rows AS n FROM information_schema.tables WHERE table_schema = DATABASE()`;
   return Object.fromEntries(rows.map((r: any) => [r.t, Number(r.n)]));
 }
 

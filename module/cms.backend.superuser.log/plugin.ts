@@ -1,4 +1,4 @@
-import { hee, getCtx, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, Sql, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { dump } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
@@ -75,36 +75,31 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?
   const db = node.app.db;
   const f = (vars.filter ?? {}) as Record<string, string>;
 
-  const where: string[] = ["1"];
-  const params: unknown[] = [];
-  if (f.id)            { where.push("log.id = ?"); params.push(Number(f.id)); }
-  if (f.not_my_client) { where.push("log.client_id != ?"); params.push(ctx.clientId); }
-  if (f.loggedin === "yes") where.push("usr.id IS NOT NULL");
-  if (f.loggedin === "no")  where.push("usr.id IS NULL");
-  if (f.from)          { where.push("log.time >= ?"); params.push(toUnix(f.from)); }
-  if (f.to)            { where.push("log.time <= ?"); params.push(toUnix(f.to)); }
+  const where: Sql[] = [sql.raw("1")];
+  if (f.id)            where.push(sql`log.id = ${Number(f.id)}`);
+  if (f.not_my_client) where.push(sql`log.client_id != ${ctx.clientId}`);
+  if (f.loggedin === "yes") where.push(sql.raw("usr.id IS NOT NULL"));
+  if (f.loggedin === "no")  where.push(sql.raw("usr.id IS NULL"));
+  if (f.from)          where.push(sql`log.time >= ${toUnix(f.from)}`);
+  if (f.to)            where.push(sql`log.time <= ${toUnix(f.to)}`);
   // Search hits a single indexed path (never an OR across joined tables, which would
   // force a full log scan). Input shape decides the dimension: number → id/client,
   // dotted/colon → ip (via unique log_ip), else → url (fulltext on the small log_url).
   if (f.search) {
     const s = f.search.trim();
     if (/^\d+$/.test(s)) {
-      where.push("(log.id = ? OR log.client_id = ? OR log.sess_id = ?)"); // same table → index merge
-      params.push(Number(s), Number(s), Number(s));
+      where.push(sql`(log.id = ${Number(s)} OR log.client_id = ${Number(s)} OR log.sess_id = ${Number(s)})`); // same table → index merge
     } else if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s) || s.includes(":")) {
-      where.push("log.ip_id = (SELECT id FROM log_ip WHERE ip = ?)");
-      params.push(s);
+      where.push(sql`log.ip_id = (SELECT id FROM log_ip WHERE ip = ${s})`);
     } else if (db.dialect === "mysql") {
-      where.push("log.url_id IN (SELECT id FROM log_url WHERE MATCH(url) AGAINST (? IN BOOLEAN MODE))");
-      params.push(s + "*");
+      where.push(sql`log.url_id IN (SELECT id FROM log_url WHERE MATCH(url) AGAINST (${s + "*"} IN BOOLEAN MODE))`);
     } else {
-      where.push("log.url_id IN (SELECT id FROM log_url WHERE url LIKE ?)");
-      params.push("%" + s + "%");
+      where.push(sql`log.url_id IN (SELECT id FROM log_url WHERE url LIKE ${"%" + s + "%"})`);
     }
   }
 
-  const rows = await db.all(
-    `SELECT log.id, log.client_id, log.sess_id, log.time, log.post,
+  const rows = await db.all`
+    SELECT log.id, log.client_id, log.sess_id, log.time, log.post,
             ip.ip AS ip, url.url AS url, referer.url AS referer,
             usr.id AS usr_id, usr.email, usr.firstname, usr.lastname, ua.user_agent
      FROM log
@@ -114,10 +109,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?
         LEFT JOIN usr                ON sess.usr_id       = usr.id
         LEFT JOIN log_ip ip          ON log.ip_id         = ip.id
         LEFT JOIN log_user_agent ua  ON log.user_agent_id = ua.id
-     WHERE ${where.join(" AND ")}
-     ORDER BY log.id DESC LIMIT 1400`,
-    params,
-  ).catch(() => []);
+     WHERE ${sql.join(where, " AND ")}
+     ORDER BY log.id DESC LIMIT 1400`.catch(() => []);
 
   const u = ctx.url;
   const ownHost = ctx.url.host;
@@ -160,13 +153,12 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?
 async function tableStats(node: Node): Promise<{ rows: number; mb: number | null }> {
   const db = node.app.db;
   if (db.dialect === "mysql") {
-    const r = await db.row(
-      `SELECT TABLE_ROWS AS rows, round((data_length + index_length) / 1024 / 1024, 2) AS mb
-       FROM information_schema.TABLES WHERE table_schema = DATABASE() AND TABLE_NAME = 'log'`,
-    ).catch(() => undefined);
+    const r = await db.row`
+      SELECT TABLE_ROWS AS rows, round((data_length + index_length) / 1024 / 1024, 2) AS mb
+       FROM information_schema.TABLES WHERE table_schema = DATABASE() AND TABLE_NAME = 'log'`.catch(() => undefined);
     if (r) return { rows: Number(r.rows) || 0, mb: r.mb == null ? null : Number(r.mb) };
   }
-  const rows = Number(await db.one("SELECT count(*) FROM log").catch(() => 0)) || 0;
+  const rows = Number(await db.one`SELECT count(*) FROM log`.catch(() => 0)) || 0;
   return { rows, mb: null };
 }
 
@@ -179,29 +171,24 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 
   if (doName === "clean_data") {
     // blank stored POST bodies, keep the request rows
-    const params: unknown[] = [];
-    let sql = "UPDATE log SET post = '' WHERE post != ''";
-    if (before) { sql += " AND time < ?"; params.push(before); }
-    const r = await db.exec(sql, params);
+    const r = await db.exec`UPDATE log SET post = '' WHERE post != ''${before ? sql` AND time < ${before}` : sql.raw("")}`;
     msg = `${r.affectedRows} ${await node.app.t`entries processed`}`;
   } else if (doName === "clean_items") {
-    const cond: string[] = ["1"];
-    const params: unknown[] = [];
-    if (before) { cond.push("time < ?"); params.push(before); }
+    const cond: Sql[] = [sql.raw("1")];
+    if (before) cond.push(sql`time < ${before}`);
     if (data.check_if_used) {
       const refs = logRefColumns(db);
       if (refs.length) {
-        const union = refs.map((r) => `SELECT ${r.col} AS id FROM ${r.table} WHERE ${r.col} IS NOT NULL`).join(" UNION ");
-        cond.push(`log.id NOT IN (${union})`);
+        const union = sql.join(refs.map((r) => sql`SELECT ${sql.id(r.col)} AS id FROM ${sql.id(r.table)} WHERE ${sql.id(r.col)} IS NOT NULL`), " UNION ");
+        cond.push(sql`log.id NOT IN (${union})`);
       }
     }
-    let inner = `SELECT id FROM log WHERE ${cond.join(" AND ")} ORDER BY id DESC`;
-    if (limit) { inner += " LIMIT ?"; params.push(limit); }
-    const r = await db.exec(`DELETE FROM log WHERE id IN (SELECT id FROM (${inner}) x)`, params);
+    const inner = sql`SELECT id FROM log WHERE ${sql.join(cond, " AND ")} ORDER BY id DESC${limit ? sql` LIMIT ${limit}` : sql.raw("")}`;
+    const r = await db.exec`DELETE FROM log WHERE id IN (SELECT id FROM (${inner}) x)`;
     msg = `${r.affectedRows} ${await node.app.t`entries processed`}`;
   } else if (doName === "optimize") {
-    if (db.dialect === "mysql") { await db.exec("OPTIMIZE TABLE log"); msg = await node.app.t`Table optimized`; }
-    else if (db.dialect === "sqlite") { await db.exec("VACUUM"); msg = await node.app.t`Table optimized`; }
+    if (db.dialect === "mysql") { await db.exec`OPTIMIZE TABLE log`; msg = await node.app.t`Table optimized`; }
+    else if (db.dialect === "sqlite") { await db.exec`VACUUM`; msg = await node.app.t`Table optimized`; }
     else msg = await node.app.t`Not supported for this database`;
   }
   return `${msg}<br><small>${((performance.now() - t0) / 1000).toFixed(2)} sec.</small>`;
@@ -210,6 +197,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   if (ctx.get.id) return renderDetail(node, Number(ctx.get.id));
+  //todo: const {t} = node.app;
 
   const message = vars.do ? await runTool(node, String(vars.do), (vars.data ?? {}) as Record<string, unknown>) : "";
   const stats = await tableStats(node);
@@ -285,49 +273,47 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; var
 
 // ── detail ──────────────────────────────────────────────────────────────────
 async function renderDetail(node: Node, id: number): Promise<string> {
+  // todo: const {t, db} = node.app;
   const db = node.app.db;
   const ctx = getCtx();
   if (!id) return `<div>${await node.app.t`Not found`}</div>`;
 
-  const log = await db.row(
-    `SELECT log.*, url.url AS url, referer.url AS referer, ip.ip AS ip, ua.user_agent AS user_agent
+  const log = await db.row`
+    SELECT log.*, url.url AS url, referer.url AS referer, ip.ip AS ip, ua.user_agent AS user_agent
      FROM log
         LEFT JOIN log_url url       ON log.url_id        = url.id
         LEFT JOIN log_url referer   ON log.referer_id    = referer.id
         LEFT JOIN log_ip ip         ON log.ip_id         = ip.id
         LEFT JOIN log_user_agent ua ON log.user_agent_id = ua.id
-     WHERE log.id = ?`, [id],
-  );
+     WHERE log.id = ${id}`;
   if (!log) return `<div>${await node.app.t`Not found`}</div>`;
 
-  const sess = log.sess_id ? await db.row("SELECT * FROM sess WHERE id = ?", [log.sess_id]) : null;
-  const usr = sess?.usr_id ? await db.row("SELECT * FROM usr WHERE id = ?", [sess.usr_id]) : null;
+  const sess = log.sess_id ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
+  const usr = sess?.usr_id ? await db.row`SELECT * FROM usr WHERE id = ${sess.usr_id}` : null;
   const info = uaInfo(log.user_agent ?? "");
 
   // relations: rows in other tables referencing this log entry
   let relations = "";
   for (const { table, col } of logRefColumns(db)) {
-    const refRows = await db.all(`SELECT * FROM ${table} WHERE ${col} = ?`, [id]).catch(() => []);
+    const refRows = await db.all`SELECT * FROM ${sql.id(table)} WHERE ${sql.id(col)} = ${id}`.catch(() => []);
     if (refRows.length) relations += `<tr><td>${hee(table)}<td>${hee(col)}<td><div style="max-width:50rem; max-height:30rem; overflow:auto">${dump(refRows)}</div>`;
   }
 
   // history of session / client / ip
   const historyOf = (ctx.get.history_of as string) ?? "sess";
-  let hWhere = "", hParams: unknown[] = [];
-  if (historyOf === "client" && log.client_id) { hWhere = "log.client_id = ?"; hParams = [log.client_id]; }
-  else if (historyOf === "ip" && log.ip_id) { hWhere = "log.ip_id = ?"; hParams = [log.ip_id]; }
-  else if (log.sess_id) { hWhere = "log.sess_id = ?"; hParams = [log.sess_id]; }
+  let hWhere: Sql | null = null;
+  if (historyOf === "client" && log.client_id) hWhere = sql`log.client_id = ${log.client_id}`;
+  else if (historyOf === "ip" && log.ip_id) hWhere = sql`log.ip_id = ${log.ip_id}`;
+  else if (log.sess_id) hWhere = sql`log.sess_id = ${log.sess_id}`;
 
   let historyRows = "";
   if (hWhere) {
-    const logs = await db.all(
-      `SELECT log.id, log.time, log.post, url.url AS url, referer.url AS referer
+    const logs = await db.all`
+      SELECT log.id, log.time, log.post, url.url AS url, referer.url AS referer
        FROM log
           LEFT JOIN log_url url     ON log.url_id     = url.id
           LEFT JOIN log_url referer ON log.referer_id = referer.id
-       WHERE ${hWhere} AND log.id <= ? ORDER BY log.id DESC LIMIT 100`,
-      [...hParams, id],
-    ).catch(() => []);
+       WHERE ${hWhere} AND log.id <= ${id} ORDER BY log.id DESC LIMIT 100`.catch(() => []);
     const u = ctx.url;
     for (const item of logs) {
       u.searchParams.set("id", String(item.id));
@@ -378,10 +364,8 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
   const since = Math.floor(Date.now() / 1000) - 86400;
-  const total = Number(await db.one("SELECT count(*) FROM log WHERE time >= ?", [since]).catch(() => 0)) || 0;
-  const users = Number(await db.one(
-    "SELECT count(DISTINCT sess.usr_id) FROM log JOIN sess ON log.sess_id = sess.id WHERE log.time >= ? AND sess.usr_id IS NOT NULL", [since],
-  ).catch(() => 0)) || 0;
+  const total = Number(await db.one`SELECT count(*) FROM log WHERE time >= ${since}`.catch(() => 0)) || 0;
+  const users = Number(await db.one`SELECT count(DISTINCT sess.usr_id) FROM log JOIN sess ON log.sess_id = sess.id WHERE log.time >= ${since} AND sess.usr_id IS NOT NULL`.catch(() => 0)) || 0;
   return `<div class=-body>
     <b>${total.toLocaleString("de-CH")}</b> ${await app.t`requests (24h)`}<br>
     <small>${users} ${await app.t`logged-in users`}</small>

@@ -2,6 +2,7 @@
 import { assertEquals } from "./deps.ts";
 import { Session, SessionManager } from "../lib/SessionManager.ts";
 import { RequestContext } from "../lib/RequestContext.ts";
+import { fakeRender } from "./sqlFake.ts";
 
 function fakeDb() {
   const calls: Array<[string, unknown[] | undefined]> = [];
@@ -12,12 +13,12 @@ function fakeDb() {
     setRow(row: any) {
       rowResult = row;
     },
-    row(sql: string, params?: unknown[]) {
-      calls.push([sql, params]);
+    row(...a: any[]) {
+      calls.push(fakeRender(a[0], a.slice(1)));
       return rowResult;
     },
-    exec(sql: string, params?: unknown[]) {
-      calls.push([sql, params]);
+    exec(...a: any[]) {
+      calls.push(fakeRender(a[0], a.slice(1)));
       return { insertId: insertId++, affectedRows: 1 };
     },
     table(name: string) {

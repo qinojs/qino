@@ -23,8 +23,8 @@ export function userSettingsItem(user: any, schema?: any): Promise<any> {
 
 export function sessSettingsItem(db: Db, sessId: string | number, schema?: any): Promise<any> {
     return buildRoot(
-        async () => (await db.row("SELECT settings FROM sess WHERE id = ?", [sessId]))?.settings,
-        async (json) => { await db.query("UPDATE sess SET settings = ? WHERE id = ?", [json, sessId]); },
+        async () => (await db.row`SELECT settings FROM sess WHERE id = ${sessId}`)?.settings,
+        async (json) => { await db.query`UPDATE sess SET settings = ${json} WHERE id = ${sessId}`; },
         schema,
     );
 }
@@ -36,9 +36,9 @@ export function sessSettingsItem(db: Db, sessId: string | number, schema?: any):
  * Todo? "only if user has none yet" or overwrite only undefined ones? does that make sense? or does it cause complications?
  */
 export async function mergeSessionSettingsToUser(db: Db, userId: number, sessId: string): Promise<void> {
-    const sessSettings = await db.one("SELECT settings FROM sess WHERE id = ?", [sessId]);
+    const sessSettings = await db.one`SELECT settings FROM sess WHERE id = ${sessId}`;
     if (!sessSettings) return;
-    const usrSettings = await db.one("SELECT settings FROM usr WHERE id = ?", [userId]);
+    const usrSettings = await db.one`SELECT settings FROM usr WHERE id = ${userId}`;
     if (usrSettings) return;
-    await db.query("UPDATE usr SET settings = ? WHERE id = ?", [sessSettings, userId]);
+    await db.query`UPDATE usr SET settings = ${sessSettings} WHERE id = ${userId}`;
 }

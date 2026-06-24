@@ -1,5 +1,6 @@
 import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
 import { uid } from "./util.ts";
+import { sql } from "./sql.ts";
 import type { Db } from "./Db.ts";
 import type { Req } from "./Req.ts";
 import type { RequestContext } from "./RequestContext.ts";
@@ -24,7 +25,7 @@ export class Session {
         this.token = token;
         this.isNew = isNew;
         const root = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
-            await this.#db.exec("UPDATE sess SET data = ? WHERE id = ?", [json, this.id]);
+            await this.#db.exec`UPDATE sess SET data = ${json} WHERE id = ${this.id}`;
         }, { debounce: 0 });
         this.data = root.proxy;
     }
@@ -34,7 +35,7 @@ export class Session {
         clearTimeout(this.#touchTimer);
         this.#touchTimer = setTimeout(async () => {
             try {
-                await this.#db.exec("UPDATE sess SET `access` = ?, usr_id = ? WHERE id = ?", [unixTime(), userId || null, this.id]);
+                await this.#db.exec`UPDATE sess SET ${sql.id("access")} = ${unixTime()}, usr_id = ${userId || null} WHERE id = ${this.id}`;
             } catch (e) { console.error("session touch error:", e); }
         }, 50);
     }
@@ -53,17 +54,17 @@ export class SessionManager {
 
     async load(cookieSessionToken?: string): Promise<Session> {
         const row = cookieSessionToken
-            ? await this.#db.row("SELECT id, data FROM sess WHERE token = ?", [cookieSessionToken])
+            ? await this.#db.row`SELECT id, data FROM sess WHERE token = ${cookieSessionToken}`
             : null;
         if (row) return new Session(this.#db, row.id, cookieSessionToken!, row.data, false);
         return this.#create();
     }
 
     async regenerateId(oldSessionToken: string): Promise<Session> {
-        const row = oldSessionToken ? await this.#db.row("SELECT id FROM sess WHERE token = ?", [oldSessionToken]) : null;
+        const row = oldSessionToken ? await this.#db.row`SELECT id FROM sess WHERE token = ${oldSessionToken}` : null;
         if (!row) return this.#create();
         const token = uid();
-        await this.#db.exec("UPDATE sess SET token = ?, data = ?, `access` = ? WHERE id = ?", [token, EMPTY_SESSION, unixTime(), row.id]);
+        await this.#db.exec`UPDATE sess SET token = ${token}, data = ${EMPTY_SESSION}, ${sql.id("access")} = ${unixTime()} WHERE id = ${row.id}`;
         return new Session(this.#db, row.id, token, EMPTY_SESSION, true);
     }
 

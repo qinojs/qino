@@ -5,7 +5,7 @@
 // Writes without request context (cron/CLI/boot) are not captured — capture
 // is keyed to ctx.logId, so there is no log entry to attach them to.
 
-import { requestStorage, type App } from "../../core/mod.ts";
+import { requestStorage, sql, type App } from "../../core/mod.ts";
 import { getVers, versTable } from "./Vers.ts";
 
 export function initHistory(app: App) {
@@ -35,15 +35,14 @@ export function initHistory(app: App) {
         const versCols = await ctx.app.db.columns(vt);
         const selects = versCols.map((c: any) => {
             const f = c.Field;
-            if (f === "_vers_space")   return `${getVers(ctx).space}`;
-            if (f === "_vers_log")     return logId;
-            if (f === "_vers_deleted") return "0";
-            if (f === "offset")        return "`offset`";
-            return `\`${f}\``;
+            if (f === "_vers_space")   return sql`${getVers(ctx).space}`;
+            if (f === "_vers_log")     return sql`${logId}`;
+            if (f === "_vers_deleted") return sql.raw("0");
+            return sql.id(f);
         });
         const where = e.Table.entryId2where(e.id);
         if (!where) return;
-        await ctx.app.db.query(`REPLACE INTO \`${vt}\` SELECT ${selects.join(", ")} FROM \`${tableName}\` WHERE ${where}`);
+        await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${sql.raw(where)}`;
     };
     app.db.on("table::update-after", catchInsertUpdate);
     app.db.on("table::insert-after", catchInsertUpdate);
@@ -62,13 +61,10 @@ export function initHistory(app: App) {
         };
         const VT = ctx.app.db.table(vt);
 
-        // const [set, params] = VT.valuesToFragment(data, undefined, true);
-        // await ctx.app.db.exec(`REPLACE INTO \`${vt}\` SET ${set}`, params);
         // SQLite has no REPLACE ... SET; use the portable (cols) VALUES (?) form (mirrors DbTable.insert).
         const cols = Object.keys(VT.fields!).filter((f) => f in data);
-        const params = cols.map((f) => VT.fields![f].valueTransform(data[f]));
-        const into = `(${cols.map((c) => `\`${c}\``).join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`;
-        await ctx.app.db.exec(`REPLACE INTO \`${vt}\` ${into}`, params);
+        const into = sql`(${sql.join(cols.map((c) => sql.id(c)))}) VALUES (${sql.join(cols.map((f) => sql`${VT.fields![f].valueTransform(data[f])}`))})`;
+        await ctx.app.db.exec`REPLACE INTO ${sql.id(vt)} ${into}`;
     });
 
     // ─── File protection: don't delete blobs referenced in _vers_file ────────
@@ -78,9 +74,7 @@ export function initHistory(app: App) {
     app.on("dbFile-remove-fs", async (e: any) => {
         const md5 = e.dbFile?.vs?.md5 ?? "";
         if (!md5) return;
-        const inVers = await app.db.one(
-            "SELECT id FROM _vers_file WHERE md5 = ?", [md5]
-        ).catch(() => null);
+        const inVers = await app.db.one`SELECT id FROM _vers_file WHERE md5 = ${md5}`.catch(() => null);
         if (inVers) e.prevent = true;
     });
 }

@@ -50,10 +50,10 @@ export function initDraftmode(app: App) {
     //             if (!fieldSpec[k]) liveData[k] = v;
     //         }
     //         if (Object.keys(liveData).length) {
-    //             const [set, setParams] = e.Table.valuesToFragment(liveData, undefined, true);
+    //             const set = e.Table.valuesToFragment(liveData, undefined, true);
     //             const idValues = e.Table.entryId2Array(e.id);
-    //             const [idWhere, idParams] = e.Table.valuesToFragment(idValues);
-    //             await ctx.app.db.exec(`UPDATE \`${tableName}\` SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
+    //             const idWhere = e.Table.valuesToFragment(idValues);
+    //             await ctx.app.db.exec`UPDATE ${sql.id(tableName)} SET ${set} WHERE ${idWhere}`;
     //         }
     //     }
     //     const VT = ctx.app.db.table(`_vers_${tableName}`);
@@ -74,7 +74,7 @@ export function initDraftmode(app: App) {
     //     const auto = e.Table.autoIncrement;
     //     if (auto) {
     //         const value = Number(ids?.[String(auto)]);
-    //         if (value) await ctx.app.db.query(`ALTER TABLE \`${tableName}\` AUTO_INCREMENT=${value + 1}`);
+    //         if (value) await ctx.app.db.query`ALTER TABLE ${sql.id(tableName)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;
     //     }
     // });
     //
@@ -105,14 +105,14 @@ export function initDraftmode(app: App) {
         if (!liveData) return;
         const idValues = e.Table.entryId2Array(e.id);
         if (!idValues) return;
-        const [idWhere, idParams] = e.Table.valuesToFragment(idValues);
-        const row = await ctx.app.db.row(`SELECT * FROM page WHERE ${idWhere}`, idParams);
+        const idWhere = e.Table.valuesToFragment(idValues);
+        const row = await ctx.app.db.row`SELECT * FROM page WHERE ${idWhere}`;
         if (!row) return;
         if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
         if (!Object.keys(liveData).length) return;
-        const [set, setParams] = e.Table.valuesToFragment(liveData, undefined, true);
-        await ctx.app.db.exec(`UPDATE page       SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
-        await ctx.app.db.exec(`UPDATE _vers_page SET ${set} WHERE ${idWhere}`, [...setParams, ...idParams]);
+        const set = e.Table.valuesToFragment(liveData, undefined, true);
+        await ctx.app.db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
+        await ctx.app.db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
     });
 
     // ─── vers_cms_page_changed tracking ──────────────────────────────────────
@@ -138,11 +138,10 @@ export function initDraftmode(app: App) {
 
     // Copy vers_cms_page_changed when a new space is created
     app.on("vers::createSpace", async (e: any) => {
-        await app.db.query(
-            `INSERT INTO vers_cms_page_changed ` +
-            `SELECT page_id, ${e.space} as space, changed_inside, changed_page, changed ` +
-            `FROM vers_cms_page_changed WHERE space = 0`
-        );
+        await app.db.query`
+            INSERT INTO vers_cms_page_changed
+            SELECT page_id, ${e.space} as space, changed_inside, changed_page, changed
+            FROM vers_cms_page_changed WHERE space = 0`;
     });
 
     // Inform client about changed pages after API calls (draftmode)
@@ -156,10 +155,7 @@ export function initDraftmode(app: App) {
         const page = await P.page();
         const pids = [pid, page?.id].filter(Boolean);
         for (const page_id of pids) {
-            const versions = await ctx.app.db.indexCol(
-                `SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ?`,
-                [page_id]
-            );
+            const versions = await ctx.app.db.indexCol`SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ${page_id}`;
             if (!versions[0] || (versions[1] as number) > (versions[0] as number)) {
                 ctx.state.Answer["cms_vers_changed"] ??= {};
                 ctx.state.Answer["cms_vers_changed"][page_id] = true;
@@ -179,14 +175,12 @@ export function initDraftmode(app: App) {
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log) return;
     //     if (!Page.vs) {
     //         const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
-    //         Page.vs = await ctx.app.db.row(
-    //             `SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM \`${spaceView}\` WHERE id = ?`, [Page.id]
-    //         );
+    //         Page.vs = await ctx.app.db.row`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE id = ${Page.id}`;
     //     }
     //     if (!Page.vs) return;
     //     const spaceNeeded = (await Page.access()) < 2 ? 0 : getCmsVers(ctx).space;
     //     if ((Page.vs.vers_space ?? 0) !== spaceNeeded) {
-    //         Page.vs = await ctx.app.db.row(`SELECT * FROM page WHERE id = ?`, [Page.id]);
+    //         Page.vs = await ctx.app.db.row`SELECT * FROM page WHERE id = ${Page.id}`;
     //     }
     //     if (Page.vs && spaceNeeded) {
     //         const oldSpace = setSpace(ctx, spaceNeeded);
@@ -199,13 +193,8 @@ export function initDraftmode(app: App) {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log || Page.Children !== null) return;
     //     const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
-    //     const rows1 = await ctx.app.db.all(
-    //         `SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM \`${spaceView}\` WHERE basis = ? ORDER BY type DESC, sort`,
-    //         [Page.id]
-    //     );
-    //     const rows2 = await ctx.app.db.all(
-    //         `SELECT * FROM page WHERE basis = ? ORDER BY type DESC, sort`, [Page.id]
-    //     );
+    //     const rows1 = await ctx.app.db.all`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
+    //     const rows2 = await ctx.app.db.all`SELECT * FROM page WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
     //     Page.Children = new Map();
     //     for (const row of [...rows1, ...rows2]) {
     //         if (Page.Children.has(row.id)) continue;
@@ -227,10 +216,7 @@ export function initDraftmode(app: App) {
         // Check if draft has changes newer than live
         const MainNode = ctx.cms.mainNode;
         if (MainNode) {
-            const versions = await ctx.app.db.indexCol(
-                `SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ?`,
-                [String(MainNode)]
-            );
+            const versions = await ctx.app.db.indexCol`SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ${String(MainNode)}`;
             if (versions[1] && (!versions[0] || versions[1] > versions[0])) {
                 ctx.html.jsData.cms_vers_draft_changed = true;
             }

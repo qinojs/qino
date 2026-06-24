@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
+import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { toTools } from "../../core/mod.ts";
 import { api, init, name, needs } from "../plugin.ts";
 
@@ -62,7 +63,8 @@ Deno.test("cms.filebrowser: search groups existing accessible files by md5", asy
   const ctx = {
     app: {
       db: {
-        all: (_sql: string, params: unknown[]) => {
+        all: (...a: any[]) => {
+          const [, params] = fakeRender(a[0], a.slice(1));
           assertEquals(params.slice(0, 3), ["cat", "%cat%", "cat%"]);
           return [
             { pid: 10, id: 1, mime: "image/jpeg", name: "a.jpg", md5: "same", access: 1 },

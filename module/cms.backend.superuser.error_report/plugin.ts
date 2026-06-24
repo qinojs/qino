@@ -1,4 +1,4 @@
-import { hee, getCtx, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, type Sql, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -42,18 +42,15 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const get = ctx.get;
 
     if (vars.delete) {
-        const [where, whereParams] = db.table("m_error_report").valuesToFragment(vars.delete);
-        if (where) await db.exec(`DELETE FROM m_error_report WHERE ${where}`, whereParams);
+        const where = db.table("m_error_report").valuesToFragment(vars.delete);
+        if (where.parts.length) await db.exec`DELETE FROM m_error_report WHERE ${where}`;
     }
     if (vars.delete_foreign_js) {
         const host = ctx.req.header("host") ?? "";
-        await db.query(
-            "DELETE FROM m_error_report WHERE source = 'js' AND file NOT LIKE '/_%' AND file NOT LIKE ? AND file NOT LIKE ?",
-            ["http://" + host + "%", "https://" + host + "%"]
-        );
+        await db.query`DELETE FROM m_error_report WHERE source = 'js' AND file NOT LIKE '/_%' AND file NOT LIKE ${"http://" + host + "%"} AND file NOT LIKE ${"https://" + host + "%"}`;
     }
     if (vars.deleteAll) {
-        await db.query("DELETE FROM m_error_report");
+        await db.query`DELETE FROM m_error_report`;
     }
 
     if (get.id) return renderDetail(node, Number(get.id));
@@ -61,8 +58,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const order    = get.order ?? "max_id";
     const orderSql = order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
 
-    const rows = await db.all(
-        `SELECT e.*,
+    const rows = await db.all`
+        SELECT e.*,
             g.num,
             g.num_ip,
             g.time,
@@ -84,8 +81,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
             LEFT JOIN log  ON e.log_id   = log.id
             LEFT JOIN sess ON log.sess_id = sess.id
             LEFT JOIN usr  ON sess.usr_id = usr.id
-         ORDER BY ${orderSql}`
-    );
+         ORDER BY ${sql.raw(orderSql)}`;
 
     const sortU = ctx.url; sortU.searchParams.delete("id");
     const sortHref = (o: string) => { sortU.searchParams.set("order", o); return hee(sortU.search); };
@@ -184,17 +180,16 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
     const db = node.app.db;
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
-    const [where, whereParams] = db.table("m_error_report").valuesToFragment({ source: get.source, file: get.file, line: get.line, col: get.col });
-    if (!where) return `<div>${await node.app.t`Invalid parameters`}</div>`;
+    const where = db.table("m_error_report").valuesToFragment({ source: get.source, file: get.file, line: get.line, col: get.col });
+    if (!where.parts.length) return `<div>${await node.app.t`Invalid parameters`}</div>`;
 
-    const rows = await db.all(
-        `SELECT e.*, usr.email
+    const rows = await db.all`
+        SELECT e.*, usr.email
          FROM m_error_report e
             LEFT JOIN log  ON e.log_id   = log.id
             LEFT JOIN sess ON log.sess_id = sess.id
             LEFT JOIN usr  ON sess.usr_id = usr.id
-         WHERE ${where} ORDER BY e.time DESC LIMIT 200`, whereParams
-    );
+         WHERE ${where} ORDER BY e.time DESC LIMIT 200`;
 
     let tableRows = "";
     const u = ctx.url;
@@ -246,12 +241,12 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     const get = ctx.get as Record<string, string>;
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
-    const error = await db.row("SELECT * FROM m_error_report WHERE id = ?", [id]);
+    const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;
     if (!error) return `<div>${await node.app.t`Error entry not found`}</div>`;
 
-    const log  = error.log_id ? await db.row("SELECT * FROM log WHERE id = ?", [error.log_id]) : null;
-    const sess = log?.sess_id  ? await db.row("SELECT * FROM sess WHERE id = ?", [log.sess_id]) : null;
-    const usr  = sess?.usr_id  ? await db.row("SELECT * FROM usr  WHERE id = ?", [sess.usr_id]) : null;
+    const log  = error.log_id ? await db.row`SELECT * FROM log WHERE id = ${error.log_id}` : null;
+    const sess = log?.sess_id  ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
+    const usr  = sess?.usr_id  ? await db.row`SELECT * FROM usr  WHERE id = ${sess.usr_id}` : null;
 
     let btHtml = "";
     const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
@@ -268,27 +263,24 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     }
 
     const historyOf = get.history_of ?? "ip";
-    let historyWhere = "";
-    let historyParams: unknown[] = [];
-    if      (historyOf === "ip"     && error.ip)       { historyWhere = `log.ip_id IN (SELECT id FROM log_ip WHERE ip = ?)`; historyParams = [error.ip]; }
-    else if (historyOf === "sess"   && log?.sess_id)   { historyWhere = `log.sess_id = ?`;  historyParams = [log.sess_id]; }
-    else if (historyOf === "client" && log?.client_id) { historyWhere = `log.client_id = ?`; historyParams = [log.client_id]; }
+    let historyWhere: Sql | null = null;
+    if      (historyOf === "ip"     && error.ip)       historyWhere = sql`log.ip_id IN (SELECT id FROM log_ip WHERE ip = ${error.ip})`;
+    else if (historyOf === "sess"   && log?.sess_id)   historyWhere = sql`log.sess_id = ${log.sess_id}`;
+    else if (historyOf === "client" && log?.client_id) historyWhere = sql`log.client_id = ${log.client_id}`;
 
     let historyRows = "";
     if (historyWhere) {
-        const logs = await db.all(
-            `SELECT log.*, url.url, referer.url AS referer
+        const logs = await db.all`
+            SELECT log.*, url.url, referer.url AS referer
              FROM log
                 LEFT JOIN log_url url     ON log.url_id     = url.id
                 LEFT JOIN log_url referer ON log.referer_id = referer.id
-             WHERE ${historyWhere} AND log.id <= ?
-             ORDER BY log.id DESC LIMIT 30`,
-            [...historyParams, error.log_id]
-        ).catch(() => []);
+             WHERE ${historyWhere} AND log.id <= ${error.log_id}
+             ORDER BY log.id DESC LIMIT 30`.catch(() => []);
 
         const eu = ctx.url; eu.searchParams.delete("history_of");
         for (const item of logs) {
-            const errorItems = await db.all("SELECT * FROM m_error_report WHERE log_id = ? ORDER BY id DESC", [item.id]).catch(() => []);
+            const errorItems = await db.all`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
             let errorLinks = "";
             for (const eItem of errorItems) {
                 const active = eItem.id === error.id ? "&#x25B6;&#xFE0E;" : "";
@@ -375,8 +367,8 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
 
 export async function backendDashboardWidget(app: App): Promise<string> {
 	  const db = app.db;
-	  const rows = await db.all(
-	    `SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
+	  const rows = await db.all`
+	    SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
 	     FROM (
 	        SELECT prio, source, file, line, col, max(id) AS max_id, count(*) AS num
 	        FROM m_error_report
@@ -384,8 +376,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 	     ) g
 	     JOIN m_error_report e ON e.id = g.max_id
 	     ORDER BY FIELD(e.prio,'error','warning','notice'), g.max_id DESC
-	     LIMIT 5`
-	  ).catch(() => []);
+	     LIMIT 5`.catch(() => []);
 
   if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries</span>`;
 

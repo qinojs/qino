@@ -15,7 +15,7 @@
 // views fall back to the previous surviving entry, and since the newest entry
 // per bucket survives, every live row keeps ≥1 entry (baseline invariant).
 
-import type { Db } from "../core/mod.ts";
+import { sql, type Db } from "../core/mod.ts";
 import { versTable, versedTables } from "./lib/Vers.ts";
 
 const DENSITY = 24;           // ~snapshots kept per age doubling (higher = keep more)
@@ -40,7 +40,7 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
     for (const t of Object.keys(versedTables(db))) {
         const vt = versTable(db, t);
         if (!vt) continue;
-        const pks = (await db.all(`SHOW COLUMNS FROM ${t}`)).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
+        const pks = (await db.all`SHOW COLUMNS FROM ${sql.id(t)}`).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
         const join = pks.map((f: string) => `mm.\`${f}\` = m.\`${f}\``).join(" AND ");
         // m is deletable if a newer entry mm of the same row falls into the same bucket
         const body =
@@ -51,9 +51,9 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
             `WHERE l.time < ${now - KEEP_RECENT_SEC} AND ${bucket("l.time")} = ${bucket("ll.time")}`;
         if (dryRun) {
             const distinct = [...pks.map((f: string) => `m.\`${f}\``), "m._vers_space", "m._vers_log"].join(", ");
-            count += Number(await db.one(`SELECT COUNT(DISTINCT ${distinct}) ${body}`));
+            count += Number(await db.one`SELECT COUNT(DISTINCT ${sql.raw(distinct)}) ${sql.raw(body)}`);
         } else {
-            count += Number((await db.exec(`DELETE m ${body}`)).affectedRows ?? 0);
+            count += Number((await db.exec`DELETE m ${sql.raw(body)}`).affectedRows ?? 0);
         }
     }
     return count;

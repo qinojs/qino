@@ -107,7 +107,7 @@ async function getBucket(db: Db, scope: string, ident: string, set: Record<strin
   const key = bucketKey(scope, ident);
   const old = bucketCache.get(db)?.get(key);
   if (old && old.until > Date.now()) return old.row;
-  const row = await db.row("SELECT * FROM m_security_bucket WHERE scope = ? AND ident = ? ORDER BY id LIMIT 1", [scope, ident]);
+  const row = await db.row`SELECT * FROM m_security_bucket WHERE scope = ${scope} AND ident = ${ident} ORDER BY id LIMIT 1`;
   setBucketCache(db, scope, ident, row ?? null, set);
   return row;
 }
@@ -161,8 +161,8 @@ export async function addEventDb(db: Db, data: Record<string, unknown>) {
 
 export async function cleanup(db: Db, set: Record<string, number>) {
   const old = now() - set.keepDays * 86400;
-  await db.query("DELETE FROM m_security_event WHERE time < ?", [old]);
-  await db.query("DELETE FROM m_security_bucket WHERE last_seen < ? AND blocked = 0", [old]);
+  await db.query`DELETE FROM m_security_event WHERE time < ${old}`;
+  await db.query`DELETE FROM m_security_bucket WHERE last_seen < ${old} AND blocked = 0`;
 }
 
 function ipRange(ip: string): string {

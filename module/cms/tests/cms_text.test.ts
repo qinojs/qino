@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
+import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { invoke, RequestContext, requestStorage } from "../../core/mod.ts";
 import { api } from "../../cms.text/mod.ts";
 
@@ -67,8 +68,9 @@ Deno.test("cms.text: missing and empty texts are returned as untranslated", asyn
     apt: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
     cms: { node: () => ({ access: () => 3 }) },
     db: {
-      one: (_sql: string, args: unknown[]) => {
-        const lang = args[1];
+      one: (...a: any[]) => {
+        const [, params] = fakeRender(a[0], a.slice(1));
+        const lang = params[1];
         if (lang === "de") return "Hallo";
         if (lang === "en") return "";
         return undefined;

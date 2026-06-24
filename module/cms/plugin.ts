@@ -123,7 +123,7 @@ export function init(app: App) {
     app.on("dbFile::access2", async (e) => {
         if (e.access) return;
         const File = e.File as DbFile;
-        const rows = await app.db.all("SELECT page_id FROM page_file WHERE file_id = ?", [File.id]);
+        const rows = await app.db.all`SELECT page_id FROM page_file WHERE file_id = ${File.id}`;
         for (const vs of rows) {
             const P = await app.cms.node(vs.page_id);
             if (await P.isReadable()) {
@@ -136,8 +136,8 @@ export function init(app: App) {
 }
 
 export async function install({ app }: { app: App }): Promise<void> {
-  if (!await app.db.one("SELECT id FROM page WHERE id = 1")) {
-    //await app.db.query("INSERT INTO page SET id=1, access=1, visible=1, searchable=1, module = 'cms.layout.custom.9', basis = 0, type='p'");
+  if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
+    //await app.db.query`INSERT INTO page (id, access, visible, searchable, module, basis, type) VALUES (1, 1, 1, 1, 'cms.layout.custom.9', 0, 'p')`;
     await app.db.table('page').insert({ id: 1, access: 1, visible: 1, searchable: 1, module: "cms.layout.custom.9", basis: 0, type: "p" });
     await (await app.cms.node(1)).title("en", "root");
   }

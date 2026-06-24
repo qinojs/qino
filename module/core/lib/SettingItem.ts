@@ -1,4 +1,5 @@
 import { Item } from "../../../deps.ts";
+import { sql } from "./sql.ts";
 import type { Db } from "./Db.ts";
 
 class SettingItem extends Item<SettingItem> {
@@ -17,13 +18,13 @@ class SettingItem extends Item<SettingItem> {
     if (this.parent && !this.data?.id) {
       const parentId = this.parent.data?.id ?? 0;
       const offset = this.key;
-      const result = await this.root.db.exec("INSERT INTO qg_setting (basis, `offset`, value) VALUES (?, ?, '')", [parentId, offset]);
-      this.data = await this.root.db.row("SELECT * FROM qg_setting WHERE id = ?", [result.insertId]);
+      const result = await this.root.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${parentId}, ${offset}, '')`;
+      this.data = await this.root.db.row`SELECT * FROM qg_setting WHERE id = ${result.insertId}`;
     }
 
     // fetch children
     const id = this.data?.id ?? 0;
-    const rows = await this.root.db.all("SELECT * FROM qg_setting WHERE basis = ? ORDER BY `offset`", [id]);
+    const rows = await this.root.db.all`SELECT * FROM qg_setting WHERE basis = ${id} ORDER BY ${sql.id("offset")}`;
     for (const data of rows) {
       const sub = this.item(data.offset);
       sub.data = data;
@@ -38,7 +39,7 @@ class SettingItem extends Item<SettingItem> {
     await this.reader(); // ensure data is loaded
 
     if (typeof value !== "object" || value == null) {
-      return this.root.db.query("UPDATE qg_setting SET value = ? WHERE id = ?", [String(value), this.data!.id]);
+      return this.root.db.query`UPDATE qg_setting SET value = ${String(value)} WHERE id = ${this.data!.id}`;
     }
 
     const promises = [];
@@ -51,7 +52,7 @@ class SettingItem extends Item<SettingItem> {
   override remover = async () => {
     await this.reader(); // ensure data is loaded
     for (const sub of this.items()) await sub.remove();
-    return this.root.db.query("DELETE FROM qg_setting WHERE id = ?", [this.data!.id]);
+    return this.root.db.query`DELETE FROM qg_setting WHERE id = ${this.data!.id}`;
   };
 }
 

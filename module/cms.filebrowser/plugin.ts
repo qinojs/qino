@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, type RequestContext, s, Access, type AptTree, type App } from "../core/mod.ts";
+import { getCtx, sql, type RequestContext, s, Access, type AptTree, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 export const name = "cms.filebrowser";
@@ -47,10 +47,7 @@ export function init(app: App) {
         const ctx = getCtx();
         const userId = ctx.userId;
         if (!userId) return;
-        const row = await app.db.row(
-            "SELECT usr_id FROM usr_file WHERE usr_id = ? AND file_id = ?",
-            [userId, String(e.File)],
-        );
+        const row = await app.db.row`SELECT usr_id FROM usr_file WHERE usr_id = ${userId} AND file_id = ${String(e.File)}`;
         if (row) e.access = true;
     });
 }
@@ -59,41 +56,19 @@ async function search(s_: string, ctx: RequestContext): Promise<any[]> {
     const db = ctx.app.db;
     const cms = ctx.app.cms;
 
-    let sql =
-        " SELECT f.*, pf.page_id AS pid" +
-        " FROM file f" +
-        " LEFT JOIN page_file pf ON pf.file_id = f.id" +
-        " WHERE true";
+    const cond = s_
+        ? sql` AND ( f.id = ${s_} OR f.name LIKE ${"%" + s_ + "%"} OR f.text LIKE ${s_ + "%"} )`
+        : sql.raw("");
+    const order = s_
+        ? sql` f.id = ${s_} DESC, f.name = ${s_} DESC, f.name LIKE ${s_ + "%"} DESC, f.name LIKE ${"% " + s_ + "%"} DESC, f.text = ${s_} DESC, f.text LIKE ${s_ + "%"} DESC, f.name ASC,`
+        : sql.raw("");
 
-    const params: any[] = [];
-
-    if (s_) {
-        sql +=
-            " AND (" +
-            "   f.id = ?" +
-            "   OR f.name LIKE ?" +
-            "   OR f.text LIKE ?" +
-            " )";
-        params.push(s_, "%" + s_ + "%", s_ + "%");
-    }
-
-    sql += " ORDER BY";
-
-    if (s_) {
-        sql +=
-            " f.id = ? DESC," +
-            " f.name = ? DESC," +
-            " f.name LIKE ? DESC," +
-            " f.name LIKE ? DESC," +
-            " f.text = ? DESC," +
-            " f.text LIKE ? DESC," +
-            " f.name ASC,";
-        params.push(s_, s_, s_ + "%", "% " + s_ + "%", s_, s_ + "%");
-    }
-
-    sql += " f.id DESC";
-
-    const rows = await db.all(sql, params);
+    const rows = await db.all`
+        SELECT f.*, pf.page_id AS pid
+        FROM file f
+        LEFT JOIN page_file pf ON pf.file_id = f.id
+        WHERE true${cond}
+        ORDER BY${order} f.id DESC`;
 
     const res: Record<string, any> = {};
 

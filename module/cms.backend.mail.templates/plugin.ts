@@ -13,7 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 export async function init(app: App): Promise<void> {
-  const rows = await app.db.all("SELECT name, html FROM mail_template");
+  const rows = await app.db.all`SELECT name, html FROM mail_template`;
   for (const row of rows) {
     if (row.name && row.html) app.mail.templates[row.name] = row.html;
   }
@@ -34,7 +34,7 @@ async function render(node: Node): Promise<string> {
     if (!tname) {
       message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
     } else {
-      const exists = await db.one("SELECT id FROM mail_template WHERE name=?", [tname]);
+      const exists = await db.one`SELECT id FROM mail_template WHERE name=${tname}`;
       if (exists) {
         message = `<div class="-msg -err">${await app.t`A template with this name already exists.`}</div>`;
       } else {
@@ -47,7 +47,7 @@ async function render(node: Node): Promise<string> {
     }
   }
 
-  const rows = await db.all("SELECT id, name, description, updated FROM mail_template ORDER BY name");
+  const rows = await db.all`SELECT id, name, description, updated FROM mail_template ORDER BY name`;
 
   const u = ctx.url;
   const trs = rows.length
@@ -99,7 +99,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const app = node.app;
   const db = app.db;
 
-  const row = await db.row("SELECT * FROM mail_template WHERE id=?", [id]);
+  const row = await db.row`SELECT * FROM mail_template WHERE id=${id}`;
   if (!row) return `<div class=u2-card><div class=-body>${await app.t`Template not found.`}</div></div>`;
 
   const back = ctx.url; back.searchParams.delete("id");
@@ -133,7 +133,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     }
 
     if ("delete" in ctx.post) {
-      await db.query("DELETE FROM mail_template WHERE id=?", [id]);
+      await db.query`DELETE FROM mail_template WHERE id=${id}`;
       delete app.mail.templates[row.name];
       ctx.responseStatus = 302;
       ctx.responseHeaders.set("Location", "?");
@@ -185,7 +185,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one("SELECT count(*) FROM mail_template"));
+  const total = Number(await app.db.one`SELECT count(*) FROM mail_template`);
   return `<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
   <tr><td>${await app.t`Templates`}:<td>${hee(String(total))}

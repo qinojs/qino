@@ -1,4 +1,4 @@
-import { hee, sqlSearchHelper, getCtx, type RequestContext } from "../../core/mod.ts";
+import { hee, sqlSearchHelper, sql, getCtx, type RequestContext } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
@@ -13,21 +13,9 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
   const grpId = ctx.get.grp_id ? Number(ctx.get.grp_id) : null;
 
   const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
+  const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");
 
-  let grpFilter = "";
-  const grpParams: unknown[] = [];
-  if (grpId) {
-    grpFilter = " AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ?)";
-    grpParams.push(grpId);
-  }
-
-  const sql =
-    " SELECT * FROM usr  WHERE " + sh.where +
-    grpFilter +
-    " ORDER BY " + sh.order +
-    " LIMIT 200";
-
-  const rows = await db.all(sql, [...sh.whereParams, ...grpParams, ...sh.orderParams]);
+  const rows = await db.all`SELECT * FROM usr WHERE ${sh.where}${grpFilter} ORDER BY ${sh.order} LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
 
@@ -35,13 +23,10 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
   for (const vs of rows) {
     if (vs.superuser && !isSuperuser) continue;
 
-    const numSess = await db.one(
-      "SELECT count(distinct sess.id) FROM sess WHERE usr_id = ? GROUP BY usr_id",
-      [vs.id]
-    ) ?? 0;
+    const numSess = await db.one`SELECT count(distinct sess.id) FROM sess WHERE usr_id = ${vs.id} GROUP BY usr_id` ?? 0;
 
-    const sessId = await db.one("SELECT max(id) FROM sess WHERE usr_id = ?", [vs.id]);
-    const time = sessId ? await db.one("SELECT max(time) FROM log WHERE log.sess_id = ?", [sessId]) : null;
+    const sessId = await db.one`SELECT max(id) FROM sess WHERE usr_id = ${vs.id}`;
+    const time = sessId ? await db.one`SELECT max(time) FROM log WHERE log.sess_id = ${sessId}` : null;
     const lastOnlineIso = time ? new Date(Number(time) * 1000).toISOString() : "";
 
     const detailUrl = pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + vs.id;

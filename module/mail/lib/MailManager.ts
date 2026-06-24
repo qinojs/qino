@@ -30,7 +30,7 @@ export class MailManager {
   }
 
   async get(id: string | number): Promise<MailMessage> {
-    const row = await this.app.db.row("SELECT * FROM mail WHERE id = ?", [id]);
+    const row = await this.app.db.row`SELECT * FROM mail WHERE id = ${id}`;
     if (!row) throw new Error(`Mail not found: ${id}`);
     const mail = new MailMessage(this, String(id), row);
     mail.persist = true;

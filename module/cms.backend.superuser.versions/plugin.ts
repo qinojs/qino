@@ -1,4 +1,4 @@
-import { hee, type App } from "../core/mod.ts";
+import { hee, sql, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { versedTables, versTable, thinHistory } from "../cms.versions/mod.ts";
@@ -16,7 +16,7 @@ async function render(node: Node): Promise<string> {
   const db = app.db;
 
   // table sizes (MySQL)
-  const status = await db.all("SHOW TABLE STATUS").catch(() => []);
+  const status = await db.all`SHOW TABLE STATUS`.catch(() => []);
   const sizeOf = new Map(status.map((r) => [String(r.Name), Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0)]));
 
   // ── per-table history storage ────────────────────────────────────────────
@@ -25,9 +25,9 @@ async function render(node: Node): Promise<string> {
     const vt = await versTable(db, t);
     if (!vt) continue;
     const [entries, rowsCount, spaces] = await Promise.all([
-      db.one(`SELECT COUNT(*) FROM \`${vt}\` WHERE _vers_log > 0`),
-      db.one(`SELECT COUNT(DISTINCT _vers_log) FROM \`${vt}\` WHERE _vers_log > 0`),
-      db.one(`SELECT COUNT(DISTINCT _vers_space) FROM \`${vt}\``),
+      db.one`SELECT COUNT(*) FROM ${sql.id(vt)} WHERE _vers_log > 0`,
+      db.one`SELECT COUNT(DISTINCT _vers_log) FROM ${sql.id(vt)} WHERE _vers_log > 0`,
+      db.one`SELECT COUNT(DISTINCT _vers_space) FROM ${sql.id(vt)}`,
     ]);
     rows += `<tr><td>${hee(t)}<td style="text-align:right">${hee(String(entries))}<td style="text-align:right">${hee(String(rowsCount))}<td style="text-align:right">${hee(String(spaces))}<td style="text-align:right"><u2-bytes>${sizeOf.get(vt) ?? 0}</u2-bytes>`;
   }
@@ -45,7 +45,7 @@ async function render(node: Node): Promise<string> {
 
   // ── spaces (vers_space holds non-live spaces; 0 = live, deletable) ──────────
   const spaceRows = (await Promise.all(
-    (await db.all("SELECT space, time_created FROM vers_space ORDER BY space").catch(() => []))
+    (await db.all`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
       .map(async (s) => `<tr><td>${hee(String(s.space))}<td>${hee(String(s.time_created ?? ""))}<td><button class=-del-space data-space="${hee(String(s.space))}" u2-confirm="${await app.t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
   )).join("");
   const spacesBox = `

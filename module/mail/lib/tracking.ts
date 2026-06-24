@@ -10,7 +10,7 @@ export async function handleTrack(ctx: RequestContext): Promise<void> {
   const trackId = Number(idRaw);
   if (!trackId || !cert || cert !== trackCert(await ctx.app.mail.secure(), trackId)) return;
 
-  const recipient = await ctx.app.db.row("SELECT * FROM mail_recipient WHERE mail1_track_id = ?", [trackId]);
+  const recipient = await ctx.app.db.row`SELECT * FROM mail_recipient WHERE mail1_track_id = ${trackId}`;
   if (!recipient) return;
 
   const url = String(ctx.get.url ?? "");

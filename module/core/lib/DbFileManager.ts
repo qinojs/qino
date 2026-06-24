@@ -5,6 +5,7 @@ import { typeByExtension } from "../../../deps.ts";
 import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { Db } from "./Db.ts";
+import { sql } from "./sql.ts";
 import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
@@ -157,7 +158,7 @@ export class DbFile extends File {
 
   async ensureVs(): Promise<Record<string, any>> {
     if (this.id && !this.vs) {
-      this.vs = await this.#manager.db.row(`SELECT * FROM \`${tableRef("file")}\` WHERE id = ?`, [this.id]) ?? {};
+      this.vs = await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` ?? {};
       if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
     }
     return this.vs!;
@@ -200,8 +201,7 @@ export class DbFile extends File {
 
   async used(): Promise<boolean> {
     for (const Field of this.#manager.db.table("file").children) {
-      const sql = `SELECT 1 FROM ${this.#manager.db.escapeId(Field.table.name)} WHERE ${this.#manager.db.escapeId(Field.name)} = ? LIMIT 1`;
-      if (await this.#manager.db.one(sql, [this.id])) return true;
+      if (await this.#manager.db.one`SELECT 1 FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)} = ${this.id} LIMIT 1`) return true;
     }
     const e = { dbFile: this, used: false };
     await this.#manager.app.fire("dbFile-used", e);
@@ -215,7 +215,7 @@ export class DbFile extends File {
     await this.#manager.app.fire("dbFile-remove-fs", e);
     this.path = "";
     if (e.prevent || !md5) return;
-    const still = await this.#manager.db.one(`SELECT id FROM file WHERE md5 = ?`, [md5]);
+    const still = await this.#manager.db.one`SELECT id FROM file WHERE md5 = ${md5}`;
     if (!still) await nodeFs.unlink(this.#manager.directory + md5).catch(() => {});
   }
 

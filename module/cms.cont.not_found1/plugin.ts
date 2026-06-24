@@ -1,4 +1,4 @@
-import { hee, type RequestContext } from "../core/mod.ts";
+import { hee, sql, type RequestContext } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.not_found1";
@@ -12,11 +12,8 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
   const possiblePages: Map<string, true> = new Map();
 
   if (words) {
-    const match = `MATCH (t.text) AGAINST (? IN BOOLEAN MODE)`;
-    const rows = await node.app.db.all(
-      `SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`,
-      [words, words],
-    );
+    const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
+    const rows = await node.app.db.all`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
     let limit = 5;
     for (const row of rows) {
       const P = await node.cms.node(row.id);
@@ -56,10 +53,7 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   if ("setRedirect" in ctx.post && ctx.post.qgToken === ctx.token) {
     const redirect = String(ctx.post.redirect ?? "").trim();
     if (redirect) {
-      await node.app.db.query(
-        "INSERT INTO page_redirect SET request = ?, redirect = ? ON DUPLICATE KEY UPDATE redirect = ?",
-        [ctx.appRequestPath, redirect, redirect],
-      );
+      await node.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${ctx.appRequestPath}, ${redirect}) ON DUPLICATE KEY UPDATE redirect = ${redirect}`;
       savedMsg = `<p style="color:green">${await node.app.t`Redirect saved.`}</p>`;
     }
   }

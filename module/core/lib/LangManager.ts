@@ -106,14 +106,14 @@ export class LangManager {
         const l = ctx.lang;
         const txts = await this.#getTxts(ns, l);
         if (!(hash in txts)) {
-            //await this.#app.db.query("INSERT IGNORE INTO smalltext SET namespace=?, hash=?, original=?", [ns, hash, string]);
+            //await this.#app.db.query`INSERT IGNORE INTO smalltext (namespace, hash, original) VALUES (${ns}, ${hash}, ${string})`;
             await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string });
             txts[hash] = "";
         }
         const translated = txts[hash] || string;
         if (ctx.dev && !txts[hash]) return `*${string}*`;
         if (await this.#app.settings.core.smalltext.counter) {
-            await this.#app.db.query("UPDATE smalltext SET count = count+1 WHERE hash = ? AND namespace = ?", [hash, ns]);
+            await this.#app.db.query`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`;
         }
         return translated;
     }
@@ -149,9 +149,9 @@ export class LangManager {
         for (const [original, txt] of Object.entries(txts)) {
             if (!txt) continue;
             const hash = createHash("md5").update(original).digest("hex");
-            const exists = await db.row("SELECT hash FROM smalltext WHERE hash = ? AND namespace = ?", [hash, ns]);
-            if (!exists) await db.query("INSERT INTO smalltext SET namespace = ?, hash = ?, original = ?", [ns, hash, original]);
-            await db.query(`UPDATE smalltext SET \`${lang}\` = ? WHERE hash = ? AND namespace = ?`, [txt, hash, ns]);
+            const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
+            if (!exists) await db.query`INSERT INTO smalltext (namespace, hash, original) VALUES (${ns}, ${hash}, ${original})`;
+            await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns}`;
         }
     }
     */

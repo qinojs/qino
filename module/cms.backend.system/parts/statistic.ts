@@ -53,7 +53,7 @@ export default async function summary(node: Node): Promise<string> {
   const db      = node.app.db;
   const appPATH = node.app.appPATH as string;
 
-  const tables = await db.all("SHOW TABLE STATUS");
+  const tables = await db.all`SHOW TABLE STATUS`;
   let dbTotal = 0;
   for (const t of tables) dbTotal += (t.Data_length ?? 0) + (t.Index_length ?? 0);
 
@@ -86,7 +86,7 @@ export async function details(node: Node): Promise<string> {
   ).join("");
 
   type TableStatus = { Name: string; Data_length?: number; Index_length?: number };
-  const tables = await db.all("SHOW TABLE STATUS") as TableStatus[];
+  const tables = await db.all`SHOW TABLE STATUS` as TableStatus[];
   tables.sort((a, b) =>
     ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0))
   );

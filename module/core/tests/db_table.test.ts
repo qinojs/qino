@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { DbTable } from "../lib/DbTable.ts";
+import { fakeRender } from "./sqlFake.ts";
+import { sql } from "../lib/sql.ts";
 
 function db() {
   const calls: Array<[string, unknown[] | undefined]> = [];
@@ -19,7 +21,8 @@ function db() {
     columns(table: string) {
       return this.query(`SHOW FULL COLUMNS FROM \`${table}\``);
     },
-    query(sql: string, params?: unknown[]) {
+    query(...a: any[]) {
+      const [sql, params] = fakeRender(a[0], a.slice(1));
       calls.push([sql, params]);
       if (sql.startsWith("SHOW FULL COLUMNS")) return [
         { Field: "id", Type: "int(11)", Null: "NO", Key: "PRI", Extra: "auto_increment", Default: null },
@@ -28,17 +31,22 @@ function db() {
       ];
       return [];
     },
-    all(sql: string, params?: unknown[]) {
+    all(...a: any[]) {
+      const [sql, params] = fakeRender(a[0], a.slice(1));
       calls.push([sql, params]);
       return rows;
     },
-    row(sql: string, params?: unknown[]) {
+    row(...a: any[]) {
+      const [sql, params] = fakeRender(a[0], a.slice(1));
       calls.push([sql, params]);
       return undefined;
     },
-    exec(sql: string, params?: unknown[], returning?: string) {
+    // exec is called either as a tag (UPDATE/DELETE) or with a fragment + returning (INSERT)
+    exec(...a: any[]) {
+      const isTag = Array.isArray(a[0]?.raw);
+      const [sql, params] = fakeRender(a[0], isTag ? a.slice(1) : []);
       calls.push([sql, params]);
-      returns.push(returning);
+      returns.push(isTag ? undefined : a[1]);
       return { affectedRows: 1, insertId: 10 };
     },
     transaction(fn: () => Promise<unknown>) {
@@ -118,7 +126,8 @@ Deno.test("DbTable: select, insert, update and delete build parameterized SQL", 
   const table = new DbTable(fake as any, "thing");
   await table.init();
 
-  assertEquals(await table.select("`id` = ?", [1]), { "1": { id: 1, name: "One", parent: null } });
+  assertEquals(await table.select(sql`id = ${1}`), { "1": { id: 1, name: "One", parent: null } });
+  assertEquals(fake.calls.some(([sql, p]) => sql === "SELECT * FROM `thing` WHERE id = ?" && Array.isArray(p) && p[0] === 1), true);
   await table.select();
   assertEquals(await table.insert({ name: "Two" }), "10");
   assertEquals(await table.update("10", { name: "Ten" }), "10");

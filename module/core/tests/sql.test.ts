@@ -32,11 +32,3 @@ Deno.test("sql`` tag renders and runs (sqlite)", async () => {
   assertEquals(idx, { 1: "a", 2: "b" });
   await db.close();
 });
-
-Deno.test("legacy string query still works (deprecated path)", async () => {
-  const db = new Db("sqlite::memory:");
-  await db.query("CREATE TABLE t (id INTEGER)");
-  await db.exec("INSERT INTO t (id) VALUES (?)", [5]);
-  assertEquals(await db.one("SELECT id FROM t WHERE id = ?", [5]), 5);
-  await db.close();
-});

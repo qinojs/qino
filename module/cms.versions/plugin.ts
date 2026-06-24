@@ -18,7 +18,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { type RequestContext, type DbScope, Access, type AptTree, s, type App } from "../core/mod.ts";
+import { type RequestContext, type DbScope, Access, type AptTree, s, sql, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
@@ -153,7 +153,7 @@ export function init(app: App) {
             };
             await generate(pid);
             delete scope.tables; // stop routing — the pre-loaded request cache stays
-            for (const v of Object.values(tables)) await db.query(`DROP VIEW IF EXISTS \`${v}\``); // historical views are one-shot
+            for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; // historical views are one-shot
         }
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────

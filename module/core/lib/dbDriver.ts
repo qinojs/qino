@@ -15,9 +15,7 @@ export interface Driver {
   escapeId(id: string): string;
   /** Bound-parameter marker for the n-th param (1-based): "?" or "$n". */
   placeholder(n: number): string;
-  /** @deprecated Transitional: translate a legacy `?`/backtick SQL string to this dialect. */
-  translateLegacy(sql: string): string;
-  /** Receives final dialect SQL (rendered by Db) — does not translate. */
+  /** Receives final dialect SQL (rendered by Db). */
   query(sql: string, params?: unknown[]): Promise<Row[]>;
   exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
   transaction<T>(fn: () => Promise<T>): Promise<T>; /** Run fn in a transaction; nested calls join the outer one. */
@@ -70,7 +68,6 @@ class MysqlDriver implements Driver {
 
   escapeId(id: string) { return mysql.escapeId(id); }
   placeholder(_n: number) { return "?"; }
-  translateLegacy(sql: string) { return sql; }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     const [res] = await this.#conn().query(sql, params);
@@ -122,7 +119,6 @@ class SqliteDriver implements Driver {
 
   escapeId(id: string) { return mysql.escapeId(id); }
   placeholder(_n: number) { return "?"; }
-  translateLegacy(sql: string) { return sql; }
   query(sql: string, params: unknown[] = []) {
     return Promise.resolve(this.#db.prepare(sql).all(...params as any[]) as Row[]);
   }
@@ -166,52 +162,6 @@ class SqliteDriver implements Driver {
   close() { this.#db.close(); return Promise.resolve(); }
 }
 
-/** TEMPORARY: Convert Qino's MySQL-compatible SQL surface to PostgreSQL syntax outside strings/comments. */
-export function toPostgresSql(sql: string): string {
-  let out = "", param = 0, quote = "", line = false, block = false;
-  for (let i = 0; i < sql.length; i++) {
-    const c = sql[i], n = sql[i + 1];
-    if (line) {
-      out += c;
-      if (c === "\n") line = false;
-      continue;
-    }
-    if (block) {
-      out += c;
-      if (c === "*" && n === "/") { out += n; i++; block = false; }
-      continue;
-    }
-    if (quote) {
-      if (quote === "`") {
-        if (c === "`") {
-          if (n === "`") { out += "\"\""; i++; }
-          else { out += '"'; quote = ""; }
-        } else out += c === '"' ? '""' : c;
-        continue;
-      }
-      if (quote === "'" && c === "\\" && n) {
-        const escaped: Record<string, string> = { "'": "''", "\\": "\\", "0": "\0", b: "\b", t: "\t", n: "\n", r: "\r" };
-        out += escaped[n] ?? n;
-        i++;
-        continue;
-      }
-      out += c;
-      if (c === quote) {
-        if (n === quote) { out += n; i++; }
-        else quote = "";
-      } else if (c === "\\" && n) out += sql[++i];
-      continue;
-    }
-    if (c === "-" && n === "-") { out += c + n; i++; line = true; continue; }
-    if (c === "/" && n === "*") { out += c + n; i++; block = true; continue; }
-    if (c === "'" || c === '"') { out += c; quote = c; continue; }
-    if (c === "`") { out += '"'; quote = c; continue; }
-    if (c === "?") { out += "$" + ++param; continue; }
-    out += c;
-  }
-  return out;
-}
-
 class PostgresDriver implements Driver {
   dialect = "postgres" as const;
   emptyInsert = "DEFAULT VALUES";
@@ -230,7 +180,6 @@ class PostgresDriver implements Driver {
 
   escapeId(id: string) { return `"${id.replaceAll('"', '""')}"`; }
   placeholder(n: number) { return "$" + n; }
-  translateLegacy(sql: string) { return toPostgresSql(sql); }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     return (await this.#conn().query(sql, params)).rows as Row[];

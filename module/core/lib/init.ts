@@ -11,7 +11,7 @@ export async function initClient(ctx: RequestContext): Promise<void> {
       await registerClient(ctx);
       return;
     }
-    const clientId = await db.one("SELECT id FROM client WHERE hash = ?", [cid]);
+    const clientId = await db.one`SELECT id FROM client WHERE hash = ${cid}`;
     if (!clientId) {
       await registerClient(ctx);
       return;
@@ -67,20 +67,20 @@ export function initLog(ctx: RequestContext): void {
       try {
         const url = ctx.requestUri;
         const urlHash = createHash("md5").update(url).digest("hex");
-        let urlId = await db.one("SELECT id FROM log_url WHERE hash = ?", [urlHash]);
+        let urlId = await db.one`SELECT id FROM log_url WHERE hash = ${urlHash}`;
         urlId ||= await db.table("log_url").insert({ url, hash: urlHash });
 
         const referer = ctx.req.header("referer") ?? "";
         const refererHash = createHash("md5").update(referer).digest("hex");
-        let refererId = await db.one("SELECT id FROM log_url WHERE hash = ?", [refererHash]);
+        let refererId = await db.one`SELECT id FROM log_url WHERE hash = ${refererHash}`;
         refererId ||= await db.table("log_url").insert({ url: referer, hash: refererHash });
 
         const ip = ctx.remoteAddr ?? "";
-        let ipId = await db.one("SELECT id FROM log_ip WHERE ip = ?", [ip]);
+        let ipId = await db.one`SELECT id FROM log_ip WHERE ip = ${ip}`;
         ipId ||= await db.table("log_ip").insert({ ip });
 
         const ua = ctx.req.header("user-agent") ?? "";
-        let uaId = await db.one("SELECT id FROM log_user_agent WHERE user_agent = ?", [ua]);
+        let uaId = await db.one`SELECT id FROM log_user_agent WHERE user_agent = ${ua}`;
         uaId ||= await db.table("log_user_agent").insert({ user_agent: ua });
 
         data.url_id        = urlId;
