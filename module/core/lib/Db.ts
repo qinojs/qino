@@ -14,7 +14,7 @@ export class Db {
 
   #tables: Record<string, DbTable> = {};
   #driver: Driver;
-  #dialect: { quoteId(id: string): string; placeholder(n: number): string };
+  #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
   #schema: Record<string, any> = { properties: {} };
   #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
 
@@ -25,7 +25,7 @@ export class Db {
   }
 
   get dialect(): DbDialect { return this.#driver.dialect; }
-  get emptyInsert(): string { return this.#driver.emptyInsert; }
+  get emptyInsert(): string { return this.#dialect.emptyInsert; }
   get tables(): Record<string, DbTable> { return this.#tables; }
   get schema(): Record<string, any> { return this.#schema; }
   set schema(schema: Record<string, any>) { this.#schema = schema; }

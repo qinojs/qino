@@ -339,7 +339,7 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
         </div>
     </div>
 
-    <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="u2-card" style="overflow:auto;">
         <div class="-head">${await node.app.t`Backtrace`}</div>
         <table class="u2-table">
             <thead><tr><th>${await node.app.t`File`}<th>${await node.app.t`Function`}<th>${await node.app.t`Arguments`}
@@ -347,14 +347,14 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
         </table>
     </div>
 
-    <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="u2-card" style="overflow:auto;">
         <div class="-head">${await node.app.t`User`}</div>
         <div class="-body">
             ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : `(${await node.app.t`no user`})`}
         </div>
     </div>
 
-    <div class="u2-card" style="overflow:auto; width:auto; flex:0 0 auto">
+    <div class="u2-card" style="overflow:auto;">
         <div class="-head">${await node.app.t`History`}</div>
         <div class="-body" style="flex-grow:0">${await node.app.t`History of:`} ${historyLinks}</div>
         <table class="u2-table">

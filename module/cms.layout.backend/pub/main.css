@@ -125,6 +125,7 @@ u2-accordion {
 	background:rgba(255,255,255,.2);
 	position: relative;
 	z-index: 0;
+	> * { min-width: 0; }
 }
 
 thead [l1\:order]:after {

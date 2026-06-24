@@ -11,10 +11,7 @@ type Row = Record<string, any>;
 /** Backend abstraction — only the dialect-specific bits live behind this. */
 export interface Driver {
   dialect: DbDialect;
-  emptyInsert: string;
   escapeId(id: string): string;
-  /** Bound-parameter marker for the n-th param (1-based): "?" or "$n". */
-  placeholder(n: number): string;
   /** Receives final dialect SQL (rendered by Db). */
   query(sql: string, params?: unknown[]): Promise<Row[]>;
   exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
@@ -48,7 +45,6 @@ export function makeDriver(conn: string): Driver {
 
 class MysqlDriver implements Driver {
   dialect = "mysql" as const;
-  emptyInsert = "() VALUES ()";
   #pool: Pool;
   #tx = new AsyncLocalStorage<any>();
   #database: string;
@@ -68,7 +64,6 @@ class MysqlDriver implements Driver {
   }
 
   escapeId(id: string) { return mysql.escapeId(id); }
-  placeholder(_n: number) { return "?"; }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     const [res] = await this.#conn().query(sql, params);
@@ -109,7 +104,6 @@ class MysqlDriver implements Driver {
 
 class SqliteDriver implements Driver {
   dialect = "sqlite" as const;
-  emptyInsert = "DEFAULT VALUES";
   #db: DatabaseSync;
   #inTx = false;
 
@@ -119,7 +113,6 @@ class SqliteDriver implements Driver {
   }
 
   escapeId(id: string) { return mysql.escapeId(id); }
-  placeholder(_n: number) { return "?"; }
   query(sql: string, params: unknown[] = []) {
     return Promise.resolve(this.#db.prepare(sql).all(...params as any[]) as Row[]);
   }
@@ -165,7 +158,6 @@ class SqliteDriver implements Driver {
 
 class PostgresDriver implements Driver {
   dialect = "postgres" as const;
-  emptyInsert = "DEFAULT VALUES";
   #pool: any;
   #tx = new AsyncLocalStorage<any>();
   #database: string;
@@ -180,7 +172,6 @@ class PostgresDriver implements Driver {
   }
 
   escapeId(id: string) { return `"${id.replaceAll('"', '""')}"`; }
-  placeholder(n: number) { return "$" + n; }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     return (await this.#conn().query(sql, params)).rows as Row[];
