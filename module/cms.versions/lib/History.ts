@@ -40,9 +40,9 @@ export function initHistory(app: App) {
             if (f === "_vers_deleted") return sql.raw("0");
             return sql.id(f);
         });
-        const where = e.Table.entryId2where(e.id);
+        const where = e.Table.entryIdToFragment(e.id);
         if (!where) return;
-        await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${sql.raw(where)}`;
+        await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
     };
     app.db.on("table::update-after", catchInsertUpdate);
     app.db.on("table::insert-after", catchInsertUpdate);
@@ -52,7 +52,7 @@ export function initHistory(app: App) {
         const t = await track(e);
         if (!t) return;
         const { ctx, vt, logId } = t;
-        const where = e.Table.entryId2where(e.id);
+        const where = e.Table.entryIdToFragment(e.id);
         if (!where) return;
         // The live row is gone, so copy its most recent snapshot and flip _vers_deleted.
         // This keeps every (NOT NULL) column populated, mirroring the insert/update capture above —
@@ -67,7 +67,7 @@ export function initHistory(app: App) {
             return sql.id(f);
         });
         await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM (
-            SELECT * FROM ${sql.id(vt)} WHERE ${sql.raw(where)} AND _vers_space = ${space}
+            SELECT * FROM ${sql.id(vt)} WHERE ${where} AND _vers_space = ${space}
             ORDER BY _vers_log DESC LIMIT 1
         ) AS src`;
     });

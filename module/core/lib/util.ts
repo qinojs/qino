@@ -108,13 +108,15 @@ export function sqlSearchHelper(
   if (!searches.length || !fields.length) {
     return { where: sql.raw("1"), order: sql.raw("1") };
   }
+  // Escape LIKE wildcards in user input; '!' is a neutral escape char in every dialect's string literals.
+  const esc = (s: string) => s.replace(/[!%_]/g, "!$&");
   const wheres: Sql[] = [];
   const orders: Sql[] = [];
   for (const s of searches) {
-    wheres.push(sql`(${sql.join(fields.map((f) => sql`${sql.id(f)} LIKE ${"%" + s + "%"}`), " OR ")})`);
+    wheres.push(sql`(${sql.join(fields.map((f) => sql`${sql.id(f)} LIKE ${"%" + esc(s) + "%"} ESCAPE '!'`), " OR ")})`);
   }
   for (const s of searches) {
-    for (const f of fields) orders.push(sql`${sql.id(f)} LIKE ${s + "%"} DESC`);
+    for (const f of fields) orders.push(sql`${sql.id(f)} LIKE ${esc(s) + "%"} ESCAPE '!' DESC`);
   }
   return { where: sql.join(wheres, " AND "), order: sql.join(orders, ", ") };
 }

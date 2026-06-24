@@ -69,15 +69,21 @@ Deno.test("DbTable: init discovers fields, primary and auto increment", async ()
   assertEquals(String(table.autoIncrement), "id");
 });
 
-Deno.test("DbTable: entry id and where/set helpers use field transforms", async () => {
+Deno.test("DbTable: entry id and where fragments use field transforms", async () => {
   const table = new DbTable(db() as any, "thing");
   await table.init();
 
   assertEquals(table.entryId({ id: "7.9" }), "7.9");
   assertEquals(table.entryId2Array("7"), { id: "7" });
-  assertEquals(table.entryId2where("7"), "`id` = '7'");
-  assertEquals(table.valuesToWhere({ id: "7", name: "A", parent: null }, "t"), "`t`.`id` = '7' AND `t`.`name` = 'A' AND `t`.`parent` IS NULL");
-  assertEquals(table.valuesToSet({ name: "A" }), "`name` = 'A'");
+  assertEquals(fakeRender(table.entryIdToFragment("7"), []), ["`id` = ?", ["7"]]);
+  assertEquals(
+    fakeRender(table.valuesToFragment({ id: "7", name: "A", parent: null }, "t"), []),
+    ["`t`.`id` = ? AND `t`.`name` = ? AND `t`.`parent` IS NULL", ["7", "A"]],
+  );
+  assertEquals(
+    fakeRender(table.valuesToFragment({ name: "A" }, undefined, true), []),
+    ["`name` = ?", ["A"]],
+  );
 });
 
 Deno.test("DbTable: schema fields and children come from db schema", async () => {

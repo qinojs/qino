@@ -113,7 +113,7 @@ export class LangManager {
         const translated = txts[hash] || string;
         if (ctx.dev && !txts[hash]) return `*${string}*`;
         if (await this.#app.settings.core.smalltext.counter) {
-            await this.#app.db.query`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`;
+            this.#app.db.query`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`;
         }
         return translated;
     }

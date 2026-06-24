@@ -72,14 +72,6 @@ export class DbTable {
     return this.#fields!;
   }
 
-  getStatus(): Promise<Record<string, any> | undefined> {
-    return this.#db.row`SHOW TABLE STATUS LIKE ${String(this)}`;
-  }
-  async getNextId(): Promise<number> {
-    const s = await this.getStatus();
-    return s ? parseInt(s.Auto_increment) : 1;
-  }
-
   entryId(vs: any): string | false {
     if (!Array.isArray(vs) && typeof vs !== "object") return String(vs);
     const part: string[] = [];
@@ -111,10 +103,12 @@ export class DbTable {
     }
     return arr;
   }
-  entryId2where(id: any, tAlias?: string): string | false {
+  /** WHERE fragment that identifies the row(s) for an entry id; false if the id is incomplete. */
+  entryIdToFragment(id: any, alias?: string): Sql | false {
     const values = this.entryId2Array(id);
     if (!values) return false;
-    return this.valuesToWhere(values, tAlias);
+    const frag = this.valuesToFragment(values, alias);
+    return frag.parts.length ? frag : false;
   }
 
   async selectByID(id: any): Promise<Record<string, any> | undefined> {
@@ -298,27 +292,6 @@ export class DbTable {
       Es[String(entry)] = entry;
     }
     return Es;
-  }
-
-  valuesToWhere(values: Record<string, any>, alias?: string): string {
-    const sqls: string[] = [];
-    for (const [field, Field] of Object.entries(this.#fields!)) {
-      if (!(field in values)) continue;
-      const v = Field.valueToSql(values[field]);
-      const f = alias ? `${this.#db.escapeId(alias)}.${this.#db.escapeId(field)}` : this.#db.escapeId(field);
-      const equal = v === "NULL" ? " IS " : " = ";
-      sqls.push(f + equal + v);
-    }
-    return sqls.join(" AND ");
-  }
-  valuesToSet(values: Record<string, any>, alias?: string): string {
-    const sqls: string[] = [];
-    for (const [field, Field] of Object.entries(this.#fields!)) {
-      if (!(field in values)) continue;
-      const f = alias ? `${this.#db.escapeId(alias)}.${this.#db.escapeId(field)}` : this.#db.escapeId(field);
-      sqls.push(`${f} = ${Field.valueToSql(values[field])}`);
-    }
-    return sqls.join(", ");
   }
 
   toString(): string { return this.#name; }

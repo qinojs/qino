@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, postgres, type Pool, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../deps.ts";
+import { mysql, postgres, type Pool, pgDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../deps.ts";
 import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -171,7 +171,7 @@ class PostgresDriver implements Driver {
     this.#pool = new postgres.Pool({ connectionString: conn });
   }
 
-  escapeId(id: string) { return `"${id.replaceAll('"', '""')}"`; }
+  escapeId(id: string) { return pgDialect.quoteId(id); }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     return (await this.#conn().query(sql, params)).rows as Row[];

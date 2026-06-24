@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, type RowDataPacket } from "../../../deps.ts";
+import { type RowDataPacket } from "../../../deps.ts";
 import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
 import { sql, isTemplate, render, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
@@ -9,9 +9,6 @@ export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, 
 export const numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
 
 export class Db {
-  // Backtick identifiers; accepted by both MySQL and SQLite.
-  static escapeId = mysql.escapeId;
-
   #tables: Record<string, DbTable> = {};
   #driver: Driver;
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
@@ -120,7 +117,6 @@ export class Db {
     if (!table) throw new Error(`unknown table: ${name}`);
     return table;
   }
-  escapeId(id: string): string { return this.#driver.escapeId(id); }
 
   close = (): Promise<void> => this.#driver.close();
 
@@ -131,14 +127,6 @@ export class Db {
     if (!this.#events[name]) return;
     data["eventType"] = name;
     for (const fn of this.#events[name]) await fn(data);
-  }
-
-  static quote(v: unknown): string {
-    if (v == null) return "NULL";
-    return `'${String(v).replace(/[\0\b\t\n\r'"\\]/g, c => ({
-      "\0": "\\0", "\b": "\\b", "\t": "\\t", "\n": "\\n",
-      "\r": "\\r", "'": "\\'", '"': '\\"', "\\": "\\\\",
-    }[c]!))}'`;
   }
 
 }

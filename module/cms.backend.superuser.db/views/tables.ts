@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { hee, getCtx, type App } from "../../core/mod.ts";
 import { fieldOriginsByTable } from "../lib/analyze.ts";
+import { tableStatus } from "../lib/tableStatus.ts";
 
 function keyBadge(key: string): string {
   if (key === "PRI") return ' <small class=u2-badge style="background:var(--yellow)">PRI</small>';
@@ -31,10 +32,10 @@ async function tableOverview(app: App, db: any): Promise<string> {
     }).map(async (table: any) => {
       const fields = await table.init();
       const schemaFields: Record<string, any> = schemaProps[table.name]?.additionalProperties?.properties ?? {};
-      const status = await table.getStatus().catch(() => null);
+      const status = await tableStatus(db, table.name).catch(() => null);
       const uncovered = Object.keys(fields).filter(f => !(f in schemaFields)).length;
 
-      const bytes = status?.Data_length != null ? `<u2-bytes>${status.Data_length}</u2-bytes>` : "?";
+      const bytes = status?.bytes != null ? `<u2-bytes>${status.bytes}</u2-bytes>` : "?";
       const primaries = Object.values(fields).filter((f: any) => f.isPrimary());
       const primaryBadge = primaries.length === 0 ? `<small class=u2-badge style="background:var(--red)">${await app.t`none`}</small>`
         : primaries.length === 1 ? `<small class=u2-badge style="background:var(--yellow)">${hee(String(primaries[0]))}</small>`
@@ -42,7 +43,7 @@ async function tableOverview(app: App, db: any): Promise<string> {
       u.searchParams.set("table", table.name);
       return `<tr data-table-name="${hee(table.name)}">
         <td><a href="${hee(u.search)}">${hee(table.name)}</a>
-        <td style="text-align:right">${hee(String(status?.Rows ?? "?"))}
+        <td style="text-align:right">${hee(String(status?.rows ?? "?"))}
         <td style="text-align:right">${bytes}
         <td style="text-align:right">${Object.keys(fields).length}
         <td data-value="${primaries.length}">${primaryBadge}
@@ -76,7 +77,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
   const fields = await table.init();
   const schemaFields: Record<string, any> = table.schema?.additionalProperties?.properties ?? {};
   const origins = fieldOriginsByTable(modules, tableName);
-  const status = await table.getStatus().catch(() => null);
+  const status = await tableStatus(db, tableName).catch(() => null);
 
   const rows = Object.entries(fields as Record<string, any>).map(([fname, field]) => {
     const props = schemaFields[fname];
@@ -98,7 +99,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
   });
 
   const meta = status
-    ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.Rows ?? "?"))} ${await app.t`rows`} · ${hee(status.Engine ?? "")} · <u2-bytes>${status["Data_length"] ?? 0}</u2-bytes></span>`
+    ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.rows ?? "?"))} ${await app.t`rows`} · ${hee(status.engine)} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
     : "";
 
   const u = getCtx().url; u.searchParams.set("view", "tables"); u.searchParams.delete("table");

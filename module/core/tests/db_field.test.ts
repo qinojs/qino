@@ -51,9 +51,3 @@ Deno.test("DbField: valueTransform normalizes numeric, date and null values", ()
   assertEquals(field("varchar(191)", { Null: "YES" }).valueTransform(""), "");
   assertEquals(field("text", { Null: "YES" }).valueTransform(""), "");
 });
-
-Deno.test("DbField: valueToSql quotes transformed values", () => {
-  assertEquals(field("varchar(191)").valueToSql("a'b"), "'a\\'b'");
-  assertEquals(field("int(11)").valueToSql("7"), "'7'");
-  assertEquals(field("int(11)", { Null: "YES" }).valueToSql(null), "NULL");
-});

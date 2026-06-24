@@ -55,7 +55,7 @@ Deno.test("util: small string helpers", () => {
 Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   const res = sqlSearchHelper(" alpha beta gamma delta epsilon ", ["title", "body"]);
   const [whereSql, whereParams] = fakeRender(res.where, []);
-  assertEquals(whereSql, "(`title` LIKE ? OR `body` LIKE ?) AND (`title` LIKE ? OR `body` LIKE ?) AND (`title` LIKE ? OR `body` LIKE ?) AND (`title` LIKE ? OR `body` LIKE ?)");
+  assertEquals(whereSql, "(`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!')");
   assertEquals(whereParams, ["%alpha%", "%alpha%", "%beta%", "%beta%", "%gamma%", "%gamma%", "%delta%", "%delta%"]);
   assertEquals(fakeRender(res.order, [])[1], ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
 });

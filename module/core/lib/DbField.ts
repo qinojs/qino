@@ -1,4 +1,4 @@
-import { Db, dateTypes, stringTypes, numTypes } from "./Db.ts";
+import { dateTypes, stringTypes, numTypes, type Db } from "./Db.ts";
 import type { DbTable } from "./DbTable.ts";
 
 export class DbField {
@@ -51,12 +51,6 @@ export class DbField {
     }
     return String(value ?? "");
   }
-
-  valueToSql(value: any): string {
-    value = this.valueTransform(value);
-    return value === null ? "NULL" : Db.quote(value); // Db.quote hier behalten!
-  }
-
 
   parent(): DbTable | false {
     return this.schema["x-qg-parent"] ? this.db.table(this.schema["x-qg-parent"]) : false;
