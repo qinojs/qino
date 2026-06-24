@@ -1,4 +1,4 @@
-import { getCtx, hee, sql, Sql, type App, type RequestContext } from "../core/mod.ts";
+import { getCtx, hee, sql, u2time, Sql, type App, type RequestContext } from "../core/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
 import type { RowDataPacket } from "../../deps.ts";
@@ -173,11 +173,4 @@ function humanBytes(n: number) {
   if (n < 1024) return n + "B";
   if (n < 1024 * 1024) return Math.round(n / 1024) + "KB";
   return Math.round(n / 1024 / 1024 * 10) / 10 + "MB";
-}
-
-function u2time(t: unknown) {
-  const d = new Date(Number(t) * 1000);
-  if (Number.isNaN(d.getTime())) return "-";
-  const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 }

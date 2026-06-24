@@ -18,6 +18,17 @@ export function clientIp(req: { header(name: string): string | undefined; peerAd
   return xff[xff.length - hops] ?? req.peerAddr;
 }
 
+/** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-". */
+export function u2time(t: unknown): string {
+  if (t == null || t === "") return "-";
+  const d = t instanceof Date ? t
+    : Number.isFinite(Number(t)) ? new Date(Number(t) * 1000)
+    : new Date(String(t));
+  if (Number.isNaN(d.getTime()) || d.getTime() === 0) return "-";
+  const iso = d.toISOString();
+  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
+}
+
 /** HTML utilities */
 export function hee(str: unknown): string {
   return String(str ?? "").replace(/[&"'<>]/g, c => ({"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"})[c]!);

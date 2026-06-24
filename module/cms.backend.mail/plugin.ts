@@ -2,7 +2,7 @@ import { basename, extname } from "node:path";
 import type {} from "../mail/mod.ts";
 import { typeByExtension } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, hee, sql, type App } from "../core/mod.ts";
+import { getCtx, hee, sql, u2time, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.mail";
@@ -11,14 +11,6 @@ export const needs = ["cms.backend", "mail"];
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Mail", de: "Mail" });
 }
-
-const u2time = (t: unknown) => {
-  if (!t) return "-";
-  const d = new Date(typeof t === "number" ? t * 1000 : String(t));
-  if (Number.isNaN(d.getTime())) return "-";
-  const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-};
 
 function parseData(v: unknown): Record<string, unknown> {
   if (!v || typeof v !== "string") return {};

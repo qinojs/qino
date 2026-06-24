@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -9,13 +9,6 @@ export { healthChecks } from "./healthChecks.ts";
 export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "DB Files", de: "DB Dateien" });
 }
-
-const u2time = (t: unknown) => {
-  const d = new Date(typeof t === "number" ? t * 1000 : String(t ?? ""));
-  if (Number.isNaN(d.getTime())) return "-";
-  const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-};
 
 
 const IMG = new Set(["jpg","jpeg","gif","png","svg","webp"]);

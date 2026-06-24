@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, Sql, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, Sql, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { dump } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
@@ -9,13 +9,6 @@ export const needs = ["cms.backend"];
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Requests", de: "Anfragen" });
 }
-
-const u2time = (t: unknown) => {
-  const d = new Date(typeof t === "number" ? t * 1000 : Number(t) * 1000);
-  if (Number.isNaN(d.getTime())) return "-";
-  const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-};
 
 // deterministic color from any value (clients, IPs, users …)
 const uniqueColor = (v: unknown): string => {

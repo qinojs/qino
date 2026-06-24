@@ -11,7 +11,7 @@ export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, RequestContext, requestStorage } from "./lib/RequestContext.ts";
 
 // HTML & general utilities
-export { hee, HtmlString, html, Output, uid, urlize, clientIp, sqlSearchHelper, itemReadDeep, u2Root, contentDisposition } from "./lib/util.ts";
+export { hee, u2time, HtmlString, html, Output, uid, urlize, clientIp, sqlSearchHelper, itemReadDeep, u2Root, contentDisposition } from "./lib/util.ts";
 
 // Schema
 export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";

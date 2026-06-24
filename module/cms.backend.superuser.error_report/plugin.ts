@@ -1,15 +1,8 @@
-import { hee, getCtx, sql, type Sql, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, type Sql, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
-
-const u2time = (t: unknown) => {
-  const d = t instanceof Date ? t : typeof t === "number" ? new Date(t * 1000) : typeof t === "string" ? new Date(t) : null;
-  if (!d || Number.isNaN(d.getTime())) return "";
-  const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-};
 export const needs = ["cms.backend", "error_report"];
 
 export async function install({ app }: { app: App }): Promise<void> {
