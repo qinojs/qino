@@ -106,13 +106,14 @@ export function initDraftmode(app: App) {
         const idValues = e.Table.entryId2Array(e.id);
         if (!idValues) return;
         const idWhere = e.Table.valuesToFragment(idValues);
-        const row = await ctx.app.db.row`SELECT * FROM page WHERE ${idWhere}`;
+        const db = ctx.app.db;
+        const row = await db.row`SELECT * FROM page WHERE ${idWhere}`;
         if (!row) return;
         if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
         if (!Object.keys(liveData).length) return;
         const set = e.Table.valuesToFragment(liveData, undefined, true);
-        await ctx.app.db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
-        await ctx.app.db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
+        await db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
+        await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
     });
 
     // ─── vers_cms_page_changed tracking ──────────────────────────────────────

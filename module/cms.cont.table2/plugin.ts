@@ -51,11 +51,12 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
     }
     const csv = lines.join("\r\n");
 
-    ctx.responseHeaders.set("Content-Type", "application/x-msdownload");
-    ctx.responseHeaders.set("Content-Disposition", contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
-    ctx.responseHeaders.set("Expires", "0");
-    ctx.responseHeaders.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
-    ctx.responseHeaders.set("Pragma", "public");
+    const headers = ctx.responseHeaders;
+    headers.set("Content-Type", "application/x-msdownload");
+    headers.set("Content-Disposition", contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
+    headers.set("Expires", "0");
+    headers.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
+    headers.set("Pragma", "public");
     throw new Output(csv);
   }
 

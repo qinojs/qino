@@ -37,7 +37,8 @@ class CmsTextService {
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) throw new AptError(403, "No access to this text");
-        const input = String(await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${source_lang}` ?? "");
+        const db = this.ctx.app.db;
+        const input = String(await db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${source_lang}` ?? "");
         if (!input.trim()) throw new AptError(400, "Source text is empty");
         let output = await this.transl(input, target_lang, source_lang);
         if (!output) throw new AptError(502, "Translation service returned nothing");
@@ -46,11 +47,11 @@ class CmsTextService {
             output = output.charAt(0).toUpperCase() + output.slice(1);
         }
 
-        const exists = await this.ctx.app.db.one`SELECT id FROM text WHERE id = ${txt_id} AND lang = ${target_lang}`;
+        const exists = await db.one`SELECT id FROM text WHERE id = ${txt_id} AND lang = ${target_lang}`;
         if (exists) {
-            await this.ctx.app.db.table("text").update({ id: txt_id, lang: target_lang, text: output });
+            await db.table("text").update({ id: txt_id, lang: target_lang, text: output });
         } else {
-            await this.ctx.app.db.table("text").insert({ id: txt_id, lang: target_lang, text: output });
+            await db.table("text").insert({ id: txt_id, lang: target_lang, text: output });
         }
         return true;
     }
@@ -138,6 +139,7 @@ class CmsTextService {
 
     async deepl_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         console.warn("deprecated? deepl used");
+        const st = this.ctx.app.settings["cms.text"];
         const params = new URLSearchParams({
             text,
             source_lang,
@@ -145,7 +147,7 @@ class CmsTextService {
             tag_handling: "xml",
             split_sentences: "1",
             preserve_formatting: "0",
-            auth_key: String(await this.ctx.app.settings["cms.text"]["deepl"]["key"] ?? ""),
+            auth_key: String(await st["deepl"]["key"] ?? ""),
         });
         const resp = await fetch("https://api.deepl.com/v2/translate", {
             method: "POST",
@@ -153,15 +155,16 @@ class CmsTextService {
         }).then((r) => r.json());
         const translation: string | false = resp?.translations?.[0]?.text ?? false;
         if (translation) {
-            const prev = Number(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0");
-            this.ctx.app.settings["cms.text"]["translate char count"](prev + text.length);
+            const prev = Number(await st["translate char count"] ?? "0");
+            st["translate char count"](prev + text.length);
         }
         return translation;
     }
 
     async google_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
+        const st = this.ctx.app.settings["cms.text"];
         const key =
-            String(await this.ctx.app.settings["cms.text"]["google"]["key"] ?? "") ||
+            String(await st["google"]["key"] ?? "") ||
             String(await this.ctx.app.settings["cms.backend.webmaster"]["google.api.key"] ?? "");
         const params = new URLSearchParams({
             q: text,
@@ -176,9 +179,9 @@ class CmsTextService {
         const result = await resp.json();
         const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {
-            console.log(await this.ctx.app.settings["cms.text"]["translate char count"]);
-            const prev = Number(await this.ctx.app.settings["cms.text"]["translate char count"] ?? "0");
-            this.ctx.app.settings["cms.text"]["translate char count"](prev + text.length);
+            console.log(await st["translate char count"]);
+            const prev = Number(await st["translate char count"] ?? "0");
+            st["translate char count"](prev + text.length);
         }
         return translation;
     }

@@ -4,25 +4,26 @@ import type { Node } from "../../cms/mod.ts";
 export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
   const t = node.app.t;
+  const admin = ctx.settings.cms.admin;
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
+    const openStr: string = admin.openPageNodes() ?? "";
     const openSet = new Set(openStr.split(",").filter(Boolean));
     if (vars.value == "1") openSet.add(p);
     else openSet.delete(p);
-    ctx.settings.cms.admin.openPageNodes([...openSet].join(","));
+    admin.openPageNodes([...openSet].join(","));
   }
 
-  if (vars?.showContents != null) ctx.settings.cms.admin.showContents(vars.showContents == "1");
+  if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
 
-  const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
+  const openStr: string = admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
-  const showContents = !!ctx.settings.cms.admin.showContents();
+  const showContents = !!admin.showContents();
   const treeType = showContents ? "*" : "p";
 
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
+  const rootId = Number(admin.rootPageNode() ?? "0") || 1;
   const rootNode = await node.cms.node(rootId);
 
   let html = "";

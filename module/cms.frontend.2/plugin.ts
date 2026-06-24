@@ -73,7 +73,8 @@ export function init(app: App) {
     const access = await node.access();
     const inBackend = node.vs?.module === "cms.layout.backend";
 
-    const qino = ctx.html.jsData.qino ??= {};
+    const { html, sysURL } = ctx;
+    const qino = html.jsData.qino ??= {};
 
     if (access > 1 || inBackend) {
       const pageNotFound = await app.settings.cms.pageNotFound ?? 0;
@@ -82,7 +83,7 @@ export function init(app: App) {
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         settings.cms[lastKey](ctx.requestUri.slice(ctx.appURL.length));
         (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
-        ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/init.mjs");
+        html.scripts.add(sysURL + "cms.frontend.2/pub/js/init.mjs");
       }
     }
 
@@ -100,22 +101,22 @@ export function init(app: App) {
         app.languages.nsStart("cms");
         const panelHtml = String(await panel.default?.(node, {}) ?? "");
         app.languages.nsStop();
-        ctx.html.content += panelHtml;
+        html.content += panelHtml;
       }
     }
 
     if (access < 2) return;
-    ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-    ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/off.css");
+    html.legacyScripts.add(sysURL + "core/pub/js/c1.js");
+    html.styles.add(sysURL + "cms.frontend.2/pub/css/off.css");
 
     const editmode = access > 1 && Number(settings.cms.editmode());
     if (editmode) {
-      ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
-      ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
-      ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/panel.mjs");
-      ctx.html.styles.add(ctx.sysURL + "core/pub/js/Rte/main.css");
-      ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
-      ctx.html.styles.add(ctx.sysURL + "cms.frontend.2/pub/css/inline.css");
+      html.scripts.add(sysURL + "cms/pub/js/cms.mjs");
+      html.scripts.add(sysURL + "cms.frontend.2/pub/js/frontend.mjs");
+      html.scripts.add(sysURL + "cms.frontend.2/pub/js/panel.mjs");
+      html.styles.add(sysURL + "core/pub/js/Rte/main.css");
+      html.styles.add(sysURL + "cms/pub/css/ui.css");
+      html.styles.add(sysURL + "cms.frontend.2/pub/css/inline.css");
     }
   });
 }

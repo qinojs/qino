@@ -48,6 +48,15 @@ async function consumeChallenge(db: Db, token: string, type: string): Promise<{ 
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
+// shared request shape for the two assertion-verify endpoints (login + step-up confirm)
+const assertionInput = s.object({
+  token:             s.string(),
+  credentialId:      s.string(),
+  clientDataJSON:    s.string(),
+  authenticatorData: s.string(),
+  signature:         s.string(),
+});
+
 async function verifyAssertion(
   app: App,
   { credentialId, clientDataJSON, authenticatorData, signature }: any,
@@ -130,7 +139,8 @@ export const api: AptTree = {
         }),
         execute: async ({ token, clientDataJSON, attestationObject, name }: any) => {
           const ctx    = getCtx();
-          const stored = await consumeChallenge(ctx.app.db, token, "register");
+          const db     = ctx.app.db;
+          const stored = await consumeChallenge(db, token, "register");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
@@ -160,12 +170,12 @@ export const api: AptTree = {
           const { credential, aaguid } = verification.registrationInfo;
           const credId = credential.id as string;
 
-          if (await ctx.app.db.one`SELECT id FROM web_auth_credential WHERE credential_id = ${credId}`) {
+          if (await db.one`SELECT id FROM web_auth_credential WHERE credential_id = ${credId}`) {
             return { ok: false, error: "already_registered" };
           }
 
           const t = now();
-          await ctx.app.db.table("web_auth_credential").insert({
+          await db.table("web_auth_credential").insert({
             usr_id: ctx.userId,
             credential_id: credId,
             public_key: b64url(credential.publicKey),
@@ -188,21 +198,22 @@ export const api: AptTree = {
         input: s.object({ email: s.optional(s.string()) }),
         execute: async ({ email }: any) => {
           const ctx = getCtx();
+          const db = ctx.app.db;
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
           let usrId = 0;
           const allowCredentials: unknown[] = [];
 
           if (email) {
-            const usr = await ctx.app.db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = 1`;
+            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = 1`;
             if (usr) {
               usrId = Number(usr.id);
-              const creds = await ctx.app.db.all`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
+              const creds = await db.all`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             }
           }
 
-          const token = await storeChallenge(ctx.app.db, challenge, usrId, "login");
+          const token = await storeChallenge(db, challenge, usrId, "login");
           return {
             token,
             publicKey: {
@@ -220,16 +231,11 @@ export const api: AptTree = {
       post: {
         description: "Verify WebAuthn login and create session",
         access: Access.PUBLIC,
-        input: s.object({
-          token:             s.string(),
-          credentialId:      s.string(),
-          clientDataJSON:    s.string(),
-          authenticatorData: s.string(),
-          signature:         s.string(),
-        }),
+        input: assertionInput,
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
           const ctx = getCtx();
-          const stored = await consumeChallenge(ctx.app.db, token, "login");
+          const db = ctx.app.db;
+          const stored = await consumeChallenge(db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
 
           const r = await verifyAssertion(ctx.app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
@@ -238,9 +244,9 @@ export const api: AptTree = {
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
-          if (!(await ctx.app.db.row`SELECT id FROM usr WHERE id = ${usrId} AND active = 1`)) return { ok: false, error: "user_inactive" };
+          if (!(await db.row`SELECT id FROM usr WHERE id = ${usrId} AND active = 1`)) return { ok: false, error: "user_inactive" };
 
-          await ctx.app.db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${now()} WHERE id = ${r.cred.id}`;
+          await db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${now()} WHERE id = ${r.cred.id}`;
 
           await login(ctx, usrId);
           ctx.app.sessions.setCookie(ctx);
@@ -279,13 +285,7 @@ export const api: AptTree = {
       post: {
         description: "Verify step-up confirmation — sets session flag 'web_auth_confirmed'",
         access: Access.USER,
-        input: s.object({
-          token:             s.string(),
-          credentialId:      s.string(),
-          clientDataJSON:    s.string(),
-          authenticatorData: s.string(),
-          signature:         s.string(),
-        }),
+        input: assertionInput,
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
           const ctx    = getCtx();
           const stored = await consumeChallenge(ctx.app.db, token, "confirm");
