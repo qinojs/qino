@@ -2,7 +2,7 @@
 import { mysql, type RowDataPacket } from "../../../deps.ts";
 import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
-import { sql, isTemplate, render, type Sql } from "../../../deps.ts";
+import { sql, isTemplate, render, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
@@ -20,10 +20,8 @@ export class Db {
 
   constructor(conn: string) {
     this.#driver = makeDriver(conn);
-    this.#dialect = {
-      quoteId: (id) => this.#driver.escapeId(id),
-      placeholder: (n) => this.#driver.placeholder(n),
-    };
+    // Dialect (quoting + placeholders) for rendering comes from item.js — one source for all backends.
+    this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
   }
 
   get dialect(): DbDialect { return this.#driver.dialect; }

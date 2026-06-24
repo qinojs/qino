@@ -10,22 +10,28 @@ export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
 export { typeByExtension } from "jsr:@std/media-types@^1";
 
-export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@0.5.19/item.js";
-export { bildJsonItem } from "jsr:@nuxodin/item@0.5.19/tools/jsonDataItem.js";
-export { sql, Sql, render, isTemplate } from "jsr:@nuxodin/item@0.5.19/tools/db/sql.js";
+export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@0.5.20/item.js";
+export { bildJsonItem } from "jsr:@nuxodin/item@0.5.20/tools/jsonDataItem.js";
+export { sql, Sql, render, isTemplate } from "jsr:@nuxodin/item@0.5.20/tools/db/sql.js";
+export { mysql as mysqlDialect } from "jsr:@nuxodin/item@0.5.20/tools/db/dialect/mysql.js";
+export { sqlite as sqliteDialect } from "jsr:@nuxodin/item@0.5.20/tools/db/dialect/sqlite.js";
+export { pg as pgDialect } from "jsr:@nuxodin/item@0.5.20/tools/db/dialect/pg.js";
 // For local item.js development: swap each jsr line for the commented file:// line below.
-export { schemaToDb as schemaToDbMysql } from "jsr:@nuxodin/item@0.5.19/tools/schema/db/mysql/to-db.js";
-export { schemaToDb as schemaToDbSqlite } from "jsr:@nuxodin/item@0.5.19/tools/schema/db/sqlite/to-db.js";
-export { schemaToDb as schemaToDbPg } from "jsr:@nuxodin/item@0.5.19/tools/schema/db/pg/to-db.js";
-export { schemaFromDb } from "jsr:@nuxodin/item@0.5.19/tools/schema/db/mysql/from-db.js";
+export { schemaToDb as schemaToDbMysql } from "jsr:@nuxodin/item@0.5.20/tools/schema/db/mysql/to-db.js";
+export { schemaToDb as schemaToDbSqlite } from "jsr:@nuxodin/item@0.5.20/tools/schema/db/sqlite/to-db.js";
+export { schemaToDb as schemaToDbPg } from "jsr:@nuxodin/item@0.5.20/tools/schema/db/pg/to-db.js";
+export { schemaFromDb } from "jsr:@nuxodin/item@0.5.20/tools/schema/db/mysql/from-db.js";
 
 // export { schemaToDb as schemaToDbMysql } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/mysql/to-db.js";
 // export { schemaToDb as schemaToDbSqlite } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/sqlite/to-db.js";
 // export { schemaToDb as schemaToDbPg } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/pg/to-db.js";
 // export { schemaFromDb } from "file:///var/www/workplace/nuxodin/item.js/tools/schema/db/mysql/from-db.js";
 // export { sql, Sql, render, isTemplate } from "file:///var/www/workplace/nuxodin/item.js/tools/db/sql.js";
+// export { mysql as mysqlDialect } from "file:///var/www/workplace/nuxodin/item.js/tools/db/dialect/mysql.js";
+// export { sqlite as sqliteDialect } from "file:///var/www/workplace/nuxodin/item.js/tools/db/dialect/sqlite.js";
+// export { pg as pgDialect } from "file:///var/www/workplace/nuxodin/item.js/tools/db/dialect/pg.js";
 
-export { schemaDiff } from "jsr:@nuxodin/item@0.5.19/tools/schema/diff.js";
-export { toInput } from "jsr:@nuxodin/item@0.5.19/tools/schema/render/html.js";
+export { schemaDiff } from "jsr:@nuxodin/item@0.5.20/tools/schema/diff.js";
+export { toInput } from "jsr:@nuxodin/item@0.5.20/tools/schema/render/html.js";
 
 export { dump } from "jsr:@nuxodin/dump@^1.5.2";

@@ -30,6 +30,7 @@ export interface Driver {
 }
 
 const sqlMode = [
+  "STRICT_TRANS_TABLES",
   "ONLY_FULL_GROUP_BY",
   "NO_ZERO_IN_DATE",
   "NO_ZERO_DATE",
