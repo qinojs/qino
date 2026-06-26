@@ -346,7 +346,7 @@
             "default": false
           }
         },
-        "required": ["id", "basis", "offset", "value", "type", "handler", "options", "w"]
+        "required": ["id", "basis", "offset", "value", "type", "w"]
       }
     },
     "qg_setting_usr": {
@@ -454,7 +454,7 @@
             "default": ""
           }
         },
-        "required": ["hash", "namespace", "original", "count", "de", "fr", "en", "it", "pl", "zh"]
+        "required": ["hash", "namespace", "original", "count"]
       }
     },
     "smalltext_code_log": {
