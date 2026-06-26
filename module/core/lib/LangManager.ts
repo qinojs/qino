@@ -19,6 +19,7 @@ export class LangManager {
 
     setLangs(langs: string[]): void {
         this.#langs = langs.map(l=>l.trim().toLowerCase()).filter(Boolean);
+        if (!this.#langs.length) this.#langs = ["en"];
     }
 
     // Initialises language per request (like L.init)
