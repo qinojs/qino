@@ -2,7 +2,7 @@ import { hee } from "./util.ts";
 
 export class HtmlBuilder {
     lang = "en";
-    class = new Set<string>();
+    class: Set<string> = new Set<string>();
     head = "";
     title = "";
     titlePrefix = "";

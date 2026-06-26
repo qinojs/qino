@@ -39,7 +39,7 @@ export class RequestContext {
   appURL = "/";
   sysURL = "/m/";
   appRequestPath = "";
-  csp = new Csp();
+  csp: Csp = new Csp();
 
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
   get hasHtml(): boolean { return this.#html !== null; }
