@@ -83,7 +83,7 @@ class MysqlDriver implements Driver {
   }
   syncAutoIncrement(_table: string, _field: string, _value: number) { return Promise.resolve(); }
   async listTables() {
-    return (await this.query("SHOW TABLES")).map((r) => Object.values(r)[0] as string);
+    return (await this.query("SHOW TABLES")).map((r) => Object.values(r)[0]);
   }
   columns(table: string) {
     return this.query(`SHOW FULL COLUMNS FROM ${mysql.escapeId(table)}`);
@@ -135,7 +135,7 @@ class SqliteDriver implements Driver {
   syncAutoIncrement(_table: string, _field: string, _value: number) { return Promise.resolve(); }
   listTables() {
     return this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-      .then((rows) => rows.map((r) => r.name as string));
+      .then((rows) => rows.map((r) => r.name));
   }
   columns(table: string) {
     // Map PRAGMA table_info → MySQL SHOW FULL COLUMNS shape so DbField stays dialect-free.
@@ -204,7 +204,7 @@ class PostgresDriver implements Driver {
   async listTables() {
     return (await this.query(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE' ORDER BY table_name",
-    )).map((r) => r.table_name as string);
+    )).map((r) => r.table_name);
   }
   columns(table: string) {
     return this.query(`

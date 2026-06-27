@@ -55,7 +55,7 @@ const dumpData = (raw: unknown): string => {
 // tables holding a reference to a log row (stamped by core on every write)
 function logRefColumns(db: App["db"]): { table: string; col: string }[] {
   const out: { table: string; col: string }[] = [];
-  const tables = db.schema?.properties ?? {};
+  const tables = (db.schema?.properties ?? {}) as Record<string, { additionalProperties?: { properties?: Record<string, unknown> } }>;
   for (const [table, def] of Object.entries(tables)) {
     const cols = def?.additionalProperties?.properties ?? {};
     for (const col of ["log_id", "log_id_ch"]) if (cols[col]) out.push({ table, col });
