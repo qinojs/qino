@@ -58,7 +58,7 @@ async function render(node: Node): Promise<string> {
       try { data = await checkFn(); } catch { continue; }
       if (!data) continue;
 
-      const solutions = Object.entries(data.solutions ?? {}) as [string, Solution][];
+      const solutions = Object.entries(data.solutions ?? {});
       let solutionsHtml = "";
       if (solutions.length === 1) {
         const [solution, solveData] = solutions[0];
