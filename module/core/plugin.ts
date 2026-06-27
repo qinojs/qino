@@ -78,8 +78,11 @@ export async function init(app: App) {
 
     app.on("html-ready", e => {
         const ctx = e.ctx as RequestContext;
-        ctx.html.importMap.set("@qino/item/", "https://jsr.io/@nuxodin/item/0.5.12/");
+        const itemRoot = "https://jsr.io/@nuxodin/item/0.5.12/";
+        ctx.html.importMap.set("@qino/item/", itemRoot);
         ctx.html.importMap.set("@qino/u2/", u2Root);
+        // core's own qino.js imports item.js; declare so uncdn proxies it (jsr.io serves raw files as text/html)
+        ctx.csp["script-src"][itemRoot] = true;
     });
 
     const langsRaw = String(await app.settings.core.langs ?? "");

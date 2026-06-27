@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { Output, assertNoSSRF, type App, type RequestContext, type HtmlBuilder } from "../core/mod.ts";
+import { Output, assertNoSSRF, type App, type RequestContext, type HtmlBuilder, type Csp } from "../core/mod.ts";
 import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
 
 export const name = "uncdn";
@@ -92,8 +92,12 @@ async function fetchAndCache(url: string, filePath: string, cacheDir: string, me
   serveResponse(mediaType, data);
 }
 
+type Sources = Record<string, true>;
+const origins = (s: Sources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
+
 export function init(app: App): void {
   const cacheDir = app.appPATH + CACHE_SUBDIR;
+  const allowed = (app.uncdn = { origins: new Set<string>() }).origins; // origins any page declared via CSP — fetchable by anyone
 
   app.on("action", async e => {
     const ctx = e.ctx as RequestContext;
@@ -110,15 +114,16 @@ export function init(app: App): void {
 
     await serveCached(filePath, mediaType); // throws Output if found
 
-    const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
-
-    const denied =
-      policy === "none" ? "fetchPolicy=none" :
-      policy === "superuser" && !await ctx.user?.get("superuser") ? "fetchPolicy=superuser but no superuser session" :
-      null;
-    if (denied) {
-      console.warn(`[uncdn] ${denied}, not fetching: ${url}`);
-      done(ctx, 404, "Not cached");
+    if (![...allowed].some(p => url.startsWith(p))) { // undeclared URLs still go through fetchPolicy
+      const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
+      const denied =
+        policy === "none" ? "fetchPolicy=none" :
+        policy === "superuser" && !await ctx.user?.get("superuser") ? "fetchPolicy=superuser but no superuser session" :
+        null;
+      if (denied) {
+        console.warn(`[uncdn] ${denied}, not fetching: ${url}`);
+        done(ctx, 404, "Not cached");
+      }
     }
 
     await fetchAndCache(url, filePath, cacheDir, mediaType, ctx);
@@ -127,18 +132,33 @@ export function init(app: App): void {
   app.on("html-ready", e => {
     const ctx = e.ctx as RequestContext;
     if (!ctx.html) return;
-    rewriteHtml(ctx.html, ctx.appURL);
+    for (const o of [...origins(ctx.csp["script-src"]), ...origins(ctx.csp["style-src"])]) allowed.add(o);
+    rewriteHtml(ctx.html, ctx.appURL, ctx.csp);
   });
 }
 
-export function rewriteHtml(html: HtmlBuilder, appURL: string): void {
-  const rewriteUrl = (url: string): string => {
-    if (!/^https?:\/\//.test(url) || /[?#]/.test(url)) return url;
-    return appURL + PROXY_PREFIX + url.replace(/^https?:\/\//, "");
+// Rewrite assets to the proxy, but only for origins the page declared in its CSP
+// (per directive: script-src gates scripts, style-src gates styles). Fonts/images
+// referenced relatively inside a proxied CSS cascade through the proxy on their own.
+export function rewriteHtml(html: HtmlBuilder, appURL: string, csp: Csp): void {
+  const rewriter = (src: Sources) => {
+    const allow = origins(src);
+    return (url: string): string =>
+      /^https?:\/\//.test(url) && !/[?#]/.test(url) && allow.some(p => url.startsWith(p))
+        ? appURL + PROXY_PREFIX + url.replace(/^https?:\/\//, "") : url;
   };
-  const rewrite = (files: Set<string>) => new Set([...files].map(rewriteUrl));
-  for (const [name, url] of html.importMap) html.importMap.set(name, rewriteUrl(url));
-  html.legacyScripts = rewrite(html.legacyScripts);
-  html.scripts       = rewrite(html.scripts);
-  html.styles        = rewrite(html.styles);
+  const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
+  for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
+  html.legacyScripts = new Set([...html.legacyScripts].map(rwScript));
+  html.scripts       = new Set([...html.scripts].map(rwScript));
+  html.styles        = new Set([...html.styles].map(rwStyle));
+
+  // drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay
+  stripDead(csp["script-src"], html.scripts, html.legacyScripts, html.importMap.values());
+  stripDead(csp["style-src"], html.styles);
+}
+
+function stripDead(src: Sources, ...refs: Iterable<string>[]): void {
+  const urls = refs.flatMap(r => [...r]);
+  for (const o of origins(src)) if (!urls.some(u => u.startsWith(o))) delete src[o];
 }

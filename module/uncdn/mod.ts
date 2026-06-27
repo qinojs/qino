@@ -1,5 +1,9 @@
 // Public API of uncdn. The qino plugin lives in ./plugin.ts.
 
+declare module "../core/lib/App.ts" {
+  interface App { uncdn: { origins: Set<string> }; } // origins.* = CSP-declared, proxyable by anyone
+}
+
 export const CACHE_SUBDIR = "cache/uncdn/";
 export const DEFAULT_FETCH_POLICY = "superuser";
 export const DEFAULT_MAX_CACHE_BYTES = 50 * 1024 * 1024;

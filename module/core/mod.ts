@@ -9,6 +9,7 @@ export { App } from "./lib/App.ts";
 export { Req } from "./lib/Req.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, RequestContext, requestStorage } from "./lib/RequestContext.ts";
+export { Csp } from "./lib/Csp.ts";
 
 // HTML & general utilities
 export { hee, u2time, HtmlString, html, Output, uid, urlize, clientIp, sqlSearchHelper, itemReadDeep, u2Root, contentDisposition } from "./lib/util.ts";

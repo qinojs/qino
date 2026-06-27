@@ -74,8 +74,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const policy = fetchPolicy(await su.fetchPolicy);
   const maxCacheBytes = cacheByteLimit(await su.maxCacheBytes);
 
+  const origins = [...(node.app.uncdn?.origins ?? [])].sort();
+
   const t = node.app.t;
-  const [tCacheSize, tMaxCacheBytes, tFetchPolicy, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached] = await Promise.all([
+  const [tCacheSize, tMaxCacheBytes, tFetchPolicy, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached, tAllowList, tNoOrigins] = await Promise.all([
     t`Cache size`,
     t`Max cache bytes`,
     t`Fetch policy`,
@@ -85,6 +87,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     t`Info`,
     t`Cached files`,
     t`No cached files yet.`,
+    t`Allow-list (CSP)`,
+    t`No origins declared yet.`,
   ]);
 
   return `<div class="u2-flex">
@@ -97,6 +101,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         <tr><td>${tFetchPolicy}<td><code>${hee(policy)}</code>
         <tr><td>${tCachePath}<td><small><code>${hee(cacheDir)}</code></small>
       </table>
+    </div>
+    <div class="-head">${tAllowList}</div>
+    <div class="-body">
+      ${origins.length ? `<table class=u2-table>${origins.map(o => `<tr><td><small><code>${hee(o)}</code></small>`).join("")}</table>` : `<em>${tNoOrigins}</em>`}
     </div>
     <div class="-head">${tActions}</div>
     <div class="-body">
