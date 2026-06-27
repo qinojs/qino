@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { type RowDataPacket } from "../../../deps.ts";
-import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { DbTable } from "./DbTable.ts";
 import { sql, isTemplate, render, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
+import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
+import type { RowDataPacket } from "../../../deps.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
