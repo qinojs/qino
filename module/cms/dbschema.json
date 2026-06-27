@@ -159,6 +159,7 @@
             "type": "integer",
             "minimum": -32768,
             "maximum": 32767,
+            "default": 0,
             "x-index": true
           }
         },
