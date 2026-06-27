@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function makeFileHelper(ctx: RequestContext) {
-    const appURL = ctx.appURL as string;
+    const appURL = ctx.appURL;
     function editorLink(file: string, line: unknown, col: unknown): string {
         const localPath = ctx.urlToLocalPath(file) ?? file;
         return appURL + "editor/?file=" + encodeURIComponent(localPath)
@@ -231,7 +231,7 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
 async function renderDetail(node: Node, id: number): Promise<string> {
     const { t, db } = node.app;
     const ctx = getCtx();
-    const get = ctx.get as Record<string, string>;
+    const get = ctx.get;
     const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
     const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;

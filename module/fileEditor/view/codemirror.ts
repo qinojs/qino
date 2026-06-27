@@ -60,8 +60,8 @@ export default async function codemirrorView(file: string): Promise<string> {
     } catch { /* not writable */ }
 
     const content = await Deno.readTextFile(file);
-    const line = ctx.get["line"] ?? "";
-    const col = ctx.get["col"] ?? "";
+    const line = ctx.get.line ?? "";
+    const col = ctx.get.col ?? "";
 
     return `<button id=saveButton
 			style="position:fixed;right:-1px;top:10px;z-index:10;padding:10px 12px;display:none;background-image:linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5))">

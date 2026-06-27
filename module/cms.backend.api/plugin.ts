@@ -70,7 +70,7 @@ function schemaToFormFields(s: StandardSchema | undefined): string {
     const inner = field.kind === "optional" ? field.inner ?? field : field;
     const required = field.kind !== "optional" && !field.defaultValue;
     const jsonSchema = toJsonSchema(inner);
-    const description = (field.description ?? inner.description) as string | undefined;
+    const description = field.description ?? inner.description;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name: k, required });
     const label = hee(k) + (required ? "" : "?");
     return `
@@ -96,7 +96,7 @@ const ACCESS_COLORS: Record<Route["accessLevel"], string> = {
 function pathParamFields(params: PathParam[]): string {
   return params.map(({ name, schema }) => {
     const jsonSchema = schema ? toJsonSchema(schema) : { type: "string" };
-    const description = schema?.description as string | undefined;
+    const description = schema?.description;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name, required: true });
     return `<label class="-field"><span>${hee(name)}</span><span>${inputHtml}</span></label>`;
   }).join("");

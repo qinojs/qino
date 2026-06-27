@@ -30,7 +30,7 @@ export const api: AptTree = {
 
 function editorFile(): string | null {
     const ctx = getCtx();
-    const file = ctx.get["file"] as string;
+    const file = ctx.get.file;
     return file && ctx.appRequestPath.startsWith("editor") ? file : null;
 }
 

@@ -51,7 +51,7 @@ async function dirTree(appPATH: string): Promise<Record<string, TreeNode>> {
 
 export default async function summary(node: Node): Promise<string> {
   const db      = node.app.db;
-  const appPATH = node.app.appPATH as string;
+  const appPATH = node.app.appPATH;
 
   const tables = await db.all`SHOW TABLE STATUS`;
   let dbTotal = 0;
@@ -74,7 +74,7 @@ export default async function summary(node: Node): Promise<string> {
 
 export async function details(node: Node): Promise<string> {
   const db      = node.app.db;
-  const appPATH = node.app.appPATH as string;
+  const appPATH = node.app.appPATH;
 
   const tree  = await dirTree(appPATH);
   const array = Object.entries(tree)

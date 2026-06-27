@@ -59,7 +59,7 @@ export class CMS {
 
     async nodeFromRequest(): Promise<Node> {
         const ctx = getCtx();
-        const cmspid = ctx.get["cmspid"];
+        const cmspid = ctx.get.cmspid;
         let pid: number;
         if (cmspid) {
             pid = Number(cmspid);

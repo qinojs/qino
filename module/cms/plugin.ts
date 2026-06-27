@@ -96,10 +96,10 @@ export function init(app: App) {
         if (cmsPageFile) {
             // Fix EXIF orientation for JPEG
             // (Deno doesn't have built-in exif support, stub for now)
-            const cmspid = Number(ctx.get["cmspid"] ?? "0");
+            const cmspid = Number(ctx.get.cmspid ?? "0");
             const P = await app.cms.node(cmspid);
             if ((await P.access()) > 1) {
-                const replace = ctx.get["replace"];
+                const replace = ctx.get.replace;
                 const File = await (replace ? P.file(replace) : P.addFile());
                 await File.replaceFromUpload(cmsPageFile);
                 throw new Output({ id: String(File), url: await File.url() + "/" + await File.get("name") });
@@ -107,7 +107,7 @@ export function init(app: App) {
         }
 
         // Page files as ZIP
-        const zipPid = ctx.get["qgCms_page_files_as_zip"];
+        const zipPid = ctx.get.qgCms_page_files_as_zip;
         if (zipPid) {
             const P = await app.cms.node(Number(zipPid));
             if (!(await P.isReadable())) { ctx.responseStatus = 403; return; }

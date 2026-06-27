@@ -292,7 +292,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   }
 
   // history of session / client / ip
-  const historyOf = (ctx.get.history_of as string) ?? "sess";
+  const historyOf = ctx.get.history_of ?? "sess";
   let hWhere: Sql | null = null;
   if (historyOf === "client" && log.client_id) hWhere = sql`log.client_id = ${log.client_id}`;
   else if (historyOf === "ip" && log.ip_id) hWhere = sql`log.ip_id = ${log.ip_id}`;

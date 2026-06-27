@@ -130,7 +130,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const ctx = getCtx();
   const app = node.app;
   const { dbFiles: fm } = app;
-  const get = ctx.get as Record<string, string>;
+  const get = ctx.get;
 
   if (get.id) return renderDetail(node, Number(get.id));
   if (vars.delete) await (await fm.file(Number(vars.delete))).remove();

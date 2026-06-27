@@ -16,7 +16,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
     if (await node.access() < 2) return false;
 
     const db = node.app.db;
-    const langs = node.app.languages.all as string[];
+    const langs = node.app.languages.all;
 
     if ("count_clean" in vars) {
         await db.query`UPDATE smalltext SET count = 0`;

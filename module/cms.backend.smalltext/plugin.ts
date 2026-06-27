@@ -13,7 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<string> {
     const ctx = getCtx();
     const db = node.app.db;
-    const langs = node.app.languages.all as string[];
+    const langs = node.app.languages.all;
     const isSuperuser = !!(await ctx.user?.get("superuser"));
 
     const v = vars ?? ctx.get;
@@ -76,7 +76,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
 async function render(node: Node): Promise<string> {
     const ctx = getCtx();
     const app = node.app;
-    const langs = app.languages.all as string[];
+    const langs = app.languages.all;
     const counterActive = !!(await app.settings.core.smalltext.counter);
     const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
     const search = String(ctx.get.search ?? "").trim();
@@ -108,7 +108,7 @@ async function render(node: Node): Promise<string> {
 
 export async function backendDashboardWidget(app: App): Promise<string> {
     const db = app.db;
-    const langs = app.languages.all as string[];
+    const langs = app.languages.all;
     const total = Number(await db.one`SELECT count(*) FROM smalltext`);
     const missing = Number(await db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " OR ")}`);
     return `<div style="overflow:auto; padding:0">

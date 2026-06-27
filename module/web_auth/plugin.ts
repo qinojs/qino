@@ -168,7 +168,7 @@ export const api: AptTree = {
           }
 
           const { credential, aaguid } = verification.registrationInfo;
-          const credId = credential.id as string;
+          const credId = credential.id;
 
           if (await db.one`SELECT id FROM web_auth_credential WHERE credential_id = ${credId}`) {
             return { ok: false, error: "already_registered" };

@@ -32,7 +32,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
   const rows = Math.min(Math.max(1, Number(node.settings.rows()) || 2), 300);
 
   if (
-    ctx.get["export_table"] && String(ctx.get["export_table"]) === String(node)
+    ctx.get.export_table && String(ctx.get.export_table) === String(node)
   ) {
     const titleStr = String(await node.showTitle());
     const d = new Date();
