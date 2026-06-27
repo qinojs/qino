@@ -79,8 +79,8 @@ export async function assertNoSSRF(url: string) {
   const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
   if (PRIVATE_RANGES.some((r) => r.test(host))) throw new Error(`SSRF blocked: ${host}`);
   const [ips, ips6] = await Promise.all([
-    Deno.resolveDns(host, "A").catch(() => [] as string[]),
-    Deno.resolveDns(host, "AAAA").catch(() => [] as string[]),
+    Deno.resolveDns(host, "A").catch(() => []),
+    Deno.resolveDns(host, "AAAA").catch(() => []),
   ]);
   for (const ip of [...ips, ...ips6]) {
     if (PRIVATE_RANGES.some((r) => r.test(ip))) throw new Error(`SSRF blocked: ${ip}`);

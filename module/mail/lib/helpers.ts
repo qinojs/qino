@@ -37,7 +37,7 @@ export function mergeHeaders(...headers: (HeadersInit | undefined)[]): Headers {
 }
 
 function valueAt(data: Dict, path: string): unknown {
-  return path.trim().split(".").reduce((v: unknown, key) => (v as Record<string, unknown>)?.[key], data as unknown);
+  return path.trim().split(".").reduce((v: unknown, key) => (v as Record<string, unknown>)?.[key], data);
 }
 
 export function renderMarkers(tpl: string, data: Dict): string {

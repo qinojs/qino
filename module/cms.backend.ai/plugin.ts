@@ -296,7 +296,7 @@ async function handlePost(app: App, post: Record<string, unknown>, token: string
 async function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const app = node.app;
-  const message = await handlePost(app, ctx.post as Record<string, unknown>, ctx.token);
+  const message = await handlePost(app, ctx.post, ctx.token);
 
   const defaultProvider = String(await app.settings.ai.default.provider ?? "");
   const defaultModel = String(await app.settings.ai.default.model ?? "");

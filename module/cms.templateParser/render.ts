@@ -175,7 +175,7 @@ async function renderEach(spec: string, el: Extract<TNode, { type: "element" }>,
     const val = await evalExpr(iterExpr, rctx, extra);
     if (val instanceof Map)                     items = [...val.values()];
     else if (Array.isArray(val))                items = val;
-    else if (val && typeof val === "object")    items = Object.values(val as object);
+    else if (val && typeof val === "object")    items = Object.values(val);
     else return "";
   }
 
