@@ -16,7 +16,7 @@ function normalizeModel(value: unknown): ProviderModel | null {
     ...(data.description ? { description: String(data.description) } : {}),
     ...(data.source ? { source: String(data.source) } : {}),
     ...(data.syncedAt ? { syncedAt: String(data.syncedAt) } : {}),
-    ...(strengths.length ? { strengths: strengths as ProviderStrength[] } : {}),
+    ...(strengths.length ? { strengths } : {}),
     ...(Number(data.maxInputTokens) > 0
       ? { maxInputTokens: Number(data.maxInputTokens) }
       : {}),

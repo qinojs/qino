@@ -112,14 +112,14 @@ function cell(v: unknown): unknown {
 
 // Tables (without internal `_`-prefixed ones) with their fields — used by helper, autocomplete and AI.
 async function buildSchema(app: App): Promise<Table[]> {
-  const tables = (Object.values(app.db.tables ?? {}) as any[])
+  const tables = Object.values(app.db.tables ?? {})
     .filter((t) => !t.name.startsWith("_"))
     .sort((a, b) => a.name.localeCompare(b.name));
   return Promise.all(tables.map(async (t) => {
     const fields = await t.init();
     return {
       name: t.name,
-      fields: Object.entries(fields as Record<string, any>).map(([name, f]) => ({ name, type: f.vs?.Type ?? "" })),
+      fields: Object.entries(fields).map(([name, f]) => ({ name, type: f.vs?.Type ?? "" })),
     };
   }));
 }

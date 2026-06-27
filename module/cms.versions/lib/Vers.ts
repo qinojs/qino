@@ -128,7 +128,7 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
     const origJoins: string[] = [];
 
     for (const col of liveFields) {
-        const f = col.Field as string;
+        const f = col.Field;
         if (fieldSpec === true || (fieldSpec as Record<string,1>)[f]) {
             selects.push(`m.\`${f}\``);
         } else {

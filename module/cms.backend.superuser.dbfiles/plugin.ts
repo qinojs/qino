@@ -95,7 +95,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars
     const exists = await f.exists();
     u.searchParams.set("id", String(row.id));
     trs += `<tr u2-href>
-  <td class="-thumb">${await mediaPreview(f, exists as boolean)}
+  <td class="-thumb">${await mediaPreview(f, !!exists)}
   <td>${row.id}
   <td><a href="${hee(u.search)}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>

@@ -28,7 +28,7 @@ export const settingsSchema = {
 };
 
 async function handleJsError(ctx: RequestContext): Promise<void> {
-  const report = ctx.post as Report;
+  const report = ctx.post;
   if (report.message) {
     await addReport(ctx.app, { source: "js", ...report });
   }

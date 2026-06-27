@@ -9,7 +9,7 @@ const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record
 
 export async function settings(app: App): Promise<SecuritySettings> {
   const s = app.settings["cms.backend.security"];
-  const props = settingsSchema.properties as Record<string, { type: string; default: unknown }>;
+  const props = settingsSchema.properties;
   const result: Record<string, unknown> = {};
   for (const [key, meta] of Object.entries(props)) {
     const raw = await s[key];

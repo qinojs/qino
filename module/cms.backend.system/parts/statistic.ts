@@ -85,8 +85,7 @@ export async function details(node: Node): Promise<string> {
     `<tr><td>${hee(folder)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`
   ).join("");
 
-  type TableStatus = { Name: string; Data_length?: number; Index_length?: number };
-  const tables = await db.all`SHOW TABLE STATUS` as TableStatus[];
+  const tables = await db.all`SHOW TABLE STATUS`;
   tables.sort((a, b) =>
     ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0))
   );

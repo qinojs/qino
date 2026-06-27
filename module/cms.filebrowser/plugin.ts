@@ -79,7 +79,7 @@ async function search(s_: string, ctx: RequestContext): Promise<any[]> {
         if (!await dbFile.exists()) continue;
         if (!await dbFile.access()) continue;
 
-        const md5 = vs.md5 as string;
+        const md5 = vs.md5;
         res[md5] ||= {
             id: vs.id,
             mime: vs.mime,

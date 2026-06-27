@@ -62,7 +62,7 @@ function modelFromPost(post: Record<string, unknown>): ProviderModel | null {
   return {
     id,
     label: String(post.model_label ?? "").trim() || undefined,
-    strengths: splitCsv(post.model_strengths) as ProviderStrength[],
+    strengths: splitCsv(post.model_strengths),
     maxInputTokens: asPositiveNumber(post.max_input_tokens),
     maxOutputTokens: asPositiveNumber(post.max_output_tokens),
     costPerMToken: asPositiveNumber(post.cost_per_m_token),

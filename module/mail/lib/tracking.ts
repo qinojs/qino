@@ -1,5 +1,6 @@
 import { Output, type RequestContext } from "../../core/mod.ts";
 import { sha1 } from "./helpers.ts";
+import type {} from "../mod.ts";
 
 const BLANK_GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), c => c.charCodeAt(0));
 

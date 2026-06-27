@@ -15,7 +15,7 @@ export function init(app: App) {
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Security", de: "Sicherheit" });
   const s = app.settings["cms.backend.security"];
-  for (const [key, meta] of Object.entries(settingsSchema.properties as Record<string, { default: unknown }>)) {
+  for (const [key, meta] of Object.entries(settingsSchema.properties)) {
     const v = await s[key]; if (v == null || v === "") await s[key](meta.default);
   }
 }

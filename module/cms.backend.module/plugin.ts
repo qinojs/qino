@@ -64,7 +64,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const exportBadges = presentExports.map(({ key, label }) => {
     let detail = "";
     if (key === "needs") {
-      detail = " <small>(" + (mod.needs as string[]).join(", ") + ")</small>";
+      detail = " <small>(" + mod.needs!.join(", ") + ")</small>";
     } else if (key === "api") {
       const routes = Object.keys(mod.api ?? {});
       detail = " <small>(" + routes.join(", ") + ")</small>";
