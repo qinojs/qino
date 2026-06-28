@@ -5,7 +5,7 @@ const pending = new Map();
 let scheduled = false;
 
 function interpolate(template, values) {
-  return values.reduce((s, v, i) => s.replace(`###${i + 1}###`, String(v ?? "")), template);
+  return values.reduce((s, v, i) => s.replaceAll(`{${i}}`, String(v ?? "")), template);
 }
 
 function flush() {
@@ -21,7 +21,7 @@ function flush() {
 
 export function t(strings, ...values) {
   const original = strings.reduce((acc, str, i) =>
-    acc + str + (i < strings.length - 1 ? `###${i + 1}###` : ""), "");
+    acc + str + (i < strings.length - 1 ? `{${i}}` : ""), "");
   let entry = cache.get(original);
   if (!entry) {
     entry = { translated: null };

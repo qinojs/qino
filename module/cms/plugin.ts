@@ -141,14 +141,5 @@ export async function install({ app }: { app: App }): Promise<void> {
     await app.db.table('page').insert({ id: 1, access: 1, visible: 1, searchable: 1, module: "cms.layout.custom.9", basis: 0, type: "p" });
     await (await app.cms.node(1)).title("en", "root");
   }
-
-  // Import locale files
-  const localeDir = new URL("./locale/", import.meta.url).pathname;
-  for await (const entry of Deno.readDir(localeDir)) {
-    const match = entry.name.match(/^([a-z]{2})\.json$/);
-    if (!match) continue;
-    const lang = match[1];
-    const json = await Deno.readTextFile(localeDir + entry.name);
-    //await app.languages.import(lang, "cms", json);
-  }
+  // locale/<lang>.json is loaded generically per module by ModuleManager (#loadLocales)
 }

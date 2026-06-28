@@ -118,11 +118,25 @@ export class ModuleManager {
       const { plugin } = this.#modules[name];
       await plugin.init?.(this.#app);
       await plugin.install?.({ app: this.#app, module: plugin });
+      await this.#loadLocales(this.#modules[name]);
       if (plugin.api) this.#app.aptTree[name] = plugin.api;
     }
     this.#app.settings[$item].setSchema(appSettingsSchema);
     this.#app.ctxSettingsSchema = ctxSettingsSchema;
     await this.#app.fire("init", { app: this.#app });
+  }
+
+  // Seed translations from a module's locale/<lang>.json (namespace = module name; core = "")
+  async #loadLocales(mod: Module): Promise<void> {
+    const dir = mod.dir;
+    if (!dir) return;
+    const ns = mod.name === "core" ? "" : mod.name;
+    try {
+      for await (const e of Deno.readDir(dir + "locale/")) {
+        const m = e.name.match(/^([a-z]{2})\.json$/);
+        if (m) await this.#app.languages.import(m[1], ns, await Deno.readTextFile(dir + "locale/" + e.name));
+      }
+    } catch { /* module has no locale dir */ }
   }
 
   #initOrder(): string[] {

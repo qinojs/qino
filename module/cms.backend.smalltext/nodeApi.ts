@@ -29,7 +29,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
     }
 
     if ("delete_not_used" in vars) {
-        const cond = sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " AND ");
+        const cond = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " AND ");
         await db.query`DELETE FROM smalltext WHERE count = 0 AND ${cond}`;
         return true;
     }
@@ -48,7 +48,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
 
     if ("translate_untranslated" in vars) {
         const svc = cmsTextService(ctx);
-        const rows = await db.all`SELECT hash, namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext WHERE ${sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " OR ")}`;
+        const rows = await db.all`SELECT hash, namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`;
         let count = 0;
         for (const row of rows) {
             const sourceLang = langs.find(l => row[l]) ?? 'en';

@@ -122,39 +122,41 @@ export class LangManager {
     // Shortcut: translate text (uses the current ctx automatically)
     async t(strings: TemplateStringsArray, ...values: unknown[]): Promise<string> {
         const ctx = getCtx();
-        const original = strings.reduce((acc, str, i) => 
-            acc + str + (i < strings.length - 1 ? `###${i + 1}###` : ""), "");
+        const original = strings.reduce((acc, str, i) => acc + str + (i < strings.length - 1 ? `{${i}}` : ""), "");
         let result = await this.#getTxt(original, ctx);
         const resolved = await Promise.all(values);
-        for (let i = 0; i < resolved.length; i++) {
-            result = result.replace(`###${i + 1}###`, String(resolved[i] ?? ""));
-        }
+        for (let i = 0; i < resolved.length; i++) 
+            result = result.replaceAll(`{${i}}`, String(resolved[i] ?? ""));
         return result;
     }
 
-
-    /*
-    // Add language to the DB if not yet present
-    async addLanguage(l: string): Promise<void> {
-        const table = this.#app.db.table("smalltext");
-        if (!table.field(l)) {
-            await table.addField(l);
-            await table.field(l).setType("text");
+    // Export all non-empty translations, grouped by namespace and language: { ns: { lang: { original: txt } } }
+    async export(): Promise<Record<string, Record<string, Record<string, string>>>> {
+        const langs = this.#langs;
+        const rows = await this.#app.db.all`SELECT namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext ORDER BY original`;
+        const out: Record<string, Record<string, Record<string, string>>> = {};
+        for (const row of rows) {
+            for (const l of langs) {
+                const txt = row[l];
+                if (!txt) continue;
+                ((out[row.namespace] ??= {})[l] ??= {})[row.original] = txt;
+            }
         }
+        return out;
     }
 
-    async import(lang: string, ns: string, json: string): Promise<void> {
-        await this.addLanguage(lang);
-        const txts: Record<string, string> = JSON.parse(json);
+
+    // Import translations for one namespace from { original: txt }; only fills empty entries, never overwrites
+    async import(lang: string, ns: string, json: string | Record<string, string>): Promise<void> {
+        const txts: Record<string, string> = typeof json === "string" ? JSON.parse(json) : json;
         const db = this.#app.db;
         for (const [original, txt] of Object.entries(txts)) {
             if (!txt) continue;
             const hash = createHash("md5").update(original).digest("hex");
             const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
-            if (!exists) await db.query`INSERT INTO smalltext (namespace, hash, original) VALUES (${ns}, ${hash}, ${original})`;
-            await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns}`;
+            if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
+            await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
         }
     }
-    */
 
 }

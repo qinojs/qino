@@ -28,7 +28,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
         ? sql`WHERE (${sql.join(["namespace", "original", ...langs].map(c => sql`${sql.id(c)} LIKE ${like}`), " OR ")})`
         : sql.raw("");
 
-    const missingExpr = sql.join(langs.map(l => sql`CASE WHEN ${sql.id(l)} = '' THEN 1 ELSE 0 END`), " + ");
+    const missingExpr = sql.join(langs.map(l => sql`CASE WHEN COALESCE(${sql.id(l)}, '') = '' THEN 1 ELSE 0 END`), " + ");
     const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);
     const rows = await db.all`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
     const total = Number(await db.one`SELECT count(*) FROM smalltext`);
@@ -80,7 +80,7 @@ async function render(node: Node): Promise<string> {
     const counterActive = !!(await app.settings.core.smalltext.counter);
     const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
     const search = String(ctx.get.search ?? "").trim();
-    const missingWhere = sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " OR ");
+    const missingWhere = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ");
     const missing = missingWhere.parts.length ? Number(await app.db.one`SELECT count(*) FROM smalltext WHERE ${missingWhere}`) : 0;
 
     return `<div class=u2-card>
@@ -110,7 +110,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     const db = app.db;
     const langs = app.languages.all;
     const total = Number(await db.one`SELECT count(*) FROM smalltext`);
-    const missing = Number(await db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`${sql.id(l)} = ''`), " OR ")}`);
+    const missing = Number(await db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`);
     return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
     <tr><td>${await app.t`Entries`}:<td>${hee(String(total))}
