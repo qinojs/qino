@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
 import type { RequestContext } from "./RequestContext.ts";
-import { uid } from "./util.ts";
+import { cookiePrefix, uid } from "./util.ts";
 
 export async function initClient(ctx: RequestContext): Promise<void> {
     const db = ctx.app.db;
     if (ctx.clientId) return;
 
-    const cid = ctx.cookie[ctx.app.https ? "__Host-cid" : "cid"];
+    const cid = ctx.cookie[cookiePrefix(ctx.app.https, ctx.appURL) + "cid"];
     if (!cid) {
       await registerClient(ctx);
       return;
@@ -23,7 +23,7 @@ async function registerClient(ctx: RequestContext): Promise<void> {
     const hash = uid();
 
     const https = ctx.app.https;
-    const cidName = https ? "__Host-cid" : "cid";
+    const cidName = cookiePrefix(https, ctx.appURL) + "cid";
     const parts = [`${cidName}=${hash}`, `Path=${ctx.appURL}`, "Expires=Sat, 01 Jan 2033 00:00:00 GMT", "HttpOnly;SameSite=Lax"];
     if (https) parts.push("Secure");
     ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
@@ -62,8 +62,7 @@ export function initLog(ctx: RequestContext): void {
       } catch (e) { console.error("initLog insert error:", e); return null; }
     })();
 
-    setTimeout(async ()=>{ // background
-      await ctx.logId; // ensure the insert finished so data.id exists for the update below
+    ctx.logId.then(async () => { // background, after the main insert so data.id exists for the update below
       try {
         const url = ctx.requestUri;
         const urlHash = createHash("md5").update(url).digest("hex");
@@ -90,6 +89,6 @@ export function initLog(ctx: RequestContext): void {
         await db.table("log").update(data);
 
       } catch (e) { console.error("liveLog background error:", e); }
-    },100)
+    });
 
 };

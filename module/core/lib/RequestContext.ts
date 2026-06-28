@@ -118,7 +118,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     }
   }
 
-  const session = await app.sessions.loadFromRequest(req, app.https);
+  const session = await app.sessions.loadFromRequest(req, app.https, appURL);
 
   const ctx = new RequestContext();
   Object.assign(ctx, {

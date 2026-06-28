@@ -71,7 +71,7 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
   assertEquals((db.calls[1][1] as unknown[])[3], 9);
 });
 
-Deno.test("SessionManager: setCookie uses host cookie for https", () => {
+Deno.test("SessionManager: setCookie uses __Secure- prefix on sub-path mounts", () => {
   const sessions = new SessionManager(fakeDb() as any);
   const ctx = new RequestContext();
   ctx.app = { https: true } as any;
@@ -79,7 +79,18 @@ Deno.test("SessionManager: setCookie uses host cookie for https", () => {
   ctx.sess = { token: "token" } as any;
 
   sessions.setCookie(ctx);
-  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qgSession=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
+  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Secure-qgSession=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
+});
+
+Deno.test("SessionManager: setCookie uses __Host- prefix at root", () => {
+  const sessions = new SessionManager(fakeDb() as any);
+  const ctx = new RequestContext();
+  ctx.app = { https: true } as any;
+  ctx.appURL = "/";
+  ctx.sess = { token: "token" } as any;
+
+  sessions.setCookie(ctx);
+  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qgSession=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 
 Deno.test("Session: touch debounces its own access updates", async () => {

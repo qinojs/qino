@@ -1,5 +1,5 @@
 import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
-import { uid } from "./util.ts";
+import { cookiePrefix, uid } from "./util.ts";
 import { sql } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
 import type { Req } from "./Req.ts";
@@ -7,7 +7,7 @@ import type { RequestContext } from "./RequestContext.ts";
 
 const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qgSession";
-const hostCookieName = (https: boolean) => https ? `__Host-${COOKIE_NAME}` : COOKIE_NAME;
+const cookieName = (ctx: RequestContext) => cookiePrefix(ctx.app.https, ctx.appURL) + COOKIE_NAME;
 const unixTime = () => Math.floor(Date.now() / 1000);
 
 /** One session: identity (token/id), server-trusted reactive data, and its own touch timer. */
@@ -48,8 +48,8 @@ export class SessionManager {
         this.#db = db;
     }
 
-    loadFromRequest(req: Req, https: boolean): Promise<Session> {
-        return this.load(req.cookie(hostCookieName(https)));
+    loadFromRequest(req: Req, https: boolean, appURL: string): Promise<Session> {
+        return this.load(req.cookie(cookiePrefix(https, appURL) + COOKIE_NAME));
     }
 
     async load(cookieSessionToken?: string): Promise<Session> {
@@ -70,7 +70,7 @@ export class SessionManager {
 
     setCookie(ctx: RequestContext): void {
         const https = ctx.app.https;
-        const parts = [`${hostCookieName(https)}=${ctx.sess.token}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
+        const parts = [`${cookieName(ctx)}=${ctx.sess.token}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
         if (https) parts.push("Secure");
         ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
     }

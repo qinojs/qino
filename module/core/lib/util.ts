@@ -5,6 +5,12 @@ export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/";
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
+/** Cookie name prefix. `__Host-` requires Path=/, so fall back to `__Secure-` on sub-path mounts. */
+export function cookiePrefix(https: boolean, appURL: string): string {
+  if (!https) return "";
+  return appURL === "/" ? "__Host-" : "__Secure-";
+}
+
 /** Safe Content-Disposition value: ASCII fallback + RFC 5987 filename* (no header injection). */
 export function contentDisposition(type: "inline" | "attachment", name: string): string {
   const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");

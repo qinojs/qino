@@ -64,7 +64,7 @@ export async function login(ctx: RequestContext, id: number | string): Promise<b
 
 export async function logout(ctx: RequestContext): Promise<void> {
   await rememberLogin(ctx, false);
-  ctx.client.set("usr_id", 0);
+  await ctx.client.set("usr_id", 0);
   ctx.sess.data({});
   await ctx.app.fire("logout");
 }
