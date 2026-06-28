@@ -59,18 +59,19 @@ async function authorizeMutation(req: Req, opts: AptFetchOptions, data: RequestD
   if (!hasValidCsrfToken(req)) throw new Output({ error: "Forbidden" }, { status: 403 });
 }
 
+// Match host:port, not scheme — behind a TLS-terminating proxy the app sees http while the browser sends an https Origin.
 function isTrustedOrigin(req: Req): boolean {
-  const target = new URL(req.url).origin;
-  const origin = originOf(req.header("origin"));
+  const target = new URL(req.url).host;
+  const origin = hostOf(req.header("origin"));
   if (origin) return origin === target;
   const referer = req.header("referer");
   if (!referer) return false;
-  return originOf(referer) === target;
+  return hostOf(referer) === target;
 }
 
-function originOf(value?: string): string | null {
+function hostOf(value?: string): string | null {
   if (!value) return null;
-  try { return new URL(value).origin; }
+  try { return new URL(value).host; }
   catch { return null; }
 }
 

@@ -13,13 +13,12 @@ export class Req {
   #json: Promise<unknown> | undefined;
   #form: Promise<FormData> | undefined;
 
-  /** `url` may differ from `raw.url` when a trusted proxy rewrote the scheme (x-forwarded-proto); `raw` stays original. */
-  constructor(raw: Request, peerAddr = "", url = raw.url) {
+  constructor(raw: Request, peerAddr = "") {
     this.raw = raw;
-    this.url = url;
+    this.url = raw.url;
     this.method = raw.method;
     this.peerAddr = peerAddr;
-    this.#url = new URL(url);
+    this.#url = new URL(raw.url);
   }
 
   get path(): string { return this.#url.pathname; }

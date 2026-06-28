@@ -5,7 +5,6 @@ import {
   ensureSlash,
   hee,
   html,
-  publicUrl,
   sqlSearchHelper,
   urlize,
 } from "../lib/util.ts";
@@ -59,18 +58,6 @@ Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   assertEquals(whereSql, "(`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!')");
   assertEquals(whereParams, ["%alpha%", "%alpha%", "%beta%", "%beta%", "%gamma%", "%gamma%", "%delta%", "%delta%"]);
   assertEquals(fakeRender(res.order, [])[1], ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
-});
-
-Deno.test("util: publicUrl honors x-forwarded-proto only behind a trusted proxy", () => {
-  const req = (proto?: string) =>
-    new Request("http://host/p", proto ? { headers: { "x-forwarded-proto": proto } } : undefined);
-  // no hops: forwarded header ignored (unspoofable scheme)
-  assertEquals(publicUrl(req("https"), 0), "http://host/p");
-  // hops>0: scheme taken from the proxy
-  assertEquals(publicUrl(req("https"), 1), "https://host/p");
-  // first value of a comma list, no header → unchanged
-  assertEquals(publicUrl(req("https, http"), 1), "https://host/p");
-  assertEquals(publicUrl(req(), 1), "http://host/p");
 });
 
 Deno.test("util: ctx.urlToLocalPath maps module and qg public files", () => {
