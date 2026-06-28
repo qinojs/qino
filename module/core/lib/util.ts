@@ -24,6 +24,15 @@ export function clientIp(req: { header(name: string): string | undefined; peerAd
   return xff[xff.length - hops] ?? req.peerAddr;
 }
 
+/** Public request URL. Behind `hops` proxies, trusts x-forwarded-proto for the scheme (TLS terminated upstream); 0 = as received. */
+export function publicUrl(request: Request, hops = 0): string {
+  const proto = hops > 0 && request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
+  if (!proto) return request.url;
+  const url = new URL(request.url);
+  url.protocol = proto;
+  return url.href;
+}
+
 /** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-". */
 export function u2time(t: unknown): string {
   if (t == null || t === "") return "-";

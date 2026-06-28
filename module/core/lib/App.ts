@@ -3,7 +3,7 @@ import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
 import { makeRequestContext, requestStorage, type RequestContext } from "./RequestContext.ts";
 import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
-import { ensureSlash, Output } from "./util.ts";
+import { ensureSlash, Output, publicUrl } from "./util.ts";
 import { Db } from "./Db.ts";
 import { DbFileManager } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
@@ -94,7 +94,7 @@ export class App {
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
-        const req = new Req(request, peerAddr);
+        const req = new Req(request, peerAddr, publicUrl(request, this.trustedProxyHops));
         let ctx: RequestContext, isNew: boolean;
         try {
             await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
