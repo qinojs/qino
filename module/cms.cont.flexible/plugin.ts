@@ -3,9 +3,9 @@ import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.flexible";
 
-const settingsSchema = {
+export const settingsSchema = {
   properties: {
-    "init-child-module": { type: "string", description: "Module name for the first automatically created child element when this flexible container is empty." },
+    "init-child-module": { type: "string", description: "Module name for the first automatically created child element when any flexible container is empty." },
   },
 };
 
@@ -14,7 +14,7 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
 
   // If no children yet, optionally init a default child module
   if (conts.length === 0) {
-    const defaultModule = node.settings["init-child-module"]();
+    const defaultModule = await node.app.settings[name]["init-child-module"];
     const initModule = vars["init-child-module"] ?? defaultModule;
     if (initModule) { await node.cont("init", initModule); conts = await node.conts(); }
   }
@@ -29,6 +29,5 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
 export const cms = {
   node: {
     render,
-    settingsSchema,
   },
 };

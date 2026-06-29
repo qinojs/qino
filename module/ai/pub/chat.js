@@ -28,7 +28,7 @@ class AiChat extends HTMLElement {
       ai-chat { display: flex; flex-direction: column; height: 100%; min-height: 200px; font-family: sans-serif; }
       ai-chat .msgs { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
       ai-chat .msg { padding: 6px 10px; border-radius: 6px; max-width: 80%; }
-      ai-chat .msg.user { align-self: flex-end; background: var(--color); color: #fff; white-space: pre-wrap; }
+      ai-chat .msg.user { align-self: flex-end; background: var(--color, #2563eb); color: #fff; white-space: pre-wrap; }
       ai-chat .msg.assistant { align-self: flex-start; background: #f0f0f0; }
       ai-chat .msg.assistant p { margin: 0 0 6px; }
       ai-chat .msg.assistant p:last-child { margin-bottom: 0; }

@@ -2,13 +2,16 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import { cms, name } from "../plugin.ts";
 
+// App settings stub: app.settings["cms.cont.flexible"]["init-child-module"]
+const appWith = (initModule: string) => ({ settings: { [name]: { "init-child-module": initModule } } });
+
 Deno.test("cms.cont.flexible: metadata is wired", () => {
   assertEquals(name, "cms.cont.flexible");
 });
 
 Deno.test("cms.cont.flexible: render concatenates child html", async () => {
   const node = {
-    settings: { "init-child-module": () => "" },
+    app: appWith(""),
     conts: () => [
       { html: () => "<p>A</p>" },
       { html: () => "<p>B</p>" },
@@ -21,7 +24,7 @@ Deno.test("cms.cont.flexible: render initializes default child when empty", asyn
   const calls: string[] = [];
   let initialized = false;
   const node = {
-    settings: { "init-child-module": () => "cms.cont.text" },
+    app: appWith("cms.cont.text"),
     conts: () => initialized ? [{ html: () => "<p>Init</p>" }] : [],
     cont: (_name: string, module: string) => {
       calls.push(module);
