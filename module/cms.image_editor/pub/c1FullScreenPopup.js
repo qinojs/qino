@@ -12,19 +12,23 @@ const styleHrefs = [
     'cms/pub/css/ui.css',
 ];
 
+// Full-screen layout; overrides ui.css's centered-box dialog rule (`:host dialog`),
+// hence the higher-specificity `dialog.qgCMS` selectors.
 const baseCss = `
-dialog {
+dialog.qgCMS {
     position: fixed;
     inset: 0;
     width: auto; height: auto;
     max-width: none; max-height: none;
     margin: 0; padding: 0; border: 0;
+    border-radius: 0; min-width: 0; box-shadow: none;
     background: #fff;
     color: var(--cms-dark, #222);
     display: flex;
     flex-flow: column;
 }
-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+dialog.qgCMS > * { padding: 0; }
+dialog.qgCMS::backdrop { background: rgba(0, 0, 0, .5); }
 `;
 
 // Base: a modal full-screen <dialog> living in an isolated shadow root.

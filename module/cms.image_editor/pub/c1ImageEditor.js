@@ -1,12 +1,7 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { c1FullScreenPopup } from './c1FullScreenPopup.js';
 import { c1ImageCropper } from './c1ImageCropper.js';
-
-const seriouslyBase = new URL('./Seriously.js/', import.meta.url).href;
-
-const loadScript = src => new Promise((resolve, reject) => {
-    document.head.append(Object.assign(document.createElement('script'), { src, onload: resolve, onerror: reject }));
-});
+import { ImageCanvas } from './imageCanvas.js';
 
 const checkerboard =
     'background-color:#fff; ' +
@@ -21,9 +16,32 @@ export class c1ImageEditor extends c1FullScreenPopup {
         this.options = options;
         this.init();
         const img = this.el('.-img');
-        const canvas = this.el('.-canvas');
+        this.img = new ImageCanvas(this.el('.-canvas'));
 
-        this.cropper = new c1ImageCropper(canvas, this.el());
+        this.#initCropper();
+        this.#wireTools();
+
+        img.onload = () => {
+            this.img.load(img);
+            this.resetCropper();
+            options.onload?.();
+            URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => {
+            alert('Das Bild konnte nicht geladen werden, oder ist nicht vorhanden. Klicken Sie auf "hochladen" um ein Bild von Ihrem Computer auszuwählen.');
+            options.onerror?.();
+        };
+        img.src = src;
+        this.el('.-save').onclick = () => {
+            this.changed = false;
+            options.onsave();
+        };
+        super.show();
+        addEventListener('resize', this);
+    }
+
+    #initCropper() {
+        this.cropper = new c1ImageCropper(this.el('.-canvas'), this.el());
         this.cropper.addEventListener('show', () => {
             this.el('.-tools').style.display = 'none';
             this.el('.-btns').style.display = 'none';
@@ -42,39 +60,60 @@ export class c1ImageEditor extends c1FullScreenPopup {
                 el.value = Math.round(this.cropper[prop] * this.scale);
             }
         });
-
-        img.onload = () => {
-            options.onload?.();
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            this.initSeriously();
-            this.resetCropper();
-            URL.revokeObjectURL(img.src);
-        };
-        img.onerror = () => {
-            alert('Das Bild konnte nicht geladen werden, oder ist nicht vorhanden. Klicken Sie auf "hochladen" um ein Bild von Ihrem Computer auszuwählen.');
-            options.onerror?.();
-        };
-        img.src = src;
-        this.el('.-save').onclick = () => {
-            this.changed = false;
-            options.onsave();
-        };
-        super.show();
-        addEventListener('resize', this);
     }
+
+    #wireTools() {
+        // brightness / contrast — live adjustments.
+        // Read the value synchronously: event.target is unreliable in a deferred (debounced) callback (Firefox).
+        const adjust = prop => {
+            const apply = c1.debounce(v => { this.img[prop] = v; this.img.render(); this.changed = true; }, 10);
+            return e => apply(+e.target.value);
+        };
+        this.el('.-brightness').addEventListener('input', adjust('brightness'));
+        this.el('.-contrast').addEventListener('input', adjust('contrast'));
+
+        // rotate
+        this.el('.-rotate').addEventListener('click', () => this.#bake(this.img.rotateRight()));
+
+        // crop
+        this.el('.-crop').addEventListener('click', () => this.cropper.toggle());
+        const cropit = () => {
+            const s = this.scale;
+            this.#bake(this.img.crop(s * this.cropper.left, s * this.cropper.top, s * this.cropper.width, s * this.cropper.height));
+            this.cropper.hide();
+        };
+        this.cropper.svg.addEventListener('dblclick', cropit);
+        this.el('.-cropit').addEventListener('click', cropit);
+        this.el().addEventListener('keydown', e => {
+            if (e.key === 'Enter' && this.cropper.svg.parentNode) {
+                cropit();
+                this.el().focus(); // prevent the activated button from re-triggering click
+            }
+        });
+        const applyCropValue = c1.debounce((name, value) => { this.cropper[name] = value / this.scale; }, 200);
+        this.el('.-cropValues').addEventListener('input', e => applyCropValue(e.target.name, +e.target.value));
+    }
+
+    // Apply a geometry change (crop/rotate) and re-sync the cropper to the new canvas size.
+    #bake(promise) {
+        this.changed = true;
+        promise.then(() => requestAnimationFrame(() => this.resetCropper()));
+    }
+
     hide() {
         if (this.changed && !confirm('Möchten Sie die Änderungen verwerfen?')) return;
         this.cropper.hide();
         removeEventListener('resize', this);
         super.hide();
     }
+
     async uploadDialog() {
         await import('../../core/pub/js/c1/form.mjs');
         const [file] = await c1.form.fileDialog({ multiple: false, accept: 'image/*' });
         if (!file?.type.match('image.*')) return;
         this.el('.-img').src = URL.createObjectURL(file);
     }
+
     init() {
         this.el().innerHTML = `
             <div style="display:flex; flex:1 1 auto;">
@@ -129,98 +168,12 @@ export class c1ImageEditor extends c1FullScreenPopup {
         this.el('.-upload').addEventListener('click', () => this.uploadDialog());
         this.el('.-cancelCrop').addEventListener('click', () => this.cropper.hide());
     }
-    async initSeriously() {
-        if (this.initialized) return;
-        const run = () => {
-            this.initialized = true;
-            const seriously = new Seriously();
-            const target = seriously.target(this.el('.-canvas'));
 
-            this.el('.-img').addEventListener('load', () => {
-                target.width = this.el('.-img').naturalWidth;
-                target.height = this.el('.-img').naturalHeight;
-                this.el('.-brightness').value = effect.brightness = 1;
-                this.el('.-contrast').value = effect.contrast = 1;
-                crop.top = crop.left = crop.bottom = crop.right = 0;
-                rotate.rotation = 0;
-                this.changed = true;
-            });
-
-            // effect
-            const effect = seriously.effect('brightness-contrast');
-            effect.source = seriously.source(this.el('.-img'));
-            this.el('.-brightness').addEventListener('input', c1.debounce(e => { effect.brightness = e.target.value; this.changed = true; }, 10));
-            this.el('.-contrast').addEventListener('input', c1.debounce(e => { effect.contrast = e.target.value; this.changed = true; }, 10));
-
-            // crop
-            this.el('.-crop').addEventListener('click', () => this.cropper.toggle());
-            const crop = seriously.effect('crop');
-            crop.source = effect;
-
-            const cropit = () => {
-                crop.top = this.scale * this.cropper.top;
-                crop.left = this.scale * this.cropper.left;
-                crop.bottom = this.scale * this.cropper.bottom;
-                crop.right = this.scale * this.cropper.right;
-                this.cropper.hide();
-            };
-            this.cropper.svg.addEventListener('dblclick', cropit);
-            this.el('.-cropit').addEventListener('click', cropit);
-            this.el().addEventListener('keydown', e => {
-                if (e.key === 'Enter' && this.cropper.svg.parentNode) {
-                    cropit();
-                    this.el().focus(); // prevent the activated button from re-triggering click
-                }
-            });
-            this.el('.-cropValues').addEventListener('input', c1.debounce(e => {
-                this.cropper[e.target.name] = e.target.value / this.scale;
-            }, 200));
-
-            crop.on('resize', () => {
-                if (crop.top === 0 && crop.left === 0 && crop.bottom === 0 && crop.right === 0) return;
-                target.width = crop.width;
-                target.height = crop.height;
-                rewriteImgSource();
-            });
-
-            const rewriteImgSource = c1.debounce(() => {
-                const sidebar = this.el('.-sidebar');
-                sidebar.style.opacity = .4;
-                sidebar.style.pointerEvents = 'none';
-                this.el('.-canvas').toBlob(result => {
-                    sidebar.style.opacity = '';
-                    sidebar.style.pointerEvents = '';
-                    this.el('.-img').src = URL.createObjectURL(result);
-                });
-            }, 100);
-
-            // rotate
-            const rotate = seriously.transform('2d');
-            rotate.source = crop;
-            this.el('.-rotate').addEventListener('click', () => {
-                const w = target.width;
-                target.width = target.height;
-                target.height = w;
-                rotate.rotation += 90;
-                rewriteImgSource();
-            });
-
-            // go
-            target.source = rotate;
-            seriously.go();
-        };
-        await loadScript(seriouslyBase + 'lib/require.js');
-        require([seriouslyBase + 'seriously.js'], () => {
-            require([
-                seriouslyBase + 'effects/seriously.brightness-contrast.js',
-                seriouslyBase + 'effects/seriously.crop.js',
-            ], run);
-        });
-    }
     handleEvent(e) {
         if (e.type !== 'resize') return;
         this.resetCropper();
     }
+
     resetCropper() {
         const canvas = this.el('.-canvas');
         this.scale = canvas.width / canvas.clientWidth;

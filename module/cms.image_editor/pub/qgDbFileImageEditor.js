@@ -27,7 +27,6 @@ const editorCss = `
     right: .8em;
     top: .7em;
     bottom: .7em;
-    border-left: 1px solid;
     padding-left: .625rem;
     transition: opacity .2s;
 }
@@ -126,13 +125,11 @@ export class qgDbFileImageEditor extends c1ImageEditor {
         this.el('.-tools').insertAdjacentHTML('beforeend',
             '<div class="c1AccordionHead" tabindex="-1">Meta-Daten</div>' +
             '<div class="-meta"><input name="name" placeholder="Dateiname" style="width:100%"><br></div>');
-        this.el('.-meta [name=name]').addEventListener('input', c1.debounce(e => {
-            this.meta.name = e.target.value;
-            meta(this.file_id).put({ name: e.target.value });
-        }, 500));
+        const saveName = c1.debounce(name => { this.meta.name = name; meta(this.file_id).put({ name }); }, 500);
+        this.el('.-meta [name=name]').addEventListener('input', e => saveName(e.target.value));
 
-        // hotspot: click the canvas to set the focus point
-        this.el('.-canvas').addEventListener('mousedown', e => {
+        // hotspot: click/tap the canvas to set the focus point
+        this.el('.-canvas').addEventListener('pointerdown', e => {
             const rect = this.el('.-canvas').getBoundingClientRect();
             const hpos = ((e.clientX - rect.left) / rect.width) * 100;
             const vpos = ((e.clientY - rect.top) / rect.height) * 100;
@@ -153,6 +150,7 @@ export class qgDbFileImageEditor extends c1ImageEditor {
     renderHotspot() {
         if (this.meta.hpos == null || this.meta.vpos == null) return;
         const hotspot = this.el('.-hotspot');
+        if (!hotspot) return;
         const cRect = this.el('.-canvas').getBoundingClientRect();
         const vRect = this.el('.-viewport').getBoundingClientRect();
         const x = (cRect.left - vRect.left) + cRect.width * (this.meta.hpos / 100);
@@ -160,37 +158,26 @@ export class qgDbFileImageEditor extends c1ImageEditor {
         hotspot.style.left = x - hotspot.offsetWidth / 2 + 'px';
         hotspot.style.top = y - hotspot.offsetHeight / 2 + 'px';
     }
-    upload(cb) {
-        const canvas = this.el('.-canvas');
-        let jpeg, png, hasAlpha = false;
-
-        // detect transparency (→ keep PNG, else pick the smaller of jpeg/png)
-        const gl = canvas.getContext('webgl');
-        const pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
-        gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-        for (let i = 0; i < pixels.length; i += 4) {
-            if (pixels[i + 3] < 255) { hasAlpha = true; break; }
+    handleEvent(e) {
+        super.handleEvent(e);
+        if (e.type === 'resize') this.renderHotspot();
+    }
+    async upload(cb) {
+        // transparency → PNG; otherwise the smaller of jpeg/png
+        let blob;
+        if (this.img.hasAlpha()) {
+            blob = await this.img.toBlob('image/png', 1);
+        } else {
+            const [jpeg, png] = await Promise.all([this.img.toBlob('image/jpeg', 1), this.img.toBlob('image/png', 1)]);
+            blob = jpeg.size > png.size ? png : jpeg;
         }
-
-        const upload = () => {
-            let blob;
-            if (hasAlpha) {
-                blob = png;
-            } else {
-                if (!jpeg || !png) return; // wait for both versions
-                blob = jpeg.size > png.size ? png : jpeg;
-            }
-            qgfileUpload(blob, 'qgDbFileImageEditor', {
-                url: ctx.appURL + '?file_id=' + this.file_id,
-                complete: () => {
-                    this.reloadElements();
-                    cb?.();
-                },
-            });
-        };
-
-        if (!hasAlpha) canvas.toBlob(b => { jpeg = b; upload(); }, 'image/jpeg', 1);
-        canvas.toBlob(b => { png = b; upload(); }, 'image/png', 1);
+        qgfileUpload(blob, 'qgDbFileImageEditor', {
+            url: ctx.appURL + '?file_id=' + this.file_id,
+            complete: () => {
+                this.reloadElements();
+                cb?.();
+            },
+        });
     }
     loading(fn) {
         const sidebar = this.el('.-sidebar');
@@ -208,12 +195,12 @@ export class qgDbFileImageEditor extends c1ImageEditor {
             this.el('.-history').innerHTML = `<div style="max-height:25rem; overflow:auto">${res}</div>`;
         });
         this.el('.-history').onmousedown = e => {
-            const log = e.target.getAttribute('log');
-            if (!log) return;
+            const log = parseInt(e.target.getAttribute('log'), 10);
+            if (!Number.isFinite(log)) return;
             if (!confirm('Möchten Sie das Bild wiederherstellen?')) return;
-            apt['cms.image_editor'].restore(this.file_id).post({ log: log * 1 + 1 }).then(() => {
-                location.href = location.href.replace(/#.*$/, '');
-            });
+            apt['cms.image_editor'].restore(this.file_id).post({ log: log + 1 })
+                .then(() => { location.href = location.href.replace(/#.*$/, ''); })
+                .catch(err => alert('Wiederherstellen fehlgeschlagen: ' + err.message));
         };
     }
 }

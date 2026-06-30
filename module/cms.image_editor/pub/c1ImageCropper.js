@@ -90,6 +90,7 @@ export class c1ImageCropper extends EventTarget {
         this.svg = document.createElementNS(SVG_NS, 'svg');
         this.svg.classList.add('c1ImageCropper-Svg');
         this.svg.style.position = 'fixed';
+        this.svg.style.overflow = 'visible';
         this.svg.innerHTML = `
             <style>
                 .c1ImageCropper-Svg .-nob { opacity: .6 }
@@ -101,7 +102,7 @@ export class c1ImageCropper extends EventTarget {
                     <rect class="-area" x="0" y="0" width="0" height="0"></rect>
                 </mask>
             </defs>
-            <rect mask="url(#maskX)" fill="rgba(0,0,0,.5)" x="0" y="0" width="9100" height="9100"></rect>`;
+            <rect mask="url(#maskX)" fill="rgba(0,0,0,.5)" x="0" y="0" width="9100" height="9100" style="width:100%;height:100%"></rect>`;
         for (const pos of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
             const nob = document.createElementNS(SVG_NS, 'rect');
             nob.style.cursor = pos + '-resize';

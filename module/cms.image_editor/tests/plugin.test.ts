@@ -1,0 +1,18 @@
+import { assertEquals } from "../../core/tests/deps.ts";
+import { api, dbSchema, name, needs } from "../plugin.ts";
+
+Deno.test("cms.image_editor: module metadata is wired", () => {
+  assertEquals(name, "cms.image_editor");
+  assertEquals(needs, ["cms", "cms.versions"]);
+  // hpos/vpos focus point is merged onto the (versioned) `file` table as floats.
+  const file = dbSchema.properties.file.additionalProperties.properties;
+  assertEquals(file.hpos.type, "number");
+  assertEquals(file.vpos.type, "number");
+});
+
+Deno.test("cms.image_editor: api exposes meta/history/restore endpoints", () => {
+  assertEquals(typeof api.meta[":file"].get.execute, "function");
+  assertEquals(typeof api.meta[":file"].put.execute, "function");
+  assertEquals(typeof api.history[":file"].get.execute, "function");
+  assertEquals(typeof api.restore[":file"].post.execute, "function");
+});

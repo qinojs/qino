@@ -74,7 +74,7 @@ customElements.whenDefined('qino-cms').then(async () => {
         if (tr.querySelector(':scope > .-editImage')) return;
         const td = document.createElement('td');
         td.className = '-editImage';
-        td.style.cssText = 'width:1.83rem; cursor:pointer';
+        td.style.cssText = 'width:1.81rem; cursor:pointer';
         tr.lastElementChild.before(td);
         const img = tr.querySelector('.-preview img');
         if (!img || !img.src.match(/dbFile\/[0-9]+\/.*\.(jpg|jpeg|png)/i)) return;
