@@ -166,7 +166,7 @@ const node = {
     ":name": {
       paramSchema: s.string().describe("Text field name"),
       put: {
-        description: "Set a text field of the node (language-specific)",
+        description: "Set a text field (html) of the node (language-specific)",
         access: nodeWrite,
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),

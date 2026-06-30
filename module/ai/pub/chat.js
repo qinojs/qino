@@ -2,12 +2,14 @@ import { apt, t } from "../../core/pub/js/qino.js";
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 
+const apiBase = new URL("api/", location.origin + (globalThis.qino?.appURL ?? "/"));
+
 class AiChat extends HTMLElement {
   static observedAttributes = ['bot'];
 
   #bot = 'cms-helper';
-  #history = [];
   #context = {};
+  #sessionId = null;
   #messages = null;
   #input = null;
   #button = null;
@@ -59,6 +61,12 @@ class AiChat extends HTMLElement {
     if (name === 'bot') this.#bot = value;
   }
 
+  async #session() {
+    if (this.#sessionId) return this.#sessionId;
+    const { id } = await apt.ai.sessions.post({ bot: this.#bot, context: this.#context });
+    return (this.#sessionId = id);
+  }
+
   async #send() {
     const text = this.#input.value.trim();
     if (!text) return;
@@ -66,27 +74,61 @@ class AiChat extends HTMLElement {
     this.#input.value = '';
     this.#setLoading(true);
     this.#addMessage('user', text);
-    this.#history.push({ role: 'user', content: text });
 
-    const loading = this.#addMessage('assistant', '…');
-    loading.classList.add('loading');
+    const out = this.#addMessage('assistant', '…');
+    out.classList.add('loading');
+    let acc = '';
 
     try {
-      const response = await apt.ai['chat-session'].post({ data: { bot: this.#bot, messages: this.#history, context: this.#context } });
-      const content = typeof response === 'string' ? response : (response.response ?? response.error ?? 'Error');
-      loading.innerHTML = DOMPurify.sanitize(marked.parse(content));
-      loading.classList.remove('loading');
-
-      if (response?.issue) {
-        this.dispatchEvent(new CustomEvent('ai-issue', { bubbles: true, detail: response.issue }));
-      }
-      if ((response?.relevance ?? 1) >= 0.3) this.#history.push({ role: 'assistant', content });
+      const id = await this.#session();
+      const res = await fetch(new URL(`ai/sessions/${id}/stream`, apiBase), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'X-CSRF-Token': globalThis.qino?.token },
+        body: JSON.stringify({ content: text }),
+      });
+      await this.#readStream(res, (ev) => {
+        if (ev.delta != null) {
+          acc += ev.delta;
+          out.classList.remove('loading');
+          out.innerHTML = DOMPurify.sanitize(marked.parse(acc));
+          out.scrollIntoView({ block: 'nearest' });
+        } else if ('done' in ev) {
+          this.#finish(out, ev.done, acc);
+        } else if (ev.error) {
+          out.textContent = ev.error;
+          out.classList.remove('loading');
+        }
+      });
     } catch (e) {
-      loading.textContent = await t`Error: ${e.message}`;
-      loading.classList.remove('loading');
-      this.#history.pop();
+      out.textContent = await t`Error: ${e.message}`;
+      out.classList.remove('loading');
     } finally {
       this.#setLoading(false);
+    }
+  }
+
+  #finish(out, done, acc) {
+    out.classList.remove('loading');
+    out.innerHTML = DOMPurify.sanitize(marked.parse(done || acc));
+  }
+
+  async #readStream(res, onEvent) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf('\n\n')) >= 0) {
+        const event = buf.slice(0, nl);
+        buf = buf.slice(nl + 2);
+        for (const line of event.split('\n')) {
+          const m = line.match(/^data:\s?(.*)$/);
+          if (m) try { onEvent(JSON.parse(m[1])); } catch { /* keepalive */ }
+        }
+      }
     }
   }
 

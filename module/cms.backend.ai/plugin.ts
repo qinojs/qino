@@ -1,14 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, getCtx, type App } from "../core/mod.ts";
-import {
-  customProviderModels,
-  parseProviderModels,
-  providerModels,
-  providers,
-  type ProviderModel,
-  type ProviderStrength,
-} from "../ai/mod.ts";
+import { getCtx, hee, type App } from "../core/mod.ts";
+import { KINDS, providerCatalog } from "../ai/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -20,477 +13,353 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 type Message = { type: "ok" | "error"; text: string };
+type Row = Record<string, any>;
 
-const modelSyncProviders: Record<string, { label: string; source: string; requiresKey?: boolean }> = {
-  "groq.com":       { label: "Groq",       source: "groq-sync",       requiresKey: true },
-  "openai.com":     { label: "OpenAI",     source: "openai-sync",     requiresKey: true },
-  "nvidia.com":     { label: "NVIDIA",     source: "nvidia-sync" },
-  "openrouter.ai":  { label: "OpenRouter", source: "openrouter-sync" },
-  "x-ai":           { label: "xAI",        source: "x-ai-sync",       requiresKey: true },
-  "aihubmix.com":   { label: "AiHubMix",   source: "aihubmix-sync",   requiresKey: true },
-};
-
-function sourceLabel(source: string | undefined): string | undefined {
-  if (!source) return undefined;
-  for (const config of Object.values(modelSyncProviders)) {
-    if (config.source === source) return `${config.label} Sync`;
-  }
-  return source;
+// Derive a provider name from its endpoint host (drop a leading "api."). Must match
+// the same rule in pub/main.js so the new provider can be auto-opened after adding.
+function nameFromEndpoint(endpoint: string): string {
+  try { return new URL(endpoint).host.replace(/^api\./, ""); }
+  catch { return endpoint.replace(/^https?:\/\//, "").split("/")[0]; }
 }
 
-function splitCsv(value: unknown): string[] {
-  return String(value ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+// /models exposes no modality, so infer the kind from the model id (correctable in the UI).
+function guessKind(id: string): string {
+  const s = id.toLowerCase();
+  if (/embed|rerank|colbert/.test(s)) return "embedding";
+  if (/image|dall|imagine|flux|stable.?diffusion|sdxl/.test(s)) return "image";
+  return "chat";
 }
 
-function asPositiveNumber(value: unknown): number | undefined {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? n : undefined;
+// u2-badge; `color` is a CSS var name (e.g. "--green") to tint it.
+function badge(text: string, color = ""): string {
+  return `<small class="u2-badge"${color ? ` style="--color-dark:var(${color})"` : ""}>${hee(text)}</small>`;
 }
 
-function pricePerMillion(value: unknown): number | undefined {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 1_000_000 * 1_000_000) / 1_000_000 : undefined;
+// Kind <option>s with an empty (unassigned) first entry.
+function kindOptions(selected = ""): string {
+  return `<option value=""${selected ? "" : " selected"}>` +
+    KINDS.map((k) => `<option value="${k}"${k === selected ? " selected" : ""}>${k}`).join("");
 }
 
-function htmlId(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "-");
+// Kind <option>s for the model filter, with an "all kinds" first entry.
+function filterKindOptions(selected = ""): string {
+  return `<option value=""${selected ? "" : " selected"}>all kinds` +
+    KINDS.map((k) => `<option value="${k}"${k === selected ? " selected" : ""}>${k}`).join("");
 }
 
-function modelFromPost(post: Record<string, unknown>): ProviderModel | null {
-  const id = String(post.model_id ?? "").trim();
-  if (!id) return null;
-  return {
-    id,
-    label: String(post.model_label ?? "").trim() || undefined,
-    strengths: splitCsv(post.model_strengths),
-    maxInputTokens: asPositiveNumber(post.max_input_tokens),
-    maxOutputTokens: asPositiveNumber(post.max_output_tokens),
-    costPerMToken: asPositiveNumber(post.cost_per_m_token),
-    inputCostPerMToken: asPositiveNumber(post.input_cost_per_m_token),
-    outputCostPerMToken: asPositiveNumber(post.output_cost_per_m_token),
-    supports: {
-      streaming: "supports_streaming" in post,
-      tools: "supports_tools" in post,
-      vision: "supports_vision" in post,
-      jsonMode: "supports_jsonMode" in post,
-    },
-  };
-}
-
-function pill(text: string, mod = ""): string {
-  return `<span class="ai-pill${mod}">${hee(text)}</span>`;
-}
-
-function formatList(values: unknown[] | undefined): string {
-  return values?.length ? values.map((v) => pill(String(v))).join("") : "";
-}
-
-function formatSupports(model: ProviderModel): string {
-  return formatList(
-    Object.entries(model.supports ?? {}).filter(([, v]) => v).map(([k]) => k),
-  );
-}
-
-function formatCosts(model: ProviderModel): string {
-  const { inputCostPerMToken: i, outputCostPerMToken: o, costPerMToken: c } = model;
-  if (i !== undefined || o !== undefined) {
-    return [i !== undefined ? `in ${i}` : "", o !== undefined ? `out ${o}` : ""].filter(Boolean).join(" / ");
-  }
-  return c !== undefined ? String(c) : "";
-}
-
-function modelOptionHtml(models: ProviderModel[], selected: string): string {
-  return models.map((m) =>
-    `<option value="${hee(m.id)}"${m.id === selected ? " selected" : ""}>${hee(m.label ? `${m.label} (${m.id})` : m.id)}`
-  ).join("");
-}
-
-function modelRow(providerName: string, model: ProviderModel, source: string, deletable: boolean, token: string): string {
-  const limits = [
-    model.maxInputTokens ? `in ${model.maxInputTokens}` : "",
-    model.maxOutputTokens ? `out ${model.maxOutputTokens}` : "",
-  ].filter(Boolean).join(" / ");
-  const deleteForm = deletable
-    ? `<form method=post style=margin:0>
-        <input type=hidden name=qgToken value="${hee(token)}">
-        <input type=hidden name=action value=delete-model>
-        <input type=hidden name=provider value="${hee(providerName)}">
-        <input type=hidden name=model_id value="${hee(model.id)}">
-        <button>delete</button>
-      </form>`
-    : "";
-  return `<tr>
-    <td><code>${hee(model.id)}</code>
-    <td>${hee(model.label ?? "")}
-    <td>${formatList(model.strengths)}
-    <td>${formatSupports(model)}
-    <td>${hee(limits)}
-    <td>${hee(formatCosts(model))}
-    <td>${hee(source)}
-    <td>${deleteForm}`;
-}
-
-function modelRows(providerName: string, builtinModels: ProviderModel[], customModels: ProviderModel[], token: string): string {
-  const builtinIds = new Set(builtinModels.map((m) => m.id));
-  const rows = [
-    ...builtinModels.map((m) => modelRow(providerName, m, "Code", false, token)),
-    ...customModels.map((m) => {
-      const src = sourceLabel(m.source) ?? (builtinIds.has(m.id) ? "Custom Override" : "Custom");
-      return modelRow(providerName, m, src, true, token);
-    }),
-  ];
-  return rows.length ? rows.join("") : `<tr><td colspan=8><em>No models added yet.</em>`;
-}
-
-function saveCustomModels(app: App, providerName: string, models: ProviderModel[]): void {
-  app.settings.ai.provider[providerName].models(JSON.stringify(models, null, 2));
-}
-
-function inferStrengths(providerName: string, id: string, data: Record<string, any>): ProviderStrength[] {
-  const lower = id.toLowerCase();
-  const strengths = new Set<ProviderStrength>(providers[providerName]?.strengths ?? []);
-  if (lower.includes("code") || lower.includes("coder")) strengths.add("coding");
-  if (lower.includes("vision") || lower.includes("vl") || lower.includes("multimodal") || lower.includes("image")) strengths.add("vision");
-  if (lower.includes("reason") || lower.includes("thinking") || lower.startsWith("o")) strengths.add("reasoning");
-  if ((Number(data.context_window ?? data.context_length) || 0) >= 100_000) strengths.add("long-context");
-  return [...strengths];
-}
-
-function toProviderModel(providerName: string, data: Record<string, any>, syncedAt: string): ProviderModel | null {
-  const id = String(data.id ?? "").trim();
-  if (!id) return null;
-
-  if (providerName === "openrouter.ai") {
-    const inputModalities: string[] = Array.isArray(data.architecture?.input_modalities) ? data.architecture.input_modalities.map(String) : [];
-    const supportedParameters: string[] = Array.isArray(data.supported_parameters) ? data.supported_parameters.map(String) : [];
-    const contextLength = asPositiveNumber(data.context_length ?? data.top_provider?.context_length);
-    const maxOutputTokens = asPositiveNumber(data.top_provider?.max_completion_tokens);
-    const inputCostPerMToken = pricePerMillion(data.pricing?.prompt);
-    const outputCostPerMToken = pricePerMillion(data.pricing?.completion);
-    const strengths: ProviderStrength[] = ["model-choice"];
-    if (inputModalities.includes("image")) strengths.push("vision");
-    if ((contextLength ?? 0) >= 100_000) strengths.push("long-context");
-    if (inputCostPerMToken !== undefined && outputCostPerMToken !== undefined && inputCostPerMToken <= 0.5 && outputCostPerMToken <= 0.5) strengths.push("cost");
-    return {
-      id,
-      label: String(data.name ?? "").trim() || undefined,
-      source: modelSyncProviders["openrouter.ai"].source,
-      syncedAt, strengths, maxInputTokens: contextLength, maxOutputTokens,
-      inputCostPerMToken, outputCostPerMToken,
-      costPerMToken: inputCostPerMToken !== undefined && outputCostPerMToken !== undefined
-        ? Math.round(((inputCostPerMToken + outputCostPerMToken) / 2) * 1_000_000) / 1_000_000 // rough average; providers charge input cheaper than output
-        : undefined,
-      supports: {
-        streaming: true,
-        tools: supportedParameters.includes("tools"),
-        vision: inputModalities.includes("image"),
-        jsonMode: supportedParameters.includes("response_format"),
-      },
-    };
-  }
-
-  const lower = id.toLowerCase();
-  return {
-    id,
-    label: String(data.name ?? "").trim() || undefined,
-    source: modelSyncProviders[providerName].source,
-    syncedAt,
-    strengths: inferStrengths(providerName, id, data),
-    maxInputTokens: asPositiveNumber(data.context_window ?? data.context_length),
-    maxOutputTokens: asPositiveNumber(data.max_completion_tokens ?? data.max_output_tokens),
-    supports: {
-      streaming: true,
-      tools: providers[providerName]?.supports?.toolChoiceAuto === true,
-      toolChoiceAuto: providers[providerName]?.supports?.toolChoiceAuto === true,
-      vision: lower.includes("vision") || lower.includes("vl") || lower.includes("multimodal"),
-      jsonMode: !!providers[providerName]?.jsonMode,
-    },
-  };
-}
-
-async function syncProviderModels(app: App, providerName: string): Promise<Message> {
-  const syncConfig = modelSyncProviders[providerName];
-  if (!syncConfig) return { type: "error", text: "This provider does not support sync." };
-
-  const provider = providers[providerName];
-  const providerSettings = app.settings.ai.provider[providerName];
-  const key = String(await providerSettings.key ?? "");
-  if (syncConfig.requiresKey && !key) {
-    return { type: "error", text: `${syncConfig.label} sync requires an API key first.` };
-  }
-
-  const response = await fetch(provider.endpoint + "/models", {
-    headers: key ? { "authorization": "Bearer " + key } : {},
-    signal: AbortSignal.timeout(30000),
+// Insert a catalog model, becoming the kind's default only if none exists yet.
+async function insertModel(app: App, providerId: number, m: { model_id: string; kind: string; is_default?: boolean }): Promise<void> {
+  const hasDefault = m.is_default && await app.db.one`SELECT id FROM ai_provider_model WHERE kind = ${m.kind} AND is_default = 1`;
+  await app.db.table("ai_provider_model").insert({
+    provider_id: providerId, model_id: m.model_id, kind: m.kind,
+    is_default: m.is_default && !hasDefault ? 1 : 0,
+    used_input_tokens: 0, used_output_tokens: 0,
   });
-  if (!response.ok) {
-    return { type: "error", text: `${syncConfig.label} Sync fehlgeschlagen: HTTP ${response.status}` };
-  }
-
-  const result = await response.json();
-  if (!Array.isArray(result?.data)) {
-    return { type: "error", text: `${syncConfig.label} Sync fehlgeschlagen: Unerwartete Antwort.` };
-  }
-
-  const syncedAt = new Date().toISOString();
-  const syncedModels = result.data
-    .map((d: unknown) => d && typeof d === "object" ? toProviderModel(providerName, d as Record<string, any>, syncedAt) : null)
-    .filter((m: ProviderModel | null): m is ProviderModel => m !== null);
-
-  const manualModels = parseProviderModels(await providerSettings.models).filter((m) => m.source !== syncConfig.source);
-  const models = new Map<string, ProviderModel>();
-  for (const m of syncedModels) models.set(m.id, m);
-  for (const m of manualModels) models.set(m.id, m);
-  await saveCustomModels(app, providerName, [...models.values()]);
-  providerSettings.models_synced_at(syncedAt);
-
-  return { type: "ok", text: `${syncedModels.length} ${syncConfig.label} models synchronised.` };
 }
 
-async function handlePost(app: App, post: Record<string, unknown>, token: string): Promise<Message | null> {
-  if (!("action" in post)) return null;
-  if (post.qgToken !== token) return { type: "error", text: "Invalid form token." };
+// --- Actions -------------------------------------------------------------
+// Called from render() with the JS-posted vars (apt html.post). Access is gated
+// by the backend node itself; no CSRF token needed — apt carries credentials.
 
-  const action = String(post.action ?? "");
+async function handleAction(app: App, vars: Record<string, any>): Promise<Message | null> {
+  if (!("action" in vars)) return null;
+  const action = String(vars.action ?? "");
+
+  if (action === "add-provider") {
+    const endpoint = String(vars.endpoint ?? "").trim();
+    if (!endpoint) return { type: "error", text: "Endpoint required." };
+    const provName = nameFromEndpoint(endpoint);
+    if (await app.db.one`SELECT id FROM ai_provider WHERE name = ${provName}`) return { type: "error", text: `Provider "${provName}" already exists.` };
+    const entry = providerCatalog.find((c) => c.endpoint === endpoint); // known endpoint → seed its models + default
+    const id = Number(await app.db.table("ai_provider").insert({ name: provName, endpoint, timeout_ms: entry?.timeout_ms ?? 60000 }));
+    for (const m of entry?.models ?? []) await insertModel(app, id, m);
+    return { type: "ok", text: `Provider ${provName} added.` };
+  }
 
   if (action === "save-default") {
-    const provider = String(post.default_provider ?? "").trim();
-    if (!providers[provider]) return { type: "error", text: "Unknown provider." };
-    app.settings.ai.default.provider(provider);
-    app.settings.ai.default.model(String(post.default_model ?? "").trim());
-    return { type: "ok", text: "Default provider saved." };
+    const kind = String(vars.kind ?? "");
+    const modelId = Number(vars.model_id ?? 0);
+    if (!modelId) return { type: "error", text: "No model selected." };
+    await app.db.query`UPDATE ai_provider_model SET is_default = 0 WHERE kind = ${kind}`;
+    await app.db.query`UPDATE ai_provider_model SET is_default = 1 WHERE id = ${modelId}`;
+    return { type: "ok", text: `Default ${kind} model saved.` };
   }
 
-  const provider = String(post.provider ?? "").trim();
-  if (!providers[provider]) return { type: "error", text: "Unknown provider." };
-  const providerSettings = app.settings.ai.provider[provider];
+  const providerId = Number(vars.provider_id ?? 0);
+  const provider = providerId ? await app.db.row`SELECT * FROM ai_provider WHERE id = ${providerId}` : undefined;
+  if (!provider) return { type: "error", text: "Unknown provider." };
+
+  if (action === "save-provider") {
+    const key = String(vars.api_key ?? "").trim();
+    if (key) app.settings.ai.provider[provider.name].key(key);
+    await app.db.query`UPDATE ai_provider SET endpoint = ${String(vars.endpoint ?? provider.endpoint).trim()} WHERE id = ${providerId}`;
+    return { type: "ok", text: `Provider ${provider.name} saved.` };
+  }
+
+  if (action === "delete-provider") {
+    await app.db.query`DELETE FROM ai_provider_model WHERE provider_id = ${providerId}`;
+    await app.db.query`DELETE FROM ai_provider WHERE id = ${providerId}`;
+    return { type: "ok", text: `Provider ${provider.name} removed.` };
+  }
 
   if (action === "sync-provider") return syncProviderModels(app, provider);
 
-  if (action === "save-provider") {
-    const key = String(post.api_key ?? "").trim();
-    if (key) providerSettings.key(key);
-    providerSettings.default_model(String(post.provider_default_model ?? "").trim());
-    return { type: "ok", text: `Provider ${provider} saved.` };
+  if (action === "add-model") {
+    const modelId = String(vars.model_id ?? "").trim();
+    if (!modelId) return { type: "error", text: "Model ID missing." };
+    if (await app.db.one`SELECT id FROM ai_provider_model WHERE provider_id = ${providerId} AND model_id = ${modelId}`) {
+      return { type: "error", text: "Model already exists." };
+    }
+    await insertModel(app, providerId, { model_id: modelId, kind: String(vars.kind ?? "chat") });
+    return { type: "ok", text: `Model ${modelId} added.` };
   }
 
-  if (action === "add-model") {
-    const model = modelFromPost(post);
-    if (!model) return { type: "error", text: "Model ID missing." };
-    const models = parseProviderModels(await providerSettings.models).filter((m) => m.id !== model.id);
-    models.push(model);
-    await saveCustomModels(app, provider, models);
-    return { type: "ok", text: `Model ${model.id} saved.` };
+  if (action === "set-kind") {
+    await app.db.query`UPDATE ai_provider_model SET kind = ${String(vars.kind ?? "chat")} WHERE id = ${Number(vars.model_id ?? 0)} AND provider_id = ${providerId}`;
+    return { type: "ok", text: "Model kind updated." };
   }
 
   if (action === "delete-model") {
-    const modelId = String(post.model_id ?? "").trim();
-    const models = parseProviderModels(await providerSettings.models).filter((m) => m.id !== modelId);
-    await saveCustomModels(app, provider, models);
-    return { type: "ok", text: `Model ${modelId} deleted.` };
+    await app.db.query`DELETE FROM ai_provider_model WHERE id = ${Number(vars.model_id ?? 0)} AND provider_id = ${providerId}`;
+    return { type: "ok", text: "Model deleted." };
   }
 
   return { type: "error", text: "Unknown action." };
 }
 
-async function render(node: Node): Promise<string> {
-  const ctx = getCtx();
-  const app = node.app;
-  const message = await handlePost(app, ctx.post, ctx.token);
-
-  const defaultProvider = String(await app.settings.ai.default.provider ?? "");
-  const defaultModel = String(await app.settings.ai.default.model ?? "");
-
-  const providerOptions = Object.keys(providers).map((name) =>
-    `<option value="${hee(name)}"${name === defaultProvider ? " selected" : ""}>${hee(name)}`
-  ).join("");
-
-  const modelsByProvider = new Map<string, ProviderModel[]>();
-  for (const name of Object.keys(providers)) {
-    modelsByProvider.set(name, await providerModels(app, name));
+async function syncProviderModels(app: App, provider: Row): Promise<Message> {
+  const key = String(await app.settings.ai.provider[provider.name].key ?? "");
+  let response: Response;
+  try {
+    response = await fetch(provider.endpoint + "/models", {
+      headers: key ? { "authorization": "Bearer " + key } : {},
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch (e) {
+    return { type: "error", text: `Sync failed: ${e instanceof Error ? e.message : String(e)}` };
   }
+  if (!response.ok) return { type: "error", text: `Sync failed: HTTP ${response.status}` };
 
-  let providerBoxes = "";
-  for (const [providerName, provider] of Object.entries(providers)) {
-    const providerSettings = app.settings.ai.provider[providerName];
-    const key = String(await providerSettings.key ?? "");
-    const usedInput = Number(await providerSettings.used_input_tokens ?? 0);
-    const usedOutput = Number(await providerSettings.used_output_tokens ?? 0);
-    const providerDefaultModel = String(await providerSettings.default_model ?? "");
-    const modelsSyncedAt = String(await providerSettings.models_synced_at ?? "");
-    const customModels = await customProviderModels(app, providerName);
-    const effectiveModels = modelsByProvider.get(providerName) ?? [];
-    const datalistId = `ai-models-${htmlId(providerName)}`;
-    const modelCount = effectiveModels.length;
-    const summaryDefaultModel = providerDefaultModel || provider.defaultModel || effectiveModels[0]?.id || "";
-    const syncConfig = modelSyncProviders[providerName];
-    const syncHtml = syncConfig ? `<form method=post class=ai-flex>
-        <input type=hidden name=qgToken value="${hee(ctx.token)}">
-        <input type=hidden name=action value=sync-provider>
-        <input type=hidden name=provider value="${hee(providerName)}">
-        <button>synchronisieren</button>
-        ${modelsSyncedAt ? `<small>zuletzt: ${hee(modelsSyncedAt)}</small>` : ""}
-      </form>` : "";
+  const result = await response.json().catch(() => null);
+  const list = Array.isArray(result?.data) ? result.data : [];
+  if (!list.length) return { type: "error", text: "Sync failed: no models in response." };
 
-    providerBoxes += `
-<details class="ai-provider"${providerName === defaultProvider ? " open" : ""}>
+  const existing = new Set((await app.db.col`SELECT model_id FROM ai_provider_model WHERE provider_id = ${provider.id}`).map(String));
+  let added = 0;
+  for (const m of list) {
+    const id = String((m as Row)?.id ?? "").trim();
+    if (!id || existing.has(id)) continue;
+    await insertModel(app, provider.id, { model_id: id, kind: guessKind(id) });
+    added++;
+  }
+  return { type: "ok", text: `${added} new model(s) synchronised.` };
+}
+
+// --- Rendering -----------------------------------------------------------
+
+// Provider box: settings + counts only — the models live in their own box.
+function providerBox(provider: Row, modelCount: number, key: string, open: boolean): string {
+  const pid = hee(String(provider.id));
+  return `
+<details${open ? " open" : ""}>
   <summary class="ai-provider-summary">
-    ${hee(providerName)}
+    ${hee(provider.name)}
     <span class=ai-summary-pills>
-      ${modelCount ? pill(`${modelCount.toLocaleString("en-US")} Models`) : ""}
-      ${pill(key ? "Key set" : "no key", ` -${key ? "ok" : "error"}`)}
-      ${summaryDefaultModel ? pill(`Default: ${summaryDefaultModel}`) : ""}
+      ${badge(`${modelCount} Models`)}
+      ${badge(key ? "Key set" : "no key", key ? "--green" : "--red")}
     </span>
   </summary>
   <div class=ai-provider-panel>
-    <section class=ai-provider-settings>
-      <div class=ai-subbody>
-        <form method=post class=ai-provider-form>
-          <input type=hidden name=qgToken value="${hee(ctx.token)}">
-          <input type=hidden name=action value=save-provider>
-          <input type=hidden name=provider value="${hee(providerName)}">
-          <table class="u2-table ai-kv">
-            <tr><th>Endpoint<td><code>${hee(provider.endpoint)}</code>
-            <tr><th>Strengths<td>${formatList(provider.strengths)}
-            <tr><th>JSON Mode<td>${provider.jsonMode ? "yes" : "no"}
-            <tr><th>API-Key<td>
-              <input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" value="${hee(key)}" placeholder="API-Key">
-            <tr><th>Provider-Default<td>
-              <input name=provider_default_model value="${hee(providerDefaultModel)}" list="${hee(datalistId)}">
-              <datalist id="${hee(datalistId)}">${modelOptionHtml(effectiveModels, providerDefaultModel)}</datalist>
-            <tr><th>Usage (Tokens)<td>${hee(usedInput.toLocaleString("en-US"))} input / ${hee(usedOutput.toLocaleString("en-US"))} output
-          </table>
-          <div class=ai-autosave-state aria-live=polite></div>
-        </form>
-      </div>
-    </section>
-    <details class=ai-subdetails>
-      <summary>Models (${hee(modelCount.toLocaleString("en-US"))})</summary>
-      <div class=ai-subbody>${syncHtml}</div>
-      <div style="overflow:auto; padding:0">
-        <table class="u2-table ai-model-table">
-          <thead><tr><th>Model<th>Label<th>Strengths<th>Features<th>Limits<th>Cost/M<th>Source<th>
-          <tbody>${modelRows(providerName, provider.models ?? [], customModels, ctx.token)}
-        </table>
-      </div>
-    </details>
-    <details class=ai-subdetails>
-      <summary>Add model</summary>
-      <div class=ai-subbody>
-        <form method=post>
-          <input type=hidden name=qgToken value="${hee(ctx.token)}">
-          <input type=hidden name=action value=add-model>
-          <input type=hidden name=provider value="${hee(providerName)}">
-          <div class=ai-grid>
-            <label>Model-ID <input required name=model_id placeholder="provider/model"></label>
-            <label>Label <input name=model_label></label>
-            <label>Strengths <input name=model_strengths placeholder="speed, reasoning"></label>
-            <label>Max Input Tokens <input name=max_input_tokens inputmode=numeric></label>
-            <label>Max Output Tokens <input name=max_output_tokens inputmode=numeric></label>
-            <label>Input Cost/M <input name=input_cost_per_m_token inputmode=decimal></label>
-            <label>Output Cost/M <input name=output_cost_per_m_token inputmode=decimal></label>
-          </div>
-          <div class=ai-flex>
-            <label><input type=checkbox name=supports_streaming value=1> Streaming</label>
-            <label><input type=checkbox name=supports_tools value=1> Tools</label>
-            <label><input type=checkbox name=supports_vision value=1> Vision</label>
-            <label><input type=checkbox name=supports_jsonMode value=1> JSON Mode</label>
-          </div>
-          <button>Add model</button>
-        </form>
-      </div>
-    </details>
+    <form class="ai-provider-form" data-provider="${pid}">
+      <table class="u2-table">
+        <tr>
+          <th>Endpoint
+          <td><input name=endpoint value="${hee(provider.endpoint)}">
+        <tr>
+          <th>API-Key
+          <td><input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" value="${hee(key)}" placeholder="API-Key (optional for local endpoints)">
+      </table>
+      <div class=ai-autosave-state aria-live=polite></div>
+    </form>
+
+    <div class=u2-flex>
+      <button data-action=sync-provider data-provider="${pid}">sync from /models</button>
+      <button data-action=delete-provider data-provider="${pid}" u2-confirm="Remove provider ${hee(provider.name)}?">remove provider</button>
+    </div>
   </div>
 </details>`;
+}
+
+function modelRow(model: Row): string {
+  const pid = hee(String(model.provider_id)), mid = hee(String(model.id));
+  const usage = `${Number(model.used_input_tokens).toLocaleString("en-US")} / ${Number(model.used_output_tokens).toLocaleString("en-US")}`;
+  const defaultCell = model.is_default
+    ? `<u2-ico icon=radio_button_checked title="default" style="color:var(--cms-color,#16794d)">●</u2-ico>`
+    : `<button class=u2-unstyle data-action=save-default data-kind="${hee(model.kind)}" data-model="${mid}" title="set as default"><u2-ico icon=radio_button_unchecked>○</u2-ico></button>`;
+  const kindCell = `<select style="text-align:right" class=u2-unstyle data-action=set-kind data-provider="${pid}" data-model="${mid}">${kindOptions(model.kind)}</select>`;
+  return `<tr>
+    <td><code>${hee(model.model_id)}</code>
+    <td>${kindCell}
+    <td style="text-align:center">${defaultCell}
+    <td>${hee(usage)}
+    <td><button class=u2-unstyle data-action=delete-model data-provider="${pid}" data-model="${mid}" u2-confirm="Delete model ${hee(model.model_id)}?" title="delete"><u2-ico icon=delete>✕</u2-ico></button>`;
+}
+
+// Models grouped by provider with a sticky provider header. Filterable by kind / search.
+async function models(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
+  const app = node.app;
+  const fkind = String(vars.filterKind ?? "");
+  const fprovider = String(vars.filterProvider ?? "");
+  const q = String(vars.filterSearch ?? "").trim().toLowerCase();
+  const filtering = !!(fkind || q);
+
+  const providers: Row[] = await app.db.all`SELECT * FROM ai_provider ORDER BY name`;
+  const allModels: Row[] = await app.db.all`SELECT * FROM ai_provider_model ORDER BY model_id`;
+  const byProvider = new Map<number, Row[]>();
+  for (const m of allModels) (byProvider.get(m.provider_id) ?? byProvider.set(m.provider_id, []).get(m.provider_id)!).push(m);
+
+  let html = "";
+  for (const provider of providers) {
+    if (fprovider && String(provider.id) !== fprovider) continue;
+    const rows = (byProvider.get(provider.id) ?? []).filter((m) =>
+      (!fkind || m.kind === fkind) && (!q || String(m.model_id).toLowerCase().includes(q)));
+    if (filtering && !rows.length) continue;
+
+    const body = rows.length ? rows.map(modelRow).join("") : `<tr><td colspan=5><em>No models yet.</em>`;
+    // Without an active filter every group offers an add-model row (also for empty providers).
+    const addRow = filtering ? "" : `
+      <tr><td colspan=5>
+        <form class="ai-add-model u2-flex" data-provider="${hee(String(provider.id))}">
+          <input required name=model_id placeholder="model id">
+          <select name=kind>${kindOptions()}</select>
+          <button>add model</button>
+        </form>`;
+    // Provider name + count double as the group header and the first column header (sticky).
+    html += `
+<table class="u2-table -Sticky">
+  <thead><tr>
+    <th>${hee(provider.name)} ${badge(`${(byProvider.get(provider.id) ?? []).length}`)}
+    <th style="text-align:center">Kind
+    <th>Default
+    <th>Usage in/out
+    <th>
+  <tbody>${body}${addRow}
+</table>`;
   }
 
-  const messageHtml = message ? `<div class="ai-message -${hee(message.type)}">${hee(message.text)}</div>` : "";
+  return html || `<p><em>No models match the filter.</em></p>`;
+}
+
+// Current default model per kind — answers "where are the defaults?" at a glance.
+function defaultsOverview(allModels: Row[], providersById: Map<number, Row>): string {
+  const rows = KINDS.map((kind) => {
+    const d = allModels.find((m) => m.kind === kind && m.is_default);
+    const label = d ? `${providersById.get(d.provider_id)?.name} · ${d.model_id}` : "—";
+    return `<tr>
+      <th>${hee(kind)}
+      <td>${hee(label)}`;
+  }).join("");
+  return `<table class="u2-table">${rows}</table>`;
+}
+
+
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
+  const ctx = getCtx();
+  const app = node.app;
+  const message = await handleAction(app, vars);
+
+  const providers: Row[] = await app.db.all`SELECT * FROM ai_provider ORDER BY name`;
+  const allModels: Row[] = await app.db.all`SELECT * FROM ai_provider_model ORDER BY kind, model_id`;
+  const providersById = new Map(providers.map((p) => [p.id, p]));
+  const countByProvider = new Map<number, number>();
+  for (const m of allModels) countByProvider.set(m.provider_id, (countByProvider.get(m.provider_id) ?? 0) + 1);
+
+  // Keep a provider expanded after acting on it: open name (add) or the acted provider_id.
+  const openName = String(vars.open ?? ctx.get.open ?? "");
+  const openId = Number(vars.provider_id ?? 0);
+  let providerBoxes = "";
+  for (const provider of providers) {
+    const key = String(await app.settings.ai.provider[provider.name].key ?? "");
+    const isOpen = openName ? provider.name === openName : openId ? provider.id === openId : providers.length === 1;
+    providerBoxes += providerBox(provider, countByProvider.get(provider.id) ?? 0, key, isOpen);
+  }
+
+  const fkind = String(vars.filterKind ?? "");
+  const fprovider = String(vars.filterProvider ?? "");
+  const fsearch = String(vars.filterSearch ?? "");
+  const messageHtml = message ? `<u2-alert open variant="${message.type === "ok" ? "success" : "error"}" style="flex-basis:100%">${hee(message.text)}</u2-alert>` : "";
+  const emptyHint = providers.length ? "" : `<p>No providers configured yet — add one below.</p>`;
 
   return `
-<div class="u2-flex ai-page">
-  <style>
-    .ai-provider-list { display:grid; gap:8px; }
-    .ai-provider { border:1px solid #ddd; background:#fff; }
-    .ai-provider[open] { border-color:#bbb; }
-    .ai-provider-summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 12px; cursor:pointer; user-select:none; background:#f3f3f3; font-weight:bold; }
-    .ai-summary-pills { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; font-weight:normal; }
-    .ai-provider-panel { padding:8px; display:grid; gap:8px; }
-    .ai-provider-settings, .ai-subdetails { border:1px solid #e5e5e5; }
-    .ai-subdetails > summary { cursor:pointer; padding:7px 9px; background:#fafafa; font-weight:bold; }
-    .ai-subbody { padding:9px; }
-    .ai-message { flex:1 1 100%; padding:8px 12px; border:1px solid #ddd; background:#f7f7f7; }
-    .ai-message.-ok { border-color:#7aa66c; background:#edf7e9; }
-    .ai-message.-error { border-color:#b45b5b; background:#faecec; }
-    .ai-pill { display:inline-block; margin:0 4px 4px 0; padding:2px 6px; border-radius:3px; background:#eee; white-space:nowrap; }
-    .ai-pill.-ok { background:#d4edda; color:#2d6a3f; }
-    .ai-pill.-error { background:#f8d7da; color:#842029; }
-    .ai-kv th { width:160px; }
-    .ai-provider-form input[list], .ai-provider-form input[name=api_key], .ai-grid input { width:100%; box-sizing:border-box; }
-    .ai-autosave-state { min-height:1.4em; margin-top:6px; color:#666; font-size:.9em; }
-    .ai-autosave-state.-error { color:#a33; }
-    .ai-model-table th, .ai-model-table td { vertical-align:top; }
-    .ai-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-bottom:8px; }
-    .ai-grid label { display:grid; gap:3px; }
-    .ai-flex { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 10px; white-space:nowrap; }
-  </style>
-
+<div class="u2-flex">
   ${messageHtml}
 
   <div class=u2-card style="flex-grow:0">
-    <div class=-head>AI Defaults</div>
-    <div class=-body style="padding:0">
-      <form method=post>
-        <input type=hidden name=qgToken value="${hee(ctx.token)}">
-        <input type=hidden name=action value=save-default>
-        <table class=u2-table>
-          <tr><th>Provider<td><select name=default_provider>${providerOptions}</select>
-          <tr><th>Model<td>
-            <input name=default_model value="${hee(defaultModel)}" list="ai-models-${htmlId(defaultProvider)}-default">
-            ${[...modelsByProvider.entries()].map(([n, ms]) =>
-              `<datalist id="ai-models-${htmlId(n)}-default">${modelOptionHtml(ms, defaultModel)}</datalist>`
-            ).join("")}
-          <tr><th><td><button>Save defaults</button>
-        </table>
+    <div class=-head>Defaults</div>
+    <div class=-body style="padding:0">${defaultsOverview(allModels, providersById)}</div>
+  </div>
+
+  <div class=u2-card style="min-width:40rem">
+    <div class=-head>AI Provider</div>
+    <div class="-body u2-flex -Col">
+      ${emptyHint}
+      ${providerBoxes}
+      <form class="ai-add-provider u2-flex">
+        <input required name=endpoint list=ai-provider-catalog placeholder="endpoint (OpenAI-compatible, e.g. https://api…/v1)">
+        <datalist id=ai-provider-catalog>${providerCatalog.map((c) => `<option value="${hee(c.endpoint)}">${hee(c.name)}`).join("")}</datalist>
+        <button>+ Add provider</button>
       </form>
     </div>
   </div>
 
-  <div class=u2-card>
-    <div class=-head>Provider</div>
-    <div class="-body ai-provider-list">
-      ${providerBoxes}
+  <div class=u2-card style="min-width:40rem">
+    <div class=-head>Models</div>
+    <div class=-body>
+      <div class="u2-flex ai-model-filters">
+        <select id=ai-filter-provider>
+          <option value=""${fprovider ? "" : " selected"}>all providers
+          ${providers.map((p) => `<option value="${hee(String(p.id))}"${String(p.id) === fprovider ? " selected" : ""}>${hee(p.name)}`).join("")}
+        </select>
+        <select id=ai-filter-kind>${filterKindOptions(fkind)}</select>
+        <input id=ai-filter-search type=search placeholder="search models" value="${hee(fsearch)}">
+      </div>
     </div>
+    <div cms-part=models style="padding:0; max-height:80vh; overflow:auto">${await models(node, { vars })}</div>
   </div>
+
 </div>`;
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const defaultProvider = String(await app.settings.ai.default.provider ?? "");
-  const defaultModel    = String(await app.settings.ai.default.model    ?? "");
+  const models: Row[] = await app.db.all`SELECT m.kind, m.model_id, p.name AS provider, m.is_default, m.used_input_tokens, m.used_output_tokens
+    FROM ai_provider_model m JOIN ai_provider p ON p.id = m.provider_id ORDER BY m.kind, p.name`;
+
+  const defaults = models.filter((m) => m.is_default)
+    .map((m) => `<tr>
+      <td>${hee(m.kind)}:
+      <td>${hee(`${m.provider} · ${m.model_id}`)}`).join("")
+    || `<tr><td colspan=2 style="color:#999">Kein Default konfiguriert.`;
 
   let rows = "";
-  for (const name of Object.keys(providers)) {
-    const s = app.settings.ai.provider[name];
-    const input  = Number(await s.used_input_tokens  ?? 0);
-    const output = Number(await s.used_output_tokens ?? 0);
+  for (const m of models) {
+    const input = Number(m.used_input_tokens), output = Number(m.used_output_tokens);
     if (!input && !output) continue;
-    rows += `<tr><td>${hee(name)}<td style="text-align:right">${hee(input.toLocaleString("de-DE"))}<td style="text-align:right">${hee(output.toLocaleString("de-DE"))}`;
+    rows += `<tr>
+      <td>${hee(m.model_id)}
+      <td style="text-align:right">${hee(input.toLocaleString("de-DE"))}
+      <td style="text-align:right">${hee(output.toLocaleString("de-DE"))}`;
   }
 
-  const defaultHtml = defaultProvider
-    ? `<tr><td>Provider:<td>${hee(defaultProvider)}
-       <tr><td>Model:<td>${hee(defaultModel || "–")}`
-    : `<tr><td colspan=2 style="color:#999">Kein Default konfiguriert.`;
-
   return `<div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">
-  ${defaultHtml}
-</table>
+<table class="u2-table" style="white-space:nowrap">${defaults}</table>
 ${rows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
-  <thead><tr><th>Provider<th style="text-align:right">Input<th style="text-align:right">Output
+  <thead><tr>
+    <th>Model
+    <th style="text-align:right">Input
+    <th style="text-align:right">Output
   <tbody>${rows}
 </table>` : ""}
 </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render } };
+export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { models } } };

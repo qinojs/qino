@@ -75,25 +75,4 @@ export const CmsHelperBot: Bot = {
     return lines.join("\n");
   },
   tools: cmsTools,
-  chatSchema: {
-    type: "object",
-    properties: {
-      response: { type: "string", description: "The answer to show the user" },
-      relevance: {
-        type: "number",
-        minimum: 0, maximum: 10,
-        description: "How relevant is this question for your memory.",
-      },
-      issue: {
-        description: "If anything in this conversation reveals improvement potential — e.g. something didn't work, was misunderstood, lacked context, or the bot was missing tools or knowledge — describe it. Otherwise null.",
-        type: "object",
-        properties: {
-          description: { type: "string" },
-          severity: { type: "string", enum: ["low", "medium", "high"] },
-        },
-        required: ["description", "severity"],
-      },
-    },
-    required: ["response", "relevance"],
-  },
 };

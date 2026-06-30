@@ -1,0 +1,148 @@
+{
+  "properties": {
+    "ai_provider": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "unique"
+          },
+          "endpoint": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "default": 60000
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "ai_provider_model": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "provider_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_provider",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "model_id": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": true
+          },
+          "is_default": {
+            "type": "boolean",
+            "default": false,
+            "x-index": true
+          },
+          "used_input_tokens": {
+            "type": "integer",
+            "default": 0
+          },
+          "used_output_tokens": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "ai_session": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "user_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "bot": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": true
+          },
+          "context": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "x-index": true
+          },
+          "updated_at": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id"]
+      }
+    },
+    "ai_message": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "session_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "ai_session",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 16
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "content": {
+            "type": "string"
+          },
+          "tool_calls": {
+            "type": "string"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "created_at": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id"]
+      }
+    }
+  }
+}

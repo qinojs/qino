@@ -1,3 +1,6 @@
+export const KINDS = ["chat", "embedding", "image", "stt", "tts", "audio_generation", "video_generation"] as const;
+export type Kind = typeof KINDS[number];
+
 export type ClientContext = Record<string, unknown>;
 
 export interface Tool {
@@ -9,68 +12,26 @@ export interface Tool {
 
 export interface Bot {
   id: string;
-  provider?: string;
-  model?: string;
-  // static string or dynamic function (server ctx + client context)
-  systemPrompt:
-    | string
-    | ((
-      ctx: unknown,
-      clientContext: ClientContext,
-    ) => string | Promise<string>);
+  provider?: string; // provider name override
+  model?: string; // model_id override
+  // static string or dynamic (server ctx + per-session client context)
+  systemPrompt: string | ((ctx: unknown, clientContext: ClientContext) => string | Promise<string>);
   tools?: Tool[];
-  // structured chat output — must include a "response" string field
-  chatSchema?: Record<string, unknown>;
 }
 
-export type ProviderStrength =
-  | "speed"
-  | "reasoning"
-  | "multilingual"
-  | "coding"
-  | "vision"
-  | "cost"
-  | "quality"
-  | "privacy"
-  | "long-context"
-  | "routing"
-  | "model-choice"
-  | "embedding"
-  | (string & {});
-
-export interface ProviderModelCapabilities {
-  streaming?: boolean;
-  tools?: boolean;
-  toolChoiceAuto?: boolean;
-  vision?: boolean;
-  jsonMode?: boolean;
-}
-
-export interface ProviderCapabilities extends ProviderModelCapabilities {}
-
-export interface ProviderModel {
-  id: string;
-  label?: string;
-  description?: string;
-  source?: string;
-  syncedAt?: string;
-  strengths?: ProviderStrength[];
-  maxInputTokens?: number;
-  maxOutputTokens?: number;
-  costPerMToken?: number;
-  inputCostPerMToken?: number;
-  outputCostPerMToken?: number;
-  supports?: ProviderModelCapabilities;
-}
-
-export interface ProviderConf {
+export interface ProviderRow {
+  id: number;
+  name: string;
   endpoint: string;
-  jsonMode?: boolean;
-  timeoutMs?: number;
-  supports?: ProviderCapabilities;
-  strengths?: ProviderStrength[];
-  models?: ProviderModel[];
-  defaultModel?: string;
-  costPerMToken?: number;
-  embeddingModel?: string;
+  timeout_ms: number;
+}
+
+export interface ProviderModelRow {
+  id: number;
+  provider_id: number;
+  model_id: string;
+  kind: Kind;
+  is_default: number | boolean;
+  used_input_tokens: number;
+  used_output_tokens: number;
 }

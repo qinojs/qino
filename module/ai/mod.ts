@@ -7,6 +7,6 @@ declare module "../core/lib/App.ts" {
 }
 
 export { AiApi } from "./lib/AiApi.ts";
-export { customProviderModels, parseProviderModels, providerModels } from "./lib/providerModels.ts";
-export { providers } from "./lib/providers.ts";
-export type { ProviderModel, ProviderStrength } from "./types.ts";
+export { providerCatalog } from "./catalog.ts";
+export { KINDS } from "./types.ts";
+export type { Bot, Kind, ProviderModelRow, ProviderRow, Tool } from "./types.ts";

@@ -18,7 +18,7 @@ Reply with the SQL query only — no explanation, no markdown fences.`;
   if (current) messages.push({ role: "user", content: `The editor currently contains this query — refine it if the request relates to it:\n${current}` });
   messages.push({ role: "user", content: question });
 
-  const res = await app.ai.chatCompletions({
+  const res = await app.ai.chat({
     messages,
     temperature: 0.2,
   }) as any;
