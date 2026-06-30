@@ -84,6 +84,14 @@ export class c1ImageEditor extends c1FullScreenPopup {
         };
         this.cropper.svg.addEventListener('dblclick', cropit);
         this.el('.-cropit').addEventListener('click', cropit);
+
+        // auto-crop: select the content bounds (uniform border trimmed away), confirm with "zuschneiden"
+        this.el('.-autocrop').addEventListener('click', () => {
+            const box = this.img.contentBox();
+            if (!box) return;
+            const s = this.scale;
+            this.cropper.setRect(box.x / s, box.y / s, box.w / s, box.h / s);
+        });
         this.el().addEventListener('keydown', e => {
             if (e.key === 'Enter' && this.cropper.svg.parentNode) {
                 cropit();
@@ -146,6 +154,7 @@ export class c1ImageEditor extends c1FullScreenPopup {
                             <span style="flex:.1 1 .5rem;"></span>
                             <button class="-cropit" style="flex:1">zuschneiden</button>
                         </div>
+                        <button class="-autocrop" style="width:100%; margin-top:.5rem">automatisch (Rand wegschneiden)</button>
                         <br>
                         <form class="-cropValues">
                             <table style="width:100%"><tbody style="vertical-align:middle">

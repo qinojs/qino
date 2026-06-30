@@ -79,6 +79,12 @@ export class c1ImageCropper extends EventTarget {
         });
     }
 
+    /** Set the crop rectangle directly (overlay px), bypassing the drag-resize clamps. */
+    setRect(left, top, width, height) {
+        this.position = { left, top, width, height };
+        this.#drawArea();
+    }
+
     // image:     the canvas the crop overlays
     // container: shadow-root node the (fixed-positioned) svg is appended to
     constructor(image, container) {

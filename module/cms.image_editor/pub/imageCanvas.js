@@ -53,6 +53,33 @@ export class ImageCanvas {
         }));
     }
 
+    /**
+     * Bounding box of content that differs from the top-left corner colour
+     * (auto-trim of a uniform border). Returns null if the image is uniform.
+     * @param tolerance allowed per-channel difference, 0–255.
+     */
+    contentBox(tolerance = 16) {
+        const w = this.width, h = this.height;
+        if (!w || !h) return null;
+        const { data } = this.#ctx.getImageData(0, 0, w, h);
+        const r = data[0], g = data[1], b = data[2], a = data[3];
+        const differs = i =>
+            Math.abs(data[i]     - r) > tolerance ||
+            Math.abs(data[i + 1] - g) > tolerance ||
+            Math.abs(data[i + 2] - b) > tolerance ||
+            Math.abs(data[i + 3] - a) > tolerance;
+        const rowHasContent = y => { const o = y * w * 4; for (let x = 0; x < w; x++) if (differs(o + x * 4)) return true; return false; };
+        const colHasContent = x => { for (let y = 0; y < h; y++) if (differs((y * w + x) * 4)) return true; return false; };
+
+        let top = 0;
+        while (top < h && !rowHasContent(top)) top++;
+        if (top === h) return null; // fully uniform → nothing to trim
+        let bottom = h - 1; while (bottom > top && !rowHasContent(bottom)) bottom--;
+        let left = 0; while (left < w && !colHasContent(left)) left++;
+        let right = w - 1; while (right > left && !colHasContent(right)) right--;
+        return { x: left, y: top, w: right - left + 1, h: bottom - top + 1 };
+    }
+
     toBlob(type, quality) {
         return new Promise(resolve => this.#canvas.toBlob(resolve, type, quality));
     }

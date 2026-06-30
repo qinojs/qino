@@ -59,8 +59,9 @@ export async function getHistory(ctx: RequestContext, fileId: number): Promise<s
     for (const row of rows) {
         const thumb = await versionThumb(app, fileId, row);
         if (!thumb) continue;
+        const log = row.log_id == null ? "" : String(row.log_id); // empty = not restorable
         str += "<tr>";
-        str += `<td style="padding:3px 4px 3px 0; width:60px"><img log="${hee(String(row.log_id))}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">`;
+        str += `<td style="padding:3px 4px 3px 0; width:60px"><img log="${hee(log)}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">`;
         str += `<td style="padding:3px 0 3px 0;">${hee(niceDate(Number(row.log_time)))}`;
         const usr = await logUser(app, Number(row.log_id));
         if (usr) str += `<br>${hee(usr)}`;
