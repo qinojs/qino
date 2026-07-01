@@ -7,18 +7,22 @@ const apiBase = new URL("api/", location.origin + (globalThis.qino?.appURL ?? "/
 class AiChat extends HTMLElement {
   static observedAttributes = ['bot'];
 
-  #bot = 'cms-helper';
+  #bot = null;
   #context = {};
   #sessionId = null;
   #messages = null;
   #input = null;
   #button = null;
+  #open = false;
+
+  // Collapse the history only when interaction moves outside the whole chat (composedPath crosses the shadow root).
+  #outside = (e) => { if (!e.composedPath().includes(this)) this.#setOpen(false); };
 
   /** Set additional context: chat.context = { page: { title, module, url }, extra: {} } */
   set context(value) { this.#context = value ?? {}; }
 
   async connectedCallback() {
-    this.#bot = this.getAttribute('bot') ?? 'cms-helper';
+    this.#bot = this.getAttribute('bot');
     this.#context = {
       page: {
         title: document.title,
@@ -27,8 +31,9 @@ class AiChat extends HTMLElement {
       },
     };
     this.innerHTML = `<style>
-      ai-chat { display: flex; flex-direction: column; height: 100%; min-height: 200px; font-family: sans-serif; }
-      ai-chat .msgs { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+      ai-chat { display: flex; flex-direction: column; height: 100%; font-family: sans-serif; }
+      ai-chat .msgs { flex: 1; overflow-y: auto; padding: 8px; display: none; flex-direction: column; gap: 6px; }
+      ai-chat.has-messages.-open .msgs { display: flex; }
       ai-chat .msg { padding: 6px 10px; border-radius: 6px; max-width: 80%; }
       ai-chat .msg.user { align-self: flex-end; background: var(--color, #2563eb); color: #fff; white-space: pre-wrap; }
       ai-chat .msg.assistant { align-self: flex-start; background: #f0f0f0; }
@@ -55,10 +60,22 @@ class AiChat extends HTMLElement {
       e.preventDefault();
       this.#send();
     });
+    this.addEventListener('focusin', () => this.#setOpen(true));
   }
+
+  disconnectedCallback() { this.#setOpen(false); }
 
   attributeChangedCallback(name, _, value) {
     if (name === 'bot') this.#bot = value;
+  }
+
+  #setOpen(open) {
+    if (open === this.#open) return;
+    this.#open = open;
+    this.classList.toggle('-open', open);
+    const method = open ? 'addEventListener' : 'removeEventListener';
+    document[method]('pointerdown', this.#outside, true);
+    document[method]('focusin', this.#outside, true);
   }
 
   async #session() {
@@ -136,6 +153,7 @@ class AiChat extends HTMLElement {
     const el = document.createElement('div');
     el.className = 'msg ' + role;
     el.textContent = content;
+    this.classList.add('has-messages'); // reveals the history (only while focused, see CSS)
     this.#messages.append(el);
     el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     return el;

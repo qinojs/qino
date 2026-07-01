@@ -15,22 +15,10 @@ Deno.test("ai: module metadata and apt tools are wired", () => {
   ]);
 });
 
-Deno.test("ai: init installs AiApi and cms-ready hook", () => {
-  const handlers: Record<string, ((data: Record<string, unknown>) => void)[]> = {};
-  const app = {
-    aptTree: {},
-    on(name: string, fn: (data: Record<string, unknown>) => void) {
-      (handlers[name] ??= []).push(fn);
-    },
-  };
+Deno.test("ai: init installs AiApi (no cms coupling)", () => {
+  const app = { aptTree: {} };
   init(app as never);
   assertEquals(typeof (app as never as { ai: unknown }).ai, "object");
-
-  const html = { content: "", scripts: { add(url: string) { html.content += `[${url}]`; } } };
-  const ctx = { cms: { editmode: true }, get: {}, sysURL: "/m/", html };
-  handlers["cms-ready"][0]({ ctx });
-  assertEquals(ctx.html.content.includes("[/m/ai/pub/chat.js]"), true);
-  assertEquals(ctx.html.content.includes('<ai-chat bot="cms-helper"></ai-chat>'), true);
 });
 
 Deno.test("ai: apt execute delegates to app.ai", async () => {

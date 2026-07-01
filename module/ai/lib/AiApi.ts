@@ -1,6 +1,5 @@
 import type { App } from "../../core/mod.ts";
 import type { Bot, Kind, ProviderRow } from "../types.ts";
-import { CmsHelperBot } from "../bots/cmsHelper.ts";
 import { Provider } from "./Provider.ts";
 import { ChatSession } from "./ChatSession.ts";
 import { resolve } from "./registry.ts";
@@ -16,9 +15,7 @@ export const CHAT_DEFAULTS = { temperature: 0.6, max_tokens: 5512 };
 export class AiApi {
   #bots = new Map<string, Bot>();
 
-  constructor(private app: Pick<App, "db" | "settings"> & { ai?: AiApi }) {
-    this.registerBot(CmsHelperBot);
-  }
+  constructor(private app: Pick<App, "db" | "settings"> & { ai?: AiApi }) {}
 
   registerBot(bot: Bot): void { this.#bots.set(bot.id, bot); }
   getBot(id: string): Bot | undefined { return this.#bots.get(id); }

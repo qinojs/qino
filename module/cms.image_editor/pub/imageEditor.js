@@ -153,7 +153,7 @@ export class ImageEditor extends FullScreenDialog {
                             <span style="flex:.1 1 .5rem;"></span>
                             <button class="-cropit" style="flex:1">zuschneiden</button>
                         </div>
-                        <button class="-autocrop" style="width:100%; margin-top:.5rem">automatisch (Rand wegschneiden)</button>
+                        <button class="-autocrop" style="width:100%; margin-top:.5rem">automatisch</button>
                         <br>
                         <form class="-cropValues">
                             <table style="width:100%"><tbody style="vertical-align:middle">

@@ -77,6 +77,9 @@ export class ImageCanvas {
         let bottom = h - 1; while (bottom > top && !rowHasContent(bottom)) bottom--;
         let left = 0; while (left < w && !colHasContent(left)) left++;
         let right = w - 1; while (right > left && !colHasContent(right)) right--;
+        // Keep a 1px safety margin: anti-aliased edges may fall within tolerance, so never trim into content.
+        top = Math.max(0, top - 1); left = Math.max(0, left - 1);
+        bottom = Math.min(h - 1, bottom + 1); right = Math.min(w - 1, right + 1);
         return { x: left, y: top, w: right - left + 1, h: bottom - top + 1 };
     }
 
