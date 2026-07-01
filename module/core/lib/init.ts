@@ -75,28 +75,25 @@ function initLog(ctx: RequestContext): void {
 
     ctx.logId.then(async () => { // background, after the main insert so data.id exists for the update below
       try {
+        const urlIdOf = async (url: string) => {
+          const hash = createHash("md5").update(url).digest("hex");
+          return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
+              || await db.table("log_url").insert({ url, hash });
+        };
         const url = ctx.requestUri;
-        const urlHash = createHash("md5").update(url).digest("hex");
-        let urlId = await db.one`SELECT id FROM log_url WHERE hash = ${urlHash}`;
-        urlId ||= await db.table("log_url").insert({ url, hash: urlHash });
-
         const referer = ctx.req.header("referer") ?? "";
-        const refererHash = createHash("md5").update(referer).digest("hex");
-        let refererId = await db.one`SELECT id FROM log_url WHERE hash = ${refererHash}`;
-        refererId ||= await db.table("log_url").insert({ url: referer, hash: refererHash });
-
         const ip = ctx.remoteAddr ?? "";
-        let ipId = await db.one`SELECT id FROM log_ip WHERE ip = ${ip}`;
-        ipId ||= await db.table("log_ip").insert({ ip });
-
         const ua = ctx.req.header("user-agent") ?? "";
-        let uaId = await db.one`SELECT id FROM log_user_agent WHERE user_agent = ${ua}`;
-        uaId ||= await db.table("log_user_agent").insert({ user_agent: ua });
 
-        data.url_id        = urlId;
-        data.referer_id    = refererId;
-        data.ip_id         = ipId;
-        data.user_agent_id = uaId;
+        const urlId = urlIdOf(url);
+        const [url_id, referer_id, ip_id, user_agent_id] = await Promise.all([
+          urlId,
+          referer === url ? urlId : urlIdOf(referer), // reuse to avoid racing a duplicate log_url row
+          db.one`SELECT id FROM log_ip WHERE ip = ${ip}`.then(id => id || db.table("log_ip").insert({ ip })),
+          db.one`SELECT id FROM log_user_agent WHERE user_agent = ${ua}`.then(id => id || db.table("log_user_agent").insert({ user_agent: ua })),
+        ]);
+
+        Object.assign(data, { url_id, referer_id, ip_id, user_agent_id });
         await db.table("log").update(data);
 
       } catch (e) { console.error("liveLog background error:", e); }

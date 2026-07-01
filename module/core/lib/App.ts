@@ -24,6 +24,16 @@ const defaultConfig = {
     db: "", // mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
 };
 
+/** Core events; modules add their own via `declare module "../core/lib/App.ts" { interface AppEvents {...} }`. */
+export interface AppEvents {
+    "request-start": { req: Req };
+    "action": { ctx: RequestContext };
+    "render": { ctx: RequestContext };
+    "html-ready": { ctx: RequestContext };
+    "respond": { ctx: RequestContext };
+    [name: string]: Record<string, unknown>; // untyped module events stay allowed
+}
+
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App {
     appPATH: string;
@@ -41,7 +51,7 @@ export class App {
     languages: LangManager;
     t: LangManager["t"];
     aptTree: AptTree = {};
-    #events: Record<string, ((data: Record<string, unknown>) => void | Promise<void>)[]> = {};
+    #events: Record<string, ((data: never) => void | Promise<void>)[]> = {};
     #apt?: AptProxy;
 
     // the proxy reads aptTree lazily, so modules added at runtime stay visible
@@ -83,34 +93,37 @@ export class App {
 
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
 
-    on(name: string, fn: (data: Record<string, unknown>) => void | Promise<void>): void {
+    on<K extends string & keyof AppEvents>(name: K, fn: (data: AppEvents[K]) => void | Promise<void>): void {
         (this.#events[name] ??= []).push(fn);
     }
 
-    async fire(name: string, data: Record<string, unknown> = {}): Promise<void> {
+    async fire<K extends string & keyof AppEvents>(name: K, data: AppEvents[K] = {} as AppEvents[K]): Promise<void> {
         if (!this.#events[name]) return;
-        for (const event of this.#events[name]) await event(data);
+        for (const event of this.#events[name]) await event(data as never);
     }
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
         const req = new Req(request, peerAddr);
-        let ctx: RequestContext, isNew: boolean;
+        let ctx: RequestContext;
         try {
             await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
-            [ctx, isNew] = await makeRequestContext(this, req, basePath || "/");
+            ctx = await makeRequestContext(this, req, basePath || "/");
         } catch (e: unknown) {
             return this.#earlyError(e);
         }
-        return requestStorage.run(ctx, () => this.#run(ctx, isNew));
+        return requestStorage.run(ctx, () => this.#run(ctx));
     }
 
-    async #run(ctx: RequestContext, isNew: boolean): Promise<Response> {
+    async #run(ctx: RequestContext): Promise<Response> {
         const t0 = performance.now();
-        const initialSessionToken = ctx.sess.token;
         try {
+            // static files skip the session/settings/log pipeline (switch: the commented call in #route)
+            const localPath = ctx.urlToLocalPath(ctx.req.url);
+            if (localPath) return serveFile(ctx.req.raw, localPath);
+
             await initRequest(ctx);
-            if (isNew || ctx.sess.token !== initialSessionToken) this.sessions.setCookie(ctx);
+            this.sessions.setCookieIfNew(ctx);
             await this.fire("action", { ctx });
             return await this.#route(ctx);
         } catch (e: unknown) {
@@ -126,8 +139,8 @@ export class App {
     #route(ctx: RequestContext): Response | Promise<Response> {
         const uri = ctx.appRequestPath;
 
-        const localPath = ctx.urlToLocalPath(ctx.req.url);
-        if (localPath) return serveFile(ctx.req.raw, localPath);
+        // const localPath = ctx.urlToLocalPath(ctx.req.url);
+        // if (localPath) return serveFile(ctx.req.raw, localPath);
 
         if (uri === "favicon.ico") return new Response(null, { status: 204 });
 
@@ -183,10 +196,8 @@ export class App {
 
     async #buildResponse(ctx: RequestContext): Promise<Response> {
         await this.fire("respond", { ctx });
-
         const headers = new Headers(ctx.responseHeaders);
         if (headers.has("Location")) return new Response(null, { status: ctx.responseStatus, headers });
-
         if (!headers.get("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("X-Content-Type-Options", "nosniff");

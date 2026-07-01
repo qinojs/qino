@@ -95,7 +95,7 @@ export class RequestContext {
   }
 }
 
-export async function makeRequestContext(app: App, req: Req, basePath: string): Promise<[RequestContext, boolean]> {
+export async function makeRequestContext(app: App, req: Req, basePath: string): Promise<RequestContext> {
 
   const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
   const url = new URL(req.url);
@@ -136,7 +136,7 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
     remoteAddr: clientIp(req, app.trustedProxyHops),
   });
 
-  return [ctx, session.isNew];
+  return ctx;
 }
 
 function appRequestPathToLocalPath(appRequestPath: string, app: App): string | null {

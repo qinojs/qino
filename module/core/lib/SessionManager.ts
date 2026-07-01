@@ -68,6 +68,11 @@ export class SessionManager {
         return new Session(this.#db, row.id, token, EMPTY_SESSION, true);
     }
 
+    /** Send the cookie when the session was created or rotated this request (`regenerateId` yields a new-marked session). */
+    setCookieIfNew(ctx: RequestContext): void {
+        if (ctx.sess.isNew) this.setCookie(ctx);
+    }
+
     setCookie(ctx: RequestContext): void {
         const https = ctx.app.https;
         const parts = [`${cookieName(ctx)}=${ctx.sess.token}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
