@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, sql, type App, type RequestContext } from "../../core/mod.ts";
+import { hee, type App, type RequestContext } from "../../core/mod.ts";
 import { getCmsVers, tableEntriesCopyTo } from "../../cms.versions/mod.ts";
 
 const ALLOWED_META = new Set(["name", "vpos", "hpos"]);
@@ -31,7 +31,7 @@ export async function getMeta(ctx: RequestContext, fileId: number): Promise<{ na
 
 export async function setMeta(ctx: RequestContext, fileId: number, data: Record<string, any>): Promise<void> {
     const vs: Record<string, any> = {};
-    for (const [k, v] of Object.entries(data)) if (ALLOWED_META.has(k)) vs[k] = v;
+    for (const [k, v] of Object.entries(data)) if (ALLOWED_META.has(k) && v !== undefined) vs[k] = v;
     if (!Object.keys(vs).length) return;
     await (await ctx.app.dbFiles.file(fileId)).setVs(vs);
 }
@@ -48,9 +48,11 @@ export async function getHistory(ctx: RequestContext, fileId: number): Promise<s
     const app = ctx.app;
     const space = getCmsVers(ctx).space;
     const rows = await app.db.all`
-        SELECT file.*, log.id AS log_id, log.time AS log_time
+        SELECT file.*, log.time AS log_time, usr.firstname AS usr_firstname, usr.lastname AS usr_lastname
         FROM _vers_file file
-          LEFT JOIN log ON file._vers_log = log.id
+          LEFT JOIN log  ON file._vers_log = log.id
+          LEFT JOIN sess ON log.sess_id = sess.id
+          LEFT JOIN usr  ON sess.usr_id = usr.id
         WHERE file._vers_log AND file.id = ${fileId} AND file._vers_space = ${space}
         ORDER BY file._vers_log DESC
         LIMIT 40`;
@@ -59,11 +61,11 @@ export async function getHistory(ctx: RequestContext, fileId: number): Promise<s
     for (const row of rows) {
         const thumb = await versionThumb(app, fileId, row);
         if (!thumb) continue;
-        const log = row.log_id == null ? "" : String(row.log_id); // empty = not restorable
+        const log = String(row._vers_log); // restore token = this capture's version log (log-table join is display-only)
         str += "<tr>";
         str += `<td style="padding:3px 4px 3px 0; width:60px"><img log="${hee(log)}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">`;
         str += `<td style="padding:3px 0 3px 0;">${hee(niceDate(Number(row.log_time)))}`;
-        const usr = await logUser(app, Number(row.log_id));
+        const usr = [row.usr_firstname, row.usr_lastname].filter(Boolean).join(" ");
         if (usr) str += `<br>${hee(usr)}`;
     }
     str += "</table>";
@@ -77,23 +79,12 @@ async function versionThumb(app: App, fileId: number, row: any): Promise<string 
     try {
         const File = await app.dbFiles.file(fileId, row); // setLocalVs → path points at this version's md5
         if (!File.path) return;
-        const { path, mime } = await File.transform({ w: 60, h: 40, max: true, q: 5 });
+        const { path, mime } = await File.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
         const buf = await Deno.readFile(path);
         return `data:${mime};base64,${btoa(String.fromCharCode(...buf))}`;
     } catch {
         return;
     }
-}
-
-async function logUser(app: App, logId: number): Promise<string> {
-    const row = await app.db.row`
-        SELECT usr.firstname, usr.lastname
-        FROM log
-          LEFT JOIN sess ON log.sess_id = sess.id
-          LEFT JOIN usr  ON sess.usr_id = usr.id
-        WHERE log.id = ${logId}`;
-    if (!row) return "";
-    return [row.firstname, row.lastname].filter(Boolean).join(" ");
 }
 
 function niceDate(ts: number): string {

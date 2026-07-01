@@ -12,7 +12,7 @@ export class ImageEditor extends FullScreenDialog {
     minHeight = 0;
     minWidth = 0;
 
-    show(src, options) {
+    show(src, options = {}) {
         this.init();
         const img = this.el('.-img');
         this.img = new ImageCanvas(this.el('.-canvas'));
@@ -33,7 +33,7 @@ export class ImageEditor extends FullScreenDialog {
         img.src = src;
         this.el('.-save').onclick = () => {
             this.changed = false;
-            options.onsave();
+            options.onsave?.();
         };
         super.show();
         addEventListener('resize', this);
@@ -157,8 +157,8 @@ export class ImageEditor extends FullScreenDialog {
                         <br>
                         <form class="-cropValues">
                             <table style="width:100%"><tbody style="vertical-align:middle">
-                                <tr> <td> X:      <td> <input name="top"    type="number" style="width:100%">
-                                <tr> <td> Y:      <td> <input name="left"   type="number" style="width:100%">
+                                <tr> <td> X:      <td> <input name="left"   type="number" style="width:100%">
+                                <tr> <td> Y:      <td> <input name="top"    type="number" style="width:100%">
                                 <tr> <td> Breite: <td> <input name="width"  type="number" style="width:100%">
                                 <tr> <td> Höhe:   <td> <input name="height" type="number" style="width:100%">
                             </table>

@@ -65,6 +65,7 @@ const editorCss = `
     bottom: -1.25rem;
     left: 50%;
     transform: translateX(-50%);
+    white-space: nowrap;
     color: #fff;
     text-shadow: 0 0 .625rem #000;
 }`;
@@ -148,9 +149,10 @@ export class DbFileImageEditor extends ImageEditor {
         });
     }
     renderHotspot() {
-        if (this.meta.hpos == null || this.meta.vpos == null) return;
         const hotspot = this.el('.-hotspot');
         if (!hotspot) return;
+        if (this.meta.hpos == null || this.meta.vpos == null) { hotspot.style.display = 'none'; return; }
+        hotspot.style.display = '';
         const cRect = this.el('.-canvas').getBoundingClientRect();
         const vRect = this.el('.-viewport').getBoundingClientRect();
         const x = (cRect.left - vRect.left) + cRect.width * (this.meta.hpos / 100);
@@ -187,14 +189,18 @@ export class DbFileImageEditor extends ImageEditor {
             return fn?.();
         };
     }
+    // Re-fetch every <img> of the edited file by swapping its cache-busting `u-…` segment.
     reloadElements() {
-        location.reload();
+        const bust = 'u-' + Date.now().toString(36);
+        for (const img of document.images) {
+            if (img.src.includes('dbFile/' + this.file_id + '/')) img.src = img.src.replace(/\/u-[^/]+\//, '/' + bust + '/');
+        }
     }
     loadHistory() {
         apt['cms.image_editor'].history(this.file_id).get().then(res => {
             this.el('.-history').innerHTML = `<div style="max-height:25rem; overflow:auto">${res}</div>`;
         });
-        this.el('.-history').onmousedown = e => {
+        this.el('.-history').onclick = e => {
             const log = parseInt(e.target.getAttribute('log'), 10);
             if (!Number.isFinite(log)) return;
             if (!confirm('Möchten Sie das Bild wiederherstellen?')) return;
