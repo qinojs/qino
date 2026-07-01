@@ -1,8 +1,19 @@
 import { createHash } from "node:crypto";
 import type { RequestContext } from "./RequestContext.ts";
 import { cookiePrefix, uid } from "./util.ts";
+import { authListen } from "./auth.ts";
 
-export async function initClient(ctx: RequestContext): Promise<void> {
+/** Per-request boot: client cookie, auth, session, settings, language, access log. */
+export async function initRequest(ctx: RequestContext): Promise<void> {
+    await initClient(ctx);
+    await authListen(ctx);
+    touchSession(ctx);
+    await ctx.initSettings();
+    await ctx.app.languages.initCtx(ctx);
+    initLog(ctx);
+}
+
+async function initClient(ctx: RequestContext): Promise<void> {
     const db = ctx.app.db;
     if (ctx.clientId) return;
 
@@ -33,11 +44,11 @@ async function registerClient(ctx: RequestContext): Promise<void> {
     ctx.clientId = String(clientId);
 };
 
-export function touchSession(ctx: RequestContext): void {
+function touchSession(ctx: RequestContext): void {
     if (ctx.sess) ctx.sess.touch(ctx.userId);
 };
 
-export function initLog(ctx: RequestContext): void {
+function initLog(ctx: RequestContext): void {
 
     const db = ctx.app.db;
 

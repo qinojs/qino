@@ -11,8 +11,7 @@ import { DbTextManager } from "./DbTextManager.ts";
 import { ModuleManager, type Module } from "./ModuleManager.ts";
 import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
-import { initClient, initLog, touchSession } from "./init.ts";
-import { authListen } from "./auth.ts";
+import { initRequest } from "./init.ts";
 
 const mainDir:string = fromFileUrl(new URL(".", Deno.mainModule));
 
@@ -34,7 +33,7 @@ export class App {
     trustedProxyHops: number;
     db: Db;
     settings: ItemProxy;
-    ctxSettingsSchema: object = { properties: {} };
+    ctxSettingsSchema: Record<string, unknown> = { properties: {} };
     dbFiles: DbFileManager;
     dbTexts: DbTextManager;
     sessions: SessionManager;
@@ -43,8 +42,10 @@ export class App {
     t: LangManager["t"];
     aptTree: AptTree = {};
     #events: Record<string, ((data: Record<string, unknown>) => void | Promise<void>)[]> = {};
+    #apt?: AptProxy;
 
-    get apt(): AptProxy { return aptClient(this.aptTree); }
+    // the proxy reads aptTree lazily, so modules added at runtime stay visible
+    get apt(): AptProxy { return this.#apt ??= aptClient(this.aptTree); }
 
     constructor(config: Partial<typeof defaultConfig> = {}) {
         const cfg = { ...defaultConfig, ...config };
@@ -88,7 +89,6 @@ export class App {
 
     async fire(name: string, data: Record<string, unknown> = {}): Promise<void> {
         if (!this.#events[name]) return;
-        data["eventType"] = name;
         for (const event of this.#events[name]) await event(data);
     }
 
@@ -109,7 +109,7 @@ export class App {
         const t0 = performance.now();
         const initialSessionToken = ctx.sess.token;
         try {
-            await this.#initRequest(ctx);
+            await initRequest(ctx);
             if (isNew || ctx.sess.token !== initialSessionToken) this.sessions.setCookie(ctx);
             await this.fire("action", { ctx });
             return await this.#route(ctx);
@@ -136,18 +136,9 @@ export class App {
 
         // apt always signals via thrown Output (success or error) — caught in #run.
         if (uri === "api" || uri.startsWith("api/"))
-            return aptFetch(ctx.req, this.aptTree, uri.slice("api".length) || "/");
+            return aptFetch(ctx.req, this.aptTree, "/" + uri.slice("api/".length));
 
         return this.#renderFallback(ctx);
-    }
-
-    async #initRequest(ctx: RequestContext): Promise<void> {
-        await initClient(ctx);
-        await authListen(ctx);
-        touchSession(ctx);
-        await ctx.initSettings();
-        await this.languages.initCtx(ctx);
-        initLog(ctx);
     }
 
     /** Fallback for paths that aren't static/dbFile/api: fire the render hooks and build the response. */
@@ -202,7 +193,6 @@ export class App {
         return new Response(ctx.responseBody, { status: ctx.responseStatus, headers });
     }
 
-
     assertAllowedPath(file: string): void {
         if (!file || file.includes("\0")) throw new Output("invalid path", { status: 400 });
         const resolved = nodePath.resolve(file);
@@ -212,5 +202,5 @@ export class App {
             if (mod.dir) roots.push(nodePath.resolve(mod.dir));
         }
         if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
-    }    
+    }
 }
