@@ -5,8 +5,8 @@ const EDIT_SVG = '<svg style="display:block; background:#fff" width="32" height=
 // show the editor for an element carrying a dbFile url
 const showEditor = async el => {
     const src = el.getAttribute('dbfile-editable') || el.src;
-    const { qgDbFileImageEditor } = await import('./qgDbFileImageEditor.js');
-    new qgDbFileImageEditor().show(src);
+    const { DbFileImageEditor } = await import('./dbFileImageEditor.js');
+    new DbFileImageEditor().show(src);
 };
 
 // ─── hover icon over editable page images (light DOM) ───────────────────────

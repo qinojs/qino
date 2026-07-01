@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { c1ImageEditor } from './c1ImageEditor.js';
+import { ImageEditor } from './imageEditor.js';
 import { apt, ctx } from '../../core/pub/js/qino.js';
 import '../../core/pub/js/qg/fileHelpers.mjs'; // globalThis.qgfileUpload
 
@@ -8,7 +8,7 @@ const loadingMjs = () => import('../../core/pub/js/c1/loading.mjs');
 
 // accordion + hotspot styles, scoped to the editor's shadow root
 const editorCss = `
-.c1AccordionHead {
+.-accordion {
     position: relative;
     background-color: var(--cms-light);
     color: var(--cms-dark);
@@ -18,7 +18,7 @@ const editorCss = `
     transition: all .1s;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
-.c1AccordionHead::after {
+.-accordion::after {
     font-family: 'qg_cms';
     content: '\\e800';
     position: absolute;
@@ -30,11 +30,11 @@ const editorCss = `
     padding-left: .625rem;
     transition: opacity .2s;
 }
-.c1AccordionHead:hover::after { opacity: 1; }
-.c1AccordionHead:first-child { margin-top: 0; }
-.c1AccordionHead:focus { color: #fff; background-color: var(--cms-dark); }
-.c1AccordionHead:focus::after { content: '\\e801'; }
-.c1AccordionHead + div {
+.-accordion:hover::after { opacity: 1; }
+.-accordion:first-child { margin-top: 0; }
+.-accordion:focus { color: #fff; background-color: var(--cms-dark); }
+.-accordion:focus::after { content: '\\e801'; }
+.-accordion + div {
     border: 1px solid var(--cms-light);
     transition-duration: .2s;
     transition-property: max-height, padding;
@@ -42,14 +42,14 @@ const editorCss = `
     padding: 0 .9375rem;
     overflow: hidden;
 }
-.c1AccordionHead + div:focus-within,
-.c1AccordionHead:focus + div {
+.-accordion + div:focus-within,
+.-accordion:focus + div {
     max-height: 90vh;
     padding: .9375rem;
     overflow: auto;
 }
-.c1AccordionHead.-title:first-child { background-color: rgb(60, 60, 60); color: #fff; }
-.c1AccordionHead.-title:first-child::after { content: '\\e902'; }
+.-accordion.-title:first-child { background-color: rgb(60, 60, 60); color: #fff; }
+.-accordion.-title:first-child::after { content: '\\e902'; }
 .-hotspot {
     position: absolute;
     width: 1.25rem;
@@ -69,7 +69,7 @@ const editorCss = `
     text-shadow: 0 0 .625rem #000;
 }`;
 
-export class qgDbFileImageEditor extends c1ImageEditor {
+export class DbFileImageEditor extends ImageEditor {
     show(src, options = {}) {
         const eSrc = src.replace(/(dbFile\/[0-9]+\/).*/, '$1');
         const uniqueMatch = src.match(/\/(u-[^/]+\/)/);
@@ -109,21 +109,21 @@ export class qgDbFileImageEditor extends c1ImageEditor {
 
         // history
         this.el('.-tools').insertAdjacentHTML('beforeend',
-            '<div class="c1AccordionHead" tabindex="-1">Verlauf</div><div class="-history"></div>');
+            '<div class="-accordion" tabindex="-1">Verlauf</div><div class="-history"></div>');
         setTimeout(() => this.loadHistory(), 100);
 
         // accordion-style the title heads; the first one doubles as a close button
         let head = this.el('.-tools :first-child');
-        head.classList.add('c1AccordionHead');
+        head.classList.add('-accordion');
         head.onclick = () => this.hide();
         head = this.el('.-toolsCrop :first-child');
-        head.classList.add('c1AccordionHead');
+        head.classList.add('-accordion');
         head.onclick = () => this.cropper.hide();
 
         // meta
         this.meta = {};
         this.el('.-tools').insertAdjacentHTML('beforeend',
-            '<div class="c1AccordionHead" tabindex="-1">Meta-Daten</div>' +
+            '<div class="-accordion" tabindex="-1">Meta-Daten</div>' +
             '<div class="-meta"><input name="name" placeholder="Dateiname" style="width:100%"><br></div>');
         const saveName = c1.debounce(name => { this.meta.name = name; meta(this.file_id).put({ name }); }, 500);
         this.el('.-meta [name=name]').addEventListener('input', e => saveName(e.target.value));
@@ -171,7 +171,7 @@ export class qgDbFileImageEditor extends c1ImageEditor {
             const [jpeg, png] = await Promise.all([this.img.toBlob('image/jpeg', 1), this.img.toBlob('image/png', 1)]);
             blob = jpeg.size > png.size ? png : jpeg;
         }
-        qgfileUpload(blob, 'qgDbFileImageEditor', {
+        qgfileUpload(blob, 'editedImage', {
             url: ctx.appURL + '?file_id=' + this.file_id,
             complete: () => {
                 this.reloadElements();

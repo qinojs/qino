@@ -32,7 +32,7 @@ dialog.qgCMS::backdrop { background: rgba(0, 0, 0, .5); }
 `;
 
 // Base: a modal full-screen <dialog> living in an isolated shadow root.
-export class c1FullScreenPopup {
+export class FullScreenDialog {
     #host;
     #shadow;
     #dialog;

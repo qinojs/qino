@@ -75,7 +75,7 @@ export function init(app: App) {
     // Replace an existing image with the edited version (keeps the filename).
     app.on("action", async e => {
         const ctx = e.ctx as RequestContext;
-        const upload = ctx.files["qgDbFileImageEditor"];
+        const upload = ctx.files["editedImage"];
         if (!upload) return;
 
         const fileId = Number(ctx.get.file_id ?? "0");

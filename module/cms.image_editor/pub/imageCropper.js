@@ -33,7 +33,7 @@ class PointerObserver {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-export class c1ImageCropper extends EventTarget {
+export class ImageCropper extends EventTarget {
 
     get top()    { return this.position.top; }
     get left()   { return this.position.left; }
@@ -94,13 +94,13 @@ export class c1ImageCropper extends EventTarget {
         this.position = { top: 0, left: 0, height: 0, width: 0 };
 
         this.svg = document.createElementNS(SVG_NS, 'svg');
-        this.svg.classList.add('c1ImageCropper-Svg');
+        this.svg.classList.add('-cropper');
         this.svg.style.position = 'fixed';
         this.svg.style.overflow = 'visible';
         this.svg.innerHTML = `
             <style>
-                .c1ImageCropper-Svg .-nob { opacity: .6 }
-                .c1ImageCropper-Svg:hover .-nob { opacity: 1 }
+                .-cropper .-nob { opacity: .6 }
+                .-cropper:hover .-nob { opacity: 1 }
             </style>
             <defs>
                 <mask id="maskX">

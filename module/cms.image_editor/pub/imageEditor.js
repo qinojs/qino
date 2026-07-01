@@ -1,6 +1,6 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { c1FullScreenPopup } from './c1FullScreenPopup.js';
-import { c1ImageCropper } from './c1ImageCropper.js';
+import { FullScreenDialog } from './fullScreenDialog.js';
+import { ImageCropper } from './imageCropper.js';
 import { ImageCanvas } from './imageCanvas.js';
 
 const checkerboard =
@@ -8,12 +8,11 @@ const checkerboard =
     'background-image: linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%, #d8d8d8), linear-gradient(45deg, #d8d8d8 25%, transparent 25%, transparent 75%, #d8d8d8 75%, #d8d8d8); ' +
     'background-size:1.25rem 1.25rem; background-position:0 0, .625rem .625rem; ';
 
-export class c1ImageEditor extends c1FullScreenPopup {
+export class ImageEditor extends FullScreenDialog {
     minHeight = 0;
     minWidth = 0;
 
     show(src, options) {
-        this.options = options;
         this.init();
         const img = this.el('.-img');
         this.img = new ImageCanvas(this.el('.-canvas'));
@@ -41,7 +40,7 @@ export class c1ImageEditor extends c1FullScreenPopup {
     }
 
     #initCropper() {
-        this.cropper = new c1ImageCropper(this.el('.-canvas'), this.el());
+        this.cropper = new ImageCropper(this.el('.-canvas'), this.el());
         this.cropper.addEventListener('show', () => {
             this.el('.-tools').style.display = 'none';
             this.el('.-btns').style.display = 'none';
@@ -138,7 +137,7 @@ export class c1ImageEditor extends c1FullScreenPopup {
                         <button class="-rotate">90° drehen</button>
                         <button class="-crop">zuschneiden</button>
                         <button class="-upload">hochladen</button>
-                        <div class="c1AccordionHead" tabindex="-1">Einstellen</div>
+                        <div class="-accordion" tabindex="-1">Einstellen</div>
                         <div>
                             <div>Helligkeit</div>
                             <input class="-brightness" type="range" style="width:100%" min=".4" max="2" step="any" value="1">
