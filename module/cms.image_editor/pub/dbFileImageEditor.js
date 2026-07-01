@@ -131,6 +131,7 @@ export class DbFileImageEditor extends ImageEditor {
 
         // hotspot: click/tap the canvas to set the focus point
         this.el('.-canvas').addEventListener('pointerdown', e => {
+            if (e.button !== 0) return; // primary button only
             const rect = this.el('.-canvas').getBoundingClientRect();
             const hpos = ((e.clientX - rect.left) / rect.width) * 100;
             const vpos = ((e.clientY - rect.top) / rect.height) * 100;
@@ -163,6 +164,11 @@ export class DbFileImageEditor extends ImageEditor {
     handleEvent(e) {
         super.handleEvent(e);
         if (e.type === 'resize') this.renderHotspot();
+    }
+    // keep the hotspot aligned after crop/rotate resizes the canvas
+    resetCropper() {
+        super.resetCropper();
+        this.renderHotspot();
     }
     async upload(cb) {
         // transparency → PNG; otherwise the smaller of jpeg/png
