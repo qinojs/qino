@@ -9,6 +9,8 @@ export class Req {
   readonly method: string;
   /** Direct TCP peer address (from the runtime), the only unspoofable IP source. */
   readonly peerAddr: string;
+  /** performance.now() when the request entered the pipeline. */
+  readonly time: number = performance.now();
   readonly #url: URL;
   #json: Promise<unknown> | undefined;
   #form: Promise<FormData> | undefined;

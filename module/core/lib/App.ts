@@ -26,11 +26,13 @@ const defaultConfig = {
 
 /** Core events; modules add their own via `declare module "../core/lib/App.ts" { interface AppEvents {...} }`. */
 export interface AppEvents {
+    "init": { app: App };
     "request-start": { req: Req };
     "action": { ctx: RequestContext };
     "render": { ctx: RequestContext };
     "html-ready": { ctx: RequestContext };
     "respond": { ctx: RequestContext };
+    "response-ready": { ctx: RequestContext; res: Response };
     [name: string]: Record<string, unknown>; // untyped module events stay allowed
 }
 
@@ -116,11 +118,21 @@ export class App {
     }
 
     async #run(ctx: RequestContext): Promise<Response> {
-        const t0 = performance.now();
+        try {
+            const res = await this.#dispatch(ctx);
+            await this.fire("response-ready", { ctx, res }); // last hook, sees every response (static, dbFile, api, pages)
+            return res;
+        } finally {
+            await ctx.cleanup();
+            console.log(`${ctx.req.method} ${ctx.req.path} ${(performance.now() - ctx.req.time).toFixed(1)}ms`);
+        }
+    }
+
+    async #dispatch(ctx: RequestContext): Promise<Response> {
         try {
             // static files skip the session/settings/log pipeline (switch: the commented call in #route)
             const localPath = ctx.urlToLocalPath(ctx.req.url);
-            if (localPath) return serveFile(ctx.req.raw, localPath);
+            if (localPath) return await serveFile(ctx.req.raw, localPath);
 
             await initRequest(ctx);
             this.sessions.setCookieIfNew(ctx);
@@ -129,9 +141,6 @@ export class App {
         } catch (e: unknown) {
             this.#handleError(ctx, e);
             return await this.#buildResponse(ctx);
-        } finally {
-            await ctx.cleanup();
-            console.log(`${ctx.req.method} ${ctx.req.path} ${(performance.now() - t0).toFixed(1)}ms`);
         }
     }
 
