@@ -12,11 +12,14 @@ customElements.whenDefined("qino-cms").then(async () => {
           .cmsChatWrapper {
             position:fixed;
             bottom:2rem;
-            left:3rem;
+            left:5rem;
+            right:5rem;
+            max-width:50rem;
+            margin:auto;
             z-index:9000;
             background:var(--color-bg);
             color:var(--color-text);
-            box-shadow:0 0 1rem rgba(0,0,0,.3);
+            box-shadow: var(--shadow);
             font-size:12px;
             display:flex;
             flex-direction:column;
@@ -24,6 +27,7 @@ customElements.whenDefined("qino-cms").then(async () => {
           }
           .cmsChatWrapper ai-chat {
             height:100%;
+            min-height:0;
           }
         </style>
         <div u2-movable class="cmsChatWrapper qgCMS">

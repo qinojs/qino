@@ -1,6 +1,7 @@
 c1.loading = {
 	mark(el, opt) {
-		if (!el.length) return c1.loading._markElement(el, opt);
+		if (!el) return ()=>{};
+		if (el.nodeType) return c1.loading._markElement(el, opt);
 		const dones = Array.from(el, el=>c1.loading._markElement(el, opt))
 		return ()=>{ for (const done of dones) done(); }
 	},
