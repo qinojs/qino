@@ -35,23 +35,24 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 export class ImageCropper extends EventTarget {
 
-    get top()    { return this.position.top; }
-    get left()   { return this.position.left; }
-    get height() { return this.position.height; }
-    get width()  { return this.position.width; }
     get right()  { return this.svg.getBoundingClientRect().width  - (this.position.left + this.position.width); }
     get bottom() { return this.svg.getBoundingClientRect().height - (this.position.top  + this.position.height); }
 
+    get top()    { return this.position.top; }
     set top(value) {
         const { height } = this.svg.getBoundingClientRect();
         this.position.top = Math.max(0, Math.min(height - this.position.height, value));
         this.#drawArea();
     }
+
+    get left()   { return this.position.left; }
     set left(value) {
         const { width } = this.svg.getBoundingClientRect();
         this.position.left = Math.max(0, Math.min(width - this.position.width, value));
         this.#drawArea();
     }
+
+    get height() { return this.position.height; }
     set height(value) {
         const { height } = this.svg.getBoundingClientRect();
         value = Math.max(value, this.minHeight || 60);
@@ -60,6 +61,8 @@ export class ImageCropper extends EventTarget {
         this.position.height = value;
         this.#drawArea();
     }
+
+    get width()  { return this.position.width; }
     set width(value) {
         const { width } = this.svg.getBoundingClientRect();
         value = Math.max(value, this.minWidth || 60);
