@@ -31,14 +31,14 @@ globalThis.cmsTreeInit = async (json) => {
   // CMS JSON -> <u2-tree>; CMS fields in node.data, `type` -> `ptype`.
   function makeNode(n) {
     const el = document.createElement("u2-tree");
-    el.data = { ...n, key: String(n.key), ptype: n.type };
-    el.dataset.key = String(n.key);
+    el.data = { ...n, id: String(n.id), ptype: n.type };
+    el.dataset.id = String(n.id);
     if (n.myaccess >= 2) el.draggable = true;
     renderNode(el);
     if (n.children?.length) {
       for (const c of n.children) el.append(makeNode(c));
       el.setAttribute("aria-expanded", "true");
-    } else if (n.isLazy) {
+    } else if (n.numChildren) {
       el.setAttribute("aria-live", "off"); // lazy marker -> keeps the arrow
       el.setAttribute("aria-expanded", "false");
     }
@@ -74,7 +74,7 @@ globalThis.cmsTreeInit = async (json) => {
     cms.Tree?.onActivate?.(node);
     const inp = root.getElementById("page-add"), off = node.data.myaccess < 2 || node.data.ptype === "c";
     if (inp) { inp.disabled = off; inp.style.opacity = off ? 0.2 : 1; }
-    const el = document.querySelector('[qcms-id="' + node.dataset.key + '"]');
+    const el = document.querySelector('[qcms-id="' + node.dataset.id + '"]');
     el && cms.contPos(el).mark();
   }
 
@@ -96,7 +96,7 @@ globalThis.cmsTreeInit = async (json) => {
   const hover = (e) => { // tree row -> highlight the content block on the page
     const node = nodeOf(e);
     if (!node) return;
-    const el = document.querySelector('[qcms-id="' + node.dataset.key + '"]');
+    const el = document.querySelector('[qcms-id="' + node.dataset.id + '"]');
     if (!el) return;
     if (e.type === "mouseover") cms.contPos.active?.el !== el && cms.contPos(el).mark();
     else cms.contPos(el).unmark();
@@ -111,7 +111,7 @@ globalThis.cmsTreeInit = async (json) => {
     else if (e.key === "Delete" && !e.ctrlKey) {
       if (node.data.myaccess < 3) return;
       if (!await cms.dialogs.confirm(t`Really delete page "${node.data.title}"?`)) return;
-      apt.cms.node(node.dataset.key).delete();
+      apt.cms.node(node.dataset.id).delete();
     } else if (e.key === "F2") editNode(node);
     else return;
     e.preventDefault();
@@ -120,7 +120,7 @@ globalThis.cmsTreeInit = async (json) => {
   // Lazy load (u2 provides e.load only on aria-live nodes).
   rootNode.addEventListener("u2-tree-expand", (e) => {
     e.load?.((n) =>
-      apt.cms.node(n.dataset.key).tree.get({ level: 1, filter: showContents() ? "*" : "p" })
+      apt.cms.node(n.dataset.id).tree.get({ level: 1, filter: showContents() ? "*" : "p" })
         .then((children) => { for (const c of children) n.append(makeNode(c)); }));
   });
 
@@ -134,9 +134,9 @@ globalThis.cmsTreeInit = async (json) => {
   rootNode.addEventListener("u2-tree-drop", (e) => { // server-first: PUT first, move after success
     e.preventDefault();
     const target = e.target, { source, parent, next, region } = e.detail;
-    const parentKey = region === "into" ? target.dataset.key : parent.dataset.key;
-    apt.cms.node(parentKey)["insert-before"]
-      .put({ id: source.dataset.key, before: next?.dataset.key })
+    const parentId = region === "into" ? target.dataset.id : parent.dataset.id;
+    apt.cms.node(parentId)["insert-before"]
+      .put({ id: source.dataset.id, before: next?.dataset.id })
       .then(() => {
         parent.insertBefore(source, next);
         region === "into" && target.toggleExpand?.(true);
@@ -164,9 +164,9 @@ globalThis.cmsTreeInit = async (json) => {
     input.addEventListener("blur", () => finish(true));
   }
 
-  // Reload lazy branches (root without key -> full reload via goTo).
+  // Reload lazy branches (root without id -> full reload via goTo).
   function reloadChildren(node, cb) {
-    if (!node.dataset.key) return goTo(activeNode?.dataset.key ?? (cms.cont.active || Page)).then(() => cb?.());
+    if (!node.dataset.id) return goTo(activeNode?.dataset.id ?? (cms.cont.active || Page)).then(() => cb?.());
     for (const c of [...node.querySelectorAll(":scope > u2-tree")]) c.remove();
     node.setAttribute("aria-live", "off");
     node.removeAttribute("aria-busy");
@@ -178,7 +178,7 @@ globalThis.cmsTreeInit = async (json) => {
   function addPage(name) {
     const parent = activeNode;
     if (!parent) return;
-    apt.cms.node(parent.dataset.key).children.post({ title: name }).then((child) => {
+    apt.cms.node(parent.dataset.id).children.post({ title: name }).then((child) => {
       if (!child) return;
       const node = makeNode(child);
       parent.insertBefore(node, parent.querySelector(":scope > u2-tree"));
@@ -194,14 +194,14 @@ globalThis.cmsTreeInit = async (json) => {
     return apt.cms.tree.get({ in: pid, filter: showContents() ? "*" : "p" }).then((json) => {
       rootNode.replaceChildren();
       for (const n of json) rootNode.append(makeNode(n));
-      activate(cms.Tree.getNodeByKey(pid));
+      activate(cms.Tree.getNodeById(pid));
     });
   }
 
   cms.Tree = {
     onActivate: null, // set by panel.mjs
     get activeNode() { return activeNode; },
-    getNodeByKey: (k) => treeEl.querySelector(`u2-tree[data-key="${k}"]`),
+    getNodeById: (id) => treeEl.querySelector(`u2-tree[data-id="${id}"]`),
     activate, // ignores null/root itself
     parent: (n) => asTree(n.parentNode),
     neighbor: (n) => n.prev() || n.next() || asTree(n.parentNode), // u2 prev/next are slot-aware
@@ -213,17 +213,17 @@ globalThis.cmsTreeInit = async (json) => {
   };
   for (const n of json) rootNode.append(makeNode(n));
   treeEl.append(rootNode);
-  activate(cms.Tree.getNodeByKey(String(cms.cont.active || Page)));
+  activate(cms.Tree.getNodeById(String(cms.cont.active || Page)));
 };
 
 /* Live updates via the cms.Tree facade */
-const onNode = (route, fn) => apt.on(route, (ctx) => { const n = cms.Tree?.getNodeByKey(ctx.params.id); n && fn(n, ctx); });
+const onNode = (route, fn) => apt.on(route, (ctx) => { const n = cms.Tree?.getNodeById(ctx.params.id); n && fn(n, ctx); });
 onNode("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:id/access", (node) => {
-  apt.cms.node(node.dataset.key).get().then((data) => {
-    const { key, title, isLazy, type, ...rest } = data;
-    Object.assign(node.data, rest, { ptype: type, key: String(key), title });
+  apt.cms.node(node.dataset.id).get().then((data) => {
+    const { id, title, numChildren, type, ...rest } = data;
+    Object.assign(node.data, rest, { ptype: type, id: String(id), title });
     cms.Tree.update(node);
-    if (isLazy) cms.Tree.reloadChildren(node, () => cms.Tree.activate(node));
+    if (numChildren) cms.Tree.reloadChildren(node, () => cms.Tree.activate(node));
   });
 });
 onNode("PUT cms/node/:id/visible", (node, { input }) => { node.data.visible = input?.value; cms.Tree.update(node); });
@@ -233,8 +233,8 @@ onNode("DELETE cms/node/:id", (node) => {
 });
 apt.on("PUT cms/node/:id/insert-before", ({ params: { id }, input }) => {
   // re-attach precisely instead of goTo: reflects own + foreign moves
-  const node = cms.Tree?.getNodeByKey(input?.id);
-  const parent = cms.Tree?.getNodeByKey(id);
+  const node = cms.Tree?.getNodeById(input?.id);
+  const parent = cms.Tree?.getNodeById(id);
   if (!node || !parent) return;
-  parent.insertBefore(node, input?.before ? cms.Tree.getNodeByKey(input.before) : null);
+  parent.insertBefore(node, input?.before ? cms.Tree.getNodeById(input.before) : null);
 });

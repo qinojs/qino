@@ -9,18 +9,18 @@ export async function nodeToJson(nid: any, type = "*"): Promise<any> {
     const titleObj = await Page.title();
     const titleStr = String(await titleObj.string() ?? "").trim();
     return {
-        title:    (await Page.access()) ? (titleStr || "-") : "(no access)",
-        title_id: titleObj.id,
-        isLazy:   (await Page.children({ type }))?.size ?? 0,
-        key:      Number(Page.id),
-        url:      await Page.url(),
-        myaccess: await Page.access(),
-        visible:  Number(Page.vs?.["visible"] ?? 0),
-        online:   (await Page.isOnline()) ? 1 : 0,
-        public:   (await Page.isPublic()) ? 1 : 0,
-        type:     Page.vs.type,
-        module:   Page.vs.module,
-        name:     String(Page.vs.name ?? ""),
+        id:          Number(Page.id),
+        title:       (await Page.access()) ? (titleStr || "-") : "(no access)",
+        title_id:    titleObj.id,
+        numChildren: (await Page.children({ type }))?.size ?? 0,
+        url:         await Page.url(),
+        myaccess:    await Page.access(),
+        visible:     Number(Page.vs?.["visible"] ?? 0),
+        online:      (await Page.isOnline()) ? 1 : 0,
+        public:      (await Page.isPublic()) ? 1 : 0,
+        type:        Page.vs.type,
+        module:      Page.vs.module,
+        name:        String(Page.vs.name ?? ""),
     };
 }
 

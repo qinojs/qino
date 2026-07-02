@@ -83,7 +83,7 @@ TreeMenu.addItem(t`Settings`, {
 	selector: '#tree .-title',
 	onshow(e) {
 		const node = e.currentTarget.closest('u2-tree');
-		this.lastPid = node.dataset.key;
+		this.lastPid = node.dataset.id;
 		this.disabled = node.data.myaccess < 2;
 		cms.Tree.activate(node);
 	},
@@ -97,11 +97,11 @@ TreeMenu.addItem(t`Rename`, {
 	selector:'#tree .-title',
 	onshow(e) {
 		const node = e.currentTarget.closest('u2-tree');
-		this.lastPid = node.dataset.key;
+		this.lastPid = node.dataset.id;
 		this.disabled = node.data.myaccess < 2;
 	},
 	onclick() {
-		const node = cms.Tree.getNodeByKey(this.lastPid);
+		const node = cms.Tree.getNodeById(this.lastPid);
 		cms.Tree.editNode(node);
 	}
 });
@@ -110,21 +110,21 @@ TreeMenu.addItem(t`Copy`, {
 	selector:'#tree .-title',
 	onshow(e) {
 		const node = e.currentTarget.closest('u2-tree');
-		this.lastPid = node.dataset.key;
+		this.lastPid = node.dataset.id;
 		this.disabled = node.data.myaccess < 2;
 	},
 	onclick() {
-		const node = cms.Tree.getNodeByKey(this.lastPid);
+		const node = cms.Tree.getNodeById(this.lastPid);
 		cms.frontend2.dialog(t`Copy page "${node.data.title}"?`,'',[
 			{
 				title:t`Copy page`,then(){
-					apt.cms.node(node.data.key).copy.post().then(() => {
+					apt.cms.node(node.data.id).copy.post().then(() => {
 						cms.Tree.reloadChildren(cms.Tree.parent(node));
 					});
 				}
 			},{
 				title:t`including subpages`,then(){
-					apt.cms.node(node.data.key).copy.post({ deep: true }).then(() => {
+					apt.cms.node(node.data.id).copy.post({ deep: true }).then(() => {
 						cms.Tree.reloadChildren(cms.Tree.parent(node));
 					});
 				}
@@ -139,15 +139,15 @@ TreeMenu.addItem(t`Delete`, {
 	selector: '#tree .-title',
 	onshow(e) {
 		const node = e.currentTarget.closest('u2-tree');
-		this.lastPid = node.dataset.key;
+		this.lastPid = node.dataset.id;
 		this.disabled = node.data.myaccess < 2;
 		t`Really delete page "${''}"?` // preload translation
 	},
 	async onclick() {
-		const n = cms.Tree.getNodeByKey(this.lastPid);
+		const n = cms.Tree.getNodeById(this.lastPid);
 		if (!await cms.dialogs.confirm(t`Really delete page "${n.data.title}"?`)) return;
-		apt.cms.node(n.data.key).delete().then(ret => {
-			if (ret.parent_id && n.data.key==Page) {
+		apt.cms.node(n.data.id).delete().then(ret => {
+			if (ret.parent_id && n.data.id==Page) {
 				location.href = "?cmspid="+ret.parent_id;
 			} else {
 				const s = cms.Tree.neighbor(n);
