@@ -100,7 +100,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     import(spec: string): Promise<Module> { return this.modules.import(spec); }
-    importAll(path: string): Promise<void> { return this.modules.importAll(path); }
+    importAll(dir: string): Promise<void> { return this.modules.importAll(dir); }
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {

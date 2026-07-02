@@ -83,8 +83,8 @@ export class ModuleManager {
     return mod;
   }
 
-  async importAll(path: string): Promise<void> {
-    const base = (path.startsWith("file:") ? fromFileUrl(path) : path).replace(/\/?$/, "/");
+  async importAll(dir: string): Promise<void> {
+    const base = (dir.startsWith("file:") ? fromFileUrl(dir) : dir).replace(/\/?$/, "/");
     const entries: string[] = [];
     for await (const entry of Deno.readDir(base)) {
       if (!entry.name.startsWith(".") && entry.isDirectory) entries.push(entry.name);

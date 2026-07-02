@@ -86,8 +86,8 @@ async function fetchAndCache(url: string, filePath: string, cacheDir: string, me
   serveResponse(mediaType, data);
 }
 
-type Sources = Record<string, true>;
-const origins = (s: Sources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
+type CspSources = Record<string, true>;
+const origins = (s: CspSources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...set].map(fn));
 
 function hasPrefix(values: Iterable<string>, url: string): boolean {
@@ -145,7 +145,7 @@ export function init(app: App): void {
 // (per directive: script-src gates scripts, style-src gates styles). Fonts/images
 // referenced relatively inside a proxied CSS cascade through the proxy on their own.
 export function rewriteHtml(html: HtmlBuilder, appURL: string, csp: Csp): void {
-  const rewriter = (src: Sources) => {
+  const rewriter = (src: CspSources) => {
     const allow = origins(src);
     return (url: string): string =>
       /^https?:\/\//.test(url) && !/[?#]/.test(url) && allow.some(p => url.startsWith(p))
@@ -162,7 +162,7 @@ export function rewriteHtml(html: HtmlBuilder, appURL: string, csp: Csp): void {
   stripDead(csp["style-src"], html.styles);
 }
 
-function stripDead(src: Sources, ...refs: Iterable<string>[]): void {
+function stripDead(src: CspSources, ...refs: Iterable<string>[]): void {
   const urls = refs.map(ref => [...ref]);
   for (const o of origins(src)) if (!urls.some(ref => hasValueWithPrefix(ref, o))) delete src[o];
 }
