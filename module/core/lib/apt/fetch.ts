@@ -26,7 +26,7 @@ export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptF
   const isBodyMethod = BODY_METHODS.has(method);
   if (isBodyMethod) {
     if (!isJsonRequest(req)) throw new Output({ error: "Unsupported Media Type" }, { status: 415 });
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => { throw new Output({ error: "Invalid JSON" }, { status: 400 }); });
     if (body && typeof body === "object") Object.assign(input, body);
   }
   for (const [key, vals] of Object.entries(req.queries())) {

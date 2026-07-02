@@ -243,9 +243,10 @@ async function deleteUnlinkedFs(node: Node) {
   for await (const e of Deno.readDir(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;
     const path = fm.directory + e.name;
-    size += (await Deno.stat(path).catch(()=>null))?.size ?? 0;
-    await Deno.remove(path).catch(()=>{});
+    const fileSize = (await Deno.stat(path).catch(()=>null))?.size ?? 0;
+    if (!await Deno.remove(path).then(()=>true, ()=>false)) continue;
     deleted++;
+    size += fileSize;
   }
   return { deleted, size };
 }

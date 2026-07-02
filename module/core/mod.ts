@@ -47,4 +47,4 @@ export { isMagickAvailable, magick, magickIdentify } from "./lib/transform/image
 
 // Server helpers used by modules
 export { HtmlBuilder } from "./lib/HtmlBuilder.ts";
-export { assertNoSSRF } from "./lib/fileStream.ts";
+export { assertNoSSRF, safeFetch } from "./lib/fileStream.ts";

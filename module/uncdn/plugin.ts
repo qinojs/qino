@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { Output, assertNoSSRF, type App, type RequestContext, type HtmlBuilder, type Csp } from "../core/mod.ts";
+import { Output, safeFetch, type App, type RequestContext, type HtmlBuilder, type Csp } from "../core/mod.ts";
 import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
 
 export const name = "uncdn";
@@ -79,8 +79,7 @@ async function serveCached(filePath: string, mediaType: string): Promise<void> {
 }
 
 async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: RequestContext): Promise<void> {
-  await assertNoSSRF(url); // blocks hosts resolving to private/internal IPs
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const res = await safeFetch(url, { signal: AbortSignal.timeout(15000) }); // SSRF-guarded, re-checked after redirects
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   if (Number(res.headers.get("content-length") ?? 0) > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
   const data = new Uint8Array(await res.arrayBuffer());

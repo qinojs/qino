@@ -236,7 +236,7 @@ export class DbFile extends File {
     const md5 = await F.md5();
     this.path = this.#manager.directory + md5;
     await nodeFs.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-    await F.copyTo(this.path);
+    if (!await F.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
 
     await this.setVs({ name: F.basename(), mime: F.mime, text: await F.getText(), md5, size: await this.size() });
   }

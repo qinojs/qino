@@ -69,7 +69,10 @@ export class ModuleManager {
     const name = plugin.name;
     if (typeof name !== "string" || !name) throw new Error(`Plugin has no exported name: ${url}`);
     const existing = this.#modules[name];
-    if (existing) return existing;
+    if (existing) {
+      if (existing.url !== url) throw new Error(`Duplicate module name "${name}": ${existing.url} vs ${url}`);
+      return existing;
+    }
 
     if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
 

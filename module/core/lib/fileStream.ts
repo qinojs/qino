@@ -87,13 +87,13 @@ export async function assertNoSSRF(url: string) {
   }
 }
 
-export async function safeFetch(url: string, maxRedirects = 5): Promise<Response> {
+export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 5): Promise<Response> {
   await assertNoSSRF(url);
-  const resp = await fetch(url, { redirect: "manual" });
+  const resp = await fetch(url, { ...init, redirect: "manual" });
   if (resp.status >= 300 && resp.status < 400) {
     const location = resp.headers.get("location");
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");
-    return safeFetch(new URL(location, url).toString(), maxRedirects - 1);
+    return safeFetch(new URL(location, url).toString(), init, maxRedirects - 1);
   }
   return resp;
 }
