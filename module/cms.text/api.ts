@@ -190,7 +190,7 @@ class CmsTextService {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const space = 0; // cms_vers::$space — cms.versions not ported yet
-        return this.ctx.app.db.all`
+        return this.ctx.app.db.query`
             SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email
             FROM
              _vers_text text
@@ -210,7 +210,7 @@ class CmsTextService {
         const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number).filter(Number.isFinite);
         if (!ids.length) return Array.isArray(txt_ids) ? {} : false;
         lang ??= this.ctx.lang;
-        const rows = await this.ctx.app.db.all`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
+        const rows = await this.ctx.app.db.query`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
         const map: Record<number, boolean> = {};
         for (const row of rows) map[row.id] = !!(row.text && row.text !== "");
         if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;

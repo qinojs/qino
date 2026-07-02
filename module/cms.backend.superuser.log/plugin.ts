@@ -91,7 +91,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?
     }
   }
 
-  const rows = await db.all`
+  const rows = await db.query`
     SELECT log.id, log.client_id, log.sess_id, log.time, log.post,
             ip.ip AS ip, url.url AS url, referer.url AS referer,
             usr.id AS usr_id, usr.email, usr.firstname, usr.lastname, ua.user_agent
@@ -287,7 +287,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   // relations: rows in other tables referencing this log entry
   let relations = "";
   for (const { table, col } of logRefColumns(db)) {
-    const refRows = await db.all`SELECT * FROM ${sql.id(table)} WHERE ${sql.id(col)} = ${id}`.catch(() => []);
+    const refRows = await db.query`SELECT * FROM ${sql.id(table)} WHERE ${sql.id(col)} = ${id}`.catch(() => []);
     if (refRows.length) relations += `<tr><td>${hee(table)}<td>${hee(col)}<td><div style="max-width:50rem; max-height:30rem; overflow:auto">${dump(refRows)}</div>`;
   }
 
@@ -300,7 +300,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   let historyRows = "";
   if (hWhere) {
-    const logs = await db.all`
+    const logs = await db.query`
       SELECT log.id, log.time, log.post, url.url AS url, referer.url AS referer
        FROM log
           LEFT JOIN log_url url     ON log.url_id     = url.id

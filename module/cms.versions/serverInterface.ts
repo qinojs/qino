@@ -152,7 +152,7 @@ async function versProtocolForNode(ctx: any, pid: number): Promise<any[]> {
 
 async function versProtocol(ctx: any, table: string, where: string): Promise<any[]> {
     if (!versedTables(ctx.app.db)[table]) return [];
-    const rows = await ctx.app.db.all`
+    const rows = await ctx.app.db.query`
         SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.email
         FROM ${sql.id("_vers_" + table)} t
         LEFT JOIN log l ON t._vers_log = l.id

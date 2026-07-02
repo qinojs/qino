@@ -104,7 +104,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   const total  = Number(await db.one`SELECT count(*) FROM usr`);
   const active = Number(await db.one`SELECT count(*) FROM usr WHERE active = 1`);
 
-  const logins = await db.all`
+  const logins = await db.query`
     SELECT usr.email, sess.access
      FROM sess
      LEFT JOIN usr ON sess.usr_id = usr.id
@@ -156,7 +156,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
             <input type=hidden name=superuser value=0>
             <input type=checkbox name=superuser value=1 ${vs.superuser ? "checked" : ""}>` : "";
 
-  const grpRows = await db.all`SELECT grp.*, usr_grp.usr_id as has FROM grp LEFT JOIN usr_grp ON grp.id = usr_grp.grp_id AND usr_grp.usr_id = ${id} ORDER BY grp.name`;
+  const grpRows = await db.query`SELECT grp.*, usr_grp.usr_id as has FROM grp LEFT JOIN usr_grp ON grp.id = usr_grp.grp_id AND usr_grp.usr_id = ${id} ORDER BY grp.name`;
 
   let grpHtml = "";
   for (const g of grpRows) {

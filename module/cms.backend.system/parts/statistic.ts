@@ -6,7 +6,7 @@ type DbTableStat = { name: string; bytes: number };
 export async function dbTableStats(db: Db): Promise<DbTableStat[]> {
   if (db.dialect === "postgres") return pgTableStats(db);
   if (db.dialect === "sqlite") return sqliteTableStats(db);
-  const rows = await db.all`SHOW TABLE STATUS`;
+  const rows = await db.query`SHOW TABLE STATUS`;
   return rows.map((r) => ({
     name: String(r.Name ?? ""),
     bytes: Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0),
@@ -14,7 +14,7 @@ export async function dbTableStats(db: Db): Promise<DbTableStat[]> {
 }
 
 async function pgTableStats(db: Db): Promise<DbTableStat[]> {
-  const rows = await db.all`
+  const rows = await db.query`
     SELECT c.relname AS name, pg_total_relation_size(c.oid) AS bytes
     FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace

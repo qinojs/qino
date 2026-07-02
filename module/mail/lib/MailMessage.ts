@@ -215,14 +215,14 @@ export class MailMessage {
   async loadParts(): Promise<this> {
     if (!this.id || this.#loaded) return this;
     const memoryAttachments = this.attachments.filter(v => typeof v !== "string" && !v.path);
-    const rows = await this.manager.app.db.all`SELECT * FROM mail_recipient WHERE mail_id = ${this.id} ORDER BY email`;
+    const rows = await this.manager.app.db.query`SELECT * FROM mail_recipient WHERE mail_id = ${this.id} ORDER BY email`;
     this.to = []; this.cc = []; this.bcc = [];
     for (const row of rows) {
       const r = { address: row.email, name: row.name || undefined, data: jsonDecode(row.data, {}), mail1_track_id: Number(row.mail1_track_id) || undefined };
       const type: RecipientType = row.type === "cc" || row.type === "bcc" ? row.type : "to";
       if (type !== "to" || !row.sent) this[type] = [...listOf(this[type]), r];
     }
-    const attachments = await this.manager.app.db.all`SELECT * FROM mail_attachment WHERE mail_id = ${this.id}`;
+    const attachments = await this.manager.app.db.query`SELECT * FROM mail_attachment WHERE mail_id = ${this.id}`;
     this.attachments = [...attachments.map(row => ({
       path: row.path, name: row.name, type: row.type, contentId: row.hash, inline: !!row.inline,
     })), ...memoryAttachments];

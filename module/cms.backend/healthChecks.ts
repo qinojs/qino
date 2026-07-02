@@ -31,7 +31,7 @@ export const healthChecks = {
 
     /** All page nodes whose module is part of the backend. */
     async function backendPages(app: any): Promise<Record<string, any>> {
-      const rows = await db.all`SELECT id FROM page WHERE module LIKE 'cms.backend%' OR module = 'cms.layout.backend'`;
+      const rows = await db.query`SELECT id FROM page WHERE module LIKE 'cms.backend%' OR module = 'cms.layout.backend'`;
       const ret: Record<string, any> = {};
       for (const row of rows) ret[row.id] = await app.cms.node(Number(row.id));
       return ret;

@@ -51,7 +51,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const order    = get.order ?? "max_id";
     const orderSql = order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
 
-    const rows = await db.all`
+    const rows = await db.query`
         SELECT e.*,
             g.num,
             g.num_ip,
@@ -176,7 +176,7 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
     const where = db.table("m_error_report").valuesToFragment({ source: get.source, file: get.file, line: get.line, col: get.col });
     if (!where.parts.length) return `<div>${await node.app.t`Invalid parameters`}</div>`;
 
-    const rows = await db.all`
+    const rows = await db.query`
         SELECT e.*, usr.email
          FROM m_error_report e
             LEFT JOIN log  ON e.log_id   = log.id
@@ -263,7 +263,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
     let historyRows = "";
     if (historyWhere) {
-        const logs = await db.all`
+        const logs = await db.query`
             SELECT log.*, url.url, referer.url AS referer
              FROM log
                 LEFT JOIN log_url url     ON log.url_id     = url.id
@@ -273,7 +273,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
         const eu = ctx.url; eu.searchParams.delete("history_of");
         for (const item of logs) {
-            const errorItems = await db.all`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
+            const errorItems = await db.query`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
             let errorLinks = "";
             for (const eItem of errorItems) {
                 const active = eItem.id === error.id ? "&#x25B6;&#xFE0E;" : "";
@@ -360,7 +360,7 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
 
 export async function backendDashboardWidget(app: App): Promise<string> {
 	  const db = app.db;
-	  const rows = await db.all`
+	  const rows = await db.query`
 	    SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
 	     FROM (
 	        SELECT prio, source, file, line, col, max(id) AS max_id, count(*) AS num

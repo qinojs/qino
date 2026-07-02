@@ -78,7 +78,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars
     else cond = sql` AND f.name LIKE ${"%" + s + "%"}`;
   }
 
-  const rows = await db.all`
+  const rows = await db.query`
     SELECT f.*,log_i.time AS init_time,log_e.time AS edit_time,ui.email AS usr_init_email,ue.email AS usr_edit_email${relSubs}
     FROM file f
       LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
@@ -182,11 +182,11 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const exists = await f.exists();
 
   const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: DbField) => {
-    const rows = await db.all`SELECT * FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)}=${id}`;
+    const rows = await db.query`SELECT * FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)}=${id}`;
     return rows.map((lr) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
   }))).join("") || "<div class=-body>none</div>";
 
-  const dupes = await db.all`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
+  const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.url;
 
   const preview = exists ? await mediaView(f) : "";
@@ -238,7 +238,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
 async function deleteUnlinkedFs(node: Node) {
   const { db, dbFiles: fm } = node.app;
-  const dbMd5s = new Set((await db.all`SELECT md5 FROM file WHERE md5 IS NOT NULL`).map((r) => r.md5));
+  const dbMd5s = new Set((await db.query`SELECT md5 FROM file WHERE md5 IS NOT NULL`).map((r) => r.md5));
   let deleted = 0, size = 0;
   for await (const e of Deno.readDir(fm.directory)) {
     if (e.name.length < 32 || e.name[0] === "." || dbMd5s.has(e.name)) continue;
@@ -255,7 +255,7 @@ async function deleteUnlinkedDb(app: App) {
   const ago = unixTime() - 60 * 60 * 24 * 7;
   const notLinked = db.table("file").children.map((F: DbField) =>
     sql`file.id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`);
-  const rows = await db.all`SELECT file.id FROM file
+  const rows = await db.query`SELECT file.id FROM file
     LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id
     WHERE (log_i.id IS NULL OR log_i.time<${ago}) AND (log_e.id IS NULL OR log_e.time<${ago})${notLinked.length ? sql` AND ${sql.join(notLinked, " AND ")}` : sql.raw("")}`;
   let deleted = 0;

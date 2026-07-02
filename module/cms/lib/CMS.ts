@@ -31,7 +31,7 @@ export class CMS {
 
     async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
         const ret: Record<string, Node> = {};
-        const rows = await this.db.all`SELECT * FROM ${sql.id(tableRef("page"))} WHERE module = ${moduleName}`;
+        const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE module = ${moduleName}`;
         for (const vs of rows) {
             ret[vs.id] = await this.node(vs.id, vs);
         }
@@ -40,7 +40,7 @@ export class CMS {
 
     // async nodesByName(name: string): Promise<Record<string, Node>> {
     //     const ret: Record<string, Node> = {};
-    //     const rows = await this.db.all`SELECT * FROM ${sql.id(tableRef("page"))} WHERE type = 'p' AND name = ${name}`;
+    //     const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE type = 'p' AND name = ${name}`;
     //     for (const vs of rows) {
     //         ret[vs.id] = await this.node(vs.id, vs);
     //     }

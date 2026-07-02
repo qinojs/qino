@@ -24,7 +24,7 @@ class SettingItem extends Item<SettingItem> {
 
     // fetch children
     const id = this.data?.id ?? 0;
-    const rows = await this.root.db.all`SELECT * FROM qg_setting WHERE basis = ${id} ORDER BY ${sql.id("offset")}`;
+    const rows = await this.root.db.query`SELECT * FROM qg_setting WHERE basis = ${id} ORDER BY ${sql.id("offset")}`;
     for (const data of rows) {
       const sub = this.item(data.offset);
       sub.data = data;

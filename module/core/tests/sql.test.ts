@@ -22,7 +22,7 @@ Deno.test("sql`` tag renders and runs (sqlite)", async () => {
 
   // sql.id (dynamic identifier) + sql.join (IN-list) + fragment composition
   const col = "name", ids = [1, 2];
-  const rows = await db.all(
+  const rows = await db.query(
     sql`SELECT ${sql.id(col)} FROM t WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) ORDER BY id`,
   );
   assertEquals(rows.map((r) => r.name), ["a", "b"]);

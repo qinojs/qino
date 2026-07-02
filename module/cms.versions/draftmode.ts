@@ -193,8 +193,8 @@ export function initDraftmode(app: App) {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log || Page.Children !== null) return;
     //     const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
-    //     const rows1 = await ctx.app.db.all`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
-    //     const rows2 = await ctx.app.db.all`SELECT * FROM page WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
+    //     const rows1 = await ctx.app.db.query`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
+    //     const rows2 = await ctx.app.db.query`SELECT * FROM page WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
     //     Page.Children = new Map();
     //     for (const row of [...rows1, ...rows2]) {
     //         if (Page.Children.has(row.id)) continue;

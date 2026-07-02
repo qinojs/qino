@@ -133,7 +133,7 @@ export class LangManager {
     // Export all non-empty translations, grouped by namespace and language: { ns: { lang: { original: txt } } }
     async export(): Promise<Record<string, Record<string, Record<string, string>>>> {
         const langs = this.#langs;
-        const rows = await this.#app.db.all`SELECT namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext ORDER BY original`;
+        const rows = await this.#app.db.query`SELECT namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext ORDER BY original`;
         const out: Record<string, Record<string, Record<string, string>>> = {};
         for (const row of rows) {
             for (const l of langs) {

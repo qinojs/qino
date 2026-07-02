@@ -27,7 +27,7 @@ export const api: AptTree = {
           const db = ctx.app.db;
           const session = await db.row`SELECT * FROM ai_session WHERE id = ${id}`;
           if (!session || Number(session.user_id) !== ctx.userId) throw new NotFoundError();
-          const messages = await db.all`SELECT role, content, created_at FROM ai_message WHERE session_id = ${id} AND role IN ('user','assistant') AND content <> '' ORDER BY id`;
+          const messages = await db.query`SELECT role, content, created_at FROM ai_message WHERE session_id = ${id} AND role IN ('user','assistant') AND content <> '' ORDER BY id`;
           return { session, messages };
         },
       },

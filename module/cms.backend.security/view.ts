@@ -6,7 +6,7 @@ import type { RowDataPacket } from "../../deps.ts";
 export async function backendDashboardWidget(app: App): Promise<string> {
   const row = await app.db.row`SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event`.catch(() => null);
   if (!row || !Number(row.events)) return `<div class="-body">${await app.t`No security events.`}</div>`;
-  const buckets = await app.db.all`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
+  const buckets = await app.db.query`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
   return `<div class="-body">
     <b>${hee(row.events)}</b> ${await app.t`Events`}, <b>${hee(row.fresh ?? 0)}</b> ${await app.t`new`}, <b>${hee(row.blocked ?? 0)}</b> ${await app.t`blocked`}<br>
     <small>${await app.t`Last alarm:`} ${u2time(row.last)}</small>
@@ -26,13 +26,13 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   if (vars.block) await db.table("m_security_bucket").update(vars.block, { score: set.blockScore, blocked: 1, reason: "manual block" });
   if (vars.seen) await db.table("m_security_event").update(vars.seen, { state: "seen" });
   if (vars.ignore) await db.table("m_security_event").update(vars.ignore, { state: "ignore" });
-  const buckets = await db.all`SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80`;
+  const buckets = await db.query`SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80`;
   const where = eventWhere(ctx.get);
-  const events = await db.all`SELECT * FROM m_security_event ${where.parts.length ? sql`WHERE ${where}` : sql.raw("")} ORDER BY id DESC LIMIT 120`;
-  const topIps = await db.all`SELECT ip, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ip!='' GROUP BY ip ORDER BY num DESC,last DESC LIMIT 10`;
-  const topPaths = await db.all`SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10`;
-  const topKinds = await db.all`SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10`;
-  const topUa = await db.all`SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10`;
+  const events = await db.query`SELECT * FROM m_security_event ${where.parts.length ? sql`WHERE ${where}` : sql.raw("")} ORDER BY id DESC LIMIT 120`;
+  const topIps = await db.query`SELECT ip, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ip!='' GROUP BY ip ORDER BY num DESC,last DESC LIMIT 10`;
+  const topPaths = await db.query`SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10`;
+  const topKinds = await db.query`SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10`;
+  const topUa = await db.query`SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10`;
   const stats: Record<string, unknown> = await db.row`SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event` ?? {};
   const tab = String(ctx.get.tab ?? "live");
   return `<div>

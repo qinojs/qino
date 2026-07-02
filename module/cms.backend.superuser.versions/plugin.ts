@@ -16,7 +16,7 @@ async function render(node: Node): Promise<string> {
   const db = app.db;
 
   // table sizes (MySQL)
-  const status = await db.all`SHOW TABLE STATUS`.catch(() => []);
+  const status = await db.query`SHOW TABLE STATUS`.catch(() => []);
   const sizeOf = new Map(status.map((r) => [String(r.Name), Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0)]));
 
   // ── per-table history storage ────────────────────────────────────────────
@@ -45,7 +45,7 @@ async function render(node: Node): Promise<string> {
 
   // ── spaces (vers_space holds non-live spaces; 0 = live, deletable) ──────────
   const spaceRows = (await Promise.all(
-    (await db.all`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
+    (await db.query`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
       .map(async (s) => `<tr><td>${hee(String(s.space))}<td>${hee(String(s.time_created ?? ""))}<td><button class=-del-space data-space="${hee(String(s.space))}" u2-confirm="${await app.t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
   )).join("");
   const spacesBox = `

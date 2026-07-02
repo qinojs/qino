@@ -60,7 +60,7 @@ export class ChatSession {
       ? await bot.systemPrompt(ctx, parseJson(data.context))
       : bot.systemPrompt;
 
-    const rows = await this.app.db.all`SELECT * FROM ai_message WHERE session_id = ${this.id} ORDER BY id`;
+    const rows = await this.app.db.query`SELECT * FROM ai_message WHERE session_id = ${this.id} ORDER BY id`;
     // Persist the exact system prompt once per session (for the record); the provider
     // always gets the freshly built one. `system` (rebuilt) and `error` (audit-only,
     // not a valid OpenAI role) rows are dropped from the history sent to the model.

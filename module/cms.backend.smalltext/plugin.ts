@@ -30,7 +30,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
 
     const missingExpr = sql.join(langs.map(l => sql`CASE WHEN COALESCE(${sql.id(l)}, '') = '' THEN 1 ELSE 0 END`), " + ");
     const orderExpr = order === "missing" ? sql`(${missingExpr})` : sql.id(order);
-    const rows = await db.all`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
+    const rows = await db.query`SELECT * FROM smalltext ${where} ORDER BY ${orderExpr} ${sql.raw(dir)} LIMIT 100`;
     const total = Number(await db.one`SELECT count(*) FROM smalltext`);
 
     const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
@@ -44,7 +44,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
         const langTds = langs.map(l => `<td><textarea data-lang="${hee(l)}">${hee(row[l] ?? "")}</textarea>`).join("");
         let codeLogTd = "";
         if (isSuperuser) {
-            const logs = await db.all`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
+            const logs = await db.query`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
             codeLogTd = `<td>${logs.map(r => `<a href="${hee(r.file)}:${hee(String(r.line))}">${hee(r.file)}:${hee(String(r.line))}</a>`).join("<br>")}`;
         }
         rowsHtml += `<tr data-hash="${hee(String(row.hash))}" data-ns="${hee(String(row.namespace))}">

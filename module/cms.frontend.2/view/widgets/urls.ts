@@ -9,7 +9,7 @@ export default async function (node: Node): Promise<string> {
   const base = hee((ctx.req.header("host") ?? "") + ctx.appURL);
   const deleteSrc = hee(ctx.sysURL + "cms.frontend.2/pub/img/delete.svg");
 
-  const urlRows = await db.all`SELECT * FROM page_url WHERE page_id = ${String(node)}`;
+  const urlRows = await db.query`SELECT * FROM page_url WHERE page_id = ${String(node)}`;
   let urlTrs = "";
   for (const row of urlRows) {
     urlTrs += `<tr data-lang="${hee(row.lang)}">
@@ -19,7 +19,7 @@ export default async function (node: Node): Promise<string> {
       <td style="width:10px"><input class=-target ${row.target ? "checked" : ""} type=checkbox title="${hee(await app.t`New window`)}">`;
   }
 
-  const redirectRows = await db.all`SELECT * FROM page_redirect WHERE redirect = ${String(node)} ORDER BY request`;
+  const redirectRows = await db.query`SELECT * FROM page_redirect WHERE redirect = ${String(node)} ORDER BY request`;
   let redirectTrs = `<tr>
     <td style="width:20px;white-space:nowrap;padding-right:0"><small style="font-size:.7em">${base}</small>
     <td style="padding-left:5px"><input class=-add_inp style="width:100%" maxlength=180>

@@ -116,13 +116,13 @@ export class DbTable {
     if (!values) return;
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return;
-    const rows = await this.#db.all`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
     return rows[0];
   }
   async select(v: string | Sql = "TRUE"): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
     const where = v instanceof Sql ? v : sql.raw(v);
-    const rows = await this.#db.all`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
     for (const entry of rows) {
       const eid = this.entryId(entry);
       if (eid !== false) ret[eid] = entry;
@@ -214,7 +214,7 @@ export class DbTable {
 
     for (const Field of this.children) {
       if (Field.onParentCopy !== "cascade") continue;
-      const childRows = await this.#db.all`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
+      const childRows = await this.#db.query`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
       for (const childRow of childRows) await Field.table.copy(childRow, { [String(Field)]: newId }, visiting);
     }
     return newId;
@@ -237,7 +237,7 @@ export class DbTable {
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
     for (const Field of this.children) {
       if (Field.onParentDelete === "cascade") {
-        const childRows = await this.#db.all`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
+        const childRows = await this.#db.query`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
         for (const row of childRows) {
           await Field.table.delete(row);
         }

@@ -12,7 +12,7 @@ export async function isWritable(ctx: RequestContext, fileId: number): Promise<b
 
 /** First page referencing the file that the user may edit (access > 1), or null. */
 export async function writablePage(ctx: RequestContext, fileId: number): Promise<any> {
-    const rows = await ctx.app.db.all`SELECT page_id FROM page_file WHERE file_id = ${fileId}`;
+    const rows = await ctx.app.db.query`SELECT page_id FROM page_file WHERE file_id = ${fileId}`;
     for (const row of rows) {
         const Page = await ctx.app.cms.node(Number(row.page_id));
         if ((await Page.access()) > 1) return Page;
@@ -47,7 +47,7 @@ export async function restore(ctx: RequestContext, fileId: number, log: number):
 export async function getHistory(ctx: RequestContext, fileId: number): Promise<string> {
     const app = ctx.app;
     const space = getCmsVers(ctx).space;
-    const rows = await app.db.all`
+    const rows = await app.db.query`
         SELECT file.*, log.time AS log_time, usr.firstname AS usr_firstname, usr.lastname AS usr_lastname
         FROM _vers_file file
           LEFT JOIN log  ON file._vers_log = log.id

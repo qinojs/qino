@@ -121,7 +121,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
     const nid = String(node.id);
     let sorted: string[];
     if (by === "name" || by === "name_reverse") {
-        const rows = await db.all`SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY f.name`;
+        const rows = await db.query`SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY f.name`;
         const vs: Record<string, string> = {};
         for (const row of rows) vs[row["name"]] = row["fname"];
         if (by === "name_reverse") for (const n in vs) vs[n] = String(vs[n] ?? '').split("").reverse().join("");
@@ -130,7 +130,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
         );
     } else {
         const order = by === "date" ? sql`f.log_id` : sql`pf.sort DESC`;
-        sorted = (await db.all`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r: any) => r["name"]);
+        sorted = (await db.query`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r: any) => r["name"]);
     }
     await node.sortFiles(sorted);
 }
@@ -146,7 +146,7 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
     const ctx = getCtx();
     search = search.replace(/^cmspid:\/\//, "");
     const res: any[] = [];
-    for (const vs of await ctx.app.db.all`
+    for (const vs of await ctx.app.db.query`
         SELECT p.id AS id FROM page p, text t WHERE true
         AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id
         AND ( p.id = ${search} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
@@ -177,7 +177,7 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
     const res: any[] = [];
     let i = 0;
     const used: Record<string, boolean> = {};
-    for (const vs of await db.all`
+    for (const vs of await db.query`
         SELECT pf.page_id AS pid, f.*
         FROM page_file pf, file f WHERE true AND pf.file_id = f.id
         AND ( f.id = ${s} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )

@@ -248,7 +248,7 @@ function renderDbBox(node: Node): Promise<string> {
 async function mysqlBox(node: Node): Promise<string> {
   const db = node.app.db;
   const relevant = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
-  const vars = await db.all`SHOW VARIABLES`;
+  const vars = await db.query`SHOW VARIABLES`;
   const map = new Map(vars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
   const fmt = (name: string, value: string) =>
     (name === "max_allowed_packet" || name === "innodb_buffer_pool_size")
@@ -260,7 +260,7 @@ async function mysqlBox(node: Node): Promise<string> {
 async function postgresBox(node: Node): Promise<string> {
   const db = node.app.db;
   const names = ["server_version", "max_connections", "shared_buffers", "work_mem"];
-  const rows = await db.all`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(names.map((n) => sql`${n}`))}) ORDER BY name`;
+  const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(names.map((n) => sql`${n}`))}) ORDER BY name`;
   const body = rows.map((r: Record<string, string>) => `<tr><td>${hee(r.name)}<td>${hee(r.setting + (r.unit ? " " + r.unit : ""))}`).join("");
   return dbCard("PostgreSQL", body);
 }
@@ -279,7 +279,7 @@ async function sqliteBox(node: Node): Promise<string> {
 async function dbDetails(node: Node): Promise<string> {
   const db = node.app.db;
   if (db.dialect === "postgres") {
-    const rows = await db.all`SELECT name, setting FROM pg_settings ORDER BY name`;
+    const rows = await db.query`SELECT name, setting FROM pg_settings ORDER BY name`;
     return kvTable(rows.map((r: Record<string, string>) => [r.name, String(r.setting)]));
   }
   if (db.dialect === "sqlite") {
@@ -288,7 +288,7 @@ async function dbDetails(node: Node): Promise<string> {
     for (const p of pragmas) { const r = await db.row`PRAGMA ${sql.raw(p)}`; rows.push([p, String(r ? Object.values(r)[0] : "")]); }
     return kvTable(rows);
   }
-  const vars = await db.all`SHOW VARIABLES`;
+  const vars = await db.query`SHOW VARIABLES`;
   return kvTable(vars.map((r: Record<string, string>) => [r.Variable_name, String(r.Value)]));
 }
 

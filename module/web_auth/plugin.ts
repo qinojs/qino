@@ -207,7 +207,7 @@ export const api: AptTree = {
             const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = 1`;
             if (usr) {
               usrId = Number(usr.id);
-              const creds = await db.all`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
+              const creds = await db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             }
           }
@@ -265,7 +265,7 @@ export const api: AptTree = {
           const ctx = getCtx();
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const creds = await ctx.app.db.all`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${ctx.userId}`;
+          const creds = await ctx.app.db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${ctx.userId}`;
           const token = await storeChallenge(ctx.app.db, challenge, ctx.userId, "confirm");
           return {
             token,
@@ -309,7 +309,7 @@ export const api: AptTree = {
       access: Access.USER,
       execute: async () => {
         const ctx  = getCtx();
-        const rows = await ctx.app.db.all`SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
+        const rows = await ctx.app.db.query`SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
         return rows.map((r: any) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
       },
     },

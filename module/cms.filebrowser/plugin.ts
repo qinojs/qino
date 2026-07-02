@@ -62,7 +62,7 @@ async function search(s_: string, ctx: RequestContext): Promise<any[]> {
         ? sql` f.id = ${s_} DESC, f.name = ${s_} DESC, f.name LIKE ${s_ + "%"} DESC, f.name LIKE ${"% " + s_ + "%"} DESC, f.text = ${s_} DESC, f.text LIKE ${s_ + "%"} DESC, f.name ASC,`
         : sql.raw("");
 
-    const rows = await db.all`
+    const rows = await db.query`
         SELECT f.*, pf.page_id AS pid
         FROM file f
         LEFT JOIN page_file pf ON pf.file_id = f.id

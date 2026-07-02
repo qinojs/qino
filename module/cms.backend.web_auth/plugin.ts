@@ -19,7 +19,7 @@ async function render(node: Node): Promise<string> {
     if (id) await db.exec`DELETE FROM web_auth_credential WHERE id = ${id}`;
   }
 
-  const rows = await db.all`
+  const rows = await db.query`
     SELECT wac.id, wac.name, wac.aaguid, wac.sign_count, wac.created, wac.last_used, wac.credential_id,
            u.id AS usr_id, u.email, u.firstname, u.lastname
     FROM web_auth_credential wac

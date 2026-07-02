@@ -77,10 +77,6 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 
-  all(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket[]>;
-  all(frag: Sql): Promise<RowDataPacket[]>;
-  all(a: any, ...rest: any[]): Promise<RowDataPacket[]> { return (this.query as any)(a, ...rest); }
-
   row(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket | undefined>;
   row(frag: Sql): Promise<RowDataPacket | undefined>;
   async row(a: any, ...rest: any[]): Promise<RowDataPacket | undefined> { return (await (this.query as any)(a, ...rest))[0]; }

@@ -13,7 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 export async function init(app: App): Promise<void> {
-  const rows = await app.db.all`SELECT name, html FROM mail_template`;
+  const rows = await app.db.query`SELECT name, html FROM mail_template`;
   for (const row of rows) {
     if (row.name && row.html) app.mail.templates[row.name] = row.html;
   }
@@ -47,7 +47,7 @@ async function render(node: Node): Promise<string> {
     }
   }
 
-  const rows = await db.all`SELECT id, name, description, updated FROM mail_template ORDER BY name`;
+  const rows = await db.query`SELECT id, name, description, updated FROM mail_template ORDER BY name`;
 
   const u = ctx.url;
   const trs = rows.length

@@ -48,7 +48,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
 
     if ("translate_untranslated" in vars) {
         const svc = cmsTextService(ctx);
-        const rows = await db.all`SELECT hash, namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`;
+        const rows = await db.query`SELECT hash, namespace, original, ${sql.join(langs.map(l => sql.id(l)))} FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`;
         let count = 0;
         for (const row of rows) {
             const sourceLang = langs.find(l => row[l]) ?? 'en';

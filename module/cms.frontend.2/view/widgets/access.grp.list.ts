@@ -17,7 +17,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
     tail = sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC `;
   }
 
-  const rows = await db.all`
+  const rows = await db.query`
     SELECT grp.*, a.access
     FROM grp
     LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = ${String(node)}

@@ -87,7 +87,7 @@ async function listRows(node: Node, search: string): Promise<string> {
   const where = search
     ? sql`(m.id = ${search} OR m.sender = ${search} OR m.subject LIKE ${like} OR m.html LIKE ${like} OR m.text LIKE ${like})`
     : sql.raw("true");
-  const rows = await db.all`
+  const rows = await db.query`
     SELECT m.id,m.log_id,m.subject,m.sender,l.time,
       s.recipient,s.num,s.sent,s.opened,s.opened_min
     FROM mail m
@@ -169,7 +169,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 async function renderPreview(node: Node, id: number): Promise<string> {
   const Mail = await node.app.mail.get(id);
   let html = await Mail.getHtml(undefined, Mail.data);
-  const files = await node.app.db.all`SELECT * FROM mail_attachment WHERE mail_id=${id} AND inline=1`;
+  const files = await node.app.db.query`SELECT * FROM mail_attachment WHERE mail_id=${id} AND inline=1`;
   for (const f of files) {
     if (!f.path || !f.hash) continue;
     try {
@@ -183,7 +183,7 @@ async function renderPreview(node: Node, id: number): Promise<string> {
 }
 
 async function renderAttachments(node: Node, id: number): Promise<string> {
-  const files = await node.app.db.all`SELECT * FROM mail_attachment WHERE mail_id=${id}`;
+  const files = await node.app.db.query`SELECT * FROM mail_attachment WHERE mail_id=${id}`;
   if (!files.length) return "";
   const rows = files.map(f => `<div style="padding:7px 0">
     ${hee(f.name || basename(f.path || ""))}
@@ -198,7 +198,7 @@ async function renderAttachments(node: Node, id: number): Promise<string> {
 
 async function renderRecipients(node: Node, id: number): Promise<string> {
   const t = node.app.t;
-  const rows = await node.app.db.all`SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.email WHERE r.mail_id=${id} ORDER BY r.email`;
+  const rows = await node.app.db.query`SELECT r.*, u.id usr_id FROM mail_recipient r LEFT JOIN usr u ON r.email=u.email WHERE r.mail_id=${id} ORDER BY r.email`;
   const trs = rows.map(r => {
     const data = parseData(r.data);
     const dataHtml = Object.entries(data).map(([k, v]) => `${hee(k)}: ${hee(String(v))}<br>`).join("");
@@ -223,7 +223,7 @@ async function renderRecipients(node: Node, id: number): Promise<string> {
 
 async function renderTracking(node: Node, id: number): Promise<string> {
   const t = node.app.t;
-  const rows = await node.app.db.all`
+  const rows = await node.app.db.query`
     SELECT t.url, count(t.id) num, max(t.time) last_time
     FROM mail1_track t
       INNER JOIN mail_recipient r ON r.mail1_track_id=t.track_id

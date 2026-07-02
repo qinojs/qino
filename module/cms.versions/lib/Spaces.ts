@@ -54,8 +54,8 @@ export async function tableEntriesCopyTo(
     const oldEntries: Record<string, any> = {};
     const newEntries: Record<string, any> = {};
 
-    for (const e of await db.all`SELECT * FROM ${sql.id(toView)} WHERE ${where}`)   oldEntries[Table.entryId(e) as string] = e;
-    for (const e of await db.all`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[Table.entryId(e) as string] = e;
+    for (const e of await db.query`SELECT * FROM ${sql.id(toView)} WHERE ${where}`)   oldEntries[Table.entryId(e) as string] = e;
+    for (const e of await db.query`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[Table.entryId(e) as string] = e;
 
     const ctx = getCtx();
     const s = getVers(ctx);

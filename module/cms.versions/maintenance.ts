@@ -40,7 +40,7 @@ export async function thinHistory(db: Db, dryRun = false): Promise<number> {
     for (const t of Object.keys(versedTables(db))) {
         const vt = versTable(db, t);
         if (!vt) continue;
-        const pks = (await db.all`SHOW COLUMNS FROM ${sql.id(t)}`).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
+        const pks = (await db.query`SHOW COLUMNS FROM ${sql.id(t)}`).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
         const join = pks.map((f: string) => `mm.\`${f}\` = m.\`${f}\``).join(" AND ");
         // m is deletable if a newer entry mm of the same row falls into the same bucket
         const body =

@@ -38,7 +38,7 @@ function messageHtml(m: Row): string {
 async function sessionDetail(app: App, id: number): Promise<string> {
   const s = await app.db.row`SELECT * FROM ai_session WHERE id = ${id}`;
   if (!s) return `<div class=u2-card><div class=-body>Session not found.</div></div>`;
-  const messages: Row[] = await app.db.all`SELECT * FROM ai_message WHERE session_id = ${id} ORDER BY id`;
+  const messages: Row[] = await app.db.query`SELECT * FROM ai_message WHERE session_id = ${id} ORDER BY id`;
   return `<div class=u2-card style="flex:1 1 40rem;">
     <div class=-head>Session #${hee(String(id))} · bot ${hee(s.bot)} · user ${hee(String(s.user_id))}</div>
     <div class=-body>${messages.map(messageHtml).join("") || "<em>No messages.</em>"}</div>
@@ -54,7 +54,7 @@ async function list(node: Node | null, { ctx, vars }: { ctx?: RequestContext; va
   const where = search
     ? sql`WHERE bot LIKE ${like} OR id IN (SELECT session_id FROM ai_message WHERE content LIKE ${like})`
     : sql.raw("");
-  const sessions: Row[] = await app.db.all`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
+  const sessions: Row[] = await app.db.query`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
   const counts = await app.db.indexCol`SELECT session_id, COUNT(*) FROM ai_message GROUP BY session_id`;
   const base = node ? await sessionLinkBase(node) : "?s=";
 

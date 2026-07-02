@@ -44,7 +44,7 @@ async function render(node: Node): Promise<string> {
       }
 
       for (const gid of toGroups) {
-        const members = await db.all`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=1`;
+        const members = await db.query`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=1`;
         for (const usr of members) {
           if (usr.email && !addedEmails.has(usr.email)) {
             mail.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
@@ -78,8 +78,8 @@ async function render(node: Node): Promise<string> {
   const defaults = await app.mail.defaults().catch(() => ({} as Record<string, unknown>));
   const defaultSender = defaults.sender ? (defaults.sendername ? `${defaults.sendername} <${defaults.sender}>` : defaults.sender) : "";
 
-  const users = await db.all`SELECT id, email, firstname, lastname FROM usr WHERE active=1 ORDER BY lastname, firstname, email`;
-  const groups = await db.all`SELECT id, name FROM grp ORDER BY name`;
+  const users = await db.query`SELECT id, email, firstname, lastname FROM usr WHERE active=1 ORDER BY lastname, firstname, email`;
+  const groups = await db.query`SELECT id, name FROM grp ORDER BY name`;
 
   const userOptions = users.map((u) => {
     const label = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;

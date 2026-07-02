@@ -12,7 +12,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   const { error, warning, notice, cleanup } = types;
 
   // ── duplicate settings ──────────────────────────────────────────────────
-  const dupRows = await db.all`SELECT ${sql.id("offset")}, basis, count(id) as count FROM qg_setting GROUP BY basis, ${sql.id("offset")} HAVING count(id) > 1`;
+  const dupRows = await db.query`SELECT ${sql.id("offset")}, basis, count(id) as count FROM qg_setting GROUP BY basis, ${sql.id("offset")} HAVING count(id) > 1`;
   for (const row of dupRows) {
     const { basis, offset } = row;
     warning[`duplicate settings "${offset}" basis:${basis}`] = async () => {
@@ -23,7 +23,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
           },
         },
       };
-      const rows = await db.all`SELECT * FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset}`;
+      const rows = await db.query`SELECT * FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset}`;
       for (const r of rows) {
         const countChilds = await db.one`SELECT count(*) FROM qg_setting WHERE basis=${r.id}`;
         solutions[`remove ${r.id} value:"${r.value}" childs:${countChilds}`] = {
@@ -37,7 +37,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   // ── superuser default password ──────────────────────────────────────────
   const { compare } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
   error["superuser default password"] = async () => {
-    const usrs = await db.all`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20`;
+    const usrs = await db.query`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20`;
     const found: typeof usrs = [];
     let info = "";
     for (const row of usrs) {

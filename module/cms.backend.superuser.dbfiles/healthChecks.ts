@@ -25,7 +25,7 @@ export const healthChecks = {
                   const notLinkedFull = children.map((F: any) =>
                     sql`file.id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`
                   );
-                  const rows = await db.all`SELECT file.id FROM file
+                  const rows = await db.query`SELECT file.id FROM file
                     LEFT JOIN log log_i ON file.log_id=log_i.id
                     LEFT JOIN log log_e ON file.log_id_ch=log_e.id
                     WHERE log_i.time<${ago} AND log_e.time<${ago}

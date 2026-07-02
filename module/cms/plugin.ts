@@ -125,7 +125,7 @@ export function init(app: App) {
     app.on("dbFile::access2", async (e) => {
         if (e.access) return;
         const File = e.File;
-        const rows = await app.db.all`SELECT page_id FROM page_file WHERE file_id = ${File.id}`;
+        const rows = await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${File.id}`;
         for (const vs of rows) {
             const P = await app.cms.node(vs.page_id);
             if (await P.isReadable()) {

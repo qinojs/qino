@@ -15,7 +15,7 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
   const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
   const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");
 
-  const rows = await db.all`SELECT * FROM usr WHERE ${sh.where}${grpFilter} ORDER BY ${sh.order} LIMIT 200`;
+  const rows = await db.query`SELECT * FROM usr WHERE ${sh.where}${grpFilter} ORDER BY ${sh.order} LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
 

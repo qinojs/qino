@@ -13,7 +13,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 
   if (words) {
     const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
-    const rows = await node.app.db.all`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
+    const rows = await node.app.db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
     let limit = 5;
     for (const row of rows) {
       const P = await node.cms.node(row.id);
