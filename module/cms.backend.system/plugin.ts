@@ -1,7 +1,7 @@
 import { hee, sql, type App } from "../core/mod.ts";
 import { getHealthTypes, type CheckResult, type Solution } from "./healthRegistry.ts";
 export { healthChecks } from "./healthChecks.ts";
-import statistic, { details as statisticDetails } from "./parts/statistic.ts";
+import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 import type { Node } from "../cms/mod.ts";
@@ -173,11 +173,10 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     : `<span style="color:green">&#10003; ${await t`All OK`}</span>`;
 
   // DB top tables
-  const tables = await app.db.all`SHOW TABLE STATUS`.catch(() => []);
-  tables.sort((a, b) => ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0)));
+  const tables = await dbTableStats(app.db).catch(() => []);
+  tables.sort((a, b) => b.bytes - a.bytes);
   const dbRows = tables.slice(0, 3).map((tbl) => {
-    const size = (tbl.Data_length ?? 0) + (tbl.Index_length ?? 0);
-    return `<tr><td>${hee(tbl.Name)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`;
+    return `<tr><td>${hee(tbl.name)}<td style="text-align:right"><u2-bytes>${tbl.bytes}</u2-bytes>`;
   }).join("");
 
   // Cache size

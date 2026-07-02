@@ -5,7 +5,31 @@
 
   & .-no-schema-row { opacity: .5; }
 
-  & .-tgroup { margin-right: 10px; }
-  & .-tgroup .-tname { opacity: .6; font-size: .85em; margin-right: 4px; }
-  & .-tgroup .-field { font-family: monospace; margin-right: 3px; }
+  & .-field-chip,
+  & .-table-chip {
+    position: relative;
+    display: inline-block;
+    margin: 1px 3px 1px 0;
+    padding: 0 4px;
+    border: 1px solid color-mix(in srgb, currentColor, transparent 75%);
+    border-radius: 3px;
+    background: color-mix(in srgb, currentColor, transparent 94%);
+    line-height: 1.5;
+  }
+  & .-field-chip.-shared,
+  & .-table-chip.-shared { border-color: var(--blue); }
+  & .-field-chip.-shared:hover::after,
+  & .-table-chip.-shared:hover::after {
+    content: attr(data-modules);
+    position: absolute;
+    z-index: 2;
+    left: 0;
+    bottom: calc(100% + 3px);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--color-text);
+    color: var(--color-bg);
+    font: 12px/1.4 system-ui, sans-serif;
+    white-space: nowrap;
+  }
 }

@@ -1,5 +1,39 @@
-import { hee } from "../../core/mod.ts";
+import { hee, sql, type Db } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
+
+type DbTableStat = { name: string; bytes: number };
+
+export async function dbTableStats(db: Db): Promise<DbTableStat[]> {
+  if (db.dialect === "postgres") return pgTableStats(db);
+  if (db.dialect === "sqlite") return sqliteTableStats(db);
+  const rows = await db.all`SHOW TABLE STATUS`;
+  return rows.map((r) => ({
+    name: String(r.Name ?? ""),
+    bytes: Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0),
+  }));
+}
+
+async function pgTableStats(db: Db): Promise<DbTableStat[]> {
+  const rows = await db.all`
+    SELECT c.relname AS name, pg_total_relation_size(c.oid) AS bytes
+    FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = current_schema() AND c.relkind IN ('r', 'p')
+    ORDER BY bytes DESC`;
+  return rows.map((r) => ({ name: String(r.name), bytes: Number(r.bytes ?? 0) }));
+}
+
+async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
+  const tables = await db.col`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`;
+  if (!tables.length) return [];
+  const stats: Record<string, unknown> = await db.indexCol`
+    SELECT COALESCE(m.tbl_name, d.name) AS name, SUM(d.pgsize) AS bytes
+    FROM dbstat d
+      LEFT JOIN sqlite_master m ON m.name = d.name
+    WHERE COALESCE(m.tbl_name, d.name) IN (${sql.join(tables.map((t) => sql`${String(t)}`))})
+    GROUP BY COALESCE(m.tbl_name, d.name)`.catch(() => ({}));
+  return tables.map((name) => ({ name: String(name), bytes: Number(stats[String(name)] ?? 0) }));
+}
 
 async function dirSize(dir: string): Promise<number> {
   let total = 0;
@@ -53,9 +87,9 @@ export default async function summary(node: Node): Promise<string> {
   const db      = node.app.db;
   const appPATH = node.app.appPATH;
 
-  const tables = await db.all`SHOW TABLE STATUS`;
+  const tables = await dbTableStats(db);
   let dbTotal = 0;
-  for (const t of tables) dbTotal += (t.Data_length ?? 0) + (t.Index_length ?? 0);
+  for (const t of tables) dbTotal += t.bytes;
 
   const diskTotal = await dirSize(appPATH);
   const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", appPATH] }).output();
@@ -85,13 +119,10 @@ export async function details(node: Node): Promise<string> {
     `<tr><td>${hee(folder)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`
   ).join("");
 
-  const tables = await db.all`SHOW TABLE STATUS`;
-  tables.sort((a, b) =>
-    ((b.Data_length ?? 0) + (b.Index_length ?? 0)) - ((a.Data_length ?? 0) + (a.Index_length ?? 0))
-  );
+  const tables = await dbTableStats(db);
+  tables.sort((a, b) => b.bytes - a.bytes);
   const tableRows = tables.map((t) => {
-    const size = (t.Data_length ?? 0) + (t.Index_length ?? 0);
-    return `<tr><td>${hee(t.Name)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`;
+    return `<tr><td>${hee(t.name)}<td style="text-align:right"><u2-bytes>${t.bytes}</u2-bytes>`;
   }).join("");
 
   return `
