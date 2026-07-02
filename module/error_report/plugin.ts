@@ -7,7 +7,9 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { getCtx, type RequestContext, Output, type App } from "../core/mod.ts";
 
-const reporterPath = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js";
+const reporterRoot = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
+const reporterPath = reporterRoot + "mod.js";
+
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
 await import(reporterPath);
 
@@ -124,6 +126,7 @@ export function init(app: App): void {
     const browserErrorsEnabled = await ctx.app.settings.error_report.browserErrors;
     if (!browserErrorsEnabled) return;
     ctx.html.jsData.reporterJsOptions = { url: ctx.appURL + "js-error", max: 50 };
+    ctx.csp["script-src"][reporterRoot] = true;
     ctx.html.legacyScripts.add(reporterPath);
     ctx.csp.reportUri = ctx.appURL + "csp-error";
   });
