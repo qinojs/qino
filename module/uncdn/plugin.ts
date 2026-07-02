@@ -73,11 +73,6 @@ function serveResponse(mediaType: string, data: Uint8Array): never {
   throw new Output(data, { headers });
 }
 
-async function serveCached(filePath: string, mediaType: string): Promise<void> {
-  const data = await Deno.readFile(filePath).catch(() => null);
-  if (data) serveResponse(mediaType, data);
-}
-
 async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: RequestContext): Promise<void> {
   const res = await safeFetch(url, { signal: AbortSignal.timeout(15000) }); // SSRF-guarded, re-checked after redirects
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
@@ -93,6 +88,17 @@ async function fetchAndCache(url: string, filePath: string, cacheDir: string, me
 
 type Sources = Record<string, true>;
 const origins = (s: Sources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
+const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...set].map(fn));
+
+function hasPrefix(values: Iterable<string>, url: string): boolean {
+  for (const value of values) if (url.startsWith(value)) return true;
+  return false;
+}
+
+function hasValueWithPrefix(values: Iterable<string>, prefix: string): boolean {
+  for (const value of values) if (value.startsWith(prefix)) return true;
+  return false;
+}
 
 export function init(app: App): void {
   const cacheDir = app.appPATH + CACHE_SUBDIR;
@@ -110,9 +116,10 @@ export function init(app: App): void {
     const mediaType = mediaTypeForPath(filePath);
     if (!mediaType) done(ctx, 404, "Not allowed");
 
-    await serveCached(filePath, mediaType); // throws Output if found
+    const data = await Deno.readFile(filePath).catch(() => null);
+    if (data) serveResponse(mediaType, data);
 
-    if (![...allowed].some(p => url.startsWith(p))) { // undeclared URLs still go through fetchPolicy
+    if (!hasPrefix(allowed, url)) { // undeclared URLs still go through fetchPolicy
       const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
       const denied =
         policy === "none" ? "fetchPolicy=none" :
@@ -128,7 +135,7 @@ export function init(app: App): void {
   });
 
   app.on("html-ready", ({ ctx }) => {
-    if (!ctx.html) return;
+    if (!ctx.hasHtml) return;
     for (const o of [...origins(ctx.csp["script-src"]), ...origins(ctx.csp["style-src"])]) allowed.add(o);
     rewriteHtml(ctx.html, ctx.appURL, ctx.csp);
   });
@@ -146,9 +153,9 @@ export function rewriteHtml(html: HtmlBuilder, appURL: string, csp: Csp): void {
   };
   const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
   for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
-  html.legacyScripts = new Set([...html.legacyScripts].map(rwScript));
-  html.scripts       = new Set([...html.scripts].map(rwScript));
-  html.styles        = new Set([...html.styles].map(rwStyle));
+  html.legacyScripts = mapSet(html.legacyScripts, rwScript);
+  html.scripts       = mapSet(html.scripts, rwScript);
+  html.styles        = mapSet(html.styles, rwStyle);
 
   // drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay
   stripDead(csp["script-src"], html.scripts, html.legacyScripts, html.importMap.values());
@@ -156,6 +163,6 @@ export function rewriteHtml(html: HtmlBuilder, appURL: string, csp: Csp): void {
 }
 
 function stripDead(src: Sources, ...refs: Iterable<string>[]): void {
-  const urls = refs.flatMap(r => [...r]);
-  for (const o of origins(src)) if (!urls.some(u => u.startsWith(o))) delete src[o];
+  const urls = refs.map(ref => [...ref]);
+  for (const o of origins(src)) if (!urls.some(ref => hasValueWithPrefix(ref, o))) delete src[o];
 }

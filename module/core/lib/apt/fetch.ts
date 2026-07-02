@@ -29,8 +29,8 @@ export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptF
     const body = await req.json().catch(() => { throw new Output({ error: "Invalid JSON" }, { status: 400 }); });
     if (body && typeof body === "object") Object.assign(input, body);
   }
-  for (const [key, vals] of Object.entries(req.queries())) {
-    query[key] = vals.length === 1 ? vals[0] : vals;
+  for (const [k, v] of Object.entries(req.queries())) {
+    query[k] = v.length === 1 ? v[0] : v;
   }
   if (!isBodyMethod) Object.assign(input, query);
   try {
@@ -70,8 +70,7 @@ function isTrustedOrigin(req: Req): boolean {
 }
 
 function hostOf(value?: string): string | null {
-  if (!value) return null;
-  try { return new URL(value).host; }
+  try { return value ? new URL(value).host : null; }
   catch { return null; }
 }
 

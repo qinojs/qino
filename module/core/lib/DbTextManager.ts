@@ -8,14 +8,12 @@ import type { Db } from "./Db.ts";
 export class DbTextManager {
   #cache: Record<string, DbText> = {};
   #app: App;
-  #db: Db;
 
   constructor(app: App) {
     this.#app = app;
-    this.#db = app.db;
   }
 
-  get db(): Db { return this.#db; }
+  get db(): Db { return this.#app.db; }
   get app(): App { return this.#app; }
 
   text(id: number | string): DbText {
@@ -32,7 +30,7 @@ export class DbTextManager {
 
   async generate(): Promise<DbText> {
     const values: Record<string, unknown> = { lang: this.#app.languages.def, text: "" };
-    await this.#db.table("text").insert(values);
+    await this.db.table("text").insert(values);
     // insert can be prevented (e.g. read-only history render) → id 0, never NaN
     const id = Number(values.id ?? "0") || 0;
     return this.text(id);
@@ -42,7 +40,7 @@ export class DbTextManager {
 export class DbText {
   #manager: DbTextManager;
   #langCache: Map<string, DbTextLang> = new Map();
-  public id: number;
+  id: number;
 
   constructor(manager: DbTextManager, id: number | string) {
     this.#manager = manager;
@@ -92,7 +90,7 @@ export class DbText {
 export class DbTextLang {
   text: DbText;
   value: string | null = null;
-  public lang: string;
+  lang: string;
 
   constructor(text: DbText, lang: string) {
     this.text = text;

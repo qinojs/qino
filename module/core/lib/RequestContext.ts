@@ -90,17 +90,16 @@ export class RequestContext {
 }
 
 export async function makeRequestContext(app: App, req: Req, basePath: string): Promise<RequestContext> {
-
   const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
   const url = new URL(req.url);
 
   const ct = req.header("content-type") ?? "";
+  const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
 
   const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
   if (Number(req.header("content-length") ?? "0") > maxSize) throw new Output("Payload Too Large", { status: 413 });
 
-  const rawBody: unknown = req.method === "POST"
-    ? (ct.includes("application/json") || ct.includes("application/csp-report") ? await req.json() : await req.parseBody()) : {};
+  const rawBody: unknown = req.method === "POST" ? (isJson ? await req.json() : await req.parseBody()) : {};
   const post: Record<string, unknown> = {};
   const files: Record<string, UploadedFile> = {};
 

@@ -126,5 +126,5 @@ export class Db extends Emitter<DbEvents> {
     return table;
   }
 
-  close = (): Promise<void> => this.#driver.close();
+  close(): Promise<void> { return this.#driver.close(); }
 }

@@ -54,50 +54,47 @@ export class DbFileManager {
     const id = Number(x.shift() ?? "0");
     const name = x.pop() ?? "";
 
-    const param: Record<string, string | true> = {};
+    const p: Record<string, string | true> = {};
     for (const value of x) {
       const y = value.split("-");
-      param[y[0]] = y[1] ?? true;
+      p[y[0]] = y[1] ?? true;
     }
 
-    const F = await this.file(id);
-    if (!await F.exists()) return new Response(null, { status: 404 });
-    if (!await F.access()) return new Response(null, { status: 401 });
+    const f = await this.file(id);
+    if (!await f.exists()) return new Response(null, { status: 404 });
+    if (!await f.access()) return new Response(null, { status: 401 });
 
-    let mime = F.mime || typeByExtension(F.extension) || "application/octet-stream";
+    let mime = f.mime || typeByExtension(f.extension) || "application/octet-stream";
     if (mime === "image/svg+xml") mime += "; charset=utf-8";
 
     const headers = new Headers();
 
-    const mtime = await F.mtime();
-    if (mtime !== false) {
-      headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
-    }
+    const mtime = await f.mtime();
+    if (mtime !== false) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
     const maxAge = 60 * 60 * 24 * 180;
     headers.set("Expires", new Date(Date.now() + maxAge * 1000).toUTCString());
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
     headers.set("Pragma", "private");
 
-    const transformed = await F.transform(param);
-    const outputPath = transformed.path;
-    mime = transformed.mime || mime;
+    const { path: outputPath, mime: outputMime } = await f.transform(p);
+    mime = outputMime || mime;
 
     if (/\.pdf$/.test(name) || mime === "application/pdf") {
       mime = "application/pdf";
-      headers.set("Content-Disposition", contentDisposition("inline", F.name));
+      headers.set("Content-Disposition", contentDisposition("inline", f.name));
       headers.set("Expires", "0");
       headers.set("Cache-Control", "must-revalidate");
     }
 
-    if ("dl" in param) {
+    if ("dl" in p) {
       mime = "application/force-download";
       headers.set("Expires", "0");
       headers.set("Cache-Control", "private, must-revalidate");
-      headers.set("Content-Disposition", contentDisposition("attachment", F.name));
+      headers.set("Content-Disposition", contentDisposition("attachment", f.name));
       headers.set("Content-Transfer-Encoding", "binary");
     }
 
-    if (param["as"] === "text") mime = "text/plain";
+    if (p["as"] === "text") mime = "text/plain";
 
     // Security
     if (/^(text\/html|application\/xhtml\+xml)/.test(mime)) mime = "text/plain";
@@ -195,14 +192,14 @@ export class DbFile extends File {
   }
 
   async updateDb() {
-    const vs = await this.ensureVs();
-    this.path = this.#manager.directory + vs["md5"];
+    const { md5 } = await this.ensureVs();
+    this.path = this.#manager.directory + md5;
     await this.setVs({ text: await this.getText(), size: await this.size() });
   }
 
   async used(): Promise<boolean> {
-    for (const Field of this.#manager.db.table("file").children) {
-      if (await this.#manager.db.one`SELECT 1 FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)} = ${this.id} LIMIT 1`) return true;
+    for (const field of this.#manager.db.table("file").children) {
+      if (await this.#manager.db.one`SELECT 1 FROM ${sql.id(field.table.name)} WHERE ${sql.id(field.name)} = ${this.id} LIMIT 1`) return true;
     }
     const e = { dbFile: this, used: false };
     await this.#manager.app.fire("dbFile-used", e);
@@ -231,14 +228,14 @@ export class DbFile extends File {
       await this.setVs({ name: remote.name, mime: remote.type, text: await this.getText(), md5: remote.md5, size: remote.size });
       return;
     }
-    const F = new File(path);
+    const src = new File(path);
 
-    const md5 = await F.md5();
+    const md5 = await src.md5();
     this.path = this.#manager.directory + md5;
     await nodeFs.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-    if (!await F.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
+    if (!await src.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
 
-    await this.setVs({ name: F.basename(), mime: F.mime, text: await F.getText(), md5, size: await this.size() });
+    await this.setVs({ name: src.basename(), mime: src.mime, text: await src.getText(), md5, size: await this.size() });
   }
 
   async replaceFromUpload(f: UploadedFile) {
@@ -256,17 +253,14 @@ export class DbFile extends File {
 
   async clone(to?: number | null): Promise<DbFile> {
     const data = { ...await this.ensureVs() };
-    let newId: number;
     if (to == null) {
       delete data["id"];
-      newId = Number(await this.#manager.db.table("file").insert(data) ?? "0");
-    } else {
-      data["id"] = String(to);
-      await this.#manager.db.table("file").update(to, data);
-      newId = to;
-      return this.#manager.file(newId, data);
+      const id = Number(await this.#manager.db.table("file").insert(data) ?? "0");
+      return this.#manager.file(id);
     }
-    return this.#manager.file(newId);
+    data["id"] = String(to);
+    await this.#manager.db.table("file").update(to, data);
+    return this.#manager.file(to, data);
   }
 
   async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string }> {
@@ -283,52 +277,44 @@ export class DbFile extends File {
 }
 
 function parseTransformOptions(param: Record<string, unknown>): TransformOptions {
-  const num = (k: string) => k in param ? Number(param[k]) : undefined;
+  const opt: TransformOptions = { fmt: param['fmt'] as TransformOptions['fmt'] };
   const bool = (k: string) => k in param ? param[k] !== 'false' && param[k] !== '0' : undefined;
-  return {
-    w:     num('w'),
-    h:     num('h'),
-    q:     num('q'),
-    vpos:  num('vpos'),
-    hpos:  num('hpos'),
-    zoom:  num('zoom'),
-    dpr:   num('dpr'),
-    page:  num('page'),
-    frame: num('frame'),
-    max:   bool('max'),
-    fmt:   param['fmt'] as TransformOptions['fmt'],
-  };
+  for (const k of ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const) {
+    opt[k] = k in param ? Number(param[k]) : undefined;
+  }
+  opt.max = bool('max');
+  return opt;
 }
 
 async function xStream(filePath: string, rangeHeader: string) {
   try {
-    const filestat = await Deno.stat(filePath);
-    const filesize = filestat.size;
+    const stat = await Deno.stat(filePath);
+    const size = stat.size;
     const [param, rangeStr] = rangeHeader.split("=");
     if (param.trim() !== "bytes") return null;
     const ranges = rangeStr.split(",")[0].split("-");
     let start: number;
     let end: number;
     if (ranges[0] === "") {
-      end = filesize - 1;
+      end = size - 1;
       start = end - parseInt(ranges[1]);
     } else if (ranges[1] === "") {
       start = parseInt(ranges[0]);
-      end = filesize - 1;
+      end = size - 1;
     } else {
       start = parseInt(ranges[0]);
       end = parseInt(ranges[1]);
-      if (end >= filesize || (!start && (!end || end === filesize - 1))) return null;
+      if (end >= size || (!start && (!end || end === size - 1))) return null;
     }
     const length = end - start + 1;
-    
+
     const file = await Deno.open(filePath, { read: true });
     await file.seek(start, Deno.SeekMode.Start);
     const buf = new Uint8Array(length);
     await file.read(buf);
     file.close();
 
-    return { data: buf, contentRange: `bytes ${start}-${end}/${filesize}` };
+    return { data: buf, contentRange: `bytes ${start}-${end}/${size}` };
   } catch {
     return null;
   }

@@ -14,7 +14,7 @@ import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
 import { initRequest } from "./init.ts";
 
-const mainDir:string = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
 const defaultConfig = {
     appPATH: mainDir,
@@ -100,7 +100,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     import(spec: string): Promise<Module> { return this.modules.import(spec); }
-    async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
+    importAll(path: string): Promise<void> { return this.modules.importAll(path); }
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
@@ -200,7 +200,7 @@ export class App extends Emitter<AppEvents> {
         await this.fire("respond", { ctx });
         const headers = new Headers(ctx.responseHeaders);
         if (headers.has("Location")) return new Response(null, { status: ctx.responseStatus, headers });
-        if (!headers.get("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
+        if (!headers.has("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("X-Content-Type-Options", "nosniff");
         return new Response(ctx.responseBody, { status: ctx.responseStatus, headers });

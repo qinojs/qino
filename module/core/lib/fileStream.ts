@@ -11,7 +11,7 @@ export interface UploadedFile {
 
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);
-  return { name: file.name, type: file.type, size: tmp.size, tmpPath: tmp.path, md5: tmp.md5};
+  return { name: file.name, type: file.type, size: tmp.size, tmpPath: tmp.path, md5: tmp.md5 };
 }
 
 export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Promise<UploadedFile> {
@@ -29,15 +29,12 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
 }
 
 async function saveStream(stream: ReadableStream<Uint8Array>, opt: { maxSize?: number; prefix?: string; dir?: string } = {}) {
-  const tmpOpt: { prefix?: string; dir?: string } = {};
-  if (opt.prefix) tmpOpt.prefix = opt.prefix;
-  if (opt.dir) tmpOpt.dir = opt.dir;
-
-  const path = await Deno.makeTempFile(tmpOpt);
+  const { prefix, dir } = opt;
+  const path = await Deno.makeTempFile({ prefix, dir });
   const file = await Deno.open(path, { write: true });
   const hash = nodeCrypto.createHash("md5");
   let size = 0;
-  let failed = false;
+  let ok = false;
   try {
     for await (const chunk of stream) {
       size += chunk.length;
@@ -45,12 +42,10 @@ async function saveStream(stream: ReadableStream<Uint8Array>, opt: { maxSize?: n
       hash.update(chunk);
       await writeAll(file, chunk);
     }
-  } catch (e) {
-    failed = true;
-    throw e;
+    ok = true;
   } finally {
     file.close();
-    if (failed) await Deno.remove(path).catch(() => {});
+    if (!ok) await Deno.remove(path).catch(() => {});
   }
   return { path, size, md5: hash.digest("hex") };
 }

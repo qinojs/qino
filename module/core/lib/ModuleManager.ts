@@ -27,17 +27,19 @@ function mergeSchema(a: any, b: any): any {
 }
 
 export class Module {
-  readonly name: string;
-  readonly url: string;
-  readonly path: string | undefined;
-  readonly plugin: Plugin;
+  #plugin: Plugin;
+  #url: string;
+  #path: string | undefined;
 
   constructor(plugin: Plugin, url: string, path?: string) {
-    this.name = plugin.name;
-    this.url = url;
-    this.path = path;
-    this.plugin = plugin;
+    this.#plugin = plugin;
+    this.#url = url;
+    this.#path = path;
   }
+  get name(): string { return this.#plugin.name; }
+  get plugin(): Plugin { return this.#plugin; }
+  get url(): string { return this.#url; }
+  get path(): string | undefined { return this.#path; }
   get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
   toString(): string { return this.name; }
 }
@@ -81,7 +83,7 @@ export class ModuleManager {
     return mod;
   }
 
-  async importAll(path:string): Promise<void> {
+  async importAll(path: string): Promise<void> {
     const base = (path.startsWith("file:") ? fromFileUrl(path) : path).replace(/\/?$/, "/");
     const entries: string[] = [];
     for await (const entry of Deno.readDir(base)) {
@@ -118,10 +120,11 @@ export class ModuleManager {
       await this.#app.db.loadTables();
     }
     for (const name of order) {
-      const { plugin } = this.#modules[name];
+      const mod = this.#modules[name];
+      const { plugin } = mod;
       await plugin.init?.(this.#app);
       await plugin.install?.({ app: this.#app, module: plugin });
-      await this.#loadLocales(this.#modules[name]);
+      await this.#loadLocales(mod);
       if (plugin.api) this.#app.aptTree[name] = plugin.api;
     }
     this.#app.settings[$item].setSchema(appSettingsSchema);

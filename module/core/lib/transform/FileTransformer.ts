@@ -57,10 +57,10 @@ export class FileTransformer {
     }
 
     const fingerprint = `${stat.mtime?.getTime() ?? 0}-${stat.size}`;
-    const optParts = Object.keys(opts)
+    const optParts = Object.entries(opts)
       .sort()
-      .filter((k) => opts[k] !== undefined)
-      .map((k) => `${k}=${opts[k]}`);
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => `${k}=${v}`);
     const cacheKey = await hashKey([fingerprint, ...optParts]);
     const cachePath = nodePath.join(cacheDir, `tf_${cacheKey}`);
     const metaPath = `${cachePath}.mime`;
@@ -118,10 +118,7 @@ export class FileTransformer {
 /** Sorts transformers by phase order + `after` dependencies within a phase */
 function sortTransformers(transformers: TransformerDef[]): TransformerDef[] {
   const result: TransformerDef[] = [];
-  for (const phase of PHASE_ORDER) {
-    const inPhase = transformers.filter((t) => t.phase === phase);
-    result.push(...topoSort(inPhase));
-  }
+  for (const phase of PHASE_ORDER) result.push(...topoSort(transformers.filter((t) => t.phase === phase)));
   return result;
 }
 
