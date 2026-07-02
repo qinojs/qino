@@ -39,6 +39,7 @@ async function render(node: Node): Promise<string> {
       <tr><td>${await t`Server Uptime`}:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
       <tr><td>${await t`System Load`}:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
       <tr><td>${await t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+      <tr><td>${await t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>
       <tr><td>${await t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
       <tr><td>${await t`APP-Path`}:<td>${hee(app.appPATH)}
     </table>
@@ -213,7 +214,8 @@ async function systemInfoRows(app: App): Promise<string> {
   <tr><td>${await t`Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
   <tr><td>${await t`Load (1m/5m/15m)`}:<td>${hee(load[0].toFixed(2))} / ${hee(load[1].toFixed(2))} / ${hee(load[2].toFixed(2))}
   <tr><td>${await t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
-  <tr><td>${await t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>`;
+  <tr><td>${await t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+  <tr><td>${await t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>`;
 }
 
 // SQL for "now in UTC" per dialect (MySQL gives 'YYYY-MM-DD HH:MM:SS', others ISO).
