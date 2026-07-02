@@ -1,6 +1,7 @@
 type Listener<T> = (data: T) => void | Promise<void>;
 
-/** Minimal typed event hub: `fire` awaits listeners in registration order. */
+/** Minimal typed event hub: `fire` awaits listeners in registration order.
+ * A throwing listener aborts the chain by design — modules throw `Output`/`Redirect` to answer a request. */
 export class Emitter<Events extends Record<string, unknown>> {
     #events: { [K in keyof Events]?: Listener<Events[K]>[] } = {};
 
