@@ -12,10 +12,10 @@ const VIDEO_MIMES = new Set([
 ]);
 
 /**
- * Decode-Phase: Extrahiert einen Frame aus einem Video als PNG.
- * Danach kann die normale Bild-Pipeline (resize, encode) greifen.
+ * Decode phase: extracts one frame of a video as PNG.
+ * The normal image pipeline (resize, encode) can then take over.
  *
- * Option `frame` (1-basiert, Standard: 1) – welcher Frame extrahiert wird.
+ * Option `frame` (1-based, default: 1) – which frame to extract.
  */
 FileTransformer.register({
   name: 'video-decode',

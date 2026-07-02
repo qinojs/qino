@@ -109,7 +109,7 @@ globalThis.Rte.ui = {
 			// }
 		}
 		opt.click && opt.el.addEventListener('mousedown',e=>{
-			Rte.manipulate( ()=>opt.click(e) ); // todo: manipulate schon hier??
+			Rte.manipulate( ()=>opt.click(e) ); // todo: manipulate already here??
 		}, false);
 		opt.shortcut && opt.el.setAttribute('title','ctrl+'+opt.shortcut);
 		this.items[name] = opt;

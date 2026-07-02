@@ -36,7 +36,7 @@ function renderState(node: Node): string {
     ${clientCtxBox("Client / ctx (qino.js)")}`;
 }
 
-// leere box, client-seitig via pub/state.mjs mit dump(getCtx()) gefüllt
+// empty box, filled client-side by pub/state.mjs with dump(getCtx())
 function clientCtxBox(title: string): string {
   return `<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
   <div class="-head">${hee(title)}</div>
@@ -66,7 +66,7 @@ function dumpBox(title: string, value: unknown, depth: number): string {
 
 function safeRender(value: unknown): string | undefined {
   if (typeof value !== "function") return undefined;
-  if ((value as unknown as Record<symbol, unknown>)[$item]) return `<em>[item.js proxy]</em>`; // .name/.length nicht lesen → kein autoviv
+  if ((value as unknown as Record<symbol, unknown>)[$item]) return `<em>[item.js proxy]</em>`; // don't read .name/.length → no autoviv
   return `<function>function <b>${hee(value.name ?? "")}</b>(${hee(value.length)})</function>`;
 }
 

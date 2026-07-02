@@ -61,7 +61,7 @@ export class RequestContext {
     if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
     return this.#settingsRoot.proxy;
   }
-  async initSettings(): Promise<void> { // inkonsistent: ctx.lang wird im LangManager initialisiert (LangManager.initCtx(ctx)), aber settings hier.
+  async initSettings(): Promise<void> { // inconsistent: ctx.lang is initialized in LangManager (LangManager.initCtx(ctx)), but settings here.
     this.#settingsRoot = this.user
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
@@ -114,13 +114,17 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
 
   const session = await app.sessions.loadFromRequest(req, app.https, appURL);
 
+  let appRequestPath: string;
+  try { appRequestPath = decodeURIComponent(req.path.slice(appURL.length)); }
+  catch { throw new Output("Bad Request", { status: 400 }); }
+
   const ctx = new RequestContext();
   Object.assign(ctx, {
     req,
     app,
     appURL,
     sysURL: appURL + "m/",
-    appRequestPath: decodeURIComponent(req.path.slice(appURL.length)),
+    appRequestPath,
     sess: session,
     cookie: req.cookies(),
     get: req.query(),

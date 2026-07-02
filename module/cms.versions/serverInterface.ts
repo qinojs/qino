@@ -128,7 +128,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 
 async function versProtocolForNodeTree(ctx: any, pid: number): Promise<any[]> {
     const P = await ctx.app.cms.node(pid);
-    const conts = await P.Conts?.() ?? [];
+    const conts = await P.conts();
     const [data, ...subs] = await Promise.all([
         versProtocolForNode(ctx, pid),
         ...conts.map((C: any) => versProtocolForNodeTree(ctx, C.id)),

@@ -196,9 +196,9 @@ more.addEventListener('mouseover', e => {
 
 /* ui */
 document.addEventListener('keydown',e=>{
-	const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
-	if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
-	if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
+	const target = e.composedPath()[0]; // real element even inside shadow DOM (e.target would be the host)
+	if (target.getRootNode() !== document) return; // from shadow DOM = a component (tree/panel/…) owns the key
+	if (target.isContentEditable || target.form !== undefined) return; // inputs/contenteditable in the light DOM (page content)
 	if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
 	if (e.code === 'KeyH') {
 		Viewer.show(Page);

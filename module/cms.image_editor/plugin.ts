@@ -93,6 +93,6 @@ export function init(app: App) {
         await File.replaceFromUpload(upload);
         await app.fire("page::file_upload-after", { Page });
 
-        throw new Output({ id: String(File), url: await File.url() + "/" + await File.get("name") });
+        throw new Output({ id: String(File), url: await File.url() });
     });
 }

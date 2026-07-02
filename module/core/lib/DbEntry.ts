@@ -117,6 +117,7 @@ export class DbEntry {
   }
 
   async save(): Promise<void> {
+    clearTimeout(this.#saveTimer);
     if (this.#changed) {
       this.#ensureEid();
       if (this.#eid === false) throw new Error(`dbEntry.save(): _eid is false, cannot update`);

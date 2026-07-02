@@ -114,7 +114,7 @@ function syncSidebar(value = sidebar.value) {
     el.classList.remove("-open");
   }
 }
-sidebar.addEventListener("set", e => syncSidebar(e.value)); // nur bei Wechsel laden; Initialzustand kommt aus dem SSR
+sidebar.addEventListener("set", e => syncSidebar(e.value)); // load only on change; initial state comes from SSR
 
 el.addEventListener("click", (e) => {
   const titelEl = e.target.closest(".-sidebar > .-item > .-title");
@@ -150,9 +150,9 @@ on(document, "mousedown touchstart", e => {
 
 // shortcuts
 document.addEventListener("keydown", (e) => {
-  const target = e.composedPath()[0]; // echtes Element auch innerhalb Shadow-DOM (e.target ist sonst der Host)
-  if (target.getRootNode() !== document) return; // aus Shadow-DOM = Komponente (Tree/Panel/…) besitzt die Taste
-  if (target.isContentEditable || target.form !== undefined) return; // Inputs/contenteditable im Light-DOM (Seiteninhalt)
+  const target = e.composedPath()[0]; // real element even inside shadow DOM (e.target would be the host)
+  if (target.getRootNode() !== document) return; // from shadow DOM = a component (tree/panel/…) owns the key
+  if (target.isContentEditable || target.form !== undefined) return; // inputs/contenteditable in the light DOM (page content)
   if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
 
   if (e.key == "t") {
@@ -298,13 +298,13 @@ onEl(".file-manager", (el) => {
       });
     }
 
-    // DnD-Sortierung via u2-dropzone: tbody[u2-dropzone] + tr[draggable] (Template).
-    // u2-draghandle (auf td.-handle) macht nur den Griff ziehbar. Nach dem Drop ist die
-    // DOM-Reihenfolge die neue Sortierung -> an Server.
+    // DnD sorting via u2-dropzone: tbody[u2-dropzone] + tr[draggable] (template).
+    // u2-draghandle (on td.-handle) makes only the handle draggable. After the drop
+    // the DOM order is the new sort order -> send to server.
     import("@qino/u2/attr/dropzone/dropzone.js");
     import("@qino/u2/attr/draghandle/draghandle.js");
     tbody.addEventListener("u2-dropzone-drop", (e) => {
-      if (!e.detail?.add) return; // gleiche Zone feuert remove+add -> nur einmal reagieren
+      if (!e.detail?.add) return; // the same zone fires remove+add -> react only once
       requestAnimationFrame(() => {
         const sort = [...tbody.children].map((el) => el.getAttribute("itemid"));
         node.files.put({ sort });

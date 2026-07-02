@@ -48,7 +48,7 @@ export class FileTransformer {
     const ext = nodePath.extname(sourcePath).slice(1).toLowerCase();
     const mime = knownMime || typeByExtension(ext) || 'application/octet-stream';
 
-    // Cache-Key: mtime+size der Quelldatei + alle gesetzten Optionen
+    // Cache key: mtime+size of the source file + all set options
     let stat: Deno.FileInfo;
     try {
       stat = await Deno.stat(sourcePath);

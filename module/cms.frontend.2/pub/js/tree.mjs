@@ -1,11 +1,11 @@
-/* CMS-Seitenbaum auf Basis von u2-tree.
- * Einstieg: window.cmsTreeInit(json); cms.Tree ist die Fassade für Panel, contextMenu.mjs
- * und Server-Listener. */
+/* CMS page tree based on u2-tree.
+ * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.mjs
+ * and server listeners. */
 import { t, apt } from "../../../core/pub/js/qino.js";
 
 const Page = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
-const asTree = (el) => el?.localName === "u2-tree" ? el : null; // Knoten oder null (Icon/Anchor überspringen)
+const asTree = (el) => el?.localName === "u2-tree" ? el : null; // tree node or null (skip icon/anchor)
 
 globalThis.cmsTreeInit = async (json) => {
   await import("@qino/u2/el/tree/tree.js");
@@ -14,7 +14,7 @@ globalThis.cmsTreeInit = async (json) => {
   if (!root.querySelector("link[data-u2tree]")) {
     const u2css = Object.assign(document.createElement("link"), { rel: "stylesheet", href: import.meta.resolve("@qino/u2/el/tree/tree.css") });
     u2css.dataset.u2tree = "";
-    root.append(u2css); // u2-Basis-CSS; CMS-Optik kommt aus tree.css (panelStyles)
+    root.append(u2css); // u2 base CSS; the CMS look comes from tree.css (panelStyles)
   }
 
   const treeEl = root.getElementById("tree");
@@ -22,13 +22,13 @@ globalThis.cmsTreeInit = async (json) => {
 
   let activeNode = null;
 
-  // Versteckte Wurzel: gemeinsamer active/selection-Scope und Träger aller Listener (Delegation).
-  // replaceChildren beim Re-Init wirft sie samt Listenern weg -> kein Stacking.
+  // Hidden root: shared active/selection scope and carrier of all listeners (delegation).
+  // replaceChildren on re-init throws it away together with its listeners -> no stacking.
   const rootNode = document.createElement("u2-tree");
   rootNode.classList.add("-root");
   rootNode.setAttribute("aria-expanded", "true");
 
-  // CMS-JSON -> <u2-tree>; CMS-Felder in node.data, `type` -> `ptype`.
+  // CMS JSON -> <u2-tree>; CMS fields in node.data, `type` -> `ptype`.
   function makeNode(n) {
     const el = document.createElement("u2-tree");
     el.data = { ...n, key: String(n.key), ptype: n.type };
@@ -39,7 +39,7 @@ globalThis.cmsTreeInit = async (json) => {
       for (const c of n.children) el.append(makeNode(c));
       el.setAttribute("aria-expanded", "true");
     } else if (n.isLazy) {
-      el.setAttribute("aria-live", "off"); // Lazy-Marker -> Pfeil bleibt
+      el.setAttribute("aria-live", "off"); // lazy marker -> keeps the arrow
       el.setAttribute("aria-expanded", "false");
     }
     return el;
@@ -51,7 +51,7 @@ globalThis.cmsTreeInit = async (json) => {
     let icon = el.querySelector(":scope > [slot=icon]");
     if (!icon) { icon = Object.assign(document.createElement("span"), { slot: "icon" }); el.prepend(icon); }
     icon.className = "-access-" + d.myaccess + typeMod + (!d.visible ? " -invisible" : ""); // Styling: tree.css
-    // draggable=false: Links sind nativ ziehbar und würden sonst die Tree-DnD kapern.
+    // draggable=false: links are natively draggable and would otherwise hijack the tree DnD.
     let a = el.querySelector(":scope > .-title");
     if (!a) { a = document.createElement("a"); a.draggable = false; el.append(a); }
     a.className = "-title" + typeMod;
@@ -68,8 +68,8 @@ globalThis.cmsTreeInit = async (json) => {
     if (!node || node === rootNode) return;
     if (activeNode !== node) {
       activeNode = node;
-      node.select(); // setzt aria-selected (CSS hängt daran), räumt alte Auswahl selbst auf
-      try { node.setFocus(); } catch { /* egal */ }
+      node.select(); // sets aria-selected (CSS depends on it), clears the old selection itself
+      try { node.setFocus(); } catch { /* ignore */ }
     }
     cms.Tree?.onActivate?.(node);
     const inp = root.getElementById("page-add"), off = node.data.myaccess < 2 || node.data.ptype === "c";
@@ -78,13 +78,13 @@ globalThis.cmsTreeInit = async (json) => {
     el && cms.contPos(el).mark();
   }
 
-  // Events per Delegation auf rootNode; nodeOf liefert den Knoten zum Event (ohne Wurzel).
+  // Events via delegation on rootNode; nodeOf resolves the event's node (excluding the root).
   const nodeOf = (e) => { const n = asTree(e.target.closest?.("u2-tree")); return n === rootNode ? null : n; };
-  rootNode.addEventListener("u2-tree-select", (e) => activate(e.target)); // Space/Enter + Zeilen-Klick
+  rootNode.addEventListener("u2-tree-select", (e) => activate(e.target)); // Space/Enter + row click
   rootNode.addEventListener("click", (e) => {
     const node = nodeOf(e);
     if (!node) return;
-    if (e.shiftKey) { e.preventDefault(); editNode(node); return; } // Shift+Klick = umbenennen
+    if (e.shiftKey) { e.preventDefault(); editNode(node); return; } // Shift+click = rename
     if (e.target.closest(".-title")) {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) open(node.data.url, "_blank");
@@ -93,7 +93,7 @@ globalThis.cmsTreeInit = async (json) => {
     activate(node);
   });
 
-  const hover = (e) => { // Baumzeile -> Inhaltsblock auf der Seite markieren
+  const hover = (e) => { // tree row -> highlight the content block on the page
     const node = nodeOf(e);
     if (!node) return;
     const el = document.querySelector('[qcms-id="' + node.dataset.key + '"]');
@@ -117,21 +117,21 @@ globalThis.cmsTreeInit = async (json) => {
     e.preventDefault();
   });
 
-  // Lazy-Load (nur bei aria-live-Knoten liefert u2 e.load).
+  // Lazy load (u2 provides e.load only on aria-live nodes).
   rootNode.addEventListener("u2-tree-expand", (e) => {
     e.load?.((n) =>
       apt.cms.node(n.dataset.key).tree.get({ level: 1, filter: showContents() ? "*" : "p" })
         .then((children) => { for (const c of children) n.append(makeNode(c)); }));
   });
 
-  rootNode.addEventListener("u2-tree-dragover", (e) => { // erlauben, sonst preventDefault (Access-Regeln)
+  rootNode.addEventListener("u2-tree-dragover", (e) => { // allow, otherwise preventDefault (access rules)
     const target = e.target, { source, parent, region } = e.detail;
     const ok = (target.data?.ptype === "c" && source.data?.ptype === "p") ? false
       : region === "into" ? target.data?.myaccess > 1
-      : parent?.data?.myaccess > 1; // before/after: Zugriff auf den Ziel-Elternknoten
+      : parent?.data?.myaccess > 1; // before/after: access on the target parent node
     if (!ok) e.preventDefault();
   });
-  rootNode.addEventListener("u2-tree-drop", (e) => { // Server-first: erst PUT, Move nach Erfolg
+  rootNode.addEventListener("u2-tree-drop", (e) => { // server-first: PUT first, move after success
     e.preventDefault();
     const target = e.target, { source, parent, next, region } = e.detail;
     const parentKey = region === "into" ? target.dataset.key : parent.dataset.key;
@@ -143,7 +143,7 @@ globalThis.cmsTreeInit = async (json) => {
       });
   });
 
-  function editNode(node) { // u2-tree hat kein Inline-Edit
+  function editNode(node) { // u2-tree has no inline edit
     const titleSpan = node.querySelector(":scope > .-title > span[cmstxt]");
     if (!titleSpan) return;
     const input = Object.assign(document.createElement("input"), { value: node.data.title });
@@ -157,14 +157,14 @@ globalThis.cmsTreeInit = async (json) => {
       apt.cms.txt(node.data.title_id).put({ value: title }).then(() => { node.data.title = title; renderNode(node); });
     };
     input.addEventListener("keydown", (ev) => {
-      ev.stopPropagation(); // nicht an den Tree-keydown-Handler
+      ev.stopPropagation(); // keep it from the tree keydown handler
       if (ev.key === "Enter") input.blur();
       else if (ev.key === "Escape") { input.value = node.data.title; finish(false); node.setFocus(); }
     });
     input.addEventListener("blur", () => finish(true));
   }
 
-  // Lazy-Äste neu laden (Wurzel ohne key -> Vollreload via goTo).
+  // Reload lazy branches (root without key -> full reload via goTo).
   function reloadChildren(node, cb) {
     if (!node.dataset.key) return goTo(activeNode?.dataset.key ?? (cms.cont.active || Page)).then(() => cb?.());
     for (const c of [...node.querySelectorAll(":scope > u2-tree")]) c.remove();
@@ -199,12 +199,12 @@ globalThis.cmsTreeInit = async (json) => {
   }
 
   cms.Tree = {
-    onActivate: null, // wird von panel.mjs gesetzt
+    onActivate: null, // set by panel.mjs
     get activeNode() { return activeNode; },
     getNodeByKey: (k) => treeEl.querySelector(`u2-tree[data-key="${k}"]`),
-    activate, // ignoriert null/Wurzel selbst
+    activate, // ignores null/root itself
     parent: (n) => asTree(n.parentNode),
-    neighbor: (n) => n.prev() || n.next() || asTree(n.parentNode), // u2 prev/next sind slot-bewusst
+    neighbor: (n) => n.prev() || n.next() || asTree(n.parentNode), // u2 prev/next are slot-aware
     update: renderNode,
     reloadChildren,
     editNode,
@@ -216,7 +216,7 @@ globalThis.cmsTreeInit = async (json) => {
   activate(cms.Tree.getNodeByKey(String(cms.cont.active || Page)));
 };
 
-/* Live-Updates über die cms.Tree-Fassade */
+/* Live updates via the cms.Tree facade */
 const onNode = (route, fn) => apt.on(route, (ctx) => { const n = cms.Tree?.getNodeByKey(ctx.params.id); n && fn(n, ctx); });
 onNode("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:id/access", (node) => {
   apt.cms.node(node.dataset.key).get().then((data) => {
@@ -232,7 +232,7 @@ onNode("DELETE cms/node/:id", (node) => {
   node.remove();
 });
 apt.on("PUT cms/node/:id/insert-before", ({ params: { id }, input }) => {
-  // gezielt umhängen statt goTo: reflektiert eigene + fremde Moves
+  // re-attach precisely instead of goTo: reflects own + foreign moves
   const node = cms.Tree?.getNodeByKey(input?.id);
   const parent = cms.Tree?.getNodeByKey(id);
   if (!node || !parent) return;

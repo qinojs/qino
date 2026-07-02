@@ -1,16 +1,16 @@
-// Client-Gegenstück zum serverseitigen `app`/`ctx`.
+// Client-side counterpart of the server-side `app`/`ctx`.
 //
 //   import { getCtx } from "./qino.js";
 //   const ctx = getCtx();
 //
-//   await ctx.app.apt.core.user.me.get();   // RPC      (wie serverseitig ctx.app.apt.…)
-//   await ctx.app.t`Hallo ${name}`;         // übersetzung (wie serverseitig app.t`…`)
-//   await ctx.settings.foo.bar;             // user/session settings (wie ctx.settings)
+//   await ctx.app.apt.core.user.me.get();   // RPC         (like server-side ctx.app.apt.…)
+//   await ctx.app.t`Hallo ${name}`;         // translation (like server-side app.t`…`)
+//   await ctx.settings.foo.bar;             // user/session settings (like ctx.settings)
 //   await ctx.settings.foo.bar.set("x");
 //   ctx.lang / ctx.token / ctx.appURL / ctx.sysURL / ctx.dev
 //
-// ctx.settings == serverseitig ctx.settings (NICHT app.settings — die sind server-only).
-// läuft über den bestehenden apt-endpoint  core/ctx-settings/:path*  (Access.USER).
+// ctx.settings == server-side ctx.settings (NOT app.settings — those are server-only).
+// Backed by the existing apt endpoint  core/ctx-settings/:path*  (Access.USER).
 
 import { Item } from "@qino/item/item.js";
 import { AptClient } from "./AptClient.js";
@@ -30,12 +30,12 @@ class CtxSetting extends Item {
   reader = async () => {
     const value = await apt.core["ctx-settings"](this.path).get();
     if (value && typeof value === "object") {
-      // wir bekommen den ganzen teilbaum → werte direkt cachen, kein nachladen.
-      // { local: true } = nicht via writer zurückschreiben (kam ja vom server).
+      // we get the whole subtree → cache the values directly, no re-fetch.
+      // { local: true } = don't write back via writer (it just came from the server).
       for (const k in value) this.item(k).set(value[k], { local: true });
-      return; // node ist objekt
+      return; // node is an object
     }
-    return value; // blatt-wert
+    return value; // leaf value
   };
 
   writer = async (value) => {
@@ -46,16 +46,16 @@ class CtxSetting extends Item {
 const appURL = globalThis.qino?.appURL ?? "/";
 
 export const ctx = {
-  app: { apt, t },         // serverseitig: ctx.app → app.apt / app.t
+  app: { apt, t },         // server-side: ctx.app → app.apt / app.t
   lang: document.documentElement.getAttribute("lang"),
   appURL,
-  sysURL: appURL + "m/",   // wie serverseitig: appURL + "m/"
+  sysURL: appURL + "m/",   // same as server-side: appURL + "m/"
   settings: new CtxSetting().proxy,
   dev: !!globalThis.qino?.dev,
   token: globalThis.qino?.token,
 };
 
-// serverseitig: import { getCtx } ... — clientseitig gibt es nur den einen ctx
+// server-side: import { getCtx } ... — client-side there is only the one ctx
 export function getCtx() { console.log(Error().stack); return ctx; }
 
 export { t };

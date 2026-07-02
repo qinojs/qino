@@ -67,7 +67,7 @@ export class MailManager {
   async secure(): Promise<string> {
     const root = this.app.settings.mail;
     let secret = String(await root._secure ?? "");
-    if (!secret) root._secure(secret = uid());
+    if (!secret) await root._secure(secret = uid());
     return secret;
   }
 
@@ -95,7 +95,7 @@ export class MailManager {
   trackURL(raw: string, base: string, track: string): string | false {
     try {
       const target = new URL(raw, base);
-      if (["cid:", "file:", "mailto:", "tel:"].includes(target.protocol)) return false;
+      if (!["http:", "https:"].includes(target.protocol)) return false;
       const url = new URL("mail-track", base);
       url.searchParams.set("mail1tr", track);
       url.searchParams.set("url", target.href);

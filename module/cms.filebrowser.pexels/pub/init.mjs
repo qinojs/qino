@@ -15,7 +15,7 @@ new SelectorObserver({ on: el=>{
         `<div class=-pexels style="padding-top:2em;" hidden>
             <h3>
                 Free images from:
-                <a href="https://pexels.com/" target=_blank><img src="http://images.pexels.com/lib/api/pexels.png" style="height:1.5em; margin-left:.5em" alt="pexels.com"></a>
+                <a href="https://pexels.com/" target=_blank><img src="https://images.pexels.com/lib/api/pexels.png" style="height:1.5em; margin-left:.5em" alt="pexels.com"></a>
             </h3>
             <div class="-list"></div>
         </div>`

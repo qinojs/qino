@@ -2,7 +2,7 @@
 
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Redirect, u2Root } from "./lib/util.ts";
+import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/RequestContext.ts";
 export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
@@ -77,7 +77,6 @@ export const ctxSettingsSchema = {
 export async function init(app: App) {
 
     app.on("html-ready", ({ ctx }) => {
-        const itemRoot = "https://jsr.io/@nuxodin/item/0.5.12/";
         ctx.html.importMap.set("@qino/item/", itemRoot);
         ctx.html.importMap.set("@qino/u2/", u2Root);
         // core's own qino.js imports item.js; declare so uncdn proxies it (jsr.io serves raw files as text/html)

@@ -18,8 +18,8 @@ declare module "../core/lib/RequestContext.ts" {
   interface RequestContext { readonly cms: CmsContext; }
 }
 
-// Pro-Request `ctx.cms`, lazy auf dem generischen `ctx.state` gebacken — kein Core-Feld,
-// app-unabhängig (daher hier als Modul-Side-Effect, nicht in init()).
+// Per-request `ctx.cms`, lazily baked onto the generic `ctx.state` — no core field,
+// app-independent (hence a module side effect here, not in init()).
 Object.defineProperty(RequestContext.prototype, "cms", {
   configurable: true,
   get(this: RequestContext): CmsContext { return (this.state.cms ??= new CmsContext()); },

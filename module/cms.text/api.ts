@@ -207,7 +207,8 @@ class CmsTextService {
     }
 
     async isTranslated(txt_ids: any, lang: any): Promise<any> {
-        const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number);
+        const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number).filter(Number.isFinite);
+        if (!ids.length) return Array.isArray(txt_ids) ? {} : false;
         lang ??= this.ctx.lang;
         const rows = await this.ctx.app.db.all`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
         const map: Record<number, boolean> = {};
@@ -226,7 +227,7 @@ export const api: AptTree = {
                 description: "Batch-check if multiple texts are translated in a language",
                 access: Access.USER,
                 query: s.object({
-                    ids: s.string().describe("Comma-separated text IDs"),
+                    ids: s.string().describe("Underscore-separated text IDs"),
                     lang: s.optional(s.string()).describe("Language code. Default: current language"),
                 }),
                 execute: ({ ids, lang }: any, ctx: RequestContext) => service(ctx).isTranslated(ids.split("_").map(Number), lang ?? null),

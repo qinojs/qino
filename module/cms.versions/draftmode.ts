@@ -102,7 +102,6 @@ export function initDraftmode(app: App) {
         for (const key of ["sort", "basis", "access", "title_id"]) {
             if (key in e.data) liveData[key] = e.data[key];
         }
-        if (!liveData) return;
         const idValues = e.Table.entryId2Array(e.id);
         if (!idValues) return;
         const idWhere = e.Table.valuesToFragment(idValues);
@@ -146,7 +145,7 @@ export function initDraftmode(app: App) {
     });
 
     // Inform client about changed pages after API calls (draftmode)
-    app.on("serverInterface::after", async (e: any) => { // gibt es nicht mehr! etwas anderes verwenden
+    app.on("serverInterface::after", async (e: any) => { // no longer exists! use something else
         const ctx = getCtx();
         if (!getCmsVers(ctx).space) return;
         if (!e.fn?.startsWith("page::")) return;

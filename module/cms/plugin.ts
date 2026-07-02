@@ -100,7 +100,7 @@ export function init(app: App) {
                 const replace = ctx.get.replace;
                 const File = await (replace ? P.file(replace) : P.addFile());
                 await File.replaceFromUpload(cmsPageFile);
-                throw new Output({ id: String(File), url: await File.url() + "/" + await File.get("name") });
+                throw new Output({ id: String(File), url: await File.url() });
             }
         }
 

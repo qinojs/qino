@@ -1,8 +1,8 @@
 import type { Node } from "./Node.ts";
 
-// Pro-Request CMS-Kontext, vom cms-Modul auf `ctx.cms` installiert (siehe plugin.ts).
-// Liegt auf dem Request-Objekt, weil die Daten pro-Request sind — App-Singleton-Umweg
-// (früher `app.cms.MainNode` via getCtx) entfällt. Core kennt cms nicht.
+// Per-request CMS context, installed on `ctx.cms` by the cms module (see plugin.ts).
+// Lives on the request object because the data is per-request — no app-singleton
+// detour (formerly `app.cms.MainNode` via getCtx). Core does not know about cms.
 export class CmsContext {
   mainNode!: Node;
   requestedNode!: Node;

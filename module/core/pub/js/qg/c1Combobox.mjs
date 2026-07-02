@@ -4,7 +4,7 @@ const doc = document;
 const dialog = doc.createElement('div');
 dialog.classList.add('c1Dialog');
 dialog.classList.add('c1Select');
-dialog.setAttribute('popover', 'manual'); // top-layer: liegt über dem cms-panel (selbst popover) und dessen shadow-dom
+dialog.setAttribute('popover', 'manual'); // top layer: sits above the cms panel (itself a popover) and its shadow DOM
 dialog.addEventListener('mousedown', e=>{
 	e.preventDefault();
 	e.stopPropagation(); // prevent closing cms-panel

@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
+import * as nodePath from "node:path";
 import { hee, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy } from "../uncdn/mod.ts";
@@ -60,8 +61,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const cacheDir = node.app.appPATH + CACHE_SUBDIR;
 
   if (vars.delete) {
-    const target = cacheDir + String(vars.delete).replace(/^\/+/, "");
-    try { await Deno.remove(target, { recursive: true }); } catch { /* already gone */ }
+    const target = nodePath.resolve(cacheDir, String(vars.delete).replace(/^\/+/, ""));
+    if (target.startsWith(nodePath.resolve(cacheDir) + nodePath.sep)) {
+      try { await Deno.remove(target, { recursive: true }); } catch { /* already gone */ }
+    }
   }
 
   if (vars.deleteAll) {

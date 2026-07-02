@@ -76,7 +76,7 @@ export const s = {
     typeof v === "string" ? { value: v } : { issues: err(p, "expected string") }),
 
   number: (): StandardSchema<number> => new StandardSchema<number>("number", (v, p) =>
-    typeof v === "number" && !Number.isNaN(v) ? { value: v } : { issues: err(p, "expected number") }),
+    typeof v === "number" && Number.isFinite(v) ? { value: v } : { issues: err(p, "expected number") }),
 
   boolean: (): StandardSchema<boolean> => new StandardSchema<boolean>("boolean", (v, p) =>
     typeof v === "boolean" ? { value: v } : { issues: err(p, "expected boolean") }),

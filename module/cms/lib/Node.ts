@@ -192,7 +192,7 @@ export class Node {
             return String(await render(this, {ctx:getCtx(), vars}));
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${err.message}</code></div>` : '<div></div>';
+            return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : '<div></div>';
         }
     }
 

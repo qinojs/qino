@@ -14,8 +14,8 @@ export async function readSse(res: Response, onData: (data: Record<string, unkno
   let buf = "";
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
+    buf += decoder.decode(value, { stream: !done });
+    if (done) buf += "\n\n"; // flush a trailing event that lacks the final blank line
     let nl: number;
     while ((nl = buf.indexOf("\n\n")) >= 0) {
       const event = buf.slice(0, nl);
@@ -27,5 +27,6 @@ export async function readSse(res: Response, onData: (data: Record<string, unkno
         try { onData(JSON.parse(m[1])); } catch { /* keepalive / non-json */ }
       }
     }
+    if (done) return;
   }
 }

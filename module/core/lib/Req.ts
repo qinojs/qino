@@ -14,6 +14,7 @@ export class Req {
   readonly #url: URL;
   #json: Promise<unknown> | undefined;
   #form: Promise<FormData> | undefined;
+  #cookies: Record<string, string> | undefined;
 
   constructor(raw: Request, peerAddr = "") {
     this.raw = raw;
@@ -62,7 +63,7 @@ export class Req {
   }
 
   cookies(): Record<string, string> {
-    return parseCookies(this.header("cookie"));
+    return this.#cookies ??= parseCookies(this.header("cookie"));
   }
 
   cookie(name: string): string | undefined {
@@ -77,7 +78,9 @@ export function parseCookies(header: string | undefined): Record<string, string>
     const i = part.indexOf("=");
     if (i < 0) continue;
     const k = part.slice(0, i).trim();
-    if (k && !(k in out)) out[k] = decodeURIComponent(part.slice(i + 1).trim());
+    if (!k || k in out) continue;
+    const v = part.slice(i + 1).trim();
+    try { out[k] = decodeURIComponent(v); } catch { out[k] = v; } // keep raw value on broken %-encoding
   }
   return out;
 }

@@ -12,7 +12,7 @@ globalThis.Rte = {
 		 * Should also check for new element when parent elements change
 		 * currently the selection and element stay the same even though the DOM structure has changed.
 		 *
-		 * In webkit ist das Element dann z.T nicht mehr das selbe. dann gehts... (ul maker)
+		 * In webkit the element is then sometimes no longer the same one. then it works... (ul maker)
 		 *  */
 		const sel = getSelection();
 		if (!sel.rangeCount) return;

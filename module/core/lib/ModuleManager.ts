@@ -136,7 +136,9 @@ export class ModuleManager {
         const m = e.name.match(/^([a-z]{2})\.json$/);
         if (m) await this.#app.languages.import(m[1], ns, await Deno.readTextFile(dir + "locale/" + e.name));
       }
-    } catch { /* module has no locale dir */ }
+    } catch (e) { /* module has no locale dir */
+      if (!(e instanceof Deno.errors.NotFound)) console.error(`locale import failed for module "${mod.name}":`, e);
+    }
   }
 
   #initOrder(): string[] {

@@ -58,7 +58,7 @@ FileTransformer.register({
       ctx.currentPath = out;
       ctx.mime = 'image/png';
     } else {
-      // Kein AVIF, kein Alpha → JPEG vs PNG, kleinere gewinnt
+      // No AVIF, no alpha → JPEG vs PNG, the smaller one wins
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       const png = nodePath.join(ctx.tmpDir, 'out.png');
       await Promise.all([
