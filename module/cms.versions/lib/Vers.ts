@@ -189,11 +189,11 @@ export function initVers(app: App) {
     // ─── Baseline versioned rows on first action ─────────────────────────────
     app.on("action", async ({ ctx }) => {
         const db = ctx.app.db;
-        for (const t of Object.keys(versedTables(db))) {
-            const vt = versTable(db, t);
-            if (!vt) continue;
-            const logId = Number(await ctx.logId) || 0;
-            if (logId) await baselineTable(db, t, vt, logId);
-        }
+        const { baselined } = dbState(db);
+        const pending = Object.keys(versedTables(db)).filter((t) => !baselined.has(`_vers_${t}`));
+        if (!pending.length) return;
+        const logId = Number(await ctx.logId) || 0;
+        if (!logId) return;
+        for (const t of pending) await baselineTable(db, t, `_vers_${t}`, logId);
     });
 }

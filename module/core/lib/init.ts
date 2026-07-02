@@ -91,8 +91,7 @@ function initLog(ctx: RequestContext): void {
           db.one`SELECT id FROM log_user_agent WHERE user_agent = ${ua}`.then(id => id || db.table("log_user_agent").insert({ user_agent: ua })),
         ]);
 
-        Object.assign(data, { url_id, referer_id, ip_id, user_agent_id });
-        await db.table("log").update(data);
+        await db.table("log").update(data.id, { url_id, referer_id, ip_id, user_agent_id });
 
       } catch (e) { console.error("liveLog background error:", e); }
     });
