@@ -41,20 +41,34 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
   assertEquals(ctx.langUsr, "fr");
 });
 
-Deno.test("LangManager: changeLanguage query overrides stored session language", async () => {
+Deno.test("LangManager: lang query overrides stored session language", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["en", "de"]);
 
   const lang = sessionLang("en");
   const ctx = new RequestContext();
   ctx.appRequestPath = "page";
-  ctx.get = { changeLanguage: "de" };
+  ctx.get = { lang: "de" };
   ctx.req = { header: () => "" } as any;
   ctx.sess = { data: { liveUser: () => 0, qg: { lang } } } as any;
   await lm.initCtx(ctx);
 
   assertEquals(ctx.langUsr, "de");
   assertEquals(lang(), "de");
+});
+
+Deno.test("LangManager: legacy changeLanguage alias still works", async () => {
+  const lm = new LangManager({} as never);
+  lm.setLangs(["en", "de"]);
+
+  const ctx = new RequestContext();
+  ctx.appRequestPath = "page";
+  ctx.get = { changeLanguage: "de" };
+  ctx.req = { header: () => "" } as any;
+  ctx.sess = { data: { liveUser: () => 0, qg: { lang: sessionLang("en") } } } as any;
+  await lm.initCtx(ctx);
+
+  assertEquals(ctx.langUsr, "de");
 });
 
 Deno.test("LangManager: namespace start/stop changes active language", async () => {

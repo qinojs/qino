@@ -209,7 +209,7 @@ export function initDraftmode(app: App) {
     // ─── cms-ready: draftmode frontend ────────────────────────────────────────
     app.on("cms-ready", async ({ ctx }) => {
         if (!ctx.cms.editmode) return;
-        if (ctx.get.qgCmsNoFrontend) return;
+        if (ctx.get.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
         // Check if draft has changes newer than live

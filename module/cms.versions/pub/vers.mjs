@@ -97,9 +97,9 @@ CmsVersViewer.prototype = {
 
 		const src = new URL(location.href);
 		src.hash = '';
-		src.searchParams.append('qgCmsVersLog',vers+1)
-		src.searchParams.append('qgCmsVersPage',this.pid)
-		src.searchParams.append('qgCmsNoFrontend','1');
+		src.searchParams.append('cms_versions_log',vers+1)
+		src.searchParams.append('cms_versions_page',this.pid)
+		src.searchParams.append('cms_noFrontend','1');
 		this.activeIframe.src = src;
 
 		this.activeIframe.style.opacity = 0;

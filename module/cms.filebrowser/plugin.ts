@@ -36,7 +36,7 @@ export const api: AptTree = {
 
 export function init(app: App) {
     app.on("cms-ready", ({ ctx }) => {
-        if (ctx.get.qgCmsNoFrontend) return;
+        if (ctx.get.cms_noFrontend) return;
         if (!ctx.cms.editmode) return;
         ctx.html.scripts.add(ctx.sysURL + "cms.filebrowser/pub/init.mjs");
     });

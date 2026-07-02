@@ -467,7 +467,7 @@ export class Node {
         const ctx = getCtx();
         lang ??= ctx.lang;
         const hash = this.vs.type === "c" ? await this.urlSeo(lang) : "";
-        if (this.edit) return ctx.appURL + "?cmspid=" + await this.page() + "&changeLanguage=" + lang + hash;
+        if (this.edit) return ctx.appURL + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
         return ctx.appURL + (await (await this.page()).urlSeo(lang)) + hash;
     }
 

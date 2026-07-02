@@ -4,7 +4,7 @@ const { appURL } = ctx;
 const Page = globalThis.qino?.cms?.nodeId;
 let div, iframe1, iframe2, pid, view1;
 
-const frameSrc = (space, log) => `${appURL}?cmspid=${Page}&qgCmsVersSpace=${space}&qgCmsVersLog=${log}&qgCmsVersPage=${pid}&qgCmsNoFrontend=1`;
+const frameSrc = (space, log) => `${appURL}?cmspid=${Page}&cms_versions_space=${space}&cms_versions_log=${log}&cms_versions_page=${pid}&cms_noFrontend=1`;
 
 export const CmsVersComparer = {
     _ensure(){

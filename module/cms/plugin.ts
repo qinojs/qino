@@ -84,7 +84,7 @@ export function init(app: App) {
         const settings = ctx.settings;
 
         // Edit mode
-        const editmode = ctx.get.qgCms_editmode;
+        const editmode = ctx.get.cms_editmode;
         if (editmode !== undefined) settings.cms.editmode(editmode);
 
         ctx.cms.editmode = Number(settings.cms.editmode()) || 0;
@@ -104,7 +104,7 @@ export function init(app: App) {
         }
 
         // Page files as ZIP
-        const zipPid = ctx.get.qgCms_page_files_as_zip;
+        const zipPid = ctx.get.cms_nodeFilesZip;
         if (zipPid) {
             const P = await app.cms.node(Number(zipPid));
             if (!(await P.isReadable())) { ctx.responseStatus = 403; return; }

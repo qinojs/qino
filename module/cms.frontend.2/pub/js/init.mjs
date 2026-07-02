@@ -5,7 +5,7 @@ const editable = globalThis.qino?.cms?.editmode !== undefined; // not available 
 function qgCmsToggleEdit(){
 	if (!editable) return;
 	const url = new URL(location.href);
-	url.searchParams.set('qgCms_editmode', globalThis.qino.cms.editmode?0:1);
+	url.searchParams.set('cms_editmode', globalThis.qino.cms.editmode?0:1);
 	url.searchParams.set('cmspid', globalThis.qino.cms.requestedNodeId);
 	import('../../../core/pub/js/c1/scrollSync.mjs').then(() => {
 		c1.scrollSync.reevaluate(globalThis);

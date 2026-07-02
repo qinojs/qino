@@ -51,3 +51,18 @@ cms.initNode("backend.superuser.log", (el) => {
 `cms.initNode` fires once per node element (matched by `qcms-mod`, i.e. the module name
 without the leading `cms.`). Server-side, `render`/parts always run inside a request context,
 so `getCtx()` and `app.t` are available.
+
+## GET parameter naming
+
+Parameters read outside your own node rendering (action hooks, core pipeline) are
+namespaced: module name with `_` instead of `.`, then the parameter name in camelCase —
+`cms_editmode`, `cms_nodeFilesZip`, `cms_noFrontend`, `cms_versions_space`.
+This avoids collisions without a registry and keeps `ctx.get.cms_editmode` as plain
+property access.
+
+Parameters read only by your own backend node stay short and unprefixed
+(`id`, `search`, `tab`) — the page scopes them.
+
+Exceptions (do not extend):
+- `cmspid`, `lang` — core-owned, well-known short names.
+- `changeLanguage` — frozen PHP-era alias for `lang`, kept as read-fallback.

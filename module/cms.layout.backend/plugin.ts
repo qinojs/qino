@@ -105,7 +105,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     const u = ctx.url;
     for (const l of allLangs) {
       if (l === currentLang) continue;
-      u.searchParams.set("changeLanguage", l);
+      u.searchParams.set("lang", l);
       links += `<a href="${hee(u.pathname + u.search)}">${hee(l)}</a> `;
     }
     langHtml = `<li><span class=-item style="padding:6px 16px; text-align:right">${links}</span>`;

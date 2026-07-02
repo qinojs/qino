@@ -7,7 +7,7 @@
  * What is fully active:
  *   - History capture: every insert/update/delete on versioned tables is
  *     written to the corresponding _vers_* shadow table (lib/History.ts).
- *   - Log-mode (historical view): qgCmsVersLog + qgCmsVersPage render a
+ *   - Log-mode (historical view): cms_versions_log + cms_versions_page render a
  *     frozen snapshot of the page at that log entry.
  *   - serverInterface: getForNode, logDetails, publishNode.
  *
@@ -119,14 +119,14 @@ export function init(app: App) {
         await applyDraftSpace(ctx);
 
         // Override from request params
-        if (ctx.get.qgCmsVersSpace !== undefined && ctx.get.qgCmsVersSpace !== "active") {
-            vs.space = Number(ctx.get.qgCmsVersSpace) || 0;
+        if (ctx.get.cms_versions_space !== undefined && ctx.get.cms_versions_space !== "active") {
+            vs.space = Number(ctx.get.cms_versions_space) || 0;
         }
-        vs.log = Number(ctx.get.qgCmsVersLog ?? "0") || 0;
+        vs.log = Number(ctx.get.cms_versions_log ?? "0") || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
         if (vs.log) {
-            const pid = Number(ctx.get.qgCmsVersPage ?? "0");
+            const pid = Number(ctx.get.cms_versions_page ?? "0");
             cacheHeaders(ctx);
 
             // Disable editmode for the historical view — request-only override;
@@ -163,7 +163,7 @@ export function init(app: App) {
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────
     app.on("cms-ready", async ({ ctx }) => {
         if (!ctx.cms.editmode) return;
-        if (ctx.get.qgCmsNoFrontend) return;
+        if (ctx.get.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
         ctx.html.jsData.cmsFrontend = frontend;
         ctx.html.scripts.add(ctx.sysURL + frontend + "/pub/js/frontend.mjs");

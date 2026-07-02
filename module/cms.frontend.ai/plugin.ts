@@ -10,7 +10,7 @@ export function init(app: App) {
   app.ai.registerBot(CmsHelperBot);
 
   app.on("cms-ready", ({ ctx }) => {
-    if (ctx.get.qgCmsNoFrontend) return;
+    if (ctx.get.cms_noFrontend) return;
     if (!ctx.cms.editmode) return;
     ctx.html.scripts.add(ctx.sysURL + "cms.frontend.ai/pub/init.mjs");
   });

@@ -28,7 +28,7 @@ export class LangManager {
 
         ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.qg.lang() ?? "";
 
-        const urlLang = ctx.get.changeLanguage;
+        const urlLang = ctx.get.lang ?? ctx.get.changeLanguage; // changeLanguage: frozen PHP-era alias
         if (urlLang) {
             ctx.langUsr = urlLang;
         } else {

@@ -61,7 +61,7 @@ function run() {
 
     div.querySelector('.-closeBtn').addEventListener('click', () => {
         const url = new URL(location.href);
-        url.searchParams.set('qgCms_editmode', '0');
+        url.searchParams.set('cms_editmode', '0');
         location.href = url;
     });
     div.querySelector('.-ignoreBtn').addEventListener('click', e => {
