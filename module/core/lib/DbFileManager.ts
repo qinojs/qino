@@ -97,7 +97,7 @@ export class DbFileManager {
       headers.set("Content-Transfer-Encoding", "binary");
     }
 
-    if ("as" in param && param["as"] === "text") mime = "text/plain";
+    if (param["as"] === "text") mime = "text/plain";
 
     // Security
     if (/^(text\/html|application\/xhtml\+xml)/.test(mime)) mime = "text/plain";

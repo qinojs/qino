@@ -42,11 +42,11 @@ async function registerClient(ctx: RequestContext): Promise<void> {
 
     const clientId = await ctx.app.db.table("client").insert({ hash });
     ctx.clientId = String(clientId);
-};
+}
 
 function touchSession(ctx: RequestContext): void {
     if (ctx.sess) ctx.sess.touch(ctx.userId);
-};
+}
 
 function initLog(ctx: RequestContext): void {
 
@@ -96,4 +96,4 @@ function initLog(ctx: RequestContext): void {
       } catch (e) { console.error("liveLog background error:", e); }
     });
 
-};
+}
