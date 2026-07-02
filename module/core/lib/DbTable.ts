@@ -181,7 +181,7 @@ export class DbTable {
       if (!where.parts.length) return false;
       const rows = await this.#db.exec`UPDATE ${sql.id(String(this))} SET ${set} WHERE ${where}`;
       if (!rows) return false;
-      if (!rows.affectedRows) return String(id);
+      if (!rows.affectedRows) return false; // no row matched (drivers report matched rows, not changed)
       await this.#db.fire("table::update-after", { Table: this, id, data: values! });
       return String(id);
     }
@@ -220,10 +220,10 @@ export class DbTable {
     return newId;
   }
 
-  delete(id: any): Promise<boolean | undefined> {
+  delete(id: any): Promise<boolean> {
     return this.#db.transaction(() => this.#delete(id));
   }
-  async #delete(id: any): Promise<boolean | undefined> {
+  async #delete(id: any): Promise<boolean> {
     id = this.entryId(id);
     const values = this.entryId2Array(id);
     const eBefore: any = { Table: this, data: values, id, returnValue: undefined };
@@ -233,7 +233,7 @@ export class DbTable {
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return false;
     const rows = await this.#db.exec`DELETE FROM ${sql.id(String(this))} WHERE ${where}`;
-    if (!rows?.affectedRows) return undefined;
+    if (!rows?.affectedRows) return false; // no row matched
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
     for (const Field of this.children) {
       if (Field.onParentDelete === "cascade") {

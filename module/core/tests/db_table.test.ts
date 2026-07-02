@@ -29,6 +29,7 @@ function db() {
         { Field: "name", Type: "varchar(191)", Null: "NO", Key: "", Extra: "", Default: null },
         { Field: "parent", Type: "int(11)", Null: "YES", Key: "", Extra: "", Default: null },
       ];
+      if (sql.startsWith("SELECT")) return rows;
       return [];
     },
     all(...a: any[]) {
