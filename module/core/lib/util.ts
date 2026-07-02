@@ -97,6 +97,15 @@ export class Output extends Error {
     this.status = status;
     this.headers = headers;
   }
+  /** Response headers for this signal; JSON content-type as default, explicit headers win. */
+  buildHeaders(): Headers {
+    const headers = new Headers(this.headers);
+    if (this.isJson && !headers.has("Content-Type")) headers.set("Content-Type", "application/json; charset=UTF-8");
+    return headers;
+  }
+  toResponse(): Response {
+    return new Response(this.body as string, { status: this.status, headers: this.buildHeaders() });
+  }
 }
 export class Redirect extends Output {
   constructor(location: string, status = 302) { super(undefined, { status, headers: { Location: location } }); }

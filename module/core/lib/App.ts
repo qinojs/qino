@@ -179,8 +179,7 @@ export class App extends Emitter<AppEvents> {
     /** Map a control-flow signal onto the request context's pending response. */
     #handleError(ctx: RequestContext, e: unknown): void {
         if (e instanceof Output) {
-            if (e.isJson) ctx.responseHeaders.set("Content-Type", "application/json; charset=UTF-8");
-            for (const [k, v] of Object.entries(e.headers)) ctx.responseHeaders.set(k, v);
+            for (const [k, v] of e.buildHeaders()) ctx.responseHeaders.set(k, v);
             ctx.responseBody = e.body as string;
             ctx.responseStatus = e.status;
         } else {
@@ -192,11 +191,7 @@ export class App extends Emitter<AppEvents> {
 
     /** Errors raised before a request context exists (init, pre-filter, 413). */
     #earlyError(e: unknown): Response {
-        if (e instanceof Output) {
-            const headers = new Headers(e.headers);
-            if (e.isJson) headers.set("Content-Type", "application/json; charset=UTF-8");
-            return new Response(e.body as string, { status: e.status, headers });
-        }
+        if (e instanceof Output) return e.toResponse();
         console.error("Error:", e);
         return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
     }
