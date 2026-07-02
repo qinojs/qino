@@ -87,11 +87,6 @@ export class App extends Emitter<AppEvents> {
         this.t         = this.languages.t;
     }
 
-    /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
-    get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
-        return (req, info) => this.handle(req, this.basePath, info?.remoteAddr?.hostname);
-    }
-
     /** Mandatory boot step, after all modules are imported: ensures the database, migrates the
      *  schema (DDL), and runs module init. Call once before serving — keeps DDL out of the request path. */
     async init(): Promise<void> {
@@ -99,24 +94,29 @@ export class App extends Emitter<AppEvents> {
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
     }
 
-    import(spec: string): Promise<Module> { return this.modules.import(spec); }
+    /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
+    get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
+        return (req, info) => this.handle(req, this.basePath, info?.remoteAddr?.hostname);
+    }
 
+    import(spec: string): Promise<Module> { return this.modules.import(spec); }
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
         const req = new Req(request, peerAddr);
+        const base = ensureSlash(basePath || "/");
         let ctx: RequestContext;
         try {
             await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
             // static files skip the whole context pipeline — no session/db work (switch: the commented call in #route)
-            const localPath = urlToLocalPath(req.url, ensureSlash(basePath || "/"), this);
+            const localPath = urlToLocalPath(req.url, base, this);
             if (localPath) return await this.#static(req, localPath);
-            ctx = await makeRequestContext(this, req, basePath || "/");
+            ctx = await makeRequestContext(this, req, base);
         } catch (e: unknown) {
             return this.#earlyError(e);
         }
-        return requestStorage.run(ctx, () => this.#run(ctx));
+        return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.cleanup()));
     }
 
     async #static(req: Req, localPath: string): Promise<Response> {
@@ -126,25 +126,18 @@ export class App extends Emitter<AppEvents> {
     }
 
     async #run(ctx: RequestContext): Promise<Response> {
-        try {
-            const res = await this.#dispatch(ctx);
-            await this.fire("response-ready", { req: ctx.req, res, ctx }); // last hook, sees every response (static, dbFile, api, pages)
-            return res;
-        } finally {
-            await ctx.cleanup();
-        }
-    }
-
-    async #dispatch(ctx: RequestContext): Promise<Response> {
+        let res: Response;
         try {
             await initRequest(ctx);
             this.sessions.setCookieIfNew(ctx);
             await this.fire("action", { ctx });
-            return await this.#route(ctx);
+            res = await this.#route(ctx);
         } catch (e: unknown) {
             this.#handleError(ctx, e);
-            return await this.#buildResponse(ctx);
+            res = await this.#buildResponse(ctx);
         }
+        await this.fire("response-ready", { req: ctx.req, res, ctx }); // last hook, sees every response (static, dbFile, api, pages)
+        return res;
     }
 
     /** Explicit, ordered dispatch over the request path — the one routing model. */
