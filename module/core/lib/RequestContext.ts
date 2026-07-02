@@ -78,13 +78,7 @@ export class RequestContext {
   }
 
   urlToLocalPath(url: string): string | null {
-    try {
-      const u = new URL(url);
-      if (u.protocol === "file:") return u.pathname;
-      const appRequestPath = decodeURIComponent(u.pathname.slice(this.appURL.length));
-      return appRequestPathToLocalPath(appRequestPath, this.app);
-    } catch { /* not a URL */ }
-    return null;
+    return urlToLocalPath(url, this.appURL, this.app);
   }
 
   async cleanup(): Promise<void> {
@@ -137,6 +131,17 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
   });
 
   return ctx;
+}
+
+/** Resolve a request URL to a servable local file (module/qg pub dirs); null if it is no static path. */
+export function urlToLocalPath(url: string, appURL: string, app: App): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol === "file:") return u.pathname;
+    const appRequestPath = decodeURIComponent(u.pathname.slice(appURL.length));
+    return appRequestPathToLocalPath(appRequestPath, app);
+  } catch { /* not a URL */ }
+  return null;
 }
 
 function appRequestPathToLocalPath(appRequestPath: string, app: App): string | null {

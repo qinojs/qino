@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
-import { makeRequestContext, requestStorage, type RequestContext } from "./RequestContext.ts";
+import { makeRequestContext, requestStorage, urlToLocalPath, type RequestContext } from "./RequestContext.ts";
 import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
@@ -33,7 +33,7 @@ export interface AppEvents {
     "render": { ctx: RequestContext };
     "html-ready": { ctx: RequestContext };
     "respond": { ctx: RequestContext };
-    "response-ready": { ctx: RequestContext; res: Response };
+    "response-ready": { req: Req; res: Response; ctx?: RequestContext }; // ctx is missing for static files
     "auth-before": { email: string; pw: string };
     "login": { session_old: ItemProxy; id: number };
     "logout": Record<string, never>;
@@ -109,6 +109,9 @@ export class App extends Emitter<AppEvents> {
         let ctx: RequestContext;
         try {
             await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
+            // static files skip the whole context pipeline — no session/db work (switch: the commented call in #route)
+            const localPath = urlToLocalPath(req.url, ensureSlash(basePath || "/"), this);
+            if (localPath) return await this.#static(req, localPath);
             ctx = await makeRequestContext(this, req, basePath || "/");
         } catch (e: unknown) {
             return this.#earlyError(e);
@@ -116,23 +119,24 @@ export class App extends Emitter<AppEvents> {
         return requestStorage.run(ctx, () => this.#run(ctx));
     }
 
+    async #static(req: Req, localPath: string): Promise<Response> {
+        const res = await serveFile(req.raw, localPath);
+        await this.fire("response-ready", { req, res });
+        return res;
+    }
+
     async #run(ctx: RequestContext): Promise<Response> {
         try {
             const res = await this.#dispatch(ctx);
-            await this.fire("response-ready", { ctx, res }); // last hook, sees every response (static, dbFile, api, pages)
+            await this.fire("response-ready", { req: ctx.req, res, ctx }); // last hook, sees every response (static, dbFile, api, pages)
             return res;
         } finally {
             await ctx.cleanup();
-            console.log(`${ctx.req.method} ${ctx.req.path} ${(performance.now() - ctx.req.time).toFixed(1)}ms`);
         }
     }
 
     async #dispatch(ctx: RequestContext): Promise<Response> {
         try {
-            // static files skip the session/settings/log pipeline (switch: the commented call in #route)
-            const localPath = ctx.urlToLocalPath(ctx.req.url);
-            if (localPath) return await serveFile(ctx.req.raw, localPath);
-
             await initRequest(ctx);
             this.sessions.setCookieIfNew(ctx);
             await this.fire("action", { ctx });
@@ -147,6 +151,8 @@ export class App extends Emitter<AppEvents> {
     #route(ctx: RequestContext): Response | Promise<Response> {
         const uri = ctx.appRequestPath;
 
+        // Switch to track statics (full session/log pipeline): disable the #static call in
+        // handle() and enable this. Plain serveFile — #run already fires response-ready here.
         // const localPath = ctx.urlToLocalPath(ctx.req.url);
         // if (localPath) return serveFile(ctx.req.raw, localPath);
 
