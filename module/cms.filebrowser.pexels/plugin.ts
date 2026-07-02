@@ -1,12 +1,11 @@
-import type { RequestContext, App } from "../core/mod.ts";
+import type { App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 export const name = "cms.filebrowser.pexels";
 export const needs = ["cms", "cms.filebrowser"];
 
 export function init(app: App) {
-    app.on("cms-ready", e => {
-        const ctx = e.ctx as RequestContext;
+    app.on("cms-ready", ({ ctx }) => {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.cms.editmode) return;
         const csp = ctx.csp;

@@ -5,10 +5,11 @@ import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
 import { Db } from "./Db.ts";
-import { DbFileManager } from "./DbFileManager.ts";
+import { DbFileManager, type DbFile } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
 import { ModuleManager, type Module } from "./ModuleManager.ts";
+import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
 import { initRequest } from "./init.ts";
@@ -33,11 +34,18 @@ export interface AppEvents {
     "html-ready": { ctx: RequestContext };
     "respond": { ctx: RequestContext };
     "response-ready": { ctx: RequestContext; res: Response };
+    "auth-before": { email: string; pw: string };
+    "login": { session_old: ItemProxy; id: number };
+    "logout": Record<string, never>;
+    "dbFile::access": { File: DbFile; access: boolean };
+    "dbFile::access2": { File: DbFile; access: boolean };
+    "dbFile-used": { dbFile: DbFile; used: boolean };
+    "dbFile-remove-fs": { dbFile: DbFile; prevent: boolean };
     [name: string]: Record<string, unknown>; // untyped module events stay allowed
 }
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
-export class App {
+export class App extends Emitter<AppEvents> {
     appPATH: string;
     basePath: string;
     https: boolean;
@@ -53,13 +61,13 @@ export class App {
     languages: LangManager;
     t: LangManager["t"];
     aptTree: AptTree = {};
-    #events: Record<string, ((data: never) => void | Promise<void>)[]> = {};
     #apt?: AptProxy;
 
     // the proxy reads aptTree lazily, so modules added at runtime stay visible
     get apt(): AptProxy { return this.#apt ??= aptClient(this.aptTree); }
 
     constructor(config: Partial<typeof defaultConfig> = {}) {
+        super();
         const cfg = { ...defaultConfig, ...config };
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
@@ -94,15 +102,6 @@ export class App {
     import(spec: string): Promise<Module> { return this.modules.import(spec); }
 
     async importAll(path: string): Promise<void> { await this.modules.importAll(path); }
-
-    on<K extends string & keyof AppEvents>(name: K, fn: (data: AppEvents[K]) => void | Promise<void>): void {
-        (this.#events[name] ??= []).push(fn);
-    }
-
-    async fire<K extends string & keyof AppEvents>(name: K, data: AppEvents[K] = {} as AppEvents[K]): Promise<void> {
-        if (!this.#events[name]) return;
-        for (const event of this.#events[name]) await event(data as never);
-    }
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {

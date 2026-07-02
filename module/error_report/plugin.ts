@@ -113,13 +113,13 @@ export function init(app: App): void {
     await addReport(app, data);
   };
 
-  app.on("action", (e) => { const ctx = e.ctx as RequestContext;
+  app.on("action", ({ ctx }) => {
     if (ctx.appRequestPath === "js-error")  return handleJsError(ctx);
     if (ctx.appRequestPath === "css-error") return handleCssError(ctx);
     if (ctx.appRequestPath === "csp-error") return handleCspError(ctx);
   });
 
-  app.on("render", async (e) => { const ctx = e.ctx as RequestContext;
+  app.on("render", async ({ ctx }) => {
     if (!ctx.hasHtml) return;
     const browserErrorsEnabled = await ctx.app.settings.error_report.browserErrors;
     if (!browserErrorsEnabled) return;

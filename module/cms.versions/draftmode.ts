@@ -93,7 +93,7 @@ export function initDraftmode(app: App) {
     // ─── cross-space field sync for `page` table ─────────────────────────────
     // Some `page` fields (sort, basis, access, title_id) must stay in sync
     // with the live table even when we're in a space.
-    app.db.on("table::update-before", async (e: any) => {
+    app.db.on("table::update-before", async (e) => {
         const ctx = requestStorage.getStore();
         if (!ctx) return;
         if (!getVers(ctx).space) return;
@@ -138,10 +138,10 @@ export function initDraftmode(app: App) {
     app.on("page::file_upload-before", onModify);
 
     // Copy vers_cms_page_changed when a new space is created
-    app.on("vers::createSpace", async (e: any) => {
+    app.on("vers::createSpace", async ({ space }) => {
         await app.db.query`
             INSERT INTO vers_cms_page_changed
-            SELECT page_id, ${e.space} as space, changed_inside, changed_page, changed
+            SELECT page_id, ${space} as space, changed_inside, changed_page, changed
             FROM vers_cms_page_changed WHERE space = 0`;
     });
 
@@ -208,8 +208,7 @@ export function initDraftmode(app: App) {
     // ─────────────────────────────────────────────────────────────────────────
 
     // ─── cms-ready: draftmode frontend ────────────────────────────────────────
-    app.on("cms-ready", async (e) => {
-        const ctx = e.ctx as RequestContext;
+    app.on("cms-ready", async ({ ctx }) => {
         if (!ctx.cms.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);

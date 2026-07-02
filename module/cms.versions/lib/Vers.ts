@@ -187,8 +187,7 @@ async function baselineTable(db: Db, tableName: string, vt: string, logId: numbe
 export function initVers(app: App) {
 
     // ─── Baseline versioned rows on first action ─────────────────────────────
-    app.on("action", async e => {
-        const ctx = e.ctx as RequestContext;
+    app.on("action", async ({ ctx }) => {
         const db = ctx.app.db;
         for (const t of Object.keys(versedTables(db))) {
             const vt = versTable(db, t);

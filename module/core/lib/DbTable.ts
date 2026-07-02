@@ -182,7 +182,7 @@ export class DbTable {
       const rows = await this.#db.exec`UPDATE ${sql.id(String(this))} SET ${set} WHERE ${where}`;
       if (!rows) return false;
       if (!rows.affectedRows) return String(id);
-      await this.#db.fire("table::update-after", { Table: this, id, data: values });
+      await this.#db.fire("table::update-after", { Table: this, id, data: values! });
       return String(id);
     }
     return undefined;
@@ -229,8 +229,9 @@ export class DbTable {
     const eBefore: any = { Table: this, data: values, id, returnValue: undefined };
     await this.#db.fire("table::delete-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const where = values ? this.valuesToFragment(values) : null;
-    if (!where?.parts.length) return false;
+    if (!values) return false;
+    const where = this.valuesToFragment(values);
+    if (!where.parts.length) return false;
     const rows = await this.#db.exec`DELETE FROM ${sql.id(String(this))} WHERE ${where}`;
     if (!rows?.affectedRows) return undefined;
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });

@@ -2,20 +2,32 @@
 import { DbTable } from "./DbTable.ts";
 import { sql, isTemplate, render, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
 import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
+import { Emitter } from "./Emitter.ts";
 import type { RowDataPacket } from "../../../deps.ts";
 
 export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
 export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
 export const numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
 
-export class Db {
+/** Core db events; modules add their own via `declare module "../core/lib/Db.ts" { interface DbEvents {...} }`. */
+export interface DbEvents {
+  "table::insert-before": { Table: DbTable; data: Record<string, any>; returnValue?: unknown };
+  "table::insert-after": { Table: DbTable; id: any; data: Record<string, any> };
+  "table::update-before": { Table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
+  "table::update-after": { Table: DbTable; id: any; data: Record<string, any> };
+  "table::delete-before": { Table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
+  "table::delete-after": { Table: DbTable; id: any; data: Record<string, any> };
+  [name: string]: Record<string, unknown>; // untyped module events stay allowed
+}
+
+export class Db extends Emitter<DbEvents> {
   #tables: Record<string, DbTable> = {};
   #driver: Driver;
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
   #schema: Record<string, any> = { properties: {} };
-  #events: Record<string, ((data: Record<string, any>) => void | Promise<void>)[]> = {};
 
   constructor(conn: string) {
+    super();
     this.#driver = makeDriver(conn);
     // Dialect (quoting + placeholders) for rendering comes from item.js — one source for all backends.
     this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
@@ -119,13 +131,4 @@ export class Db {
   }
 
   close = (): Promise<void> => this.#driver.close();
-
-  on(name: string, fn: (data: Record<string, any>) => void | Promise<void>): void {
-    (this.#events[name] ??= []).push(fn);
-  }
-  async fire(name: string, data: Record<string, any> = {}): Promise<void> {
-    if (!this.#events[name]) return;
-    for (const fn of this.#events[name]) await fn(data);
-  }
-
 }

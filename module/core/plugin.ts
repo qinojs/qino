@@ -1,12 +1,12 @@
-// deno-lint-ignore-file no-explicit-any
 // qino-module manifest for core. The public library API lives in ./mod.ts.
 
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, u2Root } from "./lib/util.ts";
-import { getCtx, type RequestContext } from "./lib/RequestContext.ts";
+import { getCtx } from "./lib/RequestContext.ts";
 export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
+import type { DbEvents } from "./lib/Db.ts";
 
 export const name = "core";
 export { dbSchema };
@@ -76,8 +76,7 @@ export const ctxSettingsSchema = {
 
 export async function init(app: App) {
 
-    app.on("html-ready", e => {
-        const ctx = e.ctx as RequestContext;
+    app.on("html-ready", ({ ctx }) => {
         const itemRoot = "https://jsr.io/@nuxodin/item/0.5.12/";
         ctx.html.importMap.set("@qino/item/", itemRoot);
         ctx.html.importMap.set("@qino/u2/", u2Root);
@@ -88,9 +87,7 @@ export async function init(app: App) {
     const langsRaw = String(await app.settings.core.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
 
-    app.on("action", async (e) => {
-        const ctx = e.ctx as RequestContext;
-
+    app.on("action", async ({ ctx }) => {
         // HTTPS redirect
         const https = app.https;
         if (https && ctx.url.protocol !== "https:") {
@@ -113,24 +110,22 @@ export async function init(app: App) {
 
     // stamp the current request's logId onto every write — except the log tables themselves
     // (the log insert would otherwise await its own pending logId → deadlock)
-    const stampLogId = (field: string) => async (e: any) => {
+    const stampLogId = (field: string) => async (e: DbEvents["table::insert-before"]) => {
       if (/^log(_|$)/.test(String(e.Table))) return;
       try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
     };
     app.db.on("table::insert-before", stampLogId("log_id"));
     app.db.on("table::update-before", stampLogId("log_id_ch"));
 
-    app.on("login", async (data: any) => {
+    app.on("login", async ({ id }) => {
       const ctx = getCtx();
       if (!ctx.sess) return;
       const { mergeSessionSettingsToUser } = await import("./lib/contextSettings.ts");
-      await mergeSessionSettingsToUser(app.db, data.id, ctx.sess.id);
+      await mergeSessionSettingsToUser(app.db, id, ctx.sess.id);
       await ctx.initSettings();
     });
 
-    app.on("respond", async (e) => {
-        const ctx = e.ctx as RequestContext;
-
+    app.on("respond", async ({ ctx }) => {
         ctx.responseHeaders.set("Accept-CH", "DPR");
 
         const enableRaw = String(await ctx.app.settings.core.csp.enable ?? "");

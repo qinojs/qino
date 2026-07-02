@@ -99,8 +99,7 @@ export function init(app: App): void {
   const cacheDir = app.appPATH + CACHE_SUBDIR;
   const allowed = (app.uncdn = { origins: new Set<string>() }).origins; // origins any page declared via CSP — fetchable by anyone
 
-  app.on("action", async e => {
-    const ctx = e.ctx as RequestContext;
+  app.on("action", async ({ ctx }) => {
     if (!ctx.appRequestPath.startsWith(PROXY_PREFIX)) return;
     const rest = ctx.appRequestPath.slice(PROXY_PREFIX.length);
     if (!rest) return;
@@ -129,8 +128,7 @@ export function init(app: App): void {
     await fetchAndCache(url, filePath, cacheDir, mediaType, ctx);
   });
 
-  app.on("html-ready", e => {
-    const ctx = e.ctx as RequestContext;
+  app.on("html-ready", ({ ctx }) => {
     if (!ctx.html) return;
     for (const o of [...origins(ctx.csp["script-src"]), ...origins(ctx.csp["style-src"])]) allowed.add(o);
     rewriteHtml(ctx.html, ctx.appURL, ctx.csp);

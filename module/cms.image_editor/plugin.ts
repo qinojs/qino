@@ -1,8 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { Output, type App, type AptTree, type RequestContext, s } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import type { Node } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
+
+declare module "../core/lib/App.ts" {
+    interface AppEvents {
+        "page::file_upload-before": { Page: Node };
+        "page::file_upload-after": { Page: Node };
+    }
+}
 
 export const name = "cms.image_editor";
 export const needs = ["cms", "cms.versions"];
@@ -65,16 +72,14 @@ export const api: AptTree = {
 };
 
 export function init(app: App) {
-    app.on("cms-ready", e => {
-        const ctx = e.ctx as RequestContext;
+    app.on("cms-ready", ({ ctx }) => {
         if (ctx.get.qgCmsNoFrontend) return;
         if (!ctx.cms.editmode) return;
         ctx.html.scripts.add(ctx.sysURL + "cms.image_editor/pub/init.mjs");
     });
 
     // Replace an existing image with the edited version (keeps the filename).
-    app.on("action", async e => {
-        const ctx = e.ctx as RequestContext;
+    app.on("action", async ({ ctx }) => {
         const upload = ctx.files["editedImage"];
         if (!upload) return;
 

@@ -3,9 +3,15 @@
 import { CMS } from "./lib/CMS.ts";
 import { CmsContext } from "./lib/CmsContext.ts";
 import { RequestContext } from "../core/mod.ts";
+import type { Node } from "./lib/Node.ts";
 
 declare module "../core/lib/App.ts" {
   interface App { cms: CMS; }
+  interface AppEvents {
+    "cms-ready": { ctx: RequestContext };
+    "page::construct": { Page: Node };
+    "cms.node.render": { node: Node; render: ((node: Node, opts: Record<string, unknown>) => unknown) | null };
+  }
 }
 
 declare module "../core/lib/RequestContext.ts" {

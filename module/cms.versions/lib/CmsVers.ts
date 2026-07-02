@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, requestStorage, sql, type RequestContext, type Db, type App } from "../../core/mod.ts";
+import { getCtx, requestStorage, sql, type RequestContext, type Db, type DbEvents, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view } from "./Vers.ts";
 import { tableEntriesCopyTo } from "./Spaces.ts";
 import type { Node } from "../../cms/mod.ts";
@@ -115,7 +115,7 @@ export async function copyNode(
  * (registering per request would leak permanent app.db listeners).
  */
 export function preventDbManipulations(app: App): void {
-    const prevent = (e: any) => {
+    const prevent = (e: DbEvents["table::insert-before"]) => {
         const ctx = requestStorage.getStore();
         if (!ctx || !getCmsVers(ctx).log) return; // only in log-mode requests
         const name: string = String(e.Table);

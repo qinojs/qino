@@ -18,7 +18,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { type RequestContext, type DbScope, Access, type AptTree, s, sql, type App } from "../core/mod.ts";
+import { type DbScope, Access, type AptTree, s, sql, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
@@ -111,9 +111,7 @@ export function init(app: App) {
 
     // ─── Request init ─────────────────────────────────────────────────────────
     // settings + request params.
-    app.on("action", async e => {
-        const ctx = e.ctx as RequestContext;
-
+    app.on("action", async ({ ctx }) => {
         const vs = getCmsVers(ctx);
         await ensureSpace(ctx.app, vs.space);
 
@@ -163,8 +161,7 @@ export function init(app: App) {
     });
 
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────
-    app.on("cms-ready", async (e) => {
-        const ctx = e.ctx as RequestContext;
+    app.on("cms-ready", async ({ ctx }) => {
         if (!ctx.cms.editmode) return;
         if (ctx.get.qgCmsNoFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");

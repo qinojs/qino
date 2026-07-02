@@ -6,6 +6,7 @@
 
 // App + request context
 export { App } from "./lib/App.ts";
+export type { AppEvents } from "./lib/App.ts";
 export { Req } from "./lib/Req.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, RequestContext, requestStorage } from "./lib/RequestContext.ts";
@@ -23,6 +24,7 @@ export * from "./lib/apt/mod.ts";
 
 // Database
 export { Db } from "./lib/Db.ts";
+export type { DbEvents } from "./lib/Db.ts";
 export { Sql, sql } from "../../deps.ts";
 export { dbScope, tableRef, scopeCache } from "./lib/dbScope.ts";
 export type { DbScope } from "./lib/dbScope.ts";

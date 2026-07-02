@@ -45,7 +45,7 @@ function injectParts(exports_: Record<string, unknown>, parsed: ParsedModule): v
 
 export function init(app: App) {
   app.on("cms.node.render", async (e) => {
-    const node     = e.node as { module?: { name?: string; dir?: string; plugin?: Record<string, unknown> } };
+    const node     = e.node;
     const dir      = node.module?.dir;
     if (!dir) return;
 
@@ -60,7 +60,7 @@ export function init(app: App) {
       watchTemplate(modName, dir + "template.html", exports_);
     }
 
-    (e as Record<string, unknown>).render = parsed.render;
+    e.render = parsed.render;
     injectParts(exports_, parsed);
   });
 }

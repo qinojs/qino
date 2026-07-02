@@ -6,6 +6,12 @@
 import { getCtx, requestStorage, sql, type App, type Db } from "../../core/mod.ts";
 import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
 
+declare module "../../core/lib/App.ts" {
+    interface AppEvents {
+        "vers::createSpace": { space: number };
+    }
+}
+
 // ─── ensureSpace ────────────────────────────────────────────────────────────
 
 export async function ensureSpace(app: App, space: number): Promise<void> {
@@ -70,7 +76,7 @@ export async function tableEntriesCopyTo(
 export function initSpaces(app: App) {
 
     // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
-    app.db.on("table::insert-after", async (e: any) => {
+    app.db.on("table::insert-after", async (e) => {
         const ctx = requestStorage.getStore();
         if (!ctx) return;
         if (getVers(ctx).space) return; // only in live space
@@ -79,7 +85,7 @@ export function initSpaces(app: App) {
         const originalTable = tableName.slice(6);
         const auto = e.Table.autoIncrement;
         if (!auto) return;
-        const ids = e.Table.entryId2Array(e.id) ?? {};
+        const ids = e.Table.entryId2Array(e.id) || {};
         const value = Number(ids[String(auto)]);
         if (!value) return;
         await ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;

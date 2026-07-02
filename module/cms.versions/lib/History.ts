@@ -5,7 +5,7 @@
 // Writes without request context (cron/CLI/boot) are not captured — capture
 // is keyed to ctx.logId, so there is no log entry to attach them to.
 
-import { requestStorage, sql, type App } from "../../core/mod.ts";
+import { requestStorage, sql, type App, type DbEvents } from "../../core/mod.ts";
 import { getVers, versTable } from "./Vers.ts";
 
 export function initHistory(app: App) {
@@ -27,7 +27,7 @@ export function initHistory(app: App) {
 
     // ─── History capture: insert/update ──────────────────────────────────────
     // Writes a REPLACE INTO _vers_* for every tracked table mutation.
-    const catchInsertUpdate = async (e: any) => {
+    const catchInsertUpdate = async (e: DbEvents["table::insert-after"]) => {
         const t = await track(e);
         if (!t) return;
         const { ctx, tableName, vt, logId } = t;
@@ -48,7 +48,7 @@ export function initHistory(app: App) {
     app.db.on("table::insert-after", catchInsertUpdate);
 
     // ─── History capture: delete ──────────────────────────────────────────────
-    app.db.on("table::delete-after", async (e: any) => {
+    app.db.on("table::delete-after", async (e) => {
         const t = await track(e);
         if (!t) return;
         const { ctx, vt, logId } = t;
@@ -76,7 +76,7 @@ export function initHistory(app: App) {
     // Blobs are the only unrecoverable data (rows can be rebuilt from snapshots).
     // TODO: dbFile output should fall back to the _vers_file snapshot when the
     // live row is gone, so history views can still serve these preserved blobs.
-    app.on("dbFile-remove-fs", async (e: any) => {
+    app.on("dbFile-remove-fs", async (e) => {
         const md5 = e.dbFile?.vs?.md5 ?? "";
         if (!md5) return;
         const inVers = await app.db.one`SELECT id FROM _vers_file WHERE md5 = ${md5}`.catch(() => null);

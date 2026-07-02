@@ -13,5 +13,5 @@ export { healthChecks } from "./healthChecks.ts";
 
 export function init(app: App): void {
   app.mail = new MailManager(app);
-  app.on("action", (e) => handleTrack(e.ctx as never));
+  app.on("action", ({ ctx }) => handleTrack(ctx));
 }

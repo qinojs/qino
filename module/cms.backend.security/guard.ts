@@ -6,8 +6,8 @@ import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqI
 const pathBlocks = new Map<string, number>();
 
 export function initSecurity(app: App) {
-  app.on("request-start", async e => {
-    const info = gateInfo(e.req as Req, app.trustedProxyHops);
+  app.on("request-start", async ({ req }) => {
+    const info = gateInfo(req, app.trustedProxyHops);
     if (isPathBlocked(info)) return deny(5);
     const set = await settings(app);
     if (!set.enabled) return;
@@ -18,8 +18,7 @@ export function initSecurity(app: App) {
     deny(set.pathBlockSeconds);
   });
 
-  app.on("action", async e => {
-    const ctx = e.ctx as RequestContext;
+  app.on("action", async ({ ctx }) => {
     const fast = fastInfo(ctx);
     if (isPathBlocked(fast)) return block(ctx, 5);
     const set = await settings(ctx.app);
@@ -51,8 +50,7 @@ export function initSecurity(app: App) {
     if (policy.delay) await sleep(policy.delay);
   });
 
-  app.on("respond", async e => {
-    const ctx = e.ctx as RequestContext;
+  app.on("respond", async ({ ctx }) => {
     const sec = ctx.state.security;
     if (!sec) return;
     const set = await settings(ctx.app);

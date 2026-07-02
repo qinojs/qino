@@ -1,6 +1,6 @@
 import { resolveText } from "./resolveText.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { hee, HtmlString, getCtx, urlize, sql, tableRef, DbFile, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
+import { hee, HtmlString, getCtx, urlize, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
 
@@ -184,7 +184,7 @@ export class Node {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
             let render = this.module.plugin.cms?.node?.render;
             if (!render) {
-                const e: { node: Node; render: ((node: Node, opts: Record<string, unknown>) => unknown) | null } = { node: this, render: null };
+                const e: AppEvents["cms.node.render"] = { node: this, render: null };
                 await this.app.fire("cms.node.render", e);
                 render = e.render ?? undefined;
             }
