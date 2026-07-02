@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
-import { sql } from "../core/mod.ts";
+import { sql, unixTime } from "../core/mod.ts";
 
 export const healthChecks = {
   get(app: any): HealthTypes {
@@ -21,7 +21,7 @@ export const healthChecks = {
               "delete unused": {
                 solve: async () => {
                   const fm = app.dbFiles;
-                  const ago = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
+                  const ago = unixTime() - 60 * 60 * 24 * 7;
                   const notLinkedFull = children.map((F: any) =>
                     sql`file.id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`
                   );

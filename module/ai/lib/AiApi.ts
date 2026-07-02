@@ -1,11 +1,10 @@
-import type { App } from "../../core/mod.ts";
+import { unixTime, type App } from "../../core/mod.ts";
 import type { Bot, Kind, ProviderRow } from "../types.ts";
 import { Provider } from "./Provider.ts";
 import { ChatSession } from "./ChatSession.ts";
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
 
-const now = () => Math.floor(Date.now() / 1000);
 const str = (v: unknown): string | undefined => v == null ? undefined : String(v);
 
 // Shared chat request defaults (raw passthrough + session loop).
@@ -35,8 +34,8 @@ export class AiApi {
       user_id: opts.userId,
       bot: opts.bot,
       context: opts.context ? JSON.stringify(opts.context) : "",
-      created_at: now(),
-      updated_at: now(),
+      created_at: unixTime(),
+      updated_at: unixTime(),
     });
     return Number(id);
   }

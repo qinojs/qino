@@ -1,6 +1,6 @@
 import { basename, extname } from "node:path";
 import { typeByExtension } from "../../../deps.ts";
-import { hee } from "../../core/mod.ts";
+import { hee, unixTime } from "../../core/mod.ts";
 import { addressOf, attachmentOf, clean, formatAddress, htmlToText, importUpyo, jsonDecode, jsonEncode, listOf, mergeHeaders, renderMarkers, sha1 } from "./helpers.ts";
 import type { MailManager } from "./MailManager.ts";
 import type { AddressInput, AttachmentInput, Dict, MailDefaults, Recipient, RecipientType, SendReceipt, Template, UserInput } from "./types.ts";
@@ -201,7 +201,7 @@ export class MailMessage {
         const result = receipt ?? { successful: false, errorMessages: ["mail sending failed"] };
         this.receipts.push(result);
         await this.markRecipient(recipient, result.successful
-          ? { sent: Math.floor(Date.now() / 1000), error: "" }
+          ? { sent: unixTime(), error: "" }
           : { error: result.errorMessages?.join("\n") ?? "mail sending failed" });
       } catch (error) {
         console.error("mail sending failed:", error);

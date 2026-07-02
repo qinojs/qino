@@ -18,7 +18,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, requestStorage, type RequestContext, type App } from "../core/mod.ts";
+import { getCtx, requestStorage, unixTime, type RequestContext, type App } from "../core/mod.ts";
 import { getVers } from "./lib/Vers.ts";
 import { getCmsVers } from "./lib/CmsVers.ts";
 
@@ -120,7 +120,7 @@ export function initDraftmode(app: App) {
         const Page = e.Page;
         if (!Page) return;
         const ctx = getCtx();
-        const now = Math.floor(Date.now() / 1000);
+        const now = unixTime();
         const path = await Page.Path?.() ?? [];
         for (const node of path) {
             const data: Record<string, any> = {

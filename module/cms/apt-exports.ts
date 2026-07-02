@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, hee, Output, sql } from "../core/mod.ts";
+import { getCtx, hee, Output, sql, unixTime } from "../core/mod.ts";
 import type { Node } from "./mod.ts";
 // ─── business logic used by REST ──────────────
 
@@ -65,7 +65,7 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         await TrashNode.insertBefore(node, await TrashNode.cont("main"));
         node.settings["__deleted_from"]   = String(parent ?? "");
         node.settings["__deleted_before"] = String(before ?? "");
-        node.settings["__deleted_time"]   = String(Math.floor(Date.now() / 1000));
+        node.settings["__deleted_time"]   = String(unixTime());
         node.settings["__deleted_by"]     = String(await ctx.user?.get("email") ?? "");
         const bough = await node.bough();
         for (const Child of bough.values()) {

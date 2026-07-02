@@ -1,5 +1,5 @@
 import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
-import { cookiePrefix, uid } from "./util.ts";
+import { cookiePrefix, uid, unixTime } from "./util.ts";
 import { sql } from "../../../deps.ts";
 import type { Db } from "./Db.ts";
 import type { Req } from "./Req.ts";
@@ -8,7 +8,6 @@ import type { RequestContext } from "./RequestContext.ts";
 const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qgSession";
 const cookieName = (ctx: RequestContext) => cookiePrefix(ctx.app.https, ctx.appURL) + COOKIE_NAME;
-const unixTime = () => Math.floor(Date.now() / 1000);
 
 /** One session: identity (token/id), server-trusted reactive data, and its own touch timer. */
 export class Session {

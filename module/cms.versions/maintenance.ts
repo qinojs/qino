@@ -15,7 +15,7 @@
 // views fall back to the previous surviving entry, and since the newest entry
 // per bucket survives, every live row keeps ≥1 entry (baseline invariant).
 
-import { sql, type Db } from "../core/mod.ts";
+import { sql, unixTime, type Db } from "../core/mod.ts";
 import { versTable, versedTables } from "./lib/Vers.ts";
 
 const DENSITY = 24;           // ~snapshots kept per age doubling (higher = keep more)
@@ -24,7 +24,7 @@ const UNIT_SEC = 60;          // finest bucket granularity (1 minute)
 
 /** Thin out old history entries. Returns the affected count; dryRun only counts. */
 export async function thinHistory(db: Db, dryRun = false): Promise<number> {
-    const now = Math.floor(Date.now() / 1000);
+    const now = unixTime();
     // epoch-anchored bucket; width = UNIT × 2^k chosen so width ≈ age / DENSITY,
     // floored at UNIT → derives from the entry's own age, stable across runs.
     const bucket = (col: string) => {

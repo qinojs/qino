@@ -1,4 +1,4 @@
-import { hee, getCtx, type RequestContext } from "../../core/mod.ts";
+import { hee, getCtx, unixTime, type RequestContext } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
@@ -118,7 +118,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
   function renderOnlineStart(SubPage: Node, access: number): string {
     if (access === 0) return "---";
     const onlineStart = SubPage.vs.online_start;
-    const ok = !onlineStart || Number(onlineStart) < Math.floor(Date.now() / 1000);
+    const ok = !onlineStart || Number(onlineStart) < unixTime();
     const iso = onlineStart ? new Date(Number(onlineStart) * 1000).toISOString() : "";
     const date = iso ? `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "---";
     if (access <= 2) return `<span style="color:${ok ? "#8a8" : "#a88"}">${date}</span>`;
@@ -141,7 +141,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; va
 
     if (access <= 2) return `<span style="color:#8a8">${date}</span>${badge}`;
 
-    const now = Math.floor(Date.now() / 1000);
+    const now = unixTime();
     const endTs = Number(onlineEnd ?? "0");
     const maxSec = 60 * 60 * 24 * 7;
     const diff = Math.min(Math.max(endTs - now, 0), maxSec);

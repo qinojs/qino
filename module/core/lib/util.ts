@@ -25,6 +25,8 @@ export function clientIp(req: { header(name: string): string | undefined; peerAd
   return xff[xff.length - hops] ?? req.peerAddr;
 }
 
+export const unixTime = () => Math.floor(Date.now() / 1000);
+
 /** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-". */
 export function u2time(t: unknown): string {
   if (t == null || t === "") return "-";

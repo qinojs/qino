@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { matchPath, parsePathList } from "./pathlist.ts";
 import { settingsSchema, type SecuritySettings } from "./schema.ts";
-import type { App, Db, RequestContext } from "../core/mod.ts";
+import { unixTime, type App, type Db, type RequestContext } from "../core/mod.ts";
 
-export const now = () => Math.floor(Date.now() / 1000);
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();
 
@@ -38,7 +37,7 @@ export function fastInfo(ctx: RequestContext): any {
   const path = short(ctx.appRequestPath || ctx.url.pathname, 191);
   const ip = ctx.remoteAddr || "";
   return {
-    time: now(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sess?.id || 0) || null,
+    time: unixTime(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sess?.id || 0) || null,
     usr_id: Number(ctx.userId || 0) || null, method: ctx.req.method, path, status: 0, duration_ms: 0,
     bytes_in: Number(ctx.req.header("content-length") ?? "0") || 0, bytes_out: 0, ua: ctx.req.header("user-agent") ?? "",
   };
@@ -72,7 +71,7 @@ export function bucketHits(info: any, signals: any[], set: Record<string, number
 }
 
 async function hitBucket(db: Db, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
-  const t = now();
+  const t = unixTime();
   const row = await getBucket(db, scope, ident, set);
   const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;
   const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore ? 1 : 0, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: short(path, 191), data: "" };
@@ -150,7 +149,7 @@ export async function addEventDb(db: Db, data: Record<string, unknown>) {
   const extra = data.data ? JSON.stringify(data.data) : "";
   delete data.data;
   const event = {
-    time: now(), prio: "notice", kind: "", scope: "", ident: "", reason: "", state: "", confidence: 0, severity: 0, score: 0, delay_ms: 0, blocked: 0,
+    time: unixTime(), prio: "notice", kind: "", scope: "", ident: "", reason: "", state: "", confidence: 0, severity: 0, score: 0, delay_ms: 0, blocked: 0,
     ip: "", ip_range: "", client_id: null, sess_id: null, usr_id: null, method: "", path: "", status: 0, duration_ms: 0, bytes_in: 0, bytes_out: 0, ua: "",
     ...data,
     data: extra,
@@ -160,7 +159,7 @@ export async function addEventDb(db: Db, data: Record<string, unknown>) {
 }
 
 export async function cleanup(db: Db, set: Record<string, number>) {
-  const old = now() - set.keepDays * 86400;
+  const old = unixTime() - set.keepDays * 86400;
   await db.query`DELETE FROM m_security_event WHERE time < ${old}`;
   await db.query`DELETE FROM m_security_bucket WHERE last_seen < ${old} AND blocked = 0`;
 }

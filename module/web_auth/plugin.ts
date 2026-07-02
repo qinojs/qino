@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, login, Access, AccessError, type AptTree, s, type App, type Db } from "../core/mod.ts";
+import { getCtx, login, unixTime, Access, AccessError, type AptTree, s, type App, type Db } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
 
 export const name = "web_auth";
@@ -16,7 +16,6 @@ export const settingsSchema = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const CHALLENGE_TTL = 5 * 60;
-const now = () => Math.floor(Date.now() / 1000);
 
 /** base64url (RFC 4648) — no padding, URL-safe alphabet. */
 const b64url = (bytes: Uint8Array | string): string =>
@@ -36,13 +35,13 @@ async function getRp(app: App): Promise<{ rpId: string; rpName: string; expected
 
 async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
   const token = randB64(24);
-  await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: now() + CHALLENGE_TTL });
-  await db.exec`DELETE FROM web_auth_challenge WHERE expires < ${now()}`;
+  await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
+  await db.exec`DELETE FROM web_auth_challenge WHERE expires < ${unixTime()}`;
   return token;
 }
 
 async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
-  const row = await db.row`SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ${token} AND type = ${type} AND expires > ${now()}`;
+  const row = await db.row`SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ${token} AND type = ${type} AND expires > ${unixTime()}`;
   if (!row) return null;
   await db.exec`DELETE FROM web_auth_challenge WHERE token = ${token}`;
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
@@ -174,7 +173,7 @@ export const api: AptTree = {
             return { ok: false, error: "already_registered" };
           }
 
-          const t = now();
+          const t = unixTime();
           await db.table("web_auth_credential").insert({
             usr_id: ctx.userId,
             credential_id: credId,
@@ -246,7 +245,7 @@ export const api: AptTree = {
           const usrId = Number(r.cred.usr_id);
           if (!(await db.row`SELECT id FROM usr WHERE id = ${usrId} AND active = 1`)) return { ok: false, error: "user_inactive" };
 
-          await db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${now()} WHERE id = ${r.cred.id}`;
+          await db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${unixTime()} WHERE id = ${r.cred.id}`;
 
           await login(ctx, usrId);
           ctx.app.sessions.setCookie(ctx);
@@ -296,8 +295,8 @@ export const api: AptTree = {
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          await ctx.app.db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${now()} WHERE id = ${r.cred.id}`;
-          ctx.sess.data.web_auth_confirmed(now());
+          await ctx.app.db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${unixTime()} WHERE id = ${r.cred.id}`;
+          ctx.sess.data.web_auth_confirmed(unixTime());
           return { ok: true };
         },
       },

@@ -1,4 +1,4 @@
-import type { App, RequestContext } from "../../core/mod.ts";
+import { unixTime, type App, type RequestContext } from "../../core/mod.ts";
 import { type AiApi, CHAT_DEFAULTS } from "./AiApi.ts";
 import type { Bot, ProviderModelRow, Tool } from "../types.ts";
 import type { Provider } from "./Provider.ts";
@@ -7,7 +7,6 @@ import { addUsage } from "./usage.ts";
 import { readSse, sse } from "./sse.ts";
 
 type Msg = Record<string, unknown>;
-const now = () => Math.floor(Date.now() / 1000);
 
 // A persistent chat: history + messages live in ai_session/ai_message.
 // `run()` returns the final answer; `runStream()` yields an SSE stream.
@@ -148,7 +147,7 @@ export class ChatSession {
       tool_calls: msg.tool_calls ?? "",
       tool_call_id: msg.tool_call_id ?? "",
       name: msg.name ?? "",
-      created_at: now(),
+      created_at: unixTime(),
     });
   }
 
@@ -158,7 +157,7 @@ export class ChatSession {
   }
 
   #touch(): Promise<unknown> {
-    return this.app.db.query`UPDATE ai_session SET updated_at = ${now()} WHERE id = ${this.id}`;
+    return this.app.db.query`UPDATE ai_session SET updated_at = ${unixTime()} WHERE id = ${this.id}`;
   }
 }
 

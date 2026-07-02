@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, Sql, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, unixTime, Sql, type RequestContext, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { dump } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
@@ -197,7 +197,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; var
   const int = (n: number) => n.toLocaleString("de-CH");
 
   const DAY = 86400;
-  const now = Math.floor(Date.now() / 1000);
+  const now = unixTime();
   const ages = [
     [now - DAY * 366 * 5, await t`older than 5 years`],
     [now - DAY * 366, await t`older than 1 year`],
@@ -355,7 +355,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
 export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
-  const since = Math.floor(Date.now() / 1000) - 86400;
+  const since = unixTime() - 86400;
   const total = Number(await db.one`SELECT count(*) FROM log WHERE time >= ${since}`.catch(() => 0)) || 0;
   const users = Number(await db.one`SELECT count(DISTINCT sess.usr_id) FROM log JOIN sess ON log.sess_id = sess.id WHERE log.time >= ${since} AND sess.usr_id IS NOT NULL`.catch(() => 0)) || 0;
   return `<div class=-body>

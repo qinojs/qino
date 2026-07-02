@@ -1,4 +1,5 @@
 import { DbEntry, registerEntryClass } from "./DbEntry.ts";
+import { unixTime } from "./util.ts";
 
 // === dbEntry_usr ===
 class dbEntry_usr extends DbEntry {
@@ -47,7 +48,7 @@ class dbEntry_client extends DbEntry {
     await this.table.db.table("client_usr").ensure({
       client_id: String(this),
       usr_id: String(id),
-      time: Math.floor(Date.now() / 1000),
+      time: unixTime(),
     });
   }
 }

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, getCtx, sql } from "../core/mod.ts";
+import { hee, getCtx, sql, unixTime } from "../core/mod.ts";
 import type { HealthTypes, Solution } from "./healthRegistry.ts";
 
 export async function healthChecks(app: any): Promise<HealthTypes> {
@@ -96,7 +96,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   // ── db-time vs os-time ───────────────────────────────────────────────────
   notice["db-time unlike os-time"] = async () => {
     const dbTime = Number(await db.one`SELECT UNIX_TIMESTAMP() as time`);
-    const osTime = Math.floor(Date.now() / 1000);
+    const osTime = unixTime();
     if (dbTime === osTime) return undefined;
     return { info: `db: ${new Date(dbTime * 1000).toISOString()}<br>os: ${new Date(osTime * 1000).toISOString()}` };
   };
@@ -171,7 +171,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
       run: {
         solve: async () => {
           const start    = Date.now();
-          const monthAgo = Math.floor((Date.now() / 1000) - 60 * 60 * 24 * 30);
+          const monthAgo = unixTime() - (60 * 60 * 24 * 30);
           let msg = "";
 
           const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} LIMIT 1000000`;

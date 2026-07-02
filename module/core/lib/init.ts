@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { RequestContext } from "./RequestContext.ts";
-import { cookiePrefix, uid } from "./util.ts";
+import { cookiePrefix, uid, unixTime } from "./util.ts";
 import { authListen } from "./auth.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
@@ -53,7 +53,7 @@ function initLog(ctx: RequestContext): void {
     const db = ctx.app.db;
 
     const data: Record<string, unknown> = {
-      time: Math.floor(Date.now() / 1000),
+      time: unixTime(),
       sess_id: ctx.sess?.id,
     };
 

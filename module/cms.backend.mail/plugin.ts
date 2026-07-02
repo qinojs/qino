@@ -2,7 +2,7 @@ import { basename, extname } from "node:path";
 import type {} from "../mail/mod.ts";
 import { typeByExtension } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, hee, sql, u2time, type App } from "../core/mod.ts";
+import { getCtx, hee, sql, u2time, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.mail";
@@ -40,7 +40,7 @@ async function renderOverview(node: Node): Promise<string> {
       await db.query`DELETE FROM mail`;
     }
     if ("delete_before1year" in ctx.post) {
-      await db.query`DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ${Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 365}`;
+      await db.query`DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ${unixTime() - 60 * 60 * 24 * 365}`;
     }
   }
 

@@ -1,4 +1,4 @@
-import { Output, type RequestContext } from "../../core/mod.ts";
+import { Output, unixTime, type RequestContext } from "../../core/mod.ts";
 import { sha1 } from "./helpers.ts";
 import type {} from "../mod.ts";
 
@@ -18,14 +18,14 @@ export async function handleTrack(ctx: RequestContext): Promise<void> {
   await ctx.app.db.table("mail1_track").insert({
     track_id: trackId,
     url,
-    time: Math.floor(Date.now() / 1000),
+    time: unixTime(),
     log_id: await ctx.logId,
   });
   if (!recipient.opened) {
     await ctx.app.db.table("mail_recipient").update({
       mail_id: recipient.mail_id,
       email: recipient.email,
-      opened: Math.floor(Date.now() / 1000),
+      opened: unixTime(),
     });
   }
 

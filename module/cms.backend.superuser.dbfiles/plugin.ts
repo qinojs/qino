@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, unixTime, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -252,7 +252,7 @@ async function deleteUnlinkedFs(node: Node) {
 
 async function deleteUnlinkedDb(app: App) {
   const { db, dbFiles: fm } = app;
-  const ago = Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7;
+  const ago = unixTime() - 60 * 60 * 24 * 7;
   const notLinked = db.table("file").children.map((F: DbField) =>
     sql`file.id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`);
   const rows = await db.all`SELECT file.id FROM file

@@ -1,6 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
 import type {} from "../mail/mod.ts";
-import { getCtx, hee, type App } from "../core/mod.ts";
+import { getCtx, hee, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
@@ -38,7 +38,7 @@ async function render(node: Node): Promise<string> {
       if (exists) {
         message = `<div class="-msg -err">${await app.t`A template with this name already exists.`}</div>`;
       } else {
-        const now = Math.floor(Date.now() / 1000);
+        const now = unixTime();
         const newId = await db.table("mail_template").insert({ name: tname, created: now, updated: now });
         ctx.responseStatus = 302;
         ctx.responseHeaders.set("Location", `?id=${newId}`);
@@ -119,7 +119,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
           description: String(ctx.post.description ?? "").trim() || null,
           subject:     String(ctx.post.subject ?? "").trim() || null,
           html:        String(ctx.post.html ?? ""),
-          updated:     Math.floor(Date.now() / 1000),
+          updated:     unixTime(),
         });
         await init(app);
         message = `<div class="-msg -ok">${await app.t`Saved.`}</div>`;

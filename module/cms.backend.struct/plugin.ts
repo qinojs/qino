@@ -1,4 +1,4 @@
-import { hee, type RequestContext, type App } from "../core/mod.ts";
+import { hee, unixTime, type RequestContext, type App } from "../core/mod.ts";
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -55,7 +55,7 @@ async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string>
 
 export async function backendDashboardWidget(app: App): Promise<string> {
   const db = app.db;
-  const now = Math.floor(Date.now() / 1000);
+  const now = unixTime();
   const total   = Number(await db.one`SELECT count(*) FROM page WHERE type='p'`);
   const offline = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`);
   const hidden  = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND visible=0`);

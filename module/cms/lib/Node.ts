@@ -1,6 +1,6 @@
 import { resolveText } from "./resolveText.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { hee, HtmlString, getCtx, urlize, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
+import { hee, HtmlString, getCtx, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
 
@@ -226,7 +226,7 @@ export class Node {
         const start = await this.onlineStart();
         const end = await this.onlineEnd();
         // small grace window so a freshly set online_start/end takes effect despite clock skew
-        const now = Math.floor(Date.now() / 1000) + 99;
+        const now = unixTime() + 99;
         return (start === 0 || now > start) && (end === 0 || now < end);
     }
     async isReadable(): Promise<boolean> {
@@ -520,7 +520,7 @@ export class Node {
     async createChild(vs: Record<string, any> = {}): Promise<Node> {
         vs = {
             basis: this.id,
-            online_start: Math.floor(Date.now() / 1000),
+            online_start: unixTime(),
             access: this.vs.access,
             module: this.vs.module,
             searchable: this.vs.searchable,
