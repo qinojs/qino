@@ -2,7 +2,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./mod.ts";
 import { render } from "./lib/render.ts";
 export { api } from "./apt.ts";
-import { Output, type App } from "../core/mod.ts";
+import { contentDisposition, Output, type App, type DbFile } from "../core/mod.ts";
 
 export const name = "cms";
 export { healthChecks } from "./healthChecks.ts";
@@ -92,8 +92,7 @@ export function init(app: App) {
         // File upload
         const cmsPageFile = ctx.files["cmsPageFile"];
         if (cmsPageFile) {
-            // Fix EXIF orientation for JPEG
-            // (Deno doesn't have built-in exif support, stub for now)
+            // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
             const cmspid = Number(ctx.get.cmspid ?? "0");
             const P = await app.cms.node(cmspid);
             if ((await P.access()) > 1) {
@@ -109,11 +108,16 @@ export function init(app: App) {
         if (zipPid) {
             const P = await app.cms.node(Number(zipPid));
             if (!(await P.isReadable())) { ctx.responseStatus = 403; return; }
-            const files = await P.files();
-            if (!Object.keys(files).length) { ctx.responseStatus = 404; return; }
-            // In production: create ZIP and send
-            ctx.responseHeaders.set("Content-Type", "application/zip");
-            ctx.responseHeaders.set("Content-Disposition", `attachment; filename=files_${P}.zip`);
+            const files = Object.values(await P.files());
+            if (!files.length) { ctx.responseStatus = 404; return; }
+            const stream = await dbFiles2Zip(files).catch((e) => {
+                console.error(e);
+                throw new Output("ZIP not available", { status: 501 });
+            });
+            throw new Output(stream, { headers: {
+                "Content-Type": "application/zip",
+                "Content-Disposition": contentDisposition("attachment", `files_${P}.zip`),
+            } });
         }
     });
 
@@ -135,9 +139,22 @@ export function init(app: App) {
 
 export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
-    //await app.db.query`INSERT INTO page (id, access, visible, searchable, module, basis, type) VALUES (1, 1, 1, 1, 'cms.layout.custom.9', 0, 'p')`;
     await app.db.table('page').insert({ id: 1, access: 1, visible: 1, searchable: 1, module: "cms.layout.custom.9", basis: 0, type: "p" });
     await (await app.cms.node(1)).title("en", "root");
   }
-  // locale/<lang>.json is loaded generically per module by ModuleManager (#loadLocales)
+}
+
+/** Streams the given DbFiles as a zip archive using the system `zip` command. */
+async function dbFiles2Zip(files: DbFile[]): Promise<ReadableStream<Uint8Array>> {
+    const dir = await Deno.makeTempDir({ prefix: "qino-zip-" });
+    const names: string[] = [];
+    for (const F of files) {
+        let name = F.name.replace(/[/\0]/g, "_") || "file";
+        if (names.includes(name)) name = names.length + "_" + name;
+        await Deno.symlink(F.path, `${dir}/${name}`);
+        names.push(name);
+    }
+    const proc = new Deno.Command("zip", { args: ["-q", "-", "--", ...names], cwd: dir, stdout: "piped", stderr: "null" }).spawn();
+    proc.status.finally(() => Deno.remove(dir, { recursive: true }).catch(console.error));
+    return proc.stdout;
 }
