@@ -86,14 +86,14 @@ export function uid(length?: number): string {
 
 /* Control flow signals */
 export class Output extends Error {
-  body: unknown;
+  body: BodyInit | undefined;
   status: number;
   headers: Record<string, string>;
   isJson: boolean;
   constructor(body?: unknown, { status = 200, headers = {} }: { status?: number; headers?: Record<string, string> } = {}) {
     super("output");
     this.isJson = body !== undefined && typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ReadableStream);
-    this.body = this.isJson ? JSON.stringify(body) : body;
+    this.body = this.isJson ? JSON.stringify(body) : body as BodyInit;
     this.status = status;
     this.headers = headers;
   }
@@ -104,7 +104,7 @@ export class Output extends Error {
     return headers;
   }
   toResponse(): Response {
-    return new Response(this.body as string, { status: this.status, headers: this.buildHeaders() });
+    return new Response(this.body, { status: this.status, headers: this.buildHeaders() });
   }
 }
 export class Redirect extends Output {

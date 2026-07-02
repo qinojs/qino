@@ -31,7 +31,7 @@ export async function handleTrack(ctx: RequestContext): Promise<void> {
 
   if (ctx.appRequestPath === "blank.gif") {
     ctx.responseHeaders.set("Content-Type", "image/gif");
-    ctx.responseBody = BLANK_GIF as never;
+    ctx.responseBody = BLANK_GIF;
     throw new Output();
   }
   if (ctx.appRequestPath === "mail-track" && url) {

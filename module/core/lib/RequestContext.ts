@@ -23,7 +23,7 @@ export class RequestContext {
   remoteAddr = "";
   responseHeaders: Headers = new Headers();
   responseStatus = 200;
-  responseBody: string = "";
+  responseBody: BodyInit | undefined = "";
   // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
   #html: HtmlBuilder | null = null;

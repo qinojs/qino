@@ -180,7 +180,7 @@ export class App extends Emitter<AppEvents> {
     #handleError(ctx: RequestContext, e: unknown): void {
         if (e instanceof Output) {
             for (const [k, v] of e.buildHeaders()) ctx.responseHeaders.set(k, v);
-            ctx.responseBody = e.body as string;
+            ctx.responseBody = e.body;
             ctx.responseStatus = e.status;
         } else {
             console.error("Error:", e);
