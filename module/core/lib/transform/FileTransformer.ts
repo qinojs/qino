@@ -48,7 +48,8 @@ export class FileTransformer {
     const ext = nodePath.extname(sourcePath).slice(1).toLowerCase();
     const mime = knownMime || typeByExtension(ext) || 'application/octet-stream';
 
-    // Cache key: mtime+size of the source file + all set options
+    // Cache key: source path + size + all set options consumed by any registered transformer
+    // (no mtime: it may be touched on access for LRU tracking; no mime: derivable from path/content)
     let stat: Deno.FileInfo;
     try {
       stat = await Deno.stat(sourcePath);
@@ -56,10 +57,11 @@ export class FileTransformer {
       throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
     }
 
-    const fingerprint = `${stat.mtime?.getTime() ?? 0}-${stat.size}`;
+    const fingerprint = `${sourcePath}-${stat.size}`;
+    const knownProps = new Set(FileTransformer.#transformers.flatMap((t) => t.props));
     const optParts = Object.entries(opts)
       .sort()
-      .filter(([, v]) => v !== undefined)
+      .filter(([k, v]) => v !== undefined && knownProps.has(k))
       .map(([k, v]) => `${k}=${v}`);
     const cacheKey = await hashKey([fingerprint, ...optParts]);
     const cachePath = nodePath.join(cacheDir, `tf_${cacheKey}`);
@@ -68,13 +70,11 @@ export class FileTransformer {
     // Check cache hit
     try {
       const cacheStat = await Deno.stat(cachePath);
-      if ((cacheStat.mtime?.getTime() ?? 0) >= (stat.mtime?.getTime() ?? 0)) {
-        const cachedMime = await Deno.readTextFile(metaPath).catch(() => mime);
-        if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) {
-          Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
-        }
-        return { path: cachePath, mime: cachedMime, transformed: true };
+      const cachedMime = await Deno.readTextFile(metaPath).catch(() => mime);
+      if (Date.now() - (cacheStat.mtime?.getTime() ?? 0) > 86_400_000) {
+        Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
       }
+      return { path: cachePath, mime: cachedMime, transformed: true, key: cacheKey };
     } catch {
       // Cache miss – continue
     }
@@ -98,13 +98,16 @@ export class FileTransformer {
       }
 
       if (ctx.currentPath === sourcePath) {
-        return { path: sourcePath, mime, transformed: false };
+        return { path: sourcePath, mime, transformed: false, key: cacheKey };
       }
 
+      // Write meta first, then move the file atomically into place (concurrent readers never see a partial file)
       await nodeFs.mkdir(cacheDir, { recursive: true });
-      await nodeFs.copyFile(ctx.currentPath, cachePath);
       await Deno.writeTextFile(metaPath, ctx.mime);
-      return { path: cachePath, mime: ctx.mime, transformed: true };
+      const partPath = `${cachePath}.part-${crypto.randomUUID()}`;
+      await nodeFs.copyFile(ctx.currentPath, partPath);
+      await nodeFs.rename(partPath, cachePath);
+      return { path: cachePath, mime: ctx.mime, transformed: true, key: cacheKey };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       console.error('[FileTransformer]', err.message);

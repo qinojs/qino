@@ -49,5 +49,7 @@ export interface TransformResult {
   mime: string;
   /** false = original returned (no transform or error) */
   transformed: boolean;
+  /** Cache key = content identity (source + options), stable across mtime touches – usable as ETag */
+  key?: string;
   error?: Error;
 }
