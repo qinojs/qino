@@ -1,6 +1,5 @@
 [qcms-mod="cont.example.ml"] {
   padding: 1em;
-  border-radius: 4px;
 
   & h2 { margin: 0 0 .5em; }
   & img { max-width: 100%; }

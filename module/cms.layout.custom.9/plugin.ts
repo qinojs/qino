@@ -1,5 +1,5 @@
 import { hee, type RequestContext } from "../core/mod.ts";
-import type { CMS, Node } from "../cms/mod.ts";
+import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.custom.9";
 
@@ -11,7 +11,7 @@ const settingsSchema = {
 
 async function render(node: Node, data: { ctx: RequestContext }): Promise<string> {
   const module = node.vs.module;
-  const LPage = await getLayoutPage(node.cms, String(module));
+  const LPage = await node.cms.layoutPage(String(module));
 
   // App-specific layout CSS
   try {
@@ -40,17 +40,6 @@ async function render(node: Node, data: { ctx: RequestContext }): Promise<string
   // Fallback: basic layout
   const mainCont = await node.cont("main");
   return `<div id=container><main>${await mainCont.html()}</main></div>`;
-}
-
-async function getLayoutPage(cms: CMS, module: string): Promise<Node> {
-  const sysPage = await cms.node(5);
-  const children = await sysPage.children({ module });
-  let LPage = children.values().next().value;
-  if (!LPage) {
-    LPage = await sysPage.createChild({ module, name: module, access: 1 });
-    await LPage.title(undefined, module);
-  }
-  return LPage;
 }
 
 export const cms = {

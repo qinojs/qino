@@ -70,6 +70,30 @@ its own module. Default: `cms.cont.flexible`.
 return html.async`${node.cont("body", "cms.cont.text")}`;
 ```
 
+## `node=` — target another node
+
+All constructs work on the current node by default. `node=` redirects them:
+
+| value                 | resolves to                                          |
+|-----------------------|------------------------------------------------------|
+| `page`                | the enclosing page — `node.page()`                   |
+| `layout`              | the global layout page — `cms.layoutPage(module)`    |
+| `parent`, `parent(2)` | ancestor — `node.parent(2)`                          |
+| a number              | that node id — `cms.node(5)`                         |
+
+```html
+<h1 cms-text=title node=page></h1>
+<cms-cont name=nav node=layout />
+```
+
+```ts
+const page   = await node.page();
+const layout = await cms.layoutPage(page.module.name);
+return html.async`
+  ${cms.text(page, "title", { tag: "h1" })}
+  ${layout.cont("nav")}`;
+```
+
 ## Notes
 
 - The template must have **exactly one root element** (`qcms-id` is injected
@@ -79,3 +103,12 @@ return html.async`${node.cont("body", "cms.cont.text")}`;
   render nothing for visitors.
 - Typos don't fail silently: unknown `cms-*` elements/attributes and missing
   `name=` log a warning in dev and edit mode.
+
+## Ideas (not implemented)
+
+- `{setting.color}` / `{lang}` / `{url}` — plain dot-path lookups in text and
+  attributes; no JS expressions, just escaped property access.
+- `<a cms-link=32>` — stable internal links, `href` from the target's
+  `node.url()`; value syntax shared with `node=`.
+- `<a cms-file=flyer>` — download links, editable in edit mode like images.
+- `cms-if` / `cms-each` — only once a real module needs them.

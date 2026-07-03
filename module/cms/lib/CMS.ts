@@ -57,6 +57,18 @@ export class CMS {
         return Object.values(ret)[0];
     }
 
+    /** Global page of a layout module (child of the system page), created if missing */
+    async layoutPage(module: string): Promise<Node> {
+        const sysPage = await this.node(5);
+        const children = await sysPage.children({ module });
+        let lPage = children.values().next().value;
+        if (!lPage) {
+            lPage = await sysPage.createChild({ module, name: module, access: 1 });
+            await lPage.title(undefined, module);
+        }
+        return lPage;
+    }
+
     async nodeFromRequest(): Promise<Node> {
         const ctx = getCtx();
         const cmspid = ctx.get.cmspid;

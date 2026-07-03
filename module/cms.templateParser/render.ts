@@ -29,6 +29,26 @@ function warn(node: Node, msg: string): void {
   if (node.app.dev || node.edit) console.warn(`templateParser: ${msg} (module ${node.module?.name})`);
 }
 
+/** Resolve node= — a node id, "page", "parent"/"parent(2)" or "layout" (default: current node) */
+async function targetNode(el: El, node: Node): Promise<Node | undefined> {
+  const spec = attrValue(el, "node");
+  if (spec === undefined) return node;
+  const target = await resolveNodeSpec(spec, node);
+  if (!target) warn(node, `unresolvable node="${spec}" on <${el.tag}>`);
+  return target;
+}
+
+async function resolveNodeSpec(spec: string, node: Node): Promise<Node | undefined> {
+  if (/^\d+$/.test(spec)) return node.cms.node(Number(spec));
+  if (spec === "page")    return node.page();
+  if (spec === "layout") {
+    const module = (await node.page()).module?.name;
+    return module ? node.cms.layoutPage(module) : undefined;
+  }
+  const m = spec.match(/^parent(?:\((\d+)\))?$/);
+  if (m) return node.parent(m[1] ? Number(m[1]) : undefined);
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -63,14 +83,16 @@ function serialize(nodes: TNode[]): string {
 // ---------------------------------------------------------------------------
 
 async function renderCmsText(el: El, name: string, node: Node): Promise<string> {
+  const target = await targetNode(el, node);
+  if (!target) return "";
   const options: Record<string, unknown> = { tag: el.tag };
   for (const a of el.attrs) {
-    if (a.name === "cms-text") continue;
+    if (a.name === "cms-text" || a.name === "node") continue;
     options[a.name] = a.value ?? true;
   }
   const initial = serialize(el.children).trim();
   if (initial) options.initial = initial;
-  return String(await node.cms.text(node, name, options));
+  return String(await target.cms.text(target, name, options));
 }
 
 // ---------------------------------------------------------------------------
@@ -80,12 +102,14 @@ async function renderCmsText(el: El, name: string, node: Node): Promise<string> 
 async function renderCmsImage(el: El, node: Node): Promise<string> {
   const name = attrValue(el, "name");
   if (!name) { warn(node, "<cms-image> without name"); return ""; }
-  const file = hasAttr(el, "localized") ? await node.cms.fileLang(node, name) : await node.file(name);
+  const target = await targetNode(el, node);
+  if (!target) return "";
+  const file = hasAttr(el, "localized") ? await target.cms.fileLang(target, name) : await target.file(name);
   if (!file) return "";
   const opts: Record<string, unknown> = { if: 1 };
-  if (node.edit) opts.editable = await file.url();
+  if (target.edit) opts.editable = await file.url();
   for (const a of el.attrs) {
-    if (a.name === "name" || a.name === "localized") continue;
+    if (a.name === "name" || a.name === "localized" || a.name === "node") continue;
     opts[a.name] = a.value ?? true;
   }
   if (opts.width)  opts.width  = Number(opts.width)  || opts.width;
@@ -100,6 +124,8 @@ async function renderCmsImage(el: El, node: Node): Promise<string> {
 async function renderCmsCont(el: El, node: Node): Promise<string> {
   const name = attrValue(el, "name");
   if (!name) { warn(node, "<cms-cont> without name"); return ""; }
+  const target = await targetNode(el, node);
+  if (!target) return "";
   const module = attrValue(el, "module") ?? attrValue(el, "default-module") ?? "cms.cont.flexible";
-  return String(await (await node.cont(name, module)).html());
+  return String(await (await target.cont(name, module)).html());
 }
