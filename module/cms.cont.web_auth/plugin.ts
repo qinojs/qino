@@ -40,7 +40,7 @@ async function render(node: Node): Promise<string> {
 }
 
 async function renderLogin(app: any, apiBase: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
-  return `<div class="web-auth-login" data-api-base=${JSON.stringify(apiBase)} data-redirect-url=${JSON.stringify(redirectUrl)}>
+  return `<div class="web-auth-login" data-api-base="${hee(apiBase)}" data-redirect-url="${hee(redirectUrl)}">
   <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
   <button data-action="login">${await app.t`Sign in with passkey`}</button>
   ${showPw ? `<details>
@@ -59,7 +59,7 @@ async function renderLogin(app: any, apiBase: string, showPw: boolean, redirectU
 }
 
 async function renderManage(app: any, apiBase: string): Promise<string> {
-  return `<div class="web-auth-manage" data-api-base=${JSON.stringify(apiBase)}>
+  return `<div class="web-auth-manage" data-api-base="${hee(apiBase)}">
   <div data-list>${await app.t`Loading…`}</div>
   <input type="text" data-name placeholder="${await app.t`Name for this authenticator`}">
   <button data-action="register">${await app.t`Add passkey`}</button>
