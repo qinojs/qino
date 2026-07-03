@@ -20,8 +20,8 @@ const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
  * success and error) so the host builds the `Response`. `path` is within the tree, e.g. `/user/5`.
  */
 export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptFetchOptions = {}): Promise<never> {
-  const input: Params = {};
-  const query: Params = {};
+  const input: Params = Object.create(null);
+  const query: Params = Object.create(null);
   const method = req.method.toLowerCase() as Method;
   const isBodyMethod = BODY_METHODS.has(method);
   if (isBodyMethod) {

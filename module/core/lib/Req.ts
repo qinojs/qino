@@ -57,7 +57,7 @@ export class Req {
   /** Form/multipart body as a flat record; File values are kept as `File`. */
   async parseBody(): Promise<Record<string, unknown>> {
     const form = await (this.#form ??= this.raw.clone().formData());
-    const out: Record<string, unknown> = {};
+    const out: Record<string, unknown> = Object.create(null);
     for (const [k, v] of form) out[k] = v;
     return out;
   }
@@ -72,7 +72,7 @@ export class Req {
 }
 
 export function parseCookies(header: string | undefined): Record<string, string> {
-  const out: Record<string, string> = {};
+  const out: Record<string, string> = Object.create(null);
   if (!header) return out;
   for (const part of header.split(";")) {
     const i = part.indexOf("=");

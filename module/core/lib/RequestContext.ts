@@ -100,8 +100,8 @@ export async function makeRequestContext(app: App, req: Req, basePath: string): 
   if (Number(req.header("content-length") ?? "0") > maxSize) throw new Output("Payload Too Large", { status: 413 });
 
   const rawBody: unknown = req.method === "POST" ? (isJson ? await req.json() : await req.parseBody()) : {};
-  const post: Record<string, unknown> = {};
-  const files: Record<string, UploadedFile> = {};
+  const post: Record<string, unknown> = Object.create(null);
+  const files: Record<string, UploadedFile> = Object.create(null);
 
   for (const [key, val] of Object.entries(rawBody && typeof rawBody === "object" ? rawBody as Record<string, unknown> : {})) {
     if (val instanceof File) {

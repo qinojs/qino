@@ -15,7 +15,7 @@ function validate(schema: StandardSchema, data: unknown, where: string): unknown
 
 function validatePart(schema: StandardSchema | undefined, src: Params, where: string, doCoerce: boolean): Params {
   if (!schema) return {};
-  const out: Params = {};
+  const out: Params = Object.create(null);
   for (const [k, field] of Object.entries(shapeOf(schema))) if (k in src) out[k] = doCoerce ? coerce(src[k], field) : src[k];
   return validate(schema, out, where) as Params;
 }
@@ -28,7 +28,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
 
   const segments: string[] = [];
   const nodes: AptNode[] = [];
-  const pathValues: Record<string, unknown> = {};
+  const pathValues: Record<string, unknown> = Object.create(null);
 
   let cursor: Branch = tree;
   const pathSegments = path.split("/").filter(Boolean).map(decodeSegment);
@@ -68,7 +68,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
   if (!verb || typeof verb.execute !== "function") throw new NotFoundError(`no ${method} on ${path}`);
 
   const ctx = getCtx();
-  const params: Params = {};
+  const params: Params = Object.create(null);
   const isSplit = "input" in rawParams || "query" in rawParams;
   const input = isSplit ? asParams(rawParams.input) : rawParams;
   const query = isSplit ? asParams(rawParams.query) : rawParams;

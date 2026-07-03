@@ -141,6 +141,17 @@ Deno.test("apt: _checkAccess returns before input validation", async () => {
   });
 });
 
+Deno.test("apt: __proto__ body keys do not become inherited input", async () => {
+  await withCtx(async () => {
+    const res = await aptRequest(api, "http://qino.test/thing/1/update", {
+      method: "POST",
+      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
+      body: `{"__proto__":{"_checkAccess":"1"}}`,
+    });
+    assertEquals(res.status, 422);
+  });
+});
+
 Deno.test("apt: GET query params are available as input", async () => {
   await withCtx(async () => {
     const tree = {
