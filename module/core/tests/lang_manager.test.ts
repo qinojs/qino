@@ -157,7 +157,7 @@ Deno.test("LangManager: export groups non-empty translations by namespace and la
     { namespace: "cms", original: "Structure", de: "Struktur", en: "", fr: "" },
     { namespace: "cms", original: "Empty", de: "", en: "", fr: "" },
   ];
-  const lm = new LangManager({ db: { all: () => rows } } as never);
+  const lm = new LangManager({ db: { query: () => rows } } as never);
   lm.setLangs(["de", "en", "fr"]);
 
   assertEquals(await lm.export(), {

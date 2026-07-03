@@ -1,4 +1,4 @@
-export const KINDS = ["chat", "embedding", "image", "stt", "tts", "audio_generation", "video_generation"] as const;
+export const KINDS = ["chat", "vision", "embedding", "image", "stt", "tts", "audio_generation", "video_generation"] as const;
 export type Kind = typeof KINDS[number];
 
 export type ClientContext = Record<string, unknown>;

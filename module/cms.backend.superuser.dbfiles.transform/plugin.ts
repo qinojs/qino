@@ -133,6 +133,16 @@ const BINARIES: Binary[] = [
     },
   },
   {
+    id: "tesseract",
+    label: "Tesseract OCR",
+    available: FileTransformer.capabilities.tesseract,
+    install: {
+      debian: "apt install tesseract-ocr tesseract-ocr-deu",
+      alpine: "apk add tesseract-ocr tesseract-ocr-data-deu",
+      macos:  "brew install tesseract tesseract-lang",
+    },
+  },
+  {
     id: "libheif",
     label: "AVIF (libheif)",
     available: FileTransformer.capabilities.avif,
@@ -177,6 +187,7 @@ async function resolveVersion(bin: Binary): Promise<string> {
     "pngquant":    [{ cmd: "pngquant", args: ["--version"] }],
     "pandoc":      [{ cmd: "pandoc", args: ["--version"] }],
     "pdftotext":   [{ cmd: "pdftotext", args: ["-v"] }],
+    "tesseract":   [{ cmd: "tesseract", args: ["--version"] }],
     "libheif":     [
       { cmd: "magick",   args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
       { cmd: "convert",  args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
@@ -281,7 +292,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   if (vars.clear_cache) {
     const days = vars.clear_cache === true ? undefined : Number(vars.clear_cache) || undefined;
     await clearCache(cacheDir(node.app), days);
-    return renderCache(node.app);
+    return JSON.stringify({ ok: true });
   }
 
   const [platform, root] = await Promise.all([detectPlatform(), isRoot()]);

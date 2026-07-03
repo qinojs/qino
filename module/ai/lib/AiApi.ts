@@ -47,7 +47,16 @@ export class AiApi {
   // --- Raw passthroughs (OpenAI-compatible) ---
 
   chat(data: Record<string, unknown>): Promise<unknown> {
-    return this.#send("chat", str(data._provider), str(data.model), "/chat/completions", (modelId) => {
+    return this.#chat("chat", data);
+  }
+
+  /** Chat completion resolved against a "vision" model (image input, e.g. OCR) */
+  vision(data: Record<string, unknown>): Promise<unknown> {
+    return this.#chat("vision", data);
+  }
+
+  #chat(kind: Kind, data: Record<string, unknown>): Promise<unknown> {
+    return this.#send(kind, str(data._provider), str(data.model), "/chat/completions", (modelId) => {
       const body: Record<string, unknown> = { ...data };
       delete body._provider;
       body.model = modelId ?? data.model;

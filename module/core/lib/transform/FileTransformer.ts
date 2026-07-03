@@ -7,19 +7,22 @@ import { isFfmpegAvailable, resetFfmpegCache } from './ffmpeg.ts';
 import { resetPngquantCache, isPngquantAvailable } from './pngquant.ts';
 import { resetPandocCache, isPandocAvailable } from './pandoc.ts';
 import { resetPdftotextCache, isPdftotextAvailable } from './poppler.ts';
+import { resetTesseractCache, isTesseractAvailable } from './tesseract.ts';
+import type { App } from '../App.ts';
 
 const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 
 export class FileTransformer {
   static readonly #transformers: TransformerDef[] = [];
 
-  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext', Promise<boolean>>> = {
+  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return isMagickAvailable(); },
     get ffmpeg(): Promise<boolean> { return isFfmpegAvailable(); },
     get avif(): Promise<boolean> { return checkAvifSupport(); },
     get pngquant(): Promise<boolean> { return isPngquantAvailable(); },
     get pandoc(): Promise<boolean> { return isPandocAvailable(); },
     get pdftotext(): Promise<boolean> { return isPdftotextAvailable(); },
+    get tesseract(): Promise<boolean> { return isTesseractAvailable(); },
   };
 
   static resetCapabilityCache(): void {
@@ -28,6 +31,7 @@ export class FileTransformer {
     resetPngquantCache();
     resetPandocCache();
     resetPdftotextCache();
+    resetTesseractCache();
   }
 
   static register(def: TransformerDef): void {
@@ -43,6 +47,8 @@ export class FileTransformer {
     options: TransformOptions,
     /** Known MIME type of the source file (e.g. from DB) – fallback to extension detection */
     knownMime?: string,
+    /** Tenant app – exposed to transformers via ctx.app */
+    app?: App,
   ): Promise<TransformResult> {
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
@@ -65,10 +71,7 @@ export class FileTransformer {
 
     const fingerprint = `${sourcePath}-${stat.size}`;
     const knownProps = new Set(FileTransformer.#transformers.flatMap((t) => t.props));
-    const optParts = Object.entries(opts)
-      .sort()
-      .filter(([k, v]) => v !== undefined && knownProps.has(k))
-      .map(([k, v]) => `${k}=${v}`);
+    const optParts = [...knownProps].sort().flatMap((k) => opts[k] !== undefined ? `${k}=${opts[k]}` : []);
     const cacheKey = await hashKey([fingerprint, ...optParts]);
     const cachePath = nodePath.join(cacheDir, `tf_${cacheKey}`);
     const metaPath = `${cachePath}.mime`;
@@ -81,13 +84,12 @@ export class FileTransformer {
         Deno.utime(cachePath, new Date(), new Date()).catch(() => {});
       }
       return { path: cachePath, mime: cachedMime, transformed: true, key: cacheKey };
-    } catch {
-      // Cache miss – continue
-    }
+    } catch { /* Cache miss – continue */ }
 
     const pipeline = sortTransformers(FileTransformer.#transformers);
     const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
     const ctx: TransformContext = {
+      app,
       sourcePath,
       currentPath: sourcePath,
       mime,

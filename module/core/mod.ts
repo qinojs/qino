@@ -42,7 +42,8 @@ export type { Plugin } from "./lib/ModuleManager.ts";
 export { login, pwHash } from "./lib/auth.ts";
 
 // File transforms
-export { FileTransformer } from "./lib/transform/index.ts";
+export { FileTransformer, registerOcrEngine } from "./lib/transform/index.ts";
+export type { OcrEngine, TransformContext } from "./lib/transform/index.ts";
 export { isMagickAvailable, magick, magickIdentify } from "./lib/transform/imagemagick.ts";
 
 // Server helpers used by modules

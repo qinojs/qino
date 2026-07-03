@@ -268,7 +268,7 @@ export class DbFile extends File {
     if (!this.path) return { path: this.path, mime: this.mime };
     const cacheDir = this.#manager.app.appPATH + "cache/pri/";
     const dbMime = this.mime;
-    const result = await FileTransformer.transform(this.path, cacheDir, parseTransformOptions(param), dbMime);
+    const result = await FileTransformer.transform(this.path, cacheDir, parseTransformOptions(param), dbMime, this.#manager.app);
     return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed };
   }
 

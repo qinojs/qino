@@ -12,7 +12,7 @@ export class Provider {
   async request(path: string, body: unknown): Promise<Response> {
     let res!: Response;
     for (let attempt = 0; attempt < 3; attempt++) {
-      res = await fetch(this.row.endpoint + path, {
+      res = await fetch(this.row.endpoint.replace(/\/+$/, "") + path, {
         method: "POST",
         headers: { "content-type": "application/json", "authorization": "Bearer " + this.key },
         body: JSON.stringify(body),
@@ -37,8 +37,9 @@ export class Provider {
       }
       return { error: error instanceof Error ? error.message : String(error) };
     }
-    try { return await res.json(); }
-    catch { return { error: "Invalid JSON response from provider" }; }
+    const text = await res.text().catch(() => "");
+    try { return JSON.parse(text); }
+    catch { return { error: `Provider "${this.row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
   }
 
   /** POST with `stream: true`; caller reads the SSE body. */

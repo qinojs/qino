@@ -1,3 +1,5 @@
+import type { App } from '../App.ts';
+
 export type Phase = 'decode' | 'geometry' | 'filter' | 'encode';
 
 export interface TransformOptions {
@@ -25,6 +27,8 @@ export interface TransformMeta {
 }
 
 export interface TransformContext {
+  /** Tenant app — lets transformers/engines use app services (ai, settings) */
+  readonly app?: App;
   readonly sourcePath: string;
   currentPath: string;
   mime: string;

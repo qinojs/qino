@@ -5,7 +5,7 @@ import { resolve } from "../lib/registry.ts";
 function mockApp(providers: unknown[], models: unknown[]) {
   return {
     db: {
-      all: (strings: TemplateStringsArray) =>
+      query: (strings: TemplateStringsArray) =>
         Promise.resolve(strings.join("").includes("ai_provider_model") ? models : providers),
     },
   } as never;
