@@ -62,7 +62,7 @@ function onIntersecting(entry) {
     }
 
 
-    // load
+    // load – round in css px; dbFileSetSize adds dpr so the server scales to physical px
     const src = dbFileSetSize(img.c1Image2_url, roundImgSize(rect.width), roundImgSize(rect.height));
 
     //if (src === img.__actualSrc) return;
@@ -154,7 +154,9 @@ function dbFileSetSize(url, w, h) {
 	const m = url.match(/(.*dbFile\/([^/]+))((?:\/[^/]+)*?)\/([^/]+)$/);
 	if (!m) return url;
 	const params = Object.fromEntries((m[3].match(/\/[^/]+/g) ?? []).map(s => { const [k,...rest] = s.slice(1).split('-'); return [k, rest.length ? rest.join('-') : true]; }));
-	params.w = w; params.h = h;
+	params.w = w;
+	params.h = h;
+	params.dpr = Math.min(devicePixelRatio || 1, 2); // hi-dpi: physical px (capped 2×), explicit so a dpr cookie can't override
 	return m[1] + Object.entries(params).map(([k,v]) => v === true ? `/${k}` : `/${k}-${v}`).join('') + '/' + m[4];
 }
 

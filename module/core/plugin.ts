@@ -125,7 +125,7 @@ export async function init(app: App) {
     });
 
     app.on("respond", async ({ ctx }) => {
-        ctx.responseHeaders.set("Accept-CH", "DPR");
+        //ctx.responseHeaders.set("Accept-CH", "DPR");
 
         const enableRaw = String(await ctx.app.settings.core.csp.enable ?? "");
         const enable = enableRaw === "report only"
