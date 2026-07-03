@@ -116,13 +116,13 @@ export class DbTable {
     if (!values) return;
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return;
-    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
     return rows[0];
   }
   async select(v: string | Sql = "TRUE"): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
     const where = v instanceof Sql ? v : sql.raw(v);
-    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
     for (const entry of rows) {
       const eid = this.entryId(entry);
       if (eid !== false) ret[eid] = entry;
@@ -152,7 +152,7 @@ export class DbTable {
       ? sql`(${sql.join(cols.map((f) => sql.id(f)))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields![f].valueTransform(values[f])}`))})`
       : sql.raw(this.#db.emptyInsert);
     const auto = this.autoIncrement;
-    const res = await this.#db.exec(sql`INSERT INTO ${sql.id(String(this))} ${into}`, String(auto || this.primary || ""));
+    const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));
     if (!res.affectedRows) return false;
     if (auto && String(auto) in values) await this.#db.syncAutoIncrement(String(this), String(auto), Number(values[String(auto)]));
     if (auto) values[String(auto)] = res.insertId;
@@ -179,7 +179,7 @@ export class DbTable {
       if (!whereValues) return false;
       const where = this.valuesToFragment(whereValues);
       if (!where.parts.length) return false;
-      const rows = await this.#db.exec`UPDATE ${sql.id(String(this))} SET ${set} WHERE ${where}`;
+      const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
       if (!rows) return false;
       if (!rows.affectedRows) return false; // no row matched (drivers report matched rows, not changed)
       await this.#db.fire("table::update-after", { Table: this, id, data: values! });
@@ -191,7 +191,7 @@ export class DbTable {
   async ensure(values: Record<string, any> = {}): Promise<string | false | undefined> {
     const whereValues = this.entryId2Array(values);
     const where = whereValues ? this.valuesToFragment(whereValues) : null;
-    return where?.parts.length && await this.#db.row`SELECT * FROM ${sql.id(String(this))} WHERE ${where}`
+    return where?.parts.length && await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`
       ? this.update(values)
       : this.insert(values);
   }
@@ -208,14 +208,17 @@ export class DbTable {
 
     const row = await this.selectByID(id);
     if (!row) return false;
-    if (this.autoIncrement) delete row[String(this.autoIncrement)];
-    const newId = await this.insert({ ...row, ...override });
+    const newRow = { ...row, ...override };
+    if (this.autoIncrement && !(String(this.autoIncrement) in override)) delete newRow[String(this.autoIncrement)];
+    const newId = await this.insert(newRow); // insert fills generated ids into newRow
     if (newId === false) return false;
 
-    for (const Field of this.children) {
-      if (Field.onParentCopy !== "cascade") continue;
-      const childRows = await this.#db.query`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
-      for (const childRow of childRows) await Field.table.copy(childRow, { [String(Field)]: newId }, visiting);
+    for (const field of this.children) {
+      if (field.onParentCopy !== "cascade") continue;
+      const pField = field.parentField();
+      if (!pField) continue;
+      const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
+      for (const childRow of childRows) await field.table.copy(childRow, { [String(field)]: newRow[String(pField)] }, visiting);
     }
     return newId;
   }
@@ -232,15 +235,17 @@ export class DbTable {
     if (!values) return false;
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return false;
-    const rows = await this.#db.exec`DELETE FROM ${sql.id(String(this))} WHERE ${where}`;
+    const cascades = this.children.filter((f) => f.onParentDelete === "cascade");
+    const row = cascades.length ? await this.selectByID(id) : undefined; // parent values are gone after the DELETE
+    const rows = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
     if (!rows?.affectedRows) return false; // no row matched
     await this.#db.fire("table::delete-after", { Table: this, data: values, id });
-    for (const Field of this.children) {
-      if (Field.onParentDelete === "cascade") {
-        const childRows = await this.#db.query`SELECT * FROM ${sql.id(String(Field.table))} WHERE ${sql.id(String(Field))} = ${id}`;
-        for (const row of childRows) {
-          await Field.table.delete(row);
-        }
+    for (const field of cascades) {
+      const pField = field.parentField();
+      if (!pField || !row) continue;
+      const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
+      for (const childRow of childRows) {
+        await field.table.delete(childRow);
       }
     }
     return true;
@@ -290,7 +295,7 @@ export class DbTable {
   async selectEntries(a?: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<Record<string, DbEntry>> {
     const tail = a == null ? sql.raw("") : isTemplate(a) ? sql(a, ...rest) : a;
     const Es: Record<string, any> = {};
-    const rows = await this.#db.query`SELECT * FROM ${sql.id(String(this))} ${tail}`;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} ${tail}`;
     for (const row of rows) {
       const entry = this.entry(row);
       Es[String(entry)] = entry;

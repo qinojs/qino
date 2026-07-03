@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbTable } from "./DbTable.ts";
-import { sql, isTemplate, render, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
+import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
 import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
 import { Emitter } from "./Emitter.ts";
 import type { RowDataPacket } from "../../../deps.ts";
@@ -48,25 +48,26 @@ export class Db extends Emitter<DbEvents> {
     }
   }
 
-  /** Render a fragment / tag to this dialect's [sql, params]. */
-  #sql(a: TemplateStringsArray | Sql, rest: unknown[]): [string, unknown[]] {
+  /** Render a fragment / tag to this dialect's [sql, params]; awaits promised values. */
+  async #sql(a: TemplateStringsArray | Sql, rest: unknown[]): Promise<[string, unknown[]]> {
     const frag = isTemplate(a) ? sql(a, ...rest) : a;
+    await resolveSql(frag);
     const { text, params } = render(frag, this.#dialect);
     return [text, params];
   }
 
   query(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket[]>;
   query(frag: Sql): Promise<RowDataPacket[]>;
-  query(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<RowDataPacket[]> {
-    const [text, params] = this.#sql(a, rest);
+  async query(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<RowDataPacket[]> {
+    const [text, params] = await this.#sql(a, rest);
     return this.#run(() => this.#driver.query(text, params), text) as Promise<RowDataPacket[]>;
   }
 
   exec(strings: TemplateStringsArray, ...values: unknown[]): Promise<ExecResult>;
   exec(frag: Sql, returning?: string): Promise<ExecResult>;
-  exec(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<ExecResult> {
+  async exec(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<ExecResult> {
     const returning = isTemplate(a) ? undefined : rest[0] as string;
-    const [text, params] = this.#sql(a, rest);
+    const [text, params] = await this.#sql(a, rest);
     return this.#run(() => this.#driver.exec(text, params, returning), text);
   }
   /** Run fn atomically; nested calls join the outer transaction. */

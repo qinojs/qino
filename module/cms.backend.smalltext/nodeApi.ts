@@ -42,7 +42,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
     if ("save_lang" in vars) {
         const { hash, ns, lang, value } = vars.save_lang;
         if (!langs.includes(String(lang))) return false;
-        await db.query`UPDATE smalltext SET ${sql.id(String(lang))} = ${String(value)} WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
+        await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${String(value)} WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
         return true;
     }
 

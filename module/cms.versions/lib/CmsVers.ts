@@ -62,26 +62,26 @@ export async function copyNode(
         await tableEntriesCopyTo(db, "page_url",  { page_id: id }, fromSpace, fromLog, toSpace);
 
         // Copy title text
-        const toPageView = await view(db, "page", toSpace, 0);
+        const toPageView = view(db, "page", toSpace, 0);
         const titleId = await db.one`SELECT title_id FROM ${sql.id(toPageView)} WHERE id = ${id}`;
         if (titleId) await tableEntriesCopyTo(db, "text", { id: titleId }, fromSpace, fromLog, toSpace);
 
         // Copy content texts
-        const toTextView = await view(db, "page_text", toSpace, 0);
+        const toTextView = view(db, "page_text", toSpace, 0);
         const textIds = await db.col`SELECT text_id FROM ${sql.id(toTextView)} WHERE page_id = ${id}`;
         for (const tid of textIds) {
             await tableEntriesCopyTo(db, "text", { id: tid }, fromSpace, fromLog, toSpace);
         }
 
         // Copy files
-        const toFileView = await view(db, "page_file", toSpace, 0);
+        const toFileView = view(db, "page_file", toSpace, 0);
         const fileIds = await db.col`SELECT file_id FROM ${sql.id(toFileView)} WHERE page_id = ${id}`;
         for (const fid of fileIds) {
             await tableEntriesCopyTo(db, "file", { id: fid }, fromSpace, fromLog, toSpace);
         }
 
         // Recurse into children
-        const childView = await view(db, "page", toSpace, 0);
+        const childView = view(db, "page", toSpace, 0);
         const childIds = await db.col`SELECT id FROM ${sql.id(childView)} WHERE basis = ${id} ${sql.raw(subPages ? "" : "AND type = 'c'")}`;
         for (const cid of childIds) await generate(Number(cid));
     };

@@ -199,7 +199,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   cleanup["not linked texts"] = async () => {
     const children = app.db.table("text").children;
     if (!children.length) return undefined;
-    const where = sql.join(children.map((f: any) => sql`id NOT IN (SELECT DISTINCT ${sql.id(String(f.name))} FROM ${sql.id(String(f.table))} WHERE ${sql.id(String(f.name))} IS NOT NULL)`), " AND ");
+    const where = sql.join(children.map((f: any) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
     const count = Number(await db.one`SELECT count(DISTINCT id) FROM text WHERE ${where}`);
     if (!count) return undefined;
     return {

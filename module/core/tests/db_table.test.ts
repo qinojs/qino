@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { DbTable } from "../lib/DbTable.ts";
+import { Db } from "../lib/Db.ts";
 import { fakeRender } from "./sqlFake.ts";
 import { sql } from "../../../deps.ts";
 
@@ -153,4 +154,38 @@ Deno.test("DbTable: select, insert, update and delete build parameterized SQL", 
     "table::delete-before",
     "table::delete-after",
   ]);
+});
+
+Deno.test("DbTable: copy and delete cascade via x-qg-parent-field on real sqlite", async () => {
+  const real = new Db("sqlite:");
+  await real.exec`CREATE TABLE parent (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL)`;
+  await real.exec`CREATE TABLE child (id INTEGER PRIMARY KEY AUTOINCREMENT, parent_code TEXT, val TEXT)`;
+  await real.exec`CREATE TABLE child2 (id INTEGER PRIMARY KEY AUTOINCREMENT, parent_id INTEGER, val TEXT)`;
+  real.schema = { properties: {
+    child: { additionalProperties: { properties: {
+      parent_code: { "x-qg-parent": "parent", "x-qg-parent-field": "code", "x-qg-on-parent-copy": "cascade", "x-qg-on-parent-delete": "cascade" },
+    } } },
+    child2: { additionalProperties: { properties: {
+      parent_id: { "x-qg-parent": "parent", "x-qg-on-parent-copy": "cascade", "x-qg-on-parent-delete": "cascade" },
+    } } },
+  } };
+  await real.loadTables();
+  const parent = real.table("parent");
+
+  const pid = await parent.insert({ code: "A" });
+  await real.table("child").insert({ parent_code: "A", val: "c1" });
+  await real.table("child").insert({ parent_code: "A", val: "c2" });
+  await real.table("child").insert({ parent_code: "X", val: "cx" });
+  await real.table("child2").insert({ parent_id: pid, val: "k1" });
+
+  // copy: children follow the non-primary parent field resp. the new primary id
+  const newId = await parent.copy(pid, { code: "B" });
+  assertEquals((await real.query`SELECT val FROM child WHERE parent_code = ${"B"} ORDER BY id`).map((r) => r.val), ["c1", "c2"]);
+  assertEquals((await real.query`SELECT val FROM child2 WHERE parent_id = ${newId} ORDER BY id`).map((r) => r.val), ["k1"]);
+
+  // delete: only children of the deleted row's parent-field value go away
+  await parent.delete(pid);
+  assertEquals((await real.query`SELECT parent_code FROM child ORDER BY id`).map((r) => r.parent_code), ["X", "B", "B"]);
+  assertEquals((await real.query`SELECT parent_id FROM child2`).map((r) => String(r.parent_id)), [newId]);
+  await real.close();
 });

@@ -2,8 +2,9 @@
   "name": "@qino/qino",
   "version": "0.4.12",
   "exports": "./module/core/mod.ts",
+  "minimumDependencyAge": "0",
   "imports": {
-    "@qino/item/": "jsr:/@nuxodin/item@0.5.20/",
+    "@qino/item/": "jsr:/@nuxodin/item@0.5.22/",
     "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/"
   },
   "tasks": {
