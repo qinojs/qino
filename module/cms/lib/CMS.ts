@@ -146,7 +146,7 @@ export class CMS {
         const access = await P.access();
         const inside = await MainNode.in?.(P);
         const online = await P.isOnline();
-        const cls = ` class="cmsLink${P} ${access ? "" : "noAccess"}${inside ? " cmsInside" : ""}${MainNode === P ? " cmsActive" : ""}${!online ? " cmsOffline" : ""}"`;
+        const cls = ` class="cmsLink${P}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}"`;
         const titleObj = await P.title();
         const cmstxt = P.edit ? ` cmstxt=${titleObj?.id ?? ""}` : "";
         const ariaCurrent = MainNode === P ? " aria-current=page" : "";
@@ -160,7 +160,7 @@ export class CMS {
         ret.target = "_blank";
         if (/^\d+$/.test(pidOrUrl)) {
             const P = await this.node(Number(pidOrUrl));
-            if (await P.is()) {
+            if (P.is()) {
                 ret.target = "_self";
                 ret.Node = P;
                 return P.url();
