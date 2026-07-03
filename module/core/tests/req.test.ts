@@ -11,7 +11,7 @@ Deno.test("parseCookies keeps the first cookie when paths provide duplicate name
 Deno.test("parseCookies keeps prototype-looking names inert", () => {
   const cookies = parseCookies("__proto__=x; constructor=y; toString=z");
   assertEquals(cookies.__proto__, "x");
-  assertEquals(cookies.constructor, "y");
-  assertEquals(cookies.toString, "z");
+  assertEquals(cookies["constructor"], "y");
+  assertEquals(cookies["toString"], "z");
   assert(!Object.prototype.isPrototypeOf(cookies));
 });
