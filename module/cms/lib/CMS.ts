@@ -194,7 +194,7 @@ export class CMS {
                 text = await T.string();
             } else {
                 text = options.initial;
-                await T.set(text); // working?
+                await T.lang(this.app.languages.def).set(text);
             }
         }
 

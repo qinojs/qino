@@ -1,20 +1,18 @@
 export type TNode =
   | { type: "text";    value: string }
-  | { type: "expr";    code: string }
   | { type: "element"; tag: string; attrs: TAttr[]; children: TNode[]; self: boolean }
 
 export type TAttr = {
   name:  string;
-  value: TNode[];  // mix of text + expr nodes
-  raw:   string;   // original attribute value string
+  value: string | null;  // null = bare attribute (no "=")
 }
 
 type Token =
-  | { t: "open";  tag: string; attrs: { name: string; value: string }[]; self: boolean }
+  | { t: "open";  tag: string; attrs: TAttr[]; self: boolean }
   | { t: "close"; tag: string }
   | { t: "text";  value: string }
 
-const VOID = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
+export const VOID = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
 
 function tokenize(html: string): Token[] {
   const tokens: Token[] = [];
@@ -54,55 +52,25 @@ function findTagEnd(html: string, start: number): number {
   return html.length - 1;
 }
 
-function parseTagContent(raw: string): { tag: string; attrs: { name: string; value: string }[] } {
+function parseTagContent(raw: string): { tag: string; attrs: TAttr[] } {
   raw = raw.trim();
   const si = raw.search(/\s/);
   if (si === -1) return { tag: raw, attrs: [] };
-  const attrs: { name: string; value: string }[] = [];
+  const attrs: TAttr[] = [];
   const re = /([^\s=/"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(raw.slice(si))) !== null) attrs.push({ name: m[1], value: m[2] ?? m[3] ?? m[4] ?? "" });
+  while ((m = re.exec(raw.slice(si))) !== null) attrs.push({ name: m[1], value: m[2] ?? m[3] ?? m[4] ?? null });
   return { tag: raw.slice(0, si), attrs };
-}
-
-function parseExprs(text: string): TNode[] {
-  if (!text.includes("{")) return text ? [{ type: "text", value: text }] : [];
-  const nodes: TNode[] = [];
-  let i = 0;
-  while (i < text.length) {
-    const open = text.indexOf("{", i);
-    if (open === -1) { nodes.push({ type: "text", value: text.slice(i) }); break; }
-    if (open > i) nodes.push({ type: "text", value: text.slice(i, open) });
-    const close = findExprClose(text, open + 1);
-    nodes.push({ type: "expr", code: text.slice(open + 1, close) });
-    i = close + 1;
-  }
-  return nodes;
-}
-
-function findExprClose(s: string, start: number): number {
-  let depth = 1, inStr: string | null = null;
-  for (let i = start; i < s.length; i++) {
-    const c = s[i];
-    if (inStr) { if (c === inStr && s[i - 1] !== "\\") inStr = null; }
-    else if (c === '"' || c === "'" || c === "`") inStr = c;
-    else if (c === "{") depth++;
-    else if (c === "}" && --depth === 0) return i;
-  }
-  return s.length;
 }
 
 export function parseTemplate(html: string): TNode[] {
   const stack: { tag: string; children: TNode[] }[] = [{ tag: "#root", children: [] }];
   for (const tok of tokenize(html)) {
     if (tok.t === "text") {
-      stack.at(-1)!.children.push(...parseExprs(tok.value)); continue;
+      stack.at(-1)!.children.push({ type: "text", value: tok.value }); continue;
     }
     if (tok.t === "open") {
-      const el: TNode & { type: "element" } = {
-        type: "element", tag: tok.tag, self: tok.self, children: [],
-        attrs: tok.attrs.map(a => ({ name: a.name, value: parseExprs(a.value), raw: a.value })),
-      };
+      const el: TNode & { type: "element" } = { type: "element", tag: tok.tag, attrs: tok.attrs, self: tok.self, children: [] };
       stack.at(-1)!.children.push(el);
       if (!tok.self) stack.push({ tag: tok.tag, children: el.children });
       continue;

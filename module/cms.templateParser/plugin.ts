@@ -1,66 +1,39 @@
 import type { App } from "../core/mod.ts";
-import { parseTemplate } from "./parse.ts";
-import { buildRenderFn, buildPartFn, extractParts } from "./render.ts";
+import type { Node } from "../cms/mod.ts";
+import { parseTemplate, type TNode } from "./parse.ts";
+import { renderNodes } from "./render.ts";
 
 export const name = "cms.templateParser";
-export const needs = ["cms"];
+export const needs = ["cms", "cms.image2"];
 
-type ParsedModule = {
-  render: (node: unknown, opts?: unknown) => Promise<string>;
-  parts:  Record<string, (node: unknown, opts?: unknown) => Promise<string>>;
-};
+// parsed templates keyed by file path — derived from the file only, safe to share across apps
+const cache = new Map<string, TNode[]>();
+const watching = new Set<string>();
 
-const cache = new Map<string, ParsedModule>();
-
-async function loadTemplate(dir: string): Promise<ParsedModule | null> {
-  let source: string;
-  try { source = await Deno.readTextFile(dir + "template.html"); }
-  catch { return null; }
-  const ast   = parseTemplate(source);
-  const parts = extractParts(ast);
-  return {
-    render: buildRenderFn(ast) as ParsedModule["render"],
-    parts:  Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, buildPartFn(v) as ParsedModule["parts"][string]])),
-  };
-}
-
-function watchTemplate(modName: string, templatePath: string, exports_: Record<string, unknown>): void {
+function watchTemplate(path: string): void {
+  if (watching.has(path)) return;
+  watching.add(path);
   (async () => {
-    for await (const event of Deno.watchFs(templatePath)) {
-      if (event.kind === "modify" || event.kind === "create") {
-        cache.delete(modName);
-        delete ((exports_.cms as Record<string, unknown>)?.node as Record<string, unknown>)?.parts;
-      }
+    for await (const event of Deno.watchFs(path)) {
+      if (event.kind === "modify" || event.kind === "create" || event.kind === "remove") cache.delete(path);
     }
-  })();
-}
-
-function injectParts(exports_: Record<string, unknown>, parsed: ParsedModule): void {
-  if (!Object.keys(parsed.parts).length) return;
-  const cmsExports  = (exports_.cms  ??= {}) as Record<string, unknown>;
-  const nodeExports = (cmsExports.node ??= {}) as Record<string, unknown>;
-  if (nodeExports.parts) return;
-  nodeExports.parts = parsed.parts;
+  })().catch(() => watching.delete(path));
 }
 
 export function init(app: App) {
   app.on("cms.node.render", async (e) => {
-    const node     = e.node;
-    const dir      = node.module?.dir;
+    const dir = e.node.module?.dir;
     if (!dir) return;
-
-    const modName  = node.module?.name ?? "";
-    const exports_ = node.module?.plugin ?? {};
-
-    let parsed = cache.get(modName);
-    if (!parsed) {
-      const loaded = await loadTemplate(dir);
-      if (!loaded) return;
-      cache.set(modName, parsed = loaded);
-      watchTemplate(modName, dir + "template.html", exports_);
+    const path = dir + "template.html";
+    let ast = cache.get(path);
+    if (!ast) {
+      let source: string;
+      try { source = await Deno.readTextFile(path); }
+      catch { return; } // no template.html — module renders itself
+      cache.set(path, ast = parseTemplate(source));
+      if (app.dev) watchTemplate(path);
     }
-
-    e.render = parsed.render;
-    injectParts(exports_, parsed);
+    const tpl = ast;
+    e.render = (node: Node) => renderNodes(tpl, node);
   });
 }
