@@ -76,10 +76,11 @@ export class DbFileManager {
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
     headers.set("Pragma", "private");
 
-    const { path: outputPath, mime: outputMime, key } = await f.transform(p);
+    const { path: outputPath, mime: outputMime, key, transformed } = await f.transform(p);
     mime = outputMime || mime;
+    if (mime === "text/markdown") mime += "; charset=utf-8";
 
-    if (/\.pdf$/.test(name) || mime === "application/pdf") {
+    if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
       headers.set("Content-Disposition", contentDisposition("inline", f.name));
       headers.set("Expires", "0");
@@ -262,13 +263,13 @@ export class DbFile extends File {
     return this.#manager.file(to, data);
   }
 
-  async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string; key?: string }> {
+  async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string; key?: string; transformed?: boolean }> {
     await this.ensureVs();
     if (!this.path) return { path: this.path, mime: this.mime };
     const cacheDir = this.#manager.app.appPATH + "cache/pri/";
     const dbMime = this.mime;
     const result = await FileTransformer.transform(this.path, cacheDir, parseTransformOptions(param), dbMime);
-    return { path: result.path, mime: result.mime || dbMime, key: result.key };
+    return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed };
   }
 
   override toString(): string { return String(this.id); }

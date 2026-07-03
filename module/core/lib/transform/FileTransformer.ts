@@ -5,23 +5,29 @@ import type { Phase, TransformerDef, TransformContext, TransformOptions, Transfo
 import { checkAvifSupport, isMagickAvailable, resetMagickCache } from './imagemagick.ts';
 import { isFfmpegAvailable, resetFfmpegCache } from './ffmpeg.ts';
 import { resetPngquantCache, isPngquantAvailable } from './pngquant.ts';
+import { resetPandocCache, isPandocAvailable } from './pandoc.ts';
+import { resetPdftotextCache, isPdftotextAvailable } from './poppler.ts';
 
 const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 
 export class FileTransformer {
   static readonly #transformers: TransformerDef[] = [];
 
-  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant', Promise<boolean>>> = {
+  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return isMagickAvailable(); },
     get ffmpeg(): Promise<boolean> { return isFfmpegAvailable(); },
     get avif(): Promise<boolean> { return checkAvifSupport(); },
     get pngquant(): Promise<boolean> { return isPngquantAvailable(); },
+    get pandoc(): Promise<boolean> { return isPandocAvailable(); },
+    get pdftotext(): Promise<boolean> { return isPdftotextAvailable(); },
   };
 
   static resetCapabilityCache(): void {
     resetMagickCache();
     resetFfmpegCache();
     resetPngquantCache();
+    resetPandocCache();
+    resetPdftotextCache();
   }
 
   static register(def: TransformerDef): void {

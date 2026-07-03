@@ -113,6 +113,26 @@ const BINARIES: Binary[] = [
     },
   },
   {
+    id: "pandoc",
+    label: "Pandoc",
+    available: FileTransformer.capabilities.pandoc,
+    install: {
+      debian: "apt install pandoc",
+      alpine: "apk add pandoc",
+      macos:  "brew install pandoc",
+    },
+  },
+  {
+    id: "pdftotext",
+    label: "pdftotext (Poppler)",
+    available: FileTransformer.capabilities.pdftotext,
+    install: {
+      debian: "apt install poppler-utils",
+      alpine: "apk add poppler-utils",
+      macos:  "brew install poppler",
+    },
+  },
+  {
     id: "libheif",
     label: "AVIF (libheif)",
     available: FileTransformer.capabilities.avif,
@@ -155,6 +175,8 @@ async function resolveVersion(bin: Binary): Promise<string> {
     "imagemagick": [{ cmd: "magick", args: ["-version"] }, { cmd: "convert", args: ["-version"] }],
     "ffmpeg":      [{ cmd: "ffmpeg", args: ["-version"] }],
     "pngquant":    [{ cmd: "pngquant", args: ["--version"] }],
+    "pandoc":      [{ cmd: "pandoc", args: ["--version"] }],
+    "pdftotext":   [{ cmd: "pdftotext", args: ["-v"] }],
     "libheif":     [
       { cmd: "magick",   args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
       { cmd: "convert",  args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
@@ -164,13 +186,14 @@ async function resolveVersion(bin: Binary): Promise<string> {
   if (!entries) return "";
   for (const entry of entries) {
     try {
-      const { code, stdout } = await new Deno.Command(entry.cmd, {
+      const { code, stdout, stderr } = await new Deno.Command(entry.cmd, {
         args: entry.args,
         stdout: "piped",
         stderr: "piped",
       }).output();
       if (code !== 0) continue;
-      const out = new TextDecoder().decode(stdout);
+      const dec = new TextDecoder();
+      const out = dec.decode(stdout).trim() || dec.decode(stderr).trim(); // pdftotext -v prints to stderr
       return entry.extract ? entry.extract(out) : out.split("\n")[0].trim();
     } catch { /* try next */ }
   }

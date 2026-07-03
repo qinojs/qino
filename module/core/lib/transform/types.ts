@@ -11,7 +11,7 @@ export interface TransformOptions {
   dpr?: number;
   page?: number;
   frame?: number;
-  fmt?: 'avif' | 'jpeg' | 'jpg' | 'png' | 'auto';
+  fmt?: 'avif' | 'jpeg' | 'jpg' | 'png' | 'md' | 'auto';
   [key: string]: unknown;
 }
 

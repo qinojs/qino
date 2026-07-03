@@ -14,10 +14,10 @@ FileTransformer.register({
     await isMagickAvailable() &&
     ctx.mime.startsWith('image/') &&
     ctx.mime !== 'image/svg+xml' &&
-    (ctx.meta.geometryApplied || ctx.options.q !== undefined || ctx.options.fmt !== undefined),
+    (ctx.meta.geometryApplied || ctx.options.q !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md')),
   transform: async (ctx) => {
     const q = Math.min(Math.max(ctx.options.q ?? 77, 1), 100);
-    const fmt = ctx.options.fmt === 'jpg' ? 'jpeg' : (ctx.options.fmt ?? 'auto');
+    const fmt = ctx.options.fmt === 'jpg' ? 'jpeg' : (ctx.options.fmt === 'md' ? 'auto' : ctx.options.fmt ?? 'auto');
 
     // Explicit format requested
     if (fmt !== 'auto') {

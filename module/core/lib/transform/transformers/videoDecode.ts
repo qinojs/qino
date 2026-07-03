@@ -24,7 +24,7 @@ FileTransformer.register({
   handles: async (ctx) =>
     await isFfmpegAvailable() &&
     VIDEO_MIMES.has(ctx.mime) &&
-    (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.frame !== undefined || ctx.options.fmt !== undefined || ctx.options.q !== undefined),
+    (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.frame !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md') || ctx.options.q !== undefined),
   transform: async (ctx) => {
     const frame = toFrameIndex(ctx.options.frame); // FFmpeg ist 0-basiert
     const out = nodePath.join(ctx.tmpDir, 'video-frame.png');
