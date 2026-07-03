@@ -4,6 +4,8 @@
  * import { WebAuth } from "/m/web_auth/pub/web_auth.js";
  */
 
+import { t } from "../../core/pub/js/qino.js";
+
 const csrfHeaders = (method) =>
   method === "GET" || !globalThis.qino?.token ? {} : { "X-CSRF-Token": globalThis.qino.token };
 
@@ -40,7 +42,7 @@ export class WebAuth {
   // ── Register ──────────────────────────────────────────────────────────────
 
   async register(opts = {}) {
-    if (!globalThis.PublicKeyCredential) throw new Error("WebAuthn not supported.");
+    if (!globalThis.PublicKeyCredential) throw new Error(await t`WebAuthn is not supported.`);
 
     const { token, publicKey } = await this.#post("/register/challenge", {});
     let credential;
@@ -53,12 +55,13 @@ export class WebAuth {
         },
       });
     } catch (e) {
-      if (e.name === "NotAllowedError") throw new Error("Abgebrochen.");
+      if (e.name === "NotAllowedError") throw new Error(await t`Cancelled.`);
       throw e;
     }
 
     return this.#post("/register/verify", {
       token,
+      credentialId:      WebAuth.#enc(credential.rawId),
       clientDataJSON:    WebAuth.#enc(credential.response.clientDataJSON),
       attestationObject: WebAuth.#enc(credential.response.attestationObject),
       name: opts.name ?? await this.guessName(),
@@ -68,11 +71,11 @@ export class WebAuth {
   // ── Login ─────────────────────────────────────────────────────────────────
 
   async login(opts = {}) {
-    if (!globalThis.PublicKeyCredential) throw new Error("WebAuthn not supported.");
+    if (!globalThis.PublicKeyCredential) throw new Error(await t`WebAuthn is not supported.`);
 
     const { token, publicKey } = await this.#post("/login/challenge", { email: opts.email ?? null });
     const assertion = await this.#getAssertion(publicKey);
-    return this.#verify(token, assertion);
+    return this.#verify("/login/verify", token, assertion);
   }
 
   // ── Conditional UI (Autofill passkey) ─────────────────────────────────────
@@ -97,7 +100,7 @@ export class WebAuth {
       if (e.name === "AbortError") return null;
       throw e;
     }
-    return this.#verify(token, assertion);
+    return this.#verify("/login/verify", token, assertion);
   }
 
   abortConditional() {
@@ -109,7 +112,7 @@ export class WebAuth {
 
   async confirm() {
     const { token, publicKey } = await this.#post("/confirm/challenge", {});
-    return this.#verify(token, await this.#getAssertion(publicKey));
+    return this.#verify("/confirm/verify", token, await this.#getAssertion(publicKey));
   }
 
   // ── Credential management ─────────────────────────────────────────────────
@@ -131,13 +134,13 @@ export class WebAuth {
 
   async guessName() {
     try {
-      if (!await WebAuth.isPlatformAuthenticatorAvailable()) return "Hardware-Key";
+      if (!await WebAuth.isPlatformAuthenticatorAvailable()) return await t`Hardware key`;
       const ua = navigator.userAgent;
       if (/iPhone|iPad/i.test(ua)) return "Face ID / Touch ID";
-      if (/Android/i.test(ua))     return "Android Biometrie";
+      if (/Android/i.test(ua))     return await t`Android biometrics`;
       if (/Win/i.test(ua))         return "Windows Hello";
       if (/Mac/i.test(ua))         return "Touch ID";
-      return "Plattform-Authenticator";
+      return await t`Platform authenticator`;
     } catch { return "Authenticator"; }
   }
 
@@ -156,15 +159,15 @@ export class WebAuth {
     try {
       assertion = await navigator.credentials.get({ publicKey: this.#decodePublicKey(publicKey) });
     } catch (e) {
-      if (e.name === "NotAllowedError") throw new Error("Abgebrochen.");
+      if (e.name === "NotAllowedError") throw new Error(await t`Cancelled.`);
       throw e;
     }
-    if (!assertion) throw new Error("Abgebrochen.");
+    if (!assertion) throw new Error(await t`Cancelled.`);
     return assertion;
   }
 
-  #verify(token, a) {
-    return this.#post("/login/verify", {
+  #verify(path, token, a) {
+    return this.#post(path, {
       token,
       credentialId:      WebAuth.#enc(a.rawId),
       clientDataJSON:    WebAuth.#enc(a.response.clientDataJSON),

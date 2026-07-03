@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, login, unixTime, Access, AccessError, type AptTree, s, type App, type Db } from "../core/mod.ts";
+import { getCtx, login, unixTime, Access, AccessError, type AptTree, s, type App, type Db, type RequestContext } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
 
 export const name = "web_auth";
@@ -10,6 +10,7 @@ export const settingsSchema = {
   properties: {
     rpId:   { type: "string", description: "Relying Party ID — domain without protocol, e.g. example.com" },
     rpName: { type: "string", description: "Display name of the application in the authenticator dialog" },
+    origin: { type: "string", description: "Accepted origin(s), comma-separated, e.g. https://example.com:8443 — default: request origin if its host matches rpId" },
   },
 };
 
@@ -27,10 +28,19 @@ function randB64(n: number): string {
   return b64url(crypto.getRandomValues(new Uint8Array(n)));
 }
 
-async function getRp(app: App): Promise<{ rpId: string; rpName: string; expectedOrigin: string }> {
+async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
   const rpId   = String(await app.settings.web_auth.rpId   ?? "") || "localhost";
   const rpName = String(await app.settings.web_auth.rpName ?? "") || "Qino";
-  return { rpId, rpName, expectedOrigin: rpId === "localhost" ? "http://localhost" : `https://${rpId}` };
+  return { rpId, rpName };
+}
+
+/** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
+async function expectedOrigins(ctx: RequestContext, rpId: string): Promise<string[]> {
+  const setting = String(await ctx.app.settings.web_auth.origin ?? "");
+  if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
+  const url = ctx.url;
+  if (url.hostname === rpId || url.hostname.endsWith("." + rpId)) return [url.origin];
+  return [rpId === "localhost" ? "http://localhost" : `https://${rpId}`];
 }
 
 async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
@@ -43,7 +53,9 @@ async function storeChallenge(db: Db, challenge: string, usrId: number, type: "r
 async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
   const row = await db.row`SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ${token} AND type = ${type} AND expires > ${unixTime()}`;
   if (!row) return null;
-  await db.exec`DELETE FROM web_auth_challenge WHERE token = ${token}`;
+  // the delete decides the race: of parallel verifies only one gets affectedRows = 1
+  const { affectedRows } = await db.exec`DELETE FROM web_auth_challenge WHERE token = ${token}`;
+  if (affectedRows !== 1) return null;
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
@@ -57,15 +69,16 @@ const assertionInput = s.object({
 });
 
 async function verifyAssertion(
-  app: App,
+  ctx: RequestContext,
   { credentialId, clientDataJSON, authenticatorData, signature }: any,
   expectedChallenge: string,
   requireUserVerification: boolean,
 ): Promise<{ ok: false; error: string } | { ok: true; cred: any; newCounter: number }> {
-  const cred = await app.db.row`SELECT * FROM web_auth_credential WHERE credential_id = ${credentialId}`;
+  const cred = await ctx.app.db.row`SELECT * FROM web_auth_credential WHERE credential_id = ${credentialId}`;
   if (!cred) return { ok: false, error: "credential_not_found" };
 
-  const { rpId, expectedOrigin } = await getRp(app);
+  const { rpId } = await getRp(ctx.app);
+  const expectedOrigin = await expectedOrigins(ctx, rpId);
   try {
     const { verified, authenticationInfo } = await verifyAuthenticationResponse({
       response: {
@@ -132,23 +145,25 @@ export const api: AptTree = {
         access: Access.USER,
         input: s.object({
           token:             s.string(),
+          credentialId:      s.string(),
           clientDataJSON:    s.string(),
           attestationObject: s.string(),
           name:              s.optional(s.string()),
         }),
-        execute: async ({ token, clientDataJSON, attestationObject, name }: any) => {
+        execute: async ({ token, credentialId, clientDataJSON, attestationObject, name }: any) => {
           const ctx    = getCtx();
           const db     = ctx.app.db;
           const stored = await consumeChallenge(db, token, "register");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          const { rpId, expectedOrigin } = await getRp(ctx.app);
+          const { rpId } = await getRp(ctx.app);
+          const expectedOrigin = await expectedOrigins(ctx, rpId);
           let verification: Awaited<ReturnType<typeof verifyRegistrationResponse>>;
           try {
             verification = await verifyRegistrationResponse({
               response: {
-                id: "", rawId: "",
+                id: credentialId, rawId: credentialId,
                 response: { clientDataJSON, attestationObject },
                 type: "public-key",
                 clientExtensionResults: {},
@@ -237,7 +252,7 @@ export const api: AptTree = {
           const stored = await consumeChallenge(db, token, "login");
           if (!stored) return { ok: false, error: "challenge_expired" };
 
-          const r = await verifyAssertion(ctx.app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
+          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
           if (!r.ok) return r;
 
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
@@ -291,7 +306,7 @@ export const api: AptTree = {
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          const r = await verifyAssertion(ctx.app, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
+          const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 

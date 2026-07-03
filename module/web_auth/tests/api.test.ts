@@ -51,11 +51,12 @@ Deno.test("web_auth: api exposes expected apt endpoints", () => {
     type: "object",
     properties: {
       token: { type: "string" },
+      credentialId: { type: "string" },
       clientDataJSON: { type: "string" },
       attestationObject: { type: "string" },
       name: { type: "string" },
     },
-    required: ["token", "clientDataJSON", "attestationObject"],
+    required: ["token", "credentialId", "clientDataJSON", "attestationObject"],
   });
 
   const loginVerify = tools.find((tool) => tool.name === "post_login_verify");

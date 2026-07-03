@@ -5,11 +5,11 @@ WebAuthn-Modul (Passkeys, Fingerabdruck, Face ID, Hardware-Key). Unabhängig vom
 ## Einbindung in server.ts
 
 ```ts
-await app.import(import.meta.resolve("../qino/module/web_auth/mod.ts"));
+await app.import(import.meta.resolve("../qino/module/web_auth/plugin.ts"));
 
 // Optional:
-await app.import(import.meta.resolve("../qino/module/cms.cont.web_auth/mod.ts"));
-await app.import(import.meta.resolve("../qino/module/cms.backend.web_auth/mod.ts"));
+await app.import(import.meta.resolve("../qino/module/cms.cont.web_auth/plugin.ts"));
+await app.import(import.meta.resolve("../qino/module/cms.backend.web_auth/plugin.ts"));
 ```
 
 ## Settings
@@ -18,6 +18,7 @@ await app.import(import.meta.resolve("../qino/module/cms.backend.web_auth/mod.ts
 |----------|---------------|---------------------------------------------------|
 | `rpId`   | `"localhost"` | Domain ohne Protokoll, z.B. `example.com`         |
 | `rpName` | `"Qino"`      | Anzeigename im Authenticator-Dialog               |
+| `origin` | abgeleitet    | Erlaubte Origin(s), kommagetrennt, z.B. `https://example.com:8443`. Ohne Setting wird die Request-Origin akzeptiert, wenn ihr Host zur `rpId` passt |
 
 ## API
 
@@ -37,23 +38,15 @@ Basis: `{appURL}api/web_auth/`
 ## Client
 
 ```js
-import { WebAuth, initWebAuth } from "/m/web_auth/pub/web_auth.js";
+import { WebAuth } from "/m/web_auth/pub/web_auth.js";
 
-// Manuell:
 const wa = new WebAuth({ apiBase: "/cms1/api/web_auth" });
 await wa.register({ name: "Mein MacBook" });
 await wa.login({ email: "user@example.com" });
-
-// Oder per data-Attribut:
-initWebAuth({ apiBase: "/cms1/api/web_auth", onSuccess: () => location.reload() });
+await wa.loginConditional(); // Autofill-Passkey (Conditional UI), null wenn nicht verfügbar
 ```
 
-```html
-<input type="email" autocomplete="username webauthn" data-web-auth-email>
-<button data-web-auth-action="login">Mit Passkey anmelden</button>
-<button data-web-auth-action="register">Passkey hinzufügen</button>
-<input data-web-auth-name placeholder="Name">
-```
+Fertige Login-/Verwaltungs-UI liefert das Content-Modul `cms.cont.web_auth` (siehe unten).
 
 ## Step-up Authentication
 
