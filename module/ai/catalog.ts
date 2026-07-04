@@ -42,4 +42,5 @@ export const providerCatalog: {
   { name: "Cerebras", endpoint: "https://api.cerebras.ai/v1" },
   { name: "Parasail", endpoint: "https://api.parasail.io/v1" },
   { name: "Scaleway", endpoint: "https://api.scaleway.ai/v1" },
+  { name: "Google AI Studio", endpoint: "https://generativelanguage.googleapis.com/v1beta/openai" },
 ];

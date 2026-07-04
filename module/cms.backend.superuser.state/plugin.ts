@@ -29,7 +29,8 @@ async function render(node: Node): Promise<string> {
 function renderState(node: Node): string {
   const ctx = getCtx();
   ctx.html.scripts.add(ctx.sysURL + "cms.backend.superuser.state/pub/state.mjs");
-  ctx.html.importMap.set(dumpJs, dumpJs);
+  ctx.html.importMap.set(dumpJs, dumpJs); // ugly
+  ctx.csp["script-src"]["https://jsr.io/@nuxodin/"] = true;
   return `
     ${dumpBox("Server / app", node.app, 2)}
     ${dumpBox("Context", ctx, 2)}
