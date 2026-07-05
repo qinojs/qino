@@ -39,10 +39,10 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
     <div class="u2-flex">
       ${await statusBox(app, stats)}
       <div>
-        ${tabs(tab)}
+        ${tabs(ctx, tab)}
         ${tab === "settings" ? settingsEditor(ctx) : ""}
         ${tab === "buckets" ? await bucketTable(app, buckets) : ""}
-        ${tab === "analyse" ? '<div class=u2-flex>' + topTable("Top IPs", topIps, "ip") + topTable("Top Paths", topPaths, "path") + topTable("Top Kinds", topKinds, "kind") + topTable("Top Clients", topUa, "ua") : ""}
+        ${tab === "analyse" ? '<div class=u2-flex>' + topTable(ctx, "Top IPs", topIps, "ip") + topTable(ctx, "Top Paths", topPaths, "path") + topTable(ctx, "Top Kinds", topKinds, "kind") + topTable(ctx, "Top Clients", topUa, "ua") : ""}
         ${tab === "live" ? await eventTable(app, events, ctx.get) : ""}
       </div>
     </div>
@@ -57,8 +57,10 @@ async function statusBox(app: App, stats: Record<string, unknown>) {
   </div></div>`;
 }
 
-function tabs(active: string) {
-  return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="?tab=${v}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
+function tabs(ctx: RequestContext, active: string) {
+  const u = ctx.url;
+  const href = (tab: string) => { u.searchParams.set("tab", tab); return hee(u.search); };
+  return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="${href(v)}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
 }
 
 function settingsEditor(ctx: RequestContext) {
@@ -126,9 +128,11 @@ function eventActions(r: RowDataPacket) {
   return `<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
 }
 
-function topTable(title: string, rows: Record<string, unknown>[], key: string) {
+function topTable(ctx: RequestContext, title: string, rows: Record<string, unknown>[], key: string) {
+  const u = ctx.url;
+  const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return hee(u.search); };
   return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">
-    ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="?tab=live&q=${encodeURIComponent(String(r[key] ?? ""))}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
+    ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="${href(r[key])}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
   </table></div>`;
 }
 
