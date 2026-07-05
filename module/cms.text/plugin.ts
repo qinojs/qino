@@ -44,6 +44,6 @@ export function init(app: App) {
 
 export { api } from "./api.ts";
 
-export function install({ app }: { app: App }): void {
+export function install({ app }: { app: App }): void { // tobi: ich glaube das braucht es nicht
     app.settings["cms.text"]["translation service"];
 }

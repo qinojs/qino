@@ -177,7 +177,7 @@ export function init(app: App) {
  * cms.versions install()
  * Tables (vers_space, vers_cms_page_changed) are created via dbSchema/migrate.
  */
-export function install({app}: { app: App }): void {
+export function install({app}: { app: App }): void { // tobi: ich glaube das braucht es nicht
     // Autovivify settings
     app.settings["cms.versions"].draftmode;
 }
