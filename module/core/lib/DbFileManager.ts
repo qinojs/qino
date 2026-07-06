@@ -1,10 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
-import * as nodeFs from "node:fs/promises";
-import { typeByExtension } from "../../../deps.ts";
+import { typeByExtension, sql } from "../../../deps.ts";
 import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
-import { sql } from "../../../deps.ts";
 import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
@@ -27,9 +25,13 @@ export class DbFileManager {
   get db(): Db { return this.#app.db; }
   get directory(): string { return this.#directory; }
 
+  #files(): Record<string, DbFile> {
+    return scopeCache(this.#cache, "dbFiles", () => ({} as Record<string, DbFile>));
+  }
+
   async file(id: number | string, vs?: any): Promise<DbFile> {
     const key = String(id);
-    const cache = scopeCache(this.#cache, "dbFiles", () => ({} as Record<string, DbFile>));
+    const cache = this.#files();
     cache[key] ??= new DbFile(this, id);
     if (vs) cache[key].setLocalVs(vs);
     else await cache[key].ensureVs();
@@ -37,7 +39,7 @@ export class DbFileManager {
   }
 
   clearCache(id?: number | string) {
-    const cache = scopeCache(this.#cache, "dbFiles", () => ({} as Record<string, DbFile>));
+    const cache = this.#files();
     if (id !== undefined) delete cache[String(id)];
     else for (const k in cache) delete cache[k];
   }
@@ -65,7 +67,6 @@ export class DbFileManager {
     if (!await f.access()) return new Response(null, { status: 403 });
 
     let mime = f.mime || typeByExtension(f.extension) || "application/octet-stream";
-    if (mime === "image/svg+xml") mime += "; charset=utf-8";
 
     const headers = new Headers();
 
@@ -78,7 +79,6 @@ export class DbFileManager {
 
     const { path: outputPath, mime: outputMime, key, transformed } = await f.transform(params);
     mime = outputMime || mime;
-    if (mime === "text/markdown") mime += "; charset=utf-8";
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
@@ -102,6 +102,7 @@ export class DbFileManager {
     if (mime === "image/svg+xml") headers.set("Content-Security-Policy", "script-src 'none'");
     headers.set("X-Content-Type-Options", "nosniff");
 
+    if (mime === "image/svg+xml" || mime === "text/markdown") mime += "; charset=utf-8";
     headers.set("Content-Type", mime);
 
     // Cache key as ETag (content identity) – cache-file mtime is unusable, it gets touched for LRU tracking
@@ -109,20 +110,19 @@ export class DbFileManager {
     if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
     headers.set("ETag", etag);
 
+    headers.set("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.get("range");
     if (rangeHeader) {
       const range = await openRange(outputPath, rangeHeader);
       if (range) {
         headers.set("Content-Range", range.contentRange);
         headers.set("Content-Length", String(range.length));
-        headers.set("Accept-Ranges", "bytes");
         return new Response(range.stream, { status: 206, headers });
       }
     }
 
     const file = await Deno.open(outputPath, { read: true });
     headers.set("Content-Length", String((await file.stat()).size));
-    headers.set("Accept-Ranges", "bytes");
     return new Response(file.readable, { status: 200, headers });
   }
 }
@@ -213,8 +213,8 @@ export class DbFile extends File {
     await this.#manager.app.fire("dbFile-remove-fs", e);
     this.path = "";
     if (e.prevent || !md5) return;
-    const still = await this.#manager.db.one`SELECT id FROM file WHERE md5 = ${md5}`;
-    if (!still) await nodeFs.unlink(this.#manager.directory + md5).catch(() => {});
+    const still = await this.#manager.db.one`SELECT id FROM ${sql.id(tableRef("file"))} WHERE md5 = ${md5}`;
+    if (!still) await Deno.remove(this.#manager.directory + md5).catch(() => {});
   }
 
   async replaceBy(path: string) {
@@ -232,7 +232,7 @@ export class DbFile extends File {
 
     const md5 = await src.md5();
     this.path = this.#manager.directory + md5;
-    await nodeFs.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
+    await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
     if (!await src.copyTo(this.path)) throw new Error(`Copy failed: ${path} → ${this.path}`);
 
     await this.setVs({ name: src.basename(), mime: src.mime, text: await src.getText(), md5, size: await this.size() });
