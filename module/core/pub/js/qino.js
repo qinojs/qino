@@ -56,6 +56,6 @@ export const ctx = {
 };
 
 // server-side: import { getCtx } ... — client-side there is only the one ctx
-export function getCtx() { console.log(Error().stack); return ctx; }
+export function getCtx() { return ctx; }
 
 export { t };

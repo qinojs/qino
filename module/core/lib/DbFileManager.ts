@@ -111,12 +111,12 @@ export class DbFileManager {
 
     const rangeHeader = req.headers.get("range");
     if (rangeHeader) {
-      const rangeData = await xStream(outputPath, rangeHeader);
-      if (rangeData) {
-        headers.set("Content-Range", rangeData.contentRange);
-        headers.set("Content-Length", String(rangeData.data.length));
+      const range = await xStream(outputPath, rangeHeader);
+      if (range) {
+        headers.set("Content-Range", range.contentRange);
+        headers.set("Content-Length", String(range.length));
         headers.set("Accept-Ranges", "bytes");
-        return new Response(rangeData.data, { status: 206, headers });
+        return new Response(range.stream, { status: 206, headers });
       }
     }
 
@@ -287,36 +287,27 @@ function parseTransformOptions(param: Record<string, unknown>): TransformOptions
   return opt;
 }
 
+/** Stream a single `bytes=` range of a file; null = serve the full file instead. */
 async function xStream(filePath: string, rangeHeader: string) {
+  const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
+  if (!m || (!m[1] && !m[2])) return null;
+  let file: Deno.FsFile;
+  try { file = await Deno.open(filePath, { read: true }); } catch { return null; }
   try {
-    const stat = await Deno.stat(filePath);
-    const size = stat.size;
-    const [param, rangeStr] = rangeHeader.split("=");
-    if (param.trim() !== "bytes") return null;
-    const ranges = rangeStr.split(",")[0].split("-");
-    let start: number;
-    let end: number;
-    if (ranges[0] === "") {
-      end = size - 1;
-      start = end - parseInt(ranges[1]);
-    } else if (ranges[1] === "") {
-      start = parseInt(ranges[0]);
-      end = size - 1;
-    } else {
-      start = parseInt(ranges[0]);
-      end = parseInt(ranges[1]);
-      if (end >= size || (!start && (!end || end === size - 1))) return null;
-    }
-    const length = end - start + 1;
-
-    const file = await Deno.open(filePath, { read: true });
+    const size = (await file.stat()).size;
+    const start = m[1] === "" ? Math.max(size - Number(m[2]), 0) : Number(m[1]); // `-n` = last n bytes
+    const end = m[1] !== "" && m[2] !== "" ? Math.min(Number(m[2]), size - 1) : size - 1;
+    if (start > end || start >= size) { file.close(); return null; }
     await file.seek(start, Deno.SeekMode.Start);
-    const buf = new Uint8Array(length);
-    await file.read(buf);
-    file.close();
-
-    return { data: buf, contentRange: `bytes ${start}-${end}/${size}` };
-  } catch {
-    return null;
-  }
+    const length = end - start + 1;
+    let remaining = length;
+    const stream = file.readable.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        controller.enqueue(chunk.subarray(0, Math.min(chunk.byteLength, remaining)));
+        remaining -= Math.min(chunk.byteLength, remaining);
+        if (remaining === 0) controller.terminate(); // cancels the source, closing the file
+      },
+    }));
+    return { stream, length, contentRange: `bytes ${start}-${end}/${size}` };
+  } catch { file.close(); return null; }
 }
