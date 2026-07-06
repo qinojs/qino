@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+import type { App } from "../core/mod.ts";
 
 export type Solution = {
   form?: Record<string, Record<string, unknown>>;
@@ -14,7 +14,7 @@ export type CheckFn = { (): Promise<CheckResult> | CheckResult; mod?: string };
 
 export type HealthTypes = Record<string, Record<string, CheckFn>>;
 
-export async function getHealthTypes(app: any): Promise<HealthTypes> {
+export async function getHealthTypes(app: App): Promise<HealthTypes> {
   const types: HealthTypes = {
     error:   {},
     warning: {},
@@ -23,12 +23,12 @@ export async function getHealthTypes(app: any): Promise<HealthTypes> {
     repair:  {},
   };
 
-  for (const mod of Object.values(app.modules.all()) as any[]) {
+  for (const mod of Object.values(app.modules.all())) {
     const hc = mod.plugin.healthChecks;
     if (!hc) continue;
-    const checks = await hc(app);
-    for (const [type, items] of Object.entries(checks) as any[]) {
-      for (const [key, item] of Object.entries(items) as any[]) {
+    const checks: HealthTypes = await hc(app);
+    for (const [type, items] of Object.entries(checks)) {
+      for (const [key, item] of Object.entries(items)) {
         (types[type] ??= {})[key] = item;
         if (item) item.mod = mod.name;
       }

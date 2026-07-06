@@ -1,6 +1,5 @@
-// deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { getCtx, hee } from "../core/mod.ts";
+import { getCtx, hee, type App } from "../core/mod.ts";
 
 export const name = "cms.cont.web_auth";
 export const needs = ["web_auth"];
@@ -31,7 +30,7 @@ async function render(node: Node): Promise<string> {
     const redirectId = Number(settings.redirectAfterLogin() ?? 0);
     let redirectUrl  = "";
     if (redirectId) {
-      const P = await (node.app as any).cms?.node(redirectId);
+      const P = await node.app.cms?.node(redirectId);
       if (P?.is()) redirectUrl = await P.url();
     }
     return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.token));
@@ -39,7 +38,7 @@ async function render(node: Node): Promise<string> {
   return "";
 }
 
-async function renderLogin(app: any, apiBase: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
+async function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
   return `<div class="web-auth-login" data-api-base="${hee(apiBase)}" data-redirect-url="${hee(redirectUrl)}">
   <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
   <button data-action="login">${await app.t`Sign in with passkey`}</button>
@@ -58,7 +57,7 @@ async function renderLogin(app: any, apiBase: string, showPw: boolean, redirectU
 </div>`;
 }
 
-async function renderManage(app: any, apiBase: string): Promise<string> {
+async function renderManage(app: App, apiBase: string): Promise<string> {
   return `<div class="web-auth-manage" data-api-base="${hee(apiBase)}">
   <div data-list>${await app.t`Loading…`}</div>
   <input type="text" data-name placeholder="${await app.t`Name for this authenticator`}">

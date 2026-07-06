@@ -1,9 +1,7 @@
-// deno-lint-ignore-file no-explicit-any
-
-import { hee, getCtx, sql, unixTime } from "../core/mod.ts";
+import { hee, getCtx, sql, unixTime, type App } from "../core/mod.ts";
 import type { HealthTypes, Solution } from "./healthRegistry.ts";
 
-export async function healthChecks(app: any): Promise<HealthTypes> {
+export async function healthChecks(app: App): Promise<HealthTypes> {
   const db       = app.db;
   const ctx      = getCtx();
   const settings = app.settings;
@@ -72,17 +70,12 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
 
   // ── users ────────────────────────────────────────────────────────────────
   warning["users with old password-hash"] = async () => {
-    const usrs = await db.col`SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
+    const usrs = await db.col<string>`SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
     if (!usrs.length) return undefined;
-    return { info: usrs.map((e: string) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
+    return { info: usrs.map((e) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
   };
 
-  // ── debug / https ────────────────────────────────────────────────────────
-  notice["debugmode is active"] = () => {
-    if (!app.debug) return undefined;
-    return { info: "change it in the app config" };
-  };
-
+  // ── dev / https ──────────────────────────────────────────────────────────
   warning["dev mode is active"] = () => {
     if (!app.dev) return undefined;
     return { info: "set dev: false in the app config" };
@@ -199,7 +192,7 @@ export async function healthChecks(app: any): Promise<HealthTypes> {
   cleanup["not linked texts"] = async () => {
     const children = app.db.table("text").children;
     if (!children.length) return undefined;
-    const where = sql.join(children.map((f: any) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
+    const where = sql.join(children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
     const count = Number(await db.one`SELECT count(DISTINCT id) FROM text WHERE ${where}`);
     if (!count) return undefined;
     return {

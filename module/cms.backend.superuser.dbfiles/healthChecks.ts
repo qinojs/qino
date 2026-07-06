@@ -1,15 +1,14 @@
-// deno-lint-ignore-file no-explicit-any
 import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
-import { sql, unixTime } from "../core/mod.ts";
+import { sql, unixTime, type App } from "../core/mod.ts";
 
-export function healthChecks(app: any): HealthTypes {
+export function healthChecks(app: App): HealthTypes {
   const db = app.db;
   return {
     cleanup: {
       "unused dbFiles": async () => {
         const children = db.table("file").children;
         if (!children.length) return undefined;
-        const notLinked = children.map((F: any) =>
+        const notLinked = children.map((F) =>
           sql`id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`
         );
         const count = Number(await db.one`SELECT count(*) FROM file WHERE ${sql.join(notLinked, " AND ")}`);
@@ -21,7 +20,7 @@ export function healthChecks(app: any): HealthTypes {
               solve: async () => {
                 const fm = app.dbFiles;
                 const ago = unixTime() - 60 * 60 * 24 * 7;
-                const notLinkedFull = children.map((F: any) =>
+                const notLinkedFull = children.map((F) =>
                   sql`file.id NOT IN (SELECT ${sql.id(F.name)} FROM ${sql.id(F.table.name)})`
                 );
                 const rows = await db.query`SELECT file.id FROM file

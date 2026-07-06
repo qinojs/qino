@@ -288,7 +288,7 @@ export const api: AptTree = {
               rpId, challenge,
               timeout: CHALLENGE_TTL * 1000,
               userVerification: "required",
-              allowCredentials: creds.map((c: any) => ({ id: c.credential_id, type: "public-key" })),
+              allowCredentials: creds.map((c) => ({ id: c.credential_id, type: "public-key" })),
             },
           };
         },
@@ -325,7 +325,7 @@ export const api: AptTree = {
       execute: async () => {
         const ctx  = getCtx();
         const rows = await ctx.app.db.query`SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
-        return rows.map((r: any) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
+        return rows.map((r) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
       },
     },
   },

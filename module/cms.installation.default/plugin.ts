@@ -131,7 +131,7 @@ export async function install({app}: {app: App}): Promise<void> {
     await app.db.query`INSERT INTO page_redirect (request, redirect) VALUES ('login', '80')`;
   }
   await (await cms.node(80)).set("module", "cms.layout.login");
-  await (await (await cms.node(80)).cont("main")).cont('1').then((c: any) => c.set("module", "cms.cont.login4"));
+  await (await (await cms.node(80)).cont("main")).cont('1').then((c) => c.set("module", "cms.cont.login4"));
 
   if (!await app.db.one`SELECT id FROM page WHERE id = 70`) {
     const P = await (await cms.node(40)).createChild({ id: 70, access: 1, offline: 0, visible: 0 });

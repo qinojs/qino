@@ -170,11 +170,11 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
  */
 async function baselineTable(db: Db, tableName: string, vt: string, logId: number): Promise<void> {
     if (dbState(db).baselined.has(vt)) return;
-    const pks = (await db.columns(tableName)).filter((c: any) => c.Key === "PRI").map((c: any) => c.Field);
+    const pks = (await db.columns(tableName)).filter((c) => c.Key === "PRI").map((c) => c.Field);
     const join = pks.map((f) => `v.\`${f}\` = t.\`${f}\``).join(" AND ");
     // Map values onto the shadow's own column order (not positional t.*,…), so it stays
     // correct even when the shadow's column order has diverged from the live table.
-    const selects = (await db.columns(vt)).map((c: any) =>
+    const selects = (await db.columns(vt)).map((c) =>
         c.Field === "_vers_log" ? sql`${logId}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql`t.${sql.id(c.Field)}`);
     await db.query`
         INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} t

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 
 import { getCtx, requestStorage, sql, type RequestContext, type Db, type DbEvents, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view } from "./Vers.ts";
@@ -126,7 +125,7 @@ export function preventDbManipulations(app: App): void {
     app.db.on("table::delete-before", prevent);
 }
 
-export function cacheHeaders(ctx: any): void {
+export function cacheHeaders(ctx: RequestContext): void {
     const maxAge = 60 * 60 * 24 * 180;
     const d = new Date(Date.now() + maxAge * 1000).toUTCString();
     ctx.responseHeaders.set("Expires", d);

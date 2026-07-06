@@ -1,5 +1,6 @@
-// deno-lint-ignore-file no-explicit-any
 import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
+import type { App } from "../core/mod.ts";
+import type { Node } from "../cms/mod.ts";
 
 /**
  * Backend pages are protected purely via node access (groups/users), not via
@@ -7,7 +8,7 @@ import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
  * user who is in no group at all — i.e. the page's effective access is > 0
  * without requiring a specific group.
  */
-export function healthChecks(app: any): HealthTypes {
+export function healthChecks(app: App): HealthTypes {
   const db = app.db;
   return {
     error: {
@@ -29,16 +30,16 @@ export function healthChecks(app: any): HealthTypes {
   };
 
   /** All page nodes whose module is part of the backend. */
-  async function backendPages(app: any): Promise<Record<string, any>> {
+  async function backendPages(app: App): Promise<Record<string, Node>> {
     const rows = await db.query`SELECT id FROM page WHERE module LIKE 'cms.backend%' OR module = 'cms.layout.backend'`;
-    const ret: Record<string, any> = {};
+    const ret: Record<string, Node> = {};
     for (const row of rows) ret[row.id] = await app.cms.node(Number(row.id));
     return ret;
   }
 }
 
 /** Page access for a logged-in user without any group: only the inherited own access. */
-async function ownAccess(node: any): Promise<number> {
+async function ownAccess(node: Node): Promise<number> {
   if (node.vs.access === null) {
     const parent = await node.parent();
     return parent ? ownAccess(parent) : 0;

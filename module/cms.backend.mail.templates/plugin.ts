@@ -51,7 +51,7 @@ async function render(node: Node): Promise<string> {
 
   const u = ctx.url;
   const trs = rows.length
-    ? rows.map((r: any) => {
+    ? rows.map((r) => {
         const d = new Date(typeof r.updated === "number" ? r.updated * 1000 : String(r.updated));
         const iso = Number.isNaN(d.getTime()) ? "" : d.toISOString();
         const time = iso ? `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "-";

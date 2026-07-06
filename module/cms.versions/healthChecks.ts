@@ -1,8 +1,8 @@
-// deno-lint-ignore-file no-explicit-any
 import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
+import type { App } from "../core/mod.ts";
 import { thinHistory } from "./maintenance.ts";
 
-export function healthChecks(app: any): HealthTypes {
+export function healthChecks(app: App): HealthTypes {
   return {
     cleanup: {
       "version history": async () => {

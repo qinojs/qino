@@ -13,7 +13,7 @@ export function initHistory(app: App) {
   // Resolve request ctx + shadow table + logId for a tracked mutation, or null to skip.
   // logId is awaited only after the versioned-table check: awaiting earlier deadlocks
   // during the log insert's own insert-after (it would wait on its own pending logId).
-  const track = async (e: any): Promise<{ ctx: any; tableName: string; vt: string; logId: any } | null> => {
+  const track = async (e: any) => {
     const ctx = requestStorage.getStore();
     if (!ctx) return null;
     const tableName: string = String(e.Table);
@@ -33,7 +33,7 @@ export function initHistory(app: App) {
     const { ctx, tableName, vt, logId } = t;
     // Build field list from _vers_* table to ensure correct column order
     const versCols = await ctx.app.db.columns(vt);
-    const selects = versCols.map((c: any) => {
+    const selects = versCols.map((c) => {
       const f = c.Field;
       if (f === "_vers_space")   return sql`${getVers(ctx).space}`;
       if (f === "_vers_log")     return sql`${logId}`;
@@ -59,7 +59,7 @@ export function initHistory(app: App) {
     // a partial VALUES insert would break on data columns that have no default.
     const space = getVers(ctx).space;
     const versCols = await ctx.app.db.columns(vt);
-    const selects = versCols.map((c: any) => {
+    const selects = versCols.map((c) => {
       const f = c.Field;
       if (f === "_vers_space")   return sql`${space}`;
       if (f === "_vers_log")     return sql`${logId}`;
