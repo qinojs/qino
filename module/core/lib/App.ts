@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
-import { makeRequestContext, requestStorage, urlToLocalPath, type RequestContext } from "./RequestContext.ts";
+import { RequestContext, requestStorage, urlToLocalPath } from "./RequestContext.ts";
 import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
@@ -111,7 +111,7 @@ export class App extends Emitter<AppEvents> {
             await this.fire("request-start", { req }); // cheap pre-filter, before any DB/session work
             const localPath = urlToLocalPath(req.url, base, this);
             if (localPath) return await this.#static(req, localPath);
-            ctx = await makeRequestContext(this, req, base);
+            ctx = await RequestContext.create(this, req, base);
         } catch (e: unknown) {
             return this.#earlyError(e);
         }

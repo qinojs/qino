@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Item, ItemProxy } from "../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
+import { RequestDeadline } from "./RequestDeadline.ts";
 import { Csp } from "./Csp.ts";
 import { uid, clientIp, Output } from "./util.ts";
 import * as nodePath from "node:path";
@@ -26,8 +27,6 @@ export class RequestContext {
   responseBody: BodyInit | undefined = "";
   // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
-  #html: HtmlBuilder | null = null;
-  #settingsRoot: Item | null = null;
   lang = "en";
   langUsr = "en";
   langNsPath: string[] = [];
@@ -41,8 +40,24 @@ export class RequestContext {
   appRequestPath = "";
   csp: Csp = new Csp();
 
+  /** Time limit + abort signal of this request: `ctx.deadline.left += 60`, `ctx.deadline.signal`. */
+  #deadline: RequestDeadline | null = null;
+  get deadline(): RequestDeadline { return this.#deadline ??= new RequestDeadline(this); }
+
+  #html: HtmlBuilder | null = null;
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
   get hasHtml(): boolean { return this.#html !== null; }
+
+  #settingsRoot: Item | null = null;
+  get settings(): ItemProxy {
+    if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
+    return this.#settingsRoot.proxy;
+  }
+  async initSettings(): Promise<void> {
+    this.#settingsRoot = this.user
+      ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
+      : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
+  }
 
   get url(): URL { return new URL(this.req.url); }
 
@@ -57,18 +72,8 @@ export class RequestContext {
     return this.app.db.table('client').entry(this.clientId) as dbEntry_client;
   }
 
-  get settings(): ItemProxy {
-    if (!this.#settingsRoot) throw new Error("ctx.settings not initialized - call ctx.initSettings() first");
-    return this.#settingsRoot.proxy;
-  }
-  async initSettings(): Promise<void> { // inconsistent: ctx.lang is initialized in LangManager (LangManager.initCtx(ctx)), but settings here.
-    this.#settingsRoot = this.user
-      ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
-      : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
-  }
-
   get dev(): boolean {
-    return this.app.dev || !!this.settings.core.dev();
+    return this.app.dev || !!this.settings.core.dev(); // todo: ctx.settings can be written to, so this may be a security risk.
   }
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get token(): string {
@@ -82,58 +87,54 @@ export class RequestContext {
   }
 
   async cleanup(): Promise<void> {
+    this.#deadline?.clear();
     for (const f of Object.values(this.files)) {
       const p = (f as { tmpPath?: unknown })?.tmpPath;
       if (typeof p === "string") await Deno.remove(p).catch(() => {});
     }
   }
-}
 
-export async function makeRequestContext(app: App, req: Req, basePath: string): Promise<RequestContext> {
-  const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
-  const url = new URL(req.url);
+  static async create(app: App, req: Req, basePath: string): Promise<RequestContext> {
+    const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
+    const url = new URL(req.url);
 
-  const ct = req.header("content-type") ?? "";
-  const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
+    const ct = req.header("content-type") ?? "";
+    const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
 
-  const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
-  if (Number(req.header("content-length") ?? "0") > maxSize) throw new Output("Payload Too Large", { status: 413 });
+    const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
+    if (Number(req.header("content-length") ?? "0") > maxSize) throw new Output("Payload Too Large", { status: 413 });
 
-  const rawBody: unknown = req.method === "POST" ? (isJson ? await req.json() : await req.parseBody()) : {};
-  const post: Record<string, unknown> = Object.create(null);
-  const files: Record<string, UploadedFile> = Object.create(null);
+    const rawBody: unknown = req.method === "POST" ? (isJson ? await req.json() : await req.parseBody()) : {};
+    const post: Record<string, unknown> = Object.create(null);
+    const files: Record<string, UploadedFile> = Object.create(null);
 
-  for (const [key, val] of Object.entries(rawBody && typeof rawBody === "object" ? rawBody as Record<string, unknown> : {})) {
-    if (val instanceof File) {
-      files[key] = await readUploadFile(val, { maxSize });
-    } else {
-      post[key] = val;
+    for (const [key, val] of Object.entries(rawBody && typeof rawBody === "object" ? rawBody as Record<string, unknown> : {})) {
+      if (val instanceof File) {
+        files[key] = await readUploadFile(val, { maxSize });
+      } else {
+        post[key] = val;
+      }
     }
+
+    let appRequestPath: string;
+    try { appRequestPath = decodeURIComponent(req.path.slice(appURL.length)); }
+    catch { throw new Output("Bad Request", { status: 400 }); }
+
+    const ctx = new RequestContext();
+    ctx.req = req;
+    ctx.app = app;
+    ctx.appURL = appURL;
+    ctx.sysURL = appURL + "m/";
+    ctx.appRequestPath = appRequestPath;
+    ctx.sess = await app.sessions.loadFromRequest(req, app.https, appURL);
+    ctx.cookie = req.cookies();
+    ctx.get = req.query();
+    ctx.post = post;
+    ctx.files = files;
+    ctx.requestUri = url.pathname + url.search;
+    ctx.remoteAddr = clientIp(req, app.trustedProxyHops);
+    return ctx;
   }
-
-  const session = await app.sessions.loadFromRequest(req, app.https, appURL);
-
-  let appRequestPath: string;
-  try { appRequestPath = decodeURIComponent(req.path.slice(appURL.length)); }
-  catch { throw new Output("Bad Request", { status: 400 }); }
-
-  const ctx = new RequestContext();
-  Object.assign(ctx, {
-    req,
-    app,
-    appURL,
-    sysURL: appURL + "m/",
-    appRequestPath,
-    sess: session,
-    cookie: req.cookies(),
-    get: req.query(),
-    post,
-    files,
-    requestUri: url.pathname + url.search,
-    remoteAddr: clientIp(req, app.trustedProxyHops),
-  });
-
-  return ctx;
 }
 
 /** Resolve a request URL to a servable local file (module/qg pub dirs); null if it is no static path. */

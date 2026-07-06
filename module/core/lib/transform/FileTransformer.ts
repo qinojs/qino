@@ -100,9 +100,7 @@ export class FileTransformer {
 
     try {
       for (const transformer of pipeline) {
-        if (await transformer.handles(ctx)) {
-          await transformer.transform(ctx);
-        }
+        if (await transformer.handles(ctx)) await transformer.transform(ctx);
       }
 
       if (ctx.currentPath === sourcePath) {
