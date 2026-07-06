@@ -441,7 +441,7 @@ const node = {
         description: "Delete all files of the node",
         access: nodeWrite,
         execute: async ({ node }: { node: Node }) => {
-          for (const name of Object.keys(await node.files())) {
+          for (const name of Object.keys(await node.filesAndPlaceholders())) {
             await node.deleteFile(name);
           }
           return { ok: true };

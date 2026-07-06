@@ -24,6 +24,9 @@ class FakeNode {
   userChanges: Array<[unknown, number]> = [];
   groupChanges: Array<[unknown, number]> = [];
   childNodes: FakeNode[] = [];
+  fileNames = ["file.jpg"];
+  allFileNames = ["file.jpg", "placeholder.jpg"];
+  deletedFiles: string[] = [];
 
   constructor(id: number, accessLevel = 3, vs: Record<string, unknown> = {}) {
     this.id = id;
@@ -60,6 +63,9 @@ class FakeNode {
   createCont({ module }: { module: string }) {
     return new FakeNode(4, 3, { type: "c", module });
   }
+  files() { return Object.fromEntries(this.fileNames.map((name) => [name, {}])); }
+  filesAndPlaceholders() { return Object.fromEntries(this.allFileNames.map((name) => [name, {}])); }
+  deleteFile(name: string) { this.deletedFiles.push(name); return true; }
   changeUser(user: unknown, access: number) { this.userChanges.push([user, access]); }
   changeGroup(group: unknown, access: number) { this.groupChanges.push([group, access]); }
   bough() { return new Map([[this.id, this]]); }
@@ -139,6 +145,17 @@ Deno.test("cms apt: contents post returns rendered html string", async () => {
       html: "<div>{}</div>",
     });
   });
+});
+
+Deno.test("cms apt: delete all files includes placeholders", async () => {
+  const { ctx, nodes } = setup();
+  const node = nodes.get(1)!;
+
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "DELETE", "/node/1/files/all"), { ok: true });
+  });
+
+  assertEquals(node.deletedFiles, ["file.jpg", "placeholder.jpg"]);
 });
 
 Deno.test("cms apt: user access and group access write through node", async () => {
