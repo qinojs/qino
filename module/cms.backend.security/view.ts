@@ -1,7 +1,6 @@
-import { getCtx, hee, sql, u2time, Sql, type App, type RequestContext } from "../core/mod.ts";
+import { getCtx, hee, sql, u2time, Sql, type App, type RequestContext, type Row } from "../core/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
-import type { RowDataPacket } from "../../deps.ts";
 
 export async function backendDashboardWidget(app: App): Promise<string> {
   const row = await app.db.row`SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event`.catch(() => null);
@@ -79,7 +78,7 @@ async function bucketTable(app: App, rows: Record<string, unknown>[]) {
   </table></div>`;
 }
 
-async function eventTable(app: App, rows: RowDataPacket[], get: Record<string, string>) {
+async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
   const [tHead, tTime, tEvent, tScore, tAffected, tAction, tReason, tRequest, tStatus] = await Promise.all([
     app.t`Alarms / Requests`, app.t`Time`, app.t`Event`, app.t`Score`, app.t`Affected`, app.t`Action`, app.t`Reason`, app.t`Request`, app.t`Status`,
   ]);
@@ -92,20 +91,20 @@ async function eventTable(app: App, rows: RowDataPacket[], get: Record<string, s
   </table></div>`;
 }
 
-function eventCell(r: RowDataPacket) {
+function eventCell(r: Row) {
   return `${tag(r.kind || "-")}<br><small>${hee(prioLabels[r.prio] ?? r.prio)}</small>`;
 }
 
-function scoreCell(r: RowDataPacket) {
+function scoreCell(r: Row) {
   const meta = [`Conf. ${r.confidence ?? 0}`, `Severity ${r.severity ?? 0}`].join(" / ");
   return `<b>${hee(r.score)}</b><br><small>${hee(meta)}</small>`;
 }
 
-function bucketCell(r: RowDataPacket) {
+function bucketCell(r: Row) {
   return r.scope || r.ident ? `${tag(scopeLabels[r.scope] ?? (r.scope || "-"))}<br><code>${hee(r.ident || "-")}</code>` : "-";
 }
 
-function actionCell(r: RowDataPacket) {
+function actionCell(r: Row) {
   const parts = [];
   if (Number(r.blocked)) parts.push("Block");
   if (Number(r.delay_ms)) parts.push(hee(r.delay_ms) + "ms Delay");
@@ -113,17 +112,17 @@ function actionCell(r: RowDataPacket) {
   return parts.length ? parts.join("<br>") : "-";
 }
 
-function requestCell(r: RowDataPacket) {
+function requestCell(r: Row) {
   const meta = [r.method, r.ip, r.duration_ms ? r.duration_ms + "ms" : "", bytes(r.bytes_in, "in"), bytes(r.bytes_out, "out")].filter(Boolean);
   const ids = [r.log_id ? "log " + r.log_id : "", r.usr_id ? "user " + r.usr_id : "", r.client_id ? "client " + r.client_id : ""].filter(Boolean);
   return `<code>${hee(r.path)}</code>${meta.length ? `<br><small>${hee(meta.join(" · "))}</small>` : ""}${ids.length ? `<br><small>${hee(ids.join(" · "))}</small>` : ""}`;
 }
 
-function stateCell(r: RowDataPacket) {
+function stateCell(r: Row) {
   return tag(stateLabels[r.state] ?? r.state ?? "-");
 }
 
-function eventActions(r: RowDataPacket) {
+function eventActions(r: Row) {
   if (r.prio === "notice") return "";
   return `<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
 }

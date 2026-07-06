@@ -25,6 +25,7 @@ export * from "./lib/apt/mod.ts";
 // Database
 export { Db } from "./lib/db/Db.ts";
 export type { DbEvents } from "./lib/db/Db.ts";
+export type { Row } from "./lib/db/DbDriver.ts";
 export { Sql, sql } from "../../deps.ts";
 export { dbScope, tableRef, scopeCache } from "./lib/db/dbScope.ts";
 export type { DbScope } from "./lib/db/dbScope.ts";
