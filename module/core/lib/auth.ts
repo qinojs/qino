@@ -69,13 +69,6 @@ export async function logout(ctx: RequestContext): Promise<void> {
   await ctx.app.fire("logout");
 }
 
-export async function rememberLogin(ctx: RequestContext, doSave: boolean): Promise<void> {
-  const usr = ctx.user;
-  if (!(await usr?.is())) return;
-  const E = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });
-  await E.set("save_login", doSave ? 1 : 0);
-}
-
 export function pwHash(pw: string): Promise<string> {
   return bcrypt.hash(pw, 10);
 }
@@ -85,6 +78,13 @@ export async function pwVerify(pw: string, hash: string): Promise<boolean> {
   return await bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
 }
 
-export function pwNeedsRehash(hash: string): boolean {
+async function rememberLogin(ctx: RequestContext, doSave: boolean): Promise<void> {
+  const usr = ctx.user;
+  if (!(await usr?.is())) return;
+  const E = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });
+  await E.set("save_login", doSave ? 1 : 0);
+}
+
+function pwNeedsRehash(hash: string): boolean {
   return !/^\$2[aby]\$/.test(hash);
 }

@@ -71,7 +71,7 @@ const editorCss = `
 }`;
 
 export class DbFileImageEditor extends ImageEditor {
-  show(src, options = {}) {
+  show(src) {
     const eSrc = src.replace(/(dbFile\/[0-9]+\/).*/, '$1');
     const uniqueMatch = src.match(/\/(u-[^/]+\/)/);
     const unique = uniqueMatch ? uniqueMatch[1] : '';

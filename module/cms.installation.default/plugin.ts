@@ -59,11 +59,8 @@ export async function install({app}: {app: App}): Promise<void> {
   }
 
   if (!await app.db.one`SELECT id FROM usr WHERE active AND NOT superuser`) {
-    //const adminGrp = (await app.db.exec`INSERT INTO grp (name, page_access) VALUES ('admin', '1')`).insertId;
     const adminGrp = await app.db.table('grp').insert({ name: 'admin', cms_access: 3 });
-    //const usr = (await app.db.exec`INSERT INTO usr (email, pw, active, firstname, lastname) VALUES ('admin', '', 1, 'Client', 'Client')`).insertId;
     const usr = await app.db.table('usr').insert({ email: 'admin', pw: '', active: 1, firstname: 'Client', lastname: 'Client' });
-    //await app.db.query`INSERT INTO usr_grp (usr_id, grp_id) VALUES (${usr}, ${adminGrp})`;
     await app.db.table('usr_grp').insert({ usr_id: usr, grp_id: adminGrp });
 
     await (await cms.node(1)).changeGroup(Number(adminGrp), 2);
@@ -72,7 +69,6 @@ export async function install({app}: {app: App}): Promise<void> {
   if (!await app.db.one`SELECT id FROM usr WHERE superuser = '1'`) {
     const pwChars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
     const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => pwChars[b % pwChars.length]).join("");
-    //await app.db.exec`INSERT INTO usr (email, pw, superuser, active, firstname, lastname) VALUES ('su', ${await pwHash(suPw)}, 1, 1, 'Superuser', 'Superuser')`;
     await app.db.table('usr').insert({ email: 'su', pw: await pwHash(suPw), superuser: 1, active: 1, firstname: 'Superuser', lastname: 'Superuser' });
     console.log(`\n\x1b[33m[qino] Superuser created — email: su  password: ${suPw}\x1b[0m\n`);
   }
@@ -146,7 +142,7 @@ export async function install({app}: {app: App}): Promise<void> {
     if (!await s.cms.pageOffline)  s.cms.pageOffline(60);
   }
 
-  // Frontend installieren
+  // define the frontend-module
   if (!await s.cms.frontend) s.cms.frontend("cms.frontend.2");
 
 }

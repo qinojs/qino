@@ -95,7 +95,6 @@ export class LangManager {
   async #getTxts(ns: string, l: string): Promise<Record<string, string>> {
     const key = `${l}::${ns}`;
     if (!this.#txtsCache[key]) {
-      //await this.addLanguage(l);
       this.#txtsCache[key] = await this.#app.db.indexCol`SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}` as Record<string, string>;
     }
     return this.#txtsCache[key];
@@ -107,7 +106,6 @@ export class LangManager {
     const l = ctx.lang;
     const txts = await this.#getTxts(ns, l);
     if (!(hash in txts)) {
-      //await this.#app.db.query`INSERT IGNORE INTO smalltext (namespace, hash, original) VALUES (${ns}, ${hash}, ${string})`;
       await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string });
       txts[hash] = "";
     }

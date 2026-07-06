@@ -1,6 +1,6 @@
 import type { Params, Verb } from "./types.ts";
 
-export const staticAccessKey = Symbol("staticAccess");
+const staticAccessKey = Symbol("staticAccess");
 
 function staticAccess(fn: NonNullable<Verb["access"]>): NonNullable<Verb["access"]> {
   return Object.assign(fn, { [staticAccessKey]: true as const });

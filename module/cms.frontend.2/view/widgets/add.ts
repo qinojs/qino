@@ -5,7 +5,7 @@ export default async function (node: Node): Promise<string> {
   const app = node.app;
   const ctx = getCtx();
 
-  const modules = await node.cms.getModules(); // TODO
+  const modules = node.cms.getModules();
   let moduleBoxes = "";
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;

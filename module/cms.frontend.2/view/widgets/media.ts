@@ -6,7 +6,6 @@ export default async function (node: Node): Promise<string> {
   const { default: mediaList } = await import("./media_list.ts");
   const mediaListHtml = await mediaList(node);
   const allFiles = await node.filesAndPlaceholders();
-  //const fileCount = Object.keys(await node.files()).length;
 
   const sortSelect = Object.keys(allFiles).length > 1 ? `
     <select class=-sortFilesSelect>

@@ -30,6 +30,7 @@ export { dbScope, tableRef, scopeCache } from "./lib/db/dbScope.ts";
 export type { DbScope } from "./lib/db/dbScope.ts";
 export { DbEntry } from "./lib/db/DbEntry.ts";
 export { DbField } from "./lib/db/DbField.ts";
+
 export { DbFile } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export type { dbEntry_usr } from "./lib/qgEntries.ts";

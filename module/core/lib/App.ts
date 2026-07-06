@@ -108,8 +108,7 @@ export class App extends Emitter<AppEvents> {
         const base = ensureSlash(basePath || "/");
         let ctx: RequestContext;
         try {
-            await this.fire("request-start", { req });           // cheap pre-filter, before any DB/session work
-            // static files skip the whole context pipeline — no session/db work (switch: the commented call in #route)
+            await this.fire("request-start", { req }); // cheap pre-filter, before any DB/session work
             const localPath = urlToLocalPath(req.url, base, this);
             if (localPath) return await this.#static(req, localPath);
             ctx = await makeRequestContext(this, req, base);
@@ -143,11 +142,6 @@ export class App extends Emitter<AppEvents> {
     /** Explicit, ordered dispatch over the request path — the one routing model. */
     #route(ctx: RequestContext): Response | Promise<Response> {
         const uri = ctx.appRequestPath;
-
-        // Switch to track statics (full session/log pipeline): disable the #static call in
-        // handle() and enable this. Plain serveFile — #run already fires response-ready here.
-        // const localPath = ctx.urlToLocalPath(ctx.req.url);
-        // if (localPath) return serveFile(ctx.req.raw, localPath);
 
         if (uri === "favicon.ico") return new Response(null, { status: 204 });
 

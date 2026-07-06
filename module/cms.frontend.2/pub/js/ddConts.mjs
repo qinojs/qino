@@ -51,37 +51,6 @@ cms.contDrag = function() {
 };
 cms.contDrag.prototype = c1.Eventer;
 
-/*
-function getNearestElement(e, els, notInside) {
-  let winner, winner2, min=null;
-  for (let i = els.length, el; el = els[--i];) {
-    if (notInside?.contains(el)) continue;
-    var r = el.getBoundingClientRect();
-    var elMin = null;
-    var xmin = Math.min(Math.abs(r.left - e.clientX), Math.abs(r.right - e.clientX));
-    var ymin = Math.min(Math.abs(r.top - e.clientY), Math.abs(r.bottom - e.clientY));
-    if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) { // is outside
-      if (e.clientY > r.top && e.clientY < r.bottom) { // in Y
-        elMin = xmin;
-      } else if (e.clientX > r.left && e.clientX < r.right) { // in X
-        elMin = ymin;
-      } else {
-        elMin = Math.sqrt(xmin*xmin+ymin*ymin);
-      }
-    } else { // is inside
-      elMin = Math.min(xmin,ymin) / 50; // inside is 50x better!
-    }
-    if (min === null || elMin < min) {
-      min = elMin;
-      winner2 = winner;
-      winner = el;
-    }
-  }
-  return winner;
-}
-*/
-
-
 
 function elementDistance(el,x,y) {
   let distance = null;
@@ -126,24 +95,6 @@ function getNearestElement2(e, els, notInside) {
   const items = elementDistances(e, els);
   return items[0]?.element;
 }
-/*
-function getBeforeElement(e, inside) {
-  const children = Array.from(inside.children).filter(item=>{ return item !== active && item !== ghost });
-  const nearest = getNearestElement2(e, children);
-  if (!nearest) return null;
-
-  const rect = nearest.getBoundingClientRect();
-  const x = e.clientX
-  const y = e.clientY;
-
-  const center = {
-    x: rect.left + (rect.width/2),
-    y: rect.top + (rect.height/2),
-  }
-  const isBefore = y < center.y || x < center.x;
-  return isBefore ? nearest : nearest.nextElementSibling;
-}
-*/
 
 /* testen: https://gemini.google.com/app/d742aa7e9c82dddd?hl=de */
 function getBeforeElement(e, el) {

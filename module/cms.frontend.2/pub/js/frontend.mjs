@@ -263,24 +263,8 @@ apt.on('PUT cms/txt/:id', ({ value }) => {
   if (value?.changed) cms.console.show(t`Der Text wurde gespeichert.`, 'info');
 });
 
-apt.on('PUT|PATCH|DELETE cms/node/:id/*', async ({ params: { id } }) => {
+apt.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
-
-// apt.on('PUT cms/node/:id/position', async ({ params: { id } }) => {
-//   return;
-//   if (parseInt(id) == window.Page) {
-//     const res = await apt.cms.node(id).html.get();
-//     document.querySelector('.-pid' + id).outerHTML = res;
-//   } else {
-//     document.querySelectorAll('.-pid' + id).forEach(el => el.remove());
-//     const parent = document.querySelector('.-pid' + id)?.closest('.qgCmsPage');
-//     if (parent) {
-//       const pid = cms.el.nid(parent);
-//       const res = await apt.cms.node(pid).html.get();
-//       document.querySelector('.-pid' + pid).outerHTML = res;
-//     }
-//   }
-// });
 
 import("./browserCheck.js");

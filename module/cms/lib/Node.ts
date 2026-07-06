@@ -710,15 +710,6 @@ export class Node {
         }
         return this.#named["c"][name];
     }
-    
-    // named sub-page, created if not exists, needed?
-    // async subPage(name: string, attris: any = {}): Promise<Node> {
-    //     await this.children();
-    //     if (this.#named["p"]?.[name]) return this.#named["p"][name];
-    //     if (typeof attris !== "object") attris = { module: attris };
-    //     attris.name = name;
-    //     return this.createChild(attris);
-    // }
 
     /* Access */
     async changeUser(user: dbEntry_usr | number, access: number): Promise<this> {

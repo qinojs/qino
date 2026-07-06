@@ -38,20 +38,6 @@ export class CMS {
     return ret;
   }
 
-  // async nodesByName(name: string): Promise<Record<string, Node>> {
-  //     const ret: Record<string, Node> = {};
-  //     const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE type = 'p' AND name = ${name}`;
-  //     for (const vs of rows) {
-  //         ret[vs.id] = await this.node(vs.id, vs);
-  //     }
-  //     return ret;
-  // }
-
-  // async nodeByName(name: string): Promise<Node | undefined> {
-  //     const ret = await this.nodesByName(name);
-  //     return Object.values(ret)[0];
-  // }
-
   async nodeByModule(moduleName: string): Promise<Node | undefined> {
     const ret = await this.nodesByModule(moduleName);
     return Object.values(ret)[0];

@@ -10,9 +10,10 @@ export interface Route {
 }
 
 export const shapeOf = (schema?: StandardSchema): Record<string, StandardSchema> => schema?.shape ?? {};
-export const isParam = (seg: string): boolean => seg.startsWith(":");
 export const isCatchall = (seg: string): boolean => isParam(seg) && seg.endsWith("*");
 export const paramName = (seg: string): string => seg.slice(1).replace(/\*$/, "");
+
+const isParam = (seg: string): boolean => seg.startsWith(":");
 
 export function routeParams(r: Route): [string, StandardSchema | undefined, string][] {
   return r.segments.flatMap((seg, i) =>

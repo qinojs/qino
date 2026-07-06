@@ -10,7 +10,7 @@ interface Registry {
   models: ProviderModelRow[];
 }
 
-export async function getRegistry(app: Pick<App, "db">): Promise<Registry> {
+async function getRegistry(app: Pick<App, "db">): Promise<Registry> {
   const providers = new Map<string, ProviderRow>();
   const byId = new Map<number, ProviderRow>();
   for (const row of await app.db.query`SELECT * FROM ai_provider`) {

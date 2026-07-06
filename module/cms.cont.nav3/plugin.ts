@@ -41,12 +41,8 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
   const cms = node.cms;
   const settings = node.settings;
 
-  // Ensure settings exist
-  //  await SET.make("filter_visible", "visible");
-
   // Determine active page
   const activeByRenderPath = await settings["active page by renderpath"];
-  //await activeByRenderPath.setType("bool");
   let ActivePage: Node;
   if (activeByRenderPath) {
     const firstId = ctx.cms.renderPath.values().next().value;
@@ -63,7 +59,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
   let StartPage: Node | undefined;
   if (startPageSetting) {
     StartPage = await cms.node(Number(startPageSetting));
-    if (!(await StartPage.is())) StartPage = await node.page();
+    if (!StartPage.is()) StartPage = await node.page();
   } else {
     StartPage = await node.page();
   }
