@@ -50,19 +50,19 @@ export class DbFileManager {
   }
 
   async output(request: string, req: Request): Promise<Response> {
-    const x = request.split("/");
-    const id = Number(x.shift() ?? "0");
-    const name = x.pop() ?? "";
+    const parts = request.split("/");
+    const id = Number(parts.shift() ?? "0");
+    const name = parts.pop() ?? "";
 
-    const p: Record<string, string | true> = {};
-    for (const value of x) {
-      const y = value.split("-");
-      p[y[0]] = y[1] ?? true;
+    const params: Record<string, string | true> = {};
+    for (const part of parts) {
+      const pair = part.split("-");
+      params[pair[0]] = pair[1] ?? true;
     }
 
     const f = await this.file(id);
     if (!await f.exists()) return new Response(null, { status: 404 });
-    if (!await f.access()) return new Response(null, { status: 401 });
+    if (!await f.access()) return new Response(null, { status: 403 });
 
     let mime = f.mime || typeByExtension(f.extension) || "application/octet-stream";
     if (mime === "image/svg+xml") mime += "; charset=utf-8";
@@ -76,7 +76,7 @@ export class DbFileManager {
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
     headers.set("Pragma", "private");
 
-    const { path: outputPath, mime: outputMime, key, transformed } = await f.transform(p);
+    const { path: outputPath, mime: outputMime, key, transformed } = await f.transform(params);
     mime = outputMime || mime;
     if (mime === "text/markdown") mime += "; charset=utf-8";
 
@@ -87,7 +87,7 @@ export class DbFileManager {
       headers.set("Cache-Control", "must-revalidate");
     }
 
-    if ("dl" in p) {
+    if ("dl" in params) {
       mime = "application/force-download";
       headers.set("Expires", "0");
       headers.set("Cache-Control", "private, must-revalidate");
@@ -95,7 +95,7 @@ export class DbFileManager {
       headers.set("Content-Transfer-Encoding", "binary");
     }
 
-    if (p["as"] === "text") mime = "text/plain";
+    if (params["as"] === "text") mime = "text/plain";
 
     // Security
     if (/^(text\/html|application\/xhtml\+xml)/.test(mime)) mime = "text/plain";
@@ -111,7 +111,7 @@ export class DbFileManager {
 
     const rangeHeader = req.headers.get("range");
     if (rangeHeader) {
-      const range = await xStream(outputPath, rangeHeader);
+      const range = await openRange(outputPath, rangeHeader);
       if (range) {
         headers.set("Content-Range", range.contentRange);
         headers.set("Content-Length", String(range.length));
@@ -288,7 +288,7 @@ function parseTransformOptions(param: Record<string, unknown>): TransformOptions
 }
 
 /** Stream a single `bytes=` range of a file; null = serve the full file instead. */
-async function xStream(filePath: string, rangeHeader: string) {
+async function openRange(filePath: string, rangeHeader: string) {
   const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
   if (!m || (!m[1] && !m[2])) return null;
   let file: Deno.FsFile;

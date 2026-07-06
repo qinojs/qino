@@ -29,7 +29,6 @@ export function sessSettingsItem(db: Db, sessId: string | number, schema?: any):
     );
 }
 
-
 /**
  * Login merge: copy session settings → user settings (only if user has none yet).
  *
