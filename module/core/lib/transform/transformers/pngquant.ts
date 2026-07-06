@@ -15,6 +15,7 @@ FileTransformer.register({
     const out = nodePath.join(ctx.tmpDir, 'out.pngquant.png');
     const proc = new Deno.Command('pngquant', {
       args: ['--quality', `${min}-${q}`, '--strip', '--output', out, ctx.currentPath],
+      signal: ctx.signal,
       stdout: 'piped', stderr: 'piped',
     });
     const { code } = await proc.output();

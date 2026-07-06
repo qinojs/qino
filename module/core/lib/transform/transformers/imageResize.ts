@@ -24,7 +24,7 @@ FileTransformer.register({
     const zoom = ctx.options.zoom ?? 0;
     const max = ctx.options.max ?? false;
 
-    const dims = await magickIdentify(ctx.currentPath, '%wx%h');
+    const dims = await magickIdentify(ctx.currentPath, '%wx%h', ctx.signal);
     const [origW, origH] = dims.split('x').map(Number);
 
     // Prevent upscaling
@@ -36,7 +36,7 @@ FileTransformer.register({
     if (max || h === 0 || w === 0) {
       // Scale only, no crop – '>' prevents upscaling
       const size = w && h ? `${w}x${h}>` : w ? `${w}>` : `x${h}>`;
-      await magick(ctx.currentPath, ['-resize', size], out);
+      await magick(ctx.currentPath, ['-resize', size], out, { signal: ctx.signal });
     } else {
       // After upscale lock, restore target aspect ratio (PHP: makeProportional before getAutoCroped)
       if (targetW / targetH > w / h) {
@@ -63,6 +63,7 @@ FileTransformer.register({
           '+repage',
         ],
         out,
+        { signal: ctx.signal },
       );
     }
 

@@ -35,6 +35,8 @@ export interface TransformContext {
   options: TransformOptions;
   meta: TransformMeta;
   tmpDir: string;
+  /** Kills external commands when the pipeline exceeds `FileTransformer.defaultTimeout` */
+  readonly signal?: AbortSignal;
 }
 
 export interface TransformerDef {

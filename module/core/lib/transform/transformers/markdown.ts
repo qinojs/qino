@@ -38,7 +38,7 @@ FileTransformer.register({
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'out.md');
     if (ctx.mime === 'application/pdf') await pdfToMarkdown(ctx, out);
-    else await pandoc(ctx.currentPath, PANDOC_FORMATS[ctx.mime], out);
+    else await pandoc(ctx.currentPath, PANDOC_FORMATS[ctx.mime], out, ctx.signal);
     ctx.currentPath = out;
     ctx.mime = 'text/markdown';
   },
@@ -48,7 +48,7 @@ FileTransformer.register({
 async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> {
   let text: string | undefined;
   if (await isPdftotextAvailable()) {
-    await pdftotext(ctx.currentPath, out);
+    await pdftotext(ctx.currentPath, out, ctx.signal);
     text = (await Deno.readTextFile(out)).trim();
   }
   const engine = await pickOcrEngine(ctx);

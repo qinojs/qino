@@ -15,6 +15,9 @@ const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 export class FileTransformer {
   static readonly #transformers: TransformerDef[] = [];
 
+  /** Max seconds per transform pipeline; external commands are killed on expiry */
+  static defaultTimeout = 600;
+
   static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return isMagickAvailable(); },
     get ffmpeg(): Promise<boolean> { return isFfmpegAvailable(); },
@@ -96,6 +99,7 @@ export class FileTransformer {
       options: opts,
       meta: {},
       tmpDir,
+      signal: AbortSignal.timeout(FileTransformer.defaultTimeout * 1000),
     };
 
     try {

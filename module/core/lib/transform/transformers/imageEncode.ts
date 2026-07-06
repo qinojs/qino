@@ -23,14 +23,14 @@ FileTransformer.register({
     if (fmt !== 'auto') {
       const ext = fmt === 'jpeg' ? 'jpg' : fmt;
       const out = nodePath.join(ctx.tmpDir, `out.${ext}`);
-      await magick(ctx.currentPath, ['-quality', String(q)], out);
+      await magick(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;
       ctx.mime = mimeForFmt(fmt);
       return;
     }
 
     // Check alpha channel
-    const alphaFlag = await magickIdentify(ctx.currentPath, '%A');
+    const alphaFlag = await magickIdentify(ctx.currentPath, '%A', ctx.signal);
     ctx.meta.hasAlpha = alphaFlag === 'True';
 
     const avifAvailable = await checkAvifSupport();
@@ -40,8 +40,8 @@ FileTransformer.register({
       const avif = nodePath.join(ctx.tmpDir, 'out.avif');
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       await Promise.all([
-        magick(ctx.currentPath, ['-quality', String(q)], avif),
-        magick(ctx.currentPath, ['-quality', String(q)], jpg),
+        magick(ctx.currentPath, ['-quality', String(q)], avif, { signal: ctx.signal }),
+        magick(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
       ]);
       const [sizeAvif, sizeJpg] = await Promise.all([fileSize(avif), fileSize(jpg)]);
       if (sizeAvif <= sizeJpg) {
@@ -54,7 +54,7 @@ FileTransformer.register({
     } else if (ctx.meta.hasAlpha) {
       // Kein AVIF, Alpha vorhanden → PNG
       const out = nodePath.join(ctx.tmpDir, 'out.png');
-      await magick(ctx.currentPath, ['-quality', String(q)], out);
+      await magick(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;
       ctx.mime = 'image/png';
     } else {
@@ -62,8 +62,8 @@ FileTransformer.register({
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       const png = nodePath.join(ctx.tmpDir, 'out.png');
       await Promise.all([
-        magick(ctx.currentPath, ['-quality', String(q)], jpg),
-        magick(ctx.currentPath, [], png),
+        magick(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
+        magick(ctx.currentPath, [], png, { signal: ctx.signal }),
       ]);
       const [sizeJpg, sizePng] = await Promise.all([fileSize(jpg), fileSize(png)]);
       if (sizeJpg <= sizePng) {

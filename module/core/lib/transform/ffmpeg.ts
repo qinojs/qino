@@ -25,9 +25,10 @@ export function resetFfmpegCache(): void { _available = null; }
 /** Extracts the embedded cover art from an audio file and writes it to `output`
  *  in its original format (`-vcodec copy`, typically JPEG).
  *  Throws an error if no cover art is embedded. */
-export async function ffmpegCoverArt(input: string, output: string): Promise<void> {
+export async function ffmpegCoverArt(input: string, output: string, signal?: AbortSignal): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {
     args: ['-i', input, '-an', '-vcodec', 'copy', '-y', output],
+    signal,
     stdout: 'piped',
     stderr: 'piped',
   }).output();
@@ -42,6 +43,7 @@ export async function ffmpegFrame(
   input: string,
   frameIndex: number, // 0-based
   output: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {
     args: [
@@ -51,6 +53,7 @@ export async function ffmpegFrame(
       '-y',
       output,
     ],
+    signal,
     stdout: 'piped',
     stderr: 'piped',
   }).output();

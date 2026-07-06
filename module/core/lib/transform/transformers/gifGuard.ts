@@ -11,7 +11,7 @@ FileTransformer.register({
   props: [],
   handles: (ctx) => ctx.mime === 'image/gif',
   transform: async (ctx) => {
-    const frames = await magickIdentify(ctx.currentPath, '%n');
+    const frames = await magickIdentify(ctx.currentPath, '%n', ctx.signal);
     if (parseInt(frames) > 1) {
       ctx.meta.animated = true;
     }

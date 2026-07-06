@@ -31,7 +31,7 @@ export async function ocrPdf(ctx: TransformContext, engine?: OcrEngine): Promise
   engine ??= await pickOcrEngine(ctx);
   if (!engine || !await isMagickAvailable()) return;
   const pattern = nodePath.join(ctx.tmpDir, 'ocr-page-%04d.png');
-  await magick(ctx.currentPath, ['-background', 'white', '-alpha', 'remove'], pattern, ['-density', '300']);
+  await magick(ctx.currentPath, ['-background', 'white', '-alpha', 'remove'], pattern, { preArgs: ['-density', '300'], signal: ctx.signal });
   const pages = (await Array.fromAsync(Deno.readDir(ctx.tmpDir)))
     .map((e) => e.name).filter((n) => n.startsWith('ocr-page-')).sort();
   const texts: string[] = [];
@@ -43,5 +43,5 @@ registerOcrEngine({
   name: 'tesseract',
   priority: 0,
   available: () => isTesseractAvailable(),
-  ocr: (imagePath) => tesseract(imagePath),
+  ocr: (imagePath, _mime, ctx) => tesseract(imagePath, ctx.signal),
 });

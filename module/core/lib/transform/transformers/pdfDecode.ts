@@ -18,7 +18,7 @@ FileTransformer.register({
       `${ctx.currentPath}[${page}]`,
       ['-background', 'white', '-flatten'],
       out,
-      ['-density', '300'], // pre-input: sets the Ghostscript render DPI (default 72 = blurry)
+      { preArgs: ['-density', '300'], signal: ctx.signal }, // preArgs: Ghostscript render DPI (default 72 = blurry)
     );
     ctx.currentPath = out;
     ctx.mime = 'image/png';

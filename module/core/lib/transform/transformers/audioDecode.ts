@@ -24,7 +24,7 @@ FileTransformer.register({
     (ctx.options.w !== undefined || ctx.options.h !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md') || ctx.options.q !== undefined),
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'audio-cover.png');
-    await ffmpegCoverArt(ctx.currentPath, out);
+    await ffmpegCoverArt(ctx.currentPath, out, ctx.signal);
     ctx.currentPath = out;
     ctx.mime = 'image/png';
   },

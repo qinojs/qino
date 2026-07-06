@@ -22,10 +22,11 @@ function tesseractLangs(): Promise<string> {
 }
 
 /** Runs OCR on an image, returns the extracted plain text */
-export async function tesseract(input: string): Promise<string> {
+export async function tesseract(input: string, signal?: AbortSignal): Promise<string> {
   const langs = await tesseractLangs();
   const { code, stdout, stderr } = await new Deno.Command('tesseract', {
     args: [input, 'stdout', ...(langs ? ['-l', langs] : [])],
+    signal,
     stdout: 'piped',
     stderr: 'piped',
   }).output();

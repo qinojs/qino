@@ -28,7 +28,7 @@ FileTransformer.register({
   transform: async (ctx) => {
     const frame = toFrameIndex(ctx.options.frame); // FFmpeg ist 0-basiert
     const out = nodePath.join(ctx.tmpDir, 'video-frame.png');
-    await ffmpegFrame(ctx.currentPath, frame, out);
+    await ffmpegFrame(ctx.currentPath, frame, out, ctx.signal);
     ctx.currentPath = out;
     ctx.mime = 'image/png';
   },

@@ -22,7 +22,7 @@ FileTransformer.register({
     let mime = ctx.mime;
     if (!DIRECT.has(mime) && await isMagickAvailable()) { // e.g. AVIF/HEIC/TIFF
       path = nodePath.join(ctx.tmpDir, 'ocr-src.png');
-      await magick(`${ctx.currentPath}[0]`, [], path); // [0]: first frame/page only
+      await magick(`${ctx.currentPath}[0]`, [], path, { signal: ctx.signal }); // [0]: first frame/page only
       mime = 'image/png';
     }
     const out = nodePath.join(ctx.tmpDir, 'ocr.md');

@@ -64,9 +64,10 @@ export async function checkAvifSupport(): Promise<boolean> {
 }
 
 /** Runs convert/magick [...preArgs, input, ...args, output]. preArgs are input-settings that must precede the file (e.g. -density for PDF rasterization). */
-export async function magick(input: string, args: string[], output: string, preArgs: string[] = []): Promise<void> {
+export async function magick(input: string, args: string[], output: string, opts: { preArgs?: string[]; signal?: AbortSignal } = {}): Promise<void> {
   const { code, stderr, stdout } = await new Deno.Command(_convertCmd, {
-    args: [...preArgs, input, ...args, output],
+    args: [...opts.preArgs ?? [], input, ...args, output],
+    signal: opts.signal,
     stdout: 'piped',
     stderr: 'piped',
   }).output();
@@ -78,9 +79,10 @@ export async function magick(input: string, args: string[], output: string, preA
 }
 
 /** Returns identify format string, e.g. "%wx%h" → "1920x1080" */
-export async function magickIdentify(input: string, format: string): Promise<string> {
+export async function magickIdentify(input: string, format: string, signal?: AbortSignal): Promise<string> {
   const { stdout } = await new Deno.Command(_identifyCmd, {
     args: [..._identifyArgs, '-format', format, `${input}[0]`],
+    signal,
     stdout: 'piped',
     stderr: 'piped',
   }).output();

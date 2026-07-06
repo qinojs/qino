@@ -3,6 +3,7 @@
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
+import { FileTransformer } from "./lib/transform/index.ts";
 import { getCtx } from "./lib/RequestContext.ts";
 export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
@@ -56,12 +57,25 @@ export const settingsSchema = {
                 },
             },
         },
+        transform: {
+            properties: {
+                timeout: {
+                    type: "number",
+                    default: 60 * 10,
+                    minimum: 0,
+                    description: "Maximum time in seconds for a file-transform pipeline to run before aborting.",
+                }
+            }
+        }
     },
 };
 
 export const ctxSettingsSchema = {
     properties: {
-        dev: { type: "boolean" },
+        dev: {
+            type: "boolean",
+            description: "Whether to enable development mode for this context.",
+        },
         lang_ns: {
             description: "Optionale Sprachvorgaben pro Namespace.",
             additionalProperties: { type: "string" },
@@ -85,6 +99,9 @@ export async function init(app: App) {
 
     const langsRaw = String(await app.settings.core.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
+
+    const transformTimeout = Number(await app.settings.core.transform.timeout ?? "");
+    if (transformTimeout) FileTransformer.defaultTimeout = transformTimeout;
 
     app.on("action", async ({ ctx }) => {
         // HTTPS redirect

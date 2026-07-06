@@ -12,9 +12,10 @@ export async function isPandocAvailable(): Promise<boolean> {
 export function resetPandocCache(): void { _available = null; }
 
 /** Converts input (format `from`) to GitHub-flavored Markdown */
-export async function pandoc(input: string, from: string, output: string): Promise<void> {
+export async function pandoc(input: string, from: string, output: string, signal?: AbortSignal): Promise<void> {
   const { code, stderr } = await new Deno.Command('pandoc', {
     args: ['-f', from, '-t', 'gfm-raw_html', '--wrap=none', '-o', output, input],
+    signal,
     stdout: 'piped',
     stderr: 'piped',
   }).output();
