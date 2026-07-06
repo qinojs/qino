@@ -1,6 +1,6 @@
 {
   "name": "@qino/qino",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "exports": "./module/core/mod.ts",
   "minimumDependencyAge": "0",
   "imports": {

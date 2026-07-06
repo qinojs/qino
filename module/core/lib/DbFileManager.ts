@@ -10,6 +10,12 @@ import { contentDisposition } from "./util.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
 
+/** Move a file, falling back to copy+remove when rename fails (e.g. across filesystems). */
+async function moveFile(from: string, to: string) {
+  try { await Deno.rename(from, to); }
+  catch { await Deno.copyFile(from, to); await Deno.remove(from).catch(() => {}); }
+}
+
 export class DbFileManager {
   #cache: Record<string, DbFile> = {};
   #app: App;
@@ -224,7 +230,7 @@ export class DbFile extends File {
         maxSize: Number(await this.#manager.app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024,
       });
       this.path = this.#manager.directory + remote.md5;
-      await Deno.rename(remote.tmpPath, this.path);
+      await moveFile(remote.tmpPath, this.path);
       await this.setVs({ name: remote.name, mime: remote.type, text: await this.getText(), md5: remote.md5, size: remote.size });
       return;
     }
@@ -241,7 +247,7 @@ export class DbFile extends File {
   async replaceFromUpload(f: UploadedFile) {
     this.path = this.#manager.directory + f.md5;
     await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
-    await Deno.rename(f.tmpPath, this.path);
+    await moveFile(f.tmpPath, this.path);
 
     const ext = f.name.replace(/.*\./, "").toLowerCase();
     let type = f.type;
