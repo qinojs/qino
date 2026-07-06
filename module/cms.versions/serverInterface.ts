@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { sql } from "../core/mod.ts";
+import { sql, type Sql } from "../core/mod.ts";
 import { versedTables, view } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
@@ -141,16 +141,16 @@ async function versProtocolForNode(ctx: any, pid: number): Promise<any[]> {
     const spaceView = (t: string) => view(ctx.app.db, t, space, 0);
 
     const results = await Promise.all([
-        versProtocol(ctx, "page",      `t.id = ${pid}`),
-        versProtocol(ctx, "page_text", `t.page_id = ${pid}`),
-        spaceView("page").then(v => versProtocol(ctx, "text", `t.id = (SELECT title_id FROM \`${v}\` WHERE id = ${pid})`)),
-        spaceView("page_text").then(v => versProtocol(ctx, "text", `t.id IN(SELECT text_id FROM \`${v}\` WHERE page_id = ${pid})`)),
-        spaceView("page_file").then(v => versProtocol(ctx, "file", `t.id IN(SELECT file_id FROM \`${v}\` WHERE page_id = ${pid})`)),
+        versProtocol(ctx, "page",      sql`t.id = ${pid}`),
+        versProtocol(ctx, "page_text", sql`t.page_id = ${pid}`),
+        spaceView("page").then(v => versProtocol(ctx, "text", sql`t.id = (SELECT title_id FROM ${sql.id(v)} WHERE id = ${pid})`)),
+        spaceView("page_text").then(v => versProtocol(ctx, "text", sql`t.id IN(SELECT text_id FROM ${sql.id(v)} WHERE page_id = ${pid})`)),
+        spaceView("page_file").then(v => versProtocol(ctx, "file", sql`t.id IN(SELECT file_id FROM ${sql.id(v)} WHERE page_id = ${pid})`)),
     ]);
     return results.flat();
 }
 
-async function versProtocol(ctx: any, table: string, where: string): Promise<any[]> {
+async function versProtocol(ctx: any, table: string, where: Sql): Promise<any[]> {
     if (!versedTables(ctx.app.db)[table]) return [];
     const rows = await ctx.app.db.query`
         SELECT t._vers_log, l.time, l.sess_id, usr.id as usr_id, usr.email
@@ -158,7 +158,7 @@ async function versProtocol(ctx: any, table: string, where: string): Promise<any
         LEFT JOIN log l ON t._vers_log = l.id
         LEFT JOIN sess  ON l.sess_id = sess.id
         LEFT JOIN usr   ON sess.usr_id = usr.id
-        WHERE t._vers_space = ${getCmsVers(ctx).space} AND t._vers_log > 0 AND ${sql.raw(where)}
+        WHERE t._vers_space = ${getCmsVers(ctx).space} AND t._vers_log > 0 AND ${where}
         ORDER BY t._vers_log`;
     return rows.map((r: any) => ({
         vers: r._vers_log,
