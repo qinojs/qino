@@ -1,6 +1,6 @@
 /* CMS page tree based on u2-tree.
- * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.mjs
- * and server listeners. */
+  * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.mjs
+  * and server listeners. */
 import { t, apt } from "../../../core/pub/js/qino.js";
 
 const Page = globalThis.qino?.cms?.nodeId;
@@ -128,7 +128,7 @@ globalThis.cmsTreeInit = async (json) => {
     const target = e.target, { source, parent, region } = e.detail;
     const ok = (target.data?.ptype === "c" && source.data?.ptype === "p") ? false
       : region === "into" ? target.data?.myaccess > 1
-      : parent?.data?.myaccess > 1; // before/after: access on the target parent node
+        : parent?.data?.myaccess > 1; // before/after: access on the target parent node
     if (!ok) e.preventDefault();
   });
   rootNode.addEventListener("u2-tree-drop", (e) => { // server-first: PUT first, move after success

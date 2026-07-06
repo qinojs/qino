@@ -5,10 +5,10 @@ import type { Node } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
 declare module "../core/lib/App.ts" {
-    interface AppEvents {
-        "page::file_upload-before": { Page: Node };
-        "page::file_upload-after": { Page: Node };
-    }
+  interface AppEvents {
+    "page::file_upload-before": { Page: Node };
+    "page::file_upload-after": { Page: Node };
+  }
 }
 
 export const name = "cms.image_editor";
@@ -16,83 +16,83 @@ export const needs = ["cms", "cms.versions"];
 
 // hpos/vpos focus point of an image, in percent (0–100). Versioned via the `file` table.
 export const dbSchema = {
-    properties: {
-        file: {
-            additionalProperties: {
-                properties: {
-                    hpos: { type: "number" },
-                    vpos: { type: "number" },
-                },
-            },
+  properties: {
+    file: {
+      additionalProperties: {
+        properties: {
+          hpos: { type: "number" },
+          vpos: { type: "number" },
         },
+      },
     },
+  },
 };
 
 const guard = async ({ file }: any, ctx: RequestContext) => isWritable(ctx, Number(file));
 
 export const api: AptTree = {
-    meta: {
-        ":file": {
-            get: {
-                description: "Read editable image meta (name, hpos, vpos).",
-                access: guard,
-                execute: ({ file }: any, ctx: any) => getMeta(ctx, Number(file)),
-            },
-            put: {
-                description: "Update image meta (name, hpos, vpos).",
-                access: guard,
-                input: s.object({
-                    name: s.optional(s.string()),
-                    hpos: s.optional(s.number()),
-                    vpos: s.optional(s.number()),
-                }),
-                execute: ({ file, name, hpos, vpos }: any, ctx: any) => setMeta(ctx, Number(file), { name, hpos, vpos }),
-            },
-        },
+  meta: {
+    ":file": {
+      get: {
+        description: "Read editable image meta (name, hpos, vpos).",
+        access: guard,
+        execute: ({ file }: any, ctx: any) => getMeta(ctx, Number(file)),
+      },
+      put: {
+        description: "Update image meta (name, hpos, vpos).",
+        access: guard,
+        input: s.object({
+          name: s.optional(s.string()),
+          hpos: s.optional(s.number()),
+          vpos: s.optional(s.number()),
+        }),
+        execute: ({ file, name, hpos, vpos }: any, ctx: any) => setMeta(ctx, Number(file), { name, hpos, vpos }),
+      },
     },
-    history: {
-        ":file": {
-            get: {
-                description: "Version history of an image as an HTML table.",
-                access: guard,
-                execute: ({ file }: any, ctx: any) => getHistory(ctx, Number(file)),
-            },
-        },
+  },
+  history: {
+    ":file": {
+      get: {
+        description: "Version history of an image as an HTML table.",
+        access: guard,
+        execute: ({ file }: any, ctx: any) => getHistory(ctx, Number(file)),
+      },
     },
-    restore: {
-        ":file": {
-            post: {
-                description: "Restore a previous version of an image.",
-                access: guard,
-                input: s.object({ log: s.number() }),
-                execute: ({ file, log }: any, ctx: any) => restore(ctx, Number(file), Number(log)),
-            },
-        },
+  },
+  restore: {
+    ":file": {
+      post: {
+        description: "Restore a previous version of an image.",
+        access: guard,
+        input: s.object({ log: s.number() }),
+        execute: ({ file, log }: any, ctx: any) => restore(ctx, Number(file), Number(log)),
+      },
     },
+  },
 };
 
 export function init(app: App) {
-    app.on("cms-ready", ({ ctx }) => {
-        if (ctx.get.cms_noFrontend) return;
-        if (!ctx.cms.editmode) return;
-        ctx.html.scripts.add(ctx.sysURL + "cms.image_editor/pub/init.mjs");
-    });
+  app.on("cms-ready", ({ ctx }) => {
+    if (ctx.get.cms_noFrontend) return;
+    if (!ctx.cms.editmode) return;
+    ctx.html.scripts.add(ctx.sysURL + "cms.image_editor/pub/init.mjs");
+  });
 
-    // Replace an existing image with the edited version (keeps the filename).
-    app.on("action", async ({ ctx }) => {
-        const upload = ctx.files["editedImage"];
-        if (!upload) return;
+  // Replace an existing image with the edited version (keeps the filename).
+  app.on("action", async ({ ctx }) => {
+    const upload = ctx.files["editedImage"];
+    if (!upload) return;
 
-        const fileId = Number(ctx.get.file_id ?? "0");
-        const Page = await writablePage(ctx, fileId);
-        if (!Page) { ctx.responseStatus = 403; throw new Output({ error: "not allowed" }); }
+    const fileId = Number(ctx.get.file_id ?? "0");
+    const Page = await writablePage(ctx, fileId);
+    if (!Page) { ctx.responseStatus = 403; throw new Output({ error: "not allowed" }); }
 
-        await app.fire("page::file_upload-before", { Page });
-        const File = await app.dbFiles.file(fileId);
-        upload.name = await File.get("name"); // dont change file-name
-        await File.replaceFromUpload(upload);
-        await app.fire("page::file_upload-after", { Page });
+    await app.fire("page::file_upload-before", { Page });
+    const File = await app.dbFiles.file(fileId);
+    upload.name = await File.get("name"); // dont change file-name
+    await File.replaceFromUpload(upload);
+    await app.fire("page::file_upload-after", { Page });
 
-        throw new Output({ id: String(File), url: await File.url() });
-    });
+    throw new Output({ id: String(File), url: await File.url() });
+  });
 }

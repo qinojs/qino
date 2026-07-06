@@ -37,8 +37,8 @@ export class AptClient extends EventTarget {
     return new Proxy(() => {}, {
       get: (_t, key) =>
         key === "then" ? undefined
-        : METHODS.has(key) ? (input = {}, opts = {}) => this.#request(key, parts, input, opts)
-        : this.#node([...parts, String(key)]),
+          : METHODS.has(key) ? (input = {}, opts = {}) => this.#request(key, parts, input, opts)
+            : this.#node([...parts, String(key)]),
       apply: (_t, _this, args) => this.#node([...parts, ...args.flatMap(arg => Array.isArray(arg) ? arg : [arg]).map(String)]),
     });
   }

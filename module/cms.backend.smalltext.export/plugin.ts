@@ -7,72 +7,72 @@ export const name = "cms.backend.smalltext.export";
 export const needs = ["cms.backend.smalltext"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-    await backend.install(app, "cms.backend.smalltext.export", { en: "Export", de: "Export" });
+  await backend.install(app, "cms.backend.smalltext.export", { en: "Export", de: "Export" });
 }
 
 type Change = { ns: string; lang: string; file: string; added: { key: string; new: string }[]; changed: { key: string; old: string; new: string }[]; removed: string[] };
 
 // Compare export map against the current file; null = no difference
 async function diffFile(ns: string, lang: string, file: string, map: Record<string, string>): Promise<Change | null> {
-    let old: Record<string, string> = {};
-    try { old = JSON.parse(await Deno.readTextFile(file)); } catch { /* file does not exist yet */ }
-    const added: Change["added"] = [], removed: string[] = [], changed: Change["changed"] = [];
-    for (const [k, v] of Object.entries(map)) {
-        if (!(k in old)) added.push({ key: k, new: v });
-        else if (old[k] !== v) changed.push({ key: k, old: old[k], new: v });
-    }
-    for (const k of Object.keys(old)) if (!(k in map)) removed.push(k);
-    return added.length || changed.length || removed.length ? { ns, lang, file, added, changed, removed } : null;
+  let old: Record<string, string> = {};
+  try { old = JSON.parse(await Deno.readTextFile(file)); } catch { /* file does not exist yet */ }
+  const added: Change["added"] = [], removed: string[] = [], changed: Change["changed"] = [];
+  for (const [k, v] of Object.entries(map)) {
+    if (!(k in old)) added.push({ key: k, new: v });
+    else if (old[k] !== v) changed.push({ key: k, old: old[k], new: v });
+  }
+  for (const k of Object.keys(old)) if (!(k in map)) removed.push(k);
+  return added.length || changed.length || removed.length ? { ns, lang, file, added, changed, removed } : null;
 }
 
 // Namespace maps to a module dir (empty ns = core); files land in <module>/locale/<lang>.json
 async function api(node: Node, vars: any): Promise<any> {
-    if (await node.access() < 2) return false;
-    if (!(await getCtx().user?.get("superuser"))) return false; // writes into module source dirs
-    const preview = "preview" in vars;
-    if (!preview && !("export" in vars)) return false;
+  if (await node.access() < 2) return false;
+  if (!(await getCtx().user?.get("superuser"))) return false; // writes into module source dirs
+  const preview = "preview" in vars;
+  if (!preview && !("export" in vars)) return false;
 
-    const app = node.app;
-    const data = await app.languages.export();
-    const written: string[] = [];
-    const skipped: string[] = [];
-    const changes: Change[] = [];
-    for (const [ns, byLang] of Object.entries(data)) {
-        const dir = app.modules.get(ns || "core")?.dir;
-        if (!dir) { skipped.push(ns || "core"); continue; } // url-based module, not on disk
-        const localeDir = dir + "locale/";
-        for (const [lang, map] of Object.entries(byLang as Record<string, Record<string, string>>)) {
-            const file = localeDir + lang + ".json";
-            if (preview) {
-                const c = await diffFile(ns || "core", lang, file, map);
-                if (c) changes.push(c);
-            } else {
-                await Deno.mkdir(localeDir, { recursive: true });
-                await Deno.writeTextFile(file, JSON.stringify(map, null, 2) + "\n");
-                written.push(file);
-            }
-        }
+  const app = node.app;
+  const data = await app.languages.export();
+  const written: string[] = [];
+  const skipped: string[] = [];
+  const changes: Change[] = [];
+  for (const [ns, byLang] of Object.entries(data)) {
+    const dir = app.modules.get(ns || "core")?.dir;
+    if (!dir) { skipped.push(ns || "core"); continue; } // url-based module, not on disk
+    const localeDir = dir + "locale/";
+    for (const [lang, map] of Object.entries(byLang as Record<string, Record<string, string>>)) {
+      const file = localeDir + lang + ".json";
+      if (preview) {
+        const c = await diffFile(ns || "core", lang, file, map);
+        if (c) changes.push(c);
+      } else {
+        await Deno.mkdir(localeDir, { recursive: true });
+        await Deno.writeTextFile(file, JSON.stringify(map, null, 2) + "\n");
+        written.push(file);
+      }
     }
-    return preview ? { changes } : { written, skipped };
+  }
+  return preview ? { changes } : { written, skipped };
 }
 
 async function render(node: Node): Promise<string> {
-    const app = node.app;
-    return `<div class=u2-card>
-    <div class=-head>${await app.t`Export translations`}</div>
-    <div class=-body>
-        <p>${await app.t`Write current translations into each module's locale folder.`}
-        <button data-action=preview>${await app.t`Preview changes`}</button>
-        <button data-action=export>${await app.t`Export to locale files`}</button>
-        <div data-result></div>
-    </div>
+  const app = node.app;
+  return `<div class=u2-card>
+  <div class=-head>${await app.t`Export translations`}</div>
+  <div class=-body>
+    <p>${await app.t`Write current translations into each module's locale folder.`}
+    <button data-action=preview>${await app.t`Preview changes`}</button>
+    <button data-action=export>${await app.t`Export to locale files`}</button>
+    <div data-result></div>
+  </div>
 </div>`;
 }
 
 export const cms = {
-    node: {
-        js: ["pub/main.js"],
-        render,
-        api,
-    },
+  node: {
+    js: ["pub/main.js"],
+    render,
+    api,
+  },
 };

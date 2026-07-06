@@ -6,7 +6,7 @@
   & .-no-schema-row { opacity: .5; }
 
   & .-field-chip,
-  & .-table-chip {
+    & .-table-chip {
     position: relative;
     display: inline-block;
     margin: 1px 3px 1px 0;
@@ -17,9 +17,9 @@
     line-height: 1.5;
   }
   & .-field-chip.-shared,
-  & .-table-chip.-shared { border-color: var(--blue); }
+    & .-table-chip.-shared { border-color: var(--blue); }
   & .-field-chip.-shared:hover::after,
-  & .-table-chip.-shared:hover::after {
+    & .-table-chip.-shared:hover::after {
     content: attr(data-modules);
     position: absolute;
     z-index: 2;

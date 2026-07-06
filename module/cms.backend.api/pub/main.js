@@ -79,8 +79,8 @@ cms.initNode("backend.api", (el) => {
       const qs = !isBodyMethod && Object.keys(body).length
         ? "?" + new URLSearchParams(Object.entries(body).map(([k, v]) => [k, String(v)])).toString()
         : Object.keys(query).length
-        ? "?" + new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
-        : "";
+          ? "?" + new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
+          : "";
       const url = appURL + "api" + path + qs;
       const opts = { method, headers: apiHeaders(method) };
       if (isBodyMethod && Object.keys(body).length) opts.body = JSON.stringify(body);

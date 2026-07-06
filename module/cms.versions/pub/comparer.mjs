@@ -7,9 +7,9 @@ let div, iframe1, iframe2, pid, view1;
 const frameSrc = (space, log) => `${appURL}?cmspid=${Page}&cms_versions_space=${space}&cms_versions_log=${log}&cms_versions_page=${pid}&cms_noFrontend=1`;
 
 export const CmsVersComparer = {
-    _ensure(){
-        if (div) return;
-        const html = `
+  _ensure(){
+    if (div) return;
+    const html = `
         <div id=qgCmsVersionComparer class=qgCMS popover=manual>
             <style>${css}</style>
             <div class=-tools>
@@ -32,82 +32,82 @@ export const CmsVersComparer = {
                 <div class=-v1><iframe class=-i1></iframe></div>
             </div>
         </div>`;
-        div = c1.dom.fragment(html).firstElementChild;
-        iframe1 = div.querySelector('.-i1');
-        iframe2 = div.querySelector('.-i2');
-        view1   = div.querySelector('.-v1');
-        div.querySelector('.-fade').addEventListener('input', e => {
-            view1.style.opacity = e.target.value;
-        });
-        div.querySelector('.-mode-side').addEventListener('click', () => {
-            const has = div.classList.toggle('-Mode-side');
-            has && div.classList.remove('-Diffs');
-        });
-        div.querySelector('.-diffs').addEventListener('click', () => div.classList.toggle('-Diffs'));
-        div.querySelector('.-close').addEventListener('click', () => this.close());
+    div = c1.dom.fragment(html).firstElementChild;
+    iframe1 = div.querySelector('.-i1');
+    iframe2 = div.querySelector('.-i2');
+    view1   = div.querySelector('.-v1');
+    div.querySelector('.-fade').addEventListener('input', e => {
+      view1.style.opacity = e.target.value;
+    });
+    div.querySelector('.-mode-side').addEventListener('click', () => {
+      const has = div.classList.toggle('-Mode-side');
+      has && div.classList.remove('-Diffs');
+    });
+    div.querySelector('.-diffs').addEventListener('click', () => div.classList.toggle('-Diffs'));
+    div.querySelector('.-close').addEventListener('click', () => this.close());
 
-        function initFrame(){
-            const other = this === iframe1 ? iframe2 : iframe1;
-            const win = this.contentWindow;
-            const doc1 = win.document;
+    function initFrame(){
+      const other = this === iframe1 ? iframe2 : iframe1;
+      const win = this.contentWindow;
+      const doc1 = win.document;
 
-            // scrollSync
-            import('../../core/pub/js/c1/scrollSync.mjs').then(() => {
-                // sync scroll
-                c1.scrollSync.syncWindows(win, other.contentWindow);
-                // sync clicks
-                win.addEventListener('click', e => {
-                    if (e.c1Synced) return;
-                    const selector = c1.scrollSync.getSelector(e.target);
-                    const otherEl = other.contentWindow.document.querySelector(selector);
-                    const event = new MouseEvent('click', { view: globalThis, bubbles: true, cancelable: true });
-                    event.c1Synced = true;
-                    otherEl.dispatchEvent(event);
-                }, true);
-            });
+      // scrollSync
+      import('../../core/pub/js/c1/scrollSync.mjs').then(() => {
+        // sync scroll
+        c1.scrollSync.syncWindows(win, other.contentWindow);
+        // sync clicks
+        win.addEventListener('click', e => {
+          if (e.c1Synced) return;
+          const selector = c1.scrollSync.getSelector(e.target);
+          const otherEl = other.contentWindow.document.querySelector(selector);
+          const event = new MouseEvent('click', { view: globalThis, bubbles: true, cancelable: true });
+          event.c1Synced = true;
+          otherEl.dispatchEvent(event);
+        }, true);
+      });
 
-            // mousemove  => opacity
-            doc1.addEventListener('mousemove', e => {
-                const opacity = e.clientX / win.innerWidth;
-                div.querySelector('.-fade').value = opacity;
-                view1.style.opacity = opacity;
-            });
-            const prevent = e => { e.preventDefault(); e.stopPropagation(); };
-            doc1.addEventListener('mousedown', prevent);
-            doc1.addEventListener('click', prevent);
-            doc1.addEventListener('touchstart', prevent);
-        }
-        iframe1.addEventListener('load',initFrame);
-        iframe2.addEventListener('load',initFrame);
-    },
-    keyListener(e){
-        e.key === 'Escape' && CmsVersComparer.close();
-    },
-    compare(page_id, options) {
-        this._ensure();
-        addEventListener('keydown',this.keyListener);
-        pid = page_id;
-        options = {fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Draft', toText:'Live', accept:null, acceptText:'Apply', ...options};
-        // accept function
-        const acceptEl = div.querySelector('.-accept');
-        acceptEl.style.display = options.accept ? 'inline-block' : 'none';
-        if (options.accept) {
-            acceptEl.onclick   = options.accept;
-            acceptEl.innerHTML = options.acceptText;
-        }
-        div.querySelector('.-fromText').innerHTML = options.fromText;
-        div.querySelector('.-toText').innerHTML   = options.toText;
-        this.setMain  (options.fromSpace, options.fromLog);
-        this.setSecond(options.toSpace,   options.toLog);
-        document.body.append(div);
-        if (!div.matches(':popover-open')) div.showPopover();
-    },
-    close(){
-        removeEventListener('keydown',this.keyListener);
-        div.remove();
-    },
-    setMain(space, log)   { iframe1.src = frameSrc(space, log); },
-    setSecond(space, log) { iframe2.src = frameSrc(space, log); }
+      // mousemove  => opacity
+      doc1.addEventListener('mousemove', e => {
+        const opacity = e.clientX / win.innerWidth;
+        div.querySelector('.-fade').value = opacity;
+        view1.style.opacity = opacity;
+      });
+      const prevent = e => { e.preventDefault(); e.stopPropagation(); };
+      doc1.addEventListener('mousedown', prevent);
+      doc1.addEventListener('click', prevent);
+      doc1.addEventListener('touchstart', prevent);
+    }
+    iframe1.addEventListener('load',initFrame);
+    iframe2.addEventListener('load',initFrame);
+  },
+  keyListener(e){
+    e.key === 'Escape' && CmsVersComparer.close();
+  },
+  compare(page_id, options) {
+    this._ensure();
+    addEventListener('keydown',this.keyListener);
+    pid = page_id;
+    options = {fromSpace:'active', fromLog:0, toSpace:'active', toLog:0, fromText:'Draft', toText:'Live', accept:null, acceptText:'Apply', ...options};
+    // accept function
+    const acceptEl = div.querySelector('.-accept');
+    acceptEl.style.display = options.accept ? 'inline-block' : 'none';
+    if (options.accept) {
+      acceptEl.onclick   = options.accept;
+      acceptEl.innerHTML = options.acceptText;
+    }
+    div.querySelector('.-fromText').innerHTML = options.fromText;
+    div.querySelector('.-toText').innerHTML   = options.toText;
+    this.setMain  (options.fromSpace, options.fromLog);
+    this.setSecond(options.toSpace,   options.toLog);
+    document.body.append(div);
+    if (!div.matches(':popover-open')) div.showPopover();
+  },
+  close(){
+    removeEventListener('keydown',this.keyListener);
+    div.remove();
+  },
+  setMain(space, log)   { iframe1.src = frameSrc(space, log); },
+  setSecond(space, log) { iframe2.src = frameSrc(space, log); }
 };
 
 const css = `
