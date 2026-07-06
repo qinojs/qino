@@ -146,14 +146,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     <small>${u2time(row.time)}</small>
     <div>${hee(row.usr_email ?? "")}</div>
   <td>
-    <u2-ico
+    <button class=u2-unstyle type=button
       data-delete-entry
       data-file="${hee(row.file)}"
       data-line="${hee(String(row.line))}"
       data-col="${hee(String(row.col))}"
-      icon=delete
-      aria-label="Delete"
-      style="cursor:pointer">✕</u2-ico>`;
+      aria-label="Delete"><u2-ico icon=delete aria-hidden="true">✕</u2-ico></button>`;
   }
 
   return `
