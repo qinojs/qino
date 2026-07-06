@@ -458,7 +458,7 @@ export class Node {
         return (await this.files())[name];
     }
 
-    async sortFiles(sort: string[]): Promise<void> {  // todo, security: just existing files allowed!
+    async sortFiles(sort: string[]): Promise<void> {  // todo, just existing files allowed!
         let i = 1;
         for (const file of sort) {
             await this.db.table("page_file").update({ page_id: String(this), name: file, sort: i++ });
