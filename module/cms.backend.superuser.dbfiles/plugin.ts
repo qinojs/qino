@@ -105,7 +105,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
-  	<button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
+    <button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
   }
 
   return `
@@ -171,7 +171,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const get = ctx.get;
 
   const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
-	console.log(row)
+  console.log(row)
   if (!row) return `<div>${await app.t`File not found`}</div>`;
 
   const f = await fm.file(id, row);

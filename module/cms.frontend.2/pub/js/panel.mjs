@@ -62,14 +62,14 @@ const [
 ]);
 // isolate dialog interactions (incl. backdrop) from page-level handlers: content marking, context menu, …
 const isolate = el => ['click','mousedown','touchstart'].forEach(type =>
-	el.addEventListener(type, e => e.stopPropagation()));
+  el.addEventListener(type, e => e.stopPropagation()));
 const scoped = dialogScope({ root, init: isolate }); // central scoped dialogs (panel shadow root)
 // t`` returns a thenable -> await text, else u2 treats the promise as the options object (body becomes "undefined")
 cms.dialogs = {
-	...scoped,
-	alert:   async (text)          => scoped.alert(await text),
-	confirm: async (text)          => scoped.confirm(await text),
-	prompt:  async (text, initial) => scoped.prompt(await text, initial),
+  ...scoped,
+  alert:   async (text)          => scoped.alert(await text),
+  confirm: async (text)          => scoped.confirm(await text),
+  prompt:  async (text, initial) => scoped.prompt(await text, initial),
 };
 const { alert, confirm } = cms.dialogs;
 function onEl(selector, fn) {
@@ -515,10 +515,10 @@ onEl(".url-manager", (el) => {
 
   const addInp = findEl(el, ".-add_inp");
   addInp.addEventListener("keyup", c1.debounce((e) => {
-      apt.cms["request-used"].get({ url: e.target.value }).then(({ used }) => {
-        e.target.style.border = used ? "1px solid red" : "1px solid green";
-      });
-    }, 200),
+    apt.cms["request-used"].get({ url: e.target.value }).then(({ used }) => {
+      e.target.style.border = used ? "1px solid red" : "1px solid green";
+    });
+  }, 200),
   );
   addInp.addEventListener("keydown", (e) => e.key === "Enter" && cmsRequestSet() );
   findEl(el, ".-add").addEventListener("click", cmsRequestSet);

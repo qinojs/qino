@@ -1,71 +1,71 @@
 
 /* Inline-CMS — editing overlays on the live page (frontend, editmode only).
-   Content containers, editable text-fields, drag/drop, trash, contpos-menu.
-   Generic CMS chrome (forms, box, console, tokens) lives in cms/pub/css/ui.css. */
+Content containers, editable text-fields, drag/drop, trash, contpos-menu.
+Generic CMS chrome (forms, box, console, tokens) lives in cms/pub/css/ui.css. */
 
 /* trash */
 #qgCmsContTrash {
-	position:fixed;
-	inset:8px auto auto 10px; /* top/left; cancels [popover] UA inset:0 */
-	margin:0; padding:0;      /* reset [popover] UA box */
-	display:none;
-	overflow:hidden;
-	box-shadow:none;
-	border:none;
-	filter: drop-shadow(black 0 0 1px);
-	&.-dropTarget {
-		display:block;
-		animation: qgcms_trash_activate .3s;
-	}
-	& > :not(svg) { display:none; }
-	& > svg {
-		fill:var(--cms-access-2);
-		transition:fill .5s;
-	}
-	&.-full > svg { fill:var(--cms-color); }
-	& > svg .-lis {
-		transform:rotate(0deg);
-		transition:transform .5s;
-	}
-	&.-full > svg .-lis { transform:rotate(-20deg) translateX(-2px); }
+  position:fixed;
+  inset:8px auto auto 10px; /* top/left; cancels [popover] UA inset:0 */
+  margin:0; padding:0;      /* reset [popover] UA box */
+  display:none;
+  overflow:hidden;
+  box-shadow:none;
+  border:none;
+  filter: drop-shadow(black 0 0 1px);
+  &.-dropTarget {
+    display:block;
+    animation: qgcms_trash_activate .3s;
+  }
+  & > :not(svg) { display:none; }
+  & > svg {
+    fill:var(--cms-access-2);
+    transition:fill .5s;
+  }
+  &.-full > svg { fill:var(--cms-color); }
+  & > svg .-lis {
+    transform:rotate(0deg);
+    transition:transform .5s;
+  }
+  &.-full > svg .-lis { transform:rotate(-20deg) translateX(-2px); }
 }
 
 /* contpos-menu */
 #qgCmsContPosMenu {
-	position:fixed;            /* top-layer popover: viewport coords (Placer 'fixed' branch) */
-	display:none;
-	inset:auto;               /* cancel [popover] UA inset:0; Placer sets top/left */
-	margin:0; border:0;       /* reset [popover] UA box */
-	overflow:visible;         /* don't clip the ::after hit-area (inset:-5px) */
-    align-items:center;
-	padding:4px 7px 2px 7px;
-    border-radius:4px;
-    scale:1.001;
-	font-size:13px;
-	background:var(--cms-color);
-    color:#fff;
+  position:fixed;            /* top-layer popover: viewport coords (Placer 'fixed' branch) */
+  display:none;
+  inset:auto;               /* cancel [popover] UA inset:0; Placer sets top/left */
+  margin:0; border:0;       /* reset [popover] UA box */
+  overflow:visible;         /* don't clip the ::after hit-area (inset:-5px) */
+  align-items:center;
+  padding:4px 7px 2px 7px;
+  border-radius:4px;
+  scale:1.001;
+  font-size:13px;
+  background:var(--cms-color);
+  color:#fff;
 
-	&:popover-open { display:flex; }
+  &:popover-open { display:flex; }
 
-	& > div {
-		width:18px;
-		margin:1px 1px 2px 1px;
-        & > svg {
-            display:block;
-            fill:currentColor;
-            width: 100%;
-        }
-	}
-	& > .-opts { cursor:pointer; }
-	& > .-mod  { width:auto; margin:1px 5px 0 3px; }
-
-    &::after {
-        content:'';
-        position:absolute;
-        inset:-5px;
-        background:#0000;
-        z-index:-1;
+  & > div {
+    width:18px;
+    margin:1px 1px 2px 1px;
+    & > svg {
+      display:block;
+      fill:currentColor;
+      width: 100%;
     }
+  }
+  & > .-opts { cursor:pointer; }
+  & > .-mod  { width:auto; margin:1px 5px 0 3px; }
+
+  &::after {
+    content:'';
+    position:absolute;
+    inset:-5px;
+    background:#0000;
+    z-index:-1;
+  }
 }
 
 
@@ -73,7 +73,7 @@
 /* text-fields */
 a[cmstxt][contenteditable]:empty, span[cmstxt][contenteditable]:empty { display:inline-block; } /* new, 8.8.18, ok? */
 :hover [cmstxt][contenteditable] { min-height:.8em; min-width:1em; }
-:hover :not([qcms-id])[cmstxt][contenteditable] 	   { outline:1px solid rgba(255,50,0,.3); }
+:hover :not([qcms-id])[cmstxt][contenteditable]      { outline:1px solid rgba(255,50,0,.3); }
 :hover :not([qcms-id])[cmstxt][contenteditable]:hover { outline:1px solid rgba(255,50,0,.5); }
 :hover :not([qcms-id])[cmstxt][contenteditable]:focus { outline:2px solid rgba(255,50,0,.8); }
 :hover [qcms-id][cmstxt][contenteditable]       { box-shadow:0 0 0 1px rgba(255,50,0,.3); }
@@ -84,19 +84,19 @@ a[cmstxt][contenteditable]:empty, span[cmstxt][contenteditable]:empty { display:
 /* text-fields placeholder */
 [cmstxt][cmstxt-placeholder]:empty::before { content: '\00a0'; }
 [cmstxt][cmstxt-placeholder]:empty:hover::before { /* :not(:focus)? */
-	content: attr(cmstxt-placeholder);
-	text-transform: capitalize;
-	opacity:.4;
+  content: attr(cmstxt-placeholder);
+  text-transform: capitalize;
+  opacity:.4;
 }
 
 
 /* Cont */
 [qcms-id] {
-	outline-offset:1px;
-	min-height:12px;
-	min-width:12px;
-	transition:min-height .5s linear;
-	transition-property:box-shadow, min-height, background-color;
+  outline-offset:1px;
+  min-height:12px;
+  min-width:12px;
+  transition:min-height .5s linear;
+  transition-property:box-shadow, min-height, background-color;
 }
 
 a.cmsOffline { text-decoration: line-through !important; }
@@ -106,32 +106,32 @@ a.cmsOffline { text-decoration: line-through !important; }
 
 
 [qcms-id].qgCmsMarked.qgCmsMarked {
-	outline:3px solid var(--cms-color);
+  outline:3px solid var(--cms-color);
 }
 [qcms-id].qgCmsMarked.qgCmsMarked[qcms-offline] {
-	outline-color:var(--cms-access-2);
+  outline-color:var(--cms-access-2);
 }
 
 
 [qcms-id].-moving {
-	display: block;
-	padding:6px;
-	width:auto;
-	max-width:30vw;
-	min-height:30px;
-	min-width:100px;
-	background-color:#fff;
-	pointer-events:none;
-	box-shadow:0 0 10px rgba(0,0,0,.9);
-	opacity:.8;
+  display: block;
+  padding:6px;
+  width:auto;
+  max-width:30vw;
+  min-height:30px;
+  min-width:100px;
+  background-color:#fff;
+  pointer-events:none;
+  box-shadow:0 0 10px rgba(0,0,0,.9);
+  opacity:.8;
 }
 
 [qcms-id].dropTarget[qcms-edit] {
-	outline:3px solid red;
-	min-width:50px;
+  outline:3px solid red;
+  min-width:50px;
 }
 [qcms-id].-moving [qcms-id].dropTarget[qcms-edit] {
-	outline-width:0px;
+  outline-width:0px;
 }
 
 
@@ -139,11 +139,11 @@ a.cmsOffline { text-decoration: line-through !important; }
 img::selection { background: rgba(0,0,0,.2); }
 
 @keyframes qgcms_trash_activate {
-	0%   { transform:scale(1); }
-	50%  { transform:scale(1.3); }
-	100% { transform:scale(1); }
+  0%   { transform:scale(1); }
+  50%  { transform:scale(1.3); }
+  100% { transform:scale(1); }
 }
 @keyframes qgcms_fadeInOut {
-	0%   { opacity:0; }
-	50%  { opacity:1; }
+  0%   { opacity:0; }
+  50%  { opacity:1; }
 }

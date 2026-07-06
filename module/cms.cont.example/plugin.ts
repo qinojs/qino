@@ -16,7 +16,7 @@ async function render(node: Node): Promise<HtmlString> {
   const color = node.settings.color();
   const image = await cms.fileLang(node, 'image');
   return html.async`
-  	<div style="background:${color}">
+    <div style="background:${color}">
       <h2>${cms.text(node, "title", { tag: "span", initial: { de: "Titel", en: "Title" } })}</h2>
       ${image && cms_image2(image, { width: 110, height: 110, fit: "contain" })}
       <div class="-text">${cms.text(node, "main", { initial: { de: "Text hier...", en: "Text here..." } })}</div>

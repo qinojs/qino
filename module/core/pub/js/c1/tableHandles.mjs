@@ -2,77 +2,77 @@
 const find = (el, sel) => el.querySelector(':scope '+sel);
 
 export class TableHandles {
-	constructor() {
-		const remImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#ee3c3c" stroke-width="14"><line x1="4" y1="4" x2="60" y2="60"/><line x1="4" y1="60" x2="60" y2="4"/></svg>')+'\'';
-		const addImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#444" stroke-width="14"><line x1="0" y1="32" x2="64" y2="32"/><line x1="32" y1="0" x2="32" y2="64"/></svg>')+'\'';
-		this.root = c1.dom.fragment(
-		`<div class="c1TableHandles">
-			<a class=-rowRemove></a>
-			<a class=-rowAdd></a>
-			<a class=-colAdd></a>
-			<a class=-colRemove></a>
-			<style>
-			.c1TableHandles > a {
-				position: absolute; 
-				border:1px solid #555; 
-				border-radius: 50%; 
-				width: 22px; 
-				height: 22px; 
-				cursor:pointer; 
-				background: #fff url(${remImgData}) 50% / 50% no-repeat;
-			}
-			.c1TableHandles > a.-rowAdd, .c1TableHandles > a.-colAdd { 
-				background-image: url(${addImgData}); 
-			}
-			</style>
-		</div>`).firstChild;
-				
-		this.rowRemove = find(this.root, '.-rowRemove');
-		this.rowAdd    = find(this.root, '.-rowAdd');
-		this.colAdd    = find(this.root, '.-colAdd');
-		this.colRemove = find(this.root, '.-colRemove');
-		this.root.addEventListener('mousedown',e=>e.preventDefault());
-	}
-	showTd(td) {
-		this.active = td;
-		document.body.append(this.root);
-		c1.zTop(this.root);
-		this.positionize(td);
-		clearInterval(this.checkIntr);
-		this.checkIntr = setInterval(this.handleEvent.bind(this), 100);
-		document.addEventListener('keydown', this);
-	}
-	hide() {
-		this.root.remove();
-	}
-	positionize(td) {
-		const tr = td.parentNode;
-		if (!tr) return;
-		let Cpos = td.getBoundingClientRect();
-		Cpos = {
-			top:  Cpos.top + scrollY,
-			left: Cpos.left + scrollX,
-		}
-		const table = tr.closest('table');
-		if (!table) return;
-		let Tpos = table.getBoundingClientRect();
-		Tpos = {
-			top:  Tpos.top + scrollY,
-			left: Tpos.left + scrollX,
-		}
-		this.rowRemove.style.cssText = 'top:'+(Cpos.top + (tr.offsetHeight / 2) - 11)+'px; left:'+(Tpos.left - 25)+'px;';
-		this.rowAdd.style.cssText    = 'top:'+(Cpos.top + tr.offsetHeight - 4)+'px;        left:'+(Tpos.left - 25)+'px;';
-		this.colRemove.style.cssText = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + (td.offsetWidth / 2) - 8)+'px;';
-		this.colAdd.style.cssText    = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + td.offsetWidth - 2)+'px;';
-	}
-	handleEvent() {
-		setTimeout(()=>{
-			if (this.root.parentNode) {
-				this.positionize(this.active);
-			} else {
-				clearInterval(this.checkIntr);
-				document.removeEventListener('keydown', this);
-			}
-		});
-	}
+  constructor() {
+    const remImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#ee3c3c" stroke-width="14"><line x1="4" y1="4" x2="60" y2="60"/><line x1="4" y1="60" x2="60" y2="4"/></svg>')+'\'';
+    const addImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#444" stroke-width="14"><line x1="0" y1="32" x2="64" y2="32"/><line x1="32" y1="0" x2="32" y2="64"/></svg>')+'\'';
+    this.root = c1.dom.fragment(
+      `<div class="c1TableHandles">
+      <a class=-rowRemove></a>
+      <a class=-rowAdd></a>
+      <a class=-colAdd></a>
+      <a class=-colRemove></a>
+      <style>
+      .c1TableHandles > a {
+        position: absolute;
+        border:1px solid #555;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        cursor:pointer;
+        background: #fff url(${remImgData}) 50% / 50% no-repeat;
+      }
+      .c1TableHandles > a.-rowAdd, .c1TableHandles > a.-colAdd {
+        background-image: url(${addImgData});
+      }
+      </style>
+    </div>`).firstChild;
+
+    this.rowRemove = find(this.root, '.-rowRemove');
+    this.rowAdd    = find(this.root, '.-rowAdd');
+    this.colAdd    = find(this.root, '.-colAdd');
+    this.colRemove = find(this.root, '.-colRemove');
+    this.root.addEventListener('mousedown',e=>e.preventDefault());
+  }
+  showTd(td) {
+    this.active = td;
+    document.body.append(this.root);
+    c1.zTop(this.root);
+    this.positionize(td);
+    clearInterval(this.checkIntr);
+    this.checkIntr = setInterval(this.handleEvent.bind(this), 100);
+    document.addEventListener('keydown', this);
+  }
+  hide() {
+    this.root.remove();
+  }
+  positionize(td) {
+    const tr = td.parentNode;
+    if (!tr) return;
+    let Cpos = td.getBoundingClientRect();
+    Cpos = {
+      top:  Cpos.top + scrollY,
+      left: Cpos.left + scrollX,
+    }
+    const table = tr.closest('table');
+    if (!table) return;
+    let Tpos = table.getBoundingClientRect();
+    Tpos = {
+      top:  Tpos.top + scrollY,
+      left: Tpos.left + scrollX,
+    }
+    this.rowRemove.style.cssText = 'top:'+(Cpos.top + (tr.offsetHeight / 2) - 11)+'px; left:'+(Tpos.left - 25)+'px;';
+    this.rowAdd.style.cssText    = 'top:'+(Cpos.top + tr.offsetHeight - 4)+'px;        left:'+(Tpos.left - 25)+'px;';
+    this.colRemove.style.cssText = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + (td.offsetWidth / 2) - 8)+'px;';
+    this.colAdd.style.cssText    = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + td.offsetWidth - 2)+'px;';
+  }
+  handleEvent() {
+    setTimeout(()=>{
+      if (this.root.parentNode) {
+        this.positionize(this.active);
+      } else {
+        clearInterval(this.checkIntr);
+        document.removeEventListener('keydown', this);
+      }
+    });
+  }
 };

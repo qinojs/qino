@@ -11,10 +11,10 @@ export async function install({ app }: { app: App }): Promise<void> {
 function render(_node: unknown, { ctx }: { ctx: RequestContext }): string {
   ctx.html.scripts.add(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
   return `<div class=u2-card>
-	<div class=-head>Settings</div>
-	<div class=-body>
-		<settings-editor source="/api/core/settings"></settings-editor>
-	</div>
+  <div class=-head>Settings</div>
+  <div class=-body>
+    <settings-editor source="/api/core/settings"></settings-editor>
+  </div>
 </div>`;
 }
 

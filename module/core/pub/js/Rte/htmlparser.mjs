@@ -1,6 +1,6 @@
 const startTag = /^<([\w\:\-]+)((?:\s+[\w\:\-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
-    endTag = /^<\/([\w\:\-]+)[^>]*>/,
-    attr = /([\w\:\-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
+  endTag = /^<\/([\w\:\-]+)[^>]*>/,
+  attr = /([\w\:\-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
 // Empty Elements - HTML 4.01
 const empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
 
@@ -21,157 +21,157 @@ const fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple
 const special = makeMap("script,style");
 
 const HTMLParser  = function(html, handler) {
-	let index, chars, match, last = html;
-	const stack = [];
+  let index, chars, match, last = html;
+  const stack = [];
 
-	stack.last = function() {
-		return this[ this.length - 1 ];
-	};
+  stack.last = function() {
+    return this[ this.length - 1 ];
+  };
 
-	while (html) {
-		chars = true;
+  while (html) {
+    chars = true;
 
-		// Make sure we're not in a script or style element
-		if (!stack.last() || !special[ stack.last() ]) {
+    // Make sure we're not in a script or style element
+    if (!stack.last() || !special[ stack.last() ]) {
 
-			// Comment
-			if (html.indexOf("<!--") === 0) {
-				index = html.indexOf("-->");
+      // Comment
+      if (html.indexOf("<!--") === 0) {
+        index = html.indexOf("-->");
 
-				if (index >= 0) {
-					if (handler.comment )
-						handler.comment( html.substring( 4, index ) );
-					html = html.substring( index + 3 );
-					chars = false;
-				}
-
-			// end tag
-			} else if (html.indexOf("</") === 0) {
-	            //$log("HTMLParser: endtag ");
-				match = html.match( endTag );
-
-				if (match) {
-	                //$log("HTMLParser: endtag match : "+match[0]);
-					html = html.substring( match[0].length );
-					match[0].replace( endTag, parseEndTag );
-					chars = false;
-				}
-
-			// start tag
-			} else if (html.indexOf("<") === 0) {
-	            //$log("HTMLParser: starttag ");
-				match = html.match( startTag );
-
-				if (match) {
-	                //$log("HTMLParser: starttag match : "+match[0]);
-					html = html.substring( match[0].length );
-					match[0].replace( startTag, parseStartTag );
-					chars = false;
-				}
-			}
-
-			if (chars) {
-	            //$log("HTMLParser: other ");
-				index = html.indexOf("<");
-				const text = index < 0 ? html : html.substring( 0, index );
-				html = index < 0 ? "" : html.substring( index );
-				if (handler.chars) {
-	                //$log("HTMLParser: chars " + text);
-				    handler.chars( text );
-			    }
-			}
-		} else {
-	        //$log("HTMLParser: special ");
-			html = html.replace(new RegExp("(.*)<\/" + stack.last() + "[^>]*>"), function(_all, text) {
-				text = text.replace(/<!--(.*?)-->/g, "$1").
-					replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
-				if (handler.chars) {
-	                //$log("HTMLParser: special chars " + text);
-				    handler.chars( text );
-			    }
-				return "";
-			});
-			parseEndTag( "", stack.last() );
-		}
-		if (html == last) {throw "Parse Error: " + html;}
-		last = html;
-	}
-
-	// Clean up any remaining tags
-	parseEndTag();
-
-	function parseStartTag(_tag, tagName, rest, unary) {
-		tagName = tagName.toLowerCase();
-		if (block[ tagName ]) {
-			while ( stack.last() && inline[ stack.last() ]) {
-				parseEndTag('', stack.last());
-			}
-		}
-
-		if (closeSelf[ tagName ] && stack.last() == tagName) {
-			parseEndTag('', tagName);
-		}
-
-		unary = empty[ tagName ] || !!unary;
-
-		if (!unary )
-			stack.push( tagName );
-
-		if (handler.start) {
-			const attrs = [];
-
-			rest.replace(attr, function(_match, name) {
-				const value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
-
-				attrs.push({
-					name: name,
-					value: value,
-					escaped: value.replace(/(^|[^\\])"/g, '$1\\\"') //"
-				});
-			});
-
-			if (handler.start) {
-			    //$log("unary ? : "+unary);
-				handler.start( tagName, attrs, unary );
-			}
-		}
-	}
-
-	function parseEndTag(_tag, tagName) {
-	  let pos;
-		// If no tag name is provided, clean shop
-		if (!tagName) {
-			pos = 0;
-		} else {
-		// Find the closest opened tag of the same type
-			for (pos = stack.length - 1; pos >= 0; pos--) {
-				//$log("parseEndTag : "+stack[ pos ] );
-				if (stack[ pos ] == tagName) {
-				    break;
-			    }
-			}
+        if (index >= 0) {
+          if (handler.comment )
+            handler.comment( html.substring( 4, index ) );
+          html = html.substring( index + 3 );
+          chars = false;
         }
-		if (pos >= 0) {
-			// Close all the open elements, up the stack
-			for (let i = stack.length - 1; i >= pos; i--) {
-                if (handler.end) {
-				    //$log("end : "+stack[ i ] );
-                    handler.end( stack[ i ] );
-                }
-			}
-			// Remove the open elements from the stack
-			//$log("setting stack length : " + stack.length + " -> " +pos );
-			stack.length = pos;
-		}
-	}
+
+      // end tag
+      } else if (html.indexOf("</") === 0) {
+        //$log("HTMLParser: endtag ");
+        match = html.match( endTag );
+
+        if (match) {
+          //$log("HTMLParser: endtag match : "+match[0]);
+          html = html.substring( match[0].length );
+          match[0].replace( endTag, parseEndTag );
+          chars = false;
+        }
+
+      // start tag
+      } else if (html.indexOf("<") === 0) {
+        //$log("HTMLParser: starttag ");
+        match = html.match( startTag );
+
+        if (match) {
+          //$log("HTMLParser: starttag match : "+match[0]);
+          html = html.substring( match[0].length );
+          match[0].replace( startTag, parseStartTag );
+          chars = false;
+        }
+      }
+
+      if (chars) {
+        //$log("HTMLParser: other ");
+        index = html.indexOf("<");
+        const text = index < 0 ? html : html.substring( 0, index );
+        html = index < 0 ? "" : html.substring( index );
+        if (handler.chars) {
+          //$log("HTMLParser: chars " + text);
+          handler.chars( text );
+        }
+      }
+    } else {
+      //$log("HTMLParser: special ");
+      html = html.replace(new RegExp("(.*)<\/" + stack.last() + "[^>]*>"), function(_all, text) {
+        text = text.replace(/<!--(.*?)-->/g, "$1").
+          replace(/<!\[CDATA\[(.*?)]]>/g, "$1");
+        if (handler.chars) {
+          //$log("HTMLParser: special chars " + text);
+          handler.chars( text );
+        }
+        return "";
+      });
+      parseEndTag( "", stack.last() );
+    }
+    if (html == last) {throw "Parse Error: " + html;}
+    last = html;
+  }
+
+  // Clean up any remaining tags
+  parseEndTag();
+
+  function parseStartTag(_tag, tagName, rest, unary) {
+    tagName = tagName.toLowerCase();
+    if (block[ tagName ]) {
+      while ( stack.last() && inline[ stack.last() ]) {
+        parseEndTag('', stack.last());
+      }
+    }
+
+    if (closeSelf[ tagName ] && stack.last() == tagName) {
+      parseEndTag('', tagName);
+    }
+
+    unary = empty[ tagName ] || !!unary;
+
+    if (!unary )
+      stack.push( tagName );
+
+    if (handler.start) {
+      const attrs = [];
+
+      rest.replace(attr, function(_match, name) {
+        const value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
+
+        attrs.push({
+          name: name,
+          value: value,
+          escaped: value.replace(/(^|[^\\])"/g, '$1\\\"') //"
+        });
+      });
+
+      if (handler.start) {
+        //$log("unary ? : "+unary);
+        handler.start( tagName, attrs, unary );
+      }
+    }
+  }
+
+  function parseEndTag(_tag, tagName) {
+    let pos;
+    // If no tag name is provided, clean shop
+    if (!tagName) {
+      pos = 0;
+    } else {
+    // Find the closest opened tag of the same type
+      for (pos = stack.length - 1; pos >= 0; pos--) {
+        //$log("parseEndTag : "+stack[ pos ] );
+        if (stack[ pos ] == tagName) {
+          break;
+        }
+      }
+    }
+    if (pos >= 0) {
+      // Close all the open elements, up the stack
+      for (let i = stack.length - 1; i >= pos; i--) {
+        if (handler.end) {
+          //$log("end : "+stack[ i ] );
+          handler.end( stack[ i ] );
+        }
+      }
+      // Remove the open elements from the stack
+      //$log("setting stack length : " + stack.length + " -> " +pos );
+      stack.length = pos;
+    }
+  }
 };
 function makeMap(str) {
-	const obj = {}, items = str.split(",");
-	for (let i = 0; i < items.length; i++ )
-		obj[ items[i] ] = true;
-	return obj;
+  const obj = {}, items = str.split(",");
+  for (let i = 0; i < items.length; i++ )
+    obj[ items[i] ] = true;
+  return obj;
 }
 
 export {
-	HTMLParser
+  HTMLParser
 };
