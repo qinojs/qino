@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import type { Db } from "./Db.ts";
+import type { Db } from "./db/Db.ts";
 import { bildJsonItem } from "../../../deps.ts";
 
 async function buildRoot(

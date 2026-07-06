@@ -1,15 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbTable } from "./DbTable.ts";
-import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../deps.ts";
-import { type DbDialect, type Driver, type ExecResult, type MigrateOptions, makeDriver } from "./dbDriver.ts";
-import { Emitter } from "./Emitter.ts";
-import type { RowDataPacket } from "../../../deps.ts";
+import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../../deps.ts";
+import { type DbDialect, type ExecResult, type MigrateOptions, DbDriver } from "./DbDriver.ts";
+import { Emitter } from "../Emitter.ts";
+import type { RowDataPacket } from "../../../../deps.ts";
 
-export const dateTypes: Record<string, 1> = { DATETIME: 1, DATE: 1, TIMESTAMP: 1 };
-export const stringTypes: Record<string, 1> = { CHAR: 1, VARCHAR: 1, BINARY: 1, VARBINARY: 1, BLOB: 1, TEXT: 1, ENUM: 1, SET: 1 };
-export const numTypes: Record<string, 1> = { TINYINT: 1, SMALLINT: 1, MEDIUMINT: 1, INT: 1, BIGINT: 1, DECIMAL: 1, FLOAT: 1, DOUBLE: 1 };
+export const dateTypes = new Set(["DATETIME", "DATE", "TIMESTAMP"]);
+export const stringTypes = new Set(["CHAR", "VARCHAR", "BINARY", "VARBINARY", "BLOB", "TEXT", "ENUM", "SET"]);
+export const numTypes = new Set(["TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE"]);
 
-/** Core db events; modules add their own via `declare module "../core/lib/Db.ts" { interface DbEvents {...} }`. */
+/** Core db events; modules add their own via `declare module "../core/lib/db/Db.ts" { interface DbEvents {...} }`. */
 export interface DbEvents {
   "table::insert-before": { Table: DbTable; data: Record<string, any>; returnValue?: unknown };
   "table::insert-after": { Table: DbTable; id: any; data: Record<string, any> };
@@ -22,13 +22,13 @@ export interface DbEvents {
 
 export class Db extends Emitter<DbEvents> {
   #tables: Record<string, DbTable> = {};
-  #driver: Driver;
+  #driver: DbDriver;
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
   #schema: Record<string, any> = { properties: {} };
 
   constructor(conn: string) {
     super();
-    this.#driver = makeDriver(conn);
+    this.#driver = DbDriver.from(conn);
     // Dialect (quoting + placeholders) for rendering comes from item.js — one source for all backends.
     this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
   }
@@ -56,11 +56,11 @@ export class Db extends Emitter<DbEvents> {
     return [text, params];
   }
 
-  query(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket[]>;
-  query(frag: Sql): Promise<RowDataPacket[]>;
-  async query(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<RowDataPacket[]> {
+  query<T = RowDataPacket>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
+  query<T = RowDataPacket>(frag: Sql): Promise<T[]>;
+  async query(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<any[]> {
     const [text, params] = await this.#sql(a, rest);
-    return this.#run(() => this.#driver.query(text, params), text) as Promise<RowDataPacket[]>;
+    return this.#run(() => this.#driver.query(text, params), text);
   }
 
   exec(strings: TemplateStringsArray, ...values: unknown[]): Promise<ExecResult>;
@@ -78,21 +78,21 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 
-  row(strings: TemplateStringsArray, ...values: unknown[]): Promise<RowDataPacket | undefined>;
-  row(frag: Sql): Promise<RowDataPacket | undefined>;
-  async row(a: any, ...rest: any[]): Promise<RowDataPacket | undefined> { return (await (this.query as any)(a, ...rest))[0]; }
+  row<T = RowDataPacket>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined>;
+  row<T = RowDataPacket>(frag: Sql): Promise<T | undefined>;
+  async row(a: any, ...rest: any[]): Promise<any> { return (await (this.query as any)(a, ...rest))[0]; }
 
-  col(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown[]>;
-  col(frag: Sql): Promise<unknown[]>;
-  async col(a: any, ...rest: any[]): Promise<unknown[]> { return (await (this.query as any)(a, ...rest)).map((r: RowDataPacket) => Object.values(r)[0]); }
+  col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
+  col<T = unknown>(frag: Sql): Promise<T[]>;
+  async col(a: any, ...rest: any[]): Promise<any[]> { return (await (this.query as any)(a, ...rest)).map((r: RowDataPacket) => Object.values(r)[0]); }
 
-  one(strings: TemplateStringsArray, ...values: unknown[]): Promise<unknown>;
-  one(frag: Sql): Promise<unknown>;
-  async one(a: any, ...rest: any[]): Promise<unknown> { return Object.values(await (this.row as any)(a, ...rest) ?? {})[0]; }
+  one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;
+  one<T = unknown>(frag: Sql): Promise<T>;
+  async one(a: any, ...rest: any[]): Promise<any> { return Object.values(await (this.row as any)(a, ...rest) ?? {})[0]; }
 
-  indexCol(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, unknown>>;
-  indexCol(frag: Sql): Promise<Record<string, unknown>>;
-  async indexCol(a: any, ...rest: any[]): Promise<Record<string, unknown>> {
+  indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>>;
+  indexCol<T = unknown>(frag: Sql): Promise<Record<string, T>>;
+  async indexCol(a: any, ...rest: any[]): Promise<Record<string, any>> {
     return Object.fromEntries((await (this.query as any)(a, ...rest)).map((r: RowDataPacket) => Object.values(r) as [string, unknown]));
   }
 

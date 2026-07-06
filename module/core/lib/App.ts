@@ -4,7 +4,7 @@ import { makeRequestContext, requestStorage, urlToLocalPath, type RequestContext
 import { Req } from "./Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
-import { Db } from "./Db.ts";
+import { Db } from "./db/Db.ts";
 import { DbFileManager, type DbFile } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";

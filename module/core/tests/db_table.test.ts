@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
-import { DbTable } from "../lib/DbTable.ts";
-import { Db } from "../lib/Db.ts";
+import { DbTable } from "../lib/db/DbTable.ts";
+import { Db } from "../lib/db/Db.ts";
 import { fakeRender } from "./sqlFake.ts";
 import { sql } from "../../../deps.ts";
 

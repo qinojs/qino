@@ -1,6 +1,6 @@
 import { Item } from "../../../deps.ts";
 import { sql } from "../../../deps.ts";
-import type { Db } from "./Db.ts";
+import type { Db } from "./db/Db.ts";
 
 class SettingItem extends Item<SettingItem> {
   data: Record<string, unknown> | undefined;

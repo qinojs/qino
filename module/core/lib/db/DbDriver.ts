@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, postgres, type Pool, pgDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../deps.ts";
+import { mysql, postgres, type Pool, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../../deps.ts";
 import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -9,21 +9,30 @@ export type DbDialect = "mysql" | "postgres" | "sqlite";
 type Row = Record<string, any>;
 
 /** Backend abstraction — only the dialect-specific bits live behind this. */
-export interface Driver {
-  dialect: DbDialect;
-  escapeId(id: string): string;
+export abstract class DbDriver {
+  abstract dialect: DbDialect;
+  abstract escapeId(id: string): string;
   /** Receives final dialect SQL (rendered by Db). */
-  query(sql: string, params?: unknown[]): Promise<Row[]>;
-  exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
-  transaction<T>(fn: () => Promise<T>): Promise<T>; /** Run fn in a transaction; nested calls join the outer one. */
-  syncAutoIncrement(table: string, field: string, value: number): Promise<void>;
-  listTables(): Promise<string[]>;
+  abstract query(sql: string, params?: unknown[]): Promise<Row[]>;
+  abstract exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
+  /** Run fn in a transaction; nested calls join the outer one. */
+  abstract transaction<T>(fn: () => Promise<T>): Promise<T>;
+  abstract listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
-  columns(table: string): Promise<Row[]>;
+  abstract columns(table: string): Promise<Row[]>;
   /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). */
-  migrate(schema: unknown, opts?: MigrateOptions): Promise<void>;
-  ensureDatabase(): Promise<void>;
-  close(): Promise<void>;
+  abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<void>;
+  abstract close(): Promise<void>;
+  syncAutoIncrement(_table: string, _field: string, _value: number): Promise<void> { return Promise.resolve(); }
+  ensureDatabase(): Promise<void> { return Promise.resolve(); }
+
+  /** Pick a backend from the connection string scheme. */
+  static from(conn: string): DbDriver {
+    if (conn.startsWith("sqlite:")) return new SqliteDriver(conn.slice("sqlite:".length) || ":memory:");
+    if (/^mysql:\/\//i.test(conn)) return new MysqlDriver(conn);
+    if (/^postgres(ql)?:\/\//i.test(conn)) return new PostgresDriver(conn);
+    throw new Error(`Unsupported database connection string: ${conn || "(empty)"}`);
+  }
 }
 
 const sqlMode = [
@@ -35,15 +44,7 @@ const sqlMode = [
   "NO_ENGINE_SUBSTITUTION",
 ].join(",");
 
-/** Pick a backend from the connection string scheme. */
-export function makeDriver(conn: string): Driver {
-  if (conn.startsWith("sqlite:")) return new SqliteDriver(conn.slice("sqlite:".length) || ":memory:");
-  if (/^mysql:\/\//i.test(conn)) return new MysqlDriver(conn);
-  if (/^postgres(ql)?:\/\//i.test(conn)) return new PostgresDriver(conn);
-  throw new Error(`Unsupported database connection string: ${conn || "(empty)"}`);
-}
-
-class MysqlDriver implements Driver {
+class MysqlDriver extends DbDriver {
   dialect = "mysql" as const;
   #pool: Pool;
   #tx = new AsyncLocalStorage<any>();
@@ -51,6 +52,7 @@ class MysqlDriver implements Driver {
   #connParams: { host: string; port?: number; user: string; password: string };
 
   constructor(conn: string) {
+    super();
     const url = new URL(conn), port = url.port ? Number(url.port) : undefined;
     this.#database = decodeURIComponent(url.pathname.slice(1));
     if (!this.#database) throw new Error(`MySQL connection string needs a database: ${conn}`);
@@ -81,17 +83,16 @@ class MysqlDriver implements Driver {
     catch (e) { await conn.rollback(); throw e; }
     finally { conn.release(); }
   }
-  syncAutoIncrement(_table: string, _field: string, _value: number) { return Promise.resolve(); }
   async listTables() {
     return (await this.query("SHOW TABLES")).map((r) => Object.values(r)[0]);
   }
   columns(table: string) {
-    return this.query(`SHOW FULL COLUMNS FROM ${mysql.escapeId(table)}`);
+    return this.query(`SHOW FULL COLUMNS FROM ${this.escapeId(table)}`);
   }
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
   }
-  async ensureDatabase() {
+  override async ensureDatabase() {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
       await tmp.query(`CREATE DATABASE IF NOT EXISTS ${mysql.escapeId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
@@ -102,17 +103,18 @@ class MysqlDriver implements Driver {
   close() { return this.#pool.end(); }
 }
 
-class SqliteDriver implements Driver {
+class SqliteDriver extends DbDriver {
   dialect = "sqlite" as const;
   #db: DatabaseSync;
   #inTx = false;
 
   constructor(path: string) {
+    super();
     this.#db = new DatabaseSync(path);
     this.#db.exec("PRAGMA foreign_keys = ON");
   }
 
-  escapeId(id: string) { return mysql.escapeId(id); }
+  escapeId(id: string) { return sqliteDialect.quoteId(id); }
   query(sql: string, params: unknown[] = []) {
     return Promise.resolve(this.#db.prepare(sql).all(...params as any[]) as Row[]);
   }
@@ -132,14 +134,13 @@ class SqliteDriver implements Driver {
     catch (e) { this.#db.exec("ROLLBACK"); throw e; }
     finally { this.#inTx = false; }
   }
-  syncAutoIncrement(_table: string, _field: string, _value: number) { return Promise.resolve(); }
   listTables() {
     return this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
       .then((rows) => rows.map((r) => r.name));
   }
   columns(table: string) {
     // Map PRAGMA table_info → MySQL SHOW FULL COLUMNS shape so DbField stays dialect-free.
-    return this.query(`PRAGMA table_info(${mysql.escapeId(table)})`).then((rows) => rows.map((c) => ({
+    return this.query(`PRAGMA table_info(${this.escapeId(table)})`).then((rows) => rows.map((c) => ({
       Field: c.name,
       Type: c.type || "text",
       Null: c.notnull ? "NO" : "YES",
@@ -152,11 +153,10 @@ class SqliteDriver implements Driver {
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
-  ensureDatabase() { return Promise.resolve(); }
   close() { this.#db.close(); return Promise.resolve(); }
 }
 
-class PostgresDriver implements Driver {
+class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
   #pool: any;
   #tx = new AsyncLocalStorage<any>();
@@ -164,6 +164,7 @@ class PostgresDriver implements Driver {
   #adminParams: Record<string, unknown>;
 
   constructor(conn: string) {
+    super();
     const url = new URL(conn);
     this.#database = decodeURIComponent(url.pathname.slice(1));
     url.pathname = "/postgres";
@@ -193,7 +194,7 @@ class PostgresDriver implements Driver {
     catch (e) { await client.query("ROLLBACK"); throw e; }
     finally { client.release(); }
   }
-  async syncAutoIncrement(table: string, field: string, value: number) {
+  override async syncAutoIncrement(table: string, field: string, value: number) {
     if (value < 1) return;
     const column = this.escapeId(field), tbl = this.escapeId(table);
     await this.#pool.query(
@@ -247,7 +248,7 @@ class PostgresDriver implements Driver {
       if (max) await this.syncAutoIncrement(table, auto, max);
     }
   }
-  async ensureDatabase() {
+  override async ensureDatabase() {
     if (!this.#database) return;
     const pool = new postgres.Pool(this.#adminParams);
     try {

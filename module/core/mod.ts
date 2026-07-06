@@ -23,13 +23,13 @@ export type { StandardIssue, StandardResult } from "./lib/StandardSchema.ts";
 export * from "./lib/apt/mod.ts";
 
 // Database
-export { Db } from "./lib/Db.ts";
-export type { DbEvents } from "./lib/Db.ts";
+export { Db } from "./lib/db/Db.ts";
+export type { DbEvents } from "./lib/db/Db.ts";
 export { Sql, sql } from "../../deps.ts";
-export { dbScope, tableRef, scopeCache } from "./lib/dbScope.ts";
-export type { DbScope } from "./lib/dbScope.ts";
-export { DbEntry } from "./lib/DbEntry.ts";
-export { DbField } from "./lib/DbField.ts";
+export { dbScope, tableRef, scopeCache } from "./lib/db/dbScope.ts";
+export type { DbScope } from "./lib/db/dbScope.ts";
+export { DbEntry } from "./lib/db/DbEntry.ts";
+export { DbField } from "./lib/db/DbField.ts";
 export { DbFile } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export type { dbEntry_usr } from "./lib/qgEntries.ts";

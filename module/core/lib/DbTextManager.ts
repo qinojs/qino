@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx } from "./RequestContext.ts";
-import { tableRef, scopeCache } from "./dbScope.ts";
+import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { sql } from "../../../deps.ts";
 import type { App } from "./App.ts";
-import type { Db } from "./Db.ts";
+import type { Db } from "./db/Db.ts";
 
 export class DbTextManager {
   #cache: Record<string, DbText> = {};

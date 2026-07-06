@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
-import { DbField } from "../lib/DbField.ts";
+import { DbField } from "../lib/db/DbField.ts";
 
 function field(type: string, extra: Record<string, any> = {}) {
   const table = { db: {}, toString: () => "tbl" };

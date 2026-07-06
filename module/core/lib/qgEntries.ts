@@ -1,4 +1,4 @@
-import { DbEntry, registerEntryClass } from "./DbEntry.ts";
+import { DbEntry, registerEntryClass } from "./db/DbEntry.ts";
 import { unixTime } from "./util.ts";
 
 // === dbEntry_usr ===

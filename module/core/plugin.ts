@@ -6,7 +6,7 @@ import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/RequestContext.ts";
 export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
-import type { DbEvents } from "./lib/Db.ts";
+import type { DbEvents } from "./lib/db/Db.ts";
 
 export const name = "core";
 export { dbSchema };

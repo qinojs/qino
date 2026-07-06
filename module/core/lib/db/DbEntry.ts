@@ -17,7 +17,7 @@ export class DbEntry {
   #vs: Record<string, any> = {};
   #eid: string | false = false;
   #changed = false;
-  #saveTimer: number | undefined;
+  #savePending = false;
 
   constructor(table: DbTable, vs?: any) {
     this.table = table;
@@ -92,10 +92,11 @@ export class DbEntry {
     this.#scheduleSave();
   }
 
+  // Microtask keeps the save inside the current transaction / request scope.
   #scheduleSave(): void {
-    if (!this.#changed) return;
-    clearTimeout(this.#saveTimer);
-    this.#saveTimer = setTimeout(() => { this.save().catch(e => console.error("auto-save failed:", e)); }, 50) as unknown as number;
+    if (!this.#changed || this.#savePending) return;
+    this.#savePending = true;
+    queueMicrotask(() => { this.#savePending = false; this.save().catch(e => console.error("auto-save failed:", e)); });
   }
 
   async makeIfNot(): Promise<this> {
@@ -117,13 +118,11 @@ export class DbEntry {
   }
 
   async save(): Promise<void> {
-    clearTimeout(this.#saveTimer);
-    if (this.#changed) {
-      this.#ensureEid();
-      if (this.#eid === false) throw new Error(`dbEntry.save(): _eid is false, cannot update`);
-      await this.table.update(this.#eid, this.#vs);
-      this.#changed = false;
-    }
+    if (!this.#changed) return;
+    this.#ensureEid();
+    if (this.#eid === false) throw new Error(`dbEntry.save(): _eid is false, cannot update`);
+    this.#changed = false; // before the await, so a concurrent save() can't double-update
+    await this.table.update(this.#eid, this.#vs);
   }
 
   toString(): string {

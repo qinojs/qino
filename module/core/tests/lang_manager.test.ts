@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { LangManager } from "../lib/LangManager.ts";
-import { Db } from "../lib/Db.ts";
+import { Db } from "../lib/db/Db.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
 
 function sessionLang(initial = "") {

@@ -6,11 +6,11 @@ import { File } from "./File.ts";
 import { FileTransformer, type TransformOptions } from "./transform/index.ts";
 import { sql } from "../../../deps.ts";
 import { getCtx } from "./RequestContext.ts";
-import { tableRef, scopeCache } from "./dbScope.ts";
+import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
 import { contentDisposition } from "./util.ts";
 import type { App } from "./App.ts";
-import type { Db } from "./Db.ts";
+import type { Db } from "./db/Db.ts";
 
 export class DbFileManager {
   #cache: Record<string, DbFile> = {};

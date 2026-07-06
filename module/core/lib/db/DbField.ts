@@ -41,12 +41,12 @@ export class DbField {
   valueTransform(value: any): any {
     const type = this.type.toUpperCase();
     if (this.null && value === null) return null;
-    if (this.null && value === "" && !stringTypes[type]) return null;
+    if (this.null && value === "" && !stringTypes.has(type)) return null;
     if (type === "BOOLEAN") return value === true || value === 1 || value === "1" || value === "true";
-    if (typeof value === "number" && dateTypes[type]) {
+    if (typeof value === "number" && dateTypes.has(type)) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }
-    if (numTypes[type] && typeof value !== "number") {
+    if (numTypes.has(type) && typeof value !== "number") {
       value = parseFloat(String(value)) || 0;
     }
     return String(value ?? "");

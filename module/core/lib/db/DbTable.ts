@@ -3,7 +3,7 @@
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { numTypes, type Db } from "./Db.ts";
-import { Sql, sql, isTemplate } from "../../../deps.ts";
+import { Sql, sql, isTemplate } from "../../../../deps.ts";
 
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
@@ -82,7 +82,7 @@ export class DbTable {
       }
       let value = vs[primary];
       const type = Field.type.toUpperCase();
-      if (numTypes[type]) value = String(parseFloat(String(value)));
+      if (numTypes.has(type)) value = String(parseFloat(String(value)));
       part.push(value);
     }
     return part.join("-:-");
