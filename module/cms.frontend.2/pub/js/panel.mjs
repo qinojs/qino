@@ -655,11 +655,11 @@ onEl(".superuser-manager", (el) => {
   el.addEventListener("click", async (e) => {
     const scopeEl = e.target.closest("[scope]");
     if (!scopeEl) return;
-    //const scope = scopeEl.getAttribute('scope');
+    const scope = scopeEl.getAttribute("scope");
     const remove = e.target.closest(".-remove");
     if (remove) {
       const file = remove.parentNode.getAttribute("itemid");
-      if (await confirm(t`Really delete this file?`)) loadWidget("superuser", { pid, delete: file });
+      if (await confirm(t`Really delete this file?`)) loadWidget("superuser", { pid, delete: file, in: scope });
     }
   });
 });

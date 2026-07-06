@@ -1,9 +1,10 @@
+import * as nodePath from "node:path";
 import type { Node } from "../../../cms/mod.ts";
-import { hee, getCtx } from "../../../core/mod.ts";
+import { hee, getCtx, Output } from "../../../core/mod.ts";
 
-function moduleDir(node: Node): string | null {
-  const path = node.app.modules.get(String(node.vs.module ?? ""))?.path;
-  return path?.replace(/\/?(mod|plugin)\.[jt]s$/, "") ?? null;
+function inRoot(file: string, root: string): boolean {
+  const rel = nodePath.relative(nodePath.resolve(root), nodePath.resolve(file));
+  return !!rel && !rel.startsWith("..") && !nodePath.isAbsolute(rel);
 }
 
 async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: string }> {
@@ -25,19 +26,25 @@ async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: s
 
 export default async function (node: Node, vars: any = {}): Promise<string> {
   const ctx = getCtx();
-  const app = node.app;
+  if (!await ctx.user?.get("superuser")) throw new Output("Access denied", { status: 403 });
+
+  const customPath = node.app.appPATH + "qg/" + node.vs.module;
+  const modPath = node.module?.dir ?? "";
+  const root = vars.param?.in === "app" ? modPath : customPath;
 
   if (vars.param?.delete) {
-    try { await Deno.remove(vars.param.delete); } catch { /* egal */ }
+    const file = String(vars.param.delete);
+    if (!root || !inRoot(file, root)) throw new Output("invalid path", { status: 400 });
+    try { await Deno.remove(file); } catch { /* egal */ }
   }
   if (vars.param?.create) {
-    const root = vars.param.in === "app" ? (moduleDir(node) ?? "") + "/" : app.appPATH + "qg/" + node.vs.module + "/";
-    const file = root + vars.param.create;
-    try { await Deno.mkdir(file.replace(/\/[^/]+$/, ""), { recursive: true }); } catch { /* egal */ }
+    if (!root || typeof vars.param.create !== "string") throw new Output("invalid path", { status: 400 });
+    const file = nodePath.resolve(root, vars.param.create);
+    if (!inRoot(file, root)) throw new Output("invalid path", { status: 400 });
+    try { await Deno.mkdir(nodePath.dirname(file), { recursive: true }); } catch { /* egal */ }
     try { await Deno.writeTextFile(file, ""); } catch { /* egal */ }
   }
 
-  const customPath = app.appPATH + "qg/" + node.vs.module;
   let customFiles = "";
   for await (const { filePath } of walkDir(customPath)) {
     const info = await Deno.stat(filePath).catch(() => null);
@@ -52,7 +59,6 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
   }
 
   let appFiles = "";
-  const modPath = moduleDir(node);
   for await (const { filePath } of walkDir(modPath ?? "")) {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;
@@ -67,7 +73,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
 
   const module = node.vs.module;
   let globalSettings = "";
-  if (module && module in app.settings) {
+  if (module && module in node.app.settings) {
     // SettingsEditor.mjs is loaded by panel.mjs
     globalSettings = `<div class="-widgetHead -open" tabindex="0"><span class=-title>Global Settings</span></div>
     <div class=-content><settings-editor source="/api/core/settings/${hee(module)}"></settings-editor></div>`;
