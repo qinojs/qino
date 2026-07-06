@@ -3,29 +3,31 @@ import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
 
-const pathBlocks = new Map<string, number>();
+// Per app, not module-global: apps in the same runtime must not share blocks.
+const pathBlocks = new WeakMap<App, Map<string, number>>();
+const blocksOf = (app: App) => pathBlocks.getOrInsertComputed(app, () => new Map());
 
 export function initSecurity(app: App) {
   app.on("request-start", async ({ req }) => {
     const info = gateInfo(req, app.trustedProxyHops);
-    if (isPathBlocked(info)) return deny(5);
+    if (isPathBlocked(app, info)) return deny(5);
     const set = await settings(app);
     if (!set.enabled) return;
     const pattern = await suspiciousPath(app, info.path);
     if (!pattern) return;
-    rememberPathBlock(info, set);
+    rememberPathBlock(app, info, set);
     await addEventDb(app.db, { ...info, prio: "error", kind: "path-block", scope: "ip", ident: info.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
     deny(set.pathBlockSeconds);
   });
 
   app.on("action", async ({ ctx }) => {
     const fast = fastInfo(ctx);
-    if (isPathBlocked(fast)) return block(ctx, 5);
+    if (isPathBlocked(ctx.app, fast)) return block(ctx, 5);
     const set = await settings(ctx.app);
     if (!set.enabled) return;
     const pattern = await suspiciousPath(ctx.app, fast.path);
     if (pattern) {
-      rememberPathBlock(fast, set);
+      rememberPathBlock(ctx.app, fast, set);
       await addEvent(ctx, { ...fast, prio: "error", kind: "path-block", scope: "ip", ident: fast.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
       return block(ctx, set.pathBlockSeconds);
     }
@@ -69,27 +71,29 @@ export function initSecurity(app: App) {
 
 type GateInfo = { ip: string; method: string; path: string; bytes_in: number; ua: string };
 
-function isPathBlocked(info: GateInfo) {
+function isPathBlocked(app: App, info: GateInfo) {
+  const blocks = blocksOf(app);
   const key = blockKey(info);
-  const until = pathBlocks.get(key) ?? 0;
+  const until = blocks.get(key) ?? 0;
   if (until > Date.now()) return true;
-  if (until) pathBlocks.delete(key);
+  if (until) blocks.delete(key);
   return false;
 }
 
-function rememberPathBlock(info: GateInfo, set: Record<string, number>) {
-  shrinkPathBlocks(set.pathBlockMax ?? 5000);
-  pathBlocks.set(blockKey(info), Date.now() + Math.max(1, set.pathBlockSeconds ?? 900) * 1000);
+function rememberPathBlock(app: App, info: GateInfo, set: Record<string, number>) {
+  const blocks = blocksOf(app);
+  shrinkPathBlocks(blocks, set.pathBlockMax ?? 5000);
+  blocks.set(blockKey(info), Date.now() + Math.max(1, set.pathBlockSeconds ?? 900) * 1000);
 }
 
-function shrinkPathBlocks(max: number) {
+function shrinkPathBlocks(blocks: Map<string, number>, max: number) {
   max = Math.max(1, max);
   const t = Date.now();
-  for (const [key, until] of pathBlocks) if (until <= t) pathBlocks.delete(key);
-  while (pathBlocks.size >= max) {
-    const key = pathBlocks.keys().next().value;
+  for (const [key, until] of blocks) if (until <= t) blocks.delete(key);
+  while (blocks.size >= max) {
+    const key = blocks.keys().next().value;
     if (!key) break;
-    pathBlocks.delete(key);
+    blocks.delete(key);
   }
 }
 
