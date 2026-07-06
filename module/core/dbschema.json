@@ -253,16 +253,14 @@
             "x-index": "primary"
           },
           "access": {
-            "type": "boolean"
-          },
-          "title_id": {
+            "deprecated": true,
             "type": "integer",
-            "x-index": true,
-            "x-qg-parent": "text",
-            "x-qg-on-parent-delete": "setnull"
+            "minimum": 0,
+            "maximum": 6,
+            "default": 0
           }
         },
-        "required": ["name", "access"]
+        "required": ["name"]
       }
     },
     "qg_hashaction": {

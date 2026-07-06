@@ -4,15 +4,13 @@ import { hee, getCtx } from "../../../core/mod.ts";
 export default async function (node: Node): Promise<string> {
   const app = node.app;
   const ctx = getCtx();
-  const isSuperuser = await ctx.user?.get("superuser");
 
   const modules = await node.cms.getModules(); // TODO
   let moduleBoxes = "";
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
     const M = await app.db.table("module").entry(name);
-    const hasAccess = await M.get?.("access");
-    if (!hasAccess && !isSuperuser) continue;
+    if (!await node.canAddModule(name)) continue;
     if (name === "cms.cont.flexible") continue;
     let desc = "";
     try { if (modDir) desc = await Deno.readTextFile(modDir + "description.txt"); } catch { /* egal */ }
@@ -50,10 +48,8 @@ export default async function (node: Node): Promise<string> {
   if (models.length) {
     let modelItems = "";
     for (const P of models) {
-      const M = await app.db.table("module").entry(P.vs.module);
-      const mAccess = await M.get?.("access");
-      if (!mAccess && !isSuperuser) continue;
-      const mName = String(await M.get?.("name") ?? "");
+      if (!await node.canAddModule(String(P.vs.module))) continue;
+      const mName = String(P.vs.module);
       const mDir = app.modules.get(mName)?.dir;
       let svgHtml: string;
       try {

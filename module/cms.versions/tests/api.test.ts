@@ -20,7 +20,7 @@ Deno.test("cms.versions: apt API exposes publish/page/log endpoints", () => {
     type: "object",
     properties: {
       pid: { type: "number" },
-      options: { type: "object" },
+      options: { type: "object", additionalProperties: true },
     },
     required: ["pid"],
   });

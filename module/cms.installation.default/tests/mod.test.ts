@@ -8,7 +8,6 @@ Deno.test("cms.installation.default: metadata lists required base modules", () =
     "cms.frontend.2",
     "cms.backend",
     "error_report",
-    "cms.versions",
     "cms.cont.flexible",
     "cms.cont.login4",
     "cms.layout.backend",

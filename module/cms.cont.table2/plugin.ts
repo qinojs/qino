@@ -1,15 +1,10 @@
-import type { Node } from "../cms/mod.ts";
-import { Output, contentDisposition, type App, type RequestContext } from "../core/mod.ts";
+import { WRITE, type Node } from "../cms/mod.ts";
+import { Output, contentDisposition, type RequestContext } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.cont.table2";
 export const needs = ["cms"];
-
-export async function install({ app }: { app: App }): Promise<void> {
-  const exists = await app.db.one`SELECT name FROM module WHERE name = 'cms.cont.table2'`;
-  if (!exists) await app.db.table('module').insert({ access: '1', name: 'cms.cont.table2' });
-}
 
 const settingsSchema = {
   additionalProperties: {
@@ -76,6 +71,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 }
 
 export const cms = {
+  access: WRITE,
   node: {
     render,
     options,

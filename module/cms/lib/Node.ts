@@ -1,4 +1,5 @@
 import { resolveText } from "./resolveText.ts";
+import { WRITE } from "./access.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
 import { hee, HtmlString, getCtx, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
@@ -123,10 +124,22 @@ export class Node {
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(Usr)}` ?? "0") || 0;
     }
 
+    /** Whether the current user may create content of the given module here: WRITE <= module level <= user level. */
+    async canAddModule(module: string): Promise<boolean> {
+        const ctx = getCtx();
+        if (await ctx.user?.get("superuser")) return true;
+        if (await this.access() < WRITE) return false;
+        const level = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${module}` ?? "0") || 0;
+        return level >= WRITE && level <= await this.cms.usrAccess(ctx.user);
+    }
+
     /* Render */
     async html(vars: Record<string, any> = {}): Promise<HtmlString> {
         if (!(await this.isReadable())) return new HtmlString("");
         const ctx = getCtx();
+        // Disabled module (cms_access 0): content hidden except for superusers
+        const modLevel = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${this.vs.module}` ?? "1");
+        if (!modLevel && !await ctx.user?.get("superuser")) return new HtmlString("");
         const renderPath = ctx.cms.renderPath;
         if (renderPath.has(this.id)) {
             return new HtmlString(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
@@ -577,7 +590,8 @@ export class Node {
         for (const [name, value] of Object.entries(node.attrs)) {
             if (langs.includes(name)) { await this.title(name, value); continue; }
             if (!Node.#xmlAttrs.has(name)) continue;
-            await this.set(name, value); // IMPORTANT: module access rights still need to be clarified — currently every module is allowed
+            if (name === "module" && !(await this.canAddModule(value))) continue;
+            await this.set(name, value);
         }
         for (const child of [...node.children].reverse()) {
             const C = child.tag === "cont" ? await this.createCont() : child.tag === "page" ? await this.createChild() : null;

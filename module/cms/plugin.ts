@@ -1,5 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS } from "./mod.ts";
+import { READ } from "./lib/access.ts";
 import { render } from "./lib/render.ts";
 export { api } from "./apt.ts";
 import { contentDisposition, Output, type App, type DbFile } from "../core/mod.ts";
@@ -141,6 +142,12 @@ export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
     await app.db.table('page').insert({ id: 1, access: 1, visible: 1, searchable: 1, module: "cms.layout.custom.9", basis: 0, type: "p" });
     await (await app.cms.node(1)).title("en", "root");
+  }
+  // Register renderable modules with their access level; default READ = visible, creatable only by superusers.
+  for (const mod of Object.values(app.modules.all())) {
+    if (!mod.plugin.cms?.node?.render) continue;
+    if (await app.db.one`SELECT name FROM module WHERE name = ${mod.name}`) continue;
+    await app.db.table('module').insert({ name: mod.name, cms_access: mod.plugin.cms.access ?? READ });
   }
 }
 

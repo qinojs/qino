@@ -5,13 +5,21 @@ cms.initNode("backend.users", (el) => {
   const node = apt.cms.node(nid);
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");
 
-  // overview: live search → reload list part
+  // overview: live search / group filter → reload list part
   const search = el.querySelector("#usrSearch");
+  const grpSel = el.querySelector("#usrGrp");
+  const reloadList = () => {
+    const url = new URL(location);
+    grpSel?.value ? url.searchParams.set("grp_id", grpSel.value) : url.searchParams.delete("grp_id");
+    history.replaceState(null, "", url);
+    cms.reloadPart(nid, "list", { search: search?.value ?? "", grp_id: grpSel?.value ?? "" });
+  };
   let timer;
   search?.addEventListener("input", () => {
     clearTimeout(timer);
-    timer = setTimeout(() => cms.reloadPart(nid, "list", { search: search.value }), 250);
+    timer = setTimeout(reloadList, 250);
   });
+  grpSel?.addEventListener("change", reloadList);
 
   el.addEventListener("click", (e) => {
     const del = e.target.closest(".-delete button");

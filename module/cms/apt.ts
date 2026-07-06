@@ -211,11 +211,7 @@ const node = {
         recursive: s.boolean().default(false).describe("If true, apply to all sub-pages too"),
       }),
       execute: async ({ node, module, recursive }: any) => {
-        const ctx = getCtx();
-        const access = await ctx.app.db.one`SELECT access FROM module WHERE name = ${module}`;
-        if (!access && !(await ctx.user?.get("superuser"))) {
-          throw new AccessError();
-        }
+        if (!(await node.canAddModule(module))) throw new AccessError();
         if (!recursive) {
           await node.set("module", module);
           return { ok: true };

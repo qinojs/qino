@@ -11,7 +11,7 @@ export const needs = [
   "cms.backend.superuser.error_report",
   "cms.backend.settings",
   "cms.backend.users",
-  "cms.backend.struct",
+  "cms.backend.cms.tree",
   "cms.cont.flexible",
   "cms.cont.login4",
   "cms.cont.nav3",
@@ -60,7 +60,7 @@ export async function install({app}: {app: App}): Promise<void> {
 
   if (!await app.db.one`SELECT id FROM usr WHERE active AND NOT superuser`) {
     //const adminGrp = (await app.db.exec`INSERT INTO grp (name, page_access) VALUES ('admin', '1')`).insertId;
-    const adminGrp = await app.db.table('grp').insert({ name: 'admin', page_access: '1' });
+    const adminGrp = await app.db.table('grp').insert({ name: 'admin', cms_access: 3 });
     //const usr = (await app.db.exec`INSERT INTO usr (email, pw, active, firstname, lastname) VALUES ('admin', '', 1, 'Client', 'Client')`).insertId;
     const usr = await app.db.table('usr').insert({ email: 'admin', pw: '', active: 1, firstname: 'Client', lastname: 'Client' });
     //await app.db.query`INSERT INTO usr_grp (usr_id, grp_id) VALUES (${usr}, ${adminGrp})`;

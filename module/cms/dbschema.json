@@ -238,12 +238,28 @@
     "grp": {
       "additionalProperties": {
         "properties": {
-          "page_access": {
-            "type": "boolean",
+          "cms_access": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "default": 0,
             "x-index": true
           }
         },
-        "required": ["page_access"]
+        "required": ["cms_access"]
+      }
+    },
+    "module": {
+      "additionalProperties": {
+        "properties": {
+          "cms_access": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "default": 1
+          }
+        },
+        "required": ["cms_access"]
       }
     },
     "mail": {

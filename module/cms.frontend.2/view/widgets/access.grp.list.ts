@@ -21,7 +21,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
     SELECT grp.*, a.access
     FROM grp
     LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = ${String(node)}
-    WHERE page_access ${tail}, grp.name LIMIT 100`;
+    WHERE cms_access ${tail}, grp.name LIMIT 100`;
   const publicAccess = node.vs.access;
   let trs = `<tr>
     <td>${await app.t`Public`}

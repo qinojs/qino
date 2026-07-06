@@ -63,7 +63,7 @@ Deno.test("cms.filebrowser: search groups existing accessible files by md5", asy
   const ctx = {
     app: {
       db: {
-        all: (...a: any[]) => {
+        query: (...a: any[]) => {
           const [, params] = fakeRender(a[0], a.slice(1));
           assertEquals(params.slice(0, 3), ["cat", "%cat%", "cat%"]);
           return [

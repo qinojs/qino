@@ -1,0 +1,44 @@
+// deno-lint-ignore-file no-explicit-any
+
+import type { Node } from "../cms/mod.ts";
+
+export default async function (node: Node, vars: any): Promise<any> {
+  if (await node.access() < 2) return false;
+  const db = node.app.db;
+
+  if ("delete" in vars) {
+    await db.table("grp").delete(vars.delete);
+    return 1;
+  }
+
+  if ("save" in vars) {
+    const allowed: Record<string, boolean> = { name: true, type: true, cms_access: true };
+    const name = String(vars.name ?? "");
+    if (!allowed[name]) return false;
+    const G = db.table("grp").entry(vars.save);
+    if (!(await G.is())) return false;
+    const value = name === "cms_access" ? Math.min(Math.max(0, Number(vars.value) || 0), 3) : vars.value;
+    await G.set(name, value);
+    await G.save();
+    return 1;
+  }
+
+  if ("set_usr" in vars) {
+    const grpId = Number(vars.set_usr);
+    const usrId = Number(vars.usr_id);
+    if (!grpId || !usrId) return false;
+    if (vars.add) await db.query`REPLACE INTO usr_grp (grp_id, usr_id) VALUES (${grpId}, ${usrId})`;
+    else await db.query`DELETE FROM usr_grp WHERE grp_id = ${grpId} AND usr_id = ${usrId}`;
+    return 1;
+  }
+
+  if ("add_email" in vars) {
+    const grpId = Number(vars.add_email);
+    const usrId = Number(await db.one`SELECT id FROM usr WHERE email = ${String(vars.email ?? "")}` ?? "0");
+    if (!grpId || !usrId) return false;
+    await db.query`REPLACE INTO usr_grp (grp_id, usr_id) VALUES (${grpId}, ${usrId})`;
+    return 1;
+  }
+
+  return false;
+}

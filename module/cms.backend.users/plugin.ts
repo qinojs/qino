@@ -1,6 +1,6 @@
 import { hee, getCtx, pwHash, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import { list } from "./parts/list.ts";
+import { list, allowLoginAs } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 
@@ -34,15 +34,24 @@ async function renderOverview(node: Node): Promise<string> {
       await db.table("usr").insert({
         active: 1,
         email: email || null,
-        pw: await pwHash(String(ctx.post.pw ?? "")),
+        pw: ctx.post.pw ? await pwHash(String(ctx.post.pw)) : null,
         firstname: String(ctx.post.firstname ?? ""),
         lastname: String(ctx.post.lastname ?? ""),
       });
+      ctx.responseHeaders.set("Location", String(ctx.url));
+      ctx.responseStatus = 302;
+      return "";
     }
   }
 
-  const allowLoginAs = !!(node.settings.allow_login_as()) || !!(await ctx.user?.get("superuser"));
-  const loginAsTh = allowLoginAs ? '<th width=20>' : "";
+  const loginAsTh = await allowLoginAs(node, ctx) ? '<th width=20>' : "";
+
+  const grpId = ctx.get.grp_id ? Number(ctx.get.grp_id) : 0;
+  const grps = await db.query`SELECT id, name FROM grp ORDER BY name`;
+  let grpOpts = `<option value="">${await app.t`All groups`}</option>`;
+  for (const g of grps) {
+    grpOpts += `<option value=${hee(String(g.id))}${Number(g.id) === grpId ? " selected" : ""}>${hee(g.name)}</option>`;
+  }
 
   return `<div class=u2-flex>
   <div class=u2-card style="flex-grow:0">
@@ -76,6 +85,7 @@ async function renderOverview(node: Node): Promise<string> {
     <div class=-head> ${await app.t`Search users`} </div>
     <div class=-body>
       <input type=search placeholder="${await app.t`search`}..." id=usrSearch style="width:300px; max-width:100%">
+      <select id=usrGrp>${grpOpts}</select>
     </div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>

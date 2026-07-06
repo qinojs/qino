@@ -119,6 +119,9 @@ export class ModuleManager {
       this.#app.db.schema = dbSchema;
       await this.#app.db.loadTables();
     }
+    // set schemas before the plugin hooks, so init()/install() already see all settings defaults
+    this.#app.settings[$item].setSchema(appSettingsSchema);
+    this.#app.ctxSettingsSchema = ctxSettingsSchema;
     for (const name of order) {
       const mod = this.#modules[name];
       const { plugin } = mod;
@@ -127,8 +130,6 @@ export class ModuleManager {
       await this.#loadLocales(mod);
       if (plugin.api) this.#app.aptTree[name] = plugin.api;
     }
-    this.#app.settings[$item].setSchema(appSettingsSchema);
-    this.#app.ctxSettingsSchema = ctxSettingsSchema;
     await this.#app.fire("init", { app: this.#app });
   }
 

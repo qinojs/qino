@@ -1,4 +1,4 @@
-import { getCtx } from "../RequestContext.ts";
+import { getCtx, requestStorage } from "../RequestContext.ts";
 import type { Req } from "../Req.ts";
 import { Output } from "../util.ts";
 import { AptError } from "./errors.ts";
@@ -40,9 +40,11 @@ export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptF
     throw new Output(body, { status: result === undefined ? 204 : 200, headers: { "Content-Type": "application/json; charset=UTF-8" } });
   } catch (e) {
     if (e instanceof Output) throw e;
-    if (e instanceof AptError)    throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
+    if (e instanceof AptError) throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
     console.error("[apt]", e);
-    throw new Output({ error: e instanceof Error ? e.message : String(e) || "Internal Server Error" }, { status: 500 });
+    // unknown errors: detail only in dev, generic message otherwise (may contain SQL/paths)
+    const detail = requestStorage.getStore()?.app.dev ? (e instanceof Error ? e.message : String(e)) : "";
+    throw new Output({ error: detail || "Internal Server Error" }, { status: 500 });
   }
 }
 

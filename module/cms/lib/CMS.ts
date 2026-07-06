@@ -1,4 +1,5 @@
 import { Node } from "./Node.ts";
+import { NONE, ADMIN } from "./access.ts";
 import { hee, HtmlString, getCtx, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 export class CMS {
@@ -20,7 +21,6 @@ export class CMS {
         if (existing) return existing;
         const node = new Node(this, id, vs);
         nodes.set(id, node);
-        //if (!vs) await node.init();
         await node.init();
         return node;
     }
@@ -69,6 +69,15 @@ export class CMS {
         return lPage;
     }
 
+    /** Highest cms_access granted by the user's groups; superuser counts as ADMIN. */
+    async usrAccess(Usr = getCtx().user): Promise<number> {
+        if (!Usr) return NONE;
+        if (await Usr.get("superuser")) return ADMIN;
+        const grps = await Usr.grps?.() ?? [];
+        if (!grps.length) return NONE;
+        return Number(await this.db.one`SELECT max(cms_access) FROM grp WHERE id IN (${sql.join(grps.map((g: number) => sql`${g}`))})` ?? "0") || 0;
+    }
+
     async nodeFromRequest(): Promise<Node> {
         const ctx = getCtx();
         const cmspid = ctx.get.cmspid;
@@ -82,11 +91,11 @@ export class CMS {
         return this.node(pid);
     }
 
-    async getModules(): Promise<Record<string, Module>> {
+    getModules(): Record<string, Module> {
         return this.#modules("cms.cont.");
     }
 
-    async getLayouts(): Promise<Record<string, Module>> {
+    getLayouts(): Record<string, Module> {
         return this.#modules("cms.layout.");
     }
 
