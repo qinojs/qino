@@ -53,7 +53,9 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   let savedMsg = "";
   if ("setRedirect" in ctx.post && ctx.post.qgToken === ctx.token) {
     const redirect = String(ctx.post.redirect ?? "").trim();
-    if (redirect) {
+    if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
+      savedMsg = `<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
+    } else if (redirect) {
       await node.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${ctx.appRequestPath}, ${redirect}) ON DUPLICATE KEY UPDATE redirect = ${redirect}`;
       savedMsg = `<p style="color:green">${await t`Redirect saved.`}</p>`;
     }

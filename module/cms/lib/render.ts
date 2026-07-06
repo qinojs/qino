@@ -60,8 +60,6 @@ export async function render(ctx: RequestContext): Promise<void> {
 
   if (!PageObj.vs.searchable) ctx.html.meta["robots"] = "noindex, nofollow";
 
-  //ctx.html.meta["generator"]   = "qino CMS 10.0"; security
-
   const content = await mainNode.html();
   ctx.html.content += content;
 
