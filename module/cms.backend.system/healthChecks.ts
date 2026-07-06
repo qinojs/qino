@@ -3,7 +3,6 @@ import type { HealthTypes, Solution } from "./healthRegistry.ts";
 
 export async function healthChecks(app: App): Promise<HealthTypes> {
   const db       = app.db;
-  const ctx      = getCtx();
   const settings = app.settings;
 
   const types: HealthTypes = { error: {}, warning: {}, notice: {}, cleanup: {}, repair: {} };
@@ -57,15 +56,17 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   // ── smalltext ───────────────────────────────────────────────────────────
   warning["smalltexts-counter is enabled"] = async () => {
-    if (!await settings.qg?.smalltext?.counter) return undefined;
+    if (!await settings.core.smalltext.counter) return undefined;
+    const ctx = getCtx();
     if (!await ctx.user?.get("superuser")) return undefined;
-    return { solutions: { disable: { solve: async () => { await settings.qg.smalltext.counter(0); } } } };
+    return { solutions: { disable: { solve: async () => { await settings.core.smalltext.counter(0); } } } };
   };
 
   warning["smalltext code-logger is enabled"] = async () => {
-    if (!await settings.qg?.smalltext?.code_logger) return undefined;
+    if (!await settings.core.smalltext.code_logger) return undefined;
+    const ctx = getCtx();
     if (!await ctx.user?.get("superuser")) return undefined;
-    return { solutions: { disable: { solve: async () => { await settings.qg.smalltext.code_logger(0); } } } };
+    return { solutions: { disable: { solve: async () => { await settings.core.smalltext.code_logger(0); } } } };
   };
 
   // ── users ────────────────────────────────────────────────────────────────
