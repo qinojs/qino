@@ -3,7 +3,7 @@
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { numTypes, type Db } from "./Db.ts";
-import { Sql, sql, isTemplate } from "../../../../deps.ts";
+import { type Sql, sql, isTemplate } from "../../../../deps.ts";
 
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
@@ -119,9 +119,8 @@ export class DbTable {
     const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
     return rows[0];
   }
-  async select(v: string | Sql = "TRUE"): Promise<Record<string, Record<string, any>>> {
+  async select(where: Sql = sql`TRUE`): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
-    const where = v instanceof Sql ? v : sql.raw(v);
     const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
     for (const entry of rows) {
       const eid = this.entryId(entry);
@@ -251,17 +250,12 @@ export class DbTable {
     return true;
   }
 
-  deleteWhere(values: Record<string, any> | string): Promise<void> {
+  deleteWhere(values: Record<string, any>): Promise<void> {
     return this.#db.transaction(() => this.#deleteWhere(values));
   }
-  async #deleteWhere(values: Record<string, any> | string): Promise<void> {
-    let rows: Record<string, Record<string, any>>;
-    if (typeof values === "string") {
-      rows = await this.select(values);
-    } else {
-      const where = this.valuesToFragment(values);
-      rows = where.parts.length ? await this.select(where) : {};
-    }
+  async #deleteWhere(values: Record<string, any>): Promise<void> {
+    const where = this.valuesToFragment(values);
+    const rows = where.parts.length ? await this.select(where) : {};
     for (const row of Object.values(rows)) await this.delete(row);
   }
 

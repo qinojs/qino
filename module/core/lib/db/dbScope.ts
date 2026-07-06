@@ -10,22 +10,22 @@
 import { requestStorage } from "../RequestContext.ts";
 
 export interface DbScope {
-    tables?: Record<string, string>; // table name → replacement
-    cache: Record<string, unknown>;  // request-local cache slots, keyed per consumer
+  tables?: Record<string, string>; // table name → replacement
+  cache: Record<string, unknown>;  // request-local cache slots, keyed per consumer
 }
 
 export function dbScope(): DbScope | undefined {
-    return requestStorage.getStore()?.state.dbScope;
+  return requestStorage.getStore()?.state.dbScope;
 }
 
 /** Resolve a table name through the active scope (identity without scope). */
 export function tableRef(name: string): string {
-    return dbScope()?.tables?.[name] ?? name;
+  return dbScope()?.tables?.[name] ?? name;
 }
 
 /** The shared app-level cache, or a request-local one while a scope is active. */
 export function scopeCache<T>(shared: T, key: string, init: () => T): T {
-    const s = dbScope();
-    if (!s) return shared;
-    return (s.cache[key] ??= init()) as T;
+  const s = dbScope();
+  if (!s) return shared;
+  return (s.cache[key] ??= init()) as T;
 }

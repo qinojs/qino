@@ -1,17 +1,17 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, postgres, type Pool, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../../deps.ts";
+import { mysql, postgres, type Pool, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../../deps.ts";
 import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 export interface ExecResult { insertId: number; affectedRows: number; }
 export interface MigrateOptions { patch?: boolean; force?: boolean; }
 export type DbDialect = "mysql" | "postgres" | "sqlite";
-type Row = Record<string, any>;
+export type Row = Record<string, any>;
 
 /** Backend abstraction — only the dialect-specific bits live behind this. */
 export abstract class DbDriver {
   abstract dialect: DbDialect;
-  abstract escapeId(id: string): string;
+  abstract quoteId(id: string): string;
   /** Receives final dialect SQL (rendered by Db). */
   abstract query(sql: string, params?: unknown[]): Promise<Row[]>;
   abstract exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
@@ -65,7 +65,7 @@ class MysqlDriver extends DbDriver {
     this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
   }
 
-  escapeId(id: string) { return mysql.escapeId(id); }
+  quoteId(id: string) { return mysqlDialect.quoteId(id); }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     const [res] = await this.#conn().query(sql, params);
@@ -87,7 +87,7 @@ class MysqlDriver extends DbDriver {
     return (await this.query("SHOW TABLES")).map((r) => Object.values(r)[0]);
   }
   columns(table: string) {
-    return this.query(`SHOW FULL COLUMNS FROM ${this.escapeId(table)}`);
+    return this.query(`SHOW FULL COLUMNS FROM ${this.quoteId(table)}`);
   }
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
@@ -95,7 +95,7 @@ class MysqlDriver extends DbDriver {
   override async ensureDatabase() {
     const tmp = mysql.createPool({ ...this.#connParams, charset: "utf8mb4" });
     try {
-      await tmp.query(`CREATE DATABASE IF NOT EXISTS ${mysql.escapeId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
+      await tmp.query(`CREATE DATABASE IF NOT EXISTS ${this.quoteId(this.#database)} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci`);
     } finally {
       await tmp.end();
     }
@@ -114,7 +114,7 @@ class SqliteDriver extends DbDriver {
     this.#db.exec("PRAGMA foreign_keys = ON");
   }
 
-  escapeId(id: string) { return sqliteDialect.quoteId(id); }
+  quoteId(id: string) { return sqliteDialect.quoteId(id); }
   query(sql: string, params: unknown[] = []) {
     return Promise.resolve(this.#db.prepare(sql).all(...params as any[]) as Row[]);
   }
@@ -134,13 +134,14 @@ class SqliteDriver extends DbDriver {
     catch (e) { this.#db.exec("ROLLBACK"); throw e; }
     finally { this.#inTx = false; }
   }
-  listTables() {
-    return this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-      .then((rows) => rows.map((r) => r.name));
+  async listTables() {
+    const rows = await this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+    return rows.map((r) => r.name);
   }
-  columns(table: string) {
+  async columns(table: string) {
     // Map PRAGMA table_info → MySQL SHOW FULL COLUMNS shape so DbField stays dialect-free.
-    return this.query(`PRAGMA table_info(${this.escapeId(table)})`).then((rows) => rows.map((c) => ({
+    const rows = await this.query(`PRAGMA table_info(${this.quoteId(table)})`);
+    return rows.map((c) => ({
       Field: c.name,
       Type: c.type || "text",
       Null: c.notnull ? "NO" : "YES",
@@ -148,7 +149,7 @@ class SqliteDriver extends DbDriver {
       Default: c.dflt_value,
       // INTEGER PRIMARY KEY is SQLite's auto-incrementing rowid alias.
       Extra: c.pk && /int/i.test(c.type) ? "auto_increment" : "",
-    })));
+    }));
   }
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
@@ -172,7 +173,7 @@ class PostgresDriver extends DbDriver {
     this.#pool = new postgres.Pool({ connectionString: conn });
   }
 
-  escapeId(id: string) { return pgDialect.quoteId(id); }
+  quoteId(id: string) { return pgDialect.quoteId(id); }
   #conn() { return this.#tx.getStore() ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     return (await this.#conn().query(sql, params)).rows as Row[];
@@ -180,7 +181,7 @@ class PostgresDriver extends DbDriver {
   async exec(sql: string, params?: unknown[], returning?: string) {
     let pgSql = sql;
     if (/^\s*insert\b/i.test(pgSql) && !/\breturning\b/i.test(pgSql)) {
-      pgSql = pgSql.replace(/;\s*$/, "") + ` RETURNING ${returning ? this.escapeId(returning) : "*"}`;
+      pgSql = pgSql.replace(/;\s*$/, "") + ` RETURNING ${returning ? this.quoteId(returning) : "*"}`;
     }
     const res = await this.#conn().query(pgSql, params);
     const row = res.rows?.[0] ?? {};
@@ -196,7 +197,7 @@ class PostgresDriver extends DbDriver {
   }
   override async syncAutoIncrement(table: string, field: string, value: number) {
     if (value < 1) return;
-    const column = this.escapeId(field), tbl = this.escapeId(table);
+    const column = this.quoteId(field), tbl = this.quoteId(table);
     await this.#pool.query(
       `SELECT setval(pg_get_serial_sequence($1, $2), GREATEST($3, (SELECT COALESCE(MAX(${column}), 0) FROM ${tbl})), true)`,
       [table, field, value],
@@ -244,7 +245,7 @@ class PostgresDriver extends DbDriver {
       const fields = tableSchema.additionalProperties?.properties ?? {};
       const auto = Object.entries(fields).find(([, field]: any) => field["x-autoincrement"])?.[0];
       if (!auto) continue;
-      const max = Number((await this.query(`SELECT MAX(${this.escapeId(auto)}) AS max FROM ${this.escapeId(table)}`))[0]?.max ?? 0);
+      const max = Number((await this.query(`SELECT MAX(${this.quoteId(auto)}) AS max FROM ${this.quoteId(table)}`))[0]?.max ?? 0);
       if (max) await this.syncAutoIncrement(table, auto, max);
     }
   }
@@ -253,7 +254,7 @@ class PostgresDriver extends DbDriver {
     const pool = new postgres.Pool(this.#adminParams);
     try {
       const exists = await pool.query("SELECT 1 FROM pg_database WHERE datname = $1", [this.#database]);
-      if (!exists.rowCount) await pool.query(`CREATE DATABASE ${this.escapeId(this.#database)}`);
+      if (!exists.rowCount) await pool.query(`CREATE DATABASE ${this.quoteId(this.#database)}`);
     } finally {
       await pool.end();
     }

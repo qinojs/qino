@@ -1,9 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbTable } from "./DbTable.ts";
 import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../../deps.ts";
-import { type DbDialect, type ExecResult, type MigrateOptions, DbDriver } from "./DbDriver.ts";
+import { type DbDialect, type ExecResult, type MigrateOptions, type Row, DbDriver } from "./DbDriver.ts";
 import { Emitter } from "../Emitter.ts";
-import type { RowDataPacket } from "../../../../deps.ts";
 
 export const dateTypes = new Set(["DATETIME", "DATE", "TIMESTAMP"]);
 export const stringTypes = new Set(["CHAR", "VARCHAR", "BINARY", "VARBINARY", "BLOB", "TEXT", "ENUM", "SET"]);
@@ -56,8 +55,8 @@ export class Db extends Emitter<DbEvents> {
     return [text, params];
   }
 
-  query<T = RowDataPacket>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
-  query<T = RowDataPacket>(frag: Sql): Promise<T[]>;
+  query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
+  query<T = Row>(frag: Sql): Promise<T[]>;
   async query(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<any[]> {
     const [text, params] = await this.#sql(a, rest);
     return this.#run(() => this.#driver.query(text, params), text);
@@ -78,13 +77,13 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 
-  row<T = RowDataPacket>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined>;
-  row<T = RowDataPacket>(frag: Sql): Promise<T | undefined>;
+  row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined>;
+  row<T = Row>(frag: Sql): Promise<T | undefined>;
   async row(a: any, ...rest: any[]): Promise<any> { return (await (this.query as any)(a, ...rest))[0]; }
 
   col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
   col<T = unknown>(frag: Sql): Promise<T[]>;
-  async col(a: any, ...rest: any[]): Promise<any[]> { return (await (this.query as any)(a, ...rest)).map((r: RowDataPacket) => Object.values(r)[0]); }
+  async col(a: any, ...rest: any[]): Promise<any[]> { return (await (this.query as any)(a, ...rest)).map((r: Row) => Object.values(r)[0]); }
 
   one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;
   one<T = unknown>(frag: Sql): Promise<T>;
@@ -93,7 +92,7 @@ export class Db extends Emitter<DbEvents> {
   indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>>;
   indexCol<T = unknown>(frag: Sql): Promise<Record<string, T>>;
   async indexCol(a: any, ...rest: any[]): Promise<Record<string, any>> {
-    return Object.fromEntries((await (this.query as any)(a, ...rest)).map((r: RowDataPacket) => Object.values(r) as [string, unknown]));
+    return Object.fromEntries((await (this.query as any)(a, ...rest)).map((r: Row) => Object.values(r) as [string, unknown]));
   }
 
   /** Create the database if missing. Must run before any schema migration queries against it. */
