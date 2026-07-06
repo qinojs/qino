@@ -1,10 +1,9 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { pandoc, isPandocAvailable } from '../pandoc.ts';
 import { pdftotext, isPdftotextAvailable } from '../poppler.ts';
-import { ocrPdf, pickOcrEngine } from '../ocr.ts';
+import { ocrPdf } from '../ocr.ts';
 import { isMagickAvailable } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
-import type { TransformContext } from '../types.ts';
+import type { TransformContext, TransformerDef } from '../types.ts';
 
 /** Pandoc input format per source MIME type */
 const PANDOC_FORMATS: Record<string, string> = {
@@ -26,13 +25,13 @@ const PANDOC_FORMATS: Record<string, string> = {
  * Decode phase: converts documents to Markdown (fmt=md).
  * HTML/Office/eBook via Pandoc, PDF as plain-text extraction via pdftotext.
  */
-FileTransformer.register({
+export const markdown: TransformerDef = {
   name: 'markdown',
   phase: 'decode',
   props: ['fmt'],
   handles: async (ctx) => ctx.options.fmt === 'md' && (
     ctx.mime === 'application/pdf'
-      ? await isPdftotextAvailable() || (!!await pickOcrEngine(ctx) && await isMagickAvailable())
+      ? await isPdftotextAvailable() || (!!await ctx.transformer.ocrEngine(ctx) && await isMagickAvailable())
       : ctx.mime in PANDOC_FORMATS && await isPandocAvailable()
   ),
   transform: async (ctx) => {
@@ -42,7 +41,7 @@ FileTransformer.register({
     ctx.currentPath = out;
     ctx.mime = 'text/markdown';
   },
-});
+};
 
 /** Text layer via pdftotext; OCR when the engine beats it (AI) or there is no text layer (scan) */
 async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> {
@@ -51,7 +50,7 @@ async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> 
     await pdftotext(ctx.currentPath, out, ctx.signal);
     text = (await Deno.readTextFile(out)).trim();
   }
-  const engine = await pickOcrEngine(ctx);
+  const engine = await ctx.transformer.ocrEngine(ctx);
   if (engine && (engine.beatsTextLayer || !text || text.length < 20)) {
     const ocred = await ocrPdf(ctx, engine);
     if (ocred !== undefined) return Deno.writeTextFile(out, ocred);

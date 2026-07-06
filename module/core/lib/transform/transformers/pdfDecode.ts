@@ -1,12 +1,12 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { magick } from '../imagemagick.ts';
+import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
 /**
  * Decode phase: converts a PDF page to PNG.
  * After this the normal image pipeline (resize, encode) can take over.
  */
-FileTransformer.register({
+export const pdfDecode: TransformerDef = {
   name: 'pdf-decode',
   phase: 'decode',
   props: ['page'],
@@ -23,4 +23,4 @@ FileTransformer.register({
     ctx.currentPath = out;
     ctx.mime = 'image/png';
   },
-});
+};

@@ -2,7 +2,7 @@
 
 import { typeByExtension, sql } from "../../../deps.ts";
 import { File } from "./File.ts";
-import { FileTransformer, type TransformOptions } from "./transform/index.ts";
+import type { TransformOptions } from "./transform/mod.ts";
 import { getCtx } from "./RequestContext.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
@@ -272,9 +272,8 @@ export class DbFile extends File {
   async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string; key?: string; transformed?: boolean }> {
     await this.ensureVs();
     if (!this.path) return { path: this.path, mime: this.mime };
-    const cacheDir = this.#manager.app.appPATH + "cache/pri/";
     const dbMime = this.mime;
-    const result = await FileTransformer.transform(this.path, cacheDir, parseTransformOptions(param), dbMime, this.#manager.app);
+    const result = await this.#manager.app.fileTransformer.transform(this.path, parseTransformOptions(param), dbMime);
     return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed };
   }
 

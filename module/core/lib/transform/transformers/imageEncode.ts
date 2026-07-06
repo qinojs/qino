@@ -1,12 +1,12 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { magick, magickIdentify, checkAvifSupport, fileSize, isMagickAvailable } from '../imagemagick.ts';
+import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
 /**
  * Encode phase: selects optimal output format (AVIF > JPEG > PNG) and sets quality.
  * Runs only when geometry has been applied or q/fmt is set explicitly.
  */
-FileTransformer.register({
+export const imageEncode: TransformerDef = {
   name: 'image-encode',
   phase: 'encode',
   props: ['q', 'fmt'],
@@ -75,7 +75,7 @@ FileTransformer.register({
       }
     }
   },
-});
+};
 
 function mimeForFmt(fmt: string): string {
   return { avif: 'image/avif', jpeg: 'image/jpeg', png: 'image/png' }[fmt] ?? 'application/octet-stream';

@@ -1,12 +1,12 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { magick, magickIdentify, isMagickAvailable } from '../imagemagick.ts';
+import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
 /**
  * Geometry phase: resize + crop with focus point (hpos/vpos).
  * Does not run for animated GIFs.
  */
-FileTransformer.register({
+export const imageResize: TransformerDef = {
   name: 'image-resize',
   phase: 'geometry',
   props: ['w', 'h', 'vpos', 'hpos', 'zoom', 'max'],
@@ -72,4 +72,4 @@ FileTransformer.register({
     ctx.meta.height = h || origH;
     ctx.meta.geometryApplied = true;
   },
-});
+};

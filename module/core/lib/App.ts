@@ -8,6 +8,7 @@ import { Db } from "./db/Db.ts";
 import { DbFileManager, type DbFile } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
+import { FileTransformer } from "./transform/mod.ts";
 import { ModuleManager, type Module } from "./ModuleManager.ts";
 import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
@@ -56,6 +57,7 @@ export class App extends Emitter<AppEvents> {
     ctxSettingsSchema: Record<string, unknown> = { properties: {} };
     dbFiles: DbFileManager;
     dbTexts: DbTextManager;
+    fileTransformer: FileTransformer;
     sessions: SessionManager;
     modules: ModuleManager;
     languages: LangManager;
@@ -81,6 +83,7 @@ export class App extends Emitter<AppEvents> {
         this.settings  = createSettingItem(this.db).proxy;
         this.dbFiles   = new DbFileManager(this, this.appPATH + "qg/file/");
         this.dbTexts   = new DbTextManager(this);
+        this.fileTransformer = FileTransformer.create({ cacheDir: this.appPATH + "cache/pri/" });
         this.sessions  = new SessionManager(this.db);
         this.modules   = new ModuleManager(this);
         this.languages = new LangManager(this);

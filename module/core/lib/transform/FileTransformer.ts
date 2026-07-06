@@ -1,22 +1,51 @@
 import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
 import { typeByExtension } from '../../../../deps.ts';
-import type { Phase, TransformerDef, TransformContext, TransformOptions, TransformResult } from './types.ts';
+import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult } from './types.ts';
 import { checkAvifSupport, isMagickAvailable, resetMagickCache } from './imagemagick.ts';
 import { isFfmpegAvailable, resetFfmpegCache } from './ffmpeg.ts';
 import { resetPngquantCache, isPngquantAvailable } from './pngquant.ts';
 import { resetPandocCache, isPandocAvailable } from './pandoc.ts';
 import { resetPdftotextCache, isPdftotextAvailable } from './poppler.ts';
 import { resetTesseractCache, isTesseractAvailable } from './tesseract.ts';
-import type { App } from '../App.ts';
+import { tesseractEngine } from './ocr.ts';
+import { gifGuard } from './transformers/gifGuard.ts';
+import { pdfDecode } from './transformers/pdfDecode.ts';
+import { videoDecode } from './transformers/videoDecode.ts';
+import { audioDecode } from './transformers/audioDecode.ts';
+import { markdown } from './transformers/markdown.ts';
+import { ocr } from './transformers/ocr.ts';
+import { imageResize } from './transformers/imageResize.ts';
+import { imageEncode } from './transformers/imageEncode.ts';
+import { pngquant } from './transformers/pngquant.ts';
 
 const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 
-export class FileTransformer {
-  static readonly #transformers: TransformerDef[] = [];
+/** Built-in transformers (array order = registration order within a phase) */
+export const builtinTransformers: TransformerDef[] =
+  [gifGuard, pdfDecode, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, pngquant];
 
+/** Framework-agnostic transform pipeline: per-instance transformers, OCR engines, cache dir and timeout. */
+export class FileTransformer {
+  /** Directory for cached transform results (created lazily) */
+  cacheDir: string;
   /** Max seconds per transform pipeline; external commands are killed on expiry */
-  static defaultTimeout = 600;
+  timeout: number;
+  #transformers: TransformerDef[] = [];
+  #ocrEngines: OcrEngine[] = [];
+
+  constructor(opts: { cacheDir: string; timeout?: number }) {
+    this.cacheDir = opts.cacheDir;
+    this.timeout = opts.timeout ?? 600;
+  }
+
+  /** FileTransformer with all built-in transformers and the Tesseract OCR engine registered */
+  static create(opts: { cacheDir: string; timeout?: number }): FileTransformer {
+    const transformer = new FileTransformer(opts);
+    for (const def of builtinTransformers) transformer.register(def);
+    transformer.registerOcrEngine(tesseractEngine);
+    return transformer;
+  }
 
   static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return isMagickAvailable(); },
@@ -37,21 +66,28 @@ export class FileTransformer {
     resetTesseractCache();
   }
 
-  static register(def: TransformerDef): void {
-    if (FileTransformer.#transformers.some((t) => t.name === def.name)) {
+  register(def: TransformerDef): void {
+    if (this.#transformers.some((t) => t.name === def.name)) {
       throw new Error(`FileTransformer: Transformer "${def.name}" bereits registriert`);
     }
-    FileTransformer.#transformers.push(def);
+    this.#transformers.push(def);
   }
 
-  static async transform(
+  /** Registers an OCR engine; the highest-priority available one wins in `ocrEngine()` */
+  registerOcrEngine(engine: OcrEngine): void {
+    this.#ocrEngines.push(engine);
+    this.#ocrEngines.sort((a, b) => b.priority - a.priority);
+  }
+
+  async ocrEngine(ctx: TransformContext): Promise<OcrEngine | undefined> {
+    for (const engine of this.#ocrEngines) if (await engine.available(ctx)) return engine;
+  }
+
+  async transform(
     sourcePath: string,
-    cacheDir: string,
     options: TransformOptions,
     /** Known MIME type of the source file (e.g. from DB) – fallback to extension detection */
     knownMime?: string,
-    /** Tenant app – exposed to transformers via ctx.app */
-    app?: App,
   ): Promise<TransformResult> {
     const opts = { ...options };
     if (opts.dpr && opts.dpr > 1) {
@@ -73,10 +109,10 @@ export class FileTransformer {
     }
 
     const fingerprint = `${sourcePath}-${stat.size}`;
-    const knownProps = new Set(FileTransformer.#transformers.flatMap((t) => t.props));
+    const knownProps = new Set(this.#transformers.flatMap((t) => t.props));
     const optParts = [...knownProps].sort().flatMap((k) => opts[k] !== undefined ? `${k}=${opts[k]}` : []);
     const cacheKey = await hashKey([fingerprint, ...optParts]);
-    const cachePath = nodePath.join(cacheDir, `tf_${cacheKey}`);
+    const cachePath = nodePath.join(this.cacheDir, `tf_${cacheKey}`);
     const metaPath = `${cachePath}.mime`;
 
     // Check cache hit
@@ -89,22 +125,24 @@ export class FileTransformer {
       return { path: cachePath, mime: cachedMime, transformed: true, key: cacheKey };
     } catch { /* Cache miss – continue */ }
 
-    const pipeline = sortTransformers(FileTransformer.#transformers);
+    const pipeline = sortTransformers(this.#transformers);
     const tmpDir = await Deno.makeTempDir({ prefix: 'filetransform_' });
     const ctx: TransformContext = {
-      app,
+      transformer: this,
       sourcePath,
       currentPath: sourcePath,
       mime,
       options: opts,
       meta: {},
       tmpDir,
-      signal: AbortSignal.timeout(FileTransformer.defaultTimeout * 1000),
+      signal: AbortSignal.timeout(this.timeout * 1000),
     };
 
     try {
       for (const transformer of pipeline) {
-        if (await transformer.handles(ctx)) await transformer.transform(ctx);
+        if (await transformer.handles(ctx)) {
+          await transformer.transform(ctx);
+        }
       }
 
       if (ctx.currentPath === sourcePath) {
@@ -112,7 +150,7 @@ export class FileTransformer {
       }
 
       // Write meta first, then move the file atomically into place (concurrent readers never see a partial file)
-      await nodeFs.mkdir(cacheDir, { recursive: true });
+      await nodeFs.mkdir(this.cacheDir, { recursive: true });
       await Deno.writeTextFile(metaPath, ctx.mime);
       const partPath = `${cachePath}.part-${crypto.randomUUID()}`;
       await nodeFs.copyFile(ctx.currentPath, partPath);

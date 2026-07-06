@@ -1,22 +1,21 @@
-import { FileTransformer } from '../FileTransformer.ts';
-import { pickOcrEngine } from '../ocr.ts';
 import { isMagickAvailable, magick } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
+import type { TransformerDef } from '../types.ts';
 
 /** Formats every OCR engine (incl. AI vision providers) can read directly */
 const DIRECT = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 
 /**
  * Decode phase: extracts text from images via OCR (fmt=md).
- * Engine choice (AI vision before Tesseract) lives in ../ocr.ts.
+ * Engine choice (AI vision before Tesseract) lives on the FileTransformer instance.
  */
-FileTransformer.register({
+export const ocr: TransformerDef = {
   name: 'ocr',
   phase: 'decode',
   props: ['fmt'],
-  handles: async (ctx) => ctx.options.fmt === 'md' && ctx.mime.startsWith('image/') && !!await pickOcrEngine(ctx),
+  handles: async (ctx) => ctx.options.fmt === 'md' && ctx.mime.startsWith('image/') && !!await ctx.transformer.ocrEngine(ctx),
   transform: async (ctx) => {
-    const engine = await pickOcrEngine(ctx);
+    const engine = await ctx.transformer.ocrEngine(ctx);
     if (!engine) return;
     let path = ctx.currentPath;
     let mime = ctx.mime;
@@ -30,4 +29,4 @@ FileTransformer.register({
     ctx.currentPath = out;
     ctx.mime = 'text/markdown';
   },
-});
+};

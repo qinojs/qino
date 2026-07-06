@@ -1,5 +1,5 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { isFfmpegAvailable, ffmpegCoverArt } from '../ffmpeg.ts';
+import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
 const AUDIO_MIMES = new Set([
@@ -14,7 +14,7 @@ const AUDIO_MIMES = new Set([
   'audio/webm',
 ]);
 
-FileTransformer.register({
+export const audioDecode: TransformerDef = {
   name: 'audio-decode',
   phase: 'decode',
   props: [],
@@ -28,4 +28,4 @@ FileTransformer.register({
     ctx.currentPath = out;
     ctx.mime = 'image/png';
   },
-});
+};

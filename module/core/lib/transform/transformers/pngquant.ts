@@ -1,8 +1,8 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { isPngquantAvailable } from '../pngquant.ts';
+import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
-FileTransformer.register({
+export const pngquant: TransformerDef = {
   name: 'pngquant',
   phase: 'encode',
   after: 'image-encode',
@@ -21,4 +21,4 @@ FileTransformer.register({
     const { code } = await proc.output();
     if (code === 0) ctx.currentPath = out;
   },
-});
+};

@@ -3,7 +3,6 @@
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
-import { FileTransformer } from "./lib/transform/index.ts";
 import { getCtx } from "./lib/RequestContext.ts";
 export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
@@ -101,7 +100,7 @@ export async function init(app: App) {
     app.languages.setLangs(langsRaw.split(","));
 
     const transformTimeout = Number(await app.settings.core.transform.timeout ?? "");
-    if (transformTimeout) FileTransformer.defaultTimeout = transformTimeout;
+    if (transformTimeout) app.fileTransformer.timeout = transformTimeout;
 
     app.on("action", async ({ ctx }) => {
         // HTTPS redirect

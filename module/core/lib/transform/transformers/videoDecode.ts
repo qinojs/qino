@@ -1,5 +1,5 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { isFfmpegAvailable, ffmpegFrame } from '../ffmpeg.ts';
+import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
 const VIDEO_MIMES = new Set([
@@ -17,7 +17,7 @@ const VIDEO_MIMES = new Set([
  *
  * Option `frame` (1-based, default: 1) – which frame to extract.
  */
-FileTransformer.register({
+export const videoDecode: TransformerDef = {
   name: 'video-decode',
   phase: 'decode',
   props: ['frame'],
@@ -32,7 +32,7 @@ FileTransformer.register({
     ctx.currentPath = out;
     ctx.mime = 'image/png';
   },
-});
+};
 
 function toFrameIndex(frame: number | undefined): number {
   const value = Math.floor(frame ?? 1);

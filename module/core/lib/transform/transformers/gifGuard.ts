@@ -1,11 +1,11 @@
-import { FileTransformer } from '../FileTransformer.ts';
 import { magickIdentify } from '../imagemagick.ts';
+import type { TransformerDef } from '../types.ts';
 
 /**
  * Decode phase: detects animated GIFs and blocks further transformations.
  * Animated GIFs cannot be cropped/resized without frame loss.
  */
-FileTransformer.register({
+export const gifGuard: TransformerDef = {
   name: 'gif-guard',
   phase: 'decode',
   props: [],
@@ -16,4 +16,4 @@ FileTransformer.register({
       ctx.meta.animated = true;
     }
   },
-});
+};
