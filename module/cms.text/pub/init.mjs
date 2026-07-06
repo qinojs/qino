@@ -183,7 +183,6 @@ const addTranslateWidget = el=>{
     `);
   fragment.querySelector('form').addEventListener('submit',async e=>{
     e.preventDefault();
-    //const inps = e.target.elements; zzz
     await import('../../core/pub/js/c1/loading.mjs');
     const sourceLang = e.submitter.name;
     const done = c1.loading.mark(e.target);

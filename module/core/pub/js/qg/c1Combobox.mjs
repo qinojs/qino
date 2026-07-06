@@ -12,17 +12,6 @@ dialog.addEventListener('mousedown', e=>{
 dialog.addEventListener('touchstart', e => e.stopPropagation()); // prevent closing cms-panel
 const Placer = new c1.Placer(dialog);
 
-if (!CSS.supports('overscroll-behavior','contain')) { // zzz if supports
-  // console.warn('used?') safari 15.5
-  dialog.addEventListener('wheel', e => {
-    if (e.wheelDelta > 0 && dialog.scrollTop === 0) {
-      e.preventDefault();
-    } else if (e.wheelDelta < 0 && dialog.scrollHeight < dialog.scrollTop + dialog.offsetHeight) {
-      e.preventDefault();
-    }
-  });
-}
-
 globalThis.c1Combobox = function(input){
   if (input.c1Combobox) return input.c1Combobox;
   input.c1Combobox = this;
