@@ -137,9 +137,12 @@ export class Node {
     async html(vars: Record<string, any> = {}): Promise<HtmlString> {
         if (!(await this.isReadable())) return new HtmlString("");
         const ctx = getCtx();
+
         // Disabled module (cms_access 0): content hidden except for superusers
+        // very bad: this inline check should be cached and be made in the access() function
         const modLevel = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${this.vs.module}` ?? "1");
         if (!modLevel && !await ctx.user?.get("superuser")) return new HtmlString("");
+
         const renderPath = ctx.cms.renderPath;
         if (renderPath.has(this.id)) {
             return new HtmlString(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
@@ -159,41 +162,30 @@ export class Node {
         return s;
     }
 
-
-    // Todo: generate something like this
-    // <div qcms-id=170 qcms-mod="cont.text" qcms-name="main" qcms-drop qcms-edit qcms-offline>
-
     async htmlPrepared(vars: Record<string, any> = {}): Promise<HtmlString> {
         const ctx = getCtx();
-
         let str = (await this.htmlRaw(vars) ?? "").trim();
         str ||= "<div></div>";
-
         let attr = "";
-
         const moduleName = this.module?.name ?? "";
         attr += ` qcms-id=${this.id} qcms-mod="${hee(moduleName.replace(/^cms\./, ""))}"`;
-
         if (this.edit) {
             attr += " qcms-edit";
             if (moduleName.startsWith("cms.cont.flexible")) attr += " qcms-drop";
             if (!(await this.isOnline())) attr += " qcms-offline";
         }
-
         if (this.vs.type === "c" && this.vs.visible) {
             attr += ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
-
         const ret2 = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
         if (ret2 !== str) return new HtmlString(ret2);
         return new HtmlString(`<div${attr}>${str}</div>`);
     }
 
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {
-        if (!this.#is) { console.warn("Page does not exist!"); return undefined; }
-
-        try {
+        if (!this.#is) { console.warn("Page does not exist!"); return; }
+        return this.#renderGuarded(async () => {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
             let render = this.module.plugin.cms?.node?.render;
             if (!render) {
@@ -202,24 +194,26 @@ export class Node {
                 render = e.render ?? undefined;
             }
             if (!render) throw new Error(`No render function for module "${this.vs.module}"`);
-            return String(await render(this, {ctx:getCtx(), vars}));
-        } catch (err: any) {
-            console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : '<div></div>';
-        }
+            return render(this, {ctx:getCtx(), vars});
+        });
     }
 
     async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | false> {
+        if (!(await this.isReadable())) return false;
         if (/[/\\]/.test(part)) return false;
         const parts = this.module?.plugin.cms?.node?.parts ?? {};
         const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : false;
         if (!fn) return false;
+        return new HtmlString(await this.#renderGuarded(() => fn(this, {ctx:getCtx(), vars})));
+    }
 
+    /** Run a module render callback, returning error markup instead of throwing. */
+    async #renderGuarded(run: () => unknown): Promise<string> {
         try {
-            return new HtmlString(String(await fn(this, {ctx:getCtx(), vars})));
+            return String(await run());
         } catch (err: any) {
             console.error(`Error in module "${this.vs.module}": ${err.message}`, err);
-            return new HtmlString(this.edit ? `<div>Webmaster: module error! <code>${err.message}</code></div>` : '<div></div>');
+            return this.edit ? `<div>Webmaster: ${await this.app.t`module error!`} <code>${hee(err.message)}</code></div>` : '<div></div>';
         }
     }
 
