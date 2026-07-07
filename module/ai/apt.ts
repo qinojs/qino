@@ -34,19 +34,19 @@ export const api: AptTree = {
       "messages": {
         post: {
           description: "Send a message and get the assistant reply",
-          input: s.object({ content: s.string() }),
+          input: s.object({ content: s.string(), context: s.optional(s.record()) }),
           access: Access.USER,
-          execute: ({ id, content }: Params, ctx: RequestContext) =>
-            ctx.app.ai.session(Number(id)).run(String(content), ctx),
+          execute: ({ id, content, context }: Params, ctx: RequestContext) =>
+            ctx.app.ai.session(Number(id)).run(String(content), ctx, context as Record<string, unknown> | undefined),
         },
       },
       "stream": {
         post: {
           description: "Send a message and stream the reply (SSE)",
-          input: s.object({ content: s.string() }),
+          input: s.object({ content: s.string(), context: s.optional(s.record()) }),
           access: Access.USER,
-          execute: ({ id, content }: Params, ctx: RequestContext): never => {
-            const stream = ctx.app.ai.session(Number(id)).runStream(String(content), ctx);
+          execute: ({ id, content, context }: Params, ctx: RequestContext): never => {
+            const stream = ctx.app.ai.session(Number(id)).runStream(String(content), ctx, context as Record<string, unknown> | undefined);
             throw new Output(stream, { headers: SSE_HEADERS });
           },
         },

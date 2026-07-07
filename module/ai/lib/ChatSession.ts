@@ -1,10 +1,10 @@
 import { unixTime, type App, type RequestContext } from "../../core/mod.ts";
-import { type AiApi, CHAT_DEFAULTS } from "./AiApi.ts";
-import type { Bot, ProviderModelRow, Tool } from "../types.ts";
-import type { Provider } from "./Provider.ts";
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
 import { readSse, sse } from "./sse.ts";
+import { type AiApi, CHAT_DEFAULTS } from "./AiApi.ts";
+import type { Bot, ProviderModelRow, Tool } from "../types.ts";
+import type { Provider } from "./Provider.ts";
 
 type Msg = Record<string, unknown>;
 
@@ -13,8 +13,8 @@ type Msg = Record<string, unknown>;
 export class ChatSession {
   constructor(private app: Pick<App, "db" | "settings">, private api: AiApi, readonly id: number) {}
 
-  async run(content: string, ctx: RequestContext): Promise<string> {
-    const { bot, messages } = await this.#prepare(content, ctx);
+  async run(content: string, ctx: RequestContext, context?: Record<string, unknown>): Promise<string> {
+    const { bot, messages } = await this.#prepare(content, ctx, context);
     try {
       const final = await this.#loop(messages, bot, ctx);
       await this.#touch();
@@ -25,11 +25,11 @@ export class ChatSession {
     }
   }
 
-  runStream(content: string, ctx: RequestContext): ReadableStream<Uint8Array> {
+  runStream(content: string, ctx: RequestContext, context?: Record<string, unknown>): ReadableStream<Uint8Array> {
     return new ReadableStream({
       start: async (controller) => {
         try {
-          const { bot, messages } = await this.#prepare(content, ctx);
+          const { bot, messages } = await this.#prepare(content, ctx, context);
           try {
             const final = await this.#loop(messages, bot, ctx, (text) => controller.enqueue(sse({ delta: text })));
             await this.#touch();
@@ -48,10 +48,16 @@ export class ChatSession {
   }
 
   // Load session + history, persist the new user message, build the message list.
-  async #prepare(content: string, ctx: RequestContext): Promise<{ bot: Bot; messages: Msg[] }> {
+  async #prepare(content: string, ctx: RequestContext, context?: Record<string, unknown>): Promise<{ bot: Bot; messages: Msg[] }> {
     const data = await this.app.db.row`SELECT * FROM ai_session WHERE id = ${this.id}`;
     if (!data) throw new Error("Session not found");
     if (Number(data.user_id) !== ctx.userId) throw new Error("Forbidden");
+
+    // Fresh client context (e.g. current page) supersedes the one stored at session start.
+    if (context) {
+      data.context = JSON.stringify(context);
+      await this.app.db.query`UPDATE ai_session SET context = ${data.context} WHERE id = ${this.id}`;
+    }
 
     const bot = this.api.getBot(String(data.bot));
     if (!bot) throw new Error(`Bot not found: ${data.bot}`);

@@ -14,6 +14,7 @@ class AiChat extends HTMLElement {
   #input = null;
   #button = null;
   #open = false;
+  #historyLoad = null;
 
   // Collapse the history only when interaction moves outside the whole chat (composedPath crosses the shadow root).
   #outside = (e) => { if (!e.composedPath().includes(this)) this.#setOpen(false); };
@@ -76,11 +77,35 @@ class AiChat extends HTMLElement {
     const method = open ? 'addEventListener' : 'removeEventListener';
     document[method]('pointerdown', this.#outside, true);
     document[method]('focusin', this.#outside, true);
+    if (open) this.#loadHistory();
+  }
+
+  get #storeKey() { return `ai-chat:${this.#bot}`; }
+
+  // Resume the stored session lazily on first focus; a stale id (deleted/foreign) is discarded.
+  #loadHistory() {
+    return this.#historyLoad ??= (async () => {
+      const id = Number(sessionStorage.getItem(this.#storeKey));
+      if (!id) return;
+      try {
+        const { messages } = await apt.ai.sessions(id).get();
+        this.#sessionId = id;
+        for (const { role, content } of messages) {
+          const el = this.#addMessage(role, content);
+          if (role === 'assistant') el.innerHTML = DOMPurify.sanitize(marked.parse(content));
+        }
+      } catch {
+        sessionStorage.removeItem(this.#storeKey);
+      }
+    })();
   }
 
   async #session() {
     if (this.#sessionId) return this.#sessionId;
+    await this.#loadHistory(); // don't fork a resumable session
+    if (this.#sessionId) return this.#sessionId;
     const { id } = await apt.ai.sessions.post({ bot: this.#bot, context: this.#context });
+    sessionStorage.setItem(this.#storeKey, id);
     return (this.#sessionId = id);
   }
 
@@ -101,7 +126,7 @@ class AiChat extends HTMLElement {
       const res = await fetch(new URL(`ai/sessions/${id}/stream`, apiBase), {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'X-CSRF-Token': globalThis.qino?.token },
-        body: JSON.stringify({ content: text }),
+        body: JSON.stringify({ content: text, context: this.#context }),
       });
       await this.#readStream(res, (ev) => {
         if (ev.delta != null) {
