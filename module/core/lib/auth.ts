@@ -8,14 +8,14 @@ const dummyHash = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi"
 export type LoginError = "username" | "inactive" | "password";
 
 export async function authListen(ctx: RequestContext): Promise<void> {
-  if ("liveUser_login" in ctx.post) {
-    if (ctx.post["token"] !== ctx.token) return;
-    const saveLogin = !!ctx.post["save_login"];
-    ctx.loginError = await auth(ctx, String(ctx.post["email"] ?? ""), String(ctx.post["pw"] ?? "")) || undefined;
+  if (ctx.post?.liveUser_login != null) {
+    if (ctx.post.token !== ctx.token) return;
+    const saveLogin = !!ctx.post.save_login;
+    ctx.loginError = await auth(ctx, String(ctx.post.email ?? ""), String(ctx.post.pw ?? "")) || undefined;
     await rememberLogin(ctx, saveLogin);
   }
-  if ("liveUser_logout" in ctx.post) {
-    if (ctx.post["token"] !== ctx.token) return;
+  if (ctx.post?.liveUser_logout != null) {
+    if (ctx.post.token !== ctx.token) return;
     await logout(ctx);
   }
   if (!ctx.userId && ctx.clientId) {

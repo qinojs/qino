@@ -171,7 +171,7 @@ function ipRange(ip: string): string {
 }
 
 function payloadText(ctx: RequestContext): string {
-  const entries = [...Object.entries(ctx.get ?? {}), ...Object.entries(ctx.post ?? {})]
+  const entries = [...Object.entries(ctx.get ?? {}), ...Object.entries(ctx.post instanceof Object ? ctx.post : {})]
     .filter(([k]) => !/pw|pass|password|token|secret/i.test(k))
     .map(([k, v]) => k + "=" + String(v));
   return entries.join("&");

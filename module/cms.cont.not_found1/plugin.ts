@@ -51,7 +51,7 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
 
   let savedMsg = "";
-  if ("setRedirect" in ctx.post && ctx.post.qgToken === ctx.token) {
+  if (ctx.post?.qgToken === ctx.token && "setRedirect" in ctx.post) {
     const redirect = String(ctx.post.redirect ?? "").trim();
     if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
       savedMsg = `<p style="color:red">${await t`Unsupported redirect target.`}</p>`;

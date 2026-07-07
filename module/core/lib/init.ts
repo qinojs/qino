@@ -59,7 +59,7 @@ function initLog(ctx: RequestContext): void {
 
     // redact secrets by key name
     const secret = /pw|oldpw|token/i;
-    data.post = Object.keys(ctx.post).length ? JSON.stringify(ctx.post, (k, v) => k && secret.test(k) ? "-----" : v) : "";
+    data.post = ctx.post != null ? JSON.stringify(ctx.post, (k, v) => k && secret.test(k) ? "-----" : v) : "";
     data.client_id = ctx.clientId;
 
     // insert runs in the background; consumers await ctx.logId only when they actually need the id

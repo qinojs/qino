@@ -17,7 +17,7 @@ async function render(node: Node): Promise<string> {
 
   let message = "";
 
-  if (ctx.post.qgToken === ctx.token && ("save" in ctx.post || "send" in ctx.post)) {
+  if (ctx.post?.qgToken === ctx.token && ("save" in ctx.post || "send" in ctx.post)) {
     const subject = String(ctx.post.subject ?? "").trim();
     const body = String(ctx.post.body ?? "").trim();
     const senderMode = String(ctx.post.sender_mode ?? "default");

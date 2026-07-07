@@ -35,7 +35,7 @@ async function renderOverview(node: Node): Promise<string> {
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const search = String(ctx.get.search ?? "").trim();
 
-  if (ctx.post.qgToken === ctx.token && isSuperuser) {
+  if (ctx.post?.qgToken === ctx.token && isSuperuser) {
     if ("delete_all" in ctx.post) {
       await db.query`DELETE FROM mail`;
     }
@@ -124,7 +124,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const row = await db.row`SELECT m.*, l.time FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE m.id=${id}`;
   if (!row) return `<div class=u2-card><div class=-body>${await t`Mail does not exist.`}</div></div>`;
 
-  if (ctx.post.qgToken === ctx.token) {
+  if (ctx.post?.qgToken === ctx.token) {
     const Mail = await node.app.mail.get(id);
     if ("send" in ctx.post) await Mail.send();
     const add = String(ctx.post.add_recipient ?? "").trim();

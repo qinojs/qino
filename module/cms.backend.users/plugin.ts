@@ -25,7 +25,7 @@ async function renderOverview(node: Node): Promise<string> {
   const db = app.db;
 
   let addMessage = "";
-  if ("add" in ctx.post && ctx.post.qgToken === ctx.token) {
+  if (ctx.post?.qgToken === ctx.token && "add" in ctx.post) {
     const email = String(ctx.post.email ?? "");
     const exists = email && await db.one`SELECT id FROM usr WHERE email = ${email}`;
     if (exists) {

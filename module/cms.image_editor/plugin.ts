@@ -80,7 +80,7 @@ export function init(app: App) {
 
   // Replace an existing image with the edited version (keeps the filename).
   app.on("action", async ({ ctx }) => {
-    const upload = ctx.files["editedImage"];
+    const upload = await ctx.files.editedImage;
     if (!upload) return;
 
     const fileId = Number(ctx.get.file_id ?? "0");

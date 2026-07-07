@@ -6,7 +6,8 @@ import { Csp } from "./Csp.ts";
 import { uid, clientIp, Output } from "./util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
-import { readUploadFile, type UploadedFile } from "./fileStream.ts";
+import type { UploadedFile } from "./fileStream.ts";
+import { Body } from "./Body.ts";
 import type { App } from "./App.ts";
 import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
 import type { Req } from "./Req.ts";
@@ -17,9 +18,13 @@ export class RequestContext {
   app!: App;
   sess: Session = null!;
   cookie: Record<string, string> = {};
-  get: Record<string, string> = {};
-  post: Record<string, unknown> = {};
-  files: Record<string, UploadedFile> = {};
+  get: Readonly<Record<string, string>> = {};
+  #body: Body = new Body();
+  /** parsed body: null (no body), flat record (form) or deep JSON value */
+  // deno-lint-ignore no-explicit-any
+  get post(): any { return this.#body.post; }
+  /** lazy per-file upload access: `await ctx.files.name` spools that file to tmp */
+  get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#body.files; }
   requestUri = "/";
   remoteAddr = "";
   responseHeaders: Headers = new Headers();
@@ -88,33 +93,15 @@ export class RequestContext {
 
   async cleanup(): Promise<void> {
     this.#deadline?.clear();
-    for (const f of Object.values(this.files)) {
-      const p = (f as { tmpPath?: unknown })?.tmpPath;
-      if (typeof p === "string") await Deno.remove(p).catch(() => {});
-    }
+    for (const p of await this.#body.settle()) await Deno.remove(p).catch(() => {});
   }
 
   static async create(app: App, req: Req, basePath: string): Promise<RequestContext> {
     const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
     const url = new URL(req.url);
 
-    const ct = req.header("content-type") ?? "";
-    const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
-
     const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
-    if (Number(req.header("content-length") ?? "0") > maxSize) throw new Output("Payload Too Large", { status: 413 });
-
-    const rawBody: unknown = req.method === "POST" ? (isJson ? await req.json() : await req.parseBody()) : {};
-    const post: Record<string, unknown> = Object.create(null);
-    const files: Record<string, UploadedFile> = Object.create(null);
-
-    for (const [key, val] of Object.entries(rawBody && typeof rawBody === "object" ? rawBody as Record<string, unknown> : {})) {
-      if (val instanceof File) {
-        files[key] = await readUploadFile(val, { maxSize });
-      } else {
-        post[key] = val;
-      }
-    }
+    const body = await Body.parse(req, { maxSize });
 
     let appRequestPath: string;
     try { appRequestPath = decodeURIComponent(req.path.slice(appURL.length)); }
@@ -128,9 +115,8 @@ export class RequestContext {
     ctx.appRequestPath = appRequestPath;
     ctx.sess = await app.sessions.loadFromRequest(req, app.https, appURL);
     ctx.cookie = req.cookies();
-    ctx.get = req.query();
-    ctx.post = post;
-    ctx.files = files;
+    ctx.get = Object.freeze(req.query());
+    ctx.#body = body;
     ctx.requestUri = url.pathname + url.search;
     ctx.remoteAddr = clientIp(req, app.trustedProxyHops);
     return ctx;

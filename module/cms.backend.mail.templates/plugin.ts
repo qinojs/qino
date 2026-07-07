@@ -29,7 +29,7 @@ async function render(node: Node): Promise<string> {
 
   let message = "";
 
-  if (ctx.post.qgToken === ctx.token && "create" in ctx.post) {
+  if (ctx.post?.qgToken === ctx.token && "create" in ctx.post) {
     const tname = String(ctx.post.tname ?? "").trim();
     if (!tname) {
       message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
@@ -107,7 +107,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   let message = "";
 
-  if (ctx.post.qgToken === ctx.token) {
+  if (ctx.post?.qgToken === ctx.token) {
     if ("save" in ctx.post) {
       const tname = String(ctx.post.tname ?? "").trim();
       if (!tname) {

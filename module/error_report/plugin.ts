@@ -31,7 +31,7 @@ export const settingsSchema = {
 
 async function handleJsError(ctx: RequestContext): Promise<void> {
   const report = ctx.post;
-  if (report.message) {
+  if (report?.message) {
     await addReport(ctx.app, { source: "js", ...report });
   }
   throw new Output({});
@@ -63,7 +63,7 @@ async function handleCssError(ctx: RequestContext): Promise<void> {
 }
 
 async function handleCspError(ctx: RequestContext): Promise<void> {
-  const report = ctx.post["csp-report"] as Report;
+  const report = ctx.post?.["csp-report"] as Report;
   if (report) {
     const directive = report["effective-directive"] ?? report["violated-directive"] ?? "";
     let blockedUri = report["blocked-uri"] ?? "";

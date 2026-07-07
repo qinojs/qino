@@ -91,7 +91,7 @@ export function init(app: App) {
         ctx.cms.editmode = Number(settings.cms.editmode()) || 0;
 
         // File upload
-        const cmsPageFile = ctx.files["cmsPageFile"];
+        const cmsPageFile = await ctx.files.cmsPageFile;
         if (cmsPageFile) {
             // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
             const cmspid = Number(ctx.get.cmspid ?? "0");

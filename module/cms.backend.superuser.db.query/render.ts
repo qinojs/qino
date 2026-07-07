@@ -22,12 +22,12 @@ export async function render(node: Node): Promise<HtmlString> {
   if (!await ctx.user?.get("superuser")) return raw("<div></div>");
 
   const tables = await buildSchema(app);
-  const token = ctx.post.qgToken === ctx.token;
-  const isAsk = "ask" in ctx.post; // AI form vs. run form
-  const question = String(ctx.post.prompt ?? "").trim();
+  const token = ctx.post?.qgToken === ctx.token;
+  const isAsk = ctx.post?.ask != null; // AI form vs. run form
+  const question = String(ctx.post?.prompt ?? "").trim();
 
   // AI prompt prefills the editor with generated SQL (using the current query as context); the user reviews and runs it.
-  let sql = String(ctx.post.sql ?? "").trim();
+  let sql = String(ctx.post?.sql ?? "").trim();
   let aiNote = "";
   if (isAsk && question && token) {
     const ai = await askDbAi(app, question, await schemaText(app), sql);
