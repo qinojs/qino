@@ -127,9 +127,10 @@ export class ChatSession {
       if (delta.content) { content += delta.content; onDelta(String(delta.content)); }
       for (const tc of (delta.tool_calls as ToolCall[] | undefined) ?? []) {
         const slot = (toolCalls[tc.index ?? 0] ??= { id: tc.id, type: "function", function: { name: "", arguments: "" } });
-        if (tc.id) slot.id = tc.id;
-        if (tc.function?.name) slot.function!.name += tc.function.name;
-        if (tc.function?.arguments) slot.function!.arguments += tc.function.arguments;
+        const fn = slot.function!;
+        const name = String(fn.name ?? "") + String(tc.function?.name ?? "");
+        const args = String(fn.arguments ?? "") + String(tc.function?.arguments ?? "");
+        Object.assign(slot, tc, { function: { ...fn, ...tc.function, name, arguments: args } });
       }
     });
     if (model && usage) await addUsage(this.app, model, usage);
