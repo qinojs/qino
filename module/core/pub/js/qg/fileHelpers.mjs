@@ -13,7 +13,8 @@ globalThis.qgfileUpload = async function(f, name, opt) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', opt.url || location.href);
     if (xhr.upload) xhr.upload.onprogress = e => opt.progress?.(e);
-    xhr.onload = () => opt.complete?.(xhr.responseText);
+    xhr.onload = () => opt.complete?.(xhr.status < 400 ? xhr.responseText : JSON.stringify({ error: xhr.responseText || xhr.statusText || `HTTP ${xhr.status}` }));
+    xhr.onerror = () => opt.complete?.(JSON.stringify({ error: 'Upload failed' }));
     xhr.send(formData);
   }
 }
