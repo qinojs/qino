@@ -90,7 +90,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
             const fn   = call.fn;
             const args = call.args ?? [];
             if (ignoreFn[fn]) continue;
-            if (fn === "cms::setTxt") {
+            if (fn === "cms::setTxt") { // tobi: irgendwo gibt es eine funktion wie cms.pidFromTxtId könnte man diese verwenden?;
                 const vs = await ctx.app.db.row`SELECT name, page_id FROM _vers_page_text WHERE text_id = ${Number(args[0])} AND _vers_space = ${getCmsVers(ctx).space}`
                 ?? await ctx.app.db.row`SELECT name, page_id FROM page_text WHERE text_id = ${Number(args[0])}`;
                 if (vs) {
