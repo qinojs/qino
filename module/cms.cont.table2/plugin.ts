@@ -17,6 +17,13 @@ const settingsSchema = {
   },
 };
 
+/** Column width: a bare number becomes px, an explicit CSS length passes through, anything else is dropped. */
+function cssWidth(raw: string): string {
+  const w = raw.trim();
+  if (/^\d+(\.\d+)?$/.test(w)) return w + "px";
+  return /^\d+(\.\d+)?(px|%|em|rem)$/.test(w) ? w : "";
+}
+
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
   if (node.edit) {
     ctx.html.scripts.add(node.modUrl + "pub/edit.mjs");
@@ -59,8 +66,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
     html += `      <tr>\n`;
     for (let j = 0; j < cols; j++) {
       const T = await node.showText(`${r}_${j}`);
-      let w = String(node.settings[`row_${j + 1}`]() ?? "");
-      if (/^\d+$/.test(w)) w += "px";
+      const w = cssWidth(String(node.settings[`row_${j + 1}`]() ?? ""));
       const styleAttr = w ? ` style="width:${w}"` : "";
       const editAttr = node.edit ? ` contenteditable cmstxt=${T.id}` : "";
       html += `        <td${styleAttr}${editAttr}>${T}\n`;
