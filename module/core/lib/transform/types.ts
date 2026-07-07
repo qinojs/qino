@@ -13,7 +13,7 @@ export interface TransformOptions {
   dpr?: number;
   page?: number;
   frame?: number;
-  fmt?: 'avif' | 'jpeg' | 'jpg' | 'png' | 'md' | 'auto';
+  fmt?: 'avif' | 'jpeg' | 'jpg' | 'png' | 'md' | 'json' | 'auto';
   [key: string]: unknown;
 }
 
@@ -60,6 +60,38 @@ export interface OcrEngine {
   available: (ctx: TransformContext) => boolean | Promise<boolean>;
   /** Extracts text/Markdown from an image file */
   ocr: (imagePath: string, mime: string, ctx: TransformContext) => Promise<string>;
+}
+
+export interface TranscriptWord {
+  word: string;
+  start?: number;
+  end?: number;
+  confidence?: number;
+}
+
+export interface TranscriptSegment {
+  start?: number;
+  end?: number;
+  text: string;
+  speaker?: string;
+  confidence?: number;
+  notes?: string[];
+  words?: TranscriptWord[];
+}
+
+export interface Transcript {
+  kind: 'qino.transcript';
+  version: 1;
+  text: string;
+  language?: string;
+  segments: TranscriptSegment[];
+}
+
+export interface TranscriptEngine {
+  name: string;
+  priority: number;
+  available: (ctx: TransformContext) => boolean | Promise<boolean>;
+  transcribe: (mediaPath: string, mime: string, ctx: TransformContext) => Promise<Transcript>;
 }
 
 export interface TransformResult {

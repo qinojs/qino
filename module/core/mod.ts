@@ -45,7 +45,7 @@ export { login, pwHash } from "./lib/auth.ts";
 
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";
-export type { OcrEngine, TransformContext } from "./lib/transform/mod.ts";
+export type { OcrEngine, Transcript, TranscriptEngine, TranscriptSegment, TranscriptWord, TransformContext } from "./lib/transform/mod.ts";
 export { isMagickAvailable, magick, magickIdentify } from "./lib/transform/imagemagick.ts";
 
 // Server helpers used by modules

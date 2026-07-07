@@ -16,7 +16,7 @@ Deno.test("ai: module metadata and apt tools are wired", () => {
 });
 
 Deno.test("ai: init installs AiApi (no cms coupling)", () => {
-  const app = { aptTree: {}, fileTransformer: { registerOcrEngine: () => {} } };
+  const app = { aptTree: {}, fileTransformer: { registerOcrEngine: () => {}, registerTranscriptEngine: () => {} } };
   init(app as never);
   assertEquals(typeof (app as never as { ai: unknown }).ai, "object");
 });

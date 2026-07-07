@@ -63,3 +63,19 @@ export async function ffmpegFrame(
     );
   }
 }
+
+export async function ffmpegAudio(input: string, output: string, signal?: AbortSignal): Promise<void> {
+  const { code, stderr } = await new Deno.Command('ffmpeg', {
+    args: ['-i', input, '-map', '0:a:0', '-vn', '-acodec', 'aac', '-b:a', '128k', '-y', output],
+    signal,
+    stdout: 'piped',
+    stderr: 'piped',
+  }).output();
+  if (code !== 0) {
+    const msg = new TextDecoder().decode(stderr).trim();
+    if (/Stream map.*matches no streams|Output file does not contain any stream/.test(msg)) {
+      throw new Error('FFmpeg error (audio): video has no audio stream');
+    }
+    throw new Error(`FFmpeg error (audio): ${msg}`);
+  }
+}

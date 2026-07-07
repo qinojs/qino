@@ -3,7 +3,8 @@ import { pdftotext, isPdftotextAvailable } from '../poppler.ts';
 import { ocrPdf } from '../ocr.ts';
 import { isMagickAvailable } from '../imagemagick.ts';
 import * as nodePath from 'node:path';
-import type { TransformContext, TransformerDef } from '../types.ts';
+import type { Transcript, TransformContext, TransformerDef } from '../types.ts';
+import { TRANSCRIPT_MIME } from './transcript.ts';
 
 /** Pandoc input format per source MIME type */
 const PANDOC_FORMATS: Record<string, string> = {
@@ -30,13 +31,16 @@ export const markdown: TransformerDef = {
   phase: 'decode',
   props: ['fmt'],
   handles: async (ctx) => ctx.options.fmt === 'md' && (
-    ctx.mime === 'application/pdf'
+    ctx.mime === TRANSCRIPT_MIME
+      ? true
+      : ctx.mime === 'application/pdf'
       ? await isPdftotextAvailable() || (!!await ctx.transformer.ocrEngine(ctx) && await isMagickAvailable())
       : ctx.mime in PANDOC_FORMATS && await isPandocAvailable()
   ),
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'out.md');
-    if (ctx.mime === 'application/pdf') await pdfToMarkdown(ctx, out);
+    if (ctx.mime === TRANSCRIPT_MIME) await Deno.writeTextFile(out, transcriptToMarkdown(JSON.parse(await Deno.readTextFile(ctx.currentPath))));
+    else if (ctx.mime === 'application/pdf') await pdfToMarkdown(ctx, out);
     else await pandoc(ctx.currentPath, PANDOC_FORMATS[ctx.mime], out, ctx.signal);
     ctx.currentPath = out;
     ctx.mime = 'text/markdown';
@@ -56,4 +60,14 @@ async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> 
     if (ocred !== undefined) return Deno.writeTextFile(out, ocred);
   }
   if (text === undefined) throw new Error('markdown: pdftotext missing and OCR failed');
+}
+
+function transcriptToMarkdown(t: Transcript): string {
+  const parts = (t.segments?.length ? t.segments : [{ text: t.text }]).map((s) => {
+    const text = String(s.text ?? '').trim();
+    const notes = Array.isArray(s.notes) ? s.notes.map((n) => `(${String(n).trim().replace(/^\(|\)$/g, '')})`).join(' ') : '';
+    const line = [text, notes].filter(Boolean).join('\n\n');
+    return s.speaker ? `**${s.speaker}:** ${line}` : line;
+  }).filter(Boolean);
+  return (parts.join('\n\n') || String(t.text ?? '').trim()) + '\n';
 }

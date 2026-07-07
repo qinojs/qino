@@ -1,7 +1,7 @@
 import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
 import { typeByExtension } from '../../../../deps.ts';
-import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult } from './types.ts';
+import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult, TranscriptEngine } from './types.ts';
 import { checkAvifSupport, isMagickAvailable, resetMagickCache } from './imagemagick.ts';
 import { isFfmpegAvailable, resetFfmpegCache } from './ffmpeg.ts';
 import { resetPngquantCache, isPngquantAvailable } from './pngquant.ts';
@@ -13,6 +13,7 @@ import { gifGuard } from './transformers/gifGuard.ts';
 import { pdfDecode } from './transformers/pdfDecode.ts';
 import { videoDecode } from './transformers/videoDecode.ts';
 import { audioDecode } from './transformers/audioDecode.ts';
+import { transcript } from './transformers/transcript.ts';
 import { markdown } from './transformers/markdown.ts';
 import { ocr } from './transformers/ocr.ts';
 import { imageResize } from './transformers/imageResize.ts';
@@ -23,7 +24,7 @@ const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
 
 /** Built-in transformers (array order = registration order within a phase) */
 export const builtinTransformers: TransformerDef[] =
-  [gifGuard, pdfDecode, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, pngquant];
+  [gifGuard, pdfDecode, transcript, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, pngquant];
 
 /** Framework-agnostic transform pipeline: per-instance transformers, OCR engines, cache dir and timeout. */
 export class FileTransformer {
@@ -33,6 +34,7 @@ export class FileTransformer {
   timeout: number;
   #transformers: TransformerDef[] = [];
   #ocrEngines: OcrEngine[] = [];
+  #transcriptEngines: TranscriptEngine[] = [];
 
   constructor(opts: { cacheDir: string; timeout?: number }) {
     this.cacheDir = opts.cacheDir;
@@ -81,6 +83,15 @@ export class FileTransformer {
 
   async ocrEngine(ctx: TransformContext): Promise<OcrEngine | undefined> {
     for (const engine of this.#ocrEngines) if (await engine.available(ctx)) return engine;
+  }
+
+  registerTranscriptEngine(engine: TranscriptEngine): void {
+    this.#transcriptEngines.push(engine);
+    this.#transcriptEngines.sort((a, b) => b.priority - a.priority);
+  }
+
+  async transcriptEngine(ctx: TransformContext): Promise<TranscriptEngine | undefined> {
+    for (const engine of this.#transcriptEngines) if (await engine.available(ctx)) return engine;
   }
 
   async transform(

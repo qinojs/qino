@@ -83,7 +83,11 @@ export class DbFileManager {
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
     headers.set("Pragma", "private");
 
-    const { path: outputPath, mime: outputMime, key, transformed } = await f.transform(params);
+    const { path: outputPath, mime: outputMime, key, transformed, error } = await f.transform(params);
+    if (error && isTransformRequest(params)) return new Response(error.message, {
+      status: 500,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
     mime = outputMime || mime;
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
@@ -269,12 +273,12 @@ export class DbFile extends File {
     return this.#manager.file(to, data);
   }
 
-  async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string; key?: string; transformed?: boolean }> {
+  async transform(param: Record<string, unknown>): Promise<{ path: string; mime: string; key?: string; transformed?: boolean; error?: Error }> {
     await this.ensureVs();
     if (!this.path) return { path: this.path, mime: this.mime };
     const dbMime = this.mime;
     const result = await this.#manager.app.fileTransformer.transform(this.path, parseTransformOptions(param), dbMime);
-    return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed };
+    return { path: result.path, mime: result.mime || dbMime, key: result.key, transformed: result.transformed, error: result.error };
   }
 
   override toString(): string { return String(this.id); }
@@ -290,6 +294,10 @@ function parseTransformOptions(param: Record<string, unknown>): TransformOptions
   }
   opt.max = bool('max');
   return opt;
+}
+
+function isTransformRequest(param: Record<string, unknown>): boolean {
+  return ['fmt', 'w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame', 'max'].some((k) => k in param);
 }
 
 /** Stream a single `bytes=` range of a file; null = serve the full file instead. */

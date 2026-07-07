@@ -42,6 +42,26 @@ export class Provider {
     catch { return { error: `Provider "${this.row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
   }
 
+  async form(path: string, body: FormData): Promise<Record<string, unknown>> {
+    let res: Response;
+    try {
+      res = await fetch(this.row.endpoint.replace(/\/+$/, "") + path, {
+        method: "POST",
+        headers: { "authorization": "Bearer " + this.key },
+        body,
+        signal: AbortSignal.timeout(this.#timeout()),
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        return { error: `Provider "${this.row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
+      }
+      return { error: error instanceof Error ? error.message : String(error) };
+    }
+    const text = await res.text().catch(() => "");
+    try { return JSON.parse(text); }
+    catch { return { error: `Provider "${this.row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
+  }
+
   /** POST with `stream: true`; caller reads the SSE body. */
   stream(path: string, body: Record<string, unknown>): Promise<Response> {
     return this.request(path, { ...body, stream: true, stream_options: { include_usage: true } });

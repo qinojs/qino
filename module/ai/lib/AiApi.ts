@@ -86,11 +86,38 @@ export class AiApi {
     }, false);
   }
 
+  transcription(data: Record<string, unknown>): Promise<unknown> {
+    return this.#sendForm("stt", str(data._provider), str(data.model), "/audio/transcriptions", async (modelId) => {
+      const file = str(data.file);
+      if (!file) throw new Error("No transcription file given.");
+      const body = new FormData();
+      body.set("file", new Blob([await Deno.readFile(file)], { type: str(data.mime) ?? "application/octet-stream" }), str(data.filename) ?? "audio");
+      body.set("model", modelId ?? str(data.model) ?? "");
+      for (const [k, v] of Object.entries(data)) {
+        if (["_provider", "model", "file", "mime", "filename"].includes(k) || v == null) continue;
+        body.set(k, String(v));
+      }
+      if (!body.get("model")) throw new Error("No speech-to-text model configured.");
+      return body;
+    }, false);
+  }
+
   // Resolve provider+model, call the endpoint, track usage, normalise errors to `{ error }`.
   async #send(kind: Kind, provider: string | undefined, model: string | undefined, path: string, body: (modelId?: string) => Record<string, unknown>, trackUsage = true): Promise<unknown> {
     try {
       const resolved = await resolve(this.app, { provider, model, kind });
       const result = await (await this.client(resolved.provider)).json(path, body(resolved.model?.model_id));
+      if (trackUsage && !result.error && resolved.model) await addUsage(this.app, resolved.model, result.usage);
+      return result;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
+  async #sendForm(kind: Kind, provider: string | undefined, model: string | undefined, path: string, body: (modelId?: string) => Promise<FormData>, trackUsage = true): Promise<unknown> {
+    try {
+      const resolved = await resolve(this.app, { provider, model, kind });
+      const result = await (await this.client(resolved.provider)).form(path, await body(resolved.model?.model_id));
       if (trackUsage && !result.error && resolved.model) await addUsage(this.app, resolved.model, result.usage);
       return result;
     } catch (e) {
