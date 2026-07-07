@@ -54,12 +54,9 @@ export class Req {
     return this.#json ??= this.raw.clone().json();
   }
 
-  /** Form/multipart body as a flat record; File values are kept as `File`. */
+  /** Form/multipart body as a flat record; File values are kept as `File`, repeated keys become arrays. */
   async parseBody(): Promise<Record<string, unknown>> {
-    const form = await (this.#form ??= this.raw.clone().formData());
-    const out: Record<string, unknown> = Object.create(null);
-    for (const [k, v] of form) out[k] = v;
-    return out;
+    return groupFormData(await (this.#form ??= this.raw.clone().formData()));
   }
 
   cookies(): Record<string, string> {
@@ -69,6 +66,18 @@ export class Req {
   cookie(name: string): string | undefined {
     return this.cookies()[name];
   }
+}
+
+/** FormData as a flat record; repeated keys become arrays. */
+export function groupFormData(form: FormData): Record<string, unknown> {
+  const out: Record<string, unknown> = Object.create(null);
+  for (const [k, v] of form) {
+    const cur = out[k];
+    if (cur === undefined) out[k] = v;
+    else if (Array.isArray(cur)) cur.push(v);
+    else out[k] = [cur, v];
+  }
+  return out;
 }
 
 export function parseCookies(header: string | undefined): Record<string, string> {

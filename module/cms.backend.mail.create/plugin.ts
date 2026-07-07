@@ -116,13 +116,13 @@ async function render(node: Node): Promise<string> {
             <div class=u2-grid style="--u2-Items-width: 25rem;">
               <label>
                 <strong>${await app.t`Users`}</strong>
-                <select name="to_users[]" multiple size=8 style="width:100%">
+                <select name=to_users multiple size=8 style="width:100%">
                   ${userOptions || `<option disabled>${await app.t`No users found`}`}
                 </select>
               </label>
               <label>
                 <strong>${await app.t`Groups`}</strong>
-                <select name="to_groups[]" multiple size=8 style="width:100%">
+                <select name=to_groups multiple size=8 style="width:100%">
                   ${groupOptions || `<option disabled>${await app.t`No groups found`}`}
                 </select>
               </label>

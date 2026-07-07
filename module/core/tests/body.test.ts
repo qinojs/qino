@@ -42,7 +42,7 @@ Deno.test("Body: invalid json -> 400 Output", async () => {
 });
 
 Deno.test("Body: content-length over maxSize -> 413 Output", async () => {
-  const err = await parse({ method: "POST", body: "x".repeat(2048), headers: { "content-type": "text/plain", "content-length": "2048" } }, 1024).catch((e) => e);
+  const err = await parse({ method: "POST", body: '"' + "x".repeat(2046) + '"', headers: { "content-type": "application/json", "content-length": "2048" } }, 1024).catch((e) => e);
   assert(err instanceof Output);
   assertEquals(err.status, 413);
 });
@@ -98,6 +98,54 @@ Deno.test("Body: upload field named `then` stays a normal file", async () => {
   assertEquals(f!.name, "t.txt");
   assertEquals(await b.files, b.files); // proxy itself still not thenable (then not callable)
   for (const p of await b.settle()) await Deno.remove(p).catch(() => {});
+});
+
+Deno.test("Body: repeated form keys become arrays, singles stay scalar", async () => {
+  const b = await parse({ method: "POST", body: new URLSearchParams([["to_users", "1"], ["to_users", "2"], ["subject", "s"]]) });
+  assertEquals(b.post.to_users, ["1", "2"]);
+  assertEquals(b.post.subject, "s");
+  assert(Object.isFrozen(b.post.to_users));
+});
+
+Deno.test("Body: chunked json (no content-length) parses through the capped reader", async () => {
+  const req = new Request("http://qino.test/", {
+    method: "POST",
+    body: new Blob(['{"a":1}']).stream(),
+    headers: { "content-type": "application/json" },
+    // @ts-ignore duplex is required for stream bodies
+    duplex: "half",
+  });
+  assertEquals(req.headers.get("content-length"), null); // stream body really has no length
+  const b = await Body.parse(new Req(req), { maxSize: 1024 });
+  assertEquals(b.post.a, 1);
+});
+
+Deno.test("Body: chunked body over maxSize -> 413 while reading", async () => {
+  const req = new Request("http://qino.test/", {
+    method: "POST",
+    body: new Blob(['{"a":"' + "x".repeat(2048) + '"}']).stream(),
+    headers: { "content-type": "application/json" },
+    // @ts-ignore duplex is required for stream bodies
+    duplex: "half",
+  });
+  const err = await Body.parse(new Req(req), { maxSize: 1024 }).catch((e) => e);
+  assert(err instanceof Output);
+  assertEquals(err.status, 413);
+  await req.body?.cancel(); // in production the server runtime drains unread request bodies
+});
+
+Deno.test("Body: streaming/raw content-types stay untouched (no 411, req still readable)", async () => {
+  const stream = new Blob(["audio-bytes"]).stream();
+  const req = new Request("http://qino.test/", {
+    method: "POST",
+    body: stream,
+    headers: { "content-type": "audio/webm" },
+    // @ts-ignore duplex is required for stream bodies
+    duplex: "half",
+  });
+  const b = await Body.parse(new Req(req), { maxSize: 1024 });
+  assertEquals(b.post, null);
+  assertEquals(await req.text(), "audio-bytes"); // raw stream untouched by Body
 });
 
 Deno.test("Req.query: always flat, first value wins", () => {

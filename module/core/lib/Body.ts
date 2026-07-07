@@ -1,4 +1,4 @@
-import type { Req } from "./Req.ts";
+import { groupFormData, type Req } from "./Req.ts";
 import { readUploadFile, type UploadedFile } from "./fileStream.ts";
 import { Output } from "./util.ts";
 
@@ -51,22 +51,51 @@ export class Body {
     const body = new Body();
     body.#maxSize = opt.maxSize;
     if (!req.raw.body) return body;
-    if (Number(req.header("content-length") ?? "0") > opt.maxSize) throw new Output("Payload Too Large", { status: 413 });
+
+    const ct = req.header("content-type") ?? "";
+    const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
+    const isForm = ct.includes("multipart/form-data") || ct.includes("application/x-www-form-urlencoded");
+    if (!isJson && !isForm) return body; // raw/streaming bodies stay untouched, readable via req
+
+    const len = req.header("content-length");
+    if (len != null && Number(len) > opt.maxSize) throw new Output("Payload Too Large", { status: 413 });
+    // without a declared length (chunked) the body is read through a capped reader instead
+    const src = len == null ? await cappedResponse(req, opt.maxSize) : null;
 
     const bad = () => { throw new Output("Bad Request", { status: 400 }); };
-    const ct = req.header("content-type") ?? "";
-    if (ct.includes("application/json") || ct.includes("application/csp-report")) {
-      body.#post = deepFreeze(await req.json().catch(bad));
-    } else if (ct.includes("multipart/form-data") || ct.includes("application/x-www-form-urlencoded")) {
+    if (isJson) {
+      body.#post = deepFreeze(await (src ? src.json() : req.json()).catch(bad));
+    } else {
+      const entries = src ? groupFormData(await src.formData().catch(bad)) : await req.parseBody().catch(bad);
       const post: Record<string, unknown> = Object.create(null);
-      for (const [key, val] of Object.entries(await req.parseBody().catch(bad))) {
-        if (val instanceof File) body.#rawFiles[key] = val;
-        else post[key] = val;
+      for (const [key, val] of Object.entries(entries)) {
+        const vals = Array.isArray(val) ? val : [val];
+        const files = vals.filter((v) => v instanceof File) as File[];
+        const fields = vals.filter((v) => !(v instanceof File));
+        if (files.length) body.#rawFiles[key] = files[files.length - 1]; // several files per name: last wins
+        if (fields.length) post[key] = fields.length > 1 ? Object.freeze(fields) : fields[0];
       }
       body.#post = Object.freeze(post);
     }
     return body;
   }
+}
+
+/** Buffer a cloned body with a hard size cap — for chunked bodies that declare no content-length. */
+async function cappedResponse(req: Req, maxSize: number): Promise<Response> {
+  const chunks: BlobPart[] = [];
+  let size = 0;
+  const reader = req.raw.clone().body!.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if ((size += value.length) > maxSize) {
+      reader.cancel().catch(() => {}); // tee-branch cancel resolves only after the raw branch ends — never await it
+      throw new Output("Payload Too Large", { status: 413 });
+    }
+    chunks.push(value);
+  }
+  return new Response(new Blob(chunks), { headers: { "content-type": req.header("content-type") ?? "" } });
 }
 
 // deno-lint-ignore no-explicit-any
