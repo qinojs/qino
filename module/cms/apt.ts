@@ -4,15 +4,15 @@
  * Complete port of all routes from apt-exports.ts.
  */
 
-import { s, Access, AccessError, ConflictError, NotFoundError, getCtx, itemReadDeep } from "../core/mod.ts";
+import { s, Access, AccessError, ConflictError, NotFoundError, itemReadDeep, type RequestContext } from "../core/mod.ts";
 import { $item } from "../../deps.ts";
 import * as fns from "./apt-exports.ts";
 import type { Node } from "./lib/Node.ts";
 
 // Static gate PUBLIC (a node read is reachable for anyone); the per-call level is checked against the resolved node in guard.
-const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }) => node.access().then(a => a >= 1) };
-const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }) => node.access().then(a => a >= 2) };
-const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }) => node.access().then(a => a >= 3) };
+const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: RequestContext) => node.access(ctx.user).then(a => a >= 1) };
+const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: RequestContext) => node.access(ctx.user).then(a => a >= 2) };
+const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: RequestContext) => node.access(ctx.user).then(a => a >= 3) };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
 // ───── Helpers ────────────────────────────────────────────────────────────
@@ -57,8 +57,8 @@ async function contentBlocks(node: Node): Promise<any[]> {
 const node = {
   paramSchema: s.number().describe("Node-ID"),
 
-  resolve: async (id: number) => {
-    const app = getCtx().app;
+  resolve: async (id: number, ctx: RequestContext) => {
+    const app = ctx.app;
     const n = await app.cms.node(id);
     if (!n.is()) throw new NotFoundError(`Node ${id} not found`);
     if ((await n.access()) < 1) throw new AccessError();
@@ -156,8 +156,8 @@ const node = {
       ...nodeWrite,
       input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
       output: s.object({ changed: s.boolean() }),
-      execute: async ({ node, value, lang }: any) => {
-        const changed = await node.title(lang ?? getCtx().lang, value);
+      execute: async ({ node, value, lang }: any, ctx: RequestContext) => {
+        const changed = await node.title(lang ?? ctx.lang, value);
         return { changed: changed !== false };
       },
     },
@@ -171,8 +171,8 @@ const node = {
         ...nodeWrite,
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),
-        execute: async ({ node, name, value, lang }: any) => {
-          const changed = await node.text(name, lang ?? getCtx().lang, value);
+        execute: async ({ node, name, value, lang }: any, ctx: RequestContext) => {
+          const changed = await node.text(name, lang ?? ctx.lang, value);
           return { changed: changed !== false };
         },
       },
@@ -267,8 +267,7 @@ const node = {
       description: "Create a new child page",
       ...nodeWrite,
       input: s.object({ title: s.string() }),
-      execute: async ({ node, title }: any) => {
-        const ctx = getCtx();
+      execute: async ({ node, title }: any, ctx: RequestContext) => {
         const id = await node.createChild();
         if (!id) throw new Error("createChild failed");
         const child = await node.cms.node(id);
@@ -285,8 +284,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ deep: s.boolean().default(false).describe("If true, sub-pages are copied too") }),
       output: s.object({ id: s.string() }),
-      execute: async ({ node, deep }: any) => {
-        const ctx = getCtx();
+      execute: async ({ node, deep }: any, ctx: RequestContext) => {
         const copied = await node.copy(deep, async (cp: any) => {
           if ((await cp.access()) < 1) return false;
         });
@@ -328,8 +326,7 @@ const node = {
       description: "Create a new content block",
       ...nodeWrite,
       input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\"") }),
-      execute: async ({ node, module }: any) => {
-        const ctx = getCtx();
+      execute: async ({ node, module }: any, ctx: RequestContext) => {
         const cont = await node.createCont({ module });
         if (!cont) throw new Error("createCont failed");
         await cont.changeUser(ctx.user, 3);
@@ -343,9 +340,9 @@ const node = {
       description: "Set public access level of the node",
       ...nodeAdmin,
       input: s.object({ value: s.optional(s.number()).describe("Access level (0 = private, 1 = public). Omit to reset.") }),
-      execute: async ({ node, value }: any) => {
+      execute: async ({ node, value }: any, ctx: RequestContext) => {
         await node.set("access", value == null ? null : Number(value));
-        await node.changeUser(getCtx().user, 3);
+        await node.changeUser(ctx.user, 3);
         return { public: !!value };
       },
     },
@@ -515,9 +512,9 @@ const node = {
       description: "Add a redirect URL",
       ...nodeWrite,
       input: s.object({ url: s.string() }),
-      execute: async ({ node, url }: any) => {
+      execute: async ({ node, url }: any, ctx: RequestContext) => {
         if (await fns.cmsRequestUsed(url)) throw new Error("URL already in use");
-        await getCtx().app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${url}, ${node.id})`;
+        await ctx.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${url}, ${node.id})`;
         return { ok: true };
       },
     },
@@ -526,8 +523,8 @@ const node = {
       description: "Remove a redirect URL",
       ...nodeWrite,
       input: s.object({ url: s.string() }),
-      execute: async ({ node, url }: any) => {
-        await getCtx().app.db.query`DELETE FROM page_redirect WHERE request = ${url} AND redirect = ${node.id}`;
+      execute: async ({ node, url }: any, ctx: RequestContext) => {
+        await ctx.app.db.query`DELETE FROM page_redirect WHERE request = ${url} AND redirect = ${node.id}`;
         return { ok: true };
       },
     },
@@ -566,11 +563,11 @@ const node = {
     post: {
       description: "Call module-specific node API",
       ...nodeRead,
-      execute: async ({ node }: { node: Node }) => {
+      execute: async ({ node }: { node: Node }, ctx: RequestContext) => {
         try {
           const api = node.module?.plugin?.cms?.node?.api;
           if (typeof api !== "function") return null;
-          const vars = getCtx().post;
+          const vars = ctx.post;
           return await api(node, vars) ?? null;
         } catch (e: any) {
           if (!e?.message?.includes("Module not found")) throw e;
@@ -620,8 +617,7 @@ export const api = {
       description: "Set clipboard node (cut)",
       access: Access.USER,
       input: s.object({ value: s.optional(s.number()).describe("Node-ID to cut. Omit to clear clipboard.") }),
-      execute: async ({ value }: any) => {
-        const ctx = getCtx();
+      execute: async ({ value }: any, ctx: RequestContext) => {
         if (value) {
           const P = await ctx.app.cms.node(value);
           if ((await P.access()) < 2) throw new AccessError();
@@ -646,8 +642,8 @@ export const api = {
       description: "Get node ID from a text ID (title or text field)",
       access: Access.USER,
       input: s.object({ id: s.number() }),
-      execute: async ({ id }: any) => {
-        const db = getCtx().app.db;
+      execute: async ({ id }: any, ctx: RequestContext) => {
+        const db = ctx.app.db;
         const pid = await db.one`SELECT page_id FROM page_text WHERE text_id = ${id}`;
         if (pid) return { id: pid };
         const pid2 = await db.one`SELECT id FROM page WHERE title_id = ${id}`;
@@ -664,8 +660,7 @@ export const api = {
         description: "Set text or title by text ID (inline editor)",
         access: Access.USER,
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language") }),
-        execute: async ({ id, value, lang }: any) => {
-          const ctx = getCtx();
+        execute: async ({ id, value, lang }: any, ctx: RequestContext) => {
           const db = ctx.app.db;
           const lang_ = lang ?? ctx.lang;
           const row = await db.row`SELECT name, page_id FROM page_text WHERE text_id = ${id}`;
