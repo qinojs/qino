@@ -80,6 +80,7 @@ export class SessionManager {
   }
 }
 
+
 function setCookie(ctx: RequestContext): void {
   const https = ctx.app.https;
   const name = cookiePrefix(https, ctx.appURL) + COOKIE_NAME;
