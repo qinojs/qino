@@ -96,32 +96,49 @@ export class Node {
         const usrId = Number(user);
         const cache = ctx.cms.accessCache;
         const key = `${this.id}:${usrId}`;
-        cache[key] ??= await this.#calcUsrAccess(user);
+        if (cache[key] === undefined) {
+            const e: AppEvents["cms::calcAccess"] = { node: this, user, access: await this.#calcUsrAccess(user) };
+            await this.app.fire("cms::calcAccess", e);
+            cache[key] = e.access;
+        }
         return cache[key];
     }
 
-    async #calcUsrAccess(Usr?: dbEntry_usr | null): Promise<number> {
-        if (await Usr?.get("superuser")) return 3;
+    async #calcUsrAccess(user?: dbEntry_usr | null): Promise<number> {
+
+        if (await user?.get("superuser")) return 3;
+
+        const nodeLevel = this.vs.access === null ? null : Number(this.vs.access ?? "0");
+
+        // inherited (or explicit user) access level
         const parent = await this.parent();
-        if (this.vs.access === null && parent) {
-            const parentAccess = await parent.access(Usr);
-            const isUser = await Usr?.is?.();
-            return isUser ? Math.max(parentAccess, await this.#usrAccessOnly(Usr)) : parentAccess;
+        if (nodeLevel === null && parent) {
+            return Math.max(await parent.access(user), await this.#accessUserLevel(user));
         }
 
-        if (!Usr) return Number(this.vs.access ?? "0") ? 1 : 0;
-        const access = Math.max(Number(this.vs.access ?? "0"), await this.#usrAccessOnly(Usr));
-        if (access === 3) return 3;
-        const grps = await Usr.grps?.() ?? [0];
-        const grpAccess = Number(await this.db.one`
-            SELECT max(access) AS access FROM page_access_grp
-            WHERE grp_id != 0 AND page_id = ${this.id}
-              AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})` ?? "0") || 0;
+        // user
+        if (!user) return Number(nodeLevel); // no user, return node level (or 0 if null)
+        const access = Math.max(Number(nodeLevel), await this.#accessUserLevel(user));
+        if (access === 3) return 3; // already ADMIN, no need to check groups
+
+        // group
+        const grpAccess = await this.#accessGroupLevel(await user.grps?.());
+        
+        // return the higher of the two
         return Math.max(access, grpAccess);
     }
-
-    async #usrAccessOnly(Usr?: dbEntry_usr | null): Promise<number> {
-        return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(Usr)}` ?? "0") || 0;
+    async #accessGroupLevel(grps?: number[] | null): Promise<number> {
+        if (!grps || !grps.length) return 0;
+        const access = Number(await this.db.one`
+            SELECT max(access) AS access FROM page_access_grp
+            WHERE page_id = ${this.id}
+                AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`) || 0;
+        return access;
+    }
+    async #accessUserLevel(user?: dbEntry_usr | null): Promise<number> {
+        if (!user) return 0;
+        if (!await user?.is?.()) return 0;
+        return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
 
     /** Whether the current user may create content of the given module here: WRITE <= module level <= user level. */
@@ -137,11 +154,6 @@ export class Node {
     async html(vars: Record<string, any> = {}): Promise<HtmlString> {
         if (!(await this.isReadable())) return new HtmlString("");
         const ctx = getCtx();
-
-        // Disabled module (cms_access 0): content hidden except for superusers
-        // very bad: this inline check should be cached and be made in the access() function
-        const modLevel = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${this.vs.module}` ?? "1");
-        if (!modLevel && !await ctx.user?.get("superuser")) return new HtmlString("");
 
         const renderPath = ctx.cms.renderPath;
         if (renderPath.has(this.id)) {
