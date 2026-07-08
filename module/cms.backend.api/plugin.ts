@@ -1,4 +1,4 @@
-import { hee, getCtx, type RequestContext, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, isStaticAccess, Access, type Method, type AptNode, type Verb, type App } from "../core/mod.ts";
+import { hee, getCtx, type RequestContext, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type AptNode, type Verb, type App } from "../core/mod.ts";
 import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
 
@@ -27,13 +27,13 @@ interface Route {
 }
 
 function accessLevel(action: Verb, ctx: RequestContext): Route["accessLevel"] {
-  const { access } = action;
+  const { access, guard } = action;
   if (!access) return "none";
-  if (!isStaticAccess(access)) return "dynamic";
+  if (guard) return "dynamic";
   if (access === Access.PUBLIC) return "public";
   if (access === Access.SUPERUSER) return "superuser";
   if (access === Access.USER) return "user";
-  return access({}, ctx) ? "user" : "none";
+  return access(ctx) ? "user" : "none";
 }
 
 function* walk(node: AptNode, ctx: RequestContext, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
@@ -128,8 +128,10 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
             ${inputForm           ? `<div class="-section"><b>Body</b>${inputForm}</div>` : ""}
             ${queryForm           ? `<div class="-section"><b>Query</b>${queryForm}</div>` : ""}
           ` : ""}
-          <button type="submit">Send</button>
-          <button type="button" data-check-access="${idx}">Check access</button>
+          <u2-buttongroup>
+            <button type="submit">Send</button>
+            <button type="button" data-check-access="${idx}">Check access</button>
+          </u2-buttongroup>
         </form>
         <u2-code id="api-result-${idx}"></u2-code>
       </div>

@@ -8,7 +8,6 @@ import {
   ValidationError,
   aptClient,
   invoke,
-  isStaticAccess,
   toTools,
 } from "../lib/apt/mod.ts";
 import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
@@ -45,7 +44,8 @@ const api = {
       update: {
         post: {
           description: "Update thing",
-          access: ({ thing }: any) => thing.writable,
+          access: Access.PUBLIC,
+          guard: ({ thing }: any) => thing.writable,
           input: s.object({
             title: s.string(),
             count: s.number(),
@@ -75,12 +75,6 @@ const api = {
 function withCtx<T>(fn: () => T): T {
   return requestStorage.run(ctx, fn);
 }
-
-Deno.test("apt: static access metadata is marked", () => {
-  assertEquals(isStaticAccess(Access.PUBLIC), true);
-  assertEquals(isStaticAccess(Access.USER), true);
-  assertEquals(isStaticAccess(() => true), false);
-});
 
 Deno.test("apt: invoke resolves path params and validates output", async () => {
   await withCtx(async () => {

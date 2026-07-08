@@ -8,7 +8,10 @@ export interface Verb {
   input?: StandardSchema;
   query?: StandardSchema;
   output?: StandardSchema;
-  access?: (params: Params, ctx: RequestContext) => boolean | Promise<boolean>;
+  /** Static admissibility gate (param-free): who may use this at all. Evaluated for listings and on every call. */
+  access?: (ctx: RequestContext) => boolean | Promise<boolean>;
+  /** Per-call check (param-aware): is this concrete call allowed. Evaluated on invoke, after access. */
+  guard?: (params: Params, ctx: RequestContext) => boolean | Promise<boolean>;
   execute(params: Params, ctx: RequestContext): unknown | Promise<unknown>;
 }
 

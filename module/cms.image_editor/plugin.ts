@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { Output, type App, type AptTree, type RequestContext, s } from "../core/mod.ts";
+import { Access, Output, type App, type AptTree, type RequestContext, s } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
@@ -28,19 +28,21 @@ export const dbSchema = {
   },
 };
 
-const guard = async ({ file }: any, ctx: RequestContext) => isWritable(ctx, Number(file));
+const canWrite = async ({ file }: any, ctx: RequestContext) => isWritable(ctx, Number(file));
 
 export const api: AptTree = {
   meta: {
     ":file": {
       get: {
         description: "Read editable image meta (name, hpos, vpos).",
-        access: guard,
+        access: Access.USER,
+        guard: canWrite,
         execute: ({ file }: any, ctx: any) => getMeta(ctx, Number(file)),
       },
       put: {
         description: "Update image meta (name, hpos, vpos).",
-        access: guard,
+        access: Access.USER,
+        guard: canWrite,
         input: s.object({
           name: s.optional(s.string()),
           hpos: s.optional(s.number()),
@@ -54,7 +56,8 @@ export const api: AptTree = {
     ":file": {
       get: {
         description: "Version history of an image as an HTML table.",
-        access: guard,
+        access: Access.USER,
+        guard: canWrite,
         execute: ({ file }: any, ctx: any) => getHistory(ctx, Number(file)),
       },
     },
@@ -63,7 +66,8 @@ export const api: AptTree = {
     ":file": {
       post: {
         description: "Restore a previous version of an image.",
-        access: guard,
+        access: Access.USER,
+        guard: canWrite,
         input: s.object({ log: s.number() }),
         execute: ({ file, log }: any, ctx: any) => restore(ctx, Number(file), Number(log)),
       },

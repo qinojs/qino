@@ -1,17 +1,8 @@
-import type { Params, Verb } from "./types.ts";
+import type { Verb } from "./types.ts";
 
-const staticAccessKey = Symbol("staticAccess");
-
-function staticAccess(fn: NonNullable<Verb["access"]>): NonNullable<Verb["access"]> {
-  return Object.assign(fn, { [staticAccessKey]: true as const });
-}
-
-export function isStaticAccess(fn: NonNullable<Verb["access"]>): boolean {
-  return (fn as unknown as Record<PropertyKey, unknown>)[staticAccessKey] === true;
-}
-
+/** Static admissibility gates for `Verb.access` (param-free). Per-call refinement goes in `Verb.guard`. */
 export const Access: Record<"PUBLIC" | "USER" | "SUPERUSER", NonNullable<Verb["access"]>> = {
-  PUBLIC:    staticAccess(() => true),
-  USER:      staticAccess((_: Params, ctx) => ctx.user !== null),
-  SUPERUSER: staticAccess((_: Params, ctx) => ctx.user?.get("superuser").then(Boolean) ?? Promise.resolve(false)),
+  PUBLIC:    () => true,
+  USER:      (ctx) => ctx.user !== null,
+  SUPERUSER: (ctx) => ctx.user?.get("superuser").then(Boolean) ?? Promise.resolve(false),
 };
