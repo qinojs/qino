@@ -71,25 +71,25 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
   assertEquals((db.calls[1][1] as unknown[])[3], 9);
 });
 
-Deno.test("SessionManager: setCookie uses __Secure- prefix on sub-path mounts", () => {
+Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", () => {
   const sessions = new SessionManager(fakeDb() as any);
   const ctx = new RequestContext();
   ctx.app = { https: true } as any;
   ctx.appURL = "/app/";
-  ctx.sess = { token: "token" } as any;
+  ctx.sess = { token: "token", isNew: true } as any;
 
-  sessions.setCookie(ctx);
+  sessions.setCookieIfNew(ctx);
   assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Secure-qgSession=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
 });
 
-Deno.test("SessionManager: setCookie uses __Host- prefix at root", () => {
+Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", () => {
   const sessions = new SessionManager(fakeDb() as any);
   const ctx = new RequestContext();
   ctx.app = { https: true } as any;
   ctx.appURL = "/";
-  ctx.sess = { token: "token" } as any;
+  ctx.sess = { token: "token", isNew: true } as any;
 
-  sessions.setCookie(ctx);
+  sessions.setCookieIfNew(ctx);
   assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qgSession=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 

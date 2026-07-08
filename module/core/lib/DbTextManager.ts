@@ -82,9 +82,9 @@ export class DbText {
     const t = await this.orFallback(lang);
     return t.get();
   }
-  toString(): string {
-    throw new Error("DbText: toString() not implemented");
-  }
+
+  toString(): string { throw new Error("DbText: toString() not implemented"); }
+
 }
 
 export class DbTextLang {

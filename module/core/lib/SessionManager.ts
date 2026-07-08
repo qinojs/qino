@@ -7,7 +7,6 @@ import type { RequestContext } from "./RequestContext.ts";
 
 const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qgSession";
-const cookieName = (ctx: RequestContext) => cookiePrefix(ctx.app.https, ctx.appURL) + COOKIE_NAME;
 
 /** One session: identity (token/id), server-trusted reactive data, and its own touch timer. */
 export class Session {
@@ -69,14 +68,7 @@ export class SessionManager {
 
   /** Send the cookie when the session was created or rotated this request (`regenerateId` yields a new-marked session). */
   setCookieIfNew(ctx: RequestContext): void {
-    if (ctx.sess.isNew) this.setCookie(ctx);
-  }
-
-  setCookie(ctx: RequestContext): void {
-    const https = ctx.app.https;
-    const parts = [`${cookieName(ctx)}=${ctx.sess.token}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
-    if (https) parts.push("Secure");
-    ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
+    if (ctx.sess.isNew) setCookie(ctx);
   }
 
   async #create(): Promise<Session> {
@@ -86,4 +78,12 @@ export class SessionManager {
     if (!id) throw new Error("Could not create session");
     return new Session(this.#db, id, token, EMPTY_SESSION, true);
   }
+}
+
+function setCookie(ctx: RequestContext): void {
+  const https = ctx.app.https;
+  const name = cookiePrefix(https, ctx.appURL) + COOKIE_NAME;
+  const parts = [`${name}=${ctx.sess.token}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
+  if (https) parts.push("Secure");
+  ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
 }

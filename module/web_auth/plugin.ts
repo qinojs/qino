@@ -262,8 +262,8 @@ export const api: AptTree = {
 
           await db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${unixTime()} WHERE id = ${r.cred.id}`;
 
-          await login(ctx, usrId);
-          ctx.app.sessions.setCookie(ctx);
+          if (!await login(ctx, usrId)) return { ok: false, error: "user_inactive" };
+          ctx.app.sessions.setCookieIfNew(ctx);
           await ctx.app.fire("web_auth:login", { usr_id: usrId });
           return { ok: true };
         },

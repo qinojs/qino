@@ -128,14 +128,14 @@ class AiChat extends HTMLElement {
         headers: { 'content-type': 'application/json', 'X-CSRF-Token': globalThis.qino?.token },
         body: JSON.stringify({ content: text, context: this.#context }),
       });
-      await this.#readStream(res, (ev) => {
+      await readStream(res, (ev) => {
         if (ev.delta != null) {
           acc += ev.delta;
           out.classList.remove('loading');
           out.innerHTML = DOMPurify.sanitize(marked.parse(acc));
           out.scrollIntoView({ block: 'nearest' });
         } else if ('done' in ev) {
-          this.#finish(out, ev.done, acc);
+          finish(out, ev.done, acc);
         } else if (ev.error) {
           out.textContent = ev.error;
           out.classList.remove('loading');
@@ -146,31 +146,6 @@ class AiChat extends HTMLElement {
       out.classList.remove('loading');
     } finally {
       this.#setLoading(false);
-    }
-  }
-
-  #finish(out, done, acc) {
-    out.classList.remove('loading');
-    out.innerHTML = DOMPurify.sanitize(marked.parse(done || acc));
-  }
-
-  async #readStream(res, onEvent) {
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '';
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      let nl;
-      while ((nl = buf.indexOf('\n\n')) >= 0) {
-        const event = buf.slice(0, nl);
-        buf = buf.slice(nl + 2);
-        for (const line of event.split('\n')) {
-          const m = line.match(/^data:\s?(.*)$/);
-          if (m) try { onEvent(JSON.parse(m[1])); } catch { /* keepalive */ }
-        }
-      }
     }
   }
 
@@ -192,3 +167,30 @@ class AiChat extends HTMLElement {
 }
 
 customElements.define('ai-chat', AiChat);
+
+
+
+function finish(out, done, acc) {
+  out.classList.remove('loading');
+  out.innerHTML = DOMPurify.sanitize(marked.parse(done || acc));
+}
+
+async function readStream(res, onEvent) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n\n')) >= 0) {
+      const event = buf.slice(0, nl);
+      buf = buf.slice(nl + 2);
+      for (const line of event.split('\n')) {
+        const m = line.match(/^data:\s?(.*)$/);
+        if (m) try { onEvent(JSON.parse(m[1])); } catch { /* keepalive */ }
+      }
+    }
+  }
+}

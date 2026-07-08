@@ -116,7 +116,7 @@ export class App extends Emitter<AppEvents> {
             if (localPath) return await this.#static(req, localPath);
             ctx = await RequestContext.create(this, req, base);
         } catch (e: unknown) {
-            return this.#earlyError(e);
+            return earlyError(e);
         }
         return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.cleanup()));
     }
@@ -135,7 +135,7 @@ export class App extends Emitter<AppEvents> {
             await this.fire("action", { ctx });
             res = await this.#route(ctx);
         } catch (e: unknown) {
-            this.#handleError(ctx, e);
+            handleError(ctx, e);
             res = await this.#buildResponse(ctx);
         }
         await this.fire("response-ready", { req: ctx.req, res, ctx }); // last hook, sees every response (static, dbFile, api, pages)
@@ -173,26 +173,6 @@ export class App extends Emitter<AppEvents> {
         return this.#buildResponse(ctx);
     }
 
-    /** Map a control-flow signal onto the request context's pending response. */
-    #handleError(ctx: RequestContext, e: unknown): void {
-        if (e instanceof Output) {
-            for (const [k, v] of e.buildHeaders()) ctx.responseHeaders.set(k, v);
-            ctx.responseBody = e.body;
-            ctx.responseStatus = e.status;
-        } else {
-            console.error("Error:", e);
-            ctx.responseStatus = 500;
-            ctx.responseBody = "<h1>500 Internal Server Error</h1>";
-        }
-    }
-
-    /** Errors raised before a request context exists (init, pre-filter, 413). */
-    #earlyError(e: unknown): Response {
-        if (e instanceof Output) return e.toResponse();
-        console.error("Error:", e);
-        return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
-    }
-
     async #buildResponse(ctx: RequestContext): Promise<Response> {
         await this.fire("respond", { ctx });
         const headers = new Headers(ctx.responseHeaders);
@@ -213,4 +193,24 @@ export class App extends Emitter<AppEvents> {
         }
         if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
     }
+}
+
+/** Map a control-flow signal onto the request context's pending response. */
+function handleError(ctx: RequestContext, e: unknown): void {
+    if (e instanceof Output) {
+        for (const [k, v] of e.buildHeaders()) ctx.responseHeaders.set(k, v);
+        ctx.responseBody = e.body;
+        ctx.responseStatus = e.status;
+    } else {
+        console.error("Error:", e);
+        ctx.responseStatus = 500;
+        ctx.responseBody = "<h1>500 Internal Server Error</h1>";
+    }
+}
+
+/** Errors raised before a request context exists (init, pre-filter, 413). */
+function earlyError(e: unknown): Response {
+    if (e instanceof Output) return e.toResponse();
+    console.error("Error:", e);
+    return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
 }
