@@ -51,8 +51,8 @@ async function render(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; va
   }
 
   return `
-<div class="u2-card -main" style="max-height:90vh; overflow:auto">
-  <table class="u2-table -Sticky" style="width:auto">
+<div class="u2-card -main" style="max-height:90vh; overflow:auto; flex-grow:0">
+  <table class="u2-table -Sticky">
     <thead><tr>
       <th>${await app.t`Module`}
       <th>${await app.t`Type`}

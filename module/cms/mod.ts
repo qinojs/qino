@@ -3,6 +3,7 @@
 import { CMS } from "./lib/CMS.ts";
 import { CmsContext } from "./lib/CmsContext.ts";
 import { RequestContext } from "../core/mod.ts";
+import type { dbEntry_usr } from "../core/mod.ts";
 import type { Node } from "./lib/Node.ts";
 
 declare module "../core/lib/App.ts" {
@@ -10,6 +11,7 @@ declare module "../core/lib/App.ts" {
   interface AppEvents {
     "cms-ready": { ctx: RequestContext };
     "page::construct": { Page: Node };
+    "cms::calcAccess": { node: Node; user?: dbEntry_usr | null; access: number };
     "cms.node.render": { node: Node; render: ((node: Node, opts: Record<string, unknown>) => unknown) | null };
   }
 }
