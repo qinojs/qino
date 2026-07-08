@@ -1,0 +1,22 @@
+import { Access, type App, type AptTree, type Params, type RequestContext } from "../core/mod.ts";
+import type {} from "../cms/mod.ts";
+import { webmcpTools } from "./mod.ts";
+
+export const name = "cms.webmcp";
+export const needs = ["cms"];
+
+export const api: AptTree = {
+  tools: {
+    get: {
+      description: "List WebMCP tool descriptors for the current app (name, description, inputSchema, method, path).",
+      access: Access.PUBLIC,
+      execute: (_params: Params, ctx: RequestContext) => webmcpTools(ctx.app.aptTree, ctx),
+    },
+  },
+};
+
+export function init(app: App): void {
+  app.on("cms-ready", ({ ctx }) => {
+    ctx.html.scripts.add(ctx.sysURL + "cms.webmcp/pub/webmcp.mjs"); // all visitors; tool list is access-filtered, each call enforced
+  });
+}
