@@ -2,8 +2,8 @@
 // https://webmachinelearning.github.io/webmcp/
 import { apt } from "../../core/pub/js/qino.js";
 
-const mc = navigator.modelContext ?? document.modelContext;
-if (mc) register();
+const mc = document.modelContext;
+mc && register();
 
 async function register() {
   const tools = await apt["cms.webmcp"].tools.get();
