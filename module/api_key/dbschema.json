@@ -1,0 +1,43 @@
+{
+  "properties": {
+    "api_key": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "prefix": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": true
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "expires": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "usr_id", "name", "prefix", "hash", "created"]
+      }
+    }
+  }
+}
