@@ -22,13 +22,12 @@ export function keyPrefix(token: string): string {
   return token.slice(0, 9);
 }
 
-/** Look a token up to its (non-expired) key and bump `last_used`. Touches no request/session
- *  state — the seam bearer auth plugs into; see USAGE.md → "Activating bearer auth". */
+/** Look a token up to its (non-expired) key. Touches no request/session state —
+ *  the seam bearer auth plugs into; see USAGE.md → "Activating bearer auth". */
 export async function verifyToken(app: App, token: string): Promise<{ id: number; usrId: number } | null> {
   if (!token.startsWith(PREFIX)) return null;
   const row = await app.db.row`SELECT id, usr_id, expires FROM api_key WHERE hash = ${hashToken(token)}`;
   if (!row) return null;
   if (row.expires && Number(row.expires) < unixTime()) return null;
-  void app.db.exec`UPDATE api_key SET last_used = ${unixTime()} WHERE id = ${row.id}`.catch(() => {});
   return { id: Number(row.id), usrId: Number(row.usr_id) };
 }

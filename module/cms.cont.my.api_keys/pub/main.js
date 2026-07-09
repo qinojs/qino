@@ -11,7 +11,7 @@ cms.initNode("cont.my.api_keys", async (el) => {
   const token = el.querySelector("[data-token]");
   const msg   = el.querySelector(".-msg");
 
-  const L = { lastUsed: await t`last used`, expires: await t`expires`, empty: await t`No keys yet.`, del: await t`Really delete this key?` };
+  const L = { expires: await t`expires`, empty: await t`No keys yet.`, del: await t`Really delete this key?` };
 
   const load = async () => {
     try {
@@ -19,7 +19,7 @@ cms.initNode("cont.my.api_keys", async (el) => {
       list.innerHTML = keys.length
         ? keys.map((k) => `<div data-key>
             <code>${esc(k.prefix)}…</code> <strong>${esc(k.name)}</strong>
-            <small>${fmt(k.created)} · ${L.lastUsed} ${fmt(k.lastUsed)}${k.expires ? ` · ${L.expires} ${fmt(k.expires)}` : ""}</small>
+            <small>${fmt(k.created)}${k.expires ? ` · ${L.expires} ${fmt(k.expires)}` : ""}</small>
             <button data-del="${k.id}"><u2-ico icon=delete>✕</u2-ico></button>
           </div>`).join("")
         : esc(L.empty);

@@ -20,11 +20,11 @@ async function render(node: Node): Promise<string> {
   }
 
   const rows = await db.query`
-    SELECT k.id, k.name, k.prefix, k.created, k.last_used, k.expires,
+    SELECT k.id, k.name, k.prefix, k.created, k.expires,
            u.id AS usr_id, u.email, u.firstname, u.lastname
     FROM api_key k
     LEFT JOIN usr u ON u.id = k.usr_id
-    ORDER BY k.last_used DESC, k.created DESC LIMIT 500`;
+    ORDER BY k.created DESC LIMIT 500`;
 
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const tableRows = rows.map((r) => {
@@ -36,13 +36,12 @@ async function render(node: Node): Promise<string> {
       <td>${hee(String(r.name ?? ""))}
       <td><code>${hee(String(r.prefix ?? ""))}…</code>
       <td>${fmt(r.created)}
-      <td>${fmt(r.last_used)}
       <td>${r.expires ? fmt(r.expires) : "–"}
       <td>${delBtn}`;
   }).join("\n");
 
   const empty = rows.length === 0
-    ? '<tr><td colspan="8" style="text-align:center;padding:1em">No API keys.'
+    ? '<tr><td colspan="7" style="text-align:center;padding:1em">No API keys.'
     : "";
 
   return `<div class="u2-card">
@@ -55,7 +54,6 @@ async function render(node: Node): Promise<string> {
         <th>Name
         <th>Prefix
         <th>Created
-        <th>Last used
         <th>Expires
         <th width=80>
       <tbody>${tableRows || empty}

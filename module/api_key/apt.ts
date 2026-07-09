@@ -8,8 +8,8 @@ export const api: AptTree = {
       access: Access.USER,
       execute: async () => {
         const ctx = getCtx();
-        const rows = await ctx.app.db.query`SELECT id, name, prefix, created, last_used, expires FROM api_key WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
-        return rows.map((r) => ({ id: r.id, name: r.name, prefix: r.prefix, created: r.created, lastUsed: r.last_used, expires: r.expires }));
+        const rows = await ctx.app.db.query`SELECT id, name, prefix, created, expires FROM api_key WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
+        return rows.map((r) => ({ id: r.id, name: r.name, prefix: r.prefix, created: r.created, expires: r.expires }));
       },
     },
     post: {
@@ -25,7 +25,6 @@ export const api: AptTree = {
           prefix: keyPrefix(token),
           hash: hashToken(token),
           created: unixTime(),
-          last_used: 0,
           expires: expires ? Number(expires) : null,
         });
         return { id, token };
