@@ -36,41 +36,12 @@ curl -H "Authorization: Bearer qk_…" {appURL}api/<module>/<endpoint>
 
 Der Request wird als der Key-User behandelt; jeder `Access.USER`-Endpoint funktioniert damit.
 
-## Activating bearer auth (saubere core-Eingriffe)
+## Bearer auth
 
-Das Modul mutiert **bewusst nichts** an fremdem Request-State. Damit ein `Authorization: Bearer`
-zur Request-Identität wird, fehlt im core nur **eine** Sache: ein generischer, request-scoped
-Auth-Punkt (nicht api_key-spezifisch — jeder künftige Authenticator nutzt ihn). Das `action`-Event
-und der CSRF-Skip (`AptFetchAuth`) existieren bereits und werden nur wiederverwendet.
+Funktioniert out of the box: das Modul hängt sich in `init` an das core-Event `authenticate`
+(request-scoped Identität via `ctx.authenticate(usrId)`, gefeuert am Anfang von `initRequest`).
 
-**Pflicht:**
-
-1. **`core/lib/RequestContext.ts`** — request-scoped Identität (der einzige echte Neuzugang;
-   eigenes Feld, damit die anonyme Session unberührt bleibt):
-   ```ts
-   statelessAuth = false;              // authed by a non-cookie credential (API key, …)
-   #authUserId = 0;
-   authenticate(userId: number): void { this.#authUserId = userId; this.statelessAuth = true; }
-   get userId(): number { return this.#authUserId || Number(this.sess.data.liveUser() || 0); }
-   ```
-2. **`core/lib/App.ts`** (`#route`, ~Z. 156) — bestehendes `opts.auth` übergeben, damit CSRF für
-   stateless entfällt (ein Bearer-Request trägt kein ambient Cookie):
-   ```ts
-   return aptFetch(ctx.req, this.aptTree, "/" + uri.slice("api/".length), { auth: () => ctx.statelessAuth });
-   ```
-3. **`api_key/plugin.ts`** — Listener auf dem bestehenden `action`-Event (feuert vor dem Routing):
-   ```ts
-   export function init(app: App): void {
-     app.on("action", async ({ ctx }) => {
-       if (ctx.userId) return;
-       const m = /^Bearer\s+(qk_[A-Za-z0-9_-]+)$/.exec(ctx.req.header("authorization")?.trim() ?? "");
-       const key = m && await verifyToken(app, m[1]);
-       if (key) ctx.authenticate(key.usrId);
-     });
-   }
-   ```
-   `verifyToken` (in `lib/keys.ts`) ist dafür bereits vorhanden.
-
-**Optional (nur Aufräumen):** In `core/lib/App.ts` (`#run`, ~Z. 134) den Cookie/Session-Overhead
-pro API-Call sparen: `if (!ctx.statelessAuth) this.sessions.setCookieIfNew(ctx);`. Nicht nötig für
-die Korrektheit — die erzeugte Session bleibt anonym.
+- **Stateless:** kein Session-/`cid`-Cookie, keine client-Zeile; CSRF entfällt (kein ambient Cookie).
+- **Präzedenz:** ein mitgesendeter Bearer schlägt eine allfällige Cookie-Session.
+- **Laut bei Fehlern:** ein `qk_`-Bearer, der ungültig/abgelaufen ist oder zu einem inaktiven
+  User gehört → **401**, kein stiller Anonym-Fallback. Fremde Bearer-Formate fallen durch.

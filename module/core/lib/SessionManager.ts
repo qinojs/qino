@@ -16,6 +16,7 @@ export class Session {
   id: string;
   data: ItemProxy;
   isNew: boolean;
+  cookieSent = false;
 
   constructor(db: Db, sessId: string | number, token: string, data: string | null, isNew: boolean) {
     this.#db = db;
@@ -66,9 +67,12 @@ export class SessionManager {
     return new Session(this.#db, row.id, token, EMPTY_SESSION, true);
   }
 
-  /** Send the cookie when the session was created or rotated this request (`regenerateId` yields a new-marked session). */
+  /** Send the cookie when the session was created or rotated this request (`regenerateId` yields a new-marked
+   *  session). Idempotent per session object, so `login()` and the core request path can both call it. */
   setCookieIfNew(ctx: RequestContext): void {
-    if (ctx.sess.isNew) setCookie(ctx);
+    if (!ctx.sess.isNew || ctx.sess.cookieSent) return;
+    ctx.sess.cookieSent = true;
+    setCookie(ctx);
   }
 
   async #create(): Promise<Session> {

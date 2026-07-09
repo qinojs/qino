@@ -66,8 +66,16 @@ export class RequestContext {
 
   get url(): URL { return new URL(this.req.url); }
 
+  #authUserId = 0;
+  /** Establish request-scoped identity without any session/cookie side effect. */
+  authenticate(userId: number): void {
+    this.#authUserId = userId;
+  }
+  /** True when a non-cookie credential (API key, …) identifies this request. */
+  get statelessAuth(): boolean { return this.#authUserId !== 0; }
+
   get userId(): number {
-    return Number(this.sess.data.liveUser() || 0);
+    return this.#authUserId || Number(this.sess.data.liveUser() || 0);
   }
   get user(): dbEntry_usr | null {
     return this.userId ? this.app.db.table('usr').entry(this.userId) as dbEntry_usr : null;

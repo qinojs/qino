@@ -30,6 +30,7 @@ const defaultConfig = {
 export interface AppEvents {
     "init": { app: App };
     "request-start": { req: Req };
+    "authenticate": { ctx: RequestContext };
     "action": { ctx: RequestContext };
     "render": { ctx: RequestContext };
     "html-ready": { ctx: RequestContext };
@@ -131,7 +132,7 @@ export class App extends Emitter<AppEvents> {
         let res: Response;
         try {
             await initRequest(ctx);
-            this.sessions.setCookieIfNew(ctx);
+            if (!ctx.statelessAuth) this.sessions.setCookieIfNew(ctx);
             await this.fire("action", { ctx });
             res = await this.#route(ctx);
         } catch (e: unknown) {
@@ -152,8 +153,9 @@ export class App extends Emitter<AppEvents> {
             return this.dbFiles.output(uri.slice("dbFile/".length), ctx.req.raw);
 
         // apt always signals via thrown Output (success or error) — caught in #run.
+        // stateless requests carry no ambient cookie, so CSRF checks don't apply
         if (uri === "api" || uri.startsWith("api/"))
-            return aptFetch(ctx.req, this.aptTree, "/" + uri.slice("api/".length));
+            return aptFetch(ctx.req, this.aptTree, "/" + uri.slice("api/".length), { auth: () => ctx.statelessAuth });
 
         return this.#renderFallback(ctx);
     }

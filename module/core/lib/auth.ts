@@ -56,6 +56,7 @@ export async function login(ctx: RequestContext, id: number | string): Promise<b
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
   ctx.sess = session;
   ctx.sess.data.liveUser(id);
+  ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
   await ctx.client.addUsr(id);
   await ctx.client.set("usr_id", id);
   await ctx.app.fire("login", { session_old: oldSession, id });

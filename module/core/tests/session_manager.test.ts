@@ -93,6 +93,18 @@ Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", () => {
   assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qgSession=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 
+Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", () => {
+  const sessions = new SessionManager(fakeDb() as any);
+  const ctx = new RequestContext();
+  ctx.app = { https: true } as any;
+  ctx.appURL = "/";
+  ctx.sess = { token: "token", isNew: true, cookieSent: false } as any;
+
+  sessions.setCookieIfNew(ctx);
+  sessions.setCookieIfNew(ctx);
+  assertEquals(ctx.responseHeaders.getSetCookie().length, 1);
+});
+
 Deno.test("Session: touch debounces its own access updates", async () => {
   const db = fakeDb();
   const sess = new Session(db as any, 3, "tok", "{}", false);

@@ -1,10 +1,19 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
+import { Output, type App } from "../core/mod.ts";
+import { verifyToken } from "./lib/keys.ts";
 
 export const name = "api_key";
 export const needs = ["core"];
 export { api } from "./apt.ts";
 export { dbSchema };
 
-// Key management (create / list / revoke) works out of the box via the session-authenticated
-// API. Using a key as a Bearer credential to call the API needs a small, generic core hook —
-// see USAGE.md → "Activating bearer auth". No hidden request-mutation happens here on purpose.
+export function init(app: App): void {
+  app.on("authenticate", async ({ ctx }) => {
+    // only the own naming scheme (qk_…) is claimed; foreign Bearer formats fall through
+    const m = /^Bearer\s+(qk_[A-Za-z0-9_-]+)$/i.exec(ctx.req.header("authorization")?.trim() ?? "");
+    if (!m) return;
+    const key = await verifyToken(app, m[1]);
+    if (!key) throw new Output({ error: "invalid api key" }, { status: 401 }); // loud, no anonymous fallback
+    ctx.authenticate(key.usrId);
+  });
+}

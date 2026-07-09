@@ -5,9 +5,12 @@ import { authListen } from "./auth.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: RequestContext): Promise<void> {
-    await initClient(ctx);
-    await authListen(ctx);
-    touchSession(ctx);
+    await ctx.app.fire("authenticate", { ctx }); // explicit credentials first: a Bearer beats an ambient cookie
+    if (!ctx.statelessAuth) {
+        await initClient(ctx);
+        await authListen(ctx);
+        touchSession(ctx);
+    }
     await ctx.initSettings();
     await ctx.app.languages.initCtx(ctx);
     initLog(ctx);
