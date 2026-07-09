@@ -168,7 +168,7 @@ export class App extends Emitter<AppEvents> {
             const html = ctx.html;
             html.lang = ctx.lang;
             const qino = html.jsData.qino ??= {};
-            qino.token = ctx.token;
+            qino.csrfToken = ctx.csrfToken;
             qino.appURL = ctx.appURL || "/";
             ctx.responseBody = html.render();
         }

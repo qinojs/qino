@@ -26,7 +26,7 @@ export class LangManager {
   async initCtx(ctx: RequestContext): Promise<void> {
     const usr = ctx.user;
 
-    ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.qg.lang() ?? "";
+    ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.core.lang() ?? "";
 
     const urlLang = ctx.get.lang ?? ctx.get.changeLanguage; // changeLanguage: frozen PHP-era alias
     if (urlLang) {
@@ -42,7 +42,7 @@ export class LangManager {
     if (usr) {
       usr.set("lang", ctx.langUsr); // save is debounced, no need to await
     } else {
-      ctx.sess.data.qg.lang(ctx.langUsr);
+      ctx.sess.data.core.lang(ctx.langUsr);
     }
 
     ctx.lang = ctx.langUsr;

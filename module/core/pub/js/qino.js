@@ -7,7 +7,7 @@
 //   await ctx.app.t`Hallo ${name}`;         // translation (like server-side app.t`…`)
 //   await ctx.settings.foo.bar;             // user/session settings (like ctx.settings)
 //   await ctx.settings.foo.bar.set("x");
-//   ctx.lang / ctx.token / ctx.appURL / ctx.sysURL / ctx.dev
+//   ctx.lang / ctx.csrfToken / ctx.appURL / ctx.sysURL / ctx.dev
 //
 // ctx.settings == server-side ctx.settings (NOT app.settings — those are server-only).
 // Backed by the existing apt endpoint  core/ctx-settings/:path*  (Access.USER).
@@ -52,7 +52,7 @@ export const ctx = {
   sysURL: appURL + "m/",   // same as server-side: appURL + "m/"
   settings: new CtxSetting().proxy,
   dev: !!globalThis.qino?.dev,
-  token: globalThis.qino?.token,
+  csrfToken: globalThis.qino?.csrfToken,
 };
 
 // server-side: import { getCtx } ... — client-side there is only the one ctx

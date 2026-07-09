@@ -78,5 +78,5 @@ function hostOf(value?: string): string | null {
 
 function hasValidCsrfToken(req: Req): boolean {
   const token = req.header("x-csrf-token");
-  return typeof token === "string" && token !== "" && token === getCtx().token;
+  return typeof token === "string" && token !== "" && token === getCtx().csrfToken;
 }

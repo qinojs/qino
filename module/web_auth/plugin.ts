@@ -258,8 +258,6 @@ export const api: AptTree = {
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
-          if (!(await db.row`SELECT id FROM usr WHERE id = ${usrId} AND active = 1`)) return { ok: false, error: "user_inactive" };
-
           await db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${unixTime()} WHERE id = ${r.cred.id}`;
 
           if (!await login(ctx, usrId)) return { ok: false, error: "user_inactive" };

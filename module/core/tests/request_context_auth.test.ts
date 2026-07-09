@@ -2,9 +2,9 @@
 import { assertEquals } from "./deps.ts";
 import { RequestContext } from "../lib/RequestContext.ts";
 
-function sessionFake(liveUserId: number) {
+function sessionFake(sessionUserId: number) {
   const writes: unknown[][] = [];
-  const data = { liveUser: (...a: unknown[]) => { if (a.length) writes.push(a); return liveUserId; } };
+  const data = { core: { userId: (...a: unknown[]) => { if (a.length) writes.push(a); return sessionUserId; } } };
   return { sess: { data } as any, writes };
 }
 

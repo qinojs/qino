@@ -18,8 +18,8 @@ function parseData(v: unknown): Record<string, unknown> {
   catch { return {}; }
 }
 
-function hiddenToken(token: string): string {
-  return `<input type=hidden name=qgToken value="${hee(token)}">`;
+function hiddenToken(csrfToken: string): string {
+  return `<input type=hidden name=csrfToken value="${hee(csrfToken)}">`;
 }
 
 function render(node: Node): Promise<string> {
@@ -35,7 +35,7 @@ async function renderOverview(node: Node): Promise<string> {
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const search = String(ctx.get.search ?? "").trim();
 
-  if (ctx.post?.qgToken === ctx.token && isSuperuser) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && isSuperuser) {
     if ("delete_all" in ctx.post) {
       await db.query`DELETE FROM mail`;
     }
@@ -47,11 +47,11 @@ async function renderOverview(node: Node): Promise<string> {
   const rows = await listRows(node, search);
   const superuserActions = isSuperuser ? `
     <form method=post style="display:inline">
-      ${hiddenToken(ctx.token)}
+      ${hiddenToken(ctx.csrfToken)}
       <button name=delete_all u2-confirm="${hee(await t`Really delete all?`)}">${await t`Delete all`}</button>
     </form>
     <form method=post style="display:inline">
-      ${hiddenToken(ctx.token)}
+      ${hiddenToken(ctx.csrfToken)}
       <button name=delete_before1year u2-confirm="${hee(await t`Really delete all older than 1 year?`)}">${await t`Delete older than 1 year`}</button>
     </form>` : "";
 
@@ -124,7 +124,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const row = await db.row`SELECT m.*, l.time FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE m.id=${id}`;
   if (!row) return `<div class=u2-card><div class=-body>${await t`Mail does not exist.`}</div></div>`;
 
-  if (ctx.post?.qgToken === ctx.token) {
+  if (ctx.post?.csrfToken === ctx.csrfToken) {
     const Mail = await node.app.mail.get(id);
     if ("send" in ctx.post) await Mail.send();
     const add = String(ctx.post.add_recipient ?? "").trim();
@@ -150,10 +150,10 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       <tr><td>${await t`Reply to`}<td>${hee(row.reply_to ?? "")}
       <tr><td>${await t`Send`}<td>
         ${todo
-          ? `<form method=post style="display:inline">${hiddenToken(ctx.token)}<button name=send u2-confirm="${hee(await t`Send the e-mails?`)}">${await t`Send`} (${todo})</button></form>`
+          ? `<form method=post style="display:inline">${hiddenToken(ctx.csrfToken)}<button name=send u2-confirm="${hee(await t`Send the e-mails?`)}">${await t`Send`} (${todo})</button></form>`
           : await t`all sent`}
         <form method=post style="display:inline; margin-left:10px">
-          ${hiddenToken(ctx.token)}
+          ${hiddenToken(ctx.csrfToken)}
           <input type=email name=add_recipient placeholder="${await t`Add recipient`}">
           <button>${await t`add`}</button>
         </form>

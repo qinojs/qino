@@ -14,7 +14,7 @@ async function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const db  = node.app.db;
 
-  if (ctx.post?.token === ctx.token && "delete_key" in ctx.post) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && "delete_key" in ctx.post) {
     const id = Number(ctx.post.delete_key ?? "0");
     if (id) await db.exec`DELETE FROM api_key WHERE id = ${id}`;
   }
@@ -29,7 +29,7 @@ async function render(node: Node): Promise<string> {
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const tableRows = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=token value="${hee(ctx.token)}"><input type=hidden name=delete_key value="${hee(String(r.id))}"><button class=u2-unstyle u2-confirm="${hee(`Really delete ${String(r.name ?? r.id)}?`)}"><u2-ico icon=delete>✕</u2-ico></button></form>`;
+    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><input type=hidden name=delete_key value="${hee(String(r.id))}"><button class=u2-unstyle u2-confirm="${hee(`Really delete ${String(r.name ?? r.id)}?`)}"><u2-ico icon=delete>✕</u2-ico></button></form>`;
     return `<tr>
       <td>${hee(String(r.id))}
       <td>${hee(userName)}<br><small>${hee(String(r.email ?? ""))}</small>

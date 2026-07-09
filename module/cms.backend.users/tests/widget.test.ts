@@ -40,7 +40,7 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
     },
   };
   const ctx = new RequestContext();
-  ctx.sess = { data: { liveUser: () => 0 } } as any;
+  ctx.sess = { data: { core: { userId: () => 0 } } } as any;
   const node = {
     access: async () => 2,
     app: { db: { table: () => ({ entry: () => entry }) } },

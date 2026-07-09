@@ -19,7 +19,7 @@ const token = (v?: string) => {
   if (v !== undefined) csrfToken = v;
   return csrfToken;
 };
-ctx.sess = { data: { liveUser: () => 0, qg: { token } } } as any;
+ctx.sess = { data: { core: { userId: () => 0, csrfToken: token } } } as any;
 
 const things = new Map<number, { id: number; title: string; writable: boolean }>([
   [1, { id: 1, title: "One", writable: true }],
@@ -163,7 +163,7 @@ Deno.test("apt: GET query params are available as input", async () => {
   });
 });
 
-Deno.test("apt: mutations require same origin and qg token", async () => {
+Deno.test("apt: mutations require same origin and csrf token", async () => {
   await withCtx(async () => {
     const body = JSON.stringify({ title: "Two", count: 2 });
 

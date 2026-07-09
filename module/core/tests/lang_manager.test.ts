@@ -28,14 +28,14 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
   ctx.appRequestPath = "fr/page";
   ctx.get = {};
   ctx.req = { header: () => "de;q=1" } as any;
-  ctx.sess = { data: { liveUser: () => 0, qg: { lang: sessionLang() } } } as any;
+  ctx.sess = { data: { core: { userId: () => 0, lang: sessionLang() } } } as any;
   await lm.initCtx(ctx);
   assertEquals(ctx.langUsr, "fr");
   assertEquals(ctx.lang, "fr");
 
   ctx.appRequestPath = "page";
   ctx.get = {};
-  ctx.sess = { data: { liveUser: () => 0, qg: { lang: sessionLang() } } } as any;
+  ctx.sess = { data: { core: { userId: () => 0, lang: sessionLang() } } } as any;
   ctx.req = { header: () => "fr-CH;q=0.9,de;q=0.8,en;q=0.7" } as any;
   await lm.initCtx(ctx);
   assertEquals(ctx.langUsr, "fr");
@@ -50,7 +50,7 @@ Deno.test("LangManager: lang query overrides stored session language", async () 
   ctx.appRequestPath = "page";
   ctx.get = { lang: "de" };
   ctx.req = { header: () => "" } as any;
-  ctx.sess = { data: { liveUser: () => 0, qg: { lang } } } as any;
+  ctx.sess = { data: { core: { userId: () => 0, lang } } } as any;
   await lm.initCtx(ctx);
 
   assertEquals(ctx.langUsr, "de");
@@ -65,7 +65,7 @@ Deno.test("LangManager: legacy changeLanguage alias still works", async () => {
   ctx.appRequestPath = "page";
   ctx.get = { changeLanguage: "de" };
   ctx.req = { header: () => "" } as any;
-  ctx.sess = { data: { liveUser: () => 0, qg: { lang: sessionLang("en") } } } as any;
+  ctx.sess = { data: { core: { userId: () => 0, lang: sessionLang("en") } } } as any;
   await lm.initCtx(ctx);
 
   assertEquals(ctx.langUsr, "de");

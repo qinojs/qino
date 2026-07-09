@@ -13,7 +13,7 @@ export function init(app: App): void {
     const m = /^Bearer\s+(qk_[A-Za-z0-9_-]+)$/i.exec(ctx.req.header("authorization")?.trim() ?? "");
     if (!m) return;
     const key = await verifyToken(app, m[1]);
-    if (!key) throw new Output({ error: "invalid api key" }, { status: 401 }); // loud, no anonymous fallback
+    if (!key) throw new Output({ error: "invalid api key" }, { status: 401, headers: { "WWW-Authenticate": "Bearer" } }); // loud, no anonymous fallback
     ctx.authenticate(key.usrId);
   });
 }

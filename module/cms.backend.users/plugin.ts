@@ -25,7 +25,7 @@ async function renderOverview(node: Node): Promise<string> {
   const db = app.db;
 
   let addMessage = "";
-  if (ctx.post?.qgToken === ctx.token && "add" in ctx.post) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && "add" in ctx.post) {
     const email = String(ctx.post.email ?? "");
     const exists = email && await db.one`SELECT id FROM usr WHERE email = ${email}`;
     if (exists) {
@@ -60,7 +60,7 @@ async function renderOverview(node: Node): Promise<string> {
     <form method=post style="padding:0">
       <input hidden name=fake1>
       <input hidden name=fake2 type=password>
-      <input type=hidden name=qgToken value="${hee(ctx.token)}">
+      <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
       <table class=u2-table style="white-space:nowrap">
         <tr>
           <th style="width:6em"> ${await app.t`Email`}:

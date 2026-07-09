@@ -34,14 +34,14 @@ function fakeDb() {
 
 Deno.test("SessionManager: load returns existing session when token is known", async () => {
   const db = fakeDb();
-  db.setRow({ id: 7, data: '{"liveUser":5}' });
+  db.setRow({ id: 7, data: '{"core":{"userId":5}}' });
   const sessions = new SessionManager(db as any);
 
   const res = await sessions.load("token-1");
   assertEquals(res.token, "token-1");
   assertEquals(res.id, "7");
   assertEquals(res.isNew, false);
-  assertEquals(res.data.liveUser(), 5);
+  assertEquals(res.data.core.userId(), 5);
 });
 
 Deno.test("SessionManager: load creates session without valid cookie", async () => {
@@ -79,7 +79,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path moun
   ctx.sess = { token: "token", isNew: true } as any;
 
   sessions.setCookieIfNew(ctx);
-  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Secure-qgSession=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
+  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Secure-qinoSess=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
 });
 
 Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", () => {
@@ -90,7 +90,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", () => {
   ctx.sess = { token: "token", isNew: true } as any;
 
   sessions.setCookieIfNew(ctx);
-  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qgSession=token; Path=/; HttpOnly;SameSite=Lax; Secure");
+  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qinoSess=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 
 Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", () => {

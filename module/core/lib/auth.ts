@@ -8,14 +8,14 @@ const dummyHash = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi"
 export type LoginError = "username" | "inactive" | "password";
 
 export async function authListen(ctx: RequestContext): Promise<void> {
-  if (ctx.post?.liveUser_login != null) {
-    if (ctx.post.token !== ctx.token) return;
+  if (ctx.post?.core_login != null) {
+    if (ctx.post.csrfToken !== ctx.csrfToken) return;
     const saveLogin = !!ctx.post.save_login;
     ctx.loginError = await auth(ctx, String(ctx.post.email ?? ""), String(ctx.post.pw ?? "")) || undefined;
     await rememberLogin(ctx, saveLogin);
   }
-  if (ctx.post?.liveUser_logout != null) {
-    if (ctx.post.token !== ctx.token) return;
+  if (ctx.post?.core_logout != null) {
+    if (ctx.post.csrfToken !== ctx.csrfToken) return;
     await logout(ctx);
   }
   if (!ctx.userId && ctx.clientId) {
@@ -49,13 +49,13 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
 
 export async function login(ctx: RequestContext, id: number | string): Promise<boolean> {
   id = Number(id);
-  if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id}`) return false;
+  if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = 1`) return false;
   const oldSession = ctx.sess.data;
   await logout(ctx);
   // neue Session-ID nach Logout verhindert Session-Fixation
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
   ctx.sess = session;
-  ctx.sess.data.liveUser(id);
+  ctx.sess.data.core.userId(id);
   ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
   await ctx.client.addUsr(id);
   await ctx.client.set("usr_id", id);

@@ -23,7 +23,7 @@ Deno.test("ai: init installs AiApi (no cms coupling)", () => {
 
 Deno.test("ai: apt execute delegates to app.ai", async () => {
   const ctx = new RequestContext();
-  ctx.sess = { data: { liveUser: () => 1 } } as never;
+  ctx.sess = { data: { core: { userId: () => 1 } } } as never;
   ctx.app = {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
     ai: {
@@ -40,7 +40,7 @@ Deno.test("ai: apt execute delegates to app.ai", async () => {
 
 Deno.test("ai: stream endpoint throws an Output carrying a ReadableStream", async () => {
   const ctx = new RequestContext();
-  ctx.sess = { data: { liveUser: () => 1 } } as never;
+  ctx.sess = { data: { core: { userId: () => 1 } } } as never;
   ctx.app = {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
     ai: { session: () => ({ runStream: () => new ReadableStream() }) },

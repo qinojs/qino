@@ -33,23 +33,23 @@ async function render(node: Node): Promise<string> {
       const P = await node.app.cms?.node(redirectId);
       if (P?.is()) redirectUrl = await P.url();
     }
-    return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.token));
+    return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.csrfToken));
   }
   return "";
 }
 
-async function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, token: string): Promise<string> {
+async function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, csrfToken: string): Promise<string> {
   return `<div class="web-auth-login" data-api-base="${hee(apiBase)}" data-redirect-url="${hee(redirectUrl)}">
   <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
   <button data-action="login">${await app.t`Sign in with passkey`}</button>
   ${showPw ? `<details>
     <summary>${await app.t`Sign in with password`}</summary>
     <form method="post">
-      <input type=hidden name=token value="${token}">
+      <input type=hidden name=csrfToken value="${csrfToken}">
       <table>
         <tr><th>${await app.t`E-Mail`}:<td><input name="email" type="email" required>
         <tr><th>${await app.t`Password`}:<td><input name="pw" type="password" required>
-        <tr><th><td><button name="liveUser_login">${await app.t`Sign in`}</button>
+        <tr><th><td><button name="core_login">${await app.t`Sign in`}</button>
       </table>
     </form>
   </details>` : ""}

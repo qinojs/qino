@@ -7,7 +7,7 @@
 import { t } from "../../core/pub/js/qino.js";
 
 const csrfHeaders = (method) =>
-  method === "GET" || !globalThis.qino?.token ? {} : { "X-CSRF-Token": globalThis.qino.token };
+  method === "GET" || !globalThis.qino?.csrfToken ? {} : { "X-CSRF-Token": globalThis.qino.csrfToken };
 
 export class WebAuth {
   constructor(opts = {}) {

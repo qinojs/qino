@@ -22,7 +22,7 @@ export async function render(node: Node): Promise<HtmlString> {
   if (!await ctx.user?.get("superuser")) return raw("<div></div>");
 
   const tables = await buildSchema(app);
-  const token = ctx.post?.qgToken === ctx.token;
+  const token = ctx.post?.csrfToken === ctx.csrfToken;
   const isAsk = ctx.post?.ask != null; // AI form vs. run form
   const question = String(ctx.post?.prompt ?? "").trim();
 
@@ -40,7 +40,7 @@ export async function render(node: Node): Promise<HtmlString> {
   return html.async`<div style="flex:1 1 auto">
   ${renderAi(app, question, aiNote)}
   <form method=post class=-console>
-    <input type=hidden name=qgToken value="${ctx.token}">
+    <input type=hidden name=csrfToken value="${ctx.csrfToken}">
     <u2-code trim language=sql class=-editor><textarea name=sql placeholder="SELECT * FROM …">${sql}</textarea></u2-code>
     <div class=-bar>
       <button>${app.t`Run`}</button>
@@ -57,7 +57,7 @@ function renderAi(app: App, question: string, note: string): Promise<HtmlString>
   if (!app.ai) return "";
   const msg = note ? html`<u2-alert open variant=danger style="margin-top:4px">${note}</u2-alert>` : "";
   return html.async`<form method=post class=-ai>
-    <input type=hidden name=qgToken value="${getCtx().token}">
+    <input type=hidden name=csrfToken value="${getCtx().csrfToken}">
     <input type=hidden name=sql class=-aisql>
     <div class=-bar>
       <input name=prompt class=-prompt placeholder="${app.t`Ask the database in plain language…`}" value="${question}">

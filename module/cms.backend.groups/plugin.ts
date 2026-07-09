@@ -29,7 +29,7 @@ async function renderOverview(node: Node): Promise<string> {
   const app = node.app;
   const db = app.db;
 
-  if (ctx.post?.qgToken === ctx.token && "add" in ctx.post) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && "add" in ctx.post) {
     await db.table("grp").insert({
       name: String(ctx.post.name ?? ""),
       cms_access: Math.min(Math.max(0, Number(ctx.post.cms_access) || 0), 3),
@@ -58,7 +58,7 @@ async function renderOverview(node: Node): Promise<string> {
   <div class=u2-card style="flex-grow:0">
     <div class=-head>${await app.t`Add group`}</div>
     <form method=post style="padding:0">
-      <input type=hidden name=qgToken value="${hee(ctx.token)}">
+      <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
       <table class=u2-table style="white-space:nowrap">
         <tr>
           <th style="width:6em"> ${await app.t`Name`}:

@@ -1,5 +1,5 @@
 const apiHeaders = (method = "POST") =>
-  ({ "Content-Type": "application/json", ...(method === "GET" || !globalThis.qino?.token ? {} : { "X-CSRF-Token": globalThis.qino.token }) });
+  ({ "Content-Type": "application/json", ...(method === "GET" || !globalThis.qino?.csrfToken ? {} : { "X-CSRF-Token": globalThis.qino.csrfToken }) });
 
 cms.initNode("backend.api", (el) => {
   const routes = JSON.parse(el.dataset.routes);

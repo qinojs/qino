@@ -5,7 +5,7 @@ import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
 
 const fakeCtx = new RequestContext();
 fakeCtx.lang = "de";
-fakeCtx.sess = { data: { liveUser: () => 0 } } as never;
+fakeCtx.sess = { data: { core: { userId: () => 0 } } } as never;
 
 const mockPages = new Map<string, { id: string; title: string; access: () => number }>([
   ["1", { id: "1", title: "Home", access: () => 3 }],

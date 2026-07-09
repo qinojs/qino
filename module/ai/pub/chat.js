@@ -125,7 +125,7 @@ class AiChat extends HTMLElement {
       const id = await this.#session();
       const res = await fetch(new URL(`ai/sessions/${id}/stream`, apiBase), {
         method: 'POST',
-        headers: { 'content-type': 'application/json', 'X-CSRF-Token': globalThis.qino?.token },
+        headers: { 'content-type': 'application/json', 'X-CSRF-Token': globalThis.qino?.csrfToken },
         body: JSON.stringify({ content: text, context: this.#context }),
       });
       await readStream(res, (ev) => {

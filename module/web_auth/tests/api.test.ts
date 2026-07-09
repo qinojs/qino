@@ -23,7 +23,7 @@ function makeApp() {
 
 function ctx(userId = 0) {
   const c = new RequestContext();
-  c.sess = { data: { liveUser: () => userId } } as any;
+  c.sess = { data: { core: { userId: () => userId } } } as any;
   return c;
 }
 

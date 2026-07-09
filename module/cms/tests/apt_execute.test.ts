@@ -77,7 +77,7 @@ function setup(access = 3) {
   nodes.set(2, new FakeNode(2, 0));
   const ctx = new RequestContext();
   ctx.lang = "de";
-  ctx.sess = { data: { liveUser: () => 9 } } as any;
+  ctx.sess = { data: { core: { userId: () => 9 } } } as any;
   const user = { id: 9, get: () => false, toString: () => "9" };
   ctx.app = {
     cms: {

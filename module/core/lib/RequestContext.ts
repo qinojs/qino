@@ -75,7 +75,7 @@ export class RequestContext {
   get statelessAuth(): boolean { return this.#authUserId !== 0; }
 
   get userId(): number {
-    return this.#authUserId || Number(this.sess.data.liveUser() || 0);
+    return this.#authUserId || Number(this.sess.data.core.userId() || 0);
   }
   get user(): dbEntry_usr | null {
     return this.userId ? this.app.db.table('usr').entry(this.userId) as dbEntry_usr : null;
@@ -89,9 +89,9 @@ export class RequestContext {
     return this.app.dev || !!this.settings.core.dev(); // todo: ctx.settings can be written to, so this may be a security risk.
   }
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
-  get token(): string {
-    const token = this.sess.data.qg.token;
-    if (!token()) this.sess.data.qg.token(uid(11));
+  get csrfToken(): string {
+    const token = this.sess.data.core.csrfToken;
+    if (!token()) this.sess.data.core.csrfToken(uid(11));
     return token() as string;
   }
 

@@ -21,7 +21,7 @@ async function render(node: Node): Promise<string> {
   const edit = node.edit;
   const cms = node.cms;
   const settings = node.settings;
-  const token = hee(ctx.token);
+  const csrfToken = hee(ctx.csrfToken);
 
   // Redirect if already logged in
   if (!edit && ctx.user) {
@@ -75,9 +75,9 @@ async function render(node: Node): Promise<string> {
         }
   ${email}
   <input name=email type=hidden value="${email}">
-  <input type=hidden name=token value="${token}">
+  <input type=hidden name=csrfToken value="${csrfToken}">
   ${showPwField ? `<input name=pw type=password>` : ""}
-  <button name=liveUser_login>${await app.t`Log in`}</button>
+  <button name=core_login>${await app.t`Log in`}</button>
 </form>\n`;
       }
     }
@@ -88,7 +88,7 @@ async function render(node: Node): Promise<string> {
     const showSaveLogin = settings.saveLogin();
 
     html += `<form method=post>
-  <input type=hidden name=token value="${token}">
+  <input type=hidden name=csrfToken value="${csrfToken}">
   ${fixUser ? `<input type=hidden name=email value="${hee(fixUser)}">` : ""}
   <table>
     ${
@@ -111,7 +111,7 @@ async function render(node: Node): Promise<string> {
       <td><input name=pw type=password required>
     <tr class=-login>
       <th>
-      <td><button name=liveUser_login>${await app.t`Log in`}</button>
+      <td><button name=core_login>${await app.t`Log in`}</button>
     ${
       showSaveLogin
         ? `<tr class=-save_login>
@@ -136,8 +136,8 @@ async function render(node: Node): Promise<string> {
       }
     }
     html += `<form method=post${action}>
-  <input type=hidden name=token value="${token}">
-  <button name=liveUser_logout>${await app.t`Log out`}</button>
+  <input type=hidden name=csrfToken value="${csrfToken}">
+  <button name=core_logout>${await app.t`Log out`}</button>
 </form>\n`;
   }
 

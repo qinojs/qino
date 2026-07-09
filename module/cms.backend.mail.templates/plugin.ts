@@ -29,7 +29,7 @@ async function render(node: Node): Promise<string> {
 
   let message = "";
 
-  if (ctx.post?.qgToken === ctx.token && "create" in ctx.post) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && "create" in ctx.post) {
     const tname = String(ctx.post.tname ?? "").trim();
     if (!tname) {
       message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
@@ -68,7 +68,7 @@ async function render(node: Node): Promise<string> {
     <div class=-head>${await app.t`New template`}</div>
     ${message ? `<div class=-body>${message}</div>` : ""}
     <form method=post>
-      <input type=hidden name=qgToken value="${hee(ctx.token)}">
+      <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
       <table class=u2-table>
         <tr>
           <th style="width:80px">${await app.t`Name`}
@@ -107,7 +107,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   let message = "";
 
-  if (ctx.post?.qgToken === ctx.token) {
+  if (ctx.post?.csrfToken === ctx.csrfToken) {
     if ("save" in ctx.post) {
       const tname = String(ctx.post.tname ?? "").trim();
       if (!tname) {
@@ -151,7 +151,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <div class=-body>
       ${message}
       <form method=post>
-        <input type=hidden name=qgToken value="${hee(ctx.token)}">
+        <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
         <table class=u2-table>
           <tr>
             <th style="width:110px">${await app.t`Name`}

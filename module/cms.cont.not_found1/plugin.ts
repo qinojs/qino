@@ -51,7 +51,7 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
 
   let savedMsg = "";
-  if (ctx.post?.qgToken === ctx.token && "setRedirect" in ctx.post) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && "setRedirect" in ctx.post) {
     const redirect = String(ctx.post.redirect ?? "").trim();
     if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
       savedMsg = `<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
@@ -65,7 +65,7 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   ${savedMsg}
   <div class=-head>${await t`Admin: define direct link to:`}</div>
   <form class=-body method=post style="display:flex; margin:0">
-    <input type=hidden name=qgToken value="${hee(ctx.token)}">
+    <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
     <input type=qgcms-page name=redirect style="flex:1 1 auto; box-sizing:border-box; border-right:0">
     <button name=setRedirect>${await t`ok`}</button>
   </form>

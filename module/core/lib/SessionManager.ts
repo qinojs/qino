@@ -6,7 +6,7 @@ import type { Req } from "./Req.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
 const EMPTY_SESSION = "{}";
-const COOKIE_NAME = "qgSession";
+const COOKIE_NAME = "qinoSess";
 
 /** One session: identity (token/id), server-trusted reactive data, and its own touch timer. */
 export class Session {

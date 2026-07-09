@@ -54,7 +54,7 @@ export async function install({app}: {app: App}): Promise<void> {
   const s = app.settings;
   const cms = app.cms;
 
-  if (!await app.settings.core.langs && !await app.settings.qg.langs) {
+  if (!await app.settings.core.langs) {
     app.settings.core.langs('en');
   }
 

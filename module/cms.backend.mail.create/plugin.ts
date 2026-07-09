@@ -17,7 +17,7 @@ async function render(node: Node): Promise<string> {
 
   let message = "";
 
-  if (ctx.post?.qgToken === ctx.token && ("save" in ctx.post || "send" in ctx.post)) {
+  if (ctx.post?.csrfToken === ctx.csrfToken && ("save" in ctx.post || "send" in ctx.post)) {
     const subject = String(ctx.post.subject ?? "").trim();
     const body = String(ctx.post.body ?? "").trim();
     const senderMode = String(ctx.post.sender_mode ?? "default");
@@ -95,7 +95,7 @@ async function render(node: Node): Promise<string> {
   <div class=-body>
     ${message}
     <form method=post>
-      <input type=hidden name=qgToken value="${hee(ctx.token)}">
+      <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
       <table class=u2-table>
         <tr>
           <th style="width:6.875rem">${await app.t`Subject`}

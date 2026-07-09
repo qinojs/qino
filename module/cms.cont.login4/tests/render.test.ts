@@ -20,7 +20,7 @@ function textObj(value = "") {
 
 function makeCtx(loggedIn = false) {
   const ctx = new RequestContext();
-  ctx.sess = { data: { liveUser: () => loggedIn ? 7 : 0, qg: { token: () => "tok" } } } as any;
+  ctx.sess = { data: { core: { userId: () => loggedIn ? 7 : 0, csrfToken: () => "tok" } } } as any;
   ctx.clientId = "client-1";
   ctx.app = {
     db: {
@@ -53,7 +53,7 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
   const out = await requestStorage.run(ctx, () => cms.node.render(node as any));
   assertEquals(out.includes("<form method=post>"), true);
   assertEquals(out.includes("<input name=email type=text required autofocus>"), true);
-  assertEquals(out.includes('name=token value="tok"'), true);
+  assertEquals(out.includes('name=csrfToken value="tok"'), true);
   assertEquals(out.includes("<input name=save_login type=checkbox value=1 class=c1-fakable>"), true);
   assertEquals(out.includes("[user]"), true);
   assertEquals(out.includes("[pw]"), true);
@@ -88,8 +88,8 @@ Deno.test("cms.cont.login4: render shows logout form for logged-in users", async
   };
 
   const out = await requestStorage.run(ctx, () => cms.node.render(node as any));
-  assertEquals(out.includes("<button name=liveUser_logout>Abmelden</button>"), true);
-  assertEquals(out.includes('name=token value="tok"'), true);
+  assertEquals(out.includes("<button name=core_logout>Abmelden</button>"), true);
+  assertEquals(out.includes('name=csrfToken value="tok"'), true);
 });
 
 Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async () => {
@@ -107,7 +107,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   assertEquals(login.includes("<script>"), false);
 
   const userCtx = makeCtx(true);
-  userCtx.sess = { data: { liveUser: () => 7, qg: { token: () => `t"><script>x</script>` } } } as any;
+  userCtx.sess = { data: { core: { userId: () => 7, csrfToken: () => `t"><script>x</script>` } } } as any;
   const userNode = {
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "Abmelden" },
