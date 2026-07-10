@@ -73,7 +73,7 @@ Deno.test("cms.text: missing and empty texts are returned as untranslated", asyn
         const lang = params[1];
         if (lang === "de") return "Hallo";
         if (lang === "en") return "";
-        return undefined;
+        return;
       },
     },
   });

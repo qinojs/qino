@@ -7,7 +7,7 @@ export function healthChecks(app: App): HealthTypes {
     cleanup: {
       "delete user-files": async () => {
         const count = Number(await db.one`SELECT COUNT(*) FROM usr_file WHERE added < DATE_SUB(NOW(), INTERVAL 6 MONTH)`);
-        if (count < 100) return undefined;
+        if (count < 100) return;
         return {
           info: "old user-files " + count,
           solutions: {

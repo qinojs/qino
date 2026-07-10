@@ -41,7 +41,7 @@ function db() {
     row(...a: any[]) {
       const [sql, params] = fakeRender(a[0], a.slice(1));
       calls.push([sql, params]);
-      return undefined;
+      return;
     },
     // exec is called either as a tag (UPDATE/DELETE) or with a fragment + returning (INSERT)
     exec(...a: any[]) {

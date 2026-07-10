@@ -211,11 +211,11 @@ export class Node {
     }
 
     async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | undefined> {
-        if (!(await this.isReadable())) return undefined;
-        if (/[/\\]/.test(part)) return undefined;
+        if (!(await this.isReadable())) return;
+        if (/[/\\]/.test(part)) return;
         const parts = this.module?.plugin.cms?.node?.parts ?? {};
         const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : undefined;
-        if (!fn) return undefined;
+        if (!fn) return;
         return new HtmlString(await this.#renderGuarded(() => fn(this, {ctx:getCtx(), vars})));
     }
 
@@ -378,7 +378,7 @@ export class Node {
         if (lang == null) return texts[name];
         const textLang = await texts[name].lang(lang);
         if (value === undefined) return textLang;
-        if ((await textLang.get()) === value) return undefined;
+        if ((await textLang.get()) === value) return;
         await textLang.set(value);
         return textLang;
     }
@@ -395,7 +395,7 @@ export class Node {
         if (lang == null) return this.#title;
         const TextLang = await this.#title.lang(lang);
         if (value === undefined) return TextLang.get();
-        if ((await TextLang.get()) === value) return undefined;
+        if ((await TextLang.get()) === value) return;
         await TextLang.set(value);
         await this.urlsSeoGen();
         return TextLang;
@@ -608,12 +608,12 @@ export class Node {
     }
 
     async copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
-        if (await ifFn?.(this) === false) return undefined;
+        if (await ifFn?.(this) === false) return;
 
         const row: Record<string, any> = { ...this.vs };
         delete row["id"];
         const newId = Number(await this.db.table("page").insert(row) ?? "0");
-        if (!newId) return undefined;
+        if (!newId) return;
         const P = await this.cms.node(newId);
 
         const titleCopy = await (await this.title())!.copy();

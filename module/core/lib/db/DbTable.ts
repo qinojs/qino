@@ -106,7 +106,7 @@ export class DbTable {
   /** WHERE fragment that identifies the row(s) for an entry id; undefined if the id is incomplete. */
   entryIdToFragment(id: any, alias?: string): Sql | undefined {
     const values = this.entryId2Array(id);
-    if (!values) return undefined;
+    if (!values) return;
     const frag = this.valuesToFragment(values, alias);
     return frag.parts.length ? frag : undefined;
   }
@@ -175,16 +175,16 @@ export class DbTable {
     const set = this.valuesToFragment(values!, undefined, true);
     if (set.parts.length) {
       const whereValues = this.entryId2Array(id);
-      if (!whereValues) return undefined;
+      if (!whereValues) return;
       const where = this.valuesToFragment(whereValues);
-      if (!where.parts.length) return undefined;
+      if (!where.parts.length) return;
       const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
-      if (!rows) return undefined;
-      if (!rows.affectedRows) return undefined; // no row matched (drivers report matched rows, not changed)
+      if (!rows) return;
+      if (!rows.affectedRows) return; // no row matched (drivers report matched rows, not changed)
       await this.#db.fire("table::update-after", { Table: this, id, data: values! });
       return String(id);
     }
-    return undefined;
+    return;
   }
 
   async ensure(values: Record<string, any> = {}): Promise<string | undefined> {
@@ -200,17 +200,17 @@ export class DbTable {
   }
   async #copy(id: any, override: Record<string, any>, visiting: Set<string>): Promise<string | undefined> {
     id = this.entryId(id);
-    if (id === undefined) return undefined;
+    if (id === undefined) return;
     const key = `${this}:${id}`;
-    if (visiting.has(key)) return undefined;
+    if (visiting.has(key)) return;
     visiting.add(key);
 
     const row = await this.selectByID(id);
-    if (!row) return undefined;
+    if (!row) return;
     const newRow = { ...row, ...override };
     if (this.autoIncrement && !(String(this.autoIncrement) in override)) delete newRow[String(this.autoIncrement)];
     const newId = await this.insert(newRow); // insert fills generated ids into newRow
-    if (newId === undefined) return undefined;
+    if (newId === undefined) return;
 
     for (const field of this.children) {
       if (field.onParentCopy !== "cascade") continue;

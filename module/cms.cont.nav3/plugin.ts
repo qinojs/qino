@@ -109,7 +109,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
       if (titleObj && (await titleObj.string()).trim()) filtered.push(C);
     }
 
-    if (!filtered.length) return undefined;
+    if (!filtered.length) return;
 
     const levelLimit = Number(levelLimitSetting || 0);
     if (levelLimit && level >= levelLimit) return "";

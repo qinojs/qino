@@ -7,7 +7,7 @@ export function healthChecks(app: App): HealthTypes {
     cleanup: {
       "clean errors": async () => {
         const num = Number(await db.one`SELECT count(*) FROM m_error_report`);
-        if (!num) return undefined;
+        if (!num) return;
         return {
           info: num + " errors",
           solutions: {

@@ -304,8 +304,8 @@ function isTransformRequest(param: Record<string, unknown>): boolean {
 async function openRange(filePath: string, rangeHeader: string) {
   const m = rangeHeader.match(/^bytes=(\d*)-(\d*)$/); // multi-range unsupported
   if (!m || (!m[1] && !m[2])) return null;
-  let file: Deno.FsFile;
-  try { file = await Deno.open(filePath, { read: true }); } catch { return null; }
+  const file = await Deno.open(filePath, { read: true }).catch(() => null);
+  if (!file) return null;
   try {
     const size = (await file.stat()).size;
     const start = m[1] === "" ? Math.max(size - Number(m[2]), 0) : Number(m[1]); // `-n` = last n bytes

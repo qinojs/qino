@@ -162,7 +162,7 @@ export class CMS {
 
   // deno-lint-ignore no-explicit-any
   async url(pidOrUrl?: string, ret: Record<string, any> = {}): Promise<string | undefined> {
-    if (!pidOrUrl) return undefined;
+    if (!pidOrUrl) return;
     pidOrUrl = pidOrUrl.trim();
     ret.target = "_blank";
     if (/^\d+$/.test(pidOrUrl)) {
@@ -172,9 +172,9 @@ export class CMS {
         ret.Node = P;
         return P.url();
       }
-      return undefined;
+      return;
     }
-    if (!pidOrUrl) return undefined;
+    if (!pidOrUrl) return;
     if (!/^[a-z]+:/.test(pidOrUrl)) return "http://" + pidOrUrl;
     return pidOrUrl;
   }

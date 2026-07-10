@@ -5,8 +5,8 @@ let _langs: Promise<string> | null = null;
 
 export async function isTesseractAvailable(): Promise<boolean> {
   if (_available !== null) return _available;
-  try { _available = (await new Deno.Command('tesseract', { args: ['--version'], stdout: 'piped', stderr: 'piped' }).output()).code === 0; }
-  catch { _available = false; }
+  _available = await new Deno.Command('tesseract', { args: ['--version'], stdout: 'piped', stderr: 'piped' }).output()
+    .then((r) => r.code === 0, () => false);
   return _available;
 }
 

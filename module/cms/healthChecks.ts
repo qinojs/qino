@@ -9,9 +9,9 @@ export function healthChecks(app: App): HealthTypes {
     cleanup: {
       "pages in trash": async () => {
         const trashId = Number(await settings.cms?.pageTrash ?? 0);
-        if (!trashId) return undefined;
+        if (!trashId) return;
         const count = Number(await db.one`SELECT count(*) FROM page WHERE basis = ${trashId}`);
-        if (!count) return undefined;
+        if (!count) return;
         return {
           info: `There are ${count} items in the trash`,
           solutions: {
@@ -30,7 +30,7 @@ export function healthChecks(app: App): HealthTypes {
     notice: {
       "pages with no parent": async () => {
         const all = await db.col`SELECT p.id FROM page p LEFT JOIN page pp ON p.basis = pp.id WHERE pp.id IS NULL AND p.basis != 0`;
-        if (!all.length) return undefined;
+        if (!all.length) return;
         return {
           info: `There are ${all.length} pages with no parent`,
           solutions: {

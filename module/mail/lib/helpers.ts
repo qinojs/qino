@@ -71,7 +71,7 @@ export function clean(obj: Dict): Dict {
 }
 
 export function toBool(v: unknown): boolean | undefined {
-  if (v === "" || v == null) return undefined;
+  if (v === "" || v == null) return;
   return v === true || v === 1 || v === "1" || v === "true";
 }
 

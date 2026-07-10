@@ -4,5 +4,5 @@ import type { Verb } from "./types.ts";
 export const Access: Record<"PUBLIC" | "USER" | "SUPERUSER", NonNullable<Verb["access"]>> = {
   PUBLIC:    () => true,
   USER:      (ctx) => ctx.user !== null,
-  SUPERUSER: (ctx) => ctx.user?.get("superuser").then(Boolean) ?? Promise.resolve(false),
+  SUPERUSER: async (ctx) => !!(await ctx.user?.get("superuser")),
 };

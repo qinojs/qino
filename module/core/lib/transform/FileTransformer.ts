@@ -112,12 +112,9 @@ export class FileTransformer {
 
     // Cache key: source path + size + all set options consumed by any registered transformer
     // (no mtime: it may be touched on access for LRU tracking; no mime: derivable from path/content)
-    let stat: Deno.FileInfo;
-    try {
-      stat = await Deno.stat(sourcePath);
-    } catch {
+    const stat = await Deno.stat(sourcePath).catch(() => {
       throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
-    }
+    });
 
     const fingerprint = `${sourcePath}-${stat.size}`;
     const knownProps = new Set(this.#transformers.flatMap((t) => t.props));

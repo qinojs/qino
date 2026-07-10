@@ -66,7 +66,7 @@ function dumpBox(title: string, value: unknown, depth: number): string {
 }
 
 function safeRender(value: unknown): string | undefined {
-  if (typeof value !== "function") return undefined;
+  if (typeof value !== "function") return;
   if ((value as unknown as Record<symbol, unknown>)[$item]) return `<em>[item.js proxy]</em>`; // don't read .name/.length → no autoviv
   return `<function>function <b>${hee(value.name ?? "")}</b>(${hee(value.length)})</function>`;
 }

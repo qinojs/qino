@@ -12,7 +12,7 @@ export function aptClient(tree: AptTree): AptProxy {
     const target = function () {} as unknown as AptProxy;
     return new Proxy(target, {
       get(_t, prop: string | symbol) {
-        if (typeof prop !== "string" || prop === "then") return undefined;
+        if (typeof prop !== "string" || prop === "then") return;
         const catchall = Object.keys(node).find(isCatchall);
         if (VERB_SET.has(prop) && (
           typeof branch(node[prop])?.execute === "function" ||
@@ -26,7 +26,7 @@ export function aptClient(tree: AptTree): AptProxy {
           };
         }
         const child = branch(node[prop]);
-        if (!child) return undefined;
+        if (!child) return;
         return buildProxy(child, [...pathSoFar, prop]);
       },
       apply(_t, _thisArg, args: unknown[]) {

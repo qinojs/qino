@@ -45,8 +45,7 @@ export class Module {
 }
 
 async function fileExists(path: string): Promise<boolean> {
-  try { return (await Deno.stat(path)).isFile; }
-  catch { return false; }
+  return (await Deno.stat(path).catch(() => null))?.isFile ?? false;
 }
 
 export class ModuleManager {

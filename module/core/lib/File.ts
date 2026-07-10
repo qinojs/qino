@@ -28,17 +28,12 @@ export class File {
     return suffix && base.endsWith(suffix) ? base.slice(0, -suffix.length) : base;
   }
 
-  async copyTo(dest: string): Promise<boolean> {
-    try {
-      await Deno.copyFile(this.path, dest);
-      return true;
-    } catch {
-      return false;
-    }
+  copyTo(dest: string): Promise<boolean> {
+    return Deno.copyFile(this.path, dest).then(() => true, () => false);
   }
 
   async exists(): Promise<this | undefined> {
-    if (!this.path) return undefined;
+    if (!this.path) return;
     const stat = await Deno.stat(this.path).catch(() => null);
     return stat?.isFile ? this : undefined;
   }
@@ -49,20 +44,13 @@ export class File {
   }
 
   async size(): Promise<number> {
-    try {
-      return (await Deno.stat(this.path)).size;
-    } catch {
-      return 0;
-    }
+    const stat = await Deno.stat(this.path).catch(() => null);
+    return stat?.size ?? 0;
   }
 
   async md5(): Promise<string> {
-    try {
-      const data = await Deno.readFile(this.path);
-      return nodeCrypto.createHash("md5").update(data).digest("hex");
-    } catch {
-      return "";
-    }
+    const data = await Deno.readFile(this.path).catch(() => null);
+    return data ? nodeCrypto.createHash("md5").update(data).digest("hex") : "";
   }
 
   async getText(): Promise<string> {

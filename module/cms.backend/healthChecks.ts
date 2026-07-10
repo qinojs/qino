@@ -21,7 +21,7 @@ export function healthChecks(app: App): HealthTypes {
           const access = await ownAccess(page);
           if (access >= 1) open.push(String(page));
         }
-        if (!open.length) return undefined;
+        if (!open.length) return;
         return {
           info: `${open.length} backend page(s) are accessible to any logged-in user (no group required): ${open.join(", ")}`,
         };

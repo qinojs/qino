@@ -8,17 +8,9 @@ let _convertCmd = 'magick';
 let _identifyCmd = 'magick';
 let _identifyArgs: string[] = ['identify'];
 
-async function tryCommand(cmd: string, args: string[]): Promise<boolean> {
-  try {
-    const { code } = await new Deno.Command(cmd, {
-      args,
-      stdout: 'piped',
-      stderr: 'piped',
-    }).output();
-    return code === 0;
-  } catch {
-    return false;
-  }
+function tryCommand(cmd: string, args: string[]): Promise<boolean> {
+  return new Deno.Command(cmd, { args, stdout: 'piped', stderr: 'piped' }).output()
+    .then((r) => r.code === 0, () => false);
 }
 
 export async function isMagickAvailable(): Promise<boolean> {
@@ -99,9 +91,5 @@ export function resetMagickCache(): void {
 }
 
 export async function fileSize(path: string): Promise<number> {
-  try {
-    return (await Deno.stat(path)).size;
-  } catch {
-    return Infinity;
-  }
+  return (await Deno.stat(path).catch(() => null))?.size ?? Infinity;
 }

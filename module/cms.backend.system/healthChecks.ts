@@ -44,7 +44,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
       found.push(row);
       info += hee(row.email) + "<br>";
     }
-    if (!found.length) return undefined;
+    if (!found.length) return;
     return {
       info: info + " only the first 20 were checked",
       solutions: {
@@ -56,34 +56,34 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   // ── smalltext ───────────────────────────────────────────────────────────
   warning["smalltexts-counter is enabled"] = async () => {
-    if (!await settings.core.smalltext.counter) return undefined;
+    if (!await settings.core.smalltext.counter) return;
     const ctx = getCtx();
-    if (!await ctx.user?.get("superuser")) return undefined;
+    if (!await ctx.user?.get("superuser")) return;
     return { solutions: { disable: { solve: async () => { await settings.core.smalltext.counter(0); } } } };
   };
 
   warning["smalltext code-logger is enabled"] = async () => {
-    if (!await settings.core.smalltext.code_logger) return undefined;
+    if (!await settings.core.smalltext.code_logger) return;
     const ctx = getCtx();
-    if (!await ctx.user?.get("superuser")) return undefined;
+    if (!await ctx.user?.get("superuser")) return;
     return { solutions: { disable: { solve: async () => { await settings.core.smalltext.code_logger(0); } } } };
   };
 
   // ── users ────────────────────────────────────────────────────────────────
   warning["users with old password-hash"] = async () => {
     const usrs = await db.col<string>`SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
-    if (!usrs.length) return undefined;
+    if (!usrs.length) return;
     return { info: usrs.map((e) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
   };
 
   // ── dev / https ──────────────────────────────────────────────────────────
   warning["dev mode is active"] = () => {
-    if (!app.dev) return undefined;
+    if (!app.dev) return;
     return { info: "set dev: false in the app config" };
   };
 
   warning["https not enforced"] = () => {
-    if (app.https) return undefined;
+    if (app.https) return;
     return { info: "set https: true in the app config" };
   };
 
@@ -91,14 +91,14 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   notice["db-time unlike os-time"] = async () => {
     const dbTime = Number(await db.one`SELECT UNIX_TIMESTAMP() as time`);
     const osTime = unixTime();
-    if (dbTime === osTime) return undefined;
+    if (dbTime === osTime) return;
     return { info: `db: ${new Date(dbTime * 1000).toISOString()}<br>os: ${new Date(osTime * 1000).toISOString()}` };
   };
 
   // ── texts with no lang ───────────────────────────────────────────────────
   notice["texts with no lang"] = async () => {
     const num = Number(await db.one`SELECT count(*) FROM text WHERE lang = ''`);
-    if (!num) return undefined;
+    if (!num) return;
     return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.query`DELETE FROM text WHERE lang = ''`; } } } };
   };
 
@@ -149,7 +149,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   const kb = (bytes: number) => (bytes / 1000).toFixed(1) + " kb cleaned";
 
   cleanup["delete cache"] = async () => {
-    if (await countCacheFiles(cacheDir, twoDays) < 100) return undefined;
+    if (await countCacheFiles(cacheDir, twoDays) < 100) return;
     return {
       info: "100+ files",
       solutions: {
@@ -192,10 +192,10 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   cleanup["not linked texts"] = async () => {
     const children = app.db.table("text").children;
-    if (!children.length) return undefined;
+    if (!children.length) return;
     const where = sql.join(children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
     const count = Number(await db.one`SELECT count(DISTINCT id) FROM text WHERE ${where}`);
-    if (!count) return undefined;
+    if (!count) return;
     return {
       info: "found " + count,
       solutions: {
@@ -212,7 +212,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   // ── repair ───────────────────────────────────────────────────────────────
   cleanup["clean files-cache"] = async () => {
-    if (await countCacheFiles(cacheDir, 60 * 1000) < 100) return undefined;
+    if (await countCacheFiles(cacheDir, 60 * 1000) < 100) return;
     return { solutions: { run: { solve: async () => kb(await deleteCacheFiles(cacheDir, 60 * 1000)) } } };
   };
 

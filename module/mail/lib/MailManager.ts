@@ -95,12 +95,12 @@ export class MailManager {
   trackURL(raw: string, base: string, track: string): string | undefined {
     try {
       const target = new URL(raw, base);
-      if (!["http:", "https:"].includes(target.protocol)) return undefined;
+      if (!["http:", "https:"].includes(target.protocol)) return;
       const url = new URL("mail-track", base);
       url.searchParams.set("mail1tr", track);
       url.searchParams.set("url", target.href);
       return url.href;
-    } catch { return undefined; }
+    } catch { return; }
   }
 
   async transport(): Promise<Transport> {
