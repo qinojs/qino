@@ -116,9 +116,9 @@ export class DbFileManager {
     headers.set("Content-Type", mime);
 
     // Cache key as ETag (content identity) – cache-file mtime is unusable, it gets touched for LRU tracking
-    const etag = "qg" + (key ?? String((await Deno.stat(outputPath).catch(() => null))?.mtime?.getTime() ?? 0));
-    if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
+    const etag = `"qg${key ?? String((await Deno.stat(outputPath).catch(() => null))?.mtime?.getTime() ?? 0)}"`;
     headers.set("ETag", etag);
+    if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
 
     headers.set("Accept-Ranges", "bytes");
     const rangeHeader = req.headers.get("range");

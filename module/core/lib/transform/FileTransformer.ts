@@ -70,7 +70,7 @@ export class FileTransformer {
 
   register(def: TransformerDef): void {
     if (this.#transformers.some((t) => t.name === def.name)) {
-      throw new Error(`FileTransformer: Transformer "${def.name}" bereits registriert`);
+      throw new Error(`FileTransformer: transformer "${def.name}" already registered`);
     }
     this.#transformers.push(def);
   }
@@ -185,18 +185,18 @@ function sortTransformers(transformers: TransformerDef[]): TransformerDef[] {
 }
 
 function topoSort(transformers: TransformerDef[]): TransformerDef[] {
-  const names = new Set(transformers.map((t) => t.name));
+  const byName = new Map(transformers.map((t) => [t.name, t]));
   const result: TransformerDef[] = [];
-  const added = new Set<string>();
+  const state = new Map<string, 'visiting' | 'done'>();
 
   function add(t: TransformerDef) {
-    if (added.has(t.name)) return;
-    if (t.after && names.has(t.after)) {
-      const dep = transformers.find((x) => x.name === t.after);
-      if (dep) add(dep);
-    }
+    if (state.get(t.name) === 'done') return;
+    if (state.get(t.name) === 'visiting') throw new Error(`FileTransformer: circular "after" dependency at "${t.name}"`);
+    state.set(t.name, 'visiting');
+    const dep = t.after ? byName.get(t.after) : undefined;
+    if (dep) add(dep);
     result.push(t);
-    added.add(t.name);
+    state.set(t.name, 'done');
   }
 
   for (const t of transformers) add(t);

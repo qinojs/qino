@@ -87,6 +87,7 @@ export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 
   const resp = await fetch(url, { ...init, redirect: "manual" });
   if (resp.status >= 300 && resp.status < 400) {
     const location = resp.headers.get("location");
+    resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");
     return safeFetch(new URL(location, url).toString(), init, maxRedirects - 1);
   }

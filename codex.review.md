@@ -1,32 +1,33 @@
 # Review: `module/core`
 
-Stand: 2026-07-10, 2. Fassung. Jedes Finding der Erstfassung wurde gegen den aktuellen Code verifiziert; der dort noch offene repo-weite Usage-Scan der öffentlichen Exporte ist jetzt enthalten (siehe [Public-API-Nutzung](#public-api-nutzung-repo-weiter-scan)). Korrekturen gegenüber der Erstfassung sind in den Findings markiert.
+Stand: 2026-07-10, 3. Fassung. Alle Findings sind gegen den Code verifiziert; der Usage-Scan der öffentlichen Exporte ist umgesetzt (mod.ts exportiert jetzt explizit). Bereits erledigte Quick-Wins wurden aus dem Dokument entfernt (siehe git-Historie). Die Nummerierung der Erstfassung bleibt stabil, daher gibt es Lücken.
+
+Bewusste Entscheidung, nicht erneut aufgreifen: `usr.set("lang", …)` in [LangManager.ts](module/core/lib/LangManager.ts#L43) bleibt aus Performance-Gründen absichtlich un-awaited.
 
 ## Kurzfazit
 
-Der Server-Core hat gute Grundlagen: Web-Standard-`Request`/`Response`, gebundene SQL-Parameter, app-gebundene Manager, eine klare Request-Pipeline und 112 grüne Tests. Für einen kleinen, konsistenten Profi-Core sind vor kosmetischer Bereinigung diese Grundlagen zu korrigieren:
+Der Server-Core hat gute Grundlagen: Web-Standard-`Request`/`Response`, gebundene SQL-Parameter, app-gebundene Manager, eine klare Request-Pipeline und eine grüne Testsuite. Für einen kleinen, konsistenten Profi-Core sind vor kosmetischer Bereinigung diese Grundlagen zu korrigieren:
 
 1. Sicherheits- und Response-Policies müssen für **jede** Response gelten (statisch und dbFile umgehen sie heute).
 2. Session/Auth und SQLite-Transaktionen müssen ihre versprochene Semantik auch bei parallelen Requests einhalten.
 3. Modul-globaler, tenantabhängiger Zustand (Entry-Registry) muss verschwinden.
-4. Der öffentliche Vertrag muss explizit werden — der Usage-Scan zeigt, welche Exporte tatsächlich Consumer haben.
-5. Der Legacy-Browserblock (`c1`, `Rte`) gehört aus dem Core heraus oder als echtes ESM neu aufgebaut.
+4. Der Legacy-Browserblock (`c1`, `Rte`) gehört aus dem Core heraus oder als echtes ESM neu aufgebaut.
 
 ## Kritische Findings
 
-### P0.1 – Statische und dbFile-Responses umgehen Response-Policies ✔ bestätigt, erweitert
+### P0.1 – Statische und dbFile-Responses umgehen Response-Policies
 
 Es gibt drei Response-Wege mit unterschiedlicher Policy-Abdeckung:
 
 - **Statisch**: verlässt `handle()` direkt über `#static()` — ohne `action` (also ohne HTTPS-Redirect/HSTS aus [plugin.ts](module/core/plugin.ts#L105)), ohne `respond` (also ohne CSP aus [plugin.ts](module/core/plugin.ts#L143)) und ohne die festen Header aus `#buildResponse()`: [App.ts](module/core/lib/App.ts#L117), [App.ts](module/core/lib/App.ts#L125), [App.ts](module/core/lib/App.ts#L178).
-- **dbFile** *(neu gegenüber Erstfassung)*: `#route()` gibt die Response direkt zurück ([App.ts](module/core/lib/App.ts#L152)). `action` läuft zwar, aber die dort auf `ctx.responseHeaders` gesetzten Header (HSTS!) werden nur von `#buildResponse()` übernommen — sie gehen verloren. `respond` feuert nie.
+- **dbFile**: `#route()` gibt die Response direkt zurück ([App.ts](module/core/lib/App.ts#L152)). `action` läuft zwar, aber die dort auf `ctx.responseHeaders` gesetzten Header (HSTS!) werden nur von `#buildResponse()` übernommen — sie gehen verloren. `respond` feuert nie.
 - **api** ist in Ordnung: apt signalisiert per geworfenem `Output`, der durch `handleError` → `#buildResponse()` läuft und `ctx.responseHeaders` mitnimmt.
 
 `response-ready` ist kein Ersatz: dort ist keine Core-Policy implementiert und die Response ist bereits gebaut.
 
 Empfehlung: Eine einzige Finalisierung für alle Responses. Routing (statisch, dbFile, api, render) liefert nur eine `Response` bzw. Body+Status; danach laufen zentral `ctx.responseHeaders`-Merge, Security-Header und `response-ready`. Der HTTPS-Redirect muss vor der statischen Auslieferung entschieden werden.
 
-### P0.2 – „Stateless Auth" erzeugt trotzdem eine persistente Session ✔ bestätigt
+### P0.2 – „Stateless Auth" erzeugt trotzdem eine persistente Session
 
 `RequestContext.create()` lädt oder **erzeugt** immer eine Session (DB-Insert in `SessionManager.#create()`): [RequestContext.ts](module/core/lib/RequestContext.ts#L124), [SessionManager.ts](module/core/lib/SessionManager.ts#L78). Erst danach feuert der `authenticate`-Hook: [init.ts](module/core/lib/init.ts#L8). Die Guards danach verhindern nur Cookie-Versand und Session-Touch, nicht den Insert.
 
@@ -34,112 +35,94 @@ Bei API-Key/Bearer-Traffic entsteht so pro Request eine tote `sess`-Zeile — da
 
 Empfehlung: Session lazy laden — erst bei cookiebasierter/anonymer Stateful-Nutzung. `sess` wird `Session | null` statt `null!` ([RequestContext.ts](module/core/lib/RequestContext.ts#L19)); `csrfToken`, `initSettings()` und `LangManager.initCtx()` müssen den null-Fall behandeln.
 
-### P0.3 – Die Default-SQLite-Transaktion ist bei Parallelität nicht isoliert ✔ bestätigt
+### P0.3 – Die Default-SQLite-Transaktion ist bei Parallelität nicht isoliert
 
 Der Treiber dokumentiert selbst, dass fremde Requests während eines `await` in dieselbe Transaktion geraten und gemeinsam rollbacken: [DbDriver.ts](module/core/lib/db/DbDriver.ts#L125). Gleichzeitig ist SQLite die Default-Datenbank jeder `App`: [App.ts](module/core/lib/App.ts#L83). „SQLite nur single-user dev/demo" wird vom API-Default nicht erzwungen — das ist ein Datenintegritätsproblem, kein Performance-Trade-off.
 
 Empfehlung: SQLite-Transaktionen über einen Mutex serialisieren und Ownership per `AsyncLocalStorage` erkennen (analog MySQL/PG-Treiber, die das bereits so machen). Test mit zwei überlappenden Requests, einer davon mit Rollback.
 
-### P0.4 – Entry-Klassen sind tenantübergreifender Modul-Globalzustand ✔ bestätigt
+### P0.4 – Entry-Klassen sind tenantübergreifender Modul-Globalzustand
 
 Die Registry liegt global im Modul: [DbEntry.ts](module/core/lib/db/DbEntry.ts#L3). `qgEntries.ts` befüllt sie per Import-Side-Effect: [qgEntries.ts](module/core/lib/qgEntries.ts#L64), importiert aus [plugin.ts](module/core/plugin.ts#L3). Registriert ein Plugin eine Tabellenklasse, gilt sie für alle parallelen `App`-/`Db`-Instanzen — direkter Verstoß gegen die Multi-Tenant-Regel des Projekts (AGENTS.md).
 
 Empfehlung: Registry an `Db` (`db.registerEntryClass(...)`), `DbTable.entry()` löst nur über die eigene `Db` auf, `qgEntries` registriert in `init()` statt per Import.
 
-### P0.5 – Jeder eingeloggte Nutzer kann `ctx.dev` aktivieren ✔ bestätigt
+### P0.5 – Jeder eingeloggte Nutzer kann `ctx.dev` aktivieren
 
 `ctx.dev` liest aus schreibbaren User-/Session-Settings: [RequestContext.ts](module/core/lib/RequestContext.ts#L88) (der `todo`-Kommentar benennt das Risiko selbst). Der `ctx-settings`-Endpoint erlaubt jedem Nutzer (`Access.USER`) beliebige Pfade inklusive `core.dev` zu schreiben: [apt.ts](module/core/apt.ts#L113). Im Core markiert `dev` „nur" Übersetzungen und triggert `smalltext`-Inserts, aber andere Module dürfen `ctx.dev` nicht als vertrauenswürdiges Debug-/Disclosure-Signal behandeln.
 
 Empfehlung: `dev` ausschließlich appseitig konfigurieren (`app.dev`) oder als serverseitig autorisierte Capability. Aus dem schreibbaren `ctxSettingsSchema` entfernen.
 
-### P0.6 – Request-Logging kann Secrets und personenbezogene Daten dauerhaft speichern ✔ bestätigt
+### P0.6 – Request-Logging kann Secrets und personenbezogene Daten dauerhaft speichern
 
-Core serialisiert standardmäßig den kompletten Body ins Log: [init.ts](module/core/lib/init.ts#L65). Der Redactor `/pw|oldpw|token/i` erfasst z. B. `password`, `secret`, `apiKey` nicht: [init.ts](module/core/lib/init.ts#L64). Volle URL (inkl. Query-Tokens) und Referer werden in `log_url` persistiert: [init.ts](module/core/lib/init.ts#L84). Die `SELECT`-dann-`INSERT`-Sequenzen für URL/IP/UA sind race-anfällig (Duplikate): [init.ts](module/core/lib/init.ts#L79).
+Core serialisiert standardmäßig den kompletten Body ins Log: [init.ts](module/core/lib/init.ts#L65) — die Key-basierte Redaction (inzwischen erweitert) bleibt eine Substring-Blocklist und damit prinzipiell lückenhaft. Volle URL (inkl. Query-Tokens) und Referer werden in `log_url` persistiert: [init.ts](module/core/lib/init.ts#L84). Die `SELECT`-dann-`INSERT`-Sequenzen für URL/IP/UA sind race-anfällig (Duplikate): [init.ts](module/core/lib/init.ts#L79).
 
 Empfehlung: Standardmäßig nur strukturierte Metadaten loggen; Body-/Query-Logging als Opt-in mit rekursiver, zentraler Redaction-Policy (Allowlist statt Substring-Blocklist). URL/IP/UA per atomarem Upsert.
 
 ## Hohe Priorität
 
-### P1.1 – `Output` erkennt Web-`BodyInit` falsch ✔ bestätigt
+### P1.1 – `Output` erkennt Web-`BodyInit` falsch
 
 Jedes Objekt außer `Uint8Array`/`ReadableStream` wird als JSON behandelt: [util.ts](module/core/lib/util.ts#L98). `Blob`, `ArrayBuffer`, `FormData`, `URLSearchParams` werden dadurch falsch serialisiert (`new Output(new Blob(["abc"])).body` → `"{}"`). `Output` ist Teil der Root-API und mit 15 externen Importstellen breit genutzt.
 
 Empfehlung: JSON nicht heuristisch aus `typeof === "object"` ableiten. Alle `BodyInit`-Typen durchreichen und JSON nur für plain objects/arrays — oder explizit `Output.json(value)` von `Output.body(body)` trennen.
 
-### P1.2 – „Standard Schema" ist nicht Standard-Schema-kompatibel ✔ bestätigt
+### P1.2 – „Standard Schema" ist nicht Standard-Schema-kompatibel
 
 apt akzeptiert nur die konkrete lokale Klasse (`kind`/`shape` sind Pflicht-Properties, echte `StandardSchemaV1`-Objekte passen strukturell nicht): [types.ts](module/core/lib/apt/types.ts#L8). Ein Spec-konformer Validator darf außerdem ein **Promise** zurückgeben; `invoke()` wertet synchron aus — ein Promise hätte weder `issues` noch `value` und ginge still als Erfolg mit `undefined` durch: [invoke.ts](module/core/lib/apt/invoke.ts#L10). `validatePart` filtert Input-Keys über `shapeOf()`, was bei fremden Schemas ein leeres Objekt validieren würde: [invoke.ts](module/core/lib/apt/invoke.ts#L16). Die lokalen Typen lassen `types` und objektförmige Path-Segmente aus ([StandardSchema.ts](module/core/lib/StandardSchema.ts#L12), Referenz: [Standard Schema V1](https://standardschema.dev)).
 
 Empfehlung: Entweder den offiziellen `StandardSchemaV1`-Typ konsumieren und Validation awaiten — oder den eigenen Validator ehrlich `AptSchema` nennen und Introspektion (`kind`, `shape`) als internes Interface führen. Halbe Kompatibilität ist die schlechteste Variante.
 
-### P1.3 – Query-Parameter verhalten sich bei Prototyp-Namen inkonsistent ✔ bestätigt
-
-`Req.query()` und `Req.queries()` bauen `{}`-Objekte: [Req.ts](module/core/lib/Req.ts#L36), [Req.ts](module/core/lib/Req.ts#L46). Parameter wie `toString`/`constructor` gehen durch die geerbten Properties verloren (`k in out` bzw. `out[k] ??=`), `__proto__` wird verworfen. Cookies, Forms und apt-Params nutzen dagegen bereits Null-Prototyp-Records ([Req.ts](module/core/lib/Req.ts#L73), [Req.ts](module/core/lib/Req.ts#L84)).
-
-Empfehlung: Durchgehend `Object.create(null)`, identische First-/Multi-Value-Semantik, Regressionstests für `__proto__`, `constructor`, `toString`, `then`.
-
-### P1.4 – Sprachzustand: verlorene Promises, stale Cache, mutierbares Array ✔ bestätigt
-
-`usr.set("lang", ...)` wird nicht awaited, obwohl `DbEntry.set()` vor dem Save asynchron lädt: [LangManager.ts](module/core/lib/LangManager.ts#L43). Der Counter-Update ist ein unbehandeltes Promise: [LangManager.ts](module/core/lib/LangManager.ts#L115). `import()` schreibt Übersetzungen, invalidiert aber `#txtsCache` nicht — nach warmem Cache bleiben Importe unsichtbar: [LangManager.ts](module/core/lib/LangManager.ts#L95), [LangManager.ts](module/core/lib/LangManager.ts#L148). `all` gibt das private Array mutierbar heraus: [LangManager.ts](module/core/lib/LangManager.ts#L18).
-
-Empfehlung: Relevante Promises awaiten oder in einen app-eigenen Background-Task-Tracker geben; Cache bei Import invalidieren; `all` als Kopie/readonly.
-
-### P1.5 – DB-Coercion speichert ungültige Werte still als `0`; Composite-IDs kollidierbar ✔ bestätigt
+### P1.5 – DB-Coercion speichert ungültige Werte still als `0`; Composite-IDs kollidierbar
 
 Numerische Felder: `parseFloat(...) || 0` — Tippfehler, leere Werte, `NaN` werden zu gültigen Nullen, `"12x"` zu `12`: [DbField.ts](module/core/lib/db/DbField.ts#L50). Composite-IDs joinen mit unescaped `-:-`: [DbTable.ts](module/core/lib/db/DbTable.ts#L88); `entryId2Array` prüft die Komponentenanzahl nicht: [DbTable.ts](module/core/lib/db/DbTable.ts#L98).
 
 Empfehlung: Strikte Konvertierung mit Fehler bei ungültigen Werten. Composite-IDs strukturiert halten oder reversibel encodieren (z. B. JSON-Array), nicht über einen frei vorkommenden Separator.
 
-### P1.6 – `DbEntry` mischt Identity Map, Auto-Save und direkte Tabellenwrites ✔ bestätigt
+### P1.6 – `DbEntry` mischt Identity Map, Auto-Save und direkte Tabellenwrites
 
 Drei konkurrierende Zustandsmodelle: WeakRef-Identity-Map in `DbTable` ([DbTable.ts](module/core/lib/db/DbTable.ts#L16)), die direkte `DbTable.update()`-Aufrufe nicht invalidieren (Entries bleiben stale); implizites Auto-Save per Microtask ([DbEntry.ts](module/core/lib/db/DbEntry.ts#L96)); `save()` löscht den Dirty-State vor dem möglicherweise fehlschlagenden Update ([DbEntry.ts](module/core/lib/db/DbEntry.ts#L124)). Dazu tote API: `entry(undefined)` wirft hart „not working" mit auskommentiertem Code: [DbTable.ts](module/core/lib/db/DbTable.ts#L268).
 
 Empfehlung (KISS): Identity Map und Auto-Save entfernen. `entry.get()` lädt, `entry.set()` mutiert lokal, `entry.save()` schreibt explizit und behält Dirty-State bei Fehler. Den `entry(undefined)`-Zweig löschen.
 
-### P1.7 – Transform-Cache-Key: für generische Nutzung nicht inhaltsadressiert ✔ bestätigt, präzisiert
+### P1.7 – Transform-Cache-Key: für generische Nutzung nicht inhaltsadressiert
 
-Der Key basiert auf Pfad + Dateigröße + Optionen: [FileTransformer.ts](module/core/lib/FileTransformer.ts#L122). **Präzisierung:** Für den Core-Konsumenten `DbFile` ist der Pfad md5-inhaltsadressiert ([DbFileManager.ts](module/core/lib/DbFileManager.ts#L164)) — dort ist der Key korrekt. `FileTransformer` ist aber generisch exportiert und wird von Modulen mit eigenen Pfaden genutzt (3 externe Importstellen); dort liefert eine geänderte Datei gleicher Größe ein stale Ergebnis. `knownMime` beeinflusst die Pipeline, ist aber nicht Teil des Keys: [FileTransformer.ts](module/core/lib/transform/FileTransformer.ts#L111).
+Der Key basiert auf Pfad + Dateigröße + Optionen: [FileTransformer.ts](module/core/lib/transform/FileTransformer.ts#L122). Für den Core-Konsumenten `DbFile` ist der Pfad md5-inhaltsadressiert ([DbFileManager.ts](module/core/lib/DbFileManager.ts#L164)) — dort ist der Key korrekt. `FileTransformer` ist aber generisch exportiert und wird von Modulen mit eigenen Pfaden genutzt; dort liefert eine geänderte Datei gleicher Größe ein stale Ergebnis. `knownMime` beeinflusst die Pipeline, ist aber nicht Teil des Keys: [FileTransformer.ts](module/core/lib/transform/FileTransformer.ts#L111).
 
-Unverändert kritisch: der Toposort erkennt keine Zyklen — bei `A after B` und `B after A` rekursiert `add()` bis zum Stackoverflow: [FileTransformer.ts](module/core/lib/transform/FileTransformer.ts#L187).
+Empfehlung: Content-Hash (oder dokumentierte Voraussetzung „Pfad ist inhaltsadressiert") plus MIME in den Key.
 
-Empfehlung: Content-Hash (oder dokumentierte Voraussetzung „Pfad ist inhaltsadressiert") plus MIME in den Key. DFS mit `visiting`/`done` und verständlichem Cycle-Fehler (Vorbild: [ModuleManager.ts](module/core/lib/ModuleManager.ts#L151), das es bereits richtig macht).
+### P1.8 – File-HTTP weicht von HTTP Semantics ab (Rest)
 
-### P1.8 – File-HTTP weicht von HTTP Semantics ab ✔ bestätigt, erweitert
-
-- ETag ungequotet (Entity-Tags sind syntaktisch quoted strings): [DbFileManager.ts](module/core/lib/DbFileManager.ts#L119).
-- *(neu)* Die `304`-Antwort wird gebaut, **bevor** der ETag-Header gesetzt ist — sie enthält keinen ETag: [DbFileManager.ts](module/core/lib/DbFileManager.ts#L120).
 - Ungültige oder unbefriedigbare Ranges fallen auf `200` komplett zurück statt `416` + `Content-Range: bytes */size`: [DbFileManager.ts](module/core/lib/DbFileManager.ts#L125), [DbFileManager.ts](module/core/lib/DbFileManager.ts#L304).
 - `If-Range` wird ignoriert, `If-None-Match` nur als exakter Einzelstring verglichen (keine Listen, kein `W/`).
 
 Referenz: [RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html). Empfehlung: Conditional-/Range-Handling in einen kleinen, eigenständig getesteten HTTP-Helper ziehen; `openRange()` unterscheidet „kein Range" / „syntaktisch ungültig" / „unsatisfiable".
 
-### P1.9 – Der SSRF-Helper heißt sicherer, als er ist ✔ bestätigt
+### P1.9 – `safeFetch` bleibt Best-Effort gegen SSRF
 
-`assertNoSSRF()` prüft eine unvollständige Liste privater Netze (es fehlen u. a. 100.64/10, NAT64) und löst DNS **separat** vor `fetch()` auf — zwischen Prüfung und Verbindung kann anders aufgelöst werden (DNS rebinding/TOCTOU): [fileStream.ts](module/core/lib/fileStream.ts#L58), [fileStream.ts](module/core/lib/fileStream.ts#L72). Redirects werden immerhin rekursiv neu geprüft, aber Redirect-Bodies nicht gecancelt: [fileStream.ts](module/core/lib/fileStream.ts#L85).
+Die Private-Range-Liste ist unvollständig (es fehlen u. a. 100.64/10, NAT64) und DNS wird **separat** vor `fetch()` aufgelöst — zwischen Prüfung und Verbindung kann anders aufgelöst werden (DNS rebinding/TOCTOU): [fileStream.ts](module/core/lib/fileStream.ts#L58), [fileStream.ts](module/core/lib/fileStream.ts#L72).
 
-Usage-Scan: `safeFetch` hat echte Consumer (uncdn, experimental), `assertNoSSRF` keinen einzigen.
+Empfehlung: Als Best-Effort-Guard dokumentieren oder mit pinned-IP-Connector härten.
 
-Empfehlung: `assertNoSSRF` nicht mehr exportieren. `safeFetch` als Best-Effort-Guard dokumentieren (oder mit pinned-IP-Connector härten), Redirect-Bodies vor dem Folge-Fetch canceln.
-
-### P1.10 – Pfadfreigabe ist nur lexikalisch und symlink-anfällig ✔ bestätigt
+### P1.10 – Pfadfreigabe ist nur lexikalisch und symlink-anfällig
 
 `assertAllowedPath()` prüft `resolve()`/String-Prefix, nicht den realen Pfad — ein Symlink unterhalb eines erlaubten Roots kann nach außen zeigen: [App.ts](module/core/lib/App.ts#L188). Der Root selbst wird durch den `root + sep`-Prefix abgelehnt.
 
 Empfehlung: `realPath()` von Root und Ziel vergleichen (für neue Ziele: realer Parent); API dafür async. Prefix-Checks über `relative()`-Semantik wie in `pubPath()` ([RequestContext.ts](module/core/lib/RequestContext.ts#L156)), das es bereits richtig macht.
 
-### P1.11 – Body-Parsing: uneinheitliche MIME- und kaputte Größenprüfung ✔ bestätigt
+### P1.11 – Body-Parsing: doppelte, uneinheitliche MIME-Erkennung
 
-Content-Types per `includes()`: [Body.ts](module/core/lib/Body.ts#L55) — apt hat parallel eine eigene, korrektere JSON-Erkennung (exakter Typ + `+json`): [fetch.ts](module/core/lib/apt/fetch.ts#L51). Ein vorhandener, aber nicht-numerischer oder negativer `Content-Length` besteht den `> maxSize`-Vergleich (`NaN > x` ist false) und umgeht den capped reader komplett: [Body.ts](module/core/lib/Body.ts#L61).
+Content-Types per `includes()`: [Body.ts](module/core/lib/Body.ts#L55) — apt hat parallel eine eigene, korrektere JSON-Erkennung (exakter Typ + `+json`): [fetch.ts](module/core/lib/apt/fetch.ts#L51).
 
-Empfehlung: Einen MIME-Helper für beide Stellen. `Content-Length` nur als endliche, nichtnegative Ganzzahl akzeptieren; sonst capped lesen oder `400`.
+Empfehlung: Ein gemeinsamer MIME-Helper für beide Stellen.
 
-### P1.12 – HTML-Safety ist unnötig weit offen ✔ bestätigt
+### P1.12 – `htmlValue` vertraut jedem Objekt mit `html`-Property
 
-`htmlValue()` vertraut jedem Objekt mit `html`-Property — beliebige Datenobjekte können Escaping umgehen, der `HtmlString`-Trust-Marker verliert seinen Wert: [util.ts](module/core/lib/util.ts#L56). `HtmlBuilder`-Links rendern frei wählbare Attribut**namen** ungeprüft: [HtmlBuilder.ts](module/core/lib/HtmlBuilder.ts#L38).
+Beliebige Datenobjekte können so Escaping umgehen; der `HtmlString`-Trust-Marker verliert seinen Wert: [util.ts](module/core/lib/util.ts#L56).
 
-Empfehlung: Nur `HtmlString` (und das dokumentierte `html()`-Renderable-Protokoll für `html.async`) ungeescaped akzeptieren. Attributnamen validieren (`/^[a-zA-Z][\w-]*$/`). `head`/`content` als bewusst trusted dokumentieren.
+Empfehlung: Nur `HtmlString` (und das dokumentierte `html()`-Renderable-Protokoll für `html.async`) ungeescaped akzeptieren. `head`/`content` im `HtmlBuilder` als bewusst trusted dokumentieren.
 
-### P1.13 – `logout`/Auth-Helfer setzen `clientId` voraus *(neu)*
+### P1.13 – `logout`/Auth-Helfer setzen `clientId` voraus
 
 `ctx.client` wirft, wenn kein `clientId` existiert: [RequestContext.ts](module/core/lib/RequestContext.ts#L83). Bei stateless Auth wird `initClient` übersprungen ([init.ts](module/core/lib/init.ts#L9)) — ein Bearer-authentifizierter Aufruf von `POST /api/core/logout` (Access.USER) läuft in `logout()` → `ctx.client` → 500: [auth.ts](module/core/lib/auth.ts#L66). Gleiches Muster in `rememberLogin()`/`login()`.
 
@@ -147,37 +130,31 @@ Empfehlung: Entweder `client` als `null`-fähig modellieren und in den Auth-Helf
 
 ## API, Architektur und Konsistenz
 
-### P2.1 – Der öffentliche Barrel exportiert Interna — jetzt mit Nutzungsdaten ✔ korrigiert
-
-`mod.ts` exportiert apt pauschal mit `export *`: [mod.ts](module/core/mod.ts#L23). **Korrektur zur Erstfassung:** Ein Teil der dort als Interna eingestuften Symbole hat echte Consumer — `walk`, `toTools`, `Tool`, `camelName`, `VERBS`, `RESERVED`, `Verb`, `AptNode`, `Method` werden von `mcp`, `cms.webmcp` und `cms.backend.api` genutzt und sind damit die (kleine, absichtliche) Introspektions-SPI. Die tatsächlich toten Exporte stehen in der [Scan-Tabelle](#public-api-nutzung-repo-weiter-scan).
-
-Empfehlung: `export *` durch explizite Exporte in drei Gruppen ersetzen — Runtime-API (App/ctx/HTML/SQL/Errors), Plugin-/Introspektions-SPI (apt-Tree-Typen, `walk`/`toTools`, Transform-Registrierung), optionaler Adapter (`honoAdapter`). Alles aus der Tabelle ohne Consumer streichen; keine Re-Exports „für alle Fälle".
-
-### P2.2 – Klassenoberflächen sind unnötig mutierbar ✔ bestätigt
+### P2.2 – Klassenoberflächen sind unnötig mutierbar
 
 Öffentlich schreibbar, obwohl intern gekoppelt: App-Konfiguration und Manager ([App.ts](module/core/lib/App.ts#L50)), Session `token`/`id`/`data` ([SessionManager.ts](module/core/lib/SessionManager.ts#L15)), `Db.schema`-Setter ([Db.ts](module/core/lib/db/Db.ts#L39)), `DbFile.vs` ([DbFileManager.ts](module/core/lib/DbFileManager.ts#L143)). Der `DbFile.name`-Setter macht fire-and-forget-I/O: [DbFileManager.ts](module/core/lib/DbFileManager.ts#L157).
 
 Empfehlung: Konfiguration nach Construction readonly, interne Referenzen `#private`, Mutation über kleine Methoden (`await file.rename(name)` statt Setter).
 
-### P2.3 – Lifecycle ist nicht explizit ✔ bestätigt
+### P2.3 – Lifecycle ist nicht explizit
 
-`App.init()` hat keinen Guard — doppelter Aufruf registriert Init-Hooks/Listener doppelt: [App.ts](module/core/lib/App.ts#L96), [ModuleManager.ts](module/core/lib/ModuleManager.ts#L101). `install()` läuft bei jedem Boot, der Name suggeriert Einmaligkeit: [ModuleManager.ts](module/core/lib/ModuleManager.ts#L129). Ein App-weites `close()` (DB, Session-Touch-Timer, Background-Logs) fehlt.
+`App.init()` hat keinen Guard — doppelter Aufruf registriert Init-Hooks/Listener doppelt: [App.ts](module/core/lib/App.ts#L96), [ModuleManager.ts](module/core/lib/ModuleManager.ts#L101). `install()` läuft bei jedem Boot, der Name suggeriert Einmaligkeit: [ModuleManager.ts](module/core/lib/ModuleManager.ts#L129). Ein App-weites `close()` fehlt — item.js-TTL-Timer und Session-Touch-Timer halten den Prozess am Leben (im Smoke-Test bestätigt).
 
 Empfehlung: `created → initialized → closed` mit idempotentem oder klar fehlschlagendem `init()`, `close()`, Background-Task-Tracker. `install` echte Einmaligkeit geben oder in den `init`-Hook mergen.
 
-### P2.4 – Absichtlich kaputte oder veraltete Mitglieder ✔ bestätigt
+### P2.4 – Absichtlich kaputte Mitglieder und Alt-Namen
 
-`DbText.toString()`/`DbTextLang.toString()` werfen immer: [DbTextManager.ts](module/core/lib/DbTextManager.ts#L86), [DbTextManager.ts](module/core/lib/DbTextManager.ts#L124); `DbTextLang.Text` ist ein warnender Deprecated-Alias: [DbTextManager.ts](module/core/lib/DbTextManager.ts#L101); `DbTable.entry()` trägt den „not working"-Zweig (P1.6). Rückwärtskompatibilität ist laut Aufgabenstellung nicht nötig.
+`DbText.toString()`/`DbTextLang.toString()` werfen immer: [DbTextManager.ts](module/core/lib/DbTextManager.ts#L86), [DbTextManager.ts](module/core/lib/DbTextManager.ts#L117); `DbTable.entry()` trägt den „not working"-Zweig (P1.6). Rückwärtskompatibilität ist laut Aufgabenstellung nicht nötig.
 
 Empfehlung: Löschen statt mitschleppen. Methodennamen normalisieren: `exists(): boolean` statt `is(): this | false`, `values()` statt `getVs()`, `ensure()` statt `makeIfNot()`.
 
-### P2.5 – Event-Typisierung wird durch Catch-all ausgehebelt ✔ bestätigt
+### P2.5 – Event-Typisierung wird durch Catch-all ausgehebelt
 
 `AppEvents` und `DbEvents` erlauben jeden Namen mit beliebigem Record: [App.ts](module/core/lib/App.ts#L46), [Db.ts](module/core/lib/db/Db.ts#L19) — Tippfehler und falsche Payloads bleiben typkorrekt, obwohl die Kommentare Declaration Merging bereits als Erweiterungsweg dokumentieren. Payload-/Eventnamen sind inkonsistent (`File` vs. `dbFile`, `Table`, `session_old`, `dbFile::access` vs. `dbFile-used`).
 
 Empfehlung: Catch-all entfernen, Module erweitern ausschließlich per Declaration Merging. Einheitlich camelCase-Payloads und ein Separator-Schema für Eventnamen.
 
-### P2.6 – Browser-Code ist überwiegend kein sauberes ESM ✔ bestätigt
+### P2.6 – Browser-Code ist überwiegend kein sauberes ESM
 
 Der größte strukturelle Fremdkörper ist `pub/js/c1` + `pub/js/Rte`:
 
@@ -188,30 +165,11 @@ Der größte strukturelle Fremdkörper ist `pub/js/c1` + `pub/js/Rte`:
 
 Empfehlung: Rte und die generischen `c1`-Utilities in ein eigenes Editor-/UI-Modul verschieben (oder löschen, was ungenutzt ist). Verbleibenden Browser-Core (`qino.js`, `AptClient.js`, `t.mjs` sind bereits sauber) auf explizite Imports/Exports halten; keine Built-in-Prototypen, keine neuen Globals.
 
-### P2.7 – Stil und Typen ohne gemeinsamen Standard ✔ bestätigt
+### P2.7 – Stil und Typen ohne gemeinsamen Standard
 
-Gemischte Einrückung (2/4 Spaces, z. B. [RequestContext.ts](module/core/lib/RequestContext.ts) vs. [App.ts](module/core/lib/App.ts)) und Quotes; deutsche Reste in Fehlermeldungen/Kommentaren, z. B. [FileTransformer.ts](module/core/lib/transform/FileTransformer.ts#L73), [plugin.ts](module/core/plugin.ts#L79), [auth.ts](module/core/lib/auth.ts#L55). Zahlreiche Dateien deaktivieren `no-explicit-any` fileweit statt an der Grenze zu typisieren: [ModuleManager.ts](module/core/lib/ModuleManager.ts#L1), [DbFileManager.ts](module/core/lib/DbFileManager.ts#L1), [Db.ts](module/core/lib/db/Db.ts#L1). `deno lint module/core`: 16 Fehler, davon 13 im Produktivcode.
+Gemischte Einrückung (2/4 Spaces, z. B. [RequestContext.ts](module/core/lib/RequestContext.ts) vs. [App.ts](module/core/lib/App.ts)) und Quotes; deutsche Reste in Kommentaren, z. B. [plugin.ts](module/core/plugin.ts#L79), [auth.ts](module/core/lib/auth.ts#L55). Zahlreiche Dateien deaktivieren `no-explicit-any` fileweit statt an der Grenze zu typisieren: [ModuleManager.ts](module/core/lib/ModuleManager.ts#L1), [DbFileManager.ts](module/core/lib/DbFileManager.ts#L1), [Db.ts](module/core/lib/db/Db.ts#L1). `deno lint module/core`: 16 Fehler, davon 13 im Produktivcode.
 
 Empfehlung: Ein Stil, englische Kommentare, keine fileweiten Lint-Ausnahmen. An DB-/Item-Grenzen `unknown`, `Row`, `JsonValue` und kleine strukturelle Interfaces.
-
-## Public-API-Nutzung (repo-weiter Scan)
-
-Import-Scan über `qino/module`, `demo*`, `experimental-modules`, `privat-module` (ohne `module/core` selbst), Stand 2026-07-10.
-
-**Ohne externen Consumer — Export streichen bzw. intern machen:**
-
-| Export | Anmerkung |
-|---|---|
-| `aptFetch`, `aptClient`, `AptProxy`, `AptFetchAuth`, `AptFetchOptions` | nur intern von `App` genutzt |
-| `asParams`, `coerce`, `shapeOf`, `isCatchall`, `paramName`, `routeParams`, `Route`, `VERB_SET`, `BODY_METHODS` | apt-Interna |
-| `checkCollisions`, `invoke` | extern nur aus Tests importiert |
-| `assertNoSSRF` | `safeFetch` genügt als Oberfläche |
-| `magick` | `isMagickAvailable`/`magickIdentify` sind die genutzte Oberfläche |
-| `ModuleManager`, `Plugin` | `Module` (Typ) reicht |
-| `dbScope` (Funktion) | `DbScope`-Typ, `tableRef`, `scopeCache` werden genutzt |
-| `StandardIssue`, `StandardResult`, `OcrEngine`, `TranscriptEngine`, `TransformContext` | Typen ohne externen Import (Engines werden duck-typed registriert) |
-
-**Aktiv genutzt (Auswahl, Importstellen):** `App` 113, `hee` 90, `getCtx` 65, `RequestContext` 57, `sql` 36, `unixTime` 26, `Output`/`requestStorage` je 15, `Access` 13, `AptTree`/`s` je 11, `Db`/`toTools` je 10, `HtmlString` 8, `u2time` 7, `AccessError`/`DbFile`/`Sql` je 6. Die Introspektions-SPI (`walk`, `toTools`, `Tool`, `camelName`, `VERBS`, `RESERVED`, `Verb`, `AptNode`, `Method`) hat reale Consumer in `mcp`, `cms.webmcp`, `cms.backend.api`. `honoAdapter` wird von den Demo-Apps genutzt.
 
 ## Empfohlene Zielstruktur
 
@@ -219,7 +177,7 @@ Kleinste sinnvolle Trennung (erst **nach** Korrektur der Semantik umsetzen, sons
 
 ```text
 module/core/
-├── mod.ts                 # explizite Runtime-API + kleine Introspektions-SPI
+├── mod.ts                 # explizite Runtime-API + kleine Introspektions-SPI (bereits umgesetzt)
 ├── plugin.ts              # Manifest, keine Import-Side-Effects
 ├── lib/
 │   ├── app/               # App, RequestContext, Pipeline mit einer Response-Finalisierung
@@ -242,9 +200,9 @@ Rte, Combobox und die `c1`-DOM-Utilities gehören nicht in den Laufzeit-Core.
 1. Integrationstests für alle vier Response-Zweige (static/dbFile/api/render), stateless Auth und parallele SQLite-Transaktionen ergänzen.
 2. Einheitliche Response-Finalisierung und lazy Session implementieren (P0.1, P0.2, P1.13).
 3. Entry-Registry pro `Db`; SQLite-Mutex; strikte Feldkonvertierung (P0.4, P0.3, P1.5).
-4. Logging-, `ctx.dev`-, SSRF-, Pfad- und File-HTTP-Grenzen korrigieren (P0.5, P0.6, P1.8–P1.11).
+4. Logging-, `ctx.dev`-, SSRF-, Pfad- und File-HTTP-Grenzen korrigieren (P0.5, P0.6, P1.8–P1.10).
 5. Schema-Frage entscheiden (echtes Standard Schema vs. ehrliches `AptSchema`) und apt-Typen ohne `any` (P1.2).
-6. Public API gemäß Scan-Tabelle verkleinern; Lifecycle und Mutabilität schließen (P2.1–P2.3).
+6. Lifecycle und Mutabilität schließen (P2.2, P2.3).
 7. Browser-Legacy auslagern/löschen (P2.6).
 8. Zuletzt Namen, Stil, Kommentare, tote Mitglieder (P2.4, P2.5, P2.7).
 
@@ -256,16 +214,16 @@ Rte, Combobox und die `c1`-DOM-Utilities gehören nicht in den Laufzeit-Core.
 - Zwei Apps mit unterschiedlichen Entry-Klassen für denselben Tabellennamen.
 - `Output` mit allen Web-`BodyInit`-Varianten.
 - Externe synchrone und asynchrone `StandardSchemaV1`-Validatoren (je nach Entscheidung in P1.2).
-- Query-Params mit Prototyp-Namen; ungültiger/negativer `Content-Length`.
-- Translation-Import nach warmem Cache.
-- Transform: gleicher Pfad/gleiche Größe/neuer Inhalt; Dependency-Cycle.
-- ETag quoting, `If-None-Match`-Listen, `If-Range`, satisfiable/unsatisfiable/suffix Range, 304 mit ETag.
+- Regressionstests für die bereits umgesetzten Quick-Fixes: Query-Params mit Prototyp-Namen, ungültiger `Content-Length`, quoted ETag + 304 mit ETag, Transform-Dependency-Cycle, Translation-Import nach warmem Cache.
+- Transform: gleicher Pfad/gleiche Größe/neuer Inhalt.
+- `If-None-Match`-Listen, `If-Range`, satisfiable/unsatisfiable/suffix Range.
 - Symlink-Escape für `assertAllowedPath`; SSRF mit kontrolliertem Resolver.
 - Browser-Smoke-Test: jeder ESM-Entry importierbar ohne implizite Globals.
 
-## Verifikation (2. Fassung)
+## Verifikation (3. Fassung)
 
-- `deno test -A module/core/tests`: **112 passed, 0 failed** (12 s).
-- `deno lint module/core`: **16 Findings, Exit 1**.
-- Alle Findings der Erstfassung im Code nachvollzogen; Korrekturen: P1.7 (DbFile-Pfade sind md5-inhaltsadressiert), P2.1 (Introspektions-SPI hat reale Consumer). Erweiterungen: P0.1 (dbFile-Zweig), P1.8 (304 ohne ETag), P1.13 (neu). Usage-Scan ergänzt.
+- Volle Testsuite (`deno task test`): **183 passed, 0 failed**; `deno check` grün für Core-Entry und alle apt-Consumer.
+- `deno lint module/core`: 16 vorbestehende Findings (P2.7).
+- End-to-End-Smoke gegen echte App (SQLite): Page-Render, api mit CSRF, dbFile ETag/304/Range, Translation-Import auf warmem Cache — grün.
+- Erledigte Findings (P1.3, P1.4, P2.1 sowie Teile von P0.6, P1.7–P1.9, P1.11, P1.12, P2.4, P2.7) wurden aus dem Dokument entfernt; Details in der git-Historie.
 - `deno fmt` gemäß Projektanweisung nicht ausgeführt.

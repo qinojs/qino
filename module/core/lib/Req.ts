@@ -35,7 +35,7 @@ export class Req {
   query(key: string): string | undefined;
   query(key?: string): Record<string, string> | string | undefined {
     if (key !== undefined) return this.#url.searchParams.get(key) ?? undefined;
-    const out: Record<string, string> = {};
+    const out: Record<string, string> = Object.create(null);
     for (const [k, v] of this.#url.searchParams) if (!(k in out)) out[k] = v;
     return out;
   }
@@ -45,7 +45,7 @@ export class Req {
   queries(key: string): string[];
   queries(key?: string): Record<string, string[]> | string[] {
     if (key !== undefined) return this.#url.searchParams.getAll(key);
-    const out: Record<string, string[]> = {};
+    const out: Record<string, string[]> = Object.create(null);
     for (const k of this.#url.searchParams.keys()) out[k] ??= this.#url.searchParams.getAll(k);
     return out;
   }

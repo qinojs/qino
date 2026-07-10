@@ -35,7 +35,7 @@ export class HtmlBuilder {
 
     for (const [name, item] of Object.entries(this.link)) {
       ret += `<link href="${hee(name)}"`;
-      for (const [k, val] of Object.entries(item)) ret += ` ${k}="${hee(val)}"`;
+      for (const [k, val] of Object.entries(item)) if (/^[a-zA-Z][\w-]*$/.test(k)) ret += ` ${k}="${hee(val)}"`;
       ret += ">\n";
     }
 

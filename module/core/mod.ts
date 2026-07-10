@@ -19,15 +19,24 @@ export { hee, u2time, unixTime, HtmlString, html, Output, uid, urlize, clientIp,
 export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";
 export type { StandardIssue, StandardResult } from "./lib/StandardSchema.ts";
 
-// apt framework: action tree, errors, adapters
-export * from "./lib/apt/mod.ts";
+// apt framework: action tree, errors, introspection
+export { Access } from "./lib/apt/access.ts";
+export { AptError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/apt/errors.ts";
+export { invoke } from "./lib/apt/invoke.ts";
+export { walk, camelName, checkCollisions } from "./lib/apt/route.ts";
+export type { Route } from "./lib/apt/route.ts";
+export { toTools } from "./lib/apt/toTools.ts";
+export type { Tool } from "./lib/apt/toTools.ts";
+export { VERBS, RESERVED } from "./lib/apt/types.ts";
+export type { AptNode, AptTree, Method, Params, Verb } from "./lib/apt/types.ts";
+export type { AptProxy } from "./lib/apt/client.ts";
 
 // Database
 export { Db } from "./lib/db/Db.ts";
 export type { DbEvents } from "./lib/db/Db.ts";
 export type { Row } from "./lib/db/DbDriver.ts";
 export { Sql, sql } from "../../deps.ts";
-export { dbScope, tableRef, scopeCache } from "./lib/db/dbScope.ts";
+export { tableRef, scopeCache } from "./lib/db/dbScope.ts";
 export type { DbScope } from "./lib/db/dbScope.ts";
 export { DbEntry } from "./lib/db/DbEntry.ts";
 export { DbField } from "./lib/db/DbField.ts";
@@ -46,8 +55,8 @@ export { login, pwHash } from "./lib/auth.ts";
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";
 export type { OcrEngine, Transcript, TranscriptEngine, TranscriptSegment, TranscriptWord, TransformContext } from "./lib/transform/mod.ts";
-export { isMagickAvailable, magick, magickIdentify } from "./lib/transform/imagemagick.ts";
+export { isMagickAvailable, magickIdentify } from "./lib/transform/imagemagick.ts";
 
 // Server helpers used by modules
 export { HtmlBuilder } from "./lib/HtmlBuilder.ts";
-export { assertNoSSRF, safeFetch } from "./lib/fileStream.ts";
+export { safeFetch } from "./lib/fileStream.ts";

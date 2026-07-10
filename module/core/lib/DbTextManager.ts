@@ -97,12 +97,6 @@ export class DbTextLang {
     this.lang = lang;
   }
 
-  /** @deprecated use text */
-  get Text(): DbText {
-    console.warn("DbTextLang.Text is deprecated, use text", Error().stack);
-    return this.text;
-  }
-
   async get(): Promise<string> {
     if (this.value === null) {
       const db = this.text.manager.db;

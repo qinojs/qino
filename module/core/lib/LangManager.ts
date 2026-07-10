@@ -15,7 +15,7 @@ export class LangManager {
   }
 
   get def(): string { return this.#langs[0] ?? "en"; }
-  get all(): string[] { return this.#langs; }
+  get all(): string[] { return [...this.#langs]; }
 
   setLangs(langs: string[]): void {
     this.#langs = langs.map(l=>l.trim().toLowerCase()).filter(Boolean);
@@ -40,7 +40,7 @@ export class LangManager {
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
     if (usr) {
-      usr.set("lang", ctx.langUsr); // save is debounced, no need to await
+      usr.set("lang", ctx.langUsr);
     } else {
       ctx.sess.data.core.lang(ctx.langUsr);
     }
@@ -112,7 +112,8 @@ export class LangManager {
     const translated = txts[hash] || string;
     if (ctx.dev && !txts[hash]) return `*${string}*`;
     if (await this.#app.settings.core.smalltext.counter) {
-      this.#app.db.query`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`;
+      this.#app.db.query`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`
+        .catch(() => {}); // fire-and-forget, already logged by Db
     }
     return translated;
   }
@@ -155,6 +156,7 @@ export class LangManager {
       if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
       await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
     }
+    delete this.#txtsCache[`${lang}::${ns}`]; // imported rows must be visible on the next lookup
   }
 
 }

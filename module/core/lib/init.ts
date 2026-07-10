@@ -61,7 +61,7 @@ function initLog(ctx: RequestContext): void {
     };
 
     // redact secrets by key name
-    const secret = /pw|oldpw|token/i;
+    const secret = /pw|pass|token|secret|key|auth/i;
     data.post = ctx.post != null ? JSON.stringify(ctx.post, (k, v) => k && secret.test(k) ? "-----" : v) : "";
     data.client_id = ctx.clientId;
 

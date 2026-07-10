@@ -57,9 +57,10 @@ export class Body {
     const isForm = ct.includes("multipart/form-data") || ct.includes("application/x-www-form-urlencoded");
     if (!isJson && !isForm) return body; // raw/streaming bodies stay untouched, readable via req
 
-    const len = req.header("content-length");
-    if (len != null && Number(len) > opt.maxSize) throw new Output("Payload Too Large", { status: 413 });
-    // without a declared length (chunked) the body is read through a capped reader instead
+    const lenHeader = req.header("content-length");
+    const len = lenHeader != null && /^\d+$/.test(lenHeader) ? Number(lenHeader) : null;
+    if (len != null && len > opt.maxSize) throw new Output("Payload Too Large", { status: 413 });
+    // without a valid declared length (chunked/bogus) the body is read through a capped reader instead
     const src = len == null ? await cappedResponse(req, opt.maxSize) : null;
 
     const bad = () => { throw new Output("Bad Request", { status: 400 }); };
