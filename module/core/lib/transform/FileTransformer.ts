@@ -112,6 +112,8 @@ export class FileTransformer {
 
     // Cache key: source path + size + all set options consumed by any registered transformer
     // (no mtime: it may be touched on access for LRU tracking; no mime: derivable from path/content)
+    // Content fingerprint: for db-files covered by the path (md5 content-addressed).
+    // For generic use (mutable paths) something is still to be found (> 1.0).
     const stat = await Deno.stat(sourcePath).catch(() => {
       throw new Error(`FileTransformer: source file not found: ${sourcePath}`);
     });
