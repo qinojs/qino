@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "./deps.ts";
+import { assertEquals, testContext } from "./deps.ts";
 import { LangManager } from "../lib/LangManager.ts";
 import { Db } from "../lib/db/Db.ts";
-import { RequestContext, requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/RequestContext.ts";
 
 function sessionLang(initial = "") {
   let value = initial;
@@ -11,6 +11,10 @@ function sessionLang(initial = "") {
     return value;
   };
   return fn;
+}
+
+function langSess(lang: ReturnType<typeof sessionLang>) {
+  return { data: { core: { userId: () => 0, lang } } };
 }
 
 Deno.test("LangManager: setLangs normalizes languages and exposes default", () => {
@@ -24,21 +28,22 @@ Deno.test("LangManager: initCtx prefers URL language then browser language", asy
   const lm = new LangManager({} as never);
   lm.setLangs(["en", "de", "fr"]);
 
-  const ctx = new RequestContext();
-  ctx.appRequestPath = "fr/page";
-  ctx.get = {};
-  ctx.req = { header: () => "de;q=1" } as any;
-  ctx.sess = { data: { core: { userId: () => 0, lang: sessionLang() } } } as any;
+  const ctx = await testContext({
+    url: "http://qino.test/fr/page",
+    headers: { "accept-language": "de;q=1" },
+    sess: langSess(sessionLang()),
+  });
   await lm.initCtx(ctx);
   assertEquals(ctx.langUsr, "fr");
   assertEquals(ctx.lang, "fr");
 
-  ctx.appRequestPath = "page";
-  ctx.get = {};
-  ctx.sess = { data: { core: { userId: () => 0, lang: sessionLang() } } } as any;
-  ctx.req = { header: () => "fr-CH;q=0.9,de;q=0.8,en;q=0.7" } as any;
-  await lm.initCtx(ctx);
-  assertEquals(ctx.langUsr, "fr");
+  const ctx2 = await testContext({
+    url: "http://qino.test/page",
+    headers: { "accept-language": "fr-CH;q=0.9,de;q=0.8,en;q=0.7" },
+    sess: langSess(sessionLang()),
+  });
+  await lm.initCtx(ctx2);
+  assertEquals(ctx2.langUsr, "fr");
 });
 
 Deno.test("LangManager: lang query overrides stored session language", async () => {
@@ -46,11 +51,7 @@ Deno.test("LangManager: lang query overrides stored session language", async () 
   lm.setLangs(["en", "de"]);
 
   const lang = sessionLang("en");
-  const ctx = new RequestContext();
-  ctx.appRequestPath = "page";
-  ctx.get = { lang: "de" };
-  ctx.req = { header: () => "" } as any;
-  ctx.sess = { data: { core: { userId: () => 0, lang } } } as any;
+  const ctx = await testContext({ url: "http://qino.test/page?lang=de", sess: langSess(lang) });
   await lm.initCtx(ctx);
 
   assertEquals(ctx.langUsr, "de");
@@ -61,11 +62,7 @@ Deno.test("LangManager: legacy changeLanguage alias still works", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["en", "de"]);
 
-  const ctx = new RequestContext();
-  ctx.appRequestPath = "page";
-  ctx.get = { changeLanguage: "de" };
-  ctx.req = { header: () => "" } as any;
-  ctx.sess = { data: { core: { userId: () => 0, lang: sessionLang("en") } } } as any;
+  const ctx = await testContext({ url: "http://qino.test/page?changeLanguage=de", sess: langSess(sessionLang("en")) });
   await lm.initCtx(ctx);
 
   assertEquals(ctx.langUsr, "de");
@@ -136,10 +133,9 @@ Deno.test("LangManager: t inserts new smalltext and replaces placeholders", asyn
   };
   const lm = new LangManager(app as never);
   lm.setLangs(["de"]);
-  const ctx = new RequestContext();
+  const ctx = await testContext({ app, set: { dev: false } }); // dev false: skip dev-mode marker
   ctx.lang = "de";
   ctx.langNs = "test";
-  Object.defineProperty(ctx, "dev", { value: false }); // skip dev-mode marker
 
   const out = await requestStorage.run(ctx, () => lm.t`Hello ${"Qino"}`);
   assertEquals(out, "Hello Qino");

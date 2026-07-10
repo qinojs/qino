@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "./deps.ts";
-import { RequestContext } from "../lib/ctx/RequestContext.ts";
+import { assertEquals, testContext } from "./deps.ts";
 
 function sessionFake(sessionUserId: number) {
   const writes: unknown[][] = [];
@@ -8,18 +7,16 @@ function sessionFake(sessionUserId: number) {
   return { sess: { data } as any, writes };
 }
 
-Deno.test("RequestContext: userId falls back to the cookie session", () => {
-  const ctx = new RequestContext();
-  ctx.sess = sessionFake(5).sess;
+Deno.test("RequestContext: userId falls back to the cookie session", async () => {
+  const ctx = await testContext({ sess: sessionFake(5).sess });
 
   assertEquals(ctx.userId, 5);
   assertEquals(ctx.statelessAuth, false);
 });
 
-Deno.test("RequestContext: authenticate beats the session and never writes it", () => {
-  const ctx = new RequestContext();
+Deno.test("RequestContext: authenticate beats the session and never writes it", async () => {
   const { sess, writes } = sessionFake(5);
-  ctx.sess = sess;
+  const ctx = await testContext({ sess });
 
   ctx.authenticate(7);
   assertEquals(ctx.userId, 7);
