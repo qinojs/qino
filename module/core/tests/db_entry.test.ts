@@ -18,7 +18,7 @@ Deno.test("DbEntry: constructor derives id from object values", async () => {
   };
   const entry = new DbEntry(table as any, { id: 5 });
   assertEquals(String(entry), "5");
-  assertEquals(await entry.is(), entry);
+  assertEquals(await entry.exists(), entry);
   assertEquals(await entry.get("name"), "Five");
 });
 
@@ -30,7 +30,7 @@ Deno.test("DbEntry: set and save update changed values through table", async () 
   };
   const table = {
     fields: { id: { isPrimary: () => true }, name: field },
-    field: (name: string) => name === "name" ? field : false,
+    field: (name: string) => name === "name" ? field : undefined,
     entryId: (vs: any) => String(vs.id),
     selectByID: () => ({ id: 7, name: "Old" }),
     update: (id: string, vs: Record<string, unknown>) => updates.push([id, vs]),

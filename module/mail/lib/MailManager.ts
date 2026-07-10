@@ -92,15 +92,15 @@ export class MailManager {
     } catch { return ""; }
   }
 
-  trackURL(raw: string, base: string, track: string): string | false {
+  trackURL(raw: string, base: string, track: string): string | undefined {
     try {
       const target = new URL(raw, base);
-      if (!["http:", "https:"].includes(target.protocol)) return false;
+      if (!["http:", "https:"].includes(target.protocol)) return undefined;
       const url = new URL("mail-track", base);
       url.searchParams.set("mail1tr", track);
       url.searchParams.set("url", target.href);
       return url.href;
-    } catch { return false; }
+    } catch { return undefined; }
   }
 
   async transport(): Promise<Transport> {

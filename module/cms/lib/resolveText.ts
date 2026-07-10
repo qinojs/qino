@@ -9,7 +9,7 @@ export async function resolveText(app: App, value: string): Promise<string> {
 
 async function replaceLinks(app: App, pid: string): Promise<string> {
   const page = await app.cms.node(Number(pid));
-  if (!(await page.is())) {
+  if (!page.exists()) {
     console.warn(`[content-issue] DeadInternalLink cmspid://${pid}`);
     return "#";
   }

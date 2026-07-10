@@ -64,11 +64,11 @@ export function setVers(ctx: RequestContext, spaceLog: [number, number] | null):
 
 // ─── Table management ───────────────────────────────────────────────────────
 
-/** Shadow table name for a versioned table, or false if it is not versioned.
+/** Shadow table name for a versioned table, or undefined if it is not versioned.
  *  The _vers_* tables are created centrally via the schema (see plugin.ts
  *  extendDbSchema), so this is a pure lookup. */
-export function versTable(db: Db, tableName: string): string | false {
-    return versedTables(db)[tableName] ? `_vers_${tableName}` : false;
+export function versTable(db: Db, tableName: string): string | undefined {
+    return versedTables(db)[tableName] ? `_vers_${tableName}` : undefined;
 }
 
 /** Derive the _vers_<table> shadow item-schema from a live table's schema:

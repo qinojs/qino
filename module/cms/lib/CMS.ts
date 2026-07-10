@@ -161,20 +161,20 @@ export class CMS {
   }
 
   // deno-lint-ignore no-explicit-any
-  async url(pidOrUrl?: string, ret: Record<string, any> = {}): Promise<string | false> {
-    if (!pidOrUrl) return false;
+  async url(pidOrUrl?: string, ret: Record<string, any> = {}): Promise<string | undefined> {
+    if (!pidOrUrl) return undefined;
     pidOrUrl = pidOrUrl.trim();
     ret.target = "_blank";
     if (/^\d+$/.test(pidOrUrl)) {
       const P = await this.node(Number(pidOrUrl));
-      if (P.is()) {
+      if (P.exists()) {
         ret.target = "_self";
         ret.Node = P;
         return P.url();
       }
-      return false;
+      return undefined;
     }
-    if (!pidOrUrl) return false;
+    if (!pidOrUrl) return undefined;
     if (!/^[a-z]+:/.test(pidOrUrl)) return "http://" + pidOrUrl;
     return pidOrUrl;
   }

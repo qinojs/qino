@@ -10,7 +10,7 @@ export default async function (node: Node, vars:any): Promise<any> {
   const db = node.app.db;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const usrOk = async (U: any) =>
-    !!(await U.is()) && (!(await U.get("superuser")) || isSuperuser);
+    !!(await U.exists()) && (!(await U.get("superuser")) || isSuperuser);
 
   if ("email_used" in vars) {
     return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}` ?? false;

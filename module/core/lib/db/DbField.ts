@@ -52,12 +52,12 @@ export class DbField {
     return String(value ?? "");
   }
 
-  parent(): DbTable | false {
-    return this.schema["x-qg-parent"] ? this.db.table(this.schema["x-qg-parent"]) : false;
+  parent(): DbTable | undefined {
+    return this.schema["x-qg-parent"] ? this.db.table(this.schema["x-qg-parent"]) : undefined;
   }
-  parentField(): DbField | false {
+  parentField(): DbField | undefined {
     const parent = this.parent();
-    if (!parent) return false;
+    if (!parent) return;
     return this.schema["x-qg-parent-field"] ? parent.field(this.schema["x-qg-parent-field"]) : parent.primary;
   }
 

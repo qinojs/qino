@@ -8,7 +8,7 @@ import { type Sql, sql, isTemplate } from "../../../../deps.ts";
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
   #primaries: Record<string, DbField> = {};
-  #autoIncrement: DbField | false = false;
+  #autoIncrement: DbField | undefined;
   #db: Db;
   #name: string;
   #children: DbField[] | null = null;
@@ -25,10 +25,10 @@ export class DbTable {
 
   get db(): Db { return this.#db; }
   get fields(): Record<string, DbField> | null { return this.#fields; }
-  get autoIncrement(): DbField | false { return this.#autoIncrement; }
+  get autoIncrement(): DbField | undefined { return this.#autoIncrement; }
   get schema(): Record<string, any> { return this.#db.schema?.properties?.[String(this)] ?? {}; }
   get primaries(): Record<string, DbField> { return this.#primaries; }
-  get primary(): DbField | false { return Object.values(this.#primaries)[0] ?? false; }
+  get primary(): DbField | undefined { return Object.values(this.#primaries)[0]; }
   get name(): string { return this.#name; }
   get children(): DbField[] {
     if (this.#children === null) {
@@ -50,14 +50,14 @@ export class DbTable {
     await this.init();
   }
 
-  field(n: string): DbField | false { return this.#fields?.[n] ?? false; }
+  field(n: string): DbField | undefined { return this.#fields?.[n]; }
 
   async init(): Promise<Record<string, DbField>> {
     if (this.#fields === null) {
       const fields = await this.#db.columns(String(this));
       this.#fields = {};
       this.#primaries = {};
-      this.#autoIncrement = false;
+      this.#autoIncrement = undefined;
       for (const field of fields) {
         const name = field.Field;
         this.#fields[name] = new DbField(this, name, field);
@@ -72,13 +72,13 @@ export class DbTable {
     return this.#fields!;
   }
 
-  entryId(vs: any): string | false {
+  entryId(vs: any): string | undefined {
     if (!Array.isArray(vs) && typeof vs !== "object") return String(vs);
     const part: string[] = [];
     for (const [primary, Field] of Object.entries(this.#primaries)) {
       if (!(primary in vs)) {
         console.warn("db-table-entryId: too few fields");
-        return false;
+        return;
       }
       let value = vs[primary];
       const type = Field.type.toUpperCase();
@@ -87,11 +87,11 @@ export class DbTable {
     }
     return part.join("-:-");
   }
-  entryId2Array(id: any): Record<string, any> | false {
+  entryId2Array(id: any): Record<string, any> | undefined {
     const arr: Record<string, any> = {};
     if (id != null && typeof id === "object") {
       for (const primary of Object.keys(this.#primaries)) {
-        if (!(primary in id)) return false;
+        if (!(primary in id)) return;
         arr[primary] = id[primary];
       }
     } else {
@@ -103,12 +103,12 @@ export class DbTable {
     }
     return arr;
   }
-  /** WHERE fragment that identifies the row(s) for an entry id; false if the id is incomplete. */
-  entryIdToFragment(id: any, alias?: string): Sql | false {
+  /** WHERE fragment that identifies the row(s) for an entry id; undefined if the id is incomplete. */
+  entryIdToFragment(id: any, alias?: string): Sql | undefined {
     const values = this.entryId2Array(id);
-    if (!values) return false;
+    if (!values) return undefined;
     const frag = this.valuesToFragment(values, alias);
-    return frag.parts.length ? frag : false;
+    return frag.parts.length ? frag : undefined;
   }
 
   async selectByID(id: any): Promise<Record<string, any> | undefined> {
@@ -124,7 +124,7 @@ export class DbTable {
     const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
     for (const entry of rows) {
       const eid = this.entryId(entry);
-      if (eid !== false) ret[eid] = entry;
+      if (eid !== undefined) ret[eid] = entry;
     }
     return ret;
   }
@@ -141,7 +141,7 @@ export class DbTable {
     return sql.join(frags, isSet ? ", " : " AND ");
   }
 
-  async insert(values: Record<string, any> = {}): Promise<string | false> {
+  async insert(values: Record<string, any> = {}): Promise<string | undefined> {
     const eBefore: any = { Table: this, data: values, returnValue: undefined };
     await this.#db.fire("table::insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
@@ -152,16 +152,16 @@ export class DbTable {
       : sql.raw(this.#db.emptyInsert);
     const auto = this.autoIncrement;
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));
-    if (!res.affectedRows) return false;
+    if (!res.affectedRows) return;
     if (auto && String(auto) in values) await this.#db.syncAutoIncrement(String(this), String(auto), Number(values[String(auto)]));
     if (auto) values[String(auto)] = res.insertId;
     else if (res.insertId && this.primary && !(String(this.primary) in values)) values[String(this.primary)] = res.insertId;
     const id = this.entryId(values);
     await this.#db.fire("table::insert-after", { Table: this, id, data: values });
-    return id !== false ? String(id) : false;
+    return id;
   }
 
-  async update(idOrValues: any, values?: Record<string, any>): Promise<string | false | undefined> {
+  async update(idOrValues: any, values?: Record<string, any>): Promise<string | undefined> {
     let id: any;
     if (values === undefined) {
       values = idOrValues;
@@ -175,19 +175,19 @@ export class DbTable {
     const set = this.valuesToFragment(values!, undefined, true);
     if (set.parts.length) {
       const whereValues = this.entryId2Array(id);
-      if (!whereValues) return false;
+      if (!whereValues) return undefined;
       const where = this.valuesToFragment(whereValues);
-      if (!where.parts.length) return false;
+      if (!where.parts.length) return undefined;
       const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
-      if (!rows) return false;
-      if (!rows.affectedRows) return false; // no row matched (drivers report matched rows, not changed)
+      if (!rows) return undefined;
+      if (!rows.affectedRows) return undefined; // no row matched (drivers report matched rows, not changed)
       await this.#db.fire("table::update-after", { Table: this, id, data: values! });
       return String(id);
     }
     return undefined;
   }
 
-  async ensure(values: Record<string, any> = {}): Promise<string | false | undefined> {
+  async ensure(values: Record<string, any> = {}): Promise<string | undefined> {
     const whereValues = this.entryId2Array(values);
     const where = whereValues ? this.valuesToFragment(whereValues) : null;
     return where?.parts.length && await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`
@@ -195,22 +195,22 @@ export class DbTable {
       : this.insert(values);
   }
 
-  copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | false> {
+  copy(id: any, override: Record<string, any> = {}, visiting: Set<string> = new Set()): Promise<string | undefined> {
     return this.#db.transaction(() => this.#copy(id, override, visiting));
   }
-  async #copy(id: any, override: Record<string, any>, visiting: Set<string>): Promise<string | false> {
+  async #copy(id: any, override: Record<string, any>, visiting: Set<string>): Promise<string | undefined> {
     id = this.entryId(id);
-    if (id === false) return false;
+    if (id === undefined) return undefined;
     const key = `${this}:${id}`;
-    if (visiting.has(key)) return false;
+    if (visiting.has(key)) return undefined;
     visiting.add(key);
 
     const row = await this.selectByID(id);
-    if (!row) return false;
+    if (!row) return undefined;
     const newRow = { ...row, ...override };
     if (this.autoIncrement && !(String(this.autoIncrement) in override)) delete newRow[String(this.autoIncrement)];
     const newId = await this.insert(newRow); // insert fills generated ids into newRow
-    if (newId === false) return false;
+    if (newId === undefined) return undefined;
 
     for (const field of this.children) {
       if (field.onParentCopy !== "cascade") continue;

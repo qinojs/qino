@@ -2,7 +2,10 @@
 
 Stand: 2026-07-10, 3. Fassung. Alle Findings sind gegen den Code verifiziert; der Usage-Scan der öffentlichen Exporte ist umgesetzt (mod.ts exportiert jetzt explizit). Bereits erledigte Quick-Wins wurden aus dem Dokument entfernt (siehe git-Historie). Die Nummerierung der Erstfassung bleibt stabil, daher gibt es Lücken.
 
-Bewusste Entscheidung, nicht erneut aufgreifen: `usr.set("lang", …)` in [LangManager.ts](module/core/lib/LangManager.ts#L43) bleibt aus Performance-Gründen absichtlich un-awaited.
+Bewusste Entscheidungen, nicht erneut aufgreifen:
+
+- `usr.set("lang", …)` in [LangManager.ts](module/core/lib/LangManager.ts#L43) bleibt aus Performance-Gründen absichtlich un-awaited.
+- Signatur-Konvention: Existenz-/Lookup-Methoden geben `this | undefined` bzw. `T | undefined` zurück — truthy-prüfbar und chainable (`?.`/`??`), **kein** boolean und kein `| false`.
 
 ## Kurzfazit
 
@@ -142,11 +145,13 @@ Empfehlung: Konfiguration nach Construction readonly, interne Referenzen `#priva
 
 Empfehlung: `created → initialized → closed` mit idempotentem oder klar fehlschlagendem `init()`, `close()`, Background-Task-Tracker. `install` echte Einmaligkeit geben oder in den `init`-Hook mergen.
 
-### P2.4 – Absichtlich kaputte Mitglieder und Alt-Namen
+### P2.4 – Absichtlich kaputte Mitglieder
 
 `DbText.toString()`/`DbTextLang.toString()` werfen immer: [DbTextManager.ts](module/core/lib/DbTextManager.ts#L86), [DbTextManager.ts](module/core/lib/DbTextManager.ts#L117); `DbTable.entry()` trägt den „not working"-Zweig (P1.6). Rückwärtskompatibilität ist laut Aufgabenstellung nicht nötig.
 
-Empfehlung: Löschen statt mitschleppen. Methodennamen normalisieren: `exists(): boolean` statt `is(): this | false`, `values()` statt `getVs()`, `ensure()` statt `makeIfNot()`.
+Empfehlung: Löschen statt mitschleppen.
+
+Bereits umgesetzt (Konvention, siehe Kopf des Dokuments): Renames `exists()`/`values()`/`ensure()` und die `X | undefined`-Signaturen für Existenz-/Lookup-/Write-Rückgaben in Core (`DbEntry`, `DbTable`, `DbField`, `File`, `DbFile`, `Csp`) und den serverseitigen Modul-APIs (`Node.exists/htmlPart/text/title/copy`, `CMS.url`, `versTable`, `MailManager.trackURL`, `MailMessage.template`). Ausgenommen: die apt-Rückgaben in [cms.text/api.ts](module/cms.text/api.ts#L90) (`false` geht dort als JSON über die Leitung — Umstellung wäre eine Wire-Format-Änderung).
 
 ### P2.5 – Event-Typisierung wird durch Catch-all ausgehebelt
 

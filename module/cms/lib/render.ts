@@ -9,7 +9,7 @@ export async function render(ctx: RequestContext): Promise<void> {
 
   let Page = await cms.nodeFromRequest();
 
-  if (!Page.is()) {
+  if (!Page.exists()) {
     // Search for redirect
     const redirect = await db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.appRequestPath}`;
     if (redirect) {

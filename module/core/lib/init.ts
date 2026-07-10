@@ -70,7 +70,7 @@ function initLog(ctx: RequestContext): void {
       try {
         const logId = await db.table("log").insert(data);
         data.log_id = logId;
-        return logId === false ? null : String(logId);
+        return logId ? String(logId) : null;
       } catch (e) { console.error("initLog insert error:", e); return null; }
     })();
 

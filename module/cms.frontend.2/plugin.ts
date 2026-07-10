@@ -34,7 +34,7 @@ function widgetUrl(widget: string): string {
   return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
 }
 
-async function renderWidget(ctx: RequestContext, widget: string, params: Record<string, any> = {}): Promise<string | null | false> {
+async function renderWidget(ctx: RequestContext, widget: string, params: Record<string, any> = {}): Promise<string | null> {
   const P = await ctx.app.cms.node(params["pid"]);
   if (await P.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;

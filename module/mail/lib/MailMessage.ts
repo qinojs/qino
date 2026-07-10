@@ -24,7 +24,7 @@ export class MailMessage {
   headers?: HeadersInit;
   tags?: string[];
   priority?: "high" | "normal" | "low";
-  template: string | Template | false = "default";
+  template: string | Template | undefined = "default";
   attachments: AttachmentInput[] = [];
   receipts: SendReceipt[] = [];
   #pending: Promise<unknown>[] = [];
@@ -44,7 +44,7 @@ export class MailMessage {
     this.subject = r.subject ?? "";
     this.text = r.text ?? "";
     this.html = this.body = r.html ?? "";
-    this.template = r.template as Template || false;
+    this.template = r.template as Template || undefined;
     this.data = jsonDecode(r.data, {});
     this.headers = jsonDecode(r.headers, undefined);
     this.tags = jsonDecode(r.tags, undefined);
@@ -236,7 +236,7 @@ export class MailMessage {
 
   async getHtml(recipient?: Recipient, data: Dict = {}): Promise<string> {
     const main = renderMarkers(this.html || this.body, data);
-    const html = this.template === false
+    const html = this.template === undefined
       ? main
       : await this.manager.renderTemplate(this.template, { app: this.manager.app, mail: this, main, data, recipient });
     return recipient && this.persist ? this.manager.trackHtml(recipient, html) : html;

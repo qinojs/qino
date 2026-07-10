@@ -7,7 +7,7 @@ Deno.test("File: contents read/write, basename, size and md5", async () => {
     const path = dir + "/hello.txt";
     const file = new File(path);
 
-    assertEquals(await file.exists(), false);
+    assertEquals(await file.exists(), undefined);
     assertEquals(await file.contents("hello"), 5);
     assertEquals(await file.exists(), file);
     assertEquals(await file.contents(), "hello");
@@ -61,8 +61,8 @@ Deno.test("File: empty and spaced filenames keep stable metadata", async () => {
 
 Deno.test("File: missing files return safe defaults", async () => {
   const file = new File("/tmp/qino-missing-file-" + crypto.randomUUID());
-  assertEquals(await file.exists(), false);
-  assertEquals(await file.mtime(), false);
+  assertEquals(await file.exists(), undefined);
+  assertEquals(await file.mtime(), undefined);
   assertEquals(await file.size(), 0);
   assertEquals(await file.md5(), "");
   assertEquals(await file.getText(), "");

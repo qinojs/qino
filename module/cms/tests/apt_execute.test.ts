@@ -34,7 +34,7 @@ class FakeNode {
     this.vs = { id, module: "cms.cont.text", name: "", type: "p", ...vs };
   }
 
-  is() { return true; }
+  exists() { return this; }
   async access() { return this.accessLevel; }
   set(key: string, value: unknown) { this.writes[key] = value; this.vs[key] = value; }
   async title(lang?: string, value?: string) {
@@ -81,7 +81,7 @@ function setup(access = 3) {
   const user = { id: 9, get: () => false, toString: () => "9" };
   ctx.app = {
     cms: {
-      node: (id: number) => nodes.get(Number(id)) ?? { is: () => false },
+      node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
     },
     db: {
       one: () => null,

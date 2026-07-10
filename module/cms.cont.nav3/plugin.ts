@@ -59,14 +59,14 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
   let StartPage: Node | undefined;
   if (startPageSetting) {
     StartPage = await cms.node(Number(startPageSetting));
-    if (!StartPage.is()) StartPage = await node.page();
+    if (!StartPage.exists()) StartPage = await node.page();
   } else {
     StartPage = await node.page();
   }
 
   if (startLevelSetting) {
     StartPage = await ActivePage.parent(Number(startLevelSetting));
-    if (!StartPage || !(await StartPage.is())) {
+    if (!StartPage || !StartPage.exists()) {
       StartPage = await node.page();
     }
   }
@@ -79,8 +79,8 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 
   let level = 0;
 
-  const getUl = async (CurPage: Node): Promise<string | false> => {
-    if (!CurPage || !(await CurPage.is())) return "";
+  const getUl = async (CurPage: Node): Promise<string | undefined> => {
+    if (!CurPage || !(await CurPage.exists())) return "";
 
     // Collect children
     const readableChildren: Node[] = [];
@@ -109,7 +109,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
       if (titleObj && (await titleObj.string()).trim()) filtered.push(C);
     }
 
-    if (!filtered.length) return false;
+    if (!filtered.length) return undefined;
 
     const levelLimit = Number(levelLimitSetting || 0);
     if (levelLimit && level >= levelLimit) return "";
@@ -124,7 +124,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
       const childPage = await ChildPage.page();
       const isInside = ActivePage ? await ActivePage.in(childPage) : false;
       const isActive = ActivePage === childPage;
-      const hasSub = childStr !== false;
+      const hasSub = childStr !== undefined;
       const isOnline = await ChildPage.isOnline();
 
       const cls = [

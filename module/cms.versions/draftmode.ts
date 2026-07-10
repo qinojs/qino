@@ -199,7 +199,7 @@ export function initDraftmode(app: App) {
     //     for (const row of [...rows1, ...rows2]) {
     //         if (Page.Children.has(row.id)) continue;
     //         const Child = await (ctx.app as any).cms.node(row.id, row);
-    //         if (!Child.is()) continue;
+    //         if (!Child.exists()) continue;
     //         if (Child.vs.basis != Page.id) continue;
     //         Page.Children.set(row.id, Child);
     //     }

@@ -60,7 +60,7 @@ const node = {
   resolve: async (id: number, ctx: RequestContext) => {
     const app = ctx.app;
     const n = await app.cms.node(id);
-    if (!n.is()) throw new NotFoundError(`Node ${id} not found`);
+    if (!n.exists()) throw new NotFoundError(`Node ${id} not found`);
     if ((await n.access()) < 1) throw new AccessError();
     return n;
   },
@@ -158,7 +158,7 @@ const node = {
       output: s.object({ changed: s.boolean() }),
       execute: async ({ node, value, lang }: any, ctx: RequestContext) => {
         const changed = await node.title(lang ?? ctx.lang, value);
-        return { changed: changed !== false };
+        return { changed: !!changed };
       },
     },
   },
@@ -173,7 +173,7 @@ const node = {
         output: s.object({ changed: s.boolean() }),
         execute: async ({ node, name, value, lang }: any, ctx: RequestContext) => {
           const changed = await node.text(name, lang ?? ctx.lang, value);
-          return { changed: changed !== false };
+          return { changed: !!changed };
         },
       },
     },
@@ -666,18 +666,18 @@ export const api = {
           const row = await db.row`SELECT name, page_id FROM page_text WHERE text_id = ${id}`;
           if (row) {
             const n = await ctx.app.cms.node(row.page_id);
-            if (!n.is()) throw new NotFoundError();
+            if (!n.exists()) throw new NotFoundError();
             if ((await n.access()) < 2) throw new AccessError();
             const changed = await n.text(row.name, lang_, value);
-            return { changed: changed !== false, kind: "text" };
+            return { changed: !!changed, kind: "text" };
           }
           const pid = await db.one`SELECT id FROM page WHERE title_id = ${id}`;
           if (pid) {
             const n = await ctx.app.cms.node(Number(pid));
-            if (!n.is()) throw new NotFoundError();
+            if (!n.exists()) throw new NotFoundError();
             if ((await n.access()) < 2) throw new AccessError();
             const changed = await n.title(lang_, value);
-            return { changed: changed !== false, kind: "title" };
+            return { changed: !!changed, kind: "title" };
           }
           throw new NotFoundError(`no node for text_id ${id}`);
         },

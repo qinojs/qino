@@ -65,7 +65,7 @@ Deno.test("cms.cont.login4: render redirects logged-in users when configured", a
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "x" },
     cms: {
-      node: () => ({ is: () => true, url: () => "/target" }),
+      node: () => ({ exists() { return this; }, url: () => "/target" }),
     },
     settings: settings({ redirect: 42 }),
     text: () => textObj(""),

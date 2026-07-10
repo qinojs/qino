@@ -77,7 +77,7 @@ export class DbFileManager {
     const headers = new Headers();
 
     const mtime = await f.mtime();
-    if (mtime !== false) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
+    if (mtime !== undefined) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
     const maxAge = 60 * 60 * 24 * 180;
     headers.set("Expires", new Date(Date.now() + maxAge * 1000).toUTCString());
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
@@ -174,7 +174,7 @@ export class DbFile extends File {
 
   async get(field: string): Promise<any> { return (await this.ensureVs())[field]; }
 
-  override async exists(): Promise<this | false> { await this.ensureVs(); return super.exists(); }
+  override async exists(): Promise<this | undefined> { await this.ensureVs(); return super.exists(); }
 
   async setVs(vs: Record<string, any>) {
     await this.#manager.db.table("file").update(this.id, vs);

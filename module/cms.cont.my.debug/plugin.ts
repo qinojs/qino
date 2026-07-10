@@ -19,13 +19,13 @@ async function render(_node: Node): Promise<string> {
   const usr = ctx.user;
   const client = ctx.client;
 
-  const clientVs = client ? await client.getVs() : {};
+  const clientVs = client ? await client.values() : {};
   const sessionData = await ctx.sess.data();
   const settingsData = await ctx.settings();
 
   let usrHtml = `<em>not logged in</em>\n`;
   if (usr) {
-    const vs = await usr.getVs();
+    const vs = await usr.values();
     const grps = ((await usr.grps?.() ?? []) as number[]).join(", ") || "–";
     usrHtml = `<h3>User #${hee(String(usr))}</h3>` + vsTable(vs, ["pw"]) +
       `<h3>Groups: ${hee(grps)}</h3>\n`;

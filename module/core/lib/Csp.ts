@@ -10,7 +10,7 @@ export class Csp {
   "connect-src": Sources = { "'self'": true };
   "frame-src":   Sources = { "'self'": true };
 
-  reportUri: string | false = false;
+  reportUri: string | undefined;
 
   toHeader(): string {
     this["script-src"]["'report-sample'"] = true;

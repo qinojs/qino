@@ -28,7 +28,7 @@ async function render(node: Node): Promise<string> {
     const redirectId = Number(settings.redirect());
     if (redirectId) {
       const P = await cms.node(redirectId);
-      if (P.is()) {
+      if (P.exists()) {
         const url = await P.url();
         ctx.responseHeaders.set("Location", url);
         ctx.responseStatus = 302;
@@ -131,7 +131,7 @@ async function render(node: Node): Promise<string> {
     let action = "";
     if (logoutRedirectId) {
       const P = await cms.node(logoutRedirectId);
-      if (P.is()) {
+      if (P.exists()) {
         action = ` action="${await P.url()}"`;
       }
     }

@@ -30,7 +30,7 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
   let saved = false;
   let setName = "";
   const entry = {
-    is: async () => true,
+    exists: async function () { return this; },
     get: async () => false,
     set: async (name: string) => {
       setName = name;

@@ -16,7 +16,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     const name = String(vars.name ?? "");
     if (!allowed[name]) return false;
     const G = db.table("grp").entry(vars.save);
-    if (!(await G.is())) return false;
+    if (!(await G.exists())) return false;
     const value = name === "cms_access" ? Math.min(Math.max(0, Number(vars.value) || 0), 3) : vars.value;
     await G.set(name, value);
     await G.save();

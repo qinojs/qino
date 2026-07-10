@@ -37,23 +37,15 @@ export class File {
     }
   }
 
-  async exists(): Promise<this | false> {
-    if (!this.path) return false;
-    try {
-      const stat = await Deno.stat(this.path);
-      return stat.isFile ? this : false;
-    } catch {
-      return false;
-    }
+  async exists(): Promise<this | undefined> {
+    if (!this.path) return undefined;
+    const stat = await Deno.stat(this.path).catch(() => null);
+    return stat?.isFile ? this : undefined;
   }
 
-  async mtime(): Promise<number | false> {
-    try {
-      const stat = await Deno.stat(this.path);
-      return stat.mtime ? Math.floor(stat.mtime.getTime() / 1000) : false;
-    } catch {
-      return false;
-    }
+  async mtime(): Promise<number | undefined> {
+    const stat = await Deno.stat(this.path).catch(() => null);
+    return stat?.mtime ? Math.floor(stat.mtime.getTime() / 1000) : undefined;
   }
 
   async size(): Promise<number> {

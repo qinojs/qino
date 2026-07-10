@@ -70,7 +70,7 @@ export class Node {
         return this;
     }
 
-    is(): boolean { return this.#is; }
+    exists(): this | undefined { return this.#is ? this : undefined; }
 
     async set(data: string | Record<string, any>, value?: any): Promise<void> {
         if (!this.#is) {
@@ -137,7 +137,7 @@ export class Node {
     }
     async #accessUserLevel(user?: dbEntry_usr | null): Promise<number> {
         if (!user) return 0;
-        if (!await user?.is?.()) return 0;
+        if (!await user.exists()) return 0;
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
 
@@ -210,12 +210,12 @@ export class Node {
         });
     }
 
-    async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | false> {
-        if (!(await this.isReadable())) return false;
-        if (/[/\\]/.test(part)) return false;
+    async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | undefined> {
+        if (!(await this.isReadable())) return undefined;
+        if (/[/\\]/.test(part)) return undefined;
         const parts = this.module?.plugin.cms?.node?.parts ?? {};
-        const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : false;
-        if (!fn) return false;
+        const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : undefined;
+        if (!fn) return undefined;
         return new HtmlString(await this.#renderGuarded(() => fn(this, {ctx:getCtx(), vars})));
     }
 
@@ -367,8 +367,8 @@ export class Node {
 
     async text(name?: string): Promise<DbText>;
     async text(name: string, lang: string | null): Promise<DbTextLang>;
-    async text(name: string, lang: string | null, value: any): Promise<false | undefined>;
-    async text(name = "main", lang?: string | null, value?: any): Promise<DbText | DbTextLang | undefined | false> {
+    async text(name: string, lang: string | null, value: any): Promise<DbTextLang | undefined>;
+    async text(name = "main", lang?: string | null, value?: any): Promise<DbText | DbTextLang | undefined> {
         const texts = await this.texts();
         if (!(name in texts)) {
             const T = await this.app.dbTexts.generate();
@@ -378,8 +378,9 @@ export class Node {
         if (lang == null) return texts[name];
         const textLang = await texts[name].lang(lang);
         if (value === undefined) return textLang;
-        if ((await textLang.get()) === value) return false;
+        if ((await textLang.get()) === value) return undefined;
         await textLang.set(value);
+        return textLang;
     }
 
     async textDelete(name: string): Promise<void> {
@@ -394,9 +395,10 @@ export class Node {
         if (lang == null) return this.#title;
         const TextLang = await this.#title.lang(lang);
         if (value === undefined) return TextLang.get();
-        if ((await TextLang.get()) === value) return false;
+        if ((await TextLang.get()) === value) return undefined;
         await TextLang.set(value);
         await this.urlsSeoGen();
+        return TextLang;
     }
 
     /* Files */
@@ -605,13 +607,13 @@ export class Node {
         }
     }
 
-    async copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | false> {
-        if (await ifFn?.(this) === false) return false;
+    async copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
+        if (await ifFn?.(this) === false) return undefined;
 
         const row: Record<string, any> = { ...this.vs };
         delete row["id"];
         const newId = Number(await this.db.table("page").insert(row) ?? "0");
-        if (!newId) return false;
+        if (!newId) return undefined;
         const P = await this.cms.node(newId);
 
         const titleCopy = await (await this.title())!.copy();

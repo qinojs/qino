@@ -15,14 +15,14 @@ export class DbEntry {
   #is: boolean | null = null;
   #full = false;
   #vs: Record<string, any> = {};
-  #eid: string | false = false;
+  #eid: string | undefined;
   #changed = false;
   #savePending = false;
 
   constructor(table: DbTable, vs?: any) {
     this.table = table;
     if (vs !== undefined && (Array.isArray(vs) || (vs != null && typeof vs === "object"))) {
-      this.#eid = table.entryId(vs) || false;
+      this.#eid = table.entryId(vs) || undefined;
       this.#vs  = vs;
     } else if (vs === undefined) {
       this.#eid = "";
@@ -32,16 +32,16 @@ export class DbEntry {
     }
   }
 
-  async is(): Promise<this | false> {
-    if (this.#is === null) await this.getVs();
-    return this.#is ? this : false;
+  async exists(): Promise<this | undefined> {
+    if (this.#is === null) await this.values();
+    return this.#is ? this : undefined;
   }
 
   async get(n: string): Promise<any> {
-    if (!this.#full) await this.getVs();
+    if (!this.#full) await this.values();
     if (n in this.#vs) return this.#vs[n];
-    if (await this.is()) console.warn(`_get "${this.table}::${n}" not implemented`);
-    else console.warn("Entry does not exists", Error().stack);
+    if (await this.exists()) console.warn(`_get "${this.table}::${n}" not implemented`);
+    else console.warn("Entry does not exist", Error().stack);
   }
 
   #fullCheck(): boolean {
@@ -57,12 +57,12 @@ export class DbEntry {
   }
 
   #ensureEid(): void {
-    if (this.#eid === false && this.table.fields && Object.keys(this.#vs).length > 0) {
-      this.#eid = this.table.entryId(this.#vs) || false;
+    if (this.#eid === undefined && this.table.fields && Object.keys(this.#vs).length > 0) {
+      this.#eid = this.table.entryId(this.#vs) || undefined;
     }
   }
 
-  async getVs(): Promise<Record<string, any>> {
+  async values(): Promise<Record<string, any>> {
     if (!this.#fullCheck()) {
       this.#ensureEid();
       const data = await this.table.selectByID(this.#eid);
@@ -74,13 +74,13 @@ export class DbEntry {
   }
 
   async setVs(vs: Record<string, any>): Promise<this> {
-    await this.getVs();
+    await this.values();
     for (const [n, v] of Object.entries(vs)) await this.set(n, v);
     return this;
   }
 
   async set(n: string, v: any): Promise<void> {
-    await this.getVs();
+    await this.values();
     if (n in this.#vs) {
       const Field = this.table.field(n);
       if (Field) {
@@ -99,8 +99,8 @@ export class DbEntry {
     queueMicrotask(() => { this.#savePending = false; this.save().catch(e => console.error("auto-save failed:", e)); });
   }
 
-  async makeIfNot(): Promise<this> {
-    if (!(await this.is())) {
+  async ensure(): Promise<this> {
+    if (!(await this.exists())) {
       const arr = this.table.entryId2Array(this.#eid);
       if (arr) this.#vs = arr;
       await this.table.insert(this.#vs);
@@ -112,7 +112,7 @@ export class DbEntry {
 
   async delete(): Promise<void> {
     await this.table.delete(this.#eid);
-    this.#eid = false;
+    this.#eid = undefined;
     this.#vs = {};
     this.#is = false;
   }
@@ -120,7 +120,7 @@ export class DbEntry {
   async save(): Promise<void> {
     if (!this.#changed) return;
     this.#ensureEid();
-    if (this.#eid === false) throw new Error(`dbEntry.save(): _eid is false, cannot update`);
+    if (this.#eid === undefined) throw new Error(`dbEntry.save(): eid is unknown, cannot update`);
     this.#changed = false; // before the await, so a concurrent save() can't double-update
     await this.table.update(this.#eid, this.#vs);
   }
