@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "./deps.ts";
+import { assertEquals, testContext } from "./deps.ts";
 import { Session, SessionManager } from "../lib/SessionManager.ts";
-import { RequestContext } from "../lib/ctx/RequestContext.ts";
 import { fakeRender } from "./sqlFake.ts";
 
 function fakeDb() {
@@ -71,34 +70,25 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
   assertEquals((db.calls[1][1] as unknown[])[3], 9);
 });
 
-Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", () => {
+Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", async () => {
   const sessions = new SessionManager(fakeDb() as any);
-  const ctx = new RequestContext();
-  ctx.app = { https: true } as any;
-  ctx.appURL = "/app/";
-  ctx.sess = { token: "token", isNew: true } as any;
+  const ctx = await testContext({ url: "http://qino.test/app/", basePath: "/app/", app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
   assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Secure-qinoSess=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
 });
 
-Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", () => {
+Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async () => {
   const sessions = new SessionManager(fakeDb() as any);
-  const ctx = new RequestContext();
-  ctx.app = { https: true } as any;
-  ctx.appURL = "/";
-  ctx.sess = { token: "token", isNew: true } as any;
+  const ctx = await testContext({ app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
   assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qinoSess=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 
-Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", () => {
+Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", async () => {
   const sessions = new SessionManager(fakeDb() as any);
-  const ctx = new RequestContext();
-  ctx.app = { https: true } as any;
-  ctx.appURL = "/";
-  ctx.sess = { token: "token", isNew: true, cookieSent: false } as any;
+  const ctx = await testContext({ app: { https: true }, sess: { token: "token", isNew: true, cookieSent: false } });
 
   sessions.setCookieIfNew(ctx);
   sessions.setCookieIfNew(ctx);

@@ -1,11 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { aptRequest, assertEquals } from "./deps.ts";
+import { aptRequest, assertEquals, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/RequestContext.ts";
 
-const ctx = new RequestContext();
-ctx.sess = { data: { core: { userId: () => 0 } } } as any;
+const ctx = await testContext();
 
 const api = {
   item: {

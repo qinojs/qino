@@ -1,11 +1,10 @@
-import { assertEquals, assertRejects } from "./deps.ts";
+import { assertEquals, assertRejects, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, AccessError, NotFoundError, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/RequestContext.ts";
 
-const fakeCtx = new RequestContext();
+const fakeCtx = await testContext();
 fakeCtx.lang = "de";
-fakeCtx.sess = { data: { core: { userId: () => 0 } } } as never;
 
 const mockPages = new Map<string, { id: string; title: string; access: () => number }>([
   ["1", { id: "1", title: "Home", access: () => 3 }],

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { aptRequest, assertEquals, assertRejects, assertThrows } from "./deps.ts";
+import { aptRequest, assertEquals, assertRejects, assertThrows, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import {
   Access,
@@ -10,16 +10,15 @@ import {
   invoke,
   toTools,
 } from "../lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/RequestContext.ts";
 
-const ctx = new RequestContext();
-ctx.lang = "de";
 let csrfToken = "csrf-token";
 const token = (v?: string) => {
   if (v !== undefined) csrfToken = v;
   return csrfToken;
 };
-ctx.sess = { data: { core: { userId: () => 0, csrfToken: token } } } as any;
+const ctx = await testContext({ sess: { data: { core: { userId: () => 0, csrfToken: token } } } });
+ctx.lang = "de";
 
 const things = new Map<number, { id: number; title: string; writable: boolean }>([
   [1, { id: 1, title: "One", writable: true }],
