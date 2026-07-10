@@ -2,8 +2,8 @@ import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
 import { cookiePrefix, uid, unixTime } from "./util.ts";
 import { sql } from "../../../deps.ts";
 import type { Db } from "./db/Db.ts";
-import type { Req } from "./Req.ts";
-import type { RequestContext } from "./RequestContext.ts";
+import type { Req } from "./ctx/Req.ts";
+import type { RequestContext } from "./ctx/RequestContext.ts";
 
 const EMPTY_SESSION = "{}";
 const COOKIE_NAME = "qinoSess";

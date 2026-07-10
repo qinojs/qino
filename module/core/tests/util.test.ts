@@ -8,7 +8,7 @@ import {
   sqlSearchHelper,
   urlize,
 } from "../lib/util.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
+import { RequestContext } from "../lib/ctx/RequestContext.ts";
 import { App } from "../lib/App.ts";
 import { fakeRender } from "./sqlFake.ts";
 

@@ -1,7 +1,7 @@
 import * as nodePath from "node:path";
 import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
-import { RequestContext, requestStorage, urlToLocalPath } from "./RequestContext.ts";
-import { Req } from "./Req.ts";
+import { RequestContext, requestStorage, urlToLocalPath } from "./ctx/RequestContext.ts";
+import { Req } from "./ctx/Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
 import { Db } from "./db/Db.ts";
@@ -13,7 +13,7 @@ import { ModuleManager, type Module } from "./ModuleManager.ts";
 import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
-import { initRequest } from "./init.ts";
+import { initRequest } from "./ctx/init.ts";
 
 const mainDir: string = fromFileUrl(new URL(".", Deno.mainModule));
 

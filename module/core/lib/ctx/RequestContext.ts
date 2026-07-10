@@ -1,18 +1,18 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { Item, ItemProxy } from "../../../deps.ts";
+import type { Item, ItemProxy } from "../../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
 import { RequestDeadline } from "./RequestDeadline.ts";
 import { Csp } from "./Csp.ts";
-import { uid, clientIp, Output } from "./util.ts";
+import { uid, clientIp, Output } from "../util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
-import type { UploadedFile } from "./fileStream.ts";
+import type { UploadedFile } from "../fileStream.ts";
 import { Body } from "./Body.ts";
-import type { App } from "./App.ts";
-import type { dbEntry_client, dbEntry_usr } from "./qgEntries.ts";
+import type { App } from "../App.ts";
+import type { dbEntry_client, dbEntry_usr } from "../qgEntries.ts";
 import type { Req } from "./Req.ts";
-import type { Session } from "./SessionManager.ts";
-import type { LoginError } from "./auth.ts";
+import type { Session } from "../SessionManager.ts";
+import type { LoginError } from "../auth.ts";
 
 export class RequestContext {
   app!: App;

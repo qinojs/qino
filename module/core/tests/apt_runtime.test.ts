@@ -10,7 +10,7 @@ import {
   invoke,
   toTools,
 } from "../lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
+import { RequestContext, requestStorage } from "../lib/ctx/RequestContext.ts";
 
 const ctx = new RequestContext();
 ctx.lang = "de";

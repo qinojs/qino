@@ -1,4 +1,4 @@
-import type { RequestContext } from "../RequestContext.ts";
+import type { RequestContext } from "../ctx/RequestContext.ts";
 import { toJsonSchema } from "../StandardSchema.ts";
 import { asParams, coerce, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { Session, SessionManager } from "../lib/SessionManager.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
+import { RequestContext } from "../lib/ctx/RequestContext.ts";
 import { fakeRender } from "./sqlFake.ts";
 
 function fakeDb() {

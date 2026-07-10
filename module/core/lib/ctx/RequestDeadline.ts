@@ -1,4 +1,4 @@
-import { Output } from "./util.ts";
+import { Output } from "../util.ts";
 import type { RequestContext } from "./RequestContext.ts";
 
 /** Cooperative request time limit: `left` seconds count down, then `signal` aborts with a 504 Output. */

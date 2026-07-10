@@ -3,7 +3,7 @@
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
-import { getCtx } from "./lib/RequestContext.ts";
+import { getCtx } from "./lib/ctx/RequestContext.ts";
 export { api } from "./apt.ts";
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/Db.ts";
@@ -139,7 +139,7 @@ export async function init(app: App) {
     app.on("login", async ({ id }) => {
       const ctx = getCtx();
       if (!ctx.sess) return;
-      const { mergeSessionSettingsToUser } = await import("./lib/contextSettings.ts");
+      const { mergeSessionSettingsToUser } = await import("./lib/ctx/contextSettings.ts");
       await mergeSessionSettingsToUser(app.db, id, ctx.sess.id);
       await ctx.initSettings();
     });

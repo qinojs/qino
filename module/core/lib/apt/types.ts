@@ -1,4 +1,4 @@
-import type { RequestContext } from "../RequestContext.ts";
+import type { RequestContext } from "../ctx/RequestContext.ts";
 import type { StandardSchema } from "../StandardSchema.ts";
 
 export type Params = Record<string, unknown>;

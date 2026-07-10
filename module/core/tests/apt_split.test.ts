@@ -2,7 +2,7 @@
 import { aptRequest, assertEquals } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
-import { RequestContext, requestStorage } from "../lib/RequestContext.ts";
+import { RequestContext, requestStorage } from "../lib/ctx/RequestContext.ts";
 
 const ctx = new RequestContext();
 ctx.sess = { data: { core: { userId: () => 0 } } } as any;

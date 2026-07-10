@@ -16,7 +16,7 @@ declare module "../core/lib/App.ts" {
   }
 }
 
-declare module "../core/lib/RequestContext.ts" {
+declare module "../core/lib/ctx/RequestContext.ts" {
   interface RequestContext { readonly cms: CmsContext; }
 }
 

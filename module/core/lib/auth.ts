@@ -1,4 +1,4 @@
-import type { RequestContext } from "./RequestContext.ts";
+import type { RequestContext } from "./ctx/RequestContext.ts";
 import { bcrypt } from "../../../deps.ts";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so

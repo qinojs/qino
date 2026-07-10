@@ -1,6 +1,6 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { HtmlBuilder } from "../../core/lib/HtmlBuilder.ts";
-import { Csp } from "../../core/lib/Csp.ts";
+import { HtmlBuilder } from "../../core/lib/ctx/HtmlBuilder.ts";
+import { Csp } from "../../core/lib/ctx/Csp.ts";
 import { rewriteHtml } from "../plugin.ts";
 
 Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () => {

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { RequestContext } from "./RequestContext.ts";
-import { cookiePrefix, uid, unixTime } from "./util.ts";
-import { authListen } from "./auth.ts";
+import { cookiePrefix, uid, unixTime } from "../util.ts";
+import { authListen } from "../auth.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: RequestContext): Promise<void> {

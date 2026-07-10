@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { authListen } from "../lib/auth.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
+import { RequestContext } from "../lib/ctx/RequestContext.ts";
 
 Deno.test("authListen: login form requires token", async () => {
   const ctx = new RequestContext();

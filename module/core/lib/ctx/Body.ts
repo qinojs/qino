@@ -1,6 +1,6 @@
 import { groupFormData, type Req } from "./Req.ts";
-import { readUploadFile, type UploadedFile } from "./fileStream.ts";
-import { Output } from "./util.ts";
+import { readUploadFile, type UploadedFile } from "../fileStream.ts";
+import { Output } from "../util.ts";
 
 /**
  * Parsed request body: fields eager, per-file disk spooling lazy.

@@ -1,8 +1,8 @@
 import { assert, assertEquals, assertThrows } from "./deps.ts";
-import { Body } from "../lib/Body.ts";
-import { Req } from "../lib/Req.ts";
+import { Body } from "../lib/ctx/Body.ts";
+import { Req } from "../lib/ctx/Req.ts";
 import { Output } from "../lib/util.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
+import { RequestContext } from "../lib/ctx/RequestContext.ts";
 
 const parse = (init?: RequestInit, maxSize = 1024 * 1024) =>
   Body.parse(new Req(new Request("http://qino.test/", init)), { maxSize });

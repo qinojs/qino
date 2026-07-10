@@ -1,6 +1,6 @@
 import { assertEquals, assert } from "./deps.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
-import { Req } from "../lib/Req.ts";
+import { RequestContext } from "../lib/ctx/RequestContext.ts";
+import { Req } from "../lib/ctx/Req.ts";
 import { Output } from "../lib/util.ts";
 
 function makeCtx(reqInit: RequestInit = {}): RequestContext {

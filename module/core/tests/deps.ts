@@ -1,7 +1,7 @@
 export { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@^1";
 
 import { aptFetch, type AptTree } from "../lib/apt/mod.ts";
-import { Req } from "../lib/Req.ts";
+import { Req } from "../lib/ctx/Req.ts";
 import { Output } from "../lib/util.ts";
 
 /** Drive an apt tree over a Web `Request` and build the `Response` from the thrown `Output` signal. */

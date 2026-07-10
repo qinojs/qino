@@ -1,4 +1,4 @@
-import { hee } from "./util.ts";
+import { hee } from "../util.ts";
 
 export class HtmlBuilder {
   lang = "en";

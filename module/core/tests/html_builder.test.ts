@@ -1,5 +1,5 @@
 import { assertEquals } from "./deps.ts";
-import { HtmlBuilder } from "../lib/HtmlBuilder.ts";
+import { HtmlBuilder } from "../lib/ctx/HtmlBuilder.ts";
 
 Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () => {
   const html = new HtmlBuilder();

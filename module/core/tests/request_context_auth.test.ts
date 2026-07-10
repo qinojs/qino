@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
-import { RequestContext } from "../lib/RequestContext.ts";
+import { RequestContext } from "../lib/ctx/RequestContext.ts";
 
 function sessionFake(sessionUserId: number) {
   const writes: unknown[][] = [];
