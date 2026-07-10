@@ -120,12 +120,6 @@ Content-Types per `includes()`: [Body.ts](module/core/lib/Body.ts#L55) — apt h
 
 Empfehlung: Ein gemeinsamer MIME-Helper für beide Stellen.
 
-### P1.12 – `htmlValue` vertraut jedem Objekt mit `html`-Property
-
-Beliebige Datenobjekte können so Escaping umgehen; der `HtmlString`-Trust-Marker verliert seinen Wert: [util.ts](module/core/lib/util.ts#L56).
-
-Empfehlung: Nur `HtmlString` (und das dokumentierte `html()`-Renderable-Protokoll für `html.async`) ungeescaped akzeptieren. `head`/`content` im `HtmlBuilder` als bewusst trusted dokumentieren.
-
 ### P1.13 – `logout`/Auth-Helfer setzen `clientId` voraus
 
 `ctx.client` wirft, wenn kein `clientId` existiert: [RequestContext.ts](module/core/lib/RequestContext.ts#L83). Bei stateless Auth wird `initClient` übersprungen ([init.ts](module/core/lib/init.ts#L9)) — ein Bearer-authentifizierter Aufruf von `POST /api/core/logout` (Access.USER) läuft in `logout()` → `ctx.client` → 500: [auth.ts](module/core/lib/auth.ts#L66). Gleiches Muster in `rememberLogin()`/`login()`.

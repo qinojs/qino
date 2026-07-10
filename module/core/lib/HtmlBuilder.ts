@@ -3,6 +3,7 @@ import { hee } from "./util.ts";
 export class HtmlBuilder {
   lang = "en";
   class: Set<string> = new Set<string>();
+  /** Trusted HTML appended verbatim to the document head. */
   head = "";
   title = "";
   titlePrefix = "";
@@ -13,6 +14,7 @@ export class HtmlBuilder {
   styles: Set<string> = new Set<string>();
   legacyScripts: Set<string> = new Set<string>();
   importMap: Map<string, string> = new Map<string, string>();
+  /** Trusted HTML appended verbatim to the document body. */
   content = "";
   // deno-lint-ignore no-explicit-any
   #jsData?: Record<string, any>;

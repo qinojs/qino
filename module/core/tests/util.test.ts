@@ -24,8 +24,9 @@ Deno.test("util: html template escapes values but keeps HtmlString values", () =
   assertEquals(String(out.escaped()), "&lt;p&gt;&amp;lt;b&amp;gt;x&amp;lt;/b&amp;gt;&lt;br&gt;&lt;/p&gt;");
 });
 
-Deno.test("util: html keeps duck-typed { html } objects raw, coerces HtmlString input", () => {
-  assertEquals(String(html`<p>${{ html: "<b>raw</b>" }}</p>`), "<p><b>raw</b></p>");
+Deno.test("util: html escapes duck-typed { html } objects, coerces HtmlString input", () => {
+  const value = { html: "<b>raw</b>", toString() { return this.html; } };
+  assertEquals(String(html`<p>${value}</p>`), "<p>&lt;b&gt;raw&lt;/b&gt;</p>");
   assertEquals(new HtmlString(null).html, "");
   assertEquals(new HtmlString(42).html, "42");
 });
