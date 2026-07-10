@@ -25,7 +25,6 @@ export class RequestContext {
   get post(): any { return this.#body.post; }
   /** lazy per-file upload access: `await ctx.files.name` spools that file to tmp */
   get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#body.files; }
-  requestUri = "/";
   remoteAddr = "";
   responseHeaders: Headers = new Headers();
   responseStatus = 200;
@@ -106,7 +105,6 @@ export class RequestContext {
 
   static async create(app: App, req: Req, basePath: string): Promise<RequestContext> {
     const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
-    const url = new URL(req.url);
 
     const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
     const body = await Body.parse(req, { maxSize });
@@ -125,7 +123,6 @@ export class RequestContext {
     ctx.cookie = req.cookies();
     ctx.get = Object.freeze(req.query());
     ctx.#body = body;
-    ctx.requestUri = url.pathname + url.search;
     ctx.remoteAddr = clientIp(req, app.trustedProxyHops);
     return ctx;
   }

@@ -10,8 +10,6 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const lastname  = await u!.get?.("lastname")  ?? "";
   const email     = await u!.get?.("email")     ?? "";
 
-  const logoutUrl = hee(ctx.requestUri || "/");
-
   let feedbackConfirmation = "";
   if (vars.param?.msg) {
     const feedbackEmail = String(await app.settings.cms.feedback.email ?? "").trim();
@@ -47,7 +45,7 @@ export default async function (node: Node, vars: { param?: Record<string, string
       <span>${await app.t`Logged in as:`} ${hee(firstname + " " + lastname)}</span>
       <div>
         <button class=-tour>${await app.t`Start CMS tour`}</button>
-        <form method=post action="${logoutUrl}" style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><button name=core_logout>${await app.t`log out`}</button></form>
+        <form method=post style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><button name=core_logout>${await app.t`log out`}</button></form>
       </div>
     </div>
   </div>

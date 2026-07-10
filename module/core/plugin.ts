@@ -105,8 +105,12 @@ export async function init(app: App) {
     app.on("action", async ({ ctx }) => {
         // HTTPS redirect
         const https = app.https;
-        if (https && ctx.url.protocol !== "https:") {
-            throw new Redirect("https://" + ctx.url.host + ctx.requestUri, 301);
+        if (https) {
+            const url = ctx.url;
+            if (url.protocol !== "https:") {
+                url.protocol = "https:";
+                throw new Redirect(url.href, 301);
+            }
         }
 
         // HSTS

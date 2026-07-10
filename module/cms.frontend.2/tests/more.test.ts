@@ -9,7 +9,6 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
   let sent = false;
   const ctx = {
     req: { header: (name: string) => name === "user-agent" ? "Test Browser" : undefined },
-    requestUri: "/page",
     user: { get: (key: string) => ({ firstname: "Ada", lastname: "Lovelace", email: "ada@example.test" })[key as "firstname"] },
     settings: {
       cms: {
@@ -53,7 +52,6 @@ Deno.test("cms.frontend.2 more: keeps feedback draft when sending fails", async 
   let draft = "Please help";
   const ctx = {
     req: { header: () => undefined },
-    requestUri: "/page",
     user: { get: () => "" },
     settings: {
       cms: { feedback: { text: (value?: string) => value === undefined ? draft : draft = value } },

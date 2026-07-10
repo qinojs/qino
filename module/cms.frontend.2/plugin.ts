@@ -80,7 +80,8 @@ export function init(app: App) {
       if (pageNotFound != node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-        settings.cms[lastKey](ctx.requestUri.slice(ctx.appURL.length));
+        const url = ctx.url;
+        settings.cms[lastKey](url.pathname.slice(ctx.appURL.length) + url.search);
         (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
         html.scripts.add(sysURL + "cms.frontend.2/pub/js/init.mjs");
       }

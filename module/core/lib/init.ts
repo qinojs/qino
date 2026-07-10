@@ -81,7 +81,7 @@ function initLog(ctx: RequestContext): void {
           return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
               || await db.table("log_url").insert({ url, hash });
         };
-        const url = ctx.requestUri;
+        const url = ctx.url.href;
         const referer = ctx.req.header("referer") ?? "";
         const ip = ctx.remoteAddr ?? "";
         const ua = ctx.req.header("user-agent") ?? "";
