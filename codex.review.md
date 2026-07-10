@@ -1,12 +1,14 @@
 # Review: `module/core`
 
-Stand: 2026-07-10, 4. Fassung. Alle Findings sind gegen den Code verifiziert; erledigte Punkte werden laufend entfernt (siehe git-Historie). Die Nummerierung der Erstfassung bleibt stabil, daher gibt es Lücken.
+Stand: 2026-07-11, 5. Fassung. Alle Findings sind gegen den Code verifiziert; erledigte Punkte werden laufend entfernt (siehe git-Historie). Die Nummerierung der Erstfassung bleibt stabil, daher gibt es Lücken.
 
 Bewusste Entscheidungen, nicht erneut aufgreifen:
 
 - `usr.set("lang", …)` in [LangManager.ts](module/core/lib/LangManager.ts#L43) bleibt aus Performance-Gründen absichtlich un-awaited.
 - Signatur-Konvention: Existenz-/Lookup-Methoden geben `this | undefined` bzw. `T | undefined` zurück — truthy-prüfbar und chainable (`?.`/`??`), **kein** boolean und kein `| false`.
 - Die `| false`-Rückgaben der apt-Endpoints in [cms.text/api.ts](module/cms.text/api.ts#L90) bleiben: `false` geht dort als JSON über die Leitung, Umstellung wäre eine Wire-Format-Änderung.
+- Die werfenden `toString()` von `DbText`/`DbTextLang` ([DbTextManager.ts](module/core/lib/DbTextManager.ts#L86)) sind Coercion-Guards, kein toter Code: die Werte sind async, ohne den Throw liefert `` `${text}` `` still `[object Object]`. Bleiben. (Ehemals P2.4.)
+- Fire-and-forget-Setter für unkritische Hintergrund-Writes (z. B. `DbFile.name`) sind bewusster Projektstil, kein Finding.
 
 ## Kurzfazit
 
@@ -83,11 +85,13 @@ Numerische Felder: `parseFloat(...) || 0` — Tippfehler, leere Werte, `NaN` wer
 
 Empfehlung: Strikte Konvertierung mit Fehler bei ungültigen Werten. Composite-IDs strukturiert halten oder reversibel encodieren (z. B. JSON-Array), nicht über einen frei vorkommenden Separator.
 
-### P1.6 – `DbEntry` mischt Identity Map, Auto-Save und direkte Tabellenwrites
+### P1.6 – `DbEntry`: stale Identity Map und Dirty-State-Verlust
 
-Drei konkurrierende Zustandsmodelle: WeakRef-Identity-Map in `DbTable` ([DbTable.ts](module/core/lib/db/DbTable.ts#L16)), die direkte `DbTable.update()`-Aufrufe nicht invalidieren (Entries bleiben stale); implizites Auto-Save per Microtask ([DbEntry.ts](module/core/lib/db/DbEntry.ts#L96)); `save()` löscht den Dirty-State vor dem möglicherweise fehlschlagenden Update ([DbEntry.ts](module/core/lib/db/DbEntry.ts#L124)). Dazu tote API: `entry(undefined)` wirft hart „not working" mit auskommentiertem Code: [DbTable.ts](module/core/lib/db/DbTable.ts#L268).
+Zwei konkrete Bugs: Die WeakRef-Identity-Map in `DbTable` ([DbTable.ts](module/core/lib/db/DbTable.ts#L16)) wird von direkten `DbTable.update()`-Aufrufen nicht invalidiert — bereits geladene Entries bleiben stale. Und `save()` löscht den Dirty-State vor dem möglicherweise fehlschlagenden Update ([DbEntry.ts](module/core/lib/db/DbEntry.ts#L124)) — schlägt das Update fehl, gehen die Änderungen still verloren.
 
-Empfehlung (KISS): Identity Map und Auto-Save entfernen. `entry.get()` lädt, `entry.set()` mutiert lokal, `entry.save()` schreibt explizit und behält Dirty-State bei Fehler. Den `entry(undefined)`-Zweig löschen.
+Das Auto-Save per Microtask ([DbEntry.ts](module/core/lib/db/DbEntry.ts#L96)) ist dagegen bewusstes Design (hält den Save in Transaktions-/Request-Scope) und bleibt. `DbEntry` soll ohnehin durch die geplante item.js-Row-Schicht ersetzt werden — hier lohnt nur die minimale Bugkorrektur, kein Semantik-Umbau.
+
+Empfehlung: Dirty-State bei fehlgeschlagenem Update wiederherstellen (Flag im `catch` zurücksetzen, dann rethrow); direkte Tabellenwrites invalidieren die Identity Map — oder die Einschränkung wird am `DbTable.update()` dokumentiert.
 
 ### P1.7 – Transform-Cache-Key: für generische Nutzung nicht inhaltsadressiert
 
@@ -128,23 +132,17 @@ Empfehlung: Entweder `client` als `null`-fähig modellieren und in den Auth-Helf
 
 ## API, Architektur und Konsistenz
 
-### P2.2 – Klassenoberflächen sind unnötig mutierbar
+### P2.2 – Boot-Konfiguration bleibt nach `init()` schreibbar
 
-Öffentlich schreibbar, obwohl intern gekoppelt: App-Konfiguration und Manager ([App.ts](module/core/lib/App.ts#L50)), Session `token`/`id`/`data` ([SessionManager.ts](module/core/lib/SessionManager.ts#L15)), `Db.schema`-Setter ([Db.ts](module/core/lib/db/Db.ts#L39)), `DbFile.vs` ([DbFileManager.ts](module/core/lib/DbFileManager.ts#L143)). Der `DbFile.name`-Setter macht fire-and-forget-I/O: [DbFileManager.ts](module/core/lib/DbFileManager.ts#L157).
+Öffentlich schreibbar, obwohl intern gekoppelt: App-Konfiguration und Manager ([App.ts](module/core/lib/App.ts#L50)), Session `token`/`id`/`data` ([SessionManager.ts](module/core/lib/SessionManager.ts#L15)), `Db.schema`-Setter ([Db.ts](module/core/lib/db/Db.ts#L39)). Fire-and-forget-Setter wie `DbFile.name` sind dagegen Projektstil (siehe bewusste Entscheidungen oben) und kein Finding.
 
-Empfehlung: Konfiguration nach Construction readonly, interne Referenzen `#private`, Mutation über kleine Methoden (`await file.rename(name)` statt Setter).
+Empfehlung: punktuell entscheiden statt pauschal — readonly/`#private` nur dort, wo eine Mutation nach dem Boot real nichts Sinnvolles bewirkt (App-Konfiguration, Manager-Referenzen). Keine generelle Readonly-Regel; KISS/duck typing gemäß AGENTS.md hat Vorrang.
 
 ### P2.3 – Lifecycle ist nicht explizit
 
 `App.init()` hat keinen Guard — doppelter Aufruf registriert Init-Hooks/Listener doppelt: [App.ts](module/core/lib/App.ts#L96), [ModuleManager.ts](module/core/lib/ModuleManager.ts#L101). `install()` läuft bei jedem Boot, der Name suggeriert Einmaligkeit: [ModuleManager.ts](module/core/lib/ModuleManager.ts#L129). Ein App-weites `close()` fehlt — item.js-TTL-Timer und Session-Touch-Timer halten den Prozess am Leben (im Smoke-Test bestätigt).
 
 Empfehlung: `created → initialized → closed` mit idempotentem oder klar fehlschlagendem `init()`, `close()`, Background-Task-Tracker. `install` echte Einmaligkeit geben oder in den `init`-Hook mergen.
-
-### P2.4 – Absichtlich kaputte Mitglieder
-
-`DbText.toString()`/`DbTextLang.toString()` werfen immer: [DbTextManager.ts](module/core/lib/DbTextManager.ts#L86), [DbTextManager.ts](module/core/lib/DbTextManager.ts#L117); `DbTable.entry()` trägt den „not working"-Zweig (P1.6). Rückwärtskompatibilität ist laut Aufgabenstellung nicht nötig.
-
-Empfehlung: Löschen statt mitschleppen.
 
 ### P2.5 – Event-Typisierung wird durch Catch-all ausgehebelt
 
@@ -202,7 +200,7 @@ Rte, Combobox und die `c1`-DOM-Utilities gehören nicht in den Laufzeit-Core.
 5. Schema-Frage entscheiden (echtes Standard Schema vs. ehrliches `AptSchema`) und apt-Typen ohne `any` (P1.2).
 6. Lifecycle und Mutabilität schließen (P2.2, P2.3).
 7. Browser-Legacy auslagern/löschen (P2.6).
-8. Zuletzt Namen, Stil, Kommentare, tote Mitglieder (P2.4, P2.5, P2.7).
+8. Zuletzt Namen, Stil, Kommentare (P2.5, P2.7).
 
 ## Fehlende Tests mit hohem Wert
 
