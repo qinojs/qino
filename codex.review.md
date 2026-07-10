@@ -1,11 +1,12 @@
 # Review: `module/core`
 
-Stand: 2026-07-10, 3. Fassung. Alle Findings sind gegen den Code verifiziert; der Usage-Scan der öffentlichen Exporte ist umgesetzt (mod.ts exportiert jetzt explizit). Bereits erledigte Quick-Wins wurden aus dem Dokument entfernt (siehe git-Historie). Die Nummerierung der Erstfassung bleibt stabil, daher gibt es Lücken.
+Stand: 2026-07-10, 4. Fassung. Alle Findings sind gegen den Code verifiziert; erledigte Punkte werden laufend entfernt (siehe git-Historie). Die Nummerierung der Erstfassung bleibt stabil, daher gibt es Lücken.
 
 Bewusste Entscheidungen, nicht erneut aufgreifen:
 
 - `usr.set("lang", …)` in [LangManager.ts](module/core/lib/LangManager.ts#L43) bleibt aus Performance-Gründen absichtlich un-awaited.
 - Signatur-Konvention: Existenz-/Lookup-Methoden geben `this | undefined` bzw. `T | undefined` zurück — truthy-prüfbar und chainable (`?.`/`??`), **kein** boolean und kein `| false`.
+- Die `| false`-Rückgaben der apt-Endpoints in [cms.text/api.ts](module/cms.text/api.ts#L90) bleiben: `false` geht dort als JSON über die Leitung, Umstellung wäre eine Wire-Format-Änderung.
 
 ## Kurzfazit
 
@@ -151,8 +152,6 @@ Empfehlung: `created → initialized → closed` mit idempotentem oder klar fehl
 
 Empfehlung: Löschen statt mitschleppen.
 
-Bereits umgesetzt (Konvention, siehe Kopf des Dokuments): Renames `exists()`/`values()`/`ensure()` und die `X | undefined`-Signaturen für Existenz-/Lookup-/Write-Rückgaben in Core (`DbEntry`, `DbTable`, `DbField`, `File`, `DbFile`, `Csp`) und den serverseitigen Modul-APIs (`Node.exists/htmlPart/text/title/copy`, `CMS.url`, `versTable`, `MailManager.trackURL`, `MailMessage.template`). Ausgenommen: die apt-Rückgaben in [cms.text/api.ts](module/cms.text/api.ts#L90) (`false` geht dort als JSON über die Leitung — Umstellung wäre eine Wire-Format-Änderung).
-
 ### P2.5 – Event-Typisierung wird durch Catch-all ausgehebelt
 
 `AppEvents` und `DbEvents` erlauben jeden Namen mit beliebigem Record: [App.ts](module/core/lib/App.ts#L46), [Db.ts](module/core/lib/db/Db.ts#L19) — Tippfehler und falsche Payloads bleiben typkorrekt, obwohl die Kommentare Declaration Merging bereits als Erweiterungsweg dokumentieren. Payload-/Eventnamen sind inkonsistent (`File` vs. `dbFile`, `Table`, `session_old`, `dbFile::access` vs. `dbFile-used`).
@@ -182,7 +181,7 @@ Kleinste sinnvolle Trennung (erst **nach** Korrektur der Semantik umsetzen, sons
 
 ```text
 module/core/
-├── mod.ts                 # explizite Runtime-API + kleine Introspektions-SPI (bereits umgesetzt)
+├── mod.ts                 # explizite Runtime-API + kleine Introspektions-SPI
 ├── plugin.ts              # Manifest, keine Import-Side-Effects
 ├── lib/
 │   ├── app/               # App, RequestContext, Pipeline mit einer Response-Finalisierung
@@ -225,10 +224,9 @@ Rte, Combobox und die `c1`-DOM-Utilities gehören nicht in den Laufzeit-Core.
 - Symlink-Escape für `assertAllowedPath`; SSRF mit kontrolliertem Resolver.
 - Browser-Smoke-Test: jeder ESM-Entry importierbar ohne implizite Globals.
 
-## Verifikation (3. Fassung)
+## Verifikation
 
-- Volle Testsuite (`deno task test`): **183 passed, 0 failed**; `deno check` grün für Core-Entry und alle apt-Consumer.
+- Volle Testsuite (`deno task test`): **183 passed, 0 failed**; `deno check` grün über alle Modul-Entries.
 - `deno lint module/core`: 16 vorbestehende Findings (P2.7).
 - End-to-End-Smoke gegen echte App (SQLite): Page-Render, api mit CSRF, dbFile ETag/304/Range, Translation-Import auf warmem Cache — grün.
-- Erledigte Findings (P1.3, P1.4, P2.1 sowie Teile von P0.6, P1.7–P1.9, P1.11, P1.12, P2.4, P2.7) wurden aus dem Dokument entfernt; Details in der git-Historie.
 - `deno fmt` gemäß Projektanweisung nicht ausgeführt.
