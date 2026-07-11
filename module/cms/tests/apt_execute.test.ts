@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { AccessError, NotFoundError, ValidationError, invoke, RequestContext, HtmlString, requestStorage } from "../../core/mod.ts";
+import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
+import { AccessError, NotFoundError, ValidationError, invoke, HtmlString, requestStorage } from "../../core/mod.ts";
 import { api } from "../apt.ts";
 
 class TextObj {
@@ -71,15 +71,12 @@ class FakeNode {
   bough() { return new Map([[this.id, this]]); }
 }
 
-function setup(access = 3) {
+async function setup(access = 3) {
   const nodes = new Map<number, FakeNode>();
   nodes.set(1, new FakeNode(1, access));
   nodes.set(2, new FakeNode(2, 0));
-  const ctx = new RequestContext();
-  ctx.lang = "de";
-  ctx.sess = { data: { core: { userId: () => 9 } } } as any;
   const user = { id: 9, get: () => false, toString: () => "9" };
-  ctx.app = {
+  const ctx = await testContext({ userId: 9, app: {
     cms: {
       node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
     },
@@ -89,12 +86,13 @@ function setup(access = 3) {
         entry: () => name === "usr" ? user : null,
       }),
     },
-  } as any;
+  } });
+  ctx.lang = "de";
   return { ctx, nodes };
 }
 
 Deno.test("cms apt: node title/text/flags write through resolved node", async () => {
-  const { ctx, nodes } = setup();
+  const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
   await requestStorage.run(ctx, async () => {
@@ -111,7 +109,7 @@ Deno.test("cms apt: node title/text/flags write through resolved node", async ()
 });
 
 Deno.test("cms apt: html and html parts render through node helpers", async () => {
-  const { ctx } = setup();
+  const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/node/1/html", { vars: { a: 1 } }), '<div>{"a":1}</div>');
     assertEquals(await invoke(api, "POST", "/node/1/html", { vars: { b: 2 } }), '<div>{"b":2}</div>');
@@ -120,7 +118,7 @@ Deno.test("cms apt: html and html parts render through node helpers", async () =
 });
 
 Deno.test("cms apt: contents returns readable content tree", async () => {
-  const { ctx, nodes } = setup();
+  const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
   const child = new FakeNode(10, 1, { type: "c", module: "cms.cont.text", name: "main" });
   child.titleValue = "Main";
@@ -138,7 +136,7 @@ Deno.test("cms apt: contents returns readable content tree", async () => {
 });
 
 Deno.test("cms apt: contents post returns rendered html string", async () => {
-  const { ctx } = setup();
+  const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/node/1/contents", { module: "cms.text" }), {
       id: 4,
@@ -148,7 +146,7 @@ Deno.test("cms apt: contents post returns rendered html string", async () => {
 });
 
 Deno.test("cms apt: delete all files includes placeholders", async () => {
-  const { ctx, nodes } = setup();
+  const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
   await requestStorage.run(ctx, async () => {
@@ -159,7 +157,7 @@ Deno.test("cms apt: delete all files includes placeholders", async () => {
 });
 
 Deno.test("cms apt: user access and group access write through node", async () => {
-  const { ctx, nodes } = setup();
+  const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
   await requestStorage.run(ctx, async () => {
@@ -172,7 +170,7 @@ Deno.test("cms apt: user access and group access write through node", async () =
 });
 
 Deno.test("cms apt: resolve rejects missing and unreadable nodes", async () => {
-  const { ctx } = setup();
+  const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "GET", "/node/99"), NotFoundError);
     await assertRejects(() => invoke(api, "GET", "/node/2"), AccessError);
@@ -180,14 +178,14 @@ Deno.test("cms apt: resolve rejects missing and unreadable nodes", async () => {
 });
 
 Deno.test("cms apt: node write access is required for mutations", async () => {
-  const { ctx } = setup(1);
+  const { ctx } = await setup(1);
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "PUT", "/node/1/title", { value: "Nope" }), AccessError);
   });
 });
 
 Deno.test("cms apt: validation rejects wrong params and payloads before writing", async () => {
-  const { ctx, nodes } = setup();
+  const { ctx, nodes } = await setup();
   const node = nodes.get(1)!;
 
   await requestStorage.run(ctx, async () => {
@@ -201,7 +199,7 @@ Deno.test("cms apt: validation rejects wrong params and payloads before writing"
 });
 
 Deno.test("cms apt: admin access is required for access mutations", async () => {
-  const { ctx } = setup(2);
+  const { ctx } = await setup(2);
   await requestStorage.run(ctx, async () => {
     await assertRejects(() => invoke(api, "PUT", "/node/1/access", { value: 1 }), AccessError);
     await assertRejects(() => invoke(api, "PUT", "/node/1/access/users/5", { access: 2 }), AccessError);

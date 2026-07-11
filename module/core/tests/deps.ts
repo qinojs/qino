@@ -26,10 +26,10 @@ export async function testContext(init: TestContextInit = {}): Promise<RequestCo
   const { url = "http://qino.test/", basePath = "/", app = {}, sess, userId = 0, set, ...reqInit } = init;
   const session = sess ?? { data: { core: { userId: () => userId } } };
   const appFake = {
-    settings: { core: {} },
     sessions: { loadFromRequest: () => session },
     trustedProxyHops: 0,
     ...app,
+    settings: { core: {}, ...app.settings },
   };
   const ctx = await RequestContext.create(appFake as never, new Req(new Request(url, reqInit)), basePath);
   for (const [k, v] of Object.entries(set ?? {}))

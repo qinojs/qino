@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { fakeRender } from "../../core/tests/sqlFake.ts";
-import { invoke, RequestContext, requestStorage } from "../../core/mod.ts";
+import { invoke, requestStorage } from "../../core/mod.ts";
 import { api } from "../../cms.text/mod.ts";
 
 class FakeText {
@@ -41,13 +41,11 @@ class FakeNode {
   }
 }
 
-function ctxWith(app: any) {
-  const ctx = new RequestContext();
-  ctx.sess = { data: { core: { userId: () => 1 } } } as any;
-  ctx.lang = "de";
+async function ctxWith(app: any) {
   app.db ??= {};
   app.db.table ??= () => ({ entry: () => ({ id: 1 }) });
-  ctx.app = app;
+  const ctx = await testContext({ userId: 1, app });
+  ctx.lang = "de";
   return ctx;
 }
 
@@ -63,7 +61,7 @@ function setting<T>(initial: T) {
 }
 
 Deno.test("cms.text: missing and empty texts are returned as untranslated", async () => {
-  const ctx = ctxWith({
+  const ctx = await ctxWith({
     languages: { all: ["de", "en", "fr"] },
     apt: { cms: { "node-id-from-txt-id": { get: () => Promise.resolve({ id: 1 }) } } },
     cms: { node: () => ({ access: () => 3 }) },
@@ -103,7 +101,7 @@ Deno.test("cms.text: translate-all-langs translates only missing or empty texts"
     } as Response);
   }) as typeof fetch;
 
-  const ctx = ctxWith({
+  const ctx = await ctxWith({
     languages: { all: ["de", "en", "fr"] },
     cms: { node: () => node },
     dbTexts: { text: (id: number) => texts.get(id) },

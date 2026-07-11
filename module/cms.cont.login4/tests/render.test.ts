@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { cms, name } from "../plugin.ts";
-import { RequestContext, requestStorage } from "../../core/mod.ts";
+import { requestStorage } from "../../core/mod.ts";
 
 function settings(values: Record<string, unknown> = {}) {
   return new Proxy({}, {
@@ -18,18 +18,18 @@ function textObj(value = "") {
   };
 }
 
-function makeCtx(loggedIn = false) {
-  const ctx = new RequestContext();
-  ctx.sess = { data: { core: { userId: () => loggedIn ? 7 : 0, csrfToken: () => "tok" } } } as any;
-  ctx.clientId = "client-1";
-  ctx.app = {
-    db: {
-      table: (name: string) => ({
-        entry: () => name === "usr" ? { get: (key: string) => key === "superuser" ? false : "user@example.test" } : null,
-      }),
+async function makeCtx(loggedIn = false) {
+  const ctx = await testContext({
+    sess: { data: { core: { userId: () => loggedIn ? 7 : 0, csrfToken: () => "tok" } } },
+    app: {
+      db: {
+        table: (name: string) => ({
+          entry: () => name === "usr" ? { get: (key: string) => key === "superuser" ? false : "user@example.test" } : null,
+        }),
+      },
     },
-  } as any;
-  ctx.state = {};
+  });
+  ctx.clientId = "client-1";
   return ctx;
 }
 
@@ -39,7 +39,7 @@ Deno.test("cms.cont.login4: metadata is wired", () => {
 });
 
 Deno.test("cms.cont.login4: render shows login form for guests", async () => {
-  const ctx = makeCtx(false);
+  const ctx = await makeCtx(false);
   const node = {
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "Anmelden" },
@@ -60,7 +60,7 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
 });
 
 Deno.test("cms.cont.login4: render redirects logged-in users when configured", async () => {
-  const ctx = makeCtx(true);
+  const ctx = await makeCtx(true);
   const node = {
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "x" },
@@ -78,7 +78,7 @@ Deno.test("cms.cont.login4: render redirects logged-in users when configured", a
 });
 
 Deno.test("cms.cont.login4: render shows logout form for logged-in users", async () => {
-  const ctx = makeCtx(true);
+  const ctx = await makeCtx(true);
   const node = {
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "Abmelden" },
@@ -93,7 +93,7 @@ Deno.test("cms.cont.login4: render shows logout form for logged-in users", async
 });
 
 Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async () => {
-  const guestCtx = makeCtx(false);
+  const guestCtx = await makeCtx(false);
   const guestNode = {
     edit: false,
     app: { t: (_strings: TemplateStringsArray) => "Anmelden" },
@@ -106,7 +106,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
   assertEquals(login.includes(`a&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;`), true);
   assertEquals(login.includes("<script>"), false);
 
-  const userCtx = makeCtx(true);
+  const userCtx = await makeCtx(true);
   userCtx.sess = { data: { core: { userId: () => 7, csrfToken: () => `t"><script>x</script>` } } } as any;
   const userNode = {
     edit: false,

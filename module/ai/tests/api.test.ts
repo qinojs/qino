@@ -1,5 +1,5 @@
-import { assert, assertEquals } from "../../core/tests/deps.ts";
-import { invoke, Output, RequestContext, requestStorage, toTools } from "../../core/mod.ts";
+import { assert, assertEquals, testContext } from "../../core/tests/deps.ts";
+import { invoke, Output, requestStorage, toTools } from "../../core/mod.ts";
 import { api } from "../apt.ts";
 import { init, name, needs } from "../plugin.ts";
 
@@ -22,15 +22,13 @@ Deno.test("ai: init installs AiApi (no cms coupling)", () => {
 });
 
 Deno.test("ai: apt execute delegates to app.ai", async () => {
-  const ctx = new RequestContext();
-  ctx.sess = { data: { core: { userId: () => 1 } } } as never;
-  ctx.app = {
+  const ctx = await testContext({ userId: 1, app: {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
     ai: {
       createSession: (_opts: unknown) => 42,
       session: (id: number) => ({ run: (content: string) => ({ kind: "run", id, content }) }),
     },
-  } as never;
+  } });
 
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/sessions", { bot: "cms-helper" }), { id: 42 });
@@ -39,12 +37,10 @@ Deno.test("ai: apt execute delegates to app.ai", async () => {
 });
 
 Deno.test("ai: stream endpoint throws an Output carrying a ReadableStream", async () => {
-  const ctx = new RequestContext();
-  ctx.sess = { data: { core: { userId: () => 1 } } } as never;
-  ctx.app = {
+  const ctx = await testContext({ userId: 1, app: {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
     ai: { session: () => ({ runStream: () => new ReadableStream() }) },
-  } as never;
+  } });
 
   await requestStorage.run(ctx, async () => {
     const err = await invoke(api, "POST", "/sessions/5/stream", { content: "hi" }).then(() => null, (e) => e);
