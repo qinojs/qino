@@ -1,8 +1,7 @@
-import { assert, assertEquals, assertThrows } from "./deps.ts";
+import { assert, assertEquals, assertThrows, testContext } from "./deps.ts";
 import { Body } from "../lib/ctx/Body.ts";
 import { Req } from "../lib/ctx/Req.ts";
 import { Output } from "../lib/util.ts";
-import { RequestContext } from "../lib/ctx/RequestContext.ts";
 
 const parse = (init?: RequestInit, maxSize = 1024 * 1024) =>
   Body.parse(new Req(new Request("http://qino.test/", init)), { maxSize });
@@ -153,8 +152,8 @@ Deno.test("Req.query: always flat, first value wins", () => {
   assertEquals(req.query().xyz, "a");
 });
 
-Deno.test("RequestContext defaults: post null, files empty", () => {
-  const ctx = new RequestContext();
+Deno.test("RequestContext defaults: post null, files empty", async () => {
+  const ctx = await testContext();
   assertEquals(ctx.post, null);
   assertEquals(Object.keys(ctx.files), []);
 });

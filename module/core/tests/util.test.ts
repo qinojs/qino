@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "./deps.ts";
+import { assertEquals, assertThrows, testContext } from "./deps.ts";
 import {
   HtmlString,
   Output,
@@ -8,7 +8,6 @@ import {
   sqlSearchHelper,
   urlize,
 } from "../lib/util.ts";
-import { RequestContext } from "../lib/ctx/RequestContext.ts";
 import { App } from "../lib/App.ts";
 import { fakeRender } from "./sqlFake.ts";
 
@@ -61,9 +60,8 @@ Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   assertEquals(fakeRender(res.order, [])[1], ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
 });
 
-Deno.test("util: ctx.urlToLocalPath maps module and qg public files", () => {
-  const ctx = Object.assign(new RequestContext(), {
-    appURL: "/",
+Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () => {
+  const ctx = await testContext({
     app: {
       appPATH: "/app/",
       modules: {
