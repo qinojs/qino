@@ -1,8 +1,9 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Item, ItemProxy } from "../../../../deps.ts";
-import { HtmlBuilder } from "./HtmlBuilder.ts";
+import type { HtmlBuilder } from "./HtmlBuilder.ts";
 import type { RequestDeadline } from "./RequestDeadline.ts";
-import { Csp } from "./Csp.ts";
+import type { Csp } from "./Csp.ts";
+import { ResponseBuilder } from "./ResponseBuilder.ts";
 import { uid } from "../util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
@@ -27,14 +28,22 @@ export class RequestContext {
   langNsPath: string[] = [];
   langNs = "";
 
-  responseHeaders: Headers = new Headers();
-  responseStatus = 200;
-  responseBody: BodyInit | undefined = "";
-  csp: Csp = new Csp();
+  res: ResponseBuilder = new ResponseBuilder();
 
-  #html: HtmlBuilder | null = null;
-  get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
-  get hasHtml(): boolean { return this.#html !== null; }
+  /** @deprecated use `ctx.res.headers` */
+  get responseHeaders(): Headers { return this.res.headers; }
+  /** @deprecated use `ctx.res.status` */
+  get responseStatus(): number { return this.res.status; }
+  set responseStatus(v: number) { this.res.status = v; }
+  /** @deprecated use `ctx.res.body` */
+  get responseBody(): BodyInit | undefined { return this.res.body; }
+  set responseBody(v: BodyInit | undefined) { this.res.body = v; }
+  /** @deprecated use `ctx.res.csp` */
+  get csp(): Csp { return this.res.csp; }
+  /** @deprecated use `ctx.res.html` */
+  get html(): HtmlBuilder { return this.res.html; }
+  /** @deprecated use `ctx.res.hasHtml` */
+  get hasHtml(): boolean { return this.res.hasHtml; }
 
   /** @deprecated use `ctx.req.query` */
   get get(): Readonly<Record<string, string>> { return this.req.query; }

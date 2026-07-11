@@ -164,26 +164,26 @@ export class App extends Emitter<AppEvents> {
     /** Fallback for paths that aren't static/dbFile/api: fire the render hooks and build the response. */
     async #renderFallback(ctx: RequestContext): Promise<Response> {
         await this.fire("render", { ctx });
-        if (ctx.hasHtml) {
+        if (ctx.res.hasHtml) {
             await this.fire("html-ready", { ctx });
-            const html = ctx.html;
+            const html = ctx.res.html;
             html.lang = ctx.lang;
             const qino = html.jsData.qino ??= {};
             qino.csrfToken = ctx.csrfToken;
-            qino.appURL = ctx.appURL || "/";
-            ctx.responseBody = html.render();
+            qino.appURL = ctx.req.basePath;
+            ctx.res.body = html.render();
         }
         return this.#buildResponse(ctx);
     }
 
     async #buildResponse(ctx: RequestContext): Promise<Response> {
         await this.fire("respond", { ctx });
-        const headers = new Headers(ctx.responseHeaders);
-        if (headers.has("Location")) return new Response(null, { status: ctx.responseStatus, headers });
+        const headers = new Headers(ctx.res.headers);
+        if (headers.has("Location")) return new Response(null, { status: ctx.res.status, headers });
         if (!headers.has("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
         headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
         headers.set("X-Content-Type-Options", "nosniff");
-        return new Response(ctx.responseBody, { status: ctx.responseStatus, headers });
+        return new Response(ctx.res.body, { status: ctx.res.status, headers });
     }
 
     assertAllowedPath(file: string): void {
@@ -201,13 +201,13 @@ export class App extends Emitter<AppEvents> {
 /** Map a control-flow signal onto the request context's pending response. */
 function handleError(ctx: RequestContext, e: unknown): void {
     if (e instanceof Output) {
-        for (const [k, v] of e.buildHeaders()) ctx.responseHeaders.set(k, v);
-        ctx.responseBody = e.body;
-        ctx.responseStatus = e.status;
+        for (const [k, v] of e.buildHeaders()) ctx.res.headers.set(k, v);
+        ctx.res.body = e.body;
+        ctx.res.status = e.status;
     } else {
         console.error("Error:", e);
-        ctx.responseStatus = 500;
-        ctx.responseBody = "<h1>500 Internal Server Error</h1>";
+        ctx.res.status = 500;
+        ctx.res.body = "<h1>500 Internal Server Error</h1>";
     }
 }
 
