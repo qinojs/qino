@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import type { Node } from "../../../cms/mod.ts";
-import { hee, getCtx, Output } from "../../../core/mod.ts";
+import { html, type HtmlString, getCtx, Output } from "../../../core/mod.ts";
 
 function inRoot(file: string, root: string): boolean {
   const rel = nodePath.relative(nodePath.resolve(root), nodePath.resolve(file));
@@ -24,7 +24,8 @@ async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: s
   }
 }
 
-export default async function (node: Node, vars: any = {}): Promise<string> {
+// deno-lint-ignore no-explicit-any
+export default async function (node: Node, vars: any = {}): Promise<HtmlString> {
   const ctx = getCtx();
   if (!await ctx.user?.get("superuser")) throw new Output("Access denied", { status: 403 });
 
@@ -45,48 +46,43 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
     try { await Deno.writeTextFile(file, ""); } catch { /* egal */ }
   }
 
-  let customFiles = "";
+  const fileRow = (filePath: string, base: number, info: Deno.FileInfo): HtmlString =>
+    html`<tr itemid="${filePath}">
+      <td><a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base + 1)}</a>
+      <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
+      <td class=-remove style="cursor:pointer;padding-left:0">
+        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
+
+  const customFiles: HtmlString[] = [];
   for await (const { filePath } of walkDir(customPath)) {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;
-    const show = hee(filePath.slice(customPath.length + 1));
-    const src = hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath));
-    customFiles += `<tr itemid="${hee(filePath)}">
-      <td><a href="${src}" target="${encodeURIComponent(filePath)}">${show}</a>
-      <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
-      <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
+    customFiles.push(fileRow(filePath, customPath.length, info));
   }
 
-  let appFiles = "";
+  const appFiles: HtmlString[] = [];
   for await (const { filePath } of walkDir(modPath ?? "")) {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;
-    const show = hee(filePath.slice((modPath?.length ?? 0) + 1));
-    const src = hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath));
-    appFiles += `<tr itemid="${hee(filePath)}">
-      <td><a href="${src}" target="${encodeURIComponent(filePath)}">${show}</a>
-      <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
-      <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
+    appFiles.push(fileRow(filePath, modPath?.length ?? 0, info));
   }
 
   const module = node.vs.module;
-  let globalSettings = "";
+  let globalSettings: HtmlString | string = "";
   if (module && module in node.app.settings) {
     // SettingsEditor.mjs is loaded by panel.mjs
-    globalSettings = `<div class="-widgetHead -open" tabindex="0"><span class=-title>Global Settings</span></div>
-    <div class=-content><settings-editor source="/api/core/settings/${hee(module)}"></settings-editor></div>`;
+    globalSettings = html`<div class="-widgetHead -open" tabindex="0"><span class=-title>Global Settings</span></div>
+    <div class=-content><settings-editor source="/api/core/settings/${module}"></settings-editor></div>`;
   }
 
-  return `
+  return html`
   <div class=superuser-manager pid="${node}" style="display:flex;flex-flow:wrap;margin:-2px;">
     <div scope=custom style="margin:2px;flex:1 1 auto">
       <div class="-widgetHead -open">Custom Files</div>
       <div class=-content>
         <table class=-styled style="width:100%">
           <th colspan=3><input class=-create placeholder=create style="width:100%">
-          ${customFiles}
+          ${html.join(customFiles)}
         </table>
       </div>
     </div>
@@ -95,7 +91,7 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
       <div class=-content>
         <table class=-styled style="width:100%">
           <tr><th colspan=3><input class=-create placeholder=create style="width:100%">
-          ${appFiles}
+          ${html.join(appFiles)}
         </table>
       </div>
     </div>

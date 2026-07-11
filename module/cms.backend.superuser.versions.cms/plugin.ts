@@ -1,4 +1,4 @@
-import { hee, type App } from "../core/mod.ts";
+import { html, type HtmlString, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
@@ -12,7 +12,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 // Linked label for a node. Contents (type 'c') often have no title, so prefix
 // the containing page's title for context: "Page title › content label".
 // node.url() points contents at their page + anchor (and edit-links in editmode).
-async function nodeAnchor(node: Node, id: number): Promise<string> {
+async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
   const P = await node.app.cms.node(id);
   const own = (await (await P.title())?.string?.() ?? "").trim();
   let label = own || `#${id}`;
@@ -21,10 +21,10 @@ async function nodeAnchor(node: Node, id: number): Promise<string> {
     const inner = own || String(P.vs?.module ?? "") || `#${id}`;
     label = pageTitle ? `${pageTitle} › ${inner}` : inner;
   }
-  return `<a href="${hee(await P.url())}" target=_blank>${hee(label)}</a>`;
+  return html`<a href="${await P.url()}" target=_blank>${label}</a>`;
 }
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node): Promise<HtmlString> {
   const app = node.app;
   const db = app.db;
 
@@ -40,36 +40,36 @@ async function render(node: Node): Promise<string> {
         UNION ALL SELECT vp.id, l.time, u.email FROM _vers_page vp JOIN log l ON l.id=vp._vers_log LEFT JOIN sess s ON l.sess_id=s.id LEFT JOIN usr u ON s.usr_id=u.id WHERE vp._vers_log>0
       ) y
     ) x WHERE x.rn=1 ORDER BY x.time DESC LIMIT 20`.catch(() => []);
-  let recentRows = "";
+  const recentParts: HtmlString[] = [];
   for (const r of recent) {
     const anchor = await nodeAnchor(node, Number(r.page_id));
     const iso = new Date(Number(r.last) * 1000).toISOString();
-    recentRows += `<tr><td>${anchor}<td><u2-time datetime="${iso}" type=relative></u2-time><td>${hee(r.email ?? "guest")}`;
+    recentParts.push(html`<tr><td>${anchor}<td><u2-time datetime="${iso}" type=relative></u2-time><td>${r.email ?? "guest"}`);
   }
-  const recentBox = `
+  const recentBox = html.async`
 <div class=u2-card>
-  <div class=-head>${await app.t`Recently edited`}</div>
+  <div class=-head>${app.t`Recently edited`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <thead><tr><th>${await app.t`Node`}<th>${await app.t`Edited`}<th>${await app.t`By`}
-      <tbody>${recentRows || `<tr><td colspan=3>${await app.t`No history yet`}`}
+      <thead><tr><th>${app.t`Node`}<th>${app.t`Edited`}<th>${app.t`By`}
+      <tbody>${recentParts.length ? html.join(recentParts) : html.async`<tr><td colspan=3>${app.t`No history yet`}`}
     </table>
   </div>
 </div>`;
 
   // ── nodes with most text-version churn ─────────────────────────────────────
   const top = await db.query`SELECT page_id, COUNT(*) AS n FROM _vers_page_text WHERE _vers_log > 0 GROUP BY page_id ORDER BY n DESC LIMIT 20`.catch(() => []);
-  let topRows = "";
+  const topParts: HtmlString[] = [];
   for (const r of top) {
-    topRows += `<tr><td>${await nodeAnchor(node, Number(r.page_id))}<td style="text-align:right">${hee(String(r.n))}`;
+    topParts.push(html`<tr><td>${await nodeAnchor(node, Number(r.page_id))}<td style="text-align:right">${r.n}`);
   }
-  const topBox = `
+  const topBox = html.async`
 <div class=u2-card>
-  <div class=-head>${await app.t`Nodes with most history`}</div>
+  <div class=-head>${app.t`Nodes with most history`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <thead><tr><th>${await app.t`Node`}<th style="text-align:right">${await app.t`Text versions`}
-      <tbody>${topRows || `<tr><td colspan=2>${await app.t`No history yet`}`}
+      <thead><tr><th>${app.t`Node`}<th style="text-align:right">${app.t`Text versions`}
+      <tbody>${topParts.length ? html.join(topParts) : html.async`<tr><td colspan=2>${app.t`No history yet`}`}
     </table>
   </div>
 </div>`;
@@ -79,21 +79,21 @@ async function render(node: Node): Promise<string> {
     SELECT d.page_id FROM vers_cms_page_changed d
     JOIN vers_cms_page_changed l ON l.page_id = d.page_id AND l.space = 0
     WHERE d.space <> 0 AND d.changed_page > l.changed_page`.catch(() => []);
-  let changedRows = "";
+  const changedParts: HtmlString[] = [];
   for (const r of changed) {
-    changedRows += `<tr><td>${await nodeAnchor(node, Number(r.page_id))}`;
+    changedParts.push(html`<tr><td>${await nodeAnchor(node, Number(r.page_id))}`);
   }
-  const changedBox = `
+  const changedBox = html.async`
 <div class=u2-card style="flex-grow:0">
-  <div class=-head>${await app.t`Unpublished changes`}</div>
+  <div class=-head>${app.t`Unpublished changes`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table>
-      <tbody>${changedRows || `<tr><td>${await app.t`None`}`}
+      <tbody>${changedParts.length ? html.join(changedParts) : html.async`<tr><td>${app.t`None`}`}
     </table>
   </div>
 </div>`;
 
-  return `<div class=u2-flex>${recentBox}${topBox}${changedBox}</div>`;
+  return html.async`<div class=u2-flex>${recentBox}${topBox}${changedBox}</div>`;
 }
 
 export const cms = {

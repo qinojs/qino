@@ -1,26 +1,27 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee, getCtx, type App } from "../../core/mod.ts";
+import { html, type HtmlString, getCtx, type App } from "../../core/mod.ts";
 import { fieldOriginsByTable } from "../lib/analyze.ts";
 import { tableStatus } from "../lib/tableStatus.ts";
 
-function keyBadge(key: string): string {
-  if (key === "PRI") return ' <small class=u2-badge style="background:var(--yellow)">PRI</small>';
-  if (key === "UNI") return ' <small class=u2-badge style="background:var(--blue)">UNI</small>';
-  if (key === "MUL") return ' <small class=u2-badge style="background:var(--green)">IDX</small>';
-  return "";
+function keyBadge(key: string): HtmlString {
+  if (key === "PRI") return html.raw(' <small class=u2-badge style="background:var(--yellow)">PRI</small>');
+  if (key === "UNI") return html.raw(' <small class=u2-badge style="background:var(--blue)">UNI</small>');
+  if (key === "MUL") return html.raw(' <small class=u2-badge style="background:var(--green)">IDX</small>');
+  return html.raw("");
 }
 
-async function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<string> {
-  if (!inSchema)   return `<small class=u2-badge style="background:var(--red)">${await app.t`no schema`}</small>`;
-  if (uncovered)   return `<small class=u2-badge style="background:var(--orange)">${uncovered} ${await app.t`without schema`}</small>`;
-  return `<u2-ico inline icon=check_circle aria-label="ok" style="color:var(--green)">✓</u2-ico>`;
+function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<HtmlString> | HtmlString {
+  if (!inSchema)   return html.async`<small class=u2-badge style="background:var(--red)">${app.t`no schema`}</small>`;
+  if (uncovered)   return html.async`<small class=u2-badge style="background:var(--orange)">${uncovered} ${app.t`without schema`}</small>`;
+  return html`<u2-ico inline icon=check_circle aria-label="ok" style="color:var(--green)">✓</u2-ico>`;
 }
 
-export function renderTables(app: App, db: any, modules: Record<string, any>, table: string): Promise<string> {
+export function renderTables(app: App, db: any, modules: Record<string, any>, table: string): Promise<HtmlString> {
   return table ? tableDetail(app, db, modules, table) : tableOverview(app, db);
 }
 
-async function tableOverview(app: App, db: any): Promise<string> {
+async function tableOverview(app: App, db: any): Promise<HtmlString> {
+  const t = app.t;
   const tables = Object.values(db.tables ?? {}) as any[];
   const schemaProps = db.schema?.properties ?? {};
 
@@ -35,44 +36,45 @@ async function tableOverview(app: App, db: any): Promise<string> {
       const status = await tableStatus(db, table.name).catch(() => null);
       const uncovered = Object.keys(fields).filter(f => !(f in schemaFields)).length;
 
-      const bytes = status?.bytes != null ? `<u2-bytes>${status.bytes}</u2-bytes>` : "?";
+      const bytes = status?.bytes != null ? html`<u2-bytes>${status.bytes}</u2-bytes>` : "?";
       const primaries = Object.values(fields).filter((f: any) => f.isPrimary());
-      const primaryBadge = primaries.length === 0 ? `<small class=u2-badge style="background:var(--red)">${await app.t`none`}</small>`
-        : primaries.length === 1 ? `<small class=u2-badge style="background:var(--yellow)">${hee(String(primaries[0]))}</small>`
-        : primaries.map((f: any) => `<small class=u2-badge>${hee(String(f))}</small>`).join(" ");
+      const primaryBadge = primaries.length === 0 ? html.async`<small class=u2-badge style="background:var(--red)">${t`none`}</small>`
+        : primaries.length === 1 ? html`<small class=u2-badge style="background:var(--yellow)">${String(primaries[0])}</small>`
+        : html.join(primaries.map((f: any) => html`<small class=u2-badge>${String(f)}</small>`), " ");
       u.searchParams.set("table", table.name);
-      return `<tr data-table-name="${hee(table.name)}">
-        <td><a href="${hee(u.search)}">${hee(table.name)}</a>
-        <td style="text-align:right">${hee(String(status?.rows ?? "?"))}
+      return html.async`<tr data-table-name="${table.name}">
+        <td><a href="${u.search}">${table.name}</a>
+        <td style="text-align:right">${String(status?.rows ?? "?")}
         <td style="text-align:right">${bytes}
         <td style="text-align:right">${Object.keys(fields).length}
         <td data-value="${primaries.length}">${primaryBadge}
-        <td>${await statusBadge(app, table.name in schemaProps, uncovered)}`;
+        <td>${statusBadge(app, table.name in schemaProps, uncovered)}`;
     })
   );
 
-  return `<div class="u2-card -full">
-    <div class="-head">${await app.t`Tables`} (${tables.length})</div>
-    <div class="-body"><input type=search data-table-search placeholder="${await app.t`Search`}..." style="width:300px;max-width:100%"></div>
+  return html.async`<div class="u2-card -full">
+    <div class="-head">${t`Tables`} (${tables.length})</div>
+    <div class="-body"><input type=search data-table-search placeholder="${t`Search`}..." style="width:300px;max-width:100%"></div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead>
           <tr>
-            <th data-sort-handler>${await app.t`Table`}
-            <th data-sort-handler>${await app.t`Rows`}
-            <th data-sort-handler>${await app.t`Size`}
-            <th data-sort-handler>${await app.t`Fields`}
-            <th data-sort-handler>${await app.t`Primary`}
-            <th data-sort-handler>${await app.t`Status`}
-        <tbody>${rows.join("")}
+            <th data-sort-handler>${t`Table`}
+            <th data-sort-handler>${t`Rows`}
+            <th data-sort-handler>${t`Size`}
+            <th data-sort-handler>${t`Fields`}
+            <th data-sort-handler>${t`Primary`}
+            <th data-sort-handler>${t`Status`}
+        <tbody>${html.join(rows)}
       </table>
     </u2-table>
   </div>`;
 }
 
-async function tableDetail(app: App, db: any, modules: Record<string, any>, tableName: string): Promise<string> {
+async function tableDetail(app: App, db: any, modules: Record<string, any>, tableName: string): Promise<HtmlString> {
+  const t = app.t;
   const table = db.tables?.[tableName];
-  if (!table) return `<div class=u2-card><div class="-body">${await app.t`Table`} <b>${hee(tableName)}</b> ${await app.t`not found.`}</div></div>`;
+  if (!table) return html.async`<div class=u2-card><div class="-body">${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;
 
   const fields = await table.init();
   const schemaFields: Record<string, any> = table.schema?.additionalProperties?.properties ?? {};
@@ -82,39 +84,39 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
   const rows = Object.entries(fields as Record<string, any>).map(([fname, field]) => {
     const props = schemaFields[fname];
     const schemaCell = props
-      ? Object.entries(props).map(([k, v]) =>
-          `<span${k.startsWith("x-") ? ' style="opacity:.5"' : ""}>${hee(k)}: <code>${hee(JSON.stringify(v))}</code></span>`
-        ).join(" ")
+      ? html.join(Object.entries(props).map(([k, v]) =>
+          html`<span${k.startsWith("x-") ? html.raw(' style="opacity:.5"') : ""}>${k}: <code>${JSON.stringify(v)}</code></span>`
+        ), " ")
       : "–";
 
-    const originsCell = (origins[fname] ?? []).map(m => `<small class=u2-badge>${hee(m)}</small>`).join(" ");
+    const originsCell = html.join((origins[fname] ?? []).map(m => html`<small class=u2-badge>${m}</small>`), " ");
 
-    return `<tr${props ? "" : ' class=-no-schema-row'}>
-      <td style="font-family:monospace">${hee(fname)}${keyBadge(field.vs?.Key ?? "")}
-      <td style="font-family:monospace;font-size:.9em">${hee(field.vs?.Type ?? "")}
+    return html`<tr${props ? "" : html.raw(" class=-no-schema-row")}>
+      <td style="font-family:monospace">${fname}${keyBadge(field.vs?.Key ?? "")}
+      <td style="font-family:monospace;font-size:.9em">${field.vs?.Type ?? ""}
       <td>${field.vs?.Null === "YES" ? "NULL" : ""}
-      <td><code>${field.vs?.Default != null ? hee(String(field.vs.Default)) : ""}</code>
+      <td><code>${field.vs?.Default != null ? String(field.vs.Default) : ""}</code>
       <td style="font-size:.82em">${schemaCell}
       <td>${originsCell}`;
   });
 
   const meta = status
-    ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.rows ?? "?"))} ${await app.t`rows`} · ${hee(status.engine)} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
+    ? html.async`<span style="font-size:.85em;opacity:.6;margin-left:12px">${String(status.rows ?? "?")} ${t`rows`} · ${status.engine} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
     : "";
 
   const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables"); u.searchParams.delete("table");
-  return `<div class="u2-card -full">
-    <div class="-head"><a href="${hee(u.search)}">← ${await app.t`Tables`}</a> &nbsp; ${hee(tableName)} ${meta}</div>
+  return html.async`<div class="u2-card -full">
+    <div class="-head"><a href="${u.search}">← ${t`Tables`}</a> &nbsp; ${tableName} ${meta}</div>
     <table class=u2-table>
       <thead>
         <tr>
-          <th>${await app.t`Field`}
-          <th>${await app.t`Type`}
+          <th>${t`Field`}
+          <th>${t`Type`}
           <th>NULL
-          <th>${await app.t`Default`}
-          <th>${await app.t`Schema`}
-          <th>${await app.t`Module`}
-      <tbody>${rows.join("")}
+          <th>${t`Default`}
+          <th>${t`Schema`}
+          <th>${t`Module`}
+      <tbody>${html.join(rows)}
     </table>
   </div>`;
 }

@@ -1,17 +1,17 @@
-import { hee, getCtx } from "../../../core/mod.ts";
+import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
 import { cmsFrontend2WidgetAccordion } from "../../mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 import { $item } from "../../../../deps.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const db = app.db;
   const cms = node.cms;
   const ctx = getCtx();
-  
+
   const T = await node.title();
-  const titleVal = hee(await T.string());
-  const titleEdit = node.edit ? ` cmstxt=${T.id}` : "";
+  const titleVal = await T.string();
+  const titleEdit = node.edit ? html` cmstxt=${T.id}` : "";
 
   const modulePubPath = node.module?.dir ? node.module.dir + "pub/" : null;
   let svgUrl: string;
@@ -25,20 +25,18 @@ export default async function (node: Node): Promise<string> {
 
   const Module = db.table("module").entry(node.vs.module);
   const modules = node.vs.type === "p" ? await cms.getLayouts() : await cms.getModules();
-  let moduleOptions = "";
-  for (const name of Object.keys(modules)) {
-    moduleOptions += `<option value="${hee(name)}" ${name === node.vs.module ? "selected" : ""}>${name}`;
-  }
+  const moduleOptions = html.join(Object.keys(modules).map((name) =>
+    html`<option value="${name}" ${name === node.vs.module ? "selected" : ""}>${name}`));
 
   const Parent = await node.parent();
-  let parentHtml = "";
+  let parentHtml: HtmlString | string = "";
   if (Parent) {
     const parentType = Parent.vs?.type;
     let parentTitle = (await (await Parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(Parent);
     if (parentType === "c") parentTitle += ` ${Parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
-    parentHtml = `<div class=-editparent parent="${Parent}" page-type="${hee(parentType)}">
-      ${await app.t`Parent:`}
-      <a href="${hee(await Parent.url())}" style="font-weight:bold;">${parentTitle}</a>
+    parentHtml = await html.async`<div class=-editparent parent="${String(Parent)}" page-type="${parentType}">
+      ${app.t`Parent:`}
+      <a href="${await Parent.url()}" style="font-weight:bold;">${html.raw(parentTitle)}</a>
     </div>`;
   }
 
@@ -62,10 +60,10 @@ export default async function (node: Node): Promise<string> {
   accordions += await cmsFrontend2WidgetAccordion("extended", node, await app.t`Advanced`);
   if (await ctx.user?.get("superuser")) accordions += await cmsFrontend2WidgetAccordion("superuser", node, "Superuser");
 
-  return `<div class="-standalone content-manager" pid="${node}" page-type="${hee(node.vs.type)}" style="font-size:1.2em;margin-bottom:1em">
-  <div title="Nr.${node}">
+  return html.async`<div class="-standalone content-manager" pid="${String(node)}" page-type="${node.vs.type}" style="font-size:1.2em;margin-bottom:1em">
+  <div title="Nr.${String(node)}">
     <div class=-h1>
-      ${node.vs.type === "p" ? await app.t`Page` : await app.t`Content`}:&nbsp;
+      ${node.vs.type === "p" ? app.t`Page` : app.t`Content`}:&nbsp;
       <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="no title">
       <div style="margin-top:-15px">
         <svg class=-img fill="var(--cms-dark)" width="46" height="46" style="display:block">
@@ -74,7 +72,7 @@ export default async function (node: Node): Promise<string> {
       </div>
     </div>
     <div style="display:flex;margin-bottom:4px;">
-      <span title="${hee(String(await Module.get?.("name") ?? ""))}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
+      <span title="${String(await Module.get?.("name") ?? "")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
       <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-4px;margin-bottom:-3px;background:transparent">
         ${moduleOptions}
       </select>
@@ -82,5 +80,5 @@ export default async function (node: Node): Promise<string> {
   </div>
   ${parentHtml}
 </div>
-${accordions}`;
+${html.raw(accordions)}`;
 }

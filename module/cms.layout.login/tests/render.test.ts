@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { cms, name } from "../plugin.ts";
-import { u2Root } from "../../core/mod.ts";
+import { html, u2Root } from "../../core/mod.ts";
 
 Deno.test("cms.layout.login: metadata is wired", () => {
   assertEquals(name, "cms.layout.login");
@@ -13,10 +13,10 @@ Deno.test("cms.layout.login: render adds assets and wraps main content", async (
 
   const node = {
     title: () => ({ string: () => "Login" }),
-    cont: (name: string) => name === "main" ? { html: () => "<form>Form</form>" } : null,
+    cont: (name: string) => name === "main" ? { html: () => html.raw("<form>Form</form>") } : null,
   };
 
-  const out = await cms.node.render(node as any, { ctx });
+  const out = String(await cms.node.render(node as any, { ctx }));
   assertEquals(out.includes("<div id=title>Login</div>"), true);
   assertEquals(out.includes("<div id=subtitle>example.test</div>"), true);
   assertEquals(out.includes("<form>Form</form>"), true);

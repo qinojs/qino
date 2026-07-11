@@ -1,10 +1,10 @@
 import type { Node } from "../../../cms/mod.ts";
-import { hee, FileTransformer } from "../../../core/mod.ts";
+import { hee, html, type HtmlString, FileTransformer } from "../../../core/mod.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const files = await node.filesAndPlaceholders();
-  let html = "";
+  let out = "";
   for (const [name, F] of Object.entries(files)) {
     const ext = F.extension;
     const exists = await F.exists();
@@ -58,12 +58,12 @@ export default async function (node: Node): Promise<string> {
     const size = exists ? (await F.size() ?? 0) : 0;
     const sizeStr = size ? String(Math.round(size / 1024)) + " KB" : "";
 
-    html += `<tr itemid="${hee(name)}" draggable>
+    out += `<tr itemid="${hee(name)}" draggable>
       <td class=-preview title="${hee(await app.t`Click to replace the file`)}">${preview}
       <td class=-link>${linkHtml}${nameLabel}
       <td class=-size>${sizeStr}
       <td class=-handle u2-draghandle>
       <td class=-delete>`;
   }
-  return html;
+  return html.raw(out);
 }

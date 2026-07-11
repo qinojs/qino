@@ -7,7 +7,7 @@ export class LangManager {
 
   #app: App;
   #langs: string[] = [];   // all available languages, first = default
-  #txtsCache: Record<string, Record<string, string>> = {};
+  #txtsCache: Record<string, Promise<Record<string, string>>> = {};
 
   constructor(app: App) {
     this.#app = app;
@@ -94,10 +94,8 @@ export class LangManager {
 
   async #getTxts(ns: string, l: string): Promise<Record<string, string>> {
     const key = `${l}::${ns}`;
-    if (!this.#txtsCache[key]) {
-      this.#txtsCache[key] = await this.#app.db.indexCol`SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}` as Record<string, string>;
-    }
-    return this.#txtsCache[key];
+    // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
+    return this.#txtsCache[key] ??= this.#app.db.indexCol`SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}` as Promise<Record<string, string>>;
   }
 
   async #getTxt(string: string, ctx: Ctx): Promise<string> {

@@ -1,35 +1,36 @@
 // deno-lint-ignore-file no-explicit-any
-import { hee, type App } from "../../core/mod.ts";
+import { html, type App, type HtmlString } from "../../core/mod.ts";
 import { collectConflicts } from "../lib/analyze.ts";
 
-export async function renderConflicts(app: App, modules: Record<string, any>): Promise<string> {
+export async function renderConflicts(app: App, modules: Record<string, any>): Promise<HtmlString> {
+  const t = app.t;
   const conflicts = collectConflicts(modules);
 
   if (!conflicts.length) {
-    return `<div class=u2-card><div class=-body>${await app.t`No schema conflicts found.`}</div></div>`;
+    return html.async`<div class=u2-card><div class=-body>${t`No schema conflicts found.`}</div></div>`;
   }
 
   const rows = conflicts.map(({ table, field, prop, values }) => {
-    const valCells = values.map(({ module: m, value }) =>
-      `<div><b>${hee(m)}</b>: <code>${hee(JSON.stringify(value))}</code></div>`
-    ).join("");
-    return `<tr>
-      <td>${hee(table)}
-      <td>${hee(field)}
-      <td><code>${hee(prop)}</code>
+    const valCells = html.join(values.map(({ module: m, value }) =>
+      html`<div><b>${m}</b>: <code>${JSON.stringify(value)}</code></div>`
+    ));
+    return html`<tr>
+      <td>${table}
+      <td>${field}
+      <td><code>${prop}</code>
       <td>${valCells}`;
-  }).join("");
+  });
 
-  return `<div class="u2-card -full">
-    <div class="-head">${await app.t`Schema conflicts`} (${conflicts.length})</div>
+  return html.async`<div class="u2-card -full">
+    <div class="-head">${t`Schema conflicts`} (${conflicts.length})</div>
     <table class="u2-table -conflicts">
       <thead>
         <tr>
-          <th>${await app.t`Table`}
-          <th>${await app.t`Field`}
-          <th>${await app.t`Property`}
-          <th>${await app.t`Values per module`}
-      <tbody>${rows}
+          <th>${t`Table`}
+          <th>${t`Field`}
+          <th>${t`Property`}
+          <th>${t`Values per module`}
+      <tbody>${html.join(rows)}
     </table>
   </div>`;
 }

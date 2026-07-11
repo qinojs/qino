@@ -1,8 +1,8 @@
 import type { Node } from "../../../cms/mod.ts";
-import { hee, getCtx } from "../../../core/mod.ts";
+import { hee, html, type HtmlString, getCtx } from "../../../core/mod.ts";
 import type {} from "../../../mail/mod.ts";
 
-export default async function (node: Node, vars: { param?: Record<string, string> } = {}): Promise<string> {
+export default async function (node: Node, vars: { param?: Record<string, string> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
   const u = ctx.user;
@@ -23,10 +23,10 @@ export default async function (node: Node, vars: { param?: Record<string, string
       "Firstname": firstname,
       "Lastname":  lastname,
     };
-    const html = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
+    const mailHtml = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
       `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
     ).join("")}</dl>`;
-    const mail = await app.mail.create({ subject: "CMS feedback", replyTo: email, html });
+    const mail = await app.mail.create({ subject: "CMS feedback", replyTo: email, html: mailHtml });
     mail.addTo(feedbackEmail);
     if (!await mail.send()) throw new Error("CMS feedback could not be sent");
     ctx.settings.cms.feedback.text('');
@@ -39,51 +39,51 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const treeShowC = ctx.settings["cms.frontend.2"].ui.tree_show_c();
   const langVal = String(ctx.settings.core.lang_ns.cms() ?? "");
 
-  return `<div class=more-manager>
+  return html.async`<div class=more-manager>
   <div class=-standalone>
     <div class=-h1>
-      <span>${await app.t`Logged in as:`} ${hee(firstname + " " + lastname)}</span>
+      <span>${app.t`Logged in as:`} ${firstname + " " + lastname}</span>
       <div>
-        <button class=-tour>${await app.t`Start CMS tour`}</button>
-        <form method=post style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><button name=core_logout>${await app.t`log out`}</button></form>
+        <button class=-tour>${app.t`Start CMS tour`}</button>
+        <form method=post style="display:inline"><input type=hidden name=csrfToken value="${ctx.csrfToken}"><button name=core_logout>${app.t`log out`}</button></form>
       </div>
     </div>
   </div>
-  ${feedbackConfirmation}
-  <div class="-widgetHead -open"><span class=-title>${await app.t`Feedback / Support`}</span></div>
+  ${html.raw(feedbackConfirmation)}
+  <div class="-widgetHead -open"><span class=-title>${app.t`Feedback / Support`}</span></div>
   <div>
     <form class=-feedbackform>
-      <textarea placeholder="${await app.t`Message to:`} ${feedbackEmail}" name=msg required style="width:100%;height:200px">${hee(feedbackText)}</textarea>
+      <textarea placeholder="${app.t`Message to:`} ${feedbackEmail}" name=msg required style="width:100%;height:200px">${feedbackText}</textarea>
       <br>
-      <button style="padding:10px 50px;width:100%">${await app.t`send`}</button>
+      <button style="padding:10px 50px;width:100%">${app.t`send`}</button>
     </form>
   </div>
-  <div class=-widgetHead><span class=-title>${await app.t`Change password`}</span></div>
+  <div class=-widgetHead><span class=-title>${app.t`Change password`}</span></div>
   <div>
     <form class=-pwchange>
       <table style="width:215px" class=c1-padding>
-        <tr><td><input autocomplete=current-password style="width:100%" placeholder="${await app.t`old password`}" type=password name=old>
-        <tr><td><input autocomplete=new-password style="width:100%" placeholder="${await app.t`new password`}" type=password name=new>
-        <tr><td><input autocomplete=new-password style="width:100%" placeholder="${await app.t`repeat new password`}" type=password name=new2>
-        <tr><td><button>${await app.t`change`}</button>
+        <tr><td><input autocomplete=current-password style="width:100%" placeholder="${app.t`old password`}" type=password name=old>
+        <tr><td><input autocomplete=new-password style="width:100%" placeholder="${app.t`new password`}" type=password name=new>
+        <tr><td><input autocomplete=new-password style="width:100%" placeholder="${app.t`repeat new password`}" type=password name=new2>
+        <tr><td><button>${app.t`change`}</button>
       </table>
     </form>
   </div>
-  <div class=-widgetHead><span class=-title>${await app.t`CMS settings`}</span></div>
+  <div class=-widgetHead><span class=-title>${app.t`CMS settings`}</span></div>
   <div>
     <table class=-styled style="width:100%">
       <tr>
-        <td>${await app.t`Language`}
+        <td>${app.t`Language`}
         <td><select class=-changelang name='["core","lang_ns","cms"]'>
-          <option value="" ${langVal === "" ? "selected" : ""}>auto (${await app.t`like website`})
-          ${app.languages.all.map(l => `<option${langVal === l ? " selected" : ""}>${l}`).join("")}
+          <option value="" ${langVal === "" ? "selected" : ""}>auto (${app.t`like website`})
+          ${html.join(app.languages.all.map(l => html`<option${langVal === l ? " selected" : ""}>${l}`))}
         </select>
       <tr>
-        <td>${await app.t`Show content in structure?`}
+        <td>${app.t`Show content in structure?`}
         <td><input class=-tree-show-c type=checkbox ${treeShowC ? "checked" : ""}>
     </table>
   </div>
-  <div class=-widgetHead><span class=-title>${await app.t`About`}</span></div>
+  <div class=-widgetHead><span class=-title>${app.t`About`}</span></div>
   <div>
     <a href="https://vanilla-cms.org/de/home" target=_blank>vanilla-cms.org</a><br>
     Feedback welcome!

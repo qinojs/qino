@@ -1,8 +1,8 @@
-import { hee, getCtx, unixTime, type Ctx } from "../../core/mod.ts";
+import { hee, getCtx, html, type HtmlString, unixTime, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
-export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<string> {
-  ctx ??= getCtx();
+export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
+  ctx ??= getCtx(); // tobi: why? needed?
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
 
@@ -26,10 +26,10 @@ export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record
   const rootId = Number(admin.rootPageNode() ?? "0") || 1;
   const rootNode = await node.cms.node(rootId);
 
-  let html = "";
+  let out = "";
 
   await renderChildren(rootNode, 0);
-  return html;
+  return html.raw(out);
 
   async function loopConts(Page: Node): Promise<{ onlineStart: number; onlineEnd: number; access: number }> {
     const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
@@ -94,7 +94,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record
       // Searchable column
       const searchableCell = renderSearchable(SubPage, subAccess);
 
-      html += `
+      out += `
 <tr${isCont ? ' class=-isCont' : ''}>
   <td style="text-align:right; font-weight:bold">
     <a title="${await t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>

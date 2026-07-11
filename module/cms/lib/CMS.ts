@@ -1,6 +1,6 @@
 import { Node } from "./Node.ts";
 import { NONE, ADMIN } from "./access.ts";
-import { hee, HtmlString, getCtx, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
+import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 export class CMS {
   app: App;
@@ -141,7 +141,7 @@ export class CMS {
     const t = urls[ctx.lang]?.target;
     const target = t ? ` target="${hee(t)}"` : "";
     const title = await (await P.title()).string();
-    return new HtmlString(`<a${await this.link_attributes(P)}${target}>${title}</a>`);
+    return html.raw(`<a${await this.link_attributes(P)}${target}>${title}</a>`);
   }
 
   async link_attributes(node: Node | number): Promise<HtmlString> {
@@ -157,7 +157,7 @@ export class CMS {
     const titleObj = await P.title();
     const cmstxt = P.edit ? ` cmstxt=${titleObj?.id ?? ""}` : "";
     const ariaCurrent = MainNode === P ? " aria-current=page" : "";
-    return new HtmlString(href + cls + cmstxt + ariaCurrent);
+    return html.raw(href + cls + cmstxt + ariaCurrent);
   }
 
   // deno-lint-ignore no-explicit-any
@@ -223,7 +223,7 @@ export class CMS {
       if (v === false) continue;
       attrStr += v === true ? ` ${n}` : ` ${n}="${hee(v)}"`;
     }
-    return new HtmlString(`<${tag}${attrStr}>${text}</${tag}>`);
+    return html.raw(`<${tag}${attrStr}>${text}</${tag}>`);
   }
 
   async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {

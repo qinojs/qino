@@ -31,8 +31,8 @@ function guessKind(id: string): string {
 }
 
 // u2-badge; `color` is a CSS var name (e.g. "--green") to tint it.
-function badge(text: string, color = ""): string {
-  return `<small class="u2-badge"${color ? ` style="--color-dark:var(${color})"` : ""}>${hee(text)}</small>`;
+function badge(text: string, color = "", cls = ""): string {
+  return `<small class="u2-badge${cls ? ` ${cls}` : ""}"${color ? ` style="--color-dark:var(${color})"` : ""}>${hee(text)}</small>`;
 }
 
 // Kind <option>s with an empty (unassigned) first entry.
@@ -166,7 +166,7 @@ function providerBox(provider: Row, modelCount: number, key: string, open: boole
     ${hee(provider.name)}
     <span class=ai-summary-pills>
       ${badge(`${modelCount} Models`)}
-      ${badge(key ? "Key set" : "no key", key ? "--green" : "--red")}
+      ${badge(key ? `Key ${key.slice(0, 12)}…` : "no key", key ? "--green" : "--red", key ? "ai-key-preview" : "")}
     </span>
   </summary>
   <div class=ai-provider-panel>
@@ -177,7 +177,7 @@ function providerBox(provider: Row, modelCount: number, key: string, open: boole
           <td><input name=endpoint value="${hee(provider.endpoint)}">
         <tr>
           <th>API-Key
-          <td><input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" value="${hee(key)}" placeholder="API-Key (optional for local endpoints)">
+          <td><input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" placeholder="API-Key (optional for local endpoints)">
       </table>
       <div class=ai-autosave-state aria-live=polite></div>
     </form>

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { hee, getCtx } from "../core/mod.ts";
+import { hee, html, type HtmlString, getCtx } from "../core/mod.ts";
 
 export const name = "cms.cont.login4";
 
@@ -15,7 +15,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node): Promise<HtmlString | string> {
   const ctx = getCtx();
   const app = node.app;
   const edit = node.edit;
@@ -48,7 +48,7 @@ async function render(node: Node): Promise<string> {
     errorHtml = `<div class=loginError>${errorText}</div>`;
   }
 
-  let html = `<div>\n${errorHtml}\n`;
+  let out = `<div>\n${errorHtml}\n`;
 
   const usrIsLoggedIn = ctx.user;
 
@@ -67,7 +67,7 @@ async function render(node: Node): Promise<string> {
         const showSaveLogin = settings.saveLogin();
         const showPwField = !saveLogin;
 
-        html += `<form method=post>
+        out += `<form method=post>
   ${
           showSaveLogin
             ? `<input name=save_login type=checkbox value=1${saveLoginChecked}>`
@@ -87,7 +87,7 @@ async function render(node: Node): Promise<string> {
     const noAutofocus = settings["no autofocus"]();
     const showSaveLogin = settings.saveLogin();
 
-    html += `<form method=post>
+    out += `<form method=post>
   <input type=hidden name=csrfToken value="${csrfToken}">
   ${fixUser ? `<input type=hidden name=email value="${hee(fixUser)}">` : ""}
   <table>
@@ -135,14 +135,14 @@ async function render(node: Node): Promise<string> {
         action = ` action="${await P.url()}"`;
       }
     }
-    html += `<form method=post${action}>
+    out += `<form method=post${action}>
   <input type=hidden name=csrfToken value="${csrfToken}">
   <button name=core_logout>${await app.t`Log out`}</button>
 </form>\n`;
   }
 
-  html += "</div>";
-  return html;
+  out += "</div>";
+  return html.raw(out);
 }
 
 export const cms = {

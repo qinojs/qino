@@ -1,5 +1,6 @@
 .ai-provider-summary { display:flex; align-items:center; gap:.5rem; }
 .ai-summary-pills { margin-inline-start:auto; display:flex; gap:.25rem; }
+.ai-key-preview { font-family:monospace; }
 .ai-provider-panel { display:grid; gap:.5rem; }
 .ai-provider-form input { width:100%; box-sizing:border-box; }
 .ai-autosave-state { min-height:1.2em; color:var(--gray); }

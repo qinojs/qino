@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, unixTime, FileTransformer, type App, type DbField, type DbFile, type Ctx } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, sql, u2time, unixTime, FileTransformer, type App, type DbField, type DbFile, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -10,35 +10,34 @@ export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "DB Files", de: "DB Dateien" });
 }
 
-
 const IMG = new Set(["jpg","jpeg","gif","png","svg","webp"]);
 const VID = new Set(["mp4","webm","mov","avi","mkv"]);
 const AUD = new Set(["mp3","flac","ogg","aac","wav","m4a"]);
 const TXT = new Set(["txt","csv","json","xml","html","htm","css","js","ts","md","yaml","yml","svg"]);
 
-async function mediaPreview(f: DbFile, exists: boolean) {
-  if (!exists) return `<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
-  return `<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
+async function mediaPreview(f: DbFile, exists: boolean): Promise<HtmlString> {
+  if (!exists) return html`<u2-ico inline icon=cancel aria-label="not found" style="color:red">✗</u2-ico>`;
+  return html`<img src="${await f.url({w:70,h:40,max:true,page:1,frame:1})}" alt="">`;
 }
 
-async function mediaView(f: DbFile) {
+async function mediaView(f: DbFile): Promise<HtmlString | string> {
   const ext = f.extension;
   const url = await f.url();
-  let inner = "";
+  let inner: HtmlString | string = "";
   if (IMG.has(ext) && await FileTransformer.capabilities.magick)
-    inner = `<img src="${url}" class="-preview-img" alt="">`;
+    inner = html`<img src="${url}" class="-preview-img" alt="">`;
   else if (VID.has(ext))
-    inner = `<video src="${url}" controls style="max-width:100%"></video>`;
+    inner = html`<video src="${url}" controls style="max-width:100%"></video>`;
   else if (AUD.has(ext))
-    inner = `<audio src="${url}" controls></audio>`;
+    inner = html`<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
-    inner = `<iframe src="${url}" style="width:100%;height:600px;border:0"></iframe>`;
-  return inner ? `<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>` : "";
+    inner = html`<iframe src="${url}" style="width:100%;height:600px;border:0"></iframe>`;
+  return inner ? html`<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>` : "";
 }
 
-async function textView(f: DbFile) {
+async function textView(f: DbFile): Promise<HtmlString | string> {
   if (!TXT.has(f.extension)) return "";
-  return `<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${hee(String(await f.contents()))}</textarea></u2-code></div></div>`;
+  return html`<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${String(await f.contents())}</textarea></u2-code></div></div>`;
 }
 
 const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
@@ -50,7 +49,7 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
 const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 
 // list (filterable part): total + table rows, reloaded on search/order change
-async function list(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, any> } = {}): Promise<string> {
+async function list(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, any> } = {}): Promise<HtmlString> {
   ctx ??= getCtx();
   const app = node.app;
   const { db, dbFiles: fm } = app;
@@ -86,47 +85,48 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<s
     WHERE true${cond}
     ORDER BY ${sql.raw(orderBy)} LIMIT 1000`;
 
-  const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
+  const relHeaders = html.join(children.map((F: DbField) => html`<th title="${F.table.name+"."+F.name}">${F.table.name}`));
 
-  let trs = "";
+  const trs: Promise<HtmlString>[] = [];
   const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
     const exists = await f.exists();
     u.searchParams.set("id", String(row.id));
-    trs += `<tr u2-href>
-  <td class="-thumb">${await mediaPreview(f, !!exists)}
+    const cells = html.join(children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻")));
+    trs.push(html.async`<tr u2-href>
+  <td class="-thumb">${mediaPreview(f, !!exists)}
   <td>${row.id}
-  <td><a href="${hee(u.search)}">${hee(row.name??"")}${!exists?` <small style="color:red">${await app.t`missing`}</small>`:""}</a>
+  <td><a href="${u.search}">${row.name??""}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
-  ${children.map((_: DbField,i: number) => row[`r${i}`]?`<td title="${row[`r${i}`]}x">◼`:`<td>◻`).join("")}
-  <td>${u2time(row.init_time)}<br><small>${hee(row.usr_init_email??"")}</small>
-  <td>${u2time(row.edit_time)}<br><small>${hee(row.usr_edit_email??"")}</small>
+  ${cells}
+  <td>${html.raw(u2time(row.init_time))}<br><small>${row.usr_init_email??""}</small>
+  <td>${html.raw(u2time(row.edit_time))}<br><small>${row.usr_edit_email??""}</small>
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
-    <button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
+    <button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
-  return `
-<caption>${await app.t`Total`}: ${rows.length}</caption>
-<thead><tr><th>${await app.t`File`}<th>${await app.t`ID`}<th>${await app.t`Name`}<th>${await app.t`Size`}${relHeaders}<th>${await app.t`Created`}<th>${await app.t`Changed`}<th>${await app.t`Used`}<th>${await app.t`Pub`}<th>
-<tbody>${trs}`;
+  return html.async`
+<caption>${app.t`Total`}: ${rows.length}</caption>
+<thead><tr><th>${app.t`File`}<th>${app.t`ID`}<th>${app.t`Name`}<th>${app.t`Size`}${relHeaders}<th>${app.t`Created`}<th>${app.t`Changed`}<th>${app.t`Used`}<th>${app.t`Pub`}<th>
+<tbody>${html.join(await Promise.all(trs))}`;
 }
 
-async function runAction(node: Node, doName: string): Promise<string> {
+async function runAction(node: Node, doName: string): Promise<HtmlString | string> {
   if (doName === "delete_unlinked") {
     const r = await deleteUnlinkedFs(node);
-    return `${r.deleted} ${await node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;
+    return html.async`${r.deleted} ${node.app.t`files deleted`} <small>(<u2-bytes>${r.size}</u2-bytes>)</small>`;
   }
   if (doName === "delete_unlinked_db") {
     const r = await deleteUnlinkedDb(node.app);
-    return `${r.deleted} ${await node.app.t`DB entries deleted`}`;
+    return html.async`${r.deleted} ${node.app.t`DB entries deleted`}`;
   }
   return "";
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
   const { dbFiles: fm } = app;
@@ -136,34 +136,34 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   if (vars.delete) await (await fm.file(Number(vars.delete))).remove();
 
   const message = vars.do ? await runAction(node, String(vars.do)) : "";
-  const orderOpts = ORDERS.map(o => `<option>${o}`).join("");
+  const orderOpts = html.join(ORDERS.map(o => html`<option>${o}`));
 
-  return `
+  return html.async`
 <div class="u2-flex">
   <div class="u2-card -sidebar">
-    <div class="-head">${await app.t`Filter`}</div>
+    <div class="-head">${app.t`Filter`}</div>
     <div class="-body">
       <form data-filter>
-        <label>${await app.t`Search`}<br><input name=search></label><br><br>
-        <label>${await app.t`Order`}<br><select name=order>${orderOpts}</select></label>
+        <label>${app.t`Search`}<br><input name=search></label><br><br>
+        <label>${app.t`Order`}<br><select name=order>${orderOpts}</select></label>
       </form>
     </div>
-    <div class="-head">${await app.t`Actions`}</div>
+    <div class="-head">${app.t`Actions`}</div>
     <div class="-body">
-      ${message ? `<p>${message}</p>` : ""}
-      <button data-reload='{"do":"delete_unlinked"}'>${await app.t`Delete files without DB entry`}</button><br>
-      <small>${await app.t`Files in version history will not be deleted.`}</small><br><br>
-      <button data-reload='{"do":"delete_unlinked_db"}'>${await app.t`Delete DB entries without link`}</button><br>
-      <small>${await app.t`Warning: only files older than 7 days.`}</small>
+      ${message ? html`<p>${message}</p>` : ""}
+      <button data-reload='{"do":"delete_unlinked"}'>${app.t`Delete files without DB entry`}</button><br>
+      <small>${app.t`Files in version history will not be deleted.`}</small><br><br>
+      <button data-reload='{"do":"delete_unlinked_db"}'>${app.t`Delete DB entries without link`}</button><br>
+      <small>${app.t`Warning: only files older than 7 days.`}</small>
     </div>
   </div>
   <div class="u2-card -main" style="max-height:90vh">
-    <table class="u2-table -Sticky" cms-part=list>${await list(node, { ctx, vars: {} })}</table>
+    <table class="u2-table -Sticky" cms-part=list>${list(node, { ctx, vars: {} })}</table>
   </div>
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<string> {
+async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
 
@@ -172,7 +172,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
   console.log(row)
-  if (!row) return `<div>${await app.t`File not found`}</div>`;
+  if (!row) return html.async`<div>${app.t`File not found`}</div>`;
 
   const f = await fm.file(id, row);
   if (get.set_name)   await f.setVs({ name: get.set_name });
@@ -181,10 +181,12 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const exists = await f.exists();
 
-  const linksHtml = (await Promise.all(fileChildren(node).map(async (Field: DbField) => {
+  const linkParts = await Promise.all(fileChildren(node).map(async (Field: DbField) => {
     const rows = await db.query`SELECT * FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)}=${id}`;
-    return rows.map((lr) => `<div>${hee(Field.table.name+"."+Field.name)}: ${hee(JSON.stringify(lr))}</div>`).join("");
-  }))).join("") || "<div class=-body>none</div>";
+    return html.join(rows.map((lr) => html`<div>${Field.table.name+"."+Field.name}: ${JSON.stringify(lr)}</div>`));
+  }));
+  const linkInner = html.join(linkParts);
+  const linksHtml = String(linkInner) ? linkInner : html`<div class=-body>none</div>`;
 
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
   const dupeU = ctx.req.url.toURL();
@@ -192,39 +194,39 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const preview = exists ? await mediaView(f) : "";
   const text = exists ? await textView(f) : "";
 
-  return `
+  return html.async`
 <div class="u2-flex">
 
   <div class=u2-flex style="flex-direction:column; ">
     <div class="u2-card" style="flex:0 0 auto">
-      <div class="-head">${hee(row.name??"")}</div>
-      ${!exists?`<div class="-body" style="color:red">${await app.t`file missing on disk!`}</div>`:""}
+      <div class="-head">${row.name??""}</div>
+      ${!exists ? html.async`<div class="-body" style="color:red">${app.t`file missing on disk!`}</div>` : ""}
       <table class="u2-table -Fields">
-        <tr><th>${await app.t`ID`}<td>${row.id}
+        <tr><th>${app.t`ID`}<td>${row.id}
         <tr>
-          <th>${await app.t`Name`}
-          <td><input value="${hee(row.name??"")}" data-set="set_name">
+          <th>${app.t`Name`}
+          <td><input value="${row.name??""}" data-set="set_name">
         <tr>
-          <th>${await app.t`Public`}
+          <th>${app.t`Public`}
           <td><input type=checkbox ${row.access?"checked":""} data-set="set_public">
         <tr>
-          <th>${await app.t`Mime`}
-          <td><input value="${hee(row.mime??"")}" data-set="set_mime">
-        <tr><th>${await app.t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
-        <tr><th>${await app.t`MD5`}<td><code>${hee(row.md5??"")}</code>
-        <tr><th>${await app.t`URL`}<td><a href="${hee(await f.url())}" target=_blank data-url>${await app.t`open`}</a> <a href="${hee(await f.url({dl:true}))}" download>${await app.t`download`}</a> <button data-copy-url>${await app.t`copy url`}</button>
+          <th>${app.t`Mime`}
+          <td><input value="${row.mime??""}" data-set="set_mime">
+        <tr><th>${app.t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
+        <tr><th>${app.t`MD5`}<td><code>${row.md5??""}</code>
+        <tr><th>${app.t`URL`}<td><a href="${f.url()}" target=_blank data-url>${app.t`open`}</a> <a href="${f.url({dl:true})}" download>${app.t`download`}</a> <button data-copy-url>${app.t`copy url`}</button>
       </table>
     </div>
 
     <div class="u2-card" style="flex:0 0 auto">
-      <div class=-head>${await app.t`Duplicates`}</div>
+      <div class=-head>${app.t`Duplicates`}</div>
       ${dupes.length
-          ? `<table class=u2-table><tr><th>${await app.t`ID`}<th>${await app.t`Name`}${dupes.map((d) => { dupeU.searchParams.set("id", String(d.id)); return `<tr><td><a href="${hee(dupeU.search)}">${d.id}</a><td>${hee(d.name)}`; }).join("")}</table>`
-          : `<div class=-body>${await app.t`none`}</div>`}
+          ? html.async`<table class=u2-table><tr><th>${app.t`ID`}<th>${app.t`Name`}${html.join(dupes.map((d) => { dupeU.searchParams.set("id", String(d.id)); return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`; }))}</table>`
+          : html.async`<div class=-body>${app.t`none`}</div>`}
     </div>
 
     <div class="u2-card" style="flex:0 0 auto">
-      <div class=-head>${await app.t`Links`}</div>
+      <div class=-head>${app.t`Links`}</div>
       ${linksHtml}
     </div>
   </div>
@@ -267,11 +269,11 @@ async function deleteUnlinkedDb(app: App) {
   return { deleted };
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const r = await app.db.row`SELECT count(*) AS n, sum(size) AS bytes FROM file`.catch(() => undefined);
   const n = Number(r?.n ?? 0), bytes = Number(r?.bytes ?? 0);
-  return `<div class=-body>
-    <b>${n.toLocaleString("de-CH")}</b> ${await app.t`files`}<br>
+  return html.async`<div class=-body>
+    <b>${n.toLocaleString("de-CH")}</b> ${app.t`files`}<br>
     <small><u2-bytes>${bytes}</u2-bytes></small>
   </div>`;
 }

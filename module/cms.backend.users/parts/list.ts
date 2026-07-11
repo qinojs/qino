@@ -1,11 +1,11 @@
-import { hee, sqlSearchHelper, sql, getCtx, type Ctx } from "../../core/mod.ts";
+import { html, type HtmlString, sqlSearchHelper, sql, getCtx, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
   return !!(await ctx.user?.get("superuser")) || !!(node?.settings.allow_login_as());
 }
 
-export async function list(_node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<string> {
+export async function list(_node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   ctx ??= getCtx();
   const db = ctx.app.db;
 
@@ -27,40 +27,40 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?
 
   const pageUrl = node ? await (await node.page()).url() : "";
 
-  let html = "";
+  const parts: Array<HtmlString | Promise<HtmlString>> = [];
   for (const vs of rows) {
     const lastOnlineIso = vs.last_online ? new Date(Number(vs.last_online) * 1000).toISOString() : "";
 
     const detailUrl = pageUrl + (pageUrl.includes("?") ? "&" : "?") + "id=" + vs.id;
     const isEmail = vs.email && /@/.test(vs.email);
     const emailCell = isEmail
-      ? `<a href="mailto:${hee(vs.email)}">${hee(vs.email)}</a>`
-      : hee(vs.email ?? "");
+      ? html`<a href="mailto:${vs.email}">${vs.email}</a>`
+      : vs.email ?? "";
 
     const loginAsTd = canLoginAs
-      ? `<td class=-loginAs><u2-ico icon=switch_account aria-label="Login as user">⇄</u2-ico>`
+      ? html.raw('<td class=-loginAs><u2-ico icon=switch_account aria-label="Login as user">⇄</u2-ico>')
       : "";
 
-    html += `
-<tr itemid=${hee(String(vs.id))} data-c1-href="${hee(detailUrl)}">
-  <td> ${hee(String(vs.id))}
+    parts.push(html`
+<tr itemid=${String(vs.id)} data-c1-href="${detailUrl}">
+  <td> ${String(vs.id)}
   <td>
-    <a href="${hee(detailUrl)}">${hee((vs.firstname ?? "") + " " + (vs.lastname ?? ""))}</a>
+    <a href="${detailUrl}">${(vs.firstname ?? "") + " " + (vs.lastname ?? "")}</a>
   <td> ${emailCell}
-  <td> ${hee(vs.company ?? "")}
+  <td> ${vs.company ?? ""}
   <td> ${vs.active ? "yes" : "no"}
-  <td> ${hee(String(vs.num_sess ?? 0))}
+  <td> ${String(vs.num_sess ?? 0)}
   <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
     ${loginAsTd}
   <td>
-    <a href="${hee(detailUrl)}">
+    <a href="${detailUrl}">
       <u2-ico icon=edit>🖉</u2-ico>
     </a>
   <td class=-delete>
-    <button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
+    <button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
-  if (rows.length === 200) html += `\n<tr><td colspan=10>${await ctx.app.t`Only the first 200 results are shown.`}`;
+  if (rows.length === 200) parts.push(html.async`\n<tr><td colspan=10>${ctx.app.t`Only the first 200 results are shown.`}`);
 
-  return html;
+  return html.join(await Promise.all(parts));
 }

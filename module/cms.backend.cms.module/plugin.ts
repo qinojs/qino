@@ -1,4 +1,4 @@
-import { hee, getCtx, type App, type Ctx } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -12,9 +12,10 @@ export async function install({ app }: { app: App }) {
 /** Short type badge from the module name. */
 const modType = (n: string) => n.match(/^cms\.(cont|layout|backend|frontend)\./)?.[1] ?? "";
 
-async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<string> {
+async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   ctx ??= getCtx();
   const app = node.app;
+  const t = app.t;
   const db = app.db;
 
   // inline edit: set a module's cms_access level
@@ -23,7 +24,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record
     await db.query`UPDATE module SET cms_access = ${level} WHERE name = ${String(vars.set_access)}`;
   }
 
-  const levels = [await app.t`disabled`, await app.t`read only`, await app.t`editors`, await app.t`admins`];
+  const levels = [await t`disabled`, await t`read only`, await t`editors`, await t`admins`];
 
   const rows = await db.query`
     SELECT m.name, m.cms_access,
@@ -32,7 +33,8 @@ async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record
   const byName = new Map(rows.map((r) => [String(r.name), r]));
 
   // only imported modules that render content (export cms.node.render)
-  let trs = "", total = 0;
+  const trs: Array<HtmlString | Promise<HtmlString>> = [];
+  let total = 0;
   for (const modName of Object.keys(app.modules.all()).sort()) {
     const mod = app.modules.get(modName)!;
     if (!mod.plugin.cms?.node?.render) continue;
@@ -40,37 +42,35 @@ async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record
     if (!row) continue;
     total++;
     const def = mod.plugin.cms.access ?? 1;
-    const opts = levels.map((label, i) =>
-      `<option value=${i} ${i === Number(row.cms_access) ? "selected" : ""}>${i} · ${label}`).join("");
-    trs += `<tr>
-      <td>${hee(modName)}
+    const opts = html.join(levels.map((label, i) =>
+      html`<option value=${i} ${i === Number(row.cms_access) ? "selected" : ""}>${i} · ${label}`));
+    trs.push(html.async`<tr>
+      <td>${modName}
       <td>${modType(modName)}
       <td style="text-align:right">${Number(row.used) || ""}
-      <td><select class=u2-unstyle data-access="${hee(modName)}">${opts}</select>
-        ${def !== Number(row.cms_access) ? `<small>(${await app.t`default`}: ${def})</small>` : ""}`;
+      <td><select class=u2-unstyle data-access="${modName}">${opts}</select>
+        ${def !== Number(row.cms_access) ? html.async`<small>(${t`default`}: ${def})</small>` : ""}`);
   }
 
-  return `
+  return html.async`
 <div class="u2-card -main" style="max-height:90vh; overflow:auto; flex-grow:0">
   <table class="u2-table -Sticky">
     <thead><tr>
-      <th>${await app.t`Module`}
-      <th>${await app.t`Type`}
-      <th>${await app.t`Used`}
-      <th>${await app.t`Access`}
-    <tbody>${trs}
+      <th>${t`Module`}
+      <th>${t`Type`}
+      <th>${t`Used`}
+      <th>${t`Access`}
+    <tbody>${html.join(await Promise.all(trs))}
     <tfoot><tr>
-      <td colspan=4>${await app.t`Total`}: ${total}
+      <td colspan=4>${t`Total`}: ${total}
   </table>
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one`SELECT count(*) FROM module`);
-  const disabled = Number(await app.db.one`SELECT count(*) FROM module WHERE cms_access = 0`);
-  return `<div class=-body>
-    <b>${total}</b> ${await app.t`modules`}<br>
-    <small>${disabled} ${await app.t`disabled`}</small>
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div class=-body>
+    <b>${app.db.one`SELECT count(*) FROM module`}</b> ${app.t`modules`}<br>
+    <small>${app.db.one`SELECT count(*) FROM module WHERE cms_access = 0`} ${app.t`disabled`}</small>
   </div>`;
 }
 

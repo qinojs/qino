@@ -15,7 +15,9 @@ export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
 
 // HTML & general utilities
-export { hee, u2time, unixTime, HtmlString, html, Output, uid, urlize, clientIp, sqlSearchHelper, itemReadDeep, u2Root, contentDisposition } from "./lib/util.ts";
+export { hee, u2time, unixTime, html, Output, uid, urlize, clientIp, sqlSearchHelper, itemReadDeep, u2Root, contentDisposition } from "./lib/util.ts";
+// HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
+export type { HtmlString } from "./lib/util.ts";
 
 // Schema
 export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";

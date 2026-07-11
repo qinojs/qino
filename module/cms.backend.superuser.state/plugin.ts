@@ -1,5 +1,5 @@
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, hee, type App } from "../core/mod.ts";
+import { getCtx, hee, html, type HtmlString, type App } from "../core/mod.ts";
 import { dump, $item } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -12,10 +12,10 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });
 }
 
-async function render(node: Node): Promise<string> {
-  const stateHtml = await renderState(node);
+function render(node: Node): HtmlString {
+  const stateHtml = renderState(node);
 
-  return `<div class=u2-flex>
+  return html`<div class=u2-flex>
   <div class="u2-card" style="flex:1 1 100%">
     <div class="-head">State</div>
     <div class="-body" style="flex:1 1 100%; xdisplay:flex; gap:8px; align-items:start; flex-wrap:wrap">
@@ -26,29 +26,29 @@ async function render(node: Node): Promise<string> {
 </div>`;
 }
 
-function renderState(node: Node): string {
+function renderState(node: Node): HtmlString {
   const ctx = getCtx();
   ctx.res.html.scripts.add(ctx.req.modulePath + "cms.backend.superuser.state/pub/state.mjs");
   ctx.res.html.importMap.set(dumpJs, dumpJs); // ugly
   ctx.res.csp["script-src"]["https://jsr.io/@nuxodin/"] = true;
-  return `
+  return html`
     ${dumpBox("Server / app", node.app, 2)}
     ${dumpBox("Context", ctx, 2)}
     ${clientCtxBox("Client / ctx (qino.js)")}`;
 }
 
 // empty box, filled client-side by pub/state.mjs with dump(getCtx())
-function clientCtxBox(title: string): string {
-  return `<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
-  <div class="-head">${hee(title)}</div>
+function clientCtxBox(title: string): HtmlString {
+  return html`<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
+  <div class="-head">${title}</div>
   <div class="-body" id="qg-client-ctx" style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
 </div>`;
 }
 
-function dumpBox(title: string, value: unknown, depth: number): string {
-  let html = "";
+function dumpBox(title: string, value: unknown, depth: number): HtmlString {
+  let out = "";
   try {
-    html = dump(value, {
+    out = dump(value, {
       depth,
       inherited: true,
       symbols: true,
@@ -57,11 +57,11 @@ function dumpBox(title: string, value: unknown, depth: number): string {
       customRender: safeRender,
     });
   } catch (err) {
-    html = `<pre>${hee(err instanceof Error ? err.stack ?? err.message : String(err))}</pre>`;
+    out = `<pre>${hee(err instanceof Error ? err.stack ?? err.message : String(err))}</pre>`;
   }
-  return `<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
-  <div class="-head">${hee(title)}</div>
-  <div class="-body" style="overflow:auto; max-height:90vh">${html}</div>
+  return html`<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
+  <div class="-head">${title}</div>
+  <div class="-body" style="overflow:auto; max-height:90vh">${html.raw(out)}</div>
 </div>`;
 }
 
@@ -71,13 +71,13 @@ function safeRender(value: unknown): string | undefined {
   return `<function>function <b>${hee(value.name ?? "")}</b>(${hee(value.length)})</function>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const rss = Deno.memoryUsage().rss;
   const upSec = Math.floor(performance.now() / 1000);
   const h = Math.floor(upSec / 3600), m = Math.floor((upSec % 3600) / 60);
-  return `<div class=-body>
-    <b><u2-bytes>${rss}</u2-bytes></b> ${await app.t`memory`}<br>
-    <small>${await app.t`uptime`} ${h}h ${m}m</small>
+  return html.async`<div class=-body>
+    <b><u2-bytes>${rss}</u2-bytes></b> ${app.t`memory`}<br>
+    <small>${app.t`uptime`} ${h}h ${m}m</small>
   </div>`;
 }
 

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, html, HtmlString, sql, type App } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, sql, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { askDbAi } from "./lib/ai.ts";
 
@@ -13,13 +13,10 @@ const KEYWORDS = "SELECT FROM WHERE GROUP BY ORDER LIMIT OFFSET INSERT INTO VALU
 
 type Table = { name: string; fields: { name: string; type: string }[] };
 
-const raw = (s: string): HtmlString => new HtmlString(s);
-const join = (parts: Array<HtmlString | string>): HtmlString => new HtmlString(parts.join(""));
-
 export async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get("superuser")) return raw("<div></div>");
+  if (!await ctx.user?.get("superuser")) return html.raw("<div></div>");
 
   const tables = await buildSchema(app);
   const token = ctx.req.body?.csrfToken === ctx.csrfToken;
@@ -49,7 +46,7 @@ export async function render(node: Node): Promise<HtmlString> {
   </form>
   ${result}
   ${renderHelper(app, tables)}
-  <script type=application/json class=-schema>${raw(JSON.stringify({ keywords: KEYWORDS, tables }))}</script>
+  <script type=application/json class=-schema>${html.raw(JSON.stringify({ keywords: KEYWORDS, tables }))}</script>
 </div>`;
 }
 
@@ -89,8 +86,8 @@ async function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString
 
   const cols = Object.keys(rows[0]);
   const shown = rows.slice(0, MAX_ROWS);
-  const head = join(cols.map(c => html`<th>${c}`));
-  const body = join(shown.map(r => html`<tr>${join(cols.map(c => html`<td>${cell(r[c])}`))}`));
+  const head = html.join(cols.map(c => html`<th>${c}`));
+  const body = html.join(shown.map(r => html`<tr>${html.join(cols.map(c => html`<td>${cell(r[c])}`))}`));
   const more = rows.length > MAX_ROWS ? html.async` · ${app.t`showing first`} ${MAX_ROWS}` : "";
 
   return await html.async`<div class="u2-card -full -result">
@@ -104,7 +101,7 @@ async function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString
 }
 
 function cell(v: unknown): unknown {
-  if (v == null) return raw(`<span class=-null>NULL</span>`);
+  if (v == null) return html.raw(`<span class=-null>NULL</span>`);
   if (v instanceof Date) return v.toISOString();
   if (typeof v === "object") return html`<code>${JSON.stringify(v)}</code>`;
   return v;
@@ -153,8 +150,8 @@ async function rowCounts(app: App): Promise<Record<string, number>> {
 
 // Reference list, clickable to insert into the editor.
 function renderHelper(app: App, tables: Table[]): Promise<HtmlString> {
-  const items = join(tables.map((t) => {
-    const fieldList = join(t.fields.map((f) =>
+  const items = html.join(tables.map((t) => {
+    const fieldList = html.join(t.fields.map((f) =>
       html`<button type=button class=-field data-field="${f.name}" title="${f.type}">${f.name}</button>`
     ));
     return html`<details class=-table>

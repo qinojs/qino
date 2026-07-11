@@ -1,6 +1,7 @@
+import { html, type HtmlString } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString | string> {
   if ((await node.access()) < 3) return "";
   const P = await node.accessInheritParent();
   const isPublic = await P.isPublic();
@@ -11,5 +12,5 @@ export default async function (node: Node): Promise<string> {
     if (all.access_2) number += `<span class="-info -access-2-bg">${all.access_2}</span>`;
     if (all.access_3) number += `<span class="-info -access-3-bg">${all.access_3}</span>`;
   }
-  return `<span class=-title>${await node.app.t`Group access`}</span> ${number}`;
+  return html.async`<span class=-title>${node.app.t`Group access`}</span> ${html.raw(number)}`;
 }

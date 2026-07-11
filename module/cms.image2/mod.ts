@@ -1,18 +1,18 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, HtmlString, magickIdentify, isMagickAvailable, getCtx, type DbFile } from "../core/mod.ts";
+import { hee, html, magickIdentify, type HtmlString, isMagickAvailable, getCtx, type DbFile } from "../core/mod.ts";
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
   ctx.res.html.legacyScripts.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.js");
   ctx.res.html.styles.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.css");
-  if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return new HtmlString("");
+  if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return html.raw("");
   options["quality"] ||= "85";
   delete options["if"];
-  return new HtmlString(await html(dbFile, options, ctx.app.appPATH));
+  return html.raw(await imageHtml(dbFile, options, ctx.app.appPATH));
 }
 
-async function html(dbFile: DbFile, options: Record<string, any>, appPATH: string): Promise<string> {
+async function imageHtml(dbFile: DbFile, options: Record<string, any>, appPATH: string): Promise<string> {
   const data = await getData(dbFile, options, appPATH);
   const w = data.w || 1;
   const h = data.h || 1;

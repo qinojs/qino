@@ -1,4 +1,4 @@
-import { getCtx, hee } from "../core/mod.ts";
+import { getCtx, html, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { renderTables } from "./views/tables.ts";
 import { renderDiff } from "./views/diff.ts";
@@ -14,17 +14,17 @@ const VIEWS = [
 
 type ViewKey = typeof VIEWS[number]["key"];
 
-export async function render(node: Node): Promise<string> {
+export async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get("superuser")) return "<div></div>";
+  if (!await ctx.user?.get("superuser")) return html.raw("<div></div>");
 
   const { db } = app;
   const modules = app.modules.all();
   const view = (ctx.req.query.view ?? "tables") as ViewKey;
   const table = ctx.req.query.table ?? "";
 
-  const dispatch: Record<ViewKey, () => Promise<string> | string> = {
+  const dispatch: Record<ViewKey, () => Promise<HtmlString | string> | HtmlString | string> = {
     tables:    () => renderTables(app, db, modules, table),
     diff:      () => renderDiff(app, db),
     modules:   () => renderModules(app, modules),
@@ -32,15 +32,14 @@ export async function render(node: Node): Promise<string> {
   };
 
   const u = ctx.req.url.toURL(); u.searchParams.delete("table");
-  const nav = await Promise.all(VIEWS.map(async ({ key, label }) => {
+  const nav = html.join(await Promise.all(VIEWS.map(({ key, label }) => {
     u.searchParams.set("view", key);
-    const href = hee(u.search);
-    return `<a class="-nav-item${view === key ? " -active" : ""}" href="${href}">${await app.t`${label}`}</a>`;
-  })).then(a => a.join(""));
+    return html.async`<a class="-nav-item${view === key ? " -active" : ""}" href="${u.search}">${app.t`${label}`}</a>`;
+  })));
 
   const content = await (dispatch[view] ?? dispatch.tables)();
 
-  return `<div>
+  return html.async`<div>
   <div class=u2-card>
     <div class="-head">DB Manager</div>
     <nav class="-nav">${nav}</nav>

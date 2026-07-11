@@ -1,32 +1,30 @@
 import type { Node } from "../cms/mod.ts";
-import { u2Root, type Ctx } from "../core/mod.ts";
+import { html, u2Root, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.layout.login";
 
-async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
-  const html = ctx.res.html;
-  html.styles.add(u2Root + "css/norm/norm.css");
-  html.styles.add(u2Root + "css/base/base.css");
-  html.scripts.add(u2Root + "u2/auto.js");
+  const resHtml = ctx.res.html;
+  resHtml.styles.add(u2Root + "css/norm/norm.css");
+  resHtml.styles.add(u2Root + "css/base/base.css");
+  resHtml.scripts.add(u2Root + "u2/auto.js");
 
-  html.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
-  html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
-  html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
+  resHtml.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
+  resHtml.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
+  resHtml.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 
   const host = ctx.req.header("host") ?? "";
-  const titleObj = await node.title();
-  const title = await titleObj.string();
-  const mainCont = await node.cont("main");
+  const title = await (await node.title()).string();
 
-  return `
+  return html.async`
   <div id=container class=qgCMS>
     <div id=head>
       <div id=title>${title}</div>
       <div id=subtitle>${host}</div>
     </div>
     <div id=content>
-      ${await mainCont.html()}
+      ${node.cont("main")}
     </div>
   </div>`;
 }

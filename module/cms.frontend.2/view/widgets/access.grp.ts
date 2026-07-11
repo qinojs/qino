@@ -1,7 +1,8 @@
+import { html, type HtmlString } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
-export default async function (node: Node): Promise<string> {
-  const t = node.app.languages.t;
+export default async function (node: Node): Promise<HtmlString> {
+  const t = node.app.t;
   const isNull = node.vs.access === null;
   const P = await node.accessInheritParent();
 
@@ -16,11 +17,11 @@ export default async function (node: Node): Promise<string> {
     inner = `${searchInput}<div widget="access.grp.list">${listHtml}</div>`;
   }
 
-  return `<div class=access-groups-manager pid=${node}>
+  return html.async`<div class=access-groups-manager pid=${String(node)}>
   <label style="display:block;margin-bottom:10px">
     <input class=-inherit type=checkbox value="${isNull ? 0 : 1}" ${isNull ? "checked" : ""}>
-    ${await t`Group permissions inherited`}
+    ${t`Group permissions inherited`}
   </label>
-  ${inner}
+  ${html.raw(inner)}
 </div>`;
 }

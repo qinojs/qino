@@ -1,6 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { cms_image2 } from "../cms.image2/mod.ts";
-import type { Ctx } from "../core/mod.ts";
+import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.image2";
 
@@ -17,7 +17,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }) {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const T = await node.showText("main");
 
   const settings = node.settings;
@@ -36,7 +36,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
   Img ??= await node.file("image_" + ctx.lang);
 
   const tag = !node.edit && url ? "a" : "div";
-  const hrefAttr = url ? ` href="${url}"` : "";
+  const hrefAttr = url ? html` href="${url}"` : "";
 
   // Style
   let style = "";
@@ -60,11 +60,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
 
   const imgHtml = await cms_image2(Img, options);
 
-  let editHtml = "";
+  let editHtml: HtmlString | string = "";
   if (node.edit) {
-    editHtml = `
+    editHtml = await html.async`
         <div class="-alt-edit qgCMS">
-            <input placeholder="${await node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${T.id} value="${T}">
+            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${T.id} value="${T}">
         </div>
         <style>
         [qcms-mod="cont.image2"] img { min-height:4em; }
@@ -79,7 +79,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }) {
         </style>`;
   }
 
-  return `<${tag}${hrefAttr}>\n    ${imgHtml}${editHtml}\n</${tag}>`;
+  return html.async`<${tag}${hrefAttr}>\n    ${imgHtml}${editHtml}\n</${tag}>`;
 }
 
 export const cms = {

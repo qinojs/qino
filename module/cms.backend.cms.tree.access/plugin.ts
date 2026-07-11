@@ -1,5 +1,5 @@
 // Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
-import { hee, getCtx, type Ctx, type App } from "../core/mod.ts";
+import { hee, html, type HtmlString, getCtx, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -15,45 +15,46 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
 
   const app = node.app;
+  const t = app.t;
   const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
   const rootNode = await app.cms.node(rootId);
 
-  let pathHtml = "";
+  const pathParts: HtmlString[] = [];
   for (const C of (await rootNode.path()).values()) {
     const title = (await C.title(ctx.lang)) || "(no text)";
-    pathHtml += `<a href="${hee("?rp=" + C.id)}">${hee(String(title)).trim() || "(no text)"}</a> > `;
+    pathParts.push(html`<a href="${"?rp=" + C.id}">${String(title).trim() || "(no text)"}</a> > `);
   }
 
   const groups = await accessGroups(app);
-  const head = groups.map(g => `<th style="width:30px"><div>${hee(String(g.name))}</div>`).join("");
+  const head = html.join(groups.map(g => html`<th style="width:30px"><div>${String(g.name)}</div>`));
 
   const listHtml = await list(node, { ctx });
 
   const showContents = !!ctx.settings.cms.admin.showContents();
 
-  return `<div class="u2-card" style="flex:0 1 1200px">
-  <div class=-head>${await app.t`Access`}</div>
+  return html.async`<div class="u2-card" style="flex:0 1 1200px">
+  <div class=-head>${t`Access`}</div>
   <div class=-body style="display:flex; justify-content:space-between; align-items:center">
     <div>
-      <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${await app.t`Show contents`}</label>
-      <div>${pathHtml}</div>
+      <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
+      <div>${html.join(pathParts)}</div>
     </div>
     <div style="display:flex; align-items:center; gap:4px">
-      <span class=-access-1-box></span> ${await app.t`View`}
-      <span class=-access-2-box></span> ${await app.t`Edit`}
-      <span class=-access-3-box></span> ${await app.t`Administer`}
+      <span class=-access-1-box></span> ${t`View`}
+      <span class=-access-2-box></span> ${t`Edit`}
+      <span class=-access-3-box></span> ${t`Administer`}
     </div>
   </div>
   <table class="u2-table cmsBeTree">
     <thead>
       <tr>
-        <th style="width:20px"> ${await app.t`No.`}
-        <th style="min-width:250px; width:100%"> ${await app.t`Page`}
-        <th style="width:30px"><div>${await app.t`Public`}</div>
+        <th style="width:20px"> ${t`No.`}
+        <th style="min-width:250px; width:100%"> ${t`Page`}
+        <th style="width:30px"><div>${t`Public`}</div>
         ${head}
     <tbody cms-part=list>
       ${listHtml}
@@ -61,7 +62,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 </div>`;
 }
 
-export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<string> {
+export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   ctx ??= getCtx();
   const app = node.app;
   const db = app.db;
@@ -87,9 +88,9 @@ export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record
   const rootNode = await app.cms.node(rootId);
   const groups = await accessGroups(app);
 
-  let html = "";
+  let out = "";
   await renderChildren(rootNode, 0);
-  return html;
+  return html.raw(out);
 
   async function renderChildren(Parent: Node, level: number): Promise<void> {
     for (const [id, SubPage] of await Parent.children({ type: treeType })) {
@@ -128,7 +129,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record
           : "<td>";
       }
 
-      html += `
+      out += `
 <tr${(isCont || inherited) ? ` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${AccessP}">
   <td style="text-align:right; font-weight:bold">
     <a title="${await app.t`Set as start point`}" href="${hee("?rp=" + id)}">${hee(String(id))}</a>

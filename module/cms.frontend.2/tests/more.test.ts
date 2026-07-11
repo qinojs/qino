@@ -34,9 +34,9 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
   };
   const node = { app };
 
-  const html = await requestStorage.run(ctx, () => more(node as never, {
+  const html = String(await requestStorage.run(ctx, () => more(node as never, {
     param: { msg: "<b>Hello</b>\nWorld", link: "https://example.test/?a=<b>" },
-  }));
+  })));
 
   assertEquals(recipient, "support@example.test");
   assertEquals(sent, true);

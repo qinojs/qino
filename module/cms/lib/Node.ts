@@ -1,7 +1,7 @@
 import { resolveText } from "./resolveText.ts";
 import { WRITE } from "./access.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { hee, HtmlString, getCtx, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
+import { hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
 
@@ -152,12 +152,12 @@ export class Node {
 
     /* Render */
     async html(vars: Record<string, any> = {}): Promise<HtmlString> {
-        if (!(await this.isReadable())) return new HtmlString("");
+        if (!(await this.isReadable())) return html.raw("");
         const ctx = getCtx();
 
         const renderPath = ctx.cms.renderPath;
         if (renderPath.has(this.id)) {
-            return new HtmlString(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
+            return html.raw(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
         }
         renderPath.add(this.id);
 
@@ -191,8 +191,8 @@ export class Node {
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
         const ret2 = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
-        if (ret2 !== str) return new HtmlString(ret2);
-        return new HtmlString(`<div${attr}>${str}</div>`);
+        if (ret2 !== str) return html.raw(ret2);
+        return html.raw(`<div${attr}>${str}</div>`);
     }
 
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {
@@ -216,7 +216,7 @@ export class Node {
         const parts = this.module?.plugin.cms?.node?.parts ?? {};
         const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : undefined;
         if (!fn) return;
-        return new HtmlString(await this.#renderGuarded(() => fn(this, {ctx:getCtx(), vars})));
+        return html.raw(await this.#renderGuarded(() => fn(this, {ctx:getCtx(), vars})));
     }
 
     /** Run a module render callback, returning error markup instead of throwing. */

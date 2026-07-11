@@ -1,6 +1,7 @@
+import { html, type HtmlString } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
-export default async function (node: Node, _vars: unknown = {}): Promise<string> {
+export default async function (node: Node, _vars: unknown = {}): Promise<HtmlString | string> {
   try {
     const options = node.module?.plugin?.cms?.node?.options;
     if (typeof options === "function") {
@@ -9,7 +10,7 @@ export default async function (node: Node, _vars: unknown = {}): Promise<string>
     }
   } catch { /* no options export */ }
   // Fallback: generic settings editor for page.settings (SettingsEditor.mjs is loaded by panel.mjs)
-  return `
+  return html`
     <div>
       <settings-editor source="/api/cms/node/${node.id}/settings"></settings-editor>
     </div>`;

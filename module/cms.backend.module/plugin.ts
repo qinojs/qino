@@ -1,4 +1,4 @@
-import { hee, getCtx, type App } from "../core/mod.ts";
+import { html, type HtmlString, getCtx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -23,19 +23,20 @@ async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: str
   }
 }
 
-async function renderDetail(node: Node, modName: string): Promise<string> {
+async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const ctx = getCtx();
   const allMods = app.modules.all();
   const modObj = allMods[modName];
 
   const back = ctx.req.url.toURL(); back.searchParams.delete("mod");
-  const backHref = hee(back.search);
+  const backHref = back.search;
 
   if (!modObj) {
-    return `<div class=u2-card>
+    return html.async`<div class=u2-card>
       <div class=-head><a href="${backHref}">← Module</a></div>
-      <div class=-body>${await app.t`Module`} ${hee(modName)} ${await app.t`not found.`}</div>
+      <div class=-body>${t`Module`} ${modName} ${t`not found.`}</div>
     </div>`;
   }
 
@@ -61,23 +62,21 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   ];
   const presentExports = knownKeys.filter(({ key }) => mod[key] !== undefined);
 
-  const exportBadges = presentExports.map(({ key, label }) => {
-    let detail = "";
+  const exportBadges = html.join(presentExports.map(({ key, label }) => {
+    let detail: HtmlString | string = "";
     if (key === "needs") {
-      detail = " <small>(" + mod.needs!.join(", ") + ")</small>";
+      detail = html` <small>(${mod.needs!.join(", ")})</small>`;
     } else if (key === "api") {
-      const routes = Object.keys(mod.api ?? {});
-      detail = " <small>(" + routes.join(", ") + ")</small>";
+      detail = html` <small>(${Object.keys(mod.api ?? {}).join(", ")})</small>`;
     } else if (key === "cms") {
-      const parts = Object.keys(mod.cms ?? {});
-      detail = " <small>(" + parts.join(", ") + ")</small>";
+      detail = html` <small>(${Object.keys(mod.cms ?? {}).join(", ")})</small>`;
     } else if (key === "settingsSchema" || key === "ctxSettingsSchema") {
       const schema = mod[key];
       const props = schema && typeof schema === "object" && "properties" in schema && schema.properties && typeof schema.properties === "object" ? Object.keys(schema.properties) : [];
-      if (props.length) detail = " <small>(" + props.join(", ") + ")</small>";
+      if (props.length) detail = html` <small>(${props.join(", ")})</small>`;
     }
-    return `${hee(label)}${detail} `;
-  }).join("");
+    return html`${label}${detail} `;
+  }));
 
   // --- Dependencies (needs) ---
   const needs: string[] = mod.needs ?? [];
@@ -87,71 +86,64 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     .sort();
 
   const u = ctx.req.url.toURL();
-  const modLink = (d: string) => { u.searchParams.set("mod", d); return `<a href="${hee(u.search)}">${hee(d)}</a>`; };
-  const depsHtml = needs.length ? needs.map(modLink).join(" ") : "<em>none</em>";
-  const neededByHtml = neededBy.length ? neededBy.map(modLink).join(" ") : "<em>none</em>";
+  const modLink = (d: string) => { u.searchParams.set("mod", d); return html`<a href="${u.search}">${d}</a>`; };
+  const depsHtml = needs.length ? html.join(needs.map(modLink), " ") : html.raw("<em>none</em>");
+  const neededByHtml = neededBy.length ? html.join(neededBy.map(modLink), " ") : html.raw("<em>none</em>");
 
   // --- Files ---
-  let filesHtml = "";
+  let filesHtml: HtmlString | string = "";
   if (modDir) {
-    const rows: string[] = [];
+    const rows: HtmlString[] = [];
     for await (const { filePath, rel } of walkDir(modDir)) {
       const info = await Deno.stat(filePath).catch(() => null);
       if (!info?.isFile) continue;
       const mtimeIso = info.mtime?.toISOString() ?? "";
-      let nameCell: string;
-      if (isSuperuser) {
-        const href = hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath));
-        nameCell = `<a href="${href}" target="${hee(encodeURIComponent(filePath))}">${hee(rel)}</a>`;
-      } else {
-        nameCell = hee(rel);
-      }
-      rows.push(`<tr>
+      const nameCell = isSuperuser
+        ? html`<a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${rel}</a>`
+        : rel;
+      rows.push(html`<tr>
         <td>${nameCell}
         <td style="text-align:right"><u2-bytes>${info.size}</u2-bytes>
         <td><u2-time datetime="${mtimeIso}" type=relative>${mtimeIso.slice(0, 16).replace("T", " ")}</u2-time>`);
     }
-    if (rows.length) {
-      filesHtml = `<table class=u2-table style="width:100%;white-space:nowrap">
-        <thead><tr><th>${await app.t`File`}<th style="text-align:right">${await app.t`Size`}<th>${await app.t`Modified`}
-        <tbody>${rows.join("")}
-      </table>`;
-    } else {
-      filesHtml = `<em>${await app.t`no files found`}</em>`;
-    }
+    filesHtml = rows.length
+      ? await html.async`<table class=u2-table style="width:100%;white-space:nowrap">
+        <thead><tr><th>${t`File`}<th style="text-align:right">${t`Size`}<th>${t`Modified`}
+        <tbody>${html.join(rows)}
+      </table>`
+      : await html.async`<em>${t`no files found`}</em>`;
   } else if (modUrl) {
-    filesHtml = `<em>${await app.t`Remote module (URL):`} ${hee(modUrl)}</em>`;
+    filesHtml = await html.async`<em>${t`Remote module (URL):`} ${modUrl}</em>`;
   }
 
   // --- Source info ---
   const sourceDisplay = modPath ?? modUrl ?? "";
   const sourceHtml = isSuperuser && modPath
-    ? `<a href="${hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(modPath))}" target="${hee(encodeURIComponent(modPath))}">${hee(sourceDisplay)}</a>`
-    : `<code>${hee(sourceDisplay)}</code>`;
+    ? html`<a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(modPath)}" target="${encodeURIComponent(modPath)}">${sourceDisplay}</a>`
+    : html`<code>${sourceDisplay}</code>`;
 
-  return `<div class=u2-flex>
+  return html.async`<div class=u2-flex>
   <div class=u2-card>
-    <div class=-head><a href="${backHref}">← Module</a> ${hee(modName)}</div>
+    <div class=-head><a href="${backHref}">← Module</a> ${modName}</div>
     <table class=u2-table>
-      <tr><th>${await app.t`Source`}<td>${sourceHtml}
-      <tr><th>${await app.t`Exports`}<td>${exportBadges || `<em>${await app.t`none`}</em>`}
-      <tr><th>${await app.t`needs`}<td>${depsHtml}
-      <tr><th>${await app.t`used by`}<td>${neededByHtml}
+      <tr><th>${t`Source`}<td>${sourceHtml}
+      <tr><th>${t`Exports`}<td>${exportBadges}
+      <tr><th>${t`needs`}<td>${depsHtml}
+      <tr><th>${t`used by`}<td>${neededByHtml}
     </table>
   </div>
-  ${mod.settingsSchema?.properties ? `
+  ${mod.settingsSchema?.properties ? html.async`
   <div class=u2-card>
-    <div class=-head>${await app.t`Settings schema`}</div>
+    <div class=-head>${t`Settings schema`}</div>
     <table class=u2-table>
-      <thead><tr><th>${await app.t`Key`}<th>${await app.t`Type`}<th>${await app.t`Title`}
-      <tbody>${Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
-        `<tr><td><code>${hee(k)}</code><td><code>${hee(v?.type ?? "")}</code><td>${hee(v?.title ?? "")}`
-      ).join("")}
+      <thead><tr><th>${t`Key`}<th>${t`Type`}<th>${t`Title`}
+      <tbody>${html.join(Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
+        html`<tr><td><code>${k}</code><td><code>${v?.type ?? ""}</code><td>${v?.title ?? ""}`))}
     </table>
   </div>` : ""}
-  ${mod.api ? `<div class=u2-card><div class=-head>${await app.t`API routes`}</div><div class=-body><pre>${hee(JSON.stringify(flattenApiRoutes(mod.api), null, 2))}</pre></div></div>` : ""}
+  ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div class=-body><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
   <div class=u2-card>
-    <div class=-head>${await app.t`Files`}${isSuperuser ? ` (${await app.t`with editor links`})` : ""}</div>
+    <div class=-head>${t`Files`}${isSuperuser ? html.async` (${t`with editor links`})` : ""}</div>
     ${filesHtml}
   </div>
 </div>`;
@@ -171,10 +163,11 @@ function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""
   return result;
 }
 
-async function renderOverview(node: Node): Promise<string> {
+async function renderOverview(node: Node): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const ctx = getCtx();
-  const rows = [];
+  const rows: HtmlString[] = [];
   const allMods = app.modules.all();
   const modules = Object.keys(allMods).sort();
 
@@ -196,56 +189,56 @@ async function renderOverview(node: Node): Promise<string> {
     const modDir = modObj.path?.replace(/\/?[^/]+$/, "") ?? null;
     const hasSvg = modDir ? await Deno.stat(modDir + "/pub/module.svg").then(() => true, () => false) : false;
     const iconHtml = hasSvg
-      ? `<svg style="display:block" width=16 height=16><use href="${ctx.req.modulePath}${name}/pub/module.svg#main"/></svg>`
+      ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.modulePath}${name}/pub/module.svg#main"/></svg>`
       : "";
 
     u.searchParams.set("mod", name);
-    rows.push(`<tr>
+    rows.push(html`<tr>
       <td style="padding-right:0">${iconHtml}
-      <td><a href="${hee(u.search)}">${hee(name)}</a>
+      <td><a href="${u.search}">${name}</a>
       <td style="text-align:center">${needs.length}
       <td style="text-align:center">${neededBy}
-      <td>${hee(exports)}`);
+      <td>${exports}`);
   }
 
-  return `<div class=u2-card>
-  <div class=-head>${await app.t`Modules`}</div>
+  return html.async`<div class=u2-card>
+  <div class=-head>${t`Modules`}</div>
   <div class=-body>
-    <input type=search placeholder="${await app.t`search`}..." style="width:300px; max-width:100%" data-module-search>
+    <input type=search placeholder="${t`search`}..." style="width:300px; max-width:100%" data-module-search>
   </div>
   <div style="overflow:auto; max-height:80vh; padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead>
         <tr>
           <th width=10>
-          <th>${await app.t`Name`}
-          <th title="${await app.t`Number of dependencies`}">${await app.t`needs`}
-          <th title="${await app.t`Required by`}">${await app.t`used by`}
-          <th>${await app.t`Exports`}
+          <th>${t`Name`}
+          <th title="${t`Number of dependencies`}">${t`needs`}
+          <th title="${t`Required by`}">${t`used by`}
+          <th>${t`Exports`}
       <tbody>
-        ${rows.join("")}
+        ${html.join(rows)}
     </table>
   </div>
 </div>`;
 }
 
-function render(node: Node): Promise<string> {
+function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const modName = ctx.req.query.mod ? String(ctx.req.query.mod) : "";
   if (modName) return renderDetail(node, modName);
   return renderOverview(node);
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const allMods = app.modules.all();
   const total = Object.keys(allMods).length;
   const withDb = Object.values(allMods).filter((m) => m.plugin?.dbSchema).length;
   const withApi = Object.values(allMods).filter((m) => m.plugin?.api).length;
-  return `
+  return html.async`
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>${await app.t`Total`}:<td>${hee(String(total))}
-  <tr><td>${await app.t`With DB schema`}:<td>${hee(String(withDb))}
-  <tr><td>${await app.t`With API`}:<td>${hee(String(withApi))}
+  <tr><td>${app.t`Total`}:<td>${total}
+  <tr><td>${app.t`With DB schema`}:<td>${withDb}
+  <tr><td>${app.t`With API`}:<td>${withApi}
 </table>`;
 }
 

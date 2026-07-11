@@ -19,7 +19,7 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
     },
     t: (s: TemplateStringsArray) => s.join(""),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];
-  const out = await backendDashboardWidget(app);
+  const out = String(await backendDashboardWidget(app));
   assertEquals(out.includes("Total:<td>7"), true);
   assertEquals(out.includes("Active:<td>5"), true);
   assertEquals(out.includes("user@example.test"), true);

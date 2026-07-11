@@ -78,6 +78,12 @@ html.async = async function(strings: TemplateStringsArray, ...values: unknown[])
   return joinHtml(strings, await Promise.all(values.map(htmlValueAsync)));
 };
 
+// Mirrors sql.raw/sql.join: raw() trusts a string as-is, join() combines
+// pre-built fragments (plain parts escaped, HtmlString kept) into one HtmlString.
+html.raw = (v: unknown): HtmlString => new HtmlString(v);
+html.join = (parts: Iterable<unknown>, separator = ""): HtmlString =>
+  new HtmlString(Array.from(parts, htmlValue).join(separator));
+
 export function uid(length?: number): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);

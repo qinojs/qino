@@ -1,25 +1,21 @@
 import type { Node } from "../../../cms/mod.ts";
-import { hee } from "../../../core/mod.ts";
+import { html, type HtmlString } from "../../../core/mod.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
-  const textTitle = await app.t`Title`;
-  const textDescr = await app.t`Description`;
-  const textPrio  = await app.t`The priority of this page relative to other pages on your website.`;
   const placeholderTitle = await app.t`max. 55 characters` + ", " + await app.t`important words first`;
-  const placeholderDescr = await app.t`max. 156 characters`;
 
   const Ttitle = await node.text("_title");
   const Tdescr  = await node.text("_meta_description");
 
   const prioVal = (node.settings._seo_priority()) ?? 0.5;
 
-  return `<div class=seo-manager pid=${node}>
-  ${textTitle}:
-  <input style="width:100%;display:block" cmstxt=${Ttitle.id} value="${hee(await Ttitle.string())}" required pattern=".{10,55}" maxlength=100 placeholder="${hee(placeholderTitle)}">
+  return html.async`<div class=seo-manager pid=${String(node)}>
+  ${app.t`Title`}:
+  <input style="width:100%;display:block" cmstxt=${Ttitle.id} value="${await Ttitle.string()}" required pattern=".{10,55}" maxlength=100 placeholder="${placeholderTitle}">
   <br>
-  ${textDescr}:
-  <textarea class=-desc style="display:block;width:100%;height:45px" cmstxt=${Tdescr.id} required pattern=".{60,156}" maxlength=220 placeholder="${hee(placeholderDescr)}" rows=4 cols=70>${hee(await Tdescr.string())}</textarea>
+  ${app.t`Description`}:
+  <textarea class=-desc style="display:block;width:100%;height:45px" cmstxt=${Tdescr.id} required pattern=".{60,156}" maxlength=220 placeholder="${app.t`max. 156 characters`}" rows=4 cols=70>${await Tdescr.string()}</textarea>
   <br>
   <style>
   .seo-manager :invalid,
@@ -27,8 +23,8 @@ export default async function (node: Node): Promise<string> {
     border-bottom-color:var(--cms-access-3);
   }
   </style>
-  ${hee(textPrio)}:<br>
-  <input type=range min=0 max=1 step=.1 value=${prioVal} data-pid=${node} class=-seo-prio>
+  ${app.t`The priority of this page relative to other pages on your website.`}:<br>
+  <input type=range min=0 max=1 step=.1 value=${prioVal} data-pid=${String(node)} class=-seo-prio>
   <br>
 </div>`;
 }

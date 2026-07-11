@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { getCtx, hee, type App } from "../core/mod.ts";
+import { getCtx, html, type App, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.web_auth";
 export const needs = ["web_auth"];
@@ -15,7 +15,7 @@ const settingsSchema = {
 
 export const cms = { node: { js: ["pub/main.js"], render, settingsSchema } };
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node): Promise<string | HtmlString> {
   const ctx     = getCtx();
   const settings = node.settings;
   const mode    = String(settings.mode() ?? "auto");
@@ -33,23 +33,23 @@ async function render(node: Node): Promise<string> {
       const P = await node.app.cms?.node(redirectId);
       if (P?.exists()) redirectUrl = await P.url();
     }
-    return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, hee(ctx.csrfToken));
+    return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, ctx.csrfToken);
   }
   return "";
 }
 
-async function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, csrfToken: string): Promise<string> {
-  return `<div class="web-auth-login" data-api-base="${hee(apiBase)}" data-redirect-url="${hee(redirectUrl)}">
-  <input type="email" placeholder="${await app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
-  <button data-action="login">${await app.t`Sign in with passkey`}</button>
-  ${showPw ? `<details>
-    <summary>${await app.t`Sign in with password`}</summary>
+function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, csrfToken: string): Promise<HtmlString> {
+  return html.async`<div class="web-auth-login" data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">
+  <input type="email" placeholder="${app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
+  <button data-action="login">${app.t`Sign in with passkey`}</button>
+  ${showPw ? html.async`<details>
+    <summary>${app.t`Sign in with password`}</summary>
     <form method="post">
       <input type=hidden name=csrfToken value="${csrfToken}">
       <table>
-        <tr><th>${await app.t`E-Mail`}:<td><input name="email" type="email" required>
-        <tr><th>${await app.t`Password`}:<td><input name="pw" type="password" required>
-        <tr><th><td><button name="core_login">${await app.t`Sign in`}</button>
+        <tr><th>${app.t`E-Mail`}:<td><input name="email" type="email" required>
+        <tr><th>${app.t`Password`}:<td><input name="pw" type="password" required>
+        <tr><th><td><button name="core_login">${app.t`Sign in`}</button>
       </table>
     </form>
   </details>` : ""}
@@ -57,11 +57,11 @@ async function renderLogin(app: App, apiBase: string, showPw: boolean, redirectU
 </div>`;
 }
 
-async function renderManage(app: App, apiBase: string): Promise<string> {
-  return `<div class="web-auth-manage" data-api-base="${hee(apiBase)}">
-  <div data-list>${await app.t`Loading…`}</div>
-  <input type="text" data-name placeholder="${await app.t`Name for this authenticator`}">
-  <button data-action="register">${await app.t`Add passkey`}</button>
+function renderManage(app: App, apiBase: string): Promise<HtmlString> {
+  return html.async`<div class="web-auth-manage" data-api-base="${apiBase}">
+  <div data-list>${app.t`Loading…`}</div>
+  <input type="text" data-name placeholder="${app.t`Name for this authenticator`}">
+  <button data-action="register">${app.t`Add passkey`}</button>
   <output class="-msg"></output>
 </div>`;
 }

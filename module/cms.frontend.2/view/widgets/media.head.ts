@@ -1,8 +1,9 @@
+import { html, type HtmlString } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString | string> {
   if ((await node.access()) < 2) return "";
   const count = Object.keys(await node.files()).length;
   const number = count ? `<span class=-info>${count}</span>` : "";
-  return `<span class=-title>${await node.app.t`Files`}</span> ${number}`;
+  return html.async`<span class=-title>${node.app.t`Files`}</span> ${html.raw(number)}`;
 }

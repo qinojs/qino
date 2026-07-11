@@ -1,29 +1,30 @@
 import type { Node } from "../../../cms/mod.ts";
-import { hee } from "../../../core/mod.ts";
+import { html, type HtmlString } from "../../../core/mod.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const { default: mediaList } = await import("./media_list.ts");
   const mediaListHtml = await mediaList(node);
   const allFiles = await node.filesAndPlaceholders();
 
-  const sortSelect = Object.keys(allFiles).length > 1 ? `
+  const sortSelect = Object.keys(allFiles).length > 1 ? html.async`
     <select class=-sortFilesSelect>
-      <option value> ${await app.t`sort by...`}
-      <option value=name>${await app.t`Name`}
-      <option value=name_reverse>${await app.t`Name reversed`}
-      <option value=date>${await app.t`Date`}
-      <option value=reverse>${await app.t`reverse`}
+      <option value> ${t`sort by...`}
+      <option value=name>${t`Name`}
+      <option value=name_reverse>${t`Name reversed`}
+      <option value=date>${t`Date`}
+      <option value=reverse>${t`reverse`}
     </select>
     <select class=-deleteFilesSelect>
-      <option> ${await app.t`delete...`}
-      <option value=double>${await app.t`duplicates`}
-      <option value=all>${await app.t`all`}
+      <option> ${t`delete...`}
+      <option value=double>${t`duplicates`}
+      <option value=all>${t`all`}
     </select>` : "";
 
-  return `<div cmsconf=contMedia_overview class=file-manager pid=${node}>
-  <button class=-uploadBtn>${await app.t`upload`}</button>
-  <input class=-addExistingFile type=qgcms-file placeholder="${hee(await app.t`existing file`)}">
+  return html.async`<div cmsconf=contMedia_overview class=file-manager pid=${String(node)}>
+  <button class=-uploadBtn>${t`upload`}</button>
+  <input class=-addExistingFile type=qgcms-file placeholder="${t`existing file`}">
   ${sortSelect}
   <br><br>
   <div cmsconf=media_list id=cmsWidgetContent_media_list>

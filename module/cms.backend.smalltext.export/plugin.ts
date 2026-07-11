@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, type App } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -56,14 +56,14 @@ async function api(node: Node, vars: any): Promise<any> {
   return preview ? { changes } : { written, skipped };
 }
 
-async function render(node: Node): Promise<string> {
-  const app = node.app;
-  return `<div class=u2-card>
-  <div class=-head>${await app.t`Export translations`}</div>
+function render(node: Node): Promise<HtmlString> {
+  const t = node.app.t;
+  return html.async`<div class=u2-card>
+  <div class=-head>${t`Export translations`}</div>
   <div class=-body>
-    <p>${await app.t`Write current translations into each module's locale folder.`}
-    <button data-action=preview>${await app.t`Preview changes`}</button>
-    <button data-action=export>${await app.t`Export to locale files`}</button>
+    <p>${t`Write current translations into each module's locale folder.`}
+    <button data-action=preview>${t`Preview changes`}</button>
+    <button data-action=export>${t`Export to locale files`}</button>
     <div data-result></div>
   </div>
 </div>`;

@@ -1,4 +1,4 @@
-import { hee, getCtx, type App, type Ctx } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -33,8 +33,8 @@ async function groups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
 }
 
-async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<string> {
-  ctx ??= getCtx();
+async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
+  ctx ??= getCtx(); // tobi: why? needed?
   const app = node.app;
   await save(app, vars);
 
@@ -49,8 +49,9 @@ async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record
     FROM module m ORDER BY m.name`;
   const dbByName = new Map(dbRows.map((r) => [String(r.name), r]));
 
-  const head = groupRows.map((g) => `<th title="${hee(String(g.name))}"><div>${hee(String(g.name))}</div>`).join("");
-  let trs = "", total = 0;
+  const head = html.join(groupRows.map((g) => html`<th title="${g.name}"><div>${g.name}</div>`));
+  const trParts: HtmlString[] = [];
+  let total = 0;
   for (const module of Object.keys(app.modules.all()).sort()) {
     const mod = app.modules.get(module)!;
     if (!mod.plugin.cms?.node?.render) continue;
@@ -58,38 +59,36 @@ async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record
     if (!row) continue;
     total++;
 
-    const cells = groupRows.map((g) => {
+    const cells = html.join(groupRows.map((g) => {
       const key = `${module}:${g.id}`;
       const v = caps.has(key) ? String(caps.get(key)) : "";
-      return `<td class=-cell data-module="${hee(module)}" data-grp="${g.id}" v="${v}" title="${hee(String(g.name))}: ${v || "no cap"}">${v || "-"}`;
-    }).join("");
-    trs += `<tr>
-      <td>${hee(module)}
+      return html`<td class=-cell data-module="${module}" data-grp="${g.id}" v="${v}" title="${g.name}: ${v || "no cap"}">${v || "-"}`;
+    }));
+    trParts.push(html`<tr>
+      <td>${module}
       <td style="text-align:right">${Number(row.cms_access) || 0}
       <td style="text-align:right">${Number(row.used) || ""}
-      ${cells}`;
+      ${cells}`);
   }
 
-  return `<div class="u2-card" style="max-height:90vh; overflow:auto; flex-grow:0">
+  return html.async`<div class="u2-card" style="max-height:90vh; overflow:auto; flex-grow:0">
   <table class="u2-table -Sticky cmsModuleAccess" style="white-space:nowrap">
     <thead>
       <tr>
-        <th>${await app.t`Module`}
-        <th title="${await app.t`Default access`}">${await app.t`Default`}
-        <th>${await app.t`Used`}
+        <th>${app.t`Module`}
+        <th title="${app.t`Default access`}">${app.t`Default`}
+        <th>${app.t`Used`}
         ${head}
-    <tbody>${trs}
-    <tfoot><tr><td colspan="${3 + groupRows.length}">${await app.t`Total`}: ${total}
+    <tbody>${html.join(trParts)}
+    <tfoot><tr><td colspan="${3 + groupRows.length}">${app.t`Total`}: ${total}
   </table>
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one`SELECT count(*) FROM cms_module_access_grp`);
-  const denied = Number(await app.db.one`SELECT count(*) FROM cms_module_access_grp WHERE access = 0`);
-  return `<div class=-body>
-    <b>${total}</b> ${await app.t`module group rules`}<br>
-    <small>${denied} ${await app.t`deny rules`}</small>
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div class=-body>
+    <b>${app.db.one`SELECT count(*) FROM cms_module_access_grp`}</b> ${app.t`module group rules`}<br>
+    <small>${app.db.one`SELECT count(*) FROM cms_module_access_grp WHERE access = 0`} ${app.t`deny rules`}</small>
   </div>`;
 }
 

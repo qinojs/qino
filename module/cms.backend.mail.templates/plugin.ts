@@ -1,6 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
 import type {} from "../mail/mod.ts";
-import { getCtx, hee, unixTime, type App } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
@@ -19,24 +19,25 @@ export async function init(app: App): Promise<void> {
   }
 }
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node): Promise<HtmlString | string> {
   const ctx = getCtx();
   const app = node.app;
+  const t = app.t;
   const db = app.db;
 
   const id = Number(ctx.req.query.id ?? 0);
   if (id) return renderDetail(node, id);
 
-  let message = "";
+  let message: HtmlString | string = "";
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "create" in ctx.req.body) {
     const tname = String(ctx.req.body.tname ?? "").trim();
     if (!tname) {
-      message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
+      message = await html.async`<div class="-msg -err">${t`Name is required.`}</div>`;
     } else {
       const exists = await db.one`SELECT id FROM mail_template WHERE name=${tname}`;
       if (exists) {
-        message = `<div class="-msg -err">${await app.t`A template with this name already exists.`}</div>`;
+        message = await html.async`<div class="-msg -err">${t`A template with this name already exists.`}</div>`;
       } else {
         const now = unixTime();
         const newId = await db.table("mail_template").insert({ name: tname, created: now, updated: now });
@@ -51,42 +52,42 @@ async function render(node: Node): Promise<string> {
 
   const u = ctx.req.url.toURL();
   const trs = rows.length
-    ? rows.map((r) => {
+    ? html.join(rows.map((r) => {
         const d = new Date(typeof r.updated === "number" ? r.updated * 1000 : String(r.updated));
         const iso = Number.isNaN(d.getTime()) ? "" : d.toISOString();
-        const time = iso ? `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "-";
+        const time = iso ? html`<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "-";
         u.searchParams.set("id", String(r.id));
-        return `<tr u2-href>
-        <td><a href="${hee(u.search)}">${hee(r.name)}</a>
-        <td>${hee(r.description ?? "")}
+        return html`<tr u2-href>
+        <td><a href="${u.search}">${r.name}</a>
+        <td>${r.description ?? ""}
         <td>${time}`;
-      }).join("")
-    : `<tr><td colspan=3><em>${await app.t`No templates yet.`}</em>`;
+      }))
+    : await html.async`<tr><td colspan=3><em>${t`No templates yet.`}</em>`;
 
-  return `<div class="u2-flex -m-mail-templates">
+  return html.async`<div class="u2-flex -m-mail-templates">
   <div class=u2-card style="flex:0 1 280px">
-    <div class=-head>${await app.t`New template`}</div>
-    ${message ? `<div class=-body>${message}</div>` : ""}
+    <div class=-head>${t`New template`}</div>
+    ${message ? html`<div class=-body>${message}</div>` : ""}
     <form method=post>
-      <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
+      <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <table class=u2-table>
         <tr>
-          <th style="width:80px">${await app.t`Name`}
+          <th style="width:80px">${t`Name`}
           <td><input name=tname required placeholder="e.g. newsletter" style="width:100%">
         <tr>
           <td colspan=2>
-            <button name=create>${await app.t`Create`}</button>
+            <button name=create>${t`Create`}</button>
       </table>
     </form>
   </div>
   <div class=u2-card style="flex:1">
-    <div class=-head>${await app.t`Templates`}</div>
+    <div class=-head>${t`Templates`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">
         <thead><tr>
-          <th>${await app.t`Name`}
-          <th>${await app.t`Description`}
-          <th>${await app.t`Updated`}
+          <th>${t`Name`}
+          <th>${t`Description`}
+          <th>${t`Updated`}
         <tbody>${trs}
       </table>
     </div>
@@ -94,24 +95,25 @@ async function render(node: Node): Promise<string> {
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<string> {
+async function renderDetail(node: Node, id: number): Promise<HtmlString | string> {
   const ctx = getCtx();
   const app = node.app;
+  const t = app.t;
   const db = app.db;
 
   const row = await db.row`SELECT * FROM mail_template WHERE id=${id}`;
-  if (!row) return `<div class=u2-card><div class=-body>${await app.t`Template not found.`}</div></div>`;
+  if (!row) return html.async`<div class=u2-card><div class=-body>${t`Template not found.`}</div></div>`;
 
   const back = ctx.req.url.toURL(); back.searchParams.delete("id");
-  const backHref = hee(back.search);
+  const backHref = back.search;
 
-  let message = "";
+  let message: HtmlString | string = "";
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken) {
     if ("save" in ctx.req.body) {
       const tname = String(ctx.req.body.tname ?? "").trim();
       if (!tname) {
-        message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
+        message = await html.async`<div class="-msg -err">${t`Name is required.`}</div>`;
       } else {
         await db.table("mail_template").update({
           id,
@@ -122,7 +124,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
           updated:     unixTime(),
         });
         await init(app);
-        message = `<div class="-msg -ok">${await app.t`Saved.`}</div>`;
+        message = await html.async`<div class="-msg -ok">${t`Saved.`}</div>`;
         Object.assign(row, {
           name:        tname,
           description: String(ctx.req.body.description ?? "").trim(),
@@ -142,53 +144,52 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   }
 
   const preview = row.html
-    ? `<iframe sandbox srcdoc="${hee(row.html)}" class=-preview-frame></iframe>`
-    : `<em>${await app.t`No content yet.`}</em>`;
+    ? html`<iframe sandbox srcdoc="${row.html}" class=-preview-frame></iframe>`
+    : await html.async`<em>${t`No content yet.`}</em>`;
 
-  return `<div class="u2-flex -m-mail-templates">
+  return html.async`<div class="u2-flex -m-mail-templates">
   <div class=u2-card style="flex:1 1 600px">
-    <div class=-head>${hee(row.name)}</div>
+    <div class=-head>${row.name}</div>
     <div class=-body>
       ${message}
       <form method=post>
-        <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
+        <input type=hidden name=csrfToken value="${ctx.csrfToken}">
         <table class=u2-table>
           <tr>
-            <th style="width:110px">${await app.t`Name`}
-            <td><input name=tname value="${hee(row.name)}" required style="width:100%">
+            <th style="width:110px">${t`Name`}
+            <td><input name=tname value="${row.name}" required style="width:100%">
           <tr>
-            <th>${await app.t`Description`}
-            <td><input name=description value="${hee(row.description ?? "")}" style="width:100%">
+            <th>${t`Description`}
+            <td><input name=description value="${row.description ?? ""}" style="width:100%">
           <tr>
-            <th>${await app.t`Default subject`}
-            <td><input name=subject value="${hee(row.subject ?? "")}" style="width:100%" placeholder="${await app.t`optional`}">
+            <th>${t`Default subject`}
+            <td><input name=subject value="${row.subject ?? ""}" style="width:100%" placeholder="${t`optional`}">
           <tr>
-            <th>${await app.t`HTML`}
-            <td><textarea name=html class=-body-editor>${hee(row.html ?? "")}</textarea>
+            <th>${t`HTML`}
+            <td><textarea name=html class=-body-editor>${row.html ?? ""}</textarea>
           <tr>
             <td colspan=2>
               <div class=-actions>
-                <button name=save>${await app.t`Save`}</button>
-                <button name=delete type=submit formnovalidate u2-confirm="${hee(await app.t`Really delete this template?`)}">${await app.t`Delete`}</button>
-                <a href="${backHref}">${await app.t`Back`}</a>
+                <button name=save>${t`Save`}</button>
+                <button name=delete type=submit formnovalidate u2-confirm="${t`Really delete this template?`}">${t`Delete`}</button>
+                <a href="${backHref}">${t`Back`}</a>
               </div>
         </table>
       </form>
     </div>
   </div>
   <div class=u2-card style="flex:1 1 400px">
-    <div class=-head>${await app.t`Preview`}</div>
+    <div class=-head>${t`Preview`}</div>
     <div class=-body style="padding:0">${preview}</div>
   </div>
 </div>`;
 }
 
 
-export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one`SELECT count(*) FROM mail_template`);
-  return `<div style="overflow:auto; padding:0">
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
-  <tr><td>${await app.t`Templates`}:<td>${hee(String(total))}
+  <tr><td>${app.t`Templates`}:<td>${app.db.one`SELECT count(*) FROM mail_template`}
 </table>
 </div>`;
 }

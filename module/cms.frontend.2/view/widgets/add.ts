@@ -1,12 +1,12 @@
 import type { Node } from "../../../cms/mod.ts";
-import { hee, getCtx } from "../../../core/mod.ts";
+import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const ctx = getCtx();
 
   const modules = node.cms.getModules();
-  let moduleBoxes = "";
+  const moduleBoxes: HtmlString[] = [];
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
     const M = await app.db.table("module").entry(name);
@@ -16,18 +16,18 @@ export default async function (node: Node): Promise<string> {
     try { if (modDir) desc = await Deno.readTextFile(modDir + "description.txt"); } catch { /* egal */ }
     let title = name.replace("cms.cont.", "");
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
-    let svgHtml: string;
+    let svgHtml: HtmlString;
     try {
       if (!modDir) throw new Error();
       await Deno.stat(modDir + "pub/module.svg");
-      svgHtml = `<use href="${ctx.req.modulePath+name}/pub/module.svg#main" />`;
+      svgHtml = html`<use href="${ctx.req.modulePath+name}/pub/module.svg#main" />`;
     } catch {
-      svgHtml = `<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
+      svgHtml = html`<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
     }
-    moduleBoxes += `<div itemid="${hee(name)}" title="${hee(desc)}">
-      <div class=-title title="${hee(String(await M.get?.("name") ?? name))}">${title}</div>
+    moduleBoxes.push(html`<div itemid="${name}" title="${desc}">
+      <div class=-title title="${String(await M.get?.("name") ?? name)}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
-    </div>`;
+    </div>`);
   }
 
   // Vorlagen
@@ -44,36 +44,36 @@ export default async function (node: Node): Promise<string> {
     models.push(P);
   }
 
-  let modelsSection = "";
+  let modelsSection: HtmlString | string = "";
   if (models.length) {
-    let modelItems = "";
+    const modelItems: HtmlString[] = [];
     for (const P of models) {
       if (!await node.canAddModule(String(P.vs.module))) continue;
       const mName = String(P.vs.module);
       const mDir = app.modules.get(mName)?.dir;
-      let svgHtml: string;
+      let svgHtml: HtmlString;
       try {
         if (!mDir) throw new Error();
         await Deno.stat(mDir + "pub/module.svg");
-        svgHtml = `<use href="${ctx.req.modulePath+P.vs.module}/pub/module.svg#main" />`;
+        svgHtml = html`<use href="${ctx.req.modulePath+P.vs.module}/pub/module.svg#main" />`;
       } catch {
-        svgHtml = `<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
+        svgHtml = html`<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
       }
-      modelItems += `<div itemid="${P.id}" title="">
+      modelItems.push(html`<div itemid="${P.id}" title="">
         <svg class=-img fill="#fff">${svgHtml}</svg>
-        <div class=-title title="${hee(String(P.id))}">${await (await P.title()).string()}</div>
-      </div>`;
+        <div class=-title title="${String(P.id)}">${await (await P.title()).string()}</div>
+      </div>`);
     }
-    modelsSection = `<div class=-standalone><br><br><div class=-h1><span>Templates</span></div></div>
-    <div class="add-models -module-boxes">${modelItems}</div>`;
+    modelsSection = html`<div class=-standalone><br><br><div class=-h1><span>Templates</span></div></div>
+    <div class="add-models -module-boxes">${html.join(modelItems)}</div>`;
   }
 
-  return `<div class="-standalone module-manager">
+  return html.async`<div class="-standalone module-manager">
   <div class=-h1>
-    <span>${await app.t`Modules`}</span>
-    <input placeholder="${await app.t`Search`}..." style="width:50%">
+    <span>${app.t`Modules`}</span>
+    <input placeholder="${app.t`Search`}..." style="width:50%">
   </div>
-  <div class="add-modules -module-boxes">${moduleBoxes}</div>
+  <div class="add-modules -module-boxes">${html.join(moduleBoxes)}</div>
   ${modelsSection}
 </div>`;
 }

@@ -1,4 +1,4 @@
-import { hee, type Ctx } from "../core/mod.ts";
+import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.custom.9";
@@ -9,7 +9,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, data: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
   const module = node.vs.module;
   const LPage = await node.cms.layoutPage(String(module));
 
@@ -38,8 +38,7 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string> {
   } catch { /* no custom layout override */ }
 
   // Fallback: basic layout
-  const mainCont = await node.cont("main");
-  return `<div id=container><main>${await mainCont.html()}</main></div>`;
+  return html.async`<div id=container><main>${node.cont("main")}</main></div>`;
 }
 
 export const cms = {

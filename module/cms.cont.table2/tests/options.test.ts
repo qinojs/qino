@@ -25,7 +25,7 @@ Deno.test("cms.cont.table2: options renders bounded rows/cols and export URL", a
   const ctx = await testContext({ url: "http://localhost/page?x=1" });
   const node = makeNode({ rows: 3, cols: 2, row_1: "40%", row_2: "60%" });
 
-  const out = await requestStorage.run(ctx, () => options(node as any, {}));
+  const out = String(await requestStorage.run(ctx, () => options(node as any, {})));
   assertEquals(out.includes('value="3" min=1 max=300'), true);
   assertEquals(out.includes('value="2" min=1 max=15'), true);
   assertEquals(out.includes('value="40%" data-node="77" data-key="row_1"'), true);
@@ -37,7 +37,7 @@ Deno.test("cms.cont.table2: options falls back to at least one row and column", 
   const ctx = await testContext({ url: "http://localhost/page" });
   const node = makeNode({ rows: 0, cols: 0, row_1: `<bad>` });
 
-  const out = await requestStorage.run(ctx, () => options(node as any, {}));
+  const out = String(await requestStorage.run(ctx, () => options(node as any, {})));
   assertEquals(out.includes('value="1" min=1 max=300'), true);
   assertEquals(out.includes('value="1" min=1 max=15'), true);
   assertEquals(out.includes('value="&lt;bad&gt;"'), true);

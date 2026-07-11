@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
-import { AccessError, NotFoundError, ValidationError, invoke, HtmlString, requestStorage } from "../../core/mod.ts";
+import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "../../core/mod.ts";
 import { api } from "../apt.ts";
 
 class TextObj {
@@ -51,7 +51,7 @@ class FakeNode {
     }
     return new TextObj(this.id * 100, this.texts[name] ?? "");
   }
-  html(vars = {}) { return new HtmlString(`<div>${JSON.stringify(vars)}</div>`); }
+  html(vars = {}) { return html.raw(`<div>${JSON.stringify(vars)}</div>`); }
   htmlPart(part: string, vars = {}) { return `<span>${part}:${JSON.stringify(vars)}</span>`; }
   children(opt: Record<string, unknown>) {
     return new Map(this.childNodes

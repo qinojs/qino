@@ -1,3 +1,4 @@
+import { html, type HtmlString } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
 function toDatetimeLocal(ts: string | number | null): string {
@@ -6,27 +7,27 @@ function toDatetimeLocal(ts: string | number | null): string {
   return d.toISOString().slice(0, 16);
 }
 
-export default async function (node: Node): Promise<string> {
+export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const startVal = toDatetimeLocal(node.vs.online_start);
   const endVal   = toDatetimeLocal(node.vs.online_end);
 
-  return `<div class=access-time-manager pid=${node}>
+  return html.async`<div class=access-time-manager pid=${String(node)}>
   <div>
-    <div style="flex:0 1 100px">${await app.t`visible`} ${await app.t`from`}:</div>
+    <div style="flex:0 1 100px">${app.t`visible`} ${app.t`from`}:</div>
     <div class=-accessTimeBtns>
-      <button class=-start_always  ${node.vs.online_start === 0 ? "disabled" : ""}>${await app.t`unlimited`}</button>
-      <button class=-start_inherit ${node.vs.online_start === null ? "disabled" : ""}>${await app.t`inherited`}</button>
-      <button class=-start_now>${await app.t`scheduled`}</button>
+      <button class=-start_always  ${node.vs.online_start === 0 ? "disabled" : ""}>${app.t`unlimited`}</button>
+      <button class=-start_inherit ${node.vs.online_start === null ? "disabled" : ""}>${app.t`inherited`}</button>
+      <button class=-start_now>${app.t`scheduled`}</button>
       <input class=-start type=datetime-local value="${startVal}" style="width:auto" required>
     </div>
   </div>
   <div>
-    <div style="flex:0 1 100px">${await app.t`until`}:</div>
+    <div style="flex:0 1 100px">${app.t`until`}:</div>
     <div class=-accessTimeBtns>
-      <button class=-end_always  ${node.vs.online_end === 0 ? "disabled" : ""}>${await app.t`unlimited`}</button>
-      <button class=-end_inherit ${node.vs.online_end === null ? "disabled" : ""}>${await app.t`inherited`}</button>
-      <button class=-end_now>${await app.t`scheduled`}</button>
+      <button class=-end_always  ${node.vs.online_end === 0 ? "disabled" : ""}>${app.t`unlimited`}</button>
+      <button class=-end_inherit ${node.vs.online_end === null ? "disabled" : ""}>${app.t`inherited`}</button>
+      <button class=-end_now>${app.t`scheduled`}</button>
       <input class=-end type=datetime-local value="${endVal}" style="width:auto" required>
     </div>
   </div>

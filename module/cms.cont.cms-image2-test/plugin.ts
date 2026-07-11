@@ -1,6 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { cms_image2 } from "../cms.image2/mod.ts";
-import { html, HtmlString, type DbFile } from "../core/mod.ts";
+import { html, type HtmlString, type DbFile } from "../core/mod.ts";
 
 export const name = "cms.cont.cms-image2-test";
 export const needs = ["cms", "cms.image2"];
@@ -32,12 +32,12 @@ async function render(node: Node, { vars }: { vars?: Record<string, unknown> } =
   const exists = await file.exists();
   const base = { width: w, height: h, quality, editable, wait: true, if: 1, alt: "cms-image2 test image" };
 
-  const basic = new HtmlString((await Promise.all(tests.map((test) => {
+  const basic = html.raw((await Promise.all(tests.map((test) => {
     const options = imageOptions(base, test.id, test.options);
     return renderCard(test.id, test.title, test.note, cms_image2(file, options), optionsText(options));
   }))).join(""));
 
-  const flex = new HtmlString((await Promise.all([
+  const flex = html.raw((await Promise.all([
     renderCard("flex-direct", "Flex direct item", "cms-image2 is the flex item beside long min-content text", renderFlexDirect(file, base), "layout:flex direct, image max-width=100%"),
     renderCard("flex-auto", "Flex wrapper min auto", "wrapper keeps the default min-width:auto behavior", renderFlexWrap(file, base, ""), "layout:flex wrapper min-width:auto"),
     renderCard("flex-min0", "Flex wrapper min 0", "same case with min-width:0 on the image column", renderFlexWrap(file, base, "c2t-min0"), "layout:flex wrapper min-width:0"),

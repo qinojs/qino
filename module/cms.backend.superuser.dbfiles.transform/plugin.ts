@@ -1,4 +1,4 @@
-import { hee, FileTransformer, type App } from "../core/mod.ts";
+import { html, type HtmlString, FileTransformer, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -219,16 +219,16 @@ const PLATFORM_LABELS: Record<Platform, string> = {
   unknown: "",
 };
 
-async function renderBinary(bin: Binary, platform: Platform, root: boolean): Promise<string> {
+async function renderBinary(bin: Binary, platform: Platform, root: boolean): Promise<HtmlString> {
   const ok = await bin.available;
   const cls  = ok ? "-ok" : "-missing";
-  const icon = ok ? `<u2-ico icon=check_circle inline>✓</u2-ico>` : `<u2-ico icon=cancel inline>✗</u2-ico>`;
-  const notes = bin.notes ? `<br><small>${hee(bin.notes)}</small>` : "";
-  const label = `${icon} ${hee(bin.label)}${notes}`;
+  const icon = ok ? html`<u2-ico icon=check_circle inline>✓</u2-ico>` : html`<u2-ico icon=cancel inline>✗</u2-ico>`;
+  const notes = bin.notes ? html`<br><small>${bin.notes}</small>` : "";
+  const label = html`${icon} ${bin.label}${notes}`;
 
   if (ok) {
     const version = await resolveVersion(bin);
-    return `<tr class="${cls}"><td>${label}<td colspan=2><small>${hee(version)}</small>`;
+    return html`<tr class="${cls}"><td>${label}<td colspan=2><small>${version}</small>`;
   }
 
   const primaryCmd = bin.install[platform];
@@ -238,48 +238,49 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
 
   const installable = root && !!primaryCmd && !bin.noAutoInstall;
 
-  return installEntries.map(([p, cmd], i) => {
+  return html.join(installEntries.map(([p, cmd], i) => {
     const displayCmd = root ? cmd : `sudo ${cmd}`;
     const installBtn = installable && i === 0
-      ? ` <button data-install="${hee(bin.id)}" title="Install now" u2-confirm><u2-ico icon=download_for_offline>⤓</u2-ico></button>`
+      ? html` <button data-install="${bin.id}" title="Install now" u2-confirm><u2-ico icon=download_for_offline>⤓</u2-ico></button>`
       : "";
-    return `
+    return html`
     <tr class="${cls}${i > 0 ? " -extra" : ""}">
-      ${i === 0 ? `<td rowspan="${installEntries.length}">${label}` : ""}
-      <td style="white-space:nowrap">${hee(PLATFORM_LABELS[p] || p)}
+      ${i === 0 ? html`<td rowspan="${installEntries.length}">${label}` : ""}
+      <td style="white-space:nowrap">${PLATFORM_LABELS[p] || p}
       <td>
-        <code>${hee(displayCmd)}</code>
-        <button class=u2-unstyle data-copy="${hee(displayCmd)}" title="Copy"><u2-ico icon=content_copy>⧉</u2-ico></button>${installBtn}`;
-  }).join("");
+        <code>${displayCmd}</code>
+        <button class=u2-unstyle data-copy="${displayCmd}" title="Copy"><u2-ico icon=content_copy>⧉</u2-ico></button>${installBtn}`;
+  }));
 }
 
 // --- Render ---
 
-async function renderCache(app: App): Promise<string> {
+async function renderCache(app: App): Promise<HtmlString> {
+  const t = app.t;
   const dir = cacheDir(app);
   const stats = await cacheStats(dir);
-  return `
+  return html.async`
 <div class="u2-card">
-  <div class="-head">${await app.t`Transform Cache`}</div>
+  <div class="-head">${t`Transform Cache`}</div>
   <table class="u2-table -Fields">
-    <tr><th>${await app.t`Directory`}<td><code>${hee(dir)}</code>
-    <tr><th>${await app.t`Files`}<td>${stats.count}
-    <tr><th>${await app.t`Size`}<td>${hee(fmtBytes(stats.size))}
+    <tr><th>${t`Directory`}<td><code>${dir}</code>
+    <tr><th>${t`Files`}<td>${stats.count}
+    <tr><th>${t`Size`}<td>${fmtBytes(stats.size)}
   </table>
   <div class="-body">
     <u2-menubutton>
-      <button><u2-ico icon=delete_sweep>✕</u2-ico> ${await app.t`Clear cache`} ▾</button>
+      <button><u2-ico icon=delete_sweep>✕</u2-ico> ${t`Clear cache`} ▾</button>
       <menu>
-        <li><button data-clear-cache="7" u2-confirm>${await app.t`Older than 1 week`}</button>
-        <li><button data-clear-cache="30" u2-confirm>${await app.t`Older than 1 month`}</button>
-        <li><button data-clear-cache="true" u2-confirm>${await app.t`All`}</button>
+        <li><button data-clear-cache="7" u2-confirm>${t`Older than 1 week`}</button>
+        <li><button data-clear-cache="30" u2-confirm>${t`Older than 1 month`}</button>
+        <li><button data-clear-cache="true" u2-confirm>${t`All`}</button>
       </menu>
     </u2-menubutton>
   </div>
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString | string> {
   if (vars.install_binary) {
     if (!isRoot()) return JSON.stringify({ error: "Not running as root" });
     const bin = BINARIES.find(b => b.id === vars.install_binary);
@@ -297,28 +298,29 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   const [platform, root] = await Promise.all([detectPlatform(), isRoot()]);
 
+  const t = node.app.t;
   const rows = await Promise.all(BINARIES.map(bin => renderBinary(bin, platform, root)));
 
   const rootHint = !root
-    ? `<p style="opacity:.7;font-style:italic">${hee("Running as non-root — use the copy button and run commands manually.")}</p>`
+    ? html`<p style="opacity:.7;font-style:italic">Running as non-root — use the copy button and run commands manually.</p>`
     : "";
 
-  return `
+  return html.async`
 <div>
   <div class="u2-flex">
 
-    <div cms-part="cache">${await renderCache(node.app)}</div>
+    <div cms-part="cache">${renderCache(node.app)}</div>
 
     <div class="u2-card">
-      <div class="-head">${await node.app.t`Transform Binaries`}</div>
+      <div class="-head">${t`Transform Binaries`}</div>
       <div class="-body">${rootHint}</div>
       <table class="u2-table -transform-table">
         <thead>
           <tr>
-            <th>${await node.app.t`Binary`}
-            <th>${await node.app.t`Platform`}
-            <th>${await node.app.t`Install command`}
-        <tbody>${rows.join("")}
+            <th>${t`Binary`}
+            <th>${t`Platform`}
+            <th>${t`Install command`}
+        <tbody>${html.join(rows)}
       </table>
     </div>
 
@@ -326,7 +328,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 </div>`;
 }
 
-function renderCachePart(node: Node): Promise<string> {
+function renderCachePart(node: Node): Promise<HtmlString> {
   return renderCache(node.app);
 }
 

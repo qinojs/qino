@@ -1,4 +1,4 @@
-import { hee, getCtx, type App } from "../core/mod.ts";
+import { html, type HtmlString, getCtx, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
@@ -11,12 +11,13 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** Options for the cms_access level (same labels as the page access widgets). */
-async function accessOptions(app: App, current: number): Promise<string> {
-  const labels = [await app.t`no access`, await app.t`view`, await app.t`edit`, await app.t`administer`];
-  return labels.map((l, i) => `<option value=${i} ${i === current ? "selected" : ""}>${i} · ${l}`).join("");
+async function accessOptions(app: App, current: number): Promise<HtmlString> {
+  const t = app.t;
+  const labels = [await t`no access`, await t`view`, await t`edit`, await t`administer`];
+  return html.join(labels.map((l, i) => html`<option value=${i} ${i === current ? "selected" : ""}>${i} · ${l}`));
 }
 
-function render(node: Node): Promise<string> {
+function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 
@@ -24,9 +25,10 @@ function render(node: Node): Promise<string> {
   return renderOverview(node);
 }
 
-async function renderOverview(node: Node): Promise<string> {
+async function renderOverview(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
+  const t = app.t;
   const db = app.db;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
@@ -43,62 +45,63 @@ async function renderOverview(node: Node): Promise<string> {
     SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
     FROM grp ORDER BY grp.type, grp.name`;
 
-  let trs = "";
+  const trs: HtmlString[] = [];
   for (const vs of rows) {
-    trs += `<tr itemid=${hee(String(vs.id))}>
-      <td>${hee(String(vs.id))}
-      <td><a href="?id=${hee(String(vs.id))}">${hee(vs.name ?? "")}</a>
-      <td>${hee(vs.type ?? "")}
+    trs.push(html`<tr itemid=${String(vs.id)}>
+      <td>${String(vs.id)}
+      <td><a href="?id=${String(vs.id)}">${vs.name ?? ""}</a>
+      <td>${vs.type ?? ""}
       <td><select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
-      <td style="text-align:right">${usersUrl ? `<a href="${hee(usersUrl)}?grp_id=${hee(String(vs.id))}">${Number(vs.members)}</a>` : Number(vs.members)}
-      <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
+      <td style="text-align:right">${usersUrl ? html`<a href="${usersUrl}?grp_id=${String(vs.id)}">${Number(vs.members)}</a>` : Number(vs.members)}
+      <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
-  return `<div class=u2-flex>
+  return html.async`<div class=u2-flex>
   <div class=u2-card style="flex-grow:0">
-    <div class=-head>${await app.t`Add group`}</div>
+    <div class=-head>${t`Add group`}</div>
     <form method=post style="padding:0">
-      <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
+      <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <table class=u2-table style="white-space:nowrap">
         <tr>
-          <th style="width:6em"> ${await app.t`Name`}:
+          <th style="width:6em"> ${t`Name`}:
           <td> <input type=text name=name required>
         <tr>
-          <th> ${await app.t`Access`}:
+          <th> ${t`Access`}:
           <td> <select name=cms_access>${await accessOptions(app, 0)}</select>
         <tr>
           <th>
-          <td> <button name=add>${await app.t`add`}</button>
+          <td> <button name=add>${t`add`}</button>
       </table>
     </form>
   </div>
 
   <div class=u2-card style="flex:1">
-    <div class=-head>${await app.t`Groups`}</div>
+    <div class=-head>${t`Groups`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>
         <thead>
           <tr>
             <th> ID
-            <th> ${await app.t`Name`}
-            <th> ${await app.t`Type`}
-            <th> ${await app.t`Access`}
-            <th> ${await app.t`Members`}
+            <th> ${t`Name`}
+            <th> ${t`Type`}
+            <th> ${t`Access`}
+            <th> ${t`Members`}
             <th width=20>
         <tbody>
-          ${trs}
+          ${html.join(trs)}
       </table>
     </div>
   </div>
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<string> {
+async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
+  const t = app.t;
   const db = app.db;
 
   const vs = await db.row`SELECT * FROM grp WHERE id = ${id}`;
-  if (!vs) return `<div class=u2-card><div class=-body>${await app.t`Group not found.`}</div></div>`;
+  if (!vs) return html.async`<div class=u2-card><div class=-body>${t`Group not found.`}</div></div>`;
 
   const usersNode = await app.cms.nodeByModule("cms.backend.users");
   const usersUrl = usersNode ? await (await usersNode.page()).url() : "";
@@ -108,52 +111,50 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     FROM usr JOIN usr_grp ON usr.id = usr_grp.usr_id
     WHERE usr_grp.grp_id = ${id} ORDER BY usr.lastname, usr.firstname`;
 
-  let memberRows = "";
+  const memberRows: HtmlString[] = [];
   for (const m of members) {
     const label = [m.firstname, m.lastname].filter(Boolean).join(" ") || m.email || m.id;
-    memberRows += `<tr>
-      <td>${usersUrl ? `<a href="${hee(usersUrl)}?id=${hee(String(m.id))}">${hee(String(label))}</a>` : hee(String(label))}
-      <td>${hee(m.email ?? "")}
-      <td><button class="u2-unstyle -remove" data-usr=${hee(String(m.id))} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
+    memberRows.push(html`<tr>
+      <td>${usersUrl ? html`<a href="${usersUrl}?id=${String(m.id)}">${String(label)}</a>` : String(label)}
+      <td>${m.email ?? ""}
+      <td><button class="u2-unstyle -remove" data-usr=${String(m.id)} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
-  return `<div class=u2-flex itemid="${hee(String(id))}">
+  return html.async`<div class=u2-flex itemid="${String(id)}">
   <div class=u2-card style="flex:0 1 340px">
-    <div class=-head>${await app.t`Group`} ${hee(String(vs.id))}</div>
+    <div class=-head>${t`Group`} ${String(vs.id)}</div>
     <div style="overflow:auto; padding:0">
       <table class="u2-table -detail">
         <tr>
-          <th> ${await app.t`Name`}:
-          <td> <input name=name value="${hee(vs.name ?? "")}">
+          <th> ${t`Name`}:
+          <td> <input name=name value="${vs.name ?? ""}">
         <tr>
-          <th> ${await app.t`Type`}:
-          <td> <input name=type value="${hee(vs.type ?? "")}">
+          <th> ${t`Type`}:
+          <td> <input name=type value="${vs.type ?? ""}">
         <tr>
-          <th> ${await app.t`Access`}:
+          <th> ${t`Access`}:
           <td> <select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
       </table>
     </div>
   </div>
 
   <div class="u2-card -members" style="flex:0 1 auto">
-    <div class=-head>${await app.t`Members`} (${members.length})</div>
+    <div class=-head>${t`Members`} (${members.length})</div>
     <table class=u2-table style="width:auto">
-      ${memberRows}
+      ${html.join(memberRows)}
     </table>
     <form class=-body data-add-member>
-      <input type=email name=email placeholder="${await app.t`Email`}..." required>
-      <button>${await app.t`add`}</button>
+      <input type=email name=email placeholder="${t`Email`}..." required>
+      <button>${t`add`}</button>
     </form>
   </div>
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
-  const total = Number(await app.db.one`SELECT count(*) FROM grp`);
-  const access = Number(await app.db.one`SELECT count(*) FROM grp WHERE cms_access > 0`);
-  return `<div class=-body>
-    <b>${total}</b> ${await app.t`groups`}<br>
-    <small>${access} ${await app.t`with page access`}</small>
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
+  return html.async`<div class=-body>
+    <b>${app.db.one`SELECT count(*) FROM grp`}</b> ${app.t`groups`}<br>
+    <small>${app.db.one`SELECT count(*) FROM grp WHERE cms_access > 0`} ${app.t`with page access`}</small>
   </div>`;
 }
 

@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, type App } from "../core/mod.ts";
+import { html, type HtmlString, getCtx, sql, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.smalltext", { en: "Translate", de: "Übersetzen" });
 }
 
-export async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<string> {
+export async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
   const db = node.app.db;
   const langs = node.app.languages.all;
@@ -36,46 +36,47 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
   const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
   const sortMark = (col: string) => col === order ? (dir === "ASC" ? " ↑" : " ↓") : "";
 
-  const langTh = langs.map(l => `<th data-sort="${hee(l)}" data-dir="${hee(nextDir(l))}">${hee(l)}${sortMark(l)}`).join("");
-  const codeLogTh = isSuperuser ? "<th>code_logs" : "";
+  const langTh = html.join(langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`));
+  const codeLogTh = isSuperuser ? html.raw("<th>code_logs") : "";
 
-  let rowsHtml = "";
+  const rowsHtml: HtmlString[] = [];
   for (const row of rows) {
-    const langTds = langs.map(l => `<td><textarea data-lang="${hee(l)}">${hee(row[l] ?? "")}</textarea>`).join("");
-    let codeLogTd = "";
+    const langTds = html.join(langs.map(l => html`<td><textarea data-lang="${l}">${row[l] ?? ""}</textarea>`));
+    let codeLogTd: HtmlString | string = "";
     if (isSuperuser) {
       const logs = await db.query`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
-      codeLogTd = `<td>${logs.map(r => `<a href="${hee(r.file)}:${hee(String(r.line))}">${hee(r.file)}:${hee(String(r.line))}</a>`).join("<br>")}`;
+      codeLogTd = html`<td>${html.join(logs.map(r => html`<a href="${r.file}:${String(r.line)}">${r.file}:${String(r.line)}</a>`), "<br>")}`;
     }
-    rowsHtml += `<tr data-hash="${hee(String(row.hash))}" data-ns="${hee(String(row.namespace))}">
-      <td class=-namespace>${hee(row.namespace)}
-      <td><div class=-original>${hee(row.original)}</div>
+    rowsHtml.push(html`<tr data-hash="${String(row.hash)}" data-ns="${String(row.namespace)}">
+      <td class=-namespace>${row.namespace}
+      <td><div class=-original>${row.original}</div>
       ${langTds}
-      <td>${hee(String(row.count))}
+      <td>${String(row.count)}
       ${codeLogTd}
       <td><button class=u2-unstyle data-action="translate_entry"><u2-ico icon=translate>↻</u2-ico></button>
       <td><button class=u2-unstyle data-action="delete_entry"><u2-ico icon=delete>✕</u2-ico></button>
-    `;
+    `);
   }
 
-  return `
+  return html`
   <table class="u2-table -Sticky">
     <thead><tr>
-      <th data-sort=namespace data-dir="${hee(nextDir("namespace"))}">NS${sortMark("namespace")}
-      <th data-sort=original data-dir="${hee(nextDir("original"))}">original${sortMark("original")}
+      <th data-sort=namespace data-dir="${nextDir("namespace")}">NS${sortMark("namespace")}
+      <th data-sort=original data-dir="${nextDir("original")}">original${sortMark("original")}
       ${langTh}
-      <th data-sort=count data-dir="${hee(nextDir("count"))}">count${sortMark("count")}
+      <th data-sort=count data-dir="${nextDir("count")}">count${sortMark("count")}
       ${codeLogTh}
       <th width=10>
       <th width=10>
-    <tbody>${rowsHtml}
+    <tbody>${html.join(rowsHtml)}
   </table>
-  <div class=-count>${hee(String(rows.length))} / ${hee(String(total))} entries</div>`;
+  <div class=-count>${rows.length} / ${total} entries</div>`;
 }
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
+  const t = app.t;
   const langs = app.languages.all;
   const counterActive = !!(await app.settings.core.smalltext.counter);
   const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
@@ -83,21 +84,21 @@ async function render(node: Node): Promise<string> {
   const missingWhere = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ");
   const missing = missingWhere.parts.length ? Number(await app.db.one`SELECT count(*) FROM smalltext WHERE ${missingWhere}`) : 0;
 
-  return `<div class=u2-card>
-  <div class=-head>${await app.t`Translate`}</div>
+  return html.async`<div class=u2-card>
+  <div class=-head>${t`Translate`}</div>
   <div class=-body>
-    <input data-search value="${hee(search)}" placeholder="${await app.t`Search`}…">
-    <label><input type=checkbox data-set=toggle_counter ${counterActive ? "checked" : ""}> ${await app.t`Counter`}</label>
+    <input data-search value="${search}" placeholder="${t`Search`}…">
+    <label><input type=checkbox data-set=toggle_counter ${counterActive ? "checked" : ""}> ${t`Counter`}</label>
     &nbsp;
-    <button data-action=count_clean>${await app.t`Clear counter`}</button>
+    <button data-action=count_clean>${t`Clear counter`}</button>
     &nbsp;&nbsp;
-    <label><input type=checkbox data-set=toggle_code_log ${codeLogActive ? "checked" : ""}> ${await app.t`Code logger`}</label>
+    <label><input type=checkbox data-set=toggle_code_log ${codeLogActive ? "checked" : ""}> ${t`Code logger`}</label>
     &nbsp;
-    <button data-action=code_log_clean>${await app.t`Clear log`}</button>
+    <button data-action=code_log_clean>${t`Clear log`}</button>
     &nbsp;&nbsp;
-    <button data-action=delete_not_used>${await app.t`Delete unused`}</button>
+    <button data-action=delete_not_used>${t`Delete unused`}</button>
     &nbsp;&nbsp;
-    <button data-action=translate_untranslated>${await app.t`Translate missing`} (${hee(String(missing))})</button>
+    <button data-action=translate_untranslated>${t`Translate missing`} (${missing})</button>
     <br>
   </div>
   <div style="overflow:auto; padding:0; max-height:90vh" cms-part="table">
@@ -106,15 +107,14 @@ async function render(node: Node): Promise<string> {
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const db = app.db;
+  const t = app.t;
   const langs = app.languages.all;
-  const total = Number(await db.one`SELECT count(*) FROM smalltext`);
-  const missing = Number(await db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`);
-  return `<div style="overflow:auto; padding:0">
+  return html.async`<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>${await app.t`Entries`}:<td>${hee(String(total))}
-  <tr><td>${await app.t`Missing translations`}:<td>${hee(String(missing))}
+  <tr><td>${t`Entries`}:<td>${db.one`SELECT count(*) FROM smalltext`}
+  <tr><td>${t`Missing translations`}:<td>${db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`}
 </table>
 </div>`;
 }
