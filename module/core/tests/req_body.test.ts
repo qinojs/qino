@@ -1,52 +1,52 @@
 import { assert, assertEquals, assertThrows, testContext } from "./deps.ts";
-import { Body } from "../lib/ctx/Body.ts";
-import { ContextRequest } from "../lib/ctx/ContextRequest.ts";
+import { ReqBody } from "../lib/ctx/ReqBody.ts";
+import { Req } from "../lib/ctx/Req.ts";
 import { Output } from "../lib/util.ts";
 
 const parse = (init?: RequestInit, maxSize = 1024 * 1024) =>
-  Body.parse(new Request("http://qino.test/", init), { maxSize });
+  ReqBody.parse(new Request("http://qino.test/", init), { maxSize });
 
-Deno.test("Body: no body -> post === null", async () => {
+Deno.test("ReqBody: no body -> post === null", async () => {
   assertEquals((await parse()).value, null);
   assertEquals((await parse({ method: "POST" })).value, null);
 });
 
-Deno.test("Body: unknown content-type -> post === null", async () => {
+Deno.test("ReqBody: unknown content-type -> post === null", async () => {
   const b = await parse({ method: "POST", body: "hello", headers: { "content-type": "text/plain" } });
   assertEquals(b.value, null);
 });
 
-Deno.test("Body: json string body -> post === 'string'", async () => {
+Deno.test("ReqBody: json string body -> post === 'string'", async () => {
   const b = await parse({ method: "POST", body: '"hello"', headers: { "content-type": "application/json" } });
   assertEquals(b.value, "hello");
 });
 
-Deno.test("Body: form -> flat frozen record", async () => {
+Deno.test("ReqBody: form -> flat frozen record", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams({ xyz: "1" }) });
   assertEquals(b.value.xyz, "1");
   assert(Object.isFrozen(b.value));
   assertThrows(() => { b.value.xyz = "2"; }, TypeError);
 });
 
-Deno.test("Body: json deep, also on PUT, deep-frozen", async () => {
+Deno.test("ReqBody: json deep, also on PUT, deep-frozen", async () => {
   const b = await parse({ method: "PUT", body: JSON.stringify({ xyz: { abc: 42 } }), headers: { "content-type": "application/json" } });
   assertEquals(b.value.xyz.abc, 42);
   assert(Object.isFrozen(b.value.xyz));
 });
 
-Deno.test("Body: invalid json -> 400 Output", async () => {
+Deno.test("ReqBody: invalid json -> 400 Output", async () => {
   const err = await parse({ method: "POST", body: "{oops", headers: { "content-type": "application/json" } }).catch((e) => e);
   assert(err instanceof Output);
   assertEquals(err.status, 400);
 });
 
-Deno.test("Body: content-length over maxSize -> 413 Output", async () => {
+Deno.test("ReqBody: content-length over maxSize -> 413 Output", async () => {
   const err = await parse({ method: "POST", body: '"' + "x".repeat(2046) + '"', headers: { "content-type": "application/json", "content-length": "2048" } }, 1024).catch((e) => e);
   assert(err instanceof Output);
   assertEquals(err.status, 413);
 });
 
-Deno.test("Body: files proxy — sync `in`/keys, lazy per-file spool, missing key -> undefined", async () => {
+Deno.test("ReqBody: files proxy — sync `in`/keys, lazy per-file spool, missing key -> undefined", async () => {
   const fd = new FormData();
   fd.append("xyz", "1");
   fd.append("up", new File(["data"], "a.txt", { type: "text/plain" }));
@@ -68,12 +68,12 @@ Deno.test("Body: files proxy — sync `in`/keys, lazy per-file spool, missing ke
   for (const p of await b.settle()) await Deno.remove(p).catch(() => {});
 });
 
-Deno.test("Body: `await body.files` without key is harmless (no `then` trap)", async () => {
+Deno.test("ReqBody: `await body.files` without key is harmless (no `then` trap)", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams({ a: "1" }) });
   assertEquals(await b.files, b.files);
 });
 
-Deno.test("Body: __proto__/then/toString are plain data keys (form)", async () => {
+Deno.test("ReqBody: __proto__/then/toString are plain data keys (form)", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams([["__proto__", "x"], ["then", "y"], ["toString", "z"]]) });
   assertEquals(b.value.__proto__, "x");
   assertEquals(b.value.then, "y");
@@ -81,7 +81,7 @@ Deno.test("Body: __proto__/then/toString are plain data keys (form)", async () =
   assertEquals(({} as Record<string, unknown>).x, undefined); // no prototype pollution
 });
 
-Deno.test("Body: __proto__/then/toString are plain data keys (json)", async () => {
+Deno.test("ReqBody: __proto__/then/toString are plain data keys (json)", async () => {
   const b = await parse({ method: "POST", body: '{"__proto__":"x","then":"y","toString":"z"}', headers: { "content-type": "application/json" } });
   assertEquals(b.value.__proto__, "x");
   assertEquals(b.value.then, "y");
@@ -89,7 +89,7 @@ Deno.test("Body: __proto__/then/toString are plain data keys (json)", async () =
   assertEquals(Object.getPrototypeOf({}), Object.prototype); // no prototype pollution
 });
 
-Deno.test("Body: upload field named `then` stays a normal file", async () => {
+Deno.test("ReqBody: upload field named `then` stays a normal file", async () => {
   const fd = new FormData();
   fd.append("then", new File(["x"], "t.txt"));
   const b = await parse({ method: "POST", body: fd });
@@ -99,14 +99,14 @@ Deno.test("Body: upload field named `then` stays a normal file", async () => {
   for (const p of await b.settle()) await Deno.remove(p).catch(() => {});
 });
 
-Deno.test("Body: repeated form keys become arrays, singles stay scalar", async () => {
+Deno.test("ReqBody: repeated form keys become arrays, singles stay scalar", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams([["to_users", "1"], ["to_users", "2"], ["subject", "s"]]) });
   assertEquals(b.value.to_users, ["1", "2"]);
   assertEquals(b.value.subject, "s");
   assert(Object.isFrozen(b.value.to_users));
 });
 
-Deno.test("Body: chunked json (no content-length) parses through the capped reader", async () => {
+Deno.test("ReqBody: chunked json (no content-length) parses through the capped reader", async () => {
   const req = new Request("http://qino.test/", {
     method: "POST",
     body: new Blob(['{"a":1}']).stream(),
@@ -115,11 +115,11 @@ Deno.test("Body: chunked json (no content-length) parses through the capped read
     duplex: "half",
   });
   assertEquals(req.headers.get("content-length"), null); // stream body really has no length
-  const b = await Body.parse(req, { maxSize: 1024 });
+  const b = await ReqBody.parse(req, { maxSize: 1024 });
   assertEquals(b.value.a, 1);
 });
 
-Deno.test("Body: chunked body over maxSize -> 413 while reading", async () => {
+Deno.test("ReqBody: chunked body over maxSize -> 413 while reading", async () => {
   const req = new Request("http://qino.test/", {
     method: "POST",
     body: new Blob(['{"a":"' + "x".repeat(2048) + '"}']).stream(),
@@ -127,13 +127,13 @@ Deno.test("Body: chunked body over maxSize -> 413 while reading", async () => {
     // @ts-ignore duplex is required for stream bodies
     duplex: "half",
   });
-  const err = await Body.parse(req, { maxSize: 1024 }).catch((e) => e);
+  const err = await ReqBody.parse(req, { maxSize: 1024 }).catch((e) => e);
   assert(err instanceof Output);
   assertEquals(err.status, 413);
   await req.body?.cancel(); // in production the server runtime drains unread request bodies
 });
 
-Deno.test("Body: streaming/raw content-types stay untouched (no 411, req still readable)", async () => {
+Deno.test("ReqBody: streaming/raw content-types stay untouched (no 411, req still readable)", async () => {
   const stream = new Blob(["audio-bytes"]).stream();
   const req = new Request("http://qino.test/", {
     method: "POST",
@@ -142,17 +142,17 @@ Deno.test("Body: streaming/raw content-types stay untouched (no 411, req still r
     // @ts-ignore duplex is required for stream bodies
     duplex: "half",
   });
-  const b = await Body.parse(req, { maxSize: 1024 });
+  const b = await ReqBody.parse(req, { maxSize: 1024 });
   assertEquals(b.value, null);
-  assertEquals(await req.text(), "audio-bytes"); // raw stream untouched by Body
+  assertEquals(await req.text(), "audio-bytes"); // raw stream untouched by ReqBody
 });
 
-Deno.test("ContextRequest.query: always flat, first value wins", async () => {
-  const req = await ContextRequest.create(new Request("http://qino.test/?xyz=a&xyz=b"));
+Deno.test("Req.query: always flat, first value wins", async () => {
+  const req = await Req.create(new Request("http://qino.test/?xyz=a&xyz=b"));
   assertEquals(req.query.xyz, "a");
 });
 
-Deno.test("RequestContext defaults: post null, files empty", async () => {
+Deno.test("Ctx defaults: post null, files empty", async () => {
   const ctx = await testContext();
   assertEquals(ctx.req.body, null);
   assertEquals(Object.keys(ctx.req.files), []);

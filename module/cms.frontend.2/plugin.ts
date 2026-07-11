@@ -1,4 +1,4 @@
-import { Access, AccessError, s, type RequestContext, type AptTree, type App } from "../core/mod.ts";
+import { Access, AccessError, s, type Ctx, type AptTree, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 export const name = "cms.frontend.2";
@@ -34,7 +34,7 @@ function widgetUrl(widget: string): string {
   return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
 }
 
-async function renderWidget(ctx: RequestContext, widget: string, params: Record<string, any> = {}): Promise<string | null> {
+async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
   const P = await ctx.app.cms.node(params["pid"]);
   if (await P.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
@@ -53,7 +53,7 @@ export const api: AptTree = {
         description: "Render CMS frontend widget.",
         access: Access.USER,
         input: s.object({ params: s.optional(s.record()) }),
-        execute: ({ widget, params }: any, ctx: RequestContext) =>
+        execute: ({ widget, params }: any, ctx: Ctx) =>
           renderWidget(ctx, widget, params ?? {}),
       },
     },

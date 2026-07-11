@@ -2,7 +2,7 @@
 import { assertEquals, testContext } from "./deps.ts";
 import { LangManager } from "../lib/LangManager.ts";
 import { Db } from "../lib/db/Db.ts";
-import { requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 function sessionLang(initial = "") {
   let value = initial;

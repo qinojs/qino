@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, unixTime, type Sql, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, unixTime, type Sql, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { dump } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
@@ -64,7 +64,7 @@ function logRefColumns(db: App["db"]): { table: string; col: string }[] {
 }
 
 // ── list (filterable part) ────────────────────────────────────────────────
-async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<string> {
   const { t, db } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
 
@@ -188,7 +188,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
-async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<string> {
   if (ctx.req.query.id) return renderDetail(node, Number(ctx.req.query.id));
   const { t } = node.app;
 

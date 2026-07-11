@@ -1,4 +1,4 @@
-import { Output, clientIp, type App, type RequestContext } from "../core/mod.ts";
+import { Output, clientIp, type App, type Ctx } from "../core/mod.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
@@ -97,7 +97,7 @@ function shrinkPathBlocks(blocks: Map<string, number>, max: number) {
   }
 }
 
-function block(ctx: RequestContext, seconds: number) {
+function block(ctx: Ctx, seconds: number) {
   ctx.res.status = 429;
   ctx.res.headers.set("Retry-After", String(Math.max(1, Math.ceil(seconds))));
   ctx.res.body = "Too many requests";

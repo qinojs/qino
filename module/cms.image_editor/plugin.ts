@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { Access, Output, type App, type AptTree, type RequestContext, s } from "../core/mod.ts";
+import { Access, Output, type App, type AptTree, type Ctx, s } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
@@ -28,7 +28,7 @@ export const dbSchema = {
   },
 };
 
-const canWrite = async ({ file }: any, ctx: RequestContext) => isWritable(ctx, Number(file));
+const canWrite = async ({ file }: any, ctx: Ctx) => isWritable(ctx, Number(file));
 
 export const api: AptTree = {
   meta: {

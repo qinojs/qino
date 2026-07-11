@@ -1,13 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { s, Access, AptError, sql, type AptTree, type RequestContext } from "../core/mod.ts";
+import { s, Access, AptError, sql, type AptTree, type Ctx } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 class CmsTextService {
 
-    #ctx: RequestContext;
+    #ctx: Ctx;
 
-    constructor(ctx: RequestContext) {
+    constructor(ctx: Ctx) {
         this.#ctx = ctx;
     }
 
@@ -218,7 +218,7 @@ class CmsTextService {
     }
 }
 
-export const service = (ctx: RequestContext): CmsTextService => new CmsTextService(ctx);
+export const service = (ctx: Ctx): CmsTextService => new CmsTextService(ctx);
 
 export const api: AptTree = {
     text: {
@@ -230,7 +230,7 @@ export const api: AptTree = {
                     ids: s.string().describe("Underscore-separated text IDs"),
                     lang: s.optional(s.string()).describe("Language code. Default: current language"),
                 }),
-                execute: ({ ids, lang }: any, ctx: RequestContext) => service(ctx).isTranslated(ids.split("_").map(Number), lang ?? null),
+                execute: ({ ids, lang }: any, ctx: Ctx) => service(ctx).isTranslated(ids.split("_").map(Number), lang ?? null),
             },
         },
         ":text": {
@@ -238,7 +238,7 @@ export const api: AptTree = {
             get: {
                 description: "Read text in all languages",
                 access: Access.USER, // fine-grained check via textAccess() in execute
-                execute: ({ text }: any, ctx: RequestContext) => service(ctx).get(text),
+                execute: ({ text }: any, ctx: Ctx) => service(ctx).get(text),
             },
             translate: {
                 post: {
@@ -248,7 +248,7 @@ export const api: AptTree = {
                         target_lang: s.string().describe("Target language code, e.g. \"en\""),
                         source_lang: s.string().describe("Source language code, e.g. \"de\""),
                     }),
-                    execute: ({ text, target_lang, source_lang }: any, ctx: RequestContext) =>
+                    execute: ({ text, target_lang, source_lang }: any, ctx: Ctx) =>
                         service(ctx).translate(text, target_lang, source_lang),
                 },
             },
@@ -257,7 +257,7 @@ export const api: AptTree = {
                     description: "Read text history for a language",
                     access: Access.USER,
                     input: s.object({ lang: s.string().describe("Language code, e.g. \"de\"") }),
-                    execute: ({ text, lang }: any, ctx: RequestContext) => service(ctx).history(text, lang),
+                    execute: ({ text, lang }: any, ctx: Ctx) => service(ctx).history(text, lang),
                 },
             },
         },
@@ -275,7 +275,7 @@ export const api: AptTree = {
                         ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
                         subpages: s.optional(s.boolean()).describe("Include sub-pages"),
                     }),
-                    execute: ({ page, target_lang, source_lang, ifNeeded, subpages }: any, ctx: RequestContext) =>
+                    execute: ({ page, target_lang, source_lang, ifNeeded, subpages }: any, ctx: Ctx) =>
                         service(ctx).translatePage(page, target_lang, source_lang ?? "auto", ifNeeded ?? true, subpages ?? false),
                 },
             },
@@ -287,7 +287,7 @@ export const api: AptTree = {
                         ifNeeded: s.optional(s.boolean()).describe("Skip already translated texts"),
                         subpages: s.optional(s.boolean()).describe("Include sub-pages"),
                     }),
-                    execute: ({ page, ifNeeded, subpages }: any, ctx: RequestContext) =>
+                    execute: ({ page, ifNeeded, subpages }: any, ctx: Ctx) =>
                         service(ctx).translatePageAllLangs(page, ifNeeded ?? true, subpages ?? false),
                 },
             },

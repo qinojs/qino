@@ -1,4 +1,4 @@
-import { hee, getCtx, type RequestContext, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type AptNode, type Verb, type App } from "../core/mod.ts";
+import { hee, getCtx, type Ctx, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type AptNode, type Verb, type App } from "../core/mod.ts";
 import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
 
@@ -26,7 +26,7 @@ interface Route {
   accessLevel: "public" | "user" | "superuser" | "dynamic" | "none";
 }
 
-function accessLevel(action: Verb, ctx: RequestContext): Route["accessLevel"] {
+function accessLevel(action: Verb, ctx: Ctx): Route["accessLevel"] {
   const { access, guard } = action;
   if (!access) return "none";
   if (guard) return "dynamic";
@@ -36,7 +36,7 @@ function accessLevel(action: Verb, ctx: RequestContext): Route["accessLevel"] {
   return access(ctx) ? "user" : "none";
 }
 
-function* walk(node: AptNode, ctx: RequestContext, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
+function* walk(node: AptNode, ctx: Ctx, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(node)) {
     if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
     const child = value as AptNode;

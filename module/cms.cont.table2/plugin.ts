@@ -1,5 +1,5 @@
 import { WRITE, type Node } from "../cms/mod.ts";
-import { Output, contentDisposition, type RequestContext } from "../core/mod.ts";
+import { Output, contentDisposition, type Ctx } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
 
@@ -24,7 +24,7 @@ function cssWidth(raw: string): string {
   return /^\d+(\.\d+)?(px|%|em|rem)$/.test(w) ? w : "";
 }
 
-async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   if (node.edit) {
     ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
   }

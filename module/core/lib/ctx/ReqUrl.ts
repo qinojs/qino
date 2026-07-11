@@ -4,7 +4,7 @@
  * Deliberately not a `URL` subclass and without `searchParams` — query access
  * lives on the request (`req.query`/`req.queryAll`).
  */
-export class RequestUrl {
+export class ReqUrl {
   #url: URL;
 
   constructor(input: string | URL) {

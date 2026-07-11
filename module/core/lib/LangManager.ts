@@ -1,4 +1,4 @@
-import { getCtx, type RequestContext } from "./ctx/RequestContext.ts";
+import { getCtx, type Ctx } from "./ctx/Ctx.ts";
 import { createHash } from "node:crypto";
 import { sql } from "../../../deps.ts";
 import type { App } from "./App.ts";
@@ -23,7 +23,7 @@ export class LangManager {
   }
 
   // Initialises language per request (like L.init)
-  async initCtx(ctx: RequestContext): Promise<void> {
+  async initCtx(ctx: Ctx): Promise<void> {
     const usr = ctx.user;
 
     ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.core.lang() ?? "";
@@ -50,7 +50,7 @@ export class LangManager {
     ctx.langNsPath ??= [];
   }
 
-  nsStart(ns: string, ctx?: RequestContext): void {
+  nsStart(ns: string, ctx?: Ctx): void {
     const c = ctx ?? getCtx();
     c.langNsPath.push(c.langNs);
     c.langNs = ns;
@@ -58,7 +58,7 @@ export class LangManager {
     c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : c.langUsr;
   }
 
-  nsStop(ctx?: RequestContext): void {
+  nsStop(ctx?: Ctx): void {
     const c = ctx ?? getCtx();
     c.langNs = c.langNsPath.pop() ?? "";
     const nsLang = String(c.settings.core.lang_ns[c.langNs]?.() ?? "");
@@ -66,7 +66,7 @@ export class LangManager {
   }
 
   // Determine language from the browser Accept-Language header
-  #fromBrowser(ctx: RequestContext): string {
+  #fromBrowser(ctx: Ctx): string {
     const acceptLang = ctx.req.header("accept-language");
     if (!acceptLang) return this.def;
     const accepted = acceptLang.split(/,\s*/);
@@ -100,7 +100,7 @@ export class LangManager {
     return this.#txtsCache[key];
   }
 
-  async #getTxt(string: string, ctx: RequestContext): Promise<string> {
+  async #getTxt(string: string, ctx: Ctx): Promise<string> {
     const hash = createHash("md5").update(string).digest("hex");
     const ns = ctx.langNs;
     const l = ctx.lang;

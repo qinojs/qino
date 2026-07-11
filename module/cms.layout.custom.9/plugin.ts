@@ -1,4 +1,4 @@
-import { hee, type RequestContext } from "../core/mod.ts";
+import { hee, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.custom.9";
@@ -9,7 +9,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, data: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, data: { ctx: Ctx }): Promise<string> {
   const module = node.vs.module;
   const LPage = await node.cms.layoutPage(String(module));
 

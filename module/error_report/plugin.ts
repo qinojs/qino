@@ -5,7 +5,7 @@
  */
 
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, type RequestContext, Output, type App } from "../core/mod.ts";
+import { getCtx, type Ctx, Output, type App } from "../core/mod.ts";
 
 const reporterRoot = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
 const reporterPath = reporterRoot + "mod.js";
@@ -29,7 +29,7 @@ export const settingsSchema = {
   },
 };
 
-async function handleJsError(ctx: RequestContext): Promise<void> {
+async function handleJsError(ctx: Ctx): Promise<void> {
   const report = ctx.req.body;
   if (report?.message) {
     await addReport(ctx.app, { source: "js", ...report });
@@ -37,7 +37,7 @@ async function handleJsError(ctx: RequestContext): Promise<void> {
   throw new Output({});
 }
 
-async function handleCssError(ctx: RequestContext): Promise<void> {
+async function handleCssError(ctx: Ctx): Promise<void> {
   const file = ctx.req.header("referer");
   const message = ctx.req.query.message || "css-error";
   const report: Report = { source: "css", message, file, backtrace: [] };
@@ -62,7 +62,7 @@ async function handleCssError(ctx: RequestContext): Promise<void> {
   throw new Output();
 }
 
-async function handleCspError(ctx: RequestContext): Promise<void> {
+async function handleCspError(ctx: Ctx): Promise<void> {
   const report = ctx.req.body?.["csp-report"] as Report;
   if (report) {
     const directive = report["effective-directive"] ?? report["violated-directive"] ?? "";

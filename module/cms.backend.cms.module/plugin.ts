@@ -1,4 +1,4 @@
-import { hee, getCtx, type App, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -12,7 +12,7 @@ export async function install({ app }: { app: App }) {
 /** Short type badge from the module name. */
 const modType = (n: string) => n.match(/^cms\.(cont|layout|backend|frontend)\./)?.[1] ?? "";
 
-async function render(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars?: Record<string, unknown> } = {}): Promise<string> {
+async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<string> {
   ctx ??= getCtx();
   const app = node.app;
   const db = app.db;

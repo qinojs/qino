@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, hee, sql, type App, type RequestContext } from "../core/mod.ts";
+import { getCtx, hee, sql, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -46,7 +46,7 @@ async function sessionDetail(app: App, id: number): Promise<string> {
 }
 
 // List part — re-rendered live on search via cms.reloadPart(nid, "list", { search }).
-async function list(node: Node | null, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
+async function list(node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
   const app = ctx.app;
   const search = String(vars?.search ?? "").trim();

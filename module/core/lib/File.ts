@@ -3,7 +3,6 @@ import { typeByExtension } from "../../../deps.ts";
 
 export class File {
   public path: string;
-  #uploadTicket?: string;
 
   constructor(path: string) {
     this.path = path;

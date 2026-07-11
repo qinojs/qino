@@ -1,5 +1,5 @@
 
-import { getCtx, requestStorage, sql, type RequestContext, type Db, type DbEvents, type App } from "../../core/mod.ts";
+import { getCtx, requestStorage, sql, type Ctx, type Db, type DbEvents, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view } from "./Vers.ts";
 import { tableEntriesCopyTo } from "./Spaces.ts";
 import type { Node } from "../../cms/mod.ts";
@@ -13,7 +13,7 @@ export interface CmsVersState {
 
 const STATE_KEY = "cms.versions";
 
-export function getCmsVers(ctx: RequestContext): CmsVersState {
+export function getCmsVers(ctx: Ctx): CmsVersState {
     ctx.state[STATE_KEY] ??= { space: 0, log: 0 };
     return ctx.state[STATE_KEY] as CmsVersState;
 }
@@ -125,7 +125,7 @@ export function preventDbManipulations(app: App): void {
     app.db.on("table::delete-before", prevent);
 }
 
-export function cacheHeaders(ctx: RequestContext): void {
+export function cacheHeaders(ctx: Ctx): void {
     const maxAge = 60 * 60 * 24 * 180;
     const d = new Date(Date.now() + maxAge * 1000).toUTCString();
     ctx.res.headers.set("Expires", d);

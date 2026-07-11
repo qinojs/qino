@@ -1,18 +1,18 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Item, ItemProxy } from "../../../../deps.ts";
-import { ResponseBuilder } from "./ResponseBuilder.ts";
+import { Res } from "./Res.ts";
 import { uid } from "../util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
-import { ContextRequest } from "./ContextRequest.ts";
+import { Req } from "./Req.ts";
 import type { App } from "../App.ts";
 import type { dbEntry_client, dbEntry_usr } from "../qgEntries.ts";
 import type { Session } from "../SessionManager.ts";
 import type { LoginError } from "../auth.ts";
 
-export class RequestContext {
+export class Ctx {
   app!: App;
-  req!: ContextRequest;
+  req!: Req;
   sess: Session = null!;
   clientId: string | null = null;
   logId: Promise<string | null> = Promise.resolve(null);
@@ -24,7 +24,7 @@ export class RequestContext {
   langNsPath: string[] = [];
   langNs = "";
 
-  res: ResponseBuilder = new ResponseBuilder();
+  res: Res = new Res();
 
   #settingsRoot: Item | null = null;
   get settings(): ItemProxy {
@@ -70,13 +70,13 @@ export class RequestContext {
     return urlToLocalPath(url, this.req.basePath, this.app);
   }
 
-  static async create(app: App, request: Request, opt: { basePath: string; peerAddr?: string; time?: number; url?: URL }): Promise<RequestContext> {
-    const req = await ContextRequest.create(request, {
+  static async create(app: App, request: Request, opt: { basePath: string; peerAddr?: string; time?: number; url?: URL }): Promise<Ctx> {
+    const req = await Req.create(request, {
       ...opt,
       maxSize: Number(await app.settings.core.uploadMaxFileSize ?? "") || undefined,
       trustedProxyHops: app.trustedProxyHops,
     });
-    const ctx = new RequestContext();
+    const ctx = new Ctx();
     ctx.req = req;
     ctx.app = app;
     ctx.sess = await app.sessions.loadFromRequest(req, app.https, req.basePath);
@@ -113,9 +113,9 @@ function pubPath(root: string, file: string): string | null {
   return rel && rel !== ".." && !rel.startsWith(".." + nodePath.sep) ? target : null;
 }
 
-export const requestStorage: AsyncLocalStorage<RequestContext> = new AsyncLocalStorage();
+export const requestStorage: AsyncLocalStorage<Ctx> = new AsyncLocalStorage();
 
-export function getCtx(): RequestContext {
+export function getCtx(): Ctx {
   const ctx = requestStorage.getStore();
   if (!ctx) throw new Error("getCtx() called outside of request context");
   return ctx;

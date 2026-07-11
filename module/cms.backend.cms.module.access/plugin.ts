@@ -1,4 +1,4 @@
-import { hee, getCtx, type App, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -33,7 +33,7 @@ async function groups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
 }
 
-async function render(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars?: Record<string, unknown> } = {}): Promise<string> {
+async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<string> {
   ctx ??= getCtx();
   const app = node.app;
   await save(app, vars);

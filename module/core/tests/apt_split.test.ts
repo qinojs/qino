@@ -2,7 +2,7 @@
 import { aptRequest, assertEquals, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
-import { requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 const ctx = await testContext();
 

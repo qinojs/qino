@@ -116,7 +116,7 @@ This generates routes `GET /users` and `GET /users/:id` automatically.
 
 ### Request Context
 
-Every request has an isolated `RequestContext` accessible via `getCtx()`:
+Every request has an isolated `Ctx` accessible via `getCtx()`:
 
 ```ts
 import { getCtx } from "jsr:@qino/qino";

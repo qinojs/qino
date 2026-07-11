@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { Output, safeFetch, type App, type RequestContext, type HtmlBuilder, type Csp } from "../core/mod.ts";
+import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "../core/mod.ts";
 import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
 
 export const name = "uncdn";
@@ -57,7 +57,7 @@ async function directorySize(path: string): Promise<number> {
   return size;
 }
 
-function done(ctx: RequestContext, status: number, body: string): never {
+function done(ctx: Ctx, status: number, body: string): never {
   ctx.res.status = status;
   ctx.res.body = body;
   throw new Output();
@@ -73,7 +73,7 @@ function serveResponse(mediaType: string, data: Uint8Array): never {
   throw new Output(data, { headers });
 }
 
-async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: RequestContext): Promise<void> {
+async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: Ctx): Promise<void> {
   const res = await safeFetch(url, { signal: AbortSignal.timeout(15000) }); // SSRF-guarded, re-checked after redirects
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   if (Number(res.headers.get("content-length") ?? 0) > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
@@ -144,7 +144,7 @@ export function init(app: App): void {
 // Rewrite assets to the proxy, but only for origins the page declared in its CSP
 // (per directive: script-src gates scripts, style-src gates styles). Fonts/images
 // referenced relatively inside a proxied CSS cascade through the proxy on their own.
-export function rewriteHtml(html: HtmlBuilder, appURL: string, csp: Csp): void {
+export function rewriteHtml(html: ResHtml, appURL: string, csp: ResCsp): void {
   const rewriter = (src: CspSources) => {
     const allow = origins(src);
     return (url: string): string =>

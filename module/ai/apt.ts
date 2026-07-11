@@ -1,4 +1,4 @@
-import { Access, type AptTree, NotFoundError, Output, type Params, type RequestContext, s } from "../core/mod.ts";
+import { Access, type AptTree, NotFoundError, Output, type Params, type Ctx, s } from "../core/mod.ts";
 import type {} from "./mod.ts";
 
 const SSE_HEADERS = {
@@ -14,7 +14,7 @@ export const api: AptTree = {
       input: s.object({ bot: s.string(), context: s.optional(s.record()) }),
       output: s.object({ id: s.number() }),
       access: Access.USER,
-      execute: async ({ bot, context }: Params, ctx: RequestContext) => ({
+      execute: async ({ bot, context }: Params, ctx: Ctx) => ({
         id: await ctx.app.ai.createSession({ bot: String(bot), context, userId: ctx.userId }),
       }),
     },
@@ -23,7 +23,7 @@ export const api: AptTree = {
       get: {
         description: "Load a chat session and its messages",
         access: Access.USER,
-        execute: async ({ id }: Params, ctx: RequestContext) => {
+        execute: async ({ id }: Params, ctx: Ctx) => {
           const db = ctx.app.db;
           const session = await db.row`SELECT * FROM ai_session WHERE id = ${id}`;
           if (!session || Number(session.user_id) !== ctx.userId) throw new NotFoundError();
@@ -36,7 +36,7 @@ export const api: AptTree = {
           description: "Send a message and get the assistant reply",
           input: s.object({ content: s.string(), context: s.optional(s.record()) }),
           access: Access.USER,
-          execute: ({ id, content, context }: Params, ctx: RequestContext) =>
+          execute: ({ id, content, context }: Params, ctx: Ctx) =>
             ctx.app.ai.session(Number(id)).run(String(content), ctx, context as Record<string, unknown> | undefined),
         },
       },
@@ -45,7 +45,7 @@ export const api: AptTree = {
           description: "Send a message and stream the reply (SSE)",
           input: s.object({ content: s.string(), context: s.optional(s.record()) }),
           access: Access.USER,
-          execute: ({ id, content, context }: Params, ctx: RequestContext): never => {
+          execute: ({ id, content, context }: Params, ctx: Ctx): never => {
             const stream = ctx.app.ai.session(Number(id)).runStream(String(content), ctx, context as Record<string, unknown> | undefined);
             throw new Output(stream, { headers: SSE_HEADERS });
           },
@@ -58,7 +58,7 @@ export const api: AptTree = {
       description: "Generate images from a prompt (OpenAI-compatible passthrough)",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: Params, ctx: RequestContext) => ctx.app.ai.images(data as Record<string, unknown>),
+      execute: ({ data }: Params, ctx: Ctx) => ctx.app.ai.images(data as Record<string, unknown>),
     },
   },
 };

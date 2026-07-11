@@ -7,7 +7,7 @@ import { Output } from "../util.ts";
  * flat frozen record (form) or deep-frozen JSON value (object/array/string/...).
  * `await body.files.name` spools exactly that file to a tmp path.
  */
-export class Body {
+export class ReqBody {
   // deno-lint-ignore no-explicit-any
   #value: any = null;
   // deno-lint-ignore no-explicit-any
@@ -15,7 +15,7 @@ export class Body {
 
   #files: Record<string, Promise<UploadedFile> | undefined>;
   get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#files; }
-  /** tmp file paths spooled so far — removed in RequestContext.cleanup() */
+  /** tmp file paths spooled so far — removed in Ctx.cleanup() */
   tmpPaths: string[] = [];
   #rawFiles: Record<string, File> = Object.create(null);
   #spooled: Record<string, Promise<UploadedFile>> = Object.create(null);
@@ -47,8 +47,8 @@ export class Body {
     return this.tmpPaths;
   }
 
-  static async parse(request: Request, opt: { maxSize: number }): Promise<Body> {
-    const body = new Body();
+  static async parse(request: Request, opt: { maxSize: number }): Promise<ReqBody> {
+    const body = new ReqBody();
     body.#maxSize = opt.maxSize;
     if (!request.body) return body;
 

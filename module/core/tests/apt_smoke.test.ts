@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import { Access, AccessError, NotFoundError, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
-import { requestStorage } from "../lib/ctx/RequestContext.ts";
+import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 const fakeCtx = await testContext();
 fakeCtx.lang = "de";

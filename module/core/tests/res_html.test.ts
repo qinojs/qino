@@ -1,8 +1,8 @@
 import { assertEquals } from "./deps.ts";
-import { HtmlBuilder } from "../lib/ctx/HtmlBuilder.ts";
+import { ResHtml } from "../lib/ctx/ResHtml.ts";
 
-Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () => {
-  const html = new HtmlBuilder();
+Deno.test("ResHtml: render renders escaped metadata and assets in head", () => {
+  const html = new ResHtml();
   html.titlePrefix = "Pre ";
   html.title = `<Title>`;
   html.titleSuffix = " & Suf";
@@ -31,8 +31,8 @@ Deno.test("HtmlBuilder: render renders escaped metadata and assets in head", () 
   assertEquals(out.indexOf("<script type=importmap>") < out.indexOf("<script type=module"), true);
 });
 
-Deno.test("HtmlBuilder: render emits lang, classes and content", () => {
-  const html = new HtmlBuilder();
+Deno.test("ResHtml: render emits lang, classes and content", () => {
+  const html = new ResHtml();
   html.lang = "de";
   html.class.add("theme");
   html.class.add(`unsafe"`);

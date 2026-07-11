@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { requestStorage, type RequestContext } from "../../core/mod.ts";
+import { requestStorage, type Ctx } from "../../core/mod.ts";
 import more from "../view/widgets/more.ts";
 
 Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () => {
@@ -17,7 +17,7 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
       core: { lang_ns: { cms: () => "" } },
       "cms.frontend.2": { ui: { tree_show_c: () => false } },
     },
-  } as unknown as RequestContext;
+  } as unknown as Ctx;
   const app = {
     settings: { cms: { feedback: { email: "support@example.test" } } },
     languages: { all: [] },
@@ -58,7 +58,7 @@ Deno.test("cms.frontend.2 more: keeps feedback draft when sending fails", async 
       core: { lang_ns: { cms: () => "" } },
       "cms.frontend.2": { ui: { tree_show_c: () => false } },
     },
-  } as unknown as RequestContext;
+  } as unknown as Ctx;
   const node = { app: {
     settings: { cms: { feedback: { email: "support@example.test" } } },
     mail: { create: () => ({ addTo: () => {}, send: () => false }) },

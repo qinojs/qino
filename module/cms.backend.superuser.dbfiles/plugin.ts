@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, unixTime, FileTransformer, type App, type DbField, type DbFile, type RequestContext } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, unixTime, FileTransformer, type App, type DbField, type DbFile, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -50,7 +50,7 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
 const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 
 // list (filterable part): total + table rows, reloaded on search/order change
-async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars?: Record<string, any> } = {}): Promise<string> {
+async function list(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, any> } = {}): Promise<string> {
   ctx ??= getCtx();
   const app = node.app;
   const { db, dbFiles: fm } = app;

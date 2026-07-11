@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import type { RequestContext } from "./RequestContext.ts";
+import type { Ctx } from "./Ctx.ts";
 import { cookiePrefix, uid, unixTime } from "../util.ts";
 import { authListen } from "../auth.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
-export async function initRequest(ctx: RequestContext): Promise<void> {
+export async function initRequest(ctx: Ctx): Promise<void> {
     await ctx.app.fire("authenticate", { ctx }); // explicit credentials first: a Bearer beats an ambient cookie
     if (!ctx.statelessAuth) {
         await initClient(ctx);
@@ -16,7 +16,7 @@ export async function initRequest(ctx: RequestContext): Promise<void> {
     initLog(ctx);
 }
 
-async function initClient(ctx: RequestContext): Promise<void> {
+async function initClient(ctx: Ctx): Promise<void> {
     const db = ctx.app.db;
     if (ctx.clientId) return;
 
@@ -33,7 +33,7 @@ async function initClient(ctx: RequestContext): Promise<void> {
     ctx.clientId = String(clientId);
 }
 
-async function registerClient(ctx: RequestContext): Promise<void> {
+async function registerClient(ctx: Ctx): Promise<void> {
     const hash = uid();
 
     const https = ctx.app.https;
@@ -46,11 +46,11 @@ async function registerClient(ctx: RequestContext): Promise<void> {
     ctx.clientId = String(clientId);
 }
 
-function touchSession(ctx: RequestContext): void {
+function touchSession(ctx: Ctx): void {
     if (ctx.sess) ctx.sess.touch(ctx.userId);
 }
 
-function initLog(ctx: RequestContext): void {
+function initLog(ctx: Ctx): void {
 
     const db = ctx.app.db;
 

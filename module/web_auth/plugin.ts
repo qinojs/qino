@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, login, unixTime, Access, AccessError, type AptTree, s, type App, type Db, type RequestContext } from "../core/mod.ts";
+import { getCtx, login, unixTime, Access, AccessError, type AptTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
 
 export const name = "web_auth";
@@ -35,7 +35,7 @@ async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
-async function expectedOrigins(ctx: RequestContext, rpId: string): Promise<string[]> {
+async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
   const setting = String(await ctx.app.settings.web_auth.origin ?? "");
   if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
   const url = ctx.req.url;
@@ -69,7 +69,7 @@ const assertionInput = s.object({
 });
 
 async function verifyAssertion(
-  ctx: RequestContext,
+  ctx: Ctx,
   { credentialId, clientDataJSON, authenticatorData, signature }: any,
   expectedChallenge: string,
   requireUserVerification: boolean,

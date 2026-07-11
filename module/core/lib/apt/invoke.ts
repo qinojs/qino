@@ -1,4 +1,4 @@
-import { getCtx } from "../ctx/RequestContext.ts";
+import { getCtx } from "../ctx/Ctx.ts";
 import type { StandardSchema } from "../StandardSchema.ts";
 import { AccessError, NotFoundError, ValidationError } from "./errors.ts";
 import { BODY_METHODS, RESERVED, VERB_SET, type AptNode, type AptTree, type Method, type Params, type Verb } from "./types.ts";

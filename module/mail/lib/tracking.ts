@@ -1,4 +1,4 @@
-import { Output, unixTime, type RequestContext } from "../../core/mod.ts";
+import { Output, unixTime, type Ctx } from "../../core/mod.ts";
 import { sha1 } from "./helpers.ts";
 import type {} from "../mod.ts";
 
@@ -6,7 +6,7 @@ const BLANK_GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAAC
 
 export const trackCert = (secret: string, trackId: number) => sha1("mail1-track" + secret + trackId).slice(0, 8);
 
-export async function handleTrack(ctx: RequestContext): Promise<void> {
+export async function handleTrack(ctx: Ctx): Promise<void> {
   const [idRaw, cert] = String(ctx.req.query.mail1tr ?? "").split("-");
   const trackId = Number(idRaw);
   if (!trackId || !cert || cert !== trackCert(await ctx.app.mail.secure(), trackId)) return;

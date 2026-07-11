@@ -1,4 +1,4 @@
-import type { RequestContext } from "../ctx/RequestContext.ts";
+import type { Ctx } from "../ctx/Ctx.ts";
 import type { StandardSchema } from "../StandardSchema.ts";
 
 export type Params = Record<string, unknown>;
@@ -9,14 +9,14 @@ export interface Verb {
   query?: StandardSchema;
   output?: StandardSchema;
   /** Static admissibility gate (param-free): who may use this at all. Evaluated for listings and on every call. */
-  access?: (ctx: RequestContext) => boolean | Promise<boolean>;
+  access?: (ctx: Ctx) => boolean | Promise<boolean>;
   /** Per-call check (param-aware): is this concrete call allowed. Evaluated on invoke, after access. */
-  guard?: (params: Params, ctx: RequestContext) => boolean | Promise<boolean>;
-  execute(params: Params, ctx: RequestContext): unknown | Promise<unknown>;
+  guard?: (params: Params, ctx: Ctx) => boolean | Promise<boolean>;
+  execute(params: Params, ctx: Ctx): unknown | Promise<unknown>;
 }
 
 export interface AptNode {
-  resolve?(raw: unknown, ctx: RequestContext, parents: Params): unknown | Promise<unknown>;
+  resolve?(raw: unknown, ctx: Ctx, parents: Params): unknown | Promise<unknown>;
   paramSchema?: StandardSchema;
   get?: Verb;
   post?: Verb;

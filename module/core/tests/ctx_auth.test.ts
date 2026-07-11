@@ -7,14 +7,14 @@ function sessionFake(sessionUserId: number) {
   return { sess: { data } as any, writes };
 }
 
-Deno.test("RequestContext: userId falls back to the cookie session", async () => {
+Deno.test("Ctx: userId falls back to the cookie session", async () => {
   const ctx = await testContext({ sess: sessionFake(5).sess });
 
   assertEquals(ctx.userId, 5);
   assertEquals(ctx.statelessAuth, false);
 });
 
-Deno.test("RequestContext: authenticate beats the session and never writes it", async () => {
+Deno.test("Ctx: authenticate beats the session and never writes it", async () => {
   const { sess, writes } = sessionFake(5);
   const ctx = await testContext({ sess });
 

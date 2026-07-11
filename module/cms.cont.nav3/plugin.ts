@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
+import type { Ctx } from "../core/mod.ts";
 
 export const name = "cms.cont.nav3";
 
@@ -37,7 +37,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const cms = node.cms;
   const settings = node.settings;
 

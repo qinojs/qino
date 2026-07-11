@@ -1,6 +1,6 @@
 import { hee } from "../util.ts";
 
-export class HtmlBuilder {
+export class ResHtml {
   lang = "en";
   class: Set<string> = new Set<string>();
   /** Trusted HTML appended verbatim to the document head. */

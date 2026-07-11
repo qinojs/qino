@@ -1,11 +1,11 @@
-import { hee, sqlSearchHelper, sql, getCtx, type RequestContext } from "../../core/mod.ts";
+import { hee, sqlSearchHelper, sql, getCtx, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
-export async function allowLoginAs(node: Node | null, ctx: RequestContext): Promise<boolean> {
+export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
   return !!(await ctx.user?.get("superuser")) || !!(node?.settings.allow_login_as());
 }
 
-export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
+export async function list(_node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
   const db = ctx.app.db;
 

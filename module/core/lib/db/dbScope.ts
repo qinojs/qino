@@ -7,7 +7,7 @@
 //    request-local cache, so scoped data never pollutes them.
 // Delete scope.tables to stop the routing while keeping the request cache.
 
-import { requestStorage } from "../ctx/RequestContext.ts";
+import { requestStorage } from "../ctx/Ctx.ts";
 
 export interface DbScope {
   tables?: Record<string, string>; // table name → replacement

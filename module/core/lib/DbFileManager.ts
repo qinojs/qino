@@ -3,7 +3,7 @@
 import { typeByExtension, sql } from "../../../deps.ts";
 import { File } from "./File.ts";
 import type { TransformOptions } from "./transform/mod.ts";
-import { getCtx } from "./ctx/RequestContext.ts";
+import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
 import { contentDisposition } from "./util.ts";

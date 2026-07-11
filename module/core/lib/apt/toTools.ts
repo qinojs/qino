@@ -1,4 +1,4 @@
-import type { RequestContext } from "../ctx/RequestContext.ts";
+import type { Ctx } from "../ctx/Ctx.ts";
 import { toJsonSchema } from "../StandardSchema.ts";
 import { asParams, coerce, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";
@@ -8,7 +8,7 @@ export interface Tool {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
-  execute(args: unknown, ctx: RequestContext): Promise<unknown>;
+  execute(args: unknown, ctx: Ctx): Promise<unknown>;
 }
 
 export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> } = {}): Tool[] {

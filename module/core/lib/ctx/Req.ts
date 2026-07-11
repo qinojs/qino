@@ -1,6 +1,6 @@
-import { Body } from "./Body.ts";
-import { RequestDeadline } from "./RequestDeadline.ts";
-import { RequestUrl } from "./RequestUrl.ts";
+import { ReqBody } from "./ReqBody.ts";
+import { ReqDeadline } from "./ReqDeadline.ts";
+import { ReqUrl } from "./ReqUrl.ts";
 import { clientIp, ensureSlash, Output } from "../util.ts";
 import type { UploadedFile } from "../fileStream.ts";
 
@@ -9,25 +9,25 @@ import type { UploadedFile } from "../fileStream.ts";
  * after prefilter and static check. Request data is read-only; a mutable URL
  * copy comes from `req.url.toURL()`.
  */
-export class ContextRequest {
+export class Req {
   #raw: Request;
   #nativeUrl: URL;
-  #url: RequestUrl;
+  #url: ReqUrl;
   #peerAddr: string;
   #time: number;
-  #body: Body;
+  #body: ReqBody;
   #clientIp: string;
   #basePath: string;
   #appPath: string;
   #query: Readonly<Record<string, string>> | undefined;
   #queryAll: Readonly<Record<string, readonly string[]>> | undefined;
   #cookies: Readonly<Record<string, string>> | undefined;
-  #deadline: RequestDeadline | null = null;
+  #deadline: ReqDeadline | null = null;
 
-  constructor(raw: Request, url: URL, body: Body, opt: { peerAddr: string; time: number; basePath: string; appPath: string; clientIp: string }) {
+  constructor(raw: Request, url: URL, body: ReqBody, opt: { peerAddr: string; time: number; basePath: string; appPath: string; clientIp: string }) {
     this.#raw = raw;
     this.#nativeUrl = url;
-    this.#url = new RequestUrl(url);
+    this.#url = new ReqUrl(url);
     this.#body = body;
     this.#peerAddr = opt.peerAddr;
     this.#time = opt.time;
@@ -38,7 +38,7 @@ export class ContextRequest {
 
   get raw(): Request { return this.#raw; }
   /** Immutable request URL; `url.toURL()` yields an independent mutable native `URL`. */
-  get url(): RequestUrl { return this.#url; }
+  get url(): ReqUrl { return this.#url; }
   get method(): string { return this.#raw.method; }
   get headers(): Headers { return this.#raw.headers; }
   /** Direct TCP peer address (from the runtime), the only unspoofable IP source. */
@@ -60,7 +60,7 @@ export class ContextRequest {
    *  A URL path — not to be confused with `app.appPATH` (filesystem path). */
   get appPath(): string { return this.#appPath; }
   /** Time limit + abort signal of this request: `req.deadline.left += 60`, `req.deadline.signal`. */
-  get deadline(): RequestDeadline { return this.#deadline ??= new RequestDeadline(this.#raw.signal); }
+  get deadline(): ReqDeadline { return this.#deadline ??= new ReqDeadline(this.#raw.signal); }
 
   /** Query params, first value per key. */
   get query(): Readonly<Record<string, string>> {
@@ -102,17 +102,17 @@ export class ContextRequest {
   static async create(request: Request, opt: {
     url?: URL; basePath?: string; peerAddr?: string; time?: number;
     maxSize?: number; trustedProxyHops?: number;
-  } = {}): Promise<ContextRequest> {
+  } = {}): Promise<Req> {
     const url = opt.url ?? new URL(request.url);
     const basePath = ensureSlash(opt.basePath || "/");
     const peerAddr = opt.peerAddr ?? "";
-    const body = await Body.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
+    const body = await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
 
     let appPath: string;
     try { appPath = decodeURIComponent(url.pathname.slice(basePath.length)); }
     catch { throw new Output("Bad Request", { status: 400 }); }
 
-    return new ContextRequest(request, url, body, {
+    return new Req(request, url, body, {
       peerAddr,
       time: opt.time ?? performance.now(),
       basePath,

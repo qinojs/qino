@@ -18,12 +18,12 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, requestStorage, unixTime, type RequestContext, type App } from "../core/mod.ts";
+import { getCtx, requestStorage, unixTime, type Ctx, type App } from "../core/mod.ts";
 import { getVers } from "./lib/Vers.ts";
 import { getCmsVers } from "./lib/CmsVers.ts";
 
 /** Draftmode: in editmode read/write the draft space (1) instead of live (0). */
-export async function applyDraftSpace(ctx: RequestContext): Promise<void> {
+export async function applyDraftSpace(ctx: Ctx): Promise<void> {
     const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
     if (draftmode) {
         getCmsVers(ctx).space = ctx.cms.editmode ? 1 : 0;

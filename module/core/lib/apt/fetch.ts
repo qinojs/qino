@@ -1,5 +1,5 @@
-import { getCtx, requestStorage } from "../ctx/RequestContext.ts";
-import type { ContextRequest } from "../ctx/ContextRequest.ts";
+import { getCtx, requestStorage } from "../ctx/Ctx.ts";
+import type { Req } from "../ctx/Req.ts";
 import { Output } from "../util.ts";
 import { AptError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
@@ -7,7 +7,7 @@ import { BODY_METHODS, type AptTree, type Method, type Params } from "./types.ts
 
 type RequestData = { method: Method; path: string; input: Params; query: Params };
 
-export type AptFetchAuth = (req: ContextRequest, data: RequestData) => boolean | Promise<boolean>;
+export type AptFetchAuth = (req: Req, data: RequestData) => boolean | Promise<boolean>;
 export type AptFetchOptions = {
   csrf?: boolean;
   auth?: AptFetchAuth;
@@ -16,17 +16,17 @@ export type AptFetchOptions = {
 const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
 
 /**
- * Run an apt request from a `ContextRequest`. Result is thrown as an `Output` signal (on both
+ * Run an apt request from a `Req`. Result is thrown as an `Output` signal (on both
  * success and error) so the host builds the `Response`. `path` is within the tree, e.g. `/user/5`.
  */
-export async function aptFetch(req: ContextRequest, tree: AptTree, path: string, opts: AptFetchOptions = {}): Promise<never> {
+export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptFetchOptions = {}): Promise<never> {
   const input: Params = Object.create(null);
   const query: Params = Object.create(null);
   const method = req.method.toLowerCase() as Method;
   const isBodyMethod = BODY_METHODS.has(method);
   if (isBodyMethod) {
     if (!isJsonRequest(req)) throw new Output({ error: "Unsupported Media Type" }, { status: 415 });
-    const body = req.body; // parsed once in ContextRequest.create; invalid JSON already answered with 400
+    const body = req.body; // parsed once in Req.create; invalid JSON already answered with 400
     if (body && typeof body === "object") Object.assign(input, body);
   }
   for (const [k, v] of Object.entries(req.queryAll)) {
@@ -48,12 +48,12 @@ export async function aptFetch(req: ContextRequest, tree: AptTree, path: string,
   }
 }
 
-function isJsonRequest(req: ContextRequest): boolean {
+function isJsonRequest(req: Req): boolean {
   const type = req.header("content-type")?.split(";")[0].trim().toLowerCase();
   return !type || type === "application/json" || type.endsWith("+json");
 }
 
-async function authorizeMutation(req: ContextRequest, opts: AptFetchOptions, data: RequestData): Promise<void> {
+async function authorizeMutation(req: Req, opts: AptFetchOptions, data: RequestData): Promise<void> {
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;
@@ -62,7 +62,7 @@ async function authorizeMutation(req: ContextRequest, opts: AptFetchOptions, dat
 }
 
 // Match host:port, not scheme — behind a TLS-terminating proxy the app sees http while the browser sends an https Origin.
-function isTrustedOrigin(req: ContextRequest): boolean {
+function isTrustedOrigin(req: Req): boolean {
   const target = req.url.host;
   const origin = hostOf(req.header("origin"));
   if (origin) return origin === target;
@@ -76,7 +76,7 @@ function hostOf(value?: string): string | null {
   catch { return null; }
 }
 
-function hasValidCsrfToken(req: ContextRequest): boolean {
+function hasValidCsrfToken(req: Req): boolean {
   const token = req.header("x-csrf-token");
   return typeof token === "string" && token !== "" && token === getCtx().csrfToken;
 }

@@ -1,4 +1,4 @@
-import { unixTime, type App, type RequestContext } from "../../core/mod.ts";
+import { unixTime, type App, type Ctx } from "../../core/mod.ts";
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
 import { readSse, sse } from "./sse.ts";
@@ -22,7 +22,7 @@ export class ChatSession {
     this.#id = id;
   }
 
-  async run(content: string, ctx: RequestContext, context?: Record<string, unknown>): Promise<string> {
+  async run(content: string, ctx: Ctx, context?: Record<string, unknown>): Promise<string> {
     const { bot, messages } = await this.#prepare(content, ctx, context);
     try {
       const final = await this.#loop(messages, bot, ctx);
@@ -34,7 +34,7 @@ export class ChatSession {
     }
   }
 
-  runStream(content: string, ctx: RequestContext, context?: Record<string, unknown>): ReadableStream<Uint8Array> {
+  runStream(content: string, ctx: Ctx, context?: Record<string, unknown>): ReadableStream<Uint8Array> {
     return new ReadableStream({
       start: async (controller) => {
         try {
@@ -57,7 +57,7 @@ export class ChatSession {
   }
 
   // Load session + history, persist the new user message, build the message list.
-  async #prepare(content: string, ctx: RequestContext, context?: Record<string, unknown>): Promise<{ bot: Bot; messages: Msg[] }> {
+  async #prepare(content: string, ctx: Ctx, context?: Record<string, unknown>): Promise<{ bot: Bot; messages: Msg[] }> {
     const data = await this.#app.db.row`SELECT * FROM ai_session WHERE id = ${this.#id}`;
     if (!data) throw new Error("Session not found");
     if (Number(data.user_id) !== ctx.userId) throw new Error("Forbidden");
@@ -89,7 +89,7 @@ export class ChatSession {
 
   // OpenAI tool loop. Always streams from the provider; `onDelta` forwards tokens
   // to the client (a no-op for the non-streaming `run`).
-  async #loop(messages: Msg[], bot: Bot, ctx: RequestContext, onDelta: (t: string) => void = () => {}): Promise<string> {
+  async #loop(messages: Msg[], bot: Bot, ctx: Ctx, onDelta: (t: string) => void = () => {}): Promise<string> {
     const { provider, model } = await resolve(this.#app, { provider: bot.provider, model: bot.model, kind: "chat" });
     const client = await this.#api.client(provider);
     // Tools belong to the bot, not the model — always offer them (tool_choice defaults to
@@ -195,7 +195,7 @@ function toOpenAiTools(tools?: Tool[]): Msg[] | undefined {
   return tools?.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
 }
 
-async function execTool(bot: Bot, name: string | undefined, args: string | undefined, ctx: RequestContext): Promise<unknown> {
+async function execTool(bot: Bot, name: string | undefined, args: string | undefined, ctx: Ctx): Promise<unknown> {
   const tool = bot.tools?.find((t) => t.name === name);
   if (!tool) return { error: `Unknown tool: ${name}` };
   try { return await tool.execute(JSON.parse(args ?? "{}"), ctx); }

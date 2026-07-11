@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, type Sql, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, u2time, type Sql, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -9,7 +9,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.error_report", { en: "Errors", de: "Fehler" });
 }
 
-function makeFileHelper(ctx: RequestContext) {
+function makeFileHelper(ctx: Ctx) {
   const appURL = ctx.req.basePath;
   function editorLink(file: string, line: unknown, col: unknown): string {
     const localPath = ctx.urlToLocalPath(file) ?? file;
@@ -167,7 +167,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 </div>`;
 }
 
-async function renderEntryList(node: Node, ctx: RequestContext, get: Record<string, string>): Promise<string> {
+async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>): Promise<string> {
   const db = node.app.db;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 

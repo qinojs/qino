@@ -1,7 +1,7 @@
 type Sources = Record<string, true>;
 
 /** Content-Security-Policy builder. Directives are typed fields; add a field for new ones. */
-export class Csp {
+export class ResCsp {
   "default-src": Sources = { "'self'": true };
   "font-src":    Sources = { "*": true, "data:": true };
   "img-src":     Sources = { "'self'": true, "data:": true };

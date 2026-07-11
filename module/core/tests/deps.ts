@@ -1,8 +1,8 @@
 export { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@^1";
 
 import { aptFetch, type AptTree } from "../lib/apt/mod.ts";
-import { ContextRequest } from "../lib/ctx/ContextRequest.ts";
-import { RequestContext } from "../lib/ctx/RequestContext.ts";
+import { Req } from "../lib/ctx/Req.ts";
+import { Ctx } from "../lib/ctx/Ctx.ts";
 import { Output } from "../lib/util.ts";
 
 // deno-lint-ignore no-explicit-any
@@ -21,8 +21,8 @@ export interface TestContextInit extends RequestInit {
   set?: Fake;
 }
 
-/** Build a RequestContext through the production `RequestContext.create()` path. */
-export async function testContext(init: TestContextInit = {}): Promise<RequestContext> {
+/** Build a Ctx through the production `Ctx.create()` path. */
+export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
   const { url = "http://qino.test/", basePath = "/", app = {}, sess, userId = 0, set, ...reqInit } = init;
   const session = sess ?? { data: { core: { userId: () => userId } } };
   const appFake = {
@@ -31,7 +31,7 @@ export async function testContext(init: TestContextInit = {}): Promise<RequestCo
     ...app,
     settings: { core: {}, ...app.settings },
   };
-  const ctx = await RequestContext.create(appFake as never, new Request(url, reqInit), { basePath });
+  const ctx = await Ctx.create(appFake as never, new Request(url, reqInit), { basePath });
   for (const [k, v] of Object.entries(set ?? {}))
     Object.defineProperty(ctx, k, { value: v, configurable: true, writable: true });
   return ctx;
@@ -41,7 +41,7 @@ export async function testContext(init: TestContextInit = {}): Promise<RequestCo
 export async function aptRequest(tree: AptTree, input: string, init?: RequestInit): Promise<Response> {
   const url = new URL(input, "http://qino.test");
   try {
-    const req = await ContextRequest.create(new Request(url, init), { url });
+    const req = await Req.create(new Request(url, init), { url });
     await aptFetch(req, tree, url.pathname);
   } catch (e) {
     if (e instanceof Output) return new Response(e.body as string, { status: e.status, headers: e.headers });

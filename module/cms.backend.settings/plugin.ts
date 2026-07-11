@@ -1,5 +1,5 @@
 import { backend } from "../cms.backend/mod.ts";
-import { hee, type RequestContext, type App } from "../core/mod.ts";
+import { hee, type Ctx, type App } from "../core/mod.ts";
 
 export const name = "cms.backend.settings";
 export const needs = ["cms.backend"];
@@ -8,7 +8,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });
 }
 
-function render(_node: unknown, { ctx }: { ctx: RequestContext }): string {
+function render(_node: unknown, { ctx }: { ctx: Ctx }): string {
   ctx.res.html.scripts.add(ctx.req.modulePath + "core/pub/js/SettingsEditor.mjs");
   return `<div class=u2-card>
   <div class=-head>Settings</div>

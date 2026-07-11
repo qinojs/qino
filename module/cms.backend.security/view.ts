@@ -1,4 +1,4 @@
-import { getCtx, hee, sql, u2time, Sql, type App, type RequestContext, type Row } from "../core/mod.ts";
+import { getCtx, hee, sql, u2time, Sql, type App, type Ctx, type Row } from "../core/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -56,13 +56,13 @@ async function statusBox(app: App, stats: Record<string, unknown>) {
   </div></div>`;
 }
 
-function tabs(ctx: RequestContext, active: string) {
+function tabs(ctx: Ctx, active: string) {
   const u = ctx.req.url.toURL();
   const href = (tab: string) => { u.searchParams.set("tab", tab); return hee(u.search); };
   return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="${href(v)}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
 }
 
-function settingsEditor(ctx: RequestContext) {
+function settingsEditor(ctx: Ctx) {
   ctx.res.html.scripts.add(ctx.req.modulePath + "core/pub/js/SettingsEditor.mjs");
   return `<div class="u2-card"><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
 }
@@ -127,7 +127,7 @@ function eventActions(r: Row) {
   return `<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
 }
 
-function topTable(ctx: RequestContext, title: string, rows: Record<string, unknown>[], key: string) {
+function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key: string) {
   const u = ctx.req.url.toURL();
   const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return hee(u.search); };
   return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">

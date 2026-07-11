@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { matchPath, parsePathList } from "./pathlist.ts";
 import { settingsSchema, type SecuritySettings } from "./schema.ts";
-import { unixTime, type App, type Db, type RequestContext } from "../core/mod.ts";
+import { unixTime, type App, type Db, type Ctx } from "../core/mod.ts";
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();
@@ -33,7 +33,7 @@ export async function suspiciousPath(app: App, path: string) {
 }
 
 
-export function fastInfo(ctx: RequestContext): any {
+export function fastInfo(ctx: Ctx): any {
   const path = short(ctx.req.appPath || ctx.req.url.pathname, 191);
   const ip = ctx.req.clientIp || "";
   return {
@@ -43,7 +43,7 @@ export function fastInfo(ctx: RequestContext): any {
   };
 }
 
-export function reqInfo(ctx: RequestContext): any {
+export function reqInfo(ctx: Ctx): any {
   const info = fastInfo(ctx);
   const payload = payloadText(ctx);
   return {
@@ -52,7 +52,7 @@ export function reqInfo(ctx: RequestContext): any {
   };
 }
 
-export async function hitBuckets(ctx: RequestContext, info: any, signals: any[], set: Record<string, number>) {
+export async function hitBuckets(ctx: Ctx, info: any, signals: any[], set: Record<string, number>) {
   for (const hit of bucketHits(info, signals, set)) {
     await hitBucket(ctx.app.db, hit.scope, hit.ident, hit.score, hit.reason, info.path, set);
   }
@@ -140,7 +140,7 @@ function bucketScopes(info: any, set: Record<string, number>, signal?: any): [st
   return scopes;
 }
 
-export async function addEvent(ctx: RequestContext, data: Record<string, unknown>) {
+export async function addEvent(ctx: Ctx, data: Record<string, unknown>) {
   const logId = await ctx.logId;
   await addEventDb(ctx.app.db, { log_id: Number(logId || 0) || null, ...data });
 }
@@ -170,7 +170,7 @@ function ipRange(ip: string): string {
   return ip;
 }
 
-function payloadText(ctx: RequestContext): string {
+function payloadText(ctx: Ctx): string {
   const entries = [...Object.entries(ctx.req.query ?? {}), ...Object.entries(ctx.req.body instanceof Object ? ctx.req.body : {})]
     .filter(([k]) => !/pw|pass|password|token|secret/i.test(k))
     .map(([k, v]) => k + "=" + String(v));

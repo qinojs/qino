@@ -1,4 +1,4 @@
-import { hee, unixTime, type RequestContext, type App } from "../core/mod.ts";
+import { hee, unixTime, type Ctx, type App } from "../core/mod.ts";
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Pages", de: "Seiten" });
 }
 
-async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string> {
+async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<string> {
 
   // handle GET params that change user settings
   if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));

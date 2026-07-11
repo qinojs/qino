@@ -1,5 +1,5 @@
 // Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
-import { hee, getCtx, type RequestContext, type App } from "../core/mod.ts";
+import { hee, getCtx, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -15,7 +15,7 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
 }
 
-async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
 
   const app = node.app;
@@ -61,7 +61,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 </div>`;
 }
 
-export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> } = {}): Promise<string> {
+export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<string> {
   ctx ??= getCtx();
   const app = node.app;
   const db = app.db;

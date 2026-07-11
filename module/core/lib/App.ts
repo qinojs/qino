@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
-import { RequestContext, requestStorage, urlToLocalPath } from "./ctx/RequestContext.ts";
+import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
 import { Db } from "./db/Db.ts";
@@ -29,12 +29,12 @@ const defaultConfig = {
 export interface AppEvents {
     "init": { app: App };
     "request-start": { request: Request; peerAddr: string; time: number };
-    "authenticate": { ctx: RequestContext };
-    "action": { ctx: RequestContext };
-    "render": { ctx: RequestContext };
-    "html-ready": { ctx: RequestContext };
-    "respond": { ctx: RequestContext };
-    "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: RequestContext }; // ctx is missing for static files
+    "authenticate": { ctx: Ctx };
+    "action": { ctx: Ctx };
+    "render": { ctx: Ctx };
+    "html-ready": { ctx: Ctx };
+    "respond": { ctx: Ctx };
+    "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // ctx is missing for static files
     "auth-before": { email: string; pw: string };
     "login": { session_old: ItemProxy; id: number };
     "logout": Record<string, never>;
@@ -109,13 +109,13 @@ export class App extends Emitter<AppEvents> {
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
         const time = performance.now();
         const base = ensureSlash(basePath || "/");
-        let ctx: RequestContext;
+        let ctx: Ctx;
         try {
             await this.fire("request-start", { request, peerAddr, time }); // cheap pre-filter, before any DB/session work
             const url = new URL(request.url);
             const localPath = urlToLocalPath(url, base, this);
             if (localPath) return await this.#static(request, peerAddr, time, localPath);
-            ctx = await RequestContext.create(this, request, { basePath: base, peerAddr, time, url });
+            ctx = await Ctx.create(this, request, { basePath: base, peerAddr, time, url });
         } catch (e: unknown) {
             return earlyError(e);
         }
@@ -128,7 +128,7 @@ export class App extends Emitter<AppEvents> {
         return res;
     }
 
-    async #run(ctx: RequestContext): Promise<Response> {
+    async #run(ctx: Ctx): Promise<Response> {
         let res: Response;
         try {
             await initRequest(ctx);
@@ -145,7 +145,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Explicit, ordered dispatch over the request path — the one routing model. */
-    #route(ctx: RequestContext): Response | Promise<Response> {
+    #route(ctx: Ctx): Response | Promise<Response> {
         const uri = ctx.req.appPath;
 
         if (uri === "favicon.ico") return new Response(null, { status: 204 });
@@ -162,7 +162,7 @@ export class App extends Emitter<AppEvents> {
     }
 
     /** Fallback for paths that aren't static/dbFile/api: fire the render hooks and build the response. */
-    async #renderFallback(ctx: RequestContext): Promise<Response> {
+    async #renderFallback(ctx: Ctx): Promise<Response> {
         await this.fire("render", { ctx });
         if (ctx.res.hasHtml) {
             await this.fire("html-ready", { ctx });
@@ -176,7 +176,7 @@ export class App extends Emitter<AppEvents> {
         return this.#buildResponse(ctx);
     }
 
-    async #buildResponse(ctx: RequestContext): Promise<Response> {
+    async #buildResponse(ctx: Ctx): Promise<Response> {
         await this.fire("respond", { ctx });
         const headers = new Headers(ctx.res.headers);
         if (headers.has("Location")) return new Response(null, { status: ctx.res.status, headers });
@@ -199,7 +199,7 @@ export class App extends Emitter<AppEvents> {
 }
 
 /** Map a control-flow signal onto the request context's pending response. */
-function handleError(ctx: RequestContext, e: unknown): void {
+function handleError(ctx: Ctx, e: unknown): void {
     if (e instanceof Output) {
         for (const [k, v] of e.buildHeaders()) ctx.res.headers.set(k, v);
         ctx.res.body = e.body;

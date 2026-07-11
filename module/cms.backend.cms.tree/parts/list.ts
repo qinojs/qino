@@ -1,7 +1,7 @@
-import { hee, getCtx, unixTime, type RequestContext } from "../../core/mod.ts";
+import { hee, getCtx, unixTime, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
-export async function list(node: Node, { ctx, vars }: { ctx?: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
+export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<string> {
   ctx ??= getCtx();
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;

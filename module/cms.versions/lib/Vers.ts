@@ -4,7 +4,7 @@
 // _vers_* shadow tables and (space,log)-views.
 // History capture lives in History.ts, space handling in Spaces.ts.
 
-import { sql, type RequestContext, type App, type Db } from "../../core/mod.ts";
+import { sql, type Ctx, type App, type Db } from "../../core/mod.ts";
 
 // ─── Per-Db state ────────────────────────────────────────────────────────────
 // Keyed by Db instance — module globals would leak between App instances (multi-tenant).
@@ -38,26 +38,26 @@ export interface VersState {
 
 const STATE_KEY = "vers";
 
-export function getVers(ctx: RequestContext): VersState {
+export function getVers(ctx: Ctx): VersState {
     return (ctx.state[STATE_KEY] ??= { space: 0, log: 0, tableEntriesCopying: false }) as VersState;
 }
 
 // ─── State helpers ──────────────────────────────────────────────────────────
 
-export function setSpace(ctx: RequestContext, space: number): number {
+export function setSpace(ctx: Ctx, space: number): number {
     const s = getVers(ctx);
     const old = s.space;
     s.space = space;
     return old;
 }
-export function setLog(ctx: RequestContext, log: number): number {
+export function setLog(ctx: Ctx, log: number): number {
     const s = getVers(ctx);
     const old = s.log;
     s.log = log;
     return old;
 }
 /** setVers(ctx, [space,log]) — returns [oldSpace,oldLog] */
-export function setVers(ctx: RequestContext, spaceLog: [number, number] | null): [number, number] {
+export function setVers(ctx: Ctx, spaceLog: [number, number] | null): [number, number] {
     spaceLog ??= [0, 0];
     return [setSpace(ctx, spaceLog[0]), setLog(ctx, spaceLog[1])];
 }

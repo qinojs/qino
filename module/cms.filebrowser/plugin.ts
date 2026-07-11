@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, sql, type RequestContext, s, Access, type AptTree, type App } from "../core/mod.ts";
+import { getCtx, sql, type Ctx, s, Access, type AptTree, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 
 export const name = "cms.filebrowser";
@@ -29,7 +29,7 @@ export const api: AptTree = {
       description: "Search files in the CMS file browser.",
       access: Access.USER,
       query: s.object({ s: s.optional(s.string()) }),
-      execute: ({ s: needle }: any, ctx: RequestContext) => search(needle ?? "", ctx),
+      execute: ({ s: needle }: any, ctx: Ctx) => search(needle ?? "", ctx),
     },
   },
 };
@@ -51,7 +51,7 @@ export function init(app: App) {
   });
 }
 
-async function search(s_: string, ctx: RequestContext): Promise<any[]> {
+async function search(s_: string, ctx: Ctx): Promise<any[]> {
   const db = ctx.app.db;
   const cms = ctx.app.cms;
 

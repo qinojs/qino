@@ -1,10 +1,10 @@
 import * as nodeFs from "node:fs/promises";
-import { Output, getCtx, type RequestContext, Access, type AptTree, s, type App, type Params } from "../core/mod.ts";
+import { Output, getCtx, type Ctx, Access, type AptTree, s, type App, type Params } from "../core/mod.ts";
 import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";
 
-async function saveFile(ctx: RequestContext, file: string, content: string): Promise<number> {
+async function saveFile(ctx: Ctx, file: string, content: string): Promise<number> {
   ctx.app.assertAllowedPath(file);
   const allowed = ctx.sess.data.fileEditor.allow[file]();
   if (!allowed && !(await ctx.user?.get('superuser'))) return 0;
@@ -23,7 +23,7 @@ export const api: AptTree = {
       description: "Save file from the file editor.",
       access: Access.USER,
       input: s.object({ file: s.string(), content: s.string() }),
-      execute: ({ file, content }: Params, ctx: RequestContext) => saveFile(ctx, String(file), String(content)),
+      execute: ({ file, content }: Params, ctx: Ctx) => saveFile(ctx, String(file), String(content)),
     },
   },
 };

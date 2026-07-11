@@ -1,9 +1,9 @@
-// Characterization tests: pin today's RequestContext semantics before the
+// Characterization tests: pin today's Ctx semantics before the
 // ctx.req/ctx.res split (CONTEXT-REQUEST-PLAN.md Phase 1). Body and deadline
-// behavior live in body.test.ts / request_context_timeout.test.ts.
+// behavior live in req_body.test.ts / ctx_timeout.test.ts.
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { Output } from "../lib/util.ts";
-import { parseCookies } from "../lib/ctx/ContextRequest.ts";
+import { parseCookies } from "../lib/ctx/Req.ts";
 
 Deno.test("req paths: basePath gets a trailing slash, modulePath derives from it", async () => {
   const ctx = await testContext({ url: "http://qino.test/cms1/de/page", basePath: "/cms1" });

@@ -1,10 +1,10 @@
-import { hee, sql, type RequestContext } from "../core/mod.ts";
+import { hee, sql, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.not_found1";
 export const needs = ["cms"];
 
-async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
   // Extract words from request URI for fulltext search
   const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
@@ -41,7 +41,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
 </div>`;
 }
 
-async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
+async function renderEditBox(node: Node, ctx: Ctx): Promise<string> {
   if (!node.edit) return "";
   const t = node.app.t;
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)

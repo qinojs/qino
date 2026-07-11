@@ -1,7 +1,7 @@
 import { Output } from "../util.ts";
 
 /** Cooperative request time limit: `left` seconds count down, then `signal` aborts with a 504 Output. */
-export class RequestDeadline {
+export class ReqDeadline {
   #ctrl = new AbortController();
   #deadline = Infinity;
   #timer: ReturnType<typeof setTimeout> | undefined;

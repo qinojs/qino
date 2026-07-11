@@ -1,4 +1,4 @@
-import type { RequestContext } from "./ctx/RequestContext.ts";
+import type { Ctx } from "./ctx/Ctx.ts";
 import { bcrypt } from "../../../deps.ts";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
@@ -7,7 +7,7 @@ const dummyHash = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi"
 
 export type LoginError = "username" | "inactive" | "password";
 
-export async function authListen(ctx: RequestContext): Promise<void> {
+export async function authListen(ctx: Ctx): Promise<void> {
   if (ctx.req.body?.core_login != null) {
     if (ctx.req.body.csrfToken !== ctx.csrfToken) return;
     const saveLogin = !!ctx.req.body.save_login;
@@ -28,7 +28,7 @@ export async function authListen(ctx: RequestContext): Promise<void> {
   }
 }
 
-export async function auth(ctx: RequestContext, email: string, pw = ""): Promise<LoginError | ""> {
+export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
   await ctx.app.fire("auth-before", { email, pw });
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, dummyHash); return user ? "inactive" : "username"; }
@@ -47,7 +47,7 @@ export async function auth(ctx: RequestContext, email: string, pw = ""): Promise
   return await login(ctx, user.id) ? "" : "username";
 }
 
-export async function login(ctx: RequestContext, id: number | string): Promise<boolean> {
+export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = 1`) return false;
   const oldSession = ctx.sess.data;
@@ -63,7 +63,7 @@ export async function login(ctx: RequestContext, id: number | string): Promise<b
   return true;
 }
 
-export async function logout(ctx: RequestContext): Promise<void> {
+export async function logout(ctx: Ctx): Promise<void> {
   await rememberLogin(ctx, false);
   await ctx.client.set("usr_id", 0);
   ctx.sess.data({});
@@ -79,7 +79,7 @@ export async function pwVerify(pw: string, hash: string): Promise<boolean> {
   return await bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
 }
 
-async function rememberLogin(ctx: RequestContext, doSave: boolean): Promise<void> {
+async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
   const usr = ctx.user;
   if (!(await usr?.exists())) return;
   const E = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });

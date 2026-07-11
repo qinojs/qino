@@ -1,5 +1,5 @@
 import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { Access, Output, type RequestContext, requestStorage, s, type Params } from "../../core/mod.ts";
+import { Access, Output, type Ctx, requestStorage, s, type Params } from "../../core/mod.ts";
 import { mcpFetch } from "../mod.ts";
 
 const aptTree = {
@@ -11,7 +11,7 @@ const aptTree = {
   },
 };
 
-async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Promise<RequestContext> {
+async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Promise<Ctx> {
   const ctx = await testContext({
     url: "http://localhost/mcp",
     method,
@@ -29,7 +29,7 @@ async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Pr
 
 /** mcpFetch always signals via thrown Output; capture and parse it. */
 // deno-lint-ignore no-explicit-any
-async function call(ctx: RequestContext): Promise<{ status: number; body: any }> {
+async function call(ctx: Ctx): Promise<{ status: number; body: any }> {
   try {
     await requestStorage.run(ctx, () => mcpFetch(ctx));
   } catch (e) {

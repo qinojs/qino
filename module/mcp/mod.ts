@@ -1,4 +1,4 @@
-import { AptError, Output, toTools, walk, type Params, type RequestContext, type Tool } from "../core/mod.ts";
+import { AptError, Output, toTools, walk, type Params, type Ctx, type Tool } from "../core/mod.ts";
 
 /** MCP server (Streamable HTTP, stateless): exposes the app's apt tree as MCP tools.
  *  Requires stateless Bearer auth (e.g. api_key); every call re-runs access/guard via invoke. */
@@ -16,10 +16,10 @@ class RpcErr extends Error {
 }
 
 /** Handle one MCP request; always signals the response via thrown `Output`. */
-export async function mcpFetch(ctx: RequestContext): Promise<never> {
+export async function mcpFetch(ctx: Ctx): Promise<never> {
   if (ctx.req.method !== "POST") throw new Output({ error: "Method Not Allowed" }, { status: 405, headers: { Allow: "POST" } });
   if (!ctx.statelessAuth) throw new Output(rpcError(null, -32001, "Unauthorized: send an api key as Bearer token"), { status: 401, headers: { "WWW-Authenticate": "Bearer" } });
-  const msg = ctx.req.body as Rpc; // parsed in ContextRequest.create; null = no/invalid JSON body
+  const msg = ctx.req.body as Rpc; // parsed in Req.create; null = no/invalid JSON body
   if (msg === null) throw new Output(rpcError(null, -32700, "Parse error"), { status: 400 });
   if (!msg || typeof msg !== "object" || Array.isArray(msg) || typeof msg.method !== "string")
     throw new Output(rpcError(null, -32600, "Invalid Request"), { status: 400 });
@@ -27,7 +27,7 @@ export async function mcpFetch(ctx: RequestContext): Promise<never> {
   throw new Output(await respond(msg, ctx));
 }
 
-async function respond(msg: Rpc, ctx: RequestContext): Promise<unknown> {
+async function respond(msg: Rpc, ctx: Ctx): Promise<unknown> {
   try {
     return { jsonrpc: "2.0", id: msg.id, result: await result(msg, ctx) };
   } catch (e) {
@@ -38,7 +38,7 @@ async function respond(msg: Rpc, ctx: RequestContext): Promise<unknown> {
   }
 }
 
-async function result(msg: Rpc, ctx: RequestContext): Promise<unknown> {
+async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
   const params = (msg.params ?? {}) as Params;
   switch (msg.method) {
     case "initialize": {
@@ -60,7 +60,7 @@ async function result(msg: Rpc, ctx: RequestContext): Promise<unknown> {
 }
 
 /** Same access filter as cms.webmcp: static `access` gates the list, per-call `guard` runs on invoke. */
-async function listTools(ctx: RequestContext) {
+async function listTools(ctx: Ctx) {
   const meta = new Map(toTools(ctx.app.aptTree).map((t) => [t.name, t]));
   const tools = [];
   for (const r of walk(ctx.app.aptTree)) {
@@ -75,7 +75,7 @@ async function listTools(ctx: RequestContext) {
 
 const inputSchema = (t: Tool) => Object.keys(t.parameters).length ? t.parameters : { type: "object", properties: {} };
 
-async function callTool(params: Params, ctx: RequestContext) {
+async function callTool(params: Params, ctx: Ctx) {
   const name = String(params.name ?? "");
   const tool = toTools(ctx.app.aptTree).find((t) => t.name === name);
   if (!tool) throw new RpcErr(-32602, `Unknown tool: ${name}`);

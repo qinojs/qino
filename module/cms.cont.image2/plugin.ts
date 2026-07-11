@@ -1,6 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { cms_image2 } from "../cms.image2/mod.ts";
-import type { RequestContext } from "../core/mod.ts";
+import type { Ctx } from "../core/mod.ts";
 
 export const name = "cms.cont.image2";
 
@@ -17,7 +17,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: RequestContext }) {
+async function render(node: Node, { ctx }: { ctx: Ctx }) {
   const T = await node.showText("main");
 
   const settings = node.settings;

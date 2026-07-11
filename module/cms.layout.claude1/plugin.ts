@@ -1,4 +1,4 @@
-import { html, type HtmlString, type RequestContext } from "../core/mod.ts";
+import { html, type HtmlString, type Ctx } from "../core/mod.ts";
 import type { CMS, Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.claude1";
@@ -29,7 +29,7 @@ const settingsSchema = {
 
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
-async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<HtmlString> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ctx.res.csp["style-src"][u2Root] = true;
   ctx.res.csp["script-src"][u2Root] = true;
   ctx.res.csp["connect-src"][u2Root] = true;

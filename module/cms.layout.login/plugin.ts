@@ -1,9 +1,9 @@
 import type { Node } from "../cms/mod.ts";
-import { u2Root, type RequestContext } from "../core/mod.ts";
+import { u2Root, type Ctx } from "../core/mod.ts";
 
 export const name = "cms.layout.login";
 
-async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
 
   const html = ctx.res.html;
   html.styles.add(u2Root + "css/norm/norm.css");

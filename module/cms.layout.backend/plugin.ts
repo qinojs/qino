@@ -1,9 +1,9 @@
-import { hee, u2Root, type RequestContext } from "../core/mod.ts";
+import { hee, u2Root, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.backend";
 
-async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
+async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
 
   const app = node.app;
   const html = ctx.res.html;
