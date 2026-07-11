@@ -10,17 +10,18 @@ export class Req {
   /** Direct TCP peer address (from the runtime), the only unspoofable IP source. */
   readonly peerAddr: string;
   /** performance.now() when the request entered the pipeline. */
-  readonly time: number = performance.now();
+  readonly time: number;
   readonly #url: URL;
   #json: Promise<unknown> | undefined;
   #form: Promise<FormData> | undefined;
   #cookies: Record<string, string> | undefined;
 
-  constructor(raw: Request, peerAddr = "") {
+  constructor(raw: Request, peerAddr = "", time = performance.now()) {
     this.raw = raw;
     this.url = raw.url;
     this.method = raw.method;
     this.peerAddr = peerAddr;
+    this.time = time;
     this.#url = new URL(raw.url);
   }
 

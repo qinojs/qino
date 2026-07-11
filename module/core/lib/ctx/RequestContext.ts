@@ -123,7 +123,7 @@ export class RequestContext {
     ctx.cookie = req.cookies();
     ctx.get = Object.freeze(req.query());
     ctx.#body = body;
-    ctx.remoteAddr = clientIp(req, app.trustedProxyHops);
+    ctx.remoteAddr = clientIp(req.raw, req.peerAddr, app.trustedProxyHops);
     return ctx;
   }
 }

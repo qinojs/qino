@@ -29,13 +29,13 @@ const defaultConfig = {
 /** Core events; modules add their own via `declare module "../core/lib/App.ts" { interface AppEvents {...} }`. */
 export interface AppEvents {
     "init": { app: App };
-    "request-start": { req: Req };
+    "request-start": { request: Request; peerAddr: string; time: number };
     "authenticate": { ctx: RequestContext };
     "action": { ctx: RequestContext };
     "render": { ctx: RequestContext };
     "html-ready": { ctx: RequestContext };
     "respond": { ctx: RequestContext };
-    "response-ready": { req: Req; res: Response; ctx?: RequestContext }; // ctx is missing for static files
+    "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: RequestContext }; // ctx is missing for static files
     "auth-before": { email: string; pw: string };
     "login": { session_old: ItemProxy; id: number };
     "logout": Record<string, never>;
@@ -108,23 +108,23 @@ export class App extends Emitter<AppEvents> {
 
     /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
     async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
-        const req = new Req(request, peerAddr);
+        const time = performance.now();
         const base = ensureSlash(basePath || "/");
         let ctx: RequestContext;
         try {
-            await this.fire("request-start", { req }); // cheap pre-filter, before any DB/session work
-            const localPath = urlToLocalPath(req.url, base, this);
-            if (localPath) return await this.#static(req, localPath);
-            ctx = await RequestContext.create(this, req, base);
+            await this.fire("request-start", { request, peerAddr, time }); // cheap pre-filter, before any DB/session work
+            const localPath = urlToLocalPath(request.url, base, this);
+            if (localPath) return await this.#static(request, peerAddr, time, localPath);
+            ctx = await RequestContext.create(this, new Req(request, peerAddr, time), base);
         } catch (e: unknown) {
             return earlyError(e);
         }
         return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.cleanup()));
     }
 
-    async #static(req: Req, localPath: string): Promise<Response> {
-        const res = await serveFile(req.raw, localPath);
-        await this.fire("response-ready", { req, res });
+    async #static(request: Request, peerAddr: string, time: number, localPath: string): Promise<Response> {
+        const res = await serveFile(request, localPath);
+        await this.fire("response-ready", { request, res, peerAddr, time });
         return res;
     }
 
@@ -139,7 +139,8 @@ export class App extends Emitter<AppEvents> {
             handleError(ctx, e);
             res = await this.#buildResponse(ctx);
         }
-        await this.fire("response-ready", { req: ctx.req, res, ctx }); // last hook, sees every response (static, dbFile, api, pages)
+        // last hook, sees every response (static, dbFile, api, pages)
+        await this.fire("response-ready", { request: ctx.req.raw, res, peerAddr: ctx.req.peerAddr, time: ctx.req.time, ctx });
         return res;
     }
 

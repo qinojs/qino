@@ -1,4 +1,4 @@
-import { Output, clientIp, type App, type Req, type RequestContext } from "../core/mod.ts";
+import { Output, clientIp, type App, type RequestContext } from "../core/mod.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
@@ -8,8 +8,8 @@ const pathBlocks = new WeakMap<App, Map<string, number>>();
 const blocksOf = (app: App) => pathBlocks.getOrInsertComputed(app, () => new Map());
 
 export function initSecurity(app: App) {
-  app.on("request-start", async ({ req }) => {
-    const info = gateInfo(req, app.trustedProxyHops);
+  app.on("request-start", async ({ request, peerAddr }) => {
+    const info = gateInfo(request, peerAddr, app.trustedProxyHops);
     if (isPathBlocked(app, info)) return deny(5);
     const set = await settings(app);
     if (!set.enabled) return;
@@ -108,9 +108,9 @@ function blockKey(info: GateInfo) {
   return info.ip ? "ip:" + info.ip : "path:" + info.path;
 }
 
-function gateInfo(req: Req, hops: number): GateInfo {
-  const ip = clientIp(req, hops);
-  return { ip, method: req.method, path: safeDecode(new URL(req.url).pathname).slice(0, 191), bytes_in: Number(req.header("content-length") ?? "0") || 0, ua: req.header("user-agent") ?? "" };
+function gateInfo(request: Request, peerAddr: string, hops: number): GateInfo {
+  const ip = clientIp(request, peerAddr, hops);
+  return { ip, method: request.method, path: safeDecode(new URL(request.url).pathname).slice(0, 191), bytes_in: Number(request.headers.get("content-length") ?? "0") || 0, ua: request.headers.get("user-agent") ?? "" };
 }
 
 function deny(seconds: number): never {

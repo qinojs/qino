@@ -19,10 +19,10 @@ export function contentDisposition(type: "inline" | "attachment", name: string):
 }
 
 /** Client IP. Trusts `hops` proxies from the right of x-forwarded-for; 0 = peer addr only (XFF ignored, unspoofable). */
-export function clientIp(req: { header(name: string): string | undefined; peerAddr: string }, hops = 0): string {
-  if (hops <= 0) return req.peerAddr;
-  const xff = req.header("x-forwarded-for")?.split(",").map(s => s.trim()).filter(Boolean) ?? [];
-  return xff[xff.length - hops] ?? req.peerAddr;
+export function clientIp(request: Request, peerAddr: string, hops = 0): string {
+  if (hops <= 0) return peerAddr;
+  const xff = request.headers.get("x-forwarded-for")?.split(",").map(s => s.trim()).filter(Boolean) ?? [];
+  return xff[xff.length - hops] ?? peerAddr;
 }
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
