@@ -13,7 +13,8 @@ export class Body {
   // deno-lint-ignore no-explicit-any
   get value(): any { return this.#value; }
 
-  readonly files: Record<string, Promise<UploadedFile> | undefined>;
+  #files: Record<string, Promise<UploadedFile> | undefined>;
+  get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#files; }
   /** tmp file paths spooled so far — removed in RequestContext.cleanup() */
   tmpPaths: string[] = [];
   #rawFiles: Record<string, File> = Object.create(null);
@@ -21,7 +22,7 @@ export class Body {
   #maxSize = 0; // set by parse(); only parse() can add files
 
   constructor() {
-    this.files = new Proxy(Object.create(null), {
+    this.#files = new Proxy(Object.create(null), {
       get: (_, key) => typeof key === "string" && this.#rawFiles[key] ? this.#spool(key) : undefined,
       has: (_, key) => typeof key === "string" && key in this.#rawFiles,
       ownKeys: () => Object.keys(this.#rawFiles),

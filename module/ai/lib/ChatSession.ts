@@ -11,7 +11,16 @@ type Msg = Record<string, unknown>;
 // A persistent chat: history + messages live in ai_session/ai_message.
 // `run()` returns the final answer; `runStream()` yields an SSE stream.
 export class ChatSession {
-  constructor(private app: Pick<App, "db" | "settings">, private api: AiApi, readonly id: number) {}
+  #app: Pick<App, "db" | "settings">;
+  #api: AiApi;
+  #id: number;
+  get id(): number { return this.#id; }
+
+  constructor(app: Pick<App, "db" | "settings">, api: AiApi, id: number) {
+    this.#app = app;
+    this.#api = api;
+    this.#id = id;
+  }
 
   async run(content: string, ctx: RequestContext, context?: Record<string, unknown>): Promise<string> {
     const { bot, messages } = await this.#prepare(content, ctx, context);
@@ -49,24 +58,24 @@ export class ChatSession {
 
   // Load session + history, persist the new user message, build the message list.
   async #prepare(content: string, ctx: RequestContext, context?: Record<string, unknown>): Promise<{ bot: Bot; messages: Msg[] }> {
-    const data = await this.app.db.row`SELECT * FROM ai_session WHERE id = ${this.id}`;
+    const data = await this.#app.db.row`SELECT * FROM ai_session WHERE id = ${this.#id}`;
     if (!data) throw new Error("Session not found");
     if (Number(data.user_id) !== ctx.userId) throw new Error("Forbidden");
 
     // Fresh client context (e.g. current page) supersedes the one stored at session start.
     if (context) {
       data.context = JSON.stringify(context);
-      await this.app.db.query`UPDATE ai_session SET context = ${data.context} WHERE id = ${this.id}`;
+      await this.#app.db.query`UPDATE ai_session SET context = ${data.context} WHERE id = ${this.#id}`;
     }
 
-    const bot = this.api.getBot(String(data.bot));
+    const bot = this.#api.getBot(String(data.bot));
     if (!bot) throw new Error(`Bot not found: ${data.bot}`);
 
     const systemPrompt = typeof bot.systemPrompt === "function"
       ? await bot.systemPrompt(ctx, parseJson(data.context))
       : bot.systemPrompt;
 
-    const rows = await this.app.db.query`SELECT * FROM ai_message WHERE session_id = ${this.id} ORDER BY id`;
+    const rows = await this.#app.db.query`SELECT * FROM ai_message WHERE session_id = ${this.#id} ORDER BY id`;
     // Persist the exact system prompt once per session (for the record); the provider
     // always gets the freshly built one. `system` (rebuilt) and `error` (audit-only,
     // not a valid OpenAI role) rows are dropped from the history sent to the model.
@@ -81,8 +90,8 @@ export class ChatSession {
   // OpenAI tool loop. Always streams from the provider; `onDelta` forwards tokens
   // to the client (a no-op for the non-streaming `run`).
   async #loop(messages: Msg[], bot: Bot, ctx: RequestContext, onDelta: (t: string) => void = () => {}): Promise<string> {
-    const { provider, model } = await resolve(this.app, { provider: bot.provider, model: bot.model, kind: "chat" });
-    const client = await this.api.client(provider);
+    const { provider, model } = await resolve(this.#app, { provider: bot.provider, model: bot.model, kind: "chat" });
+    const client = await this.#api.client(provider);
     // Tools belong to the bot, not the model — always offer them (tool_choice defaults to
     // "auto"). A model without function-calling errors clearly instead of faking a text call.
     const tools = bot.tools?.length ? toOpenAiTools(bot.tools) : undefined;
@@ -139,15 +148,15 @@ export class ChatSession {
         Object.assign(slot, tc, { function: { ...fn, ...tc.function, name, arguments: args } });
       }
     });
-    if (model && usage) await addUsage(this.app, model, usage);
+    if (model && usage) await addUsage(this.#app, model, usage);
     const message: Msg = { role: "assistant", content };
     if (toolCalls.length) message.tool_calls = toolCalls;
     return message;
   }
 
   #insert(msg: { role: string; content?: string; tool_calls?: string; tool_call_id?: string; name?: string; model?: string }): Promise<unknown> {
-    return this.app.db.table("ai_message").insert({
-      session_id: this.id,
+    return this.#app.db.table("ai_message").insert({
+      session_id: this.#id,
       role: msg.role,
       model: msg.model ?? "",
       content: msg.content ?? "",
@@ -164,7 +173,7 @@ export class ChatSession {
   }
 
   #touch(): Promise<unknown> {
-    return this.app.db.query`UPDATE ai_session SET updated_at = ${unixTime()} WHERE id = ${this.id}`;
+    return this.#app.db.query`UPDATE ai_session SET updated_at = ${unixTime()} WHERE id = ${this.#id}`;
   }
 }
 

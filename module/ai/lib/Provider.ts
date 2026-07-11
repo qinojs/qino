@@ -3,18 +3,24 @@ import type { ProviderRow } from "../types.ts";
 // Thin transport for one OpenAI-compatible provider: auth, timeout, 429-retry.
 // Higher layers (AiApi/ChatSession) own model resolution and usage accounting.
 export class Provider {
-  constructor(readonly row: ProviderRow, private key: string) {}
+  #row: ProviderRow;
+  #key: string;
 
-  get name(): string { return this.row.name; }
-  #timeout(): number { return this.row.timeout_ms || 60000; }
+  constructor(row: ProviderRow, key: string) {
+    this.#row = row;
+    this.#key = key;
+  }
+
+  get name(): string { return this.#row.name; }
+  #timeout(): number { return this.#row.timeout_ms || 60000; }
 
   /** POST to `path`, retrying transient 429s. Returns the raw `Response`. */
   async request(path: string, body: unknown): Promise<Response> {
     let res!: Response;
     for (let attempt = 0; attempt < 3; attempt++) {
-      res = await fetch(this.row.endpoint.replace(/\/+$/, "") + path, {
+      res = await fetch(this.#row.endpoint.replace(/\/+$/, "") + path, {
         method: "POST",
-        headers: { "content-type": "application/json", "authorization": "Bearer " + this.key },
+        headers: { "content-type": "application/json", "authorization": "Bearer " + this.#key },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(this.#timeout()),
       });
@@ -33,33 +39,33 @@ export class Provider {
       res = await this.request(path, body);
     } catch (error) {
       if (error instanceof DOMException && error.name === "TimeoutError") {
-        return { error: `Provider "${this.row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
+        return { error: `Provider "${this.#row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
       }
       return { error: error instanceof Error ? error.message : String(error) };
     }
     const text = await res.text().catch(() => "");
     try { return JSON.parse(text); }
-    catch { return { error: `Provider "${this.row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
+    catch { return { error: `Provider "${this.#row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
   }
 
   async form(path: string, body: FormData): Promise<Record<string, unknown>> {
     let res: Response;
     try {
-      res = await fetch(this.row.endpoint.replace(/\/+$/, "") + path, {
+      res = await fetch(this.#row.endpoint.replace(/\/+$/, "") + path, {
         method: "POST",
-        headers: { "authorization": "Bearer " + this.key },
+        headers: { "authorization": "Bearer " + this.#key },
         body,
         signal: AbortSignal.timeout(this.#timeout()),
       });
     } catch (error) {
       if (error instanceof DOMException && error.name === "TimeoutError") {
-        return { error: `Provider "${this.row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
+        return { error: `Provider "${this.#row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
       }
       return { error: error instanceof Error ? error.message : String(error) };
     }
     const text = await res.text().catch(() => "");
     try { return JSON.parse(text); }
-    catch { return { error: `Provider "${this.row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
+    catch { return { error: `Provider "${this.#row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
   }
 
   /** POST with `stream: true`; caller reads the SSE body. */

@@ -1,9 +1,16 @@
 import type { StandardIssue } from "../StandardSchema.ts";
 
 export class AptError extends Error {
-  constructor(public readonly status: number, message: string, public readonly issues?: readonly StandardIssue[]) {
+  #status: number;
+  #issues: readonly StandardIssue[] | undefined;
+  get status(): number { return this.#status; }
+  get issues(): readonly StandardIssue[] | undefined { return this.#issues; }
+
+  constructor(status: number, message: string, issues?: readonly StandardIssue[]) {
     super(message);
     this.name = this.constructor.name;
+    this.#status = status;
+    this.#issues = issues;
   }
 }
 

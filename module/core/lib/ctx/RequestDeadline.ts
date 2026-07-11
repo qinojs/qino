@@ -5,11 +5,12 @@ export class RequestDeadline {
   #ctrl = new AbortController();
   #deadline = Infinity;
   #timer: ReturnType<typeof setTimeout> | undefined;
+  #signal: AbortSignal;
   /** Aborts on client disconnect or timeout — pass to fetch/db calls. */
-  readonly signal: AbortSignal;
+  get signal(): AbortSignal { return this.#signal; }
 
   constructor(requestSignal: AbortSignal) {
-    this.signal = AbortSignal.any([requestSignal, this.#ctrl.signal]);
+    this.#signal = AbortSignal.any([requestSignal, this.#ctrl.signal]);
   }
 
   /** Remaining seconds; `Infinity` = no limit (default). Setting re-arms the timer: `deadline.left += 60`. */
