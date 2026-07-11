@@ -13,7 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 function render(node: Node): Promise<string> {
   const ctx = getCtx();
-  const id = ctx.get.id ? Number(ctx.get.id) : 0;
+  const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 
   if (id) return renderDetail(node, id);
   return renderOverview(node);
@@ -25,8 +25,8 @@ async function renderOverview(node: Node): Promise<string> {
   const db = app.db;
 
   let addMessage = "";
-  if (ctx.post?.csrfToken === ctx.csrfToken && "add" in ctx.post) {
-    const email = String(ctx.post.email ?? "");
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
+    const email = String(ctx.req.body.email ?? "");
     const exists = email && await db.one`SELECT id FROM usr WHERE email = ${email}`;
     if (exists) {
       addMessage = `<div class=-body>${await app.t`This e-mail address already exists!`}</div>`;
@@ -34,19 +34,19 @@ async function renderOverview(node: Node): Promise<string> {
       await db.table("usr").insert({
         active: 1,
         email: email || null,
-        pw: ctx.post.pw ? await pwHash(String(ctx.post.pw)) : null,
-        firstname: String(ctx.post.firstname ?? ""),
-        lastname: String(ctx.post.lastname ?? ""),
+        pw: ctx.req.body.pw ? await pwHash(String(ctx.req.body.pw)) : null,
+        firstname: String(ctx.req.body.firstname ?? ""),
+        lastname: String(ctx.req.body.lastname ?? ""),
       });
-      ctx.responseHeaders.set("Location", String(ctx.url));
-      ctx.responseStatus = 302;
+      ctx.res.headers.set("Location", ctx.req.url.href);
+      ctx.res.status = 302;
       return "";
     }
   }
 
   const loginAsTh = await allowLoginAs(node, ctx) ? '<th width=20>' : "";
 
-  const grpId = ctx.get.grp_id ? Number(ctx.get.grp_id) : 0;
+  const grpId = ctx.req.query.grp_id ? Number(ctx.req.query.grp_id) : 0;
   const grps = await db.query`SELECT id, name FROM grp ORDER BY name`;
   let grpOpts = `<option value="">${await app.t`All groups`}</option>`;
   for (const g of grps) {

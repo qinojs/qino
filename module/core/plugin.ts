@@ -90,10 +90,10 @@ export const ctxSettingsSchema = {
 export async function init(app: App) {
 
     app.on("html-ready", ({ ctx }) => {
-        ctx.html.importMap.set("@qino/item/", itemRoot);
-        ctx.html.importMap.set("@qino/u2/", u2Root);
+        ctx.res.html.importMap.set("@qino/item/", itemRoot);
+        ctx.res.html.importMap.set("@qino/u2/", u2Root);
         // core's own qino.js imports item.js; declare so uncdn proxies it (jsr.io serves raw files as text/html)
-        ctx.csp["script-src"][itemRoot] = true;
+        ctx.res.csp["script-src"][itemRoot] = true;
     });
 
     const langsRaw = String(await app.settings.core.langs ?? "");
@@ -106,7 +106,7 @@ export async function init(app: App) {
         // HTTPS redirect
         const https = app.https;
         if (https) {
-            const url = ctx.url;
+            const url = ctx.req.url.toURL();
             if (url.protocol !== "https:") {
                 url.protocol = "https:";
                 throw new Redirect(url.href, 301);
@@ -121,7 +121,7 @@ export async function init(app: App) {
                 let header = `max-age=${maxAge}`;
                 if (await set.includeSubDomains) header += "; includeSubDomains";
                 if (await set.preload) header += "; preload";
-                ctx.responseHeaders.set("Strict-Transport-Security", header);
+                ctx.res.headers.set("Strict-Transport-Security", header);
             }
         }
 
@@ -145,7 +145,7 @@ export async function init(app: App) {
     });
 
     app.on("respond", async ({ ctx }) => {
-        //ctx.responseHeaders.set("Accept-CH", "DPR");
+        //ctx.res.headers.set("Accept-CH", "DPR");
 
         const enableRaw = String(await ctx.app.settings.core.csp.enable ?? "");
         const enable = enableRaw === "report only"
@@ -154,7 +154,7 @@ export async function init(app: App) {
 
         if (enable) {
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
-            ctx.responseHeaders.set(headerName, ctx.csp.toHeader());
+            ctx.res.headers.set(headerName, ctx.res.csp.toHeader());
         }
     });
 }

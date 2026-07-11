@@ -7,7 +7,7 @@ export const needs = ["cms"];
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
 
   // Extract words from request URI for fulltext search
-  const words = (ctx.appRequestPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
+  const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
 
   const possiblePages: Map<string, true> = new Map();
 
@@ -47,16 +47,16 @@ async function renderEditBox(node: Node, ctx: RequestContext): Promise<string> {
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
   if (ctx.cms.mainNode === await node.cms.nodeFromRequest?.()) return "";
 
-  ctx.html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
-  ctx.html.scripts.add(ctx.sysURL + "cms.frontend.2/pub/js/frontend.mjs");
+  ctx.res.html.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
+  ctx.res.html.scripts.add(ctx.req.modulePath + "cms.frontend.2/pub/js/frontend.mjs");
 
   let savedMsg = "";
-  if (ctx.post?.csrfToken === ctx.csrfToken && "setRedirect" in ctx.post) {
-    const redirect = String(ctx.post.redirect ?? "").trim();
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && "setRedirect" in ctx.req.body) {
+    const redirect = String(ctx.req.body.redirect ?? "").trim();
     if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
       savedMsg = `<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
     } else if (redirect) {
-      await node.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${ctx.appRequestPath}, ${redirect}) ON DUPLICATE KEY UPDATE redirect = ${redirect}`;
+      await node.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${ctx.req.appPath}, ${redirect}) ON DUPLICATE KEY UPDATE redirect = ${redirect}`;
       savedMsg = `<p style="color:green">${await t`Redirect saved.`}</p>`;
     }
   }

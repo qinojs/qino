@@ -4,7 +4,7 @@ import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 export function healthChecks(app: App): HealthTypes {
   const ctx      = getCtx();
   const settings = app.settings;
-  const domain   = ctx.url.hostname.replace(/^www\./, "");
+  const domain   = ctx.req.url.hostname.replace(/^www\./, "");
 
   const types: HealthTypes = { error: {}, warning: {}, notice: {}, cleanup: {}, repair: {} };
   const { notice } = types;

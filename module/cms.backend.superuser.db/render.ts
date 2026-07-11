@@ -21,8 +21,8 @@ export async function render(node: Node): Promise<string> {
 
   const { db } = app;
   const modules = app.modules.all();
-  const view = (ctx.get.view ?? "tables") as ViewKey;
-  const table = ctx.get.table ?? "";
+  const view = (ctx.req.query.view ?? "tables") as ViewKey;
+  const table = ctx.req.query.table ?? "";
 
   const dispatch: Record<ViewKey, () => Promise<string> | string> = {
     tables:    () => renderTables(app, db, modules, table),
@@ -31,7 +31,7 @@ export async function render(node: Node): Promise<string> {
     conflicts: () => renderConflicts(app, modules),
   };
 
-  const u = ctx.url; u.searchParams.delete("table");
+  const u = ctx.req.url.toURL(); u.searchParams.delete("table");
   const nav = await Promise.all(VIEWS.map(async ({ key, label }) => {
     u.searchParams.set("view", key);
     const href = hee(u.search);

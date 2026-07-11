@@ -50,12 +50,12 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;
     const show = hee(filePath.slice(customPath.length + 1));
-    const src = hee(ctx.appURL + "editor?file=" + encodeURIComponent(filePath));
+    const src = hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath));
     customFiles += `<tr itemid="${hee(filePath)}">
       <td><a href="${src}" target="${encodeURIComponent(filePath)}">${show}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.sysURL}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
+        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
   }
 
   let appFiles = "";
@@ -63,12 +63,12 @@ export default async function (node: Node, vars: any = {}): Promise<string> {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;
     const show = hee(filePath.slice((modPath?.length ?? 0) + 1));
-    const src = hee(ctx.appURL + "editor?file=" + encodeURIComponent(filePath));
+    const src = hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath));
     appFiles += `<tr itemid="${hee(filePath)}">
       <td><a href="${src}" target="${encodeURIComponent(filePath)}">${show}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.sysURL}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
+        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
   }
 
   const module = node.vs.module;

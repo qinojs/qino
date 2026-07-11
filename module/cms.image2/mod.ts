@@ -4,8 +4,8 @@ import { hee, HtmlString, magickIdentify, isMagickAvailable, getCtx, type DbFile
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
-  ctx.html.legacyScripts.add(ctx.sysURL + "cms.image2/pub/cms-image2.js");
-  ctx.html.styles.add(ctx.sysURL + "cms.image2/pub/cms-image2.css");
+  ctx.res.html.legacyScripts.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.js");
+  ctx.res.html.styles.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.css");
   if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return new HtmlString("");
   options["quality"] ||= "85";
   delete options["if"];

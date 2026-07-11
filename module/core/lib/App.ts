@@ -146,7 +146,7 @@ export class App extends Emitter<AppEvents> {
 
     /** Explicit, ordered dispatch over the request path — the one routing model. */
     #route(ctx: RequestContext): Response | Promise<Response> {
-        const uri = ctx.appRequestPath;
+        const uri = ctx.req.appPath;
 
         if (uri === "favicon.ico") return new Response(null, { status: 204 });
 

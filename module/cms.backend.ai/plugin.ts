@@ -275,7 +275,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   for (const m of allModels) countByProvider.set(m.provider_id, (countByProvider.get(m.provider_id) ?? 0) + 1);
 
   // Keep a provider expanded after acting on it: open name (add) or the acted provider_id.
-  const openName = String(vars.open ?? ctx.get.open ?? "");
+  const openName = String(vars.open ?? ctx.req.query.open ?? "");
   const openId = Number(vars.provider_id ?? 0);
   let providerBoxes = "";
   for (const provider of providers) {

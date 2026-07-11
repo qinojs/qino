@@ -81,7 +81,7 @@ async function sessionLinkBase(node: Node): Promise<string> {
 async function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const app = node.app;
-  const selected = ctx.get.s ? Number(ctx.get.s) : 0;
+  const selected = ctx.req.query.s ? Number(ctx.req.query.s) : 0;
 
   return `
 <div class="u2-flex">

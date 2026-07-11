@@ -188,7 +188,7 @@ export class DbFile extends File {
     const vs = await this.ensureVs();
     const u = `u-${String(vs["md5"] ?? "").slice(0, 5)}`;
     const parts = [u, ...Object.entries(params).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
-    const baseURL = getCtx().appURL + "dbFile/";
+    const baseURL = getCtx().req.basePath + "dbFile/";
     return baseURL + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
   }
 

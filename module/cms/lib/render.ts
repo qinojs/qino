@@ -11,21 +11,21 @@ export async function render(ctx: RequestContext): Promise<void> {
 
   if (!Page.exists()) {
     // Search for redirect
-    const redirect = await db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.appRequestPath}`;
+    const redirect = await db.one`SELECT redirect FROM page_redirect WHERE request = ${ctx.req.appPath}`;
     if (redirect) {
       let url: string;
       if (!isNaN(Number(redirect))) {
         const P = await cms.node(Number(redirect));
-        url = ctx.url.origin + (await P.url());
+        url = ctx.req.url.origin + (await P.url());
       } else {
         url = String(redirect);
       }
-      ctx.responseHeaders.set("Location", url);
-      ctx.responseStatus = 301;
+      ctx.res.headers.set("Location", url);
+      ctx.res.status = 301;
       return;
     }
     // Not found
-    ctx.responseStatus = 404;
+    ctx.res.status = 404;
     const notFoundId = await app.settings.cms.pageNotFound ?? 0;
     Page = await cms.node(Number(notFoundId));
   }
@@ -37,12 +37,12 @@ export async function render(ctx: RequestContext): Promise<void> {
   const access = await Page.access();
 
   if (!access) {
-    ctx.responseStatus = 401;
+    ctx.res.status = 401;
     const noAccessId = await app.settings.cms.pageNoAccess ?? 0;
     ctx.cms.mainNode = await cms.node(Number(noAccessId));
   }
   if (!(await ctx.cms.mainNode.isReadable())) {
-    ctx.responseStatus = 401;
+    ctx.res.status = 401;
     const offlineId = await app.settings.cms.pageOffline;
     ctx.cms.mainNode = await cms.node(Number(offlineId ?? "0"));
   }
@@ -52,20 +52,20 @@ export async function render(ctx: RequestContext): Promise<void> {
   const titleT = await PageObj.text("_title");
   const title = titleT ? String(await titleT.string()).replace(/<[^>]+>/g, "") : "";
   const pageTitle = await PageObj.title?.();
-  ctx.html.title = title || (pageTitle ? String(await pageTitle.string() ?? "").replace(/<[^>]+>/g, "") : "");
+  ctx.res.html.title = title || (pageTitle ? String(await pageTitle.string() ?? "").replace(/<[^>]+>/g, "") : "");
   const metaDesc = await PageObj.text?.("_meta_description");
-  ctx.html.meta["description"] = metaDesc ? String(await metaDesc.string()).replace(/<[^>]+>/g, "") : "";
+  ctx.res.html.meta["description"] = metaDesc ? String(await metaDesc.string()).replace(/<[^>]+>/g, "") : "";
   const metaKw = await PageObj.text?.("_meta_keywords");
-  ctx.html.meta["keywords"]    = metaKw ? String(await metaKw.string()).replace(/<[^>]+>/g, "") : "";
+  ctx.res.html.meta["keywords"]    = metaKw ? String(await metaKw.string()).replace(/<[^>]+>/g, "") : "";
 
-  if (!PageObj.vs.searchable) ctx.html.meta["robots"] = "noindex, nofollow";
+  if (!PageObj.vs.searchable) ctx.res.html.meta["robots"] = "noindex, nofollow";
 
   const content = await mainNode.html();
-  ctx.html.content += content;
+  ctx.res.html.content += content;
 
   await app.fire("cms-ready", {ctx});
 
-  ctx.responseHeaders.set("content-type", "text/html; charset=utf-8");
-  ctx.responseHeaders.set("cache-control", "no-cache, no-store");
-  ctx.responseHeaders.set("X-Frame-Options", "SAMEORIGIN");
+  ctx.res.headers.set("content-type", "text/html; charset=utf-8");
+  ctx.res.headers.set("cache-control", "no-cache, no-store");
+  ctx.res.headers.set("X-Frame-Options", "SAMEORIGIN");
 }

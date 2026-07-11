@@ -6,15 +6,15 @@ export const name = "cms.layout.backend";
 async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<string> {
 
   const app = node.app;
-  const html = ctx.html;
+  const html = ctx.res.html;
   
   html.class.add("qgCMS");
-  html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-  html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
+  html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
+  html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 
-  ctx.csp["style-src"][u2Root] = true;
-  ctx.csp["script-src"][u2Root] = true;
-  ctx.csp["connect-src"][u2Root] = true;
+  ctx.res.csp["style-src"][u2Root] = true;
+  ctx.res.csp["script-src"][u2Root] = true;
+  ctx.res.csp["connect-src"][u2Root] = true;
 
   html.styles.add(u2Root + "css/norm/norm.css");
   html.styles.add(u2Root + "css/base/base.css");
@@ -50,7 +50,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   // html.scripts.add(u2Root + "el/menubutton/menubutton.js");
   html.scripts.add(u2Root + "u2/auto.js");
 
-  html.styles.add(ctx.sysURL + "cms/pub/css/ui.css");
+  html.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
 
   const Page = await node.page();
 
@@ -92,7 +92,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
     }
     const cConts = [...(await C.conts()).values()];
     const cModName = String(cConts[0]?.vs?.module ?? "");
-    const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.sysURL}${cModName}/pub/module.svg#main"/></svg> ` : "";
+    const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.modulePath}${cModName}/pub/module.svg#main"/></svg> ` : "";
     navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
   }
 
@@ -102,7 +102,7 @@ async function render(node: Node, {ctx}: { ctx: RequestContext }): Promise<strin
   if (allLangs.length > 1) {
     const currentLang = ctx.lang;
     let links = "";
-    const u = ctx.url;
+    const u = ctx.req.url.toURL();
     for (const l of allLangs) {
       if (l === currentLang) continue;
       u.searchParams.set("lang", l);

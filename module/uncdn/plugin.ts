@@ -58,8 +58,8 @@ async function directorySize(path: string): Promise<number> {
 }
 
 function done(ctx: RequestContext, status: number, body: string): never {
-  ctx.responseStatus = status;
-  ctx.responseBody = body;
+  ctx.res.status = status;
+  ctx.res.body = body;
   throw new Output();
 }
 
@@ -105,10 +105,10 @@ export function init(app: App): void {
   const allowed = (app.uncdn = { origins: new Set<string>() }).origins; // origins any page declared via CSP — fetchable by anyone
 
   app.on("action", async ({ ctx }) => {
-    if (!ctx.appRequestPath.startsWith(PROXY_PREFIX)) return;
-    const rest = ctx.appRequestPath.slice(PROXY_PREFIX.length);
+    if (!ctx.req.appPath.startsWith(PROXY_PREFIX)) return;
+    const rest = ctx.req.appPath.slice(PROXY_PREFIX.length);
     if (!rest) return;
-    if (Object.keys(ctx.get ?? {}).length) done(ctx, 404, "Not allowed");
+    if (Object.keys(ctx.req.query ?? {}).length) done(ctx, 404, "Not allowed");
 
     const url = "https://" + rest;
     const filePath = urlToPath(cacheDir, url);
@@ -135,9 +135,9 @@ export function init(app: App): void {
   });
 
   app.on("html-ready", ({ ctx }) => {
-    if (!ctx.hasHtml) return;
-    for (const o of [...origins(ctx.csp["script-src"]), ...origins(ctx.csp["style-src"])]) allowed.add(o);
-    rewriteHtml(ctx.html, ctx.appURL, ctx.csp);
+    if (!ctx.res.hasHtml) return;
+    for (const o of [...origins(ctx.res.csp["script-src"]), ...origins(ctx.res.csp["style-src"])]) allowed.add(o);
+    rewriteHtml(ctx.res.html, ctx.req.basePath, ctx.res.csp);
   });
 }
 

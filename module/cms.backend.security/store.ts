@@ -34,8 +34,8 @@ export async function suspiciousPath(app: App, path: string) {
 
 
 export function fastInfo(ctx: RequestContext): any {
-  const path = short(ctx.appRequestPath || ctx.url.pathname, 191);
-  const ip = ctx.remoteAddr || "";
+  const path = short(ctx.req.appPath || ctx.req.url.pathname, 191);
+  const ip = ctx.req.clientIp || "";
   return {
     time: unixTime(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sess?.id || 0) || null,
     usr_id: Number(ctx.userId || 0) || null, method: ctx.req.method, path, status: 0, duration_ms: 0,
@@ -171,7 +171,7 @@ function ipRange(ip: string): string {
 }
 
 function payloadText(ctx: RequestContext): string {
-  const entries = [...Object.entries(ctx.get ?? {}), ...Object.entries(ctx.post instanceof Object ? ctx.post : {})]
+  const entries = [...Object.entries(ctx.req.query ?? {}), ...Object.entries(ctx.req.body instanceof Object ? ctx.req.body : {})]
     .filter(([k]) => !/pw|pass|password|token|secret/i.test(k))
     .map(([k, v]) => k + "=" + String(v));
   return entries.join("&");

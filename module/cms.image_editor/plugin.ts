@@ -77,19 +77,19 @@ export const api: AptTree = {
 
 export function init(app: App) {
   app.on("cms-ready", ({ ctx }) => {
-    if (ctx.get.cms_noFrontend) return;
+    if (ctx.req.query.cms_noFrontend) return;
     if (!ctx.cms.editmode) return;
-    ctx.html.scripts.add(ctx.sysURL + "cms.image_editor/pub/init.mjs");
+    ctx.res.html.scripts.add(ctx.req.modulePath + "cms.image_editor/pub/init.mjs");
   });
 
   // Replace an existing image with the edited version (keeps the filename).
   app.on("action", async ({ ctx }) => {
-    const upload = await ctx.files.editedImage;
+    const upload = await ctx.req.files.editedImage;
     if (!upload) return;
 
-    const fileId = Number(ctx.get.file_id ?? "0");
+    const fileId = Number(ctx.req.query.file_id ?? "0");
     const Page = await writablePage(ctx, fileId);
-    if (!Page) { ctx.responseStatus = 403; throw new Output({ error: "not allowed" }); }
+    if (!Page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
     await app.fire("page::file_upload-before", { Page });
     const File = await app.dbFiles.file(fileId);

@@ -37,8 +37,8 @@ export const settingsSchema = {
 export function init(app: App) {
   app.on("cms-ready", ({ ctx }) => {
     if (!ctx.cms.editmode) return;
-    if (ctx.get.cms_noFrontend) return;
-    ctx.html.scripts.add(ctx.sysURL + "cms.text/pub/init.mjs");
+    if (ctx.req.query.cms_noFrontend) return;
+    ctx.res.html.scripts.add(ctx.req.modulePath + "cms.text/pub/init.mjs");
   });
 }
 

@@ -13,12 +13,15 @@ Deno.test("cms.frontend.2: stores request URI without base path", async () => {
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
   const ctx = {
-    appRequestPath: "backend/page",
-    appURL: "/cms1/",
-    url: new URL("https://example.test/cms1/backend/page?tab=settings"),
+    req: {
+      appPath: "backend/page",
+      basePath: "/cms1/",
+      modulePath: "/cms1/m/",
+      url: new URL("https://example.test/cms1/backend/page?tab=settings"),
+      query: {},
+    },
     cms: { mainNode: { id: 1, vs: { module: "cms.layout.backend" }, access: () => 1 } },
-    get: {},
-    html: { jsData, scripts: { add: () => {} } },
+    res: { html: { jsData, scripts: { add: () => {} } } },
     settings: { cms: {
       last_backend_page: (value: string) => stored = value,
       last_frontend_page: () => "frontend/page",
@@ -41,12 +44,15 @@ Deno.test("cms.frontend.2: exposes stored app path unchanged", async () => {
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
   const ctx = {
-    appRequestPath: "backend/page",
-    appURL: "/cms1/",
-    url: new URL("https://example.test/cms1/backend/page"),
+    req: {
+      appPath: "backend/page",
+      basePath: "/cms1/",
+      modulePath: "/cms1/m/",
+      url: new URL("https://example.test/cms1/backend/page"),
+      query: {},
+    },
     cms: { mainNode: { id: 1, vs: { module: "cms.layout.backend" }, access: () => 1 } },
-    get: {},
-    html: { jsData, scripts: { add: () => {} } },
+    res: { html: { jsData, scripts: { add: () => {} } } },
     settings: { cms: {
       last_backend_page: () => {},
       last_frontend_page: () => "////frontend/page",

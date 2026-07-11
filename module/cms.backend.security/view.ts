@@ -26,14 +26,14 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   if (vars.seen) await db.table("m_security_event").update(vars.seen, { state: "seen" });
   if (vars.ignore) await db.table("m_security_event").update(vars.ignore, { state: "ignore" });
   const buckets = await db.query`SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80`;
-  const where = eventWhere(ctx.get);
+  const where = eventWhere(ctx.req.query);
   const events = await db.query`SELECT * FROM m_security_event ${where.parts.length ? sql`WHERE ${where}` : sql.raw("")} ORDER BY id DESC LIMIT 120`;
   const topIps = await db.query`SELECT ip, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ip!='' GROUP BY ip ORDER BY num DESC,last DESC LIMIT 10`;
   const topPaths = await db.query`SELECT path, COUNT(*) num, MAX(time) last FROM m_security_event WHERE path!='' GROUP BY path ORDER BY num DESC,last DESC LIMIT 10`;
   const topKinds = await db.query`SELECT kind, COUNT(*) num, MAX(time) last FROM m_security_event WHERE kind!='' GROUP BY kind ORDER BY num DESC,last DESC LIMIT 10`;
   const topUa = await db.query`SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10`;
   const stats: Record<string, unknown> = await db.row`SELECT COUNT(*) events, SUM(blocked) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event` ?? {};
-  const tab = String(ctx.get.tab ?? "live");
+  const tab = String(ctx.req.query.tab ?? "live");
   return `<div>
     <div class="u2-flex">
       ${await statusBox(app, stats)}
@@ -42,7 +42,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
         ${tab === "settings" ? settingsEditor(ctx) : ""}
         ${tab === "buckets" ? await bucketTable(app, buckets) : ""}
         ${tab === "analyse" ? '<div class=u2-flex>' + topTable(ctx, "Top IPs", topIps, "ip") + topTable(ctx, "Top Paths", topPaths, "path") + topTable(ctx, "Top Kinds", topKinds, "kind") + topTable(ctx, "Top Clients", topUa, "ua") : ""}
-        ${tab === "live" ? await eventTable(app, events, ctx.get) : ""}
+        ${tab === "live" ? await eventTable(app, events, ctx.req.query) : ""}
       </div>
     </div>
   </div>`;
@@ -57,13 +57,13 @@ async function statusBox(app: App, stats: Record<string, unknown>) {
 }
 
 function tabs(ctx: RequestContext, active: string) {
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   const href = (tab: string) => { u.searchParams.set("tab", tab); return hee(u.search); };
   return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="${href(v)}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
 }
 
 function settingsEditor(ctx: RequestContext) {
-  ctx.html.scripts.add(ctx.sysURL + "core/pub/js/SettingsEditor.mjs");
+  ctx.res.html.scripts.add(ctx.req.modulePath + "core/pub/js/SettingsEditor.mjs");
   return `<div class="u2-card"><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
 }
 
@@ -128,7 +128,7 @@ function eventActions(r: Row) {
 }
 
 function topTable(ctx: RequestContext, title: string, rows: Record<string, unknown>[], key: string) {
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return hee(u.search); };
   return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">
     ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="${href(r[key])}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}

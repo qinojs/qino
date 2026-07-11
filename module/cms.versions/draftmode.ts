@@ -209,7 +209,7 @@ export function initDraftmode(app: App) {
     // ─── cms-ready: draftmode frontend ────────────────────────────────────────
     app.on("cms-ready", async ({ ctx }) => {
         if (!ctx.cms.editmode) return;
-        if (ctx.get.cms_noFrontend) return;
+        if (ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
         // Check if draft has changes newer than live
@@ -217,10 +217,10 @@ export function initDraftmode(app: App) {
         if (MainNode) {
             const versions = await ctx.app.db.indexCol`SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ${String(MainNode)}`;
             if (versions[1] && (!versions[0] || versions[1] > versions[0])) {
-                ctx.html.jsData.cms_vers_draft_changed = true;
+                ctx.res.html.jsData.cms_vers_draft_changed = true;
             }
         }
-        ctx.html.scripts.add(ctx.sysURL + "cms.versions/pub/draftmode.mjs");
+        ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/draftmode.mjs");
     });
 }
 

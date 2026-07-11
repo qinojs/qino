@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function makeFileHelper(ctx: RequestContext) {
-  const appURL = ctx.appURL;
+  const appURL = ctx.req.basePath;
   function editorLink(file: string, line: unknown, col: unknown): string {
     const localPath = ctx.urlToLocalPath(file) ?? file;
     return appURL + "editor/?file=" + encodeURIComponent(localPath)
@@ -32,7 +32,7 @@ function makeFileHelper(ctx: RequestContext) {
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
   const { t, db } = node.app;
   const ctx = getCtx();
-  const get = ctx.get;
+  const get = ctx.req.query;
 
   if (vars.delete) {
     const where = db.table("m_error_report").valuesToFragment(vars.delete);
@@ -76,7 +76,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       LEFT JOIN usr  ON sess.usr_id = usr.id
     ORDER BY ${sql.raw(orderSql)}`;
 
-  const sortU = ctx.url; sortU.searchParams.delete("id");
+  const sortU = ctx.req.url.toURL(); sortU.searchParams.delete("id");
   const sortHref = (o: string) => { sortU.searchParams.set("order", o); return hee(sortU.search); };
 
   const tools = `
@@ -183,7 +183,7 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
     WHERE ${where} ORDER BY e.time DESC LIMIT 200`;
 
   let tableRows = "";
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   for (const row of rows) {
     const eUrl = editorLink(row.file ?? "", row.line, row.col);
 
@@ -229,7 +229,7 @@ async function renderEntryList(node: Node, ctx: RequestContext, get: Record<stri
 async function renderDetail(node: Node, id: number): Promise<string> {
   const { t, db } = node.app;
   const ctx = getCtx();
-  const get = ctx.get;
+  const get = ctx.req.query;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
   const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;
@@ -269,7 +269,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       WHERE ${historyWhere} AND log.id <= ${error.log_id}
       ORDER BY log.id DESC LIMIT 30`.catch(() => []);
 
-    const eu = ctx.url; eu.searchParams.delete("history_of");
+    const eu = ctx.req.url.toURL(); eu.searchParams.delete("history_of");
     for (const item of logs) {
       const errorItems = await db.query`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
       let errorLinks = "";
@@ -289,7 +289,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     }
   }
 
-  const hu = ctx.url; hu.searchParams.set("id", String(id));
+  const hu = ctx.req.url.toURL(); hu.searchParams.set("id", String(id));
   const histHref = (h: string) => { hu.searchParams.set("history_of", h); return hee(hu.search); };
   const historyLinks = `
 <a href="${histHref("ip")}">IP</a>

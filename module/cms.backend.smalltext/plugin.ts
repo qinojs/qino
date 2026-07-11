@@ -16,7 +16,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
   const langs = node.app.languages.all;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
 
-  const v = vars ?? ctx.get;
+  const v = vars ?? ctx.req.query;
   const search = String(v.search ?? "").trim();
   const orderRaw = String(v.order ?? "missing");
   const dir = String(v.dir ?? "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
@@ -79,7 +79,7 @@ async function render(node: Node): Promise<string> {
   const langs = app.languages.all;
   const counterActive = !!(await app.settings.core.smalltext.counter);
   const codeLogActive = !!(await app.settings.core.smalltext.code_logger);
-  const search = String(ctx.get.search ?? "").trim();
+  const search = String(ctx.req.query.search ?? "").trim();
   const missingWhere = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ");
   const missing = missingWhere.parts.length ? Number(await app.db.one`SELECT count(*) FROM smalltext WHERE ${missingWhere}`) : 0;
 

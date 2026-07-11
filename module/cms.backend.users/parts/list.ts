@@ -14,7 +14,7 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: RequestCon
   const canLoginAs = await allowLoginAs(node, ctx);
 
   const search = String(vars?.search ?? "");
-  const grpId = Number(vars?.grp_id ?? ctx.get.grp_id ?? 0) || null;
+  const grpId = Number(vars?.grp_id ?? ctx.req.query.grp_id ?? 0) || null;
 
   const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
   const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");

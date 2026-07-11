@@ -154,6 +154,6 @@ Deno.test("ContextRequest.query: always flat, first value wins", async () => {
 
 Deno.test("RequestContext defaults: post null, files empty", async () => {
   const ctx = await testContext();
-  assertEquals(ctx.post, null);
-  assertEquals(Object.keys(ctx.files), []);
+  assertEquals(ctx.req.body, null);
+  assertEquals(Object.keys(ctx.req.files), []);
 });

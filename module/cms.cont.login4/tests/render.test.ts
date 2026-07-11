@@ -73,8 +73,8 @@ Deno.test("cms.cont.login4: render redirects logged-in users when configured", a
 
   const out = await requestStorage.run(ctx, () => cms.node.render(node as any));
   assertEquals(out, "");
-  assertEquals(ctx.responseStatus, 302);
-  assertEquals(ctx.responseHeaders.get("Location"), "/target");
+  assertEquals(ctx.res.status, 302);
+  assertEquals(ctx.res.headers.get("Location"), "/target");
 });
 
 Deno.test("cms.cont.login4: render shows logout form for logged-in users", async () => {

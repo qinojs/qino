@@ -87,8 +87,8 @@ export class SessionManager {
 
 function setCookie(ctx: RequestContext): void {
   const https = ctx.app.https;
-  const name = cookiePrefix(https, ctx.appURL) + COOKIE_NAME;
-  const parts = [`${name}=${ctx.sess.token}`, `Path=${ctx.appURL}`, "HttpOnly;SameSite=Lax"];
+  const name = cookiePrefix(https, ctx.req.basePath) + COOKIE_NAME;
+  const parts = [`${name}=${ctx.sess.token}`, `Path=${ctx.req.basePath}`, "HttpOnly;SameSite=Lax"];
   if (https) parts.push("Secure");
-  ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
+  ctx.res.headers.append("Set-Cookie", parts.join("; "));
 }

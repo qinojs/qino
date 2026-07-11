@@ -66,12 +66,12 @@ export class CMS {
 
   async nodeFromRequest(): Promise<Node> {
     const ctx = getCtx();
-    const cmspid = ctx.get.cmspid;
+    const cmspid = ctx.req.query.cmspid;
     let pid: number;
     if (cmspid) {
       pid = Number(cmspid);
     } else {
-      const id = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${ctx.appRequestPath}`;
+      const id = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${ctx.req.appPath}`;
       pid = Number(id ?? "0") || 0;
     }
     return this.node(pid);

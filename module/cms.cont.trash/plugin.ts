@@ -24,7 +24,7 @@ async function render(node: Node): Promise<string> {
     const fromTitle   = deletedFrom ? hee(await (await (await app.cms.node(deletedFrom)).title()).string()) : "";
     const timeHtml    = deletedTime ? `<u2-time datetime="${new Date(deletedTime * 1000).toISOString()}" type=relative></u2-time>` : "";
     const module      = hee(String(P.vs.module ?? ""));
-    const previewUrl = hee(ctx.appURL + "?cmspid=" + id);
+    const previewUrl = hee(ctx.req.basePath + "?cmspid=" + id);
     listHtml += `
 <div class="u2-card -item" data-id="${id}" data-url="${previewUrl}">
   <strong>${title}</strong>
@@ -54,7 +54,7 @@ async function render(node: Node): Promise<string> {
   <div class="-list u2-grid">${listHtml}</div>
   <dialog class="-preview"><iframe></iframe></dialog>
 </div>
-<script type=module src="${hee(ctx.sysURL)}cms.cont.trash/pub/main.js"></script>`;
+<script type=module src="${hee(ctx.req.modulePath)}cms.cont.trash/pub/main.js"></script>`;
 }
 
 export const cms = {

@@ -24,7 +24,7 @@ function hiddenToken(csrfToken: string): string {
 
 function render(node: Node): Promise<string> {
   const ctx = getCtx();
-  const id = Number(ctx.get.id ?? 0);
+  const id = Number(ctx.req.query.id ?? 0);
   if (id) return renderDetail(node, id);
   return renderOverview(node);
 }
@@ -33,13 +33,13 @@ async function renderOverview(node: Node): Promise<string> {
   const ctx = getCtx();
   const { t, db } = node.app;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
-  const search = String(ctx.get.search ?? "").trim();
+  const search = String(ctx.req.query.search ?? "").trim();
 
-  if (ctx.post?.csrfToken === ctx.csrfToken && isSuperuser) {
-    if ("delete_all" in ctx.post) {
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && isSuperuser) {
+    if ("delete_all" in ctx.req.body) {
       await db.query`DELETE FROM mail`;
     }
-    if ("delete_before1year" in ctx.post) {
+    if ("delete_before1year" in ctx.req.body) {
       await db.query`DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ${unixTime() - 60 * 60 * 24 * 365}`;
     }
   }
@@ -103,7 +103,7 @@ async function listRows(node: Node, search: string): Promise<string> {
 
   const tMoreLabel = await node.app.t`more`;
   const tNoSubject = await node.app.t`no subject`;
-  const u = getCtx().url;
+  const u = getCtx().req.url.toURL();
   return rows.map(row => {
     const more = Number(row.num ?? 0) > 1 ? ` <small>${Number(row.num) - 1} ${tMoreLabel}</small>` : "";
     u.searchParams.set("id", String(row.id));
@@ -124,10 +124,10 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const row = await db.row`SELECT m.*, l.time FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE m.id=${id}`;
   if (!row) return `<div class=u2-card><div class=-body>${await t`Mail does not exist.`}</div></div>`;
 
-  if (ctx.post?.csrfToken === ctx.csrfToken) {
+  if (ctx.req.body?.csrfToken === ctx.csrfToken) {
     const Mail = await node.app.mail.get(id);
-    if ("send" in ctx.post) await Mail.send();
-    const add = String(ctx.post.add_recipient ?? "").trim();
+    if ("send" in ctx.req.body) await Mail.send();
+    const add = String(ctx.req.body.add_recipient ?? "").trim();
     if (add) {
       Mail.addTo(add);
       await Mail.save();

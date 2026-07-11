@@ -119,14 +119,14 @@ export function init(app: App) {
         await applyDraftSpace(ctx);
 
         // Override from request params
-        if (ctx.get.cms_versions_space !== undefined && ctx.get.cms_versions_space !== "active") {
-            vs.space = Number(ctx.get.cms_versions_space) || 0;
+        if (ctx.req.query.cms_versions_space !== undefined && ctx.req.query.cms_versions_space !== "active") {
+            vs.space = Number(ctx.req.query.cms_versions_space) || 0;
         }
-        vs.log = Number(ctx.get.cms_versions_log ?? "0") || 0;
+        vs.log = Number(ctx.req.query.cms_versions_log ?? "0") || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
         if (vs.log) {
-            const pid = Number(ctx.get.cms_versions_page ?? "0");
+            const pid = Number(ctx.req.query.cms_versions_page ?? "0");
             cacheHeaders(ctx);
 
             // Disable editmode for the historical view — request-only override;
@@ -163,11 +163,11 @@ export function init(app: App) {
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────
     app.on("cms-ready", async ({ ctx }) => {
         if (!ctx.cms.editmode) return;
-        if (ctx.get.cms_noFrontend) return;
+        if (ctx.req.query.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
-        ctx.html.jsData.cmsFrontend = frontend;
-        ctx.html.scripts.add(ctx.sysURL + frontend + "/pub/js/frontend.mjs");
-        ctx.html.scripts.add(ctx.sysURL + "cms.versions/pub/vers.mjs");
+        ctx.res.html.jsData.cmsFrontend = frontend;
+        ctx.res.html.scripts.add(ctx.req.modulePath + frontend + "/pub/js/frontend.mjs");
+        ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/vers.mjs");
     });
 
     initDraftmode(app);

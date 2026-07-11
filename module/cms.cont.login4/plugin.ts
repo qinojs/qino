@@ -30,8 +30,8 @@ async function render(node: Node): Promise<string> {
       const P = await cms.node(redirectId);
       if (P.exists()) {
         const url = await P.url();
-        ctx.responseHeaders.set("Location", url);
-        ctx.responseStatus = 302;
+        ctx.res.headers.set("Location", url);
+        ctx.res.status = 302;
         return "";
       }
     }

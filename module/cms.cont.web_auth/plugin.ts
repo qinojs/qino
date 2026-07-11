@@ -23,7 +23,7 @@ async function render(node: Node): Promise<string> {
   const showManage = mode === "manage" || (mode === "auto" && !!ctx.user);
   const showLogin  = mode === "login"  || (mode === "auto" && !ctx.user);
 
-  const apiBase   = String(settings.apiBase() ?? "") || ctx.appURL + "api/web_auth";
+  const apiBase   = String(settings.apiBase() ?? "") || ctx.req.basePath + "api/web_auth";
 
   if (showManage && ctx.user) return renderManage(node.app, apiBase);
   if (showLogin) {

@@ -11,7 +11,7 @@ Deno.test("cms.backend.settings: render adds settings editor and app source", as
   const out = cms.node.render({}, { ctx });
   assertEquals(out.includes("<settings-editor"), true);
   assertEquals(out.includes("source=\"/api/core/settings\""), true);
-  assertEquals(ctx.html.scripts.has("/m/core/pub/js/SettingsEditor.mjs"), true);
+  assertEquals(ctx.res.html.scripts.has("/m/core/pub/js/SettingsEditor.mjs"), true);
 });
 
 Deno.test("cms.backend.settings: dashboard widget escapes count", async () => {

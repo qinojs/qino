@@ -38,7 +38,7 @@ async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
 async function expectedOrigins(ctx: RequestContext, rpId: string): Promise<string[]> {
   const setting = String(await ctx.app.settings.web_auth.origin ?? "");
   if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
-  const url = ctx.url;
+  const url = ctx.req.url;
   if (url.hostname === rpId || url.hostname.endsWith("." + rpId)) return [url.origin];
   return [rpId === "localhost" ? "http://localhost" : `https://${rpId}`];
 }

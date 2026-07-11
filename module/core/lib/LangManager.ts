@@ -28,11 +28,11 @@ export class LangManager {
 
     ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.core.lang() ?? "";
 
-    const urlLang = ctx.get.lang ?? ctx.get.changeLanguage; // changeLanguage: frozen PHP-era alias
+    const urlLang = ctx.req.query.lang ?? ctx.req.query.changeLanguage; // changeLanguage: frozen PHP-era alias
     if (urlLang) {
       ctx.langUsr = urlLang;
     } else {
-      const match = ctx.appRequestPath?.match(/^([a-z][a-z])(\/|$|\?)/);
+      const match = ctx.req.appPath?.match(/^([a-z][a-z])(\/|$|\?)/);
       if (match) ctx.langUsr = match[1];
     }
 

@@ -143,7 +143,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
 
 function render(): string {
   const ctx = getCtx();
-  const appURL: string = ctx.appURL ?? "/";
+  const appURL: string = ctx.req.basePath ?? "/";
 
   const aptTree = ctx.app.aptTree;
   const routes = [...walk(aptTree, ctx)];

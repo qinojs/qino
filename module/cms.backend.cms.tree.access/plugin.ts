@@ -16,7 +16,7 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
 }
 
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
-  if (ctx.get.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.get.rp));
+  if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
 
   const app = node.app;
   const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;

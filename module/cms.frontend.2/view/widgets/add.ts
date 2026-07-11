@@ -20,9 +20,9 @@ export default async function (node: Node): Promise<string> {
     try {
       if (!modDir) throw new Error();
       await Deno.stat(modDir + "pub/module.svg");
-      svgHtml = `<use href="${ctx.sysURL+name}/pub/module.svg#main" />`;
+      svgHtml = `<use href="${ctx.req.modulePath+name}/pub/module.svg#main" />`;
     } catch {
-      svgHtml = `<use href="${ctx.sysURL}cms.frontend.2/pub/img/module_default.svg#main" />`;
+      svgHtml = `<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
     }
     moduleBoxes += `<div itemid="${hee(name)}" title="${hee(desc)}">
       <div class=-title title="${hee(String(await M.get?.("name") ?? name))}">${title}</div>
@@ -55,9 +55,9 @@ export default async function (node: Node): Promise<string> {
       try {
         if (!mDir) throw new Error();
         await Deno.stat(mDir + "pub/module.svg");
-        svgHtml = `<use href="${ctx.sysURL+P.vs.module}/pub/module.svg#main" />`;
+        svgHtml = `<use href="${ctx.req.modulePath+P.vs.module}/pub/module.svg#main" />`;
       } catch {
-        svgHtml = `<use href="${ctx.sysURL}cms.frontend.2/pub/img/module_default.svg#main" />`;
+        svgHtml = `<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
       }
       modelItems += `<div itemid="${P.id}" title="">
         <svg class=-img fill="#fff">${svgHtml}</svg>

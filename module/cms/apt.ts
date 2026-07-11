@@ -567,7 +567,7 @@ const node = {
         try {
           const api = node.module?.plugin?.cms?.node?.api;
           if (typeof api !== "function") return null;
-          const vars = ctx.post;
+          const vars = ctx.req.body;
           return await api(node, vars) ?? null;
         } catch (e: any) {
           if (!e?.message?.includes("Module not found")) throw e;

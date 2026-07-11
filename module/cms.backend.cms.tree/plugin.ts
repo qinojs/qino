@@ -13,7 +13,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function render(node: Node, {ctx}: {ctx: RequestContext}): Promise<string> {
 
   // handle GET params that change user settings
-  if (ctx.get.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.get.rp));
+  if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
 
   const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
   const rootNode = await node.app.cms.node(rootId);

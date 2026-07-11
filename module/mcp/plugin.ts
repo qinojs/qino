@@ -6,7 +6,7 @@ export const needs = ["core"];
 
 export function init(app: App): void {
   app.on("action", async ({ ctx }) => {
-    if (ctx.appRequestPath !== "mcp") return;
+    if (ctx.req.appPath !== "mcp") return;
     await mcpFetch(ctx);
   });
 }

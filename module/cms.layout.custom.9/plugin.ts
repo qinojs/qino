@@ -16,13 +16,13 @@ async function render(node: Node, data: { ctx: RequestContext }): Promise<string
   // App-specific layout CSS
   try {
     await Deno.stat(node.app.appPATH + "qg/" + module + "/pub/main.css");
-    data.ctx.html.styles.add(data.ctx.appURL + "qg/" + module + "/pub/main.css");
+    data.ctx.res.html.styles.add(data.ctx.req.basePath + "qg/" + module + "/pub/main.css");
   } catch {/**/}
 
   // Font CSS from layout settings
   const fontCss = LPage.settings["font-css-file"]();
   if (fontCss) {
-    data.ctx.html.head += `<link rel=stylesheet href="${
+    data.ctx.res.html.head += `<link rel=stylesheet href="${
       hee(fontCss.replace(/\|/g, "%7C"))
     }">\n`;
   }

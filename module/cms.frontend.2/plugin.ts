@@ -62,7 +62,7 @@ export const api: AptTree = {
 
 export function init(app: App) {
   app.on("cms-ready", async ({ ctx }) => {
-    if (ctx.get.cms_noFrontend) return;
+    if (ctx.req.query.cms_noFrontend) return;
     if (await app.settings.cms.frontend !== "cms.frontend.2") return;
 
     const settings = ctx.settings;
@@ -72,7 +72,8 @@ export function init(app: App) {
     const access = await node.access();
     const inBackend = node.vs?.module === "cms.layout.backend";
 
-    const { html, sysURL } = ctx;
+    const html = ctx.res.html;
+    const sysURL = ctx.req.modulePath;
     const qino = html.jsData.qino ??= {};
 
     if (access > 1 || inBackend) {
@@ -80,15 +81,15 @@ export function init(app: App) {
       if (pageNotFound != node.id) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
-        const url = ctx.url;
-        settings.cms[lastKey](url.pathname.slice(ctx.appURL.length) + url.search);
+        const url = ctx.req.url;
+        settings.cms[lastKey](url.pathname.slice(ctx.req.basePath.length) + url.search);
         (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
         html.scripts.add(sysURL + "cms.frontend.2/pub/js/init.mjs");
       }
     }
 
     if (access > 1) {
-      ctx.csp["img-src"]["blob:"] = true;
+      ctx.res.csp["img-src"]["blob:"] = true;
       qino.cms ??= {};
       qino.cms.nodeId = node.id;
       qino.cms.requestedNodeId = ctx.cms.requestedNodeId;

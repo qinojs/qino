@@ -30,10 +30,9 @@ Deno.test("cms.filebrowser: init registers cms-ready asset hook", async () => {
   const added: string[] = [];
   await handlers["cms-ready"][0]({
     ctx: {
-      get: {},
+      req: { query: {}, modulePath: "/m/" },
       cms: { editmode: true },
-      sysURL: "/m/",
-      html: { scripts: { add: (url: string) => added.push(url) } },
+      res: { html: { scripts: { add: (url: string) => added.push(url) } } },
     },
   });
   assertEquals(added, ["/m/cms.filebrowser/pub/init.mjs"]);

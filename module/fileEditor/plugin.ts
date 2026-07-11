@@ -30,8 +30,8 @@ export const api: AptTree = {
 
 function editorFile(): string | null {
   const ctx = getCtx();
-  const file = ctx.get.file;
-  return file && ctx.appRequestPath.startsWith("editor") ? file : null;
+  const file = ctx.req.query.file;
+  return file && ctx.req.appPath.startsWith("editor") ? file : null;
 }
 
 export function init(app: App) {
@@ -44,13 +44,13 @@ export function init(app: App) {
     const allowed = ctx.sess.data.fileEditor.allow[file]();
     const isSuperuser = Boolean(await ctx.user?.get('superuser'));
     if (!allowed && !isSuperuser) {
-      ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
+      ctx.res.headers.set("Content-Type", "text/plain; charset=utf-8");
       throw new Output("no access");
     }
 
     const stat = await nodeFs.stat(file).catch(() => null);
     if (!stat?.isFile()) {
-      ctx.responseHeaders.set("Content-Type", "text/plain; charset=utf-8");
+      ctx.res.headers.set("Content-Type", "text/plain; charset=utf-8");
       throw new Output("file does not exist");
     }
   });
@@ -58,6 +58,6 @@ export function init(app: App) {
   app.on("render", async () => {
     const file = editorFile();
     if (!file) return;
-    getCtx().html.content = await codemirrorView(file);
+    getCtx().res.html.content = await codemirrorView(file);
   });
 }

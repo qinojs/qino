@@ -30,14 +30,14 @@ const settingsSchema = {
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<HtmlString> {
-  ctx.csp["style-src"][u2Root] = true;
-  ctx.csp["script-src"][u2Root] = true;
-  ctx.csp["connect-src"][u2Root] = true;
+  ctx.res.csp["style-src"][u2Root] = true;
+  ctx.res.csp["script-src"][u2Root] = true;
+  ctx.res.csp["connect-src"][u2Root] = true;
 
-  for (const f of u2css) ctx.html.styles.add(u2Root + f);
-  ctx.html.scripts.add(u2Root + "u2/auto.js");
-  ctx.html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
-  ctx.html.scripts.add(ctx.sysURL + "cms/pub/js/cms.mjs");
+  for (const f of u2css) ctx.res.html.styles.add(u2Root + f);
+  ctx.res.html.scripts.add(u2Root + "u2/auto.js");
+  ctx.res.html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
+  ctx.res.html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 
   const LPage = await getLayoutPage(node.cms, String(node.vs.module));
 
@@ -56,7 +56,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<Htm
   <header id=head role=banner>
     <div class=u2-width>
       <div class="u2-flex -Between">
-        <a id=logo href="${ctx.appURL}">${logoInner}</a>
+        <a id=logo href="${ctx.req.basePath}">${logoInner}</a>
         <input type=checkbox id=navtoggle hidden>
         <label for=navtoggle id=burger aria-label="Menu">
           <svg viewBox="0 0 24 24" width=28 height=28 fill=none stroke=currentColor stroke-width=2 stroke-linecap=round>

@@ -8,7 +8,7 @@ export default async function (node: Node, _vars: unknown): Promise<string> {
   const errorID = uid(7);
 
   const ctx = getCtx();
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   u.searchParams.set("export_table", String(node.id));
   const exportUrl = u.pathname + u.search;
 

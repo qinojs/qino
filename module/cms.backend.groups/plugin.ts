@@ -18,7 +18,7 @@ async function accessOptions(app: App, current: number): Promise<string> {
 
 function render(node: Node): Promise<string> {
   const ctx = getCtx();
-  const id = ctx.get.id ? Number(ctx.get.id) : 0;
+  const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
 
   if (id) return renderDetail(node, id);
   return renderOverview(node);
@@ -29,10 +29,10 @@ async function renderOverview(node: Node): Promise<string> {
   const app = node.app;
   const db = app.db;
 
-  if (ctx.post?.csrfToken === ctx.csrfToken && "add" in ctx.post) {
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
     await db.table("grp").insert({
-      name: String(ctx.post.name ?? ""),
-      cms_access: Math.min(Math.max(0, Number(ctx.post.cms_access) || 0), 3),
+      name: String(ctx.req.body.name ?? ""),
+      cms_access: Math.min(Math.max(0, Number(ctx.req.body.cms_access) || 0), 3),
     });
   }
 

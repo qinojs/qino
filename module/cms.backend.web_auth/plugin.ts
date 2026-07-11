@@ -14,8 +14,8 @@ async function render(node: Node): Promise<string> {
   const ctx = getCtx();
   const db  = node.app.db;
 
-  if (ctx.post?.csrfToken === ctx.csrfToken && "delete_cred" in ctx.post) {
-    const id = Number(ctx.post.delete_cred ?? "0");
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_cred" in ctx.req.body) {
+    const id = Number(ctx.req.body.delete_cred ?? "0");
     if (id) await db.exec`DELETE FROM web_auth_credential WHERE id = ${id}`;
   }
 

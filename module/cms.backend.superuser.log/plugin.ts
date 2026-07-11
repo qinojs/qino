@@ -105,8 +105,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?
      WHERE ${sql.join(where, " AND ")}
      ORDER BY log.id DESC LIMIT 1400`.catch(() => []);
 
-  const u = ctx.url;
-  const ownHost = ctx.url.host;
+  const u = ctx.req.url.toURL();
+  const ownHost = ctx.req.url.host;
   let body = "";
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
@@ -189,7 +189,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
 
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; vars?: Record<string, unknown> }): Promise<string> {
-  if (ctx.get.id) return renderDetail(node, Number(ctx.get.id));
+  if (ctx.req.query.id) return renderDetail(node, Number(ctx.req.query.id));
   const { t } = node.app;
 
   const message = vars.do ? await runTool(node, String(vars.do), (vars.data ?? {}) as Record<string, unknown>) : "";
@@ -210,7 +210,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: RequestContext; var
     ages.map((a, i) => `<option value="${a[0]}"${i === sel ? " selected" : ""}>${hee(String(a[1]))}`).join("");
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
-  const initSearch = String(ctx.get.search ?? "");
+  const initSearch = String(ctx.req.query.search ?? "");
   const initialList = await list(node, { ctx, vars: { filter: { search: initSearch } } });
 
   // single root element — the CMS injects qcms-id/qcms-mod into the first tag, so the
@@ -292,7 +292,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   }
 
   // history of session / client / ip
-  const historyOf = ctx.get.history_of ?? "sess";
+  const historyOf = ctx.req.query.history_of ?? "sess";
   let hWhere: Sql | null = null;
   if (historyOf === "client" && log.client_id) hWhere = sql`log.client_id = ${log.client_id}`;
   else if (historyOf === "ip" && log.ip_id) hWhere = sql`log.ip_id = ${log.ip_id}`;
@@ -306,7 +306,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
           LEFT JOIN log_url url     ON log.url_id     = url.id
           LEFT JOIN log_url referer ON log.referer_id = referer.id
        WHERE ${hWhere} AND log.id <= ${id} ORDER BY log.id DESC LIMIT 100`.catch(() => []);
-    const u = ctx.url;
+    const u = ctx.req.url.toURL();
     for (const item of logs) {
       u.searchParams.set("id", String(item.id));
       historyRows += `
@@ -316,11 +316,11 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <td>${item.post ? `<pre style="max-width:30rem; max-height:8rem; overflow:auto">${hee(item.post)}</pre>` : "-"}`;
     }
   }
-  const hu = ctx.url; hu.searchParams.set("id", String(id));
+  const hu = ctx.req.url.toURL(); hu.searchParams.set("id", String(id));
   const histLink = (h: string, label: string) => { hu.searchParams.set("history_of", h); return `<a href="${hee(hu.search)}">${hee(label)}</a>`; };
 
   // links back to the filtered list (drop id/history_of so render() shows the list, not the detail)
-  const lu = ctx.url; lu.searchParams.delete("id"); lu.searchParams.delete("history_of");
+  const lu = ctx.req.url.toURL(); lu.searchParams.delete("id"); lu.searchParams.delete("history_of");
   const searchLink = (v: unknown) => { lu.searchParams.set("search", String(v)); return hee(lu.search); };
 
   return `

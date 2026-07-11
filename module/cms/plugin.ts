@@ -85,19 +85,19 @@ export function init(app: App) {
         const settings = ctx.settings;
 
         // Edit mode
-        const editmode = ctx.get.cms_editmode;
+        const editmode = ctx.req.query.cms_editmode;
         if (editmode !== undefined) settings.cms.editmode(editmode);
 
         ctx.cms.editmode = Number(settings.cms.editmode()) || 0;
 
         // File upload
-        const cmsPageFile = await ctx.files.cmsPageFile;
+        const cmsPageFile = await ctx.req.files.cmsPageFile;
         if (cmsPageFile) {
             // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
-            const cmspid = Number(ctx.get.cmspid ?? "0");
+            const cmspid = Number(ctx.req.query.cmspid ?? "0");
             const P = await app.cms.node(cmspid);
             if ((await P.access()) > 1) {
-                const replace = ctx.get.replace;
+                const replace = ctx.req.query.replace;
                 const File = await (replace ? P.file(replace) : P.addFile());
                 await File.replaceFromUpload(cmsPageFile);
                 throw new Output({ id: String(File), url: await File.url() });
@@ -105,12 +105,12 @@ export function init(app: App) {
         }
 
         // Page files as ZIP
-        const zipPid = ctx.get.cms_nodeFilesZip;
+        const zipPid = ctx.req.query.cms_nodeFilesZip;
         if (zipPid) {
             const P = await app.cms.node(Number(zipPid));
-            if (!(await P.isReadable())) { ctx.responseStatus = 403; return; }
+            if (!(await P.isReadable())) { ctx.res.status = 403; return; }
             const files = Object.values(await P.files());
-            if (!files.length) { ctx.responseStatus = 404; return; }
+            if (!files.length) { ctx.res.status = 404; return; }
             const stream = await dbFiles2Zip(files).catch((e) => {
                 console.error(e);
                 throw new Output("ZIP not available", { status: 501 });

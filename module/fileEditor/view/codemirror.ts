@@ -6,12 +6,12 @@ import { typeByExtension } from "../../../deps.ts";
 
 export default async function codemirrorView(file: string): Promise<string> {
   const ctx = getCtx();
-  const html = ctx.html;
+  const html = ctx.res.html;
 
   html.styles.add(u2Root + "css/norm/norm.css");
   html.styles.add(u2Root + "css/base/base.css");
 
-  html.legacyScripts.add(ctx.sysURL + "core/pub/js/c1.js");
+  html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
 
   const version = "5.65.5";
   const url = `https://cdn.jsdelivr.net/npm/codemirror@${version}`;
@@ -45,8 +45,8 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   html.legacyScripts.add(`${url}/keymap/sublime.${min}js`);
 
-  html.scripts.add(ctx.sysURL + "fileEditor/pub/main.mjs");
-  html.styles.add(ctx.sysURL + "fileEditor/pub/main.css");
+  html.scripts.add(ctx.req.modulePath + "fileEditor/pub/main.mjs");
+  html.styles.add(ctx.req.modulePath + "fileEditor/pub/main.css");
 
   html.title = nodePath.basename(file) + " | Editor";
 
@@ -60,8 +60,8 @@ export default async function codemirrorView(file: string): Promise<string> {
   } catch { /* not writable */ }
 
   const content = await Deno.readTextFile(file);
-  const line = ctx.get.line ?? "";
-  const col = ctx.get.col ?? "";
+  const line = ctx.req.query.line ?? "";
+  const col = ctx.req.query.col ?? "";
 
   return `<button id=saveButton
     style="position:fixed;right:-1px;top:10px;z-index:10;padding:10px 12px;display:none;background-image:linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5))">

@@ -17,16 +17,16 @@ async function render(node: Node): Promise<string> {
 
   let message = "";
 
-  if (ctx.post?.csrfToken === ctx.csrfToken && ("save" in ctx.post || "send" in ctx.post)) {
-    const subject = String(ctx.post.subject ?? "").trim();
-    const body = String(ctx.post.body ?? "").trim();
-    const senderMode = String(ctx.post.sender_mode ?? "default");
-    const sender = senderMode === "custom" ? String(ctx.post.sender_custom ?? "").trim() : "";
-    const replyTo = String(ctx.post.reply_to ?? "").trim();
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && ("save" in ctx.req.body || "send" in ctx.req.body)) {
+    const subject = String(ctx.req.body.subject ?? "").trim();
+    const body = String(ctx.req.body.body ?? "").trim();
+    const senderMode = String(ctx.req.body.sender_mode ?? "default");
+    const sender = senderMode === "custom" ? String(ctx.req.body.sender_custom ?? "").trim() : "";
+    const replyTo = String(ctx.req.body.reply_to ?? "").trim();
 
-    const toUsers = [ctx.post.to_users ?? []].flat().map(Number).filter(Boolean);
-    const toGroups = [ctx.post.to_groups ?? []].flat().map(Number).filter(Boolean);
-    const toCustom = String(ctx.post.to_custom ?? "").trim();
+    const toUsers = [ctx.req.body.to_users ?? []].flat().map(Number).filter(Boolean);
+    const toGroups = [ctx.req.body.to_groups ?? []].flat().map(Number).filter(Boolean);
+    const toCustom = String(ctx.req.body.to_custom ?? "").trim();
 
     if (!subject) {
       message = `<u2-alert open variant=danger>${await app.t`Subject is required.`}</u2-alert>`;
@@ -66,7 +66,7 @@ async function render(node: Node): Promise<string> {
       await mail.save();
       const savedId = mail.id;
 
-      if ("send" in ctx.post) {
+      if ("send" in ctx.req.body) {
         await mail.send();
         message = `<u2-alert open variant=success style="margin:0">${await app.t`Mail created and sent`} (${addedEmails.size} ${await app.t`recipients`}). <a href="../?id=${savedId}">${await app.t`View`}</a></u2-alert>`;
       } else {

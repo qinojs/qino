@@ -89,7 +89,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx?: RequestContext; vars
   const relHeaders = children.map((F: DbField) => `<th title="${hee(F.table.name+"."+F.name)}">${hee(F.table.name)}`).join("");
 
   let trs = "";
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
     const exists = await f.exists();
@@ -130,7 +130,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const ctx = getCtx();
   const app = node.app;
   const { dbFiles: fm } = app;
-  const get = ctx.get;
+  const get = ctx.req.query;
 
   if (get.id) return renderDetail(node, Number(get.id));
   if (vars.delete) await (await fm.file(Number(vars.delete))).remove();
@@ -168,7 +168,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const app = node.app;
 
   const { db, dbFiles: fm } = app;
-  const get = ctx.get;
+  const get = ctx.req.query;
 
   const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
   console.log(row)
@@ -187,7 +187,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   }))).join("") || "<div class=-body>none</div>";
 
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
-  const dupeU = ctx.url;
+  const dupeU = ctx.req.url.toURL();
 
   const preview = exists ? await mediaView(f) : "";
   const text = exists ? await textView(f) : "";

@@ -18,9 +18,9 @@ export default async function (node: Node): Promise<string> {
   try {
     if (!modulePubPath) throw new Error();
     await Deno.stat(modulePubPath + "module.svg");
-    svgUrl = ctx.sysURL + node.vs.module + "/pub/module.svg";
+    svgUrl = ctx.req.modulePath + node.vs.module + "/pub/module.svg";
   } catch {
-    svgUrl = ctx.sysURL + "cms.frontend.2/pub/img/module_default.svg";
+    svgUrl = ctx.req.modulePath + "cms.frontend.2/pub/img/module_default.svg";
   }
 
   const Module = db.table("module").entry(node.vs.module);

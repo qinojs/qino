@@ -44,9 +44,9 @@ export function initSecurity(app: App) {
     const policy = decide(penalty, signals, set, await ctx.user?.get("superuser"));
     if (policy.warn) await addEvent(ctx, { ...info, prio: policy.prio, kind: "throttle", scope: policy.scope, ident: policy.ident, reason: policy.reason, confidence: policy.confidence, severity: policy.severity, score: policy.score, delay_ms: policy.delay, blocked: policy.blocked });
     if (policy.blocked) {
-      ctx.responseStatus = 429;
-      ctx.responseHeaders.set("Retry-After", String(Math.ceil(policy.delay / 1000) || 5));
-      ctx.responseBody = "Too many requests";
+      ctx.res.status = 429;
+      ctx.res.headers.set("Retry-After", String(Math.ceil(policy.delay / 1000) || 5));
+      ctx.res.body = "Too many requests";
       throw new Output();
     }
     if (policy.delay) await sleep(policy.delay);
@@ -58,9 +58,9 @@ export function initSecurity(app: App) {
     const set = await settings(ctx.app);
     if (!set.enabled) return;
     const info = reqInfo(ctx);
-    info.status = ctx.responseStatus;
+    info.status = ctx.res.status;
     info.duration_ms = Math.round(performance.now() - sec.start);
-    info.bytes_out = String(ctx.responseBody ?? "").length;
+    info.bytes_out = String(ctx.res.body ?? "").length;
     const signal = responseSignal(info, set);
     if (!signal) return;
     const ranked = rankSignal(signal, info, set);
@@ -98,9 +98,9 @@ function shrinkPathBlocks(blocks: Map<string, number>, max: number) {
 }
 
 function block(ctx: RequestContext, seconds: number) {
-  ctx.responseStatus = 429;
-  ctx.responseHeaders.set("Retry-After", String(Math.max(1, Math.ceil(seconds))));
-  ctx.responseBody = "Too many requests";
+  ctx.res.status = 429;
+  ctx.res.headers.set("Retry-After", String(Math.max(1, Math.ceil(seconds))));
+  ctx.res.body = "Too many requests";
   throw new Output();
 }
 

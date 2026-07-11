@@ -24,13 +24,13 @@ async function render(node: Node): Promise<string> {
   const app = node.app;
   const db = app.db;
 
-  const id = Number(ctx.get.id ?? 0);
+  const id = Number(ctx.req.query.id ?? 0);
   if (id) return renderDetail(node, id);
 
   let message = "";
 
-  if (ctx.post?.csrfToken === ctx.csrfToken && "create" in ctx.post) {
-    const tname = String(ctx.post.tname ?? "").trim();
+  if (ctx.req.body?.csrfToken === ctx.csrfToken && "create" in ctx.req.body) {
+    const tname = String(ctx.req.body.tname ?? "").trim();
     if (!tname) {
       message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
     } else {
@@ -40,8 +40,8 @@ async function render(node: Node): Promise<string> {
       } else {
         const now = unixTime();
         const newId = await db.table("mail_template").insert({ name: tname, created: now, updated: now });
-        ctx.responseStatus = 302;
-        ctx.responseHeaders.set("Location", `?id=${newId}`);
+        ctx.res.status = 302;
+        ctx.res.headers.set("Location", `?id=${newId}`);
         return "";
       }
     }
@@ -49,7 +49,7 @@ async function render(node: Node): Promise<string> {
 
   const rows = await db.query`SELECT id, name, description, updated FROM mail_template ORDER BY name`;
 
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   const trs = rows.length
     ? rows.map((r) => {
         const d = new Date(typeof r.updated === "number" ? r.updated * 1000 : String(r.updated));
@@ -102,41 +102,41 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const row = await db.row`SELECT * FROM mail_template WHERE id=${id}`;
   if (!row) return `<div class=u2-card><div class=-body>${await app.t`Template not found.`}</div></div>`;
 
-  const back = ctx.url; back.searchParams.delete("id");
+  const back = ctx.req.url.toURL(); back.searchParams.delete("id");
   const backHref = hee(back.search);
 
   let message = "";
 
-  if (ctx.post?.csrfToken === ctx.csrfToken) {
-    if ("save" in ctx.post) {
-      const tname = String(ctx.post.tname ?? "").trim();
+  if (ctx.req.body?.csrfToken === ctx.csrfToken) {
+    if ("save" in ctx.req.body) {
+      const tname = String(ctx.req.body.tname ?? "").trim();
       if (!tname) {
         message = `<div class="-msg -err">${await app.t`Name is required.`}</div>`;
       } else {
         await db.table("mail_template").update({
           id,
           name:        tname,
-          description: String(ctx.post.description ?? "").trim() || null,
-          subject:     String(ctx.post.subject ?? "").trim() || null,
-          html:        String(ctx.post.html ?? ""),
+          description: String(ctx.req.body.description ?? "").trim() || null,
+          subject:     String(ctx.req.body.subject ?? "").trim() || null,
+          html:        String(ctx.req.body.html ?? ""),
           updated:     unixTime(),
         });
         await init(app);
         message = `<div class="-msg -ok">${await app.t`Saved.`}</div>`;
         Object.assign(row, {
           name:        tname,
-          description: String(ctx.post.description ?? "").trim(),
-          subject:     String(ctx.post.subject ?? "").trim(),
-          html:        String(ctx.post.html ?? ""),
+          description: String(ctx.req.body.description ?? "").trim(),
+          subject:     String(ctx.req.body.subject ?? "").trim(),
+          html:        String(ctx.req.body.html ?? ""),
         });
       }
     }
 
-    if ("delete" in ctx.post) {
+    if ("delete" in ctx.req.body) {
       await db.query`DELETE FROM mail_template WHERE id=${id}`;
       delete app.mail.templates[row.name];
-      ctx.responseStatus = 302;
-      ctx.responseHeaders.set("Location", "?");
+      ctx.res.status = 302;
+      ctx.res.headers.set("Location", "?");
       return "";
     }
   }

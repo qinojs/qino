@@ -24,7 +24,7 @@ async function tableOverview(app: App, db: any): Promise<string> {
   const tables = Object.values(db.tables ?? {}) as any[];
   const schemaProps = db.schema?.properties ?? {};
 
-  const u = getCtx().url; u.searchParams.set("view", "tables");
+  const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables");
   const rows = await Promise.all(
     [...tables].sort((a, b) => {
       const [sa, sb] = [a.name.startsWith("_"), b.name.startsWith("_")];
@@ -102,7 +102,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
     ? `<span style="font-size:.85em;opacity:.6;margin-left:12px">${hee(String(status.rows ?? "?"))} ${await app.t`rows`} · ${hee(status.engine)} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
     : "";
 
-  const u = getCtx().url; u.searchParams.set("view", "tables"); u.searchParams.delete("table");
+  const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables"); u.searchParams.delete("table");
   return `<div class="u2-card -full">
     <div class="-head"><a href="${hee(u.search)}">← ${await app.t`Tables`}</a> &nbsp; ${hee(tableName)} ${meta}</div>
     <table class=u2-table>

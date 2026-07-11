@@ -29,7 +29,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   const allMods = app.modules.all();
   const modObj = allMods[modName];
 
-  const back = ctx.url; back.searchParams.delete("mod");
+  const back = ctx.req.url.toURL(); back.searchParams.delete("mod");
   const backHref = hee(back.search);
 
   if (!modObj) {
@@ -86,7 +86,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
     .map(([n]) => n)
     .sort();
 
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   const modLink = (d: string) => { u.searchParams.set("mod", d); return `<a href="${hee(u.search)}">${hee(d)}</a>`; };
   const depsHtml = needs.length ? needs.map(modLink).join(" ") : "<em>none</em>";
   const neededByHtml = neededBy.length ? neededBy.map(modLink).join(" ") : "<em>none</em>";
@@ -101,7 +101,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
       const mtimeIso = info.mtime?.toISOString() ?? "";
       let nameCell: string;
       if (isSuperuser) {
-        const href = hee(ctx.appURL + "editor?file=" + encodeURIComponent(filePath));
+        const href = hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath));
         nameCell = `<a href="${href}" target="${hee(encodeURIComponent(filePath))}">${hee(rel)}</a>`;
       } else {
         nameCell = hee(rel);
@@ -126,7 +126,7 @@ async function renderDetail(node: Node, modName: string): Promise<string> {
   // --- Source info ---
   const sourceDisplay = modPath ?? modUrl ?? "";
   const sourceHtml = isSuperuser && modPath
-    ? `<a href="${hee(ctx.appURL + "editor?file=" + encodeURIComponent(modPath))}" target="${hee(encodeURIComponent(modPath))}">${hee(sourceDisplay)}</a>`
+    ? `<a href="${hee(ctx.req.basePath + "editor?file=" + encodeURIComponent(modPath))}" target="${hee(encodeURIComponent(modPath))}">${hee(sourceDisplay)}</a>`
     : `<code>${hee(sourceDisplay)}</code>`;
 
   return `<div class=u2-flex>
@@ -178,7 +178,7 @@ async function renderOverview(node: Node): Promise<string> {
   const allMods = app.modules.all();
   const modules = Object.keys(allMods).sort();
 
-  const u = ctx.url;
+  const u = ctx.req.url.toURL();
   for (const name of modules) {
     const modObj = allMods[name];
     const mod = modObj.plugin;
@@ -196,7 +196,7 @@ async function renderOverview(node: Node): Promise<string> {
     const modDir = modObj.path?.replace(/\/?[^/]+$/, "") ?? null;
     const hasSvg = modDir ? await Deno.stat(modDir + "/pub/module.svg").then(() => true, () => false) : false;
     const iconHtml = hasSvg
-      ? `<svg style="display:block" width=16 height=16><use href="${ctx.sysURL}${name}/pub/module.svg#main"/></svg>`
+      ? `<svg style="display:block" width=16 height=16><use href="${ctx.req.modulePath}${name}/pub/module.svg#main"/></svg>`
       : "";
 
     u.searchParams.set("mod", name);
@@ -231,7 +231,7 @@ async function renderOverview(node: Node): Promise<string> {
 
 function render(node: Node): Promise<string> {
   const ctx = getCtx();
-  const modName = ctx.get.mod ? String(ctx.get.mod) : "";
+  const modName = ctx.req.query.mod ? String(ctx.req.query.mod) : "";
   if (modName) return renderDetail(node, modName);
   return renderOverview(node);
 }

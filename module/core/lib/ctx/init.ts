@@ -20,7 +20,7 @@ async function initClient(ctx: RequestContext): Promise<void> {
     const db = ctx.app.db;
     if (ctx.clientId) return;
 
-    const cid = ctx.cookie[cookiePrefix(ctx.app.https, ctx.appURL) + "cid"];
+    const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.basePath) + "cid"];
     if (!cid) {
       await registerClient(ctx);
       return;
@@ -37,10 +37,10 @@ async function registerClient(ctx: RequestContext): Promise<void> {
     const hash = uid();
 
     const https = ctx.app.https;
-    const cidName = cookiePrefix(https, ctx.appURL) + "cid";
-    const parts = [`${cidName}=${hash}`, `Path=${ctx.appURL}`, "Expires=Sat, 01 Jan 2033 00:00:00 GMT", "HttpOnly;SameSite=Lax"];
+    const cidName = cookiePrefix(https, ctx.req.basePath) + "cid";
+    const parts = [`${cidName}=${hash}`, `Path=${ctx.req.basePath}`, "Expires=Sat, 01 Jan 2033 00:00:00 GMT", "HttpOnly;SameSite=Lax"];
     if (https) parts.push("Secure");
-    ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
+    ctx.res.headers.append("Set-Cookie", parts.join("; "));
 
     const clientId = await ctx.app.db.table("client").insert({ hash });
     ctx.clientId = String(clientId);
@@ -61,7 +61,7 @@ function initLog(ctx: RequestContext): void {
 
     // redact secrets by key name
     const secret = /pw|pass|token|secret|key|auth/i;
-    data.post = ctx.post != null ? JSON.stringify(ctx.post, (k, v) => k && secret.test(k) ? "-----" : v) : "";
+    data.post = ctx.req.body != null ? JSON.stringify(ctx.req.body, (k, v) => k && secret.test(k) ? "-----" : v) : "";
     data.client_id = ctx.clientId;
 
     // insert runs in the background; consumers await ctx.logId only when they actually need the id
@@ -80,9 +80,9 @@ function initLog(ctx: RequestContext): void {
           return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
               || await db.table("log_url").insert({ url, hash });
         };
-        const url = ctx.url.href;
+        const url = ctx.req.url.href;
         const referer = ctx.req.header("referer") ?? "";
-        const ip = ctx.remoteAddr ?? "";
+        const ip = ctx.req.clientIp ?? "";
         const ua = ctx.req.header("user-agent") ?? "";
 
         const urlId = urlIdOf(url);

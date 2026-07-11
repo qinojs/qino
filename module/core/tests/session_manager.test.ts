@@ -75,7 +75,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path moun
   const ctx = await testContext({ url: "http://qino.test/app/", basePath: "/app/", app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
-  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Secure-qinoSess=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
+  assertEquals(ctx.res.headers.get("Set-Cookie"), "__Secure-qinoSess=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");
 });
 
 Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async () => {
@@ -83,7 +83,7 @@ Deno.test("SessionManager: setCookieIfNew uses __Host- prefix at root", async ()
   const ctx = await testContext({ app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
-  assertEquals(ctx.responseHeaders.get("Set-Cookie"), "__Host-qinoSess=token; Path=/; HttpOnly;SameSite=Lax; Secure");
+  assertEquals(ctx.res.headers.get("Set-Cookie"), "__Host-qinoSess=token; Path=/; HttpOnly;SameSite=Lax; Secure");
 });
 
 Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session", async () => {
@@ -92,7 +92,7 @@ Deno.test("SessionManager: setCookieIfNew sends the cookie only once per session
 
   sessions.setCookieIfNew(ctx);
   sessions.setCookieIfNew(ctx);
-  assertEquals(ctx.responseHeaders.getSetCookie().length, 1);
+  assertEquals(ctx.res.headers.getSetCookie().length, 1);
 });
 
 Deno.test("Session: touch debounces its own access updates", async () => {

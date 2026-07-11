@@ -26,14 +26,14 @@ function cssWidth(raw: string): string {
 
 async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<string> {
   if (node.edit) {
-    ctx.html.scripts.add(node.modUrl + "pub/edit.mjs");
+    ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
   }
 
   const cols = Math.min(Math.max(1, Number(node.settings.cols()) || 2), 15);
   const rows = Math.min(Math.max(1, Number(node.settings.rows()) || 2), 300);
 
   if (
-    ctx.get.export_table && String(ctx.get.export_table) === String(node)
+    ctx.req.query.export_table && String(ctx.req.query.export_table) === String(node)
   ) {
     const titleStr = String(await node.showTitle());
     const d = new Date();
@@ -52,7 +52,7 @@ async function render(node: Node, { ctx }: { ctx: RequestContext }): Promise<str
     }
     const csv = lines.join("\r\n");
 
-    const headers = ctx.responseHeaders;
+    const headers = ctx.res.headers;
     headers.set("Content-Type", "application/x-msdownload");
     headers.set("Content-Disposition", contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
     headers.set("Expires", "0");
