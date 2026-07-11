@@ -7,31 +7,31 @@ const parse = (init?: RequestInit, maxSize = 1024 * 1024) =>
   Body.parse(new Req(new Request("http://qino.test/", init)), { maxSize });
 
 Deno.test("Body: no body -> post === null", async () => {
-  assertEquals((await parse()).post, null);
-  assertEquals((await parse({ method: "POST" })).post, null);
+  assertEquals((await parse()).value, null);
+  assertEquals((await parse({ method: "POST" })).value, null);
 });
 
 Deno.test("Body: unknown content-type -> post === null", async () => {
   const b = await parse({ method: "POST", body: "hello", headers: { "content-type": "text/plain" } });
-  assertEquals(b.post, null);
+  assertEquals(b.value, null);
 });
 
 Deno.test("Body: json string body -> post === 'string'", async () => {
   const b = await parse({ method: "POST", body: '"hello"', headers: { "content-type": "application/json" } });
-  assertEquals(b.post, "hello");
+  assertEquals(b.value, "hello");
 });
 
 Deno.test("Body: form -> flat frozen record", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams({ xyz: "1" }) });
-  assertEquals(b.post.xyz, "1");
-  assert(Object.isFrozen(b.post));
-  assertThrows(() => { b.post.xyz = "2"; }, TypeError);
+  assertEquals(b.value.xyz, "1");
+  assert(Object.isFrozen(b.value));
+  assertThrows(() => { b.value.xyz = "2"; }, TypeError);
 });
 
 Deno.test("Body: json deep, also on PUT, deep-frozen", async () => {
   const b = await parse({ method: "PUT", body: JSON.stringify({ xyz: { abc: 42 } }), headers: { "content-type": "application/json" } });
-  assertEquals(b.post.xyz.abc, 42);
-  assert(Object.isFrozen(b.post.xyz));
+  assertEquals(b.value.xyz.abc, 42);
+  assert(Object.isFrozen(b.value.xyz));
 });
 
 Deno.test("Body: invalid json -> 400 Output", async () => {
@@ -52,8 +52,8 @@ Deno.test("Body: files proxy — sync `in`/keys, lazy per-file spool, missing ke
   fd.append("up", new File(["data"], "a.txt", { type: "text/plain" }));
   const b = await parse({ method: "POST", body: fd });
 
-  assertEquals(b.post.xyz, "1");
-  assert(!("up" in b.post));            // files never leak into post
+  assertEquals(b.value.xyz, "1");
+  assert(!("up" in b.value));            // files never leak into post
   assert("up" in b.files);              // sync, no disk work yet
   assertEquals(Object.keys(b.files), ["up"]);
   assertEquals(b.files.nope, undefined);
@@ -75,17 +75,17 @@ Deno.test("Body: `await body.files` without key is harmless (no `then` trap)", a
 
 Deno.test("Body: __proto__/then/toString are plain data keys (form)", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams([["__proto__", "x"], ["then", "y"], ["toString", "z"]]) });
-  assertEquals(b.post.__proto__, "x");
-  assertEquals(b.post.then, "y");
-  assertEquals(b.post.toString, "z");
+  assertEquals(b.value.__proto__, "x");
+  assertEquals(b.value.then, "y");
+  assertEquals(b.value.toString, "z");
   assertEquals(({} as Record<string, unknown>).x, undefined); // no prototype pollution
 });
 
 Deno.test("Body: __proto__/then/toString are plain data keys (json)", async () => {
   const b = await parse({ method: "POST", body: '{"__proto__":"x","then":"y","toString":"z"}', headers: { "content-type": "application/json" } });
-  assertEquals(b.post.__proto__, "x");
-  assertEquals(b.post.then, "y");
-  assertEquals(b.post.toString, "z");
+  assertEquals(b.value.__proto__, "x");
+  assertEquals(b.value.then, "y");
+  assertEquals(b.value.toString, "z");
   assertEquals(Object.getPrototypeOf({}), Object.prototype); // no prototype pollution
 });
 
@@ -101,9 +101,9 @@ Deno.test("Body: upload field named `then` stays a normal file", async () => {
 
 Deno.test("Body: repeated form keys become arrays, singles stay scalar", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams([["to_users", "1"], ["to_users", "2"], ["subject", "s"]]) });
-  assertEquals(b.post.to_users, ["1", "2"]);
-  assertEquals(b.post.subject, "s");
-  assert(Object.isFrozen(b.post.to_users));
+  assertEquals(b.value.to_users, ["1", "2"]);
+  assertEquals(b.value.subject, "s");
+  assert(Object.isFrozen(b.value.to_users));
 });
 
 Deno.test("Body: chunked json (no content-length) parses through the capped reader", async () => {
@@ -116,7 +116,7 @@ Deno.test("Body: chunked json (no content-length) parses through the capped read
   });
   assertEquals(req.headers.get("content-length"), null); // stream body really has no length
   const b = await Body.parse(new Req(req), { maxSize: 1024 });
-  assertEquals(b.post.a, 1);
+  assertEquals(b.value.a, 1);
 });
 
 Deno.test("Body: chunked body over maxSize -> 413 while reading", async () => {
@@ -143,7 +143,7 @@ Deno.test("Body: streaming/raw content-types stay untouched (no 411, req still r
     duplex: "half",
   });
   const b = await Body.parse(new Req(req), { maxSize: 1024 });
-  assertEquals(b.post, null);
+  assertEquals(b.value, null);
   assertEquals(await req.text(), "audio-bytes"); // raw stream untouched by Body
 });
 

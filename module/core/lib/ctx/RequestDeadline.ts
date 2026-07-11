@@ -1,5 +1,4 @@
 import { Output } from "../util.ts";
-import type { RequestContext } from "./RequestContext.ts";
 
 /** Cooperative request time limit: `left` seconds count down, then `signal` aborts with a 504 Output. */
 export class RequestDeadline {
@@ -9,8 +8,8 @@ export class RequestDeadline {
   /** Aborts on client disconnect or timeout — pass to fetch/db calls. */
   readonly signal: AbortSignal;
 
-  constructor(ctx: RequestContext) {
-    this.signal = AbortSignal.any([ctx.req.raw.signal, this.#ctrl.signal]);
+  constructor(requestSignal: AbortSignal) {
+    this.signal = AbortSignal.any([requestSignal, this.#ctrl.signal]);
   }
 
   /** Remaining seconds; `Infinity` = no limit (default). Setting re-arms the timer: `deadline.left += 60`. */

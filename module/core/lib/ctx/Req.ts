@@ -13,7 +13,6 @@ export class Req {
   readonly time: number;
   readonly #url: URL;
   #json: Promise<unknown> | undefined;
-  #form: Promise<FormData> | undefined;
   #cookies: Record<string, string> | undefined;
 
   constructor(raw: Request, peerAddr = "", time = performance.now()) {
@@ -55,11 +54,6 @@ export class Req {
     return this.#json ??= this.raw.clone().json();
   }
 
-  /** Form/multipart body as a flat record; File values are kept as `File`, repeated keys become arrays. */
-  async parseBody(): Promise<Record<string, unknown>> {
-    return groupFormData(await (this.#form ??= this.raw.clone().formData()));
-  }
-
   cookies(): Record<string, string> {
     return this.#cookies ??= parseCookies(this.header("cookie"));
   }
@@ -67,18 +61,6 @@ export class Req {
   cookie(name: string): string | undefined {
     return this.cookies()[name];
   }
-}
-
-/** FormData as a flat record; repeated keys become arrays. */
-export function groupFormData(form: FormData): Record<string, unknown> {
-  const out: Record<string, unknown> = Object.create(null);
-  for (const [k, v] of form) {
-    const cur = out[k];
-    if (cur === undefined) out[k] = v;
-    else if (Array.isArray(cur)) cur.push(v);
-    else out[k] = [cur, v];
-  }
-  return out;
 }
 
 export function parseCookies(header: string | undefined): Record<string, string> {

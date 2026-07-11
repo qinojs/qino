@@ -22,7 +22,7 @@ export class RequestContext {
   #body: Body = new Body();
   /** parsed body: null (no body), flat record (form) or deep JSON value */
   // deno-lint-ignore no-explicit-any
-  get post(): any { return this.#body.post; }
+  get post(): any { return this.#body.value; }
   /** lazy per-file upload access: `await ctx.files.name` spools that file to tmp */
   get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#body.files; }
   remoteAddr = "";
@@ -46,7 +46,7 @@ export class RequestContext {
 
   /** Time limit + abort signal of this request: `ctx.deadline.left += 60`, `ctx.deadline.signal`. */
   #deadline: RequestDeadline | null = null;
-  get deadline(): RequestDeadline { return this.#deadline ??= new RequestDeadline(this); }
+  get deadline(): RequestDeadline { return this.#deadline ??= new RequestDeadline(this.req.raw.signal); }
 
   #html: HtmlBuilder | null = null;
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }

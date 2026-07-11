@@ -1,18 +1,18 @@
-import { groupFormData, type Req } from "./Req.ts";
+import type { Req } from "./Req.ts";
 import { readUploadFile, type UploadedFile } from "../fileStream.ts";
 import { Output } from "../util.ts";
 
 /**
  * Parsed request body: fields eager, per-file disk spooling lazy.
- * `body.post` is the parsed body itself: null (no/unknown body),
+ * `body.value` is the parsed body itself: null (no/unknown body),
  * flat frozen record (form) or deep-frozen JSON value (object/array/string/...).
  * `await body.files.name` spools exactly that file to a tmp path.
  */
 export class Body {
   // deno-lint-ignore no-explicit-any
-  #post: any = null;
+  #value: any = null;
   // deno-lint-ignore no-explicit-any
-  get post(): any { return this.#post; }
+  get value(): any { return this.#value; }
 
   readonly files: Record<string, Promise<UploadedFile> | undefined>;
   /** tmp file paths spooled so far — removed in RequestContext.cleanup() */
@@ -65,9 +65,9 @@ export class Body {
 
     const bad = () => { throw new Output("Bad Request", { status: 400 }); };
     if (isJson) {
-      body.#post = deepFreeze(await (src ? src.json() : req.json()).catch(bad));
+      body.#value = deepFreeze(await (src ? src.json() : req.json()).catch(bad));
     } else {
-      const entries = src ? groupFormData(await src.formData().catch(bad)) : await req.parseBody().catch(bad);
+      const entries = groupFormData(await (src ?? req.raw.clone()).formData().catch(bad));
       const post: Record<string, unknown> = Object.create(null);
       for (const [key, val] of Object.entries(entries)) {
         const vals = Array.isArray(val) ? val : [val];
@@ -76,7 +76,7 @@ export class Body {
         if (files.length) body.#rawFiles[key] = files[files.length - 1]; // several files per name: last wins
         if (fields.length) post[key] = fields.length > 1 ? Object.freeze(fields) : fields[0];
       }
-      body.#post = Object.freeze(post);
+      body.#value = Object.freeze(post);
     }
     return body;
   }
@@ -106,4 +106,16 @@ function deepFreeze(v: any): any {
     Object.freeze(v);
   }
   return v;
+}
+
+/** FormData as a flat record; repeated keys become arrays. */
+function groupFormData(form: FormData): Record<string, unknown> {
+  const out: Record<string, unknown> = Object.create(null);
+  for (const [k, v] of form) {
+    const cur = out[k];
+    if (cur === undefined) out[k] = v;
+    else if (Array.isArray(cur)) cur.push(v);
+    else out[k] = [cur, v];
+  }
+  return out;
 }
