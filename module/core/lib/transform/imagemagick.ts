@@ -1,4 +1,5 @@
 /** Thin wrapper around ImageMagick (IM6: convert/identify, IM7: magick) */
+import { tryCommand } from "./tryCommand.ts";
 
 let _checked = false;
 let _available: boolean | null = null;
@@ -8,10 +9,6 @@ let _convertCmd = 'magick';
 let _identifyCmd = 'magick';
 let _identifyArgs: string[] = ['identify'];
 
-function tryCommand(cmd: string, args: string[]): Promise<boolean> {
-  return new Deno.Command(cmd, { args, stdout: 'piped', stderr: 'piped' }).output()
-    .then((r) => r.code === 0, () => false);
-}
 
 export async function isMagickAvailable(): Promise<boolean> {
   if (_available !== null) return _available;

@@ -1,12 +1,12 @@
 /** Thin wrapper around Tesseract OCR */
 
+import { tryCommand } from "./tryCommand.ts";
+
 let _available: boolean | null = null;
 let _langs: Promise<string> | null = null;
 
 export async function isTesseractAvailable(): Promise<boolean> {
-  if (_available !== null) return _available;
-  _available = await new Deno.Command('tesseract', { args: ['--version'], stdout: 'piped', stderr: 'piped' }).output()
-    .then((r) => r.code === 0, () => false);
+  _available ??= await tryCommand('tesseract', ['--version']);
   return _available;
 }
 

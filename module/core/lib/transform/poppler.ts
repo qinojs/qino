@@ -1,11 +1,11 @@
 /** Thin wrapper around Poppler's pdftotext */
 
+import { tryCommand } from "./tryCommand.ts";
+
 let _available: boolean | null = null;
 
 export async function isPdftotextAvailable(): Promise<boolean> {
-  if (_available !== null) return _available;
-  _available = await new Deno.Command('pdftotext', { args: ['-v'], stdout: 'piped', stderr: 'piped' }).output()
-    .then((r) => r.code === 0, () => false);
+  _available ??= await tryCommand('pdftotext', ['-v']);
   return _available;
 }
 

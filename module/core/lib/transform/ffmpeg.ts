@@ -1,11 +1,8 @@
 /** Thin wrapper around FFmpeg */
 
-let _available: boolean | null = null;
+import { tryCommand } from "./tryCommand.ts";
 
-function tryCommand(cmd: string, args: string[]): Promise<boolean> {
-  return new Deno.Command(cmd, { args, stdout: 'piped', stderr: 'piped' }).output()
-    .then((r) => r.code === 0, () => false);
-}
+let _available: boolean | null = null;
 
 export async function isFfmpegAvailable(): Promise<boolean> {
   _available ??= await tryCommand('ffmpeg', ['-version']);

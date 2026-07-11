@@ -1,11 +1,11 @@
 /** Thin wrapper around Pandoc (document → markdown conversion) */
 
+import { tryCommand } from "./tryCommand.ts";
+
 let _available: boolean | null = null;
 
 export async function isPandocAvailable(): Promise<boolean> {
-  if (_available !== null) return _available;
-  _available = await new Deno.Command('pandoc', { args: ['--version'], stdout: 'piped', stderr: 'piped' }).output()
-    .then((r) => r.code === 0, () => false);
+  _available ??= await tryCommand('pandoc', ['--version']);
   return _available;
 }
 

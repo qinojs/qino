@@ -1,9 +1,9 @@
+import { tryCommand } from "./tryCommand.ts";
+
 let _available: boolean | null = null;
 
 async function isAvailable(): Promise<boolean> {
-  if (_available !== null) return _available;
-  _available = await new Deno.Command('pngquant', { args: ['--version'], stdout: 'piped', stderr: 'piped' }).output()
-    .then((r) => r.code === 0, () => false);
+  _available ??= await tryCommand('pngquant', ['--version']);
   return _available;
 }
 
