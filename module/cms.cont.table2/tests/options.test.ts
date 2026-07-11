@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import options from "../options.ts";
-import { RequestContext, requestStorage } from "../../core/mod.ts";
+import { requestStorage } from "../../core/mod.ts";
 
 function callable(value: unknown) {
   const fn = () => value;
@@ -22,9 +22,7 @@ function makeNode(settings: Record<string, unknown>) {
 }
 
 Deno.test("cms.cont.table2: options renders bounded rows/cols and export URL", async () => {
-  const ctx = new RequestContext();
-  ctx.sysURL = "/m/";
-  ctx.req = { url: "http://localhost/page?x=1" } as any;
+  const ctx = await testContext({ url: "http://localhost/page?x=1" });
   const node = makeNode({ rows: 3, cols: 2, row_1: "40%", row_2: "60%" });
 
   const out = await requestStorage.run(ctx, () => options(node as any, {}));
@@ -36,9 +34,7 @@ Deno.test("cms.cont.table2: options renders bounded rows/cols and export URL", a
 });
 
 Deno.test("cms.cont.table2: options falls back to at least one row and column", async () => {
-  const ctx = new RequestContext();
-  ctx.sysURL = "/m/";
-  ctx.req = { url: "http://localhost/page" } as any;
+  const ctx = await testContext({ url: "http://localhost/page" });
   const node = makeNode({ rows: 0, cols: 0, row_1: `<bad>` });
 
   const out = await requestStorage.run(ctx, () => options(node as any, {}));

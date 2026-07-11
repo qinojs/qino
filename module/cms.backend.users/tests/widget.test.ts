@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { RequestContext, requestStorage } from "../../core/mod.ts";
+import { assertEquals, testContext } from "../../core/tests/deps.ts";
+import { requestStorage } from "../../core/mod.ts";
 import nodeApi from "../nodeApi.ts";
 import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
 
@@ -39,8 +39,7 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
       saved = true;
     },
   };
-  const ctx = new RequestContext();
-  ctx.sess = { data: { core: { userId: () => 0 } } } as any;
+  const ctx = await testContext();
   const node = {
     access: async () => 2,
     app: { db: { table: () => ({ entry: () => entry }) } },

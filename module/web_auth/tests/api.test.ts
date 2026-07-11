@@ -1,5 +1,5 @@
-import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { AccessError, invoke, toTools, RequestContext, requestStorage } from "../../core/mod.ts";
+import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
+import { AccessError, invoke, toTools, requestStorage } from "../../core/mod.ts";
 import { name, api, settingsSchema } from "../plugin.ts";
 
 function makeApp() {
@@ -21,11 +21,6 @@ function makeApp() {
   return { app, challenges, execs };
 }
 
-function ctx(userId = 0) {
-  const c = new RequestContext();
-  c.sess = { data: { core: { userId: () => userId } } } as any;
-  return c;
-}
 
 Deno.test("web_auth: module metadata is wired", () => {
   assertEquals(name, "web_auth");
@@ -75,8 +70,7 @@ Deno.test("web_auth: api exposes expected apt endpoints", () => {
 
 Deno.test("web_auth: user-only endpoints reject guests", async () => {
   const { app } = makeApp();
-  const c = ctx();
-  c.app = app as any;
+  const c = await testContext({ app });
   await requestStorage.run(c, async () => {
     await assertRejects(() => invoke((app as any).aptTree.web_auth, "POST", "/register/challenge"), AccessError);
     await assertRejects(() => invoke((app as any).aptTree.web_auth, "POST", "/confirm/challenge"), AccessError);
@@ -86,8 +80,7 @@ Deno.test("web_auth: user-only endpoints reject guests", async () => {
 
 Deno.test("web_auth: public login challenge stores bounded challenge state", async () => {
   const { app, challenges, execs } = makeApp();
-  const c = ctx();
-  c.app = app as any;
+  const c = await testContext({ app });
   const out = await requestStorage.run(c, () =>
     invoke((app as any).aptTree.web_auth, "POST", "/login/challenge", { email: " nobody@example.test " })
   ) as any;

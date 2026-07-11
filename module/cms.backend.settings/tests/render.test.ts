@@ -1,5 +1,4 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { RequestContext } from "../../core/mod.ts";
+import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
 
 Deno.test("cms.backend.settings: metadata is wired", () => {
@@ -7,9 +6,8 @@ Deno.test("cms.backend.settings: metadata is wired", () => {
   assertEquals(needs, ["cms.backend"]);
 });
 
-Deno.test("cms.backend.settings: render adds settings editor and app source", () => {
-  const ctx = new RequestContext();
-  ctx.sysURL = "/m/";
+Deno.test("cms.backend.settings: render adds settings editor and app source", async () => {
+  const ctx = await testContext();
   const out = cms.node.render({}, { ctx });
   assertEquals(out.includes("<settings-editor"), true);
   assertEquals(out.includes("source=\"/api/core/settings\""), true);

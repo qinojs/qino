@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { cms_image2 } from "../mod.ts";
-import { RequestContext, requestStorage } from "../../core/mod.ts";
+import { requestStorage } from "../../core/mod.ts";
 
 Deno.test("cms.image2: cms_image2 renders escaped image component from cached data", async () => {
   const dir = await Deno.makeTempDir();
@@ -17,8 +17,7 @@ Deno.test("cms.image2: cms_image2 renders escaped image component from cached da
       preview: "data:image/png;base64,preview",
     }));
 
-    const ctx = new RequestContext();
-    ctx.app = { appPATH: dir + "/" } as any;
+    const ctx = await testContext({ app: { appPATH: dir + "/" } });
     const dbFile = {
       path: dir + "/image.jpg",
       get: (key: string) => ({
@@ -64,8 +63,7 @@ Deno.test("cms.image2: cms_image2 derives alt text from file name", async () => 
       preview: "",
     }));
 
-    const ctx = new RequestContext();
-    ctx.app = { appPATH: dir + "/" } as any;
+    const ctx = await testContext({ app: { appPATH: dir + "/" } });
     const dbFile = {
       path: dir + "/image.jpg",
       get: (key: string) => ({
