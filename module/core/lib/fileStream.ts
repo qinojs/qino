@@ -84,6 +84,7 @@ export async function assertNoSSRF(url: string) {
 
 export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 5): Promise<Response> {
   await assertNoSSRF(url);
+  init = { ...init, signal: init?.signal ?? AbortSignal.timeout(15000) };
   const resp = await fetch(url, { ...init, redirect: "manual" });
   if (resp.status >= 300 && resp.status < 400) {
     const location = resp.headers.get("location");

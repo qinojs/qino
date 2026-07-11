@@ -74,7 +74,7 @@ function serveResponse(mediaType: string, data: Uint8Array): never {
 }
 
 async function fetchAndCache(url: string, filePath: string, cacheDir: string, mediaType: string, ctx: Ctx): Promise<void> {
-  const res = await safeFetch(url, { signal: AbortSignal.timeout(15000) }); // SSRF-guarded, re-checked after redirects
+  const res = await safeFetch(url); // SSRF-guarded, re-checked after redirects; safeFetch applies a default timeout
   if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
   if (Number(res.headers.get("content-length") ?? 0) > MAX_ASSET_BYTES) throw new Error(`fetch ${url} too large`);
   const data = new Uint8Array(await res.arrayBuffer());
