@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertThrows } from "./deps.ts";
+import { assert, assertEquals } from "./deps.ts";
 import { RequestUrl } from "../lib/ctx/RequestUrl.ts";
 
 const url = new RequestUrl("http://user@qino.test:8080/a%2Fb/c?x=1&x=2#frag");
@@ -31,12 +31,10 @@ Deno.test("RequestUrl: toURL() returns an independent mutable native URL", () =>
   assert(copy !== url.toURL()); // every call is a fresh copy
 });
 
-// Until the old string `ctx.req.url` is fully migrated (plan Phase 7), implicit
-// stringification must fail loudly instead of producing "[object Object]".
-Deno.test("RequestUrl: stringification throws during migration", () => {
-  assertThrows(() => `${url}`, Error, "RequestUrl");
-  assertThrows(() => url.toString(), Error, "RequestUrl");
-  assertThrows(() => JSON.stringify(url), Error, "RequestUrl");
+Deno.test("RequestUrl: stringifies to href", () => {
+  assertEquals(`${url}`, url.href);
+  assertEquals(url.toString(), url.href);
+  assertEquals(JSON.stringify(url), JSON.stringify(url.href));
   // deno-lint-ignore no-explicit-any
-  assertThrows(() => (url as any) + "", Error, "RequestUrl");
+  assertEquals((url as any) + "", url.href);
 });

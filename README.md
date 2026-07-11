@@ -126,9 +126,10 @@ const ctx = getCtx();
 ctx.user         // Current authenticated user (or null)
 ctx.sess.data    // Server-trusted, per-session data
 ctx.settings     // Per-user/session settings
-ctx.get          // Query parameters
-ctx.post         // Request body
-ctx.cookie       // Cookies
+ctx.req.query    // Query parameters (first value per key)
+ctx.req.body     // Parsed request body (JSON or form)
+ctx.req.cookies  // Incoming cookies
+ctx.res.status   // Outgoing response: status, headers, body, html
 ```
 
 ### Built-in Modules

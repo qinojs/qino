@@ -57,7 +57,7 @@ so `getCtx()` and `app.t` are available.
 Parameters read outside your own node rendering (action hooks, core pipeline) are
 namespaced: module name with `_` instead of `.`, then the parameter name in camelCase —
 `cms_editmode`, `cms_nodeFilesZip`, `cms_noFrontend`, `cms_versions_space`.
-This avoids collisions without a registry and keeps `ctx.get.cms_editmode` as plain
+This avoids collisions without a registry and keeps `ctx.req.query.cms_editmode` as plain
 property access.
 
 Parameters read only by your own backend node stay short and unprefixed

@@ -1,13 +1,9 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Item, ItemProxy } from "../../../../deps.ts";
-import type { HtmlBuilder } from "./HtmlBuilder.ts";
-import type { RequestDeadline } from "./RequestDeadline.ts";
-import type { Csp } from "./Csp.ts";
 import { ResponseBuilder } from "./ResponseBuilder.ts";
 import { uid } from "../util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
-import type { UploadedFile } from "../fileStream.ts";
 import { ContextRequest } from "./ContextRequest.ts";
 import type { App } from "../App.ts";
 import type { dbEntry_client, dbEntry_usr } from "../qgEntries.ts";
@@ -29,43 +25,6 @@ export class RequestContext {
   langNs = "";
 
   res: ResponseBuilder = new ResponseBuilder();
-
-  /** @deprecated use `ctx.res.headers` */
-  get responseHeaders(): Headers { return this.res.headers; }
-  /** @deprecated use `ctx.res.status` */
-  get responseStatus(): number { return this.res.status; }
-  set responseStatus(v: number) { this.res.status = v; }
-  /** @deprecated use `ctx.res.body` */
-  get responseBody(): BodyInit | undefined { return this.res.body; }
-  set responseBody(v: BodyInit | undefined) { this.res.body = v; }
-  /** @deprecated use `ctx.res.csp` */
-  get csp(): Csp { return this.res.csp; }
-  /** @deprecated use `ctx.res.html` */
-  get html(): HtmlBuilder { return this.res.html; }
-  /** @deprecated use `ctx.res.hasHtml` */
-  get hasHtml(): boolean { return this.res.hasHtml; }
-
-  /** @deprecated use `ctx.req.query` */
-  get get(): Readonly<Record<string, string>> { return this.req.query; }
-  /** @deprecated use `ctx.req.body` */
-  // deno-lint-ignore no-explicit-any
-  get post(): any { return this.req.body; }
-  /** @deprecated use `ctx.req.files` */
-  get files(): Record<string, Promise<UploadedFile> | undefined> { return this.req.files; }
-  /** @deprecated use `ctx.req.cookies` */
-  get cookie(): Readonly<Record<string, string>> { return this.req.cookies; }
-  /** @deprecated use `ctx.req.clientIp` */
-  get remoteAddr(): string { return this.req.clientIp; }
-  /** @deprecated use `ctx.req.basePath` */
-  get appURL(): string { return this.req.basePath; }
-  /** @deprecated use `ctx.req.modulePath` */
-  get sysURL(): string { return this.req.modulePath; }
-  /** @deprecated use `ctx.req.appPath` */
-  get appRequestPath(): string { return this.req.appPath; }
-  /** @deprecated use `ctx.req.deadline` */
-  get deadline(): RequestDeadline { return this.req.deadline; }
-  /** @deprecated read `ctx.req.url`, mutate via `ctx.req.url.toURL()` */
-  get url(): URL { return this.req.url.toURL(); }
 
   #settingsRoot: Item | null = null;
   get settings(): ItemProxy {

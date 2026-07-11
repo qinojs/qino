@@ -25,10 +25,7 @@ export class RequestUrl {
   /** Independent, mutable native `URL` copy. */
   toURL(): URL { return new URL(this.#url); }
 
-  // Migration guard: `ctx.req.url` used to be a string; implicit stringification
-  // would silently survive the migration. Throws until the old API is gone
-  // (CONTEXT-REQUEST-PLAN.md Phase 7), then switches to `href`.
-  toString(): never { throw new Error("RequestUrl: use .href or .toURL()"); }
-  toJSON(): never { throw new Error("RequestUrl: use .href or .toURL()"); }
-  [Symbol.toPrimitive](): never { throw new Error("RequestUrl: use .href or .toURL()"); }
+  toString(): string { return this.#url.href; }
+  toJSON(): string { return this.#url.href; }
+  [Symbol.toPrimitive](): string { return this.#url.href; }
 }

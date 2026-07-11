@@ -9,6 +9,7 @@ export { App } from "./lib/App.ts";
 export type { AppEvents } from "./lib/App.ts";
 export { ContextRequest } from "./lib/ctx/ContextRequest.ts";
 export { RequestUrl } from "./lib/ctx/RequestUrl.ts";
+export { ResponseBuilder } from "./lib/ctx/ResponseBuilder.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, RequestContext, requestStorage } from "./lib/ctx/RequestContext.ts";
 export { Csp } from "./lib/ctx/Csp.ts";
