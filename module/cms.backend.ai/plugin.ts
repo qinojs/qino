@@ -81,7 +81,7 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
     const modelId = Number(vars.model_id ?? 0);
     if (!modelId) return { type: "error", text: "No model selected." };
     await app.db.query`UPDATE ai_provider_model SET is_default = 0 WHERE kind = ${kind}`;
-    await app.db.query`UPDATE ai_provider_model SET is_default = 1 WHERE id = ${modelId}`;
+    await app.db.query`UPDATE ai_provider_model SET is_default = 1 WHERE id = ${modelId} AND kind = ${kind}`;
     return { type: "ok", text: `Default ${kind} model saved.` };
   }
 
