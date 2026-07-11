@@ -88,7 +88,7 @@ export class MailManager {
     if (base) return base.replace(/\/?$/, "/");
     try {
       const ctx = getCtx();
-      return new URL(ctx.appURL, ctx.req.url).href;
+      return new URL(ctx.req.basePath, ctx.req.url.href).href;
     } catch { return ""; }
   }
 

@@ -1,4 +1,3 @@
-import type { Req } from "./Req.ts";
 import { readUploadFile, type UploadedFile } from "../fileStream.ts";
 import { Output } from "../util.ts";
 
@@ -47,27 +46,27 @@ export class Body {
     return this.tmpPaths;
   }
 
-  static async parse(req: Req, opt: { maxSize: number }): Promise<Body> {
+  static async parse(request: Request, opt: { maxSize: number }): Promise<Body> {
     const body = new Body();
     body.#maxSize = opt.maxSize;
-    if (!req.raw.body) return body;
+    if (!request.body) return body;
 
-    const ct = req.header("content-type") ?? "";
+    const ct = request.headers.get("content-type") ?? "";
     const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
     const isForm = ct.includes("multipart/form-data") || ct.includes("application/x-www-form-urlencoded");
     if (!isJson && !isForm) return body; // raw/streaming bodies stay untouched, readable via req
 
-    const lenHeader = req.header("content-length");
+    const lenHeader = request.headers.get("content-length");
     const len = lenHeader != null && /^\d+$/.test(lenHeader) ? Number(lenHeader) : null;
     if (len != null && len > opt.maxSize) throw new Output("Payload Too Large", { status: 413 });
     // without a valid declared length (chunked/bogus) the body is read through a capped reader instead
-    const src = len == null ? await cappedResponse(req, opt.maxSize) : null;
+    const src = len == null ? await cappedResponse(request, opt.maxSize) : null;
 
     const bad = () => { throw new Output("Bad Request", { status: 400 }); };
     if (isJson) {
-      body.#value = deepFreeze(await (src ? src.json() : req.json()).catch(bad));
+      body.#value = deepFreeze(await (src ?? request.clone()).json().catch(bad));
     } else {
-      const entries = groupFormData(await (src ?? req.raw.clone()).formData().catch(bad));
+      const entries = groupFormData(await (src ?? request.clone()).formData().catch(bad));
       const post: Record<string, unknown> = Object.create(null);
       for (const [key, val] of Object.entries(entries)) {
         const vals = Array.isArray(val) ? val : [val];
@@ -83,10 +82,10 @@ export class Body {
 }
 
 /** Buffer a cloned body with a hard size cap — for chunked bodies that declare no content-length. */
-async function cappedResponse(req: Req, maxSize: number): Promise<Response> {
+async function cappedResponse(request: Request, maxSize: number): Promise<Response> {
   const chunks: BlobPart[] = [];
   let size = 0;
-  const reader = req.raw.clone().body!.getReader();
+  const reader = request.clone().body!.getReader();
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -96,7 +95,7 @@ async function cappedResponse(req: Req, maxSize: number): Promise<Response> {
     }
     chunks.push(value);
   }
-  return new Response(new Blob(chunks), { headers: { "content-type": req.header("content-type") ?? "" } });
+  return new Response(new Blob(chunks), { headers: { "content-type": request.headers.get("content-type") ?? "" } });
 }
 
 // deno-lint-ignore no-explicit-any

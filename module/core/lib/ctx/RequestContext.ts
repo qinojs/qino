@@ -1,56 +1,62 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Item, ItemProxy } from "../../../../deps.ts";
 import { HtmlBuilder } from "./HtmlBuilder.ts";
-import { RequestDeadline } from "./RequestDeadline.ts";
+import type { RequestDeadline } from "./RequestDeadline.ts";
 import { Csp } from "./Csp.ts";
-import { uid, clientIp, Output } from "../util.ts";
+import { uid } from "../util.ts";
 import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import type { UploadedFile } from "../fileStream.ts";
-import { Body } from "./Body.ts";
+import { ContextRequest } from "./ContextRequest.ts";
 import type { App } from "../App.ts";
 import type { dbEntry_client, dbEntry_usr } from "../qgEntries.ts";
-import type { Req } from "./Req.ts";
 import type { Session } from "../SessionManager.ts";
 import type { LoginError } from "../auth.ts";
 
 export class RequestContext {
   app!: App;
+  req!: ContextRequest;
   sess: Session = null!;
-  cookie: Record<string, string> = {};
-  get: Readonly<Record<string, string>> = {};
-  #body: Body = new Body();
-  /** parsed body: null (no body), flat record (form) or deep JSON value */
-  // deno-lint-ignore no-explicit-any
-  get post(): any { return this.#body.value; }
-  /** lazy per-file upload access: `await ctx.files.name` spools that file to tmp */
-  get files(): Record<string, Promise<UploadedFile> | undefined> { return this.#body.files; }
-  remoteAddr = "";
-  responseHeaders: Headers = new Headers();
-  responseStatus = 200;
-  responseBody: BodyInit | undefined = "";
+  clientId: string | null = null;
+  logId: Promise<string | null> = Promise.resolve(null);
+  loginError?: LoginError;
   // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
   lang = "en";
   langUsr = "en";
   langNsPath: string[] = [];
   langNs = "";
-  req!: Req;
-  clientId: string | null = null;
-  logId: Promise<string | null> = Promise.resolve(null);
-  loginError?: LoginError;
-  appURL = "/";
-  sysURL = "/m/";
-  appRequestPath = "";
-  csp: Csp = new Csp();
 
-  /** Time limit + abort signal of this request: `ctx.deadline.left += 60`, `ctx.deadline.signal`. */
-  #deadline: RequestDeadline | null = null;
-  get deadline(): RequestDeadline { return this.#deadline ??= new RequestDeadline(this.req.raw.signal); }
+  responseHeaders: Headers = new Headers();
+  responseStatus = 200;
+  responseBody: BodyInit | undefined = "";
+  csp: Csp = new Csp();
 
   #html: HtmlBuilder | null = null;
   get html(): HtmlBuilder { return this.#html ??= new HtmlBuilder(); }
   get hasHtml(): boolean { return this.#html !== null; }
+
+  /** @deprecated use `ctx.req.query` */
+  get get(): Readonly<Record<string, string>> { return this.req.query; }
+  /** @deprecated use `ctx.req.body` */
+  // deno-lint-ignore no-explicit-any
+  get post(): any { return this.req.body; }
+  /** @deprecated use `ctx.req.files` */
+  get files(): Record<string, Promise<UploadedFile> | undefined> { return this.req.files; }
+  /** @deprecated use `ctx.req.cookies` */
+  get cookie(): Readonly<Record<string, string>> { return this.req.cookies; }
+  /** @deprecated use `ctx.req.clientIp` */
+  get remoteAddr(): string { return this.req.clientIp; }
+  /** @deprecated use `ctx.req.basePath` */
+  get appURL(): string { return this.req.basePath; }
+  /** @deprecated use `ctx.req.modulePath` */
+  get sysURL(): string { return this.req.modulePath; }
+  /** @deprecated use `ctx.req.appPath` */
+  get appRequestPath(): string { return this.req.appPath; }
+  /** @deprecated use `ctx.req.deadline` */
+  get deadline(): RequestDeadline { return this.req.deadline; }
+  /** @deprecated read `ctx.req.url`, mutate via `ctx.req.url.toURL()` */
+  get url(): URL { return this.req.url.toURL(); }
 
   #settingsRoot: Item | null = null;
   get settings(): ItemProxy {
@@ -62,8 +68,6 @@ export class RequestContext {
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
   }
-
-  get url(): URL { return new URL(this.req.url); }
 
   #authUserId = 0;
   /** Establish request-scoped identity without any session/cookie side effect. */
@@ -95,43 +99,27 @@ export class RequestContext {
   }
 
   urlToLocalPath(url: string): string | null {
-    return urlToLocalPath(url, this.appURL, this.app);
+    return urlToLocalPath(url, this.req.basePath, this.app);
   }
 
-  async cleanup(): Promise<void> {
-    this.#deadline?.clear();
-    for (const p of await this.#body.settle()) await Deno.remove(p).catch(() => {});
-  }
-
-  static async create(app: App, req: Req, basePath: string): Promise<RequestContext> {
-    const appURL = basePath.endsWith("/") ? basePath : basePath + "/";
-
-    const maxSize = Number(await app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024;
-    const body = await Body.parse(req, { maxSize });
-
-    let appRequestPath: string;
-    try { appRequestPath = decodeURIComponent(req.path.slice(appURL.length)); }
-    catch { throw new Output("Bad Request", { status: 400 }); }
-
+  static async create(app: App, request: Request, opt: { basePath: string; peerAddr?: string; time?: number; url?: URL }): Promise<RequestContext> {
+    const req = await ContextRequest.create(request, {
+      ...opt,
+      maxSize: Number(await app.settings.core.uploadMaxFileSize ?? "") || undefined,
+      trustedProxyHops: app.trustedProxyHops,
+    });
     const ctx = new RequestContext();
     ctx.req = req;
     ctx.app = app;
-    ctx.appURL = appURL;
-    ctx.sysURL = appURL + "m/";
-    ctx.appRequestPath = appRequestPath;
-    ctx.sess = await app.sessions.loadFromRequest(req, app.https, appURL);
-    ctx.cookie = req.cookies();
-    ctx.get = Object.freeze(req.query());
-    ctx.#body = body;
-    ctx.remoteAddr = clientIp(req.raw, req.peerAddr, app.trustedProxyHops);
+    ctx.sess = await app.sessions.loadFromRequest(req, app.https, req.basePath);
     return ctx;
   }
 }
 
 /** Resolve a request URL to a servable local file (module/qg pub dirs); null if it is no static path. */
-export function urlToLocalPath(url: string, appURL: string, app: App): string | null {
+export function urlToLocalPath(url: string | URL, appURL: string, app: App): string | null {
   try {
-    const u = new URL(url);
+    const u = typeof url === "string" ? new URL(url) : url;
     if (u.protocol === "file:") return u.pathname;
     const appRequestPath = decodeURIComponent(u.pathname.slice(appURL.length));
     return appRequestPathToLocalPath(appRequestPath, app);

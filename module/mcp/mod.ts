@@ -19,7 +19,8 @@ class RpcErr extends Error {
 export async function mcpFetch(ctx: RequestContext): Promise<never> {
   if (ctx.req.method !== "POST") throw new Output({ error: "Method Not Allowed" }, { status: 405, headers: { Allow: "POST" } });
   if (!ctx.statelessAuth) throw new Output(rpcError(null, -32001, "Unauthorized: send an api key as Bearer token"), { status: 401, headers: { "WWW-Authenticate": "Bearer" } });
-  const msg = await ctx.req.json().catch(() => { throw new Output(rpcError(null, -32700, "Parse error"), { status: 400 }); }) as Rpc;
+  const msg = ctx.req.body as Rpc; // parsed in ContextRequest.create; null = no/invalid JSON body
+  if (msg === null) throw new Output(rpcError(null, -32700, "Parse error"), { status: 400 });
   if (!msg || typeof msg !== "object" || Array.isArray(msg) || typeof msg.method !== "string")
     throw new Output(rpcError(null, -32600, "Invalid Request"), { status: 400 });
   if (msg.id == null) throw new Output(undefined, { status: 202 }); // notification, e.g. notifications/initialized

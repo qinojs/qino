@@ -41,7 +41,6 @@ async function registerClient(ctx: RequestContext): Promise<void> {
     const parts = [`${cidName}=${hash}`, `Path=${ctx.appURL}`, "Expires=Sat, 01 Jan 2033 00:00:00 GMT", "HttpOnly;SameSite=Lax"];
     if (https) parts.push("Secure");
     ctx.responseHeaders.append("Set-Cookie", parts.join("; "));
-    ctx.cookie[cidName] = hash;
 
     const clientId = await ctx.app.db.table("client").insert({ hash });
     ctx.clientId = String(clientId);

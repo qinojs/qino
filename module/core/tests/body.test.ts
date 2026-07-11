@@ -1,10 +1,10 @@
 import { assert, assertEquals, assertThrows, testContext } from "./deps.ts";
 import { Body } from "../lib/ctx/Body.ts";
-import { Req } from "../lib/ctx/Req.ts";
+import { ContextRequest } from "../lib/ctx/ContextRequest.ts";
 import { Output } from "../lib/util.ts";
 
 const parse = (init?: RequestInit, maxSize = 1024 * 1024) =>
-  Body.parse(new Req(new Request("http://qino.test/", init)), { maxSize });
+  Body.parse(new Request("http://qino.test/", init), { maxSize });
 
 Deno.test("Body: no body -> post === null", async () => {
   assertEquals((await parse()).value, null);
@@ -115,7 +115,7 @@ Deno.test("Body: chunked json (no content-length) parses through the capped read
     duplex: "half",
   });
   assertEquals(req.headers.get("content-length"), null); // stream body really has no length
-  const b = await Body.parse(new Req(req), { maxSize: 1024 });
+  const b = await Body.parse(req, { maxSize: 1024 });
   assertEquals(b.value.a, 1);
 });
 
@@ -127,7 +127,7 @@ Deno.test("Body: chunked body over maxSize -> 413 while reading", async () => {
     // @ts-ignore duplex is required for stream bodies
     duplex: "half",
   });
-  const err = await Body.parse(new Req(req), { maxSize: 1024 }).catch((e) => e);
+  const err = await Body.parse(req, { maxSize: 1024 }).catch((e) => e);
   assert(err instanceof Output);
   assertEquals(err.status, 413);
   await req.body?.cancel(); // in production the server runtime drains unread request bodies
@@ -142,14 +142,14 @@ Deno.test("Body: streaming/raw content-types stay untouched (no 411, req still r
     // @ts-ignore duplex is required for stream bodies
     duplex: "half",
   });
-  const b = await Body.parse(new Req(req), { maxSize: 1024 });
+  const b = await Body.parse(req, { maxSize: 1024 });
   assertEquals(b.value, null);
   assertEquals(await req.text(), "audio-bytes"); // raw stream untouched by Body
 });
 
-Deno.test("Req.query: always flat, first value wins", () => {
-  const req = new Req(new Request("http://qino.test/?xyz=a&xyz=b"));
-  assertEquals(req.query().xyz, "a");
+Deno.test("ContextRequest.query: always flat, first value wins", async () => {
+  const req = await ContextRequest.create(new Request("http://qino.test/?xyz=a&xyz=b"));
+  assertEquals(req.query.xyz, "a");
 });
 
 Deno.test("RequestContext defaults: post null, files empty", async () => {

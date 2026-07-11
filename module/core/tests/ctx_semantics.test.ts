@@ -3,7 +3,7 @@
 // behavior live in body.test.ts / request_context_timeout.test.ts.
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { Output } from "../lib/util.ts";
-import { parseCookies } from "../lib/ctx/Req.ts";
+import { parseCookies } from "../lib/ctx/ContextRequest.ts";
 
 Deno.test("ctx paths: appURL gets a trailing slash, sysURL derives from it", async () => {
   const ctx = await testContext({ url: "http://qino.test/cms1/de/page", basePath: "/cms1" });
@@ -32,10 +32,11 @@ Deno.test("ctx query: first value wins, frozen, prototype-safe", async () => {
   assert(Object.isFrozen(ctx.get));
 });
 
-Deno.test("ctx query: queries() keeps every repeated value in order", async () => {
+Deno.test("ctx query: queryAll keeps every repeated value in order, frozen", async () => {
   const ctx = await testContext({ url: "http://qino.test/?a=1&b=x&a=2" });
-  assertEquals(ctx.req.queries(), { a: ["1", "2"], b: ["x"] });
-  assertEquals(ctx.req.queries("a"), ["1", "2"]);
+  assertEquals(ctx.req.queryAll, { a: ["1", "2"], b: ["x"] });
+  assert(Object.isFrozen(ctx.req.queryAll));
+  assert(Object.isFrozen(ctx.req.queryAll.a));
 });
 
 Deno.test("ctx cookies: request cookies land on ctx.cookie", async () => {

@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "./deps.ts";
-import { parseCookies } from "../lib/ctx/Req.ts";
+import { parseCookies } from "../lib/ctx/ContextRequest.ts";
 
 Deno.test("parseCookies keeps the first cookie when paths provide duplicate names", () => {
   assertEquals(parseCookies("qinoSess=cms1; qinoSess=root; cid=client"), {

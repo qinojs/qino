@@ -16,6 +16,7 @@ async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Pr
     url: "http://localhost/mcp",
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
+    headers: body === undefined ? undefined : { "content-type": "application/json" },
     app: {
       dev: true,
       db: { table: () => ({ entry: (id: number) => id ? { get: () => Promise.resolve(0) } : null }) },

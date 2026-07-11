@@ -1,7 +1,6 @@
 import * as nodePath from "node:path";
 import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
 import { RequestContext, requestStorage, urlToLocalPath } from "./ctx/RequestContext.ts";
-import { Req } from "./ctx/Req.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
 import { Db } from "./db/Db.ts";
@@ -75,7 +74,7 @@ export class App extends Emitter<AppEvents> {
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
         this.appPATH   = ensureSlash(appPATH);
-        this.basePath  = cfg.basePath;
+        this.basePath  = ensureSlash(cfg.basePath || "/");
         this.https     = cfg.https;
         this.dev       = cfg.dev;
         this.trustedProxyHops = cfg.trustedProxyHops;
@@ -113,13 +112,14 @@ export class App extends Emitter<AppEvents> {
         let ctx: RequestContext;
         try {
             await this.fire("request-start", { request, peerAddr, time }); // cheap pre-filter, before any DB/session work
-            const localPath = urlToLocalPath(request.url, base, this);
+            const url = new URL(request.url);
+            const localPath = urlToLocalPath(url, base, this);
             if (localPath) return await this.#static(request, peerAddr, time, localPath);
-            ctx = await RequestContext.create(this, new Req(request, peerAddr, time), base);
+            ctx = await RequestContext.create(this, request, { basePath: base, peerAddr, time, url });
         } catch (e: unknown) {
             return earlyError(e);
         }
-        return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.cleanup()));
+        return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.req.cleanup()));
     }
 
     async #static(request: Request, peerAddr: string, time: number, localPath: string): Promise<Response> {

@@ -20,7 +20,7 @@ Deno.test("deadline.left counts down and supports += extension", async () => {
   assert(ctx.deadline.left > 89 && ctx.deadline.left <= 90);
   ctx.deadline.left = Infinity; // lift the limit again, clears the timer
   assertEquals(ctx.deadline.left, Infinity);
-  await ctx.cleanup();
+  await ctx.req.cleanup();
 });
 
 Deno.test("Infinity += n stays unlimited", async () => {
@@ -28,7 +28,7 @@ Deno.test("Infinity += n stays unlimited", async () => {
   ctx.deadline.left += 99;
   assertEquals(ctx.deadline.left, Infinity);
   assertEquals(ctx.deadline.signal.aborted, false);
-  await ctx.cleanup();
+  await ctx.req.cleanup();
 });
 
 Deno.test("expired deadline aborts the signal with a 504 Output", async () => {
@@ -40,7 +40,7 @@ Deno.test("expired deadline aborts the signal with a 504 Output", async () => {
   assert(ctx.deadline.signal.reason instanceof Output);
   assertEquals((ctx.deadline.signal.reason as Output).status, 504);
   assertEquals(ctx.deadline.left, 0);
-  await ctx.cleanup();
+  await ctx.req.cleanup();
 });
 
 Deno.test("client disconnect aborts deadline.signal too", async () => {
@@ -49,11 +49,11 @@ Deno.test("client disconnect aborts deadline.signal too", async () => {
   assertEquals(ctx.deadline.signal.aborted, false);
   ctrl.abort();
   assert(ctx.deadline.signal.aborted);
-  await ctx.cleanup();
+  await ctx.req.cleanup();
 });
 
 Deno.test("cleanup clears a pending timeout timer", async () => {
   const ctx = await makeCtx();
   ctx.deadline.left = 60; // would leak a timer without cleanup (deno test leak detector)
-  await ctx.cleanup();
+  await ctx.req.cleanup();
 });

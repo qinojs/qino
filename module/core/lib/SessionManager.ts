@@ -2,7 +2,7 @@ import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
 import { cookiePrefix, uid, unixTime } from "./util.ts";
 import { sql } from "../../../deps.ts";
 import type { Db } from "./db/Db.ts";
-import type { Req } from "./ctx/Req.ts";
+import type { ContextRequest } from "./ctx/ContextRequest.ts";
 import type { RequestContext } from "./ctx/RequestContext.ts";
 
 const EMPTY_SESSION = "{}";
@@ -47,8 +47,8 @@ export class SessionManager {
     this.#db = db;
   }
 
-  loadFromRequest(req: Req, https: boolean, appURL: string): Promise<Session> {
-    return this.load(req.cookie(cookiePrefix(https, appURL) + COOKIE_NAME));
+  loadFromRequest(req: ContextRequest, https: boolean, appURL: string): Promise<Session> {
+    return this.load(req.cookies[cookiePrefix(https, appURL) + COOKIE_NAME]);
   }
 
   async load(cookieSessionToken?: string): Promise<Session> {
