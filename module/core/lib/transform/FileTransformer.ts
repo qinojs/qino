@@ -178,9 +178,7 @@ export class FileTransformer {
 
 /** Sorts transformers by phase order + `after` dependencies within a phase */
 function sortTransformers(transformers: TransformerDef[]): TransformerDef[] {
-  const result: TransformerDef[] = [];
-  for (const phase of PHASE_ORDER) result.push(...topoSort(transformers.filter((t) => t.phase === phase)));
-  return result;
+  return PHASE_ORDER.flatMap((phase) => topoSort(transformers.filter((t) => t.phase === phase)));
 }
 
 function topoSort(transformers: TransformerDef[]): TransformerDef[] {
