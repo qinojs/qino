@@ -1,6 +1,5 @@
-import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
+import { bildJsonItem, sql, type ItemProxy } from "../../../deps.ts";
 import { cookiePrefix, uid, unixTime } from "./util.ts";
-import { sql } from "../../../deps.ts";
 import type { Db } from "./db/Db.ts";
 import type { Req } from "./ctx/Req.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
