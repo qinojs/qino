@@ -266,9 +266,6 @@ export class DbTable {
     if (id instanceof Cl) return id;
     if (id === undefined) {
       throw new Error("not working sync without id (generate)");
-      // const Entry = new Cl(this);
-      // this.#entries.set(String(Entry), new WeakRef(Entry));
-      // return Entry;
     }
 
     const isCompositeId = Array.isArray(id) || (id != null && typeof id === "object");
