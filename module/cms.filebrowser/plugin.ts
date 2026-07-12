@@ -92,11 +92,5 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
     }
   }
 
-  const items: any[] = [];
-  let i = 0;
-  for (const item of Object.values(res)) {
-    if (i++ >= 100) break;
-    items.push(item);
-  }
-  return items;
+  return Object.values(res).slice(0, 100);
 }
