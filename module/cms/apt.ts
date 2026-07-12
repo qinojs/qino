@@ -1,8 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-/**
- * cms/apt.ts — apt action tree for the cms module.
- * Complete port of all routes from apt-exports.ts.
- */
 
 import { s, Access, AccessError, ConflictError, NotFoundError, itemReadDeep, type Ctx } from "../core/mod.ts";
 import { $item } from "../../deps.ts";
@@ -31,7 +27,7 @@ const node = {
   get: {
     description: "Read node as JSON",
     ...nodeRead,
-    execute: ({ node }: { node: Node }) => fns.nodeToJson(node.id),
+    execute: ({ node }: { node: Node }) => fns.nodeToJson(node),
   },
 
   delete: {
@@ -50,7 +46,7 @@ const node = {
     get: {
       description: "Read page tree from this node (id and title only)",
       ...nodeRead,
-      execute: async ({ node }: { node: Node }) => (await fns.tree({
+      execute: async ({ node }: { node: Node }) => (await fns.treeToJson({
         node,
         self: true,
         type: "p",
@@ -71,7 +67,7 @@ const node = {
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
       execute: ({ node, filter, level }: any) =>
-        fns.cmsGetTree(node.id, { filter: filter ?? "*", level: level ?? 0 }),
+        fns.tree(node.id, { filter: filter ?? "*", level: level ?? 0 }),
     },
   },
 
@@ -244,7 +240,7 @@ const node = {
         const child = await node.cms.node(id);
         await child.title(ctx.lang, title);
         await child.changeUser(ctx.user!, 3);
-        return fns.nodeToJson(id);
+        return fns.nodeToJson(child);
       },
     },
   },
@@ -290,7 +286,7 @@ const node = {
     get: {
       description: "Read content blocks of this node (id, module, name, children)",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => fns.tree({
+      execute: ({ node }: { node: Node }) => fns.treeToJson({
         node,
         type: "c",
         entry: async (n) => ({
@@ -493,7 +489,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any, ctx: Ctx) => {
-        if (await fns.cmsRequestUsed(url)) throw new Error("URL already in use");
+        if (await fns.requestUsed(url)) throw new Error("URL already in use");
         await ctx.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${url}, ${node.id})`;
         return { ok: true };
       },
@@ -570,7 +566,7 @@ export const api = {
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
       execute: ({ filter, level }: any) =>
-        fns.cmsGetTree(0, { filter: filter ?? "*", level: level ?? 0 }),
+        fns.tree(0, { filter: filter ?? "*", level: level ?? 0 }),
     },
   },
 
@@ -579,7 +575,7 @@ export const api = {
       description: "Search nodes by title",
       access: Access.USER,
       input: s.object({ q: s.string().describe("Search query") }),
-      execute: ({ q }: any) => fns.cmsSearchNodes(q),
+      execute: ({ q }: any) => fns.searchNodes(q),
     },
   },
 
@@ -588,7 +584,7 @@ export const api = {
       description: "Search files",
       access: Access.USER,
       input: s.object({ q: s.string().describe("Search query") }),
-      execute: ({ q }: any) => fns.cmsSearchFiles(q),
+      execute: ({ q }: any) => fns.searchFiles(q),
     },
   },
 
@@ -613,7 +609,7 @@ export const api = {
       description: "Check if a URL is already used as a redirect",
       access: Access.USER,
       input: s.object({ url: s.string() }),
-      execute: ({ url }: any) => fns.cmsRequestUsed(url).then((used) => ({ used })),
+      execute: ({ url }: any) => fns.requestUsed(url).then((used) => ({ used })),
     },
   },
 

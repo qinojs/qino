@@ -1,13 +1,13 @@
 import type { Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { cmsGetTree } from "../../../cms/apt-exports.ts";
+import { tree } from "../../../cms/apt-exports.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const ctx = getCtx();
   const treeShowC = await ctx.settings["cms.frontend.2"].ui.tree_show_c;
 
-  const treeData = await cmsGetTree(0, {
+  const treeData = await tree(0, {
     in: node,
     filter: treeShowC ? "*" : "p",
   });

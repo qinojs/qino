@@ -3,28 +3,27 @@ import { getCtx, hee, Output, sql, unixTime } from "../core/mod.ts";
 import type { Node } from "./mod.ts";
 // ─── business logic used by REST ──────────────
 
-export async function nodeToJson(nid: any, type = "*"): Promise<any> {
-    const app = getCtx().app.cms;
-    const Page = await app.node(nid);
-    const title = await Page.showTitle();
+export async function nodeToJson(node: Node, type = "*"): Promise<any> {
+    const title = await node.showTitle();
+    const access = await node.access();
     return {
-        id:          Number(Page.id),
-        title:       (await Page.access()) ? (String(title).trim() || "-") : "(no access)",
+        id:          Number(node.id),
+        title:       access ? (String(title).trim() || "-") : "(no access)",
         title_id:    title.id,
-        numChildren: (await Page.children({ type }))?.size ?? 0,
-        url:         await Page.url(),
-        myaccess:    await Page.access(),
-        visible:     Number(Page.vs?.["visible"] ?? 0),
-        online:      (await Page.isOnline()) ? 1 : 0,
-        public:      (await Page.isPublic()) ? 1 : 0,
-        type:        Page.vs.type,
-        module:      Page.vs.module,
-        name:        String(Page.vs.name ?? ""),
+        numChildren: (await node.children({ type }))?.size ?? 0,
+        url:         await node.url(),
+        myaccess:    access,
+        visible:     Number(node.vs?.["visible"] ?? 0),
+        online:      (await node.isOnline()) ? 1 : 0,
+        public:      (await node.isPublic()) ? 1 : 0,
+        type:        node.vs.type,
+        module:      node.vs.module,
+        name:        String(node.vs.name ?? ""),
     };
 }
 
-// Shared recursive tree walker over node.children(); self = start with the node itself instead of its children.
-export async function tree(opts: {
+// Shared recursive tree serializer over node.children(); self = start with the node itself instead of its children.
+export async function treeToJson(opts: {
     node: Node;
     self?: boolean;
     type: string;
@@ -39,7 +38,7 @@ export async function tree(opts: {
         if ((await n.access()) < (opts.access ?? 1)) continue;
         const entry = await opts.entry(n);
         if (!opts.expand || await opts.expand(n, level)) {
-            const children = await tree({ ...opts, node: n, self: false }, level + 1);
+            const children = await treeToJson({ ...opts, node: n, self: false }, level + 1);
             if (children.length || opts.emptyChildren) entry.children = children;
         }
         res.push(entry);
@@ -47,17 +46,17 @@ export async function tree(opts: {
     return res;
 }
 
-export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
+export async function tree(start: any, opt: any = {}): Promise<any[]> {
     const ctx = getCtx();
     const filter = opt.filter ?? "*";
     const In = opt.in ? await ctx.app.cms.node(opt.in) : null;
     const self = String(start) === "0";
-    return tree({
+    return treeToJson({
         node: await ctx.app.cms.node(self ? 1 : start),
         self,
         type: filter,
         access: 0, // no-access nodes stay listed, nodeToJson masks their title
-        entry: (n: Node) => nodeToJson(n.id, filter),
+        entry: (n: Node) => nodeToJson(n, filter),
         expand: async (n: Node, level: number) => (!In || await In.in(n)) && (!opt.level || opt.level > level),
         emptyChildren: true,
     });
@@ -149,14 +148,14 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
     await node.sortFiles(sorted);
 }
 
-export async function cmsRequestUsed(v: string): Promise<boolean> {
+export async function requestUsed(v: string): Promise<boolean> {
     const db = getCtx().app.db;
     const r  = await db.one`SELECT count(*) FROM page_redirect WHERE request = ${v}`;
     const u  = await db.one`SELECT count(*) FROM page_url WHERE url = ${v}`;
     return !!(r || u);
 }
 
-export async function cmsSearchNodes(search: string): Promise<any[]> {
+export async function searchNodes(search: string): Promise<any[]> {
     const ctx = getCtx();
     search = search.replace(/^cmspid:\/\//, "");
     const res: any[] = [];
@@ -184,7 +183,7 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
     return res;
 }
 
-export async function cmsSearchFiles(search: string): Promise<any[]> {
+export async function searchFiles(search: string): Promise<any[]> {
     const ctx = getCtx();
     const db  = ctx.app.db;
     const s   = search;
