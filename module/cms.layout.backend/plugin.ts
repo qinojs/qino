@@ -112,9 +112,8 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
   }
 
   // Content conts
-  const allConts = await node.conts();
   let contentHtml = "";
-  for (const C of allConts) {
+  for (const C of await node.conts()) {
     contentHtml += await C.html();
   }
 
