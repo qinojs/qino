@@ -63,10 +63,12 @@ Modules are the building blocks of a Qino application. A module exposes its publ
 
 ```ts
 // my-module/plugin.ts
+import type { App, AptTree } from "jsr:@qino/qino";
+
 export const name = "my-module";
 export const needs = ["core"];       // Dependencies
 
-export const dbSchema = { ... };     // Optional: database tables
+export const dbSchema = { /* ... */ }; // Optional: database tables
 
 export function init(app: App) {
   // Called once at startup
