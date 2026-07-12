@@ -130,7 +130,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
   <tr><td>${t`Total`}:<td>${db.one`SELECT count(*) FROM usr`}
-  <tr><td>${t`Active`}:<td>${db.one`SELECT count(*) FROM usr WHERE active = 1`}
+  <tr><td>${t`Active`}:<td>${db.one`SELECT count(*) FROM usr WHERE active = ${true}`}
 </table>
 ${loginRows}
 </div>`;

@@ -37,7 +37,7 @@ async function render(node: Node): Promise<HtmlString> {
       const addedEmails = new Set<string>();
 
       for (const uid of toUsers) {
-        const usr = await db.row`SELECT email, firstname, lastname FROM usr WHERE id=${uid} AND active=1`;
+        const usr = await db.row`SELECT email, firstname, lastname FROM usr WHERE id=${uid} AND active=${true}`;
         if (usr?.email && !addedEmails.has(usr.email)) {
           mail.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
           addedEmails.add(usr.email);
@@ -45,7 +45,7 @@ async function render(node: Node): Promise<HtmlString> {
       }
 
       for (const gid of toGroups) {
-        const members = await db.query`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=1`;
+        const members = await db.query`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=${true}`;
         for (const usr of members) {
           if (usr.email && !addedEmails.has(usr.email)) {
             mail.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
@@ -79,7 +79,7 @@ async function render(node: Node): Promise<HtmlString> {
   const defaults = await app.mail.defaults().catch(() => ({} as Record<string, unknown>));
   const defaultSender = defaults.sender ? (defaults.sendername ? `${defaults.sendername} <${defaults.sender}>` : defaults.sender) : "";
 
-  const users = await db.query`SELECT id, email, firstname, lastname FROM usr WHERE active=1 ORDER BY lastname, firstname, email`;
+  const users = await db.query`SELECT id, email, firstname, lastname FROM usr WHERE active=${true} ORDER BY lastname, firstname, email`;
   const groups = await db.query`SELECT id, name FROM grp ORDER BY name`;
 
   const userOptions = users.length

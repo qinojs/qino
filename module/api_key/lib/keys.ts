@@ -26,7 +26,7 @@ export function keyPrefix(token: string): string {
 export async function verifyToken(app: App, token: string): Promise<{ id: number; usrId: number } | null> {
   if (!token.startsWith(PREFIX)) return null;
   const row = await app.db.row`SELECT k.id, k.usr_id, k.expires FROM api_key k
-    JOIN usr u ON u.id = k.usr_id AND u.active = 1
+    JOIN usr u ON u.id = k.usr_id AND u.active = ${true}
     WHERE k.hash = ${hashToken(token)}`;
   if (!row) return null;
   if (row.expires && Number(row.expires) < unixTime()) return null;

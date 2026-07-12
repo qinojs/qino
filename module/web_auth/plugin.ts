@@ -219,7 +219,7 @@ export const api: AptTree = {
           const allowCredentials: unknown[] = [];
 
           if (email) {
-            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = 1`;
+            const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = ${true}`;
             if (usr) {
               usrId = Number(usr.id);
               const creds = await db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;

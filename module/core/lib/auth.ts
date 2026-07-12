@@ -49,7 +49,7 @@ export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError
 
 export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   id = Number(id);
-  if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = 1`) return false;
+  if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;
   const oldSession = ctx.sess.data;
   await logout(ctx);
   // neue Session-ID nach Logout verhindert Session-Fixation

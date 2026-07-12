@@ -115,11 +115,13 @@ class SqliteDriver extends DbDriver {
   }
 
   quoteId(id: string) { return sqliteDialect.quoteId(id); }
+  // node:sqlite rejects boolean binds; SQLite has no boolean type, so map to 0/1.
+  #bind(params: unknown[]) { return params.map((p) => typeof p === "boolean" ? +p : p); }
   query(sql: string, params: unknown[] = []) {
-    return Promise.resolve(this.#db.prepare(sql).all(...params as any[]) as Row[]);
+    return Promise.resolve(this.#db.prepare(sql).all(...this.#bind(params) as any[]) as Row[]);
   }
   exec(sql: string, params: unknown[] = [], _returning?: string) {
-    const r = this.#db.prepare(sql).run(...params as any[]);
+    const r = this.#db.prepare(sql).run(...this.#bind(params) as any[]);
     return Promise.resolve({ insertId: Number(r.lastInsertRowid), affectedRows: Number(r.changes) });
   }
   // One shared connection: re-entrancy via a flag, no per-call routing needed.
