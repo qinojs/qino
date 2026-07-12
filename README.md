@@ -154,7 +154,7 @@ ctx.res.status   // Outgoing response: status, headers, body, html
 Clone the repo and run the demo:
 
 ```sh
-git clone https://github.com/nuxodin/qino
+git clone https://github.com/qinojs/qino
 cd qino/demo
 deno task dev
 ```
