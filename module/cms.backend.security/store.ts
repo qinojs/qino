@@ -177,4 +177,4 @@ function payloadText(ctx: Ctx): string {
   return entries.join("&");
 }
 
-const short = (s: string, n: number) => s.length > n ? s.slice(0, n) : s;
+const short = (s: string, n: number) => s.slice(0, n);
