@@ -18,7 +18,7 @@ const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g
 // ───── Helpers ────────────────────────────────────────────────────────────
 
 async function slimTree(node: Node): Promise<any> {
-  const title = String(await (await node.title()).string() ?? "").trim();
+  const title = String(await node.showTitle()).trim();
   const children = [
     ...(await node.children({ type: "p" })).values(),
   ];
@@ -38,7 +38,7 @@ async function contentBlocks(node: Node): Promise<any[]> {
   const entries = [];
   for (const content of contents) {
     if ((await content.access()) < 1) continue;
-    const title = String(await (await content.title()).string() ?? "").trim();
+    const title = String(await content.showTitle()).trim();
     const entry: any = {
       id: Number(content.id),
       module: String(content.vs?.module ?? ""),
@@ -290,7 +290,7 @@ const node = {
         });
         if (!copied) throw new AccessError();
         await copied.changeUser(ctx.user, 3);
-        const titleStr = String(await (await copied.title()).string() ?? "").trim();
+        const titleStr = String(await copied.showTitle()).trim();
         await copied.title(ctx.lang, titleStr ? titleStr + " (copy)" : "");
         return { id: String(copied.id) };
       },

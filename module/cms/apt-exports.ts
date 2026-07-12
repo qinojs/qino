@@ -6,12 +6,11 @@ import type { Node } from "./mod.ts";
 export async function nodeToJson(nid: any, type = "*"): Promise<any> {
     const app = getCtx().app.cms;
     const Page = await app.node(nid);
-    const titleObj = await Page.title();
-    const titleStr = String(await titleObj.string() ?? "").trim();
+    const title = await Page.showTitle();
     return {
         id:          Number(Page.id),
-        title:       (await Page.access()) ? (titleStr || "-") : "(no access)",
-        title_id:    titleObj.id,
+        title:       (await Page.access()) ? (String(title).trim() || "-") : "(no access)",
+        title_id:    title.id,
         numChildren: (await Page.children({ type }))?.size ?? 0,
         url:         await Page.url(),
         myaccess:    await Page.access(),
@@ -154,12 +153,12 @@ export async function cmsSearchNodes(search: string): Promise<any[]> {
         t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
         const Page = await ctx.app.cms.node(vs.id);
         if (!await Page.access()) continue;
-        const titleStr = String(await (await Page.title()).string() ?? "").trim();
+        const titleStr = String(await Page.showTitle()).trim();
         if (!titleStr) continue;
         const parent   = await Page.parent();
-        const pTitle   = parent ? String(await (await parent.title()).string() ?? "").trim() : "";
+        const pTitle   = parent ? String(await parent.showTitle()).trim() : "";
         const gp       = parent ? await parent.parent() : null;
-        const gpTitle  = gp ? String(await (await gp.title()).string() ?? "").trim() : "";
+        const gpTitle  = gp ? String(await gp.showTitle()).trim() : "";
         res.push({
             html:  `<b>${hee(titleStr)}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),
@@ -196,7 +195,7 @@ export async function cmsSearchFiles(search: string): Promise<any[]> {
         const imgSrc = isImg ? await F.url({w: 32, h: 32}) : "about:blank";
         res.push({
             html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
-                   `<b>${hee(vs["name"])}</b><br><i>${hee(await (await (await node.page()).title()).string() ?? "")}</i>`,
+                   `<b>${hee(vs["name"])}</b><br><i>${hee(await (await node.page()).showTitle())}</i>`,
             text:  vs["name"],
             value: F.id,
         });
