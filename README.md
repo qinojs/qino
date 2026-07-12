@@ -38,7 +38,7 @@ Deno.serve({ port: 8080 }, hono.fetch);
 The `App` class is the central hub. It manages the database connection, module system, session handling, settings, and HTTP routing.
 
 ```ts
-const app = new App({ db, https? });
+const app = new App({ db });
 
 await app.importAll(path);          // Load all modules from a directory
 await app.import(pluginUrl);        // Load a single Qino plugin
