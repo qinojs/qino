@@ -45,10 +45,9 @@ export function fastInfo(ctx: Ctx): any {
 
 export function reqInfo(ctx: Ctx): any {
   const info = fastInfo(ctx);
-  const payload = payloadText(ctx);
   return {
     ...info,
-    inspect: [info.path, payload].filter(Boolean).join("\n").slice(0, 8000),
+    inspect: [info.path, payloadText(ctx)].filter(Boolean).join("\n").slice(0, 8000),
   };
 }
 
