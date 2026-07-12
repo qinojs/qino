@@ -1,5 +1,6 @@
 import { Access, AccessError, s, type Ctx, type AptTree, type App } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
+import { widgetUrl } from "./api.ts";
 
 export const name = "cms.frontend.2";
 export const needs = ["cms"];
@@ -29,10 +30,6 @@ export const ctxSettingsSchema = {
     },
   },
 };
-
-function widgetUrl(widget: string): string {
-  return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
-}
 
 async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
   const P = await ctx.app.cms.node(params["pid"]);
