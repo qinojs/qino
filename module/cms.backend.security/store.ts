@@ -16,7 +16,7 @@ export async function settings(app: App): Promise<SecuritySettings> {
       result[key] = raw != null && raw !== "" ? raw === true || raw === "true" || raw === "1" : meta.default;
     } else if (meta.type === "integer") {
       const n = Number(raw);
-      result[key] = (raw != null && raw !== "" && !Number.isNaN(n)) ? n : meta.default;
+      result[key] = (raw != null && raw !== "" && !isNaN(n)) ? n : meta.default;
     } else {
       result[key] = (raw != null && raw !== "") ? String(raw) : meta.default;
     }
