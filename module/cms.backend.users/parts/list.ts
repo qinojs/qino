@@ -18,7 +18,7 @@ export async function list(_node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?
 
   const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
   const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");
-  const superFilter = isSuperuser ? sql.raw("") : sql` AND coalesce(superuser, 0) = 0`;
+  const superFilter = isSuperuser ? sql.raw("") : sql` AND superuser = ${false}`;
 
   const rows = await db.query`SELECT usr.*,
     (SELECT count(*) FROM sess WHERE usr_id = usr.id) AS num_sess,

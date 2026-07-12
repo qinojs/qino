@@ -140,7 +140,7 @@ export function sqlSearchHelper(
 ): { where: Sql; order: Sql } {
   const searches = (search ?? "").trim().split(/\s+/).slice(0, 4).filter(Boolean);
   if (!searches.length || !fields.length) {
-    return { where: sql.raw("1"), order: sql.raw("1") };
+    return { where: sql.raw("true"), order: sql.raw("1") };
   }
   // Escape LIKE wildcards in user input; '!' is a neutral escape char in every dialect's string literals.
   const esc = (s: string) => s.replace(/[!%_]/g, "!$&");
