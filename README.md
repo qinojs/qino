@@ -72,7 +72,7 @@ export function init(app: App) {
   // Called once at startup
 }
 
-export const api: Tree = {
+export const api: AptTree = {
   hello: {
     get: {
       description: "Say hello",
@@ -86,12 +86,12 @@ Modules are loaded in dependency order and can define database schemas, API endp
 
 ### API Tree (apt)
 
-The `Tree` system lets you define APIs declaratively. The same tree is automatically exposed as REST routes, and can be adapted for LLM tools or other interfaces:
+The `AptTree` type lets you define APIs declaratively. The same tree is automatically exposed as REST routes, and can be adapted for LLM tools or other interfaces:
 
 ```ts
-import { type Tree } from "jsr:@qino/qino";
+import { type AptTree } from "jsr:@qino/qino";
 
-export const api: Tree = {
+export const api: AptTree = {
   users: {
     get: {
       description: "List all users",
