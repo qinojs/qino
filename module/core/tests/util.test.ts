@@ -2,6 +2,7 @@ import { assertEquals, assertThrows, testContext } from "./deps.ts";
 import {
   HtmlString,
   Output,
+  contentDisposition,
   ensureSlash,
   hee,
   html,
@@ -51,6 +52,14 @@ Deno.test("util: small string helpers", () => {
   assertEquals(ensureSlash("/tmp/qino"), "/tmp/qino/");
   assertEquals(ensureSlash("/tmp/qino/"), "/tmp/qino/");
 });
+
+Deno.test("util: contentDisposition encodes RFC 5987 reserved characters", () => {
+  assertEquals(
+    contentDisposition("attachment", "report (final)*'ä.txt"),
+    "attachment; filename=\"report (final)*'_ä.txt\"; filename*=UTF-8''report%20%28final%29%2A%27%C3%A4.txt",
+  );
+});
+
 
 Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   const res = sqlSearchHelper(" alpha beta gamma delta epsilon ", ["title", "body"]);
