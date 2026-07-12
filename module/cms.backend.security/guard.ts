@@ -10,7 +10,7 @@ const blocksOf = (app: App) => pathBlocks.getOrInsertComputed(app, () => new Map
 export function initSecurity(app: App) {
   app.on("request-start", async ({ request, peerAddr }) => {
     const info = gateInfo(request, peerAddr, app.trustedProxyHops);
-    if (isPathBlocked(app, info)) return deny(5);
+    if (isPathBlocked(app, info)) deny(5);
     const set = await settings(app);
     if (!set.enabled) return;
     const pattern = await suspiciousPath(app, info.path);
