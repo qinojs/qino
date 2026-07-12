@@ -15,43 +15,6 @@ const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx
 const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
-// ───── Helpers ────────────────────────────────────────────────────────────
-
-async function slimTree(node: Node): Promise<any> {
-  const title = String(await node.showTitle()).trim();
-  const children = [
-    ...(await node.children({ type: "p" })).values(),
-  ];
-  const entry: any = { id: Number(node.id), title: title || "-" };
-  const childNodes = [];
-  for (const child of children) {
-    if ((await child.access()) >= 1) childNodes.push(await slimTree(child));
-  }
-  if (childNodes.length) entry.children = childNodes;
-  return entry;
-}
-
-async function contentBlocks(node: Node): Promise<any[]> {
-  const contents = [
-    ...(await node.children({ type: "c" })).values(),
-  ];
-  const entries = [];
-  for (const content of contents) {
-    if ((await content.access()) < 1) continue;
-    const title = String(await content.showTitle()).trim();
-    const entry: any = {
-      id: Number(content.id),
-      module: String(content.vs?.module ?? ""),
-      name: content.vs?.name ?? undefined,
-    };
-    if (title) entry.title = title;
-    const children = await contentBlocks(content);
-    if (children.length) entry.children = children;
-    entries.push(entry);
-  }
-  return entries;
-}
-
 // ───── Node ───────────────────────────────────────────────────────────────
 
 const node = {
@@ -87,7 +50,15 @@ const node = {
     get: {
       description: "Read page tree from this node (id and title only)",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => slimTree(node),
+      execute: async ({ node }: { node: Node }) => (await fns.tree({
+        node,
+        self: true,
+        type: "p",
+        entry: async (n) => ({
+          id: Number(n.id),
+          title: String(await n.showTitle()).trim() || "-",
+        }),
+      }))[0],
     },
   },
 
@@ -319,7 +290,16 @@ const node = {
     get: {
       description: "Read content blocks of this node (id, module, name, children)",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => contentBlocks(node),
+      execute: ({ node }: { node: Node }) => fns.tree({
+        node,
+        type: "c",
+        entry: async (n) => ({
+          id: Number(n.id),
+          module: String(n.vs?.module ?? ""),
+          name: n.vs?.name ?? undefined,
+          title: String(await n.showTitle()).trim() || undefined,
+        }),
+      }),
     },
 
     post: {

@@ -23,29 +23,44 @@ export async function nodeToJson(nid: any, type = "*"): Promise<any> {
     };
 }
 
-export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
-    const ctx = getCtx();
-    const filter = opt["filter"] ?? "*";
-    const level  = (opt["_level"] ?? 0) + 1;
+// Shared recursive tree walker over node.children(); self = start with the node itself instead of its children.
+export async function tree(opts: {
+    node: Node;
+    self?: boolean;
+    type: string;
+    entry: (n: Node) => Promise<Record<string, unknown>>;
+    expand?: (n: Node, level: number) => boolean | Promise<boolean>;
+    access?: number; // min access to include a node incl. subtree (default 1)
+    emptyChildren?: boolean;
+}, level = 1): Promise<any[]> {
+    const nodes = opts.self ? [opts.node] : (await opts.node.children({ type: opts.type })).values();
     const res: any[] = [];
-    let Cs: any[];
-    if (String(start) === "0") {
-        Cs = [await ctx.app.cms.node(1)];
-    } else {
-        const P = await ctx.app.cms.node(start);
-        Cs = [...(await P.children({ type: filter })).values()];
-    }
-    for (const C of Cs) {
-        const node: any = await nodeToJson(C.id, filter);
-        const shouldExpand =
-            (!opt["in"] || await (await ctx.app.cms.node(opt["in"])).in(C)) &&
-            (!opt["level"] || opt["level"] > level);
-        if (shouldExpand) {
-            node["children"] = await cmsGetTree(C.id, { ...opt, _level: level });
+    for (const n of nodes) {
+        if ((await n.access()) < (opts.access ?? 1)) continue;
+        const entry = await opts.entry(n);
+        if (!opts.expand || await opts.expand(n, level)) {
+            const children = await tree({ ...opts, node: n, self: false }, level + 1);
+            if (children.length || opts.emptyChildren) entry.children = children;
         }
-        res.push(node);
+        res.push(entry);
     }
     return res;
+}
+
+export async function cmsGetTree(start: any, opt: any = {}): Promise<any[]> {
+    const ctx = getCtx();
+    const filter = opt.filter ?? "*";
+    const In = opt.in ? await ctx.app.cms.node(opt.in) : null;
+    const self = String(start) === "0";
+    return tree({
+        node: await ctx.app.cms.node(self ? 1 : start),
+        self,
+        type: filter,
+        access: 0, // no-access nodes stay listed, nodeToJson masks their title
+        entry: (n: Node) => nodeToJson(n.id, filter),
+        expand: async (n: Node, level: number) => (!In || await In.in(n)) && (!opt.level || opt.level > level),
+        emptyChildren: true,
+    });
 }
 
 export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
