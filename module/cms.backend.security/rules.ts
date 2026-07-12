@@ -44,7 +44,7 @@ export function rankSignal(s: Signal, info: any, set: Record<string, number>): S
   if (!info.usr_id || s.kind === "attack") return s;
   const percent = Math.max(0, Math.min(100, set.userScorePercent ?? 50));
   const score = Math.max(1, Math.round(s.score * percent / 100));
-  const confidence = Math.max(1, Math.round(Number(s.confidence ?? 50) * percent / 100));
+  const confidence = Math.max(1, Math.round(s.confidence * percent / 100));
   return { ...s, score, confidence, severity: severity(score, confidence) };
 }
 
