@@ -1,19 +1,19 @@
 
 import '../../../core/pub/js/c1/contextMenu.mjs';
-import { apt, ctx } from '../../../core/pub/js/qino.js';
+import { apt, ctx, t } from '../../../core/pub/js/qino.js';
 import '../../../cms/pub/js/cms.mjs';
-import { t } from '../../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
 const Page = globalThis.qino?.cms?.nodeId;
+const blockSelector = '[qcms-edit], #qgCmsContPosMenu';
 
 const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
   icon: sysURL+'cms.frontend.2/pub/img/module_default.svg',
-  selector: '[qcms-edit], #qgCmsContPosMenu',
+  selector: blockSelector,
 });
 Menu.addItem(t`Settings`, {
   icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
-  selector: '[qcms-edit], #qgCmsContPosMenu',
+  selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -25,7 +25,7 @@ Menu.addItem(t`Settings`, {
 });
 Menu.addItem(t`Move`, {
   icon: sysURL+'cms.frontend.2/pub/img/move.svg',
-  selector: '[qcms-edit], #qgCmsContPosMenu',
+  selector: blockSelector,
   onshow() {
     this.activeEl = cms.contPos.active.el;
     this.disabled = !cms.contPos.active.isDraggable();
@@ -34,7 +34,7 @@ Menu.addItem(t`Move`, {
 });
 Menu.addItem(t`Copy`, {
   icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
-  selector: '[qcms-edit], #qgCmsContPosMenu',
+  selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -47,7 +47,7 @@ Menu.addItem(t`Copy`, {
 });
 Menu.addItem(t`Cut`, {
   icon: sysURL+'cms.frontend.2/pub/img/cut.svg',
-  selector: '[qcms-edit], #qgCmsContPosMenu',
+  selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -62,7 +62,7 @@ Menu.addItem(t`Cut`, {
 });
 Menu.addItem(t`Delete`, {
   icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
-  selector: '[qcms-edit], #qgCmsContPosMenu',
+  selector: blockSelector,
   onshow() {
     this.activeEl = cms.contPos.active.el;
     this.disabled = !cms.contPos.active.isDraggable();
