@@ -65,8 +65,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         count(*)                   AS num,
         count(DISTINCT ip)         AS num_ip,
         max(time)                  AS time,
-        sum(bot)                   AS num_bot,
-        sum(unsupported_ua)        AS num_unsupported
+        sum(CASE WHEN bot THEN 1 ELSE 0 END)            AS num_bot,
+        sum(CASE WHEN unsupported_ua THEN 1 ELSE 0 END) AS num_unsupported
       FROM m_error_report
       GROUP BY source, file, line, col
     ) g
