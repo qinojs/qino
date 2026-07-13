@@ -16,7 +16,6 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 export async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get("superuser")) return "<div></div>";
   const db = app.db;
   const set = await settings(app);
   if (vars.clearEvents) await db.query`DELETE FROM m_security_event`;

@@ -16,7 +16,6 @@ type Table = { name: string; fields: { name: string; type: string }[] };
 export async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get("superuser")) return html.raw("<div></div>");
 
   const tables = await buildSchema(app);
   const token = ctx.req.body?.csrfToken === ctx.csrfToken;

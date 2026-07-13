@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, html, type HtmlString, type App } from "../core/mod.ts";
+import { html, type HtmlString, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -28,7 +28,6 @@ async function diffFile(ns: string, lang: string, file: string, map: Record<stri
 // Namespace maps to a module dir (empty ns = core); files land in <module>/locale/<lang>.json
 async function api(node: Node, vars: any): Promise<any> {
   if (await node.access() < 2) return false;
-  if (!(await getCtx().user?.get("superuser"))) return false; // writes into module source dirs
   const preview = "preview" in vars;
   if (!preview && !("export" in vars)) return false;
 

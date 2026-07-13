@@ -17,7 +17,6 @@ type ViewKey = typeof VIEWS[number]["key"];
 export async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
-  if (!await ctx.user?.get("superuser")) return html.raw("<div></div>");
 
   const { db } = app;
   const modules = app.modules.all();
