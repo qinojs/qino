@@ -175,7 +175,8 @@ export class CMS {
       return;
     }
     if (!pidOrUrl) return;
-    if (!/^[a-z]+:/.test(pidOrUrl)) return "http://" + pidOrUrl;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(pidOrUrl)) return "http://" + pidOrUrl;
+    if (!/^(https?|mailto|tel):/i.test(pidOrUrl)) return; // drop javascript:/data: etc.
     return pidOrUrl;
   }
 
