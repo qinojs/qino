@@ -191,7 +191,7 @@ export async function itemReadDeep(item: any): Promise<unknown> {
 function itemGetIn(e: any): void {
   const schema = e.target.schema;
   if (e.value == null && schema?.default !== undefined) e.value = schema.default;
-  if (e.value == null || !schema?.type) return;
+  if (e.value == null || typeof e.value === 'object' || !schema?.type) return;
 
   const num = Number(e.value);
   if ((schema.type === 'integer' || schema.type === 'number') && !Number.isNaN(num)) {
