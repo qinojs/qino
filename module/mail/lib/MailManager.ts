@@ -109,6 +109,7 @@ export class MailManager {
     const key = JSON.stringify(config);
     if (this.#builtTransport && this.#builtKey === key) return this.#builtTransport;
 
+    await this.#builtTransport?.close?.();
     const entry = transports[config.type];
     if (!entry) throw new Error(`Unknown mail transport "${config.type}"`);
     const TransportClass = (await importUpyo(config.type))[entry.exportName] as TransportCtor | undefined;
