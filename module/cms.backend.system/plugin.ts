@@ -175,9 +175,9 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   // DB top tables
   const tables = await dbTableStats(app.db).catch(() => []);
   tables.sort((a, b) => b.bytes - a.bytes);
-  const dbRows = tables.slice(0, 3).map((tbl) => {
-    return `<tr><td>${hee(tbl.name)}<td style="text-align:right"><u2-bytes>${tbl.bytes}</u2-bytes>`;
-  }).join("");
+  const dbRows = tables.slice(0, 3).map((tbl) =>
+    `<tr><td>${hee(tbl.name)}<td style="text-align:right"><u2-bytes>${tbl.bytes}</u2-bytes>`
+  ).join("");
 
   // Cache size
   const cacheDir = app.appPATH + "cache/";
