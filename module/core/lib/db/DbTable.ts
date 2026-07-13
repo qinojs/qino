@@ -95,11 +95,10 @@ export class DbTable {
         arr[primary] = id[primary];
       }
     } else {
+      const keys = Object.keys(this.#primaries);
       const vs = String(id).split("-:-");
-      let i = 0;
-      for (const primary of Object.keys(this.#primaries)) {
-        arr[primary] = vs[i++];
-      }
+      keys.forEach((primary, i) => // last field keeps any remaining "-:-"
+        arr[primary] = i === keys.length - 1 ? vs.slice(i).join("-:-") : vs[i]);
     }
     return arr;
   }
