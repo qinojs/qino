@@ -344,7 +344,7 @@
             "default": false
           }
         },
-        "required": ["id", "basis", "offset", "value", "type", "w"]
+        "required": ["id", "basis", "offset", "type", "w"]
       }
     },
     "qg_setting_usr": {

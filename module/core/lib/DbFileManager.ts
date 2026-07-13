@@ -231,7 +231,7 @@ export class DbFile extends File {
     if (/^https?:\/\//.test(path)) {
       const remote = await fetchRemoteFile({
         url: path,
-        maxSize: Number(await this.#manager.app.settings.core.uploadMaxFileSize ?? "") || 100 * 1024 * 1024,
+        maxSize: await this.#manager.app.settings.core.uploadMaxFileSize as number,
       });
       this.path = this.#manager.directory + remote.md5;
       await moveFile(remote.tmpPath, this.path);

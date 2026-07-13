@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@nuxodin/dump@^1.5.2": "1.5.2",
     "jsr:@nuxodin/item@0.5.22": "0.5.22",
+    "jsr:@nuxodin/item@0.5.23": "0.5.23",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/cli@^1.0.31": "1.0.31",
     "jsr:@std/encoding@^1.0.11": "1.0.11",
@@ -30,6 +31,9 @@
     },
     "@nuxodin/item@0.5.22": {
       "integrity": "df03fa1154ca68d106bc8ce25d0d912c4356b9bf9322188ee1773a187b25fb11"
+    },
+    "@nuxodin/item@0.5.23": {
+      "integrity": "13f8c7ca68c3d2a989705309f7efcb6abdf55009ed41875e87a6c19f59f6bfb3"
     },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",

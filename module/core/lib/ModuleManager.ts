@@ -119,7 +119,18 @@ export class ModuleManager {
       await this.#app.db.loadTables();
     }
     // set schemas before the plugin hooks, so init()/install() already see all settings defaults
-    this.#app.settings[$item].setSchema(appSettingsSchema);
+    const root = this.#app.settings[$item];
+    root.setSchema(appSettingsSchema);
+    root.addEventListener('getIn', (e: any) => {
+      if (e.value == null) {
+        const d = e.target.schema?.default;
+        if (d !== undefined) e.value = d;
+      }
+      const type = e.target.schema?.type;
+      if (type === 'integer' && e.value != null) e.value = Number(e.value);
+      if (type === 'number' && e.value != null) e.value = parseFloat(e.value);
+      if (type === 'boolean' && e.value != null) e.value = !!e.value;
+    });
     this.#app.ctxSettingsSchema = ctxSettingsSchema;
     for (const name of order) {
       const mod = this.#modules[name];

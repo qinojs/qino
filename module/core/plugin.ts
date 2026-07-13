@@ -20,6 +20,7 @@ export const settingsSchema = {
         uploadMaxFileSize: {
             type: "integer",
             description: "Maximum file size for uploads and remote file imports in bytes.",
+            default: 100 * 1024 * 1024,
         },
         HSTS: {
             description: "Settings for the Strict-Transport-Security header.",

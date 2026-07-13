@@ -16,7 +16,7 @@ class SettingItem extends Item<SettingItem> {
     // autovivif: create if they don't exist in db
     if (this.parent && !this.data?.id) {
       const parentId = this.parent.data?.id ?? 0;
-      const result = await this.root.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${parentId}, ${this.key}, '')`;
+      const result = await this.root.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${parentId}, ${this.key}, NULL)`;
       this.data = await this.root.db.row`SELECT * FROM qg_setting WHERE id = ${result.insertId}`;
     }
 
@@ -37,7 +37,7 @@ class SettingItem extends Item<SettingItem> {
     await this.reader(); // ensure data is loaded
 
     if (typeof value !== "object" || value == null) {
-      return this.root.db.query`UPDATE qg_setting SET value = ${String(value)} WHERE id = ${this.data!.id}`;
+      return this.root.db.query`UPDATE qg_setting SET value = ${value == null ? null : String(value)} WHERE id = ${this.data!.id}`;
     }
 
     const promises = [];
