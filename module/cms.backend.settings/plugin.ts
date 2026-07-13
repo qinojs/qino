@@ -19,8 +19,7 @@ function render(_node: unknown, { ctx }: { ctx: Ctx }): string {
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const db = app.db;
-  const count = Number(await db.one`SELECT count(*) FROM qg_setting`);
+  const count = Number(await app.db.one`SELECT count(*) FROM qg_setting`);
   return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
   <tr><td>Entries:<td>${hee(String(count))}
