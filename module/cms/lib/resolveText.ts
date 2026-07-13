@@ -19,8 +19,7 @@ async function replaceLinks(app: App, pid: string): Promise<string> {
 async function replaceFileUrls(app: App, id: string): Promise<string> {
   const file = await app.dbFiles.file(Number(id));
   if (await file.exists()) {
-    const u = String(await file.get("md5") ?? "").slice(0, 5);
-    return `/dbFile/${id}/u-${u}/`;
+    return `/dbFile/${id}/u-${String(await file.get("md5") ?? "").slice(0, 5)}/`;
   }
   console.warn(`[content-issue] MissingFile dbFile://${id}`);
   return `/dbFile/${id}/`;
