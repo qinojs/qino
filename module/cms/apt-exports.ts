@@ -97,10 +97,10 @@ export async function nodeRestore(node: any): Promise<{ url: string }> {
     if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
     const fromId   = Number(await node.settings["__deleted_from"]   ?? 0);
     const beforeId = Number(await node.settings["__deleted_before"] ?? 0);
-    const ToNode   = fromId ? await ctx.app.cms.node(fromId) : null;
-    if (!ToNode || !await ToNode.access()) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
+    const toNode   = fromId ? await ctx.app.cms.node(fromId) : null;
+    if (!toNode || await toNode.access() < 2) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
     const before = beforeId ? await ctx.app.cms.node(beforeId) : null;
-    await ToNode.insertBefore(node, before);
+    await toNode.insertBefore(node, before);
     delete node.settings["__deleted_from"];
     delete node.settings["__deleted_before"];
     delete node.settings["__deleted_time"];
