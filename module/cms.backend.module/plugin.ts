@@ -157,8 +157,7 @@ function flattenApiRoutes(tree: Record<string, unknown> | undefined, prefix = ""
     const route = val && typeof val === "object" ? val as Record<string, unknown> : {};
     const methods = verbs.filter(v => route[v]);
     if (methods.length) result[path] = methods.map(m => m.toUpperCase());
-    const children = flattenApiRoutes(route, path);
-    Object.assign(result, children);
+    Object.assign(result, flattenApiRoutes(route, path));
   }
   return result;
 }
