@@ -9,7 +9,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   // Extract words from request URI for fulltext search
   const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
 
-  const possiblePages: Map<string, true> = new Map();
+  const possiblePages = new Set<string>();
 
   if (words) {
     const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
@@ -18,15 +18,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     for (const row of rows) {
       const P = await node.cms.node(row.id);
       if (!await P.access()) continue;
-      possiblePages.set(String(row.id), true);
+      possiblePages.add(String(row.id));
       if (--limit <= 0) break;
     }
   }
   // Always include the home page (id=2)
-  possiblePages.set("2", true);
+  possiblePages.add("2");
 
   let listItems = "";
-  for (const pid of possiblePages.keys()) {
+  for (const pid of possiblePages) {
     listItems += `<li>${await node.cms.link(await node.cms.node(Number(pid)))}`;
   }
 
