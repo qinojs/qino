@@ -76,11 +76,11 @@ export class MailManager {
     if (!trackId) return html;
     const base = await this.baseURL();
     if (!base) return html;
-    const track = `${trackId}-${trackCert(await this.secure(), trackId)}`;
+    const secret = await this.secure();
     const pixel = new URL("blank.gif", base);
-    pixel.searchParams.set("mail1tr", track);
+    pixel.searchParams.set("mail1tr", `${trackId}-${trackCert(secret, trackId)}`);
     html += `<img src="${hee(pixel.href)}" width="2" height="2" style="margin-top:-2px" alt="">`;
-    return html.replace(/(<a\b[^>]*\bhref=["'])([^"']+)/gi, (_m, pre, href) => pre + (this.trackURL(href, base, track) || href));
+    return html.replace(/(<a\b[^>]*\bhref=["'])([^"']+)/gi, (_m, pre, href) => pre + (this.trackURL(href, base, secret, trackId) || href));
   }
 
   async baseURL(): Promise<string> {
@@ -92,12 +92,12 @@ export class MailManager {
     } catch { return ""; }
   }
 
-  trackURL(raw: string, base: string, track: string): string | undefined {
+  trackURL(raw: string, base: string, secret: string, trackId: number): string | undefined {
     try {
       const target = new URL(raw, base);
       if (!["http:", "https:"].includes(target.protocol)) return;
       const url = new URL("mail-track", base);
-      url.searchParams.set("mail1tr", track);
+      url.searchParams.set("mail1tr", `${trackId}-${trackCert(secret, trackId, target.href)}`);
       url.searchParams.set("url", target.href);
       return url.href;
     } catch { return; }
