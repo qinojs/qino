@@ -18,12 +18,11 @@ export function aptClient(tree: AptTree): AptProxy {
           typeof branch(node[prop])?.execute === "function" ||
           typeof branch(branch(node[catchall ?? ""])?.[prop])?.execute === "function"
         )) {
-          return (body?: unknown, query?: unknown) => {
-            return invoke(tree, prop, "/" + pathSoFar.join("/"), {
+          return (body?: unknown, query?: unknown) =>
+            invoke(tree, prop, "/" + pathSoFar.join("/"), {
               input: asParams(body),
               query: asParams(query),
             });
-          };
         }
         const child = branch(node[prop]);
         if (!child) return;
