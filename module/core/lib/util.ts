@@ -28,27 +28,6 @@ export function clientIp(request: Request, peerAddr: string, hops = 0): string {
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
 
-/** Apply schema defaults and type coercion on item.js get event. */
-// deno-lint-ignore no-explicit-any
-function itemGetIn(e: any): void {
-  const schema = e.target.schema;
-  if (e.value == null && schema?.default !== undefined) e.value = schema.default;
-  if (e.value == null || !schema?.type) return;
-
-  const num = Number(e.value);
-  if ((schema.type === 'integer' || schema.type === 'number') && !Number.isNaN(num)) {
-    e.value = num;
-  } else if (schema.type === 'boolean') {
-    e.value = typeof e.value === 'string' ? !['false', '0', ''].includes(e.value) : !!e.value;
-  }
-}
-
-/** Enable schema-driven defaults on an item.js Item (attach listener for getIn events). */
-// deno-lint-ignore no-explicit-any
-export function enableItemSchemaDefaults(item: any): void {
-  item.addEventListener('getIn', itemGetIn);
-}
-
 /** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-". */
 export function u2time(t: unknown): string {
   if (t == null || t === "") return "-";
@@ -192,4 +171,25 @@ export async function itemReadDeep(item: any): Promise<unknown> {
     return data;
   }
   return item.get() ?? null;
+}
+
+/** Apply schema defaults and type coercion on item.js get event. */
+// deno-lint-ignore no-explicit-any
+function itemGetIn(e: any): void {
+  const schema = e.target.schema;
+  if (e.value == null && schema?.default !== undefined) e.value = schema.default;
+  if (e.value == null || !schema?.type) return;
+
+  const num = Number(e.value);
+  if ((schema.type === 'integer' || schema.type === 'number') && !Number.isNaN(num)) {
+    e.value = num;
+  } else if (schema.type === 'boolean') {
+    e.value = typeof e.value === 'string' ? !['false', '0', ''].includes(e.value) : !!e.value;
+  }
+}
+
+/** Enable schema-driven defaults on an item.js Item (attach listener for getIn events). */
+// deno-lint-ignore no-explicit-any
+export function enableItemSchemaDefaults(item: any): void {
+  item.addEventListener('getIn', itemGetIn);
 }
