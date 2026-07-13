@@ -101,7 +101,9 @@ export class Output extends Error {
   isJson: boolean;
   constructor(body?: unknown, { status = 200, headers = {} }: { status?: number; headers?: Record<string, string> } = {}) {
     super("output");
-    this.isJson = body !== undefined && typeof body === "object" && !(body instanceof Uint8Array) && !(body instanceof ReadableStream);
+    const isBody = body instanceof ReadableStream || body instanceof Blob || body instanceof FormData ||
+      body instanceof URLSearchParams || body instanceof ArrayBuffer || ArrayBuffer.isView(body);
+    this.isJson = body !== undefined && typeof body === "object" && !isBody;
     this.body = this.isJson ? JSON.stringify(body) : body as BodyInit;
     this.status = status;
     this.headers = headers;

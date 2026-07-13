@@ -53,6 +53,11 @@ Deno.test("util: small string helpers", () => {
   assertEquals(ensureSlash("/tmp/qino/"), "/tmp/qino/");
 });
 
+Deno.test("util: Output passes Web BodyInit objects through", async () => {
+  assertEquals(await new Output(new Blob(["abc"])).toResponse().text(), "abc");
+  assertEquals(await new Output(new URLSearchParams({ a: "b" })).toResponse().text(), "a=b");
+});
+
 Deno.test("util: contentDisposition encodes RFC 5987 reserved characters", () => {
   assertEquals(
     contentDisposition("attachment", "report (final)*'ä.txt"),
