@@ -42,7 +42,7 @@ Deno.test({
       appPATH,
       db: {},
       installed: [],
-      settings: { [$item]: { setSchema() {} } },
+      settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       fire: (event: string) => {
         events.push(event);
       },
@@ -131,7 +131,7 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     `);
 
     const app = {
-      settings: { [$item]: { setSchema() {} } },
+      settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       fire() {},
       db: {},
     };

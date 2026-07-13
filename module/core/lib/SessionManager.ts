@@ -1,5 +1,5 @@
 import { bildJsonItem, sql, type ItemProxy } from "../../../deps.ts";
-import { cookiePrefix, uid, unixTime } from "./util.ts";
+import { header, cookiePrefix, uid, unixTime } from "./util.ts";
 import type { Db } from "./db/Db.ts";
 import type { Req } from "./ctx/Req.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
@@ -70,7 +70,7 @@ export class SessionManager {
   setCookieIfNew(ctx: Ctx): void {
     if (!ctx.sess.isNew || ctx.sess.cookieSent) return;
     ctx.sess.cookieSent = true;
-    setCookie(ctx);
+    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, ctx.req.basePath, ctx.app.https));
   }
 
   async #create(): Promise<Session> {
@@ -80,13 +80,4 @@ export class SessionManager {
     if (!id) throw new Error("Could not create session");
     return new Session(this.#db, id, token, EMPTY_SESSION, true);
   }
-}
-
-
-function setCookie(ctx: Ctx): void {
-  const https = ctx.app.https;
-  const name = cookiePrefix(https, ctx.req.basePath) + COOKIE_NAME;
-  const parts = [`${name}=${ctx.sess.token}`, `Path=${ctx.req.basePath}`, "HttpOnly;SameSite=Lax"];
-  if (https) parts.push("Secure");
-  ctx.res.headers.append("Set-Cookie", parts.join("; "));
 }

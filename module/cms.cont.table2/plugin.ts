@@ -1,5 +1,5 @@
 import { WRITE, type Node } from "../cms/mod.ts";
-import { Output, contentDisposition, type Ctx } from "../core/mod.ts";
+import { Output, header, type Ctx } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
 
@@ -54,7 +54,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
     const headers = ctx.res.headers;
     headers.set("Content-Type", "application/x-msdownload");
-    headers.set("Content-Disposition", contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
+    headers.set(...header.contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
     headers.set("Expires", "0");
     headers.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
     headers.set("Pragma", "public");

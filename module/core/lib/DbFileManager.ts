@@ -6,7 +6,7 @@ import type { TransformOptions } from "./transform/mod.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
-import { contentDisposition } from "./util.ts";
+import { header } from "./util.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
 
@@ -92,7 +92,7 @@ export class DbFileManager {
 
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
-      headers.set("Content-Disposition", contentDisposition("inline", f.name));
+      headers.set(...header.contentDisposition("inline", f.name));
       headers.set("Expires", "0");
       headers.set("Cache-Control", "must-revalidate");
     }
@@ -101,7 +101,7 @@ export class DbFileManager {
       mime = "application/force-download";
       headers.set("Expires", "0");
       headers.set("Cache-Control", "private, must-revalidate");
-      headers.set("Content-Disposition", contentDisposition("attachment", f.name));
+      headers.set(...header.contentDisposition("attachment", f.name));
       headers.set("Content-Transfer-Encoding", "binary");
     }
 

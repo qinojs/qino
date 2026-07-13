@@ -3,7 +3,7 @@ import { CMS } from "./mod.ts";
 import { READ } from "./lib/access.ts";
 import { render } from "./lib/render.ts";
 export { api } from "./apt.ts";
-import { contentDisposition, Output, type App, type DbFile } from "../core/mod.ts";
+import { header, Output, type App, type DbFile } from "../core/mod.ts";
 
 export const name = "cms";
 export { healthChecks } from "./healthChecks.ts";
@@ -115,10 +115,10 @@ export function init(app: App) {
                 console.error(e);
                 throw new Output("ZIP not available", { status: 501 });
             });
-            throw new Output(stream, { headers: {
-                "Content-Type": "application/zip",
-                "Content-Disposition": contentDisposition("attachment", `files_${P}.zip`),
-            } });
+            throw new Output(stream, { headers: [
+                ["Content-Type", "application/zip"],
+                header.contentDisposition("attachment", `files_${P}.zip`),
+            ] });
         }
     });
 

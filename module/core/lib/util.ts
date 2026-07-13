@@ -2,7 +2,7 @@ import { sql, type Sql } from "../../../deps.ts";
 
 /** Single source of truth for CDN roots (version pin). */
 export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/";
-export const itemRoot = "https://jsr.io/@nuxodin/item/0.5.12/";
+export const itemRoot = "https://jsr.io/@nuxodin/item/0.5.23/";
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
@@ -12,12 +12,25 @@ export function cookiePrefix(https: boolean, appURL: string): string {
   return appURL === "/" ? "__Host-" : "__Secure-";
 }
 
-/** Safe Content-Disposition value: ASCII fallback + RFC 5987 filename* (no header injection). */
-export function contentDisposition(type: "inline" | "attachment", name: string): string {
-  const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
-  const encoded = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-  return `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`;
-}
+/** Header builders (like sql.id/html.raw): each returns a [name, value] tuple
+ *  for headers.set(...) / .append(...) or HeadersInit arrays. */
+export const header = {
+  /** Safe Content-Disposition: ASCII fallback + RFC 5987 filename* (no header injection). */
+  contentDisposition(type: "inline" | "attachment", name: string): [string, string] {
+    const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
+    const encoded = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    return ["Content-Disposition", `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`];
+  },
+  /** Secure Set-Cookie (HttpOnly, SameSite=Lax, prefix). Optional expires for persistent cookies. */
+  setCookie(name: string, value: string, basePath: string, https: boolean, expires?: string): [string, string] {
+    const fullName = cookiePrefix(https, basePath) + name;
+    const parts = [`${fullName}=${value}`, `Path=${basePath}`];
+    if (expires) parts.push(`Expires=${expires}`);
+    parts.push("HttpOnly;SameSite=Lax");
+    if (https) parts.push("Secure");
+    return ["Set-Cookie", parts.join("; ")];
+  },
+};
 
 /** Client IP. Trusts `hops` proxies from the right of x-forwarded-for; 0 = peer addr only (XFF ignored, unspoofable). */
 export function clientIp(request: Request, peerAddr: string, hops = 0): string {
@@ -97,9 +110,9 @@ export function uid(length?: number): string {
 export class Output extends Error {
   body: BodyInit | undefined;
   status: number;
-  headers: Record<string, string>;
+  headers: HeadersInit;
   isJson: boolean;
-  constructor(body?: unknown, { status = 200, headers = {} }: { status?: number; headers?: Record<string, string> } = {}) {
+  constructor(body?: unknown, { status = 200, headers = {} }: { status?: number; headers?: HeadersInit } = {}) {
     super("output");
     const isBody = body instanceof ReadableStream || body instanceof Blob || body instanceof FormData ||
       body instanceof URLSearchParams || body instanceof ArrayBuffer || ArrayBuffer.isView(body);

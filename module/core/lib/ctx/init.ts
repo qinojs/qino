@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Ctx } from "./Ctx.ts";
-import { cookiePrefix, uid, unixTime } from "../util.ts";
+import { header, cookiePrefix, uid, unixTime } from "../util.ts";
 import { authListen } from "../auth.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
@@ -35,13 +35,7 @@ async function initClient(ctx: Ctx): Promise<void> {
 
 async function registerClient(ctx: Ctx): Promise<void> {
     const hash = uid();
-
-    const https = ctx.app.https;
-    const cidName = cookiePrefix(https, ctx.req.basePath) + "cid";
-    const parts = [`${cidName}=${hash}`, `Path=${ctx.req.basePath}`, "Expires=Sat, 01 Jan 2033 00:00:00 GMT", "HttpOnly;SameSite=Lax"];
-    if (https) parts.push("Secure");
-    ctx.res.headers.append("Set-Cookie", parts.join("; "));
-
+    ctx.res.headers.append(...header.setCookie("cid", hash, ctx.req.basePath, ctx.app.https, "Sat, 01 Jan 2033 00:00:00 GMT"));
     const clientId = await ctx.app.db.table("client").insert({ hash });
     ctx.clientId = String(clientId);
 }
