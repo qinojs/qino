@@ -54,8 +54,7 @@ export class File {
 
   async getText(): Promise<string> {
     if (!await this.exists()) return "";
-    const ext = this.extension;
-    switch (ext) {
+    switch (this.extension) {
       case "csv":
       case "txt":
         return String(await this.contents());
