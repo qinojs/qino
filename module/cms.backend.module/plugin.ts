@@ -230,10 +230,10 @@ function render(node: Node): Promise<HtmlString> {
 }
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
-  const allMods = app.modules.all();
-  const total = Object.keys(allMods).length;
-  const withDb = Object.values(allMods).filter((m) => m.plugin?.dbSchema).length;
-  const withApi = Object.values(allMods).filter((m) => m.plugin?.api).length;
+  const mods = Object.values(app.modules.all());
+  const total = mods.length;
+  const withDb = mods.filter((m) => m.plugin?.dbSchema).length;
+  const withApi = mods.filter((m) => m.plugin?.api).length;
   return html.async`
 <table class="u2-table" style="white-space:nowrap">
   <tr><td>${app.t`Total`}:<td>${total}

@@ -5,8 +5,7 @@ import { tryCommand } from "./tryCommand.ts";
 let _available: boolean | null = null;
 
 export async function isFfmpegAvailable(): Promise<boolean> {
-  _available ??= await tryCommand('ffmpeg', ['-version']);
-  return _available;
+  return _available ??= await tryCommand('ffmpeg', ['-version']);
 }
 
 export function resetFfmpegCache(): void { _available = null; }

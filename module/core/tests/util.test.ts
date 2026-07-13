@@ -2,6 +2,7 @@ import { assertEquals, assertThrows, testContext } from "./deps.ts";
 import {
   HtmlString,
   Output,
+  contentDisposition,
   ensureSlash,
   hee,
   html,
@@ -56,6 +57,14 @@ Deno.test("util: Output passes Web BodyInit objects through", async () => {
   assertEquals(await new Output(new Blob(["abc"])).toResponse().text(), "abc");
   assertEquals(await new Output(new URLSearchParams({ a: "b" })).toResponse().text(), "a=b");
 });
+
+Deno.test("util: contentDisposition encodes RFC 5987 reserved characters", () => {
+  assertEquals(
+    contentDisposition("attachment", "report (final)*'ä.txt"),
+    "attachment; filename=\"report (final)*'_ä.txt\"; filename*=UTF-8''report%20%28final%29%2A%27%C3%A4.txt",
+  );
+});
+
 
 Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   const res = sqlSearchHelper(" alpha beta gamma delta epsilon ", ["title", "body"]);

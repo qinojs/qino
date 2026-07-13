@@ -15,7 +15,8 @@ export function cookiePrefix(https: boolean, appURL: string): string {
 /** Safe Content-Disposition value: ASCII fallback + RFC 5987 filename* (no header injection). */
 export function contentDisposition(type: "inline" | "attachment", name: string): string {
   const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
-  return `${type}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+  const encoded = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`;
 }
 
 /** Client IP. Trusts `hops` proxies from the right of x-forwarded-for; 0 = peer addr only (XFF ignored, unspoofable). */

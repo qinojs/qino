@@ -3,7 +3,7 @@
 import { getCtx, hee } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
-function widgetUrl(widget: string): string {
+export function widgetUrl(widget: string): string {
   return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
 }
 

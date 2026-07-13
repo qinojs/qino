@@ -41,7 +41,7 @@ function uaInfo(ua: string): { browser: string; version: string; bot: boolean } 
 const toUnix = (v: string): number => {
   if (/^\d+$/.test(v)) return Number(v);
   const ms = Date.parse(v);
-  return Number.isNaN(ms) ? 0 : Math.floor(ms / 1000);
+  return isNaN(ms) ? 0 : Math.floor(ms / 1000);
 };
 
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first

@@ -44,6 +44,7 @@ class FakeNode {
     }
     return new TextObj(this.id * 10, this.titleValue);
   }
+  async showTitle() { return new TextObj(this.id * 10, this.titleValue); }
   async text(name: string, lang?: string, value?: string) {
     if (value !== undefined) {
       this.texts[name] = `${lang}:${value}`;

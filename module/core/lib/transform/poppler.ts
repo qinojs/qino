@@ -5,8 +5,7 @@ import { tryCommand } from "./tryCommand.ts";
 let _available: boolean | null = null;
 
 export async function isPdftotextAvailable(): Promise<boolean> {
-  _available ??= await tryCommand('pdftotext', ['-v']);
-  return _available;
+  return _available ??= await tryCommand('pdftotext', ['-v']);
 }
 
 export function resetPdftotextCache(): void { _available = null; }

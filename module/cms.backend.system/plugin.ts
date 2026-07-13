@@ -158,7 +158,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   for (const [type, checks] of Object.entries(types)) {
     for (const checkFn of Object.values(checks)) {
       let result;
-      try { result = await (checkFn as () => Promise<unknown>)(); } catch { continue; }
+      try { result = await checkFn(); } catch { continue; }
       if (!result) continue;
       if (type === "error") errors++;
       else if (type === "warning") warnings++;

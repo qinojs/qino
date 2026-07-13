@@ -1,5 +1,4 @@
-import { Item } from "../../../deps.ts";
-import { sql } from "../../../deps.ts";
+import { Item, sql } from "../../../deps.ts";
 import type { Db } from "./db/Db.ts";
 
 class SettingItem extends Item<SettingItem> {
@@ -17,8 +16,7 @@ class SettingItem extends Item<SettingItem> {
     // autovivif: create if they don't exist in db
     if (this.parent && !this.data?.id) {
       const parentId = this.parent.data?.id ?? 0;
-      const offset = this.key;
-      const result = await this.root.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${parentId}, ${offset}, '')`;
+      const result = await this.root.db.exec`INSERT INTO qg_setting (basis, ${sql.id("offset")}, value) VALUES (${parentId}, ${this.key}, '')`;
       this.data = await this.root.db.row`SELECT * FROM qg_setting WHERE id = ${result.insertId}`;
     }
 

@@ -114,7 +114,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const levelLimit = Number(levelLimitSetting || 0);
     if (levelLimit && level >= levelLimit) return "";
 
-    if (pathOnly && level > 0 && !(await ActivePage?.in(CurPage))) return "";
+    if (pathOnly && level > 0 && !(await ActivePage.in(CurPage))) return "";
 
     level++;
     let str = `<ul class="cmsChilds${CurPage}">`;
@@ -122,7 +122,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       const childStr = await getUl(ChildPage);
 
       const childPage = await ChildPage.page();
-      const isInside = ActivePage ? await ActivePage.in(childPage) : false;
+      const isInside = await ActivePage.in(childPage);
       const isActive = ActivePage === childPage;
       const hasSub = childStr !== undefined;
       const isOnline = await ChildPage.isOnline();

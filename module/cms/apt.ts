@@ -1,8 +1,4 @@
 // deno-lint-ignore-file no-explicit-any
-/**
- * cms/apt.ts — apt action tree for the cms module.
- * Complete port of all routes from apt-exports.ts.
- */
 
 import { s, Access, AccessError, ConflictError, NotFoundError, itemReadDeep, type Ctx } from "../core/mod.ts";
 import { $item } from "../../deps.ts";
@@ -14,43 +10,6 @@ const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx
 const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
 const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
-
-// ───── Helpers ────────────────────────────────────────────────────────────
-
-async function slimTree(node: Node): Promise<any> {
-  const title = String(await (await node.title()).string() ?? "").trim();
-  const children = [
-    ...(await node.children({ type: "p" })).values(),
-  ];
-  const entry: any = { id: Number(node.id), title: title || "-" };
-  const childNodes = [];
-  for (const child of children) {
-    if ((await child.access()) >= 1) childNodes.push(await slimTree(child));
-  }
-  if (childNodes.length) entry.children = childNodes;
-  return entry;
-}
-
-async function contentBlocks(node: Node): Promise<any[]> {
-  const contents = [
-    ...(await node.children({ type: "c" })).values(),
-  ];
-  const entries = [];
-  for (const content of contents) {
-    if ((await content.access()) < 1) continue;
-    const title = String(await (await content.title()).string() ?? "").trim();
-    const entry: any = {
-      id: Number(content.id),
-      module: String(content.vs?.module ?? ""),
-      name: content.vs?.name ?? undefined,
-    };
-    if (title) entry.title = title;
-    const children = await contentBlocks(content);
-    if (children.length) entry.children = children;
-    entries.push(entry);
-  }
-  return entries;
-}
 
 // ───── Node ───────────────────────────────────────────────────────────────
 
@@ -68,7 +27,7 @@ const node = {
   get: {
     description: "Read node as JSON",
     ...nodeRead,
-    execute: ({ node }: { node: Node }) => fns.nodeToJson(node.id),
+    execute: ({ node }: { node: Node }) => fns.nodeToJson(node),
   },
 
   delete: {
@@ -87,7 +46,15 @@ const node = {
     get: {
       description: "Read page tree from this node (id and title only)",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => slimTree(node),
+      execute: async ({ node }: { node: Node }) => (await fns.treeToJson({
+        node,
+        self: true,
+        type: "p",
+        entry: async (n) => ({
+          id: Number(n.id),
+          title: String(await n.showTitle()).trim() || "-",
+        }),
+      }))[0],
     },
   },
 
@@ -100,7 +67,7 @@ const node = {
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
       execute: ({ node, filter, level }: any) =>
-        fns.cmsGetTree(node.id, { filter: filter ?? "*", level: level ?? 0 }),
+        fns.tree(node.id, { filter: filter ?? "*", level: level ?? 0 }),
     },
   },
 
@@ -273,7 +240,7 @@ const node = {
         const child = await node.cms.node(id);
         await child.title(ctx.lang, title);
         await child.changeUser(ctx.user!, 3);
-        return fns.nodeToJson(id);
+        return fns.nodeToJson(child);
       },
     },
   },
@@ -290,7 +257,7 @@ const node = {
         });
         if (!copied) throw new AccessError();
         await copied.changeUser(ctx.user, 3);
-        const titleStr = String(await (await copied.title()).string() ?? "").trim();
+        const titleStr = String(await copied.showTitle()).trim();
         await copied.title(ctx.lang, titleStr ? titleStr + " (copy)" : "");
         return { id: String(copied.id) };
       },
@@ -319,7 +286,16 @@ const node = {
     get: {
       description: "Read content blocks of this node (id, module, name, children)",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => contentBlocks(node),
+      execute: ({ node }: { node: Node }) => fns.treeToJson({
+        node,
+        type: "c",
+        entry: async (n) => ({
+          id: Number(n.id),
+          module: String(n.vs?.module ?? ""),
+          name: n.vs?.name ?? undefined,
+          title: String(await n.showTitle()).trim() || undefined,
+        }),
+      }),
     },
 
     post: {
@@ -513,7 +489,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any, ctx: Ctx) => {
-        if (await fns.cmsRequestUsed(url)) throw new Error("URL already in use");
+        if (await fns.requestUsed(url)) throw new Error("URL already in use");
         await ctx.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${url}, ${node.id})`;
         return { ok: true };
       },
@@ -590,7 +566,7 @@ export const api = {
         level: s.optional(s.number()).describe("Max depth (0 = unlimited)"),
       }),
       execute: ({ filter, level }: any) =>
-        fns.cmsGetTree(0, { filter: filter ?? "*", level: level ?? 0 }),
+        fns.tree(0, { filter: filter ?? "*", level: level ?? 0 }),
     },
   },
 
@@ -599,7 +575,7 @@ export const api = {
       description: "Search nodes by title",
       access: Access.USER,
       input: s.object({ q: s.string().describe("Search query") }),
-      execute: ({ q }: any) => fns.cmsSearchNodes(q),
+      execute: ({ q }: any) => fns.searchNodes(q),
     },
   },
 
@@ -608,7 +584,7 @@ export const api = {
       description: "Search files",
       access: Access.USER,
       input: s.object({ q: s.string().describe("Search query") }),
-      execute: ({ q }: any) => fns.cmsSearchFiles(q),
+      execute: ({ q }: any) => fns.searchFiles(q),
     },
   },
 
@@ -633,7 +609,7 @@ export const api = {
       description: "Check if a URL is already used as a redirect",
       access: Access.USER,
       input: s.object({ url: s.string() }),
-      execute: ({ url }: any) => fns.cmsRequestUsed(url).then((used) => ({ used })),
+      execute: ({ url }: any) => fns.requestUsed(url).then((used) => ({ used })),
     },
   },
 

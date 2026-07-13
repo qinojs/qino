@@ -5,8 +5,7 @@ import { tryCommand } from "./tryCommand.ts";
 let _available: boolean | null = null;
 
 export async function isPandocAvailable(): Promise<boolean> {
-  _available ??= await tryCommand('pandoc', ['--version']);
-  return _available;
+  return _available ??= await tryCommand('pandoc', ['--version']);
 }
 
 export function resetPandocCache(): void { _available = null; }

@@ -1,6 +1,5 @@
-import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
+import { bildJsonItem, sql, type ItemProxy } from "../../../deps.ts";
 import { cookiePrefix, uid, unixTime } from "./util.ts";
-import { sql } from "../../../deps.ts";
 import type { Db } from "./db/Db.ts";
 import type { Req } from "./ctx/Req.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
@@ -23,10 +22,9 @@ export class Session {
     this.id = String(sessId);
     this.token = token;
     this.isNew = isNew;
-    const root = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
+    this.data = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
       await this.#db.exec`UPDATE sess SET data = ${json} WHERE id = ${this.id}`;
-    }, { debounce: 0 });
-    this.data = root.proxy;
+    }, { debounce: 0 }).proxy;
   }
 
   /** Debounced per-session write of last access time and current user. */

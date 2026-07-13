@@ -22,9 +22,9 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   if (!resp.body) throw new Error("Remote file has no body");
   const file = await saveStream(resp.body, { prefix: "remote-", maxSize: opt.maxSize });
 
-  const m = (resp.headers.get("content-disposition") ?? "").match(/filename="([^"]+)"/);
+  const m = resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/);
   const name = (m?.[1] ?? new URL(opt.url).pathname.split("/").pop() ?? "file").replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
-  const type = (resp.headers.get("content-type") ?? "").replace(/;.*/, "") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "";
+  const type = resp.headers.get("content-type")?.replace(/;.*/, "") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "";
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 
@@ -86,7 +86,7 @@ export async function safeFetch(url: string, init?: RequestInit, maxRedirects = 
   await assertNoSSRF(url);
   init = { ...init, signal: init?.signal ?? AbortSignal.timeout(15000) };
   const resp = await fetch(url, { ...init, redirect: "manual" });
-  if (resp.status >= 300 && resp.status < 400) {
+  if ([301, 302, 303, 307, 308].includes(resp.status)) {
     const location = resp.headers.get("location");
     resp.body?.cancel().catch(() => {}); // don't leak the redirect body
     if (!location || maxRedirects <= 0) throw new Error("Too many redirects");
