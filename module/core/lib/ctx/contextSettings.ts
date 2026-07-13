@@ -1,7 +1,6 @@
-// deno-lint-ignore-file no-explicit-any
-
 import type { Db } from "../db/Db.ts";
 import { bildJsonItem } from "../../../../deps.ts";
+import { enableItemSchemaDefaults } from "../util.ts";
 
 async function buildRoot(
     load: () => Promise<string | null | undefined>,
@@ -9,7 +8,10 @@ async function buildRoot(
     schema?: any,
 ): Promise<any> {
     const root = bildJsonItem(await load(), save, {debounce:0});
-    if (schema) root.setSchema(schema);
+    if (schema) {
+        root.setSchema(schema);
+        enableItemSchemaDefaults(root);
+    }
     return root;
 }
 

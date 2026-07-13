@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
 import type { App } from "./App.ts";
+import { enableItemSchemaDefaults } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 
@@ -121,16 +122,7 @@ export class ModuleManager {
     // set schemas before the plugin hooks, so init()/install() already see all settings defaults
     const root = this.#app.settings[$item];
     root.setSchema(appSettingsSchema);
-    root.addEventListener('getIn', (e: any) => {
-      if (e.value == null) {
-        const d = e.target.schema?.default;
-        if (d !== undefined) e.value = d;
-      }
-      const type = e.target.schema?.type;
-      if (type === 'integer' && e.value != null) e.value = Number(e.value);
-      if (type === 'number' && e.value != null) e.value = parseFloat(e.value);
-      if (type === 'boolean' && e.value != null) e.value = !!e.value;
-    });
+    enableItemSchemaDefaults(root);
     this.#app.ctxSettingsSchema = ctxSettingsSchema;
     for (const name of order) {
       const mod = this.#modules[name];
