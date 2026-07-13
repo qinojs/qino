@@ -82,9 +82,7 @@ async function versionThumb(app: App, fileId: number, row: any): Promise<string 
         const { path, mime } = await File.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
         const buf = await Deno.readFile(path);
         return `data:${mime};base64,${btoa(String.fromCharCode(...buf))}`;
-    } catch {
-        return;
-    }
+    } catch {}
 }
 
 function niceDate(ts: number): string {
