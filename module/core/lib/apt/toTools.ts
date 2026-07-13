@@ -32,11 +32,10 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
       }
     }
 
-    const hasParams = Object.keys(properties).length > 0;
     tools.push({
       name: r.name,
       description: r.verb.description ?? r.name,
-      parameters: hasParams ? { type: "object", properties, required } : {},
+      parameters: Object.keys(properties).length ? { type: "object", properties, required } : {},
       execute: (args) => {
         const raw = { ...asParams(args) };
         for (const [name, schema] of routeParams(r)) if (schema && name in raw) raw[name] = coerce(raw[name], schema);
