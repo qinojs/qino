@@ -167,24 +167,16 @@ cms.fileBrowser = class {
         for (const item of result) {
           if (has[item.id]) continue;
           const el = c1.dom.fragment(
-            '<label data-type=dbFile itemid="'+item.id+'">'+
-            '  <input type="checkbox" style="position:absolute; top:8px; left:8px">'+
-            '  <div class=-title>'+
-            item.name+
-            '  </div>'+
-            '</label>'
+            `<label data-type=dbFile>
+              <div class=-ext style="position:absolute; inset:0; display:flex; justify-content:center; align-items:center; font-size:3.6em; color:#fff"></div>
+              <input type=checkbox style="position:absolute; top:.8em; left:.8em">
+              <div class=-title></div>
+            </label>`
           ).firstChild;
-          if (item.mime.includes('image/')) {
-            el.style.backgroundImage = 'url("'+item.url+'/w-180/h-130/max/image")';
-          } else {
-            el.prepend(
-              c1.dom.fragment(
-                '<div style="position:absolute; inset:0; display:flex; justify-content: center; align-items: center; font-size:3.6em; color:#fff">'+
-                item.name.replace(/.*\.([^.]+)$/,'$1').slice(-4).toUpperCase()+
-                '</div>'
-              )
-            )
-          }
+          el.setAttribute('itemid', item.id);
+          el.querySelector('.-title').textContent = item.name;
+          if (item.mime.includes('image/')) el.style.backgroundImage = 'url("'+item.url+'")';
+          else el.querySelector('.-ext').textContent = item.name.replace(/.*\.([^.]+)$/,'$1').slice(-4).toUpperCase();
           list.append(el);
         }
       });

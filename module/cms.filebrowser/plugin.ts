@@ -82,7 +82,7 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
     res[md5] ||= {
       id: vs.id,
       mime: vs.mime,
-      url: await dbFile.url({}),
+      url: await dbFile.url({width: 180, height: 130, max: true}),
       name: dbFile.name,
       pages: {} as Record<string, string>,
     };
