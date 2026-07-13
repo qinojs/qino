@@ -31,6 +31,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
   if ("delete_not_used" in vars) {
     const cond = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " AND ");
     await db.query`DELETE FROM smalltext WHERE count = 0 AND ${cond}`;
+    node.app.languages.clear();
     return true;
   }
 
@@ -43,6 +44,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
     const { hash, ns, lang, value } = vars.save_lang;
     if (!langs.includes(String(lang))) return false;
     await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${String(value)} WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
+    node.app.languages.clear();
     return true;
   }
 
@@ -62,12 +64,14 @@ export default async function api(node: Node, vars: any): Promise<any> {
         count++;
       }
     }
+    node.app.languages.clear();
     return { translated: count };
   }
 
   if ("delete_entry" in vars) {
     const { hash, ns } = vars.delete_entry;
     await db.query`DELETE FROM smalltext WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
+    node.app.languages.clear();
     return true;
   }
 
@@ -86,6 +90,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
       await db.query`UPDATE smalltext SET ${sql.id(targetLang)} = ${translated} WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
       count++;
     }
+    node.app.languages.clear();
     return { translated: count };
   }
 

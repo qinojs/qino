@@ -92,6 +92,9 @@ export class LangManager {
     return currentLang;
   }
 
+  // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
+  clear(): void { this.#txtsCache = {}; }
+
   async #getTxts(ns: string, l: string): Promise<Record<string, string>> {
     const key = `${l}::${ns}`;
     // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
@@ -154,7 +157,7 @@ export class LangManager {
       if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
       await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
     }
-    delete this.#txtsCache[`${lang}::${ns}`]; // imported rows must be visible on the next lookup
+    this.clear(); // imported rows must be visible on the next lookup
   }
 
 }
