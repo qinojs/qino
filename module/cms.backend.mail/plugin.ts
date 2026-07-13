@@ -32,10 +32,9 @@ function render(node: Node): Promise<HtmlString> {
 async function renderOverview(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const { t, db } = node.app;
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
   const search = String(ctx.req.query.search ?? "").trim();
 
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && isSuperuser) {
+  if (ctx.req.body?.csrfToken === ctx.csrfToken) {
     if ("delete_all" in ctx.req.body) {
       await db.query`DELETE FROM mail`;
     }
@@ -45,7 +44,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   }
 
   const rows = await listRows(node, search);
-  const superuserActions = isSuperuser ? await html.async`
+  const actions = await html.async`
     <form method=post style="display:inline">
       ${hiddenToken(ctx.csrfToken)}
       <button name=delete_all u2-confirm="${t`Really delete all?`}">${t`Delete all`}</button>
@@ -53,7 +52,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     <form method=post style="display:inline">
       ${hiddenToken(ctx.csrfToken)}
       <button name=delete_before1year u2-confirm="${t`Really delete all older than 1 year?`}">${t`Delete older than 1 year`}</button>
-    </form>` : "";
+    </form>`;
 
   return html.async`<div class=u2-card>
   <div class=-head>${t`E-Mails`}</div>
@@ -63,7 +62,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
       <input type=search name=search value="${search}" placeholder="${t`Search...`}">
       <button>${t`Search`}</button>
     </form>
-    ${superuserActions ? html`<div style="margin-top:10px">${superuserActions}</div>` : ""}
+    <div style="margin-top:10px">${actions}</div>
   </div>
   <div style="max-height:85vh; overflow:auto; padding:0">
     <table class=u2-table style="white-space:nowrap">
