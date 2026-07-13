@@ -179,7 +179,6 @@ class CmsTextService {
         const result = await resp.json();
         const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {
-            console.log(await st["translate char count"]);
             const prev = Number(await st["translate char count"] ?? "0");
             st["translate char count"](prev + text.length);
         }
