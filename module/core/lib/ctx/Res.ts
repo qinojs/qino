@@ -8,9 +8,9 @@ import { ResHtml } from "./ResHtml.ts";
  */
 export class Res {
   status = 200;
-  headers: Headers = new Headers();
+  headers = new Headers();
   body: BodyInit | undefined = "";
-  csp: ResCsp = new ResCsp();
+  csp = new ResCsp();
 
   #html: ResHtml | null = null;
   get html(): ResHtml { return this.#html ??= new ResHtml(); }
