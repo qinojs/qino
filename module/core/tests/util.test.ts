@@ -52,6 +52,11 @@ Deno.test("util: small string helpers", () => {
   assertEquals(ensureSlash("/tmp/qino/"), "/tmp/qino/");
 });
 
+Deno.test("util: Output passes Web BodyInit objects through", async () => {
+  assertEquals(await new Output(new Blob(["abc"])).toResponse().text(), "abc");
+  assertEquals(await new Output(new URLSearchParams({ a: "b" })).toResponse().text(), "a=b");
+});
+
 Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
   const res = sqlSearchHelper(" alpha beta gamma delta epsilon ", ["title", "body"]);
   const [whereSql, whereParams] = fakeRender(res.where, []);
