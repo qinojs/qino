@@ -81,7 +81,7 @@ const showEditor = async el => {
       body +=
             '<div class=-language style="padding:1rem; min-width:15rem; border-right:1px solid">'+
                 '<div style="display:flex; align-items:end; margin-bottom:.5rem">'+
-                    '<h2 style="margin:0 auto 0 0" title="'+hee(row.email)+'">'+date+'</h2> '+
+                    '<h2 style="margin:0 auto 0 0" title="'+hee(row.email ?? '')+'">'+date+'</h2> '+
                     '<button class=-restore style="white-space:nowrap">restore</button>'+
                 '</div>'+
                 '<div cmstxt='+tid+' cmslang="'+lang+'" style="min-height:2em; flex:1; border:2px solid var(--cms-dark); overflow:auto; padding:.2rem; max-height:70vh;">'+
