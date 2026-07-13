@@ -6,8 +6,7 @@ let _available: boolean | null = null;
 let _langs: Promise<string> | null = null;
 
 export async function isTesseractAvailable(): Promise<boolean> {
-  _available ??= await tryCommand('tesseract', ['--version']);
-  return _available;
+  return _available ??= await tryCommand('tesseract', ['--version']);
 }
 
 export function resetTesseractCache(): void { _available = null; _langs = null; }
