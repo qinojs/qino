@@ -17,9 +17,8 @@ export class DbTextManager {
   get app(): App { return this.#app; }
 
   text(id: number | string): DbText {
-    const key = String(id);
     const cache = scopeCache(this.#cache, "dbTexts", () => ({} as Record<string, DbText>));
-    return cache[key] ??= new DbText(this, id);
+    return cache[String(id)] ??= new DbText(this, id);
   }
 
   clearCache(id?: number | string) {
