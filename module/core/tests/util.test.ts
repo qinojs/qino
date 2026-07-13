@@ -91,6 +91,8 @@ Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () =
   assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/../mod.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/../../deps.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/qg/custom/pub/../mod.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/m/../pub/main.css"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/qg/../pub/main.css"), null);
   assertEquals(ctx.urlToLocalPath("http://h/other/main.css"), null);
 });
 

@@ -95,15 +95,18 @@ export function urlToLocalPath(url: string | URL, appURL: string, app: App): str
   return null;
 }
 
+// module/qg segment must be a plain name, never "."/".." (would shift the served root)
+const safeSeg = (s: string) => s !== "." && s !== ".." ? s : null;
+
 function appRequestPathToLocalPath(appRequestPath: string, app: App): string | null {
   const matchM = appRequestPath.match(/^m\/([^/]+)\/pub\/(.*)/);
-  if (matchM) {
+  if (matchM && safeSeg(matchM[1])) {
     const mod = app.modules.get(matchM[1]);
     const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
     return pubPath(base, matchM[2]);
   }
   const matchQg = appRequestPath.match(/^qg\/([^/]+)\/pub\/(.*)/);
-  return matchQg ? pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]) : null;
+  return matchQg && safeSeg(matchQg[1]) ? pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]) : null;
 }
 
 function pubPath(root: string, file: string): string | null {
