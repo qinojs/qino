@@ -22,10 +22,9 @@ export class Session {
     this.id = String(sessId);
     this.token = token;
     this.isNew = isNew;
-    const root = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
+    this.data = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
       await this.#db.exec`UPDATE sess SET data = ${json} WHERE id = ${this.id}`;
-    }, { debounce: 0 });
-    this.data = root.proxy;
+    }, { debounce: 0 }).proxy;
   }
 
   /** Debounced per-session write of last access time and current user. */
