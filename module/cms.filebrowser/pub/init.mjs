@@ -144,7 +144,8 @@ cms.fileBrowser = class {
       return items;
     }
 
-    dialog.querySelector('[type=search]').addEventListener('input', c1.debounce(e => search(e.target.value), 600));
+    const searchInput = dialog.querySelector('[type=search]');
+    searchInput.addEventListener('input', c1.debounce(() => search(searchInput.value), 600));
 
     dialog.querySelector('.-browse').addEventListener('click', async () => {
       const files = await c1.form.fileDialog({ accept:this.options.accept, multiple:this.options.multiple });
