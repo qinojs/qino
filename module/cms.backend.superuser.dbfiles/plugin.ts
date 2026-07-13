@@ -171,7 +171,6 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const get = ctx.req.query;
 
   const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
-  console.log(row)
   if (!row) return html.async`<div>${app.t`File not found`}</div>`;
 
   const f = await fm.file(id, row);
