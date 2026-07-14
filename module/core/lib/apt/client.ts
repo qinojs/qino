@@ -5,9 +5,9 @@ import { VERB_SET, type AptTree, type Method, type Params } from "./types.ts";
 export type AptProxy ={ [key: string]: AptProxy } & ((...args: unknown[]) => AptProxy) & { [K in Method]: (params?: Params) => Promise<unknown> };
 
 type Branch = Record<string, unknown>;
-const branch = (v: unknown): Branch | undefined => v && typeof v === "object" ? v as Branch : undefined;
+const branch = (v: unknown) => v && typeof v === "object" ? v as Branch : undefined;
 
-export function aptClient(tree: AptTree): AptProxy {
+export function aptClient(tree: AptTree) {
   function buildProxy(node: Branch, pathSoFar: string[]): AptProxy {
     const target = function () {} as unknown as AptProxy;
     return new Proxy(target, {
