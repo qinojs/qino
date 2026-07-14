@@ -20,7 +20,6 @@ async function render(node: Node): Promise<string> {
   // ── server info ────────────────────────────────────────────────────────
 
   const mem = Deno.memoryUsage();
-  const pid = Deno.pid;
   const appUptimeSec = performance.now() / 1000;
   const osUptimeSec = Deno.osUptime(); // requires --allow-sys
   const load = Deno.loadavg();
@@ -34,7 +33,7 @@ async function render(node: Node): Promise<string> {
   <div class=-body style="padding:0">
     <table class="u2-table" style="white-space:nowrap">
       <tr><td>${await t`Deno Version`}:<td>${hee(Deno.version.deno)}
-      <tr><td>${await t`PID`}:<td>${hee(pid)}
+      <tr><td>${await t`PID`}:<td>${hee(Deno.pid)}
       <tr><td>${await t`App Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
       <tr><td>${await t`Server Uptime`}:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
       <tr><td>${await t`System Load`}:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
