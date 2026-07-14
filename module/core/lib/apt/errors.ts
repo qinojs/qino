@@ -3,8 +3,8 @@ import type { StandardIssue } from "../StandardSchema.ts";
 export class AptError extends Error {
   #status: number;
   #issues: readonly StandardIssue[] | undefined;
-  get status(): number { return this.#status; }
-  get issues(): readonly StandardIssue[] | undefined { return this.#issues; }
+  get status() { return this.#status; }
+  get issues() { return this.#issues; }
 
   constructor(status: number, message: string, issues?: readonly StandardIssue[]) {
     super(message);
