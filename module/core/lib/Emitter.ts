@@ -5,11 +5,11 @@ type Listener<T> = (data: T) => void | Promise<void>;
 export class Emitter<Events extends Record<string, unknown>> {
     #events: { [K in keyof Events]?: Listener<Events[K]>[] } = {};
 
-    on<K extends string & keyof Events>(name: K, fn: Listener<Events[K]>): void {
+    on<K extends string & keyof Events>(name: K, fn: Listener<Events[K]>) {
         (this.#events[name] ??= []).push(fn);
     }
 
-    async fire<K extends string & keyof Events>(name: K, data: Events[K] = {} as Events[K]): Promise<void> {
+    async fire<K extends string & keyof Events>(name: K, data: Events[K] = {} as Events[K]) {
         for (const fn of this.#events[name] ?? []) await fn(data);
     }
 }
