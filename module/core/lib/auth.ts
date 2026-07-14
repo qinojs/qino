@@ -70,7 +70,7 @@ export async function logout(ctx: Ctx): Promise<void> {
   await ctx.app.fire("logout");
 }
 
-export function pwHash(pw: string) {
+export function pwHash(pw: string): Promise<string> {
   return bcrypt.hash(pw, 10);
 }
 
