@@ -12,20 +12,20 @@ export class ReqUrl {
     Object.freeze(this);
   }
 
-  get href(): string { return this.#url.href; }
-  get origin(): string { return this.#url.origin; }
-  get protocol(): string { return this.#url.protocol; }
-  get host(): string { return this.#url.host; }
-  get hostname(): string { return this.#url.hostname; }
-  get port(): string { return this.#url.port; }
-  get pathname(): string { return this.#url.pathname; }
-  get search(): string { return this.#url.search; }
-  get hash(): string { return this.#url.hash; }
+  get href() { return this.#url.href; }
+  get origin() { return this.#url.origin; }
+  get protocol() { return this.#url.protocol; }
+  get host() { return this.#url.host; }
+  get hostname() { return this.#url.hostname; }
+  get port() { return this.#url.port; }
+  get pathname() { return this.#url.pathname; }
+  get search() { return this.#url.search; }
+  get hash() { return this.#url.hash; }
 
   /** Independent, mutable native `URL` copy. */
-  toURL(): URL { return new URL(this.#url); }
+  toURL() { return new URL(this.#url); }
 
-  toString(): string { return this.#url.href; }
-  toJSON(): string { return this.#url.href; }
-  [Symbol.toPrimitive](): string { return this.#url.href; }
+  toString() { return this.#url.href; }
+  toJSON() { return this.#url.href; }
+  [Symbol.toPrimitive]() { return this.#url.href; }
 }
