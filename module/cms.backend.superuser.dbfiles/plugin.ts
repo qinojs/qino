@@ -126,14 +126,25 @@ async function runAction(node: Node, doName: string): Promise<HtmlString | strin
   return "";
 }
 
+async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
+  const fm = node.app.dbFiles;
+  if (vars.delete) { await (await fm.file(Number(vars.delete))).remove(); return { done: true }; }
+  if (vars.id != null) {
+    const f = await fm.file(Number(vars.id));
+    if (vars.set_name != null)   await f.setVs({ name: String(vars.set_name) });
+    if (vars.set_public != null) await f.setVs({ access: vars.set_public ? 1 : 0 });
+    if (vars.set_mime != null)   await f.setVs({ mime: String(vars.set_mime) });
+    return { done: true };
+  }
+  return false;
+}
+
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
-  const { dbFiles: fm } = app;
   const get = ctx.req.query;
 
   if (get.id) return renderDetail(node, Number(get.id));
-  if (vars.delete) await (await fm.file(Number(vars.delete))).remove();
 
   const message = vars.do ? await runAction(node, String(vars.do)) : "";
   const orderOpts = html.join(ORDERS.map(o => html`<option>${o}`));
@@ -168,16 +179,11 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const app = node.app;
 
   const { db, dbFiles: fm } = app;
-  const get = ctx.req.query;
 
   const row = await db.row`SELECT * FROM file WHERE id = ${id}`;
   if (!row) return html.async`<div>${app.t`File not found`}</div>`;
 
   const f = await fm.file(id, row);
-  if (get.set_name)   await f.setVs({ name: get.set_name });
-  if (get.set_public) await f.setVs({ access: get.set_public ? 1 : 0 });
-  if (get.set_mime)   await f.setVs({ mime: get.set_mime });
-
   const exists = await f.exists();
 
   const linkParts = await Promise.all(fileChildren(node).map(async (Field: DbField) => {
@@ -197,7 +203,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 <div class="u2-flex">
 
   <div class=u2-flex style="flex-direction:column; ">
-    <div class="u2-card" style="flex:0 0 auto">
+    <div class="u2-card" style="flex:0 0 auto" data-file-id="${row.id}">
       <div class="-head">${row.name??""}</div>
       ${!exists ? html.async`<div class="-body" style="color:red">${app.t`file missing on disk!`}</div>` : ""}
       <table class="u2-table -Fields">
@@ -277,4 +283,12 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { list } } };
+export const cms = {
+  node: {
+    css: ["pub/main.css"],
+    js: ["pub/main.js"],
+    render,
+    parts: { list },
+    api,
+  },
+};
