@@ -37,12 +37,12 @@ export class Module {
     this.#url = url;
     this.#path = path;
   }
-  get name(): string { return this.#plugin.name; }
-  get plugin(): Plugin { return this.#plugin; }
-  get url(): string { return this.#url; }
-  get path(): string | undefined { return this.#path; }
-  get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
-  toString(): string { return this.name; }
+  get name() { return this.#plugin.name; }
+  get plugin() { return this.#plugin; }
+  get url() { return this.#url; }
+  get path() { return this.#path; }
+  get dir() { return this.path?.replace(/\/[^/]+$/, "/"); }
+  toString() { return this.name; }
 }
 
 async function fileExists(path: string): Promise<boolean> {
