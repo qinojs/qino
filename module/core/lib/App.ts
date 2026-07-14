@@ -14,7 +14,7 @@ import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
 import { initRequest } from "./ctx/init.ts";
 
-const mainDir: string = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
 const defaultConfig = {
     appPATH: mainDir,
@@ -190,7 +190,7 @@ export class App extends Emitter<AppEvents> {
         if (!file || file.includes("\0")) throw new Output("invalid path", { status: 400 });
         const resolved = nodePath.resolve(file);
         if (resolved !== nodePath.normalize(file) && resolved !== file) throw new Output("invalid path", { status: 400 });
-        const roots: string[] = [nodePath.resolve(this.appPATH)];
+        const roots = [nodePath.resolve(this.appPATH)];
         for (const mod of Object.values(this.modules.all())) {
             if (mod.dir) roots.push(nodePath.resolve(mod.dir));
         }
