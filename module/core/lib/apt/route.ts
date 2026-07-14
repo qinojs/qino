@@ -10,10 +10,10 @@ export interface Route {
 }
 
 export const shapeOf = (schema?: StandardSchema): Record<string, StandardSchema> => schema?.shape ?? {};
-export const isCatchall = (seg: string): boolean => isParam(seg) && seg.endsWith("*");
-export const paramName = (seg: string): string => seg.slice(1).replace(/\*$/, "");
+export const isCatchall = (seg: string) => isParam(seg) && seg.endsWith("*");
+export const paramName = (seg: string) => seg.slice(1).replace(/\*$/, "");
 
-const isParam = (seg: string): boolean => seg.startsWith(":");
+const isParam = (seg: string) => seg.startsWith(":");
 
 export function routeParams(r: Route): [string, StandardSchema | undefined, string][] {
   return r.segments.flatMap((seg, i) =>
@@ -34,12 +34,12 @@ export function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] =
   }
 }
 
-export function camelName(verb: Method, segments: string[]): string {
+export function camelName(verb: Method, segments: string[]) {
   const parts = [verb, ...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s])];
   return parts.map((p) => p.replace(/[-.]([a-z])/g, (_, c) => c.toUpperCase())).join("_");
 }
 
-export function checkCollisions(r: Route): void {
+export function checkCollisions(r: Route) {
   const seen = new Map<string, string>();
   const add = (name: string, source: string) => {
     if (seen.has(name)) throw new Error(
