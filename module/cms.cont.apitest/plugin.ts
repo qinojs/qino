@@ -1,113 +1,60 @@
 import type { Node } from "../cms/mod.ts";
-import { Access, getCtx, hee, toJsonSchema, walk, type AptNode, type Route, type StandardSchema, type Verb } from "../core/mod.ts";
-import { toInput } from "../../deps.ts";
+import { Access, getCtx, hee, walk, type AptNode, type Route, type Verb } from "../core/mod.ts";
 
 export const name = "cms.cont.apitest";
 export const needs = ["cms"];
 
-type AccessLabel = "public" | "user" | "superuser" | "dynamic" | "custom" | "none";
-
-/** Static access category of a verb — the baseline shown per route, before per-identity probing. */
-function accessLabel(verb: Verb): AccessLabel {
+/** Static access category — the baseline badge; a dynamic guard may still differ per identity. */
+function accessLabel(verb: Verb): string {
   if (!verb.access) return "none";
-  if (verb.guard) return "dynamic"; // decided per-call, so a probe can differ from the static label
+  if (verb.guard) return "dynamic";
   if (verb.access === Access.PUBLIC) return "public";
   if (verb.access === Access.SUPERUSER) return "superuser";
   if (verb.access === Access.USER) return "user";
   return "custom";
 }
 
-function pathParamsOf(r: Route): { name: string; jsonSchema: Record<string, unknown> }[] {
-  return r.segments.flatMap((seg, i) => {
-    if (!seg.startsWith(":")) return [];
-    const schema = (r.nodes[i] as AptNode)?.paramSchema;
-    return [{ name: seg.slice(1).replace(/\*$/, ""), jsonSchema: schema ? toJsonSchema(schema) : { type: "string" } }];
-  });
-}
-
-/** One labelled input per object-schema field; reused for body and query in the run panel. */
-function formFields(s: StandardSchema | undefined): string {
-  if (!s || s.kind !== "object" || !s.shape) return "";
-  return Object.entries(s.shape).map(([k, v]) => {
-    const field = v as StandardSchema;
-    const inner = field.kind === "optional" ? field.inner ?? field : field;
-    const required = field.kind !== "optional" && !field.defaultValue;
-    const description = field.description ?? inner.description;
-    const input = toInput({ title: description, ...toJsonSchema(inner) }, { name: k, required });
-    return `<label class="-field"><span>${hee(k)}${required ? "" : "?"}</span><span>${input}</span></label>`;
-  }).join("");
-}
+const paramNames = (r: Route): string[] =>
+  r.segments.flatMap((seg, i) => seg.startsWith(":") && (r.nodes[i] as AptNode) ? [seg.slice(1).replace(/\*$/, "")] : []);
 
 function render(node: Node): string {
   const ctx = getCtx();
   const appURL = ctx.req.basePath ?? "/";
 
-  // smart prefill: current node feeds node-ish params, current user feeds user-ish params
-  const nid = String(node.id);
-  const uid = ctx.userId ? String(ctx.userId) : "";
-  const prefill: Record<string, string> = {
-    id: nid, pid: nid, node: nid, page: nid,
-    lang: ctx.lang,
-    user: uid, usr: uid, uid, userId: uid,
-  };
-
-  const routes = [...walk(ctx.app.aptTree)];
-
-  const meta = routes.map((r, idx) => {
-    const params = pathParamsOf(r);
-    return {
-      idx,
-      method: r.method,
-      path: "/" + r.segments.join("/"),
-      access: accessLabel(r.verb),
-      description: r.verb.description ?? "",
-      params: params.map((p) => ({ name: p.name, value: prefill[p.name] ?? "" })),
-      hasInput: !!r.verb.input,
-      hasQuery: !!r.verb.query,
-    };
-  });
+  // smart prefill: current node feeds node-ish params, current user feeds user-ish ones
+  const nid = String(node.id), uid = ctx.userId ? String(ctx.userId) : "";
+  const prefill: Record<string, string> = { id: nid, pid: nid, node: nid, page: nid, lang: ctx.lang, user: uid, usr: uid, uid };
 
   let group = "";
-  const rows = meta.map((m) => {
-    const g = m.path.split("/")[1] ?? "";
-    const groupRow = g !== group ? (group = g, `<tr class="-group" data-group="${hee(g)}"><td colspan="2"><button type="button" data-gtoggle>▾</button> ${hee(g)}</td></tr>`) : "";
-    const paramInputs = m.params.map((p) =>
-      `<label class="-param">:${hee(p.name)}<input data-param="${hee(p.name)}" value="${hee(p.value)}" size="6"></label>`
+  const rows = [...walk(ctx.app.aptTree)].map((r) => {
+    const path = "/" + r.segments.join("/");
+    const g = r.segments[0] ?? "";
+    const groupRow = g !== group ? (group = g, `<tr class="-group" data-group="${hee(g)}"><td colspan="2"><button data-gtoggle>▾</button> ${hee(g)}</td></tr>`) : "";
+    const params = paramNames(r).map((p) =>
+      `<label class="-param">:${hee(p)}<input data-param="${hee(p)}" value="${hee(prefill[p] ?? "")}"></label>`
     ).join("");
-    const bodyForm = m.hasInput ? `<div class="-section" data-part="body"><b>body</b>${formFields(routes[m.idx].verb.input)}</div>` : "";
-    const queryForm = m.hasQuery ? `<div class="-section" data-part="query"><b>query</b>${formFields(routes[m.idx].verb.query)}</div>` : "";
     return `${groupRow}
-    <tr data-idx="${m.idx}" data-method="${hee(m.method)}" data-path="${hee(m.path)}" data-group="${hee(g)}">
+    <tr data-method="${hee(r.method)}" data-path="${hee(path)}" data-group="${hee(g)}">
       <td class="-route">
-        <small class="u2-badge -method">${hee(m.method.toUpperCase())}</small>
-        <code>${hee(m.path)}</code>
-        <span class="-access -a-${m.access}" title="static access">${m.access}</span>
-        <span class="-params">${paramInputs}</span>
-        ${m.description ? `<small class="-desc">${hee(m.description)}</small>` : ""}
-        <button type="button" data-toggle title="open / run">▸</button>
+        <span class="-method">${hee(r.method.toUpperCase())}</span>
+        <code>${hee(path)}</code>
+        <span class="-access -a-${accessLabel(r.verb)}">${accessLabel(r.verb)}</span>
+        <span class="-params">${params}</span>
+        ${r.verb.description ? `<small class="-desc">${hee(r.verb.description)}</small>` : ""}
       </td>
       <td class="-cells"></td>
-    </tr>
-    <tr class="-detail" hidden><td colspan="2">
-      <form class="-form">${bodyForm}${queryForm}
-        <u2-buttongroup>
-          <label>as <select data-as></select></label>
-          <button type="submit">run (real call)</button>
-        </u2-buttongroup>
-      </form>
-      <u2-code data-result></u2-code>
-    </td></tr>`;
+    </tr>`;
   }).join("");
 
   return `<div class="-m-apitest" data-app-url="${hee(appURL)}">
   <div class="-bar">
     <span class="-identities"></span>
     <form class="-add">
-      <input data-label placeholder="label" size="10">
-      <input data-token placeholder="qk_… bearer token" size="18">
-      <button>add identity</button>
+      <input data-label placeholder="label">
+      <input data-token placeholder="qk_… bearer token">
+      <button>+ identity</button>
     </form>
-    <button type="button" data-checkall>check all</button>
+    <span class="-legend">✓ granted &nbsp; ✗ denied &nbsp; ⊘ csrf/origin gate &nbsp; … needs param</span>
     <input type="search" class="-filter" placeholder="filter…">
   </div>
   <table class="-matrix">
