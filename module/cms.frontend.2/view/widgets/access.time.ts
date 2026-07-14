@@ -3,8 +3,7 @@ import type { Node } from "../../../cms/mod.ts";
 
 function toDatetimeLocal(ts: string | number | null): string {
   if (!ts) return "";
-  const d = new Date(Number(ts) * 1000);
-  return d.toISOString().slice(0, 16);
+  return new Date(Number(ts) * 1000).toISOString().slice(0, 16);
 }
 
 export default async function (node: Node): Promise<HtmlString> {
