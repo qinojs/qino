@@ -14,10 +14,10 @@ export class LangManager {
     this.t = this.t.bind(this);
   }
 
-  get def(): string { return this.#langs[0] ?? "en"; }
-  get all(): string[] { return [...this.#langs]; }
+  get def() { return this.#langs[0] ?? "en"; }
+  get all() { return [...this.#langs]; }
 
-  setLangs(langs: string[]): void {
+  setLangs(langs: string[]) {
     this.#langs = langs.map(l=>l.trim().toLowerCase()).filter(Boolean);
     if (!this.#langs.length) this.#langs = ["en"];
   }
@@ -50,7 +50,7 @@ export class LangManager {
     ctx.langNsPath ??= [];
   }
 
-  nsStart(ns: string, ctx?: Ctx): void {
+  nsStart(ns: string, ctx?: Ctx) {
     const c = ctx ?? getCtx();
     c.langNsPath.push(c.langNs);
     c.langNs = ns;
@@ -58,7 +58,7 @@ export class LangManager {
     c.lang = (nsLang && this.#langs.includes(nsLang)) ? nsLang : c.langUsr;
   }
 
-  nsStop(ctx?: Ctx): void {
+  nsStop(ctx?: Ctx) {
     const c = ctx ?? getCtx();
     c.langNs = c.langNsPath.pop() ?? "";
     const nsLang = String(c.settings.core.lang_ns[c.langNs]?.() ?? "");
@@ -66,7 +66,7 @@ export class LangManager {
   }
 
   // Determine language from the browser Accept-Language header
-  #fromBrowser(ctx: Ctx): string {
+  #fromBrowser(ctx: Ctx) {
     const acceptLang = ctx.req.header("accept-language");
     if (!acceptLang) return this.def;
     const accepted = acceptLang.split(/,\s*/);
@@ -93,7 +93,7 @@ export class LangManager {
   }
 
   // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
-  clear(): void { this.#txtsCache = {}; }
+  clear() { this.#txtsCache = {}; }
 
   async #getTxts(ns: string, l: string): Promise<Record<string, string>> {
     const key = `${l}::${ns}`;
