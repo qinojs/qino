@@ -14,7 +14,12 @@ export function cookiePrefix(https: boolean, appURL: string): string {
 
 /** Header builders (like sql.id/html.raw): each returns a [name, value] tuple
  *  for headers.set(...) / .append(...) or HeadersInit arrays. */
-export const header = {
+interface HeaderBuilders {
+  contentDisposition(type: "inline" | "attachment", name: string): [string, string];
+  setCookie(name: string, value: string, basePath: string, https: boolean, expires?: string): [string, string];
+}
+
+export const header: HeaderBuilders = {
   /** Safe Content-Disposition: ASCII fallback + RFC 5987 filename* (no header injection). */
   contentDisposition(type: "inline" | "attachment", name: string): [string, string] {
     const ascii = name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");

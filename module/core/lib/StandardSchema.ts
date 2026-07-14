@@ -44,7 +44,7 @@ export class StandardSchema<T = unknown> {
     };
   }
 
-  default(value: T) {
+  default(value: T): StandardSchema<T> {
     return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), {
       shape: this.shape,
       inner: this.inner,
@@ -53,7 +53,7 @@ export class StandardSchema<T = unknown> {
     });
   }
 
-  describe(description: string) {
+  describe(description: string): StandardSchema<T> {
     return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), {
       shape: this.shape,
       inner: this.inner,
@@ -65,23 +65,23 @@ export class StandardSchema<T = unknown> {
 
 // ───── Helpers ────────────────────────────────────────────────────────────
 
-function err(path: PropertyKey[], message: string) {
+function err(path: PropertyKey[], message: string): StandardIssue[] {
   return [{ message, path }];
 }
 
 // ───── Builder `s` ────────────────────────────────────────────────────────
 
 export const s = {
-  string: () => new StandardSchema<string>("string", (v, p) =>
+  string: (): StandardSchema<string> => new StandardSchema<string>("string", (v, p) =>
     typeof v === "string" ? { value: v } : { issues: err(p, "expected string") }),
 
-  number: () => new StandardSchema<number>("number", (v, p) =>
+  number: (): StandardSchema<number> => new StandardSchema<number>("number", (v, p) =>
     typeof v === "number" && Number.isFinite(v) ? { value: v } : { issues: err(p, "expected number") }),
 
-  boolean: () => new StandardSchema<boolean>("boolean", (v, p) =>
+  boolean: (): StandardSchema<boolean> => new StandardSchema<boolean>("boolean", (v, p) =>
     typeof v === "boolean" ? { value: v } : { issues: err(p, "expected boolean") }),
 
-  object: <Shape extends Record<string, StandardSchema<any>>>(shape: Shape) => {
+  object: <Shape extends Record<string, StandardSchema<any>>>(shape: Shape): StandardSchema<InferObject<Shape>> => {
     const keys = Object.keys(shape);
     return new StandardSchema<InferObject<Shape>>("object", (v, p) => {
       if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
@@ -96,7 +96,7 @@ export const s = {
     }, { shape });
   },
 
-  array: <T>(item: StandardSchema<T>) =>
+  array: <T>(item: StandardSchema<T>): StandardSchema<T[]> =>
     new StandardSchema<T[]>("array", (v, p) => {
       if (!Array.isArray(v)) return { issues: err(p, "expected array") };
       const out: T[] = [];
@@ -114,10 +114,10 @@ export const s = {
       v == null ? { value: undefined } : inner["~standard"].validate(v) as StandardResult<T | undefined>,
     { inner }) as Optional<T>,
 
-  any: () =>
+  any: (): StandardSchema<unknown> =>
     new StandardSchema<unknown>("any", (v) => ({ value: v })),
 
-  record: <T = unknown>(value?: StandardSchema<T>) =>
+  record: <T = unknown>(value?: StandardSchema<T>): StandardSchema<Record<string, T>> =>
     new StandardSchema<Record<string, T>>("record", (v, p) => {
       if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
       if (!value) return { value: v as Record<string, T> };

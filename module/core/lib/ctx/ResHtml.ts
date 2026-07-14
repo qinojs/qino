@@ -2,7 +2,7 @@ import { hee } from "../util.ts";
 
 export class ResHtml {
   lang = "en";
-  class = new Set<string>();
+  class: Set<string> = new Set();
   /** Trusted HTML appended verbatim to the document head. */
   head = "";
   title = "";
@@ -10,10 +10,10 @@ export class ResHtml {
   titleSuffix = "";
   meta: Record<string, string> = { viewport: "width=device-width" };
   link: Record<string, Record<string, string>> = {};
-  scripts = new Set<string>();
-  styles = new Set<string>();
-  legacyScripts = new Set<string>();
-  importMap = new Map<string, string>();
+  scripts: Set<string> = new Set();
+  styles: Set<string> = new Set();
+  legacyScripts: Set<string> = new Set();
+  importMap: Map<string, string> = new Map();
   /** Trusted HTML appended verbatim to the document body. */
   content = "";
   // deno-lint-ignore no-explicit-any

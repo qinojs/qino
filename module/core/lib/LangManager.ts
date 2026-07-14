@@ -14,8 +14,8 @@ export class LangManager {
     this.t = this.t.bind(this);
   }
 
-  get def() { return this.#langs[0] ?? "en"; }
-  get all() { return [...this.#langs]; }
+  get def(): string { return this.#langs[0] ?? "en"; }
+  get all(): string[] { return [...this.#langs]; }
 
   setLangs(langs: string[]) {
     this.#langs = langs.map(l=>l.trim().toLowerCase()).filter(Boolean);
