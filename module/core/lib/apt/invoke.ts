@@ -5,15 +5,15 @@ import { BODY_METHODS, RESERVED, VERB_SET, type AptNode, type AptTree, type Meth
 import { isCatchall, paramName, shapeOf } from "./route.ts";
 
 type Branch = Record<string, unknown>;
-const branch = (v: unknown): Branch | undefined => v && typeof v === "object" ? v as Branch : undefined;
+const branch = (v: unknown) => v && typeof v === "object" ? v as Branch : undefined;
 
-function validate(schema: StandardSchema, data: unknown, where: string): unknown {
+function validate(schema: StandardSchema, data: unknown, where: string) {
   const res = schema["~standard"].validate(data);
   if (res.issues) throw new ValidationError(res.issues, where);
   return res.value;
 }
 
-function validatePart(schema: StandardSchema | undefined, src: Params, where: string, doCoerce: boolean): Params {
+function validatePart(schema: StandardSchema | undefined, src: Params, where: string, doCoerce: boolean) {
   if (!schema) return {};
   const out: Params = Object.create(null);
   for (const [k, field] of Object.entries(shapeOf(schema))) if (k in src) out[k] = doCoerce ? coerce(src[k], field) : src[k];
@@ -100,7 +100,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
   return result;
 }
 
-function decodeSegment(s: string): string {
+function decodeSegment(s: string) {
   try { return decodeURIComponent(s); } catch { return s; }
 }
 
