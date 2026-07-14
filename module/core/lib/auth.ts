@@ -70,11 +70,11 @@ export async function logout(ctx: Ctx): Promise<void> {
   await ctx.app.fire("logout");
 }
 
-export function pwHash(pw: string): Promise<string> {
+export function pwHash(pw: string) {
   return bcrypt.hash(pw, 10);
 }
 
-export async function pwVerify(pw: string, hash: string): Promise<boolean> {
+export async function pwVerify(pw: string, hash: string) {
   if (!pw || !hash) return false;
   return await bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
 }
@@ -86,6 +86,6 @@ async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
   await E.set("save_login", doSave ? 1 : 0);
 }
 
-function pwNeedsRehash(hash: string): boolean {
+function pwNeedsRehash(hash: string) {
   return !/^\$2[aby]\$/.test(hash);
 }
