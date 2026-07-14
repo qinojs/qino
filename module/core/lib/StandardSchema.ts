@@ -45,7 +45,7 @@ export class StandardSchema<T = unknown> {
   }
 
   default(value: T): StandardSchema<T> {
-    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v) as any, {
+    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), {
       shape: this.shape,
       inner: this.inner,
       defaultValue: () => value,
@@ -54,7 +54,7 @@ export class StandardSchema<T = unknown> {
   }
 
   describe(description: string): StandardSchema<T> {
-    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v) as any, {
+    return new StandardSchema<T>(this.kind, (v) => this["~standard"].validate(v), {
       shape: this.shape,
       inner: this.inner,
       defaultValue: this.defaultValue,
@@ -104,7 +104,7 @@ export const s = {
       for (let i = 0; i < v.length; i++) {
         const res = item["~standard"].validate(v[i]);
         if (res.issues) issues.push(...res.issues.map((iss) => ({ message: iss.message, path: [i, ...(iss.path ?? [])] })));
-        else out.push(res.value as T);
+        else out.push(res.value);
       }
       return issues.length ? { issues } : { value: out };
     }, { inner: item }),
@@ -126,7 +126,7 @@ export const s = {
       for (const [k, val] of Object.entries(v)) {
         const res = value["~standard"].validate(val);
         if (res.issues) issues.push(...res.issues.map((iss) => ({ message: iss.message, path: [k, ...(iss.path ?? [])] })));
-        else out[k] = res.value as T;
+        else out[k] = res.value;
       }
       return issues.length ? { issues } : { value: out };
     }, value ? { inner: value } : {}),
