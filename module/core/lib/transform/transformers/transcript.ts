@@ -10,7 +10,7 @@ export const transcript: TransformerDef = {
   name: 'transcript',
   phase: 'decode',
   props: ['fmt'],
-  handles: async (ctx) =>
+  handles: (ctx) =>
     (ctx.options.fmt === 'json' || ctx.options.fmt === 'md') &&
     (AUDIO_MIMES.has(ctx.mime) || VIDEO_MIMES.has(ctx.mime)),
   transform: async (ctx) => {
