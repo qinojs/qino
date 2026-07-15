@@ -1,7 +1,21 @@
 {
   "name": "@qino/qino",
-  "version": "0.4.19",
-  "exports": "./module/core/mod.ts",
+  "version": "0.4.20",
+  "exports": {
+    ".": "./module/core/mod.ts",
+    "./ai": "./module/ai/mod.ts",
+    "./cms": "./module/cms/mod.ts",
+    "./cms.backend": "./module/cms.backend/mod.ts",
+    "./cms.frontend.2": "./module/cms.frontend.2/mod.ts",
+    "./cms.image2": "./module/cms.image2/mod.ts",
+    "./cms.text": "./module/cms.text/mod.ts",
+    "./cms.versions": "./module/cms.versions/mod.ts",
+    "./cms.webmcp": "./module/cms.webmcp/mod.ts",
+    "./core": "./module/core/mod.ts",
+    "./mail": "./module/mail/mod.ts",
+    "./mcp": "./module/mcp/mod.ts",
+    "./uncdn": "./module/uncdn/mod.ts"
+  },
   "minimumDependencyAge": "0",
   "imports": {
     "@qino/item/": "jsr:/@nuxodin/item@0.5.23/",
