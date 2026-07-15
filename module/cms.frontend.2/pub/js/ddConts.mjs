@@ -92,8 +92,7 @@ function elementDistances(e, els) {
 }
 function getNearestElement2(e, els, notInside) {
   els = Array.prototype.filter.call(els, el => !notInside.contains(el) )
-  const items = elementDistances(e, els);
-  return items[0]?.element;
+  return elementDistances(e, els)[0]?.element;
 }
 
 /* testen: https://gemini.google.com/app/d742aa7e9c82dddd?hl=de */
