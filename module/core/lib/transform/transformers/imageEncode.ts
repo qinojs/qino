@@ -30,8 +30,7 @@ export const imageEncode: TransformerDef = {
     }
 
     // Check alpha channel
-    const alphaFlag = await magickIdentify(ctx.currentPath, '%A', ctx.signal);
-    ctx.meta.hasAlpha = alphaFlag === 'True';
+    ctx.meta.hasAlpha = await magickIdentify(ctx.currentPath, '%A', ctx.signal) === 'True';
 
     const avifAvailable = await checkAvifSupport();
 
