@@ -41,8 +41,8 @@ export function registerAiOcr(app: App): void {
       }) as { error?: unknown; choices?: { message?: { content?: string } }[] };
       const err = res.error;
       if (err) throw new Error(`AI OCR: ${typeof err === "object" ? (err as { message?: string }).message ?? JSON.stringify(err) : err}`);
-      const text = (res.choices?.[0]?.message?.content ?? "").trim();
-      return text.replace(/^```(?:markdown)?\s*\n([\s\S]*)\n```$/, "$1");
+      return (res.choices?.[0]?.message?.content ?? "").trim()
+        .replace(/^```(?:markdown)?\s*\n([\s\S]*)\n```$/, "$1");
     },
   });
 }
