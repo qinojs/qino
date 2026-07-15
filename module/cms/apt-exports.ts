@@ -204,8 +204,7 @@ export async function searchFiles(search: string): Promise<any[]> {
         if (md5 && used[md5]) continue;
         if (i++ > 10) break;
         if (md5) used[md5] = true;
-        const ext   = F.extension;
-        const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(ext);
+        const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(F.extension);
         const imgSrc = isImg ? await F.url({w: 32, h: 32}) : "about:blank";
         res.push({
             html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
