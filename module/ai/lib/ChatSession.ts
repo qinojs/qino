@@ -11,12 +11,12 @@ type Msg = Record<string, unknown>;
 // A persistent chat: history + messages live in ai_session/ai_message.
 // `run()` returns the final answer; `runStream()` yields an SSE stream.
 export class ChatSession {
-  #app: Pick<App, "db" | "settings">;
+  #app: Pick<App, "db">;
   #api: AiApi;
   #id: number;
   get id(): number { return this.#id; }
 
-  constructor(app: Pick<App, "db" | "settings">, api: AiApi, id: number) {
+  constructor(app: Pick<App, "db">, api: AiApi, id: number) {
     this.#app = app;
     this.#api = api;
     this.#id = id;
