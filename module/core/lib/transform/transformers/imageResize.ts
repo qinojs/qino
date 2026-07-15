@@ -24,8 +24,7 @@ export const imageResize: TransformerDef = {
     const zoom = ctx.options.zoom ?? 0;
     const max = ctx.options.max ?? false;
 
-    const dims = await magickIdentify(ctx.currentPath, '%wx%h', ctx.signal);
-    const [origW, origH] = dims.split('x').map(Number);
+    const [origW, origH] = (await magickIdentify(ctx.currentPath, '%wx%h', ctx.signal)).split('x').map(Number);
 
     // Prevent upscaling
     let w = targetW ? Math.min(origW, targetW) : 0;
