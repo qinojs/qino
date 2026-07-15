@@ -1,7 +1,7 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type HtmlString, uid, getCtx } from "../core/mod.ts";
 
-export default async function (node: Node, _vars: unknown): Promise<HtmlString> {
+export default function (node: Node, _vars: unknown): Promise<HtmlString> {
   const t = node.app.t;
   const cols = Math.max(1, Number(node.settings.cols()) || 1);
   const rows = Math.max(1, Number(node.settings.rows()) || 1);
