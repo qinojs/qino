@@ -50,6 +50,6 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
 }
 
 function pathValue(v: unknown, rest = false): string[] {
-  const vals = rest && Array.isArray(v) ? v : rest ? String(v ?? "").split("/") : [v];
-  return vals.map((x) => encodeURIComponent(String(x ?? "")));
+  return (rest && Array.isArray(v) ? v : rest ? String(v ?? "").split("/") : [v])
+    .map((x) => encodeURIComponent(String(x ?? "")));
 }
