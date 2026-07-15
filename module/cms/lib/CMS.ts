@@ -39,8 +39,7 @@ export class CMS {
   }
 
   async nodeByModule(moduleName: string): Promise<Node | undefined> {
-    const ret = await this.nodesByModule(moduleName);
-    return Object.values(ret)[0];
+    return Object.values(await this.nodesByModule(moduleName))[0];
   }
 
   /** Global page of a layout module (child of the system page), created if missing */
