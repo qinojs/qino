@@ -121,9 +121,9 @@ export async function details(node: Node): Promise<string> {
 
   const tables = await dbTableStats(db);
   tables.sort((a, b) => b.bytes - a.bytes);
-  const tableRows = tables.map((t) => {
-    return `<tr><td>${hee(t.name)}<td style="text-align:right"><u2-bytes>${t.bytes}</u2-bytes>`;
-  }).join("");
+  const tableRows = tables.map((t) =>
+    `<tr><td>${hee(t.name)}<td style="text-align:right"><u2-bytes>${t.bytes}</u2-bytes>`
+  ).join("");
 
   return `
 <h2>Ordner</h2>
