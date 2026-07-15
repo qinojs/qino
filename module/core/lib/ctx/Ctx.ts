@@ -102,8 +102,7 @@ function appRequestPathToLocalPath(appRequestPath: string, app: App) {
   const matchM = appRequestPath.match(/^m\/([^/]+)\/pub\/(.*)/);
   if (matchM && safeSeg(matchM[1])) {
     const mod = app.modules.get(matchM[1]);
-    const base = mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/");
-    return pubPath(base, matchM[2]);
+    return pubPath(mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/"), matchM[2]);
   }
   const matchQg = appRequestPath.match(/^qg\/([^/]+)\/pub\/(.*)/);
   return matchQg && safeSeg(matchQg[1]) ? pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]) : null;
