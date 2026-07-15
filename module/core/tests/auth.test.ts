@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { assertEquals, testContext } from "./deps.ts";
 import { authListen } from "../lib/auth.ts";
 
