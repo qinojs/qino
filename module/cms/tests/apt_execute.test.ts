@@ -1,4 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore-file require-await
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "../../core/mod.ts";
 import { api } from "../apt.ts";
