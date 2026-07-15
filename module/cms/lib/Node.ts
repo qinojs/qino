@@ -325,8 +325,7 @@ export class Node {
     }
 
     async in(PageRef: Node | number): Promise<boolean> {
-        const path = await this.path();
-        return path.has(Number(PageRef));
+        return (await this.path()).has(Number(PageRef));
     }
 
     /* Texts */
