@@ -103,8 +103,8 @@ export class ImageCanvas {
 }
 
 // Draw into an offscreen canvas and freeze it as an ImageBitmap (the new source).
-async function bake(width, height, draw) {
+function bake(width, height, draw) {
   const off = new OffscreenCanvas(width, height);
   draw(off.getContext('2d'));
-  return await createImageBitmap(off);
+  return createImageBitmap(off);
 }
