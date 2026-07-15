@@ -4,8 +4,7 @@ import options from "../options.ts";
 import { requestStorage } from "../../core/mod.ts";
 
 function callable(value: unknown) {
-  const fn = () => value;
-  return fn;
+  return () => value;
 }
 
 function makeNode(settings: Record<string, unknown>) {
