@@ -36,8 +36,7 @@ const mediaTypesByExtension: Record<string, string> = {
 function urlToPath(cacheDir: string, url: string): string | null {
   const u = new URL(url);
   const target = nodePath.resolve(cacheDir, u.hostname + u.pathname);
-  const root = nodePath.resolve(cacheDir);
-  return target.startsWith(root + nodePath.sep) ? target : null;
+  return target.startsWith(nodePath.resolve(cacheDir) + nodePath.sep) ? target : null;
 }
 
 function mediaTypeForPath(filePath: string): string | null {
