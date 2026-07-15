@@ -9,8 +9,7 @@ const branch = (v: unknown) => v && typeof v === "object" ? v as Branch : undefi
 
 export function aptClient(tree: AptTree) {
   function buildProxy(node: Branch, pathSoFar: string[]): AptProxy {
-    const target = function () {} as unknown as AptProxy;
-    return new Proxy(target, {
+    return new Proxy(function () {} as unknown as AptProxy, {
       get(_t, prop: string | symbol) {
         if (typeof prop !== "string" || prop === "then") return;
         const catchall = Object.keys(node).find(isCatchall);
