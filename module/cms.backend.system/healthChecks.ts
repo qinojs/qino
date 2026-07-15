@@ -73,7 +73,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   warning["users with old password-hash"] = async () => {
     const usrs = await db.col<string>`SELECT email FROM usr WHERE active AND email != '' AND email IS NOT NULL AND pw != '' AND pw NOT LIKE '$%' LIMIT 1000`;
     if (!usrs.length) return;
-    return { info: usrs.map((e) => hee(e)).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
+    return { info: usrs.map(hee).join("<br>"), solutions: { "todo: ": { solve: () => "nothing" } } };
   };
 
   // ── dev / https ──────────────────────────────────────────────────────────
