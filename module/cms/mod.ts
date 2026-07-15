@@ -31,3 +31,4 @@ export { CMS };
 export { CmsContext } from "./lib/CmsContext.ts";
 export { Node } from "./lib/Node.ts";
 export * from "./lib/access.ts";
+export { sanitizeHtml } from "./lib/sanitize.ts";

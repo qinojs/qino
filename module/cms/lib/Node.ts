@@ -1,4 +1,5 @@
 import { resolveText } from "./resolveText.ts";
+import { sanitizeHtml } from "./sanitize.ts";
 import { WRITE } from "./access.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
 import { hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
@@ -333,12 +334,13 @@ export class Node {
     async #showTextLang(textOrLang: any, lang?: string | null): Promise<any> {
         const ctx = getCtx();
         const textLang = lang == null ? await textOrLang.orFallback(ctx.lang) : textOrLang;
-        const raw = await textLang.get();
-        const value = this.edit ? raw : await resolveText(this.app, raw);
+        let text = await textLang.get();
+        if (!this.edit) text = await resolveText(this.app, text); // edit mode keeps cmspid:// etc. unresolved
+        text = sanitizeHtml(text); // last step: nothing may touch the string after sanitizing
         return {
             lang: textLang.lang,
             id: textLang.text.id,
-            toString() { return value; },
+            toString() { return text; },
         };
     }
 

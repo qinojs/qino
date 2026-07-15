@@ -6,6 +6,8 @@ export { default as mysql } from "npm:mysql2@^3/promise";
 export { default as postgres } from "npm:pg@^8";
 export type { Pool, ResultSetHeader, RowDataPacket } from "npm:mysql2@^3/promise";
 export { default as bcrypt } from "npm:bcryptjs@^3";
+// @ts-types="npm:@types/sanitize-html@^2"
+export { default as sanitizeHtml } from "npm:sanitize-html@^2";
 export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
 export { typeByExtension } from "jsr:@std/media-types@^1";

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { s, Access, AptError, sql, type AptTree, type Ctx } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { sanitizeHtml } from "../cms/mod.ts";
 
 class CmsTextService {
 
@@ -27,9 +27,11 @@ class CmsTextService {
         if (!await this.textAccess(txt_id)) return false;
         const return_: any[] = [];
         for (const l of this.ctx.app.languages.all) {
-            let text = await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${l}`;
-            if (text == null || text === "") text = false;
-            return_.push({ lang: l, text });
+            const text = await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${l}`;
+            return_.push({
+                lang: l,
+                text: !text ? false : sanitizeHtml(String(text)),
+            });
         }
         return return_;
     }
@@ -189,7 +191,7 @@ class CmsTextService {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const space = 0; // cms_vers::$space — cms.versions not ported yet
-        return this.ctx.app.db.query`
+        const rows = await this.ctx.app.db.query`
             SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email
             FROM
              _vers_text text
@@ -203,6 +205,8 @@ class CmsTextService {
               AND text._vers_space = ${space}
             ORDER BY text._vers_log DESC
             LIMIT 100`;
+        for (const row of rows) if (row.text) row.text = sanitizeHtml(String(row.text)); // dialog renders it via innerHTML
+        return rows;
     }
 
     async isTranslated(txt_ids: any, lang: any): Promise<any> {
