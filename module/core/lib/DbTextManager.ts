@@ -78,8 +78,7 @@ export class DbText {
 
   async string(): Promise<string | null> {
     const lang = getCtx().lang;
-    const t = await this.orFallback(lang);
-    return t.get();
+    return (await this.orFallback(lang)).get();
   }
 
   toString(): string { throw new Error("DbText: toString() not implemented"); }
