@@ -68,7 +68,7 @@ function normalizeTranscript(raw: Record<string, unknown>): Transcript {
 function openAiSegments(raw: Record<string, unknown>): TranscriptSegment[] | undefined {
   const segs = arr(raw.segments);
   if (!segs) return;
-  return segs.map((s) => obj(s)).filter((s): s is Record<string, unknown> => !!s).map(seg).filter((s) => s.text);
+  return segs.map(obj).filter((s): s is Record<string, unknown> => !!s).map(seg).filter((s) => s.text);
 }
 
 function deepgramSegments(raw: Record<string, unknown>): TranscriptSegment[] | undefined {
