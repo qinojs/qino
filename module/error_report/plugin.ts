@@ -50,8 +50,7 @@ async function handleCssError(ctx: Ctx): Promise<void> {
       const content = await Deno.readTextFile(localPath);
       const pos = content.indexOf(message);
       if (pos >= 0) {
-        const before = content.slice(0, pos);
-        const lines = before.split("\n");
+        const lines = content.slice(0, pos).split("\n");
         report.line = lines.length;
         report.col = lines[lines.length - 1].length;
       }
