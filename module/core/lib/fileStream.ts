@@ -22,8 +22,7 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   if (!resp.body) throw new Error("Remote file has no body");
   const file = await saveStream(resp.body, { prefix: "remote-", maxSize: opt.maxSize });
 
-  const m = resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/);
-  const name = (m?.[1] ?? new URL(opt.url).pathname.split("/").pop() ?? "file").replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
+  const name = (resp.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] ?? new URL(opt.url).pathname.split("/").pop() ?? "file").replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
   const type = resp.headers.get("content-type")?.replace(/;.*/, "") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "";
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
