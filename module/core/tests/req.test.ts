@@ -13,5 +13,5 @@ Deno.test("parseCookies keeps prototype-looking names inert", () => {
   assertEquals(cookies.__proto__, "x");
   assertEquals(cookies["constructor"], "y");
   assertEquals(cookies["toString"], "z");
-  assert(!Object.prototype.isPrototypeOf(cookies));
+  assert(Object.getPrototypeOf(cookies) === null);
 });
