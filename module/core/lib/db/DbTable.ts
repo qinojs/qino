@@ -115,8 +115,7 @@ export class DbTable {
     if (!values) return;
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return;
-    const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
-    return rows[0];
+    return (await this.#db.query`SELECT * FROM ${sql.id(this)} WHERE ${where}`)[0];
   }
   async select(where: Sql = sql`TRUE`): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
