@@ -95,7 +95,7 @@ export class LangManager {
   // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
   clear() { this.#txtsCache = {}; }
 
-  async #getTxts(ns: string, l: string): Promise<Record<string, string>> {
+  #getTxts(ns: string, l: string): Promise<Record<string, string>> {
     const key = `${l}::${ns}`;
     // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
     return this.#txtsCache[key] ??= this.#app.db.indexCol`SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}` as Promise<Record<string, string>>;
