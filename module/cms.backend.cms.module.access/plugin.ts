@@ -29,7 +29,7 @@ async function save(app: App, vars: Record<string, unknown>): Promise<void> {
   else await table.ensure({ ...id, access: Number(access) });
 }
 
-async function groups(app: App): Promise<Record<string, string | number>[]> {
+function groups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
 }
 
