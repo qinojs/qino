@@ -28,7 +28,7 @@ export const dbSchema = {
   },
 };
 
-const canWrite = async ({ file }: any, ctx: Ctx) => isWritable(ctx, Number(file));
+const canWrite = ({ file }: any, ctx: Ctx) => isWritable(ctx, Number(file));
 
 export const api: AptTree = {
   meta: {
