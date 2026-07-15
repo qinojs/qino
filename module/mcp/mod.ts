@@ -54,7 +54,7 @@ async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
     case "tools/list":
       return { tools: await listTools(ctx) };
     case "tools/call":
-      return await callTool(params, ctx);
+      return callTool(params, ctx);
   }
   throw new RpcErr(-32601, `Method not found: ${msg.method}`);
 }
