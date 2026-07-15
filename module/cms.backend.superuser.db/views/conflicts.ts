@@ -2,7 +2,7 @@
 import { html, type App, type HtmlString } from "../../core/mod.ts";
 import { collectConflicts } from "../lib/analyze.ts";
 
-export async function renderConflicts(app: App, modules: Record<string, any>): Promise<HtmlString> {
+export function renderConflicts(app: App, modules: Record<string, any>): Promise<HtmlString> {
   const t = app.t;
   const conflicts = collectConflicts(modules);
 
