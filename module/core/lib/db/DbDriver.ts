@@ -137,8 +137,8 @@ class SqliteDriver extends DbDriver {
     finally { this.#inTx = false; }
   }
   async listTables() {
-    const rows = await this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
-    return rows.map((r) => r.name);
+    return (await this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"))
+      .map((r) => r.name);
   }
   async columns(table: string) {
     // Map PRAGMA table_info → MySQL SHOW FULL COLUMNS shape so DbField stays dialect-free.
