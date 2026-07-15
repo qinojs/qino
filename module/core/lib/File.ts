@@ -33,8 +33,7 @@ export class File {
 
   async exists(): Promise<this | undefined> {
     if (!this.path) return;
-    const stat = await Deno.stat(this.path).catch(() => null);
-    return stat?.isFile ? this : undefined;
+    return (await Deno.stat(this.path).catch(() => null))?.isFile ? this : undefined;
   }
 
   async mtime(): Promise<number | undefined> {
