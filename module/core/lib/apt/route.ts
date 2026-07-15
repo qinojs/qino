@@ -35,8 +35,8 @@ export function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] =
 }
 
 export function camelName(verb: Method, segments: string[]): string {
-  const parts = [verb, ...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s])];
-  return parts.map((p) => p.replace(/[-.]([a-z])/g, (_, c) => c.toUpperCase())).join("_");
+  return [verb, ...segments.flatMap((s) => isCatchall(s) ? paramName(s) : isParam(s) ? [] : [s])]
+    .map((p) => p.replace(/[-.]([a-z])/g, (_, c) => c.toUpperCase())).join("_");
 }
 
 export function checkCollisions(r: Route) {
