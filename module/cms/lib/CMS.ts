@@ -1,6 +1,6 @@
 import { Node } from "./Node.ts";
 import { NONE, ADMIN } from "./access.ts";
-import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
+import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText, type dbEntry_usr } from "../../core/mod.ts";
 
 export class CMS {
   app: App;
@@ -56,7 +56,7 @@ export class CMS {
   }
 
   /** Highest cms_access granted by the user's groups; superuser counts as ADMIN. */
-  async usrAccess(Usr = getCtx().user): Promise<number> {
+  async usrAccess(Usr: dbEntry_usr | null = getCtx().user): Promise<number> {
     if (!Usr) return NONE;
     if (await Usr.get("superuser")) return ADMIN;
     const grps = await Usr.grps?.() ?? [];

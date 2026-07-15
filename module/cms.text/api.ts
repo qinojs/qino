@@ -11,7 +11,7 @@ class CmsTextService {
         this.#ctx = ctx;
     }
 
-    get ctx() { return this.#ctx; }
+    get ctx(): Ctx { return this.#ctx; }
 
     async textAccess(text_id: any): Promise<boolean> {
         text_id = Number(text_id);

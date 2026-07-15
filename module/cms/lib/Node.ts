@@ -2,7 +2,7 @@ import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { WRITE } from "./access.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry } from "../../core/mod.ts";
+import { hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
 import type { CMS } from "./CMS.ts";
 
@@ -230,7 +230,7 @@ export class Node {
         }
     }
 
-    get module() {
+    get module(): Module | undefined {
         return this.app.modules.get(String(this.vs.module ?? ""));
     }
     /* Online state */
