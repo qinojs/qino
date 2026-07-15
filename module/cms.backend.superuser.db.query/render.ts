@@ -108,7 +108,7 @@ function cell(v: unknown): unknown {
 }
 
 // Tables (without internal `_`-prefixed ones) with their fields — used by helper, autocomplete and AI.
-async function buildSchema(app: App): Promise<Table[]> {
+function buildSchema(app: App): Promise<Table[]> {
   const tables = Object.values(app.db.tables ?? {})
     .filter((t) => !t.name.startsWith("_"))
     .sort((a, b) => a.name.localeCompare(b.name));
