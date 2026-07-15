@@ -2,7 +2,7 @@
 import * as nodePath from "node:path";
 import { hee, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy } from "../uncdn/mod.ts";
+import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy, uncdn } from "../uncdn/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.uncdn";
@@ -77,7 +77,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const policy = fetchPolicy(await su.fetchPolicy);
   const maxCacheBytes = cacheByteLimit(await su.maxCacheBytes);
 
-  const origins = [...(node.app.uncdn?.origins ?? [])].sort();
+  const origins = [...uncdn(node.app).origins].sort();
 
   const t = node.app.t;
   const [tCacheSize, tMaxCacheBytes, tFetchPolicy, tCachePath, tActions, tDeleteAll, tInfo, tCachedFiles, tNoCached, tAllowList, tNoOrigins] = await Promise.all([

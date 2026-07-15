@@ -1,6 +1,7 @@
 import * as nodePath from "node:path";
 import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "../core/mod.ts";
 import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
+import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 
 export const name = "uncdn";
 export const needs = ["core"];
@@ -22,7 +23,6 @@ export const settingsSchema = {
 };
 
 const PROXY_PREFIX = "uncdn/";
-const MAX_ASSET_BYTES = 1024 * 1024;
 const mediaTypesByExtension: Record<string, string> = {
   css: "text/css",
   js: "text/javascript",
@@ -101,7 +101,8 @@ function hasValueWithPrefix(values: Iterable<string>, prefix: string): boolean {
 
 export function init(app: App): void {
   const cacheDir = app.appPATH + CACHE_SUBDIR;
-  const allowed = (app.uncdn = { origins: new Set<string>() }).origins; // origins any page declared via CSP — fetchable by anyone
+  const allowed = new Set<string>(); // origins any page declared via CSP — fetchable by anyone
+  uncdnInstances.set(app, { origins: allowed });
 
   app.on("action", async ({ ctx }) => {
     if (!ctx.req.appPath.startsWith(PROXY_PREFIX)) return;
