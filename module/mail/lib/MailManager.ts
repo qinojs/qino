@@ -25,8 +25,8 @@ export class MailManager {
     return Object.assign(new MailMessage(this), values);
   }
 
-  async create(values: Dict = {}): Promise<MailMessage> {
-    return await this.build(values).create();
+  create(values: Dict = {}): Promise<MailMessage> {
+    return this.build(values).create();
   }
 
   async get(id: string | number): Promise<MailMessage> {
