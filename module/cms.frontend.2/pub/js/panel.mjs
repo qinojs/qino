@@ -29,14 +29,7 @@ const findEl = (el, s) => el.querySelector(sel(s));
 const findAll = (el, s) => el.querySelectorAll(sel(s));
 function setHtml(el, html) {
   el.innerHTML = html;
-  for (const old of el.querySelectorAll("script")) {
-    console.warn("Script tag in CMS widget HTML", old);
-    const s = document.createElement("script");
-    s.async = false;
-    for (const attr of old.attributes) s.setAttribute(attr.name, attr.value);
-    s.textContent = old.textContent;
-    old.replaceWith(s);
-  }
+  for (const s of el.querySelectorAll("script")) console.warn("Script tag in CMS widget HTML", s);
 }
 function setSetting(value, path) {
   const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);

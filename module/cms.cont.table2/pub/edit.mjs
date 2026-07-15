@@ -4,7 +4,7 @@ import { TableHandles } from '../../core/pub/js/c1/tableHandles.mjs';
 const handles = new TableHandles();
 let active, pid;
 document.addEventListener('input', e => {
-  const input = e.target.closest('[data-table2-setting]');
+  const input = e.composedPath()[0].closest('[data-table2-setting]');
   if (!input) return;
   apt.cms.node(input.dataset.node).settings[input.dataset.key].put({value:input.value}).then(() => {
     if (input.hasAttribute('data-reload-options')) cms.cont(cms.cont.active).showWidget('options');
