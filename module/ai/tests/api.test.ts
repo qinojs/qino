@@ -1,6 +1,8 @@
 import { assert, assertEquals, testContext } from "../../core/tests/deps.ts";
 import { invoke, Output, requestStorage, toTools } from "../../core/mod.ts";
 import { api } from "../apt.ts";
+import { ai, AiApi } from "../mod.ts";
+import { aiInstances } from "../lib/AiApi.ts";
 import { init, name, needs } from "../plugin.ts";
 
 Deno.test("ai: module metadata and apt tools are wired", () => {
@@ -18,17 +20,17 @@ Deno.test("ai: module metadata and apt tools are wired", () => {
 Deno.test("ai: init installs AiApi (no cms coupling)", () => {
   const app = { aptTree: {}, fileTransformer: { registerOcrEngine: () => {}, registerTranscriptEngine: () => {} } };
   init(app as never);
-  assertEquals(typeof (app as never as { ai: unknown }).ai, "object");
+  assert(ai(app as never) instanceof AiApi);
 });
 
-Deno.test("ai: apt execute delegates to app.ai", async () => {
+Deno.test("ai: apt execute delegates to the app's ai instance", async () => {
   const ctx = await testContext({ userId: 1, app: {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
-    ai: {
-      createSession: (_opts: unknown) => 42,
-      session: (id: number) => ({ run: (content: string) => ({ kind: "run", id, content }) }),
-    },
   } });
+  aiInstances.set(ctx.app, {
+    createSession: (_opts: unknown) => 42,
+    session: (id: number) => ({ run: (content: string) => ({ kind: "run", id, content }) }),
+  } as never);
 
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/sessions", { bot: "cms-helper" }), { id: 42 });
@@ -39,8 +41,8 @@ Deno.test("ai: apt execute delegates to app.ai", async () => {
 Deno.test("ai: stream endpoint throws an Output carrying a ReadableStream", async () => {
   const ctx = await testContext({ userId: 1, app: {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
-    ai: { session: () => ({ runStream: () => new ReadableStream() }) },
   } });
+  aiInstances.set(ctx.app, { session: () => ({ runStream: () => new ReadableStream() }) } as never);
 
   await requestStorage.run(ctx, async () => {
     const err = await invoke(api, "POST", "/sessions/5/stream", { content: "hi" }).then(() => null, (e) => e);

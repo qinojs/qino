@@ -1,5 +1,5 @@
 import type { App } from "../../core/mod.ts";
-import type {} from "../mod.ts"; // App.ai augmentation
+import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
 
 // AI-vision OCR engine: transcribes document images to Markdown via a configured
@@ -11,11 +11,10 @@ const PROMPT =
 
 /** True if the app has a vision model and a provider key configured */
 async function hasVisionModel(app: App): Promise<boolean> {
-  if (!app.ai) return false;
   try {
     const { provider, model } = await resolve(app, { kind: "vision" });
     if (!model) return false;
-    await app.ai.client(provider); // throws if no API key configured
+    await ai(app).client(provider); // throws if no API key configured
     return true;
   } catch { return false; }
 }
@@ -28,7 +27,7 @@ export function registerAiOcr(app: App): void {
     available: () => hasVisionModel(app),
     ocr: async (imagePath, mime) => {
       const image = (await Deno.readFile(imagePath)).toBase64();
-      const res = await app.ai.vision({
+      const res = await ai(app).vision({
         messages: [{
           role: "user",
           content: [

@@ -1,5 +1,5 @@
 import { Access, type AptTree, NotFoundError, Output, type Params, type Ctx, s } from "../core/mod.ts";
-import type {} from "./mod.ts";
+import { ai } from "./mod.ts";
 
 const SSE_HEADERS = {
   "Content-Type": "text/event-stream; charset=utf-8",
@@ -15,7 +15,7 @@ export const api: AptTree = {
       output: s.object({ id: s.number() }),
       access: Access.USER,
       execute: async ({ bot, context }: Params, ctx: Ctx) => ({
-        id: await ctx.app.ai.createSession({ bot: String(bot), context, userId: ctx.userId }),
+        id: await ai(ctx.app).createSession({ bot: String(bot), context, userId: ctx.userId }),
       }),
     },
     ":id": {
@@ -37,7 +37,7 @@ export const api: AptTree = {
           input: s.object({ content: s.string(), context: s.optional(s.record()) }),
           access: Access.USER,
           execute: ({ id, content, context }: Params, ctx: Ctx) =>
-            ctx.app.ai.session(Number(id)).run(String(content), ctx, context as Record<string, unknown> | undefined),
+            ai(ctx.app).session(Number(id)).run(String(content), ctx, context as Record<string, unknown> | undefined),
         },
       },
       "stream": {
@@ -46,7 +46,7 @@ export const api: AptTree = {
           input: s.object({ content: s.string(), context: s.optional(s.record()) }),
           access: Access.USER,
           execute: ({ id, content, context }: Params, ctx: Ctx): never => {
-            const stream = ctx.app.ai.session(Number(id)).runStream(String(content), ctx, context as Record<string, unknown> | undefined);
+            const stream = ai(ctx.app).session(Number(id)).runStream(String(content), ctx, context as Record<string, unknown> | undefined);
             throw new Output(stream, { headers: SSE_HEADERS });
           },
         },
@@ -58,7 +58,7 @@ export const api: AptTree = {
       description: "Generate images from a prompt (OpenAI-compatible passthrough)",
       input: s.object({ data: s.record() }),
       access: Access.USER,
-      execute: ({ data }: Params, ctx: Ctx) => ctx.app.ai.images(data as Record<string, unknown>),
+      execute: ({ data }: Params, ctx: Ctx) => ai(ctx.app).images(data as Record<string, unknown>),
     },
   },
 };

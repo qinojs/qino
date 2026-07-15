@@ -1,14 +1,13 @@
 import * as nodePath from "node:path";
 import type { App, Transcript, TranscriptSegment, TranscriptWord } from "../../core/mod.ts";
-import type {} from "../mod.ts"; // App.ai augmentation
+import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
 
 async function hasSttModel(app: App): Promise<boolean> {
-  if (!app.ai) return false;
   try {
     const { provider, model } = await resolve(app, { kind: "stt" });
     if (!model) return false;
-    await app.ai.client(provider);
+    await ai(app).client(provider);
     return true;
   } catch { return false; }
 }
@@ -19,7 +18,7 @@ export function registerAiTranscript(app: App): void {
     priority: 10,
     available: () => hasSttModel(app),
     transcribe: async (mediaPath, mime) => {
-      let res = await app.ai.transcription({
+      let res = await ai(app).transcription({
         file: mediaPath,
         filename: mediaName(mediaPath, mime),
         mime,
@@ -27,7 +26,7 @@ export function registerAiTranscript(app: App): void {
         "timestamp_granularities[]": "word",
       }) as Record<string, unknown>;
       if (res.error) {
-        res = await app.ai.transcription({ file: mediaPath, filename: mediaName(mediaPath, mime), mime }) as Record<string, unknown>;
+        res = await ai(app).transcription({ file: mediaPath, filename: mediaName(mediaPath, mime), mime }) as Record<string, unknown>;
       }
       if (res.error) throw new Error(`AI transcript: ${errText(res.error)}`);
       return normalizeTranscript(res);

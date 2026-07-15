@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, html, type HtmlString, sql, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
+import { ai } from "../ai/mod.ts";
 import { askDbAi } from "./lib/ai.ts";
 
 const MAX_ROWS = 1000; // cap rendered rows; the query itself is not limited
@@ -50,7 +51,7 @@ export async function render(node: Node): Promise<HtmlString> {
 }
 
 function renderAi(app: App, question: string, note: string): Promise<HtmlString> | string {
-  if (!app.ai) return "";
+  if (!ai.get(app)) return "";
   const msg = note ? html`<u2-alert open variant=danger style="margin-top:4px">${note}</u2-alert>` : "";
   return html.async`<form method=post class=-ai>
     <input type=hidden name=csrfToken value="${getCtx().csrfToken}">

@@ -10,11 +10,16 @@ const str = (v: unknown): string | undefined => v == null ? undefined : String(v
 // Shared chat request defaults (raw passthrough + session loop).
 export const CHAT_DEFAULTS = { temperature: 0.6, max_tokens: 5512 };
 
-// app.ai facade: bot registry, provider clients, raw passthroughs, sessions.
+// Per-app instances; the plugin's init binds, ai()/ai.get() read. Internal — mod.ts does not export it.
+export const aiInstances: WeakMap<object, AiApi> = new WeakMap();
+
+// ai(app) facade: bot registry, provider clients, raw passthroughs, sessions.
 export class AiApi {
   #bots = new Map<string, Bot>();
+  #app: Pick<App, "db" | "settings">;
+  get app(): Pick<App, "db" | "settings"> { return this.#app; }
 
-  constructor(private app: Pick<App, "db" | "settings"> & { ai?: AiApi }) {}
+  constructor(app: Pick<App, "db" | "settings">) { this.#app = app; }
 
   registerBot(bot: Bot): void { this.#bots.set(bot.id, bot); }
   getBot(id: string): Bot | undefined { return this.#bots.get(id); }

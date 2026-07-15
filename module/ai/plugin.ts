@@ -1,5 +1,5 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { AiApi } from "./mod.ts";
+import { AiApi, aiInstances } from "./lib/AiApi.ts";
 import type { App } from "../core/mod.ts";
 import { registerAiOcr } from "./lib/ocr.ts";
 import { registerAiTranscript } from "./lib/transcript.ts";
@@ -9,8 +9,8 @@ export const needs = ["core"];
 export { api } from "./apt.ts";
 export { dbSchema };
 
-export function init(app: Pick<App, "aptTree" | "on" | "settings" | "fileTransformer"> & { ai?: AiApi }) {
-  app.ai = new AiApi(app as App);
-  registerAiOcr(app as App); // AI-vision OCR engine
-  registerAiTranscript(app as App); // AI speech-to-text engine
+export function init(app: App) {
+  aiInstances.set(app, new AiApi(app));
+  registerAiOcr(app); // AI-vision OCR engine
+  registerAiTranscript(app); // AI speech-to-text engine
 }
