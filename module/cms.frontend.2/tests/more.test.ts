@@ -1,5 +1,6 @@
 import { assert, assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { requestStorage, type Ctx } from "../../core/mod.ts";
+import { mailInstances } from "../../mail/lib/MailManager.ts";
 import more from "../view/widgets/more.ts";
 
 Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () => {
@@ -22,16 +23,16 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
     settings: { cms: { feedback: { email: "support@example.test" } } },
     languages: { all: [] },
     t: (strings: TemplateStringsArray) => strings[0],
-    mail: {
-      create: (data: Record<string, unknown>) => {
-        values = data;
-        return {
-          addTo: (email: string) => recipient = email,
-          send: () => { sent = true; return true; },
-        };
-      },
-    },
   };
+  mailInstances.set(app, {
+    create: (data: Record<string, unknown>) => {
+      values = data;
+      return {
+        addTo: (email: string) => recipient = email,
+        send: () => { sent = true; return true; },
+      };
+    },
+  } as never);
   const node = { app };
 
   const html = String(await requestStorage.run(ctx, () => more(node as never, {
@@ -59,10 +60,9 @@ Deno.test("cms.frontend.2 more: keeps feedback draft when sending fails", async 
       "cms.frontend.2": { ui: { tree_show_c: () => false } },
     },
   } as unknown as Ctx;
-  const node = { app: {
-    settings: { cms: { feedback: { email: "support@example.test" } } },
-    mail: { create: () => ({ addTo: () => {}, send: () => false }) },
-  } };
+  const app = { settings: { cms: { feedback: { email: "support@example.test" } } } };
+  mailInstances.set(app, { create: () => ({ addTo: () => {}, send: () => false }) } as never);
+  const node = { app };
 
   await assertRejects(
     () => requestStorage.run(ctx, () => more(node as never, { param: { msg: draft } })),

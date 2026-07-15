@@ -1,16 +1,17 @@
-// deno-lint-ignore-file no-explicit-any
-
 // Public API of mail. The qino plugin lives in ./plugin.ts.
 
-export interface MailManager {
-  templates: Record<string, unknown>;
-  create(values?: Record<string, unknown>): Promise<any>;
-  build(values?: Record<string, unknown>): any;
-  get(id: string | number): Promise<any>;
-  defaults(): Promise<Record<string, string>>;
-  secure(): Promise<string>;
+import type { App } from "../core/mod.ts";
+import { type MailManager, mailInstances } from "./lib/MailManager.ts";
+
+/** The app's mail manager. Throws when mail is not loaded. */
+export function mail(app: App): MailManager {
+  const manager = mailInstances.get(app);
+  if (!manager) throw new Error('module "mail" is not loaded');
+  return manager;
 }
 
-declare module "../core/lib/App.ts" {
-  interface App { mail: MailManager; }
-}
+/** Undefined when mail is not loaded — for optional dependencies. */
+mail.get = (app: App): MailManager | undefined => mailInstances.get(app);
+
+export { MailManager } from "./lib/MailManager.ts";
+export { MailMessage } from "./lib/MailMessage.ts";

@@ -1,7 +1,7 @@
 import { backend } from "../cms.backend/mod.ts";
 import { getCtx, html, type HtmlString, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import type {} from "../mail/mod.ts";
+import { mail } from "../mail/mod.ts";
 
 export const name = "cms.backend.mail.create";
 export const needs = ["cms.backend.mail"];
@@ -32,14 +32,14 @@ async function render(node: Node): Promise<HtmlString> {
     if (!subject) {
       message = await html.async`<u2-alert open variant=danger>${t`Subject is required.`}</u2-alert>`;
     } else {
-      const mail = await app.mail.create({ subject, html: body, sender: sender || undefined, replyTo: replyTo || undefined });
+      const msg = await mail(app).create({ subject, html: body, sender: sender || undefined, replyTo: replyTo || undefined });
 
       const addedEmails = new Set<string>();
 
       for (const uid of toUsers) {
         const usr = await db.row`SELECT email, firstname, lastname FROM usr WHERE id=${uid} AND active=${true}`;
         if (usr?.email && !addedEmails.has(usr.email)) {
-          mail.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
+          msg.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
           addedEmails.add(usr.email);
         }
       }
@@ -48,7 +48,7 @@ async function render(node: Node): Promise<HtmlString> {
         const members = await db.query`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=${true}`;
         for (const usr of members) {
           if (usr.email && !addedEmails.has(usr.email)) {
-            mail.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
+            msg.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
             addedEmails.add(usr.email);
           }
         }
@@ -58,17 +58,17 @@ async function render(node: Node): Promise<HtmlString> {
         for (const raw of toCustom.split(/[\n,;]+/)) {
           const addr = raw.trim();
           if (addr && !addedEmails.has(addr)) {
-            mail.addTo(addr);
+            msg.addTo(addr);
             addedEmails.add(addr);
           }
         }
       }
 
-      await mail.save();
-      const savedId = mail.id;
+      await msg.save();
+      const savedId = msg.id;
 
       if ("send" in ctx.req.body) {
-        await mail.send();
+        await msg.send();
         message = await html.async`<u2-alert open variant=success style="margin:0">${t`Mail created and sent`} (${addedEmails.size} ${t`recipients`}). <a href="../?id=${savedId}">${t`View`}</a></u2-alert>`;
       } else {
         message = await html.async`<u2-alert open variant=success>${t`Mail saved`} (${addedEmails.size} ${t`recipients`}). <a href="../?id=${savedId}">${t`View`}</a></u2-alert>`;
@@ -76,7 +76,7 @@ async function render(node: Node): Promise<HtmlString> {
     }
   }
 
-  const defaults = await app.mail.defaults().catch(() => ({} as Record<string, unknown>));
+  const defaults = await mail(app).defaults().catch(() => ({} as Record<string, unknown>));
   const defaultSender = defaults.sender ? (defaults.sendername ? `${defaults.sendername} <${defaults.sender}>` : defaults.sender) : "";
 
   const users = await db.query`SELECT id, email, firstname, lastname FROM usr WHERE active=${true} ORDER BY lastname, firstname, email`;

@@ -1,5 +1,5 @@
 import { basename, extname } from "node:path";
-import type {} from "../mail/mod.ts";
+import { mail } from "../mail/mod.ts";
 import { typeByExtension } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { getCtx, html, type HtmlString, sql, u2time, unixTime, type App } from "../core/mod.ts";
@@ -124,12 +124,12 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   if (!row) return html.async`<div class=u2-card><div class=-body>${t`Mail does not exist.`}</div></div>`;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken) {
-    const Mail = await node.app.mail.get(id);
-    if ("send" in ctx.req.body) await Mail.send();
+    const msg = await mail(node.app).get(id);
+    if ("send" in ctx.req.body) await msg.send();
     const add = String(ctx.req.body.add_recipient ?? "").trim();
     if (add) {
-      Mail.addTo(add);
-      await Mail.save();
+      msg.addTo(add);
+      await msg.save();
     }
   }
 
@@ -166,8 +166,8 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 }
 
 async function renderPreview(node: Node, id: number): Promise<HtmlString> {
-  const Mail = await node.app.mail.get(id);
-  let body = await Mail.getHtml(undefined, Mail.data);
+  const msg = await mail(node.app).get(id);
+  let body = await msg.getHtml(undefined, msg.data);
   const files = await node.app.db.query`SELECT * FROM mail_attachment WHERE mail_id=${id} AND inline=1`;
   for (const f of files) {
     if (!f.path || !f.hash) continue;

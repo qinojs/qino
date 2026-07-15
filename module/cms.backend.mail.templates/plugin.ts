@@ -1,5 +1,5 @@
 import { backend } from "../cms.backend/mod.ts";
-import type {} from "../mail/mod.ts";
+import { mail } from "../mail/mod.ts";
 import { getCtx, html, type HtmlString, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
@@ -15,7 +15,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 export async function init(app: App): Promise<void> {
   const rows = await app.db.query`SELECT name, html FROM mail_template`;
   for (const row of rows) {
-    if (row.name && row.html) app.mail.templates[row.name] = row.html;
+    if (row.name && row.html) mail(app).templates[row.name] = row.html;
   }
 }
 
@@ -136,7 +136,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
 
     if ("delete" in ctx.req.body) {
       await db.query`DELETE FROM mail_template WHERE id=${id}`;
-      delete app.mail.templates[row.name];
+      delete mail(app).templates[row.name];
       ctx.res.status = 302;
       ctx.res.headers.set("Location", "?");
       return "";

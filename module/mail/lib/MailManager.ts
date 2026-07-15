@@ -1,7 +1,6 @@
 import { getCtx, hee, uid, type App } from "../../core/mod.ts";
-import { clean, importUpyo, renderMarkers, toBool, toInt } from "./helpers.ts";
+import { clean, importUpyo, renderMarkers, toBool, toInt, trackCert } from "./helpers.ts";
 import { MailMessage } from "./MailMessage.ts";
-import { trackCert } from "./tracking.ts";
 import { transports } from "./transport.ts";
 import type { Dict, MailDefaults, Recipient, Template, TemplateData, Transport, TransportCtor } from "./types.ts";
 
@@ -13,13 +12,18 @@ const defaultTemplate: Template = ({ main }) => `<!DOCTYPE html>
   </body>
 </html>`;
 
+// Per-app instances; the plugin's init binds, mail()/mail.get() read. Internal — mod.ts does not export it.
+export const mailInstances: WeakMap<object, MailManager> = new WeakMap();
+
 export class MailManager {
   templates: Record<string, Template> = { default: defaultTemplate };
   #transport?: Transport;
   #builtTransport?: Transport;
   #builtKey = "";
+  #app: App;
+  get app(): App { return this.#app; }
 
-  constructor(public app: App) {}
+  constructor(app: App) { this.#app = app; }
 
   build(values: Dict = {}): MailMessage {
     return Object.assign(new MailMessage(this), values);
@@ -122,7 +126,7 @@ export class MailManager {
     const root = this.app.settings.mail.transport;
     let type = String(await root.type ?? "").toLowerCase();
     if (!type && this.app.dev) type = "mock";
-    if (!type) throw new Error("No mail transport configured. Set mail.transport.type or inject app.mail.setTransport().");
+    if (!type) throw new Error("No mail transport configured. Set mail.transport.type or inject mail(app).setTransport().");
     const get = (key: string) => root[type][key];
     const options: Dict = {};
 

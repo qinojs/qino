@@ -1,17 +1,14 @@
 import { Output, unixTime, type Ctx } from "../../core/mod.ts";
-import { sha1 } from "./helpers.ts";
-import type {} from "../mod.ts";
+import { trackCert } from "./helpers.ts";
+import { mail } from "../mod.ts";
 
 const BLANK_GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), c => c.charCodeAt(0));
-
-// Signs trackId and redirect target; "\n" delimits ambiguous id/url boundaries.
-export const trackCert = (secret: string, trackId: number, url = "") => sha1("mail1-track" + secret + trackId + "\n" + url).slice(0, 16);
 
 export async function handleTrack(ctx: Ctx): Promise<void> {
   const [idRaw, cert] = String(ctx.req.query.mail1tr ?? "").split("-");
   const trackId = Number(idRaw);
   const url = String(ctx.req.query.url ?? "");
-  if (!trackId || !cert || cert !== trackCert(await ctx.app.mail.secure(), trackId, url)) return;
+  if (!trackId || !cert || cert !== trackCert(await mail(ctx.app).secure(), trackId, url)) return;
 
   // cert is stateless: track if the recipient still exists, redirect either way
   const recipient = await ctx.app.db.row`SELECT * FROM mail_recipient WHERE mail1_track_id = ${trackId}`;

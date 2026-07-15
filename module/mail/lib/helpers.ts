@@ -96,6 +96,10 @@ export function sha1(value: string): string {
   return createHash("sha1").update(value).digest("hex");
 }
 
+// Signs trackId and redirect target; "\n" delimits ambiguous id/url boundaries.
+export const trackCert = (secret: string, trackId: number, url = ""): string =>
+  sha1("mail1-track" + secret + trackId + "\n" + url).slice(0, 16);
+
 function pathAttachment(v: string, opts: Dict = {}): Dict {
   const filename = opts.name ?? opts.filename ?? basename(v);
   const contentType = opts.type ?? opts.contentType ?? typeByExtension(extname(v).replace(/^\./, "")) ?? "application/octet-stream";

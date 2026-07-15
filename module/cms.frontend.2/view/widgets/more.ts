@@ -1,6 +1,6 @@
 import type { Node } from "../../../cms/mod.ts";
 import { hee, html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import type {} from "../../../mail/mod.ts";
+import { mail } from "../../../mail/mod.ts";
 
 export default async function (node: Node, vars: { param?: Record<string, string> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
@@ -14,7 +14,8 @@ export default async function (node: Node, vars: { param?: Record<string, string
   if (vars.param?.msg) {
     const feedbackEmail = String(await app.settings.cms.feedback.email ?? "").trim();
     if (!feedbackEmail) throw new Error("CMS feedback recipient is not configured");
-    if (!app.mail) throw new Error("CMS feedback requires the mail module");
+    const manager = mail.get(app);
+    if (!manager) throw new Error("CMS feedback requires the mail module");
     const data: Record<string, string> = {
       "Message:": vars.param.msg,
       "Link":     vars.param.link ?? "",
@@ -26,9 +27,9 @@ export default async function (node: Node, vars: { param?: Record<string, string
     const mailHtml = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
       `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
     ).join("")}</dl>`;
-    const mail = await app.mail.create({ subject: "CMS feedback", replyTo: email, html: mailHtml });
-    mail.addTo(feedbackEmail);
-    if (!await mail.send()) throw new Error("CMS feedback could not be sent");
+    const msg = await manager.create({ subject: "CMS feedback", replyTo: email, html: mailHtml });
+    msg.addTo(feedbackEmail);
+    if (!await msg.send()) throw new Error("CMS feedback could not be sent");
     ctx.settings.cms.feedback.text('');
     feedbackConfirmation = `<br><i style="color:#4c4">Thank you for your feedback. <br>We will get back to you as soon as possible.</i><br>`;
   }

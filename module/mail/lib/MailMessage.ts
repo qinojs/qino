@@ -29,8 +29,11 @@ export class MailMessage {
   receipts: SendReceipt[] = [];
   #pending: Promise<unknown>[] = [];
   #loaded = false;
+  #manager: MailManager;
+  get manager(): MailManager { return this.#manager; }
 
-  constructor(public manager: MailManager, id = "", row?: Dict) {
+  constructor(manager: MailManager, id = "", row?: Dict) {
+    this.#manager = manager;
     this.id = id;
     if (row) this.fromRow(row);
   }
