@@ -81,7 +81,7 @@ async function sessionLinkBase(node: Node): Promise<string> {
   return url.pathname + (qs ? "?" + qs + "&" : "?") + "s=";
 }
 
-async function render(node: Node): Promise<HtmlString> {
+function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
   const selected = ctx.req.query.s ? Number(ctx.req.query.s) : 0;
