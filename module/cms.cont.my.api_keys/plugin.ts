@@ -5,7 +5,7 @@ export const name = "cms.cont.my.api_keys";
 export const needs = ["cms", "api_key"];
 export const cms = { node: { js: ["pub/main.js"], render } };
 
-async function render(node: Node): Promise<HtmlString> {
+function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   if (!getCtx().user) return html.async`<p>${t`Please sign in.`}</p>`;
   return html.async`<div class="-m-api_keys">
