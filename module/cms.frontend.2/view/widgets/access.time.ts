@@ -6,7 +6,7 @@ function toDatetimeLocal(ts: string | number | null): string {
   return new Date(Number(ts) * 1000).toISOString().slice(0, 16);
 }
 
-export default async function (node: Node): Promise<HtmlString> {
+export default function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const startVal = toDatetimeLocal(node.vs.online_start);
   const endVal   = toDatetimeLocal(node.vs.online_end);
