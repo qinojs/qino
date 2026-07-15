@@ -114,7 +114,9 @@ async function data(node: Node) {
   return { file, w, h, delay, quality, editable };
 }
 
-async function renderCard(id: string, title: string, note: string, content: Promise<HtmlString> | HtmlString, params: string): Promise<string> {
+function renderCard(
+  id: string, title: string, note: string, content: Promise<HtmlString> | HtmlString, params: string,
+): Promise<string> {
   return html.async`
     <article class="c2t-card" data-c2t-case="${id}" data-c2t-params="${params}">
       <h4>${title}</h4>
