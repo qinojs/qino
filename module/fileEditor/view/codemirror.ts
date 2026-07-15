@@ -13,8 +13,7 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
 
-  const version = "5.65.5";
-  const url = `https://cdn.jsdelivr.net/npm/codemirror@${version}`;
+  const url = "https://cdn.jsdelivr.net/npm/codemirror@5.65.5";
   const min = "min.";
 
   html.styles.add(`${url}/lib/codemirror.${min}css`);
