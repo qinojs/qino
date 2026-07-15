@@ -48,6 +48,5 @@ function match(pattern: string, path: string) {
 }
 
 function validPattern(pattern: string) {
-  const value = pattern.replace(/^\*+|\*+$/g, "");
-  return value.length >= 3;
+  return pattern.replace(/^\*+|\*+$/g, "").length >= 3;
 }
