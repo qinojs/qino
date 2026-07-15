@@ -11,8 +11,7 @@ export const gifGuard: TransformerDef = {
   props: [],
   handles: (ctx) => ctx.mime === 'image/gif',
   transform: async (ctx) => {
-    const frames = await magickIdentify(ctx.currentPath, '%n', ctx.signal);
-    if (parseInt(frames) > 1) {
+    if (parseInt(await magickIdentify(ctx.currentPath, '%n', ctx.signal)) > 1) {
       ctx.meta.animated = true;
     }
   },
