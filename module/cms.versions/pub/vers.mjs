@@ -13,8 +13,7 @@ const body = document.body;
 const htmlEl = document.documentElement;
 
 function panelEl(selector) {
-  const root = document.querySelector('qino-cms')?.shadowRoot || document;
-  return root.querySelector(selector);
+  return (document.querySelector('qino-cms')?.shadowRoot || document).querySelector(selector);
 }
 
 const CmsVersViewer = function(){
