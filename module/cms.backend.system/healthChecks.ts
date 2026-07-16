@@ -109,7 +109,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
     if (skipModules.has(module) || installedModules[module]) continue;
     notice[`settings needed :${module}`] = () => ({
       info: "did you deinstall the module?",
-      solutions: { delete: { solve: async () => { delete (settings as Record<string, unknown>)[module]; } } },
+      solutions: { delete: { solve: () => { delete (settings as Record<string, unknown>)[module]; } } },
     });
   }
 
