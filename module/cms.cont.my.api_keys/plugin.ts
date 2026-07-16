@@ -1,13 +1,13 @@
 import type { Node } from "../cms/mod.ts";
-import { getCtx, html, type HtmlString } from "../core/mod.ts";
+import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.my.api_keys";
 export const needs = ["cms", "api_key"];
 export const cms = { node: { js: ["pub/main.js"], render } };
 
-function render(node: Node): Promise<HtmlString> {
+function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
-  if (!getCtx().user) return html.async`<p>${t`Please sign in.`}</p>`;
+  if (!ctx.user) return html.async`<p>${t`Please sign in.`}</p>`;
   return html.async`<div class="-m-api_keys">
   <div data-list>${t`Loading…`}</div>
   <form data-create>

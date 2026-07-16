@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { hee, getCtx, type App } from "../core/mod.ts";
+import { hee, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name  = "cms.backend.web_auth";
@@ -10,8 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.web_auth", { en: "WebAuthn", de: "WebAuthn" });
 }
 
-async function render(node: Node): Promise<string> {
-  const ctx = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const db  = node.app.db;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_cred" in ctx.req.body) {

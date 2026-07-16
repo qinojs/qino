@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, hee, type App } from "../core/mod.ts";
+import { hee, type App, type Ctx } from "../core/mod.ts";
 import { KINDS, providerCatalog } from "../ai/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -263,8 +263,7 @@ function defaultsOverview(allModels: Row[], providersById: Map<number, Row>): st
 }
 
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const ctx = getCtx();
+async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }): Promise<string> {
   const app = node.app;
   const message = await handleAction(app, vars);
 

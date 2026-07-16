@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { hee, html, type HtmlString, getCtx } from "../core/mod.ts";
+import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.login4";
 
@@ -15,8 +15,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<HtmlString | string> {
-  const ctx = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | string> {
   const app = node.app;
   const edit = node.edit;
   const cms = node.cms;

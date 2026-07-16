@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { getCtx, html, type App, type HtmlString } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.web_auth";
 export const needs = ["web_auth"];
@@ -15,8 +15,7 @@ const settingsSchema = {
 
 export const cms = { node: { js: ["pub/main.js"], render, settingsSchema } };
 
-async function render(node: Node): Promise<string | HtmlString> {
-  const ctx     = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlString> {
   const settings = node.settings;
   const mode    = String(settings.mode() ?? "auto");
 

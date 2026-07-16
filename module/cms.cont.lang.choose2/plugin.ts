@@ -1,5 +1,5 @@
 import { cmsCtx, type Node } from "../cms/mod.ts";
-import { getCtx, hee } from "../core/mod.ts";
+import { hee, type Ctx } from "../core/mod.ts";
 
 export const name = "cms.cont.lang.choose2";
 
@@ -36,8 +36,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node): Promise<string> {
-  const ctx = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const cms = node.cms;
   const settings = node.settings;
 

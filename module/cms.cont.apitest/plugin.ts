@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { Access, getCtx, hee, walk, type AptNode, type Route, type Verb } from "../core/mod.ts";
+import { Access, hee, walk, type AptNode, type Ctx, type Route, type Verb } from "../core/mod.ts";
 
 export const name = "cms.cont.apitest";
 export const needs = ["cms"];
@@ -17,8 +17,7 @@ function accessLabel(verb: Verb): string {
 const paramNames = (r: Route): string[] =>
   r.segments.flatMap((seg, i) => seg.startsWith(":") && (r.nodes[i] as AptNode) ? [seg.slice(1).replace(/\*$/, "")] : []);
 
-function render(node: Node): string {
-  const ctx = getCtx();
+function render(node: Node, { ctx }: { ctx: Ctx }): string {
   const appURL = ctx.req.basePath ?? "/";
 
   // smart prefill: current node feeds node-ish params, current user feeds user-ish ones

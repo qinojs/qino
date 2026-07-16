@@ -1,11 +1,10 @@
-import { hee, getCtx } from "../core/mod.ts";
+import { hee, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.trash";
 export const needs = ["cms"];
 
-async function render(node: Node): Promise<string> {
-  const ctx   = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const app   = node.app;
   const trash = Number(await app.settings.cms?.pageTrash ?? 0);
   if (!trash) return `<div>No trash page configured</div>`;

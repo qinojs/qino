@@ -1,5 +1,5 @@
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, html, type HtmlString, type App } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { mail } from "../mail/mod.ts";
 
@@ -10,8 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Create Mail", de: "Mail erstellen" });
 }
 
-async function render(node: Node): Promise<HtmlString> {
-  const ctx = getCtx();
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const db = app.db;
