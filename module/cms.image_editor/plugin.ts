@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { Access, Output, type App, type AptTree, type Ctx, s } from "../core/mod.ts";
-import { cmsCtx, type Node } from "../cms/mod.ts";
+import { cmsCtx } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
 export const name = "cms.image_editor";
