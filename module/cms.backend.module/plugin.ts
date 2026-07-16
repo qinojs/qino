@@ -79,7 +79,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   }));
 
   // --- Dependencies (needs) ---
-  const needs: string[] = mod.needs ?? [];
+  const needs = mod.needs ?? [];
   const neededBy = Object.entries(allMods)
     .filter(([, m]) => (m.plugin.needs ?? []).includes(modName))
     .map(([n]) => n)
@@ -174,7 +174,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   for (const name of modules) {
     const modObj = allMods[name];
     const mod = modObj.plugin;
-    const needs: string[] = mod.needs ?? [];
+    const needs = mod.needs ?? [];
     const neededBy = Object.values(allMods).filter((m) => (m.plugin.needs ?? []).includes(name)).length;
     const exports = [
       mod.init && "init",
