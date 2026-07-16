@@ -127,8 +127,5 @@ export function preventDbManipulations(app: App): void {
 
 export function cacheHeaders(ctx: Ctx): void {
     const maxAge = 60 * 60 * 24 * 180;
-    const d = new Date(Date.now() + maxAge * 1000).toUTCString();
-    ctx.res.headers.set("Expires", d);
     ctx.res.headers.set("Cache-Control", `private, max-age=${maxAge}`);
-    ctx.res.headers.set("Pragma", "private");
 }

@@ -79,9 +79,7 @@ export class DbFileManager {
     const mtime = await f.mtime();
     if (mtime !== undefined) headers.set("Last-Modified", new Date(mtime * 1000).toUTCString());
     const maxAge = 60 * 60 * 24 * 180;
-    headers.set("Expires", new Date(Date.now() + maxAge * 1000).toUTCString());
     headers.set("Cache-Control", `max-age=${maxAge}, private, immutable`);
-    headers.set("Pragma", "private");
 
     const { path: outputPath, mime: outputMime, key, transformed, error } = await f.transform(params);
     if (error && isTransformRequest(params)) return new Response(error.message, {
@@ -93,16 +91,12 @@ export class DbFileManager {
     if (!transformed && (/\.pdf$/.test(name) || mime === "application/pdf")) {
       mime = "application/pdf";
       headers.set(...header.contentDisposition("inline", f.name));
-      headers.set("Expires", "0");
-      headers.set("Cache-Control", "must-revalidate");
+      headers.set("Cache-Control", "no-cache");
     }
 
     if ("dl" in params) {
-      mime = "application/force-download";
-      headers.set("Expires", "0");
-      headers.set("Cache-Control", "private, must-revalidate");
+      headers.set("Cache-Control", "private, no-cache");
       headers.set(...header.contentDisposition("attachment", f.name));
-      headers.set("Content-Transfer-Encoding", "binary");
     }
 
     if (params["as"] === "text") mime = "text/plain";

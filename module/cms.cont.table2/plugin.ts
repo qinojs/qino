@@ -55,9 +55,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const headers = ctx.res.headers;
     headers.set("Content-Type", "application/x-msdownload");
     headers.set(...header.contentDisposition("inline", `${titleStr}_${dateStr}.xls`));
-    headers.set("Expires", "0");
-    headers.set("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
-    headers.set("Pragma", "public");
+    headers.set("Cache-Control", "no-cache");
     throw new Output(csv);
   }
 
