@@ -1,13 +1,13 @@
 import type { Ctx } from "../../core/mod.ts";
-import type { CMS } from "./CMS.ts";
-import type {} from "../mod.ts";
+import { cms } from "./CMS.ts";
+import { cmsCtx } from "./CmsContext.ts";
 
 export async function render(ctx: Ctx): Promise<void> {
   const app = ctx.app;
   const db = ctx.app.db;
-  const cms: CMS = ctx.app.cms;
+  const cm = cms(ctx.app);
 
-  let Page = await cms.nodeFromRequest();
+  let Page = await cm.nodeFromRequest();
 
   if (!Page.exists()) {
     // Search for redirect
@@ -15,7 +15,7 @@ export async function render(ctx: Ctx): Promise<void> {
     if (redirect) {
       let url: string;
       if (!isNaN(Number(redirect))) {
-        const P = await cms.node(Number(redirect));
+        const P = await cm.node(Number(redirect));
         url = ctx.req.url.origin + (await P.url());
       } else {
         url = String(redirect);
@@ -27,11 +27,11 @@ export async function render(ctx: Ctx): Promise<void> {
     // Not found
     ctx.res.status = 404;
     const notFoundId = await app.settings.cms.pageNotFound ?? 0;
-    Page = await cms.node(Number(notFoundId));
+    Page = await cm.node(Number(notFoundId));
   }
 
-  ctx.cms.mainNode = Page;
-  ctx.cms.requestedNode = Page;
+  cmsCtx(ctx).mainNode = Page;
+  cmsCtx(ctx).requestedNode = Page;
 
   // Set editmode early so Node.edit (sync getter) works during render
   const access = await Page.access();
@@ -39,15 +39,15 @@ export async function render(ctx: Ctx): Promise<void> {
   if (!access) {
     ctx.res.status = 401;
     const noAccessId = await app.settings.cms.pageNoAccess ?? 0;
-    ctx.cms.mainNode = await cms.node(Number(noAccessId));
+    cmsCtx(ctx).mainNode = await cm.node(Number(noAccessId));
   }
-  if (!(await ctx.cms.mainNode.isReadable())) {
+  if (!(await cmsCtx(ctx).mainNode.isReadable())) {
     ctx.res.status = 401;
     const offlineId = await app.settings.cms.pageOffline;
-    ctx.cms.mainNode = await cms.node(Number(offlineId ?? "0"));
+    cmsCtx(ctx).mainNode = await cm.node(Number(offlineId ?? "0"));
   }
 
-  const mainNode = ctx.cms.mainNode;
+  const mainNode = cmsCtx(ctx).mainNode;
   const PageObj = await mainNode.page();
   const titleT = await PageObj.text("_title");
   const title = titleT ? String(await titleT.string()).replace(/<[^>]+>/g, "") : "";

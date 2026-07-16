@@ -1,6 +1,6 @@
 import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 import type { App } from "../core/mod.ts";
-import type {} from "./mod.ts";
+import { cms } from "./mod.ts";
 
 export function healthChecks(app: App): HealthTypes {
   const db       = app.db;
@@ -17,7 +17,7 @@ export function healthChecks(app: App): HealthTypes {
           solutions: {
             "empty trash": {
               solve: async () => {
-                const TrashNode = await app.cms.node(trashId);
+                const TrashNode = await cms(app).node(trashId);
                 for (const Child of (await TrashNode.children({ type: "*" })).values()) {
                   await TrashNode.removeChild(Child);
                 }
@@ -38,10 +38,10 @@ export function healthChecks(app: App): HealthTypes {
               solve: async () => {
                 const trashId = Number(await settings.cms?.pageTrash ?? 0);
                 if (!trashId) throw new Error("No trash page configured");
-                const TrashNode = await app.cms.node(trashId);
+                const TrashNode = await cms(app).node(trashId);
                 const trashCont = await TrashNode.cont("main");
                 for (const pid of all) {
-                  const P = await app.cms.node(Number(pid));
+                  const P = await cms(app).node(Number(pid));
                   await TrashNode.insertBefore(P, trashCont);
                 }
               },

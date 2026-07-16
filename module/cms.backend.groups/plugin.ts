@@ -38,7 +38,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     });
   }
 
-  const usersNode = await app.cms.nodeByModule("cms.backend.users");
+  const usersNode = await node.cms.nodeByModule("cms.backend.users");
   const usersUrl = usersNode ? await (await usersNode.page()).url() : "";
 
   const rows = await db.query`
@@ -103,7 +103,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const vs = await db.row`SELECT * FROM grp WHERE id = ${id}`;
   if (!vs) return html.async`<div class=u2-card><div class=-body>${t`Group not found.`}</div></div>`;
 
-  const usersNode = await app.cms.nodeByModule("cms.backend.users");
+  const usersNode = await node.cms.nodeByModule("cms.backend.users");
   const usersUrl = usersNode ? await (await usersNode.page()).url() : "";
 
   const members = await db.query`

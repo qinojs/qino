@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, hee, Output, sql, unixTime } from "../core/mod.ts";
-import type { Node } from "./mod.ts";
+import { cms, type Node } from "./mod.ts";
 // ─── business logic used by REST ──────────────
 
 export async function nodeToJson(node: Node, type = "*"): Promise<any> {
@@ -49,10 +49,10 @@ export async function treeToJson(opts: {
 export async function tree(start: any, opt: any = {}): Promise<any[]> {
     const ctx = getCtx();
     const filter = opt.filter ?? "*";
-    const In = opt.in ? await ctx.app.cms.node(opt.in) : null;
+    const In = opt.in ? await cms(ctx.app).node(opt.in) : null;
     const self = String(start) === "0";
     return treeToJson({
-        node: await ctx.app.cms.node(self ? 1 : start),
+        node: await cms(ctx.app).node(self ? 1 : start),
         self,
         type: filter,
         access: 0, // no-access nodes stay listed, nodeToJson masks their title
@@ -70,7 +70,7 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
         if (await node.access() < 3) throw new Output({ error: "Forbidden" }, { status: 403 });
         await (await node.parent()).removeChild(node);
     } else {
-        const TrashNode = await ctx.app.cms.node(trash);
+        const TrashNode = await cms(ctx.app).node(trash);
         const parent = await node.parent();
         const siblings = parent ? [...(await parent.children({ type: node.vs.type })).values()] : [];
         const idx = siblings.findIndex(s => s.id === node.id);
@@ -97,9 +97,9 @@ export async function nodeRestore(node: any): Promise<{ url: string }> {
     if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
     const fromId   = Number(await node.settings["__deleted_from"]   ?? 0);
     const beforeId = Number(await node.settings["__deleted_before"] ?? 0);
-    const toNode   = fromId ? await ctx.app.cms.node(fromId) : null;
+    const toNode   = fromId ? await cms(ctx.app).node(fromId) : null;
     if (!toNode || await toNode.access() < 2) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
-    const before = beforeId ? await ctx.app.cms.node(beforeId) : null;
+    const before = beforeId ? await cms(ctx.app).node(beforeId) : null;
     await toNode.insertBefore(node, before);
     delete node.settings["__deleted_from"];
     delete node.settings["__deleted_before"];
@@ -165,7 +165,7 @@ export async function searchNodes(search: string): Promise<any[]> {
         AND ( p.id = ${search} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
         p.id = ${search} DESC, t.lang = ${ctx.lang} DESC,
         t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
-        const Page = await ctx.app.cms.node(vs.id);
+        const Page = await cms(ctx.app).node(vs.id);
         if (!await Page.access()) continue;
         const titleStr = String(await Page.showTitle()).trim();
         if (!titleStr) continue;
@@ -196,7 +196,7 @@ export async function searchFiles(search: string): Promise<any[]> {
         AND ( f.id = ${s} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )
         ORDER BY f.id = ${s} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
         f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
-        const node = await ctx.app.cms.node(vs["pid"]);
+        const node = await cms(ctx.app).node(vs["pid"]);
         if ((await node.access()) < 2) continue;
         const F = await ctx.app.dbFiles.file(vs.id, vs);
         if (!await F.exists()) continue;

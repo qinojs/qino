@@ -10,7 +10,7 @@ async function render(node: Node): Promise<string> {
   const trash = Number(await app.settings.cms?.pageTrash ?? 0);
   if (!trash) return `<div>No trash page configured</div>`;
 
-  const TrashNode = await app.cms.node(trash);
+  const TrashNode = await node.cms.node(trash);
   const items     = [...(await TrashNode.children({ type: "*", access: 2 })).values()];
 
   let listHtml = "";
@@ -21,7 +21,7 @@ async function render(node: Node): Promise<string> {
     const deletedTime = Number(await P.settings["__deleted_time"] ?? 0);
     const deletedBy   = hee(String(await P.settings["__deleted_by"]  ?? ""));
     const deletedFrom = Number(await P.settings["__deleted_from"] ?? 0);
-    const fromTitle   = deletedFrom ? hee(await (await (await app.cms.node(deletedFrom)).title()).string()) : "";
+    const fromTitle   = deletedFrom ? hee(await (await (await node.cms.node(deletedFrom)).title()).string()) : "";
     const timeHtml    = deletedTime ? `<u2-time datetime="${new Date(deletedTime * 1000).toISOString()}" type=relative></u2-time>` : "";
     const module      = hee(String(P.vs.module ?? ""));
     const previewUrl = hee(ctx.req.basePath + "?cmspid=" + id);

@@ -1,3 +1,4 @@
+import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { WRITE } from "./access.ts";
@@ -95,7 +96,7 @@ export class Node {
         const ctx = getCtx();
         user ??= ctx.user;
         const usrId = Number(user);
-        const cache = ctx.cms.accessCache;
+        const cache = cmsCtx(ctx).accessCache;
         const key = `${this.id}:${usrId}`;
         if (cache[key] === undefined) {
             const e: AppEvents["cms::calcAccess"] = { node: this, user, access: await this.#calcUsrAccess(user) };
@@ -156,7 +157,7 @@ export class Node {
         if (!(await this.isReadable())) return html.raw("");
         const ctx = getCtx();
 
-        const renderPath = ctx.cms.renderPath;
+        const renderPath = cmsCtx(ctx).renderPath;
         if (renderPath.has(this.id)) {
             return html.raw(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
         }
@@ -264,9 +265,9 @@ export class Node {
     get edit(): boolean {
         const ctx = getCtx();
         const usrId = Number(ctx.user);
-        const cache = ctx.cms.accessCache;
+        const cache = cmsCtx(ctx).accessCache;
         const cachedAccess = cache[`${this.id}:${usrId}`] ?? 0;
-        return cachedAccess > 1 && !!ctx.cms.editmode;
+        return cachedAccess > 1 && !!cmsCtx(ctx).editmode;
     }
 
     async page(): Promise<Node> {

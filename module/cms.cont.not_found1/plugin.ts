@@ -1,5 +1,5 @@
 import { hee, sql, type Ctx } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { cmsCtx, type Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.not_found1";
 export const needs = ["cms"];
@@ -45,7 +45,7 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<string> {
   if (!node.edit) return "";
   const t = node.app.t;
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
-  if (ctx.cms.mainNode === await node.cms.nodeFromRequest?.()) return "";
+  if (cmsCtx(ctx).mainNode === await node.cms.nodeFromRequest?.()) return "";
 
   ctx.res.html.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
   ctx.res.html.scripts.add(ctx.req.modulePath + "cms.frontend.2/pub/js/frontend.mjs");

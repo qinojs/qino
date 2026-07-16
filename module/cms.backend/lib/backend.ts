@@ -1,11 +1,11 @@
 import type { App } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { cms, type Node } from "../../cms/mod.ts";
 
 export async function checkInstalled(app: App): Promise<Node | undefined> {
-  const cms = app.cms;
-  let node = await cms.nodeByModule("cms.backend");
+  const cm = cms(app);
+  let node = await cm.nodeByModule("cms.backend");
   if (!node) {
-    const root = await cms.node(1);
+    const root = await cm.node(1);
     const P = await root.createChild({
       id: 100,
       visible: 0,
@@ -24,13 +24,13 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       P.settings.childXML = '<page visible="1"></page>';
       app.settings.cms.backend(String(P.id));
     }
-    node = await cms.nodeByModule("cms.backend");
+    node = await cm.nodeByModule("cms.backend");
   }
   return node?.page();
 }
 
 export async function install(app: App, module: string, titles?: Record<string, string>): Promise<Node | undefined> {
-  const cms = app.cms;
+  const cm = cms(app);
 
   await checkInstalled(app);
   const m = module.match(/^cms\.backend\.(.+)/);
@@ -39,9 +39,9 @@ export async function install(app: App, module: string, titles?: Record<string, 
   let parentModule = "cms.backend";
   for (const part of parts) {
     const mod = parentModule + "." + part;
-    const existing = await cms.nodeByModule(mod);
+    const existing = await cm.nodeByModule(mod);
     if (!existing) {
-      const parentNode = await cms.nodeByModule(parentModule);
+      const parentNode = await cm.nodeByModule(parentModule);
       const Parent = parentNode ? await parentNode.page() : parentNode;
       if (Parent) {
         const Node = await (await Parent.createChild({
@@ -55,7 +55,7 @@ export async function install(app: App, module: string, titles?: Record<string, 
     }
     parentModule = mod;
   }
-  const node = await cms.nodeByModule(module);
+  const node = await cm.nodeByModule(module);
   const P = await node?.page();
   if (P && titles) for (const [lang, text] of Object.entries(titles)) await P.title(lang, text);
   return P;

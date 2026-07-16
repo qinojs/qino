@@ -4,12 +4,6 @@
 import { getCtx, requestStorage, sql, type App, type Db, type Row } from "../../core/mod.ts";
 import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
 
-declare module "../../core/lib/App.ts" {
-  interface AppEvents {
-    "vers::createSpace": { space: number };
-  }
-}
-
 // ─── ensureSpace ────────────────────────────────────────────────────────────
 
 export async function ensureSpace(app: App, space: number): Promise<void> {

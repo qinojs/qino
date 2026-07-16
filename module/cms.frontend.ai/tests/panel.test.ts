@@ -18,7 +18,7 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
   const scripts: string[] = [];
   const ctx = {
     req: { query: {}, modulePath: "/m/" },
-    cms: { editmode: true },
+    state: { cms: { editmode: true } },
     res: { html: { scripts: { add: (u: string) => scripts.push(u) } } },
   };
   handlers["cms-ready"][0]({ ctx });
@@ -26,6 +26,6 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
 
   // no script outside editmode
   scripts.length = 0;
-  handlers["cms-ready"][0]({ ctx: { ...ctx, cms: { editmode: false } } });
+  handlers["cms-ready"][0]({ ctx: { ...ctx, state: { cms: { editmode: false } } } });
   assertEquals(scripts, []);
 });

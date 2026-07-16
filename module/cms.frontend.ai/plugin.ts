@@ -1,5 +1,5 @@
 import type { App } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { cmsCtx } from "../cms/mod.ts";
 import { ai } from "../ai/mod.ts";
 import { CmsHelperBot } from "./bots/cmsHelper.ts";
 
@@ -11,7 +11,7 @@ export function init(app: App) {
 
   app.on("cms-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
-    if (!ctx.cms.editmode) return;
+    if (!cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.frontend.ai/pub/init.mjs");
   });
 }

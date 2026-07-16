@@ -30,7 +30,7 @@ async function render(node: Node): Promise<string | HtmlString> {
     const redirectId = Number(settings.redirectAfterLogin() ?? 0);
     let redirectUrl  = "";
     if (redirectId) {
-      const P = await node.app.cms?.node(redirectId);
+      const P = await node.cms.node(redirectId);
       if (P?.exists()) redirectUrl = await P.url();
     }
     return renderLogin(node.app, apiBase, !!(settings.showPasswordFallback()), redirectUrl, ctx.csrfToken);

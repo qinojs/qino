@@ -1,15 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { Access, Output, type App, type AptTree, type Ctx, s } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { cmsCtx, type Node } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
-
-declare module "../core/lib/App.ts" {
-  interface AppEvents {
-    "page::file_upload-before": { Page: Node };
-    "page::file_upload-after": { Page: Node };
-  }
-}
 
 export const name = "cms.image_editor";
 export const needs = ["cms", "cms.versions"];
@@ -78,7 +71,7 @@ export const api: AptTree = {
 export function init(app: App) {
   app.on("cms-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
-    if (!ctx.cms.editmode) return;
+    if (!cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.image_editor/pub/init.mjs");
   });
 

@@ -1,3 +1,4 @@
+import { cms } from "../cms/mod.ts";
 import { sql, type App } from "../core/mod.ts";
 
 export const name = "cms.moduleAccess";
@@ -42,7 +43,7 @@ export function init(app: App): void {
     const module = String(e.node.module?.name ?? "");
     if (!module) return;
 
-    const grps = (await e.user.grps?.() ?? []).map(Number).filter(Boolean);
+    const grps: number[] = (await e.user.grps?.() ?? []).map(Number).filter(Boolean);
     if (!grps.length) return;
 
     const cap = await app.db.one`

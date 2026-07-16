@@ -1,3 +1,4 @@
+import { cms } from "../../cms/mod.ts";
 // deno-lint-ignore-file no-explicit-any
 
 import { hee, type App, type Ctx } from "../../core/mod.ts";
@@ -14,7 +15,7 @@ export async function isWritable(ctx: Ctx, fileId: number): Promise<boolean> {
 export async function writablePage(ctx: Ctx, fileId: number): Promise<any> {
     const rows = await ctx.app.db.query`SELECT page_id FROM page_file WHERE file_id = ${fileId}`;
     for (const row of rows) {
-        const Page = await ctx.app.cms.node(Number(row.page_id));
+        const Page = await cms(ctx.app).node(Number(row.page_id));
         if ((await Page.access()) > 1) return Page;
     }
     return null;

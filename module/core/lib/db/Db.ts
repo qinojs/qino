@@ -8,7 +8,7 @@ export const dateTypes = new Set(["DATETIME", "DATE", "TIMESTAMP"]);
 export const stringTypes = new Set(["CHAR", "VARCHAR", "BINARY", "VARBINARY", "BLOB", "TEXT", "ENUM", "SET"]);
 export const numTypes = new Set(["TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE"]);
 
-/** Core db events; modules add their own via `declare module "../core/lib/db/Db.ts" { interface DbEvents {...} }`. */
+/** Core db events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface DbEvents {
   "table::insert-before": { Table: DbTable; data: Record<string, any>; returnValue?: unknown };
   "table::insert-after": { Table: DbTable; id: any; data: Record<string, any> };

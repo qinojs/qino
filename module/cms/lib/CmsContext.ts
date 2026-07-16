@@ -1,8 +1,13 @@
+import type { Ctx } from "../../core/mod.ts";
 import type { Node } from "./Node.ts";
 
-// Per-request CMS context, installed on `ctx.cms` by the cms module (see plugin.ts).
-// Lives on the request object because the data is per-request — no app-singleton
-// detour (formerly `app.cms.MainNode` via getCtx). Core does not know about cms.
+/** Per-request cms state, lazily created on the generic `ctx.state` — core stays cms-agnostic. */
+export function cmsCtx(ctx: Ctx): CmsContext {
+  return (ctx.state.cms ??= new CmsContext());
+}
+
+// Per-request CMS context. Lives on the request object because the data is per-request —
+// no app-singleton detour. Core does not know about cms.
 export class CmsContext {
   mainNode!: Node;
   requestedNode!: Node;

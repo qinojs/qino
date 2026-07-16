@@ -1,6 +1,6 @@
 import { hee, getCtx, sql, u2time, type Sql, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { cms as cmsOf, type Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
 export const needs = ["cms.backend", "error_report"];
@@ -371,7 +371,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 
   if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries</span>`;
 
-  const errNode = await app.cms.nodeByModule("cms.backend.superuser.error_report");
+  const errNode = await cmsOf(app).nodeByModule("cms.backend.superuser.error_report");
   const baseUrl = errNode ? await errNode.url() : null;
 
   const color: Record<string, string> = { error: "var(--red)", warning: "var(--orange)", notice: "var(--gray)" };

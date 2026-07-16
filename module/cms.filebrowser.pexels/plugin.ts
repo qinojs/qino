@@ -1,5 +1,5 @@
 import { Access, type AptTree, type App, type Ctx, type Params, s } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.filebrowser.pexels";
 export const needs = ["cms", "cms.filebrowser"];
@@ -18,7 +18,7 @@ export const api: AptTree = {
 export function init(app: App) {
   app.on("cms-ready", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
-    if (!ctx.cms.editmode) return;
+    if (!cmsCtx(ctx).editmode) return;
     if (!await app.settings["cms.filebrowser.pexels"].key) return; // no key, no Pexels UI
     ctx.res.csp["img-src"]["https://*.pexels.com"] = true;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser.pexels/pub/init.mjs");

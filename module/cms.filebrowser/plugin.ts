@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx, sql, type Ctx, s, Access, type AptTree, type App } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { cms, cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.filebrowser";
 export { healthChecks } from "./healthChecks.ts";
@@ -37,7 +37,7 @@ export const api: AptTree = {
 export function init(app: App) {
   app.on("cms-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
-    if (!ctx.cms.editmode) return;
+    if (!cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser/pub/init.mjs");
   });
 
@@ -53,7 +53,6 @@ export function init(app: App) {
 
 async function search(s_: string, ctx: Ctx): Promise<any[]> {
   const db = ctx.app.db;
-  const cms = ctx.app.cms;
 
   const cond = s_
     ? sql` AND ( f.id = ${s_} OR f.name LIKE ${"%" + s_ + "%"} OR f.text LIKE ${s_ + "%"} )`
@@ -72,7 +71,7 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
   const res: Record<string, any> = {};
 
   for (const vs of rows) {
-    const Page = vs.pid ? await cms.node(Number(vs.pid)) : null;
+    const Page = vs.pid ? await cms(ctx.app).node(Number(vs.pid)) : null;
     const dbFile = await ctx.app.dbFiles.file(Number(vs.id), vs);
 
     if (!await dbFile.exists()) continue;

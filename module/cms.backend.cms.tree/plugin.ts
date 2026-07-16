@@ -16,7 +16,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
   if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
 
   const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
-  const rootNode = await node.app.cms.node(rootId);
+  const rootNode = await node.cms.node(rootId);
 
   // Breadcrumb path to root node
   const pathParts: HtmlString[] = [];

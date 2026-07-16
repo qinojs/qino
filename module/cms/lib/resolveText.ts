@@ -1,5 +1,5 @@
 import type { App } from "../../core/mod.ts";
-import type {} from "../mod.ts";
+import { cms } from "./CMS.ts";
 
 export async function resolveText(app: App, value: string): Promise<string> {
   value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
@@ -8,7 +8,7 @@ export async function resolveText(app: App, value: string): Promise<string> {
 }
 
 async function replaceLinks(app: App, pid: string): Promise<string> {
-  const page = await app.cms.node(Number(pid));
+  const page = await cms(app).node(Number(pid));
   if (!page.exists()) {
     console.warn(`[content-issue] DeadInternalLink cmspid://${pid}`);
     return "#";

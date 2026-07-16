@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { s, Access, AptError, sql, type AptTree, type Ctx } from "../core/mod.ts";
-import { sanitizeHtml } from "../cms/mod.ts";
+import { cms, sanitizeHtml } from "../cms/mod.ts";
 
 class CmsTextService {
 
@@ -17,7 +17,7 @@ class CmsTextService {
         text_id = Number(text_id);
         const pid = await this.ctx.app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
-        const P = await this.ctx.app.cms.node(pid);
+        const P = await cms(this.ctx.app).node(pid);
         if ((await P.access()) < 2) return false;
         return true;
     }
@@ -79,7 +79,7 @@ class CmsTextService {
         const done = await this.translateCont(pid, target_lang, source_lang, ifNeeded);
         if (done === false) ++return_.fail;
         else return_.count += done;
-        const node = await this.ctx.app.cms.node(pid);
+        const node = await cms(this.ctx.app).node(pid);
         const children = await node.children({ type: subpages ? "*" : "c" }) ?? new Map();
         for (const Child of children.values()) {
             const result = await this.translatePage(Child.id, target_lang, source_lang, ifNeeded, subpages);
@@ -90,7 +90,7 @@ class CmsTextService {
     }
 
     async translateCont(pid: any, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number | false> {
-        const node = await this.ctx.app.cms.node(pid);
+        const node = await cms(this.ctx.app).node(pid);
         if ((await node.access()) < 2) return false;
         let count = 0;
         const Title = await node.title();

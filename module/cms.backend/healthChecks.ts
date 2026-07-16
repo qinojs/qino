@@ -1,6 +1,6 @@
 import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 import type { App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { cms, type Node } from "../cms/mod.ts";
 
 /**
  * Backend pages are protected purely via node access (groups/users), not via
@@ -33,7 +33,7 @@ export function healthChecks(app: App): HealthTypes {
   async function backendPages(app: App): Promise<Record<string, Node>> {
     const rows = await db.query`SELECT id FROM page WHERE module LIKE 'cms.backend%' OR module = 'cms.layout.backend'`;
     const ret: Record<string, Node> = {};
-    for (const row of rows) ret[row.id] = await app.cms.node(Number(row.id));
+    for (const row of rows) ret[row.id] = await cms(app).node(Number(row.id));
     return ret;
   }
 }

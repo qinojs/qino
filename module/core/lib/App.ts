@@ -25,7 +25,7 @@ const defaultConfig = {
     db: "", // mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
 };
 
-/** Core events; modules add their own via `declare module "../core/lib/App.ts" { interface AppEvents {...} }`. */
+/** Core events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface AppEvents {
     "init": { app: App };
     "request-start": { request: Request; peerAddr: string; time: number };
@@ -42,7 +42,8 @@ export interface AppEvents {
     "dbFile::access2": { File: DbFile; access: boolean };
     "dbFile-used": { dbFile: DbFile; used: boolean };
     "dbFile-remove-fs": { dbFile: DbFile; prevent: boolean };
-    [name: string]: Record<string, unknown>; // untyped module events stay allowed
+    // deno-lint-ignore no-explicit-any -- module events carry their own payloads; typing them needs a per-module emitter, not a global map
+    [name: string]: any;
 }
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */

@@ -1,4 +1,4 @@
-import type { Node } from "../cms/mod.ts";
+import { cmsCtx, type Node } from "../cms/mod.ts";
 import { getCtx, hee } from "../core/mod.ts";
 
 export const name = "cms.cont.lang.choose2";
@@ -49,7 +49,7 @@ async function render(node: Node): Promise<string> {
   const langs = node.app.languages.all;
   if (langs.length < 2) return "<span></span>";
 
-  const Page = toPageId ? await cms.node(Number(toPageId)) : ctx.cms.mainNode;
+  const Page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
 
   if (type === "select") {
     const options = await Promise.all(langs.map(async (l) => {

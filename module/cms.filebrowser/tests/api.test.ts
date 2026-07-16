@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
+import { cmsInstances } from "../../cms/lib/CMS.ts";
 import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { toTools } from "../../core/mod.ts";
 import { api, init, name, needs } from "../plugin.ts";
@@ -31,7 +32,7 @@ Deno.test("cms.filebrowser: init registers cms-ready asset hook", async () => {
   await handlers["cms-ready"][0]({
     ctx: {
       req: { query: {}, modulePath: "/m/" },
-      cms: { editmode: true },
+      state: { cms: { editmode: true } },
       res: { html: { scripts: { add: (url: string) => added.push(url) } } },
     },
   });
@@ -59,30 +60,29 @@ Deno.test("cms.filebrowser: search groups existing accessible files by md5", asy
       url: () => "/file/private.jpg",
     },
   };
-  const ctx = {
-    app: {
-      db: {
-        query: (...a: any[]) => {
-          const [, params] = fakeRender(a[0], a.slice(1));
-          assertEquals(params.slice(0, 3), ["cat", "%cat%", "cat%"]);
-          return [
-            { pid: 10, id: 1, mime: "image/jpeg", name: "a.jpg", md5: "same", access: 1 },
-            { pid: 11, id: 2, mime: "image/jpeg", name: "a-copy.jpg", md5: "same", access: 1 },
-            { pid: 12, id: 3, mime: "image/jpeg", name: "private.jpg", md5: "private", access: 1 },
-          ];
-        },
-      },
-      cms: {
-        node: (id: number) => ({
-          id,
-          title: () => ({ string: () => `Page ${id}` }),
-        }),
-      },
-      dbFiles: {
-        file: (id: number) => dbFiles[id],
+  const app = {
+    db: {
+      query: (...a: any[]) => {
+        const [, params] = fakeRender(a[0], a.slice(1));
+        assertEquals(params.slice(0, 3), ["cat", "%cat%", "cat%"]);
+        return [
+          { pid: 10, id: 1, mime: "image/jpeg", name: "a.jpg", md5: "same", access: 1 },
+          { pid: 11, id: 2, mime: "image/jpeg", name: "a-copy.jpg", md5: "same", access: 1 },
+          { pid: 12, id: 3, mime: "image/jpeg", name: "private.jpg", md5: "private", access: 1 },
+        ];
       },
     },
+    dbFiles: {
+      file: (id: number) => dbFiles[id],
+    },
   };
+  cmsInstances.set(app, {
+    node: (id: number) => ({
+      id,
+      title: () => ({ string: () => `Page ${id}` }),
+    }),
+  } as never);
+  const ctx = { app };
 
   const res = await api.search.get!.execute({ s: "cat" }, ctx as any);
   assertEquals(res, [{

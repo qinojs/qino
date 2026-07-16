@@ -1,5 +1,5 @@
 import type { App } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.text";
 export const needs = ["cms"];
@@ -36,7 +36,7 @@ export const settingsSchema = {
 
 export function init(app: App) {
   app.on("cms-ready", ({ ctx }) => {
-    if (!ctx.cms.editmode) return;
+    if (!cmsCtx(ctx).editmode) return;
     if (ctx.req.query.cms_noFrontend) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.text/pub/init.mjs");
   });

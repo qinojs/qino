@@ -1,9 +1,20 @@
 import { Node } from "./Node.ts";
+import { cmsCtx } from "./CmsContext.ts";
 import { NONE, ADMIN } from "./access.ts";
 import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText, type dbEntry_usr } from "../../core/mod.ts";
 
 // Per-app instances; the plugin's init binds, cms()/cms.get() read. Internal — mod.ts does not export it.
 export const cmsInstances: WeakMap<object, CMS> = new WeakMap();
+
+/** The app's cms instance. Throws when cms is not loaded. */
+export function cms(app: App): CMS {
+  const instance = cmsInstances.get(app);
+  if (!instance) throw new Error('module "cms" is not loaded');
+  return instance;
+}
+
+/** Undefined when cms is not loaded — for optional dependencies. */
+cms.get = (app: App): CMS | undefined => cmsInstances.get(app);
 
 export class CMS {
   app: App;
@@ -150,7 +161,7 @@ export class CMS {
     const ctx = getCtx();
     const P = await this.node(Number(node));
     await P.urlSeo(ctx.lang);
-    const MainNode = ctx.cms.mainNode || await this.nodeFromRequest();
+    const MainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
     const href = ` href="${hee(await P.url())}"`;
     const access = await P.access();
     const inside = await MainNode.in?.(P);

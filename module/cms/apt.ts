@@ -1,3 +1,4 @@
+import { cms } from "./mod.ts";
 // deno-lint-ignore-file no-explicit-any
 
 import { s, Access, AccessError, ConflictError, NotFoundError, itemReadDeep, type Ctx } from "../core/mod.ts";
@@ -18,7 +19,7 @@ const node = {
 
   resolve: async (id: number, ctx: Ctx) => {
     const app = ctx.app;
-    const n = await app.cms.node(id);
+    const n = await cms(app).node(id);
     if (!n.exists()) throw new NotFoundError(`Node ${id} not found`);
     if ((await n.access()) < 1) throw new AccessError();
     return n;
@@ -595,7 +596,7 @@ export const api = {
       input: s.object({ value: s.optional(s.number()).describe("Node-ID to cut. Omit to clear clipboard.") }),
       execute: async ({ value }: any, ctx: Ctx) => {
         if (value) {
-          const P = await ctx.app.cms.node(value);
+          const P = await cms(ctx.app).node(value);
           if ((await P.access()) < 2) throw new AccessError();
         }
         await ctx.settings.cms.clipboard(Number(value ?? 0));
@@ -641,7 +642,7 @@ export const api = {
           const lang_ = lang ?? ctx.lang;
           const row = await db.row`SELECT name, page_id FROM page_text WHERE text_id = ${id}`;
           if (row) {
-            const n = await ctx.app.cms.node(row.page_id);
+            const n = await cms(ctx.app).node(row.page_id);
             if (!n.exists()) throw new NotFoundError();
             if ((await n.access()) < 2) throw new AccessError();
             const changed = await n.text(row.name, lang_, value);
@@ -649,7 +650,7 @@ export const api = {
           }
           const pid = await db.one`SELECT id FROM page WHERE title_id = ${id}`;
           if (pid) {
-            const n = await ctx.app.cms.node(Number(pid));
+            const n = await cms(ctx.app).node(Number(pid));
             if (!n.exists()) throw new NotFoundError();
             if ((await n.access()) < 2) throw new AccessError();
             const changed = await n.title(lang_, value);

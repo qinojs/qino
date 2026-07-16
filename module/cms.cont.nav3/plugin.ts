@@ -1,4 +1,4 @@
-import type { Node } from "../cms/mod.ts";
+import { cmsCtx, type Node } from "../cms/mod.ts";
 import type { Ctx } from "../core/mod.ts";
 
 export const name = "cms.cont.nav3";
@@ -45,11 +45,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const activeByRenderPath = await settings["active page by renderpath"];
   let ActivePage: Node;
   if (activeByRenderPath) {
-    const firstId = ctx.cms.renderPath.values().next().value;
+    const firstId = cmsCtx(ctx).renderPath.values().next().value;
     const firstPage = firstId ? await cms.node(firstId) : null;
-    ActivePage = firstPage ? await firstPage.page() : ctx.cms.mainNode;
+    ActivePage = firstPage ? await firstPage.page() : cmsCtx(ctx).mainNode;
   } else {
-    ActivePage = ctx.cms.mainNode;
+    ActivePage = cmsCtx(ctx).mainNode;
   }
 
   // Determine start page

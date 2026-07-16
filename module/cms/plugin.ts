@@ -1,5 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { CMS } from "./mod.ts";
+import { CMS, cmsInstances } from "./lib/CMS.ts";
+import { cms, cmsCtx } from "./mod.ts";
 import { READ } from "./lib/access.ts";
 import { render } from "./lib/render.ts";
 export { api } from "./apt.ts";
@@ -75,7 +76,7 @@ export const ctxSettingsSchema = {
 
 export function init(app: App) {
 
-    app.cms = new CMS(app);
+    cmsInstances.set(app, new CMS(app));
 
     app.on("render", async (e) => {
         await render(e.ctx);
@@ -88,14 +89,14 @@ export function init(app: App) {
         const editmode = ctx.req.query.cms_editmode;
         if (editmode !== undefined) settings.cms.editmode(editmode);
 
-        ctx.cms.editmode = Number(settings.cms.editmode()) || 0;
+        cmsCtx(ctx).editmode = Number(settings.cms.editmode()) || 0;
 
         // File upload
         const cmsPageFile = await ctx.req.files.cmsPageFile;
         if (cmsPageFile) {
             // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
             const cmspid = Number(ctx.req.query.cmspid ?? "0");
-            const P = await app.cms.node(cmspid);
+            const P = await cms(app).node(cmspid);
             if ((await P.access()) > 1) {
                 const replace = ctx.req.query.replace;
                 const File = await (replace ? P.file(replace) : P.addFile());
@@ -107,7 +108,7 @@ export function init(app: App) {
         // Page files as ZIP
         const zipPid = ctx.req.query.cms_nodeFilesZip;
         if (zipPid) {
-            const P = await app.cms.node(Number(zipPid));
+            const P = await cms(app).node(Number(zipPid));
             if (!(await P.isReadable())) { ctx.res.status = 403; return; }
             const files = Object.values(await P.files());
             if (!files.length) { ctx.res.status = 404; return; }
@@ -128,7 +129,7 @@ export function init(app: App) {
         const File = e.File;
         const rows = await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${File.id}`;
         for (const vs of rows) {
-            const P = await app.cms.node(vs.page_id);
+            const P = await cms(app).node(vs.page_id);
             if (await P.isReadable()) {
                 e.access = true;
                 return;
@@ -141,7 +142,7 @@ export function init(app: App) {
 export async function install({ app }: { app: App }): Promise<void> {
   if (!await app.db.one`SELECT id FROM page WHERE id = 1`) {
     await app.db.table('page').insert({ id: 1, access: 1, visible: 1, searchable: 1, module: "cms.layout.custom.9", basis: 0, type: "p" });
-    await (await app.cms.node(1)).title("en", "root");
+    await (await cms(app).node(1)).title("en", "root");
   }
   // Register renderable modules with their access level; default READ = visible, creatable only by superusers.
   for (const mod of Object.values(app.modules.all())) {

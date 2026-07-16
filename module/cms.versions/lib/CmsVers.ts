@@ -2,7 +2,7 @@
 import { getCtx, requestStorage, sql, type Ctx, type Db, type DbEvents, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view } from "./Vers.ts";
 import { tableEntriesCopyTo } from "./Spaces.ts";
-import type { Node } from "../../cms/mod.ts";
+import { cms, type Node } from "../../cms/mod.ts";
 
 // ─── Per-request state: the cms-selected space/log (draftmode/request params) ─
 
@@ -50,7 +50,7 @@ export async function copyNode(
     const ctx = getCtx();
 
     const generate = async (id: number): Promise<void> => {
-        const Page = await ctx.app.cms.node(id);
+        const Page = await cms(ctx.app).node(id);
         if ((await Page.access()) <= 1) return;
 
         await tableEntriesCopyTo(db, "page",      { id },        fromSpace, fromLog, toSpace);
@@ -88,13 +88,13 @@ export async function copyNode(
     // Switch to fromSpace so Page.access() reads correct data
     const oldVers = setVers(ctx, [fromSpace, fromLog]);
     // Clear CMS page cache so space change takes effect
-    ctx.app.cms.clearCache();
+    cms(ctx.app).clearCache();
     await generate(pid);
 
     // Regenerate URLs in toSpace
-    ctx.app.cms.clearCache();
+    cms(ctx.app).clearCache();
     setVers(ctx, [toSpace, 0]);
-    const P = await ctx.app.cms.node(pid);
+    const P = await cms(ctx.app).node(pid);
     for (const l of ctx.app.languages.all) {
         const genUrl = await P.urlSeoGenerated?.(l);
         const curUrl = await P.urlSeo?.(l);
@@ -103,7 +103,7 @@ export async function copyNode(
 
     setVers(ctx, oldVers);
     // The copy wrote rows past the managers — drop all derived caches
-    ctx.app.cms.clearCache();
+    cms(ctx.app).clearCache();
     ctx.app.dbTexts.clearCache();
     ctx.app.dbFiles.clearCache();
 }

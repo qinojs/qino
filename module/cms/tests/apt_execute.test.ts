@@ -1,6 +1,7 @@
 // deno-lint-ignore-file require-await
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "../../core/mod.ts";
+import { cmsInstances } from "../lib/CMS.ts";
 import { api } from "../apt.ts";
 
 class TextObj {
@@ -78,9 +79,6 @@ async function setup(access = 3) {
   nodes.set(2, new FakeNode(2, 0));
   const user = { id: 9, get: () => false, toString: () => "9" };
   const ctx = await testContext({ userId: 9, app: {
-    cms: {
-      node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
-    },
     db: {
       one: () => null,
       table: (name: string) => ({
@@ -88,6 +86,9 @@ async function setup(access = 3) {
       }),
     },
   } });
+  cmsInstances.set(ctx.app, {
+    node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
+  } as never);
   ctx.lang = "de";
   return { ctx, nodes };
 }

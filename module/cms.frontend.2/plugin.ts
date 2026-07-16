@@ -1,5 +1,5 @@
 import { Access, AccessError, s, type Ctx, type AptTree, type App } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { cms, cmsCtx } from "../cms/mod.ts";
 import { widgetUrl } from "./api.ts";
 
 export const name = "cms.frontend.2";
@@ -32,7 +32,7 @@ export const ctxSettingsSchema = {
 };
 
 async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
-  const P = await ctx.app.cms.node(params["pid"]);
+  const P = await cms(ctx.app).node(params["pid"]);
   if (await P.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
   ctx.state.cmsWidgetCont = P;
@@ -64,7 +64,7 @@ export function init(app: App) {
 
     const settings = ctx.settings;
 
-    const node = ctx.cms.mainNode;
+    const node = cmsCtx(ctx).mainNode;
     if (!node) return;
     const access = await node.access();
     const inBackend = node.vs?.module === "cms.layout.backend";
@@ -89,11 +89,11 @@ export function init(app: App) {
       ctx.res.csp["img-src"]["blob:"] = true;
       qino.cms ??= {};
       qino.cms.nodeId = node.id;
-      qino.cms.requestedNodeId = ctx.cms.requestedNodeId;
+      qino.cms.requestedNodeId = cmsCtx(ctx).requestedNodeId;
       if (await ctx.user?.get("superuser")) qino.dev = ctx.dev || null;
-      qino.cms.editmode = ctx.cms.editmode;
+      qino.cms.editmode = cmsCtx(ctx).editmode;
 
-      if (ctx.cms.editmode) {
+      if (cmsCtx(ctx).editmode) {
         qino.cms.clipboard = Number(settings.cms.clipboard() ?? "0");
         const panel = await import(new URL("./view/panel.ts", import.meta.url).href);
         app.languages.nsStart("cms");

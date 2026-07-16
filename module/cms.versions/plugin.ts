@@ -19,7 +19,7 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { type DbScope, Access, type AptTree, s, sql, type App } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { cms, cmsCtx } from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { ensureSpace, initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
@@ -131,7 +131,7 @@ export function init(app: App) {
 
             // Disable editmode for the historical view — request-only override;
             // writing ctx.settings would persist it for the whole session
-            ctx.cms.editmode = 0;
+            cmsCtx(ctx).editmode = 0;
 
             // Route reads through the historical views and give the request its
             // own caches (core dbScope) — the shared app caches stay untouched.
@@ -143,7 +143,7 @@ export function init(app: App) {
             // Pre-load the viewed page (incl. conts) from the views into the
             // request cache; the rest of the request (layout, nav) renders live.
             const generate = async (id: number): Promise<void> => {
-                const node = await ctx.app.cms.node(id);
+                const node = await cms(ctx.app).node(id);
                 for (const SubCont of await node.conts()) await generate(SubCont.id);
                 if ((await node.access()) < 2) return;
                 (node.vs as any).online_start = (node.vs as any).online_end = 0; // request-scoped node — safe
@@ -162,7 +162,7 @@ export function init(app: App) {
 
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────
     app.on("cms-ready", async ({ ctx }) => {
-        if (!ctx.cms.editmode) return;
+        if (!cmsCtx(ctx).editmode) return;
         if (ctx.req.query.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
         ctx.res.html.jsData.cmsFrontend = frontend;

@@ -1,3 +1,4 @@
+import { cms } from "../cms/mod.ts";
 // deno-lint-ignore-file no-explicit-any
 
 import { sql, type Sql } from "../core/mod.ts";
@@ -6,7 +7,7 @@ import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
 export async function publishNode(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = Number(pid);
-    const Page = await ctx.app.cms.node(id);
+    const Page = await cms(ctx.app).node(id);
     if ((await Page.access()) < 2) return false;
     const cmsVersSpace = getCmsVers(ctx).space;
     options = {
@@ -94,20 +95,20 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
                 const vs = await ctx.app.db.row`SELECT name, page_id FROM _vers_page_text WHERE text_id = ${Number(args[0])} AND _vers_space = ${getCmsVers(ctx).space}`
                 ?? await ctx.app.db.row`SELECT name, page_id FROM page_text WHERE text_id = ${Number(args[0])}`;
                 if (vs) {
-                    const P = await ctx.app.cms.node(vs.page_id);
+                    const P = await cms(ctx.app).node(vs.page_id);
                     messages.push((await contOrPage(P)) + ` ${await t`Text`} "${vs.name}" ${await t`changed`}`);
                 } else {
                     const vs2 = await ctx.app.db.row`SELECT id FROM page WHERE title_id = ${Number(args[0])}`;
                     if (vs2) {
-                        const P = await ctx.app.cms.node(vs2.id);
+                        const P = await cms(ctx.app).node(vs2.id);
                         messages.push((await contOrPage(P)) + " " + await t`Title changed`);
                     }
                 }
             } else if (fn === "page::insertBefore") {
-                const P = await ctx.app.cms.node(args[1]);
+                const P = await cms(ctx.app).node(args[1]);
                 messages.push((await contOrPage(P)) + " " + translateFn[fn]);
             } else if (translateFn[fn]) {
-                const P = await ctx.app.cms.node(args[0]);
+                const P = await cms(ctx.app).node(args[0]);
                 messages.push((await contOrPage(P)) + " " + translateFn[fn]);
             } else {
                 messages.push(`<span style="color:red">${fn}</span>`);
@@ -127,7 +128,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 // ─── Protocol helpers ────────────────────────────────────────────────────────
 
 async function versProtocolForNodeTree(ctx: any, pid: number): Promise<any[]> {
-    const P = await ctx.app.cms.node(pid);
+    const P = await cms(ctx.app).node(pid);
     const conts = await P.conts();
     const [data, ...subs] = await Promise.all([
         versProtocolForNode(ctx, pid),

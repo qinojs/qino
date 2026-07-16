@@ -1,3 +1,4 @@
+import { cms, cmsCtx } from "../cms/mod.ts";
 /**
  * cms.versions/draftmode.ts
  *
@@ -26,7 +27,7 @@ import { getCmsVers } from "./lib/CmsVers.ts";
 export async function applyDraftSpace(ctx: Ctx): Promise<void> {
     const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
     if (draftmode) {
-        getCmsVers(ctx).space = ctx.cms.editmode ? 1 : 0;
+        getCmsVers(ctx).space = cmsCtx(ctx).editmode ? 1 : 0;
     }
 }
 
@@ -151,7 +152,7 @@ export function initDraftmode(app: App) {
     //     if (!e.fn?.startsWith("page::")) return;
     //     const pid = Number(e.args?.[0]);
     //     if (!pid) return;
-    //     const P = await ctx.app.cms.node(pid);
+    //     const P = await cms(ctx.app).node(pid);
     //     const page = await P.page();
     //     const pids = [pid, page?.id].filter(Boolean);
     //     for (const page_id of pids) {
@@ -208,12 +209,12 @@ export function initDraftmode(app: App) {
 
     // ─── cms-ready: draftmode frontend ────────────────────────────────────────
     app.on("cms-ready", async ({ ctx }) => {
-        if (!ctx.cms.editmode) return;
+        if (!cmsCtx(ctx).editmode) return;
         if (ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
         // Check if draft has changes newer than live
-        const MainNode = ctx.cms.mainNode;
+        const MainNode = cmsCtx(ctx).mainNode;
         if (MainNode) {
             const versions = await ctx.app.db.indexCol`SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ${String(MainNode)}`;
             if (versions[1] && (!versions[0] || versions[1] > versions[0])) {

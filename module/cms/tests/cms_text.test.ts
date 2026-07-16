@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, testContext } from "../../core/tests/deps.ts";
+import { cmsInstances } from "../lib/CMS.ts";
 import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { invoke, requestStorage } from "../../core/mod.ts";
 import { api } from "../../cms.text/mod.ts";
@@ -44,7 +45,9 @@ class FakeNode {
 async function ctxWith(app: any) {
   app.db ??= {};
   app.db.table ??= () => ({ entry: () => ({ id: 1 }) });
-  const ctx = await testContext({ userId: 1, app });
+  const { cms, ...rest } = app;
+  const ctx = await testContext({ userId: 1, app: rest });
+  if (cms) cmsInstances.set(ctx.app, cms);
   ctx.lang = "de";
   return ctx;
 }
