@@ -105,7 +105,6 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
   if (!row) return html.async`<div class=u2-card><div class=-body>${t`Template not found.`}</div></div>`;
 
   const back = ctx.req.url.toURL(); back.searchParams.delete("id");
-  const backHref = back.search;
 
   let message: HtmlString | string = "";
 
@@ -172,7 +171,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
               <div class=-actions>
                 <button name=save>${t`Save`}</button>
                 <button name=delete type=submit formnovalidate u2-confirm="${t`Really delete this template?`}">${t`Delete`}</button>
-                <a href="${backHref}">${t`Back`}</a>
+                <a href="${back.search}">${t`Back`}</a>
               </div>
         </table>
       </form>
