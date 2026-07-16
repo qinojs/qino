@@ -32,11 +32,10 @@ async function api(node: Node, vars: any): Promise<any> {
   if (!preview && !("export" in vars)) return false;
 
   const app = node.app;
-  const data = await app.languages.export();
   const written: string[] = [];
   const skipped: string[] = [];
   const changes: Change[] = [];
-  for (const [ns, byLang] of Object.entries(data)) {
+  for (const [ns, byLang] of Object.entries(await app.languages.export())) {
     const dir = app.modules.get(ns || "core")?.dir;
     if (!dir) { skipped.push(ns || "core"); continue; } // url-based module, not on disk
     const localeDir = dir + "locale/";
