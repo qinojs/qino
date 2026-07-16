@@ -18,8 +18,6 @@ const paramNames = (r: Route): string[] =>
   r.segments.flatMap((seg, i) => seg.startsWith(":") && (r.nodes[i] as AptNode) ? [seg.slice(1).replace(/\*$/, "")] : []);
 
 function render(node: Node, { ctx }: { ctx: Ctx }): string {
-  const appURL = ctx.req.basePath ?? "/";
-
   // smart prefill: current node feeds node-ish params, current user feeds user-ish ones
   const nid = String(node.id), uid = ctx.userId ? String(ctx.userId) : "";
   const prefill: Record<string, string> = { id: nid, pid: nid, node: nid, page: nid, lang: ctx.lang, user: uid, usr: uid, uid };
@@ -45,7 +43,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
     </tr>`;
   }).join("");
 
-  return `<div class="-m-apitest" data-app-url="${hee(appURL)}">
+  return `<div class="-m-apitest" data-app-url="${hee(ctx.req.basePath ?? "/")}">
   <div class="-bar">
     <span class="-identities"></span>
     <form class="-add">
