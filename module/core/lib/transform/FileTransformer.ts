@@ -201,7 +201,6 @@ function topoSort(transformers: TransformerDef[]): TransformerDef[] {
 }
 
 async function hashKey(parts: string[]): Promise<string> {
-  const data = new TextEncoder().encode(parts.join('|'));
-  const buf = await crypto.subtle.digest('SHA-1', data);
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(parts.join('|')));
   return new Uint8Array(buf).toHex();
 }
