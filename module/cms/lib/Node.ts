@@ -100,8 +100,7 @@ export class Node {
         const key = `${this.id}:${usrId}`;
         if (cache[key] === undefined) {
             const e: AppEvents["node:access"] = { node: this, user, access: await this.#calcUsrAccess(user) };
-            await this.app.fire("node:access", e);
-            cache[key] = e.access;
+            cache[key] = (await this.app.fire("node:access", e)).access;
         }
         return cache[key];
     }
@@ -204,8 +203,7 @@ export class Node {
             let render = this.module.plugin.cms?.node?.render;
             if (!render) {
                 const e: AppEvents["node:render"] = { node: this, render: null };
-                await this.app.fire("node:render", e);
-                render = e.render ?? undefined;
+                render = (await this.app.fire("node:render", e)).render ?? undefined;
             }
             if (!render) throw new Error(`No render function for module "${this.vs.module}"`);
             return render(this, {ctx:getCtx(), vars});

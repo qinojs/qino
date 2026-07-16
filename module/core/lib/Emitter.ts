@@ -9,7 +9,9 @@ export class Emitter<Events extends Record<string, unknown>> {
         (this.#events[name] ??= []).push(fn);
     }
 
-    async fire<K extends string & keyof Events>(name: K, data: Events[K] = {} as Events[K]) {
+    /** Fires listeners in order and returns the (possibly mutated) event — handy for question events. */
+    async fire<K extends string & keyof Events>(name: K, data: Events[K] = {} as Events[K]): Promise<Events[K]> {
         for (const fn of this.#events[name] ?? []) await fn(data);
+        return data;
     }
 }
