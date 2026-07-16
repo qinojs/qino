@@ -1,8 +1,7 @@
-import { hee, getCtx, html, type HtmlString, unixTime, type Ctx } from "../../core/mod.ts";
+import { hee, html, type HtmlString, unixTime, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
-export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
-  ctx ??= getCtx(); // tobi: why? needed?
+export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const t = node.app.t;
   const admin = ctx.settings.cms.admin;
 
@@ -66,7 +65,7 @@ export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record
         titleCell = `<span style="flex:1; color:#bbb">(${await t`no access`})</span>`;
       } else {
         const titleObj = await SubPage.title();
-        const titleLang = titleObj ? await titleObj.orFallback(ctx!.lang) : null;
+        const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
         const titleText = titleLang ? hee(String(await titleLang.get() ?? "")) : "";
         const titleId = titleObj?.id ?? 0;
         if (subAccess < 2) {

@@ -50,7 +50,7 @@ Deno.test("cms.cont.login4: render shows login form for guests", async () => {
     text: () => textObj("Login failed"),
   };
 
-  const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any)));
+  const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any, { ctx })));
   assertEquals(out.includes("<form method=post>"), true);
   assertEquals(out.includes("<input name=email type=text required autofocus>"), true);
   assertEquals(out.includes('name=csrfToken value="tok"'), true);
@@ -71,7 +71,7 @@ Deno.test("cms.cont.login4: render redirects logged-in users when configured", a
     text: () => textObj(""),
   };
 
-  const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any)));
+  const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any, { ctx })));
   assertEquals(out, "");
   assertEquals(ctx.res.status, 302);
   assertEquals(ctx.res.headers.get("Location"), "/target");
@@ -87,7 +87,7 @@ Deno.test("cms.cont.login4: render shows logout form for logged-in users", async
     text: () => textObj(""),
   };
 
-  const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any)));
+  const out = String(await requestStorage.run(ctx, () => cms.node.render(node as any, { ctx })));
   assertEquals(out.includes("<button name=core_logout>Abmelden</button>"), true);
   assertEquals(out.includes('name=csrfToken value="tok"'), true);
 });
@@ -102,7 +102,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
     text: () => textObj(""),
   };
 
-  const login = String(await requestStorage.run(guestCtx, () => cms.node.render(guestNode as any)));
+  const login = String(await requestStorage.run(guestCtx, () => cms.node.render(guestNode as any, { ctx: guestCtx })));
   assertEquals(login.includes(`a&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;`), true);
   assertEquals(login.includes("<script>"), false);
 
@@ -116,7 +116,7 @@ Deno.test("cms.cont.login4: render escapes fixed users and logout tokens", async
     text: () => textObj(""),
   };
 
-  const logout = String(await requestStorage.run(userCtx, () => cms.node.render(userNode as any)));
+  const logout = String(await requestStorage.run(userCtx, () => cms.node.render(userNode as any, { ctx: userCtx })));
   assertEquals(logout.includes(`t&quot;&gt;&lt;script&gt;x&lt;/script&gt;`), true);
   assertEquals(logout.includes("<script>"), false);
 });

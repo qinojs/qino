@@ -68,7 +68,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const cur = ctx.settings.cms.admin.openPageNodes() ?? "";
+    const cur: string = ctx.settings.cms.admin.openPageNodes() ?? "";
     const open = new Set(cur.split(",").filter(Boolean));
     if (vars.value == "1") open.add(p);
     else open.delete(p);
@@ -77,7 +77,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   if (vars?.showContents != null) ctx.settings.cms.admin.showContents(vars.showContents == "1");
 
-  const openStr = ctx.settings.cms.admin.openPageNodes() ?? "";
+  const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   const showContents = !!ctx.settings.cms.admin.showContents();
@@ -106,7 +106,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       }
 
       const titleObj = await SubPage.title();
-      const titleStr = titleObj ? String(await (await titleObj.orFallback(ctx!.lang)).get() ?? "") : "";
+      const titleStr = titleObj ? String(await (await titleObj.orFallback(ctx.lang)).get() ?? "") : "";
       const titleCell = access >= 1
         ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(String(SubPage.vs.name ?? ""))}</span></span><a style="vertical-align:middle" href="${hee(await SubPage.url())}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`
         : `<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;

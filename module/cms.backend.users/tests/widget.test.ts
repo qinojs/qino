@@ -15,7 +15,7 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
   const app = {
     db: {
       one: () => oneValues.shift(),
-      query: () => [{ email: "user@example.test", access: 1700000000 }],
+      query: () => Promise.resolve([{ email: "user@example.test", access: 1700000000 }]),
     },
     t: (s: TemplateStringsArray) => s.join(""),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];

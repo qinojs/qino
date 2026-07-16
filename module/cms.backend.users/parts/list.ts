@@ -1,15 +1,13 @@
-import { html, type HtmlString, sqlSearchHelper, sql, getCtx, type Ctx } from "../../core/mod.ts";
+import { html, type HtmlString, sqlSearchHelper, sql, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
   return !!(await ctx.user?.get("superuser")) || !!(node?.settings.allow_login_as());
 }
 
-export async function list(_node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
-  ctx ??= getCtx();
+export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const db = ctx.app.db;
 
-  const node: Node | null = _node;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
   const canLoginAs = await allowLoginAs(node, ctx);
 
