@@ -1,4 +1,4 @@
-import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
