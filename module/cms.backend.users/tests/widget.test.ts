@@ -14,8 +14,8 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
   const oneValues = [7, 5];
   const app = {
     db: {
-      one: async () => oneValues.shift(),
-      query: async () => [{ email: "user@example.test", access: 1700000000 }],
+      one: () => oneValues.shift(),
+      query: () => [{ email: "user@example.test", access: 1700000000 }],
     },
     t: (s: TemplateStringsArray) => s.join(""),
   } as unknown as Parameters<typeof backendDashboardWidget>[0];
@@ -30,18 +30,18 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
   let saved = false;
   let setName = "";
   const entry = {
-    exists: async function () { return this; },
-    get: async () => false,
-    set: async (name: string) => {
+    exists: function () { return this; },
+    get: () => false,
+    set: (name: string) => {
       setName = name;
     },
-    save: async () => {
+    save: () => {
       saved = true;
     },
   };
   const ctx = await testContext();
   const node = {
-    access: async () => 2,
+    access: () => 2,
     app: { db: { table: () => ({ entry: () => entry }) } },
   };
 
