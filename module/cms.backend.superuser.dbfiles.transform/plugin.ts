@@ -227,8 +227,7 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
   const label = html`${icon} ${bin.label}${notes}`;
 
   if (ok) {
-    const version = await resolveVersion(bin);
-    return html`<tr class="${cls}"><td>${label}<td colspan=2><small>${version}</small>`;
+    return html`<tr class="${cls}"><td>${label}<td colspan=2><small>${await resolveVersion(bin)}</small>`;
   }
 
   const primaryCmd = bin.install[platform];
