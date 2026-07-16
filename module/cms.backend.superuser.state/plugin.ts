@@ -13,8 +13,6 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function render(node: Node): HtmlString {
-  const stateHtml = renderState(node);
-
   return html`<div class=u2-flex>
   <div class="u2-card" style="flex:1 1 100%">
     <div class="-head">State</div>
@@ -22,7 +20,7 @@ function render(node: Node): HtmlString {
       <button type=button onclick="cms.reloadPart(${Number(node.id)}, 'state')">neu laden</button>
     </div>
   </div>
-  <div class="u2-flex" cms-part="state">${stateHtml}</div>
+  <div class="u2-flex" cms-part="state">${renderState(node)}</div>
 </div>`;
 }
 
