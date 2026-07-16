@@ -1,4 +1,3 @@
-import { cms } from "../cms/mod.ts";
 import { sql, type App } from "../core/mod.ts";
 
 export const name = "cms.moduleAccess";
