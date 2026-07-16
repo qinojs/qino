@@ -14,14 +14,13 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   resHtml.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
   resHtml.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 
-  const host = ctx.req.header("host") ?? "";
   const title = await (await node.title()).string();
 
   return html.async`
   <div id=container class=qgCMS>
     <div id=head>
       <div id=title>${title}</div>
-      <div id=subtitle>${host}</div>
+      <div id=subtitle>${ctx.req.header("host") ?? ""}</div>
     </div>
     <div id=content>
       ${node.cont("main")}
