@@ -49,8 +49,7 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   html.title = nodePath.basename(file) + " | Editor";
 
-  const ext = file.replace(/.*\.([^.]+)/, "$1");
-  const mime = extToCodeMirrorMime(ext);
+  const mime = extToCodeMirrorMime(file.replace(/.*\.([^.]+)/, "$1"));
 
   let isWritable = false;
   try {
