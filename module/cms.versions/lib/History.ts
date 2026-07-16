@@ -16,7 +16,7 @@ export function initHistory(app: App) {
   const track = async (e: any) => {
     const ctx = requestStorage.getStore();
     if (!ctx) return null;
-    const tableName: string = String(e.Table);
+    const tableName = String(e.Table);
     if (tableName.startsWith("_vers_") && !e.data?._vers_log) return null; // writing to vers table – let through
     const vt = versTable(ctx.app.db, tableName);
     if (!vt) return null;
