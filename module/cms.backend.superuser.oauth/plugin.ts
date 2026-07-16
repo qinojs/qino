@@ -40,26 +40,29 @@ function providerForm(csrf: string, selfBase: string, p: any = {}): string {
   const v = (k: string) => hee(String(p[k] ?? ""));
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
-  const field = (label: string, input: string) => `<div><label>${label} ${input}</label></div>`;
   const text = (k: string, ph = "") => `<input name=${k} value="${v(k)}" placeholder="${hee(ph)}">`;
   return `<form method=post class="u2-card">
   <div class="-head">${isNew ? "Add provider" : v("name")}</div>
   <div class="-body">
     <input type=hidden name=csrfToken value="${hee(csrf)}">
     <input type=hidden name=id value="${v("id")}">
-    ${field("Name", `<input name=name value="${v("name")}"${isNew ? "" : " readonly"} required>`)}
-    ${field("Issuer (OIDC)", text("issuer", "https://accounts.google.com"))}
-    ${field("Client ID", text("client_id"))}
-    ${field("Client secret", `<input type=password name=client_secret value=""${isNew ? "" : ` placeholder="•••••• (unchanged)"`}>`)}
-    ${field("Scopes", text("scopes", "openid email profile"))}
-    ${field("Allowed domains", text("allowed_domains", "example.com"))}
-    <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
+    <u2-fields>
+      Name <input name=name value="${v("name")}"${isNew ? "" : " readonly"} required>
+      Issuer (OIDC) ${text("issuer", "https://accounts.google.com")}
+      Client ID ${text("client_id")}
+      Client secret <input type=password name=client_secret value=""${isNew ? "" : ` placeholder="•••••• (unchanged)"`}>
+      Scopes ${text("scopes", "openid email profile")}
+      Allowed domains ${text("allowed_domains", "example.com")}
+      <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
+    </u2-fields>
     <details>
       <summary>OAuth2 (no discovery)</summary>
-      ${field("Authorize URL", text("authorize_url"))}
-      ${field("Token URL", text("token_url"))}
-      ${field("Userinfo URL", text("userinfo_url"))}
-      ${field("E-mail URL", text("email_url"))}
+      <u2-fields>
+        Authorize URL ${text("authorize_url")}
+        Token URL ${text("token_url")}
+        Userinfo URL ${text("userinfo_url")}
+        E-mail URL ${text("email_url")}
+      </u2-fields>
     </details>
     ${isNew ? "" : `<div><small>Redirect URI: <code>${hee(selfBase + "oauth/callback/" + String(p.name))}</code></small></div>`}
     <div><button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>${isNew ? "" : ` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" class=u2-unstyle>✕</button>`}</div>
