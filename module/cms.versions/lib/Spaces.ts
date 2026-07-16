@@ -72,7 +72,7 @@ export function initSpaces(app: App) {
     const ctx = requestStorage.getStore();
     if (!ctx) return;
     if (getVers(ctx).space) return; // only in live space
-    const tableName: string = String(e.Table);
+    const tableName = String(e.Table);
     if (!tableName.startsWith("_vers_")) return;
     const originalTable = tableName.slice(6);
     const auto = e.Table.autoIncrement;
