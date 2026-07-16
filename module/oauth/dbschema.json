@@ -1,0 +1,60 @@
+{
+  "properties": {
+    "social_login_provider": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          },
+          "issuer": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "authorize_url": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "token_url": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "userinfo_url": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "email_url": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "client_id": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "client_secret": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "scopes": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "auto_create": {
+            "type": "integer"
+          },
+          "allowed_domains": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "required": ["id", "name", "client_id", "client_secret"]
+      }
+    }
+  }
+}
