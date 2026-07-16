@@ -3,7 +3,7 @@ import type { Node } from "./Node.ts";
 
 /** Per-request cms state, lazily created on the generic `ctx.state` — core stays cms-agnostic. */
 export function cmsCtx(ctx: Ctx): CmsContext {
-  return (ctx.state.cms ??= new CmsContext());
+  return ctx.state.cms ??= new CmsContext();
 }
 
 // Per-request CMS context. Lives on the request object because the data is per-request —
