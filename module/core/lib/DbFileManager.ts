@@ -194,9 +194,9 @@ export class DbFile extends File {
   async access(set?: any): Promise<boolean> {
     if (set !== undefined) { await this.setVs({ access: set ? 1 : 0 }); return !!set; }
     const vs = await this.ensureVs();
-    const e = { File: this, access: vs["access"] == "1" };
-    await this.#manager.app.fire("dbFile:access", e);
-    await this.#manager.app.fire("dbFile:access2", e);
+    const e = { file: this, access: vs["access"] == "1" };
+    await this.#manager.app.fire("dbFile:access", e);                          // fast path
+    if (!e.access) await this.#manager.app.fire("dbFile:access-fallback", e);  // slow path only when still unresolved
     return e.access;
   }
 
@@ -210,16 +210,14 @@ export class DbFile extends File {
     for (const field of this.#manager.db.table("file").children) {
       if (await this.#manager.db.one`SELECT 1 FROM ${sql.id(field.table.name)} WHERE ${sql.id(field.name)} = ${this.id} LIMIT 1`) return true;
     }
-    const e = { dbFile: this, used: false };
-    await this.#manager.app.fire("dbFile-used", e);
-    return e.used;
+    return false;
   }
 
   async remove() {
     const { md5 } = await this.ensureVs();
     await this.#manager.db.table("file").delete(this.id);
-    const e = { dbFile: this, prevent: false };
-    await this.#manager.app.fire("dbFile-remove-fs", e);
+    const e = { file: this, prevent: false };
+    await this.#manager.app.fire("dbFile:unlink-before", e);
     this.path = "";
     if (e.prevent || !md5) return;
     const still = await this.#manager.db.one`SELECT id FROM ${sql.id(tableRef("file"))} WHERE md5 = ${md5}`;

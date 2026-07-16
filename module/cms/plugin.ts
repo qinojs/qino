@@ -124,9 +124,9 @@ export function init(app: App) {
     });
 
     // File access check
-    app.on("dbFile:access2", async (e) => {
+    app.on("dbFile:access-fallback", async (e) => {
         if (e.access) return;
-        const File = e.File;
+        const File = e.file;
         const rows = await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${File.id}`;
         for (const vs of rows) {
             const P = await cms(app).node(vs.page_id);

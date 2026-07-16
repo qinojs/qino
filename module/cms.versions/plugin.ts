@@ -160,8 +160,8 @@ export function init(app: App) {
         // page:children overrides. See draftmode.ts.
     });
 
-    // ─── cms-ready: add frontend JS ──────────────────────────────────────────
-    app.on("cms-ready", async ({ ctx }) => {
+    // ─── cms:page-ready: add frontend JS ──────────────────────────────────────────
+    app.on("cms:page-ready", async ({ ctx }) => {
         if (!cmsCtx(ctx).editmode) return;
         if (ctx.req.query.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");

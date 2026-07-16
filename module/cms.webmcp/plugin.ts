@@ -16,7 +16,7 @@ export const api: AptTree = {
 };
 
 export function init(app: App): void {
-  app.on("cms-ready", ({ ctx }) => {
+  app.on("cms:page-ready", ({ ctx }) => {
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.webmcp/pub/webmcp.mjs"); // all visitors; tool list is access-filtered, each call enforced
   });
 }

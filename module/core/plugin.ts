@@ -131,17 +131,17 @@ export async function init(app: App) {
     // stamp the current request's logId onto every write — except the log tables themselves
     // (the log insert would otherwise await its own pending logId → deadlock)
     const stampLogId = (field: string) => async (e: DbEvents["table:insert-before"]) => {
-      if (/^log(_|$)/.test(String(e.Table))) return;
+      if (/^log(_|$)/.test(String(e.table))) return;
       try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
     };
     app.db.on("table:insert-before", stampLogId("log_id"));
     app.db.on("table:update-before", stampLogId("log_id_ch"));
 
-    app.on("login", async ({ id }) => {
+    app.on("auth:login", async ({ usrId }) => {
       const ctx = getCtx();
       if (!ctx.sess) return;
       const { mergeSessionSettingsToUser } = await import("./lib/ctx/contextSettings.ts");
-      await mergeSessionSettingsToUser(app.db, id, ctx.sess.id);
+      await mergeSessionSettingsToUser(app.db, usrId, ctx.sess.id);
       await ctx.initSettings();
     });
 

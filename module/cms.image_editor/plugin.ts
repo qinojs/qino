@@ -69,7 +69,7 @@ export const api: AptTree = {
 };
 
 export function init(app: App) {
-  app.on("cms-ready", ({ ctx }) => {
+  app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.image_editor/pub/init.mjs");
@@ -84,11 +84,10 @@ export function init(app: App) {
     const Page = await writablePage(ctx, fileId);
     if (!Page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
-    await app.fire("page:file_upload-before", { Page });
+    await app.fire("node:fileUpload-before", { node: Page });
     const File = await app.dbFiles.file(fileId);
     upload.name = await File.get("name"); // dont change file-name
     await File.replaceFromUpload(upload);
-    await app.fire("page:file_upload-after", { Page });
 
     throw new Output({ id: String(File), url: await File.url() });
   });

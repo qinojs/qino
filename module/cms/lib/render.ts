@@ -63,7 +63,7 @@ export async function render(ctx: Ctx): Promise<void> {
   const content = await mainNode.html();
   ctx.res.html.content += content;
 
-  await app.fire("cms-ready", {ctx});
+  await app.fire("cms:page-ready", {ctx});
 
   ctx.res.headers.set("content-type", "text/html; charset=utf-8");
   ctx.res.headers.set("cache-control", "no-cache, no-store");

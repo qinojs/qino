@@ -29,7 +29,7 @@ export async function authListen(ctx: Ctx): Promise<void> {
 }
 
 export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
-  await ctx.app.fire("auth-before", { email, pw });
+  await ctx.app.fire("auth:login-before", { email, pw });
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, dummyHash); return user ? "inactive" : "username"; }
   const UsrEntry = ctx.app.db.table("usr").entry(user.id);
@@ -59,7 +59,7 @@ export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
   await ctx.client.addUsr(id);
   await ctx.client.set("usr_id", id);
-  await ctx.app.fire("login", { session_old: oldSession, id });
+  await ctx.app.fire("auth:login", { oldSession, usrId: id });
   return true;
 }
 
@@ -67,7 +67,7 @@ export async function logout(ctx: Ctx): Promise<void> {
   await rememberLogin(ctx, false);
   await ctx.client.set("usr_id", 0);
   ctx.sess.data({});
-  await ctx.app.fire("logout");
+  await ctx.app.fire("auth:logout");
 }
 
 export function pwHash(pw: string): Promise<string> {

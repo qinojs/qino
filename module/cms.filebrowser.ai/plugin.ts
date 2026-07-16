@@ -5,7 +5,7 @@ export const name = "cms.filebrowser.ai";
 export const needs = ["cms", "ai", "cms.filebrowser"];
 
 export function init(app: App) {
-  app.on("cms-ready", ({ ctx }) => {
+  app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
     const csp = ctx.res.csp;

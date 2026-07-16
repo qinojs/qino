@@ -34,13 +34,12 @@ export interface AppEvents {
     "html-ready": { ctx: Ctx };
     "respond": { ctx: Ctx };
     "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // ctx is missing for static files
-    "auth-before": { email: string; pw: string };
-    "login": { session_old: ItemProxy; id: number };
-    "logout": Record<string, never>;
-    "dbFile:access": { File: DbFile; access: boolean };
-    "dbFile:access2": { File: DbFile; access: boolean };
-    "dbFile-used": { dbFile: DbFile; used: boolean };
-    "dbFile-remove-fs": { dbFile: DbFile; prevent: boolean };
+    "auth:login-before": { email: string; pw: string };
+    "auth:login": { oldSession: ItemProxy; usrId: number };
+    "auth:logout": Record<string, never>;
+    "dbFile:access": { file: DbFile; access: boolean };          // fast path
+    "dbFile:access-fallback": { file: DbFile; access: boolean }; // slow path, only fired when access still unresolved
+    "dbFile:unlink-before": { file: DbFile; prevent: boolean };
     // deno-lint-ignore no-explicit-any -- module events carry their own payloads; typing them needs a per-module emitter, not a global map
     [name: string]: any;
 }

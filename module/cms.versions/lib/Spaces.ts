@@ -72,12 +72,12 @@ export function initSpaces(app: App) {
     const ctx = requestStorage.getStore();
     if (!ctx) return;
     if (getVers(ctx).space) return; // only in live space
-    const tableName = String(e.Table);
+    const tableName = String(e.table);
     if (!tableName.startsWith("_vers_")) return;
     const originalTable = tableName.slice(6);
-    const auto = e.Table.autoIncrement;
+    const auto = e.table.autoIncrement;
     if (!auto) return;
-    const ids = e.Table.entryId2Array(e.id) || {};
+    const ids = e.table.entryId2Array(e.id) || {};
     const value = Number(ids[String(auto)]);
     if (!value) return;
     await ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;

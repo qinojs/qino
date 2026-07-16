@@ -58,7 +58,7 @@ export const api: AptTree = {
 };
 
 export function init(app: App) {
-  app.on("cms-ready", async ({ ctx }) => {
+  app.on("cms:page-ready", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (await app.settings.cms.frontend !== "cms.frontend.2") return;
 

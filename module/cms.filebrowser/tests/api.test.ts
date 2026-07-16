@@ -17,7 +17,7 @@ Deno.test("cms.filebrowser: metadata and apt shape are wired", () => {
   });
 });
 
-Deno.test("cms.filebrowser: init registers cms-ready asset hook", async () => {
+Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () => {
   const handlers: Record<string, Function[]> = {};
   const app = {
     on(name: string, fn: Function) {
@@ -26,10 +26,10 @@ Deno.test("cms.filebrowser: init registers cms-ready asset hook", async () => {
     db: { row: () => null },
   };
   init(app as any);
-  assertEquals(handlers["cms-ready"].length, 1);
+  assertEquals(handlers["cms:page-ready"].length, 1);
 
   const added: string[] = [];
-  await handlers["cms-ready"][0]({
+  await handlers["cms:page-ready"][0]({
     ctx: {
       req: { query: {}, modulePath: "/m/" },
       state: { cms: { editmode: true } },

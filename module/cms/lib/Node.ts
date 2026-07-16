@@ -49,7 +49,7 @@ export class Node {
             }
             this.vs = row;
         } else {
-            await this.app.fire("page:construct", { Page: this });
+            await this.app.fire("node:construct", { node: this });
         }
 
         this.settings = bildJsonItem(
@@ -99,8 +99,8 @@ export class Node {
         const cache = cmsCtx(ctx).accessCache;
         const key = `${this.id}:${usrId}`;
         if (cache[key] === undefined) {
-            const e: AppEvents["cms:calcAccess"] = { node: this, user, access: await this.#calcUsrAccess(user) };
-            await this.app.fire("cms:calcAccess", e);
+            const e: AppEvents["node:access"] = { node: this, user, access: await this.#calcUsrAccess(user) };
+            await this.app.fire("node:access", e);
             cache[key] = e.access;
         }
         return cache[key];
@@ -203,8 +203,8 @@ export class Node {
             if (!this.module) throw new Error(`Module "${this.vs.module}" is not imported`);
             let render = this.module.plugin.cms?.node?.render;
             if (!render) {
-                const e: AppEvents["cms.node.render"] = { node: this, render: null };
-                await this.app.fire("cms.node.render", e);
+                const e: AppEvents["node:render"] = { node: this, render: null };
+                await this.app.fire("node:render", e);
                 render = e.render ?? undefined;
             }
             if (!render) throw new Error(`No render function for module "${this.vs.module}"`);

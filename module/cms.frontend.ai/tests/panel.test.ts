@@ -21,11 +21,11 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
     state: { cms: { editmode: true } },
     res: { html: { scripts: { add: (u: string) => scripts.push(u) } } },
   };
-  handlers["cms-ready"][0]({ ctx });
+  handlers["cms:page-ready"][0]({ ctx });
   assertEquals(scripts, ["/m/cms.frontend.ai/pub/init.mjs"]);
 
   // no script outside editmode
   scripts.length = 0;
-  handlers["cms-ready"][0]({ ctx: { ...ctx, state: { cms: { editmode: false } } } });
+  handlers["cms:page-ready"][0]({ ctx: { ...ctx, state: { cms: { editmode: false } } } });
   assertEquals(scripts, []);
 });

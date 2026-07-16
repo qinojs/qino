@@ -13,8 +13,8 @@ import { cmsCtx } from "../cms/mod.ts";
  *
  * What is commented out (TODO – space-mode write/read routing):
  *   - table:insert/update/delete-before space routing
- *   - page:construct / page:children space-aware read overrides
- *   - page:sql SQL-rewrite hook (complex regex approach)
+ *   - node:construct / node:children space-aware read overrides
+ *   - node:sql SQL-rewrite hook (complex regex approach)
  */
 
 // deno-lint-ignore-file no-explicit-any
@@ -40,9 +40,9 @@ export function initDraftmode(app: App) {
     // app.on("table:update-before", async (e: any) => {
     //     const ctx = getCtx();
     //     if (!getVers(ctx).space) return;
-    //     const tableName: string = String(e.Table);
+    //     const tableName: string = String(e.table);
     //     if (!versedTables(ctx.app.db)[tableName]) return;
-    //     const data = { ...e.data, ...e.Table.entryId2Array(e.id), _vers_log: 0, _vers_space: getVers(ctx).space };
+    //     const data = { ...e.data, ...e.table.entryId2Array(e.id), _vers_log: 0, _vers_space: getVers(ctx).space };
     //     // for partially-versioned tables (like page), push non-versioned fields to live table
     //     const fieldSpec = versedTables(ctx.app.db)[tableName];
     //     if (typeof fieldSpec === "object") {
@@ -51,9 +51,9 @@ export function initDraftmode(app: App) {
     //             if (!fieldSpec[k]) liveData[k] = v;
     //         }
     //         if (Object.keys(liveData).length) {
-    //             const set = e.Table.valuesToFragment(liveData, undefined, true);
-    //             const idValues = e.Table.entryId2Array(e.id);
-    //             const idWhere = e.Table.valuesToFragment(idValues);
+    //             const set = e.table.valuesToFragment(liveData, undefined, true);
+    //             const idValues = e.table.entryId2Array(e.id);
+    //             const idWhere = e.table.valuesToFragment(idValues);
     //             await ctx.app.db.exec`UPDATE ${sql.id(tableName)} SET ${set} WHERE ${idWhere}`;
     //         }
     //     }
@@ -65,14 +65,14 @@ export function initDraftmode(app: App) {
     // app.on("table:insert-before", async (e: any) => {
     //     const ctx = getCtx();
     //     if (!getVers(ctx).space) return;
-    //     const tableName: string = String(e.Table);
+    //     const tableName: string = String(e.table);
     //     if (!versedTables(ctx.app.db)[tableName]) return;
     //     const data = { ...e.data, _vers_log: 0, _vers_space: getVers(ctx).space };
     //     const VT = ctx.app.db.table(`_vers_${tableName}`);
     //     const id = await VT.insert(data);
-    //     const ids = e.Table.entryId2Array(id);
-    //     e.returnValue = e.Table.entryId(ids);
-    //     const auto = e.Table.autoIncrement;
+    //     const ids = e.table.entryId2Array(id);
+    //     e.returnValue = e.table.entryId(ids);
+    //     const auto = e.table.autoIncrement;
     //     if (auto) {
     //         const value = Number(ids?.[String(auto)]);
     //         if (value) await ctx.app.db.query`ALTER TABLE ${sql.id(tableName)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;
@@ -82,9 +82,9 @@ export function initDraftmode(app: App) {
     // app.on("table:delete-before", async (e: any) => {
     //     const ctx = getCtx();
     //     if (!getVers(ctx).space) return;
-    //     const tableName: string = String(e.Table);
+    //     const tableName: string = String(e.table);
     //     if (!versedTables(ctx.app.db)[tableName]) return;
-    //     const data = { ...(e.Table.entryId2Array(e.id) ?? {}), _vers_log: 0, _vers_space: getVers(ctx).space, _vers_deleted: 1 };
+    //     const data = { ...(e.table.entryId2Array(e.id) ?? {}), _vers_log: 0, _vers_space: getVers(ctx).space, _vers_deleted: 1 };
     //     const VT = ctx.app.db.table(`_vers_${tableName}`);
     //     await VT.update(data);
     //     e.returnValue = true;
@@ -98,44 +98,44 @@ export function initDraftmode(app: App) {
         const ctx = requestStorage.getStore();
         if (!ctx) return;
         if (!getVers(ctx).space) return;
-        if (String(e.Table) !== "page") return;
+        if (String(e.table) !== "page") return;
         const liveData: Record<string, any> = {};
         for (const key of ["sort", "basis", "access", "title_id"]) {
             if (key in e.data) liveData[key] = e.data[key];
         }
-        const idValues = e.Table.entryId2Array(e.id);
+        const idValues = e.table.entryId2Array(e.id);
         if (!idValues) return;
-        const idWhere = e.Table.valuesToFragment(idValues);
+        const idWhere = e.table.valuesToFragment(idValues);
         const db = ctx.app.db;
         const row = await db.row`SELECT * FROM page WHERE ${idWhere}`;
         if (!row) return;
         if (row.type !== "p") { delete liveData.sort; delete liveData.basis; }
         if (!Object.keys(liveData).length) return;
-        const set = e.Table.valuesToFragment(liveData, undefined, true);
+        const set = e.table.valuesToFragment(liveData, undefined, true);
         await db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
         await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
     });
 
     // ─── vers_cms_page_changed tracking ──────────────────────────────────────
     const onModify = async (e: any) => {
-        const Page = e.Page;
-        if (!Page) return;
+        const changedNode = e.node;
+        if (!changedNode) return;
         const ctx = getCtx();
         const now = unixTime();
-        const path = await Page.Path?.() ?? [];
+        const path = await changedNode.Path?.() ?? [];
         for (const node of path) {
             const data: Record<string, any> = {
                 page_id:        node.id,
                 space:          getVers(ctx).space,
                 changed_inside: now,
             };
-            if (node === Page)                data.changed      = now;
-            if (Page.Page && await node.in?.(Page.Page)) data.changed_page = now;
+            if (node === changedNode)                                  data.changed      = now;
+            if (changedNode.Page && await node.in?.(changedNode.Page)) data.changed_page = now;
             await ctx.app.db.table("vers_cms_page_changed").ensure(data);
         }
     };
-    app.on("page:modify-before",      onModify);
-    app.on("page:file_upload-before", onModify);
+    app.on("node:modify-before",      onModify);
+    app.on("node:fileUpload-before", onModify);
 
     // Copy vers_cms_page_changed when a new space is created
     app.on("vers:createSpace", async ({ space }) => {
@@ -169,46 +169,46 @@ export function initDraftmode(app: App) {
     //
     // To enable full draft-mode reads, uncomment the following blocks AND
     // implement space-aware SQL rewriting in cms/lib/Node.ts's sql()
-    // method (the page:sql event).
+    // method (the node:sql event).
     //
-    // app.on("page:construct", async ({ Page }) => {
+    // app.on("node:construct", async ({ node }) => {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log) return;
-    //     if (!Page.vs) {
+    //     if (!node.vs) {
     //         const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
-    //         Page.vs = await ctx.app.db.row`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE id = ${Page.id}`;
+    //         node.vs = await ctx.app.db.row`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE id = ${node.id}`;
     //     }
-    //     if (!Page.vs) return;
-    //     const spaceNeeded = (await Page.access()) < 2 ? 0 : getCmsVers(ctx).space;
-    //     if ((Page.vs.vers_space ?? 0) !== spaceNeeded) {
-    //         Page.vs = await ctx.app.db.row`SELECT * FROM page WHERE id = ${Page.id}`;
+    //     if (!node.vs) return;
+    //     const spaceNeeded = (await node.access()) < 2 ? 0 : getCmsVers(ctx).space;
+    //     if ((node.vs.vers_space ?? 0) !== spaceNeeded) {
+    //         node.vs = await ctx.app.db.row`SELECT * FROM page WHERE id = ${node.id}`;
     //     }
-    //     if (Page.vs && spaceNeeded) {
+    //     if (node.vs && spaceNeeded) {
     //         const oldSpace = setSpace(ctx, spaceNeeded);
-    //         await nodeLoadRuntimeCache(Page);
+    //         await nodeLoadRuntimeCache(node);
     //         setSpace(ctx, oldSpace);
     //     }
     // });
     //
-    // app.on("page:children", async ({ Page }) => {
+    // app.on("node:children", async ({ node }) => {
     //     const ctx = getCtx();
-    //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log || Page.Children !== null) return;
+    //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log || node.Children !== null) return;
     //     const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);
-    //     const rows1 = await ctx.app.db.query`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
-    //     const rows2 = await ctx.app.db.query`SELECT * FROM page WHERE basis = ${Page.id} ORDER BY type DESC, sort`;
-    //     Page.Children = new Map();
+    //     const rows1 = await ctx.app.db.query`SELECT *, ${getCmsVers(ctx).space} AS vers_space FROM ${sql.id(spaceView)} WHERE basis = ${node.id} ORDER BY type DESC, sort`;
+    //     const rows2 = await ctx.app.db.query`SELECT * FROM page WHERE basis = ${node.id} ORDER BY type DESC, sort`;
+    //     node.Children = new Map();
     //     for (const row of [...rows1, ...rows2]) {
-    //         if (Page.Children.has(row.id)) continue;
+    //         if (node.Children.has(row.id)) continue;
     //         const Child = await (ctx.app as any).cms.node(row.id, row);
     //         if (!Child.exists()) continue;
-    //         if (Child.vs.basis != Page.id) continue;
-    //         Page.Children.set(row.id, Child);
+    //         if (Child.vs.basis != node.id) continue;
+    //         node.Children.set(row.id, Child);
     //     }
     // });
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ─── cms-ready: draftmode frontend ────────────────────────────────────────
-    app.on("cms-ready", async ({ ctx }) => {
+    // ─── cms:page-ready: draftmode frontend ────────────────────────────────────────
+    app.on("cms:page-ready", async ({ ctx }) => {
         if (!cmsCtx(ctx).editmode) return;
         if (ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);

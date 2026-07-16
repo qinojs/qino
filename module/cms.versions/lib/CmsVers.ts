@@ -117,7 +117,7 @@ export function preventDbManipulations(app: App): void {
     const prevent = (e: DbEvents["table:insert-before"]) => {
         const ctx = requestStorage.getStore();
         if (!ctx || !getCmsVers(ctx).log) return; // only in log-mode requests
-        const name = String(e.Table);
+        const name = String(e.table);
         if (versedTables(app.db)[name] || name.startsWith("_vers_")) e.returnValue = false;
     };
     app.db.on("table:insert-before", prevent);

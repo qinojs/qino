@@ -21,7 +21,7 @@ function watchTemplate(path: string): void {
 }
 
 export function init(app: App) {
-  app.on("cms.node.render", async (e) => {
+  app.on("node:render", async (e) => {
     const dir = e.node.module?.dir;
     if (!dir) return;
     const path = dir + "template.html";

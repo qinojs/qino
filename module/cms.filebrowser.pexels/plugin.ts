@@ -16,7 +16,7 @@ export const api: AptTree = {
 };
 
 export function init(app: App) {
-  app.on("cms-ready", async ({ ctx }) => {
+  app.on("cms:page-ready", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
     if (!await app.settings["cms.filebrowser.pexels"].key) return; // no key, no Pexels UI

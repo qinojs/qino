@@ -16,7 +16,7 @@ export function initHistory(app: App) {
   const track = async (e: any) => {
     const ctx = requestStorage.getStore();
     if (!ctx) return null;
-    const tableName = String(e.Table);
+    const tableName = String(e.table);
     if (tableName.startsWith("_vers_") && !e.data?._vers_log) return null; // writing to vers table – let through
     const vt = versTable(ctx.app.db, tableName);
     if (!vt) return null;
@@ -40,7 +40,7 @@ export function initHistory(app: App) {
       if (f === "_vers_deleted") return sql.raw("0");
       return sql.id(f);
     });
-    const where = e.Table.entryIdToFragment(e.id);
+    const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
     await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
   };
@@ -52,7 +52,7 @@ export function initHistory(app: App) {
     const t = await track(e);
     if (!t) return;
     const { ctx, vt, logId } = t;
-    const where = e.Table.entryIdToFragment(e.id);
+    const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
     // The live row is gone, so copy its most recent snapshot and flip _vers_deleted.
     // This keeps every (NOT NULL) column populated, mirroring the insert/update capture above —
@@ -76,8 +76,8 @@ export function initHistory(app: App) {
   // Blobs are the only unrecoverable data (rows can be rebuilt from snapshots).
   // TODO: dbFile output should fall back to the _vers_file snapshot when the
   // live row is gone, so history views can still serve these preserved blobs.
-  app.on("dbFile-remove-fs", async (e) => {
-    const md5 = e.dbFile?.vs?.md5 ?? "";
+  app.on("dbFile:unlink-before", async (e) => {
+    const md5 = e.file?.vs?.md5 ?? "";
     if (!md5) return;
     const inVers = await app.db.one`SELECT id FROM _vers_file WHERE md5 = ${md5}`.catch(() => null);
     if (inVers) e.prevent = true;
