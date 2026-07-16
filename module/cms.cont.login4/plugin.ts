@@ -28,8 +28,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     if (redirectId) {
       const P = await cms.node(redirectId);
       if (P.exists()) {
-        const url = await P.url();
-        ctx.res.headers.set("Location", url);
+        ctx.res.headers.set("Location", await P.url());
         ctx.res.status = 302;
         return "";
       }
