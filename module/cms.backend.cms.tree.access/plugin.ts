@@ -1,5 +1,5 @@
 // Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
-import { hee, html, type HtmlString, getCtx, type Ctx, type App } from "../core/mod.ts";
+import { hee, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -62,8 +62,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-export async function list(node: Node, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
-  ctx ??= getCtx();
+export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = node.app;
   const db = app.db;
 

@@ -49,8 +49,7 @@ async function sessionDetail(app: App, id: number): Promise<HtmlString> {
 }
 
 // List part — re-rendered live on search via cms.reloadPart(nid, "list", { search }).
-async function list(node: Node | null, { ctx, vars }: { ctx?: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
-  ctx ??= getCtx();
+async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = ctx.app;
   const search = String(vars?.search ?? "").trim();
   const like = `%${search}%`;

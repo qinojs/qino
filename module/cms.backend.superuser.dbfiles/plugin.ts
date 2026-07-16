@@ -49,8 +49,7 @@ const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
 const ORDERS = ["newest", "oldest", "changed", "biggest", "not exists"];
 
 // list (filterable part): total + table rows, reloaded on search/order change
-async function list(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, any> } = {}): Promise<HtmlString> {
-  ctx ??= getCtx();
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }): Promise<HtmlString> {
   const app = node.app;
   const { db, dbFiles: fm } = app;
 

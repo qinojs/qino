@@ -1,4 +1,4 @@
-import { getCtx, html, type HtmlString, type App, type Ctx } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -33,8 +33,7 @@ function groups(app: App): Promise<Record<string, string | number>[]> {
   return app.db.query`SELECT id, name FROM grp WHERE cms_access ORDER BY name`;
 }
 
-async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
-  ctx ??= getCtx(); // tobi: why? needed?
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = node.app;
   await save(app, vars);
 

@@ -1,4 +1,4 @@
-import { getCtx, html, type HtmlString, type App, type Ctx } from "../core/mod.ts";
+import { html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -12,8 +12,7 @@ export async function install({ app }: { app: App }) {
 /** Short type badge from the module name. */
 const modType = (n: string) => n.match(/^cms\.(cont|layout|backend|frontend)\./)?.[1] ?? "";
 
-async function render(node: Node, { ctx, vars = {} }: { ctx?: Ctx; vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
-  ctx ??= getCtx();
+async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const db = app.db;
