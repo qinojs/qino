@@ -14,7 +14,7 @@ import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
 import { initRequest } from "./ctx/init.ts";
 
-const mainDir: string = fromFileUrl(new URL(".", Deno.mainModule));
+const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
 const defaultConfig = {
     appPATH: mainDir,
