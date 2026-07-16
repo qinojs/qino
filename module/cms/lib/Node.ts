@@ -49,7 +49,7 @@ export class Node {
             }
             this.vs = row;
         } else {
-            await this.app.fire("page::construct", { Page: this });
+            await this.app.fire("page:construct", { Page: this });
         }
 
         this.settings = bildJsonItem(
@@ -99,8 +99,8 @@ export class Node {
         const cache = cmsCtx(ctx).accessCache;
         const key = `${this.id}:${usrId}`;
         if (cache[key] === undefined) {
-            const e: AppEvents["cms::calcAccess"] = { node: this, user, access: await this.#calcUsrAccess(user) };
-            await this.app.fire("cms::calcAccess", e);
+            const e: AppEvents["cms:calcAccess"] = { node: this, user, access: await this.#calcUsrAccess(user) };
+            await this.app.fire("cms:calcAccess", e);
             cache[key] = e.access;
         }
         return cache[key];

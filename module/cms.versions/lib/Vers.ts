@@ -140,7 +140,7 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
         }
     }
 
-    // Add vers_space annotation used by page::construct
+    // Add vers_space annotation used by page:construct
     selects.push(`${space} AS vers_space`);
 
     const head =
@@ -187,7 +187,7 @@ async function baselineTable(db: Db, tableName: string, vt: string, logId: numbe
 export function initVers(app: App) {
 
     // ─── Baseline versioned rows on first action ─────────────────────────────
-    app.on("action", async ({ ctx }) => {
+    app.on("route", async ({ ctx }) => {
         const db = ctx.app.db;
         const { baselined } = dbState(db);
         const pending = Object.keys(versedTables(db)).filter((t) => !baselined.has(`_vers_${t}`));

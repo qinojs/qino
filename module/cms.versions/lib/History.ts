@@ -27,7 +27,7 @@ export function initHistory(app: App) {
 
   // ─── History capture: insert/update ──────────────────────────────────────
   // Writes a REPLACE INTO _vers_* for every tracked table mutation.
-  const catchInsertUpdate = async (e: DbEvents["table::insert-after"]) => {
+  const catchInsertUpdate = async (e: DbEvents["table:insert-after"]) => {
     const t = await track(e);
     if (!t) return;
     const { ctx, tableName, vt, logId } = t;
@@ -44,11 +44,11 @@ export function initHistory(app: App) {
     if (!where) return;
     await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
   };
-  app.db.on("table::update-after", catchInsertUpdate);
-  app.db.on("table::insert-after", catchInsertUpdate);
+  app.db.on("table:update-after", catchInsertUpdate);
+  app.db.on("table:insert-after", catchInsertUpdate);
 
   // ─── History capture: delete ──────────────────────────────────────────────
-  app.db.on("table::delete-after", async (e) => {
+  app.db.on("table:delete-after", async (e) => {
     const t = await track(e);
     if (!t) return;
     const { ctx, vt, logId } = t;

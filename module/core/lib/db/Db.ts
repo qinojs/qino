@@ -10,12 +10,12 @@ export const numTypes = new Set(["TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIG
 
 /** Core db events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface DbEvents {
-  "table::insert-before": { Table: DbTable; data: Record<string, any>; returnValue?: unknown };
-  "table::insert-after": { Table: DbTable; id: any; data: Record<string, any> };
-  "table::update-before": { Table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
-  "table::update-after": { Table: DbTable; id: any; data: Record<string, any> };
-  "table::delete-before": { Table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
-  "table::delete-after": { Table: DbTable; id: any; data: Record<string, any> };
+  "table:insert-before": { Table: DbTable; data: Record<string, any>; returnValue?: unknown };
+  "table:insert-after": { Table: DbTable; id: any; data: Record<string, any> };
+  "table:update-before": { Table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
+  "table:update-after": { Table: DbTable; id: any; data: Record<string, any> };
+  "table:delete-before": { Table: DbTable; id: any; data: Record<string, any>; returnValue?: unknown };
+  "table:delete-after": { Table: DbTable; id: any; data: Record<string, any> };
   [name: string]: Record<string, unknown>; // untyped module events stay allowed
 }
 

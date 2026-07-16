@@ -82,7 +82,7 @@ export function init(app: App) {
         await render(e.ctx);
     });
 
-    app.on("action", async ({ ctx }) => {
+    app.on("route", async ({ ctx }) => {
         const settings = ctx.settings;
 
         // Edit mode
@@ -124,7 +124,7 @@ export function init(app: App) {
     });
 
     // File access check
-    app.on("dbFile::access2", async (e) => {
+    app.on("dbFile:access2", async (e) => {
         if (e.access) return;
         const File = e.File;
         const rows = await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${File.id}`;

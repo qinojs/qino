@@ -103,7 +103,7 @@ export async function init(app: App) {
     const transformTimeout = Number(await app.settings.core.transform.timeout ?? "");
     if (transformTimeout) app.fileTransformer.timeout = transformTimeout;
 
-    app.on("action", async ({ ctx }) => {
+    app.on("route", async ({ ctx }) => {
         // HTTPS redirect
         const https = app.https;
         if (https) {
@@ -130,12 +130,12 @@ export async function init(app: App) {
 
     // stamp the current request's logId onto every write — except the log tables themselves
     // (the log insert would otherwise await its own pending logId → deadlock)
-    const stampLogId = (field: string) => async (e: DbEvents["table::insert-before"]) => {
+    const stampLogId = (field: string) => async (e: DbEvents["table:insert-before"]) => {
       if (/^log(_|$)/.test(String(e.Table))) return;
       try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
     };
-    app.db.on("table::insert-before", stampLogId("log_id"));
-    app.db.on("table::update-before", stampLogId("log_id_ch"));
+    app.db.on("table:insert-before", stampLogId("log_id"));
+    app.db.on("table:update-before", stampLogId("log_id_ch"));
 
     app.on("login", async ({ id }) => {
       const ctx = getCtx();

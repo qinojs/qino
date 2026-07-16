@@ -147,12 +147,12 @@ Deno.test("DbTable: select, insert, update and delete build parameterized SQL", 
   assertEquals(fake.calls.some(([sql]) => sql === "UPDATE `thing` SET `name` = ? WHERE `id` = ?"), true);
   assertEquals(fake.calls.some(([sql]) => sql === "DELETE FROM `thing` WHERE `id` = ?"), true);
   assertEquals(fake.events.map(([name]) => name), [
-    "table::insert-before",
-    "table::insert-after",
-    "table::update-before",
-    "table::update-after",
-    "table::delete-before",
-    "table::delete-after",
+    "table:insert-before",
+    "table:insert-after",
+    "table:update-before",
+    "table:update-after",
+    "table:delete-before",
+    "table:delete-after",
   ]);
 });
 

@@ -35,7 +35,7 @@ export const dbSchema = {
 };
 
 export function init(app: App): void {
-  app.on("cms::calcAccess", async (e) => {
+  app.on("cms:calcAccess", async (e) => {
     if (!e.access || !e.user) return;
     if (await e.user.get("superuser")) return;
 

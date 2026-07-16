@@ -111,7 +111,7 @@ export function init(app: App) {
 
     // ─── Request init ─────────────────────────────────────────────────────────
     // settings + request params.
-    app.on("action", async ({ ctx }) => {
+    app.on("route", async ({ ctx }) => {
         const vs = getCmsVers(ctx);
         await ensureSpace(ctx.app, vs.space);
 
@@ -155,9 +155,9 @@ export function init(app: App) {
         }
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────
-        // TODO: full space-mode read routing requires the page::sql hook in
-        // Page.ts to rewrite SQL table references + page::construct /
-        // page::children overrides. See draftmode.ts.
+        // TODO: full space-mode read routing requires the page:sql hook in
+        // Page.ts to rewrite SQL table references + page:construct /
+        // page:children overrides. See draftmode.ts.
     });
 
     // ─── cms-ready: add frontend JS ──────────────────────────────────────────

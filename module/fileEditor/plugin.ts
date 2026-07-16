@@ -35,7 +35,7 @@ function editorFile(): string | null {
 }
 
 export function init(app: App) {
-  app.on("action", async ({ ctx }) => {
+  app.on("route", async ({ ctx }) => {
     const file = editorFile();
     if (!file) return;
     ctx.app.assertAllowedPath(file);

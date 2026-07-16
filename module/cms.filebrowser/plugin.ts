@@ -41,7 +41,7 @@ export function init(app: App) {
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser/pub/init.mjs");
   });
 
-  app.on("dbFile::access2", async (e) => {
+  app.on("dbFile:access2", async (e) => {
     if (e.access) return;
     const ctx = getCtx();
     const userId = ctx.userId;

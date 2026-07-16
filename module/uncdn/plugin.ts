@@ -104,7 +104,7 @@ export function init(app: App): void {
   const allowed = new Set<string>(); // origins any page declared via CSP — fetchable by anyone
   uncdnInstances.set(app, { origins: allowed });
 
-  app.on("action", async ({ ctx }) => {
+  app.on("route", async ({ ctx }) => {
     if (!ctx.req.appPath.startsWith(PROXY_PREFIX)) return;
     const rest = ctx.req.appPath.slice(PROXY_PREFIX.length);
     if (!rest) return;

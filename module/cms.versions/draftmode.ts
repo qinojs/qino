@@ -12,9 +12,9 @@ import { cmsCtx } from "../cms/mod.ts";
  *   - cross-space field sync for `page`
  *
  * What is commented out (TODO – space-mode write/read routing):
- *   - table::insert/update/delete-before space routing
- *   - page::construct / page::children space-aware read overrides
- *   - page::sql SQL-rewrite hook (complex regex approach)
+ *   - table:insert/update/delete-before space routing
+ *   - page:construct / page:children space-aware read overrides
+ *   - page:sql SQL-rewrite hook (complex regex approach)
  */
 
 // deno-lint-ignore-file no-explicit-any
@@ -37,7 +37,7 @@ export function initDraftmode(app: App) {
     // DRAFT-MODE: space-routing for DB writes
     // TODO: uncomment to enable full draft-mode write routing.
     //
-    // app.on("table::update-before", async (e: any) => {
+    // app.on("table:update-before", async (e: any) => {
     //     const ctx = getCtx();
     //     if (!getVers(ctx).space) return;
     //     const tableName: string = String(e.Table);
@@ -62,7 +62,7 @@ export function initDraftmode(app: App) {
     //     e.returnValue = e.id;
     // });
     //
-    // app.on("table::insert-before", async (e: any) => {
+    // app.on("table:insert-before", async (e: any) => {
     //     const ctx = getCtx();
     //     if (!getVers(ctx).space) return;
     //     const tableName: string = String(e.Table);
@@ -79,7 +79,7 @@ export function initDraftmode(app: App) {
     //     }
     // });
     //
-    // app.on("table::delete-before", async (e: any) => {
+    // app.on("table:delete-before", async (e: any) => {
     //     const ctx = getCtx();
     //     if (!getVers(ctx).space) return;
     //     const tableName: string = String(e.Table);
@@ -94,7 +94,7 @@ export function initDraftmode(app: App) {
     // ─── cross-space field sync for `page` table ─────────────────────────────
     // Some `page` fields (sort, basis, access, title_id) must stay in sync
     // with the live table even when we're in a space.
-    app.db.on("table::update-before", async (e) => {
+    app.db.on("table:update-before", async (e) => {
         const ctx = requestStorage.getStore();
         if (!ctx) return;
         if (!getVers(ctx).space) return;
@@ -134,11 +134,11 @@ export function initDraftmode(app: App) {
             await ctx.app.db.table("vers_cms_page_changed").ensure(data);
         }
     };
-    app.on("page::modify-before",      onModify);
-    app.on("page::file_upload-before", onModify);
+    app.on("page:modify-before",      onModify);
+    app.on("page:file_upload-before", onModify);
 
     // Copy vers_cms_page_changed when a new space is created
-    app.on("vers::createSpace", async ({ space }) => {
+    app.on("vers:createSpace", async ({ space }) => {
         await app.db.query`
             INSERT INTO vers_cms_page_changed
             SELECT page_id, ${space} as space, changed_inside, changed_page, changed
@@ -169,9 +169,9 @@ export function initDraftmode(app: App) {
     //
     // To enable full draft-mode reads, uncomment the following blocks AND
     // implement space-aware SQL rewriting in cms/lib/Node.ts's sql()
-    // method (the page::sql event).
+    // method (the page:sql event).
     //
-    // app.on("page::construct", async ({ Page }) => {
+    // app.on("page:construct", async ({ Page }) => {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log) return;
     //     if (!Page.vs) {
@@ -190,7 +190,7 @@ export function initDraftmode(app: App) {
     //     }
     // });
     //
-    // app.on("page::children", async ({ Page }) => {
+    // app.on("page:children", async ({ Page }) => {
     //     const ctx = getCtx();
     //     if (!getCmsVers(ctx).space || getCmsVers(ctx).log || Page.Children !== null) return;
     //     const spaceView = await view(ctx.app.db, "page", getCmsVers(ctx).space, 0);

@@ -27,10 +27,9 @@ const defaultConfig = {
 
 /** Core events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface AppEvents {
-    "init": { app: App };
     "request-start": { request: Request; peerAddr: string; time: number };
     "authenticate": { ctx: Ctx };
-    "action": { ctx: Ctx };
+    "route": { ctx: Ctx };
     "render": { ctx: Ctx };
     "html-ready": { ctx: Ctx };
     "respond": { ctx: Ctx };
@@ -38,8 +37,8 @@ export interface AppEvents {
     "auth-before": { email: string; pw: string };
     "login": { session_old: ItemProxy; id: number };
     "logout": Record<string, never>;
-    "dbFile::access": { File: DbFile; access: boolean };
-    "dbFile::access2": { File: DbFile; access: boolean };
+    "dbFile:access": { File: DbFile; access: boolean };
+    "dbFile:access2": { File: DbFile; access: boolean };
     "dbFile-used": { dbFile: DbFile; used: boolean };
     "dbFile-remove-fs": { dbFile: DbFile; prevent: boolean };
     // deno-lint-ignore no-explicit-any -- module events carry their own payloads; typing them needs a per-module emitter, not a global map
@@ -134,7 +133,7 @@ export class App extends Emitter<AppEvents> {
         try {
             await initRequest(ctx);
             if (!ctx.statelessAuth) this.sessions.setCookieIfNew(ctx);
-            await this.fire("action", { ctx });
+            await this.fire("route", { ctx });
             res = await this.#route(ctx);
         } catch (e: unknown) {
             handleError(ctx, e);

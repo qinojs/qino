@@ -25,7 +25,7 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
   }
   await db.table("vers_space").insert({ space, time_created: new Date() });
   // fire so other modules can react
-  await app.fire("vers::createSpace", { space });
+  await app.fire("vers:createSpace", { space });
 }
 
 // ─── tableEntriesCopyTo ─────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ export async function tableEntriesCopyTo(
 export function initSpaces(app: App) {
 
   // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
-  app.db.on("table::insert-after", async (e) => {
+  app.db.on("table:insert-after", async (e) => {
     const ctx = requestStorage.getStore();
     if (!ctx) return;
     if (getVers(ctx).space) return; // only in live space

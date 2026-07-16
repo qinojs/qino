@@ -20,7 +20,7 @@ export function initSecurity(app: App) {
     deny(set.pathBlockSeconds);
   });
 
-  app.on("action", async ({ ctx }) => {
+  app.on("route", async ({ ctx }) => {
     const fast = fastInfo(ctx);
     if (isPathBlocked(ctx.app, fast)) return block(ctx, 5);
     const set = await settings(ctx.app);

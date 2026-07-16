@@ -114,7 +114,7 @@ export function init(app: App): void {
     await addReport(app, data);
   };
 
-  app.on("action", ({ ctx }) => {
+  app.on("route", ({ ctx }) => {
     if (ctx.req.appPath === "js-error")  return handleJsError(ctx);
     if (ctx.req.appPath === "css-error") return handleCssError(ctx);
     if (ctx.req.appPath === "csp-error") return handleCspError(ctx);

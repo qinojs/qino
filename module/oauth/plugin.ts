@@ -154,7 +154,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
 }
 
 export function init(app: App): void {
-  app.on("action", async ({ ctx }) => {
+  app.on("route", async ({ ctx }) => {
     const path = ctx.req.appPath;
     if (path.startsWith("oauth/start/")) await start(ctx, path.slice("oauth/start/".length));
     else if (path.startsWith("oauth/callback/")) await callback(ctx, path.slice("oauth/callback/".length));

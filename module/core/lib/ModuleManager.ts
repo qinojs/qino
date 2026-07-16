@@ -132,7 +132,6 @@ export class ModuleManager {
       await this.#loadLocales(mod);
       if (plugin.api) this.#app.aptTree[name] = plugin.api;
     }
-    await this.#app.fire("init", { app: this.#app });
   }
 
   // Seed translations from a module's locale/<lang>.json (namespace = module name; core = "")

@@ -141,7 +141,7 @@ export class DbTable {
 
   async insert(values: Record<string, any> = {}): Promise<string | undefined> {
     const eBefore: any = { Table: this, data: values, returnValue: undefined };
-    await this.#db.fire("table::insert-before", eBefore);
+    await this.#db.fire("table:insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const cols = Object.keys(this.#fields!).filter((f) => f in values);
     // Standard `(cols) VALUES (?)`; the driver supplies its dialect-specific empty-row fragment.
@@ -155,7 +155,7 @@ export class DbTable {
     if (auto) values[String(auto)] = res.insertId;
     else if (res.insertId && this.primary && !(String(this.primary) in values)) values[String(this.primary)] = res.insertId;
     const id = this.entryId(values);
-    await this.#db.fire("table::insert-after", { Table: this, id, data: values });
+    await this.#db.fire("table:insert-after", { Table: this, id, data: values });
     return id;
   }
 
@@ -168,7 +168,7 @@ export class DbTable {
       id = idOrValues;
     }
     const eBefore: any = { Table: this, id, data: values, returnValue: undefined };
-    await this.#db.fire("table::update-before", eBefore);
+    await this.#db.fire("table:update-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const set = this.valuesToFragment(values!, undefined, true);
     if (set.parts.length) {
@@ -179,7 +179,7 @@ export class DbTable {
       const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
       if (!rows) return;
       if (!rows.affectedRows) return; // no row matched (drivers report matched rows, not changed)
-      await this.#db.fire("table::update-after", { Table: this, id, data: values! });
+      await this.#db.fire("table:update-after", { Table: this, id, data: values! });
       return String(id);
     }
     return;
@@ -227,7 +227,7 @@ export class DbTable {
     id = this.entryId(id);
     const values = this.entryId2Array(id);
     const eBefore: any = { Table: this, data: values, id, returnValue: undefined };
-    await this.#db.fire("table::delete-before", eBefore);
+    await this.#db.fire("table:delete-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     if (!values) return false;
     const where = this.valuesToFragment(values);
@@ -236,7 +236,7 @@ export class DbTable {
     const row = cascades.length ? await this.selectByID(id) : undefined; // parent values are gone after the DELETE
     const rows = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
     if (!rows?.affectedRows) return false; // no row matched
-    await this.#db.fire("table::delete-after", { Table: this, data: values, id });
+    await this.#db.fire("table:delete-after", { Table: this, data: values, id });
     for (const field of cascades) {
       const pField = field.parentField();
       if (!pField || !row) continue;

@@ -76,7 +76,7 @@ export function init(app: App) {
   });
 
   // Replace an existing image with the edited version (keeps the filename).
-  app.on("action", async ({ ctx }) => {
+  app.on("route", async ({ ctx }) => {
     const upload = await ctx.req.files.editedImage;
     if (!upload) return;
 
@@ -84,11 +84,11 @@ export function init(app: App) {
     const Page = await writablePage(ctx, fileId);
     if (!Page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
-    await app.fire("page::file_upload-before", { Page });
+    await app.fire("page:file_upload-before", { Page });
     const File = await app.dbFiles.file(fileId);
     upload.name = await File.get("name"); // dont change file-name
     await File.replaceFromUpload(upload);
-    await app.fire("page::file_upload-after", { Page });
+    await app.fire("page:file_upload-after", { Page });
 
     throw new Output({ id: String(File), url: await File.url() });
   });

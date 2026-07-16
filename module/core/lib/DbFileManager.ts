@@ -195,8 +195,8 @@ export class DbFile extends File {
     if (set !== undefined) { await this.setVs({ access: set ? 1 : 0 }); return !!set; }
     const vs = await this.ensureVs();
     const e = { File: this, access: vs["access"] == "1" };
-    await this.#manager.app.fire("dbFile::access", e);
-    await this.#manager.app.fire("dbFile::access2", e);
+    await this.#manager.app.fire("dbFile:access", e);
+    await this.#manager.app.fire("dbFile:access2", e);
     return e.access;
   }
 

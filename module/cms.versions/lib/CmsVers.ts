@@ -114,15 +114,15 @@ export async function copyNode(
  * (registering per request would leak permanent app.db listeners).
  */
 export function preventDbManipulations(app: App): void {
-    const prevent = (e: DbEvents["table::insert-before"]) => {
+    const prevent = (e: DbEvents["table:insert-before"]) => {
         const ctx = requestStorage.getStore();
         if (!ctx || !getCmsVers(ctx).log) return; // only in log-mode requests
         const name = String(e.Table);
         if (versedTables(app.db)[name] || name.startsWith("_vers_")) e.returnValue = false;
     };
-    app.db.on("table::insert-before", prevent);
-    app.db.on("table::update-before", prevent);
-    app.db.on("table::delete-before", prevent);
+    app.db.on("table:insert-before", prevent);
+    app.db.on("table:update-before", prevent);
+    app.db.on("table:delete-before", prevent);
 }
 
 export function cacheHeaders(ctx: Ctx): void {

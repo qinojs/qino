@@ -37,15 +37,11 @@ Deno.test({
     export const value = "js";
   `);
 
-    const events: string[] = [];
     const app = {
       appPATH,
       db: {},
       installed: [],
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
-      fire: (event: string) => {
-        events.push(event);
-      },
     };
     const modules = new ModuleManager(app as any);
     await modules.importAll(toFileUrl(localModDir).href);
@@ -76,7 +72,6 @@ Deno.test({
     assertEquals(modules.get("private.foo")?.plugin.value, "private");
     assert(modules.get("private.foo")?.path?.endsWith("/private.foo/plugin.ts"));
     await modules.init();
-    assertEquals(events, ["init"]);
     assertEquals(app.installed, ["private.foo"]);
 
     await Deno.remove(root, { recursive: true });
