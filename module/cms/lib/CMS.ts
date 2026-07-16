@@ -2,6 +2,9 @@ import { Node } from "./Node.ts";
 import { NONE, ADMIN } from "./access.ts";
 import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText, type dbEntry_usr } from "../../core/mod.ts";
 
+// Per-app instances; the plugin's init binds, cms()/cms.get() read. Internal — mod.ts does not export it.
+export const cmsInstances: WeakMap<object, CMS> = new WeakMap();
+
 export class CMS {
   app: App;
   db: Db;
