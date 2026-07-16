@@ -1,4 +1,4 @@
-import { cms, cmsCtx } from "../cms/mod.ts";
+import { cmsCtx } from "../cms/mod.ts";
 /**
  * cms.versions/draftmode.ts
  *
