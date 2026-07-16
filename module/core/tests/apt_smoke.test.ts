@@ -31,7 +31,7 @@ const api = {
           access: Access.PUBLIC,
           input: s.object({ deep: s.boolean().default(false) }),
           output: s.object({ id: s.string() }),
-          execute: async ({ page, deep }: { page: { id: string; access: () => number }; deep: boolean }) => {
+          execute: ({ page, deep }: { page: { id: string; access: () => number }; deep: boolean }) => {
             if (page.access() < 2) throw new AccessError("copy needs write");
             return { id: page.id + "-copy" + (deep ? "-deep" : "") };
           },
