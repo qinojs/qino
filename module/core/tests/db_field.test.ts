@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "./deps.ts";
+import { assertEquals, assertThrows } from "./deps.ts";
 import { DbField } from "../lib/db/DbField.ts";
 
 function field(type: string, extra: Record<string, any> = {}) {
@@ -42,12 +42,22 @@ Deno.test("DbField: parses compound and fallback type metadata", () => {
 
 Deno.test("DbField: valueTransform normalizes numeric, date and null values", () => {
   assertEquals(field("int(11)").valueTransform("12.5"), "12.5");
-  assertEquals(field("int(11)").valueTransform("bad"), "0");
   assertEquals(field("decimal(10,2)").valueTransform("7.25"), "7.25");
-  assertEquals(field("float").valueTransform("nope"), "0");
+  assertEquals(field("int(11)").valueTransform(""), "0"); // empty form input on NOT NULL
+  assertEquals(field("int(11)").valueTransform(null), "0");
+  assertEquals(field("int(11)").valueTransform(true), "1");
+  assertEquals(field("int(11)").valueTransform(0), "0");
   assertEquals(field("date").valueTransform(1700000000), "2023-11-14 22:13:20");
   assertEquals(field("datetime").valueTransform(1700000000), "2023-11-14 22:13:20");
   assertEquals(field("int(11)", { Null: "YES" }).valueTransform(""), null);
   assertEquals(field("varchar(191)", { Null: "YES" }).valueTransform(""), "");
   assertEquals(field("text", { Null: "YES" }).valueTransform(""), "");
+});
+
+Deno.test("DbField: valueTransform throws on invalid numeric values", () => {
+  assertThrows(() => field("int(11)").valueTransform("bad"), Error, "tbl.value");
+  assertThrows(() => field("int(11)").valueTransform("12abc"), Error);
+  assertThrows(() => field("float").valueTransform(NaN), Error);
+  assertThrows(() => field("float").valueTransform(Infinity), Error);
+  assertThrows(() => field("int(11)", { Null: "YES" }).valueTransform("bad"), Error); // nullable swallows nothing
 });

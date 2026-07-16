@@ -46,8 +46,11 @@ export class DbField {
     if (typeof value === "number" && dateTypes.has(type)) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }
-    if (numTypes.has(type) && typeof value !== "number") {
-      value = parseFloat(String(value)) || 0;
+    if (numTypes.has(type)) {
+      // Number() is strict ("12abc" fails); "" and null become 0 on NOT NULL columns.
+      const num = typeof value === "number" ? value : Number(value);
+      if (!Number.isFinite(num)) throw new Error(`invalid numeric value for ${this.table}.${this.#name}: ${JSON.stringify(value)}`);
+      value = num;
     }
     return String(value ?? "");
   }
