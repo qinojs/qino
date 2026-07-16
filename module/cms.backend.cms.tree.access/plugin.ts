@@ -68,7 +68,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const cur: string = ctx.settings.cms.admin.openPageNodes() ?? "";
+    const cur = ctx.settings.cms.admin.openPageNodes() ?? "";
     const open = new Set(cur.split(",").filter(Boolean));
     if (vars.value == "1") open.add(p);
     else open.delete(p);
@@ -77,7 +77,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   if (vars?.showContents != null) ctx.settings.cms.admin.showContents(vars.showContents == "1");
 
-  const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
+  const openStr = ctx.settings.cms.admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   const showContents = !!ctx.settings.cms.admin.showContents();
