@@ -34,9 +34,7 @@ export interface AppEvents {
     "html-ready": { ctx: Ctx };
     "respond": { ctx: Ctx };
     "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // ctx is missing for static files
-    "auth:login-before": { email: string; pw: string };
     "auth:login": { oldSession: ItemProxy; usrId: number };
-    "auth:logout": Record<string, never>;
     "dbFile:access": { file: DbFile; access: boolean };          // fast path
     "dbFile:access-fallback": { file: DbFile; access: boolean }; // slow path, only fired when access still unresolved
     "dbFile:unlink-before": { file: DbFile; prevent: boolean };
