@@ -35,15 +35,14 @@ function editorFile(): string | null {
 }
 
 export function init(app: App) {
-  app.on("action", async () => {
+  app.on("action", async ({ ctx }) => {
     const file = editorFile();
     if (!file) return;
-    const ctx = getCtx();
     ctx.app.assertAllowedPath(file);
 
-    const allowed = ctx.sess.data.fileEditor.allow[file]();
     const isSuperuser = Boolean(await ctx.user?.get('superuser'));
-    if (!allowed && !isSuperuser) {
+    const allowed = ctx.sess.data.fileEditor.allow[file]();
+    if (!isSuperuser && !allowed) {
       ctx.res.headers.set("Content-Type", "text/plain; charset=utf-8");
       throw new Output("no access");
     }
