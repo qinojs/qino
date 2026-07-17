@@ -69,8 +69,7 @@ async function runQuery(app: App, text: string): Promise<HtmlString> {
   try {
     const bare = text.replace(/^(?:\s|--[^\n]*|\/\*[\s\S]*?\*\/)+/, ""); // leading comments would defeat the routing regex
     if (READ_RE.test(bare)) {
-      const rows = await app.db.query`${sql.raw(text)}`;
-      return await renderRows(app, rows, performance.now() - t0);
+      return await renderRows(app, await app.db.query`${sql.raw(text)}`, performance.now() - t0);
     }
     const res = await app.db.exec`${sql.raw(text)}`;
     const ms = (performance.now() - t0).toFixed(1);
