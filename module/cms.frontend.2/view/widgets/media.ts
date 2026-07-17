@@ -6,9 +6,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const t = app.t;
   const { default: mediaList } = await import("./media_list.ts");
   const mediaListHtml = await mediaList(node);
-  const allFiles = await node.filesAndPlaceholders();
-
-  const sortSelect = Object.keys(allFiles).length > 1 ? html.async`
+  const sortSelect = Object.keys(await node.filesAndPlaceholders()).length > 1 ? html.async`
     <select class=-sortFilesSelect>
       <option value> ${t`sort by...`}
       <option value=name>${t`Name`}
