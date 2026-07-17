@@ -17,23 +17,22 @@ class CmsTextService {
         text_id = Number(text_id);
         const pid = await this.ctx.app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
-        const P = await cms(this.ctx.app).node(pid);
-        if ((await P.access()) < 2) return false;
-        return true;
+        const node = await cms(this.ctx.app).node(pid);
+        return (await node.access()) >= 2;
     }
 
     async get(txt_id: any): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
-        const return_: any[] = [];
-        for (const l of this.ctx.app.languages.all) {
-            const text = await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${l}`;
-            return_.push({
-                lang: l,
+        const results: any[] = [];
+        for (const lang of this.ctx.app.languages.all) {
+            const text = await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${lang}`;
+            results.push({
+                lang,
                 text: !text ? false : sanitizeHtml(String(text)),
             });
         }
-        return return_;
+        return results;
     }
 
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
@@ -58,13 +57,13 @@ class CmsTextService {
     }
 
     async translatePageAllLangs(pid: any, ifNeeded: boolean, subpages: boolean): Promise<{ count: number; fail: number }> {
-        const return_ = { count: 0, fail: 0 };
-        for (const l of this.ctx.app.languages.all) {
-            const result = await this.translatePage(pid, l, "auto", ifNeeded, subpages);
-            return_.count += result.count;
-            return_.fail += result.fail;
+        const stats = { count: 0, fail: 0 };
+        for (const lang of this.ctx.app.languages.all) {
+            const result = await this.translatePage(pid, lang, "auto", ifNeeded, subpages);
+            stats.count += result.count;
+            stats.fail += result.fail;
         }
-        return return_;
+        return stats;
     }
 
     async translatePage(
@@ -74,45 +73,45 @@ class CmsTextService {
         ifNeeded = true,
         subpages = false
     ): Promise<{ count: number; fail: number }> {
-        const return_ = { count: 0, fail: 0 };
+        const stats = { count: 0, fail: 0 };
         const done = await this.translateCont(pid, target_lang, source_lang, ifNeeded);
-        if (done === false) ++return_.fail;
-        else return_.count += done;
+        if (done === false) ++stats.fail;
+        else stats.count += done;
         const node = await cms(this.ctx.app).node(pid);
         const children = await node.children({ type: subpages ? "*" : "c" }) ?? new Map();
-        for (const Child of children.values()) {
-            const result = await this.translatePage(Child.id, target_lang, source_lang, ifNeeded, subpages);
-            return_.count += result.count;
-            return_.fail += result.fail;
+        for (const child of children.values()) {
+            const result = await this.translatePage(child.id, target_lang, source_lang, ifNeeded, subpages);
+            stats.count += result.count;
+            stats.fail += result.fail;
         }
-        return return_;
+        return stats;
     }
 
     async translateCont(pid: any, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number | false> {
         const node = await cms(this.ctx.app).node(pid);
         if ((await node.access()) < 2) return false;
         let count = 0;
-        const Title = await node.title();
-        count += await this.translateText(Title.id, target_lang, source_lang, ifNeeded);
+        const title = await node.title();
+        count += await this.translateText(title.id, target_lang, source_lang, ifNeeded);
         const texts = await node.texts();
-        for (const Text of Object.values(texts)) {
-            count += await this.translateText((Text as any).id, target_lang, source_lang, ifNeeded);
+        for (const text of Object.values(texts)) {
+            count += await this.translateText((text as any).id, target_lang, source_lang, ifNeeded);
         }
         return count;
     }
 
     async translateText(tid: number, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number> {
-        const Text = this.ctx.app.dbTexts.text(tid);
+        const textEntry = this.ctx.app.dbTexts.text(tid);
 
-        if (ifNeeded && source_lang !== "clean" && (await Text.lang(target_lang).get()).trim()) return 0;
+        if (ifNeeded && source_lang !== "clean" && (await textEntry.lang(target_lang).get()).trim()) return 0;
 
         if (source_lang === "auto") {
             source_lang = "";
-            for (const l of this.ctx.app.languages.all) {
-                if (l === target_lang) continue;
-                const source_text = await Text.lang(l).get();
+            for (const lang of this.ctx.app.languages.all) {
+                if (lang === target_lang) continue;
+                const source_text = await textEntry.lang(lang).get();
                 if (source_text.trim() === "") continue;
-                source_lang = l;
+                source_lang = lang;
             }
         }
         if (!source_lang) return 0;
@@ -121,12 +120,12 @@ class CmsTextService {
         if (source_lang === "clean") {
             text = "";
         } else {
-            const sourceText = await Text.lang(source_lang).get();
+            const sourceText = await textEntry.lang(source_lang).get();
             const translated = await this.transl(sourceText, target_lang, source_lang);
             if (!translated) return 0;
             text = translated;
         }
-        await Text.lang(target_lang).set(text);
+        await textEntry.lang(target_lang).set(text);
         return 1;
     }
 
