@@ -23,7 +23,7 @@ export class Db extends Emitter<DbEvents> {
   #tables: Record<string, DbTable> = {};
   #driver: DbDriver;
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
-  #schema: Record<string, any> = { properties: {} };
+  schema: Record<string, any> = { properties: {} };
 
   constructor(conn: string) {
     super();
@@ -35,8 +35,6 @@ export class Db extends Emitter<DbEvents> {
   get dialect(): DbDialect { return this.#driver.dialect; }
   get emptyInsert(): string { return this.#dialect.emptyInsert; }
   get tables(): Record<string, DbTable> { return this.#tables; }
-  get schema(): Record<string, any> { return this.#schema; }
-  set schema(schema: Record<string, any>) { this.#schema = schema; }
 
   async #run<T>(fn: () => Promise<T>, sql: string): Promise<T> {
     try {
@@ -55,13 +53,21 @@ export class Db extends Emitter<DbEvents> {
     return [text, params];
   }
 
-  /** Shared base of query and its shortcuts. Fragments run via `db.query\`${frag}\``. */
-  async #q(strings: TemplateStringsArray, values: unknown[]): Promise<any[]> {
+  /** Fragments run via interpolation: `db.query\`${frag}\`` — same for the shortcuts below. */
+  async query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
     const [text, params] = await this.#sql(strings, values);
-    return this.#run(() => this.#driver.query(text, params), text);
+    return this.#run(() => this.#driver.query(text, params), text) as Promise<T[]>;
   }
 
-  query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> { return this.#q(strings, values); }
+  async row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return (await this.query<T>(strings, ...values))[0]; }
+
+  async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> { return (await this.query(strings, ...values)).map((r) => Object.values(r)[0] as T); }
+
+  async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return Object.values((await this.query(strings, ...values))[0] ?? {})[0] as T | undefined; }
+
+  async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>> {
+    return Object.fromEntries((await this.query(strings, ...values)).map((r) => Object.values(r) as [string, T]));
+  }
 
   exec(strings: TemplateStringsArray, ...values: unknown[]): Promise<ExecResult>;
   exec(frag: Sql, returning?: string): Promise<ExecResult>;
@@ -76,16 +82,6 @@ export class Db extends Emitter<DbEvents> {
   }
   syncAutoIncrement(table: string, field: string, value: number): Promise<void> {
     return this.#driver.syncAutoIncrement(table, field, value);
-  }
-
-  async row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return (await this.#q(strings, values))[0]; }
-
-  async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> { return (await this.#q(strings, values)).map((r) => Object.values(r)[0] as T); }
-
-  async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return Object.values((await this.#q(strings, values))[0] ?? {})[0] as T | undefined; }
-
-  async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>> {
-    return Object.fromEntries((await this.#q(strings, values)).map((r) => Object.values(r) as [string, T]));
   }
 
   /** Create the database if missing. Must run before any schema migration queries against it. */
