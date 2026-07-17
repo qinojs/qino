@@ -31,7 +31,7 @@ export class DbTextManager {
     const values: Record<string, unknown> = { lang: this.#app.languages.def, text: "" };
     await this.db.table("text").insert(values);
     // insert can be prevented (e.g. read-only history render) → id 0, never NaN
-    const id = Number(values.id ?? "0") || 0;
+    const id = Number(values.id) || 0;
     return this.text(id);
   }
 }
