@@ -110,7 +110,10 @@ function blockKey(info: GateInfo) {
 
 function gateInfo(request: Request, peerAddr: string, hops: number): GateInfo {
   const ip = clientIp(request, peerAddr, hops);
-  return { ip, method: request.method, path: safeDecode(new URL(request.url).pathname).slice(0, 191), bytes_in: Number(request.headers.get("content-length") ?? "0") || 0, ua: request.headers.get("user-agent") ?? "" };
+  return {
+    ip, method: request.method, path: safeDecode(new URL(request.url).pathname).slice(0, 191),
+    bytes_in: Number(request.headers.get("content-length")) || 0, ua: request.headers.get("user-agent") ?? "",
+  };
 }
 
 function deny(seconds: number): never {
