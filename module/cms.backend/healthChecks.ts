@@ -44,5 +44,5 @@ async function ownAccess(node: Node): Promise<number> {
     const parent = await node.parent();
     return parent ? ownAccess(parent) : 0;
   }
-  return Number(node.vs.access ?? "0") || 0;
+  return Number(node.vs.access) || 0;
 }
