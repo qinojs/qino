@@ -53,8 +53,8 @@ function fileUrl(dbFile: DbFile, data: any, options: Record<string, any>): Promi
 }
 
 async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = getCtx().app.appPATH): Promise<any> {
-  let w = Number(options.width ?? 0) || 0;
-  let h = Number(options.height ?? 0) || 0;
+  let w = Number(options.width) || 0;
+  let h = Number(options.height) || 0;
   const hpos = options.hpos ?? await dbFile.get("hpos") ?? 50;
   const vpos = options.vpos ?? await dbFile.get("vpos") ?? 50;
   const faktor = 42;
