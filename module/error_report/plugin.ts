@@ -120,6 +120,20 @@ export function init(app: App): void {
     if (ctx.req.appPath === "csp-error") return handleCspError(ctx);
   });
 
+  // Track every 404 response (pages, api, dbFile, static). A direct visit of the
+  // cms not-found page renders with status 200, so it is not reported.
+  app.on("response-ready", async ({ request, res, peerAddr, ctx }) => {
+    if (res.status !== 404) return;
+    const report: Report = { source: "404", message: request.url, file: new URL(request.url).pathname, prio: "notice" };
+    if (!ctx) { // static path has no request context, addReport can't fill these
+      report.request = request.url;
+      report.referer = request.headers.get("referer") ?? "";
+      report.browser = request.headers.get("user-agent") ?? "";
+      report.ip = peerAddr;
+    }
+    await addReport(app, report);
+  });
+
   app.on("render", async ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
     if (!await ctx.app.settings.error_report.browserErrors) return;
