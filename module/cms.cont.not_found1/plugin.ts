@@ -30,13 +30,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     listItems += `<li>${await node.cms.link(await node.cms.node(Number(pid)))}`;
   }
 
-  const editBox = await renderEditBox(node, ctx);
-
   return `<div>
   <div thm1-width class=u1-width>
     ${await node.cms.text(node, "main")}
     <ul>${listItems}</ul>
-    ${editBox}
+    ${await renderEditBox(node, ctx)}
   </div>
 </div>`;
 }
