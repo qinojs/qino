@@ -109,8 +109,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   if (get.show === "entries") {
-    const entriesBox = await renderEntryList(node, ctx, get);
-    return `<div class="u2-flex">${tools}${entriesBox}</div>`;
+    return `<div class="u2-flex">${tools}${await renderEntryList(node, ctx, get)}</div>`;
   }
 
   const { editorLink } = makeFileHelper(ctx);
