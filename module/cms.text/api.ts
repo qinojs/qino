@@ -44,7 +44,7 @@ class CmsTextService {
         let output = await this.transl(input, target_lang, source_lang);
         if (!output) throw new AptError(502, "Translation service returned nothing");
 
-        if (input && /^[A-Z]/.test(input[0] ?? "")) {
+        if (/^[A-Z]/.test(input)) {
             output = output.charAt(0).toUpperCase() + output.slice(1);
         }
 
