@@ -147,7 +147,7 @@ export class Node {
         const ctx = getCtx();
         if (await ctx.user?.get("superuser")) return true;
         if (await this.access() < WRITE) return false;
-        const level = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${module}` ?? "0") || 0;
+        const level = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${module}`) || 0;
         return level >= WRITE && level <= await this.cms.usrAccess(ctx.user);
     }
 
