@@ -24,11 +24,9 @@ cms.initNode("backend.superuser.error_report", (el) => {
       return;
     }
 
-    const del = e.target.closest("[data-delete-entry]");
-    if (del) {
-      apt.cms.node(pid).html.post({ vars: { delete: Object.assign({}, del.dataset) } }).then((html) => {
-        el.outerHTML = html;
-      });
+    const delGroup = e.target.closest("[data-delete-group]");
+    if (delGroup) {
+      reload({ deleteGroup: { ...delGroup.dataset } }, delGroup);
     }
   });
 });

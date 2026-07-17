@@ -38,6 +38,9 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const where = db.table("m_error_report").valuesToFragment(vars.delete);
     if (where.parts.length) await db.exec`DELETE FROM m_error_report WHERE ${where}`;
   }
+  if (vars.deleteGroup) {
+    await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(vars.deleteGroup)}`;
+  }
   if (vars.deleteMatching) {
     await db.exec`DELETE FROM m_error_report WHERE ${filterWhere(db, vars.deleteMatching)}`;
   }
@@ -49,9 +52,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const prios   = await db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`;
   const opts    = (vals: string[], cur: string) => vals.map(v => `<option ${v === cur ? "selected" : ""}>${hee(v)}</option>`).join("");
   const ranges: [string, string][] = [["", await t`all time`], ["1", await t`last 24h`], ["7", await t`last 7 days`], ["30", await t`last 30 days`]];
+  const range  = get.range ?? "30"; // default window keeps the group scan off the full table
 
   const filterForm = `
-  <form class="-body">
+  <form>
     <input type=search name=search value="${hee(get.search ?? "")}" placeholder="${await t`message, /path, IP or id`}"
       title="${await t`Words search the message, a path (with /) the file, an IP address or a numeric id match exactly`}">
     <select name=source>
@@ -61,7 +65,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       <option value="">${await t`All priorities`}</option>${opts(prios, get.prio ?? "")}
     </select>
     <select name=range>
-      ${ranges.map(([v, l]) => `<option value="${v}" ${v === (get.range ?? "") ? "selected" : ""}>${hee(l)}</option>`).join("")}
+      ${ranges.map(([v, l]) => `<option value="${v}" ${v === range ? "selected" : ""}>${hee(l)}</option>`).join("")}
     </select>
     <select name=order>
       <option value=max_id>${await t`sort by date`}</option>
@@ -70,18 +74,32 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   </form>`;
 
   const tools = `
-  ${filterForm}
   <div class="-body">
-    <button data-delete-matching u2-confirm="${await t`Really delete all matching entries?`}">${await t`Delete matching`}</button>
+    ${filterForm}
+    <div>
+      <button data-delete-matching u2-confirm="${await t`Really delete all matching entries?`}">${await t`Delete matching`}</button>
+    </div>
   </div>`;
 
   return `
 <div class=u2-card>
   <div class=-head>${await t`Errors`}</div>
   ${tools}
-  <div cms-part=list style="overflow:auto; max-height:80vh; padding:0; border-top:.4rem solid var(--color-darker)">${await list(node, { ctx, vars: get })}</div>
+  <div cms-part=list style="overflow:auto; max-height:80vh; padding:0; border-top:.4rem solid var(--color-darker)">${await list(node, { ctx, vars: { ...get, range } })}</div>
 </div>`;
 }
+
+// WHERE for one error group (source/file/line/col). NULL columns travel through
+// URLs and datasets as the string "null" — translate that back to IS NULL.
+function groupWhere(vals: Record<string, unknown>): Sql {
+  return sql.join(["source", "file", "line", "col"].map(c => {
+    const v = vals[c];
+    return v == null || v === "null" ? sql`${sql.id(c)} IS NULL` : sql`${sql.id(c)} = ${String(v)}`;
+  }), " AND ");
+}
+
+// Cutoff in the table's "YYYY-MM-DD HH:MM:SS" time format; compares via the time index.
+const daysAgo = (days: number) => new Date(Date.now() - days * 86400e3).toISOString().slice(0, 19).replace("T", " ");
 
 // WHERE for the current search/filter state — shared by the list part and "delete matching".
 // The search dispatches on input shape to indexed paths: id/log_id, ip, or fulltext
@@ -95,7 +113,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
   const conds: Sql[] = [];
   if (fSource) conds.push(sql`source = ${fSource}`);
   if (fPrio)   conds.push(sql`prio = ${fPrio}`);
-  if (fRange)  conds.push(sql`time >= ${new Date(Date.now() - fRange * 86400e3).toISOString().slice(0, 19).replace("T", " ")}`);
+  if (fRange)  conds.push(sql`time >= ${daysAgo(fRange)}`);
   if (search) {
     const ftCol = search.includes("/") ? "file" : "message";
     const words = search.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 3).slice(0, 4);
@@ -150,6 +168,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const num     = Number(row.num)     || 0;
     const numBot  = Number(row.num_bot) || 0;
     const numUns  = Number(row.num_unsupported) || 0;
+    const msg     = String(row.message ?? "");
     const entriesUrl = `?show=entries&source=${encodeURIComponent(row.source)}&file=${encodeURIComponent(row.file)}&line=${encodeURIComponent(row.line)}&col=${encodeURIComponent(row.col)}`;
     const editorUrl  = editorLink(row.file, row.line, row.col);
     tableRows += `
@@ -172,13 +191,14 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       </div> oldies: ${numUns}
     </small>
   <td>
-    <a target="_blank" href="${hee(editorUrl)}">${hee(row.message)}</a><br>
+    <a target="_blank" href="${hee(editorUrl)}">${hee(msg.slice(0, 300))}${msg.length > 300 ? "…" : ""}</a><br>
     <small>${u2time(row.time)}</small>
     <div>${hee(row.usr_email ?? "")}</div>
   <td>
     <button class=u2-unstyle type=button
-      data-delete-entry
-      data-file="${hee(row.file)}"
+      data-delete-group
+      data-source="${hee(String(row.source))}"
+      data-file="${hee(String(row.file))}"
       data-line="${hee(String(row.line))}"
       data-col="${hee(String(row.col))}"
       aria-label="Delete"><u2-ico icon=delete aria-hidden="true">✕</u2-ico></button>`;
@@ -195,8 +215,8 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   const db = node.app.db;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
-  const where = db.table("m_error_report").valuesToFragment({ source: get.source, file: get.file, line: get.line, col: get.col });
-  if (!where.parts.length) return `<div>${await node.app.t`Invalid parameters`}</div>`;
+  if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return `<div>${await node.app.t`Invalid parameters`}</div>`;
+  const where = groupWhere(get);
 
   const rows = await db.query`
     SELECT e.*, usr.email
@@ -242,7 +262,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 
   return `
 <div class=u2-card style="height:88vh; overflow:auto; flex:1 1 80rem">
-  <div class=-head>${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
+  <div class=-head><a href="?">← ${await node.app.t`Errors`}</a> &nbsp; ${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
   <table class=u2-table>
     <tbody style="vertical-align:baseline">
       ${tableRows}
@@ -387,13 +407,14 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     FROM (
       SELECT prio, source, file, line, col, max(id) AS max_id, count(*) AS num
       FROM m_error_report
+      WHERE time >= ${daysAgo(7)}
       GROUP BY prio, source, file, line, col
     ) g
     JOIN m_error_report e ON e.id = g.max_id
-    ORDER BY FIELD(e.prio,'error','warning','notice'), g.max_id DESC
+    ORDER BY CASE e.prio WHEN 'error' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END, g.max_id DESC
     LIMIT 5`.catch(() => []);
 
-  if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries</span>`;
+  if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries (last 7 days)</span>`;
 
   const errNode = await cmsOf(app).nodeByModule("cms.backend.superuser.error_report");
   const baseUrl = errNode ? await errNode.url() : null;
