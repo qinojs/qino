@@ -25,8 +25,6 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
     pathParts.push(html`<a href="${"?rp=" + C.id}">${String(title).trim() || "(no text)"}</a> > `);
   }
 
-  const listHtml = await list(node, { ctx, vars: {} });
-
   const showContents = !!ctx.settings.cms.admin.showContents();
 
   const t = node.app.t;
@@ -48,7 +46,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
         <th style="width:80px"> ${t`Searchable`}
         <th style="width:160px"> ${t`Layout`}
     <tbody cms-part=list>
-      ${listHtml}
+      ${await list(node, { ctx, vars: {} })}
   </table>
 </div>`;
 }
