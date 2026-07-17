@@ -103,13 +103,14 @@ html.raw = (v: unknown): HtmlString => new HtmlString(v);
 html.join = (parts: Iterable<unknown>, separator = ""): HtmlString =>
   new HtmlString(Array.from(parts, htmlValue).join(separator));
 
-export function uid(length?: number): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  const full = btoa(String.fromCharCode(...bytes))
-    .replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-  return length ? full.slice(0, length) : full;
-}
+/** base64url (RFC 4648) — no padding, URL-safe alphabet. */
+export const b64url = (bytes: Uint8Array): string => bytes.toBase64({ alphabet: "base64url", omitPadding: true });
+export const unb64url = (str: string): Uint8Array<ArrayBuffer> => Uint8Array.fromBase64(str, { alphabet: "base64url" });
+
+/** n random bytes as base64url. */
+export const randB64 = (n: number): string => b64url(crypto.getRandomValues(new Uint8Array(n)));
+
+export const uid = (length?: number): string => randB64(16).slice(0, length);
 
 /* Control flow signals */
 export class Output extends Error {

@@ -1,19 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { login, Output, Redirect, unixTime, type App, type Ctx } from "../core/mod.ts";
+import { login, Output, Redirect, unixTime, b64url, unb64url, randB64, type App, type Ctx } from "../core/mod.ts";
 
 export const name = "oauth";
 export const needs = ["core"];
 export { dbSchema };
 
-const B64URL = { alphabet: "base64url", omitPadding: true } as const;
-const rand = (n: number): string => crypto.getRandomValues(new Uint8Array(n)).toBase64(B64URL);
-
 /** Decode a JWT payload without verifying the signature — safe here: the token comes
  *  straight from the token endpoint over TLS (OIDC allows skipping the signature check). */
 function jwtPayload(token: string): any {
-  const bytes = Uint8Array.fromBase64(token.split(".")[1] ?? "", { alphabet: "base64url", lastChunkHandling: "loose" });
-  return JSON.parse(new TextDecoder().decode(bytes));
+  return JSON.parse(new TextDecoder().decode(unb64url(token.split(".")[1] ?? "")));
 }
 
 // public IdP metadata, keyed by issuer — identical across tenants, so a shared cache is safe
@@ -82,7 +78,7 @@ async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): P
 async function start(ctx: Ctx, name: string): Promise<never> {
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);
-  const state = rand(24), nonce = rand(24), verifier = e.oidc ? rand(48) : "";
+  const state = randB64(24), nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
 
   const d = ctx.sess.data.oauth; // one-shot transient, mirrors ctx.sess.data.core.*
   d.prov(name); d.state(state); d.nonce(nonce); d.verifier(verifier);
@@ -96,7 +92,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   u.searchParams.set("state", state);
   if (e.oidc) { // PKCE + nonce only for OIDC; plain-OAuth2 providers (e.g. GitHub) may reject them
     u.searchParams.set("nonce", nonce);
-    u.searchParams.set("code_challenge", new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))).toBase64(B64URL));
+    u.searchParams.set("code_challenge", b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)))));
     u.searchParams.set("code_challenge_method", "S256");
   }
   throw new Redirect(u.href);

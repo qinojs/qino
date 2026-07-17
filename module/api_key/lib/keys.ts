@@ -1,14 +1,11 @@
 import { createHash } from "node:crypto";
-import { unixTime, type App } from "../../core/mod.ts";
+import { unixTime, randB64, type App } from "../../core/mod.ts";
 
 const PREFIX = "qk_";
 
-const b64url = (bytes: Uint8Array): string =>
-  btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-
 /** New opaque token: `qk_` + 256 random bits, base64url. Shown to the user exactly once. */
 export function generateToken(): string {
-  return PREFIX + b64url(crypto.getRandomValues(new Uint8Array(32)));
+  return PREFIX + randB64(32);
 }
 
 /** SHA-256 hex — the only representation we store, looked up via the unique index.

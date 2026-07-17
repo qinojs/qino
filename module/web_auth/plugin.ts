@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, login, unixTime, Access, AccessError, type AptTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
+import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, type AptTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
 
 export const name = "web_auth";
@@ -17,16 +17,6 @@ export const settingsSchema = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const CHALLENGE_TTL = 5 * 60;
-
-/** base64url (RFC 4648) — no padding, URL-safe alphabet. */
-const b64url = (bytes: Uint8Array | string): string =>
-  btoa(typeof bytes === "string" ? bytes : String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-const unb64url = (str: string) =>
-  Uint8Array.from(atob(str.replaceAll("-", "+").replaceAll("_", "/")), (c) => c.charCodeAt(0));
-
-function randB64(n: number): string {
-  return b64url(crypto.getRandomValues(new Uint8Array(n)));
-}
 
 async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
   const rpId   = String(await app.settings.web_auth.rpId   ?? "") || "localhost";
@@ -124,7 +114,7 @@ export const api: AptTree = {
             publicKey: {
               rp: { id: rpId, name: rpName },
               user: {
-                id: b64url(String(ctx.userId)),
+                id: b64url(new TextEncoder().encode(String(ctx.userId))),
                 name: String(usr?.email ?? ctx.userId),
                 displayName: [usr?.firstname, usr?.lastname].filter(Boolean).join(" ") || String(usr?.email ?? ctx.userId),
               },
