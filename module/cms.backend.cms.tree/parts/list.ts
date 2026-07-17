@@ -22,7 +22,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const showContents = !!admin.showContents();
   const treeType = showContents ? "*" : "p";
 
-  const rootId = Number(admin.rootPageNode() ?? "0") || 1;
+  const rootId = Number(admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
 
   let out = "";

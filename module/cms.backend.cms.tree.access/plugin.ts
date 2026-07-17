@@ -20,7 +20,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const app = node.app;
   const t = app.t;
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
+  const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
 
   const pathParts: HtmlString[] = [];
@@ -83,7 +83,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const showContents = !!ctx.settings.cms.admin.showContents();
   const treeType = showContents ? "*" : "p";
 
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
+  const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
   const groups = await accessGroups(app);
 
