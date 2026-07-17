@@ -54,7 +54,7 @@ export { Module, ModuleManager } from "./lib/ModuleManager.ts";
 export type { Plugin } from "./lib/ModuleManager.ts";
 
 // Auth
-export { login, pwHash } from "./lib/auth.ts";
+export { login, pwHash, pwVerify } from "./lib/auth.ts";
 
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";

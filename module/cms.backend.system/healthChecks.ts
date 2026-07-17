@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, unixTime, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, unixTime, pwVerify, type App } from "../core/mod.ts";
 import type { HealthTypes, Solution } from "./healthRegistry.ts";
 
 export async function healthChecks(app: App): Promise<HealthTypes> {
@@ -32,15 +32,12 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   }
 
   // ── superuser default password ──────────────────────────────────────────
-  const { compare } = await import("https://deno.land/x/bcrypt@v0.4.1/mod.ts");
   error["superuser default password"] = async () => {
     const usrs = await db.query`SELECT * FROM usr WHERE pw != '' ORDER BY superuser DESC, email = 'su' DESC, id LIMIT 20`;
     const found: typeof usrs = [];
     let info = "";
     for (const row of usrs) {
-      let match = false;
-      try { match = await compare("su", row.pw); } catch { /* skip */ }
-      if (!match) continue;
+      if (!await pwVerify("su", row.pw)) continue;
       found.push(row);
       info += hee(row.email) + "<br>";
     }
