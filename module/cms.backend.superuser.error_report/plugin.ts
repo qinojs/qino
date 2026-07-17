@@ -11,22 +11,31 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 function makeFileHelper(ctx: Ctx) {
   const appURL = ctx.req.basePath;
+  /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
+  function localPath(file: string): string | null {
+    if (!file.startsWith("file:")) return ctx.urlToLocalPath(file);
+    try {
+      const path = new URL(file).pathname;
+      ctx.app.assertAllowedPath(path);
+      return path;
+    } catch { return null; }
+  }
   function editorLink(file: string, line: unknown, col: unknown): string {
-    const localPath = ctx.urlToLocalPath(file) ?? file;
-    return appURL + "editor/?file=" + encodeURIComponent(localPath)
+    const path = localPath(file) ?? file;
+    return appURL + "editor/?file=" + encodeURIComponent(path)
       + "&line=" + encodeURIComponent(String(line ?? ""))
       + "&col="  + encodeURIComponent(String(col  ?? ""));
   }
   function fileDisplay(file: string): string {
-    const localPath = ctx.urlToLocalPath(file);
-    if (!localPath) return file;
+    const path = localPath(file);
+    if (!path) return file;
     for (const mod of Object.values(ctx.app.modules.all())) {
-      if (mod.dir && localPath.startsWith(mod.dir)) return "m/" + mod.name + "/" + localPath.slice(mod.dir.length);
+      if (mod.dir && path.startsWith(mod.dir)) return "m/" + mod.name + "/" + path.slice(mod.dir.length);
     }
-    const mIdx = localPath.lastIndexOf("/m/");
-    return mIdx >= 0 ? localPath.slice(mIdx + 1) : localPath;
+    const mIdx = path.lastIndexOf("/m/");
+    return mIdx >= 0 ? path.slice(mIdx + 1) : path;
   }
-  return { editorLink, fileDisplay };
+  return { editorLink, fileDisplay, localPath };
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
@@ -274,7 +283,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
-  const { editorLink, fileDisplay } = makeFileHelper(ctx);
+  const { editorLink, fileDisplay, localPath } = makeFileHelper(ctx);
 
   const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;
   if (!error) return `<div>${await t`Error entry not found`}</div>`;
@@ -286,7 +295,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   let btHtml = "";
   const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
   for (const item of bt) {
-    const isLocal = ctx.urlToLocalPath(item.file ?? "") !== null;
+    const isLocal = localPath(item.file ?? "") !== null;
     const fileCell = isLocal
       ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target="_blank">${hee(fileDisplay(item.file ?? ""))} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span></a>`
       : `${hee(item.file ?? "")} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span>`;
@@ -339,7 +348,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 <a href="${histHref("ip")}">IP</a>
 ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client")}">Client</a>` : ""}`;
 
-  const isLocalFile = ctx.urlToLocalPath(error.file ?? "") !== null;
+  const isLocalFile = localPath(error.file ?? "") !== null;
   const fileBlock = isLocalFile
     ? `<a style="color:inherit; text-decoration:none" target="_blank" href="${hee(editorLink(error.file, error.line, error.col))}">
       <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(String(error.line))} column: ${hee(String(error.col))}

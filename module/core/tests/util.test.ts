@@ -112,6 +112,8 @@ Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () =
   assertEquals(ctx.urlToLocalPath("http://h/m/../pub/main.css"), null);
   assertEquals(ctx.urlToLocalPath("http://h/qg/../pub/main.css"), null);
   assertEquals(ctx.urlToLocalPath("http://h/other/main.css"), null);
+  assertEquals(ctx.urlToLocalPath("file:///etc/passwd"), null);
+  assertEquals(ctx.urlToLocalPath("file:///app/m/local.foo/pub/main.css"), null);
 });
 
 Deno.test("util: app.assertAllowedPath accepts app/module roots and rejects siblings", () => {
