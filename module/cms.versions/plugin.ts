@@ -122,7 +122,7 @@ export function init(app: App) {
         if (ctx.req.query.cms_versions_space !== undefined && ctx.req.query.cms_versions_space !== "active") {
             vs.space = Number(ctx.req.query.cms_versions_space) || 0;
         }
-        vs.log = Number(ctx.req.query.cms_versions_log ?? "0") || 0;
+        vs.log = Number(ctx.req.query.cms_versions_log) || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
         if (vs.log) {
