@@ -42,15 +42,8 @@ export function init(app: App) {
 
     const isSuperuser = Boolean(await ctx.user?.get('superuser'));
     const allowed = ctx.sess.data.fileEditor.allow[file]();
-    if (!isSuperuser && !allowed) {
-      ctx.res.headers.set("Content-Type", "text/plain; charset=utf-8");
-      throw new Output("no access");
-    }
-
-    if (!(await nodeFs.stat(file).catch(() => null))?.isFile()) {
-      ctx.res.headers.set("Content-Type", "text/plain; charset=utf-8");
-      throw new Output("file does not exist");
-    }
+    if (!isSuperuser && !allowed) throw new Output("no access");
+    if (!(await nodeFs.stat(file).catch(() => null))?.isFile()) throw new Output("file does not exist");
   });
 
   app.on("render", async () => {

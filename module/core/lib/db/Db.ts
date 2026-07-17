@@ -59,11 +59,17 @@ export class Db extends Emitter<DbEvents> {
     return this.#run(() => this.#driver.query(text, params), text) as Promise<T[]>;
   }
 
-  async row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return (await this.query<T>(strings, ...values))[0]; }
+  async row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> {
+    return (await this.query<T>(strings, ...values))[0];
+  }
 
-  async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> { return (await this.query(strings, ...values)).map((r) => Object.values(r)[0] as T); }
+  async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
+    return (await this.query(strings, ...values)).map((r) => Object.values(r)[0] as T);
+  }
 
-  async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return Object.values((await this.query(strings, ...values))[0] ?? {})[0] as T | undefined; }
+  async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> {
+    return Object.values((await this.query(strings, ...values))[0] ?? {})[0] as T | undefined;
+  }
 
   async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>> {
     return Object.fromEntries((await this.query(strings, ...values)).map((r) => Object.values(r) as [string, T]));
@@ -76,10 +82,11 @@ export class Db extends Emitter<DbEvents> {
     const [text, params] = await this.#sql(a, rest);
     return this.#run(() => this.#driver.exec(text, params, returning), text);
   }
-  /** Run fn atomically; nested calls join the outer transaction. */
-  transaction<T>(fn: () => Promise<T>): Promise<T> {
+
+  transaction<T>(fn: () => Promise<T>): Promise<T> { /** Run fn atomically; nested calls join the outer transaction. */
     return this.#driver.transaction(fn);
   }
+
   syncAutoIncrement(table: string, field: string, value: number): Promise<void> {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
