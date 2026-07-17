@@ -344,8 +344,7 @@ export class Node {
     }
 
     async showText(name = "main", lang?: string | null): Promise<any> {
-        const obj = await this.text(name, lang ?? null);
-        return this.#showTextLang(obj, lang);
+        return this.#showTextLang(await this.text(name, lang ?? null), lang);
     }
 
     async showTitle(lang?: string | null): Promise<any> {
