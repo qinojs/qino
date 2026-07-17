@@ -233,7 +233,8 @@ export class DbTable {
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return false;
     const cascades = this.children.filter((f) => f.onParentDelete === "cascade");
-    const row = cascades.length ? await this.selectByID(id) : undefined; // parent values are gone after the DELETE
+    const setnulls = this.children.filter((f) => f.onParentDelete === "setnull");
+    const row = cascades.length || setnulls.length ? await this.selectByID(id) : undefined; // parent values are gone after the DELETE
     const rows = await this.#db.exec`DELETE FROM ${sql.id(this)} WHERE ${where}`;
     if (!rows?.affectedRows) return false; // no row matched
     await this.#db.fire("table:delete-after", { table: this, data: values, id });
@@ -244,6 +245,11 @@ export class DbTable {
       for (const childRow of childRows) {
         await field.table.delete(childRow);
       }
+    }
+    for (const field of setnulls) {
+      const pField = field.parentField();
+      if (!pField || !row) continue;
+      await this.#db.exec`UPDATE ${sql.id(field.table)} SET ${sql.id(field)} = ${null} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
     }
     return true;
   }

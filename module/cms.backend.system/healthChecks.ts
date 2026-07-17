@@ -46,7 +46,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
       info: info + (usrs.length === 20 ? " only the first 20 were checked" : ""),
       solutions: {
         "remove pw":   { solve: async () => { for (const r of found) await db.query`UPDATE usr SET pw='' WHERE id=${r.id}`; } },
-        "remove user": { solve: async () => { for (const r of found) await db.query`DELETE FROM usr WHERE id=${r.id}`; } },
+        "remove user": { solve: async () => { for (const r of found) await db.table("usr").delete(r.id); } },
       },
     };
   };
@@ -159,6 +159,8 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   // MySQL-only fragments; other dialects run without cap/optimize.
   const limit1M  = db.dialect === "mysql" ? sql.raw(" LIMIT 1000000") : sql.raw("");
   const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
+  // "no row references this table" condition, built from x-qg-parent child columns
+  const notLinked = (table: string) => sql.join(db.table(table).children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
 
   cleanup["clean logs, clients and sessions"] = () => ({
     info: "deletes not used and older then one month, can take long!",
@@ -169,25 +171,24 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
           const monthAgo = unixTime() - (60 * 60 * 24 * 30);
           let msg = "";
 
-          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo}${limit1M}`;
+          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} AND ${notLinked("log")}${limit1M}`;
           await optimize("log");
           msg += logRes.affectedRows + " log-rows deleted\n";
 
           for (const table of ["log_url", "log_user_agent", "log_ip"]) {
-            const where = sql.join(db.table(table).children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
-            const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${where}${limit1M}`;
+            const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${notLinked(table)}${limit1M}`;
             await optimize(table);
             msg += res.affectedRows + ` ${table}-rows deleted\n`;
           }
 
-          const clientRes = await db.exec`DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL)${limit1M}`;
+          const clientRes = await db.exec`DELETE FROM client WHERE ${notLinked("client")}${limit1M}`;
           await optimize("client");
           msg += clientRes.affectedRows + " client-rows deleted\n";
 
           const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${monthAgo} AND token IS NOT NULL${limit1M}`;
           msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
 
-          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL)${limit1M}`;
+          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND ${notLinked("sess")}${limit1M}`;
           await optimize("sess");
           msg += sessRes.affectedRows + " sess-rows deleted\n";
 
@@ -199,9 +200,8 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   });
 
   cleanup["not linked texts"] = async () => {
-    const children = app.db.table("text").children;
-    if (!children.length) return;
-    const where = sql.join(children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
+    if (!db.table("text").children.length) return;
+    const where = notLinked("text");
     const count = Number(await db.one`SELECT count(DISTINCT id) FROM text WHERE ${where}`);
     if (!count) return;
     return {
