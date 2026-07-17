@@ -54,7 +54,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     fit: (await settings["contain"]) ? "contain" : "cover",
     if: 1,
     style,
-    quality: Number(await settings["quality"] ?? "0") || null,
+    quality: Number(await settings["quality"]) || null,
     editable: node.edit ? await Img.url() : null,
   };
 
