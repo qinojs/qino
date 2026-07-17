@@ -40,8 +40,7 @@ function urlToPath(cacheDir: string, url: string): string | null {
 }
 
 function mediaTypeForPath(filePath: string): string | null {
-  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
-  return mediaTypesByExtension[ext] ?? null;
+  return mediaTypesByExtension[filePath.split(".").pop()?.toLowerCase() ?? ""] ?? null;
 }
 
 async function directorySize(path: string): Promise<number> {
