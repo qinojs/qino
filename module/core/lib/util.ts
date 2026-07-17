@@ -155,10 +155,7 @@ export function urlize(str: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function sqlSearchHelper(
-  search: string,
-  fields: string[],
-): { where: Sql; order: Sql } {
+export function sqlSearchHelper(search: string, fields: string[]): { where: Sql; order: Sql } {
   const searches = (search ?? "").trim().split(/\s+/).slice(0, 4).filter(Boolean);
   if (!searches.length || !fields.length) {
     return { where: sql.raw("true"), order: sql.raw("1") };
