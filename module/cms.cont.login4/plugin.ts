@@ -42,8 +42,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     await errorT.lang("en").set("Your login attempt failed");
   }
   if (ctx.loginError) {
-    const errorText = await errorT.string();
-    errorHtml = `<div class=loginError>${errorText}</div>`;
+    errorHtml = `<div class=loginError>${await errorT.string()}</div>`;
   }
 
   let out = `<div>\n${errorHtml}\n`;
