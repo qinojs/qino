@@ -158,7 +158,7 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
         : `m._vers_space = ${space} AND m._vers_log = 0`;
 
     await db.query`DROP VIEW IF EXISTS ${sql.id(name)}`;
-    await db.query(sql.raw(head + where));
+    await db.query`${sql.raw(head + where)}`;
 }
 
 // ─── Baseline ────────────────────────────────────────────────────────────────

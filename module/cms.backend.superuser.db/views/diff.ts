@@ -49,7 +49,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
     : html`<div class="-body">Schema and DB match.</div>`;
 
   // --- schema from db ---
-  const fromDb = await schemaFromDb((text: string) => db.query(sql.raw(text)));
+  const fromDb = await schemaFromDb((text: string) => db.query`${sql.raw(text)}`);
   const current = db.schema ?? { properties: {} };
   const diffs = schemaDiff(fromDb, current);
 

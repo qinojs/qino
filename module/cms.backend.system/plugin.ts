@@ -103,7 +103,7 @@ async function render(node: Node): Promise<string> {
 
   // ── locales / time ─────────────────────────────────────────────────────
   const osIso   = new Date().toISOString();
-  const dbRaw   = await db.one(sql.raw(dbUtcNowSql(db.dialect)));
+  const dbRaw   = await db.one`${sql.raw(dbUtcNowSql(db.dialect))}`;
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
 <div class="u2-card">

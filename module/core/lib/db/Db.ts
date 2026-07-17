@@ -55,15 +55,13 @@ export class Db extends Emitter<DbEvents> {
     return [text, params];
   }
 
-  /** Shared base of query and its shortcuts; keeps the public overloads cast-free. */
-  async #q(a: TemplateStringsArray | Sql, rest: unknown[]): Promise<Row[]> {
-    const [text, params] = await this.#sql(a, rest);
+  /** Shared base of query and its shortcuts. Fragments run via `db.query\`${frag}\``. */
+  async #q(strings: TemplateStringsArray, values: unknown[]): Promise<any[]> {
+    const [text, params] = await this.#sql(strings, values);
     return this.#run(() => this.#driver.query(text, params), text);
   }
 
-  query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
-  query<T = Row>(frag: Sql): Promise<T[]>;
-  query(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<any[]> { return this.#q(a, rest); }
+  query<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> { return this.#q(strings, values); }
 
   exec(strings: TemplateStringsArray, ...values: unknown[]): Promise<ExecResult>;
   exec(frag: Sql, returning?: string): Promise<ExecResult>;
@@ -80,22 +78,14 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 
-  row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined>;
-  row<T = Row>(frag: Sql): Promise<T | undefined>;
-  async row(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<any> { return (await this.#q(a, rest))[0]; }
+  async row<T = Row>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return (await this.#q(strings, values))[0]; }
 
-  col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
-  col<T = unknown>(frag: Sql): Promise<T[]>;
-  async col(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<any[]> { return (await this.#q(a, rest)).map((r) => Object.values(r)[0]); }
+  async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> { return (await this.#q(strings, values)).map((r) => Object.values(r)[0] as T); }
 
-  one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined>;
-  one<T = unknown>(frag: Sql): Promise<T | undefined>;
-  async one(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<any> { return Object.values((await this.#q(a, rest))[0] ?? {})[0]; }
+  async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> { return Object.values((await this.#q(strings, values))[0] ?? {})[0] as T | undefined; }
 
-  indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>>;
-  indexCol<T = unknown>(frag: Sql): Promise<Record<string, T>>;
-  async indexCol(a: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<Record<string, any>> {
-    return Object.fromEntries((await this.#q(a, rest)).map((r) => Object.values(r) as [string, unknown]));
+  async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>> {
+    return Object.fromEntries((await this.#q(strings, values)).map((r) => Object.values(r) as [string, T]));
   }
 
   /** Create the database if missing. Must run before any schema migration queries against it. */

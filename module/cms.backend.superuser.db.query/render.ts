@@ -67,11 +67,12 @@ function renderAi(app: App, question: string, note: string): Promise<HtmlString>
 async function runQuery(app: App, text: string): Promise<HtmlString> {
   const t0 = performance.now();
   try {
-    if (READ_RE.test(text)) {
-      const rows = await app.db.query(sql.raw(text));
+    const bare = text.replace(/^(?:\s|--[^\n]*|\/\*[\s\S]*?\*\/)+/, ""); // leading comments would defeat the routing regex
+    if (READ_RE.test(bare)) {
+      const rows = await app.db.query`${sql.raw(text)}`;
       return await renderRows(app, rows, performance.now() - t0);
     }
-    const res = await app.db.exec(sql.raw(text));
+    const res = await app.db.exec`${sql.raw(text)}`;
     const ms = (performance.now() - t0).toFixed(1);
     const insert = res.insertId ? ` · insertId ${res.insertId}` : "";
     return await html.async`<u2-alert open variant=success class=-result>${res.affectedRows} ${app.t`rows affected`}${insert} · ${ms} ms</u2-alert>`;
