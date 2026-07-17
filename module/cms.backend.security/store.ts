@@ -36,9 +36,10 @@ export function fastInfo(ctx: Ctx): any {
   const path = short(ctx.req.appPath || ctx.req.url.pathname, 191);
   const ip = ctx.req.clientIp || "";
   return {
-    time: unixTime(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId || 0) || null, sess_id: Number(ctx.sess?.id || 0) || null,
-    usr_id: Number(ctx.userId || 0) || null, method: ctx.req.method, path, status: 0, duration_ms: 0,
-    bytes_in: Number(ctx.req.header("content-length") ?? "0") || 0, bytes_out: 0, ua: ctx.req.header("user-agent") ?? "",
+    time: unixTime(), ip, ip_range: ipRange(ip), client_id: Number(ctx.clientId) || null,
+    sess_id: Number(ctx.sess?.id) || null, usr_id: Number(ctx.userId) || null,
+    method: ctx.req.method, path, status: 0, duration_ms: 0,
+    bytes_in: Number(ctx.req.header("content-length")) || 0, bytes_out: 0, ua: ctx.req.header("user-agent") ?? "",
   };
 }
 
