@@ -10,7 +10,7 @@ export default async function (node: Node): Promise<HtmlString> {
   if (isNull) {
     inner = await t`Inherited from ${node.cms.link(P)}`;
   } else {
-    const hasMany = (Number(await node.app.db.one`SELECT count(*) FROM grp WHERE cms_access` ?? "0") || 0) > 10;
+    const hasMany = (Number(await node.app.db.one`SELECT count(*) FROM grp WHERE cms_access`) || 0) > 10;
     const searchInput = hasMany ? `<input class=-search placeholder="${await node.app.t`Search`}">` : "";
     const { default: listFn } = await import("./access.grp.list.ts");
     const listHtml = await listFn(node, { hasMany });
