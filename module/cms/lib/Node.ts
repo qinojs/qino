@@ -441,7 +441,7 @@ export class Node {
         const row: Record<string, string | number> = { page_id: String(this), file_id: String(File) };
         if (!name) {
             const minSort = await this.db.one`SELECT min(sort) FROM ${sql.id(tableRef("page_file"))} WHERE page_id = ${this.id}`;
-            row.sort = (Number(minSort ?? "0") || 0) - 1;
+            row.sort = (Number(minSort) || 0) - 1;
             name = "_" + Math.random().toString(36).slice(2, 9);
         }
         row.name = name;
