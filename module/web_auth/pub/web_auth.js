@@ -74,8 +74,7 @@ export class WebAuth {
     if (!globalThis.PublicKeyCredential) throw new Error(await t`WebAuthn is not supported.`);
 
     const { token, publicKey } = await this.#post("/login/challenge", { email: opts.email ?? null });
-    const assertion = await this.#getAssertion(publicKey);
-    return this.#verify("/login/verify", token, assertion);
+    return this.#verify("/login/verify", token, await this.#getAssertion(publicKey));
   }
 
   // ── Conditional UI (Autofill passkey) ─────────────────────────────────────
