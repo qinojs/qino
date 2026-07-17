@@ -213,7 +213,7 @@ class CmsTextService {
         lang ??= this.ctx.lang;
         const rows = await this.ctx.app.db.query`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
         const map: Record<number, boolean> = {};
-        for (const row of rows) map[row.id] = !!(row.text && row.text !== "");
+        for (const row of rows) map[row.id] = !!row.text;
         if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;
         return Object.fromEntries(ids.map(id => [id, map[id] ?? false]));
     }
