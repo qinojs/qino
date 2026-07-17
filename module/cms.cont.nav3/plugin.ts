@@ -142,8 +142,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     return str;
   };
 
-  const nav = await getUl(StartPage);
-  return `<nav>${nav || ""}</nav>`;
+  return `<nav>${await getUl(StartPage) || ""}</nav>`;
 }
 
 export const cms = {
