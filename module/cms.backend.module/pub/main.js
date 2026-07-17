@@ -3,6 +3,7 @@ cms.initNode("backend.module", (el) => {
   const search = el.querySelector("[data-module-search]");
   search?.addEventListener("input", () => {
     const q = search.value.toLowerCase();
-    for (const tr of el.querySelectorAll("tbody tr")) tr.hidden = !tr.textContent.toLowerCase().includes(q);
+    // inline display beats u2-table's `display:table-row`, which would override [hidden]
+    for (const tr of el.querySelectorAll("tbody tr")) tr.style.display = tr.textContent.toLowerCase().includes(q) ? "" : "none";
   });
 });
