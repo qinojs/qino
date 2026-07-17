@@ -43,8 +43,7 @@ export async function cmsFrontend2WidgetAccordion(
       title ?? widget
     }</span></div>`;
   }
-  const contentHtml = await cmsFrontend2Widget(widget, open, node, "-content", param);
-  return headHtml + contentHtml;
+  return headHtml + await cmsFrontend2Widget(widget, open, node, "-content", param);
 }
 
 /** Widget als Sidebar-Item */
