@@ -6,8 +6,7 @@ type DbTableStat = { name: string; bytes: number };
 export async function dbTableStats(db: Db): Promise<DbTableStat[]> {
   if (db.dialect === "postgres") return pgTableStats(db);
   if (db.dialect === "sqlite") return sqliteTableStats(db);
-  const rows = await db.query`SHOW TABLE STATUS`;
-  return rows.map((r) => ({
+  return (await db.query`SHOW TABLE STATUS`).map((r) => ({
     name: String(r.Name ?? ""),
     bytes: Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0),
   }));
