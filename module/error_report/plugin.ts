@@ -122,8 +122,7 @@ export function init(app: App): void {
 
   app.on("render", async ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
-    const browserErrorsEnabled = await ctx.app.settings.error_report.browserErrors;
-    if (!browserErrorsEnabled) return;
+    if (!await ctx.app.settings.error_report.browserErrors) return;
     ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.basePath + "js-error", max: 50 };
     ctx.res.csp["script-src"][reporterRoot] = true;
     ctx.res.html.legacyScripts.add(reporterPath);
