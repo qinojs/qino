@@ -47,8 +47,7 @@ export function init(app: App) {
       throw new Output("no access");
     }
 
-    const stat = await nodeFs.stat(file).catch(() => null);
-    if (!stat?.isFile()) {
+    if (!(await nodeFs.stat(file).catch(() => null))?.isFile()) {
       ctx.res.headers.set("Content-Type", "text/plain; charset=utf-8");
       throw new Output("file does not exist");
     }
