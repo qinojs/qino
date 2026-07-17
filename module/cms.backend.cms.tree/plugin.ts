@@ -15,7 +15,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
   // handle GET params that change user settings
   if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
 
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode() ?? "0") || 1;
+  const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);
 
   // Breadcrumb path to root node
