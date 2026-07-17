@@ -59,7 +59,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       let i = 0;
       for (const clientUsr of Object.values(clientUsrs)) {
         if (++i > historyLimit) break;
-        const email = hee(await ctx.user?.get("email") ?? "");
+        const email = hee(await (await clientUsr.user()).get("email") ?? "");
         const saveLogin = await (clientUsr as any).get("save_login");
         const saveLoginChecked = saveLogin ? " checked" : "";
         const showSaveLogin = settings.saveLogin();
