@@ -7,7 +7,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const openStr: string = admin.openPageNodes() ?? "";
+    const openStr = admin.openPageNodes() ?? "";
     const openSet = new Set(openStr.split(",").filter(Boolean));
     if (vars.value == "1") openSet.add(p);
     else openSet.delete(p);
@@ -16,7 +16,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
 
-  const openStr: string = admin.openPageNodes() ?? "";
+  const openStr = admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
   const showContents = !!admin.showContents();
