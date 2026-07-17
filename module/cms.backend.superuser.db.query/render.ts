@@ -82,8 +82,8 @@ async function runQuery(app: App, text: string): Promise<HtmlString> {
   }
 }
 
-async function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString> {
-  if (!rows.length) return await html.async`<u2-alert open class=-result>${app.t`0 rows`} · ${ms.toFixed(1)} ms</u2-alert>`;
+function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString> {
+  if (!rows.length) return html.async`<u2-alert open class=-result>${app.t`0 rows`} · ${ms.toFixed(1)} ms</u2-alert>`;
 
   const cols = Object.keys(rows[0]);
   const shown = rows.slice(0, MAX_ROWS);
@@ -91,7 +91,7 @@ async function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString
   const body = html.join(shown.map(r => html`<tr>${html.join(cols.map(c => html`<td>${cell(r[c])}`))}`));
   const more = rows.length > MAX_ROWS ? html.async` · ${app.t`showing first`} ${MAX_ROWS}` : "";
 
-  return await html.async`<div class="u2-card -full -result">
+  return html.async`<div class="u2-card -full -result">
     <div class="-head">${rows.length} ${app.t`rows`} · ${ms.toFixed(1)} ms${more}</div>
     <u2-table style="padding:0">
       <table class=u2-table>
