@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, html, type HtmlString, sql, type App, type Ctx } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, sql, sqlSearch, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -52,9 +52,10 @@ async function sessionDetail(app: App, id: number): Promise<HtmlString> {
 async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = ctx.app;
   const search = String(vars?.search ?? "").trim();
-  const like = `%${search}%`;
+  const bot = sqlSearch(search, ["bot"]).where;
+  const msg = sqlSearch(search, ["content"]).where;
   const where = search
-    ? sql`WHERE bot LIKE ${like} OR id IN (SELECT session_id FROM ai_message WHERE content LIKE ${like})`
+    ? sql`WHERE ${bot} OR id IN (SELECT session_id FROM ai_message WHERE ${msg})`
     : sql.raw("");
   const sessions: Row[] = await app.db.query`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
   const counts = await app.db.indexCol`SELECT session_id, COUNT(*) FROM ai_message GROUP BY session_id`;

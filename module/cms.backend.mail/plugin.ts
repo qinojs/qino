@@ -2,7 +2,7 @@ import { basename, extname } from "node:path";
 import { mail } from "../mail/mod.ts";
 import { typeByExtension } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, html, type HtmlString, sql, u2time, unixTime, type App } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, sqlSearch, u2time, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.mail";
@@ -82,10 +82,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 
 async function listRows(node: Node, search: string): Promise<HtmlString> {
   const db = node.app.db;
-  const like = `%${search}%`;
-  const where = search
-    ? sql`(m.id = ${search} OR m.sender = ${search} OR m.subject LIKE ${like} OR m.html LIKE ${like} OR m.text LIKE ${like})`
-    : sql.raw("true");
+  const sh = sqlSearch(search, ["m.subject", "m.html", "m.text"], { exact: ["m.id", "m.sender"] });
   const rows = await db.query`
     SELECT m.id,m.log_id,m.subject,m.sender,l.time,
       s.recipient,s.num,s.sent,s.opened,s.opened_min
@@ -96,7 +93,7 @@ async function listRows(node: Node, search: string): Promise<HtmlString> {
           SUM(IF(sent,1,0)) sent, SUM(IF(opened,1,0)) opened, MIN(NULLIF(opened,0)) opened_min
         FROM mail_recipient GROUP BY mail_id
       ) s ON s.mail_id=m.id
-    WHERE ${where}
+    WHERE ${sh.where}
     ORDER BY m.id DESC
     LIMIT 1000`;
 

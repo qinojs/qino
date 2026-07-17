@@ -1,4 +1,4 @@
-import { html, type HtmlString, sqlSearchHelper, sql, type Ctx } from "../../core/mod.ts";
+import { html, type HtmlString, sqlSearch, sql, type Ctx } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
@@ -14,14 +14,14 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   const search = String(vars?.search ?? "");
   const grpId = Number(vars?.grp_id ?? ctx.req.query.grp_id ?? 0) || null;
 
-  const sh = sqlSearchHelper(search, ["lastname", "firstname", "company", "email"]);
+  const sh = sqlSearch(search, ["lastname", "firstname", "company", "email"]);
   const grpFilter = grpId ? sql` AND id IN(SELECT usr_id FROM usr_grp WHERE grp_id = ${grpId})` : sql.raw("");
   const superFilter = isSuperuser ? sql.raw("") : sql` AND superuser = ${false}`;
 
   const rows = await db.query`SELECT usr.*,
     (SELECT count(*) FROM sess WHERE usr_id = usr.id) AS num_sess,
     (SELECT max(time) FROM log WHERE sess_id = (SELECT max(id) FROM sess WHERE usr_id = usr.id)) AS last_online
-    FROM usr WHERE ${sh.where}${grpFilter}${superFilter} ORDER BY ${sh.order} LIMIT 200`;
+    FROM usr WHERE ${sh.where}${grpFilter}${superFilter} ORDER BY ${sh.order}, id LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
 

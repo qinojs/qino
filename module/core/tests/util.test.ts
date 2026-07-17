@@ -6,7 +6,7 @@ import {
   header,
   hee,
   html,
-  sqlSearchHelper,
+  sqlSearch,
   urlize,
 } from "../lib/util.ts";
 import { App } from "../lib/App.ts";
@@ -66,12 +66,30 @@ Deno.test("util: header.contentDisposition encodes RFC 5987 reserved characters"
 });
 
 
-Deno.test("util: sqlSearchHelper builds parameterized LIKE fragments", () => {
-  const res = sqlSearchHelper(" alpha beta gamma delta epsilon ", ["title", "body"]);
+Deno.test("util: sqlSearch builds parameterized LIKE fragments (words capped at 4)", () => {
+  const res = sqlSearch(" Alpha beta gamma delta epsilon ", ["title", "body"]);
   const [whereSql, whereParams] = fakeRender(res.where, []);
-  assertEquals(whereSql, "(`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!') AND (`title` LIKE ? ESCAPE '!' OR `body` LIKE ? ESCAPE '!')");
+  const w = "(LOWER(`title`) LIKE ? ESCAPE '!' OR LOWER(`body`) LIKE ? ESCAPE '!')";
+  assertEquals(whereSql, `(${w} AND ${w} AND ${w} AND ${w})`);
   assertEquals(whereParams, ["%alpha%", "%alpha%", "%beta%", "%beta%", "%gamma%", "%gamma%", "%delta%", "%delta%"]);
-  assertEquals(fakeRender(res.order, [])[1], ["alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
+  const exactTier = ["alpha beta gamma delta epsilon", "alpha beta gamma delta epsilon"];
+  assertEquals(fakeRender(res.order, [])[1], [...exactTier, "alpha%", "alpha%", "beta%", "beta%", "gamma%", "gamma%", "delta%", "delta%"]);
+});
+
+Deno.test("util: sqlSearch exact columns, qualified names, wildcard escaping", () => {
+  const res = sqlSearch("50%", ["m.subject"], { exact: ["m.id"] });
+  const [whereSql, whereParams] = fakeRender(res.where, []);
+  assertEquals(whereSql, "((LOWER(`m`.`subject`) LIKE ? ESCAPE '!') OR `m`.`id` = ?)");
+  assertEquals(whereParams, ["%50!%%", "50%"]);
+  const [orderSql, orderParams] = fakeRender(res.order, []);
+  assertEquals(orderSql, "`m`.`id` = ? DESC, LOWER(`m`.`subject`) = ? DESC, LOWER(`m`.`subject`) LIKE ? ESCAPE '!' DESC");
+  assertEquals(orderParams, ["50%", "50%", "50!%%"]);
+});
+
+Deno.test("util: sqlSearch is neutral on empty input", () => {
+  const res = sqlSearch("   ", ["title"]);
+  assertEquals(fakeRender(res.where, [])[0], "true");
+  assertEquals(fakeRender(res.order, [])[0], "NULL");
 });
 
 Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () => {

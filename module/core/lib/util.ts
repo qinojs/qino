@@ -155,20 +155,30 @@ export function urlize(str: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function sqlSearchHelper(search: string, fields: string[]): { where: Sql; order: Sql } {
-  const searches = (search ?? "").trim().split(/\s+/).slice(0, 4).filter(Boolean);
-  if (!searches.length || !fields.length) {
-    return { where: sql.raw("true"), order: sql.raw("1") };
-  }
-  // Escape LIKE wildcards in user input; '!' is a neutral escape char in every dialect's string literals.
+/** Tokenized LIKE search: every word must match a `like` column (case-insensitive, wildcards
+ *  escaped); `exact` columns match the whole input instead (ids, emails). `order` ranks exact
+ *  hits before word prefixes. Both fragments are neutral on empty input, so call sites need no
+ *  branching. Qualified names ("m.subject") are supported. */
+export function sqlSearch(input: string, like: string[], opt: { exact?: string[] } = {}): { where: Sql; order: Sql } {
+  const trimmed = (input ?? "").trim();
+  const words = trimmed.toLowerCase().split(/\s+/).slice(0, 4).filter(Boolean);
+  const exact = opt.exact ?? [];
+  if (!words.length || !(like.length + exact.length)) return { where: sql.raw("true"), order: sql.raw("NULL") };
+  const id = (name: string) => sql.join(name.split(".").map(sql.id), ".");
+  // '!' is a neutral escape char in every dialect's string literals.
   const esc = (s: string) => s.replace(/[!%_]/g, "!$&");
-  const wheres: Sql[] = [];
-  const orders: Sql[] = [];
-  for (const s of searches) {
-    wheres.push(sql`(${sql.join(fields.map((f) => sql`${sql.id(f)} LIKE ${"%" + esc(s) + "%"} ESCAPE '!'`), " OR ")})`);
-    for (const f of fields) orders.push(sql`${sql.id(f)} LIKE ${esc(s) + "%"} ESCAPE '!' DESC`);
-  }
-  return { where: sql.join(wheres, " AND "), order: sql.join(orders, ", ") };
+  const low = (f: string) => sql`LOWER(${id(f)})`;
+
+  const ors: Sql[] = exact.map(f => sql`${id(f)} = ${trimmed}`);
+  if (like.length) ors.unshift(sql.join(words.map(w =>
+    sql`(${sql.join(like.map(f => sql`${low(f)} LIKE ${"%" + esc(w) + "%"} ESCAPE '!'`), " OR ")})`), " AND "));
+
+  const orders: Sql[] = [
+    ...exact.map(f => sql`${id(f)} = ${trimmed} DESC`),
+    ...like.map(f => sql`${low(f)} = ${trimmed.toLowerCase()} DESC`),
+    ...words.flatMap(w => like.map(f => sql`${low(f)} LIKE ${esc(w) + "%"} ESCAPE '!' DESC`)),
+  ];
+  return { where: sql`(${sql.join(ors, " OR ")})`, order: sql.join(orders, ", ") };
 }
 
 /**

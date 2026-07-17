@@ -1,4 +1,4 @@
-import { html, type HtmlString, sql, Sql } from "../../../core/mod.ts";
+import { html, type HtmlString, sql, Sql, sqlSearch } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<HtmlString> {
@@ -10,9 +10,8 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   if (!hasMany) {
     tail = sql` ORDER BY a.access DESC `;
   } else if (search) {
-    const like = "%" + search + "%";
-    tail = sql` AND (grp.name LIKE ${like})
-      ORDER BY grp.name = ${search} DESC, grp.name LIKE ${search + "%"} DESC, grp.name LIKE ${like} DESC `;
+    const sh = sqlSearch(search, ["grp.name"]);
+    tail = sql` AND ${sh.where} ORDER BY ${sh.order}`;
   } else {
     tail = sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC `;
   }
