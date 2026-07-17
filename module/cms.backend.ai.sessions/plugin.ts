@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, html, type HtmlString, sql, sqlSearch, type App, type Ctx } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, sql, type Sql, sqlSearch, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -38,8 +38,14 @@ function messageHtml(m: Row): HtmlString {
   return html`<div class=ai-msg><div class=ai-msg-head>${head}</div><div class=ai-msg-body>${body}</div></div>`;
 }
 
-async function sessionDetail(app: App, id: number): Promise<HtmlString> {
-  const s = await app.db.row`SELECT * FROM ai_session WHERE id = ${id}`;
+/** Non-superusers only see their own sessions. */
+async function ownWhere(ctx: Ctx): Promise<Sql> {
+  return await ctx.user?.get("superuser") ? sql.raw("true") : sql`user_id = ${ctx.userId}`;
+}
+
+async function sessionDetail(ctx: Ctx, id: number): Promise<HtmlString> {
+  const app = ctx.app;
+  const s = await app.db.row`SELECT * FROM ai_session WHERE id = ${id} AND ${await ownWhere(ctx)}`;
   if (!s) return html`<div class=u2-card><div class=-body>Session not found.</div></div>`;
   const messages: Row[] = await app.db.query`SELECT * FROM ai_message WHERE session_id = ${id} ORDER BY id`;
   return html`<div class=u2-card style="flex:1 1 40rem;">
@@ -54,9 +60,10 @@ async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const search = String(vars?.search ?? "").trim();
   const bot = sqlSearch(search, ["bot"]).where;
   const msg = sqlSearch(search, ["content"]).where;
+  const own = await ownWhere(ctx);
   const where = search
-    ? sql`WHERE ${bot} OR id IN (SELECT session_id FROM ai_message WHERE ${msg})`
-    : sql.raw("");
+    ? sql`WHERE ${own} AND (${bot} OR id IN (SELECT session_id FROM ai_message WHERE ${msg}))`
+    : sql`WHERE ${own}`;
   const sessions: Row[] = await app.db.query`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
   const counts = await app.db.indexCol`SELECT session_id, COUNT(*) FROM ai_message GROUP BY session_id`;
   const base = node ? await sessionLinkBase(node) : "?s=";
@@ -109,7 +116,7 @@ function render(node: Node): Promise<HtmlString> {
     </div>
   </div>
 
-  ${selected ? sessionDetail(app, selected) : ""}
+  ${selected ? sessionDetail(ctx, selected) : ""}
 
 </div>`;
 }
