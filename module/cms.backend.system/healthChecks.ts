@@ -43,7 +43,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
     }
     if (!found.length) return;
     return {
-      info: info + " only the first 20 were checked",
+      info: info + (usrs.length === 20 ? " only the first 20 were checked" : ""),
       solutions: {
         "remove pw":   { solve: async () => { for (const r of found) await db.query`UPDATE usr SET pw='' WHERE id=${r.id}`; } },
         "remove user": { solve: async () => { for (const r of found) await db.query`DELETE FROM usr WHERE id=${r.id}`; } },
@@ -86,9 +86,9 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   // ── db-time vs os-time ───────────────────────────────────────────────────
   notice["db-time unlike os-time"] = async () => {
-    const dbTime = Number(await db.one`SELECT UNIX_TIMESTAMP() as time`);
+    const dbTime = Number(await db.one`${sql.raw(dbEpochSql(db.dialect))}`);
     const osTime = unixTime();
-    if (dbTime === osTime) return;
+    if (Math.abs(dbTime - osTime) <= 2) return;
     return { info: `db: ${new Date(dbTime * 1000).toISOString()}<br>os: ${new Date(osTime * 1000).toISOString()}` };
   };
 
@@ -156,6 +156,10 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
     };
   };
 
+  // MySQL-only fragments; other dialects run without cap/optimize.
+  const limit1M  = db.dialect === "mysql" ? sql.raw(" LIMIT 1000000") : sql.raw("");
+  const optimize = async (table: string) => { if (db.dialect === "mysql") await db.query`OPTIMIZE TABLE ${sql.id(table)}`; };
+
   cleanup["clean logs, clients and sessions"] = () => ({
     info: "deletes not used and older then one month, can take long!",
     solutions: {
@@ -165,19 +169,26 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
           const monthAgo = unixTime() - (60 * 60 * 24 * 30);
           let msg = "";
 
-          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo} LIMIT 1000000`;
-          await db.query`OPTIMIZE TABLE log`;
+          const logRes = await db.exec`DELETE FROM log WHERE time < ${monthAgo}${limit1M}`;
+          await optimize("log");
           msg += logRes.affectedRows + " log-rows deleted\n";
 
-          const clientRes = await db.exec`DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL) LIMIT 1000000`;
-          await db.query`OPTIMIZE TABLE client`;
+          for (const table of ["log_url", "log_user_agent", "log_ip"]) {
+            const where = sql.join(db.table(table).children.map((f) => sql`id NOT IN (SELECT DISTINCT ${sql.id(f.name)} FROM ${sql.id(f.table)} WHERE ${sql.id(f.name)} IS NOT NULL)`), " AND ");
+            const res = await db.exec`DELETE FROM ${sql.id(table)} WHERE ${where}${limit1M}`;
+            await optimize(table);
+            msg += res.affectedRows + ` ${table}-rows deleted\n`;
+          }
+
+          const clientRes = await db.exec`DELETE FROM client WHERE id NOT IN (SELECT DISTINCT client_id FROM log WHERE client_id IS NOT NULL)${limit1M}`;
+          await optimize("client");
           msg += clientRes.affectedRows + " client-rows deleted\n";
 
-          const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${monthAgo} AND token IS NOT NULL LIMIT 1000000`;
+          const sessClearRes = await db.exec`UPDATE sess SET token = NULL, data = '' WHERE access < ${monthAgo} AND token IS NOT NULL${limit1M}`;
           msg += sessClearRes.affectedRows + " sess-tokens cleared\n";
 
-          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL) LIMIT 1000000`;
-          await db.query`OPTIMIZE TABLE sess`;
+          const sessRes = await db.exec`DELETE FROM sess WHERE token IS NULL AND id NOT IN (SELECT DISTINCT sess_id FROM log WHERE sess_id IS NOT NULL)${limit1M}`;
+          await optimize("sess");
           msg += sessRes.affectedRows + " sess-rows deleted\n";
 
           msg += "duration: " + ((Date.now() - start) / 1000).toFixed(2) + " seconds";
@@ -198,8 +209,8 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
       solutions: {
         run: {
           solve: async () => {
-            const res = await db.exec`DELETE FROM text WHERE ${where} ORDER BY id DESC LIMIT 1000000`;
-            await db.query`OPTIMIZE TABLE text`;
+            const res = await db.exec`DELETE FROM text WHERE ${where}${limit1M}`;
+            await optimize("text");
             return res.affectedRows + " rows deleted\n";
           },
         },
@@ -214,4 +225,11 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   };
 
   return types;
+}
+
+// SQL for "now as unix epoch" per dialect.
+function dbEpochSql(dialect: string): string {
+  if (dialect === "postgres") return "SELECT floor(extract(epoch FROM now()))";
+  if (dialect === "sqlite") return "SELECT strftime('%s','now')";
+  return "SELECT UNIX_TIMESTAMP()";
 }
