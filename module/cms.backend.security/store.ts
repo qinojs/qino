@@ -8,9 +8,8 @@ const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record
 
 export async function settings(app: App): Promise<SecuritySettings> {
   const s = app.settings["cms.backend.security"];
-  const props = settingsSchema.properties;
   const result: Record<string, unknown> = {};
-  for (const [key, meta] of Object.entries(props)) {
+  for (const [key, meta] of Object.entries(settingsSchema.properties)) {
     const raw = await s[key];
     if (meta.type === "boolean") {
       result[key] = raw != null && raw !== "" ? raw === true || raw === "true" || raw === "1" : meta.default;
