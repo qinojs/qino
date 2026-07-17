@@ -9,8 +9,7 @@ import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
 export async function ensureSpace(app: App, space: number): Promise<void> {
   if (!space) return;
   const db = app.db;
-  const exists = await db.row`SELECT space FROM vers_space WHERE space = ${space}`;
-  if (exists) return;
+  if (await db.row`SELECT space FROM vers_space WHERE space = ${space}`) return;
 
   // Seed each versioned table with live data
   for (const tableName of Object.keys(versedTables(db))) {
