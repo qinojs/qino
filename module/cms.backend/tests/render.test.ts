@@ -10,8 +10,7 @@ Deno.test("cms.backend: metadata is wired", () => {
 Deno.test("cms.backend: render shows fallback when no dashboard widgets exist", async () => {
   const page = { children: () => new Map() };
   const node = { page: () => page };
-  const out = await cms.node.render(node as any);
-  assertEquals(out.includes("No widgets available."), true);
+  assertEquals((await cms.node.render(node as any)).includes("No widgets available."), true);
 });
 
 Deno.test("cms.backend: render collects visible child widgets", async () => {
