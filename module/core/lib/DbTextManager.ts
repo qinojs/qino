@@ -67,8 +67,7 @@ export class DbText {
   async copy(): Promise<DbText> {
     const db = this.#manager.db;
     const newText = await this.#manager.generate();
-    const rows = await db.query`SELECT * FROM text WHERE id = ${this.id}`;
-    for (const row of rows) {
+    for (const row of await db.query`SELECT * FROM text WHERE id = ${this.id}`) {
       row.id = newText.id;
       const exists = await db.one`SELECT id FROM text WHERE id = ${row.id} AND lang = ${row.lang}`;
       await (exists ? db.table("text").update(row) : db.table("text").insert(row));
