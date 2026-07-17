@@ -32,16 +32,15 @@ async function render(node: Node): Promise<HtmlString> {
   // Derived from the history (log.time + editor); vers_cms_page_changed is not
   // reliably updated on text edits, so we read the actual capture rows instead.
   // ROW_NUMBER picks the latest edit per node to carry its editor email.
-  const recent = await db.query`
+  const recentParts: HtmlString[] = [];
+  for (const r of await db.query`
     SELECT x.page_id, x.time AS last, x.email FROM (
       SELECT page_id, time, email, ROW_NUMBER() OVER (PARTITION BY page_id ORDER BY time DESC) rn FROM (
         SELECT pt.page_id AS page_id, l.time AS time, u.email AS email FROM _vers_text vt JOIN log l ON l.id=vt._vers_log JOIN page_text pt ON pt.text_id=vt.id LEFT JOIN sess s ON l.sess_id=s.id LEFT JOIN usr u ON s.usr_id=u.id WHERE vt._vers_log>0
         UNION ALL SELECT p.id, l.time, u.email FROM _vers_text vt JOIN log l ON l.id=vt._vers_log JOIN page p ON p.title_id=vt.id LEFT JOIN sess s ON l.sess_id=s.id LEFT JOIN usr u ON s.usr_id=u.id WHERE vt._vers_log>0
         UNION ALL SELECT vp.id, l.time, u.email FROM _vers_page vp JOIN log l ON l.id=vp._vers_log LEFT JOIN sess s ON l.sess_id=s.id LEFT JOIN usr u ON s.usr_id=u.id WHERE vp._vers_log>0
       ) y
-    ) x WHERE x.rn=1 ORDER BY x.time DESC LIMIT 20`.catch(() => []);
-  const recentParts: HtmlString[] = [];
-  for (const r of recent) {
+    ) x WHERE x.rn=1 ORDER BY x.time DESC LIMIT 20`.catch(() => [])) {
     const anchor = await nodeAnchor(node, Number(r.page_id));
     const iso = new Date(Number(r.last) * 1000).toISOString();
     recentParts.push(html`<tr><td>${anchor}<td><u2-time datetime="${iso}" type=relative></u2-time><td>${r.email ?? "guest"}`);
