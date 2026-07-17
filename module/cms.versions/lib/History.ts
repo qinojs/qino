@@ -79,7 +79,6 @@ export function initHistory(app: App) {
   app.on("dbFile:unlink-before", async (e) => {
     const md5 = e.file?.vs?.md5 ?? "";
     if (!md5) return;
-    const inVers = await app.db.one`SELECT id FROM _vers_file WHERE md5 = ${md5}`.catch(() => null);
-    if (inVers) e.prevent = true;
+    if (await app.db.one`SELECT id FROM _vers_file WHERE md5 = ${md5}`.catch(() => null)) e.prevent = true;
   });
 }
