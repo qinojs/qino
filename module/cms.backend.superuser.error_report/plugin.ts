@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, u2time, type Sql, type Ctx, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, sqlSearch, u2time, type Sql, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
 
@@ -38,18 +38,81 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     const where = db.table("m_error_report").valuesToFragment(vars.delete);
     if (where.parts.length) await db.exec`DELETE FROM m_error_report WHERE ${where}`;
   }
-  if (vars.delete_foreign_js) {
-    const host = ctx.req.header("host") ?? "";
-    await db.query`DELETE FROM m_error_report WHERE source = 'js' AND file NOT LIKE '/_%' AND file NOT LIKE ${"http://" + host + "%"} AND file NOT LIKE ${"https://" + host + "%"}`;
-  }
-  if (vars.deleteAll) {
-    await db.query`DELETE FROM m_error_report`;
+  if (vars.deleteMatching) {
+    await db.exec`DELETE FROM m_error_report WHERE ${filterWhere(db, vars.deleteMatching)}`;
   }
 
   if (get.id) return renderDetail(node, Number(get.id));
+  if (get.show === "entries") return renderEntryList(node, ctx, get);
 
-  const order    = get.order ?? "max_id";
-  const orderSql = order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
+  const sources = await db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`;
+  const prios   = await db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`;
+  const opts    = (vals: string[], cur: string) => vals.map(v => `<option ${v === cur ? "selected" : ""}>${hee(v)}</option>`).join("");
+  const ranges: [string, string][] = [["", await t`all time`], ["1", await t`last 24h`], ["7", await t`last 7 days`], ["30", await t`last 30 days`]];
+
+  const filterForm = `
+  <form class="-body">
+    <input type=search name=search value="${hee(get.search ?? "")}" placeholder="${await t`message, /path, IP or id`}"
+      title="${await t`Words search the message, a path (with /) the file, an IP address or a numeric id match exactly`}">
+    <select name=source>
+      <option value="">${await t`All sources`}</option>${opts(sources, get.source ?? "")}
+    </select>
+    <select name=prio>
+      <option value="">${await t`All priorities`}</option>${opts(prios, get.prio ?? "")}
+    </select>
+    <select name=range>
+      ${ranges.map(([v, l]) => `<option value="${v}" ${v === (get.range ?? "") ? "selected" : ""}>${hee(l)}</option>`).join("")}
+    </select>
+    <select name=order>
+      <option value=max_id>${await t`sort by date`}</option>
+      <option value=num_ip ${get.order === "num_ip" ? "selected" : ""}>${await t`sort by number of IPs`}</option>
+    </select>
+  </form>`;
+
+  const tools = `
+  ${filterForm}
+  <div class="-body">
+    <button data-delete-matching u2-confirm="${await t`Really delete all matching entries?`}">${await t`Delete matching`}</button>
+  </div>`;
+
+  return `
+<div class=u2-card>
+  <div class=-head>${await t`Errors`}</div>
+  ${tools}
+  <div cms-part=list style="overflow:auto; max-height:80vh; padding:0; border-top:.4rem solid var(--color-darker)">${await list(node, { ctx, vars: get })}</div>
+</div>`;
+}
+
+// WHERE for the current search/filter state — shared by the list part and "delete matching".
+// The search dispatches on input shape to indexed paths: id/log_id, ip, or fulltext
+// MATCH on message/file (mysql). sqlite/pg get no fulltext index (schema engine
+// skips it) — the LIKE fallback there scans no more than the grouped view already does.
+function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
+  const search  = String(vars.search ?? "").trim();
+  const fSource = String(vars.source ?? "");
+  const fPrio   = String(vars.prio ?? "");
+  const fRange  = Number(vars.range) || 0; // days; bounds the group scan via the time index
+  const conds: Sql[] = [];
+  if (fSource) conds.push(sql`source = ${fSource}`);
+  if (fPrio)   conds.push(sql`prio = ${fPrio}`);
+  if (fRange)  conds.push(sql`time >= ${new Date(Date.now() - fRange * 86400e3).toISOString().slice(0, 19).replace("T", " ")}`);
+  if (search) {
+    const ftCol = search.includes("/") ? "file" : "message";
+    const words = search.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 3).slice(0, 4);
+    if (/^\d+$/.test(search)) conds.push(sql`(id = ${Number(search)} OR log_id = ${Number(search)})`);
+    else if (/[.:]/.test(search) && /^[0-9a-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
+    // words below ft_min_token_size can never hit the fulltext index — empty result beats a full scan
+    else if (db.dialect === "mysql") conds.push(words.length ? sql`MATCH(${sql.id(ftCol)}) AGAINST (${words.map(w => `+${w}*`).join(" ")} IN BOOLEAN MODE)` : sql.raw("false"));
+    else conds.push(sqlSearch(search, [ftCol]).where);
+  }
+  return conds.length ? sql.join(conds, " AND ") : sql.raw("true");
+}
+
+// List part — re-rendered live on filter input via cms.reloadPart(nid, "list", form values).
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<string> {
+  const { t, db } = node.app;
+  const orderSql = vars.order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
+  const where = filterWhere(db, vars);
 
   const rows = await db.query`
     SELECT e.*,
@@ -68,6 +131,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         sum(CASE WHEN bot THEN 1 ELSE 0 END)            AS num_bot,
         sum(CASE WHEN unsupported_ua THEN 1 ELSE 0 END) AS num_unsupported
       FROM m_error_report
+      WHERE ${where}
       GROUP BY source, file, line, col
     ) g
       JOIN m_error_report e ON e.id = g.max_id
@@ -76,41 +140,8 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       LEFT JOIN usr  ON sess.usr_id = usr.id
     ORDER BY ${sql.raw(orderSql)}`;
 
-  const sortU = ctx.req.url.toURL(); sortU.searchParams.delete("id");
-  const sortHref = (o: string) => { sortU.searchParams.set("order", o); return hee(sortU.search); };
-
-  const tools = `
-<div class="u2-card" style="flex-grow:0">
-  <div class="-head">${await t`Tools`}</div>
-  <div class="-body">
-    ${order === "num_ip"
-      ? `<a href="${sortHref("max_id")}">${await t`sort by date`}</a><br>`
-      : `<a href="${sortHref("num_ip")}">${await t`sort by number of IPs`}</a><br>`}
-    <br>
-    ${await t`Delete`}:<br>
-    <button data-reload='{"delete":{"bot":"1","source":"404"}}'>${await t`404 and bots`}</button><br>
-    <button data-reload='{"delete":{"unsupported_ua":"1","source":"404"}}'>${await t`404 and old browsers`}</button><br>
-    <button data-reload='{"delete":{"referer":"","source":"404"}}'>${await t`404 no referer`}</button><br>
-    <button data-reload='{"delete":{"bot":"1","source":"js"}}'>${await t`js and bots`}</button><br>
-    <button data-reload='{"delete":{"unsupported_ua":"1","source":"js"}}'>${await t`js and old browsers`}</button><br>
-    <button data-reload='{"delete":{"file":"","source":"js"}}'>${await t`js no file`}</button><br>
-    <button data-reload='{"delete_foreign_js":true}'>${await t`js, foreign`}</button><br>
-    <button data-reload='{"delete":{"source":"404"}}'>${await t`delete 404`}</button><br>
-    <button data-reload='{"delete":{"source":"net"}}'>${await t`delete net`}</button><br>
-    <button data-reload='{"delete":{"source":"perf"}}'>${await t`delete perf`}</button><br>
-    <button data-reload='{"delete":{"prio":"notice","source":"csp"}}'>${await t`csp read-only`}</button><br>
-    <button data-reload='{"delete":{"prio":"notice"}}'>${await t`Notices`}</button><br>
-    <button data-reload='{"deleteAll":1}'>${await t`Delete all entries`}</button><br>
-  </div>
-</div>`;
-
-  if (!rows.length && get.show !== "entries") {
-    return `<div class="u2-flex">${tools}<div class="u2-card"><div class="-body">${await t`Great, no errors so far!`}</div></div></div>`;
-  }
-
-  if (get.show === "entries") {
-    return `<div class="u2-flex">${tools}${await renderEntryList(node, ctx, get)}</div>`;
-  }
+  const filtered = [vars.search, vars.source, vars.prio, vars.range].some(v => String(v ?? "").trim());
+  if (!rows.length) return `<div class="-body">${filtered ? await t`No matching entries` : await t`Great, no errors so far!`}</div>`;
 
   const { editorLink } = makeFileHelper(ctx);
   let tableRows = "";
@@ -154,16 +185,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   }
 
   return `
-<div class="u2-flex">
-  ${tools}
-  <div class=u2-card style="max-height:88vh; overflow:auto; flex:1 1 80rem">
-    <div class=-head>${await t`Errors`}</div>
-    <table class=u2-table>
-      <tbody style="vertical-align:baseline">
-        ${tableRows}
-    </table>
-  </div>
-</div>`;
+<table class=u2-table>
+  <tbody style="vertical-align:baseline">
+    ${tableRows}
+</table>`;
 }
 
 async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>): Promise<string> {
@@ -398,5 +423,6 @@ export const cms = {
   node: {
     js: ["pub/main.js"],
     render,
+    parts: { list },
   },
 };

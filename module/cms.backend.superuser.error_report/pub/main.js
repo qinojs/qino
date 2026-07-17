@@ -3,6 +3,13 @@ import { apt } from "../../core/pub/js/qino.js";
 cms.initNode("backend.superuser.error_report", (el) => {
   const pid = Number(cms.el.nid(el));
 
+  const form = el.querySelector("form");
+  let timer;
+  form?.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => cms.reloadPart(pid, "list", Object.fromEntries(new FormData(form))), 300);
+  });
+
   const reload = (vars, btn) => {
     if (btn) btn.disabled = true;
     apt.cms.node(pid).html.post({ vars }).then((html) => {
@@ -11,9 +18,9 @@ cms.initNode("backend.superuser.error_report", (el) => {
   };
 
   el.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-reload]");
-    if (btn) {
-      reload(JSON.parse(btn.dataset.reload), btn);
+    const delMatching = e.target.closest("[data-delete-matching]");
+    if (delMatching) {
+      reload({ deleteMatching: Object.fromEntries(new FormData(form)) }, delMatching);
       return;
     }
 
