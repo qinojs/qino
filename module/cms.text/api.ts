@@ -18,8 +18,7 @@ class CmsTextService {
         const pid = await this.ctx.app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
         const P = await cms(this.ctx.app).node(pid);
-        if ((await P.access()) < 2) return false;
-        return true;
+        return (await P.access()) >= 2;
     }
 
     async get(txt_id: any): Promise<any> {
