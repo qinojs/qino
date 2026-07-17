@@ -108,7 +108,7 @@ async function data(node: Node) {
   const file = await node.file("image");
   const w = Number(await settings["width"] ?? 0) || 360;
   const h = Number(await settings["height"] ?? 0) || 220;
-  const delay = Number(await settings["delay"] ?? 0) || 1800;
+  const delay = Number(await settings["delay"]) || 1800;
   const quality = Number(await settings["quality"] ?? 0) || null;
   const editable = node.edit ? await file.url() : null;
   return { file, w, h, delay, quality, editable };
