@@ -285,8 +285,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     const bin = BINARIES.find(b => b.id === vars.install_binary);
     if (!bin) return JSON.stringify({ error: "Unknown binary" });
     const platform = await detectPlatform();
-    const output = await runInstall(platform, bin);
-    return JSON.stringify({ output });
+    return JSON.stringify({ output: await runInstall(platform, bin) });
   }
 
   if (vars.clear_cache) {
