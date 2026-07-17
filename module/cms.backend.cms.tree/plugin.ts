@@ -12,8 +12,11 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
 
-  // handle GET params that change user settings
-  if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
+  // handle GET params that change user settings; only accept existing nodes the user may read
+  if (ctx.req.query.rp) {
+    const rp = await node.cms.node(Number(ctx.req.query.rp));
+    if (rp.exists() && await rp.access() > 0) ctx.settings.cms.admin.rootPageNode(rp.id);
+  }
 
   const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
   const rootNode = await node.cms.node(rootId);

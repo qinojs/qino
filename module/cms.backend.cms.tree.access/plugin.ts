@@ -16,7 +16,11 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  if (ctx.req.query.rp) ctx.settings.cms.admin.rootPageNode(Number(ctx.req.query.rp));
+  // only accept existing nodes the user may read
+  if (ctx.req.query.rp) {
+    const rp = await node.cms.node(Number(ctx.req.query.rp));
+    if (rp.exists() && await rp.access() > 0) ctx.settings.cms.admin.rootPageNode(rp.id);
+  }
 
   const app = node.app;
   const t = app.t;
