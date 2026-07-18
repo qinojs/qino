@@ -159,13 +159,13 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
             <td><input name=tname value="${row.name}" required style="width:100%">
           <tr>
             <th>${t`Description`}
-            <td><input name=description value="${row.description ?? ""}" style="width:100%">
+            <td><input name=description value="${row.description}" style="width:100%">
           <tr>
             <th>${t`Default subject`}
-            <td><input name=subject value="${row.subject ?? ""}" style="width:100%" placeholder="${t`optional`}">
+            <td><input name=subject value="${row.subject}" style="width:100%" placeholder="${t`optional`}">
           <tr>
             <th>${t`HTML`}
-            <td><textarea name=html class=-body-editor>${row.html ?? ""}</textarea>
+            <td><textarea name=html class=-body-editor>${row.html}</textarea>
           <tr>
             <td colspan=2>
               <div class=-actions>
