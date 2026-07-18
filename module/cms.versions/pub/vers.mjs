@@ -118,6 +118,10 @@ CmsVersViewer.prototype = {
       doc.addEventListener('keydown', this.keydownListener);
       const ready = ()=>{
         if (!doc.body) return;
+        // force instant scroll on every element/container (page sets scroll-behavior:smooth)
+        const style = doc.createElement('style');
+        style.textContent = '*{scroll-behavior:auto !important}';
+        doc.head.append(style);
         doc.documentElement.scrollTop = doc.body.scrollTop = scrollTop;
         const els = doc.querySelectorAll('[qcms-id="'+this.pid+'"]');
         let el;
