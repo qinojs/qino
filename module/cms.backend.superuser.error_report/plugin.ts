@@ -208,7 +208,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td>
     <a target="_blank" href="${hee(editorUrl)}">${hee(msg.slice(0, 300))}${msg.length > 300 ? "…" : ""}</a><br>
     <small>${u2time(row.time)}</small>
-    <div>${hee(row.usr_email ?? "")}</div>
+    <div>${hee(row.usr_email)}</div>
   <td>
     <button class=u2-unstyle type=button
       data-delete-group
