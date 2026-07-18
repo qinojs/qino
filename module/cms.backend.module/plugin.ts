@@ -138,7 +138,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     <table class=u2-table>
       <thead><tr><th>${t`Key`}<th>${t`Type`}<th>${t`Title`}
       <tbody>${html.join(Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
-        html`<tr><td><code>${k}</code><td><code>${v?.type ?? ""}</code><td>${v?.title ?? ""}`))}
+        html`<tr><td><code>${k}</code><td><code>${v?.type}</code><td>${v?.title}`))}
     </table>
   </div>` : ""}
   ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div class=-body><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
