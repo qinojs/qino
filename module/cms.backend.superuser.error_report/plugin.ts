@@ -335,10 +335,10 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 <tr>
   <td>${u2time(item.time)} <br> Session: ${hee(String(item.sess_id ?? ""))} <br> Log-ID: ${hee(String(item.id))}
   <td>
-    <a href="${hee(item.url ?? "")}" target="_blank">${hee(item.url ?? "")}</a><br>
-    <div style="font-size:.9em; color:#aaa">${hee(item.referer ?? "")}</div>
+    <a href="${hee(item.url)}" target="_blank">${hee(item.url)}</a><br>
+    <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
     ${errorLinks}
-  <td><div style="max-width:600px; overflow:auto">${hee(item.post ?? "")}</div>`;
+  <td><div style="max-width:600px; overflow:auto">${hee(item.post)}</div>`;
     }
   }
 
