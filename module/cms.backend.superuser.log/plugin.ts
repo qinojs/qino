@@ -120,8 +120,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 <tr u2-href>
     <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2time(row.time)}</a>
     <td>
-        <div class=-url>${hee(row.url ?? "")}</div>
-        <small class=-url${foreignRef ? ' style="color:var(--red)"' : ""}>${hee(row.referer ?? "")}</small>
+        <div class=-url>${hee(row.url)}</div>
+        <small class=-url${foreignRef ? ' style="color:var(--red)"' : ""}>${hee(row.referer)}</small>
     <td style="text-align:center; white-space:nowrap">
         ${own
           ? `<small class=u2-badge>${hee(String(row.client_id ?? ""))}</small>`
