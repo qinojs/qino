@@ -371,11 +371,11 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
     <table class="u2-table">
       <tr><th>${await t`Id`}<td>${error.id}
       <tr><th>${await t`Request`}<td>
-        <a href="${hee(error.request ?? "")}">${hee(error.request ?? "")}</a><br>
-        <small>${await t`Referer`} <a href="${hee(error.referer ?? "")}">${hee(error.referer ?? "")}</a></small>
-      <tr><th>${await t`Browser`}<td><small>${hee(error.browser ?? "")}</small>
+        <a href="${hee(error.request)}">${hee(error.request)}</a><br>
+        <small>${await t`Referer`} <a href="${hee(error.referer)}">${hee(error.referer)}</a></small>
+      <tr><th>${await t`Browser`}<td><small>${hee(error.browser)}</small>
       <tr><th>${await t`Time`}<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
-      <tr><th>${await t`IP`}<td>${hee(error.ip ?? "")}
+      <tr><th>${await t`IP`}<td>${hee(error.ip)}
     </table>
     <div class="-body">
       ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
