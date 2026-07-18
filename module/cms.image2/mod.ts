@@ -47,7 +47,7 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, appPATH: 
 }
 
 function fileUrl(dbFile: DbFile, data: any, options: Record<string, any>): Promise<string> {
-  const params: Record<string, any> = { w: data.w, h: data.h, vpos: data.vpos, hpos: data.hpos, q: options.quality ?? "85" };
+  const params: Record<string, any> = { w: data.w, h: data.h, vpos: data.vpos, hpos: data.hpos, q: options.quality };
   if (options.fit === "contain") params.max = true;
   return dbFile.url(params);
 }
