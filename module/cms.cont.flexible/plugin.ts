@@ -13,16 +13,14 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
   let conts = await node.conts();
 
   // If no children yet, optionally init a default child module
-  if (conts.length === 0) {
+  if (!conts.length) {
     const defaultModule = await node.app.settings[name]["init-child-module"];
     const initModule = vars["init-child-module"] ?? defaultModule;
     if (initModule) { await node.cont("init", initModule); conts = await node.conts(); }
   }
 
   let str = "";
-  for (const C of conts) {
-    str += await C.html();
-  }
+  for (const C of conts) str += await C.html();
   return `<div>${str}</div>`;
 }
 
