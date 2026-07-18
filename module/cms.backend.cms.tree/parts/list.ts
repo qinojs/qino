@@ -66,7 +66,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       } else {
         const titleObj = await SubPage.title();
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
-        const titleText = titleLang ? hee(String(await titleLang.get() ?? "")) : "";
+        const titleText = titleLang ? hee(await titleLang.get()) : "";
         const titleId = titleObj?.id ?? 0;
         if (subAccess < 2) {
           titleCell = `<input value="${titleText}" style="flex:1; background:transparent; border:none; margin:0 10px 0 0; padding:0" disabled>`;

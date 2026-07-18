@@ -110,7 +110,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       }
 
       const titleObj = await SubPage.title();
-      const titleStr = titleObj ? String(await (await titleObj.orFallback(ctx.lang)).get() ?? "") : "";
+      const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
       const titleCell = access >= 1
         ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(String(SubPage.vs.name ?? ""))}</span></span><a style="vertical-align:middle" href="${hee(await SubPage.url())}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`
         : `<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
