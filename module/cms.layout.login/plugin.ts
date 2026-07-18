@@ -20,7 +20,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   <div id=container class=qgCMS>
     <div id=head>
       <div id=title>${title}</div>
-      <div id=subtitle>${ctx.req.header("host") ?? ""}</div>
+      <div id=subtitle>${ctx.req.header("host")}</div>
     </div>
     <div id=content>
       ${node.cont("main")}
