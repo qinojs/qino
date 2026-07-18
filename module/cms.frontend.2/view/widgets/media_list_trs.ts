@@ -54,7 +54,7 @@ export default async function (node: Node): Promise<HtmlString> {
       linkHtml = `<a title="${fname}" href="${url}" target=_blank>${hee(vsName)}</a>`;
     }
     const nameLabel = name[0] !== "_" ? `<div style="font-size:11px;color:#999;font-style:italic">(${hee(name)})</div>` : "";
-    const size = exists ? (await F.size() ?? 0) : 0;
+    const size = exists ? await F.size() : 0;
     const sizeStr = size ? String(Math.round(size / 1024)) + " KB" : "";
 
     out += `<tr itemid="${hee(name)}" draggable>
