@@ -312,7 +312,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       historyRows += `
 <tr u2-href${item.id === id ? " aria-current=true" : ""}>
     <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2time(item.time)}</a><br><small>${item.id}</small>
-    <td><a href="${hee(item.url ?? "")}" target=_blank>${hee(item.url ?? "")}</a><br><small>${hee(item.referer ?? "")}</small>
+    <td><a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br><small>${hee(item.referer)}</small>
     <td>${item.post ? `<pre style="max-width:30rem; max-height:8rem; overflow:auto">${hee(item.post)}</pre>` : "-"}`;
     }
   }
