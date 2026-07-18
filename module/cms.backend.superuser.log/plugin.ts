@@ -129,7 +129,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
         <small style="color:${uniqueColor(info.browser)}">${hee(info.browser)} ${hee(info.version)}</small>
         ${info.bot ? '<br><small class=u2-badge>bot</small>' : ""}
     <td>${row.usr_id ? `<span style="color:${uniqueColor(row.usr_id)}">${hee((row.firstname ?? "") + " " + (row.lastname ?? ""))}</span><br><small>${hee(row.email ?? "")}</small>` : "<small>guest</small>"}
-    <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${hee(row.ip ?? "")}
+    <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${hee(row.ip)}
     <td>${post ? `<pre style="max-width:25rem; max-height:6rem; overflow:auto">${hee(post)}</pre>` : "-"}
     <td>${row.id}`;
   }
