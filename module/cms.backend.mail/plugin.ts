@@ -24,7 +24,7 @@ function hiddenToken(csrfToken: string): HtmlString {
 
 function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
-  const id = Number(ctx.req.query.id ?? 0);
+  const id = Number(ctx.req.query.id);
   if (id) return renderDetail(node, id);
   return renderOverview(node);
 }
@@ -101,7 +101,7 @@ async function listRows(node: Node, search: string): Promise<HtmlString> {
   const tNoSubject = await node.app.t`no subject`;
   const u = getCtx().req.url.toURL();
   return html.join(rows.map(row => {
-    const more = Number(row.num ?? 0) > 1 ? html` <small>${Number(row.num) - 1} ${tMoreLabel}</small>` : "";
+    const more = Number(row.num) > 1 ? html` <small>${Number(row.num) - 1} ${tMoreLabel}</small>` : "";
     u.searchParams.set("id", String(row.id));
     return html`<tr u2-href>
       <td>${html.raw(u2time(row.time))}

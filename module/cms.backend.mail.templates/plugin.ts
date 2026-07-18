@@ -25,7 +25,7 @@ async function render(node: Node): Promise<HtmlString | string> {
   const t = app.t;
   const db = app.db;
 
-  const id = Number(ctx.req.query.id ?? 0);
+  const id = Number(ctx.req.query.id);
   if (id) return renderDetail(node, id);
 
   let message: HtmlString | string = "";
