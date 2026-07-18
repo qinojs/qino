@@ -117,7 +117,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   }
 
   // --- Source info ---
-  const sourceDisplay = modPath ?? modUrl ?? "";
+  const sourceDisplay = modPath ?? modUrl;
   const sourceHtml = isSuperuser && modPath
     ? html`<a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(modPath)}" target="${encodeURIComponent(modPath)}">${sourceDisplay}</a>`
     : html`<code>${sourceDisplay}</code>`;
