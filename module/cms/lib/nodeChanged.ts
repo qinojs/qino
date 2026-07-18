@@ -6,7 +6,9 @@
 // Consumers aggregate (EXISTS / GROUP BY node_id); duplicates are fine.
 // Writes without request context (cron/CLI/boot) are not captured.
 
-import { requestStorage, type App } from "../../core/mod.ts";
+import { hee, requestStorage, type App } from "../../core/mod.ts";
+
+type TFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<string>;
 
 // tables whose rows belong to a node via their page_id column
 const LINKED = new Set(["page_text", "page_url", "page_file", "page_access_grp", "page_access_usr"]);
@@ -77,4 +79,36 @@ export function initNodeChanged(app: App) {
     app.db.on("table:update-after", (e) => capture("update", e));
     // delete: captured before the row (and its basis chain) disappears
     app.db.on("table:delete-before", (e) => capture("delete", e));
+}
+
+// Human-readable change label from a node_changed `data` payload
+// ({ table, op, name?, lang?, cols? }). `t` is app.t. Lives here next to the
+// capture logic so every history consumer describes a mutation identically.
+export async function describeChange(dataStr: unknown, t: TFn): Promise<string> {
+    let d: any = {};
+    try { d = JSON.parse(String(dataStr ?? "{}")); } catch { /* keep {} */ }
+    const cols: string[] = Array.isArray(d.cols) ? d.cols : [];
+    const lang = d.lang ? ` (${hee(String(d.lang))})` : "";
+    switch (d.table) {
+        case "page":
+            if (d.op === "insert") return await t`Created`;
+            if (d.op === "delete") return await t`Deleted`;
+            if (cols.includes("visible")) return await t`Visibility changed`;
+            if (cols.includes("module")) return await t`Module changed`;
+            if (cols.includes("sort") || cols.includes("basis")) return await t`Position changed`;
+            return await t`Setting changed`;
+        case "page_text":
+        case "text":
+            return (d.name ? `${await t`Text`} "${hee(String(d.name))}"` : await t`Text`) + lang + " " + await t`changed`;
+        case "page_file":
+        case "file":
+            return d.op === "delete" ? await t`File deleted` : await t`File added`;
+        case "page_url":
+            return await t`URL changed`;
+        case "page_access_grp":
+        case "page_access_usr":
+            return await t`Access changed`;
+        default:
+            return await t`Changed`;
+    }
 }

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { cms } from "../cms/mod.ts";
+import { cms, describeChange } from "../cms/mod.ts";
 import { sql, hee, type Sql } from "../core/mod.ts";
 import { versedTables, view } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
@@ -70,35 +70,6 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         browser: row.user_agent ?? "",
         time:    Number(row.time ?? 0),
     };
-}
-
-// Human-readable change label from a node_changed `data` payload ({ table, op, name?, cols? }).
-async function describeChange(dataStr: any, t: any): Promise<string> {
-    let d: any = {};
-    try { d = JSON.parse(String(dataStr ?? "{}")); } catch { /* keep {} */ }
-    const cols: string[] = Array.isArray(d.cols) ? d.cols : [];
-    switch (d.table) {
-        case "page":
-            if (d.op === "insert") return await t`Created`;
-            if (d.op === "delete") return await t`Deleted`;
-            if (cols.includes("visible")) return await t`Visibility changed`;
-            if (cols.includes("module")) return await t`Module changed`;
-            if (cols.includes("sort") || cols.includes("basis")) return await t`Position changed`;
-            return await t`Setting changed`;
-        case "page_text":
-        case "text":
-            return d.name ? `${await t`Text`} "${hee(String(d.name))}" ${await t`changed`}` : await t`Text changed`;
-        case "page_file":
-        case "file":
-            return d.op === "delete" ? await t`File deleted` : await t`File added`;
-        case "page_url":
-            return await t`URL changed`;
-        case "page_access_grp":
-        case "page_access_usr":
-            return await t`Access changed`;
-        default:
-            return await t`Changed`;
-    }
 }
 
 // ─── Protocol helpers ────────────────────────────────────────────────────────

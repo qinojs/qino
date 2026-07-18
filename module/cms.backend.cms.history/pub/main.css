@@ -1,0 +1,25 @@
+.-m-history {
+
+  & > .u2-card { flex: 1 1 100%; }
+
+  & .-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+    align-items: end;
+  }
+  & .-filter .-check { align-self: center; }
+  & .-filter .-status {
+    margin-inline-start: auto;
+    align-self: center;
+  }
+
+  & .-scroll {
+    max-height: 82vh;
+    overflow: auto;
+  }
+
+  & .-when { white-space: nowrap; }
+  & .-where { max-width: 32rem; }
+  & .-client small { white-space: nowrap; }
+}
