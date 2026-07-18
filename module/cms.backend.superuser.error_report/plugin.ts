@@ -256,12 +256,12 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <a href="${hee(u.search)}">${u2time(row.time)} <br> ${hee(String(row.log_id ?? ""))}</a>
     <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
   <td>
-    <b>${hee(row.message ?? "")}</b><br>
-    <a href="${hee(row.request ?? "")}" target="_blank">${hee(row.request ?? "")}</a><br>
-    <a href="${hee(row.referer ?? "")}" target="_blank">${hee(row.referer ?? "")}</a><br>
-    <small>${hee(row.browser ?? "")}</small>
-    <br>${hee(row.ip ?? "")}
-    <br>${hee(row.email ?? "")}
+    <b>${hee(row.message)}</b><br>
+    <a href="${hee(row.request)}" target="_blank">${hee(row.request)}</a><br>
+    <a href="${hee(row.referer)}" target="_blank">${hee(row.referer)}</a><br>
+    <small>${hee(row.browser)}</small>
+    <br>${hee(row.ip)}
+    <br>${hee(row.email)}
   <td>
     <a href="${hee(eUrl)}" target="_blank" title="${hee(row.file ?? "")}" style="color:inherit; text-decoration:none">
       ${row.sample ? `<pre style="font-size:10px; box-shadow:0 0 5px; padding:4px">${hee(row.sample)}</pre>` : "edit File"}
