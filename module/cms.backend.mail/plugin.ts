@@ -140,10 +140,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   <div class=u2-card style="flex-basis:800px">
     <div class=-head>${t`Mail details`}</div>
     <table class=u2-table>
-      <tr><td style="width:100px">${t`Date`}<td>${html.raw(u2time(row.time))} <small>${row.log_id ?? ""}</small>
-      <tr><td>${t`Subject`}<td>${row.subject ?? ""}
-      <tr><td>${t`Sender`}<td>${row.sender ?? ""}
-      <tr><td>${t`Reply to`}<td>${row.reply_to ?? ""}
+      <tr><td style="width:100px">${t`Date`}<td>${html.raw(u2time(row.time))} <small>${row.log_id}</small>
+      <tr><td>${t`Subject`}<td>${row.subject}
+      <tr><td>${t`Sender`}<td>${row.sender}
+      <tr><td>${t`Reply to`}<td>${row.reply_to}
       <tr><td>${t`Send`}<td>
         ${todo
           ? html.async`<form method=post style="display:inline">${hiddenToken(ctx.csrfToken)}<button name=send u2-confirm="${t`Send the e-mails?`}">${t`Send`} (${todo})</button></form>`
