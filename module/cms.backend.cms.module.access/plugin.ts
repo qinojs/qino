@@ -10,7 +10,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function level(v: unknown): string {
-  if (v === "" || v === null || v === undefined) return "";
+  if (v === "" || v == null) return "";
   return String(Math.min(Math.max(0, Number(v) || 0), 3));
 }
 
