@@ -21,7 +21,7 @@ export class DbEntry {
 
   constructor(table: DbTable, vs?: any) {
     this.table = table;
-    if (vs !== undefined && (Array.isArray(vs) || (vs != null && typeof vs === "object"))) {
+    if (Array.isArray(vs) || (vs != null && typeof vs === "object")) {
       this.#eid = table.entryId(vs) || undefined;
       this.#vs  = vs;
     } else if (vs === undefined) {
