@@ -184,7 +184,7 @@ async function renderAttachments(node: Node, id: number): Promise<HtmlString | s
   const rows = html.join(files.map(f => html`<div style="padding:7px 0">
     ${f.name || basename(f.path || "")}
     ${f.inline ? html`<small>(inline)</small>` : ""}
-    <br><small>${f.path ?? ""}</small>
+    <br><small>${f.path}</small>
   </div>`));
   return html.async`<div class=u2-card>
     <div class=-head>${node.app.t`Attachments`}</div>
