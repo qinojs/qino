@@ -184,19 +184,19 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
             <input type=checkbox name=active value=1 ${vs.active ? "checked" : ""}>
         <tr>
           <th> ${t`Email`}:
-          <td> <input name=email value="${vs.email ?? ""}">
+          <td> <input name=email value="${vs.email}">
         <tr>
           <th> ${t`Password`}:
           <td> <input name=pw autocomplete=new-password type=password>
         <tr>
           <th> ${t`First name`}:
-          <td> <input name=firstname value="${vs.firstname ?? ""}">
+          <td> <input name=firstname value="${vs.firstname}">
         <tr>
           <th> ${t`Last name`}:
-          <td> <input name=lastname value="${vs.lastname ?? ""}">
+          <td> <input name=lastname value="${vs.lastname}">
         <tr>
           <th> ${t`Company`}:
-          <td> <input name=company value="${vs.company ?? ""}">
+          <td> <input name=company value="${vs.company}">
         ${superuserRow}
       </table>
     </div>
