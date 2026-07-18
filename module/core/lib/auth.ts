@@ -34,7 +34,7 @@ export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError
   const UsrEntry = ctx.app.db.table("usr").entry(user.id);
   const rehash = pwNeedsRehash(await UsrEntry.get("pw"));
   if (!rehash) {
-    const clientUsrs = await ctx.client.users() ?? {};
+    const clientUsrs = await ctx.client.users();
     const usrId = String(await UsrEntry.get("id") ?? "");
     if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return await login(ctx, user.id) ? "" : "username";
   }
