@@ -116,7 +116,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     const label = [m.firstname, m.lastname].filter(Boolean).join(" ") || m.email || m.id;
     memberRows.push(html`<tr>
       <td>${usersUrl ? html`<a href="${usersUrl}?id=${String(m.id)}">${String(label)}</a>` : String(label)}
-      <td>${m.email ?? ""}
+      <td>${m.email}
       <td><button class="u2-unstyle -remove" data-usr=${String(m.id)} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
@@ -127,10 +127,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       <table class="u2-table -detail">
         <tr>
           <th> ${t`Name`}:
-          <td> <input name=name value="${vs.name ?? ""}">
+          <td> <input name=name value="${vs.name}">
         <tr>
           <th> ${t`Type`}:
-          <td> <input name=type value="${vs.type ?? ""}">
+          <td> <input name=type value="${vs.type}">
         <tr>
           <th> ${t`Access`}:
           <td> <select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
