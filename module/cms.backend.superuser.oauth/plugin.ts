@@ -76,7 +76,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
   if (b?.csrfToken === ctx.csrfToken) {
     if ("oauth_delete" in b) {
-      const id = Number(b.oauth_delete ?? 0);
+      const id = Number(b.oauth_delete);
       if (id) await db.exec`DELETE FROM social_login_provider WHERE id = ${id}`;
     } else if ("oauth_save" in b) {
       const secret = String(b.client_secret ?? "");
@@ -92,7 +92,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
         auto_create: b.auto_create ? 1 : 0,
         allowed_domains: String(b.allowed_domains ?? "").trim(),
       };
-      const id = Number(b.id ?? 0);
+      const id = Number(b.id);
       if (id) { if (secret) vals.client_secret = secret; await db.table("social_login_provider").update(id, vals); }
       else if (vals.name) await db.table("social_login_provider").insert({ client_secret: secret, ...vals });
     }
