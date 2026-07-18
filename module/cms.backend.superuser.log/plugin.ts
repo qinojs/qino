@@ -328,7 +328,8 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>Log ${id}</div>
         <table class=u2-table>
-            <tr><th>${await t`Request`}<td><a href="${hee(log.url ?? "")}" target=_blank>${hee(log.url ?? "")}</a><br><small>Referer <a href="${hee(log.referer ?? "")}" target=_blank>${hee(log.referer ?? "")}</a></small>
+            <tr><th>${await t`Request`}<td><a href="${hee(log.url)}" target=_blank>${hee(log.url)}</a><br>
+                <small>Referer <a href="${hee(log.referer)}" target=_blank>${hee(log.referer)}</a></small>
             <tr><th>${await t`Browser`}<td>${hee(info.browser)} ${hee(info.version)} ${info.bot ? '<small class=u2-badge>bot</small>' : ""}<br><small>${hee(log.user_agent ?? "")}</small>
             <tr><th>${await t`Time`}<td>${u2time(log.time)}
             <tr><th style="color:${uniqueColor(log.ip)}">${await t`IP`}<td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}
