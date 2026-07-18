@@ -49,8 +49,8 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   for (const vs of rows) {
     trs.push(html`<tr itemid=${String(vs.id)}>
       <td>${String(vs.id)}
-      <td><a href="?id=${String(vs.id)}">${vs.name ?? ""}</a>
-      <td>${vs.type ?? ""}
+      <td><a href="?id=${String(vs.id)}">${vs.name}</a>
+      <td>${vs.type}
       <td><select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
       <td style="text-align:right">${usersUrl ? html`<a href="${usersUrl}?grp_id=${String(vs.id)}">${Number(vs.members)}</a>` : Number(vs.members)}
       <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
