@@ -41,7 +41,7 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
 
   const rowsHtml: HtmlString[] = [];
   for (const row of rows) {
-    const langTds = html.join(langs.map(l => html`<td><textarea data-lang="${l}">${row[l] ?? ""}</textarea>`));
+    const langTds = html.join(langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`));
     let codeLogTd: HtmlString | string = "";
     if (isSuperuser) {
       const logs = await db.query`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
