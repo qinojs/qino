@@ -47,7 +47,7 @@ Deno.serve(app.fetch);
 
 Your endpoint is now available at `GET /api/hello`.
 
-## One Core, Three Databases
+## SQLite, PostgreSQL, or MySQL
 
 Qino uses SQLite by default, with no configuration required. Move to PostgreSQL or MySQL by changing only the connection string:
 
