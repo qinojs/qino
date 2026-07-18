@@ -14,7 +14,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const db  = node.app.db;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_key" in ctx.req.body) {
-    const id = Number(ctx.req.body.delete_key ?? "0");
+    const id = Number(ctx.req.body.delete_key);
     if (id) await db.exec`DELETE FROM api_key WHERE id = ${id}`;
   }
 
