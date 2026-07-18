@@ -43,7 +43,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
   if ("save_lang" in vars) {
     const { hash, ns, lang, value } = vars.save_lang;
     if (!langs.includes(String(lang))) return false;
-    await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${String(value)} WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
+    await db.table("smalltext").update({ hash: String(hash), namespace: String(ns) }, { [String(lang)]: String(value) });
     node.app.languages.clear();
     return true;
   }
@@ -60,7 +60,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
         const source = row[sourceLang] || row.original;
         const translated = matchCase(await svc.transl(source, targetLang, sourceLang) || "", row.original);
         if (!translated) continue;
-        await db.query`UPDATE smalltext SET ${sql.id(targetLang)} = ${translated} WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
+        await db.table("smalltext").update({ hash: row.hash, namespace: row.namespace }, { [targetLang]: translated });
         count++;
       }
     }
@@ -70,7 +70,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
 
   if ("delete_entry" in vars) {
     const { hash, ns } = vars.delete_entry;
-    await db.query`DELETE FROM smalltext WHERE hash = ${String(hash)} AND namespace = ${String(ns)}`;
+    await db.table("smalltext").delete({ hash: String(hash), namespace: String(ns) });
     node.app.languages.clear();
     return true;
   }
@@ -87,7 +87,7 @@ export default async function api(node: Node, vars: any): Promise<any> {
       if (row[targetLang]?.trim()) continue;
       const translated = matchCase(await svc.transl(row[sourceLang], targetLang, sourceLang) || "", row.original);
       if (!translated) continue;
-      await db.query`UPDATE smalltext SET ${sql.id(targetLang)} = ${translated} WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
+      await db.table("smalltext").update({ hash: row.hash, namespace: row.namespace }, { [targetLang]: translated });
       count++;
     }
     node.app.languages.clear();

@@ -491,7 +491,7 @@ const node = {
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any, ctx: Ctx) => {
         if (await fns.requestUsed(url)) throw new Error("URL already in use");
-        await ctx.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${url}, ${node.id})`;
+        await ctx.app.db.table("page_redirect").insert({ request: url, redirect: node.id });
         return { ok: true };
       },
     },
@@ -501,7 +501,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ url: s.string() }),
       execute: async ({ node, url }: any, ctx: Ctx) => {
-        await ctx.app.db.query`DELETE FROM page_redirect WHERE request = ${url} AND redirect = ${node.id}`;
+        await ctx.app.db.table("page_redirect").deleteWhere({ request: url, redirect: node.id });
         return { ok: true };
       },
     },

@@ -20,7 +20,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   // inline edit: set a module's cms_access level
   if (vars.set_access !== undefined) {
     const level = Math.min(Math.max(0, Number(vars.access) || 0), 3);
-    await db.query`UPDATE module SET cms_access = ${level} WHERE name = ${String(vars.set_access)}`;
+    await db.table("module").update(String(vars.set_access), { cms_access: level });
   }
 
   const levels = [await t`disabled`, await t`read only`, await t`editors`, await t`admins`];

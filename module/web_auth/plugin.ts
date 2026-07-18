@@ -43,9 +43,8 @@ async function storeChallenge(db: Db, challenge: string, usrId: number, type: "r
 async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
   const row = await db.row`SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ${token} AND type = ${type} AND expires > ${unixTime()}`;
   if (!row) return null;
-  // the delete decides the race: of parallel verifies only one gets affectedRows = 1
-  const { affectedRows } = await db.exec`DELETE FROM web_auth_challenge WHERE token = ${token}`;
-  if (affectedRows !== 1) return null;
+  // the delete decides the race: of parallel verifies only one gets a successful delete
+  if (!await db.table("web_auth_challenge").delete(token)) return null;
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
@@ -248,7 +247,7 @@ export const api: AptTree = {
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
-          await db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${unixTime()} WHERE id = ${r.cred.id}`;
+          await db.table("web_auth_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
 
           if (!await login(ctx, usrId)) return { ok: false, error: "user_inactive" };
           return { ok: true };
@@ -296,7 +295,7 @@ export const api: AptTree = {
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          await ctx.app.db.exec`UPDATE web_auth_credential SET sign_count = ${r.newCounter}, last_used = ${unixTime()} WHERE id = ${r.cred.id}`;
+          await ctx.app.db.table("web_auth_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
           ctx.sess.data.web_auth_confirmed(unixTime());
           return { ok: true };
         },
@@ -327,7 +326,7 @@ export const api: AptTree = {
           const cred = await ctx.app.db.row`SELECT usr_id FROM web_auth_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
           if (Number(cred.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
-          await ctx.app.db.exec`DELETE FROM web_auth_credential WHERE id = ${credId}`;
+          await ctx.app.db.table("web_auth_credential").delete(credId);
           return { ok: true };
         },
       },

@@ -27,8 +27,8 @@ export default async function (node: Node, vars: any): Promise<any> {
     const grpId = Number(vars.set_usr);
     const usrId = Number(vars.usr_id);
     if (!grpId || !usrId) return false;
-    if (vars.add) await db.query`REPLACE INTO usr_grp (grp_id, usr_id) VALUES (${grpId}, ${usrId})`;
-    else await db.query`DELETE FROM usr_grp WHERE grp_id = ${grpId} AND usr_id = ${usrId}`;
+    if (vars.add) await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
+    else await db.table("usr_grp").delete({ grp_id: grpId, usr_id: usrId });
     return 1;
   }
 
@@ -36,7 +36,7 @@ export default async function (node: Node, vars: any): Promise<any> {
     const grpId = Number(vars.add_email);
     const usrId = Number(await db.one`SELECT id FROM usr WHERE email = ${String(vars.email ?? "")}` ?? "0");
     if (!grpId || !usrId) return false;
-    await db.query`REPLACE INTO usr_grp (grp_id, usr_id) VALUES (${grpId}, ${usrId})`;
+    await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
     return 1;
   }
 

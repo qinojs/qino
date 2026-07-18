@@ -65,7 +65,7 @@ export class ChatSession {
     // Fresh client context (e.g. current page) supersedes the one stored at session start.
     if (context) {
       data.context = JSON.stringify(context);
-      await this.#app.db.query`UPDATE ai_session SET context = ${data.context} WHERE id = ${this.#id}`;
+      await this.#app.db.table("ai_session").update(this.#id, { context: data.context });
     }
 
     const bot = this.#api.getBot(String(data.bot));
@@ -173,7 +173,7 @@ export class ChatSession {
   }
 
   #touch(): Promise<unknown> {
-    return this.#app.db.query`UPDATE ai_session SET updated_at = ${unixTime()} WHERE id = ${this.#id}`;
+    return this.#app.db.table("ai_session").update(this.#id, { updated_at: unixTime() });
   }
 }
 

@@ -56,9 +56,9 @@ export default async function (node: Node, vars:any): Promise<any> {
     const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;
     if (vars.add) {
-      await db.query`REPLACE INTO usr_grp (grp_id, usr_id) VALUES (${grpId}, ${usrId})`;
+      await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
     } else {
-      await db.query`DELETE FROM usr_grp WHERE grp_id = ${grpId} AND usr_id = ${usrId}`;
+      await db.table("usr_grp").delete({ grp_id: grpId, usr_id: usrId });
     }
     return 1;
   }

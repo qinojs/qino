@@ -24,7 +24,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
       for (const r of rows) {
         const countChilds = await db.one`SELECT count(*) FROM qg_setting WHERE basis=${r.id}`;
         solutions[`remove ${r.id} value:"${r.value}" childs:${countChilds}`] = {
-          solve: async () => { await db.query`DELETE FROM qg_setting WHERE id = ${r.id}`; },
+          solve: async () => { await db.table("qg_setting").delete(r.id); },
         };
       }
       return { solutions };
@@ -45,7 +45,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
     return {
       info: info + (usrs.length === 20 ? " only the first 20 were checked" : ""),
       solutions: {
-        "remove pw":   { solve: async () => { for (const r of found) await db.query`UPDATE usr SET pw='' WHERE id=${r.id}`; } },
+        "remove pw":   { solve: async () => { for (const r of found) await db.table("usr").update(r.id, { pw: "" }); } },
         "remove user": { solve: async () => { for (const r of found) await db.table("usr").delete(r.id); } },
       },
     };

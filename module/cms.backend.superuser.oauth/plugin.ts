@@ -77,7 +77,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   if (b?.csrfToken === ctx.csrfToken) {
     if ("oauth_delete" in b) {
       const id = Number(b.oauth_delete);
-      if (id) await db.exec`DELETE FROM social_login_provider WHERE id = ${id}`;
+      if (id) await db.table("social_login_provider").delete(id);
     } else if ("oauth_save" in b) {
       const secret = String(b.client_secret ?? "");
       const vals: Record<string, unknown> = {

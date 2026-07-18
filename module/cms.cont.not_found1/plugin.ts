@@ -54,7 +54,7 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<string> {
     if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
       savedMsg = `<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
     } else if (redirect) {
-      await node.app.db.query`INSERT INTO page_redirect (request, redirect) VALUES (${ctx.req.appPath}, ${redirect}) ON DUPLICATE KEY UPDATE redirect = ${redirect}`;
+      await node.app.db.table("page_redirect").ensure({ request: ctx.req.appPath, redirect });
       savedMsg = `<p style="color:green">${await t`Redirect saved.`}</p>`;
     }
   }

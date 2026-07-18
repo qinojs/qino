@@ -81,7 +81,9 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
     const modelId = Number(vars.model_id ?? 0);
     if (!modelId) return { type: "error", text: "No model selected." };
     await app.db.query`UPDATE ai_provider_model SET is_default = 0 WHERE kind = ${kind}`;
-    await app.db.query`UPDATE ai_provider_model SET is_default = 1 WHERE id = ${modelId} AND kind = ${kind}`;
+    if (await app.db.one`SELECT id FROM ai_provider_model WHERE id = ${modelId} AND kind = ${kind}`) {
+      await app.db.table("ai_provider_model").update(modelId, { is_default: 1 });
+    }
     return { type: "ok", text: `Default ${kind} model saved.` };
   }
 
@@ -92,13 +94,12 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
   if (action === "save-provider") {
     const key = String(vars.api_key ?? "").trim();
     if (key) app.settings.ai.provider[provider.name].key(key);
-    await app.db.query`UPDATE ai_provider SET endpoint = ${String(vars.endpoint ?? provider.endpoint).trim()} WHERE id = ${providerId}`;
+    await app.db.table("ai_provider").update(providerId, { endpoint: String(vars.endpoint ?? provider.endpoint).trim() });
     return { type: "ok", text: `Provider ${provider.name} saved.` };
   }
 
   if (action === "delete-provider") {
-    await app.db.query`DELETE FROM ai_provider_model WHERE provider_id = ${providerId}`;
-    await app.db.query`DELETE FROM ai_provider WHERE id = ${providerId}`;
+    await app.db.table("ai_provider").delete(providerId); // ai_provider_model rows cascade
     return { type: "ok", text: `Provider ${provider.name} removed.` };
   }
 
@@ -115,12 +116,15 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
   }
 
   if (action === "set-kind") {
-    await app.db.query`UPDATE ai_provider_model SET kind = ${String(vars.kind ?? "chat")} WHERE id = ${Number(vars.model_id ?? 0)} AND provider_id = ${providerId}`;
+    const modelId = Number(vars.model_id ?? 0);
+    if (await app.db.one`SELECT id FROM ai_provider_model WHERE id = ${modelId} AND provider_id = ${providerId}`) {
+      await app.db.table("ai_provider_model").update(modelId, { kind: String(vars.kind ?? "chat") });
+    }
     return { type: "ok", text: "Model kind updated." };
   }
 
   if (action === "delete-model") {
-    await app.db.query`DELETE FROM ai_provider_model WHERE id = ${Number(vars.model_id ?? 0)} AND provider_id = ${providerId}`;
+    await app.db.table("ai_provider_model").deleteWhere({ id: Number(vars.model_id ?? 0), provider_id: providerId });
     return { type: "ok", text: "Model deleted." };
   }
 

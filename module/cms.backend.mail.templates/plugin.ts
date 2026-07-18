@@ -134,7 +134,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
     }
 
     if ("delete" in ctx.req.body) {
-      await db.query`DELETE FROM mail_template WHERE id=${id}`;
+      await db.table("mail_template").delete(id);
       delete mail(app).templates[row.name];
       ctx.res.status = 302;
       ctx.res.headers.set("Location", "?");
