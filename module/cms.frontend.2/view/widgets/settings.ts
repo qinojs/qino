@@ -46,7 +46,7 @@ export default async function (node: Node): Promise<HtmlString> {
   let accordions = "";
 
   const hasOptions = typeof node.module?.plugin?.cms?.node?.options === "function";
-  const hasPageSettings = (node.settings[$item].keys?.length ?? 0) > 0;
+  const hasPageSettings = Boolean(node.settings[$item].keys?.length);
   if (hasOptions || hasPageSettings) accordions += await cmsFrontend2WidgetAccordion("options", node, await app.t`Settings`);
 
   accordions += await cmsFrontend2WidgetAccordion("media", node);
