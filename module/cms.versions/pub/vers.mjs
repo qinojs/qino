@@ -27,11 +27,11 @@ const CmsVersViewer = function(){
       <style id=x>${css()}</style>
     </div>`
   ).firstElementChild;
+  this.preview = find(this.container, '.-preview');
   this.iframe1 = document.createElement('iframe');
   this.iframe2 = document.createElement('iframe');
   this.iframe1.sandbox = this.iframe2.sandbox = 'allow-same-origin allow-scripts';
-  find(this.container, '.-preview').append(this.iframe1);
-  find(this.container, '.-preview').append(this.iframe2);
+  this.preview.append(this.iframe1, this.iframe2);
   find(this.container, '.-control > .-head').addEventListener('click', ()=>{
     this.hide();
   });
@@ -103,14 +103,14 @@ CmsVersViewer.prototype = {
 
     this.activeIframe.style.opacity = 0;
 
-    find(this.container, '.-preview').classList.add('-loading');
+    this.preview.classList.add('-loading');
 
     for (const li of findAll(this.container, '.-list > li')) li.classList.remove('-active');
     const li = find(this.container, `.-list > li[v="${vers}"]`);
     li.classList.add('-active','-loading');
 
     this.activeIframe.onload = ()=>{
-      find(this.container, '.-preview').classList.remove('-loading');
+      this.preview.classList.remove('-loading');
       this.iframe1.style.zIndex = this.activeIframe === this.iframe1 ? 1 : 0;
       this.iframe2.style.zIndex = this.activeIframe === this.iframe2 ? 1 : 0;
       this.activeIframe.style.opacity = 1;
@@ -147,8 +147,7 @@ const more = c1.dom.fragment(`
     <div class=-txt></div>
   </div>`).firstElementChild;
 const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
-find(Viewer.container, '.-control').append(more);
-find(Viewer.container, '.-control').append(pointer);
+find(Viewer.container, '.-control').append(more, pointer);
 Viewer.on('before-load',function(e){
   const li = find(this.container, `.-list > li[v="${e.vers}"]`);
   const pos = li.getBoundingClientRect();
