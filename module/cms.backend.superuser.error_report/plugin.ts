@@ -171,6 +171,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   if (!rows.length) return `<div class="-body">${filtered ? await t`No matching entries` : await t`Great, no errors so far!`}</div>`;
 
   const { editorLink } = makeFileHelper(ctx);
+  const u = ctx.req.url.toURL();
   let tableRows = "";
   for (const row of rows) {
     const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" } as Record<string, string>)[String(row.prio)] ?? "var(--gray)";
@@ -178,7 +179,12 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const numBot  = Number(row.num_bot) || 0;
     const numUns  = Number(row.num_unsupported) || 0;
     const msg     = String(row.message ?? "");
-    const entriesUrl = `?show=entries&source=${encodeURIComponent(row.source)}&file=${encodeURIComponent(row.file)}&line=${encodeURIComponent(row.line)}&col=${encodeURIComponent(row.col)}`;
+    u.searchParams.set("show", "entries");
+    u.searchParams.set("source", String(row.source));
+    u.searchParams.set("file", String(row.file));
+    u.searchParams.set("line", String(row.line));
+    u.searchParams.set("col", String(row.col));
+    const entriesUrl = u.search;
     const editorUrl  = editorLink(row.file, row.line, row.col);
     tableRows += `
 <tr u2-href>
@@ -237,6 +243,8 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 
   let tableRows = "";
   const u = ctx.req.url.toURL();
+  const back = ctx.req.url.toURL();
+  for (const k of ["show", "source", "file", "line", "col"]) back.searchParams.delete(k);
   for (const row of rows) {
     const eUrl = editorLink(row.file ?? "", row.line, row.col);
 
@@ -271,7 +279,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 
   return `
 <div class=u2-card style="height:88vh; overflow:auto; flex:1 1 80rem">
-  <div class=-head><a href="?">← ${await node.app.t`Errors`}</a> &nbsp; ${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
+  <div class=-head><a href="${hee(back.search || "?")}">← ${await node.app.t`Errors`}</a> &nbsp; ${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
   <table class=u2-table>
     <tbody style="vertical-align:baseline">
       ${tableRows}
