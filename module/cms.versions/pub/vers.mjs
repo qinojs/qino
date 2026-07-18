@@ -170,7 +170,7 @@ Viewer.on('before-load',function(e){
   });
   find(more, '.-reactivate').onclick = () => {
     body.style.opacity = 0.3;
-    apt['cms.versions']['publish-node'].post({ pid: Viewer.pid, options: {fromLog:e.vers+1} }).then(() => {
+    apt['cms.versions']['publish-node'].post({ pid: Number(Viewer.pid), options: {fromLog:e.vers+1} }).then(() => {
       location.href = location.href.replace(/#.*$/,'');
     });
   };
