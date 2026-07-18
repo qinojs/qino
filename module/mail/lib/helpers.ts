@@ -41,7 +41,7 @@ function valueAt(data: Dict, path: string): unknown {
 }
 
 export function renderMarkers(tpl: string, data: Dict): string {
-  return tpl.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => hee(valueAt(data, key) ?? ""));
+  return tpl.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => hee(valueAt(data, key)));
 }
 
 export function htmlToText(html: string): string {
