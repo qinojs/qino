@@ -7,10 +7,10 @@ export async function nodeToJson(node: Node, type = "*"): Promise<any> {
     const title = await node.showTitle();
     const access = await node.access();
     return {
-        id:          Number(node.id),
+        id:          node.id,
         title:       access ? (String(title).trim() || "-") : "(no access)",
         title_id:    title.id,
-        numChildren: (await node.children({ type }))?.size ?? 0,
+        numChildren: (await node.children({ type })).size,
         url:         await node.url(),
         myaccess:    access,
         visible:     Number(node.vs?.["visible"] ?? 0),
