@@ -26,6 +26,10 @@ function fakeDb() {
           calls.push([`INSERT INTO ${name}`, [values]]);
           return String(insertId++);
         },
+        update(id: unknown, values: Record<string, unknown>) {
+          calls.push([`UPDATE ${name}`, [id, values]]);
+          return String(id);
+        },
       };
     },
   };
@@ -66,8 +70,11 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
   const res = await sessions.regenerateId("old-token");
   assertEquals(res.id, "9");
   assertEquals(res.isNew, true);
-  assertEquals(db.calls[1][0], "UPDATE sess SET token = ?, data = ?, `access` = ? WHERE id = ?");
-  assertEquals((db.calls[1][1] as unknown[])[3], 9);
+  assertEquals(db.calls[1][0], "UPDATE sess");
+  const [id, values] = db.calls[1][1] as [unknown, Record<string, unknown>];
+  assertEquals(id, 9);
+  assertEquals(values.token, res.token);
+  assertEquals(values.data, "{}");
 });
 
 Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", async () => {
@@ -103,9 +110,11 @@ Deno.test("Session: touch debounces its own access updates", async () => {
   sess.touch(4);
   await new Promise((resolve) => setTimeout(resolve, 70));
 
-  const updates = db.calls.filter(([sql]) => sql.startsWith("UPDATE sess SET `access`"));
+  const updates = db.calls.filter(([sql]) => sql === "UPDATE sess");
   assertEquals(updates.length, 1);
-  assertEquals((updates[0][1] as unknown[]).slice(1), [4, "3"]);
+  const [id, values] = updates[0][1] as [unknown, Record<string, unknown>];
+  assertEquals(id, "3");
+  assertEquals(values.usr_id, 4);
 });
 
 Deno.test("Session: parallel sessions touch independently", async () => {
@@ -117,6 +126,6 @@ Deno.test("Session: parallel sessions touch independently", async () => {
   b.touch(22);
   await new Promise((resolve) => setTimeout(resolve, 70));
 
-  const updates = db.calls.filter(([sql]) => sql.startsWith("UPDATE sess SET `access`"));
+  const updates = db.calls.filter(([sql]) => sql === "UPDATE sess");
   assertEquals(updates.length, 2);
 });

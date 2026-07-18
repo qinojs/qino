@@ -26,7 +26,7 @@ export function userSettingsItem(user: any, schema?: any): Promise<any> {
 export function sessSettingsItem(db: Db, sessId: string | number, schema?: any): Promise<any> {
     return buildRoot(
         async () => (await db.row`SELECT settings FROM sess WHERE id = ${sessId}`)?.settings,
-        async (json) => { await db.query`UPDATE sess SET settings = ${json} WHERE id = ${sessId}`; },
+        async (json) => { await db.table("sess").update(sessId, { settings: json }); },
         schema,
     );
 }
@@ -40,5 +40,5 @@ export async function mergeSessionSettingsToUser(db: Db, userId: number, sessId:
     const sessSettings = await db.one`SELECT settings FROM sess WHERE id = ${sessId}`;
     if (!sessSettings) return;
     if (await db.one`SELECT settings FROM usr WHERE id = ${userId}`) return;
-    await db.query`UPDATE usr SET settings = ${sessSettings} WHERE id = ${userId}`;
+    await db.table("usr").update(userId, { settings: sessSettings });
 }

@@ -1,4 +1,4 @@
-import { bildJsonItem, sql, type ItemProxy } from "../../../deps.ts";
+import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
 import { header, cookiePrefix, uid, unixTime } from "./util.ts";
 import type { Db } from "./db/Db.ts";
 import type { Req } from "./ctx/Req.ts";
@@ -23,7 +23,7 @@ export class Session {
     this.token = token;
     this.isNew = isNew;
     this.data = bildJsonItem(data || EMPTY_SESSION, async (json: string) => {
-      await this.#db.exec`UPDATE sess SET data = ${json} WHERE id = ${this.id}`;
+      await this.#db.table("sess").update(this.id, { data: json });
     }, { debounce: 0 }).proxy;
   }
 
@@ -32,7 +32,7 @@ export class Session {
     clearTimeout(this.#touchTimer);
     this.#touchTimer = setTimeout(async () => {
       try {
-        await this.#db.exec`UPDATE sess SET ${sql.id("access")} = ${unixTime()}, usr_id = ${userId || null} WHERE id = ${this.id}`;
+        await this.#db.table("sess").update(this.id, { access: unixTime(), usr_id: userId || null });
       } catch (e) { console.error("session touch error:", e); }
     }, 50);
   }
@@ -61,7 +61,7 @@ export class SessionManager {
     const row = oldSessionToken ? await this.#db.row`SELECT id FROM sess WHERE token = ${oldSessionToken}` : null;
     if (!row) return this.#create();
     const token = uid();
-    await this.#db.exec`UPDATE sess SET token = ${token}, data = ${EMPTY_SESSION}, ${sql.id("access")} = ${unixTime()} WHERE id = ${row.id}`;
+    await this.#db.table("sess").update(row.id, { token, data: EMPTY_SESSION, access: unixTime() });
     return new Session(this.#db, row.id, token, EMPTY_SESSION, true);
   }
 
