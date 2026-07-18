@@ -33,7 +33,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
     const isEmail = vs.email && /@/.test(vs.email);
     const emailCell = isEmail
       ? html`<a href="mailto:${vs.email}">${vs.email}</a>`
-      : vs.email ?? "";
+      : vs.email;
 
     const loginAsTd = canLoginAs
       ? html.raw('<td class=-loginAs><u2-ico icon=switch_account aria-label="Login as user">⇄</u2-ico>')
@@ -45,7 +45,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
   <td>
     <a href="${detailUrl}">${(vs.firstname ?? "") + " " + (vs.lastname ?? "")}</a>
   <td> ${emailCell}
-  <td> ${vs.company ?? ""}
+  <td> ${vs.company}
   <td> ${vs.active ? "yes" : "no"}
   <td> ${String(vs.num_sess ?? 0)}
   <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>

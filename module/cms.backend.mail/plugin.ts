@@ -106,8 +106,8 @@ async function listRows(node: Node, search: string): Promise<HtmlString> {
     return html`<tr u2-href>
       <td>${html.raw(u2time(row.time))}
       <td><a href="${u.search}">${row.subject || `-- ${tNoSubject} --`}</a>
-      <td>${row.sender ?? ""}
-      <td>${row.recipient ?? ""}${more}
+      <td>${row.sender}
+      <td>${row.recipient}${more}
       <td>${row.sent || "-"}
       <td>${row.opened || "-"}
       <td><small>${html.raw(u2time(row.opened_min))}</small>`;
@@ -199,11 +199,11 @@ async function renderRecipients(node: Node, id: number): Promise<HtmlString> {
     const data = parseData(r.data);
     const dataHtml = html.join(Object.entries(data).map(([k, v]) => html`${k}: ${String(v)}<br>`));
     return html`<tr>
-      <td>${r.email ?? ""}
+      <td>${r.email}
       <td>${r.type || "to"}
       <td>${html.raw(u2time(r.sent))}
       <td>${html.raw(u2time(r.opened))}
-      <td>${r.error ?? ""}
+      <td>${r.error}
       <td><div style="overflow:auto; max-height:60px; font-size:10px">${dataHtml}</div>`;
   }));
   return html.async`<div class=u2-card style="flex:1 1 500px">

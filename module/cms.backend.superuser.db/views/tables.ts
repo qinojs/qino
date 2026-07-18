@@ -93,7 +93,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
 
     return html`<tr${props ? "" : html.raw(" class=-no-schema-row")}>
       <td style="font-family:monospace">${fname}${keyBadge(field.vs?.Key ?? "")}
-      <td style="font-family:monospace;font-size:.9em">${field.vs?.Type ?? ""}
+      <td style="font-family:monospace;font-size:.9em">${field.vs?.Type}
       <td>${field.vs?.Null === "YES" ? "NULL" : ""}
       <td><code>${field.vs?.Default != null ? String(field.vs.Default) : ""}</code>
       <td style="font-size:.82em">${schemaCell}

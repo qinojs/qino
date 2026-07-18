@@ -59,7 +59,7 @@ async function render(node: Node): Promise<HtmlString | string> {
         u.searchParams.set("id", String(r.id));
         return html`<tr u2-href>
         <td><a href="${u.search}">${r.name}</a>
-        <td>${r.description ?? ""}
+        <td>${r.description}
         <td>${time}`;
       }))
     : await html.async`<tr><td colspan=3><em>${t`No templates yet.`}</em>`;

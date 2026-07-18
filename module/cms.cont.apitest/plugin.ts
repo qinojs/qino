@@ -28,7 +28,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
     const g = r.segments[0] ?? "";
     const groupRow = g !== group ? (group = g, `<tr class="-group" data-group="${hee(g)}"><td colspan="2"><button data-gtoggle>▾</button> ${hee(g)}</td></tr>`) : "";
     const params = paramNames(r).map((p) =>
-      `<label class="-param">:${hee(p)}<input data-param="${hee(p)}" value="${hee(prefill[p] ?? "")}"></label>`
+      `<label class="-param">:${hee(p)}<input data-param="${hee(p)}" value="${hee(prefill[p])}"></label>`
     ).join("");
     return `${groupRow}
     <tr data-method="${hee(r.method)}" data-path="${hee(path)}" data-group="${hee(g)}">
