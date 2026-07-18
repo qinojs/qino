@@ -66,3 +66,36 @@ Parameters read only by your own backend node stay short and unprefixed
 Exceptions (do not extend):
 - `cmspid`, `lang` — core-owned, well-known short names.
 - `changeLanguage` — frozen PHP-era alias for `lang`, kept as read-fallback.
+
+## Change tracking (`node_changed`)
+
+Every content mutation writes one row into `node_changed`, captured at the db-event
+level (`table:insert/update/delete`) in `lib/nodeChanged.ts` — so every write path
+through the table API is recorded without per-method instrumentation.
+
+```
+node_changed
+  id       PK
+  log_id   request log entry (index)
+  node_id  the cont/page that changed (index)
+  page_id  its containing page (== node_id for pages) (index)
+  data     small JSON: { table, op, name?, lang?, cols? }
+```
+
+- **Event log, not a mapping**: one row per mutation, no dedup — text edited and file
+  added in the same request = two rows. Consumers aggregate (`EXISTS`, `GROUP BY node_id`,
+  `MAX(log.time)` via the `log` join). `data` is a display/debug payload, never a query
+  surface (JSON access is dialect-specific); promote a real column when a filter is needed.
+- **Shared text/file rows resolve through their links**: `text`/`file` are reference rows;
+  the node is found via `page_text`/`page.title_id`/`page_file`. Adding a translation is an
+  `INSERT` on an already-linked `text` row, so multilingual edits are tracked too.
+- **Deleted/moved nodes stay resolvable**: on page delete, `page_id` is taken from the
+  parent side (basis) before the row disappears.
+- **No request context** (cron/CLI/boot): no row — like the versions history capture.
+- `log_id` is `setnull` on log delete (like `page`/`text`): pruning logs keeps the history
+  rows, they just lose their who/when (which live in `log` → `sess` → `usr`). Field values
+  live in the `_vers_*` shadow tables; `node_changed` is only the node↔log index.
+
+Consumers: the 213 access guards in `cms.versions/serverInterface.ts` (`getForNode`,
+`logDetails`), and the superuser history page (`cms.backend.superuser.versions.cms`).
+No backfill — pre-existing logs simply have no rows (fail-closed for the access guard).

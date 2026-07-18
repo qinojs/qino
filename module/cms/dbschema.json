@@ -166,6 +166,35 @@
         "required": ["page_id", "name", "file_id", "sort"]
       }
     },
+    "node_changed": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "node_id": {
+            "type": "integer",
+            "x-index": true
+          },
+          "page_id": {
+            "type": "integer",
+            "x-index": true
+          },
+          "data": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "log_id", "node_id", "page_id"]
+      }
+    },
     "page_redirect": {
       "additionalProperties": {
         "properties": {

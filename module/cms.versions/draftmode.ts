@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { cmsCtx } from "../cms/mod.ts";
 /**
  * cms.versions/draftmode.ts
@@ -8,7 +9,6 @@ import { cmsCtx } from "../cms/mod.ts";
  *
  * What is active:
  *   - editmode → draft space selection (applyDraftSpace)
- *   - vers_cms_page_changed tracking + "unpublished changes" frontend hint
  *   - cross-space field sync for `page`
  *
  * What is commented out (TODO – space-mode write/read routing):
@@ -17,9 +17,7 @@ import { cmsCtx } from "../cms/mod.ts";
  *   - node:sql SQL-rewrite hook (complex regex approach)
  */
 
-// deno-lint-ignore-file no-explicit-any
-
-import { getCtx, requestStorage, unixTime, type Ctx, type App } from "../core/mod.ts";
+import { requestStorage, type Ctx, type App } from "../core/mod.ts";
 import { getVers } from "./lib/Vers.ts";
 import { getCmsVers } from "./lib/CmsVers.ts";
 
@@ -116,35 +114,6 @@ export function initDraftmode(app: App) {
         await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
     });
 
-    // ─── vers_cms_page_changed tracking ──────────────────────────────────────
-    const onModify = async (e: any) => {
-        const changedNode = e.node;
-        if (!changedNode) return;
-        const ctx = getCtx();
-        const now = unixTime();
-        const path = await changedNode.Path?.() ?? [];
-        for (const node of path) {
-            const data: Record<string, any> = {
-                page_id:        node.id,
-                space:          getVers(ctx).space,
-                changed_inside: now,
-            };
-            if (node === changedNode)                                  data.changed      = now;
-            if (changedNode.Page && await node.in?.(changedNode.Page)) data.changed_page = now;
-            await ctx.app.db.table("vers_cms_page_changed").ensure(data);
-        }
-    };
-    app.on("node:modify-before",      onModify);
-    app.on("node:fileUpload-before", onModify);
-
-    // Copy vers_cms_page_changed when a new space is created
-    app.on("vers:createSpace", async ({ space }) => {
-        await app.db.query`
-            INSERT INTO vers_cms_page_changed
-            SELECT page_id, ${space} as space, changed_inside, changed_page, changed
-            FROM vers_cms_page_changed WHERE space = 0`;
-    });
-
     // Inform client about changed pages after API calls (draftmode)
     // app.on("serverInterface::after", async (e: any) => { // no longer exists! use something else
     //     const ctx = getCtx();
@@ -213,27 +182,6 @@ export function initDraftmode(app: App) {
         if (ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
-        // Check if draft has changes newer than live
-        const MainNode = cmsCtx(ctx).mainNode;
-        if (MainNode) {
-            const versions = await ctx.app.db.indexCol`SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ${String(MainNode)}`;
-            if (versions[1] && (!versions[0] || versions[1] > versions[0])) {
-                ctx.res.html.jsData.cms_vers_draft_changed = true;
-            }
-        }
         ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/draftmode.mjs");
     });
 }
-
-/** vers_cms_page_changed table (draftmode). Merged into the module dbSchema. */
-export const versPageChangedSchema = {
-    additionalProperties: {
-        properties: {
-            page_id:        { type: "integer", "x-index": "primary" },
-            space:          { type: "integer", "x-index": "primary" },
-            changed_inside: { type: "string", format: "date-time" },
-            changed_page:   { type: "string", format: "date-time" },
-            changed:        { type: "string", format: "date-time" },
-        },
-    },
-};

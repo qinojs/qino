@@ -1,7 +1,6 @@
-import { cms } from "../cms/mod.ts";
 // deno-lint-ignore-file no-explicit-any
-
-import { sql, type Sql } from "../core/mod.ts";
+import { cms } from "../cms/mod.ts";
+import { sql, hee, type Sql } from "../core/mod.ts";
 import { versedTables, view } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
@@ -21,6 +20,8 @@ export async function publishNode(ctx: any, pid: any, options: any = {}): Promis
 }
 
 export async function getForNode(ctx: any, pid: any): Promise<any[]> {
+    const Page = await cms(ctx.app).node(Number(pid));
+    if ((await Page.access()) < 2) return [];
     const data = await versProtocolForNodeTree(ctx, Number(pid));
     const map: Record<number, any> = {};
     for (const row of data) map[row.vers] = row;
@@ -30,7 +31,7 @@ export async function getForNode(ctx: any, pid: any): Promise<any[]> {
 export async function logDetails(ctx: any, id: any): Promise<any> {
     id = Number(id);
     const row = await ctx.app.db.row`
-        SELECT log.time, log.post, log_ip.ip, log_user_agent.user_agent, usr.email
+        SELECT log.time, log_ip.ip, log_user_agent.user_agent, usr.email
         FROM log
           LEFT JOIN log_ip           ON log.ip_id         = log_ip.id
           LEFT JOIN log_user_agent   ON log.user_agent_id = log_user_agent.id
@@ -39,82 +40,28 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         WHERE log.id = ${id}`;
     if (!row) return null;
 
-    const safeJson = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
-    const post = safeJson(String(row.post || "{}"));
-    const data = safeJson(post.askJSON ?? "{}");
-
-    const t = ctx.app.t.bind(ctx.app.languages);
-    const [tContentAdded, tPositionChanged, tSettingChanged, tFileOrderChanged, tFilesSorted, tFileAdded, tFileDeleted, tDuplicatesDeleted, tCopied, tDeleted, tModuleChanged, tTagAdded, tTagRemoved, tVisibilityChanged, tReverted] = await Promise.all([
-        t`Content added`, t`Position changed`, t`Setting changed`, t`File order changed`, t`Files sorted`, t`File added`, t`File deleted`, t`Duplicate files deleted`, t`Copied`, t`Deleted`, t`Module changed`, t`Tag added`, t`Tag removed`, t`Visibility changed`, t`Reverted to previous state`,
-    ]);
-    const translateFn: Record<string, string> = {
-        "page::addContent":        tContentAdded,
-        "page::insertBefore":      tPositionChanged,
-        "page::setDefault":        tSettingChanged,
-        "page::setDefaultById":    tSettingChanged,
-        "page::FilesSort":         tFileOrderChanged,
-        "page::filesSetOrder":     tFilesSorted,
-        "page::FileAdd":           tFileAdded,
-        "page::FileDelete":        tFileDeleted,
-        "page::filesDeleteDouble": tDuplicatesDeleted,
-        "page::copy":              tCopied,
-        "page::remove":            tDeleted,
-        "page::setModule":         tModuleChanged,
-        "page::addClass":          tTagAdded,
-        "page::removeClass":       tTagRemoved,
-        "page::setVisible":        tVisibilityChanged,
-        "cms_vers::rollBackCont":  tReverted,
-        "SettingsEditor::set":     tSettingChanged,
-        "Setting":                 tSettingChanged,
-    };
-    const ignoreFn: Record<string, 1> = {
-        "cms_frontend_1::widget": 1,
-        "cms::getTree":           1,
-        "page::get":              1,
-        "page::getWithHead":      1,
-        "page::reload":           1,
-        "page::setPublic":        1,
-        "page::onlineStart":      1,
-        "page::onlineEnd":        1,
-    };
-
+    // One message per node_changed row on a page the caller may edit (>= 2).
+    // Edit access on any affected page unlocks the metadata (who/when/ip);
+    // rows on unreachable pages are skipped, so no foreign node leaks through.
+    // Logs without any editable affected page (or none captured) stay closed.
+    const t = ctx.app.t;
     const contOrPage = async (Page: any): Promise<string> => {
-        const titleObj = await Page.title();
-        const title = (await titleObj?.string?.() ?? "").trim();
-        const label = `${Page.vs?.type === "p" ? await t`Page` : await t`Content`} ${title ? `"${title}" ` : ""}(${Page.id})`;
+        const title = (await (await Page.title())?.string?.() ?? "").trim();
+        const label = `${Page.vs?.type === "p" ? await t`Page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${Page.id})`;
         return `<div mark="[qcms-id='${Page.id}']">${label}</div>`;
     };
 
+    const changed = await ctx.app.db.query`SELECT node_id, page_id, data FROM node_changed WHERE log_id = ${id} ORDER BY id`;
+    const access: Record<number, number> = {};
     const messages: string[] = [];
-    if (data.serverInterface) {
-        for (const call of Object.values(data.serverInterface) as any[]) {
-            const fn   = call.fn;
-            const args = call.args ?? [];
-            if (ignoreFn[fn]) continue;
-            if (fn === "cms::setTxt") { // tobi: irgendwo gibt es eine funktion wie cms.pidFromTxtId könnte man diese verwenden?;
-                const vs = await ctx.app.db.row`SELECT name, page_id FROM _vers_page_text WHERE text_id = ${Number(args[0])} AND _vers_space = ${getCmsVers(ctx).space}`
-                ?? await ctx.app.db.row`SELECT name, page_id FROM page_text WHERE text_id = ${Number(args[0])}`;
-                if (vs) {
-                    const P = await cms(ctx.app).node(vs.page_id);
-                    messages.push((await contOrPage(P)) + ` ${await t`Text`} "${vs.name}" ${await t`changed`}`);
-                } else {
-                    const vs2 = await ctx.app.db.row`SELECT id FROM page WHERE title_id = ${Number(args[0])}`;
-                    if (vs2) {
-                        const P = await cms(ctx.app).node(vs2.id);
-                        messages.push((await contOrPage(P)) + " " + await t`Title changed`);
-                    }
-                }
-            } else if (fn === "page::insertBefore") {
-                const P = await cms(ctx.app).node(args[1]);
-                messages.push((await contOrPage(P)) + " " + translateFn[fn]);
-            } else if (translateFn[fn]) {
-                const P = await cms(ctx.app).node(args[0]);
-                messages.push((await contOrPage(P)) + " " + translateFn[fn]);
-            } else {
-                messages.push(`<span style="color:red">${fn}</span>`);
-            }
-        }
+    for (const c of changed) {
+        const pageId = Number(c.page_id);
+        access[pageId] ??= await (await cms(ctx.app).node(pageId)).access();
+        if (access[pageId] < 2) continue;
+        const P = await cms(ctx.app).node(Number(c.node_id));
+        messages.push((await contOrPage(P)) + " " + await describeChange(c.data, t));
     }
+    if (!messages.length) return null;
 
     return {
         messages,
@@ -123,6 +70,35 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         browser: row.user_agent ?? "",
         time:    Number(row.time ?? 0),
     };
+}
+
+// Human-readable change label from a node_changed `data` payload ({ table, op, name?, cols? }).
+async function describeChange(dataStr: any, t: any): Promise<string> {
+    let d: any = {};
+    try { d = JSON.parse(String(dataStr ?? "{}")); } catch { /* keep {} */ }
+    const cols: string[] = Array.isArray(d.cols) ? d.cols : [];
+    switch (d.table) {
+        case "page":
+            if (d.op === "insert") return await t`Created`;
+            if (d.op === "delete") return await t`Deleted`;
+            if (cols.includes("visible")) return await t`Visibility changed`;
+            if (cols.includes("module")) return await t`Module changed`;
+            if (cols.includes("sort") || cols.includes("basis")) return await t`Position changed`;
+            return await t`Setting changed`;
+        case "page_text":
+        case "text":
+            return d.name ? `${await t`Text`} "${hee(String(d.name))}" ${await t`changed`}` : await t`Text changed`;
+        case "page_file":
+        case "file":
+            return d.op === "delete" ? await t`File deleted` : await t`File added`;
+        case "page_url":
+            return await t`URL changed`;
+        case "page_access_grp":
+        case "page_access_usr":
+            return await t`Access changed`;
+        default:
+            return await t`Changed`;
+    }
 }
 
 // ─── Protocol helpers ────────────────────────────────────────────────────────

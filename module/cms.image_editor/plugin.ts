@@ -84,7 +84,6 @@ export function init(app: App) {
     const Page = await writablePage(ctx, fileId);
     if (!Page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
-    await app.fire("node:fileUpload-before", { node: Page });
     const File = await app.dbFiles.file(fileId);
     upload.name = await File.get("name"); // dont change file-name
     await File.replaceFromUpload(upload);

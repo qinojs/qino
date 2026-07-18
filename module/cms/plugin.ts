@@ -1,5 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS, cmsInstances } from "./lib/CMS.ts";
+import { initNodeChanged } from "./lib/nodeChanged.ts";
 import { cms, cmsCtx } from "./mod.ts";
 import { READ } from "./lib/access.ts";
 import { render } from "./lib/render.ts";
@@ -77,6 +78,8 @@ export const ctxSettingsSchema = {
 export function init(app: App) {
 
     cmsInstances.set(app, new CMS(app));
+
+    initNodeChanged(app);
 
     app.on("render", async (e) => {
         await render(e.ctx);

@@ -25,7 +25,7 @@ import { initHistory } from "./lib/History.ts";
 import { ensureSpace, initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
 import { getCmsVers, nodeLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
-import { applyDraftSpace, initDraftmode, versPageChangedSchema } from "./draftmode.ts";
+import { applyDraftSpace, initDraftmode } from "./draftmode.ts";
 export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.versions";
@@ -47,8 +47,7 @@ const VERSED: Record<string, true | Record<string, 1>> = {
 // after the static merge), so they are created in one pass and visible to all modules.
 export function dbSchema(merged: { properties: Record<string, any> }) {
     const properties: Record<string, any> = {
-        vers_space: versSpaceSchema,                  // generic (Spaces.ts)
-        vers_cms_page_changed: versPageChangedSchema, // draftmode.ts
+        vers_space: versSpaceSchema, // generic (Spaces.ts)
     };
     for (const t of Object.keys(VERSED)) {
         const source = merged.properties[t];
@@ -175,7 +174,7 @@ export function init(app: App) {
 
 /**
  * cms.versions install()
- * Tables (vers_space, vers_cms_page_changed) are created via dbSchema/migrate.
+ * Tables (vers_space) are created via dbSchema/migrate.
  */
 export function install({app}: { app: App }): void { // tobi: ich glaube das braucht es nicht
     // Autovivify settings

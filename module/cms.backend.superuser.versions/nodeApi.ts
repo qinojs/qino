@@ -20,7 +20,6 @@ export default async function (node: Node, vars: any): Promise<any> {
       if (vt) await db.query`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
     }
     await db.query`DELETE FROM vers_space WHERE space = ${space}`;
-    await db.query`DELETE FROM vers_cms_page_changed WHERE space = ${space}`.catch(() => {});
     return { done: true };
   }
 
@@ -31,7 +30,6 @@ export default async function (node: Node, vars: any): Promise<any> {
       if (vt) await db.query`DELETE FROM ${sql.id(vt)}`;
     }
     await db.query`DELETE FROM vers_space`;
-    await db.query`DELETE FROM vers_cms_page_changed`.catch(() => {});
     return { done: true };
   }
 
