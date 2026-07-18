@@ -253,7 +253,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     for (const item of bt) {
       btHtml += `<tr>
   <td style="padding-right:1rem"><a href="${hee(editorLink(item.file ?? "", item.line, item.col))}" target="_blank">${hee(fileDisplay(item.file ?? ""))}</a>
-  <td style="padding-right:1rem">${hee(item.function ?? "")}
+  <td style="padding-right:1rem">${hee(item.function)}
   <td>${hee(item.args ? JSON.stringify(item.args) : "")}`;
     }
 
@@ -310,7 +310,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     btHtml += `
 <tr>
   <td>${fileCell}
-  <td>${hee(item.function ?? "")}
+  <td>${hee(item.function)}
   <td>${hee(item.args ? JSON.stringify(item.args) : "")}`;
   }
 
