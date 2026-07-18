@@ -138,7 +138,7 @@ function imageOptions(base: ImgOptions, id: string, opts: ImgOptions = {}): ImgO
 
 function optionsText(options: ImgOptions): string {
   const skip = new Set(["alt", "editable", "if", "quality", "wait", "data-test"]);
-  return Object.entries(options).filter(([k, v]) => !skip.has(k) && v !== null && v !== undefined && v !== false).map(([k, v]) =>
+  return Object.entries(options).filter(([k, v]) => !skip.has(k) && v != null && v !== false).map(([k, v]) =>
     k === "css" && v && typeof v === "object" ? "css:" + Object.entries(v).map(([ck, cv]) => `${ck}=${cv}`).join(",") : `${k}=${v}`
   ).join(", ");
 }
