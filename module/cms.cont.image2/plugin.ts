@@ -41,10 +41,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // Style
   let style = "";
   let minHeight = String(await settings["min-height"] ?? "");
-  if (minHeight && /^\d+$/.test(minHeight)) minHeight += "px";
+  if (/^\d+$/.test(minHeight)) minHeight += "px";
   if (minHeight) style += `min-height:${minHeight};`;
   let maxHeight = String(await settings["max-height"] ?? "");
-  if (maxHeight && /^\d+$/.test(maxHeight)) maxHeight += "px";
+  if (/^\d+$/.test(maxHeight)) maxHeight += "px";
   if (maxHeight) style += `max-height:${maxHeight};`;
 
   const options = {
