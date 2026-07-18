@@ -137,13 +137,13 @@ function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key:
 async function eventFilter(app: App, get: Record<string, string>) {
   return `<form class="u2-flex">
     <input type="hidden" name="tab" value="live">
-    <input name="q" value="${hee(get.q ?? "")}" placeholder="${await app.t`IP, path, reason`}">
+    <input name="q" value="${hee(get.q)}" placeholder="${await app.t`IP, path, reason`}">
     <select name="prio"><option value="">${await app.t`Severity`}${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
     <select name="kind"><option value="">${await app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, kindLabels)}</select>
     <select name="scope"><option value="">${await app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, scopeLabels)}</select>
     <select name="blocked"><option value="">${await app.t`Action`}${opts(["blocked","delayed"], get.blocked, actionLabels)}</select>
     <select name="state"><option value="">${await app.t`Status`}${opts(["new","seen","ignore"], get.state, stateLabels)}</select>
-    <input name="min" value="${hee(get.min ?? "")}" placeholder="${await app.t`min severity`}">
+    <input name="min" value="${hee(get.min)}" placeholder="${await app.t`min severity`}">
     <button>${await app.t`filter`}</button>
   </form>`;
 }
