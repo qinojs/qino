@@ -55,6 +55,17 @@ Deno.test("node_changed: page update captures one row for the page itself", asyn
   assertEquals(inserts[0], { log: 42, node: 5, page: 5, data: { table: "page", op: "update", cols: ["visible"] } });
 });
 
+Deno.test("node_changed: page delete keeps node_id but anchors page_id at a surviving ancestor", async () => {
+  const { app, handlers, inserts } = fakeApp({ tree: { 8: { type: "p", basis: 3 }, 3: { type: "p", basis: 1 } } });
+  initNodeChanged(app);
+  await withCtx(async () => {
+    await handlers["table:delete-before"](fakeEvent("page", 8, {}));
+  });
+  assertEquals(inserts.length, 1);
+  // node = the deleted page itself; page = its parent (via basis), not 8 which is vanishing
+  assertEquals(inserts[0], { log: 42, node: 8, page: 3, data: { table: "page", op: "delete" } });
+});
+
 Deno.test("node_changed: page_text insert links to its page", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } } });
   initNodeChanged(app);
