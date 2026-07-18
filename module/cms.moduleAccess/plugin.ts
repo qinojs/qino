@@ -49,6 +49,6 @@ export function init(app: App): void {
       SELECT max(access) FROM cms_module_access_grp
       WHERE module = ${module}
         AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`;
-    if (cap !== undefined && cap !== null) e.access = Math.min(e.access, Number(cap) || 0);
+    if (cap != null) e.access = Math.min(e.access, Number(cap) || 0);
   });
 }
