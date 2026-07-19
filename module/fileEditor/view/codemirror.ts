@@ -66,7 +66,11 @@ export default async function codemirrorView(file: string): Promise<string> {
     ${isWritable ? "save" : "no write permission!"}
   </button>
   <div style="height:100%;width:100%">
-    <textarea id=editor name="textareaContentCanBeCachedOnReload${Date.now()}" mime="${hee(mime)}" line="${hee(String(line))}" col="${hee(String(col))}" style="width:100%;height:100%">${hee(content)}</textarea>
+    <textarea id=editor name="textareaContentCanBeCachedOnReload${Date.now()}" mime="${hee(mime)}" line="${hee(
+  line
+)}" col="${hee(
+  col
+)}" style="width:100%;height:100%">${hee(content)}</textarea>
   </div>`;
 }
 
