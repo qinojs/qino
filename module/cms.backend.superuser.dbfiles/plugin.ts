@@ -37,7 +37,8 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
 
 async function textView(f: DbFile): Promise<HtmlString | string> {
   if (!TXT.has(f.extension)) return "";
-  return html`<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${String(await f.contents())}</textarea></u2-code></div></div>`;
+  return html`<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${await
+    f.contents()}</textarea></u2-code></div></div>`;
 }
 
 const fileChildren = (node: Node) => node.app.db.table("file").children.filter(
