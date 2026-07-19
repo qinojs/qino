@@ -30,7 +30,11 @@ async function render(node: Node): Promise<HtmlString> {
       db.one`SELECT COUNT(DISTINCT _vers_log) FROM ${sql.id(vt)} WHERE _vers_log > 0`,
       db.one`SELECT COUNT(DISTINCT _vers_space) FROM ${sql.id(vt)}`,
     ]);
-    rows.push(html`<tr><td>${tbl}<td style="text-align:right">${String(entries)}<td style="text-align:right">${String(rowsCount)}<td style="text-align:right">${String(spaces)}<td style="text-align:right"><u2-bytes>${sizeOf.get(vt) ?? 0}</u2-bytes>`);
+    rows.push(html`<tr><td>${tbl}<td style="text-align:right">${entries}<td style="text-align:right">${
+      rowsCount
+    }<td style="text-align:right">${spaces}<td style="text-align:right"><u2-bytes>${
+      sizeOf.get(vt) ?? 0
+    }</u2-bytes>`);
   }
 
   const storageBox = html.async`
@@ -47,7 +51,9 @@ async function render(node: Node): Promise<HtmlString> {
   // ── spaces (vers_space holds non-live spaces; 0 = live, deletable) ──────────
   const spaceRows = html.join(await Promise.all(
     (await db.query`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
-      .map((s) => html.async`<tr><td>${String(s.space)}<td>${String(s.time_created ?? "")}<td><button class=-del-space data-space="${String(s.space)}" u2-confirm="${t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
+      .map((s) => html.async`<tr><td>${s.space}<td>${s.time_created}<td><button class=-del-space data-space="${
+        s.space
+      }" u2-confirm="${t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
   ));
   const spacesBox = html.async`
 <div class=u2-card style="flex-grow:0">
@@ -66,7 +72,7 @@ async function render(node: Node): Promise<HtmlString> {
 <div class=u2-card style="flex-grow:0">
   <div class=-head>${t`Maintenance`}</div>
   <div class=-body>
-    <p>${t`Thinnable entries`}: <strong>${String(thinnable)}</strong></p>
+    <p>${t`Thinnable entries`}: <strong>${thinnable}</strong></p>
     <p><small>${t`Old bursts are collapsed (fine while fresh, coarser with age).`}</small></p>
     <button class=-thin ${thinnable ? "" : "disabled"}>${t`Thin out`}</button>
     <hr>
