@@ -45,13 +45,15 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
     let codeLogTd: HtmlString | string = "";
     if (isSuperuser) {
       const logs = await db.query`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
-      codeLogTd = html`<td>${html.join(logs.map(r => html`<a href="${r.file}:${String(r.line)}">${r.file}:${String(r.line)}</a>`), "<br>")}`;
+      codeLogTd = html`<td>${html.join(
+        logs.map(r => html`<a href="${r.file}:${r.line}">${r.file}:${r.line}</a>`), "<br>"
+      )}`;
     }
-    rowsHtml.push(html`<tr data-hash="${String(row.hash)}" data-ns="${String(row.namespace)}">
+    rowsHtml.push(html`<tr data-hash="${row.hash}" data-ns="${row.namespace}">
       <td class=-namespace>${row.namespace}
       <td><div class=-original>${row.original}</div>
       ${langTds}
-      <td>${String(row.count)}
+      <td>${row.count}
       ${codeLogTd}
       <td><button class=u2-unstyle data-action="translate_entry"><u2-ico icon=translate>↻</u2-ico></button>
       <td><button class=u2-unstyle data-action="delete_entry"><u2-ico icon=delete>✕</u2-ico></button>
