@@ -311,11 +311,10 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     const u = ctx.req.url.toURL();
     for (const item of logs) {
       u.searchParams.set("id", String(item.id));
-      historyRows += `
-<tr u2-href${item.id === id ? " aria-current=true" : ""}>
-    <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2time(item.time)}</a><br><small>${item.id}</small>
-    <td><a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br><small>${hee(item.referer)}</small>
-    <td>${item.post ? `<pre style="max-width:30rem; max-height:8rem; overflow:auto">${hee(item.post)}</pre>` : "-"}`;
+      historyRows += `<tr u2-href${item.id === id ? " aria-current=true" : ""}>
+        <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2time(item.time)}</a><br><small>${item.id}</small>
+        <td><a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br><small>${hee(item.referer)}</small>
+        <td>${item.post ? `<pre style="max-width:30rem; max-height:8rem; overflow:auto">${hee(item.post)}</pre>` : "-"}`;
     }
   }
   const hu = ctx.req.url.toURL(); hu.searchParams.set("id", String(id));
@@ -330,20 +329,26 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>Log ${id}</div>
         <table class=u2-table>
-            <tr><th>${await t`Request`}<td><a href="${hee(log.url)}" target=_blank>${hee(log.url)}</a><br>
-                <small>Referer <a href="${hee(log.referer)}" target=_blank>${hee(log.referer)}</a></small>
-            <tr><th>${await t`Browser`}<td>${hee(info.browser)} ${hee(info.version)} ${
-  info.bot ? '<small class=u2-badge>bot</small>' : ""
-}<br><small>${hee(log.user_agent)}</small>
+            <tr>
+              <th>${await t`Request`}
+              <td><a href="${hee(log.url)}" target=_blank>${hee(log.url)}</a><br>
+                  <small>Referer <a href="${hee(log.referer)}" target=_blank>${hee(log.referer)}</a></small>
+            <tr>
+              <th>${await t`Browser`}
+              <td>${hee(info.browser)} ${hee(info.version)} ${info.bot ? '<small class=u2-badge>bot</small>' : ""}
+                  <br><small>${hee(log.user_agent)}</small>
             <tr><th>${await t`Time`}<td>${u2time(log.time)}
-            <tr><th style="color:${uniqueColor(log.ip)}">${await t`IP`}<td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}
-            <tr><th>${await t`Client`}<td><a href="${searchLink(log.client_id)}" style="color:${
-  uniqueColor(log.client_id)
-}">${hee(log.client_id)}</a>
+            <tr>
+              <th style="color:${uniqueColor(log.ip)}">${await t`IP`}
+              <td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}
+            <tr>
+              <th>${await t`Client`}
+              <td><a href="${searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${hee(log.client_id)}</a>
             <tr><th>${await t`Session`}<td><a href="${searchLink(log.sess_id)}">${hee(log.sess_id)}</a>
-            <tr><th>${await t`User`}<td>${usr ? `${hee(
-  (usr.firstname ?? "") + " " + (usr.lastname ?? "")
-)} <small>#${usr.id}</small><br><small>${hee(usr.email)}</small>` : "guest"}
+            <tr>
+              <th>${await t`User`}
+              <td>${usr ? `${hee((usr.firstname ?? "") + " " + (usr.lastname ?? ""))} <small>#${usr.id}</small>
+                  <br><small>${hee(usr.email)}</small>` : "guest"}
             <tr><th>POST<td><div style="max-width:40rem; max-height:30rem; overflow:auto">${dumpData(log.post)}</div>
         </table>
     </div>
