@@ -124,8 +124,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
         <small class=-url${foreignRef ? ' style="color:var(--red)"' : ""}>${hee(row.referer)}</small>
     <td style="text-align:center; white-space:nowrap">
         ${own
-          ? `<small class=u2-badge>${hee(String(row.client_id ?? ""))}</small>`
-          : `<span style="color:${uniqueColor(row.client_id)}">${hee(String(row.client_id ?? ""))}</span>`}<br>
+          ? `<small class=u2-badge>${hee(row.client_id)}</small>`
+          : `<span style="color:${uniqueColor(row.client_id)}">${hee(row.client_id)}</span>`}<br>
         <small style="color:${uniqueColor(info.browser)}">${hee(info.browser)} ${hee(info.version)}</small>
         ${info.bot ? '<br><small class=u2-badge>bot</small>' : ""}
     <td>${row.usr_id ? `<span style="color:${uniqueColor(row.usr_id)}">${hee((row.firstname ?? "") + " " + (row.lastname ?? ""))}</span><br><small>${hee(row.email ?? "")}</small>` : "<small>guest</small>"}
