@@ -37,7 +37,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 /** One editable card per provider (blank `p` = the "add" form). */
 function providerForm(csrf: string, selfBase: string, p: any = {}): string {
-  const v = (k: string) => hee(String(p[k] ?? ""));
+  const v = (k: string) => hee(p[k]);
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
   const text = (k: string, ph = "") => `<input name=${k} value="${v(k)}" placeholder="${hee(ph)}">`;
