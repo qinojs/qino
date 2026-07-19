@@ -20,7 +20,7 @@ export default async function (node: Node): Promise<HtmlString> {
       <option value=all>${t`all`}
     </select>` : "";
 
-  return html.async`<div cmsconf=contMedia_overview class=file-manager pid=${String(node)}>
+  return html.async`<div cmsconf=contMedia_overview class=file-manager pid=${node}>
   <button class=-uploadBtn>${t`upload`}</button>
   <input class=-addExistingFile type=qgcms-file placeholder="${t`existing file`}">
   ${sortSelect}
