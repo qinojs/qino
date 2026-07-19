@@ -229,7 +229,7 @@ async function renderTracking(node: Node, id: number): Promise<HtmlString | stri
   if (!rows.length) return "";
   const trs = html.join(rows.map(r => html`<tr>
     <td><a href="${r.url}" target=_blank>${r.url || "(open)"}</a>
-    <td>${String(r.num ?? "")}
+    <td>${r.num}
     <td>${html.raw(u2time(r.last_time))}
   `));
   return html.async`<div class=u2-card style="flex:1 1 500px">
