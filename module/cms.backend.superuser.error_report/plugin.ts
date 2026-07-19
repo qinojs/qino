@@ -261,7 +261,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     tableRows += `
 <tr style="white-space:nowrap">
   <td>
-    <a href="${hee(u.search)}">${u2time(row.time)} <br> ${hee(String(row.log_id ?? ""))}</a>
+    <a href="${hee(u.search)}">${u2time(row.time)} <br> ${hee(row.log_id)}</a>
     <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
   <td>
     <b>${hee(row.message)}</b><br>
@@ -341,7 +341,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       }
       historyRows += `
 <tr>
-  <td>${u2time(item.time)} <br> Session: ${hee(String(item.sess_id ?? ""))} <br> Log-ID: ${hee(String(item.id))}
+  <td>${u2time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(String(item.id))}
   <td>
     <a href="${hee(item.url)}" target="_blank">${hee(item.url)}</a><br>
     <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
