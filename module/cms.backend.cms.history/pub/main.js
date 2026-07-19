@@ -54,5 +54,5 @@ cms.initNode("backend.cms.history", (el) => {
   };
 
   updateStatus();
-  setInterval(refresh, 15000);
+  setInterval(refresh, 5000);
 });

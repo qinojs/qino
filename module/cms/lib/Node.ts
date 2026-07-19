@@ -500,6 +500,10 @@ export class Node {
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
         data = { page_id: this.id, lang, ...data };
         const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
+        // No-op guard: SEO regeneration walks the whole subtree × all languages and
+        // usually re-writes the identical url. Skip unchanged writes so they neither
+        // hit the db nor show up as bogus "URL changed" history entries.
+        if (row && Object.keys(data).every((k) => row[k] === data[k])) return;
         await this.db.table("page_url")[row ? "update" : "insert"](data);
         this.#urls = null; // neu
     }

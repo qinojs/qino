@@ -1,5 +1,6 @@
-import { html, hee, sql, type App, type Ctx, type HtmlString, type Sql } from "../core/mod.ts";
-import { describeChange, WRITE, type Node } from "../cms/mod.ts";
+// deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
+import { html, sql, type App, type Ctx, type HtmlString, type Sql } from "../core/mod.ts";
+import { cms as cmsOf, describeChange, WRITE, type Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.cms.history";
@@ -46,7 +47,7 @@ function uaInfo(ua: string): { label: string; bot: boolean } {
 }
 
 // Candidate node_changed rows (newest first). Search/date/own-client narrow the
-// window in SQL; type and — crucially — per-page edit rights are applied in JS,
+// window in SQL; type and — crucially — per-node edit rights are applied in JS,
 // because access is inheritance/group/event derived and not expressible in SQL.
 async function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
   const db = app.db;
@@ -78,22 +79,8 @@ async function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promis
      ORDER BY nc.id DESC LIMIT 1200`.catch(() => []);
 }
 
-// One display event = all mutations of a single request on a single page.
-interface Event { key: string; ncMax: number; row: Record<string, any>; datas: unknown[]; nodes: Set<number>; lang?: string }
-
-function parseData(raw: unknown): { table: string; lang?: string } {
-  try {
-    const d = JSON.parse(String(raw ?? "{}"));
-    return { table: String(d.table ?? ""), lang: d.lang ? String(d.lang) : undefined };
-  } catch { return { table: "" }; }
-}
-
-// Deep link into the frontend page in edit mode, scrolled to the changed content
-// (content elements carry id="cmspid<id>"). The caller already holds edit rights.
-function editLink(ctx: Ctx, pageId: number, anchorNode: number | undefined, lang: string): string {
-  const anchor = anchorNode ? "#cmspid" + anchorNode : "";
-  return `${ctx.req.basePath}?cmspid=${pageId}&lang=${encodeURIComponent(lang)}&cms_editmode=1${anchor}`;
-}
+// One display event = all mutations of a single request on a single node.
+interface Event { key: string; ncMax: number; row: Record<string, any>; datas: unknown[] }
 
 // ── list (filterable / incrementally reloadable part) ───────────────────────
 async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
@@ -102,37 +89,36 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const rows = await candidates(app, f, ctx);
 
   const typeTables = TYPE_TABLES[f.type ?? ""];
-  const access: Record<number, number> = {}; // per page: computed once, reused
   const events = new Map<string, Event>();
   const order: string[] = [];
   const MAX = 150;
 
   for (const r of rows) {
-    const pageId = Number(r.page_id);
-    access[pageId] ??= await (await node.cms.node(pageId)).access();
-    if (access[pageId] < WRITE) continue; // only pages the caller may edit (superuser: all)
-    const d = parseData(r.data);
-    if (typeTables && !typeTables.includes(d.table)) continue;
-    const key = r.log_id + ":" + pageId;
+    const nodeId = Number(r.node_id);
+    if (await (await node.cms.node(nodeId)).access() < WRITE) continue; // edit right on the changed node (superuser: all)
+    if (typeTables) {
+      let table = "";
+      try { table = JSON.parse(String(r.data ?? "{}")).table; } catch { /* ignore */ }
+      if (!typeTables.includes(table)) continue;
+    }
+    const key = r.log_id + ":" + nodeId; // one event per request × changed node
     let ev = events.get(key);
     if (!ev) {
       if (order.length >= MAX) continue;
-      ev = { key, ncMax: Number(r.id), row: r, datas: [], nodes: new Set() };
+      ev = { key, ncMax: Number(r.id), row: r, datas: [] };
       events.set(key, ev);
       order.push(key);
     }
     ev.ncMax = Math.max(ev.ncMax, Number(r.id));
     ev.datas.push(r.data);
-    if (Number(r.node_id) !== pageId) ev.nodes.add(Number(r.node_id)); // changed content within the page
-    ev.lang ??= d.lang;
   }
 
   if (!order.length) return html.async`<tr class=-empty><td colspan=5>${app.t`No changes found.`}`;
   const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
-  return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!, titles, ctx))));
+  return html.join(await Promise.all(order.map((k) => renderRow(node, events.get(k)!, titles))));
 }
 
-async function renderRow(node: Node, ev: Event, titles: Map<number, string>, ctx: Ctx): Promise<HtmlString> {
+async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Promise<HtmlString> {
   const t = node.app.t;
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
@@ -148,16 +134,11 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>, ctx
     labels.push(html`<div class=-change>${html.raw(label)}</div>`);
   }
 
-  // deep-link the page crumb into edit mode, anchored at the changed content
-  // when the event touched exactly one node inside the page.
-  const anchor = ev.nodes.size === 1 ? [...ev.nodes][0] : undefined;
-  const href = editLink(ctx, Number(r.page_id), anchor, ev.lang || ctx.lang);
-
   return html.async`
 <tr class=-row data-key="${ev.key}" data-nc="${ev.ncMax}">
   <td class=-when><u2-time datetime="${iso}" type=relative title="${stamp}">${stamp}</u2-time>
   <td class=-who>${await actorCell(r, t)}
-  <td class=-where>${await breadcrumb(node, Number(r.page_id), titles, href, await t`Open in edit mode`)}
+  <td class=-where>${await breadcrumb(node, Number(r.node_id), titles)}
   <td class=-what>${html.join(labels)}
   <td class=-client>${r.ip ?? "-"}<br><small>${ua.label}${ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : html.raw("")}</small>`;
 }
@@ -168,21 +149,25 @@ async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
   return html.async`<b>${name || r.email}</b>${name && r.email ? html`<br><small>${r.email}</small>` : ""}`;
 }
 
-// Linked breadcrumb from the tree root down to the changed page. Titles are
-// cached across rows so shared ancestors are looked up once per request.
-async function breadcrumb(host: Node, pageId: number, titles: Map<number, string>): Promise<HtmlString> {
-  const P = await host.cms.node(pageId);
-  const nodes = [...(await P.path()).values()].filter((n) => n.id !== 1); // drop system root
+// Linked breadcrumb from the tree root down to the changed node (a page or a
+// content within it). Titles are cached across rows so shared ancestors are
+// looked up once per request; content nodes usually have no title, so fall back
+// to their (shortened) module name, then the id.
+async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string>): Promise<HtmlString> {
+  const N = await host.cms.node(nodeId);
+  const nodes = [...(await N.path()).values()].filter((n) => n.id !== 1); // drop system root
+  // the containing page is the deepest type='p' node; contents hang below it → show it in bold
+  let pageIdx = -1;
+  for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
   const crumbs: HtmlString[] = [];
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
-    const title = (await nodeTitle(n, titles)) || `#${n.id}`;
+    const title = (await nodeTitle(n, titles)) || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
     let url = "";
     try { url = await n.url(); } catch { /* no url (e.g. detached) */ }
-    const last = i === nodes.length - 1;
-    crumbs.push(html`<a href="${url}" target=_blank${last ? html.raw(" class=-page") : html.raw("")}>${title}</a>`);
+    crumbs.push(html`<a href="${url}" target=_blank>${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
   }
-  if (!crumbs.length) crumbs.push(html`<span class=-page>#${pageId}</span>`);
+  if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
   return html.join(crumbs, ' <span class="-sep">›</span> ');
 }
 
@@ -200,7 +185,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const initial = await list(node, { ctx, vars: { filter: (vars.filter ?? {}) as Record<string, string> } });
   return html.async`
 <div class="-m-history u2-flex">
-  <div class="-toolbar u2-card">
+  <div class=u2-card>
     <div class=-body>
       <form class=-filter>
         <label>${t`Search`}<br><input name=search placeholder="${t`User or IP`}"></label>
@@ -227,10 +212,53 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
         <th>${t`Where`}
         <th>${t`What`}
         <th>${t`Client`}
-      <tbody class=-list cms-part=history>${initial}</tbody>
+      <tbody cms-part=history>${initial}</tbody>
     </table>
   </div>
 </div>`;
+}
+
+// Dashboard widget: most recently active editors — one row per user with their
+// latest change (time + page). Access-filtered like the list, so a viewer only
+// sees activity on pages they may edit (superuser: all).
+export async function backendDashboardWidget(app: App): Promise<string> {
+  const t = app.t;
+  const rows = await app.db.query`
+    SELECT nc.id, nc.node_id, nc.page_id, l.time, u.id AS usr_id, u.email, u.firstname, u.lastname
+      FROM node_changed nc
+      JOIN log l ON l.id = nc.log_id
+      LEFT JOIN sess s ON l.sess_id = s.id
+      LEFT JOIN usr u  ON s.usr_id  = u.id
+     ORDER BY nc.id DESC LIMIT 600`.catch(() => []);
+
+  const latest = new Map<string, { time: number; name: string; pageId: number }>();
+  for (const r of rows) {
+    if (await (await cmsOf(app).node(Number(r.node_id))).access() < WRITE) continue;
+    const uid = r.usr_id ? "u" + r.usr_id : "guest";
+    if (latest.has(uid)) continue; // rows are newest-first → first hit is this user's latest
+    const name = r.usr_id ? (`${r.firstname ?? ""} ${r.lastname ?? ""}`.trim() || r.email || "#" + r.usr_id) : await t`guest`;
+    latest.set(uid, { time: Number(r.time), name, pageId: Number(r.page_id) });
+    if (latest.size >= 12) break;
+  }
+  if (!latest.size) return "";
+
+  const titles = new Map<number, string>();
+  const items = [...latest.values()].sort((a, b) => b.time - a.time);
+  const trs: HtmlString[] = [];
+  for (const it of items) {
+    const P = await cmsOf(app).node(it.pageId);
+    const title = (await nodeTitle(P, titles)) || "#" + it.pageId;
+    let url = "";
+    try { url = await P.url(); } catch { /* no url */ }
+    const iso = new Date(it.time * 1000).toISOString();
+    trs.push(html`<tr>
+      <td>${it.name}
+      <td style="white-space:nowrap"><u2-time datetime="${iso}" type=relative></u2-time>
+      <td><a href="${url}" target=_blank>${title}</a>`);
+  }
+  return String(await html.async`<div class=-body style="padding:0">
+    <table class=u2-table style="vertical-align:top">${html.join(trs)}</table>
+  </div>`);
 }
 
 export const cms = {
