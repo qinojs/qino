@@ -51,7 +51,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
   const grps = await db.query`SELECT id, name FROM grp ORDER BY name`;
   const grpOpts: Array<HtmlString | Promise<HtmlString>> = [html.async`<option value="">${t`All groups`}</option>`];
   for (const g of grps) {
-    grpOpts.push(html`<option value=${String(g.id)}${Number(g.id) === grpId ? " selected" : ""}>${g.name}</option>`);
+    grpOpts.push(html`<option value=${g.id}${Number(g.id) === grpId ? " selected" : ""}>${g.name}</option>`);
   }
 
   return html.async`<div class=u2-flex>
@@ -172,9 +172,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <td>
           <input type=checkbox value=${g.id} ${g.has ? "checked" : ""}>`));
 
-  return html.async`<div class=u2-flex itemid="${String(id)}">
+  return html.async`<div class=u2-flex itemid="${id}">
   <div class=u2-card style="flex:0 1 340px">
-    <div class=-head>${t`User`} ${String(vs.id)}</div>
+    <div class=-head>${t`User`} ${vs.id}</div>
     <div style="overflow:auto; padding:0">
       <table class="u2-table -detail">
         <tr>

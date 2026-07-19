@@ -40,14 +40,14 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
       : "";
 
     parts.push(html`
-<tr itemid=${String(vs.id)} data-c1-href="${detailUrl}">
-  <td> ${String(vs.id)}
+<tr itemid=${vs.id} data-c1-href="${detailUrl}">
+  <td> ${vs.id}
   <td>
     <a href="${detailUrl}">${(vs.firstname ?? "") + " " + (vs.lastname ?? "")}</a>
   <td> ${emailCell}
   <td> ${vs.company}
   <td> ${vs.active ? "yes" : "no"}
-  <td> ${String(vs.num_sess ?? 0)}
+  <td> ${vs.num_sess ?? 0}
   <td> <u2-time datetime="${lastOnlineIso}" type=relative>${lastOnlineIso.slice(0, 16).replace("T", " ")}</u2-time>
     ${loginAsTd}
   <td>
