@@ -47,12 +47,14 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 
   const trs: HtmlString[] = [];
   for (const vs of rows) {
-    trs.push(html`<tr itemid=${String(vs.id)}>
-      <td>${String(vs.id)}
-      <td><a href="?id=${String(vs.id)}">${vs.name}</a>
+    trs.push(html`<tr itemid=${vs.id}>
+      <td>${vs.id}
+      <td><a href="?id=${vs.id}">${vs.name}</a>
       <td>${vs.type}
       <td><select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
-      <td style="text-align:right">${usersUrl ? html`<a href="${usersUrl}?grp_id=${String(vs.id)}">${Number(vs.members)}</a>` : Number(vs.members)}
+      <td style="text-align:right">${
+        usersUrl ? html`<a href="${usersUrl}?grp_id=${vs.id}">${Number(vs.members)}</a>` : Number(vs.members)
+      }
       <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
@@ -115,14 +117,14 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   for (const m of members) {
     const label = [m.firstname, m.lastname].filter(Boolean).join(" ") || m.email || m.id;
     memberRows.push(html`<tr>
-      <td>${usersUrl ? html`<a href="${usersUrl}?id=${String(m.id)}">${String(label)}</a>` : String(label)}
+      <td>${usersUrl ? html`<a href="${usersUrl}?id=${m.id}">${label}</a>` : label}
       <td>${m.email}
-      <td><button class="u2-unstyle -remove" data-usr=${String(m.id)} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
+      <td><button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
-  return html.async`<div class=u2-flex itemid="${String(id)}">
+  return html.async`<div class=u2-flex itemid="${id}">
   <div class=u2-card style="flex:0 1 340px">
-    <div class=-head>${t`Group`} ${String(vs.id)}</div>
+    <div class=-head>${t`Group`} ${vs.id}</div>
     <div style="overflow:auto; padding:0">
       <table class="u2-table -detail">
         <tr>
