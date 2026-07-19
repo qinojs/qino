@@ -228,7 +228,7 @@ async function renderTracking(node: Node, id: number): Promise<HtmlString | stri
     ORDER BY last_time DESC`.catch(() => []);
   if (!rows.length) return "";
   const trs = html.join(rows.map(r => html`<tr>
-    <td><a href="${r.url ?? ""}" target=_blank>${r.url || "(open)"}</a>
+    <td><a href="${r.url}" target=_blank>${r.url || "(open)"}</a>
     <td>${String(r.num ?? "")}
     <td>${html.raw(u2time(r.last_time))}
   `));
