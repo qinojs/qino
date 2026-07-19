@@ -88,7 +88,7 @@ export async function describeChange(dataStr: unknown, t: TFn): Promise<string> 
     let d: any = {};
     try { d = JSON.parse(String(dataStr ?? "{}")); } catch { /* keep {} */ }
     const cols: string[] = Array.isArray(d.cols) ? d.cols : [];
-    const lang = d.lang ? ` (${hee(String(d.lang))})` : "";
+    const lang = d.lang ? ` (${hee(d.lang)})` : "";
     switch (d.table) {
         case "page":
             if (d.op === "insert") return await t`Created`;
@@ -99,7 +99,7 @@ export async function describeChange(dataStr: unknown, t: TFn): Promise<string> 
             return await t`Setting changed`;
         case "page_text":
         case "text":
-            return (d.name ? `${await t`Text`} "${hee(String(d.name))}"` : await t`Text`) + lang + " " + await t`changed`;
+            return (d.name ? `${await t`Text`} "${hee(d.name)}"` : await t`Text`) + lang + " " + await t`changed`;
         case "page_file":
         case "file":
             return d.op === "delete" ? await t`File deleted` : await t`File added`;
