@@ -11,7 +11,7 @@ export default function (node: Node): Promise<HtmlString> {
   const startVal = toDatetimeLocal(node.vs.online_start);
   const endVal   = toDatetimeLocal(node.vs.online_end);
 
-  return html.async`<div class=access-time-manager pid=${String(node)}>
+  return html.async`<div class=access-time-manager pid=${node}>
   <div>
     <div style="flex:0 1 100px">${app.t`visible`} ${app.t`from`}:</div>
     <div class=-accessTimeBtns>

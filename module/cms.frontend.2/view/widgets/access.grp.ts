@@ -17,7 +17,7 @@ export default async function (node: Node): Promise<HtmlString> {
     inner = `${searchInput}<div widget="access.grp.list">${listHtml}</div>`;
   }
 
-  return html.async`<div class=access-groups-manager pid=${String(node)}>
+  return html.async`<div class=access-groups-manager pid=${node}>
   <label style="display:block;margin-bottom:10px">
     <input class=-inherit type=checkbox value="${isNull ? 0 : 1}" ${isNull ? "checked" : ""}>
     ${t`Group permissions inherited`}
