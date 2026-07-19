@@ -163,7 +163,7 @@ async function syncProviderModels(app: App, provider: Row): Promise<Message> {
 
 // Provider box: settings + counts only — the models live in their own box.
 function providerBox(provider: Row, modelCount: number, key: string, open: boolean): string {
-  const pid = hee(String(provider.id));
+  const pid = hee(provider.id);
   return `
 <details${open ? " open" : ""}>
   <summary class="ai-provider-summary">
@@ -195,7 +195,7 @@ function providerBox(provider: Row, modelCount: number, key: string, open: boole
 }
 
 function modelRow(model: Row): string {
-  const pid = hee(String(model.provider_id)), mid = hee(String(model.id));
+  const pid = hee(model.provider_id), mid = hee(model.id);
   const usage = `${Number(model.used_input_tokens).toLocaleString("en-US")} / ${Number(model.used_output_tokens).toLocaleString("en-US")}`;
   const defaultCell = model.is_default
     ? `<u2-ico icon=radio_button_checked title="default" style="color:var(--cms-color,#16794d)">●</u2-ico>`
@@ -233,7 +233,7 @@ async function models(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     // Without an active filter every group offers an add-model row (also for empty providers).
     const addRow = filtering ? "" : `
       <tr><td colspan=5>
-        <form class="ai-add-model u2-flex" data-provider="${hee(String(provider.id))}">
+        <form class="ai-add-model u2-flex" data-provider="${hee(provider.id)}">
           <input required name=model_id placeholder="model id">
           <select name=kind>${kindOptions()}</select>
           <button>add model</button>
@@ -321,7 +321,9 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
       <div class="u2-flex ai-model-filters">
         <select id=ai-filter-provider>
           <option value=""${fprovider ? "" : " selected"}>all providers
-          ${providers.map((p) => `<option value="${hee(String(p.id))}"${String(p.id) === fprovider ? " selected" : ""}>${hee(p.name)}`).join("")}
+          ${providers.map((p) => `<option value="${hee(p.id)}"${
+    String(p.id) === fprovider ? " selected" : ""
+  }>${hee(p.name)}`).join("")}
         </select>
         <select id=ai-filter-kind>${filterKindOptions(fkind)}</select>
         <input id=ai-filter-search type=search placeholder="search models" value="${hee(fsearch)}">
