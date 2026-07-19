@@ -91,12 +91,12 @@ export async function describeChange(dataStr: unknown, t: TFn): Promise<string> 
     const lang = d.lang ? ` (${hee(d.lang)})` : "";
     switch (d.table) {
         case "page":
-            if (d.op === "insert") return await t`Created`;
-            if (d.op === "delete") return await t`Deleted`;
-            if (cols.includes("visible")) return await t`Visibility changed`;
-            if (cols.includes("module")) return await t`Module changed`;
-            if (cols.includes("sort") || cols.includes("basis")) return await t`Position changed`;
-            return await t`Setting changed`;
+            if (d.op === "insert") return t`Created`;
+            if (d.op === "delete") return t`Deleted`;
+            if (cols.includes("visible")) return t`Visibility changed`;
+            if (cols.includes("module")) return t`Module changed`;
+            if (cols.includes("sort") || cols.includes("basis")) return t`Position changed`;
+            return t`Setting changed`;
         case "page_text":
         case "text":
             return (d.name ? `${await t`Text`} "${hee(d.name)}"` : await t`Text`) + lang + " " + await t`changed`;
@@ -104,11 +104,11 @@ export async function describeChange(dataStr: unknown, t: TFn): Promise<string> 
         case "file":
             return d.op === "delete" ? await t`File deleted` : await t`File added`;
         case "page_url":
-            return await t`URL changed`;
+            return t`URL changed`;
         case "page_access_grp":
         case "page_access_usr":
-            return await t`Access changed`;
+            return t`Access changed`;
         default:
-            return await t`Changed`;
+            return t`Changed`;
     }
 }
