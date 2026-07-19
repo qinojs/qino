@@ -95,8 +95,8 @@ export async function nodeRestore(node: any): Promise<{ url: string }> {
     const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
     if (!await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
     if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
-    const fromId   = Number(await node.settings["__deleted_from"]   ?? 0);
-    const beforeId = Number(await node.settings["__deleted_before"] ?? 0);
+    const fromId   = Number(await node.settings["__deleted_from"]);
+    const beforeId = Number(await node.settings["__deleted_before"]);
     const toNode   = fromId ? await cms(ctx.app).node(fromId) : null;
     if (!toNode || await toNode.access() < 2) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
     const before = beforeId ? await cms(ctx.app).node(beforeId) : null;
