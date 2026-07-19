@@ -108,7 +108,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   <td>${accessCell}
   <td>${visibleCell}
   <td>${searchableCell}
-  <td><span>${hee(String(SubPage.vs.module ?? ""))}</span>`;
+  <td><span>${hee(SubPage.vs.module)}</span>`;
 
       if (open) await renderChildren(SubPage, level + 1);
     }
