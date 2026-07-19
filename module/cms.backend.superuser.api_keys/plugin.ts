@@ -31,9 +31,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const delBtn   = `<form method=post style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><input type=hidden name=delete_key value="${hee(String(r.id))}"><button class=u2-unstyle u2-confirm="${hee(`Really delete ${String(r.name ?? r.id)}?`)}"><u2-ico icon=delete>✕</u2-ico></button></form>`;
     return `<tr>
       <td>${hee(String(r.id))}
-      <td>${hee(userName)}<br><small>${hee(String(r.email ?? ""))}</small>
-      <td>${hee(String(r.name ?? ""))}
-      <td><code>${hee(String(r.prefix ?? ""))}…</code>
+      <td>${hee(userName)}<br><small>${hee(r.email)}</small>
+      <td>${hee(r.name)}
+      <td><code>${hee(r.prefix)}…</code>
       <td>${fmt(r.created)}
       <td>${r.expires ? fmt(r.expires) : "–"}
       <td>${delBtn}`;
