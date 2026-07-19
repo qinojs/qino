@@ -29,10 +29,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const tableRows = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
     const delBtn   = `<form method=post style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><input type=hidden name=delete_cred value="${hee(String(r.id))}"><button class=u2-unstyle u2-confirm="${hee(`Really delete ${String(r.name ?? r.id)}?`)}"><u2-ico icon=delete>✕</u2-ico></button></form>`;
-    return `<tr><td>${hee(String(r.id))}<td>${hee(userName)}<br><small style="color:#888">${hee(r.email)}</small>` +
-      `<td>${hee(r.name)}<td title="${hee(r.credential_id)}">` +
-      `${hee(String(r.credential_id ?? "").slice(0, 20))}…<td>${hee(r.aaguid)}` +
-      `<td>${hee(r.sign_count ?? "0")}<td>${fmt(r.created)}<td>${fmt(r.last_used)}<td>${delBtn}`;
+    return `<tr>
+      <td>${hee(String(r.id))}
+      <td>${hee(userName)}<br><small style="color:#888">${hee(r.email)}</small>
+      <td>${hee(r.name)}
+      <td title="${hee(r.credential_id)}">${hee(String(r.credential_id ?? "").slice(0, 20))}…
+      <td>${hee(r.aaguid)}
+      <td>${hee(r.sign_count ?? "0")}<td>${fmt(r.created)}<td>${fmt(r.last_used)}
+      <td>${delBtn}`;
   }).join("\n");
 
   const empty = rows.length === 0
@@ -43,21 +47,30 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(not configured)";
 
   return `<div class="u2-flex">
-<div class="u2-card" style="flex:0 1 24rem">
+<div class=u2-card style="flex:0 1 24rem">
   <div class="-head">Configuration</div>
   <table class="u2-table">
     <tr><th style="width:8em">Relying Party ID<td>${hee(rpId)}
     <tr><th>RP Name<td>${hee(rpName)}
   </table>
-  <div class="-body">
+  <div class=-body>
     <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → web_auth</code>.</p>
   </div>
 </div>
-<div class="u2-card" style="flex:1">
+<div class=u2-card style="flex:1">
   <div class="-head">Registered passkeys (${rows.length})</div>
   <div style="overflow:auto; padding:0">
     <table class="u2-table">
-      <thead><tr><th>ID<th>User<th>Name<th>Credential ID<th>AAGUID<th>Sign Count<th>Registered<th>Last used<th width=80>
+      <thead><tr>
+        <th>ID
+        <th>User
+        <th>Name
+        <th>Credential ID
+        <th>AAGUID
+        <th>Sign Count
+        <th>Registered
+        <th>Last used
+        <th width=80>
       <tbody>${tableRows || empty}
     </table>
   </div>
