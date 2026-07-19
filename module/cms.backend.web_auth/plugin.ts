@@ -35,7 +35,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       <td>${hee(r.name)}
       <td title="${hee(r.credential_id)}">${hee(String(r.credential_id ?? "").slice(0, 20))}…
       <td>${hee(r.aaguid)}
-      <td>${hee(r.sign_count ?? "0")}<td>${fmt(r.created)}<td>${fmt(r.last_used)}
+      <td>${hee(r.sign_count ?? "0")}<td>${fmt(r.created)}
+      <td>${fmt(r.last_used)}
       <td>${delBtn}`;
   }).join("\n");
 
