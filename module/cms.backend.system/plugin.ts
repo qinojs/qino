@@ -195,7 +195,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   <tbody>${dbRows}
 </table>
 <table class="u2-table" style="white-space:nowrap;margin-top:1px">
-  <tr><td>${await t`Cache files`}:<td>${hee(String(cacheCount))}
+  <tr><td>${await t`Cache files`}:<td>${hee(cacheCount)}
   <tr><td>${await t`Cache size`}:<td><u2-bytes>${cacheSize}</u2-bytes>
 </table>
 </div>`;
@@ -270,7 +270,7 @@ async function sqliteBox(node: Node): Promise<string> {
   let rows = `<tr><td>version<td>${hee(await db.one`SELECT sqlite_version()`)}`;
   for (const p of pragmas) {
     const r = await db.row`PRAGMA ${sql.raw(p)}`;
-    rows += `<tr><td>${hee(p)}<td>${hee(String(r ? Object.values(r)[0] : ""))}`;
+    rows += `<tr><td>${hee(p)}<td>${hee(r ? Object.values(r)[0] : "")}`;
   }
   return dbCard("SQLite", rows);
 }
