@@ -65,7 +65,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
   const filterForm = `
   <form>
-    <input type=search name=search value="${hee(get.search ?? "")}" placeholder="${await t`message, /path, IP or id`}"
+    <input type=search name=search value="${hee(get.search)}" placeholder="${await t`message, /path, IP or id`}"
       title="${await t`Words search the message, a path (with /) the file, an IP address or a numeric id match exactly`}">
     <select name=source>
       <option value="">${await t`All sources`}</option>${opts(sources, get.source ?? "")}
@@ -271,7 +271,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <br>${hee(row.ip)}
     <br>${hee(row.email)}
   <td>
-    <a href="${hee(eUrl)}" target="_blank" title="${hee(row.file ?? "")}" style="color:inherit; text-decoration:none">
+    <a href="${hee(eUrl)}" target="_blank" title="${hee(row.file)}" style="color:inherit; text-decoration:none">
       ${row.sample ? `<pre style="font-size:10px; box-shadow:0 0 5px; padding:4px">${hee(row.sample)}</pre>` : "edit File"}
     </a>
   <td>${bt.length ? `<table>${btHtml}</table>` : ""}`;
@@ -279,7 +279,9 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 
   return `
 <div class=u2-card style="height:88vh; overflow:auto; flex:1 1 80rem">
-  <div class=-head><a href="${hee(back.search || "?")}">← ${await node.app.t`Errors`}</a> &nbsp; ${hee(get.file ?? "")} : ${hee(get.line ?? "")} : ${hee(get.col ?? "")}</div>
+  <div class=-head><a href="${hee(back.search || "?")}">← ${await node.app.t`Errors`}</a> &nbsp; ${hee(
+    get.file
+  )} : ${hee(get.line)} : ${hee(get.col)}</div>
   <table class=u2-table>
     <tbody style="vertical-align:baseline">
       ${tableRows}
@@ -304,9 +306,12 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
   for (const item of bt) {
     const isLocal = localPath(item.file ?? "") !== null;
+    const position = `<span style="opacity:.6">: ${hee(item.line)}${item.col ? " : " + hee(item.col) : ""}</span>`;
     const fileCell = isLocal
-      ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target="_blank">${hee(fileDisplay(item.file ?? ""))} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span></a>`
-      : `${hee(item.file ?? "")} <span style="opacity:.6">: ${hee(String(item.line ?? ""))}${item.col ? " : " + hee(String(item.col)) : ""}</span>`;
+      ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target="_blank">${
+        hee(fileDisplay(item.file ?? ""))
+      } ${position}</a>`
+      : `${hee(item.file)} ${position}`;
     btHtml += `
 <tr>
   <td>${fileCell}
