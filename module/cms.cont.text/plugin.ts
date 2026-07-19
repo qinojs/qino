@@ -1,4 +1,4 @@
-import { WRITE, type Node } from "../cms/mod.ts";
+import { type Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.text";
 export const needs = ["cms"];
@@ -9,7 +9,6 @@ async function render(node: Node) {
 }
 
 export const cms = {
-  access: WRITE,
   node: {
     render,
   },

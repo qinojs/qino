@@ -1,5 +1,9 @@
-import type { Node } from "../../../cms/mod.ts";
+import { WRITE, type Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
+
+/** Highest access the current user has on a module (cms.accessRules lowers it; ADMIN without it). */
+const moduleAccess = (node: Node, module: string) =>
+  node.app.fire("module:access", { module, user: getCtx().user, access: 3 }).then((e) => e.access);
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
@@ -10,7 +14,7 @@ export default async function (node: Node): Promise<HtmlString> {
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
     const M = await app.db.table("module").entry(name);
-    if (!await node.canAddModule(name)) continue;
+    if (await moduleAccess(node, name) < WRITE) continue;
     if (name === "cms.cont.flexible") continue;
     let desc = "";
     try { if (modDir) desc = await Deno.readTextFile(modDir + "description.txt"); } catch { /* egal */ }
@@ -48,7 +52,7 @@ export default async function (node: Node): Promise<HtmlString> {
   if (models.length) {
     const modelItems: HtmlString[] = [];
     for (const P of models) {
-      if (!await node.canAddModule(String(P.vs.module))) continue;
+      if (await moduleAccess(node, String(P.vs.module)) < WRITE) continue;
       const mName = String(P.vs.module);
       const mDir = app.modules.get(mName)?.dir;
       let svgHtml: HtmlString;

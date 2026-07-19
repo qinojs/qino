@@ -1,0 +1,21 @@
+.cmsAccessRules {
+
+  & .-toolbar { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+  & [data-search] { max-width:14rem; }
+  & .-legend { display:flex; gap:1rem; }
+  & .-legend > span { display:inline-flex; gap:.3rem; align-items:center; }
+  & .-legend i { width:1rem; height:1rem; display:inline-block; }
+  & .-legend .-a1 { background:var(--cms-access-1); }
+  & .-legend .-a2 { background:var(--cms-access-2); }
+  & .-legend .-a3 { background:var(--cms-access-3); }
+
+  /* colored access cells, same scheme as the page-access matrix */
+  & td.-cell { cursor:pointer; text-align:center; color:#fff; }
+  & td.-cell[v=""] { color:inherit; }
+  & td.-cell[v="0"] { background:var(--cms-access-0); }
+  & td.-cell[v="1"] { background:var(--cms-access-1); }
+  & td.-cell[v="2"] { background:var(--cms-access-2); }
+  & td.-cell[v="3"] { background:var(--cms-access-3); }
+
+  & .-add-group { display:grid; gap:.6rem; padding:1rem; }
+}

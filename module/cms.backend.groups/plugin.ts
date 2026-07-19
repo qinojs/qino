@@ -10,13 +10,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Groups", de: "Gruppen" });
 }
 
-/** Options for the cms_access level (same labels as the page access widgets). */
-async function accessOptions(app: App, current: number): Promise<HtmlString> {
-  const t = app.t;
-  const labels = [await t`no access`, await t`view`, await t`edit`, await t`administer`];
-  return html.join(labels.map((l, i) => html`<option value=${i} ${i === current ? "selected" : ""}>${i} · ${l}`));
-}
-
 function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const id = ctx.req.query.id ? Number(ctx.req.query.id) : 0;
@@ -32,10 +25,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   const db = app.db;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "add" in ctx.req.body) {
-    await db.table("grp").insert({
-      name: String(ctx.req.body.name ?? ""),
-      cms_access: Math.min(Math.max(0, Number(ctx.req.body.cms_access) || 0), 3),
-    });
+    await db.table("grp").insert({ name: String(ctx.req.body.name ?? "") });
   }
 
   const usersNode = await node.cms.nodeByModule("cms.backend.users");
@@ -51,7 +41,6 @@ async function renderOverview(node: Node): Promise<HtmlString> {
       <td>${vs.id}
       <td><a href="?id=${vs.id}">${vs.name}</a>
       <td>${vs.type}
-      <td><select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
       <td style="text-align:right">${
         usersUrl ? html`<a href="${usersUrl}?grp_id=${vs.id}">${Number(vs.members)}</a>` : Number(vs.members)
       }
@@ -68,9 +57,6 @@ async function renderOverview(node: Node): Promise<HtmlString> {
           <th style="width:6em"> ${t`Name`}:
           <td> <input type=text name=name required>
         <tr>
-          <th> ${t`Access`}:
-          <td> <select name=cms_access>${await accessOptions(app, 0)}</select>
-        <tr>
           <th>
           <td> <button name=add>${t`add`}</button>
       </table>
@@ -86,7 +72,6 @@ async function renderOverview(node: Node): Promise<HtmlString> {
             <th> ID
             <th> ${t`Name`}
             <th> ${t`Type`}
-            <th> ${t`Access`}
             <th> ${t`Members`}
             <th width=20>
         <tbody>
@@ -133,9 +118,6 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         <tr>
           <th> ${t`Type`}:
           <td> <input name=type value="${vs.type}">
-        <tr>
-          <th> ${t`Access`}:
-          <td> <select name=cms_access>${await accessOptions(app, Number(vs.cms_access) || 0)}</select>
       </table>
     </div>
   </div>
@@ -155,8 +137,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div class=-body>
-    <b>${app.db.one`SELECT count(*) FROM grp`}</b> ${app.t`groups`}<br>
-    <small>${app.db.one`SELECT count(*) FROM grp WHERE cms_access > 0`} ${app.t`with page access`}</small>
+    <b>${app.db.one`SELECT count(*) FROM grp`}</b> ${app.t`groups`}
   </div>`;
 }
 

@@ -1,7 +1,6 @@
 import { Node } from "./Node.ts";
 import { cmsCtx } from "./CmsContext.ts";
-import { NONE, ADMIN } from "./access.ts";
-import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText, type dbEntry_usr } from "../../core/mod.ts";
+import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 // Per-app instances; the plugin's init binds, cms()/cms.get() read. Internal — mod.ts does not export it.
 export const cmsInstances: WeakMap<object, CMS> = new WeakMap();
@@ -66,15 +65,6 @@ export class CMS {
       await lPage.title(undefined, module);
     }
     return lPage;
-  }
-
-  /** Highest cms_access granted by the user's groups; superuser counts as ADMIN. */
-  async usrAccess(Usr: dbEntry_usr | null = getCtx().user): Promise<number> {
-    if (!Usr) return NONE;
-    if (await Usr.get("superuser")) return ADMIN;
-    const grps = await Usr.grps?.() ?? [];
-    if (!grps.length) return NONE;
-    return Number(await this.db.one`SELECT max(cms_access) FROM grp WHERE id IN (${sql.join(grps.map((g: number) => sql`${g}`))})` ?? "0") || 0;
   }
 
   async nodeFromRequest(): Promise<Node> {

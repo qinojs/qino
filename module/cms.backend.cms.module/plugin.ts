@@ -12,43 +12,23 @@ export async function install({ app }: { app: App }) {
 /** Short type badge from the module name. */
 const modType = (n: string) => n.match(/^cms\.(cont|layout|backend|frontend)\./)?.[1] ?? "";
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
-  const app = node.app;
-  const t = app.t;
-  const db = app.db;
+async function render(node: Node): Promise<HtmlString> {
+  const app = node.app, t = app.t;
 
-  // inline edit: set a module's cms_access level
-  if (vars.set_access !== undefined) {
-    const level = Math.min(Math.max(0, Number(vars.access) || 0), 3);
-    await db.table("module").update(String(vars.set_access), { cms_access: level });
-  }
+  const used = new Map((await app.db.query`
+    SELECT m.name, (SELECT COUNT(*) FROM page WHERE module = m.name) AS used FROM module m`)
+    .map((r) => [String(r.name), Number(r.used)]));
 
-  const levels = [await t`disabled`, await t`read only`, await t`editors`, await t`admins`];
-
-  const rows = await db.query`
-    SELECT m.name, m.cms_access,
-      (SELECT COUNT(*) FROM page WHERE module = m.name) AS used
-    FROM module m ORDER BY m.name`;
-  const byName = new Map(rows.map((r) => [String(r.name), r]));
-
-  // only imported modules that render content (export cms.node.render)
-  const trs: Array<HtmlString | Promise<HtmlString>> = [];
+  const trs: HtmlString[] = [];
   let total = 0;
   for (const modName of Object.keys(app.modules.all()).sort()) {
-    const mod = app.modules.get(modName)!;
-    if (!mod.plugin.cms?.node?.render) continue;
-    const row = byName.get(modName);
-    if (!row) continue;
+    if (!app.modules.get(modName)!.plugin.cms?.node?.render) continue;
+    if (!used.has(modName)) continue;
     total++;
-    const def = mod.plugin.cms.access ?? 1;
-    const opts = html.join(levels.map((label, i) =>
-      html`<option value=${i} ${i === Number(row.cms_access) ? "selected" : ""}>${i} · ${label}`));
-    trs.push(html.async`<tr>
+    trs.push(html`<tr>
       <td>${modName}
       <td>${modType(modName)}
-      <td style="text-align:right">${Number(row.used) || ""}
-      <td><select class=u2-unstyle data-access="${modName}">${opts}</select>
-        ${def !== Number(row.cms_access) ? html.async`<small>(${t`default`}: ${def})</small>` : ""}`);
+      <td style="text-align:right">${used.get(modName) || ""}`);
   }
 
   return html.async`
@@ -58,19 +38,17 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       <th>${t`Module`}
       <th>${t`Type`}
       <th>${t`Used`}
-      <th>${t`Access`}
-    <tbody>${html.join(await Promise.all(trs))}
+    <tbody>${html.join(trs)}
     <tfoot><tr>
-      <td colspan=4>${t`Total`}: ${total}
+      <td colspan=3>${t`Total`}: ${total}
   </table>
 </div>`;
 }
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div class=-body>
-    <b>${app.db.one`SELECT count(*) FROM module`}</b> ${app.t`modules`}<br>
-    <small>${app.db.one`SELECT count(*) FROM module WHERE cms_access = 0`} ${app.t`disabled`}</small>
+    <b>${app.db.one`SELECT count(*) FROM module`}</b> ${app.t`modules`}
   </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render } };
+export const cms = { node: { render } };

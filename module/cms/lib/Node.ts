@@ -1,7 +1,6 @@
 import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
-import { WRITE } from "./access.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
 import { hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
 import { $item, bildJsonItem } from "../../../deps.ts";
@@ -140,15 +139,6 @@ export class Node {
         if (!user) return 0;
         if (!await user.exists()) return 0;
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
-    }
-
-    /** Whether the current user may create content of the given module here: WRITE <= module level <= user level. */
-    async canAddModule(module: string): Promise<boolean> {
-        const ctx = getCtx();
-        if (await ctx.user?.get("superuser")) return true;
-        if (await this.access() < WRITE) return false;
-        const level = Number(await this.db.one`SELECT cms_access FROM module WHERE name = ${module}`) || 0;
-        return level >= WRITE && level <= await this.cms.usrAccess(ctx.user);
     }
 
     /* Render */
@@ -601,7 +591,6 @@ export class Node {
         for (const [name, value] of Object.entries(node.attrs)) {
             if (langs.includes(name)) { await this.title(name, value); continue; }
             if (!Node.#xmlAttrs.has(name)) continue;
-            if (name === "module" && !(await this.canAddModule(value))) continue;
             await this.set(name, value);
         }
         for (const child of [...node.children].reverse()) {

@@ -12,13 +12,12 @@ export default async function (node: Node, vars: any): Promise<any> {
   }
 
   if ("save" in vars) {
-    const allowed: Record<string, boolean> = { name: true, type: true, cms_access: true };
+    const allowed: Record<string, boolean> = { name: true, type: true };
     const name = String(vars.name ?? "");
     if (!allowed[name]) return false;
     const G = db.table("grp").entry(vars.save);
     if (!(await G.exists())) return false;
-    const value = name === "cms_access" ? Math.min(Math.max(0, Number(vars.value) || 0), 3) : vars.value;
-    await G.set(name, value);
+    await G.set(name, vars.value);
     await G.save();
     return 1;
   }

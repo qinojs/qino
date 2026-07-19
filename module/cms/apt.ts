@@ -180,7 +180,6 @@ const node = {
         recursive: s.boolean().default(false).describe("If true, apply to all sub-pages too"),
       }),
       execute: async ({ node, module, recursive }: any) => {
-        if (!(await node.canAddModule(module))) throw new AccessError();
         if (!recursive) {
           await node.set("module", module);
           return { ok: true };

@@ -1,4 +1,4 @@
-import { WRITE, type Node } from "../cms/mod.ts";
+import { type Node } from "../cms/mod.ts";
 import { Output, header, type Ctx } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
@@ -75,7 +75,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 }
 
 export const cms = {
-  access: WRITE,
   node: {
     render,
     options,

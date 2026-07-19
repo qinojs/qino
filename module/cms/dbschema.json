@@ -269,13 +269,11 @@
         "properties": {
           "cms_access": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 3,
-            "default": 0,
             "x-index": true
           }
-        },
-        "required": ["cms_access"]
+        }
       }
     },
     "module": {
@@ -284,11 +282,9 @@
           "cms_access": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 3,
-            "default": 1
+            "maximum": 3
           }
-        },
-        "required": ["cms_access"]
+        }
       }
     },
     "mail": {
