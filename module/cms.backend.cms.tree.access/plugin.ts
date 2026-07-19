@@ -112,7 +112,11 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       const titleObj = await SubPage.title();
       const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
       const titleCell = access >= 1
-        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(String(SubPage.vs.name ?? ""))}</span></span><a style="vertical-align:middle" href="${hee(await SubPage.url())}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`
+        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(
+  SubPage.vs.name
+)}</span></span><a style="vertical-align:middle" href="${hee(
+  await SubPage.url()
+)}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`
         : `<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
 
       // "Public" cell — toggles this page's own access (null = inherited)
@@ -128,14 +132,14 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       for (const g of groups) {
         const v = grpAccess[String(g.id)] ?? 0;
         grpCells += editable
-          ? `<td class=-cell data-pid="${AccessP}" data-gid="${g.id}" v="${v}" title="${hee(String(g.name))} (${g.id})">`
+          ? `<td class=-cell data-pid="${AccessP}" data-gid="${g.id}" v="${v}" title="${hee(g.name)} (${g.id})">`
           : "<td>";
       }
 
       out += `
 <tr${(isCont || inherited) ? ` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${AccessP}">
   <td style="text-align:right; font-weight:bold">
-    <a title="${await app.t`Set as start point`}" href="${hee("?rp=" + id)}">${hee(String(id))}</a>
+    <a title="${await app.t`Set as start point`}" href="${hee("?rp=" + id)}">${hee(id)}</a>
   <td style="padding-left:${level * 15}px; white-space:nowrap">
     <div style="display:flex; align-items:center">${toggleBtn}${titleCell}</div>
   ${publicCell}
