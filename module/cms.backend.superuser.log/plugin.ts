@@ -128,7 +128,9 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
           : `<span style="color:${uniqueColor(row.client_id)}">${hee(row.client_id)}</span>`}<br>
         <small style="color:${uniqueColor(info.browser)}">${hee(info.browser)} ${hee(info.version)}</small>
         ${info.bot ? '<br><small class=u2-badge>bot</small>' : ""}
-    <td>${row.usr_id ? `<span style="color:${uniqueColor(row.usr_id)}">${hee((row.firstname ?? "") + " " + (row.lastname ?? ""))}</span><br><small>${hee(row.email ?? "")}</small>` : "<small>guest</small>"}
+    <td>${row.usr_id ? `<span style="color:${uniqueColor(row.usr_id)}">${hee(
+  (row.firstname ?? "") + " " + (row.lastname ?? "")
+)}</span><br><small>${hee(row.email)}</small>` : "<small>guest</small>"}
     <td style="color:${uniqueColor(row.ip)}; white-space:nowrap">${hee(row.ip)}
     <td>${post ? `<pre style="max-width:25rem; max-height:6rem; overflow:auto">${hee(post)}</pre>` : "-"}
     <td>${row.id}`;
@@ -330,12 +332,18 @@ async function renderDetail(node: Node, id: number): Promise<string> {
         <table class=u2-table>
             <tr><th>${await t`Request`}<td><a href="${hee(log.url)}" target=_blank>${hee(log.url)}</a><br>
                 <small>Referer <a href="${hee(log.referer)}" target=_blank>${hee(log.referer)}</a></small>
-            <tr><th>${await t`Browser`}<td>${hee(info.browser)} ${hee(info.version)} ${info.bot ? '<small class=u2-badge>bot</small>' : ""}<br><small>${hee(log.user_agent ?? "")}</small>
+            <tr><th>${await t`Browser`}<td>${hee(info.browser)} ${hee(info.version)} ${
+  info.bot ? '<small class=u2-badge>bot</small>' : ""
+}<br><small>${hee(log.user_agent)}</small>
             <tr><th>${await t`Time`}<td>${u2time(log.time)}
             <tr><th style="color:${uniqueColor(log.ip)}">${await t`IP`}<td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}
-            <tr><th>${await t`Client`}<td><a href="${searchLink(log.client_id)}" style="color:${uniqueColor(log.client_id)}">${hee(String(log.client_id ?? ""))}</a>
-            <tr><th>${await t`Session`}<td><a href="${searchLink(log.sess_id)}">${hee(String(log.sess_id ?? ""))}</a>
-            <tr><th>${await t`User`}<td>${usr ? `${hee((usr.firstname ?? "") + " " + (usr.lastname ?? ""))} <small>#${usr.id}</small><br><small>${hee(usr.email ?? "")}</small>` : "guest"}
+            <tr><th>${await t`Client`}<td><a href="${searchLink(log.client_id)}" style="color:${
+  uniqueColor(log.client_id)
+}">${hee(log.client_id)}</a>
+            <tr><th>${await t`Session`}<td><a href="${searchLink(log.sess_id)}">${hee(log.sess_id)}</a>
+            <tr><th>${await t`User`}<td>${usr ? `${hee(
+  (usr.firstname ?? "") + " " + (usr.lastname ?? "")
+)} <small>#${usr.id}</small><br><small>${hee(usr.email)}</small>` : "guest"}
             <tr><th>POST<td><div style="max-width:40rem; max-height:30rem; overflow:auto">${dumpData(log.post)}</div>
         </table>
     </div>
