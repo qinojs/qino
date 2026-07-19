@@ -76,7 +76,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
   }
 
   return html`
-  <div class=superuser-manager pid="${node}" style="display:flex;flex-flow:wrap;margin:-2px;">
+  <div class=superuser-manager pid=${node.id} style="display:flex;flex-flow:wrap;margin:-2px;">
     <div scope=custom style="margin:2px;flex:1 1 auto">
       <div class="-widgetHead -open">Custom Files</div>
       <div class=-content>

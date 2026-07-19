@@ -19,15 +19,15 @@ export default function (node: Node, _vars: unknown): Promise<HtmlString> {
     colWidths.push(html`
     <div style="width:${percent}%; text-align:center;">
       ${i}<br>
-      <input value="${val}" data-node="${node}" data-key="${"row_" + i}" data-table2-setting style="width:93%; text-align:center" placeholder="50%"/>
+      <input value="${val}" data-node="${node.id}" data-key="${"row_" + i}" data-table2-setting style="width:93%; text-align:center" placeholder="50%"/>
     </div>`);
   }
 
   return html.async`
-<input type=number value="${rows}" min=1 max=300 data-node="${node}" data-key="rows" data-table2-setting style="width:5em;">
+<input type=number value="${rows}" min=1 max=300 data-node="${node.id}" data-key="rows" data-table2-setting style="width:5em;">
 ${t`Rows (max: 300)`}<br>
 <br>
-<input type=number value="${cols}" min=1 max=15 data-node="${node}" data-key="cols" data-table2-setting data-reload-options style="width:5em;">
+<input type=number value="${cols}" min=1 max=15 data-node="${node.id}" data-key="cols" data-table2-setting data-reload-options style="width:5em;">
 ${t`Columns (max: 15)`}<br>
 
 <br>

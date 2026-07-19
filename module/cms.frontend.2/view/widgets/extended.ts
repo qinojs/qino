@@ -20,7 +20,7 @@ export default async function (node: Node): Promise<HtmlString> {
     extras += await cmsFrontend2WidgetAccordion("sets", node, "Settings");
   }
 
-  return html.async`<div class=advanced-manager pid=${node}>
+  return html.async`<div class=advanced-manager pid=${node.id}>
   <label><input class=-visible ${node.vs.visible ? "checked" : ""} type=checkbox> ${app.t`Visible in navigation`}</label><br><br>
   <label><input class=-searchable ${node.vs.searchable ? "checked" : ""} type=checkbox> ${app.t`Searchable`}</label><br><br>
   <label>

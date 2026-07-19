@@ -34,42 +34,67 @@ export const dbSchema = {
   },
 };
 
-/** Access ceiling for a user on a module, or undefined = no cap. Caps node-bezug downward.
- *  Only cms users (a group with cms_access) get capped — the layer stays inert for plain
- *  frontend users and sites without cms groups. Per group: cms_access is a hard ceiling, a
- *  module override can only lower it further; the most permissive group wins. */
-async function moduleCap(app: App, module: string, user: dbEntry_usr): Promise<number | undefined> {
-  const grps: number[] = (await user.grps?.() ?? []).map(Number).filter(Boolean);
-  if (!grps.length) return;
-  const rows = await app.db.query`
-    SELECT grp.cms_access AS cap, mag.access AS override
-    FROM grp LEFT JOIN cms_module_access_grp mag ON mag.grp_id = grp.id AND mag.module = ${module}
-    WHERE grp.id IN (${sql.join(grps.map((x) => sql`${x}`))})`;
-  let cap: number | undefined;
-  for (const r of rows) {
-    const g = Number(r.cap) || 0; // 0/null = group irrelevant → no cap
-    if (!g) continue;
-    const perGroup = r.override == null ? g : Math.min(g, Number(r.override)); // override can't exceed the cap
-    cap = cap === undefined ? perGroup : Math.max(cap, perGroup);
+// module → cms_access rules per app, cached (hot path: every node render checks it)
+const stdCache: WeakMap<object, Promise<Map<string, number>>> = new WeakMap();
+
+function standards(app: App): Promise<Map<string, number>> {
+  let p = stdCache.get(app);
+  if (!p) {
+    p = app.db.query`SELECT name, cms_access FROM module WHERE cms_access IS NOT NULL`
+      .then((rows) => new Map(rows.map((r) => [String(r.name), Number(r.cms_access)])));
+    p.catch(() => stdCache.delete(app)); // don't cache failures
+    stdCache.set(app, p);
   }
-  if (cap === undefined) return;
-  const ceil = await app.db.one`SELECT cms_access FROM module WHERE name = ${module}`;
-  return ceil == null ? cap : Math.min(cap, Number(ceil));
+  return p;
+}
+
+/** Call after writing module.cms_access. */
+export function invalidateStandards(app: App): void {
+  stdCache.delete(app);
+}
+
+/** Module-axis access for a user (or guest), or undefined = no rule at all.
+ *  module.cms_access is the default for everyone (0 = module off, null = no rule);
+ *  a group override replaces that default — but never exceeds the group's cms_access
+ *  cap. The most permissive group wins. */
+async function moduleCap(app: App, module: string, user?: dbEntry_usr | null): Promise<number | undefined> {
+  const std = (await standards(app)).get(module); // undefined = no rule
+  const base = std ?? 3;
+  const grps: number[] = user ? (await user.grps?.() ?? []).map(Number).filter(Boolean) : [];
+  let cap = std; // the default applies to everyone, groups can only improve on it
+  if (grps.length) {
+    const rows = await app.db.query`
+      SELECT grp.cms_access AS cap, mag.access AS override
+      FROM grp LEFT JOIN cms_module_access_grp mag ON mag.grp_id = grp.id AND mag.module = ${module}
+      WHERE grp.id IN (${sql.join(grps.map((x) => sql`${x}`))})`;
+    for (const r of rows) {
+      const g = Number(r.cap) || 0; // 0/null = group irrelevant for the module axis
+      if (!g) continue;
+      const perGroup = Math.min(g, r.override == null ? base : Number(r.override));
+      cap = cap === undefined ? perGroup : Math.max(cap, perGroup);
+    }
+  }
+  return cap;
 }
 
 export function init(app: App): void {
-  // cap the node access by the module axis
+  // cap the node access by the module axis; a logged-in user never ends up
+  // below the guest baseline of the node (deny standard = 0 for guests too).
   app.on("node:access", async (e) => {
-    if (!e.access || !e.user || await e.user.get("superuser")) return;
+    if (!e.access) return;
+    if (e.user && await e.user.get("superuser")) return;
     const module = String(e.node.module?.name ?? "");
     if (!module) return;
     const cap = await moduleCap(app, module, e.user);
-    if (cap != null) e.access = Math.min(e.access, cap);
+    if (cap == null) return;
+    if (!e.user) { e.access = Math.min(e.access, cap); return; }
+    const guest = (await standards(app)).get(module) === 0 ? 0 : (await e.node.isPublic()) ? 1 : 0;
+    e.access = Math.max(Math.min(e.access, cap), guest);
   });
 
-  // module picker: lower e.access to what the user may do with this module
+  // module picker/add: lower e.access to what the user may do with this module
   app.on("module:access", async (e) => {
-    if (!e.user || await e.user.get("superuser")) return;
+    if (e.user && await e.user.get("superuser")) return;
     const cap = await moduleCap(app, String(e.module), e.user);
     if (cap != null) e.access = Math.min(e.access, cap);
   });

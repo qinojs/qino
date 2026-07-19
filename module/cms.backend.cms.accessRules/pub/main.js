@@ -1,8 +1,9 @@
 import { apt } from "../../core/pub/js/qino.js";
 
+// deny (0) only exists on the standard column (module off); caps/overrides cycle 1..max
 const nextCap = (v) => (v === "1" ? "2" : v === "2" ? "3" : "1");                    // grp cap: 1→2→3→1
-const nextDef = (v) => (v === "" ? "0" : v === "3" ? "" : String(Number(v) + 1));   // ceiling: ""→0→1→2→3→""
-const nextUpTo = (v, max) => (v === "" ? "0" : Number(v) + 1 > max ? "" : String(Number(v) + 1)); // override: ""→0..max→""
+const nextDef = (v) => (v === "" ? "0" : v === "3" ? "" : String(Number(v) + 1));   // standard: ""→0→1→2→3→""
+const nextUpTo = (v, max) => (v === "" ? "1" : Number(v) + 1 > max ? "" : String(Number(v) + 1)); // override: ""→1..max→""
 
 cms.initNode("backend.cms.accessRules", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -38,6 +39,14 @@ cms.initNode("backend.cms.accessRules", (el) => {
     });
   });
 
+  // deny is a standard-only value → disable it when a group column is targeted
+  el.querySelector("[data-bulk-col]")?.addEventListener("change", (e) => {
+    const bulk = el.querySelector("[data-bulk]");
+    const deny = bulk.querySelector("option[value='0']");
+    deny.disabled = e.target.value !== "standard";
+    if (deny.disabled && bulk.value === "0") bulk.value = "";
+  });
+
   // bulk: set the chosen column (standard ceiling or a group override) for all checked modules
   el.querySelector("[data-bulk-apply]")?.addEventListener("click", async () => {
     const col = el.querySelector("[data-bulk-col]").value;
@@ -49,7 +58,7 @@ cms.initNode("backend.cms.accessRules", (el) => {
       await post({ bulk_ceiling: 1, modules, access: v });
       rows.forEach((tr) => setCell(tr.querySelector("td[data-kind=ceiling]"), v));
     } else {
-      if (v !== "" && v !== "0") v = String(Math.min(Number(v), grpCap(col))); // can't exceed the group's cap
+      if (v !== "") v = String(Math.min(Number(v), grpCap(col))); // can't exceed the group's cap
       await post({ bulk_override: 1, modules, grp: col, access: v });
       rows.forEach((tr) => setCell(tr.querySelector(`td[data-kind=override][data-grp="${col}"]`), v));
     }

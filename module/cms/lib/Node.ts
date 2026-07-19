@@ -98,9 +98,18 @@ export class Node {
         const cache = cmsCtx(ctx).accessCache;
         const key = `${this.id}:${usrId}`;
         if (cache[key] === undefined) {
-            const e: AppEvents["node:access"] = { node: this, user, access: await this.#calcUsrAccess(user) };
+            const e: AppEvents["node:access"] = { node: this, user, access: await this.#rawAccess(user) };
             cache[key] = (await this.app.fire("node:access", e)).access;
         }
+        return cache[key];
+    }
+
+    /** Node-bezug before node:access adjustments (module axis). Inheritance builds on
+     *  this — a parent's module rules only apply to the parent, never to its children. */
+    async #rawAccess(user?: dbEntry_usr | null): Promise<number> {
+        const cache = cmsCtx(getCtx()).accessCache;
+        const key = `${this.id}:${Number(user)}:raw`;
+        cache[key] ??= await this.#calcUsrAccess(user);
         return cache[key];
     }
 
@@ -113,7 +122,7 @@ export class Node {
         // inherited (or explicit user) access level
         const parent = await this.parent();
         if (nodeLevel === null && parent) {
-            return Math.max(await parent.access(user), await this.#accessUserLevel(user));
+            return Math.max(await parent.#rawAccess(user), await this.#accessUserLevel(user));
         }
 
         // user

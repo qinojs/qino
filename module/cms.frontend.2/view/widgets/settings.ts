@@ -34,7 +34,7 @@ export default async function (node: Node): Promise<HtmlString> {
     const parentType = Parent.vs?.type;
     let parentTitle = (await (await Parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(Parent);
     if (parentType === "c") parentTitle += ` ${Parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
-    parentHtml = await html.async`<div class=-editparent parent="${Parent}" page-type="${parentType}">
+    parentHtml = await html.async`<div class=-editparent parent="${Parent.id}" page-type="${parentType}">
       ${app.t`Parent:`}
       <a href="${await Parent.url()}" style="font-weight:bold;">${html.raw(parentTitle)}</a>
     </div>`;
@@ -60,9 +60,9 @@ export default async function (node: Node): Promise<HtmlString> {
   accordions += await cmsFrontend2WidgetAccordion("extended", node, await app.t`Advanced`);
   if (await ctx.user?.get("superuser")) accordions += await cmsFrontend2WidgetAccordion("superuser", node, "Superuser");
 
-  return html.async`<div class="-standalone content-manager" pid="${node}" page-type="${node.vs.type}"
+  return html.async`<div class="-standalone content-manager" pid="${node.id}" page-type="${node.vs.type}"
     style="font-size:1.2em;margin-bottom:1em">
-  <div title="Nr.${node}">
+  <div title="Nr.${node.id}">
     <div class=-h1>
       ${node.vs.type === "p" ? app.t`Page` : app.t`Content`}:&nbsp;
       <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="no title">

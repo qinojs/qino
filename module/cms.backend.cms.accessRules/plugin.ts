@@ -1,5 +1,6 @@
 import { html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
+import { invalidateStandards } from "../cms.accessRules/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.cms.accessRules";
@@ -35,11 +36,13 @@ async function save(app: App, vars: Record<string, unknown>): Promise<void> {
   } else if (vars.set_ceiling !== undefined) { // module.cms_access
     const module = String(vars.module ?? ""), access = level(vars.access);
     if (module) await app.db.table("module").update(module, { cms_access: access === "" ? null : Number(access) });
+    invalidateStandards(app);
   } else if (vars.bulk_ceiling !== undefined) { // set standard of many modules
     const access = level(vars.access), val = access === "" ? null : Number(access);
     for (const m of String(vars.modules ?? "").split(",").filter(Boolean)) {
       await app.db.table("module").update(m, { cms_access: val });
     }
+    invalidateStandards(app);
   } else if (vars.bulk_override !== undefined) { // set one group's override for many modules
     const grpId = Number(vars.grp) || 0, access = level(vars.access);
     if (grpId) for (const m of String(vars.modules ?? "").split(",").filter(Boolean)) await setOverride(m, grpId, access);
@@ -66,7 +69,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   // labels (plain html`` doesn't await app.t) + value→word map for the coloured cells
   const [lGroup, lName, lNew, lCap, lRead, lEdit, lAdmin, lAdd, lSearch, lSet, lNone, lDeny, lSave, lStd] = await Promise.all(
-    [t`Group`, t`Name`, t`new group`, t`Cap`, t`read`, t`edit`, t`admin`, t`add`, t`Search`, t`Set checked`, t`— none —`, t`deny`, t`save`, t`standard`]);
+    [t`Group`, t`Name`, t`new group`, t`Cap`, t`read`, t`edit`, t`insertable`, t`add`, t`Search`, t`Set checked`, t`— none —`, t`deny`, t`save`, t`standard`]);
   const word: Record<string, string> = { "": "–", "0": lDeny, "1": lRead, "2": lEdit, "3": lAdmin };
 
   const head = html.join(groupRows.map((g) => html`<th data-sort-handler title="${g.name}"><div>${g.name}</div>`));

@@ -10,6 +10,13 @@ import type { Node } from "./lib/Node.ts";
 const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 1) };
 const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
 const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
+
+// Adding/assigning a module needs ADMIN on the module axis (editorial add-gate).
+// cms.accessRules lowers e.access to the user's module cap; ADMIN (3) without it.
+const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
+  const e = await ctx.app.fire("module:access", { module, user: ctx.user, access: 3 });
+  if (Number(e.access) < 3) throw new AccessError();
+};
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
 // ───── Node ───────────────────────────────────────────────────────────────
@@ -179,7 +186,8 @@ const node = {
         module: s.string().describe("Module name, e.g. \"cms.default\""),
         recursive: s.boolean().default(false).describe("If true, apply to all sub-pages too"),
       }),
-      execute: async ({ node, module, recursive }: any) => {
+      execute: async ({ node, module, recursive }: any, ctx: Ctx) => {
+        await requireModuleAdmin(module, ctx);
         if (!recursive) {
           await node.set("module", module);
           return { ok: true };
@@ -303,6 +311,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\"") }),
       execute: async ({ node, module }: any, ctx: Ctx) => {
+        await requireModuleAdmin(module, ctx);
         const cont = await node.createCont({ module });
         if (!cont) throw new Error("createCont failed");
         await cont.changeUser(ctx.user, 3);

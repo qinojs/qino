@@ -79,6 +79,7 @@ async function setup(access = 3) {
   nodes.set(2, new FakeNode(2, 0));
   const user = { id: 9, get: () => false, toString: () => "9" };
   const ctx = await testContext({ userId: 9, app: {
+    fire: (_name: string, e: unknown) => e, // no module:access handler → event unchanged
     db: {
       one: () => null,
       table: (name: string) => ({
