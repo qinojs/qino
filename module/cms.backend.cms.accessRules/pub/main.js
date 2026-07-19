@@ -2,7 +2,7 @@ import { apt } from "../../core/pub/js/qino.js";
 
 // deny (0) only exists on the standard column (module off); caps/overrides cycle 1..max
 const nextCap = (v) => (v === "1" ? "2" : v === "2" ? "3" : "1");                    // grp cap: 1→2→3→1
-const nextDef = (v) => (v === "" ? "0" : v === "3" ? "" : String(Number(v) + 1));   // standard: ""→0→1→2→3→""
+const nextStd = (v) => (v === "" ? "0" : v === "3" ? "" : String(Number(v) + 1));   // standard: ""→0→1→2→3→""
 const nextUpTo = (v, max) => (v === "" ? "1" : Number(v) + 1 > max ? "" : String(Number(v) + 1)); // override: ""→1..max→""
 
 cms.initNode("backend.cms.accessRules", (el) => {
@@ -26,11 +26,11 @@ cms.initNode("backend.cms.accessRules", (el) => {
     const kind = cell.dataset.kind, cur = cell.getAttribute("v") ?? "";
     const next = kind === "cap" ? nextCap(cur)
       : kind === "override" ? nextUpTo(cur, grpCap(cell.dataset.grp)) // can't exceed the group's cap
-      : nextDef(cur);
+      : nextStd(cur);
     const vars = { access: next };
     if (kind === "cap") { vars.set_cap = 1; vars.grp = cell.dataset.grp; }
-    else if (kind === "ceiling") { vars.set_ceiling = 1; vars.module = cell.dataset.module; }
-    else { vars.set_access = 1; vars.module = cell.dataset.module; vars.grp = cell.dataset.grp; }
+    else if (kind === "standard") { vars.set_standard = 1; vars.module = cell.dataset.module; }
+    else { vars.set_override = 1; vars.module = cell.dataset.module; vars.grp = cell.dataset.grp; }
     await post(vars);
     if (kind === "override") cell.dataset.raw = next;
     setCell(cell, next);
@@ -65,8 +65,8 @@ cms.initNode("backend.cms.accessRules", (el) => {
     if (!rows.length) return;
     const modules = rows.map((tr) => tr.dataset.name).join(",");
     if (col === "standard") {
-      await post({ bulk_ceiling: 1, modules, access: v });
-      rows.forEach((tr) => setCell(tr.querySelector("td[data-kind=ceiling]"), v));
+      await post({ bulk_standard: 1, modules, access: v });
+      rows.forEach((tr) => setCell(tr.querySelector("td[data-kind=standard]"), v));
     } else {
       if (v !== "") v = String(Math.min(Number(v), grpCap(col))); // can't exceed the group's cap
       await post({ bulk_override: 1, modules, grp: col, access: v });

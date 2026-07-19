@@ -1,4 +1,4 @@
-import { cms } from "./mod.ts";
+import { cms, ADMIN } from "./mod.ts";
 // deno-lint-ignore-file no-explicit-any
 
 import { s, Access, AccessError, ConflictError, NotFoundError, itemReadDeep, type Ctx } from "../core/mod.ts";
@@ -11,11 +11,11 @@ const nodeRead  = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx
 const nodeWrite = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 2) };
 const nodeAdmin = { access: Access.PUBLIC, guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then(a => a >= 3) };
 
-// Adding/assigning a module needs ADMIN on the module axis (editorial add-gate).
-// cms.accessRules lowers e.access to the user's module cap; ADMIN (3) without it.
+// Adding/assigning a module needs ADMIN ("insertable") on the module axis — an editorial
+// add-gate, not security. cms.accessRules lowers e.access; without it everything is insertable.
 const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
-  const e = await ctx.app.fire("module:access", { module, user: ctx.user, access: 3 });
-  if (Number(e.access) < 3) throw new AccessError();
+  const e = await ctx.app.fire("module:access", { module, user: ctx.user, access: ADMIN });
+  if (Number(e.access) < ADMIN) throw new AccessError();
 };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 

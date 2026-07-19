@@ -19,33 +19,33 @@ export async function install({ app }: { app: App }): Promise<void> {
 const clamp = (v: unknown, min = 0) => Math.min(Math.max(min, Number(v) || 0), 3);
 const level = (v: unknown) => (v === "" || v == null ? "" : String(clamp(v)));
 
-/** One handler for every edit: override cell, CAP row, module ceiling, bulk (ceiling/override), add group. */
+/** One handler for every edit: override cell, CAP row, standard column, bulk (standard/override), add group. */
 async function save(app: App, vars: Record<string, unknown>): Promise<void> {
+  const modules = () => String(vars.modules ?? "").split(",").filter(Boolean);
   const setOverride = async (module: string, grpId: number, access: string) => {
     const table = app.db.table("cms_module_access_grp"), id = { module, grp_id: grpId };
     if (access === "") await table.delete(id);
     else await table.ensure({ ...id, access: Number(access) });
   };
+  const setStandard = (module: string, access: string) =>
+    app.db.table("module").update(module, { cms_access: access === "" ? null : Number(access) });
 
-  if (vars.set_access !== undefined) { // single override cell
+  if (vars.set_override !== undefined) { // single override cell
     const module = String(vars.module ?? ""), grpId = Number(vars.grp) || 0;
     if (module && grpId) await setOverride(module, grpId, level(vars.access));
   } else if (vars.set_cap !== undefined) { // grp.cms_access
     const grpId = Number(vars.grp) || 0;
     if (grpId) await app.db.table("grp").update(grpId, { cms_access: clamp(vars.access, 1) });
-  } else if (vars.set_ceiling !== undefined) { // module.cms_access
-    const module = String(vars.module ?? ""), access = level(vars.access);
-    if (module) await app.db.table("module").update(module, { cms_access: access === "" ? null : Number(access) });
+  } else if (vars.set_standard !== undefined) { // module.cms_access
+    const module = String(vars.module ?? "");
+    if (module) await setStandard(module, level(vars.access));
     invalidateStandards(app);
-  } else if (vars.bulk_ceiling !== undefined) { // set standard of many modules
-    const access = level(vars.access), val = access === "" ? null : Number(access);
-    for (const m of String(vars.modules ?? "").split(",").filter(Boolean)) {
-      await app.db.table("module").update(m, { cms_access: val });
-    }
+  } else if (vars.bulk_standard !== undefined) { // set standard of many modules
+    for (const m of modules()) await setStandard(m, level(vars.access));
     invalidateStandards(app);
   } else if (vars.bulk_override !== undefined) { // set one group's override for many modules
-    const grpId = Number(vars.grp) || 0, access = level(vars.access);
-    if (grpId) for (const m of String(vars.modules ?? "").split(",").filter(Boolean)) await setOverride(m, grpId, access);
+    const grpId = Number(vars.grp) || 0;
+    if (grpId) for (const m of modules()) await setOverride(m, grpId, level(vars.access));
   } else if (vars.add_group !== undefined) { // promote/create a group into the matrix
     let grpId = Number(vars.grp) || 0;
     if (!grpId && vars.new_group && await app.settings[name].canCreateGroups) {
@@ -68,9 +68,9 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     .map((r) => [String(r.name), r]));
 
   // labels (plain html`` doesn't await app.t) + value→word map for the coloured cells
-  const [lGroup, lName, lNew, lCap, lRead, lEdit, lAdmin, lAdd, lSearch, lSet, lNone, lDeny, lSave, lStd] = await Promise.all(
+  const [lGroup, lName, lNew, lCap, lRead, lEdit, lInsertable, lAdd, lSearch, lSet, lNone, lDeny, lSave, lStd] = await Promise.all(
     [t`Group`, t`Name`, t`new group`, t`Cap`, t`read`, t`edit`, t`insertable`, t`add`, t`Search`, t`Set checked`, t`— none —`, t`deny`, t`save`, t`standard`]);
-  const word: Record<string, string> = { "": "–", "0": lDeny, "1": lRead, "2": lEdit, "3": lAdmin };
+  const word: Record<string, string> = { "": "–", "0": lDeny, "1": lRead, "2": lEdit, "3": lInsertable };
 
   const head = html.join(groupRows.map((g) => html`<th data-sort-handler title="${g.name}"><div>${g.name}</div>`));
   const capCells = html.join(groupRows.map((g) =>
@@ -83,7 +83,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     const row = modRows.get(module);
     if (!row) continue;
     total++;
-    const ceil = row.cms_access == null ? "" : String(row.cms_access);
+    const std = row.cms_access == null ? "" : String(row.cms_access);
     const cells = html.join(groupRows.map((g) => {
       const raw = overrides.has(`${module}:${g.id}`) ? String(overrides.get(`${module}:${g.id}`)) : "";
       // show the effective value — an override above the group's CAP is clamped by it
@@ -94,7 +94,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       <td><input type=checkbox data-check>
       <td>${module}
       <td style="text-align:right">${Number(row.used) || ""}
-      <td class=-cell data-kind=ceiling data-module="${module}" v="${ceil}">${word[ceil]}
+      <td class=-cell data-kind=standard data-module="${module}" v="${std}">${word[std]}
       ${cells}`);
   }
 
@@ -109,13 +109,13 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       <div>
         <input type=search data-search placeholder="${lSearch}…">
         <label>${lSet}:
-          <select data-bulk><option value="">${lNone}<option value=0>${lDeny}<option value=1>${lRead}<option value=2>${lEdit}<option value=3>${lAdmin}</select>
+          <select data-bulk><option value="">${lNone}<option value=0>${lDeny}<option value=1>${lRead}<option value=2>${lEdit}<option value=3>${lInsertable}</select>
           <select data-bulk-col><option value=standard>${lStd}${bulkCols}</select>
           <button data-bulk-apply type=button>${lSave}</button>
         </label>
       </div>
       <span class=-legend>
-        <span><i class=-a1></i>${lRead}</span><span><i class=-a2></i>${lEdit}</span><span><i class=-a3></i>${lAdmin}</span>
+        <span><i class=-a1></i>${lRead}</span><span><i class=-a2></i>${lEdit}</span><span><i class=-a3></i>${lInsertable}</span>
       </span>
     </div>
     <u2-table style="padding:0">
@@ -125,7 +125,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
             <th><input type=checkbox data-check-all>
             <th data-sort-handler>${t`Module`}
             <th data-sort-handler>${t`Used`}
-            <th data-sort-handler title="${t`Module ceiling`}">${lStd}
+            <th data-sort-handler title="${t`Default for everyone; deny = module off`}">${lStd}
             ${head}
           <tr class=-cap>
             <td>
@@ -148,7 +148,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       </select></label>
       ${canCreate ? html`<label>${lName}<br><input name=new_group></label>` : ""}
       <label>${lCap}<br><select name=cap>
-        <option value=1>${lRead}<option value=2>${lEdit}<option value=3>${lAdmin}
+        <option value=1>${lRead}<option value=2>${lEdit}<option value=3>${lInsertable}
       </select></label>
       <button>${lAdd}</button>
     </form>

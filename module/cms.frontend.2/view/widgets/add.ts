@@ -1,10 +1,10 @@
 import { ADMIN, type Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
 
-// Adding a module = ADMIN on the module axis (edit-only groups don't see it in the picker).
-// cms.accessRules lowers e.access to the user's module cap; ADMIN (3) without it → all shown.
+// Adding a module = ADMIN ("insertable") on the module axis — edit-only groups don't see it here.
+// cms.accessRules lowers e.access to the user's module cap; without it everything stays insertable.
 const moduleAccess = (node: Node, module: string) =>
-  node.app.fire("module:access", { module, user: getCtx().user, access: 3 }).then((e) => e.access);
+  node.app.fire("module:access", { module, user: getCtx().user, access: ADMIN }).then((e) => e.access);
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
