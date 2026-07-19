@@ -10,7 +10,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   const prioVal = (node.settings._seo_priority()) ?? 0.5;
 
-  return html.async`<div class=seo-manager pid=${String(node)}>
+  return html.async`<div class=seo-manager pid=${node}>
   ${app.t`Title`}:
   <input style="width:100%;display:block" cmstxt=${Ttitle.id} value="${await Ttitle.string()}" required pattern=".{10,55}" maxlength=100 placeholder="${placeholderTitle}">
   <br>
@@ -24,7 +24,7 @@ export default async function (node: Node): Promise<HtmlString> {
   }
   </style>
   ${app.t`The priority of this page relative to other pages on your website.`}:<br>
-  <input type=range min=0 max=1 step=.1 value=${prioVal} data-pid=${String(node)} class=-seo-prio>
+  <input type=range min=0 max=1 step=.1 value=${prioVal} data-pid=${node} class=-seo-prio>
   <br>
 </div>`;
 }
