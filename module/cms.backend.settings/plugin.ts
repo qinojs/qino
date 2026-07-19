@@ -22,7 +22,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   const count = Number(await app.db.one`SELECT count(*) FROM qg_setting`);
   return `<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
-  <tr><td>Entries:<td>${hee(String(count))}
+  <tr><td>Entries:<td>${hee(count)}
 </table>
 </div>`;
 }
