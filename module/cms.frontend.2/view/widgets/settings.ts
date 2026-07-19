@@ -34,7 +34,7 @@ export default async function (node: Node): Promise<HtmlString> {
     const parentType = Parent.vs?.type;
     let parentTitle = (await (await Parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(Parent);
     if (parentType === "c") parentTitle += ` ${Parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
-    parentHtml = await html.async`<div class=-editparent parent="${String(Parent)}" page-type="${parentType}">
+    parentHtml = await html.async`<div class=-editparent parent="${Parent}" page-type="${parentType}">
       ${app.t`Parent:`}
       <a href="${await Parent.url()}" style="font-weight:bold;">${html.raw(parentTitle)}</a>
     </div>`;
@@ -60,8 +60,9 @@ export default async function (node: Node): Promise<HtmlString> {
   accordions += await cmsFrontend2WidgetAccordion("extended", node, await app.t`Advanced`);
   if (await ctx.user?.get("superuser")) accordions += await cmsFrontend2WidgetAccordion("superuser", node, "Superuser");
 
-  return html.async`<div class="-standalone content-manager" pid="${String(node)}" page-type="${node.vs.type}" style="font-size:1.2em;margin-bottom:1em">
-  <div title="Nr.${String(node)}">
+  return html.async`<div class="-standalone content-manager" pid="${node}" page-type="${node.vs.type}"
+    style="font-size:1.2em;margin-bottom:1em">
+  <div title="Nr.${node}">
     <div class=-h1>
       ${node.vs.type === "p" ? app.t`Page` : app.t`Content`}:&nbsp;
       <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="no title">
@@ -72,7 +73,7 @@ export default async function (node: Node): Promise<HtmlString> {
       </div>
     </div>
     <div style="display:flex;margin-bottom:4px;">
-      <span title="${String(await Module.get?.("name") ?? "")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
+      <span title="${await Module.get?.("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
       <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-4px;margin-bottom:-3px;background:transparent">
         ${moduleOptions}
       </select>
