@@ -28,9 +28,7 @@ export default async function (node: Node): Promise<HtmlString> {
     ${app.t`Show as template under "Modules"`}
   </label><br><br>
   <table><tbody style="vertical-align:middle">
-    <tr><td>${app.t`Identifier`} (${app.t`Layout position`}):<td><input class=-name value="${
-      node.vs.name
-    }" style="width:250px">
+    <tr><td>${app.t`Identifier`} (${app.t`Layout position`}):<td><input class=-name value="${node.vs.name}" style="width:250px">
     <tr><td>${app.t`Base`}:<td><input class=-basis type=qgcms-page value="${node.vs.basis}" style="width:250px">
   </table><br>
   ${app.t`Subpage definition`}
