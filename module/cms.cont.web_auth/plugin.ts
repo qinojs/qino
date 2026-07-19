@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlS
 
   if (showManage && ctx.user) return renderManage(node.app, apiBase);
   if (showLogin) {
-    const redirectId = Number(settings.redirectAfterLogin() ?? 0);
+    const redirectId = Number(settings.redirectAfterLogin());
     let redirectUrl  = "";
     if (redirectId) {
       const P = await node.cms.node(redirectId);
