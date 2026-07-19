@@ -30,11 +30,12 @@ async function render(node: Node): Promise<HtmlString> {
       db.one`SELECT COUNT(DISTINCT _vers_log) FROM ${sql.id(vt)} WHERE _vers_log > 0`,
       db.one`SELECT COUNT(DISTINCT _vers_space) FROM ${sql.id(vt)}`,
     ]);
-    rows.push(html`<tr><td>${tbl}<td style="text-align:right">${entries}<td style="text-align:right">${
-      rowsCount
-    }<td style="text-align:right">${spaces}<td style="text-align:right"><u2-bytes>${
-      sizeOf.get(vt) ?? 0
-    }</u2-bytes>`);
+    rows.push(html`<tr>
+      <td>${tbl}
+      <td style="text-align:right">${entries}
+      <td style="text-align:right">${rowsCount}
+      <td style="text-align:right">${spaces}
+      <td style="text-align:right"><u2-bytes>${sizeOf.get(vt) ?? 0}</u2-bytes>`);
   }
 
   const storageBox = html.async`
@@ -42,7 +43,12 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=-head>${t`History storage`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <thead><tr><th>${t`Table`}<th style="text-align:right">${t`Entries`}<th style="text-align:right">${t`Log entries`}<th style="text-align:right">${t`Spaces`}<th style="text-align:right">${t`Size`}
+      <thead><tr>
+        <th>${t`Table`}
+        <th style="text-align:right">${t`Entries`}
+        <th style="text-align:right">${t`Log entries`}
+        <th style="text-align:right">${t`Spaces`}
+        <th style="text-align:right">${t`Size`}
       <tbody>${html.join(rows)}
     </table>
   </div>
@@ -60,8 +66,12 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=-head>${t`Spaces`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table>
-      <thead><tr><th>${t`Space`}<th>${t`Created`}<th>
-      <tbody><tr><td>0<td>${t`live`}<td>${spaceRows}
+      <thead><tr>
+        <th>${t`Space`}
+        <th>${t`Created`}<th>
+      <tbody><tr>
+        <td>0
+        <td>${t`live`}<td>${spaceRows}
     </table>
   </div>
 </div>`;
