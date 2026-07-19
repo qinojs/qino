@@ -85,8 +85,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     total++;
     const ceil = row.cms_access == null ? "" : String(row.cms_access);
     const cells = html.join(groupRows.map((g) => {
-      const v = overrides.has(`${module}:${g.id}`) ? String(overrides.get(`${module}:${g.id}`)) : "";
-      return html`<td class=-cell data-kind=override data-module="${module}" data-grp="${g.id}" v="${v}">${word[v]}`;
+      const raw = overrides.has(`${module}:${g.id}`) ? String(overrides.get(`${module}:${g.id}`)) : "";
+      // show the effective value — an override above the group's CAP is clamped by it
+      const v = raw === "" ? "" : String(Math.min(Number(raw), Number(g.cms_access) || 3));
+      return html`<td class=-cell data-kind=override data-module="${module}" data-grp="${g.id}" data-raw="${raw}" v="${v}">${word[v]}`;
     }));
     trParts.push(html`<tr data-name="${module}">
       <td><input type=checkbox data-check>

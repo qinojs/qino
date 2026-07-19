@@ -12,6 +12,14 @@ cms.initNode("backend.cms.accessRules", (el) => {
   const setCell = (cell, v) => { cell.setAttribute("v", v); cell.textContent = labels[v] ?? "–"; };
   const grpCap = (grp) => Number(el.querySelector(`td.-cell[data-kind=cap][data-grp="${grp}"]`)?.getAttribute("v")) || 3;
 
+  // override cells show the effective value: raw DB value clamped by the group's CAP
+  const reclampColumn = (grp, cap) => {
+    el.querySelectorAll(`td.-cell[data-kind=override][data-grp="${grp}"]`).forEach((c) => {
+      const raw = c.dataset.raw ?? "";
+      setCell(c, raw === "" ? "" : String(Math.min(Number(raw), cap)));
+    });
+  };
+
   el.addEventListener("click", async (e) => {
     const cell = e.target.closest(".cmsAccessRules td.-cell");
     if (!cell) return;
@@ -24,7 +32,9 @@ cms.initNode("backend.cms.accessRules", (el) => {
     else if (kind === "ceiling") { vars.set_ceiling = 1; vars.module = cell.dataset.module; }
     else { vars.set_access = 1; vars.module = cell.dataset.module; vars.grp = cell.dataset.grp; }
     await post(vars);
+    if (kind === "override") cell.dataset.raw = next;
     setCell(cell, next);
+    if (kind === "cap") reclampColumn(cell.dataset.grp, Number(next));
   });
 
   el.querySelector("[data-search]")?.addEventListener("input", (e) => {
@@ -60,7 +70,11 @@ cms.initNode("backend.cms.accessRules", (el) => {
     } else {
       if (v !== "") v = String(Math.min(Number(v), grpCap(col))); // can't exceed the group's cap
       await post({ bulk_override: 1, modules, grp: col, access: v });
-      rows.forEach((tr) => setCell(tr.querySelector(`td[data-kind=override][data-grp="${col}"]`), v));
+      rows.forEach((tr) => {
+        const c = tr.querySelector(`td[data-kind=override][data-grp="${col}"]`);
+        c.dataset.raw = v;
+        setCell(c, v);
+      });
     }
     rows.forEach((tr) => tr.querySelector("[data-check]").checked = false);
     el.querySelector("[data-check-all]").checked = false;

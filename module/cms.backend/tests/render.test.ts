@@ -17,6 +17,7 @@ Deno.test("cms.backend: render shows fallback when no dashboard widgets exist", 
 Deno.test("cms.backend: render collects visible child widgets", async () => {
   const child = {
     vs: { visible: 1 },
+    access: () => 1,
     url: () => "/backend/settings",
     title: () => ({ string: () => "Settings" }),
     conts: () => [{
@@ -34,6 +35,7 @@ Deno.test("cms.backend: render collects visible child widgets", async () => {
 Deno.test("cms.backend: render escapes child links and titles", async () => {
   const child = {
     vs: { visible: 1 },
+    access: () => 1,
     url: () => `/backend?q="><script>x</script>`,
     title: () => ({ string: () => `Settings"><script>x</script>` }),
     conts: () => [{

@@ -1,5 +1,7 @@
 # Developing CMS modules
 
+Access/permissions are documented in [ACCESS.md](ACCESS.md).
+
 A CMS module renders a page node. It exports a `cms.node` contract from its `plugin.ts`:
 
 ```ts
