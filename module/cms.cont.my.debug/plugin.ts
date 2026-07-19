@@ -9,7 +9,7 @@ function vsTable(vs: Record<string, unknown>, exclude: string[] = []): string {
   return '<table>' +
     Object.entries(vs)
     .filter(([k]) => !exclude.includes(k))
-    .map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(String(v ?? ""))}`)
+    .map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(v)}`)
     .join("\n") +
     '</table>';
 }
