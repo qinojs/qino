@@ -6,7 +6,7 @@ export const needs = ["cms"];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const app   = node.app;
-  const trash = Number(await app.settings.cms?.pageTrash ?? 0);
+  const trash = Number(await app.settings.cms?.pageTrash);
   if (!trash) return `<div>No trash page configured</div>`;
 
   const TrashNode = await node.cms.node(trash);
@@ -17,9 +17,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     if (await node.in(P)) continue;
     const title       = hee(await (await P.title()).string() || "(kein Titel)");
     const id          = P.id;
-    const deletedTime = Number(await P.settings["__deleted_time"] ?? 0);
+    const deletedTime = Number(await P.settings["__deleted_time"]);
     const deletedBy   = hee(await P.settings["__deleted_by"]);
-    const deletedFrom = Number(await P.settings["__deleted_from"] ?? 0);
+    const deletedFrom = Number(await P.settings["__deleted_from"]);
     const fromTitle   = deletedFrom ? hee(await (await (await node.cms.node(deletedFrom)).title()).string()) : "";
     const timeHtml    = deletedTime ? `<u2-time datetime="${new Date(deletedTime * 1000).toISOString()}" type=relative></u2-time>` : "";
     const module      = hee(P.vs.module);
