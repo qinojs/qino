@@ -38,13 +38,15 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 
       const bytes = status?.bytes != null ? html`<u2-bytes>${status.bytes}</u2-bytes>` : "?";
       const primaries = Object.values(fields).filter((f: any) => f.isPrimary());
-      const primaryBadge = primaries.length === 0 ? html.async`<small class=u2-badge style="background:var(--red)">${t`none`}</small>`
-        : primaries.length === 1 ? html`<small class=u2-badge style="background:var(--yellow)">${String(primaries[0])}</small>`
-        : html.join(primaries.map((f: any) => html`<small class=u2-badge>${String(f)}</small>`), " ");
+      const primaryBadge = primaries.length === 0
+        ? html.async`<small class=u2-badge style="background:var(--red)">${t`none`}</small>`
+        : primaries.length === 1
+        ? html`<small class=u2-badge style="background:var(--yellow)">${primaries[0]}</small>`
+        : html.join(primaries.map((f: any) => html`<small class=u2-badge>${f}</small>`), " ");
       u.searchParams.set("table", table.name);
       return html.async`<tr data-table-name="${table.name}">
         <td><a href="${u.search}">${table.name}</a>
-        <td style="text-align:right">${String(status?.rows ?? "?")}
+        <td style="text-align:right">${status?.rows ?? "?"}
         <td style="text-align:right">${bytes}
         <td style="text-align:right">${Object.keys(fields).length}
         <td data-value="${primaries.length}">${primaryBadge}
@@ -95,13 +97,15 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
       <td style="font-family:monospace">${fname}${keyBadge(field.vs?.Key ?? "")}
       <td style="font-family:monospace;font-size:.9em">${field.vs?.Type}
       <td>${field.vs?.Null === "YES" ? "NULL" : ""}
-      <td><code>${field.vs?.Default != null ? String(field.vs.Default) : ""}</code>
+      <td><code>${field.vs?.Default ?? ""}</code>
       <td style="font-size:.82em">${schemaCell}
       <td>${originsCell}`;
   });
 
   const meta = status
-    ? html.async`<span style="font-size:.85em;opacity:.6;margin-left:12px">${String(status.rows ?? "?")} ${t`rows`} · ${status.engine} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
+    ? html.async`<span style="font-size:.85em;opacity:.6;margin-left:12px">${status.rows ?? "?"} ${
+      t`rows`
+    } · ${status.engine} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
     : "";
 
   const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables"); u.searchParams.delete("table");
