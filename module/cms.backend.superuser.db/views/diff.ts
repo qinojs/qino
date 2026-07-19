@@ -63,8 +63,8 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
   const schemaRows = diffs.map((d: { path: string[]; prev?: unknown; next?: unknown; destructive?: unknown }) =>
     html`<tr>
       <td>${d.path.join(".")}
-      <td>${String(d.prev ?? "–")}
-      <td>${String(d.next ?? "–")}
+      <td>${d.prev ?? "–"}
+      <td>${d.next ?? "–"}
       <td>${d.destructive ? html`<span class=u2-badge style="background:var(--red)">${txtDescructive}</span>` : ""}`
   );
 
