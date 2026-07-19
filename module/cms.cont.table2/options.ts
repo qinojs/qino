@@ -24,26 +24,18 @@ export default function (node: Node, _vars: unknown): Promise<HtmlString> {
   }
 
   return html.async`
-<input type=number value="${
-  rows
-}" min=1 max=300 data-node="${
-  node
-}" data-key="rows" data-table2-setting style="width:5em;">
+<input type=number value="${rows}" min=1 max=300 data-node="${node}" data-key="rows" data-table2-setting style="width:5em;">
 ${t`Rows (max: 300)`}<br>
 <br>
-<input type=number value="${
-  cols
-}" min=1 max=15 data-node="${
-  node
-}" data-key="cols" data-table2-setting data-reload-options style="width:5em;">
+<input type=number value="${cols}" min=1 max=15 data-node="${node}" data-key="cols" data-table2-setting data-reload-options style="width:5em;">
 ${t`Columns (max: 15)`}<br>
 
 <br>
 <br>
 <p id="${errorID}" style="color:#FF0000; display:none;">${t`Note: the sum of all column widths must equal 100%.`}</p>
-<div style="display:flex">${html.join(colWidths)}
-</div>
+<div style="display:flex">${html.join(colWidths)}</div>
 
 <p>&nbsp;</p>
 <a href="${exportUrl}">${t`Export table as Excel`}</a>`;
+
 }
