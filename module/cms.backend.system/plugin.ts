@@ -267,7 +267,7 @@ async function postgresBox(node: Node): Promise<string> {
 async function sqliteBox(node: Node): Promise<string> {
   const db = node.app.db;
   const pragmas = ["journal_mode", "page_size", "foreign_keys"];
-  let rows = `<tr><td>version<td>${hee(String(await db.one`SELECT sqlite_version()` ?? ""))}`;
+  let rows = `<tr><td>version<td>${hee(await db.one`SELECT sqlite_version()`)}`;
   for (const p of pragmas) {
     const r = await db.row`PRAGMA ${sql.raw(p)}`;
     rows += `<tr><td>${hee(p)}<td>${hee(String(r ? Object.values(r)[0] : ""))}`;
