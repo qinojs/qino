@@ -78,7 +78,7 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
 
   if (action === "save-default") {
     const kind = String(vars.kind ?? "");
-    const modelId = Number(vars.model_id ?? 0);
+    const modelId = Number(vars.model_id);
     if (!modelId) return { type: "error", text: "No model selected." };
     await app.db.query`UPDATE ai_provider_model SET is_default = 0 WHERE kind = ${kind}`;
     if (await app.db.one`SELECT id FROM ai_provider_model WHERE id = ${modelId} AND kind = ${kind}`) {
@@ -87,7 +87,7 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
     return { type: "ok", text: `Default ${kind} model saved.` };
   }
 
-  const providerId = Number(vars.provider_id ?? 0);
+  const providerId = Number(vars.provider_id);
   const provider = providerId ? await app.db.row`SELECT * FROM ai_provider WHERE id = ${providerId}` : undefined;
   if (!provider) return { type: "error", text: "Unknown provider." };
 
@@ -279,7 +279,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   // Keep a provider expanded after acting on it: open name (add) or the acted provider_id.
   const openName = String(vars.open ?? ctx.req.query.open ?? "");
-  const openId = Number(vars.provider_id ?? 0);
+  const openId = Number(vars.provider_id);
   let providerBoxes = "";
   for (const provider of providers) {
     const key = String(await app.settings.ai.provider[provider.name].key ?? "");
