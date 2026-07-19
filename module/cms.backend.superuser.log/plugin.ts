@@ -209,7 +209,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     ["", await t`all`],
   ] as const;
   const ageOptions = (sel: number) =>
-    ages.map((a, i) => `<option value="${a[0]}"${i === sel ? " selected" : ""}>${hee(String(a[1]))}`).join("");
+    ages.map((a, i) => `<option value="${a[0]}"${i === sel ? " selected" : ""}>${hee(a[1])}`).join("");
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
   const initSearch = String(ctx.req.query.search ?? "");
