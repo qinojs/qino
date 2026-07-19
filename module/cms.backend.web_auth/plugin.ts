@@ -32,7 +32,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     return `<tr><td>${hee(String(r.id))}<td>${hee(userName)}<br><small style="color:#888">${hee(r.email)}</small>` +
       `<td>${hee(r.name)}<td title="${hee(r.credential_id)}">` +
       `${hee(String(r.credential_id ?? "").slice(0, 20))}…<td>${hee(r.aaguid)}` +
-      `<td>${hee(String(r.sign_count ?? "0"))}<td>${fmt(r.created)}<td>${fmt(r.last_used)}<td>${delBtn}`;
+      `<td>${hee(r.sign_count ?? "0")}<td>${fmt(r.created)}<td>${fmt(r.last_used)}<td>${delBtn}`;
   }).join("\n");
 
   const empty = rows.length === 0
