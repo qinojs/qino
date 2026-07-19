@@ -8,7 +8,7 @@ export function healthChecks(app: App): HealthTypes {
   return {
     cleanup: {
       "pages in trash": async () => {
-        const trashId = Number(await settings.cms?.pageTrash ?? 0);
+        const trashId = Number(await settings.cms?.pageTrash);
         if (!trashId) return;
         const count = Number(await db.one`SELECT count(*) FROM page WHERE basis = ${trashId}`);
         if (!count) return;
@@ -36,7 +36,7 @@ export function healthChecks(app: App): HealthTypes {
           solutions: {
             "move to trash": {
               solve: async () => {
-                const trashId = Number(await settings.cms?.pageTrash ?? 0);
+                const trashId = Number(await settings.cms?.pageTrash);
                 if (!trashId) throw new Error("No trash page configured");
                 const TrashNode = await cms(app).node(trashId);
                 const trashCont = await TrashNode.cont("main");
