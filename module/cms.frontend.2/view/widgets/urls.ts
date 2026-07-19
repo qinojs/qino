@@ -31,7 +31,7 @@ export default async function (node: Node): Promise<HtmlString> {
       <td class=-delete style="cursor:pointer;width:20px"><img src="${deleteSrc}" alt="${app.t`delete`}">`);
   }
 
-  return html.async`<div class=url-manager pid="${String(node)}">
+  return html.async`<div class=url-manager pid="${node}">
   <table class="-urls -styled -noborder" style="width:100%"><tbody>${html.join(await Promise.all(urlTrs))}</table>
   <br>
   <b>${app.t`Direct links`}</b>

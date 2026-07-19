@@ -29,7 +29,7 @@ export default async function (node: Node): Promise<HtmlString> {
       svgHtml = html`<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
     }
     moduleBoxes.push(html`<div itemid="${name}" title="${desc}">
-      <div class=-title title="${String(await M.get?.("name") ?? name)}">${title}</div>
+      <div class=-title title="${await M.get?.("name") ?? name}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
     </div>`);
   }
@@ -65,7 +65,7 @@ export default async function (node: Node): Promise<HtmlString> {
       }
       modelItems.push(html`<div itemid="${P.id}" title="">
         <svg class=-img fill="#fff">${svgHtml}</svg>
-        <div class=-title title="${String(P.id)}">${await (await P.title()).string()}</div>
+        <div class=-title title="${P.id}">${await (await P.title()).string()}</div>
       </div>`);
     }
     modelsSection = html`<div class=-standalone><br><br><div class=-h1><span>Templates</span></div></div>
