@@ -27,7 +27,7 @@ async function render(_node: Node): Promise<string> {
   if (usr) {
     const vs = await usr.values();
     const grps = ((await usr.grps?.() ?? []) as number[]).join(", ") || "–";
-    usrHtml = `<h3>User #${hee(String(usr))}</h3>` + vsTable(vs, ["pw"]) +
+    usrHtml = `<h3>User #${hee(usr)}</h3>` + vsTable(vs, ["pw"]) +
       `<h3>Groups: ${hee(grps)}</h3>\n`;
   }
 
