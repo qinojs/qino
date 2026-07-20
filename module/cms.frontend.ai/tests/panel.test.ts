@@ -12,7 +12,7 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
     },
   };
   aiInstances.set(app, { registerBot: (bot: Bot) => bots.push(bot) } as never);
-  init(app as never);
+  init(app as never, { signal: new AbortController().signal });
   assertEquals(bots.map((b) => b.id), ["cms-helper"]);
 
   const scripts: string[] = [];

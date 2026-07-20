@@ -9,7 +9,7 @@ Deno.test("cms.frontend.2: stores request URI without base path", async () => {
     on: (_name: string, fn: typeof listener) => listener = fn,
     settings: { cms: { frontend: "cms.frontend.2", pageNotFound: 0 } },
   };
-  init(app as unknown as App);
+  init(app as unknown as App, { signal: new AbortController().signal });
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
   const ctx = {
@@ -40,7 +40,7 @@ Deno.test("cms.frontend.2: exposes stored app path unchanged", async () => {
     on: (_name: string, fn: typeof listener) => listener = fn,
     settings: { cms: { frontend: "cms.frontend.2", pageNotFound: 0 } },
   };
-  init(app as unknown as App);
+  init(app as unknown as App, { signal: new AbortController().signal });
 
   const jsData: { qino?: { cms?: { beUrl?: string } } } = {};
   const ctx = {

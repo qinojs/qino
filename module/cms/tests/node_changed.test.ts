@@ -47,7 +47,7 @@ async function withCtx(fn: () => Promise<void>) {
 
 Deno.test("node_changed: page update captures one row for the page itself", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 5: { type: "p", basis: 1 } } });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     await handlers["table:update-after"](fakeEvent("page", 5, { visible: 1 }));
   });
@@ -57,7 +57,7 @@ Deno.test("node_changed: page update captures one row for the page itself", asyn
 
 Deno.test("node_changed: page delete keeps node_id but anchors page_id at a surviving ancestor", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 8: { type: "p", basis: 3 }, 3: { type: "p", basis: 1 } } });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     await handlers["table:delete-before"](fakeEvent("page", 8, {}));
   });
@@ -68,7 +68,7 @@ Deno.test("node_changed: page delete keeps node_id but anchors page_id at a surv
 
 Deno.test("node_changed: page_text insert links to its page", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } } });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     await handlers["table:insert-after"](fakeEvent("page_text", { page_id: 7, name: "main" }, { page_id: 7, name: "main", text_id: 99 }));
   });
@@ -83,7 +83,7 @@ Deno.test("node_changed: text update resolves node via page_text + title link", 
     tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } },
     links: { "FROM page_text WHERE text_id": [{ page_id: 7 }] },
   });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     await handlers["table:update-after"](fakeEvent("text", 99, { de: "hi" }));
   });
@@ -93,7 +93,7 @@ Deno.test("node_changed: text update resolves node via page_text + title link", 
 
 Deno.test("node_changed: text insert with no link yet produces no row", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: {} }); // no page_text link
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     await handlers["table:insert-after"](fakeEvent("text", { id: 99, lang: "de" }, { id: 99, lang: "de", text: "hi" }));
   });
@@ -105,7 +105,7 @@ Deno.test("node_changed: adding a new language to an existing text is tracked", 
     tree: { 7: { type: "c", basis: 3 }, 3: { type: "p", basis: 1 } },
     links: { "FROM page_text WHERE text_id": [{ page_id: 7 }] }, // text 99 already linked to node 7
   });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     // set() inserts a new (id, lang) row when that language did not exist yet
     await handlers["table:insert-after"](fakeEvent("text", { id: 99, lang: "fr" }, { id: 99, lang: "fr", text: "salut" }));
@@ -116,7 +116,7 @@ Deno.test("node_changed: adding a new language to an existing text is tracked", 
 
 Deno.test("node_changed: unrelated table is ignored", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: {} });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await withCtx(async () => {
     await handlers["table:insert-after"](fakeEvent("log", 1, { time: 1 }));
   });
@@ -125,7 +125,7 @@ Deno.test("node_changed: unrelated table is ignored", async () => {
 
 Deno.test("node_changed: no request context → no capture", async () => {
   const { app, handlers, inserts } = fakeApp({ tree: { 5: { type: "p", basis: 0 } } });
-  initNodeChanged(app);
+  initNodeChanged(app, new AbortController().signal);
   await handlers["table:update-after"](fakeEvent("page", 5, { visible: 1 })); // no requestStorage.run
   assertEquals(inserts.length, 0);
 });
