@@ -1,5 +1,6 @@
 import type { Ctx } from "./ctx/Ctx.ts";
 import { bcrypt } from "../../../deps.ts";
+import { timingSafeEqual } from "node:crypto";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
 // response timing can't reveal whether an e-mail is registered (user enumeration).
@@ -9,13 +10,13 @@ export type LoginError = "username" | "inactive" | "password";
 
 export async function authListen(ctx: Ctx): Promise<void> {
   if (ctx.req.body?.core_login != null) {
-    if (ctx.req.body.csrfToken !== ctx.csrfToken) return;
+    if (!safeEqual(ctx.req.body.csrfToken, ctx.csrfToken)) return;
     const saveLogin = !!ctx.req.body.save_login;
     ctx.loginError = await auth(ctx, String(ctx.req.body.email ?? ""), String(ctx.req.body.pw ?? "")) || undefined;
     await rememberLogin(ctx, saveLogin);
   }
   if (ctx.req.body?.core_logout != null) {
-    if (ctx.req.body.csrfToken !== ctx.csrfToken) return;
+    if (!safeEqual(ctx.req.body.csrfToken, ctx.csrfToken)) return;
     await logout(ctx);
   }
   if (!ctx.userId && ctx.clientId) {
@@ -86,4 +87,11 @@ async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
 
 function pwNeedsRehash(hash: string) {
   return !/^\$2[aby]\$/.test(hash);
+}
+
+const enc = new TextEncoder();
+/** Constant-time token compare (CSRF etc.); coerces untrusted input to string. */
+function safeEqual(a: unknown, b: string): boolean {
+  const ab = enc.encode(String(a ?? "")), bb = enc.encode(b);
+  return ab.byteLength === bb.byteLength && timingSafeEqual(ab, bb);
 }
