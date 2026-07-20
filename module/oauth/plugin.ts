@@ -45,10 +45,6 @@ async function provider(app: App, name: string): Promise<any> {
   return p;
 }
 
-/** Providers to offer users — only fully configured ones (client_id set). */
-export const providers = (app: App): Promise<any[]> =>
-  app.db.query`SELECT name FROM social_login_provider WHERE client_id <> '' ORDER BY name`;
-
 /** Distill an id_token / userinfo response into canonical identity fields (providers vary in naming). */
 function identity(c: any): { email: string; verified: unknown; firstname: string; lastname: string } {
   const full = String(c.name ?? c.global_name ?? c.username ?? c.login ?? "").trim();

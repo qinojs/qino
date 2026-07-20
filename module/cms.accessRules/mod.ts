@@ -1,1 +1,1 @@
-export { invalidateStandards } from "./plugin.ts";
+export { invalidateStandards } from "./lib/standards.ts";

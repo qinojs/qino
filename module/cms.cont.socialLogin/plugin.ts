@@ -1,6 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
-import { providers } from "../oauth/plugin.ts";
+import { providers } from "../oauth/mod.ts";
 
 export const name = "cms.cont.socialLogin";
 export const needs = ["cms", "oauth"];
