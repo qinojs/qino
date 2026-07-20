@@ -226,6 +226,8 @@ export const api: AptTree = {
         "are-translated": {
             get: {
                 description: "Batch-check if multiple texts are translated in a language",
+                // No per-id access check: authenticated users can probe existence/translated-status of foreign
+                // text ids (metadata only, no content). Accepted trade-off; rate-limit later if needed.
                 access: Access.USER,
                 query: s.object({
                     ids: s.string().describe("Underscore-separated text IDs"),
