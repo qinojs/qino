@@ -150,6 +150,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.basePath + "js-error", max: 50 };
     ctx.res.csp["script-src"][reporterRoot] = true;
     ctx.res.html.legacyScripts.add(reporterPath);
-    ctx.res.csp.reportUri = ctx.req.basePath + "csp-error";
+    ctx.res.csp.reportTo = ctx.req.basePath + "csp-error";
   }, { signal });
 }

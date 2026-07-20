@@ -156,6 +156,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         if (enable) {
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
             ctx.res.headers.set(headerName, ctx.res.csp.toHeader());
+            const endpoints = ctx.res.csp.reportingEndpoints();
+            if (endpoints) ctx.res.headers.set("Reporting-Endpoints", endpoints);
         }
     }, { signal });
 }

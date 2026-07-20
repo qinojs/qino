@@ -10,21 +10,27 @@ export class ResCsp {
   "connect-src": Sources = { "'self'": true };
   "frame-src":   Sources = { "'self'": true };
 
-  reportUri: string | undefined;
+  /** Violation-report endpoint. Emitted as `report-to`; pair with the `Reporting-Endpoints` header (see reportingEndpoints). */
+  reportTo: string | undefined;
 
   toHeader(): string {
-    this["script-src"]["'report-sample'"] = true;
-    this["style-src"]["'report-sample'"] = true;
-    const def = this["default-src"];
-    if (def["'none'"] && Object.keys(def).length > 1) delete def["'none'"];
-
     let s = "";
     for (const [type, allowed] of Object.entries(this) as [string, Sources][]) {
-      if (type === "reportUri") continue;
-      if (!Object.keys(allowed).length) continue;
-      s += type + " " + Object.keys(allowed).join(" ") + "; ";
+      if (type === "reportTo") continue;
+      let keys = Object.keys(allowed);
+      // 'report-sample' opts violation reports into a sample of the offending code
+      if (type === "script-src" || type === "style-src") keys = [...keys, "'report-sample'"];
+      // 'none' is meaningless once other sources are present
+      else if (type === "default-src" && keys.length > 1) keys = keys.filter((k) => k !== "'none'");
+      if (!keys.length) continue;
+      s += type + " " + keys.join(" ") + "; ";
     }
-    if (this.reportUri) s += "report-uri " + this.reportUri + "; ";
+    if (this.reportTo) s += "report-to csp; ";
     return s;
+  }
+
+  /** Value for the `Reporting-Endpoints` response header, or undefined when no endpoint is set. */
+  reportingEndpoints(): string | undefined {
+    return this.reportTo ? `csp="${this.reportTo}"` : undefined;
   }
 }
