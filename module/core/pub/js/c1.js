@@ -90,7 +90,7 @@
   };
 
 
-  const dataEl = d.querySelector('script[type="json/c1"]');
+  const dataEl = d.querySelector('#qino-data');
   if (dataEl) {
     const data = JSON.parse(dataEl.textContent);
     for (const k in data) {

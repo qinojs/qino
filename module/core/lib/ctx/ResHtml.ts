@@ -45,7 +45,7 @@ export class ResHtml {
 
     for (const url of this.styles) ret += `<link rel=stylesheet href="${hee(url)}">\n`;
 
-    if (this.#jsData) ret += `<script type=json/c1>${jsonScript(this.#jsData)}</script>\n`;
+    if (this.#jsData) ret += `<script type=application/json id=qino-data>${jsonScript(this.#jsData)}</script>\n`;
 
     for (const url of this.legacyScripts) ret += `<script src="${hee(url)}"></script>\n`;
 

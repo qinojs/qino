@@ -22,7 +22,7 @@ Deno.test("ResHtml: render renders escaped metadata and assets in head", () => {
   assertEquals(out.includes('<script type=importmap>{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
   assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;">'), true);
   assertEquals(out.includes('<link rel=stylesheet href="/style.css?x=1&amp;y=2">'), true);
-  assertEquals(out.includes('<script type=json/c1>{"hello":"\\u003cworld>"}</script>'), true);
+  assertEquals(out.includes('<script type=application/json id=qino-data>{"hello":"\\u003cworld>"}</script>'), true);
   assertEquals(out.includes('<meta name="description" content="A &quot;quote&quot; &amp; more">'), true);
   assertEquals(out.includes("name=empty"), false);
   assertEquals(out.includes('<title>Pre &lt;Title&gt; &amp; Suf</title>'), true);

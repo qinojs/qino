@@ -17,7 +17,7 @@ import { AptClient } from "./AptClient.js";
 import { t } from "./t.mjs";
 
 function defaultBase() {
-  const el = document.querySelector('script[type="json/c1"]');
+  const el = document.querySelector('#qino-data');
   let appURL = globalThis.qino?.appURL;
   if (!appURL && el?.textContent) try { appURL = JSON.parse(el.textContent)?.qino?.appURL; } catch { /* not json */ }
   return new URL("api/", location.origin + (appURL ?? "/"));
