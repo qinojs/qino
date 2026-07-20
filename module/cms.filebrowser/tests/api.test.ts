@@ -25,7 +25,7 @@ Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () 
     },
     db: { row: () => null },
   };
-  init(app as any);
+  init(app as any, { signal: new AbortController().signal });
   assertEquals(handlers["cms:page-ready"].length, 1);
 
   const added: string[] = [];

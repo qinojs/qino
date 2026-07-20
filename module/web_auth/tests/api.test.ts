@@ -7,6 +7,7 @@ function makeApp() {
   const execs: Array<[string, unknown[]]> = [];
   const app = {
     settings: { web_auth: { rpId: "localhost", rpName: "Qino" } },
+    fire: () => Promise.resolve(),
     db: {
       row: () => null,
       all: () => [],
