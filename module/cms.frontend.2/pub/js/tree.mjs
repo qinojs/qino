@@ -191,7 +191,7 @@ globalThis.cmsTreeInit = async (json) => {
 
   function goTo(pid) {
     pid = String(pid);
-    return apt.cms.tree.get({ in: pid, filter: showContents() ? "*" : "p" }).then((json) => {
+    return apt.cms.tree.get({ filter: showContents() ? "*" : "p" }).then((json) => {
       rootNode.replaceChildren();
       for (const n of json) rootNode.append(makeNode(n));
       activate(cms.Tree.getNodeById(pid));

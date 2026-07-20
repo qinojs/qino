@@ -15,8 +15,11 @@ function validate(schema: StandardSchema, data: unknown, where: string) {
 
 function validatePart(schema: StandardSchema | undefined, src: Params, where: string, doCoerce: boolean) {
   if (!schema) return {};
+  const shape = shapeOf(schema);
   const out: Params = Object.create(null);
-  for (const [k, field] of Object.entries(shapeOf(schema))) if (k in src) out[k] = doCoerce ? coerce(src[k], field) : src[k];
+  // strict: unknown fields are a caller mistake, not silently dropped
+  if (schema.shape) for (const k of Object.keys(src)) if (!(k in shape)) throw new ValidationError([{ message: "unexpected field", path: [k] }], where);
+  for (const [k, field] of Object.entries(shape)) if (k in src) out[k] = doCoerce ? coerce(src[k], field) : src[k];
   return validate(schema, out, where) as Params;
 }
 

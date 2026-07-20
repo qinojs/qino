@@ -42,7 +42,9 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
         const concretePath = r.segments
           .flatMap((seg) => seg.startsWith(":") ? pathValue(raw[paramName(seg)], isCatchall(seg)) : seg)
           .join("/");
-        return invoke(tree, r.method, "/" + concretePath, { input: raw, query: raw });
+        const body = { ...raw }; // path params travel in the URL, not the field bag (strict rejects unknowns)
+        for (const [name] of routeParams(r)) delete body[name];
+        return invoke(tree, r.method, "/" + concretePath, { input: body, query: body });
       },
     });
   }
