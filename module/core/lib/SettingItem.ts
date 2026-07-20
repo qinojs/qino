@@ -40,10 +40,11 @@ class SettingItem extends Item<SettingItem> {
       return this.root.db.table("qg_setting").update(this.data!.id, { value: value == null ? null : String(value) });
     }
 
+    // replace: drop child keys absent from the new object, then set the given ones
+    const keys = new Set(Object.keys(value));
     const promises = [];
-    for (const key in value) {
-      promises.push(this.item(key).set((value as Record<string, unknown>)[key]));
-    }
+    for (const sub of this.items()) if (sub.key != null && !keys.has(sub.key)) promises.push(sub.remove());
+    for (const key of keys) promises.push(this.item(key).set((value as Record<string, unknown>)[key]));
     return Promise.all(promises);
   };
 
