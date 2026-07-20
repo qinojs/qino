@@ -6,21 +6,16 @@ import type { Node } from "../cms/mod.ts";
 export const name = "cms.backend.cms.accessRules";
 export const needs = ["cms.backend", "cms.accessRules"];
 
-export const settingsSchema = { properties: { canCreateGroups: { type: "boolean", default: true } } };
-
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Access rules", de: "Zugriffsregeln" });
-  const s = app.settings[name];
-  for (const [key, meta] of Object.entries(settingsSchema.properties)) {
-    if ((await s[key]) == null) await s[key](meta.default);
-  }
 }
 
 const clamp = (v: unknown, min = 0) => Math.min(Math.max(min, Number(v) || 0), 3);
 const level = (v: unknown) => (v === "" || v == null ? "" : String(clamp(v)));
 
 /** One handler for every edit: override cell, CAP row, standard column, bulk (standard/override), add group. */
-async function save(app: App, vars: Record<string, unknown>): Promise<void> {
+async function save(node: Node, vars: Record<string, unknown>): Promise<void> {
+  const app = node.app;
   const modules = () => String(vars.modules ?? "").split(",").filter(Boolean);
   const setOverride = async (module: string, grpId: number, access: string) => {
     const table = app.db.table("cms_module_access_grp"), id = { module, grp_id: grpId };
@@ -48,7 +43,7 @@ async function save(app: App, vars: Record<string, unknown>): Promise<void> {
     if (grpId) for (const m of modules()) await setOverride(m, grpId, level(vars.access));
   } else if (vars.add_group !== undefined) { // promote/create a group into the matrix
     let grpId = Number(vars.grp) || 0;
-    if (!grpId && vars.new_group && await app.settings[name].canCreateGroups) {
+    if (!grpId && vars.new_group && (node.settings.canCreateGroups() ?? true)) {
       grpId = Number(await app.db.table("grp").insert({ name: String(vars.new_group).trim() }));
     }
     if (grpId) await app.db.table("grp").update(grpId, { cms_access: clamp(vars.cap, 1) });
@@ -57,7 +52,7 @@ async function save(app: App, vars: Record<string, unknown>): Promise<void> {
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = node.app, t = app.t;
-  await save(app, vars);
+  await save(node, vars);
 
   const groupRows = await app.db.query`SELECT id, name, cms_access FROM grp WHERE cms_access ORDER BY name`;
   const overrides = new Map<string, number>();
@@ -98,7 +93,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       ${cells}`);
   }
 
-  const canCreate = await app.settings[name].canCreateGroups;
+  const canCreate = node.settings.canCreateGroups() ?? true;
   const other = await app.db.query`SELECT id, name FROM grp WHERE cms_access IS NULL OR cms_access = 0 ORDER BY name`;
   const bulkCols = html.join(groupRows.map((g) => html`<option value="${g.id}">${g.name}`));
 
@@ -119,9 +114,9 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
       </span>
     </div>
     <u2-table style="padding:0">
-      <table class="u2-table -Sticky" style="white-space:nowrap">
+      <table class="u2-table -Sticky" style="white-space:nowrap;">
         <thead>
-          <tr>
+          <tr style="position:relative; z-index:1">
             <th><input type=checkbox data-check-all>
             <th data-sort-handler>${t`Module`}
             <th data-sort-handler>${t`Used`}
@@ -163,4 +158,13 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render } };
+export const cms = {
+  node: {
+    css: ["pub/main.css"],
+    js: ["pub/main.js"],
+    render,
+    settingsSchema: { properties: {
+      canCreateGroups: { type: "boolean", default: true }
+    }},
+  },
+};

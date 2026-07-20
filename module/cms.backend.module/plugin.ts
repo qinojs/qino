@@ -46,8 +46,9 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const error = ctx.state.moduleError as string | undefined;
 
   // Runtime-only enable/disable (not persisted — a restart re-links everything).
-  const toggleBtn = isSuperuser && !PROTECTED.has(modName)
-    ? html`<button data-mod-toggle="${linked ? "disable" : "enable"}" data-mod="${modName}">${linked ? t`Disable` : t`Enable`}</button> <small>${t`runtime only — reset on restart`}</small>`
+  const canToggle = isSuperuser && (!linked || !undisablable(node).has(modName));
+  const toggleBtn = canToggle
+    ? await html.async`<button data-mod-toggle="${linked ? "disable" : "enable"}" data-mod="${modName}">${linked ? t`Disable` : t`Enable`}</button> <small>${t`runtime only — reset on restart`}</small>`
     : "";
   const modPath = modObj.path;
   const modUrl  = modObj.url;
@@ -178,6 +179,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   const allMods = app.modules.all();
   const modules = Object.keys(allMods).sort();
 
+  const disabledLabel = await t`disabled`;
   const u = ctx.req.url.toURL();
   for (const name of modules) {
     const modObj = allMods[name];
@@ -203,7 +205,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     u.searchParams.set("mod", name);
     rows.push(html`<tr>
       <td style="padding-right:0">${iconHtml}
-      <td><a href="${u.search}">${name}</a>${disabled ? html` <small>(${t`disabled`})</small>` : ""}
+      <td><a href="${u.search}">${name}</a>${disabled ? html` <small>(${disabledLabel})</small>` : ""}
       <td style="text-align:center">${needs.length}
       <td style="text-align:center">${neededBy}
       <td>${exports}`);
@@ -234,14 +236,16 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 // dependency guard in unlink() anyway.
 const PROTECTED = new Set(["core"]);
 
+const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); // never unlink the module rendering this very page
+
 // Runtime-only enable/disable: link/unlink the module. Not persisted — a restart
 // re-links every imported module. Superuser only.
-async function toggleModule(app: App, vars: Record<string, unknown>): Promise<void> {
+async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<void> {
   const ctx = getCtx();
   if (!(await ctx.user?.get("superuser"))) return;
   try {
-    if (vars.disable) { const n = String(vars.disable); if (!PROTECTED.has(n)) app.unlink(n); }
-    else if (vars.enable) await app.link(String(vars.enable));
+    if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.unlink(n); }
+    else if (vars.enable) await node.app.link(String(vars.enable));
   } catch (e) {
     ctx.state.moduleError = e instanceof Error ? e.message : String(e); // shown in the detail view
   }
@@ -249,7 +253,7 @@ async function toggleModule(app: App, vars: Record<string, unknown>): Promise<vo
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
-  if (vars.disable || vars.enable) await toggleModule(node.app, vars);
+  if (vars.disable || vars.enable) await toggleModule(node, vars);
   // JS reloads post vars without the ?mod= query, so keep the toggled module in view.
   const modName = String(vars.mod ?? vars.disable ?? vars.enable ?? ctx.req.query.mod ?? "");
   if (modName) return renderDetail(node, modName);
