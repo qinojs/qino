@@ -1,7 +1,7 @@
 import { html, type HtmlString, getCtx, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import api from "./nodeApi.ts";
+import api, { canManageMembers } from "./nodeApi.ts";
 
 export const name = "cms.backend.groups";
 export const needs = ["cms.backend"];
@@ -92,6 +92,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
   const usersNode = await node.cms.nodeByModule("cms.backend.users");
   const usersUrl = usersNode ? await (await usersNode.page()).url() : "";
+  const canManage = await canManageMembers(id);
 
   const members = await db.query`
     SELECT usr.id, usr.email, usr.firstname, usr.lastname
@@ -104,7 +105,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     memberRows.push(html`<tr>
       <td>${usersUrl ? html`<a href="${usersUrl}?id=${m.id}">${label}</a>` : label}
       <td>${m.email}
-      <td><button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
+      <td>${canManage ? html`<button class="u2-unstyle -remove" data-usr=${m.id} u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`);
   }
 
   return html.async`<div class=u2-flex itemid="${id}">
@@ -127,10 +128,12 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     <table class=u2-table style="width:auto">
       ${html.join(memberRows)}
     </table>
-    <form class=-body data-add-member>
+    ${canManage
+      ? html.async`<form class=-body data-add-member>
       <input type=email name=email placeholder="${t`Email`}..." required>
       <button>${t`add`}</button>
-    </form>
+    </form>`
+      : html.async`<div class=-body>${t`You can only add users to groups you are a member of yourself.`}</div>`}
   </div>
 </div>`;
 }

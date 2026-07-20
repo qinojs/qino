@@ -1,9 +1,17 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { apt, t } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.groups", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = apt.cms.node(nid);
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");
+  let alertFn;
+  const alert = async (text) => (alertFn ??= (await import("@qino/u2/js/dialog/dialog.js")).alert)(text);
+
+  const onMemberResult = async (r, onOk) => {
+    if (r?.error) { await alert(r.error); return; }
+    if (!r) { await alert(await t`Action failed.`); return; }
+    await onOk?.();
+  };
 
   el.addEventListener("click", (e) => {
     const del = e.target.closest(".-delete button");
@@ -15,7 +23,8 @@ cms.initNode("backend.groups", (el) => {
     const rm = e.target.closest(".-members .-remove");
     if (rm) {
       const tr = rm.closest("tr");
-      node.api.post({ set_usr: itemId(rm), usr_id: rm.dataset.usr, add: 0 }).then((ok) => { if (ok) tr.remove(); });
+      node.api.post({ set_usr: itemId(rm), usr_id: rm.dataset.usr, add: 0 })
+        .then((r) => onMemberResult(r, () => tr.remove()));
     }
   });
 
@@ -31,7 +40,7 @@ cms.initNode("backend.groups", (el) => {
   const addForm = el.querySelector("[data-add-member]");
   addForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const ok = await node.api.post({ add_email: itemId(addForm), email: addForm.email.value });
-    if (ok) cms.reloadNode(nid);
+    const r = await node.api.post({ add_email: itemId(addForm), email: addForm.email.value });
+    await onMemberResult(r, () => cms.reloadNode(nid));
   });
 });
