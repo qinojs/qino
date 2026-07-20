@@ -537,6 +537,23 @@
       "integrity": "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="
     }
   },
+  "remote": {
+    "https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js": "086b990606b844f86b2a2a0aa0db6c093b276df9fb4f62bc14a2d5b63175929f",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/draghandle/draghandle.js": "a4764f7390c23cfc5b5c9dc65fd11d4b320b7fc9e13983547eb9ab2ee43aede8",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/dropzone/dropzone.js": "5136d9d76e014d9d2c6c600ac4766f9530f7cad6f1c6c2bfe7f55d400ff49c56",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/focusgroup/focusgroup.js": "4438cce292b76991c9ca6ef5bf7c5c779dad3493ce9971215834bbe395ca5d1a",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/el/tree/ext/dnd.js": "1e4086f1d09a0aff3650ed6edf42be868e2f37f8b439d2a71ce972a0f963118d",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/el/tree/ext/item.js": "df5840e51901d07c3bd2394a260985d82a11a310fe99cce053b878130a852cef",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/el/tree/tree.js": "ab25ca7b2555694738633879563826b90c55ddc0c3e2e6d586285c3d4af20f5d",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/Placer/Placer.js": "0ae8cd8a2d956341506801876209987cd2b6c8ed2f0409a8dc802c9e2b1e5128",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/SelectorObserver/SelectorObserver.js": "754759d165cbac7b3d8ad30a1fd6bddd80b812f0d5c749ee2655f139ea31ce78",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/Tour/Tour.js": "3649adf138f23fcd8a6116538a644bc96d4408cfa1fb31453575ca9e3d12be5d",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/dialog/dialog.js": "d1cb68a0919ad2cf811a62d392d29b89fe16a78ce4e9006ff0847f6669add12d",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/drag/drag.js": "71905b618f834ac88dc8edb1924c022de40c5b7162ffcbbd49d8bf23cf0248e9",
+    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/drag/indicateDrop.js": "c8a5bef524293773f44bccf75ffc4b29d15eaf3b3cd4f0ee40fa776e95817167",
+    "https://cdn.jsdelivr.net/npm/dompurify@3/+esm": "045f152d3ec562412bfff4fdd428ec8e8333616fc7b3d4e4e54781eb7196c3f0",
+    "https://cdn.jsdelivr.net/npm/marked@18/+esm": "6c022b7cff763280d5a8c2a0008d9a3d2aa2b99ae05cc384500bcaf6b07b0e05"
+  },
   "workspace": {
     "dependencies": [
       "jsr:@nuxodin/item@0.5.24"
