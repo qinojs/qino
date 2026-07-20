@@ -18,7 +18,7 @@ export function healthChecks(app: App): HealthTypes {
               solve: async () => { await db.query`DELETE FROM m_error_report WHERE source = '404'`; },
             },
             "remove bots": {
-              solve: async () => { await db.query`DELETE FROM m_error_report WHERE bot`; },
+              solve: async () => { await db.query`DELETE FROM m_error_report WHERE bot = ${true}`; },
             },
             "remove notices": {
               solve: async () => { await db.query`DELETE FROM m_error_report WHERE prio = 'notice'`; },

@@ -89,7 +89,7 @@ export class DbTable {
     }
     return part.join(":");
   }
-  entryId2Array(id: any): Record<string, any> | undefined {
+  entryIdValues(id: any): Record<string, any> | undefined {
     const arr: Record<string, any> = {};
     if (id != null && typeof id === "object") {
       for (const primary of Object.keys(this.#primaries)) {
@@ -110,14 +110,14 @@ export class DbTable {
   }
   /** WHERE fragment that identifies the row(s) for an entry id; undefined if the id is incomplete. */
   entryIdToFragment(id: any, alias?: string): Sql | undefined {
-    const values = this.entryId2Array(id);
+    const values = this.entryIdValues(id);
     if (!values) return;
     const frag = this.valuesToFragment(values, alias);
     return frag.parts.length ? frag : undefined;
   }
 
   async selectByID(id: any): Promise<Record<string, any> | undefined> {
-    const values = this.entryId2Array(id);
+    const values = this.entryIdValues(id);
     if (!values) return;
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return;
@@ -178,7 +178,7 @@ export class DbTable {
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const set = this.valuesToFragment(values!, undefined, true);
     if (set.parts.length) {
-      const whereValues = this.entryId2Array(id);
+      const whereValues = this.entryIdValues(id);
       if (!whereValues) return;
       const where = this.valuesToFragment(whereValues);
       if (!where.parts.length) return;
@@ -186,13 +186,13 @@ export class DbTable {
       if (!rows) return;
       if (!rows.affectedRows) return; // no row matched (drivers report matched rows, not changed)
       await this.#db.fire("table:update-after", { table: this, id, data: values! });
-      return String(id);
+      return this.entryId(id);
     }
     return;
   }
 
   async ensure(values: Record<string, any> = {}): Promise<string | undefined> {
-    const whereValues = this.entryId2Array(values);
+    const whereValues = this.entryIdValues(values);
     const where = whereValues ? this.valuesToFragment(whereValues) : null;
     return where?.parts.length && await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`
       ? this.update(values)
@@ -231,7 +231,7 @@ export class DbTable {
   }
   async #delete(id: any): Promise<boolean> {
     id = this.entryId(id);
-    const values = this.entryId2Array(id);
+    const values = this.entryIdValues(id);
     const eBefore: any = { table: this, data: values, id, returnValue: undefined };
     await this.#db.fire("table:delete-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
@@ -282,7 +282,7 @@ export class DbTable {
     }
 
     const isCompositeId = Array.isArray(id) || (id != null && typeof id === "object");
-    const values = isCompositeId ? id : this.entryId2Array(id);
+    const values = isCompositeId ? id : this.entryIdValues(id);
     const eid = isCompositeId ? String(this.entryId(id)) : String(id);
 
     const hit = this.#entries.get(eid)?.deref();

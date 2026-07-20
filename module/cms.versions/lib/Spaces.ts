@@ -76,7 +76,7 @@ export function initSpaces(app: App, signal: AbortSignal) {
     const originalTable = tableName.slice(6);
     const auto = e.table.autoIncrement;
     if (!auto) return;
-    const ids = e.table.entryId2Array(e.id) || {};
+    const ids = e.table.entryIdValues(e.id) || {};
     const value = Number(ids[String(auto)]);
     if (!value) return;
     await ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;

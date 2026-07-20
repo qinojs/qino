@@ -49,7 +49,7 @@ function filterKindOptions(selected = ""): string {
 
 // Insert a catalog model, becoming the kind's default only if none exists yet.
 async function insertModel(app: App, providerId: number, m: { model_id: string; kind: string; is_default?: boolean }): Promise<void> {
-  const hasDefault = m.is_default && await app.db.one`SELECT id FROM ai_provider_model WHERE kind = ${m.kind} AND is_default = 1`;
+  const hasDefault = m.is_default && await app.db.one`SELECT id FROM ai_provider_model WHERE kind = ${m.kind} AND is_default = ${true}`;
   await app.db.table("ai_provider_model").insert({
     provider_id: providerId, model_id: m.model_id, kind: m.kind,
     is_default: m.is_default && !hasDefault ? 1 : 0,
@@ -80,7 +80,7 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
     const kind = String(vars.kind ?? "");
     const modelId = Number(vars.model_id);
     if (!modelId) return { type: "error", text: "No model selected." };
-    await app.db.query`UPDATE ai_provider_model SET is_default = 0 WHERE kind = ${kind}`;
+    await app.db.query`UPDATE ai_provider_model SET is_default = ${false} WHERE kind = ${kind}`;
     if (await app.db.one`SELECT id FROM ai_provider_model WHERE id = ${modelId} AND kind = ${kind}`) {
       await app.db.table("ai_provider_model").update(modelId, { is_default: 1 });
     }

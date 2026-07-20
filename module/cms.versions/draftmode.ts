@@ -40,7 +40,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //     if (!getVers(ctx).space) return;
     //     const tableName: string = String(e.table);
     //     if (!versedTables(ctx.app.db)[tableName]) return;
-    //     const data = { ...e.data, ...e.table.entryId2Array(e.id), _vers_log: 0, _vers_space: getVers(ctx).space };
+    //     const data = { ...e.data, ...e.table.entryIdValues(e.id), _vers_log: 0, _vers_space: getVers(ctx).space };
     //     // for partially-versioned tables (like page), push non-versioned fields to live table
     //     const fieldSpec = versedTables(ctx.app.db)[tableName];
     //     if (typeof fieldSpec === "object") {
@@ -50,7 +50,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //         }
     //         if (Object.keys(liveData).length) {
     //             const set = e.table.valuesToFragment(liveData, undefined, true);
-    //             const idValues = e.table.entryId2Array(e.id);
+    //             const idValues = e.table.entryIdValues(e.id);
     //             const idWhere = e.table.valuesToFragment(idValues);
     //             await ctx.app.db.exec`UPDATE ${sql.id(tableName)} SET ${set} WHERE ${idWhere}`;
     //         }
@@ -68,7 +68,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //     const data = { ...e.data, _vers_log: 0, _vers_space: getVers(ctx).space };
     //     const VT = ctx.app.db.table(`_vers_${tableName}`);
     //     const id = await VT.insert(data);
-    //     const ids = e.table.entryId2Array(id);
+    //     const ids = e.table.entryIdValues(id);
     //     e.returnValue = e.table.entryId(ids);
     //     const auto = e.table.autoIncrement;
     //     if (auto) {
@@ -82,7 +82,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //     if (!getVers(ctx).space) return;
     //     const tableName: string = String(e.table);
     //     if (!versedTables(ctx.app.db)[tableName]) return;
-    //     const data = { ...(e.table.entryId2Array(e.id) ?? {}), _vers_log: 0, _vers_space: getVers(ctx).space, _vers_deleted: 1 };
+    //     const data = { ...(e.table.entryIdValues(e.id) ?? {}), _vers_log: 0, _vers_space: getVers(ctx).space, _vers_deleted: 1 };
     //     const VT = ctx.app.db.table(`_vers_${tableName}`);
     //     await VT.update(data);
     //     e.returnValue = true;
@@ -101,7 +101,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
         for (const key of ["sort", "basis", "access", "title_id"]) {
             if (key in e.data) liveData[key] = e.data[key];
         }
-        const idValues = e.table.entryId2Array(e.id);
+        const idValues = e.table.entryIdValues(e.id);
         if (!idValues) return;
         const idWhere = e.table.valuesToFragment(idValues);
         const db = ctx.app.db;

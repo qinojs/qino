@@ -37,7 +37,7 @@ function fakeApp(opts: { tree: Record<number, { type: string; basis: number }>; 
 }
 
 function fakeEvent(table: string, id: any, data: Record<string, any>) {
-  return { table: { toString: () => table, entryId2Array: () => (typeof id === "object" ? id : { id }) }, id, data };
+  return { table: { toString: () => table, entryIdValues: () => (typeof id === "object" ? id : { id }) }, id, data };
 }
 
 async function withCtx(fn: () => Promise<void>) {

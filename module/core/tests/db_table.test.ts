@@ -76,7 +76,7 @@ Deno.test("DbTable: entry id and where fragments use field transforms", async ()
   await table.init();
 
   assertEquals(table.entryId({ id: "7.9" }), "7.9");
-  assertEquals(table.entryId2Array("7"), { id: "7" });
+  assertEquals(table.entryIdValues("7"), { id: "7" });
   assertEquals(fakeRender(table.entryIdToFragment("7"), []), ["`id` = ?", ["7"]]);
   assertEquals(
     fakeRender(table.valuesToFragment({ id: "7", name: "A", parent: null }, "t"), []),

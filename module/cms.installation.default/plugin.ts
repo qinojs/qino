@@ -66,7 +66,7 @@ export async function install({app}: {app: App}): Promise<void> {
     await (await cm.node(1)).changeGroup(Number(adminGrp), 2);
   }
   // Superuser
-  if (!await app.db.one`SELECT id FROM usr WHERE superuser = '1'`) {
+  if (!await app.db.one`SELECT id FROM usr WHERE superuser = ${true}`) {
     const pwChars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
     const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => pwChars[b % pwChars.length]).join("");
     await app.db.table('usr').insert({ email: 'su', pw: await pwHash(suPw), superuser: 1, active: 1, firstname: 'Superuser', lastname: 'Superuser' });

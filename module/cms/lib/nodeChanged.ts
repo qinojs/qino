@@ -52,7 +52,7 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         if (!ctx) return;
         const table = String(e.table);
         if (table !== "page" && table !== "text" && table !== "file" && !LINKED.has(table)) return;
-        const vs = { ...(e.id != null ? e.table.entryId2Array?.(e.id) : {}), ...e.data };
+        const vs = { ...(e.id != null ? e.table.entryIdValues?.(e.id) : {}), ...e.data };
         const logId = Number(await ctx.logId) || 0;
         if (!logId) return;
 

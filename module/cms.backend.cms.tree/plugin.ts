@@ -60,7 +60,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const now = unixTime();
   const total   = Number(await db.one`SELECT count(*) FROM page WHERE type='p'`);
   const offline = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`);
-  const hidden  = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND visible=0`);
+  const hidden  = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND visible=${false}`);
   return html.async`<div style="overflow:auto; padding:0">
 <table class="u2-table" style="white-space:nowrap">
   <tr><td>${t`Pages total`}:<td>${total}

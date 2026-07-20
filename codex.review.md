@@ -81,7 +81,7 @@ Empfehlung: Entweder den offiziellen `StandardSchemaV1`-Typ konsumieren und Vali
 
 ### P1.5 – DB-Coercion speichert ungültige Werte still als `0`; Composite-IDs kollidierbar
 
-Numerische Felder: `parseFloat(...) || 0` — Tippfehler, leere Werte, `NaN` werden zu gültigen Nullen, `"12x"` zu `12`: [DbField.ts](module/core/lib/db/DbField.ts#L50). Composite-IDs joinen mit unescaped `-:-`: [DbTable.ts](module/core/lib/db/DbTable.ts#L88); `entryId2Array` prüft die Komponentenanzahl nicht: [DbTable.ts](module/core/lib/db/DbTable.ts#L98).
+Numerische Felder: `parseFloat(...) || 0` — Tippfehler, leere Werte, `NaN` werden zu gültigen Nullen, `"12x"` zu `12`: [DbField.ts](module/core/lib/db/DbField.ts#L50). Composite-IDs joinen mit unescaped `-:-`: [DbTable.ts](module/core/lib/db/DbTable.ts#L88); `entryIdValues` prüft die Komponentenanzahl nicht: [DbTable.ts](module/core/lib/db/DbTable.ts#L98).
 
 Empfehlung: Strikte Konvertierung mit Fehler bei ungültigen Werten. Composite-IDs strukturiert halten oder reversibel encodieren (z. B. JSON-Array), nicht über einen frei vorkommenden Separator.
 

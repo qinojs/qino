@@ -101,7 +101,7 @@ export class DbEntry {
 
   async ensure(): Promise<this> {
     if (!(await this.exists())) {
-      const arr = this.table.entryId2Array(this.#eid);
+      const arr = this.table.entryIdValues(this.#eid);
       if (arr) this.#vs = arr;
       await this.table.insert(this.#vs);
       this.#full = false;

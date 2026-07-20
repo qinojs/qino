@@ -16,7 +16,7 @@ export function cookiePrefix(https: boolean, appURL: string): string {
  *  for headers.set(...) / .append(...) or HeadersInit arrays. */
 interface HeaderBuilders {
   contentDisposition(type: "inline" | "attachment", name: string): [string, string];
-  setCookie(name: string, value: string, basePath: string, https: boolean, expires?: string): [string, string];
+  setCookie(name: string, value: string, basePath: string, https: boolean, maxAge?: number): [string, string];
 }
 
 export const header: HeaderBuilders = {
@@ -26,11 +26,11 @@ export const header: HeaderBuilders = {
     const encoded = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
     return ["Content-Disposition", `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`];
   },
-  /** Secure Set-Cookie (HttpOnly, SameSite=Lax, prefix). Optional expires for persistent cookies. */
-  setCookie(name: string, value: string, basePath: string, https: boolean, expires?: string): [string, string] {
+  /** Secure Set-Cookie (HttpOnly, SameSite=Lax, prefix). Optional Max-Age (seconds) for persistent cookies. */
+  setCookie(name: string, value: string, basePath: string, https: boolean, maxAge?: number): [string, string] {
     const fullName = cookiePrefix(https, basePath) + name;
     const parts = [`${fullName}=${value}`, `Path=${basePath}`];
-    if (expires) parts.push(`Expires=${expires}`);
+    if (maxAge != null) parts.push(`Max-Age=${maxAge}`);
     parts.push("HttpOnly;SameSite=Lax");
     if (https) parts.push("Secure");
     return ["Set-Cookie", parts.join("; ")];

@@ -165,7 +165,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 async function renderPreview(node: Node, id: number): Promise<HtmlString> {
   const msg = await mail(node.app).get(id);
   let body = await msg.getHtml(undefined, msg.data);
-  const files = await node.app.db.query`SELECT * FROM mail_attachment WHERE mail_id=${id} AND inline=1`;
+  const files = await node.app.db.query`SELECT * FROM mail_attachment WHERE mail_id=${id} AND inline=${true}`;
   for (const f of files) {
     if (!f.path || !f.hash) continue;
     try {
