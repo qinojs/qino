@@ -88,8 +88,8 @@ async function verifyAssertion(
     });
     if (!verified) return { ok: false, error: "verification_failed" };
     return { ok: true, cred, newCounter: authenticationInfo.newCounter };
-  } catch (e: any) {
-    return { ok: false, error: e.message ?? "verification_failed" };
+  } catch {
+    return { ok: false, error: "verification_failed" };
   }
 }
 
@@ -162,8 +162,8 @@ export const api: AptTree = {
               expectedRPID: rpId,
               requireUserVerification: false,
             });
-          } catch (e: any) {
-            return { ok: false, error: e.message ?? "verification_failed" };
+          } catch {
+            return { ok: false, error: "verification_failed" };
           }
 
           if (!verification.verified || !verification.registrationInfo) {
@@ -213,6 +213,8 @@ export const api: AptTree = {
               usrId = Number(usr.id);
               const creds = await db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
+            } else {
+              ctx.app.fire("suspicious", { ctx, reason: "webauthn login challenge for unknown email" }).catch(() => {});
             }
           }
 
@@ -242,7 +244,10 @@ export const api: AptTree = {
           if (!stored) return { ok: false, error: "challenge_expired" };
 
           const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, false);
-          if (!r.ok) return r;
+          if (!r.ok) {
+            ctx.app.fire("suspicious", { ctx, reason: "webauthn login verification failed" }).catch(() => {});
+            return r;
+          }
 
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 

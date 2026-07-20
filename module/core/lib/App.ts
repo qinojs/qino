@@ -34,6 +34,7 @@ export interface AppEvents {
     "html-ready": { ctx: Ctx };
     "respond": { ctx: Ctx };
     "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // ctx is missing for static files
+    "suspicious": { ctx: Ctx; weight?: number; reason?: string }; // a module noticed something abusive; consumers score the client. weight defaults to 1
     "auth:login": { oldSession: ItemProxy; usrId: number };
     "dbFile:access": { file: DbFile; access: boolean };          // fast path
     "dbFile:access-fallback": { file: DbFile; access: boolean }; // slow path, only fired when access still unresolved

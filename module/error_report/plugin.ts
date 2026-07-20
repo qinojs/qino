@@ -136,6 +136,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     await addReport(app, report);
   }, { signal });
 
+  // Log every "suspicious" signal (failed logins, enumeration probes, …). A future
+  // security module scores the client from the same event; here we just record it.
+  app.on("suspicious", ({ reason }) => addReport(app, {
+    source: "suspicious",
+    message: reason ?? "suspicious",
+    prio: "warning",
+  }), { signal });
+
   app.on("render", async ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
     if (!await ctx.app.settings.error_report.browserErrors) return;
