@@ -63,8 +63,9 @@ cms.initNode("cont.apitest", (root) => {
       opts.credentials = "omit"; // drop the ambient cookie so anon/bearer are honest
       if (identity.mode === "bearer") headers["Authorization"] = "Bearer " + identity.token;
     }
+    headers["X-Apt-Check"] = "access";
     try {
-      const res = await fetch(appURL + "api" + path + "?_checkAccess=1", opts);
+      const res = await fetch(appURL + "api" + path, opts);
       if (res.ok) return "ok";
       const err = await res.json().then((b) => b.error).catch(() => "");
       if (res.status === 403) return err === "Forbidden" ? "csrf" : "denied";

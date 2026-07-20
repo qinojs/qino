@@ -25,7 +25,10 @@ function validatePart(schema: StandardSchema | undefined, src: Params, where: st
 
 export const asParams = (v: unknown): Params => v && typeof v === "object" ? v as Params : {};
 
-export async function invoke(tree: AptTree, method: string, path: string, rawParams: Params = {}): Promise<unknown> {
+/** Out-of-band control channel, kept out of the input/query data namespace. */
+export type InvokeOptions = { checkAccess?: boolean };
+
+export async function invoke(tree: AptTree, method: string, path: string, rawParams: Params = {}, opts: InvokeOptions = {}): Promise<unknown> {
   const m = method.toLowerCase() as Method;
   if (!VERB_SET.has(m)) throw new NotFoundError(`no route: ${method} ${path}`);
 
@@ -90,7 +93,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
   if (!verb.access) throw new AccessError("no access defined");
   if (!await verb.access(ctx)) throw new AccessError();
   if (verb.guard && !await verb.guard(params, ctx)) throw new AccessError();
-  if (rawParams._checkAccess || input._checkAccess || query._checkAccess) return { ok: true };
+  if (opts.checkAccess) return { ok: true };
 
   Object.assign(params, validatePart(verb.input, input, "input", !BODY_METHODS.has(m)), validatePart(verb.query, query, "query", true));
   const result = await verb.execute(params, ctx);

@@ -34,7 +34,7 @@ cms.initNode("backend.api", (el) => {
         }
         result.value ="Checking…";
         const method = r.method.toUpperCase();
-        const res = await fetch(appURL + "api" + path + "?_checkAccess=1", { method, headers: apiHeaders(method) });
+        const res = await fetch(appURL + "api" + path, { method, headers: { ...apiHeaders(method), "X-Apt-Check": "access" } });
         result.value =res.ok ? "✓ access granted" : "✗ " + res.status + " access denied";
       } catch (err) {
         result.value =String(err);

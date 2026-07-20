@@ -128,9 +128,26 @@ Deno.test("apt: access and validation errors are typed", async () => {
   });
 });
 
-Deno.test("apt: _checkAccess returns before input validation", async () => {
+Deno.test("apt: checkAccess option returns before input validation", async () => {
   await withCtx(async () => {
-    assertEquals(await invoke(api, "POST", "/thing/1/update", { _checkAccess: "1" }), { ok: true });
+    // invalid body would normally throw ValidationError; the gate returns first
+    assertEquals(await invoke(api, "POST", "/thing/1/update", { title: "Bad", count: "x" }, { checkAccess: true }), { ok: true });
+    // gate still runs: guard denies non-writable thing 2
+    await assertRejects(() => invoke(api, "POST", "/thing/2/update", {}, { checkAccess: true }), AccessError);
+    // a field named _checkAccess is now just data, no longer a control signal
+    await assertRejects(() => invoke(api, "POST", "/thing/1/update", { _checkAccess: "1" }), ValidationError);
+  });
+});
+
+Deno.test("apt: X-Apt-Check header triggers the access gate over HTTP", async () => {
+  await withCtx(async () => {
+    const res = await aptRequest(api, "http://qino.test/thing/1/update", {
+      method: "POST",
+      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken, "x-apt-check": "access" },
+      body: `{}`, // invalid input, but the gate answers before validation
+    });
+    assertEquals(res.status, 200);
+    assertEquals(await res.json(), { ok: true });
   });
 });
 

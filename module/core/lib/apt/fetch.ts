@@ -35,7 +35,8 @@ export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptF
   if (!isBodyMethod) Object.assign(input, query);
   try {
     await authorizeMutation(req, opts, { method, path, input, query });
-    const result = await invoke(tree, req.method, path, { input, query });
+    const checkAccess = req.header("x-apt-check") === "access"; // dry-run: run the access/guard gate, skip execute
+    const result = await invoke(tree, req.method, path, { input, query }, { checkAccess });
     const body = result === undefined ? undefined : JSON.stringify(result);
     throw new Output(body, { status: result === undefined ? 204 : 200, headers: { "Content-Type": "application/json; charset=UTF-8" } });
   } catch (e) {
