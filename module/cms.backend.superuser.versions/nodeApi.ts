@@ -17,9 +17,9 @@ export default async function (node: Node, vars: any): Promise<any> {
     if (!space) return false; // never the live space (0)
     for (const t of Object.keys(versedTables(db))) {
       const vt = await versTable(db, t);
-      if (vt) await db.query`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
+      if (vt) await db.exec`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
     }
-    await db.query`DELETE FROM vers_space WHERE space = ${space}`;
+    await db.exec`DELETE FROM vers_space WHERE space = ${space}`;
     return { done: true };
   }
 
@@ -27,9 +27,9 @@ export default async function (node: Node, vars: any): Promise<any> {
   if ("purge" in vars) {
     for (const t of Object.keys(versedTables(db))) {
       const vt = await versTable(db, t);
-      if (vt) await db.query`DELETE FROM ${sql.id(vt)}`;
+      if (vt) await db.exec`DELETE FROM ${sql.id(vt)}`;
     }
-    await db.query`DELETE FROM vers_space`;
+    await db.exec`DELETE FROM vers_space`;
     return { done: true };
   }
 

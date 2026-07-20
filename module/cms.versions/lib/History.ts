@@ -42,7 +42,7 @@ export function initHistory(app: App, signal: AbortSignal) {
     });
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
+    await ctx.app.db.exec`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
   };
   app.db.on("table:update-after", catchInsertUpdate, { signal });
   app.db.on("table:insert-after", catchInsertUpdate, { signal });
@@ -66,7 +66,7 @@ export function initHistory(app: App, signal: AbortSignal) {
       if (f === "_vers_deleted") return sql.raw("1");
       return sql.id(f);
     });
-    await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM (
+    await ctx.app.db.exec`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM (
       SELECT * FROM ${sql.id(vt)} WHERE ${where} AND _vers_space = ${space}
       ORDER BY _vers_log DESC LIMIT 1
     ) AS src`;

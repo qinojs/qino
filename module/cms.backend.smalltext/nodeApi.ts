@@ -19,18 +19,18 @@ export default async function api(node: Node, vars: any): Promise<any> {
   const langs = node.app.languages.all;
 
   if ("count_clean" in vars) {
-    await db.query`UPDATE smalltext SET count = 0`;
+    await db.exec`UPDATE smalltext SET count = 0`;
     return true;
   }
 
   if ("code_log_clean" in vars) {
-    await db.query`DELETE FROM smalltext_code_log`;
+    await db.exec`DELETE FROM smalltext_code_log`;
     return true;
   }
 
   if ("delete_not_used" in vars) {
     const cond = sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " AND ");
-    await db.query`DELETE FROM smalltext WHERE count = 0 AND ${cond}`;
+    await db.exec`DELETE FROM smalltext WHERE count = 0 AND ${cond}`;
     node.app.languages.clear();
     return true;
   }

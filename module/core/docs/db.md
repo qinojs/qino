@@ -5,8 +5,13 @@ Three layers, from low to high:
 | Layer | What it is | Use for |
 |---|---|---|
 | `` sql`…` `` fragment | dialect-neutral AST (from item.js) | building reusable/composed SQL pieces |
-| `db.query` / `exec` / `row` / … | render a fragment to the driver's dialect and run it | one-off reads & writes |
+| `db.query` / `row` / `col` / … | render a fragment and run it, returning rows | one-off **reads** |
+| `db.exec` | render a fragment and run it, returning an `ExecResult` | one-off **writes** (INSERT/UPDATE/DELETE) |
 | `db.table(name)` helpers | schema-aware `insert`/`update`/`ensure`/`delete`/`select` | normal row CRUD (the safe write path) |
+
+Reserve `query` (and `row`/`col`/`one`/`indexCol`) for reads; run writes through `exec`, which
+returns `affectedRows`/`insertId` and carries dialect write-quirks. Both take the same
+`` `…` `` template.
 
 The driver (`DbDriver.from(conn)`) picks the dialect — **mysql**, **sqlite** or **pg**. The same
 code runs on all three; the fragment stays pure data and the dialect (identifier quoting +
@@ -58,7 +63,7 @@ interpolate async lookups without serial `await`s:
 
 ```ts
 // both selects run in parallel, then the outer query renders
-db.query`INSERT INTO x (a, b) VALUES (${lookupA()}, ${lookupB()})`;
+db.exec`INSERT INTO x (a, b) VALUES (${lookupA()}, ${lookupB()})`;
 ```
 
 Note this parallelism is *within one statement's parameters*. It does not batch across statements.
@@ -69,8 +74,8 @@ Bind boolean comparisons/assignments as `${true}` / `${false}` — never `= 1` /
 and never bare MySQL-truthiness (`WHERE flag`):
 
 ```ts
-db.query`DELETE FROM m_error_report WHERE bot = ${true}`;   // ✓ every dialect
-db.query`DELETE FROM m_error_report WHERE bot = 1`;         // ✗ Postgres: boolean = integer error
+db.exec`DELETE FROM m_error_report WHERE bot = ${true}`;   // ✓ every dialect
+db.exec`DELETE FROM m_error_report WHERE bot = 1`;         // ✗ Postgres: boolean = integer error
 ```
 
 **Why:** only a bound JS boolean is serialized per dialect (sqlite driver maps `boolean → 0/1`,

@@ -19,8 +19,8 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
     // so it stays correct even when the shadow's column order diverged from the live table.
     const selects = (await db.columns(vt)).map((c) =>
       c.Field === "_vers_space" ? sql`${space}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql.id(c.Field));
-    await db.query`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
-    await db.query`INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
+    await db.exec`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
+    await db.exec`INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
   }
   await db.table("vers_space").insert({ space, time_created: new Date() });
   // fire so other modules can react

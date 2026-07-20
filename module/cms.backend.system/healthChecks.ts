@@ -16,7 +16,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
       const solutions: Record<string, Solution> = {
         "remove all without value": {
           solve: async () => {
-            await db.query`DELETE FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset} AND value = ''`;
+            await db.exec`DELETE FROM qg_setting WHERE basis=${basis} AND ${sql.id("offset")} = ${offset} AND value = ''`;
           },
         },
       };
@@ -96,7 +96,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   notice["texts with no lang"] = async () => {
     const num = Number(await db.one`SELECT count(*) FROM text WHERE lang = ''`);
     if (!num) return;
-    return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.query`DELETE FROM text WHERE lang = ''`; } } } };
+    return { info: `Found ${num}`, solutions: { delete: { solve: async () => { await db.exec`DELETE FROM text WHERE lang = ''`; } } } };
   };
 
   // ── orphaned settings ────────────────────────────────────────────────────

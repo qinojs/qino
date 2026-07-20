@@ -18,8 +18,8 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const app = node.app;
   const db = app.db;
   const set = await settings(app);
-  if (vars.clearEvents) await db.query`DELETE FROM m_security_event`;
-  if (vars.clearBuckets) await db.query`DELETE FROM m_security_bucket`;
+  if (vars.clearEvents) await db.exec`DELETE FROM m_security_event`;
+  if (vars.clearBuckets) await db.exec`DELETE FROM m_security_bucket`;
   if (vars.release) await db.table("m_security_bucket").update(vars.release, { score: 0, blocked: 0, reason: "released" });
   if (vars.block) await db.table("m_security_bucket").update(vars.block, { score: set.blockScore, blocked: 1, reason: "manual block" });
   if (vars.seen) await db.table("m_security_event").update(vars.seen, { state: "seen" });

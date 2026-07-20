@@ -51,7 +51,7 @@ class SettingItem extends Item<SettingItem> {
   override remover = async () => {
     await this.reader(); // ensure data is loaded
     for (const sub of this.items()) await sub.remove();
-    return this.root.db.query`DELETE FROM qg_setting WHERE id = ${this.data!.id}`;
+    return this.root.db.exec`DELETE FROM qg_setting WHERE id = ${this.data!.id}`;
   };
 }
 

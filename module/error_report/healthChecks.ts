@@ -12,16 +12,16 @@ export function healthChecks(app: App): HealthTypes {
           info: num + " errors",
           solutions: {
             "remove all": {
-              solve: async () => { await db.query`DELETE FROM m_error_report`; },
+              solve: async () => { await db.exec`DELETE FROM m_error_report`; },
             },
             "remove 404": {
-              solve: async () => { await db.query`DELETE FROM m_error_report WHERE source = '404'`; },
+              solve: async () => { await db.exec`DELETE FROM m_error_report WHERE source = '404'`; },
             },
             "remove bots": {
-              solve: async () => { await db.query`DELETE FROM m_error_report WHERE bot = ${true}`; },
+              solve: async () => { await db.exec`DELETE FROM m_error_report WHERE bot = ${true}`; },
             },
             "remove notices": {
-              solve: async () => { await db.query`DELETE FROM m_error_report WHERE prio = 'notice'`; },
+              solve: async () => { await db.exec`DELETE FROM m_error_report WHERE prio = 'notice'`; },
             },
           },
         };

@@ -113,7 +113,7 @@ export class LangManager {
     const translated = txts[hash] || string;
     if (ctx.dev && !txts[hash]) return `*${string}*`;
     if (await this.#app.settings.core.smalltext.counter) {
-      this.#app.db.query`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`
+      this.#app.db.exec`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`
         .catch(() => {}); // fire-and-forget, already logged by Db
     }
     return translated;
@@ -155,7 +155,7 @@ export class LangManager {
       const hash = createHash("md5").update(original).digest("hex");
       const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
       if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
-      await db.query`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
+      await db.exec`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
     }
     this.clear(); // imported rows must be visible on the next lookup
   }
