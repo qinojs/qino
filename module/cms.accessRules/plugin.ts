@@ -77,7 +77,7 @@ async function moduleCap(app: App, module: string, user?: dbEntry_usr | null): P
   return cap;
 }
 
-export function init(app: App): void {
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // cap the node access by the module axis; a logged-in user never ends up
   // below the guest baseline of the node (deny standard = 0 for guests too).
   app.on("node:access", async (e) => {
@@ -90,12 +90,12 @@ export function init(app: App): void {
     if (!e.user) { e.access = Math.min(e.access, cap); return; }
     const guest = (await standards(app)).get(module) === 0 ? 0 : (await e.node.isPublic()) ? 1 : 0;
     e.access = Math.max(Math.min(e.access, cap), guest);
-  });
+  }, { signal });
 
   // module picker/add: lower e.access to what the user may do with this module
   app.on("module:access", async (e) => {
     if (e.user && await e.user.get("superuser")) return;
     const cap = await moduleCap(app, String(e.module), e.user);
     if (cap != null) e.access = Math.min(e.access, cap);
-  });
+  }, { signal });
 }

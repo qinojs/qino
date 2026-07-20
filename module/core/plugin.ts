@@ -88,14 +88,14 @@ export const ctxSettingsSchema = {
     },
 };
 
-export async function init(app: App) {
+export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     app.on("html-ready", ({ ctx }) => {
         ctx.res.html.importMap.set("@qino/item/", itemRoot);
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
         // core's own qino.js imports item.js; declare so uncdn proxies it (jsr.io serves raw files as text/html)
         ctx.res.csp["script-src"][itemRoot] = true;
-    });
+    }, { signal });
 
     const langsRaw = String(await app.settings.core.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
@@ -126,7 +126,7 @@ export async function init(app: App) {
             }
         }
 
-    });
+    }, { signal });
 
     // stamp the current request's logId onto every write — except the log tables themselves
     // (the log insert would otherwise await its own pending logId → deadlock)
@@ -134,8 +134,8 @@ export async function init(app: App) {
       if (/^log(_|$)/.test(String(e.table))) return;
       try { const id = await getCtx().logId; if (id) e.data[field] = id; } catch { /* outside request context */ }
     };
-    app.db.on("table:insert-before", stampLogId("log_id"));
-    app.db.on("table:update-before", stampLogId("log_id_ch"));
+    app.db.on("table:insert-before", stampLogId("log_id"), { signal });
+    app.db.on("table:update-before", stampLogId("log_id_ch"), { signal });
 
     app.on("auth:login", async ({ usrId }) => {
       const ctx = getCtx();
@@ -143,7 +143,7 @@ export async function init(app: App) {
       const { mergeSessionSettingsToUser } = await import("./lib/ctx/contextSettings.ts");
       await mergeSessionSettingsToUser(app.db, usrId, ctx.sess.id);
       await ctx.initSettings();
-    });
+    }, { signal });
 
     app.on("respond", async ({ ctx }) => {
         //ctx.res.headers.set("Accept-CH", "DPR");
@@ -157,5 +157,5 @@ export async function init(app: App) {
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
             ctx.res.headers.set(headerName, ctx.res.csp.toHeader());
         }
-    });
+    }, { signal });
 }

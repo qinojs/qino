@@ -113,16 +113,16 @@ export async function copyNode(
  * Registered once at init — the per-request log check happens in the handler
  * (registering per request would leak permanent app.db listeners).
  */
-export function preventDbManipulations(app: App): void {
+export function preventDbManipulations(app: App, signal: AbortSignal): void {
     const prevent = (e: DbEvents["table:insert-before"]) => {
         const ctx = requestStorage.getStore();
         if (!ctx || !getCmsVers(ctx).log) return; // only in log-mode requests
         const name = String(e.table);
         if (versedTables(app.db)[name] || name.startsWith("_vers_")) e.returnValue = false;
     };
-    app.db.on("table:insert-before", prevent);
-    app.db.on("table:update-before", prevent);
-    app.db.on("table:delete-before", prevent);
+    app.db.on("table:insert-before", prevent, { signal });
+    app.db.on("table:update-before", prevent, { signal });
+    app.db.on("table:delete-before", prevent, { signal });
 }
 
 export function cacheHeaders(ctx: Ctx): void {

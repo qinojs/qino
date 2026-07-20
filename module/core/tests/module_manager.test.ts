@@ -2,6 +2,7 @@
 import { assert, assertEquals, assertRejects } from "./deps.ts";
 import { toFileUrl, $item } from "../../../deps.ts";
 import { ModuleManager } from "../lib/ModuleManager.ts";
+import { Emitter } from "../lib/Emitter.ts";
 
 Deno.test({
   name: "ModuleManager imports modules and initializes by needs",
@@ -73,6 +74,47 @@ Deno.test({
     assert(modules.get("private.foo")?.path?.endsWith("/private.foo/plugin.ts"));
     await modules.init();
     assertEquals(app.installed, ["private.foo"]);
+
+    await Deno.remove(root, { recursive: true });
+  },
+});
+
+Deno.test({
+  name: "ModuleManager unlink tears down signal-bound listeners; re-link rebinds",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const root = await Deno.makeTempDir();
+    const modDir = root + "/m/";
+    await Deno.mkdir(modDir + "sig.foo/", { recursive: true });
+    // init() registers a listener bound to the per-module signal
+    await Deno.writeTextFile(modDir + "sig.foo/plugin.ts", `
+      export const name = "sig.foo";
+      export function init(app, { signal }) {
+        app.on("ping", (e) => { e.count++; }, { signal });
+      }
+    `);
+
+    const bus = new Emitter<{ ping: { count: number } }>();
+    const app = {
+      appPATH: root + "/",
+      db: {},
+      aptTree: {} as Record<string, unknown>,
+      settings: { [$item]: { setSchema() {}, addEventListener() {} } },
+      on: bus.on.bind(bus),
+      fire: bus.fire.bind(bus),
+    };
+
+    const modules = new ModuleManager(app as any);
+    await modules.importAll(toFileUrl(modDir).href);
+    await modules.init();
+    assertEquals((await app.fire("ping", { count: 0 })).count, 1); // linked → handler runs
+
+    modules.unlink("sig.foo");
+    assertEquals((await app.fire("ping", { count: 0 })).count, 0); // unlinked → signal aborted, listener gone
+
+    await modules.link("sig.foo");
+    assertEquals((await app.fire("ping", { count: 0 })).count, 1); // re-linked → fresh signal rebinds
 
     await Deno.remove(root, { recursive: true });
   },

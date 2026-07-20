@@ -74,15 +74,15 @@ export const ctxSettingsSchema = {
     },
 };
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     cmsInstances.set(app, new CMS(app));
 
-    initNodeChanged(app);
+    initNodeChanged(app, signal);
 
     app.on("render", async (e) => {
         await render(e.ctx);
-    });
+    }, { signal });
 
     app.on("route", async ({ ctx }) => {
         const settings = ctx.settings;
@@ -123,7 +123,7 @@ export function init(app: App) {
                 header.contentDisposition("attachment", `files_${P}.zip`),
             ] });
         }
-    });
+    }, { signal });
 
     // File access check
     app.on("dbFile:access-fallback", async (e) => {
@@ -136,7 +136,7 @@ export function init(app: App) {
                 return;
             }
         }
-    });
+    }, { signal });
 
 }
 

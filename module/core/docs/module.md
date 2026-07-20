@@ -93,3 +93,17 @@ linked module's defaults.
 `dbSchema` is either a static object (the module's own tables) or a function
 `(merged) => schema` that computes tables from the already-merged schema of other modules — it
 runs after all static schemas. Both are merged and migrated additively on `init`/`link`.
+
+## Not yet torn down on unlink
+
+Everything registered through `{ signal }` (listeners on `app` and `app.db`, timers) is now
+removed on unlink. What is **not** cleaned up yet are registrations into shared registries that
+have no removal API — they keep a stale entry after unlink:
+
+- **`ai`** — `registerAiOcr` / `registerAiTranscript` add engines to `app.fileTransformer`;
+  `FileTransformer` has no unregister.
+- **`ai` / `cms.frontend.ai`** — `AiApi.registerBot(...)` writes into a `Map` with no unregister.
+
+To make these unlink-clean, the registries need either a `signal` argument or a returned dispose
+handle (e.g. `registerOcrEngine(engine, { signal })`). Small API addition, no behaviour change —
+deferred until module disable/enable actually needs it.

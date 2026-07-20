@@ -184,7 +184,7 @@ async function baselineTable(db: Db, tableName: string, vt: string, logId: numbe
 
 // ─── App wiring (core) ───────────────────────────────────────────────────────
 
-export function initVers(app: App) {
+export function initVers(app: App, signal: AbortSignal) {
 
     // ─── Baseline versioned rows on first action ─────────────────────────────
     app.on("route", async ({ ctx }) => {
@@ -195,5 +195,5 @@ export function initVers(app: App) {
         const logId = Number(await ctx.logId) || 0;
         if (!logId) return;
         for (const t of pending) await baselineTable(db, t, `_vers_${t}`, logId);
-    });
+    }, { signal });
 }

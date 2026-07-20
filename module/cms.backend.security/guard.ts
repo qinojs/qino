@@ -7,7 +7,7 @@ import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqI
 const pathBlocks = new WeakMap<App, Map<string, number>>();
 const blocksOf = (app: App) => pathBlocks.getOrInsertComputed(app, () => new Map());
 
-export function initSecurity(app: App) {
+export function initSecurity(app: App, signal: AbortSignal) {
   app.on("request-start", async ({ request, peerAddr }) => {
     const info = gateInfo(request, peerAddr, app.trustedProxyHops);
     if (isPathBlocked(app, info)) deny(5);
@@ -18,7 +18,7 @@ export function initSecurity(app: App) {
     rememberPathBlock(app, info, set);
     await addEventDb(app.db, { ...info, prio: "error", kind: "path-block", scope: "ip", ident: info.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
     deny(set.pathBlockSeconds);
-  });
+  }, { signal });
 
   app.on("route", async ({ ctx }) => {
     const fast = fastInfo(ctx);
@@ -50,7 +50,7 @@ export function initSecurity(app: App) {
       throw new Output();
     }
     if (policy.delay) await sleep(policy.delay);
-  });
+  }, { signal });
 
   app.on("respond", async ({ ctx }) => {
     const sec = ctx.state.security;
@@ -66,7 +66,7 @@ export function initSecurity(app: App) {
     const ranked = rankSignal(signal, info, set);
     await hitBuckets(ctx, info, [ranked], set);
     await addEvent(ctx, { ...info, ...ranked });
-  });
+  }, { signal });
 }
 
 type GateInfo = { ip: string; method: string; path: string; bytes_in: number; ua: string };

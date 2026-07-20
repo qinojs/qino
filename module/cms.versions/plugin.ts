@@ -95,18 +95,18 @@ export const api: AptTree = {
     },
 };
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     // Register versioned tables for the runtime engine (schema is wired via extendDbSchema).
     Object.assign(versedTables(app.db), VERSED);
 
     // Generic engine (lib/): core shadow tables/views, history capture, spaces
-    initVers(app);
-    initHistory(app);
-    initSpaces(app);
+    initVers(app, signal);
+    initHistory(app, signal);
+    initSpaces(app, signal);
 
     // Log-mode write guard (active only in log-mode requests, see CmsVers.ts)
-    preventDbManipulations(app);
+    preventDbManipulations(app, signal);
 
     // ─── Request init ─────────────────────────────────────────────────────────
     // settings + request params.
@@ -157,7 +157,7 @@ export function init(app: App) {
         // TODO: full space-mode read routing requires the page:sql hook in
         // Page.ts to rewrite SQL table references + page:construct /
         // page:children overrides. See draftmode.ts.
-    });
+    }, { signal });
 
     // ─── cms:page-ready: add frontend JS ──────────────────────────────────────────
     app.on("cms:page-ready", async ({ ctx }) => {
@@ -167,9 +167,9 @@ export function init(app: App) {
         ctx.res.html.jsData.cmsFrontend = frontend;
         ctx.res.html.scripts.add(ctx.req.modulePath + frontend + "/pub/js/frontend.mjs");
         ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/vers.mjs");
-    });
+    }, { signal });
 
-    initDraftmode(app);
+    initDraftmode(app, signal);
 }
 
 /**

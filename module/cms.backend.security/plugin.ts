@@ -8,8 +8,8 @@ export const name = "cms.backend.security";
 export const needs = ["cms.backend"];
 export { dbSchema, settingsSchema };
 
-export function init(app: App) {
-  initSecurity(app);
+export function init(app: App, { signal }: { signal: AbortSignal }) {
+  initSecurity(app, signal);
 }
 
 export async function install({ app }: { app: App }): Promise<void> {

@@ -68,12 +68,12 @@ export const api: AptTree = {
   },
 };
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.image_editor/pub/init.mjs");
-  });
+  }, { signal });
 
   // Replace an existing image with the edited version (keeps the filename).
   app.on("route", async ({ ctx }) => {
@@ -89,5 +89,5 @@ export function init(app: App) {
     await File.replaceFromUpload(upload);
 
     throw new Output({ id: String(File), url: await File.url() });
-  });
+  }, { signal });
 }

@@ -10,7 +10,7 @@ export { dbSchema, MailManager, settingsSchema };
 export { MailMessage } from "./lib/MailMessage.ts";
 export { healthChecks } from "./healthChecks.ts";
 
-export function init(app: App): void {
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
   mailInstances.set(app, new MailManager(app));
-  app.on("route", ({ ctx }) => handleTrack(ctx));
+  app.on("route", ({ ctx }) => handleTrack(ctx), { signal });
 }

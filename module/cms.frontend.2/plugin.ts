@@ -57,7 +57,7 @@ export const api: AptTree = {
   },
 };
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (await app.settings.cms.frontend !== "cms.frontend.2") return;
@@ -116,5 +116,5 @@ export function init(app: App) {
       html.styles.add(sysURL + "cms/pub/css/ui.css");
       html.styles.add(sysURL + "cms.frontend.2/pub/css/inline.css");
     }
-  });
+  }, { signal });
 }

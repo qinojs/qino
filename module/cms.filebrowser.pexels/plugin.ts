@@ -15,14 +15,14 @@ export const api: AptTree = {
   },
 };
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", async ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
     if (!await app.settings["cms.filebrowser.pexels"].key) return; // no key, no Pexels UI
     ctx.res.csp["img-src"]["https://*.pexels.com"] = true;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser.pexels/pub/init.mjs");
-  });
+  }, { signal });
 }
 
 const pexelsImg = (u: unknown) => typeof u === "string" && u.startsWith("https://images.pexels.com/");

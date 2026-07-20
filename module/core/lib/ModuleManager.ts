@@ -66,6 +66,9 @@ export class ModuleManager {
 
   all(): Record<string, Module> { return this.#modules; }
 
+  // True once a module's hooks have run (imported ⊇ linked). Unlink flips it back.
+  linked(name: string): boolean { return this.#linked.has(name); }
+
   async import(spec: string): Promise<Module> {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported. Use app.import(import.meta.resolve("${spec}"))`);
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);

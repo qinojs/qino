@@ -13,7 +13,7 @@ type TFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<stri
 // tables whose rows belong to a node via their page_id column
 const LINKED = new Set(["page_text", "page_url", "page_file", "page_access_grp", "page_access_usr"]);
 
-export function initNodeChanged(app: App) {
+export function initNodeChanged(app: App, signal: AbortSignal) {
     const db = app.db;
 
     // nearest ancestor of type 'p', starting at (and including) id
@@ -75,10 +75,10 @@ export function initNodeChanged(app: App) {
         }
     };
 
-    app.db.on("table:insert-after", (e) => capture("insert", e));
-    app.db.on("table:update-after", (e) => capture("update", e));
+    app.db.on("table:insert-after", (e) => capture("insert", e), { signal });
+    app.db.on("table:update-after", (e) => capture("update", e), { signal });
     // delete: captured before the row (and its basis chain) disappears
-    app.db.on("table:delete-before", (e) => capture("delete", e));
+    app.db.on("table:delete-before", (e) => capture("delete", e), { signal });
 }
 
 // Human-readable change label from a node_changed `data` payload

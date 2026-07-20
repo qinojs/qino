@@ -34,7 +34,7 @@ function editorFile(): string | null {
   return file && ctx.req.appPath.startsWith("editor") ? file : null;
 }
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("route", async ({ ctx }) => {
     const file = editorFile();
     if (!file) return;
@@ -44,11 +44,11 @@ export function init(app: App) {
     const allowed = ctx.sess.data.fileEditor.allow[file]();
     if (!isSuperuser && !allowed) throw new Output("no access");
     if (!(await nodeFs.stat(file).catch(() => null))?.isFile()) throw new Output("file does not exist");
-  });
+  }, { signal });
 
   app.on("render", async () => {
     const file = editorFile();
     if (!file) return;
     getCtx().res.html.content = await codemirrorView(file);
-  });
+  }, { signal });
 }

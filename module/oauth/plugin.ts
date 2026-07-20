@@ -149,10 +149,10 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   throw new Redirect(safeReturn(ctx.req.basePath, returnTo));
 }
 
-export function init(app: App): void {
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", async ({ ctx }) => {
     const path = ctx.req.appPath;
     if (path.startsWith("oauth/start/")) await start(ctx, path.slice("oauth/start/".length));
     else if (path.startsWith("oauth/callback/")) await callback(ctx, path.slice("oauth/callback/".length));
-  });
+  }, { signal });
 }

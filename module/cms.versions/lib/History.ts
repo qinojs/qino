@@ -8,7 +8,7 @@
 import { requestStorage, sql, type App, type DbEvents } from "../../core/mod.ts";
 import { getVers, versTable } from "./Vers.ts";
 
-export function initHistory(app: App) {
+export function initHistory(app: App, signal: AbortSignal) {
 
   // Resolve request ctx + shadow table + logId for a tracked mutation, or null to skip.
   // logId is awaited only after the versioned-table check: awaiting earlier deadlocks
@@ -44,8 +44,8 @@ export function initHistory(app: App) {
     if (!where) return;
     await ctx.app.db.query`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
   };
-  app.db.on("table:update-after", catchInsertUpdate);
-  app.db.on("table:insert-after", catchInsertUpdate);
+  app.db.on("table:update-after", catchInsertUpdate, { signal });
+  app.db.on("table:insert-after", catchInsertUpdate, { signal });
 
   // ─── History capture: delete ──────────────────────────────────────────────
   app.db.on("table:delete-after", async (e) => {
@@ -70,7 +70,7 @@ export function initHistory(app: App) {
       SELECT * FROM ${sql.id(vt)} WHERE ${where} AND _vers_space = ${space}
       ORDER BY _vers_log DESC LIMIT 1
     ) AS src`;
-  });
+  }, { signal });
 
   // ─── File protection: don't delete blobs referenced in _vers_file ────────
   // Blobs are the only unrecoverable data (rows can be rebuilt from snapshots).
@@ -80,5 +80,5 @@ export function initHistory(app: App) {
     const md5 = e.file?.vs?.md5 ?? "";
     if (!md5) return;
     if (await app.db.one`SELECT id FROM _vers_file WHERE md5 = ${md5}`.catch(() => null)) e.prevent = true;
-  });
+  }, { signal });
 }

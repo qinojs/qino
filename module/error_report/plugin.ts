@@ -107,18 +107,20 @@ async function addReport(app: App, vs: Report): Promise<void> {
   await app.db.table("m_error_report").insert(row).catch(() => {});
 }
 
-export function init(app: App): void {
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
-  (globalThis as any).reporterJsOptions.onError = async (data: Report) => {
+  const reporter = (globalThis as any).reporterJsOptions;
+  reporter.onError = async (data: Report) => {
     data.source ??= "deno";
     await addReport(app, data);
   };
+  signal.addEventListener("abort", () => { delete reporter.onError; }, { once: true });
 
   app.on("route", ({ ctx }) => {
     if (ctx.req.appPath === "js-error")  return handleJsError(ctx);
     if (ctx.req.appPath === "css-error") return handleCssError(ctx);
     if (ctx.req.appPath === "csp-error") return handleCspError(ctx);
-  });
+  }, { signal });
 
   // Track every 404 response (pages, api, dbFile, static). A direct visit of the
   // cms not-found page renders with status 200, so it is not reported.
@@ -132,7 +134,7 @@ export function init(app: App): void {
       report.ip = peerAddr;
     }
     await addReport(app, report);
-  });
+  }, { signal });
 
   app.on("render", async ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
@@ -141,5 +143,5 @@ export function init(app: App): void {
     ctx.res.csp["script-src"][reporterRoot] = true;
     ctx.res.html.legacyScripts.add(reporterPath);
     ctx.res.csp.reportUri = ctx.req.basePath + "csp-error";
-  });
+  }, { signal });
 }

@@ -99,7 +99,7 @@ function hasValueWithPrefix(values: Iterable<string>, prefix: string): boolean {
   return false;
 }
 
-export function init(app: App): void {
+export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const cacheDir = app.appPATH + CACHE_SUBDIR;
   const allowed = new Set<string>(); // origins any page declared via CSP — fetchable by anyone
   uncdnInstances.set(app, { origins: allowed });
@@ -132,13 +132,13 @@ export function init(app: App): void {
     }
 
     await fetchAndCache(url, filePath, cacheDir, mediaType, ctx);
-  });
+  }, { signal });
 
   app.on("html-ready", ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
     for (const o of [...origins(ctx.res.csp["script-src"]), ...origins(ctx.res.csp["style-src"])]) allowed.add(o);
     rewriteHtml(ctx.res.html, ctx.req.basePath, ctx.res.csp);
-  });
+  }, { signal });
 }
 
 // Rewrite assets to the proxy, but only for origins the page declared in its CSP

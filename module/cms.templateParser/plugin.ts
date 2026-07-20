@@ -20,7 +20,7 @@ function watchTemplate(path: string): void {
   })().catch(() => watching.delete(path));
 }
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("node:render", async (e) => {
     const dir = e.node.module?.dir;
     if (!dir) return;
@@ -35,5 +35,5 @@ export function init(app: App) {
     }
     const tpl = ast;
     e.render = (node: Node) => renderNodes(tpl, node);
-  });
+  }, { signal });
 }

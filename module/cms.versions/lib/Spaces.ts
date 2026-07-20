@@ -64,7 +64,7 @@ export async function tableEntriesCopyTo(
 
 // ─── App wiring ─────────────────────────────────────────────────────────────
 
-export function initSpaces(app: App) {
+export function initSpaces(app: App, signal: AbortSignal) {
 
   // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
   app.db.on("table:insert-after", async (e) => {
@@ -80,7 +80,7 @@ export function initSpaces(app: App) {
     const value = Number(ids[String(auto)]);
     if (!value) return;
     await ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;
-  });
+  }, { signal });
 }
 
 /** vers_space table (cms-agnostic). Merged into the module dbSchema. */

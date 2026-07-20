@@ -34,12 +34,12 @@ export const api: AptTree = {
   },
 };
 
-export function init(app: App) {
+export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser/pub/init.mjs");
-  });
+  }, { signal });
 
   app.on("dbFile:access-fallback", async (e) => {
     if (e.access) return;
@@ -48,7 +48,7 @@ export function init(app: App) {
     if (!userId) return;
     const row = await app.db.row`SELECT usr_id FROM usr_file WHERE usr_id = ${userId} AND file_id = ${String(e.file)}`;
     if (row) e.access = true;
-  });
+  }, { signal });
 }
 
 async function search(s_: string, ctx: Ctx): Promise<any[]> {

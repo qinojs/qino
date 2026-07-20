@@ -29,7 +29,7 @@ export async function applyDraftSpace(ctx: Ctx): Promise<void> {
     }
 }
 
-export function initDraftmode(app: App) {
+export function initDraftmode(app: App, signal: AbortSignal) {
 
     // ─────────────────────────────────────────────────────────────────────────
     // DRAFT-MODE: space-routing for DB writes
@@ -112,7 +112,7 @@ export function initDraftmode(app: App) {
         const set = e.table.valuesToFragment(liveData, undefined, true);
         await db.exec`UPDATE page       SET ${set} WHERE ${idWhere}`;
         await db.exec`UPDATE _vers_page SET ${set} WHERE ${idWhere}`;
-    });
+    }, { signal });
 
     // Inform client about changed pages after API calls (draftmode)
     // app.on("serverInterface::after", async (e: any) => { // no longer exists! use something else
@@ -183,5 +183,5 @@ export function initDraftmode(app: App) {
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
         ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/draftmode.mjs");
-    });
+    }, { signal });
 }
