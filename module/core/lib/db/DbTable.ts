@@ -74,6 +74,8 @@ export class DbTable {
 
   entryId(vs: any): string | undefined {
     if (!Array.isArray(vs) && typeof vs !== "object") return String(vs);
+    // encoding only disambiguates the ":" separator, so single-primary ids stay raw
+    const composite = Object.keys(this.#primaries).length > 1;
     const part: string[] = [];
     for (const [primary, Field] of Object.entries(this.#primaries)) {
       if (!(primary in vs)) {
@@ -81,11 +83,12 @@ export class DbTable {
         return;
       }
       let value = vs[primary];
-      const type = Field.type.toUpperCase();
-      if (numTypes.has(type)) value = String(parseFloat(String(value)));
+      // numeric values never contain ":" or "%", so they skip encoding (hot path)
+      if (numTypes.has(Field.type.toUpperCase())) value = String(parseFloat(String(value)));
+      else if (composite) value = encodeURIComponent(value);
       part.push(value);
     }
-    return part.join("-:-");
+    return part.join(":");
   }
   entryId2Array(id: any): Record<string, any> | undefined {
     const arr: Record<string, any> = {};
@@ -95,10 +98,14 @@ export class DbTable {
         arr[primary] = id[primary];
       }
     } else {
-      const keys = Object.keys(this.#primaries);
-      const vs = String(id).split("-:-");
-      keys.forEach((primary, i) => // last field keeps any remaining "-:-"
-        arr[primary] = i === keys.length - 1 ? vs.slice(i).join("-:-") : vs[i]);
+      const primaries = Object.values(this.#primaries);
+      const composite = primaries.length > 1;
+      const vs = String(id).split(":");
+      primaries.forEach((Field, i) => {
+        let value = composite ? vs[i] : String(id); // single primary keeps the whole raw string (may contain ":")
+        if (composite && !numTypes.has(Field.type.toUpperCase())) value = decodeURIComponent(value);
+        arr[Field.name] = value;
+      });
     }
     return arr;
   }

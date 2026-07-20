@@ -81,12 +81,12 @@ export class DbEntry {
 
   async set(n: string, v: any): Promise<void> {
     await this.values();
-    if (n in this.#vs) {
-      const Field = this.table.field(n);
-      if (Field) {
-        v = Field.valueTransform(v);
-        if (this.#vs[n] !== v) this.#changed = true;
-      }
+    const Field = this.table.field(n);
+    // Unknown field: value is kept in memory but never persisted. Warn for now; throw once confirmed unused.
+    if (!Field) console.warn(`db-set "${this.table}::${n}": unknown field, value not persisted`);
+    else if (n in this.#vs) {
+      v = Field.valueTransform(v);
+      if (this.#vs[n] !== v) this.#changed = true;
     }
     this.#vs[n] = v;
     this.#scheduleSave();
