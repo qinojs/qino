@@ -1,5 +1,6 @@
 import { ADMIN, type Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
+import { moduleIcon } from "../../api.ts";
 
 // Adding a module = ADMIN ("insertable") on the module axis — edit-only groups don't see it here.
 // cms.accessRules lowers e.access to the user's module cap; without it everything stays insertable.
@@ -21,14 +22,7 @@ export default async function (node: Node): Promise<HtmlString> {
     try { if (modDir) desc = await Deno.readTextFile(modDir + "description.txt"); } catch { /* egal */ }
     let title = name.replace("cms.cont.", "");
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
-    let svgHtml: HtmlString;
-    try {
-      if (!modDir) throw new Error();
-      await Deno.stat(modDir + "pub/module.svg");
-      svgHtml = html`<use href="${ctx.req.modulePath+name}/pub/module.svg#main" />`;
-    } catch {
-      svgHtml = html`<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
-    }
+    const svgHtml = await moduleIcon(name, modDir);
     moduleBoxes.push(html`<div itemid="${name}" title="${desc}">
       <div class=-title title="${await M.get?.("name") ?? name}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
@@ -56,14 +50,7 @@ export default async function (node: Node): Promise<HtmlString> {
       if (await moduleAccess(node, String(P.vs.module)) < ADMIN) continue;
       const mName = String(P.vs.module);
       const mDir = app.modules.get(mName)?.dir;
-      let svgHtml: HtmlString;
-      try {
-        if (!mDir) throw new Error();
-        await Deno.stat(mDir + "pub/module.svg");
-        svgHtml = html`<use href="${ctx.req.modulePath+P.vs.module}/pub/module.svg#main" />`;
-      } catch {
-        svgHtml = html`<use href="${ctx.req.modulePath}cms.frontend.2/pub/img/module_default.svg#main" />`;
-      }
+      const svgHtml = await moduleIcon(mName, mDir);
       modelItems.push(html`<div itemid="${P.id}" title="">
         <svg class=-img fill="#fff">${svgHtml}</svg>
         <div class=-title title="${P.id}">${await (await P.title()).string()}</div>

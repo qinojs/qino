@@ -1,10 +1,19 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, hee } from "../core/mod.ts";
+import { getCtx, hee, html, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export function widgetUrl(widget: string): string {
   return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
+}
+
+// `<use>` referencing a module's icon SVG, falling back to the default module icon when absent.
+export async function moduleIcon(module: string | number | null, dir: string | null | undefined): Promise<HtmlString> {
+  const base = getCtx().req.modulePath;
+  const url = dir && await Deno.stat(dir + "pub/module.svg").then(() => true, () => false)
+    ? base + module + "/pub/module.svg"
+    : base + "cms.frontend.2/pub/img/module_default.svg";
+  return html`<use href="${url}#main" />`;
 }
 
 /** Render widget content */

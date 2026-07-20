@@ -2,6 +2,7 @@ import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
 import { cmsFrontend2WidgetAccordion } from "../../mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 import { $item } from "../../../../deps.ts";
+import { moduleIcon } from "../../api.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
@@ -13,15 +14,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const titleVal = await T.string();
   const titleEdit = node.edit ? html` cmstxt=${T.id}` : "";
 
-  const modulePubPath = node.module?.dir ? node.module.dir + "pub/" : null;
-  let svgUrl: string;
-  try {
-    if (!modulePubPath) throw new Error();
-    await Deno.stat(modulePubPath + "module.svg");
-    svgUrl = ctx.req.modulePath + node.vs.module + "/pub/module.svg";
-  } catch {
-    svgUrl = ctx.req.modulePath + "cms.frontend.2/pub/img/module_default.svg";
-  }
+  const svgIcon = await moduleIcon(node.vs.module, node.module?.dir);
 
   const Module = db.table("module").entry(node.vs.module);
   const modules = node.vs.type === "p" ? await cms.getLayouts() : await cms.getModules();
@@ -68,7 +61,7 @@ export default async function (node: Node): Promise<HtmlString> {
       <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="no title">
       <div style="margin-top:-15px">
         <svg class=-img fill="var(--cms-dark)" width="46" height="46" style="display:block">
-          <use href="${svgUrl}#main" />
+          ${svgIcon}
         </svg>
       </div>
     </div>
