@@ -83,8 +83,7 @@ export class DbTable {
         return;
       }
       let value = vs[primary];
-      // numeric values never contain ":" or "%", so they skip encoding (hot path)
-      if (numTypes.has(Field.type.toUpperCase())) value = String(parseFloat(String(value)));
+      if (numTypes.has(Field.type.toUpperCase())) value = String(parseFloat(String(value))); // numeric values never contain ":" or "%", so they skip encoding (hot path)
       else if (composite) value = encodeURIComponent(value);
       part.push(value);
     }
