@@ -11,7 +11,7 @@ export type Plugin = Record<string, any> & {
   // Object = static schema. Function = computed from the merged schema (runs after all
   // static ones), e.g. for tables derived from other modules' tables.
   dbSchema?: DbSchema | ((merged: DbSchema) => DbSchema);
-  init?(app: App): void | Promise<void>;
+  init?(app: App, opts: { signal: AbortSignal }): void | Promise<void>;
   install?(ctx: { app: App; module: Plugin }): void | Promise<void>;
   settingsSchema?: Record<string, unknown>;
   ctxSettingsSchema?: Record<string, unknown>;
@@ -31,6 +31,7 @@ export class Module {
   #plugin: Plugin;
   #url: string;
   #path: string | undefined;
+  #abort = new AbortController();
 
   constructor(plugin: Plugin, url: string, path?: string) {
     this.#plugin = plugin;
@@ -42,6 +43,9 @@ export class Module {
   get url(): string { return this.#url; }
   get path(): string | undefined { return this.#path; }
   get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
+  // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
+  newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
+  abort(): void { this.#abort.abort(); }
   toString(): string { return this.name; }
 }
 
@@ -52,6 +56,7 @@ async function fileExists(path: string): Promise<boolean> {
 export class ModuleManager {
   #app: App;
   #modules: Record<string, Module> = {};
+  #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
 
   constructor(app: App) {
     this.#app = app;
@@ -99,14 +104,68 @@ export class ModuleManager {
   }
 
   async init(): Promise<void> {
+    const order = this.#order();
+    await this.#applyDbSchema(order);
+    this.#applySchemas(order);
+    for (const name of order) await this.#linkOne(this.#modules[name]);
+  }
+
+  // Run a registered module's hooks at runtime. Idempotent; its needs must already be linked.
+  async link(name: string): Promise<void> {
+    const mod = this.#modules[name];
+    if (!mod) throw new Error(`Cannot link "${name}": not imported`);
+    if (this.#linked.has(name)) return;
+    for (const need of mod.plugin.needs ?? [])
+      if (!this.#linked.has(need)) throw new Error(`Cannot link "${name}": needs "${need}", which is not linked`);
+    const order = this.#order([...this.#linked, name]);
+    await this.#applyDbSchema(order);
+    this.#applySchemas(order);
+    await this.#linkOne(mod);
+  }
+
+  // Reverse a module's hooks. Stays registered (re-linkable); tables, locales and install content (data) remain.
+  unlink(name: string): void {
+    const mod = this.#modules[name];
+    if (!mod || !this.#linked.has(name)) return;
+    for (const other of Object.values(this.#modules))
+      if (other !== mod && this.#linked.has(other.name) && (other.plugin.needs ?? []).includes(name))
+        throw new Error(`Cannot unlink "${name}": "${other.name}" needs it`);
+    mod.abort(); // fires the signal init() registered its listeners/timers with
+    delete this.#app.aptTree[name];
+    this.#linked.delete(name);
+    this.#applySchemas(this.#order([...this.#linked]));
+  }
+
+  // Per-module hooks: registers everything init() sets up for one module.
+  async #linkOne(mod: Module): Promise<void> {
+    const { plugin } = mod;
+    await plugin.init?.(this.#app, { signal: mod.newSignal() });
+    await plugin.install?.({ app: this.#app, module: plugin });
+    await this.#loadLocales(mod);
+    if (plugin.api) this.#app.aptTree[mod.name] = plugin.api;
+    this.#linked.add(mod.name);
+  }
+
+  // Rebuild app/ctx settings schema from the given (dependency-ordered) modules and re-apply defaults.
+  #applySchemas(order: string[]): void {
     const appSettingsSchema = { properties: {} as Record<string, unknown> };
     const ctxSettingsSchema = { properties: {} as Record<string, unknown> };
-    const order = this.#initOrder();
-    const dbSchema = { properties: {} };
     for (const name of order) {
       const { plugin } = this.#modules[name];
       appSettingsSchema.properties[name] = plugin.settingsSchema;
       ctxSettingsSchema.properties[name] = plugin.ctxSettingsSchema;
+    }
+    const root = this.#app.settings[$item];
+    root.setSchema(appSettingsSchema);
+    enableItemSchemaDefaults(root);
+    this.#app.ctxSettingsSchema = ctxSettingsSchema;
+  }
+
+  // Merge the given modules' dbSchema (static, then function-form) and migrate additively.
+  async #applyDbSchema(order: string[]): Promise<void> {
+    const dbSchema = { properties: {} };
+    for (const name of order) {
+      const { plugin } = this.#modules[name];
       if (typeof plugin.dbSchema !== "function") mergeSchema(dbSchema, plugin.dbSchema);
     }
     // Function-form dbSchema runs after the static merge — for tables derived from other modules.
@@ -118,19 +177,6 @@ export class ModuleManager {
       await this.#app.db.migrate(dbSchema, { patch: true });
       this.#app.db.schema = dbSchema;
       await this.#app.db.loadTables();
-    }
-    // set schemas before the plugin hooks, so init()/install() already see all settings defaults
-    const root = this.#app.settings[$item];
-    root.setSchema(appSettingsSchema);
-    enableItemSchemaDefaults(root);
-    this.#app.ctxSettingsSchema = ctxSettingsSchema;
-    for (const name of order) {
-      const mod = this.#modules[name];
-      const { plugin } = mod;
-      await plugin.init?.(this.#app);
-      await plugin.install?.({ app: this.#app, module: plugin });
-      await this.#loadLocales(mod);
-      if (plugin.api) this.#app.aptTree[name] = plugin.api;
     }
   }
 
@@ -149,9 +195,11 @@ export class ModuleManager {
     }
   }
 
-  #initOrder(): string[] {
+  // Dependency-ordered subset (default: all imported). Recurses needs only within the set.
+  #order(names: string[] = Object.keys(this.#modules)): string[] {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
+    const set = new Set(names);
     const visit = (name: string) => {
       if (seen[name] === "done") return;
       if (seen[name] === "visiting") throw new Error(`Circular module dependency: ${name}`);
@@ -160,12 +208,12 @@ export class ModuleManager {
       seen[name] = "visiting";
       for (const need of mod.plugin.needs ?? []) {
         if (!this.#modules[need]) throw new Error(`Module "${name}" needs "${need}", but it is not imported`);
-        visit(need);
+        if (set.has(need)) visit(need);
       }
       seen[name] = "done";
       order.push(name);
     };
-    for (const name of Object.keys(this.#modules)) visit(name);
+    for (const name of names) visit(name);
     return order;
   }
 

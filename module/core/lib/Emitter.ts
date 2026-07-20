@@ -5,8 +5,16 @@ type Listener<T> = (data: T) => void | Promise<void>;
 export class Emitter<Events extends Record<string, unknown>> {
     #events: { [K in keyof Events]?: Listener<Events[K]>[] } = {};
 
-    on<K extends string & keyof Events>(name: K, fn: Listener<Events[K]>) {
-        (this.#events[name] ??= []).push(fn);
+    // `signal`: abort removes the listener again — the handle for runtime module unlink.
+    on<K extends string & keyof Events>(name: K, fn: Listener<Events[K]>, opts?: { signal?: AbortSignal }) {
+        const signal = opts?.signal;
+        if (signal?.aborted) return;
+        const list = (this.#events[name] ??= []);
+        list.push(fn);
+        signal?.addEventListener("abort", () => {
+            const i = list.indexOf(fn);
+            if (i !== -1) list.splice(i, 1);
+        }, { once: true });
     }
 
     /** Fires listeners in order and returns the (possibly mutated) event — handy for question events. */
