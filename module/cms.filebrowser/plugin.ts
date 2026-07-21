@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, sql, type Ctx, s, Access, type AptTree, type App } from "../core/mod.ts";
+import { getCtx, requestStorage, sql, type Ctx, s, Access, type AptTree, type App } from "../core/mod.ts";
 import { cms, cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.filebrowser";
@@ -48,6 +48,16 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!userId) return;
     const row = await app.db.row`SELECT usr_id FROM usr_file WHERE usr_id = ${userId} AND file_id = ${String(e.file)}`;
     if (row) e.access = true;
+  }, { signal });
+
+  // Grant the uploading user access to their new file. A file insert always yields a
+  // fresh id, so the (usr_id, file_id) pair is new — plain insert, no ensure needed.
+  app.db.on("table:insert-after", (e) => {
+    if (e.table.name !== "file") return;
+    const userId = requestStorage.getStore()?.userId; // no request (import/install) → no grant
+    if (!userId) return;
+    const added = new Date().toISOString().slice(0, 19).replace("T", " ");
+    app.db.table("usr_file").insert({ usr_id: userId, file_id: e.id, added }).catch(() => {}); // best-effort, must not break the upload
   }, { signal });
 }
 
