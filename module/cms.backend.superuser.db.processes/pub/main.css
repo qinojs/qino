@@ -1,0 +1,7 @@
+[qcms-mod="backend.superuser.db.processes"] {
+  & .-time { text-align: right; }
+  /* the query can be huge — clip the cell, full text stays in the title */
+  & .-info { max-width: 40em; overflow: hidden; text-overflow: ellipsis; font-family: monospace; }
+  /* gone = process is no longer in the snapshot (kept via "Keep old") */
+  & tr[data-gone] { opacity: .5; }
+}
