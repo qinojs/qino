@@ -49,7 +49,7 @@ function uaInfo(ua: string): { label: string; bot: boolean } {
 // Candidate node_changed rows (newest first). Search/date/own-client narrow the
 // window in SQL; type and — crucially — per-node edit rights are applied in JS,
 // because access is inheritance/group/event derived and not expressible in SQL.
-async function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
+function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
   const db = app.db;
   const where: Sql[] = [sql.raw("1")];
   if (f.from)          where.push(sql`l.time >= ${toUnix(f.from)}`);
@@ -65,7 +65,7 @@ async function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promis
       where.push(sql`(u.email LIKE ${like} OR u.firstname LIKE ${like} OR u.lastname LIKE ${like})`);
     }
   }
-  return await db.query`
+  return db.query`
     SELECT nc.id, nc.log_id, nc.node_id, nc.page_id, nc.data,
            l.time, l.client_id, ip.ip AS ip, ua.user_agent AS ua,
            u.id AS usr_id, u.email, u.firstname, u.lastname
