@@ -32,7 +32,10 @@ export async function getMeta(ctx: Ctx, fileId: number): Promise<{ name: string;
 
 export async function setMeta(ctx: Ctx, fileId: number, data: Record<string, any>): Promise<void> {
     const vs: Record<string, any> = {};
-    for (const [k, v] of Object.entries(data)) if (ALLOWED_META.has(k) && v !== undefined) vs[k] = v;
+    for (const [k, v] of Object.entries(data)) { // hpos/vpos are percentages, clamp to 0..100
+        if (!ALLOWED_META.has(k) || v === undefined) continue;
+        vs[k] = k === "name" ? String(v).trim() : Math.max(0, Math.min(100, Number(v)));
+    }
     if (!Object.keys(vs).length) return;
     await (await ctx.app.dbFiles.file(fileId)).setVs(vs);
 }
