@@ -82,7 +82,7 @@ export class Node {
 
         let changed = false;
         for (const [n, v] of Object.entries(data)) {
-            if (this.vs[n] !== v) changed = true;
+            if (this.vs[n] !== v) { changed = true; break; }
         }
         if (!changed) return;
 

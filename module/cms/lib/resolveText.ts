@@ -3,7 +3,7 @@ import { cms } from "./CMS.ts";
 
 export async function resolveText(app: App, value: string): Promise<string> {
   value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));
-  value = await replaceAsync(value, /["\/]dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(app, id));
+  value = await replaceAsync(value, /\/dbFile\/([0-9]+)\/(u-[^/]+\/)?/g, (_, id) => replaceFileUrls(app, id));
   return value;
 }
 
