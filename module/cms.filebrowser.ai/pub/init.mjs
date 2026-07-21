@@ -34,12 +34,13 @@ customElements.whenDefined('qino-cms').then(async () => {
         const urls = res?.data?.map(i => i.url) ?? [];
         if (!urls.length) urls.push('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt));
         for (const url of urls) {
-          const label = c1.dom.fragment(
-            `<label data-type=url itemid="${url}">` +
-                        `<input type=checkbox style="position:absolute;top:8px;left:8px">` +
-                        `<img src="${url}" referrerpolicy="no-referrer" style="max-width:100%">` +
-                    `</label>`
-          ).firstChild;
+          const label = document.createElement('label');
+          label.dataset.type = 'url';
+          label.setAttribute('itemid', url);
+          label.append(
+            Object.assign(document.createElement('input'), { type: 'checkbox', style: 'position:absolute;top:8px;left:8px' }),
+            Object.assign(document.createElement('img'), { src: url, referrerPolicy: 'no-referrer', style: 'max-width:100%' }),
+          );
           list.append(label);
         }
       } catch (err) {

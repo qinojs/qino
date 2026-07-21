@@ -40,7 +40,7 @@ export default async function (node: Node): Promise<HtmlString> {
         const text = exists ? ext : "upload";
         preview = `<svg width=70 height=40 style="display:block">
           <rect x=0 y=0 width=70 height=40 fill="var(--cms-color)"></rect>
-          <text x=30 y=24 fill="#fff"><tspan text-anchor=middle>${text}</tspan></text>
+          <text x=30 y=24 fill="#fff"><tspan text-anchor=middle>${hee(text)}</tspan></text>
         </svg>`;
       }
     }
