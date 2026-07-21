@@ -27,7 +27,7 @@ export function initSecurity(app: App, signal: AbortSignal) {
     const pattern = await suspiciousPath(app, info.path);
     if (!pattern) return;
     rememberPathBlock(app, info, set);
-    await addEventDb(app.db, { ...info, prio: "error", kind: "path-block", scope: "ip", ident: info.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
+    await addEventDb(app.db, { ...info, prio: "error", kind: "path-block", scope: "ip", ident: info.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: true });
     deny(set.pathBlockSeconds);
   }, { signal });
 
@@ -39,7 +39,7 @@ export function initSecurity(app: App, signal: AbortSignal) {
     const pattern = await suspiciousPath(ctx.app, fast.path);
     if (pattern) {
       rememberPathBlock(ctx.app, fast, set);
-      await addEvent(ctx, { ...fast, prio: "error", kind: "path-block", scope: "ip", ident: fast.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: 1 });
+      await addEvent(ctx, { ...fast, prio: "error", kind: "path-block", scope: "ip", ident: fast.ip, reason: "suspicious path: " + pattern, confidence: 98, severity: 100, score: set.blockScore, blocked: true });
       return block(ctx, set.pathBlockSeconds);
     }
     ctx.state.security = { start: performance.now() };

@@ -547,9 +547,9 @@ export class Node {
             online_start: unixTime(),
             access: this.vs.access,
             module: this.vs.module,
-            searchable: this.vs.searchable,
             type: "p",
-            visible: 1,
+            searchable: this.vs.searchable,
+            visible: true,
             ...vs,
         };
         const id = await this.db.table("page").insert(vs);

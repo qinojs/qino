@@ -8,12 +8,12 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
     const root = await cm.node(1);
     const P = await root.createChild({
       id: 100,
-      visible: 0,
       module: "cms.layout.backend",
       access: 0,
       offline: 0,
+      visible: false,
+      searchable: false,
       sort: 20,
-      searchable: 0,
     });
     if (P) {
       await P.changeGroup(1, 0);
@@ -46,9 +46,9 @@ export async function install(app: App, module: string, titles?: Record<string, 
       if (Parent) {
         const Node = await (await Parent.createChild({
           module: "cms.layout.backend",
-          visible: 1,
           access: 0,
           offline: 0,
+          visible: true,
         })).cont('1');
         await Node.set("module", mod);
       }

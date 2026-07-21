@@ -73,7 +73,7 @@ async function hitBucket(db: Db, scope: string, ident: string, add: number, reas
   const t = unixTime();
   const row = await getBucket(db, scope, ident, set);
   const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;
-  const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore ? 1 : 0, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: short(path, 191), data: "" };
+  const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: short(path, 191), data: "" };
   if (row) {
     await db.table("m_security_bucket").update(row.id, data);
     setBucketCache(db, scope, ident, { ...row, ...data }, set);
@@ -148,7 +148,7 @@ export async function addEventDb(db: Db, data: Record<string, unknown>) {
   const extra = data.data ? JSON.stringify(data.data) : "";
   delete data.data;
   const event = {
-    time: unixTime(), prio: "notice", kind: "", scope: "", ident: "", reason: "", state: "", confidence: 0, severity: 0, score: 0, delay_ms: 0, blocked: 0,
+    time: unixTime(), prio: "notice", kind: "", scope: "", ident: "", reason: "", state: "", confidence: 0, severity: 0, score: 0, delay_ms: 0, blocked: false,
     ip: "", ip_range: "", client_id: null, sess_id: null, usr_id: null, method: "", path: "", status: 0, duration_ms: 0, bytes_in: 0, bytes_out: 0, ua: "",
     ...data,
     data: extra,
@@ -160,7 +160,7 @@ export async function addEventDb(db: Db, data: Record<string, unknown>) {
 export async function cleanup(db: Db, set: Record<string, number>) {
   const old = unixTime() - set.keepDays * 86400;
   await db.exec`DELETE FROM m_security_event WHERE time < ${old}`;
-  await db.exec`DELETE FROM m_security_bucket WHERE last_seen < ${old} AND blocked = 0`;
+  await db.exec`DELETE FROM m_security_bucket WHERE last_seen < ${old} AND blocked = ${false}`;
 }
 
 function ipRange(ip: string): string {

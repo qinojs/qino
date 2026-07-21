@@ -20,8 +20,8 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const set = await settings(app);
   if (vars.clearEvents) await db.exec`DELETE FROM m_security_event`;
   if (vars.clearBuckets) await db.exec`DELETE FROM m_security_bucket`;
-  if (vars.release) await db.table("m_security_bucket").update(vars.release, { score: 0, blocked: 0, reason: "released" });
-  if (vars.block) await db.table("m_security_bucket").update(vars.block, { score: set.blockScore, blocked: 1, reason: "manual block" });
+  if (vars.release) await db.table("m_security_bucket").update(vars.release, { score: 0, blocked: false, reason: "released" });
+  if (vars.block) await db.table("m_security_bucket").update(vars.block, { score: set.blockScore, blocked: true, reason: "manual block" });
   if (vars.seen) await db.table("m_security_event").update(vars.seen, { state: "seen" });
   if (vars.ignore) await db.table("m_security_event").update(vars.ignore, { state: "ignore" });
   const buckets = await db.query`SELECT * FROM m_security_bucket ORDER BY score DESC,last_seen DESC LIMIT 80`;
@@ -153,7 +153,7 @@ function eventWhere(get: Record<string, string>): Sql {
   if (get.prio) parts.push(sql`prio = ${get.prio}`);
   if (get.kind) parts.push(sql`kind = ${get.kind}`);
   if (get.scope) parts.push(sql`scope = ${get.scope}`);
-  if (get.blocked === "blocked") parts.push(sql.raw("blocked = 1"));
+  if (get.blocked === "blocked") parts.push(sql`blocked = ${true}`);
   if (get.blocked === "delayed") parts.push(sql.raw("delay_ms > 0"));
   if (get.state) parts.push(sql`state = ${get.state}`);
   if (get.min) parts.push(sql`severity >= ${Number(get.min) || 0}`);
