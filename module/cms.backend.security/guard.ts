@@ -7,6 +7,17 @@ import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqI
 const pathBlocks = new WeakMap<App, Map<string, number>>();
 const blocksOf = (app: App) => pathBlocks.getOrInsertComputed(app, () => new Map());
 
+const utf8 = new TextEncoder();
+// Byte length of a serialized response body. Streams/forms are unknown up front → 0, not fake precision.
+function bodySize(body: BodyInit | undefined): number {
+  if (body == null) return 0;
+  if (typeof body === "string") return utf8.encode(body).length;
+  if (body instanceof ArrayBuffer) return body.byteLength;
+  if (ArrayBuffer.isView(body)) return body.byteLength; // Uint8Array & other typed arrays
+  if (body instanceof Blob) return body.size;
+  return 0;
+}
+
 export function initSecurity(app: App, signal: AbortSignal) {
   app.on("request-start", async ({ request, peerAddr }) => {
     const info = gateInfo(request, peerAddr, app.trustedProxyHops);
@@ -60,7 +71,7 @@ export function initSecurity(app: App, signal: AbortSignal) {
     const info = reqInfo(ctx);
     info.status = ctx.res.status;
     info.duration_ms = Math.round(performance.now() - sec.start);
-    info.bytes_out = String(ctx.res.body ?? "").length;
+    info.bytes_out = bodySize(ctx.res.body);
     const signal = responseSignal(info, set);
     if (!signal) return;
     const ranked = rankSignal(signal, info, set);
