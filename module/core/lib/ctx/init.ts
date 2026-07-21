@@ -72,7 +72,7 @@ function initLog(ctx: Ctx): void {
         const urlIdOf = async (url: string) => {
           const hash = createHash("md5").update(url).digest("hex");
           return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
-              || await db.table("log_url").insert({ url, hash });
+              || db.table("log_url").insert({ url, hash });
         };
         const url = ctx.req.url.href;
         const referer = ctx.req.header("referer") ?? "";
