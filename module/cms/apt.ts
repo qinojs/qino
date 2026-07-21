@@ -1,7 +1,7 @@
 import { cms, ADMIN } from "./mod.ts";
 // deno-lint-ignore-file no-explicit-any
 
-import { s, Access, AccessError, ConflictError, NotFoundError, itemReadDeep, type Ctx } from "../core/mod.ts";
+import { s, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep, type Ctx } from "../core/mod.ts";
 import { $item } from "../../deps.ts";
 import * as fns from "./apt-exports.ts";
 import type { Node } from "./lib/Node.ts";
@@ -18,6 +18,7 @@ const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
   if (Number(e.access) < ADMIN) throw new AccessError();
 };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
+
 
 // ───── Node ───────────────────────────────────────────────────────────────
 
@@ -462,7 +463,7 @@ const node = {
         ...nodeWrite,
         input: s.object({ url: s.string() }),
         execute: async ({ node, lang, url }: any) => {
-          await node.urlSet(lang, { url, custom: 1 });
+          await node.urlSet(lang, { url: cleanCustomUrl(url), custom: 1 });
           return node.urlSeoGen(lang);
         },
       },
@@ -674,3 +675,15 @@ export const api = {
     ":node": node,
   },
 };
+
+
+// Normalize + validate a user-supplied custom URL path (stored as page_url.url).
+// Only the manual override passes here; internal SEO-generated urls bypass it.
+function cleanCustomUrl(raw: string): string {
+  const url = raw.trim().replace(/^\/+|\/+$/g, ""); // strip surrounding slashes (also neutralizes //protocol-relative)
+  const invalid = /[\x00-\x1f\x7f]/.test(url) // control chars: header/log injection primitive
+    || /^[a-z][a-z0-9+.-]*:/i.test(url)             // absolute scheme (javascript:, http:, ...)
+    || url.length > 255;                             // page_url.url column width
+  if (invalid) throw new ValidationError([{ message: "invalid custom url", path: ["url"] }]);
+  return url;
+}
