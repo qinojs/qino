@@ -411,11 +411,12 @@ export class Node {
                       LEFT JOIN ${sql.id(tableRef("file"))} f ON f.id = pf.file_id
                     WHERE pf.page_id = ${this.id}
                     ORDER BY sort`;
-                for (const vs of rows) {
-                    const F = await this.app.dbFiles.file(vs.id, vs);
-                    this.#filesAll![vs.pf_name] = F;
-                    if (await F.exists()) files[vs.pf_name] = F;
-                }
+                const Fs = await Promise.all(rows.map((vs) => this.app.dbFiles.file(vs.id, vs)));
+                const exist = await Promise.all(Fs.map((F) => F.exists()));
+                rows.forEach((vs, i) => {
+                    this.#filesAll![vs.pf_name] = Fs[i];
+                    if (exist[i]) files[vs.pf_name] = Fs[i];
+                });
                 return files;
             })();
         }
