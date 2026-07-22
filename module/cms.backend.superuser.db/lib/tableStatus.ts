@@ -10,7 +10,7 @@ export function tableStatus(db: Db, table: string): Promise<TableStatus> {
 }
 
 async function mysqlStatus(db: Db, table: string): Promise<TableStatus> {
-  const s: any = await db.row`SHOW TABLE STATUS LIKE ${table}`;
+  const s = await db.row`SHOW TABLE STATUS LIKE ${table}`;
   return {
     rows: s?.Rows != null ? Number(s.Rows) : null,
     bytes: s?.Data_length != null ? Number(s.Data_length) : null,
@@ -19,7 +19,7 @@ async function mysqlStatus(db: Db, table: string): Promise<TableStatus> {
 }
 
 async function pgStatus(db: Db, table: string): Promise<TableStatus> {
-  const s: any = await db.row`
+  const s = await db.row`
     SELECT c.reltuples::bigint AS rows, pg_total_relation_size(c.oid) AS bytes
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE c.relname = ${table} AND n.nspname = current_schema()`;
