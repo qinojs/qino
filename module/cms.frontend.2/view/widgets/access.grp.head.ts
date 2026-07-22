@@ -6,7 +6,7 @@ export default async function (node: Node): Promise<HtmlString | string> {
   const P = await node.accessInheritParent();
   const isPublic = await P.isPublic();
   let number = !isPublic ? `<span class=-info style="font-family:qg_cms;">&#xe900;</span>` : "";
-  const all = await node.app.db.row`SELECT sum(if(access=1,1,0)) as access_1, sum(if(access=2,1,0)) as access_2, sum(if(access=3,1,0)) as access_3 FROM page_access_grp WHERE page_id = ${String(P)}`;
+  const all = await node.app.db.row`SELECT sum(if(access=1,1,0)) as access_1, sum(if(access=2,1,0)) as access_2, sum(if(access=3,1,0)) as access_3 FROM page_access_grp WHERE page_id = ${P.id}`;
   if (all) {
     if (all.access_1) number += `<span class="-info -access-1-bg">${all.access_1}</span>`;
     if (all.access_2) number += `<span class="-info -access-2-bg">${all.access_2}</span>`;

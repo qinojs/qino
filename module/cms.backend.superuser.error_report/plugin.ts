@@ -191,7 +191,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td style="width:3rem; white-space:nowrap">
     <small class=u2-badge style="background-color:${color}">${hee(row.prio || "?")}</small> <small>${num}x</small>
   <td style="width:6rem">
-    <a href="${hee(entriesUrl)}">${hee(String(row.num_ip))} IPs</a>
+    <a href="${hee(entriesUrl)}">${hee(row.num_ip)} IPs</a>
   <td style="width:6rem">
     ${hee(row.source)}
   <td style="width:6rem; white-space:nowrap">
@@ -212,10 +212,10 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td>
     <button class=u2-unstyle type=button
       data-delete-group
-      data-source="${hee(String(row.source))}"
-      data-file="${hee(String(row.file))}"
-      data-line="${hee(String(row.line))}"
-      data-col="${hee(String(row.col))}"
+      data-source="${hee(row.source)}"
+      data-file="${hee(row.file)}"
+      data-line="${hee(row.line)}"
+      data-col="${hee(row.col)}"
       aria-label="Delete"><u2-ico icon=delete aria-hidden="true">✕</u2-ico></button>`;
   }
 
@@ -262,7 +262,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 <tr style="white-space:nowrap">
   <td>
     <a href="${hee(u.search)}">${u2time(row.time)} <br> ${hee(row.log_id)}</a>
-    <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(row.id))}'}}); this.disabled=true">delete</button>
+    <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(row.id)}'}}); this.disabled=true">delete</button>
   <td>
     <b>${hee(row.message)}</b><br>
     <a href="${hee(row.request)}" target="_blank">${hee(row.request)}</a><br>
@@ -346,7 +346,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       }
       historyRows += `
 <tr>
-  <td>${u2time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(String(item.id))}
+  <td>${u2time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(item.id)}
   <td>
     <a href="${hee(item.url)}" target="_blank">${hee(item.url)}</a><br>
     <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
@@ -364,10 +364,10 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
   const isLocalFile = localPath(error.file ?? "") !== null;
   const fileBlock = isLocalFile
     ? `<a style="color:inherit; text-decoration:none" target="_blank" href="${hee(editorLink(error.file, error.line, error.col))}">
-      <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(String(error.line))} column: ${hee(String(error.col))}
+      <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(error.line)} column: ${hee(error.col)}
       ${error.sample ? `<pre style="box-shadow:0 0 10px; padding:10px">${hee(error.sample)}</pre>` : ""}
     </a>`
-    : `<b>${hee(error.file)}</b> line: ${hee(String(error.line))} column: ${hee(String(error.col))}
+    : `<b>${hee(error.file)}</b> line: ${hee(error.line)} column: ${hee(error.col)}
     ${error.sample ? `<pre style="box-shadow:0 0 10px; padding:10px">${hee(error.sample)}</pre>` : ""}`;
 
   return `
@@ -392,7 +392,7 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
     </table>
     <div class="-body">
       ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
-      <button onclick="cmsApi(${node.id},{delete:{id:'${hee(String(error.id))}'}}); this.disabled=true">delete</button>
+      <button onclick="cmsApi(${node.id},{delete:{id:'${hee(error.id)}'}}); this.disabled=true">delete</button>
     </div>
   </div>
 
@@ -452,7 +452,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     <td><span style="color:${c};font-weight:bold">${hee(row.prio)}</span>
     <td>${hee(row.source)}
     <td>${detailUrl ? `<a href="${detailUrl}">${msg}</a>` : msg}
-    <td style="color:#888">${hee(String(row.num))}x`;
+    <td style="color:#888">${hee(row.num)}x`;
   }
 
   return `<div style="overflow:auto; padding:0">

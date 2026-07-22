@@ -19,7 +19,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   const rows = await db.query`
     SELECT grp.*, a.access
     FROM grp
-    LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = ${String(node)}
+    LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = ${node.id}
     WHERE cms_access ${tail}, grp.name LIMIT 100`;
   const publicAccess = node.vs.access;
   const trs: Array<HtmlString | Promise<HtmlString>> = [html.async`<tr>

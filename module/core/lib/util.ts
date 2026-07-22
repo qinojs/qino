@@ -58,8 +58,9 @@ export function u2time(t: unknown): string {
 }
 
 /** HTML utilities */
+const HEE: Record<string, string> = {"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"};
 export function hee(str: unknown): string {
-  return String(str ?? "").replace(/[&"'<>]/g, c => ({"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"})[c]!);
+  return String(str ?? "").replace(/[&"'<>]/g, c => HEE[c]);
 }
 
 export class HtmlString {
@@ -146,7 +147,9 @@ const TRANSLIT: Record<string, string> = {
   ä: "ae", ö: "oe", ü: "ue", Ä: "ae", Ö: "oe", Ü: "ue",
   ß: "ss", æ: "ae", œ: "oe", þ: "th", ð: "dh", "&": "and", "&amp;": "and",
 };
-const TRANSLIT_RE = new RegExp(Object.keys(TRANSLIT).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
+// longest first: "&amp;" must win over "&"
+const TRANSLIT_RE = new RegExp(
+  Object.keys(TRANSLIT).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
 export function urlize(str: string): string {
   return str
     .replace(TRANSLIT_RE, m => TRANSLIT[m])

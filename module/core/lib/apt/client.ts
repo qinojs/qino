@@ -1,11 +1,9 @@
 import { asParams, invoke } from "./invoke.ts";
 import { isCatchall } from "./route.ts";
-import { VERB_SET, type AptTree, type Method, type Params } from "./types.ts";
+import { VERB_SET, branch, type AptTree, type Branch, type Method, type Params } from "./types.ts";
 
 export type AptProxy ={ [key: string]: AptProxy } & ((...args: unknown[]) => AptProxy) & { [K in Method]: (params?: Params) => Promise<unknown> };
 
-type Branch = Record<string, unknown>;
-const branch = (v: unknown) => v && typeof v === "object" ? v as Branch : undefined;
 
 export function aptClient(tree: AptTree) {
   function buildProxy(node: Branch, pathSoFar: string[]): AptProxy {

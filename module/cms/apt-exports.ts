@@ -88,8 +88,8 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
         const bough = await node.bough();
         for (const Child of bough.values()) {
             if (Child.vs?.["access"] !== null) await Child.set("access", 0);
-            await ctx.app.db.exec`DELETE FROM page_access_usr WHERE page_id = ${String(Child)} AND access < 2`;
-            await ctx.app.db.exec`DELETE FROM page_access_grp WHERE page_id = ${String(Child)} AND access < 2`;
+            await ctx.app.db.exec`DELETE FROM page_access_usr WHERE page_id = ${Child.id} AND access < 2`;
+            await ctx.app.db.exec`DELETE FROM page_access_grp WHERE page_id = ${Child.id} AND access < 2`;
         }
     }
     return ret;

@@ -50,7 +50,7 @@ export function setSpace(ctx: Ctx, space: number): number {
     s.space = space;
     return old;
 }
-export function setLog(ctx: Ctx, log: number): number {
+function setLog(ctx: Ctx, log: number): number {
     const s = getVers(ctx);
     const old = s.log;
     s.log = log;

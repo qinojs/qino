@@ -1,11 +1,9 @@
 import { getCtx } from "../ctx/Ctx.ts";
 import type { StandardSchema } from "../StandardSchema.ts";
 import { AccessError, NotFoundError, ValidationError } from "./errors.ts";
-import { BODY_METHODS, RESERVED, VERB_SET, type AptNode, type AptTree, type Method, type Params, type Verb } from "./types.ts";
+import { BODY_METHODS, RESERVED, VERB_SET, branch, type AptNode, type AptTree, type Branch, type Method, type Params, type Verb } from "./types.ts";
 import { isCatchall, paramName, shapeOf } from "./route.ts";
 
-type Branch = Record<string, unknown>;
-const branch = (v: unknown) => v && typeof v === "object" ? v as Branch : undefined;
 
 function validate(schema: StandardSchema, data: unknown, where: string) {
   const res = schema["~standard"].validate(data);

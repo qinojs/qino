@@ -46,7 +46,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     const ctx = getCtx();
     const userId = ctx.userId;
     if (!userId) return;
-    const row = await app.db.row`SELECT usr_id FROM usr_file WHERE usr_id = ${userId} AND file_id = ${String(e.file)}`;
+    const row = await app.db.row`SELECT usr_id FROM usr_file WHERE usr_id = ${userId} AND file_id = ${e.file.id}`;
     if (row) e.access = true;
   }, { signal });
 

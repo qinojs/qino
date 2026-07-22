@@ -36,7 +36,7 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, appPATH: 
   if (options.editable) attrStr += ` dbfile-editable="${hee(options.editable)}"`;
   for (const [k, v] of Object.entries(options)) {
     if (skip.has(k)) continue;
-    attrStr += v === true ? ` ${k}` : v === false ? "" : ` ${k}="${hee(String(v))}"`;
+    attrStr += v === true ? ` ${k}` : v === false ? "" : ` ${k}="${hee(v)}"`;
   }
 
   return (

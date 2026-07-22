@@ -28,6 +28,10 @@ export interface AptNode {
 
 export type AptTree = Record<string, AptNode>;
 
+/** A tree level while walking: any object is a possible branch. */
+export type Branch = Record<string, unknown>;
+export const branch = (v: unknown): Branch | undefined => v && typeof v === "object" ? v as Branch : undefined;
+
 export const VERBS = ["get", "post", "put", "delete", "patch"] as const;
 export type Method = typeof VERBS[number];
 export const VERB_SET = new Set<string>(VERBS);
