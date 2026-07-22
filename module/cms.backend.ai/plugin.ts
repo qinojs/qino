@@ -217,8 +217,8 @@ async function models(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const q = String(vars.filterSearch ?? "").trim().toLowerCase();
   const filtering = !!(fkind || q);
 
-  const providers: Row[] = await app.db.query`SELECT * FROM ai_provider ORDER BY name`;
-  const allModels: Row[] = await app.db.query`SELECT * FROM ai_provider_model ORDER BY model_id`;
+  const providers = await app.db.query`SELECT * FROM ai_provider ORDER BY name`;
+  const allModels = await app.db.query`SELECT * FROM ai_provider_model ORDER BY model_id`;
   const byProvider = new Map<number, Row[]>();
   for (const m of allModels) (byProvider.get(m.provider_id) ?? byProvider.set(m.provider_id, []).get(m.provider_id)!).push(m);
 
@@ -271,8 +271,8 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const app = node.app;
   const message = await handleAction(app, vars);
 
-  const providers: Row[] = await app.db.query`SELECT * FROM ai_provider ORDER BY name`;
-  const allModels: Row[] = await app.db.query`SELECT * FROM ai_provider_model ORDER BY kind, model_id`;
+  const providers = await app.db.query`SELECT * FROM ai_provider ORDER BY name`;
+  const allModels = await app.db.query`SELECT * FROM ai_provider_model ORDER BY kind, model_id`;
   const providersById = new Map(providers.map((p) => [p.id, p]));
   const countByProvider = new Map<number, number>();
   for (const m of allModels) countByProvider.set(m.provider_id, (countByProvider.get(m.provider_id) ?? 0) + 1);
@@ -336,7 +336,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 }
 
 export async function backendDashboardWidget(app: App): Promise<string> {
-  const models: Row[] = await app.db.query`SELECT m.kind, m.model_id, p.name AS provider, m.is_default, m.used_input_tokens, m.used_output_tokens
+  const models = await app.db.query`\n    SELECT m.kind, m.model_id, p.name AS provider, m.is_default, m.used_input_tokens, m.used_output_tokens
     FROM ai_provider_model m JOIN ai_provider p ON p.id = m.provider_id ORDER BY m.kind, p.name`;
 
   const defaults = models.filter((m) => m.is_default)
