@@ -96,9 +96,9 @@ export async function copyNode(
     setVers(ctx, [toSpace, 0]);
     const P = await cms(ctx.app).node(pid);
     for (const l of ctx.app.languages.all) {
-        const genUrl = await P.urlSeoGenerated?.(l);
-        const curUrl = await P.urlSeo?.(l);
-        if (genUrl !== curUrl) await P.urlSeoGen?.(l);
+        const genUrl = await P.urlSeoGenerated(l);
+        const curUrl = await P.urlSeo(l);
+        if (genUrl !== curUrl) await P.urlSeoGen(l);
     }
 
     setVers(ctx, oldVers);
