@@ -11,7 +11,7 @@ const bucketWrite = new Map<string, Promise<unknown>>();
 function serialize<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const run = (bucketWrite.get(key) ?? Promise.resolve()).then(fn, fn);
   bucketWrite.set(key, run);
-  return run.finally(() => { if (bucketWrite.get(key) === run) bucketWrite.delete(key); }) as Promise<T>;
+  return run.finally(() => { if (bucketWrite.get(key) === run) bucketWrite.delete(key); });
 }
 
 export async function settings(app: App): Promise<SecuritySettings> {
