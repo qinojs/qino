@@ -279,7 +279,7 @@ export class Node {
     /* Tree traversal */
     children(filter?: any): Promise<Map<number, Node>> {
         this.#children ??= (async () => {
-            const map: Map<number, Node> = new Map();
+            const map = new Map<number, Node>();
             const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} ORDER BY type DESC, sort, id DESC`;
             for (const row of rows) {
                 const id = Number(row.id);
@@ -316,7 +316,7 @@ export class Node {
     }
 
     async bough(filter?: any): Promise<Map<number, Node>> {
-        const bough: Map<number, Node> = new Map([[this.id, this]]);
+        const bough = new Map<number, Node>([[this.id, this]]);
         for (const Child of (await this.children({ type: "*" })).values()) {
             for (const [k, v] of (await Child.bough()).entries()) bough.set(k, v);
         }
