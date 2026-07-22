@@ -47,7 +47,7 @@ async function sessionDetail(ctx: Ctx, id: number): Promise<HtmlString> {
   const app = ctx.app;
   const s = await app.db.row`SELECT * FROM ai_session WHERE id = ${id} AND ${await ownWhere(ctx)}`;
   if (!s) return html`<div class=u2-card><div class=-body>Session not found.</div></div>`;
-  const messages: Row[] = await app.db.query`SELECT * FROM ai_message WHERE session_id = ${id} ORDER BY id`;
+  const messages = await app.db.query`SELECT * FROM ai_message WHERE session_id = ${id} ORDER BY id`;
   return html`<div class=u2-card style="flex:1 1 40rem;">
     <div class=-head>Session #${id} · bot ${s.bot} · user ${s.user_id}</div>
     <div class=-body>${messages.length ? html.join(messages.map(messageHtml)) : html`<em>No messages.</em>`}</div>
@@ -64,7 +64,7 @@ async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const where = search
     ? sql`WHERE ${own} AND (${bot} OR id IN (SELECT session_id FROM ai_message WHERE ${msg}))`
     : sql`WHERE ${own}`;
-  const sessions: Row[] = await app.db.query`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
+  const sessions = await app.db.query`SELECT * FROM ai_session ${where} ORDER BY updated_at DESC LIMIT 200`;
   const counts = await app.db.indexCol`SELECT session_id, COUNT(*) FROM ai_message GROUP BY session_id`;
   const base = node ? await sessionLinkBase(node) : "?s=";
 
