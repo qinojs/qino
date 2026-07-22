@@ -6,7 +6,7 @@ export async function cms_image2(dbFile: DbFile, options: Record<string, any>): 
   const ctx = getCtx();
   ctx.res.html.legacyScripts.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.js");
   ctx.res.html.styles.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.css");
-  if ((options["if"] ?? 0) && !await dbFile.exists() && !options["editable"]) return html.raw("");
+  if (options["if"] && !await dbFile.exists() && !options["editable"]) return html.raw("");
   options["quality"] ||= "85";
   delete options["if"];
   return html.raw(await imageHtml(dbFile, options, ctx.app.appPATH));
