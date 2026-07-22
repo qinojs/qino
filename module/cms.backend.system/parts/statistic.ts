@@ -23,15 +23,15 @@ async function pgTableStats(db: Db): Promise<DbTableStat[]> {
 }
 
 async function sqliteTableStats(db: Db): Promise<DbTableStat[]> {
-  const tables = await db.col`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`;
+  const tables = await db.col<string>`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`;
   if (!tables.length) return [];
   const stats: Record<string, unknown> = await db.indexCol`
     SELECT COALESCE(m.tbl_name, d.name) AS name, SUM(d.pgsize) AS bytes
     FROM dbstat d
       LEFT JOIN sqlite_master m ON m.name = d.name
-    WHERE COALESCE(m.tbl_name, d.name) IN (${sql.join(tables.map((t) => sql`${String(t)}`))})
+    WHERE COALESCE(m.tbl_name, d.name) IN (${sql.join(tables.map((t) => sql`${t}`))})
     GROUP BY COALESCE(m.tbl_name, d.name)`.catch(() => ({}));
-  return tables.map((name) => ({ name: String(name), bytes: Number(stats[String(name)] ?? 0) }));
+  return tables.map((name) => ({ name, bytes: Number(stats[name] ?? 0) }));
 }
 
 async function dirSize(dir: string): Promise<number> {
