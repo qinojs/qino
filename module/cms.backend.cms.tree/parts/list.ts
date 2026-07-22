@@ -68,10 +68,11 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
         const titleText = titleLang ? hee(await titleLang.get()) : "";
         const titleId = titleObj?.id ?? 0;
+        const inputStyle = 'style="flex:1; background:transparent; border:none; margin:0 10px 0 0; padding:0"';
         if (subAccess < 2) {
-          titleCell = `<input value="${titleText}" style="flex:1; background:transparent; border:none; margin:0 10px 0 0; padding:0" disabled>`;
+          titleCell = `<input value="${titleText}" ${inputStyle} disabled>`;
         } else {
-          titleCell = `<input value="${titleText}" style="flex:1; background:transparent; border:none; margin:0 10px 0 0; padding:0" cmstxt="${hee(String(titleId))}">`;
+          titleCell = `<input value="${titleText}" ${inputStyle} cmstxt="${hee(titleId)}">`;
         }
       }
 
@@ -96,7 +97,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       out += `
 <tr${isCont ? ' class=-isCont' : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${await t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(String(SubPage.id))}</a>
+    <a title="${await t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(SubPage.id)}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}
