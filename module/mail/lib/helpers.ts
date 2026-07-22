@@ -24,7 +24,7 @@ export function addressOf(input: AddressInput, name = "", data: Dict = {}): Reci
 
 export function listOf(input: AddressInput | AddressInput[] | undefined): Recipient[] {
   const list = Array.isArray(input) ? input : input ? [input] : [];
-  return list.map(v => addressOf(v)).filter(Boolean) as Recipient[];
+  return list.flatMap(v => addressOf(v) ?? []);
 }
 
 export function mergeHeaders(...headers: (HeadersInit | undefined)[]): Headers {
