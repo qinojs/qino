@@ -44,9 +44,7 @@ class CmsTextService {
         let output = await this.transl(input, target_lang, source_lang);
         if (!output) throw new AptError(502, "Translation service returned nothing");
 
-        if (/^[A-Z]/.test(input)) {
-            output = output.charAt(0).toUpperCase() + output.slice(1);
-        }
+        if (/^[A-Z]/.test(input)) output = output.charAt(0).toUpperCase() + output.slice(1);
 
         if (await db.one`SELECT id FROM text WHERE id = ${txt_id} AND lang = ${target_lang}`) {
             await db.table("text").update({ id: txt_id, lang: target_lang, text: output });

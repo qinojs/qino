@@ -58,8 +58,8 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         const pageId = Number(c.page_id);
         access[pageId] ??= await (await cms(ctx.app).node(pageId)).access();
         if (access[pageId] < 2) continue;
-        const page = await cms(ctx.app).node(Number(c.node_id));
-        messages.push((await contOrPage(page)) + " " + await describeChange(c.data, t));
+        const p = await cms(ctx.app).node(Number(c.node_id));
+        messages.push((await contOrPage(p)) + " " + await describeChange(c.data, t));
     }
     if (!messages.length) return null;
 

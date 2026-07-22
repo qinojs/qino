@@ -32,14 +32,14 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
   async function loopConts(page: Node): Promise<{ onlineStart: number; onlineEnd: number; access: number }> {
     const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
-    for (const C of await page.conts()) {
-      const child = await loopConts(C);
+    for (const cont of await page.conts()) {
+      const child = await loopConts(cont);
       data.onlineStart += child.onlineStart;
       data.onlineEnd += child.onlineEnd;
       data.access += child.access;
-      if (C.vs.online_start != null) data.onlineStart++;
-      if (C.vs.online_end != null) data.onlineEnd++;
-      if (C.vs.access != null) data.access++;
+      if (cont.vs.online_start != null) data.onlineStart++;
+      if (cont.vs.online_end != null) data.onlineEnd++;
+      if (cont.vs.access != null) data.access++;
     }
     return data;
   }

@@ -19,8 +19,8 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       await page.changeGroup(1, 0);
       await page.changeGroup(2, 0);
       await page.changeGroup(3, 0);
-      const cont = await page.cont('1');
-      await cont.set("module", "cms.backend");
+      const c = await page.cont('1');
+      await c.set("module", "cms.backend");
       page.settings.childXML = '<page visible="1"></page>';
       app.settings.cms.backend(String(page.id));
     }
@@ -56,9 +56,9 @@ export async function install(app: App, module: string, titles?: Record<string, 
     parentModule = mod;
   }
   const node = await cm.nodeByModule(module);
-  const page = await node?.page();
-  if (page && titles) for (const [lang, text] of Object.entries(titles)) await page.title(lang, text);
-  return page;
+  const p = await node?.page();
+  if (p && titles) for (const [lang, text] of Object.entries(titles)) await p.title(lang, text);
+  return p;
 }
 
 const UA_TESTS: [string, RegExp][] = [

@@ -393,12 +393,12 @@ export class Node {
     async title(lang?: string | null, value?: any): Promise<any> {
         this.#title ??= this.app.dbTexts.text(Number(this.vs.title_id ?? "0"));
         if (lang == null) return this.#title;
-        const TextLang = await this.#title.lang(lang);
-        if (value === undefined) return TextLang.get();
-        if ((await TextLang.get()) === value) return;
-        await TextLang.set(value);
+        const textLang = await this.#title.lang(lang);
+        if (value === undefined) return textLang.get();
+        if ((await textLang.get()) === value) return;
+        await textLang.set(value);
         await this.urlsSeoGen();
-        return TextLang;
+        return textLang;
     }
 
     /* Files */
@@ -525,9 +525,7 @@ export class Node {
         const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
         let url = base + part;
         const exists = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${this.id} AND lang = ${lang})`;
-        if ((await Deno.stat(this.app.appPATH + url).catch(() => null)) || exists) {
-            url += "-" + lang + this;
-        }
+        if ((await Deno.stat(this.app.appPATH + url).catch(() => null)) || exists) url += "-" + lang + this;
         return url;
     }
 

@@ -213,9 +213,7 @@ const node = {
       input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-01-01T00:00:00\") or Unix timestamp. Omit to remove limit.") }),
       execute: async ({ node, value }: any) => {
         let v = value;
-        if (typeof v === "string" && v.includes("T")) {
-          v = Math.floor(new Date(v).getTime() / 1000);
-        }
+        if (typeof v === "string" && v.includes("T")) v = Math.floor(new Date(v).getTime() / 1000);
         await node.set("online_start", v);
         return { ok: true };
       },
@@ -229,9 +227,7 @@ const node = {
       input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-12-31T23:59:59\") or Unix timestamp. Omit to remove limit.") }),
       execute: async ({ node, value }: any) => {
         let v = value;
-        if (typeof v === "string" && v.includes("T")) {
-          v = Math.floor(new Date(v).getTime() / 1000);
-        }
+        if (typeof v === "string" && v.includes("T")) v = Math.floor(new Date(v).getTime() / 1000);
         await node.set("online_end", v);
         return { ok: true };
       },
@@ -246,10 +242,10 @@ const node = {
       execute: async ({ node, title }: any, ctx: Ctx) => {
         const id = await node.createChild();
         if (!id) throw new Error("createChild failed");
-        const child = await node.cms.node(id);
-        await child.title(ctx.lang, title);
-        await child.changeUser(ctx.user!, 3);
-        return fns.nodeToJson(child);
+        const c = await node.cms.node(id);
+        await c.title(ctx.lang, title);
+        await c.changeUser(ctx.user!, 3);
+        return fns.nodeToJson(c);
       },
     },
   },
@@ -313,10 +309,10 @@ const node = {
       input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\"") }),
       execute: async ({ node, module }: any, ctx: Ctx) => {
         await requireModuleAdmin(module, ctx);
-        const cont = await node.createCont({ module });
-        if (!cont) throw new Error("createCont failed");
-        await cont.changeUser(ctx.user, 3);
-        return { id: cont.id, html: String(await cont.html()) };
+        const c = await node.createCont({ module });
+        if (!c) throw new Error("createCont failed");
+        await c.changeUser(ctx.user, 3);
+        return { id: c.id, html: String(await c.html()) };
       },
     },
   },
@@ -605,8 +601,8 @@ export const api = {
       input: s.object({ value: s.optional(s.number()).describe("Node-ID to cut. Omit to clear clipboard.") }),
       execute: async ({ value }: any, ctx: Ctx) => {
         if (value) {
-          const page = await cms(ctx.app).node(value);
-          if ((await page.access()) < 2) throw new AccessError();
+          const p = await cms(ctx.app).node(value);
+          if ((await p.access()) < 2) throw new AccessError();
         }
         await ctx.settings.cms.clipboard(Number(value ?? 0));
         return { ok: true };

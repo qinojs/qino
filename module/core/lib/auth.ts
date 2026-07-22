@@ -81,8 +81,8 @@ export async function pwVerify(pw: string, hash: string) {
 async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
   const usr = ctx.user;
   if (!(await usr?.exists())) return;
-  const E = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });
-  await E.set("save_login", doSave ? 1 : 0);
+  const entry = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });
+  await entry.set("save_login", doSave ? 1 : 0);
 }
 
 function pwNeedsRehash(hash: string) {

@@ -37,10 +37,10 @@ export default async function (node: Node): Promise<HtmlString> {
   const models = [];
   for (const id of allIds) {
     if (!id) continue;
-    const page = await node.cms.node(Number(id));
-    if (page.vs?.type !== "c") continue;
-    if ((await page.access()) < 2) continue;
-    models.push(page);
+    const p = await node.cms.node(Number(id));
+    if (p.vs?.type !== "c") continue;
+    if ((await p.access()) < 2) continue;
+    models.push(p);
   }
 
   let modelsSection: HtmlString | string = "";

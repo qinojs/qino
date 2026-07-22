@@ -157,10 +157,10 @@ export async function install({ app }: { app: App }): Promise<void> {
 async function dbFiles2Zip(files: DbFile[]): Promise<ReadableStream<Uint8Array>> {
     const dir = await Deno.makeTempDir({ prefix: "qino-zip-" });
     const names: string[] = [];
-    for (const F of files) {
-        let name = F.name.replace(/[/\0]/g, "_") || "file";
+    for (const dbFile of files) {
+        let name = dbFile.name.replace(/[/\0]/g, "_") || "file";
         if (names.includes(name)) name = names.length + "_" + name;
-        await Deno.symlink(F.path, `${dir}/${name}`);
+        await Deno.symlink(dbFile.path, `${dir}/${name}`);
         names.push(name);
     }
     const proc = new Deno.Command("zip", { args: ["-q", "-", "--", ...names], cwd: dir, stdout: "piped", stderr: "null" }).spawn();

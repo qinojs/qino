@@ -18,8 +18,8 @@ export function healthChecks(app: App): HealthTypes {
             "empty trash": {
               solve: async () => {
                 const trashNode = await cms(app).node(trashId);
-                for (const Child of (await trashNode.children({ type: "*" })).values()) {
-                  await trashNode.removeChild(Child);
+                for (const child of (await trashNode.children({ type: "*" })).values()) {
+                  await trashNode.removeChild(child);
                 }
               },
             },
@@ -41,8 +41,8 @@ export function healthChecks(app: App): HealthTypes {
                 const trashNode = await cms(app).node(trashId);
                 const trashCont = await trashNode.cont("main");
                 for (const pid of all) {
-                  const page = await cms(app).node(Number(pid));
-                  await trashNode.insertBefore(page, trashCont);
+                  const p = await cms(app).node(Number(pid));
+                  await trashNode.insertBefore(p, trashCont);
                 }
               },
             },

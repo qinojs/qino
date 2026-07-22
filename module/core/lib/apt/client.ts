@@ -21,9 +21,9 @@ export function aptClient(tree: AptTree) {
               query: asParams(query),
             });
         }
-        const child = branch(node[prop]);
-        if (!child) return;
-        return buildProxy(child, [...pathSoFar, prop]);
+        const c = branch(node[prop]);
+        if (!c) return;
+        return buildProxy(c, [...pathSoFar, prop]);
       },
       apply(_t, _thisArg, args: unknown[]) {
         const paramKey = Object.keys(node).find((k) => k.startsWith(":"));

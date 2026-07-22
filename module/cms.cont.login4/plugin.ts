@@ -26,9 +26,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   if (!edit && ctx.user) {
     const redirectId = Number(settings.redirect());
     if (redirectId) {
-      const P = await cms.node(redirectId);
-      if (P.exists()) {
-        ctx.res.headers.set("Location", await P.url());
+      const page = await cms.node(redirectId);
+      if (page.exists()) {
+        ctx.res.headers.set("Location", await page.url());
         ctx.res.status = 302;
         return "";
       }
@@ -38,9 +38,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   // Login error message
   let errorHtml = "";
   const errorT = await node.text("login failed");
-  if (!(await errorT.string())) {
-    await errorT.lang("en").set("Your login attempt failed");
-  }
+  if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
   if (ctx.loginError) {
     errorHtml = `<div class=loginError>${await errorT.string()}</div>`;
   }

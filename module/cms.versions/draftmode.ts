@@ -24,9 +24,7 @@ import { getCmsVers } from "./lib/CmsVers.ts";
 /** Draftmode: in editmode read/write the draft space (1) instead of live (0). */
 export async function applyDraftSpace(ctx: Ctx): Promise<void> {
     const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
-    if (draftmode) {
-        getCmsVers(ctx).space = cmsCtx(ctx).editmode ? 1 : 0;
-    }
+    if (draftmode) getCmsVers(ctx).space = cmsCtx(ctx).editmode ? 1 : 0;
 }
 
 export function initDraftmode(app: App, signal: AbortSignal) {

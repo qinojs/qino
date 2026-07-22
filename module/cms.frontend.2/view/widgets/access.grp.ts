@@ -4,14 +4,14 @@ import type { Node } from "../../../cms/mod.ts";
 export default async function (node: Node): Promise<HtmlString> {
   const t = node.app.t;
   const isNull = node.vs.access === null;
-  const P = await node.accessInheritParent();
+  const page = await node.accessInheritParent();
 
   let inner: string;
   if (isNull) {
-    inner = await t`Inherited from ${node.cms.link(P)}`;
+    inner = await t`Inherited from ${node.cms.link(page)}`;
   } else {
     const hasMany = Number(await node.app.db.one`SELECT count(*) FROM grp WHERE cms_access`) > 10;
-    const searchInput = hasMany ? `<input class=-search placeholder="${await node.app.t`Search`}">` : "";
+    const searchInput = hasMany ? `<input class=-search placeholder="${await t`Search`}">` : "";
     const { default: listFn } = await import("./access.grp.list.ts");
     const listHtml = await listFn(node, { hasMany });
     inner = `${searchInput}<div widget="access.grp.list">${listHtml}</div>`;

@@ -18,7 +18,7 @@ const settingsSchema = {
 };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const T = await node.showText("main");
+  const text = await node.showText("main");
 
   const settings = node.settings;
 
@@ -48,7 +48,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (maxHeight) style += `max-height:${maxHeight};`;
 
   const options = {
-    alt: String(T),
+    alt: String(text),
     width: await settings["width"],
     height: await settings["height"],
     fit: (await settings["contain"]) ? "contain" : "cover",
@@ -64,7 +64,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (node.edit) {
     editHtml = await html.async`
         <div class="-alt-edit qgCMS">
-            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${T.id} value="${T}">
+            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text}">
         </div>
         <style>
         [qcms-mod="cont.image2"] img { min-height:4em; }

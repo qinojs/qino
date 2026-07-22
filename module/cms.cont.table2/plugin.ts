@@ -25,9 +25,7 @@ function cssWidth(raw: string): string {
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
-  if (node.edit) {
-    ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
-  }
+  if (node.edit) ctx.res.html.scripts.add(node.modUrl + "pub/edit.mjs");
 
   const cols = Math.min(Math.max(1, Number(node.settings.cols()) || 2), 15);
   const rows = Math.min(Math.max(1, Number(node.settings.rows()) || 2), 300);
@@ -63,11 +61,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   for (let r = 0; r < rows; r++) {
     html += `      <tr>\n`;
     for (let j = 0; j < cols; j++) {
-      const T = await node.showText(`${r}_${j}`);
+      const text = await node.showText(`${r}_${j}`);
       const w = cssWidth(String(node.settings[`row_${j + 1}`]() ?? ""));
       const styleAttr = w ? ` style="width:${w}"` : "";
-      const editAttr = node.edit ? ` contenteditable cmstxt=${T.id}` : "";
-      html += `        <td${styleAttr}${editAttr}>${T}\n`;
+      const editAttr = node.edit ? ` contenteditable cmstxt=${text.id}` : "";
+      html += `        <td${styleAttr}${editAttr}>${text}\n`;
     }
   }
   html += `  </table>\n</div>`;

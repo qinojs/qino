@@ -23,9 +23,9 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
 
   // Breadcrumb path to root node
   const pathParts: HtmlString[] = [];
-  for (const C of (await rootNode.path()).values()) {
-    const title = (await C.title(ctx.lang)) || "(no text)";
-    pathParts.push(html`<a href="${"?rp=" + C.id}">${String(title).trim() || "(no text)"}</a> > `);
+  for (const child of (await rootNode.path()).values()) {
+    const title = (await child.title(ctx.lang)) || "(no text)";
+    pathParts.push(html`<a href="${"?rp=" + child.id}">${String(title).trim() || "(no text)"}</a> > `);
   }
 
   const showContents = !!ctx.settings.cms.admin.showContents();

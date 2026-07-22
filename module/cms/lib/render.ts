@@ -4,8 +4,8 @@ import { cmsCtx } from "./CmsContext.ts";
 
 export async function render(ctx: Ctx): Promise<void> {
   const app = ctx.app;
-  const db = ctx.app.db;
-  const cm = cms(ctx.app);
+  const db = app.db;
+  const cm = cms(app);
 
   let page = await cm.nodeFromRequest();
 

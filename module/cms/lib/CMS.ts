@@ -104,34 +104,24 @@ export class CMS {
     filter = tags ?? { ...filter };
     if (!tags) filter.type ||= "p";
     const ret = new Map<number, Node>();
-    for (const [id, C] of pages) {
-      const vs = C.vs;
+    for (const [id, c] of pages) {
+      const vs = c.vs;
       if (!tags) {
-        if (filter.type && filter.type !== "*") {
-          if (vs.type !== filter.type) continue;
-        }
-        if (filter.visible !== undefined) {
-          if (!!vs.visible !== !!filter.visible) continue;
-        }
+        if (filter.type && filter.type !== "*" && vs.type !== filter.type) continue;
+        if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
         if (filter.module) {
           const modules = Array.isArray(filter.module) ? filter.module : [filter.module];
           if (!modules.includes(vs.module)) continue;
         }
-        if (filter.access !== undefined) {
-          if ((await C.access()) < filter.access) continue;
-        }
+        if (filter.access !== undefined && (await c.access()) < filter.access) continue;
       }
       if (tags?.includes("navi")) {
-        const titleObj = await C.title();
-        if (!vs.visible || !(await C.isReadable()) || !(await titleObj.string() || C.edit)) continue;
+        const titleObj = await c.title();
+        if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || c.edit)) continue;
       }
-      if (tags?.includes("access")) {
-        if (!(await C.access())) continue;
-      }
-      if (tags?.includes("readable")) {
-        if (!(await C.isReadable())) continue;
-      }
-      ret.set(id, C);
+      if (tags?.includes("access") && !(await c.access())) continue;
+      if (tags?.includes("readable") && !(await c.isReadable())) continue;
+      ret.set(id, c);
     }
     return ret;
   }
@@ -189,12 +179,8 @@ export class CMS {
     const textObj = name === "title" ? await node.title() : await node.text(name);
     const tag = options.tag ?? "div";
     options.contenteditable ??= node.edit;
-    if (node.edit) {
-      options["cmstxt-placeholder"] ||= name;
-    }
-    if (options.contenteditable || tag === "input" || tag === "textarea") {
-      options.cmstxt = textObj.id;
-    }
+    if (node.edit) options["cmstxt-placeholder"] ||= name;
+    if (options.contenteditable || tag === "input" || tag === "textarea") options.cmstxt = textObj.id;
     let text = await textObj.string();
     if (text === "" && options.initial !== undefined) {
       if (typeof options.initial === "object" && !Array.isArray(options.initial)) {

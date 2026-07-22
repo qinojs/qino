@@ -35,9 +35,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   const search = String(ctx.req.query.search ?? "").trim();
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken) {
-    if ("delete_all" in ctx.req.body) {
-      await db.exec`DELETE FROM mail`;
-    }
+    if ("delete_all" in ctx.req.body) await db.exec`DELETE FROM mail`;
     if ("delete_before1year" in ctx.req.body) {
       await db.exec`DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ${unixTime() - 60 * 60 * 24 * 365}`;
     }

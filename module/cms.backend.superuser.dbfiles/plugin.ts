@@ -58,8 +58,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const search = String(vars.search ?? "");
   const order  = String(vars.order  ?? "newest");
 
-  const relSubs = sql.join(children.map((F: DbField, i: number) =>
-    sql`,(SELECT COUNT(*) FROM ${sql.id(F.table.name)} WHERE ${sql.id(F.name)}=f.id) AS ${sql.raw("r" + i)}`), "");
+  const relSubs = sql.join(children.map((dbFile: DbField, i: number) =>
+    sql`,(SELECT COUNT(*) FROM ${sql.id(dbFile.table.name)} WHERE ${sql.id(dbFile.name)}=f.id) AS ${sql.raw("r" + i)}`), "");
 
   const orderSql: Record<string, string> = { newest:"f.log_id DESC", oldest:"f.log_id ASC", changed:"f.log_id_ch DESC", biggest:"f.size DESC" };
   const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: DbField, i: number) => `r${i}`)].join(",");
@@ -85,7 +85,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     WHERE true${cond}
     ORDER BY ${sql.raw(orderBy)} LIMIT 1000`;
 
-  const relHeaders = html.join(children.map((F: DbField) => html`<th title="${F.table.name+"."+F.name}">${F.table.name}`));
+  const relHeaders = html.join(children.map((dbFile: DbField) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`));
 
   const trs: Promise<HtmlString>[] = [];
   const u = ctx.req.url.toURL();
@@ -261,8 +261,8 @@ async function deleteUnlinkedFs(node: Node) {
 async function deleteUnlinkedDb(app: App) {
   const { db, dbFiles: fm } = app;
   const ago = unixTime() - 60 * 60 * 24 * 7;
-  const notLinked = db.table("file").children.map((F: DbField) =>
-    sql`NOT EXISTS (SELECT 1 FROM ${sql.id(F.table.name)} c WHERE c.${sql.id(F.name)}=file.id)`);
+  const notLinked = db.table("file").children.map((dbFile: DbField) =>
+    sql`NOT EXISTS (SELECT 1 FROM ${sql.id(dbFile.table.name)} c WHERE c.${sql.id(dbFile.name)}=file.id)`);
   const rows = await db.query`SELECT file.id FROM file
     LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id
     WHERE (log_i.id IS NULL OR log_i.time<${ago}) AND (log_e.id IS NULL OR log_e.time<${ago})${notLinked.length ? sql` AND ${sql.join(notLinked, " AND ")}` : sql.raw("")}`;

@@ -17,16 +17,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   let message: HtmlString | string = "";
 
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && ("save" in ctx.req.body || "send" in ctx.req.body)) {
-    const subject = String(ctx.req.body.subject ?? "").trim();
-    const body = String(ctx.req.body.body ?? "").trim();
-    const senderMode = String(ctx.req.body.sender_mode ?? "default");
-    const sender = senderMode === "custom" ? String(ctx.req.body.sender_custom ?? "").trim() : "";
-    const replyTo = String(ctx.req.body.reply_to ?? "").trim();
+  const post = ctx.req.body;
+  if (post?.csrfToken === ctx.csrfToken && ("save" in post || "send" in post)) {
+    const subject = String(post.subject ?? "").trim();
+    const body = String(post.body ?? "").trim();
+    const senderMode = String(post.sender_mode ?? "default");
+    const sender = senderMode === "custom" ? String(post.sender_custom ?? "").trim() : "";
+    const replyTo = String(post.reply_to ?? "").trim();
 
-    const toUsers = [ctx.req.body.to_users ?? []].flat().map(Number).filter(Boolean);
-    const toGroups = [ctx.req.body.to_groups ?? []].flat().map(Number).filter(Boolean);
-    const toCustom = String(ctx.req.body.to_custom ?? "").trim();
+    const toUsers = [post.to_users ?? []].flat().map(Number).filter(Boolean);
+    const toGroups = [post.to_groups ?? []].flat().map(Number).filter(Boolean);
+    const toCustom = String(post.to_custom ?? "").trim();
 
     if (!subject) {
       message = await html.async`<u2-alert open variant=danger>${t`Subject is required.`}</u2-alert>`;
@@ -66,7 +67,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       await msg.save();
       const savedId = msg.id;
 
-      if ("send" in ctx.req.body) {
+      if ("send" in post) {
         await msg.send();
         message = await html.async`<u2-alert open variant=success style="margin:0">${t`Mail created and sent`} (${addedEmails.size} ${t`recipients`}). <a href="../?id=${savedId}">${t`View`}</a></u2-alert>`;
       } else {

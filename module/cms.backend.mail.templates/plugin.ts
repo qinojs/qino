@@ -30,8 +30,9 @@ async function render(node: Node): Promise<HtmlString | string> {
 
   let message: HtmlString | string = "";
 
-  if (ctx.req.body?.csrfToken === ctx.csrfToken && "create" in ctx.req.body) {
-    const tname = String(ctx.req.body.tname ?? "").trim();
+  const post = ctx.req.body;
+  if (post?.csrfToken === ctx.csrfToken && "create" in post) {
+    const tname = String(post.tname ?? "").trim();
     if (!tname) {
       message = await html.async`<div class="-msg -err">${t`Name is required.`}</div>`;
     } else {
@@ -108,32 +109,33 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
 
   let message: HtmlString | string = "";
 
-  if (ctx.req.body?.csrfToken === ctx.csrfToken) {
-    if ("save" in ctx.req.body) {
-      const tname = String(ctx.req.body.tname ?? "").trim();
+  const post = ctx.req.body;
+  if (post?.csrfToken === ctx.csrfToken) {
+    if ("save" in post) {
+      const tname = String(post.tname ?? "").trim();
       if (!tname) {
         message = await html.async`<div class="-msg -err">${t`Name is required.`}</div>`;
       } else {
         await db.table("mail_template").update({
           id,
           name:        tname,
-          description: String(ctx.req.body.description ?? "").trim() || null,
-          subject:     String(ctx.req.body.subject ?? "").trim() || null,
-          html:        String(ctx.req.body.html ?? ""),
+          description: String(post.description ?? "").trim() || null,
+          subject:     String(post.subject ?? "").trim() || null,
+          html:        String(post.html ?? ""),
           updated:     unixTime(),
         });
         await init(app);
         message = await html.async`<div class="-msg -ok">${t`Saved.`}</div>`;
         Object.assign(row, {
           name:        tname,
-          description: String(ctx.req.body.description ?? "").trim(),
-          subject:     String(ctx.req.body.subject ?? "").trim(),
-          html:        String(ctx.req.body.html ?? ""),
+          description: String(post.description ?? "").trim(),
+          subject:     String(post.subject ?? "").trim(),
+          html:        String(post.html ?? ""),
         });
       }
     }
 
-    if ("delete" in ctx.req.body) {
+    if ("delete" in post) {
       await db.table("mail_template").delete(id);
       delete mail(app).templates[row.name];
       ctx.res.status = 302;

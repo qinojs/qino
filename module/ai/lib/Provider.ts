@@ -33,30 +33,23 @@ export class Provider {
   }
 
   /** POST and parse JSON; provider/transport errors come back as `{ error }`. */
-  async json(path: string, body: unknown): Promise<Record<string, unknown>> {
-    let res: Response;
-    try {
-      res = await this.request(path, body);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "TimeoutError") {
-        return { error: `Provider "${this.#row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
-      }
-      return { error: error instanceof Error ? error.message : String(error) };
-    }
-    const text = await res.text().catch(() => "");
-    try { return JSON.parse(text); }
-    catch { return { error: `Provider "${this.#row.name}": HTTP ${res.status} — ${text.slice(0, 300).trim() || "empty response"}` }; }
+  json(path: string, body: unknown): Promise<Record<string, unknown>> {
+    return this.#parsed(() => this.request(path, body));
   }
 
-  async form(path: string, body: FormData): Promise<Record<string, unknown>> {
+  form(path: string, body: FormData): Promise<Record<string, unknown>> {
+    return this.#parsed(() => fetch(this.#row.endpoint.replace(/\/+$/, "") + path, {
+      method: "POST",
+      headers: { "authorization": "Bearer " + this.#key },
+      body,
+      signal: AbortSignal.timeout(this.#timeout()),
+    }));
+  }
+
+  async #parsed(send: () => Promise<Response>): Promise<Record<string, unknown>> {
     let res: Response;
     try {
-      res = await fetch(this.#row.endpoint.replace(/\/+$/, "") + path, {
-        method: "POST",
-        headers: { "authorization": "Bearer " + this.#key },
-        body,
-        signal: AbortSignal.timeout(this.#timeout()),
-      });
+      res = await send();
     } catch (error) {
       if (error instanceof DOMException && error.name === "TimeoutError") {
         return { error: `Provider "${this.#row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };

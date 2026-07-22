@@ -61,12 +61,8 @@ export class DbTable {
       for (const field of fields) {
         const name = field.Field;
         this.#fields[name] = new DbField(this, name, field);
-        if (this.#fields[name].isPrimary()) {
-          this.#primaries[name] = this.#fields[name];
-        }
-        if (this.#fields[name].isAutoIncrement()) {
-          this.#autoIncrement = this.#fields[name];
-        }
+        if (this.#fields[name].isPrimary()) this.#primaries[name] = this.#fields[name];
+        if (this.#fields[name].isAutoIncrement()) this.#autoIncrement = this.#fields[name];
       }
     }
     return this.#fields!;
@@ -271,9 +267,9 @@ export class DbTable {
 
   entry(id?: any): DbEntry {
     const table = String(this);
-    const Cl = getEntryClass(table);
+    const cls = getEntryClass(table);
 
-    if (id instanceof Cl) return id;
+    if (id instanceof cls) return id;
     if (id === undefined) {
       throw new Error("not working sync without id (generate)");
       // const Entry = new Cl(this);
@@ -288,7 +284,7 @@ export class DbTable {
     const hit = this.#entries.get(eid)?.deref();
     if (hit) return hit;
 
-    const entry = new Cl(this, values);
+    const entry = new cls(this, values);
     this.#entries.set(eid, new WeakRef(entry));
     this.#entryFinalizer.register(entry, eid);
     return entry;

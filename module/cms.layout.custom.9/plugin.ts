@@ -32,9 +32,7 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
   try {
     await Deno.stat(customPath);
     const mod = await import(customPath);
-    if (typeof mod.default === "function") {
-      return mod.default(node, data);
-    }
+    if (typeof mod.default === "function") return mod.default(node, data);
   } catch { /* no custom layout override */ }
 
   // Fallback: basic layout

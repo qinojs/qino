@@ -66,9 +66,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
   if (startLevelSetting) {
     StartPage = await ActivePage.parent(Number(startLevelSetting));
-    if (!StartPage || !StartPage.exists()) {
-      StartPage = await node.page();
-    }
+    if (!StartPage || !StartPage.exists()) StartPage = await node.page();
   }
 
   // Settings for rendering
@@ -85,28 +83,28 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     // Collect children
     const readableChildren: Node[] = [];
     const allChildren = await curPage.children("readable");
-    for (const C of allChildren.values()) {
-      if (filterVisible === "visible" && !C.vs.visible) continue;
-      if (filterVisible === "hidden" && C.vs.visible) continue;
-      readableChildren.push(C);
+    for (const child of allChildren.values()) {
+      if (filterVisible === "visible" && !child.vs.visible) continue;
+      if (filterVisible === "hidden" && child.vs.visible) continue;
+      readableChildren.push(child);
     }
 
     // Optionally include content items (contents of children)
     if (includeContentsSetting) {
       const conts = await curPage.conts();
-      for (const FirstLevelCont of conts) {
-        const bough = await FirstLevelCont.bough(["readable", { type: "c" }]);
-        for (const Content of bough.values()) {
-          if (Content.vs.visible) readableChildren.push(Content);
+      for (const cont of conts) {
+        const bough = await cont.bough(["readable", { type: "c" }]);
+        for (const sub of bough.values()) {
+          if (sub.vs.visible) readableChildren.push(sub);
         }
       }
     }
 
     // Filter: skip entries without a title
     const filtered: Node[] = [];
-    for (const C of readableChildren) {
-      const titleObj = await C.title();
-      if (titleObj && (await titleObj.string()).trim()) filtered.push(C);
+    for (const child of readableChildren) {
+      const titleObj = await child.title();
+      if (titleObj && (await titleObj.string()).trim()) filtered.push(child);
     }
 
     if (!filtered.length) return;
@@ -118,24 +116,24 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
     level++;
     let str = `<ul class="cmsChilds${curPage}">`;
-    for (const ChildPage of filtered) {
-      const childStr = await getUl(ChildPage);
+    for (const child of filtered) {
+      const childStr = await getUl(child);
 
-      const childPage = await ChildPage.page();
+      const childPage = await child.page();
       const isInside = await ActivePage.in(childPage);
       const isActive = ActivePage === childPage;
       const hasSub = childStr !== undefined;
-      const isOnline = await ChildPage.isOnline();
+      const isOnline = await child.isOnline();
 
       const cls = [
-        "cmsLink" + ChildPage,
+        "cmsLink" + child,
         isInside ? "cmsInside" : "",
         isActive ? "cmsActive" : "",
         hasSub ? "cmsHasSub" : "",
         !isOnline ? "cmsOffline" : "",
       ].filter(Boolean).join(" ");
 
-      str += `<li class="${cls}">${await cms.link(ChildPage)}${childStr || ""}`;
+      str += `<li class="${cls}">${await cms.link(child)}${childStr || ""}`;
     }
     str += "</ul>";
     level--;

@@ -8,10 +8,8 @@ export const needs = ["cms"];
 import { backend, renderDashboard } from "./mod.ts";
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const P = await backend.checkInstalled(app);
-  if (P) {
-    await P.title("en", "Backend");
-  }
+  const p = await backend.checkInstalled(app);
+  p && await p.title("en", "Backend");
 }
 
 export const cms = {

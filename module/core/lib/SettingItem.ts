@@ -28,9 +28,7 @@ class SettingItem extends Item<SettingItem> {
       sub.data = data;
     }
 
-    if (!rows[0]) {
-      return this.data?.value; // not an object
-    }
+    if (!rows[0]) return this.data?.value; // not an object
   }
 
   override writer = async (value: unknown) => {

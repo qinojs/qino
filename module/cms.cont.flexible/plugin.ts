@@ -20,7 +20,7 @@ async function render(node: Node, { vars }: any = {}): Promise<string> {
   }
 
   let str = "";
-  for (const C of conts) str += await C.html();
+  for (const c of conts) str += await c.html();
   return `<div>${str}</div>`;
 }
 

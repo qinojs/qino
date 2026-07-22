@@ -75,10 +75,10 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         }
     };
 
-    app.db.on("table:insert-after", (e) => capture("insert", e), { signal });
-    app.db.on("table:update-after", (e) => capture("update", e), { signal });
+    db.on("table:insert-after", (e) => capture("insert", e), { signal });
+    db.on("table:update-after", (e) => capture("update", e), { signal });
     // delete: captured before the row (and its basis chain) disappears
-    app.db.on("table:delete-before", (e) => capture("delete", e), { signal });
+    db.on("table:delete-before", (e) => capture("delete", e), { signal });
 }
 
 // Human-readable change label from a node_changed `data` payload

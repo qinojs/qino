@@ -13,15 +13,15 @@ export async function install({ app }: { app: App }): Promise<void> {
 // the containing page's title for context: "Page title › content label".
 // node.url() points contents at their page + anchor (and edit-links in editmode).
 async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
-  const P = await node.cms.node(id);
-  const own = (await (await P.title()).string() ?? "").trim();
+  const page = await node.cms.node(id);
+  const own = (await (await page.title()).string() ?? "").trim();
   let label = own || `#${id}`;
-  if (P.vs?.type === "c") {
-    const pageTitle = (await (await (await P.page()).title()).string() ?? "").trim();
-    const inner = own || String(P.vs?.module ?? "") || `#${id}`;
+  if (page.vs?.type === "c") {
+    const pageTitle = (await (await (await page.page()).title()).string() ?? "").trim();
+    const inner = own || String(page.vs?.module ?? "") || `#${id}`;
     label = pageTitle ? `${pageTitle} › ${inner}` : inner;
   }
-  return html`<a href="${await P.url()}" target=_blank>${label}</a>`;
+  return html`<a href="${await page.url()}" target=_blank>${label}</a>`;
 }
 
 async function render(node: Node): Promise<HtmlString> {

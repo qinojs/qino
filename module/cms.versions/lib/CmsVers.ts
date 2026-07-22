@@ -94,11 +94,11 @@ export async function copyNode(
     // Regenerate URLs in toSpace
     cms(ctx.app).clearCache();
     setVers(ctx, [toSpace, 0]);
-    const P = await cms(ctx.app).node(pid);
+    const page = await cms(ctx.app).node(pid);
     for (const l of ctx.app.languages.all) {
-        const genUrl = await P.urlSeoGenerated(l);
-        const curUrl = await P.urlSeo(l);
-        if (genUrl !== curUrl) await P.urlSeoGen(l);
+        const genUrl = await page.urlSeoGenerated(l);
+        const curUrl = await page.urlSeo(l);
+        if (genUrl !== curUrl) await page.urlSeoGen(l);
     }
 
     setVers(ctx, oldVers);

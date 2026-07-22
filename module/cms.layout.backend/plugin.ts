@@ -64,12 +64,12 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
   const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
 
   let navHtml = "";
-  for (const C of navItems) {
-    const subC = [...(await C.children({ access: 1 })).values()];
-    const isActive = await page.in(C);
+  for (const child of navItems) {
+    const subC = [...(await child.children({ access: 1 })).values()];
+    const isActive = await page.in(child);
     const hasSub = subC.length > 0;
-    const cUrl = hee(await C.url());
-    const cTitle = hee(await (await C.title()).string());
+    const cUrl = hee(await child.url());
+    const cTitle = hee(await (await child.title()).string());
     let subHtml = "";
     if (isActive) {
       for (const SC of subC) {
@@ -90,7 +90,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
         subHtml += `<ul><li><a class="-item ${isActiveSC ? "-active" : ""} ${hasSubSC ? "-hasSub" : ""}" href="${scUrl}">${scTitle}</a>${subSubHtml}</ul>`;
       }
     }
-    const cConts = [...(await C.conts()).values()];
+    const cConts = [...(await child.conts()).values()];
     const cModName = String(cConts[0]?.vs?.module ?? "");
     const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.modulePath}${cModName}/pub/module.svg#main"/></svg> ` : "";
     navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
@@ -113,8 +113,8 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
 
   // Content conts
   let contentHtml = "";
-  for (const C of await node.conts()) {
-    contentHtml += await C.html();
+  for (const child of await node.conts()) {
+    contentHtml += await child.html();
   }
 
   const pathHtml = (await Promise.all([...await page.path()].filter(([id]) => id !== 1).map(([, p]) => node.cms.link(p)))).join("");

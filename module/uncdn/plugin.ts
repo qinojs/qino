@@ -90,12 +90,12 @@ const origins = (s: CspSources) => Object.keys(s).filter(k => /^https?:\/\//.tes
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...set].map(fn));
 
 function hasPrefix(values: Iterable<string>, url: string): boolean {
-  for (const value of values) if (url.startsWith(value)) return true;
+  for (const v of values) if (url.startsWith(v)) return true;
   return false;
 }
 
 function hasValueWithPrefix(values: Iterable<string>, prefix: string): boolean {
-  for (const value of values) if (value.startsWith(prefix)) return true;
+  for (const v of values) if (v.startsWith(prefix)) return true;
   return false;
 }
 

@@ -137,8 +137,8 @@ async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
 // looked up once per request; content nodes usually have no title, so fall back
 // to their (shortened) module name, then the id.
 async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string>): Promise<HtmlString> {
-  const N = await host.cms.node(nodeId);
-  const nodes = [...(await N.path()).values()].filter((n) => n.id !== 1); // drop system root
+  const node = await host.cms.node(nodeId);
+  const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
   let pageIdx = -1;
   for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
@@ -229,10 +229,10 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   const items = [...latest.values()].sort((a, b) => b.time - a.time);
   const trs: HtmlString[] = [];
   for (const it of items) {
-    const P = await cmsOf(app).node(it.pageId);
-    const title = (await nodeTitle(P, titles)) || "#" + it.pageId;
+    const page = await cmsOf(app).node(it.pageId);
+    const title = (await nodeTitle(page, titles)) || "#" + it.pageId;
     let url = "";
-    try { url = await P.url(); } catch { /* no url */ }
+    try { url = await page.url(); } catch { /* no url */ }
     const iso = new Date(it.time * 1000).toISOString();
     trs.push(html`<tr>
       <td>${it.name}

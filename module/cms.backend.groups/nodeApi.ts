@@ -28,10 +28,10 @@ export default async function (node: Node, vars: any): Promise<any> {
     const allowed: Record<string, boolean> = { name: true, type: true };
     const name = String(vars.name ?? "");
     if (!allowed[name]) return false;
-    const G = db.table("grp").entry(vars.save);
-    if (!(await G.exists())) return false;
-    await G.set(name, vars.value);
-    await G.save();
+    const grp = db.table("grp").entry(vars.save);
+    if (!(await grp.exists())) return false;
+    await grp.set(name, vars.value);
+    await grp.save();
     return 1;
   }
 

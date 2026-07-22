@@ -16,8 +16,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const rows = await node.app.db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
     let limit = 5;
     for (const row of rows) {
-      const P = await node.cms.node(row.id);
-      if (!await P.access()) continue;
+      const p = await node.cms.node(row.id);
+      if (!await p.access()) continue;
       possiblePages.add(String(row.id));
       if (--limit <= 0) break;
     }

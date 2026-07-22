@@ -1,4 +1,16 @@
-import { html, type HtmlString, sql, type Sql, sqlSearch } from "../../core/mod.ts";
+import { html, type App, type HtmlString, sql, type Sql, sqlSearch } from "../../core/mod.ts";
+
+/** Badges "n × view / edit / administer" for the access widget heads. */
+export async function accessCounts(app: App, table: string, pageId: number | string): Promise<string> {
+  const all = await app.db.row`SELECT sum(if(access=1,1,0)) as access_1, sum(if(access=2,1,0)) as access_2, sum(if(access=3,1,0)) as access_3
+    FROM ${sql.id(table)} WHERE page_id = ${pageId}`;
+  let out = "";
+  for (const level of [1, 2, 3]) {
+    const n = all?.["access_" + level];
+    if (n) out += `<span class="-info -access-${level}-bg">${n}</span>`;
+  }
+  return out;
+}
 
 /** Shared WHERE-tail of the usr/grp access lists: all rows, search hits or only granted ones. */
 export function accessTail(hasMany: boolean, search: string, searchCols: string[]): Sql {

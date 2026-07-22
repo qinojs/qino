@@ -15,8 +15,8 @@ export async function isWritable(ctx: Ctx, fileId: number): Promise<boolean> {
 export async function writablePage(ctx: Ctx, fileId: number): Promise<any> {
     const rows = await ctx.app.db.query`SELECT page_id FROM page_file WHERE file_id = ${fileId}`;
     for (const row of rows) {
-        const page = await cms(ctx.app).node(Number(row.page_id));
-        if ((await page.access()) > 1) return page;
+        const p = await cms(ctx.app).node(Number(row.page_id));
+        if ((await p.access()) > 1) return p;
     }
     return null;
 }

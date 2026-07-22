@@ -32,13 +32,13 @@ export const ctxSettingsSchema = {
 };
 
 async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
-  const P = await cms(ctx.app).node(params["pid"]);
-  if (await P.access() < 2) throw new AccessError();
+  const page = await cms(ctx.app).node(params["pid"]);
+  if (await page.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
-  ctx.state.cmsWidgetCont = P;
+  ctx.state.cmsWidgetCont = page;
   await ctx.app.languages.nsStart("cms");
   const mod = await import(widgetUrl(widget));
-  const html = String(await mod.default?.(P, { param: params }) ?? "");
+  const html = String(await mod.default?.(page, { param: params }) ?? "");
   ctx.app.languages.nsStop();
   return html;
 }
