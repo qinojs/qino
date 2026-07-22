@@ -22,7 +22,7 @@ export function renderTables(app: App, db: any, modules: Record<string, any>, ta
 
 async function tableOverview(app: App, db: any): Promise<HtmlString> {
   const t = app.t;
-  const tables = Object.values(db.tables ?? {});
+  const tables: any[] = Object.values(db.tables ?? {});
   const schemaProps = db.schema?.properties ?? {};
 
   const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables");
