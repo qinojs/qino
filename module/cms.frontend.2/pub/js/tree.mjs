@@ -6,6 +6,7 @@ import { t, apt } from "../../../core/pub/js/qino.js";
 const Page = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // tree node or null (skip icon/anchor)
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 globalThis.cmsTreeInit = async (json) => {
   await import("@qino/u2/el/tree/tree.js");
@@ -57,8 +58,8 @@ globalThis.cmsTreeInit = async (json) => {
     a.className = "-title" + typeMod;
     a.href = d.url || "#";
     let html = `<span cmstxt="${d.title_id}">${d.title}</span>`;
-    if (d.ptype === "c") html += ` <span class=-col1 title="${d.module}"> ${String(d.module).replace(/^cms\.cont\./, "")} </span> `;
-    html += ` <span class=-col2> ${d.name || ""} </span> `;
+    if (d.ptype === "c") html += ` <span class=-col1 title="${esc(d.module)}"> ${esc(String(d.module).replace(/^cms\.cont\./, ""))} </span> `;
+    html += ` <span class=-col2> ${esc(d.name)} </span> `;
     if (!d.public) html += "<span class=-private title=private></span>";
     if (!d.online) html += "<span class=-offline title=offline></span>";
     a.innerHTML = html;

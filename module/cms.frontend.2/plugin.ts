@@ -90,7 +90,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
       qino.cms ??= {};
       qino.cms.nodeId = node.id;
       qino.cms.requestedNodeId = cmsCtx(ctx).requestedNodeId;
-      if (await ctx.user?.get("superuser")) qino.dev = ctx.dev || null;
+      qino.dev = ctx.dev;
       qino.cms.editmode = cmsCtx(ctx).editmode;
 
       if (cmsCtx(ctx).editmode) {

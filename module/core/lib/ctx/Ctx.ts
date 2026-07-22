@@ -23,6 +23,7 @@ export class Ctx {
   langUsr = "en";
   langNsPath: string[] = [];
   langNs = "";
+  dev = false;
 
   res: Res = new Res();
 
@@ -35,6 +36,7 @@ export class Ctx {
     this.#settingsRoot = this.user
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
+    this.dev = this.app.dev || (!!(await this.user?.get("superuser")) && !!this.settings.core.dev());
   }
 
   #authUserId = 0;
@@ -54,10 +56,6 @@ export class Ctx {
   get client(): dbEntry_client {
     if (!this.clientId) throw new Error("No client id");
     return this.app.db.table('client').entry(this.clientId) as dbEntry_client;
-  }
-
-  get dev(): boolean {
-    return this.app.dev || !!this.settings.core.dev(); // todo: ctx.settings can be written to, so this may be a security risk.
   }
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get csrfToken(): string {

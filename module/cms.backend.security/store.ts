@@ -6,6 +6,14 @@ import { unixTime, type App, type Db, type Ctx } from "../core/mod.ts";
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();
 
+// Serialize read-modify-write per bucket so concurrent hits don't lose updates or insert duplicate rows.
+const bucketWrite = new Map<string, Promise<unknown>>();
+function serialize<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const run = (bucketWrite.get(key) ?? Promise.resolve()).then(fn, fn);
+  bucketWrite.set(key, run);
+  return run.finally(() => { if (bucketWrite.get(key) === run) bucketWrite.delete(key); }) as Promise<T>;
+}
+
 export async function settings(app: App): Promise<SecuritySettings> {
   const s = app.settings["cms.backend.security"];
   const result: Record<string, unknown> = {};
@@ -69,18 +77,20 @@ export function bucketHits(info: any, signals: any[], set: Record<string, number
   return [...hits.values()];
 }
 
-async function hitBucket(db: Db, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
-  const t = unixTime();
-  const row = await getBucket(db, scope, ident, set);
-  const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;
-  const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: short(path, 191), data: "" };
-  if (row) {
-    await db.table("m_security_bucket").update(row.id, data);
-    setBucketCache(db, scope, ident, { ...row, ...data }, set);
-  } else {
-    const id = await db.table("m_security_bucket").insert(data);
-    setBucketCache(db, scope, ident, { id, ...data }, set);
-  }
+function hitBucket(db: Db, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
+  return serialize(bucketKey(scope, ident), async () => {
+    const t = unixTime();
+    const row = await getBucket(db, scope, ident, set);
+    const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;
+    const data = { scope, ident, score, count: Number(row?.count ?? 0) + 1, blocked: score >= set.blockScore, first_seen: row?.first_seen ?? t, last_seen: t, reason, sample_path: short(path, 191), data: "" };
+    if (row) {
+      await db.table("m_security_bucket").update(row.id, data);
+      setBucketCache(db, scope, ident, { ...row, ...data }, set);
+    } else {
+      const id = await db.table("m_security_bucket").insert(data);
+      setBucketCache(db, scope, ident, { id, ...data }, set);
+    }
+  });
 }
 
 export async function penaltyState(db: Db, info: any, set: Record<string, number>, signals: any[] = []) {
