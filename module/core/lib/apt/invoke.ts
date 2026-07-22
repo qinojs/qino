@@ -52,11 +52,11 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
       pathValues[paramName(paramKey)] = isCatchall(paramKey) ? pathSegments.slice(i) : seg;
       cursor = branch(cursor[paramKey])!;
       segments.push(paramKey);
-      nodes.push(cursor as AptNode);
+      nodes.push(cursor);
       if (isCatchall(paramKey)) break;
       continue;
     }
-    nodes.push(cursor as AptNode);
+    nodes.push(cursor);
   }
 
   let verb = branch(cursor[m]) as Verb | undefined;
@@ -67,7 +67,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
       pathValues[paramName(paramKey)] = [];
       cursor = child;
       segments.push(paramKey);
-      nodes.push(cursor as AptNode);
+      nodes.push(cursor);
       verb = branch(cursor[m]) as Verb | undefined;
     }
   }

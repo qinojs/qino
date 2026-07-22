@@ -182,7 +182,7 @@ async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
 // ── render ──────────────────────────────────────────────────────────────────
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const t = node.app.t;
-  const initial = await list(node, { ctx, vars: { filter: (vars.filter ?? {}) as Record<string, string> } });
+  const initial = await list(node, { ctx, vars: { filter: vars.filter ?? {} } });
   return html.async`
 <div class="-m-history u2-flex">
   <div class=u2-card>

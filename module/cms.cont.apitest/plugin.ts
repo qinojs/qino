@@ -15,7 +15,7 @@ function accessLabel(verb: Verb): string {
 }
 
 const paramNames = (r: Route): string[] =>
-  r.segments.flatMap((seg, i) => seg.startsWith(":") && (r.nodes[i] as AptNode) ? [seg.slice(1).replace(/\*$/, "")] : []);
+  r.segments.flatMap((seg, i) => seg.startsWith(":") && r.nodes[i] ? [seg.slice(1).replace(/\*$/, "")] : []);
 
 function render(node: Node, { ctx }: { ctx: Ctx }): string {
   // smart prefill: current node feeds node-ish params, current user feeds user-ish ones

@@ -66,11 +66,11 @@ export class Db extends Emitter<DbEvents> {
   }
 
   async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
-    return (await this.query(strings, ...values)).map((r) => Object.values(r)[0] as T);
+    return (await this.query(strings, ...values)).map((r) => Object.values(r)[0]);
   }
 
   async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> {
-    return Object.values((await this.query(strings, ...values))[0] ?? {})[0] as T | undefined;
+    return Object.values((await this.query(strings, ...values))[0] ?? {})[0];
   }
 
   async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>> {

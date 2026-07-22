@@ -88,7 +88,7 @@ export function jsonEncode(v: unknown): string {
 
 export function jsonDecode<T>(v: unknown, fallback: T): T {
   if (!v || typeof v !== "string") return fallback;
-  try { return JSON.parse(v) as T; }
+  try { return JSON.parse(v); }
   catch { return fallback; }
 }
 

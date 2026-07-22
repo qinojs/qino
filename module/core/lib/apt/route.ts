@@ -25,7 +25,7 @@ export function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] =
   for (const [key, value] of Object.entries(tree)) {
     if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
     for (const verbKey of VERBS) {
-      const verb = (value as AptNode)[verbKey];
+      const verb = value[verbKey];
       if (verb && typeof verb === "object" && typeof verb.execute === "function") {
         yield { method: verbKey, segments: [...segments, key], nodes: [...nodes, value], verb, name: camelName(verbKey, [...segments, key]) };
       }

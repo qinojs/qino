@@ -102,11 +102,11 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   // ── orphaned settings ────────────────────────────────────────────────────
   const installedModules = app.modules.all();
   const skipModules = new Set(["app1", "client1", "m", "qg"]);
-  for (const module of Object.keys(settings as Record<string, unknown>)) {
+  for (const module of Object.keys(settings)) {
     if (skipModules.has(module) || installedModules[module]) continue;
     notice[`settings needed :${module}`] = () => ({
       info: "did you deinstall the module?",
-      solutions: { delete: { solve: () => { delete (settings as Record<string, unknown>)[module]; } } },
+      solutions: { delete: { solve: () => { delete settings[module]; } } },
     });
   }
 

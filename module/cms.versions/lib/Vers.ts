@@ -39,7 +39,7 @@ export interface VersState {
 const STATE_KEY = "vers";
 
 export function getVers(ctx: Ctx): VersState {
-    return (ctx.state[STATE_KEY] ??= { space: 0, log: 0, tableEntriesCopying: false }) as VersState;
+    return (ctx.state[STATE_KEY] ??= { space: 0, log: 0, tableEntriesCopying: false });
 }
 
 // ─── State helpers ──────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
 
     for (const col of liveFields) {
         const f = col.Field;
-        if (fieldSpec === true || (fieldSpec as Record<string,1>)[f]) {
+        if (fieldSpec === true || fieldSpec[f]) {
             selects.push(`m.\`${f}\``);
         } else {
             selects.push(`original.\`${f}\``);

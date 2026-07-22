@@ -174,7 +174,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const u = ctx.req.url.toURL();
   let tableRows = "";
   for (const row of rows) {
-    const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" } as Record<string, string>)[String(row.prio)] ?? "var(--gray)";
+    const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" })[String(row.prio)] ?? "var(--gray)";
     const num     = Number(row.num)     || 0;
     const numBot  = Number(row.num_bot) || 0;
     const numUns  = Number(row.num_unsupported) || 0;

@@ -54,7 +54,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
   const diffs = schemaDiff(fromDb, current);
 
   const missingTables = Object.fromEntries(
-    Object.entries(fromDb.properties as Record<string, unknown>).filter(
+    Object.entries(fromDb.properties).filter(
       ([t]) => !(t in (current.properties ?? {}))
     )
   );
