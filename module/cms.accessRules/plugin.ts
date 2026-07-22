@@ -42,7 +42,7 @@ export const dbSchema = {
 async function moduleCap(app: App, module: string, user?: dbEntry_usr | null): Promise<number | undefined> {
   const std = (await standards(app)).get(module); // undefined = no rule
   const base = std ?? 3;
-  const grps: number[] = user ? (await user.grps?.() ?? []).map(Number).filter(Boolean) : [];
+  const grps = user ? (await user.grps?.() ?? []).map(Number).filter(Boolean) : [];
   let cap = std; // the default applies to everyone, groups can only improve on it
   if (grps.length) {
     const rows = await app.db.query`
