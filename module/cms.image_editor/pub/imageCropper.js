@@ -126,61 +126,61 @@ export class ImageCropper extends EventTarget {
       }
       this.area = this.svg.querySelector('.-area');
 
-      const cropper = this;
       const observer = new PointerObserver(this.svg, { passive: false });
       let started = null;
       let aspectRatio = null;
       let createNew = false;
-      observer.onstart = function (e) {
+      observer.onstart = (e) => {
         e.preventDefault();
         started = e.target;
-        aspectRatio = started.hasAttribute('data-manipulate-edge') ? cropper.width / cropper.height : false;
+        aspectRatio = started.hasAttribute('data-manipulate-edge') ? this.width / this.height : false;
         createNew = false;
         if (started.classList.contains('-nob')) return;
-        const inside = e.offsetX > cropper.left && e.offsetX < cropper.left + cropper.width && e.offsetY > cropper.top && e.offsetY < cropper.top + cropper.height;
+        const inside = e.offsetX > this.left && e.offsetX < this.left + this.width &&
+          e.offsetY > this.top && e.offsetY < this.top + this.height;
         if (!inside) {
           createNew = true;
-          cropper.top = e.offsetY;
-          cropper.left = e.offsetX;
-          cropper.width = 0;
-          cropper.height = 0;
+          this.top = e.offsetY;
+          this.left = e.offsetX;
+          this.width = 0;
+          this.height = 0;
         }
       };
-      observer.onmove = function (e) {
+      observer.onmove = (e) => {
         e.preventDefault();
-        const x = cropper.left;
-        const y = cropper.top;
-        const width = cropper.width;
-        const height = cropper.height;
-        let diffX = this.diff.x;
-        let diffY = this.diff.y;
+        const x = this.left;
+        const y = this.top;
+        const width = this.width;
+        const height = this.height;
+        let diffX = observer.diff.x;
+        let diffY = observer.diff.y;
         if (started.classList.contains('-nob') || createNew) {
-          const distance = Math.hypot(this.diff.x, this.diff.y);
-          const speed = this.diff.time / distance; // milliseconds per pixel
+          const distance = Math.hypot(observer.diff.x, observer.diff.y);
+          const speed = observer.diff.time / distance; // milliseconds per pixel
           if (speed > 6) { diffY = diffY / 5; diffX = diffX / 5; }
           if (started.getAttribute('data-manipulate-e') || createNew) {
-            cropper.width = width + diffX;
-            if (aspectRatio && !e.shiftKey) cropper.height = cropper.width / aspectRatio;
+            this.width = width + diffX;
+            if (aspectRatio && !e.shiftKey) this.height = this.width / aspectRatio;
           }
           if (started.getAttribute('data-manipulate-s') || createNew) {
-            cropper.height = height + diffY;
-            if (aspectRatio && !e.shiftKey) cropper.width = cropper.height * aspectRatio;
+            this.height = height + diffY;
+            if (aspectRatio && !e.shiftKey) this.width = this.height * aspectRatio;
           }
           if (started.getAttribute('data-manipulate-w')) {
-            cropper.width = width - diffX;
-            if (diffX > 0) diffX = width - cropper.width; // effective diff
-            cropper.left = x + diffX;
-            if (aspectRatio && !e.shiftKey) cropper.height = cropper.width / aspectRatio;
+            this.width = width - diffX;
+            if (diffX > 0) diffX = width - this.width; // effective diff
+            this.left = x + diffX;
+            if (aspectRatio && !e.shiftKey) this.height = this.width / aspectRatio;
           }
           if (started.getAttribute('data-manipulate-n')) {
-            cropper.height = height - diffY;
-            if (diffY > 0) diffY = height - cropper.height;
-            cropper.top = y + diffY;
-            if (aspectRatio && !e.shiftKey) cropper.width = cropper.height * aspectRatio;
+            this.height = height - diffY;
+            if (diffY > 0) diffY = height - this.height;
+            this.top = y + diffY;
+            if (aspectRatio && !e.shiftKey) this.width = this.height * aspectRatio;
           }
         } else {
-          cropper.top = y + diffY;
-          cropper.left = x + diffX;
+          this.top = y + diffY;
+          this.left = x + diffX;
         }
       };
     }
