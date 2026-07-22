@@ -14,10 +14,10 @@ export async function install({ app }: { app: App }): Promise<void> {
 // node.url() points contents at their page + anchor (and edit-links in editmode).
 async function nodeAnchor(node: Node, id: number): Promise<HtmlString> {
   const P = await node.cms.node(id);
-  const own = (await (await P.title())?.string?.() ?? "").trim();
+  const own = (await (await P.title()).string() ?? "").trim();
   let label = own || `#${id}`;
   if (P.vs?.type === "c") {
-    const pageTitle = (await (await (await P.page()).title())?.string?.() ?? "").trim();
+    const pageTitle = (await (await (await P.page()).title()).string() ?? "").trim();
     const inner = own || String(P.vs?.module ?? "") || `#${id}`;
     label = pageTitle ? `${pageTitle} › ${inner}` : inner;
   }
