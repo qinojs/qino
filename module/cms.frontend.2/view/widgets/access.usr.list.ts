@@ -1,4 +1,5 @@
-import { html, type HtmlString, sql, Sql, sqlSearch } from "../../../core/mod.ts";
+import { html, type HtmlString } from "../../../core/mod.ts";
+import { accessRadios, accessTail } from "../accessList.ts";
 import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<HtmlString> {
@@ -6,15 +7,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   const db = app.db;
   const hasMany = vars.hasMany ?? true;
   const search  = vars.param?.search ?? "";
-  let tail: Sql;
-  if (!hasMany) {
-    tail = sql` ORDER BY a.access DESC `;
-  } else if (search) {
-    const sh = sqlSearch(search, ["usr.firstname", "usr.lastname", "usr.email"]);
-    tail = sql` AND ${sh.where} ORDER BY ${sh.order}`;
-  } else {
-    tail = sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC `;
-  }
+  const tail = accessTail(hasMany, search, ["usr.firstname", "usr.lastname", "usr.email"]);
 
   const rows = await db.query`
     SELECT usr.*, a.access
@@ -25,10 +18,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
   for (const vs of rows) {
     trs.push(html`<tr>
       <td>${vs.email}
-      <td><input ${!vs.access ? "checked" : ""} type=radio name=u_${vs.id} value=0>
-      <td><input ${vs.access == 1 ? "checked" : ""} type=radio name=u_${vs.id} value=1>
-      <td><input ${vs.access == 2 ? "checked" : ""} type=radio name=u_${vs.id} value=2>
-      <td><input ${vs.access == 3 ? "checked" : ""} type=radio name=u_${vs.id} value=3>`);
+      ${accessRadios(`u_${vs.id}`, vs.access)}`);
   }
 
   return html.async`<table id=cmsUsrAccessTable class=-styled style="width:100%">

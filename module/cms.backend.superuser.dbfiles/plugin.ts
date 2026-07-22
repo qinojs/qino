@@ -97,11 +97,11 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     trs.push(html.async`<tr u2-href>
   <td class="-thumb">${mediaPreview(f, !!exists)}
   <td>${row.id}
-  <td><a href="${u.search}">${row.name??""}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
+  <td><a href="${u.search}">${row.name}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
   ${cells}
-  <td>${html.raw(u2time(row.init_time))}<br><small>${row.usr_init_email??""}</small>
-  <td>${html.raw(u2time(row.edit_time))}<br><small>${row.usr_edit_email??""}</small>
+  <td>${html.raw(u2time(row.init_time))}<br><small>${row.usr_init_email}</small>
+  <td>${html.raw(u2time(row.edit_time))}<br><small>${row.usr_edit_email}</small>
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
@@ -204,21 +204,21 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
   <div class=u2-flex style="flex-direction:column; ">
     <div class="u2-card" style="flex:0 0 auto" data-file-id="${row.id}">
-      <div class="-head">${row.name??""}</div>
+      <div class="-head">${row.name}</div>
       ${!exists ? html.async`<div class="-body" style="color:red">${app.t`file missing on disk!`}</div>` : ""}
       <table class="u2-table -Fields">
         <tr><th>${app.t`ID`}<td>${row.id}
         <tr>
           <th>${app.t`Name`}
-          <td><input value="${row.name??""}" data-set="set_name">
+          <td><input value="${row.name}" data-set="set_name">
         <tr>
           <th>${app.t`Public`}
           <td><input type=checkbox ${row.access?"checked":""} data-set="set_public">
         <tr>
           <th>${app.t`Mime`}
-          <td><input value="${row.mime??""}" data-set="set_mime">
+          <td><input value="${row.mime}" data-set="set_mime">
         <tr><th>${app.t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
-        <tr><th>${app.t`MD5`}<td><code>${row.md5??""}</code>
+        <tr><th>${app.t`MD5`}<td><code>${row.md5}</code>
         <tr><th>${app.t`URL`}<td><a href="${f.url()}" target=_blank data-url>${app.t`open`}</a> <a href="${f.url({dl:true})}" download>${app.t`download`}</a> <button data-copy-url>${app.t`copy url`}</button>
       </table>
     </div>

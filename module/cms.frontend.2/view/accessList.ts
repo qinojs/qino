@@ -1,0 +1,15 @@
+import { html, type HtmlString, sql, type Sql, sqlSearch } from "../../core/mod.ts";
+
+/** Shared WHERE-tail of the usr/grp access lists: all rows, search hits or only granted ones. */
+export function accessTail(hasMany: boolean, search: string, searchCols: string[]): Sql {
+  if (!hasMany) return sql` ORDER BY a.access DESC `;
+  if (!search) return sql` AND NOT ISNULL(a.access) ORDER BY a.access DESC `;
+  const sh = sqlSearch(search, searchCols);
+  return sql` AND ${sh.where} ORDER BY ${sh.order}`;
+}
+
+/** The four access radios of one row (0 none, 1 view, 2 edit, 3 administer). */
+export function accessRadios(name: string, access: unknown): HtmlString {
+  return html.join([0, 1, 2, 3].map(v =>
+    html`<td><input ${(v ? access == v : !access) ? "checked" : ""} type=radio name=${name} value=${v}>`));
+}

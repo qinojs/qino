@@ -60,3 +60,22 @@ export async function install(app: App, module: string, titles?: Record<string, 
   if (P && titles) for (const [lang, text] of Object.entries(titles)) await P.title(lang, text);
   return P;
 }
+
+const UA_TESTS: [string, RegExp][] = [
+  ["Edge", /Edg(?:e|A|iOS)?\/([\d.]+)/],
+  ["Opera", /(?:OPR|Opera)\/([\d.]+)/],
+  ["Samsung", /SamsungBrowser\/([\d.]+)/],
+  ["Firefox", /Firefox\/([\d.]+)/],
+  ["Chrome", /Chrome\/([\d.]+)/],
+  ["Safari", /Version\/([\d.]+).*Safari/],
+];
+
+/** Lightweight user-agent classification (browser name + version, bot flag). */
+export function uaInfo(ua: string): { browser: string; version: string; bot: boolean } {
+  const bot = /bot|crawl|spider|slurp|bing|google|yandex|baidu|duckduck|facebookexternal|headless|preview|monitor/i.test(ua);
+  for (const [browser, re] of UA_TESTS) {
+    const m = re.exec(ua);
+    if (m) return { browser, version: m[1], bot };
+  }
+  return { browser: ua ? "?" : "-", version: "", bot };
+}

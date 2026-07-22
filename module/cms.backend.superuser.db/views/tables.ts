@@ -97,7 +97,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
       <td style="font-family:monospace">${fname}${keyBadge(field.vs?.Key ?? "")}
       <td style="font-family:monospace;font-size:.9em">${field.vs?.Type}
       <td>${field.vs?.Null === "YES" ? "NULL" : ""}
-      <td><code>${field.vs?.Default ?? ""}</code>
+      <td><code>${field.vs?.Default}</code>
       <td style="font-size:.82em">${schemaCell}
       <td>${originsCell}`;
   });

@@ -18,23 +18,6 @@ const uniqueColor = (v: unknown): string => {
   return `hsl(${h % 360} 55% 45%)`;
 };
 
-// lightweight user-agent classification
-function uaInfo(ua: string): { browser: string; version: string; bot: boolean } {
-  const bot = /bot|crawl|spider|slurp|bing|google|yandex|baidu|duckduck|facebookexternal|headless|preview|monitor/i.test(ua);
-  const tests: [string, RegExp][] = [
-    ["Edge", /Edg(?:e|A|iOS)?\/([\d.]+)/],
-    ["Opera", /(?:OPR|Opera)\/([\d.]+)/],
-    ["Samsung", /SamsungBrowser\/([\d.]+)/],
-    ["Firefox", /Firefox\/([\d.]+)/],
-    ["Chrome", /Chrome\/([\d.]+)/],
-    ["Safari", /Version\/([\d.]+).*Safari/],
-  ];
-  for (const [browser, re] of tests) {
-    const m = re.exec(ua);
-    if (m) return { browser, version: m[1], bot };
-  }
-  return { browser: ua ? "?" : "-", version: "", bot };
-}
 
 // from/to arrive as unix seconds (converted in the browser, where the TZ is known);
 // fall back to parsing a raw datetime string (server-local TZ) for direct API calls.
@@ -111,7 +94,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
     const own = String(row.client_id) === String(ctx.clientId);
-    const info = uaInfo(row.user_agent ?? "");
+    const info = backend.uaInfo(row.user_agent ?? "");
     // referer is red only when it comes from another host (compare origins, not paths)
     let foreignRef = false;
     if (row.referer) { try { foreignRef = new URL(row.referer).host !== ownHost; } catch { foreignRef = true; } }
@@ -284,7 +267,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 
   const sess = log.sess_id ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr = sess?.usr_id ? await db.row`SELECT * FROM usr WHERE id = ${sess.usr_id}` : null;
-  const info = uaInfo(log.user_agent ?? "");
+  const info = backend.uaInfo(log.user_agent ?? "");
 
   // relations: rows in other tables referencing this log entry
   let relations = "";

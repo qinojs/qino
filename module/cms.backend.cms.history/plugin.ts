@@ -28,23 +28,6 @@ const toUnix = (v: string): number => {
   return isNaN(ms) ? 0 : Math.floor(ms / 1000);
 };
 
-// lightweight user-agent → "Browser 123" + bot flag
-function uaInfo(ua: string): { label: string; bot: boolean } {
-  const bot = /bot|crawl|spider|slurp|bing|google|yandex|baidu|duckduck|facebookexternal|headless|preview|monitor/i.test(ua);
-  const tests: [string, RegExp][] = [
-    ["Edge", /Edg(?:e|A|iOS)?\/([\d.]+)/],
-    ["Opera", /(?:OPR|Opera)\/([\d.]+)/],
-    ["Samsung", /SamsungBrowser\/([\d.]+)/],
-    ["Firefox", /Firefox\/([\d.]+)/],
-    ["Chrome", /Chrome\/([\d.]+)/],
-    ["Safari", /Version\/([\d.]+).*Safari/],
-  ];
-  for (const [browser, re] of tests) {
-    const m = re.exec(ua);
-    if (m) return { label: `${browser} ${m[1].split(".")[0]}`, bot };
-  }
-  return { label: ua ? "?" : "-", bot };
-}
 
 // Candidate node_changed rows (newest first). Search/date/own-client narrow the
 // window in SQL; type and — crucially — per-node edit rights are applied in JS,
@@ -123,7 +106,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   const r = ev.row;
   const iso = new Date(Number(r.time) * 1000).toISOString();
   const stamp = iso.slice(0, 16).replace("T", " ");
-  const ua = uaInfo(r.ua ?? "");
+  const ua = backend.uaInfo(r.ua ?? "");
 
   const seen = new Set<string>();
   const labels: HtmlString[] = [];
@@ -140,7 +123,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   <td class=-who>${await actorCell(r, t)}
   <td class=-where>${await breadcrumb(node, Number(r.node_id), titles)}
   <td class=-what>${html.join(labels)}
-  <td class=-client>${r.ip ?? "-"}<br><small>${ua.label}${ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : html.raw("")}</small>`;
+  <td class=-client>${r.ip ?? "-"}<br><small>${ua.browser} ${ua.version.split(".")[0]}${ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : html.raw("")}</small>`;
 }
 
 async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
