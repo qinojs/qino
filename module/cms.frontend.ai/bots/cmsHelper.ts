@@ -52,7 +52,7 @@ export const CmsHelperBot: Bot = {
   id: "cms-helper",
   systemPrompt: async (ctx: unknown, clientContext: ClientContext): Promise<string> => {
     const { user } = ctx as { user?: { get(k: string): Promise<string> } };
-    const lines: string[] = [CMS_CONTEXT];
+    const lines = [CMS_CONTEXT];
     if (user) {
       const name = await user.get("firstname");
       if (name) lines.push(`\nCurrent user: ${name}`);
