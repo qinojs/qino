@@ -22,7 +22,7 @@ export const imageResize: TransformerDef = {
     const vpos = ctx.options.vpos ?? 20;
     const hpos = ctx.options.hpos ?? 50;
     const zoom = ctx.options.zoom ?? 0;
-    const max = ctx.options.max ?? false;
+    const max = ctx.options.max;
 
     const dims = await magickIdentify(ctx.currentPath, '%wx%h', ctx.signal);
     const [origW, origH] = dims.split('x').map(Number);
