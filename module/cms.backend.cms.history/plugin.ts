@@ -174,7 +174,7 @@ async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string
 async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
   const hit = cache.get(n.id);
   if (hit !== undefined) return hit;
-  const s = ((await (await n.title())?.string?.()) ?? "").trim();
+  const s = (await (await n.title()).string()).trim();
   cache.set(n.id, s);
   return s;
 }
