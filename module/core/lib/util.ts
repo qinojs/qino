@@ -170,11 +170,11 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
   const esc = (s: string) => s.replace(/[!%_]/g, "!$&");
   const low = (f: string) => sql`LOWER(${id(f)})`;
 
-  const ors: Sql[] = exact.map(f => sql`${id(f)} = ${trimmed}`);
+  const ors = exact.map(f => sql`${id(f)} = ${trimmed}`);
   if (like.length) ors.unshift(sql.join(words.map(w =>
     sql`(${sql.join(like.map(f => sql`${low(f)} LIKE ${"%" + esc(w) + "%"} ESCAPE '!'`), " OR ")})`), " AND "));
 
-  const orders: Sql[] = [
+  const orders = [
     ...exact.map(f => sql`${id(f)} = ${trimmed} DESC`),
     ...like.map(f => sql`${low(f)} = ${trimmed.toLowerCase()} DESC`),
     ...words.flatMap(w => like.map(f => sql`${low(f)} LIKE ${esc(w) + "%"} ESCAPE '!' DESC`)),
