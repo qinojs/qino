@@ -3,44 +3,44 @@ import './Rte.mjs';
 
 globalThis.Rte.ui = {
   init() {
-    const my = this;
-    my.div = document.createElement('div');
-    my.div.id = 'qgRteToolbar';
-    my.div.addEventListener('mousedown',  e=>e.stopPropagation());
-    my.div.addEventListener('touchstart', e=>e.stopPropagation());
+    const ui=Rte.ui;
+    ui.div = document.createElement('div');
+    ui.div.id = 'qgRteToolbar';
+    ui.div.addEventListener('mousedown',  e=>e.stopPropagation());
+    ui.div.addEventListener('touchstart', e=>e.stopPropagation());
 
-    Rte.addUiElement(my.div);
+    Rte.addUiElement(ui.div);
 
-    my.mainContainer = document.createElement('div');
-    my.mainContainer.className = '-main';
-    my.div.appendChild(my.mainContainer);
+    ui.mainContainer = document.createElement('div');
+    ui.mainContainer.className = '-main';
+    ui.div.appendChild(ui.mainContainer);
 
-    my.moreContainer = document.createElement('div');
-    my.moreContainer.className = '-more';
-    my.div.appendChild(my.moreContainer);
+    ui.moreContainer = document.createElement('div');
+    ui.moreContainer.className = '-more';
+    ui.div.appendChild(ui.moreContainer);
 
     Rte.on('activate', function() {
       const config = Rte.ui.config['rteDef']; // todo
-      my.activeItems = {};
-      let appendTo = my.mainContainer;
+      ui.activeItems = {};
+      let appendTo = ui.mainContainer;
       const addItem = (n) => {
-        if (!my.items[n]) return;
-        my.activeItems[n] = my.items[n];
-        appendTo.appendChild(my.items[n].el);
+        if (!ui.items[n]) return;
+        ui.activeItems[n] = ui.items[n];
+        appendTo.appendChild(ui.items[n].el);
       };
       config.main.forEach(addItem);
-      appendTo = my.moreContainer;
+      appendTo = ui.moreContainer;
       config.more.forEach(addItem);
-      if (my.activeItems) {
-        document.body.appendChild(my.div);
-        my.div.style.display = 'block';
-        my.div.style.opacity = '0';
-        my.div.style.pointerEvents = 'none';
+      if (ui.activeItems) {
+        document.body.appendChild(ui.div);
+        ui.div.style.display = 'block';
+        ui.div.style.opacity = '0';
+        ui.div.style.pointerEvents = 'none';
         Rte.ui.mouseover = 0;
         setTimeout(()=>{
-          c1.zTop(my.div);
-          my.div.style.opacity = '1';
-          my.div.style.pointerEvents = '';
+          c1.zTop(ui.div);
+          ui.div.style.opacity = '1';
+          ui.div.style.pointerEvents = '';
         },100);
         document.addEventListener('keydown', shortcutListener, false);
       }
@@ -48,13 +48,13 @@ globalThis.Rte.ui = {
     Rte.on('deactivate', function() {
       document.removeEventListener('keydown', shortcutListener, false);
       setTimeout(()=>{ // need timeout because inputs inside have to blur first (ff, no chrome)
-        !Rte.active && my.div.parentNode && document.body.removeChild(my.div);
+        !Rte.active && ui.div.parentNode && document.body.removeChild(ui.div);
       },1);
     });
     //Rte.on('elementchange', function() {
     Rte.on('selectionchange', function() { // new 10.1.18, item.enable has to check on selectionchange
       //if (!Rte.element) return; needed?
-      for (const [_name, item] of Object.entries(my.activeItems)){
+      for (const [_name, item] of Object.entries(ui.activeItems)){
         if (!item.enable || item.enable(Rte.element)) {
           item.enabled = true;
           item.el.removeAttribute('hidden');
@@ -68,7 +68,7 @@ globalThis.Rte.ui = {
     const shortcutListener = function(e) {
       if (e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
         const char = e.key;
-        for (const [_name, item] of Object.entries(my.activeItems)){
+        for (const [_name, item] of Object.entries(ui.activeItems)){
           if (item.enabled && item.shortcut === char) {
             const event = new MouseEvent('mousedown',{'bubbles': true,'cancelable': true});
             item.el.dispatchEvent(event);
@@ -79,12 +79,12 @@ globalThis.Rte.ui = {
     };
     /* ui hover */
     let moreTimeout = null;
-    my.div.addEventListener('mouseenter',()=>{
+    ui.div.addEventListener('mouseenter',()=>{
       clearTimeout(moreTimeout);
       moreTimeout = setTimeout(() => Rte.ui.div.querySelector('.-more').classList.add('-show'), 300);
       Rte.ui.mouseover = 1;
     });
-    my.div.addEventListener('mouseleave',()=>{
+    ui.div.addEventListener('mouseleave',()=>{
       clearTimeout(moreTimeout);
       moreTimeout = setTimeout(() => Rte.ui.div.querySelector('.-more').classList.remove('-show'), 300);
       Rte.ui.mouseover = 0;
