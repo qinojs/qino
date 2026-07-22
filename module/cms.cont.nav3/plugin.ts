@@ -80,7 +80,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   let level = 0;
 
   const getUl = async (CurPage: Node): Promise<string | undefined> => {
-    if (!CurPage || !(await CurPage.exists())) return "";
+    if (!CurPage.exists()) return "";
 
     // Collect children
     const readableChildren: Node[] = [];
