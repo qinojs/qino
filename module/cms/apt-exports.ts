@@ -79,10 +79,12 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
         const idx = siblings.findIndex(s => s.id === node.id);
         const before = siblings[idx + 1] ?? null;
         await TrashNode.insertBefore(node, await TrashNode.cont("main"));
-        node.settings["__deleted_from"]   = String(parent ?? "");
-        node.settings["__deleted_before"] = String(before ?? "");
-        node.settings["__deleted_time"]   = String(unixTime());
-        node.settings["__deleted_by"]     = String(await ctx.user?.get("email") ?? "");
+        await node.settings.__deleted({
+            from:   String(parent ?? ""),
+            before: String(before ?? ""),
+            time:   String(unixTime()),
+            by:     String(await ctx.user?.get("email") ?? ""),
+        });
         const bough = await node.bough();
         for (const Child of bough.values()) {
             if (Child.vs?.["access"] !== null) await Child.set("access", 0);
@@ -101,16 +103,13 @@ async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
     if (!await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
     if (await node.access() < 2) throw new Output({ error: "Forbidden" }, { status: 403 });
-    const fromId   = Number(await node.settings["__deleted_from"]);
-    const beforeId = Number(await node.settings["__deleted_before"]);
+    const fromId   = Number(await node.settings.__deleted.from);
+    const beforeId = Number(await node.settings.__deleted.before);
     const toNode   = fromId ? await cms(ctx.app).node(fromId) : null;
     if (!toNode || await toNode.access() < 2) throw new Output({ error: "Original parent no longer accessible" }, { status: 403 });
     const before = beforeId ? await cms(ctx.app).node(beforeId) : null;
     await toNode.insertBefore(node, before);
-    delete node.settings["__deleted_from"];
-    delete node.settings["__deleted_before"];
-    delete node.settings["__deleted_time"];
-    delete node.settings["__deleted_by"];
+    await node.settings.__deleted(undefined);
     return { url: await node.url() };
 }
 

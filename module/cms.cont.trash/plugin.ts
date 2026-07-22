@@ -17,9 +17,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     if (await node.in(P)) continue;
     const title       = hee(await (await P.title()).string() || "(kein Titel)");
     const id          = P.id;
-    const deletedTime = Number(await P.settings["__deleted_time"]);
-    const deletedBy   = hee(await P.settings["__deleted_by"]);
-    const deletedFrom = Number(await P.settings["__deleted_from"]);
+    const deletedTime = Number(await P.settings.__deleted.time);
+    const deletedBy   = hee(await P.settings.__deleted.by);
+    const deletedFrom = Number(await P.settings.__deleted.from);
     const fromTitle   = deletedFrom ? hee(await (await (await node.cms.node(deletedFrom)).title()).string()) : "";
     const timeHtml    = deletedTime ? `<u2-time datetime="${new Date(deletedTime * 1000).toISOString()}" type=relative></u2-time>` : "";
     const module      = hee(P.vs.module);
