@@ -13,7 +13,7 @@ export default async function (node: Node, vars:any): Promise<any> {
     !!(await U.exists()) && (!(await U.get("superuser")) || isSuperuser);
 
   if ("email_used" in vars) {
-    return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}` ?? false;
+    return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}`;
   }
 
   if ("login_as" in vars) {
