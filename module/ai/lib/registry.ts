@@ -13,12 +13,11 @@ interface Registry {
 async function getRegistry(app: Pick<App, "db">): Promise<Registry> {
   const providers = new Map<string, ProviderRow>();
   const byId = new Map<number, ProviderRow>();
-  for (const row of await app.db.query`SELECT * FROM ai_provider`) {
-    const p = row as unknown as ProviderRow;
+  for (const p of await app.db.query<ProviderRow>`SELECT * FROM ai_provider`) {
     providers.set(p.name, p);
     byId.set(p.id, p);
   }
-  const models = (await app.db.query`SELECT * FROM ai_provider_model ORDER BY is_default DESC, id`) as unknown as ProviderModelRow[];
+  const models = await app.db.query<ProviderModelRow>`SELECT * FROM ai_provider_model ORDER BY is_default DESC, id`;
   return { providers, byId, models };
 }
 
