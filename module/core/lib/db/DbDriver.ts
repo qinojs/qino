@@ -106,7 +106,9 @@ class MysqlDriver extends DbDriver {
 class SqliteDriver extends DbDriver {
   dialect = "sqlite" as const;
   #db: DatabaseSync;
-  #inTx = false;
+  // One shared connection: while a transaction awaits, outside queries must not touch it.
+  #txAls = new AsyncLocalStorage<boolean>();
+  #chain: Promise<unknown> = Promise.resolve();
 
   constructor(path: string) {
     super();
@@ -117,24 +119,29 @@ class SqliteDriver extends DbDriver {
   quoteId(id: string) { return sqliteDialect.quoteId(id); }
   // node:sqlite rejects boolean binds; SQLite has no boolean type, so map to 0/1.
   #bind(params: unknown[]) { return params.map((p) => typeof p === "boolean" ? +p : p); }
+  // Serialize access against an open transaction; the tx owner (#txAls set) runs directly to avoid deadlock.
+  #serial<T>(fn: () => T | Promise<T>): Promise<T> {
+    if (this.#txAls.getStore()) return Promise.resolve(fn());
+    const run = this.#chain.then(fn, fn);
+    this.#chain = run.then(() => {}, () => {});
+    return run;
+  }
   query(sql: string, params: unknown[] = []) {
-    return Promise.resolve(this.#db.prepare(sql).all(...this.#bind(params) as any[]) as Row[]);
+    return this.#serial(() => this.#db.prepare(sql).all(...this.#bind(params) as any[]) as Row[]);
   }
   exec(sql: string, params: unknown[] = [], _returning?: string) {
-    const r = this.#db.prepare(sql).run(...this.#bind(params) as any[]);
-    return Promise.resolve({ insertId: Number(r.lastInsertRowid), affectedRows: Number(r.changes) });
+    return this.#serial(() => {
+      const r = this.#db.prepare(sql).run(...this.#bind(params) as any[]);
+      return { insertId: Number(r.lastInsertRowid), affectedRows: Number(r.changes) };
+    });
   }
-  // One shared connection: re-entrancy via a flag, no per-call routing needed.
-  // Caveat: with concurrent requests, queries from other requests at await points
-  // inside fn run on this same connection — they join this transaction and roll back
-  // with it. Fine for single-user dev/demo; prod uses MySQL with per-tx connections.
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.#inTx) return fn();
-    this.#inTx = true;
-    this.#db.exec("BEGIN");
-    try { const r = await fn(); this.#db.exec("COMMIT"); return r; }
-    catch (e) { this.#db.exec("ROLLBACK"); throw e; }
-    finally { this.#inTx = false; }
+    if (this.#txAls.getStore()) return fn(); // nested → join the running transaction
+    return this.#serial(() => this.#txAls.run(true, async () => {
+      this.#db.exec("BEGIN");
+      try { const r = await fn(); this.#db.exec("COMMIT"); return r; }
+      catch (e) { this.#db.exec("ROLLBACK"); throw e; }
+    }));
   }
   async listTables() {
     const rows = await this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
