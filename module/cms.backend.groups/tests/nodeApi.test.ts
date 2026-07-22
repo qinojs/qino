@@ -9,7 +9,7 @@ function makeNode(db: unknown, access = 2) {
 function makeDb(opts: { emailUserId?: number }) {
   const state = { ensured: false, deleted: false };
   const db = {
-    one: async (strings: TemplateStringsArray) => {
+    one: (strings: TemplateStringsArray) => {
       const sql = strings.join("?");
       if (sql.includes("FROM usr WHERE email")) return opts.emailUserId ?? null;
       return null;
