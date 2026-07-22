@@ -98,7 +98,8 @@ export class LangManager {
   #getTxts(ns: string, l: string): Promise<Record<string, string>> {
     const key = `${l}::${ns}`;
     // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
-    return this.#txtsCache[key] ??= this.#app.db.indexCol`SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}` as Promise<Record<string, string>>;
+    return this.#txtsCache[key] ??= this.#app.db.indexCol<string>`
+      SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`;
   }
 
   async #getTxt(string: string, ctx: Ctx): Promise<string> {
