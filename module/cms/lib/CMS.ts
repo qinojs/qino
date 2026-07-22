@@ -19,7 +19,7 @@ export class CMS {
   app: App;
   db: Db;
 
-  #nodes: Map<number, Node> = new Map();
+  #nodes = new Map<number, Node>();
   #layouts: Record<string, string> | null = null;
 
   constructor(app: App) {
@@ -103,7 +103,7 @@ export class CMS {
     const tags = Array.isArray(filter) ? filter : undefined;
     filter = tags ?? { ...filter };
     if (!tags) filter.type ||= "p";
-    const ret: Map<number, Node> = new Map();
+    const ret = new Map<number, Node>();
     for (const [id, C] of Pages) {
       const vs = C.vs;
       if (!tags) {
