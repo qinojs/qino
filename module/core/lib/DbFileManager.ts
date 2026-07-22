@@ -32,7 +32,7 @@ export class DbFileManager {
   get directory(): string { return this.#directory; }
 
   #files(): Record<string, DbFile> {
-    return scopeCache(this.#cache, "dbFiles", () => ({} as Record<string, DbFile>));
+    return scopeCache<Record<string, DbFile>>(this.#cache, "dbFiles", () => ({}));
   }
 
   async file(id: number | string, vs?: any): Promise<DbFile> {

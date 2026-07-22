@@ -17,12 +17,12 @@ export class DbTextManager {
   get app(): App { return this.#app; }
 
   text(id: number | string): DbText {
-    const cache = scopeCache(this.#cache, "dbTexts", () => ({} as Record<string, DbText>));
+    const cache = scopeCache<Record<string, DbText>>(this.#cache, "dbTexts", () => ({}));
     return cache[String(id)] ??= new DbText(this, id);
   }
 
   clearCache(id?: number | string) {
-    const cache = scopeCache(this.#cache, "dbTexts", () => ({} as Record<string, DbText>));
+    const cache = scopeCache<Record<string, DbText>>(this.#cache, "dbTexts", () => ({}));
     if (id !== undefined) delete cache[String(id)];
     else for (const k in cache) delete cache[k];
   }
