@@ -61,7 +61,7 @@ export class Ctx {
   get csrfToken(): string {
     const token = this.sess.data.core.csrfToken;
     if (!token()) this.sess.data.core.csrfToken(uid(11));
-    return token() as string;
+    return token()!;
   }
 
   urlToLocalPath(url: string): string | null {
