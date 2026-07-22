@@ -71,7 +71,7 @@ export class ReqBody {
       const post: Record<string, unknown> = Object.create(null);
       for (const [key, val] of Object.entries(entries)) {
         const vals = Array.isArray(val) ? val : [val];
-        const files = vals.filter((v) => v instanceof File) as File[];
+        const files = vals.filter((v) => v instanceof File);
         const fields = vals.filter((v) => !(v instanceof File));
         if (files.length) body.#rawFiles[key] = files[files.length - 1]; // several files per name: last wins
         if (fields.length) post[key] = fields.length > 1 ? Object.freeze(fields) : fields[0];
