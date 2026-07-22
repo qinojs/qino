@@ -26,7 +26,7 @@ async function render(_node: Node): Promise<string> {
   let usrHtml = `<em>not logged in</em>\n`;
   if (usr) {
     const vs = await usr.values();
-    const grps = ((await usr.grps?.() ?? []) as number[]).join(", ") || "–";
+    const grps = (await usr.grps()).join(", ") || "–";
     usrHtml = `<h3>User #${hee(usr)}</h3>` + vsTable(vs, ["pw"]) +
       `<h3>Groups: ${hee(grps)}</h3>\n`;
   }
