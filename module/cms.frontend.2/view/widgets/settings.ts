@@ -66,7 +66,7 @@ export default async function (node: Node): Promise<HtmlString> {
       </div>
     </div>
     <div style="display:flex;margin-bottom:4px;">
-      <span title="${await Module.get?.("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
+      <span title="${await Module.get("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
       <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-4px;margin-bottom:-3px;background:transparent">
         ${moduleOptions}
       </select>
