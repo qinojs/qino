@@ -1,8 +1,8 @@
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { cmsFrontend2WidgetAccordion } from "../../mod.ts";
+import { accordion } from "../widget.ts";
 import type { Node } from "../../../cms/mod.ts";
 import { $item } from "../../../../deps.ts";
-import { moduleIcon } from "../../api.ts";
+import { moduleIcon } from "../widget.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
@@ -40,18 +40,18 @@ export default async function (node: Node): Promise<HtmlString> {
 
   const hasOptions = typeof node.module?.plugin?.cms?.node?.options === "function";
   const hasPageSettings = Boolean(node.settings[$item].keys?.length);
-  if (hasOptions || hasPageSettings) accordions += await cmsFrontend2WidgetAccordion("options", node, await app.t`Settings`);
+  if (hasOptions || hasPageSettings) accordions += await accordion("options", node, await app.t`Settings`);
 
-  accordions += await cmsFrontend2WidgetAccordion("media", node);
-  if (showAccessTime) accordions += await cmsFrontend2WidgetAccordion("access.time", node);
+  accordions += await accordion("media", node);
+  if (showAccessTime) accordions += await accordion("access.time", node);
   if ((await node.access()) > 2) {
-    accordions += await cmsFrontend2WidgetAccordion("access.grp", node);
-    accordions += await cmsFrontend2WidgetAccordion("access.usr", node);
+    accordions += await accordion("access.grp", node);
+    accordions += await accordion("access.usr", node);
   }
-  if (node.vs.type === "p") accordions += await cmsFrontend2WidgetAccordion("seo", node);
-  if (showUrls)    accordions += await cmsFrontend2WidgetAccordion("urls", node);
-  accordions += await cmsFrontend2WidgetAccordion("extended", node, await app.t`Advanced`);
-  if (await ctx.user?.get("superuser")) accordions += await cmsFrontend2WidgetAccordion("superuser", node, "Superuser");
+  if (node.vs.type === "p") accordions += await accordion("seo", node);
+  if (showUrls)    accordions += await accordion("urls", node);
+  accordions += await accordion("extended", node, await app.t`Advanced`);
+  if (await ctx.user?.get("superuser")) accordions += await accordion("superuser", node, "Superuser");
 
   return html.async`<div class="-standalone content-manager" pid="${node.id}" page-type="${node.vs.type}"
     style="font-size:1.2em;margin-bottom:1em">

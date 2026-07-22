@@ -1,6 +1,6 @@
 import { Access, AccessError, s, type Ctx, type AptTree, type App } from "../core/mod.ts";
 import { cms, cmsCtx } from "../cms/mod.ts";
-import { widgetUrl } from "./api.ts";
+import { widgetUrl } from "./view/widget.ts";
 
 export const name = "cms.frontend.2";
 export const needs = ["cms"];

@@ -1,5 +1,5 @@
 import type { Node } from "../../../cms/mod.ts";
-import { cmsFrontend2WidgetAccordion } from "../../mod.ts";
+import { accordion } from "../widget.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
 export default async function (node: Node): Promise<HtmlString> {
   const ctx = getCtx();
@@ -16,8 +16,8 @@ export default async function (node: Node): Promise<HtmlString> {
 
   let extras = "";
   if (await ctx.user?.get("superuser")) {
-    extras += await cmsFrontend2WidgetAccordion("txts", node, "Texts");
-    extras += await cmsFrontend2WidgetAccordion("sets", node, "Settings");
+    extras += await accordion("txts", node, "Texts");
+    extras += await accordion("sets", node, "Settings");
   }
 
   return html.async`<div class=advanced-manager pid=${node.id}>

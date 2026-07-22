@@ -1,5 +1,5 @@
 import { getCtx } from "../../core/mod.ts";
-import { cmsFrontend2WidgetSidebar } from "../mod.ts";
+import { sidebar } from "./widget.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export default async function (node: Node): Promise<string> {
@@ -8,10 +8,10 @@ export default async function (node: Node): Promise<string> {
 
   ctx.res.html.jsData.cmsFrontend2Data = (await ctx.settings["cms.frontend.2"].ui) ?? {};
 
-  const tree     = await cmsFrontend2WidgetSidebar("tree",     node, await t`Structure`,    await t`Overview. Create, move, delete pages...`);
-  const settings = await cmsFrontend2WidgetSidebar("settings", node, await t`Settings`,     await t`Settings, files, permissions of the current page`);
-  const add      = await cmsFrontend2WidgetSidebar("add",      node, await t`Modules`,      await t`Add content, e.g. a text field or a table`);
-  const more     = await cmsFrontend2WidgetSidebar("more",     node, await t`More`,         await t`CMS feedback, change password...`);
+  const tree     = await sidebar("tree",     node, await t`Structure`,    await t`Overview. Create, move, delete pages...`);
+  const settings = await sidebar("settings", node, await t`Settings`,     await t`Settings, files, permissions of the current page`);
+  const add      = await sidebar("add",      node, await t`Modules`,      await t`Add content, e.g. a text field or a table`);
+  const more     = await sidebar("more",     node, await t`More`,         await t`CMS feedback, change password...`);
 
   return `<qino-cms hidden>
 <div id=panel popover=manual class="qgCMS -open -sidebar-open">

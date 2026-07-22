@@ -1,6 +1,6 @@
 import { ADMIN, type Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { moduleIcon } from "../../api.ts";
+import { moduleIcon } from "../widget.ts";
 
 // Adding a module = ADMIN ("insertable") on the module axis — edit-only groups don't see it here.
 // cms.accessRules lowers e.access to the user's module cap; without it everything stays insertable.
@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const moduleBoxes: HtmlString[] = [];
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
-    const mod = await app.db.table("module").entry(name);
+    const modEntry = await app.db.table("module").entry(name);
     if (await moduleAccess(node, name) < ADMIN) continue;
     if (name === "cms.cont.flexible") continue;
     let desc = "";
@@ -24,7 +24,7 @@ export default async function (node: Node): Promise<HtmlString> {
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
     const svgHtml = await moduleIcon(name, modDir);
     moduleBoxes.push(html`<div itemid="${name}" title="${desc}">
-      <div class=-title title="${await mod.get("name") ?? name}">${title}</div>
+      <div class=-title title="${await modEntry.get("name") ?? name}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
     </div>`);
   }

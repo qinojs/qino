@@ -6,7 +6,6 @@
     "./ai": "./module/ai/mod.ts",
     "./cms": "./module/cms/mod.ts",
     "./cms.backend": "./module/cms.backend/mod.ts",
-    "./cms.frontend.2": "./module/cms.frontend.2/mod.ts",
     "./cms.image2": "./module/cms.image2/mod.ts",
     "./cms.text": "./module/cms.text/mod.ts",
     "./cms.versions": "./module/cms.versions/mod.ts",
