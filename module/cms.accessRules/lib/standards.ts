@@ -1,7 +1,7 @@
 import type { App } from "../../core/mod.ts";
 
 // module → cms_access rules per app, cached (hot path: every node render checks it)
-const stdCache: WeakMap<object, Promise<Map<string, number>>> = new WeakMap();
+const stdCache = new WeakMap<object, Promise<Map<string, number>>>();
 
 export function standards(app: App): Promise<Map<string, number>> {
   let p = stdCache.get(app);
