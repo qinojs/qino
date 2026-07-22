@@ -186,9 +186,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const f = await fm.file(id, row);
   const exists = await f.exists();
 
-  const linkParts = await Promise.all(fileChildren(node).map(async (Field: DbField) => {
-    const rows = await db.query`SELECT * FROM ${sql.id(Field.table.name)} WHERE ${sql.id(Field.name)}=${id}`;
-    return html.join(rows.map((lr) => html`<div>${Field.table.name+"."+Field.name}: ${JSON.stringify(lr)}</div>`));
+  const linkParts = await Promise.all(fileChildren(node).map(async (field: DbField) => {
+    const rows = await db.query`SELECT * FROM ${sql.id(field.table.name)} WHERE ${sql.id(field.name)}=${id}`;
+    return html.join(rows.map((lr) => html`<div>${field.table.name+"."+field.name}: ${JSON.stringify(lr)}</div>`));
   }));
   const linkInner = html.join(linkParts);
   const linksHtml = String(linkInner) ? linkInner : html`<div class=-body>none</div>`;

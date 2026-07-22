@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const moduleBoxes: HtmlString[] = [];
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
-    const M = await app.db.table("module").entry(name);
+    const mod = await app.db.table("module").entry(name);
     if (await moduleAccess(node, name) < ADMIN) continue;
     if (name === "cms.cont.flexible") continue;
     let desc = "";
@@ -24,7 +24,7 @@ export default async function (node: Node): Promise<HtmlString> {
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
     const svgHtml = await moduleIcon(name, modDir);
     moduleBoxes.push(html`<div itemid="${name}" title="${desc}">
-      <div class=-title title="${await M.get("name") ?? name}">${title}</div>
+      <div class=-title title="${await mod.get("name") ?? name}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
     </div>`);
   }
@@ -37,23 +37,23 @@ export default async function (node: Node): Promise<HtmlString> {
   const models = [];
   for (const id of allIds) {
     if (!id) continue;
-    const P = await node.cms.node(Number(id));
-    if (P.vs?.type !== "c") continue;
-    if ((await P.access()) < 2) continue;
-    models.push(P);
+    const page = await node.cms.node(Number(id));
+    if (page.vs?.type !== "c") continue;
+    if ((await page.access()) < 2) continue;
+    models.push(page);
   }
 
   let modelsSection: HtmlString | string = "";
   if (models.length) {
     const modelItems: HtmlString[] = [];
-    for (const P of models) {
-      if (await moduleAccess(node, String(P.vs.module)) < ADMIN) continue;
-      const mName = String(P.vs.module);
+    for (const page of models) {
+      if (await moduleAccess(node, String(page.vs.module)) < ADMIN) continue;
+      const mName = String(page.vs.module);
       const mDir = app.modules.get(mName)?.dir;
       const svgHtml = await moduleIcon(mName, mDir);
-      modelItems.push(html`<div itemid="${P.id}" title="">
+      modelItems.push(html`<div itemid="${page.id}" title="">
         <svg class=-img fill="#fff">${svgHtml}</svg>
-        <div class=-title title="${P.id}">${await (await P.title()).string()}</div>
+        <div class=-title title="${page.id}">${await (await page.title()).string()}</div>
       </div>`);
     }
     modelsSection = html`<div class=-standalone><br><br><div class=-h1><span>Templates</span></div></div>

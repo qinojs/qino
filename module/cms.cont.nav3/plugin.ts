@@ -79,12 +79,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
   let level = 0;
 
-  const getUl = async (CurPage: Node): Promise<string | undefined> => {
-    if (!CurPage.exists()) return "";
+  const getUl = async (curPage: Node): Promise<string | undefined> => {
+    if (!curPage.exists()) return "";
 
     // Collect children
     const readableChildren: Node[] = [];
-    const allChildren = await CurPage.children("readable");
+    const allChildren = await curPage.children("readable");
     for (const C of allChildren.values()) {
       if (filterVisible === "visible" && !C.vs.visible) continue;
       if (filterVisible === "hidden" && C.vs.visible) continue;
@@ -93,7 +93,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
     // Optionally include content items (contents of children)
     if (includeContentsSetting) {
-      const conts = await CurPage.conts();
+      const conts = await curPage.conts();
       for (const FirstLevelCont of conts) {
         const bough = await FirstLevelCont.bough(["readable", { type: "c" }]);
         for (const Content of bough.values()) {
@@ -114,10 +114,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const levelLimit = Number(levelLimitSetting || 0);
     if (levelLimit && level >= levelLimit) return "";
 
-    if (pathOnly && level > 0 && !(await ActivePage.in(CurPage))) return "";
+    if (pathOnly && level > 0 && !(await ActivePage.in(curPage))) return "";
 
     level++;
-    let str = `<ul class="cmsChilds${CurPage}">`;
+    let str = `<ul class="cmsChilds${curPage}">`;
     for (const ChildPage of filtered) {
       const childStr = await getUl(ChildPage);
 

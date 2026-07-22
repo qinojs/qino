@@ -48,7 +48,7 @@ export class DbEntry {
     if (this.#full) return true;
     if (!this.table.fields) return false;
     const nonPrimaries = Object.entries(this.table.fields)
-      .filter(([, Field]) => !Field.isPrimary())
+      .filter(([, field]) => !field.isPrimary())
       .map(([field]) => field);
     if (!nonPrimaries.length) return false;
     this.#full = nonPrimaries.every(field => field in this.#vs);
@@ -81,11 +81,11 @@ export class DbEntry {
 
   async set(n: string, v: any): Promise<void> {
     await this.values();
-    const Field = this.table.field(n);
+    const field = this.table.field(n);
     // Unknown field: value is kept in memory but never persisted. Warn for now; throw once confirmed unused.
-    if (!Field) console.warn(`db-set "${this.table}::${n}": unknown field, value not persisted`);
+    if (!field) console.warn(`db-set "${this.table}::${n}": unknown field, value not persisted`);
     else if (n in this.#vs) {
-      v = Field.valueTransform(v);
+      v = field.valueTransform(v);
       if (this.#vs[n] !== v) this.#changed = true;
     }
     this.#vs[n] = v;

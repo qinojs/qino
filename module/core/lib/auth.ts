@@ -32,17 +32,17 @@ export async function authListen(ctx: Ctx): Promise<void> {
 export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, dummyHash); return user ? "inactive" : "username"; }
-  const UsrEntry = ctx.app.db.table("usr").entry(user.id);
-  const rehash = pwNeedsRehash(await UsrEntry.get("pw"));
+  const usrEntry = ctx.app.db.table("usr").entry(user.id);
+  const rehash = pwNeedsRehash(await usrEntry.get("pw"));
   if (!rehash) {
     const clientUsrs = await ctx.client.users();
-    const usrId = String(await UsrEntry.get("id") ?? "");
+    const usrId = String(await usrEntry.get("id") ?? "");
     if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return await login(ctx, user.id) ? "" : "username";
   }
-  if (!await pwVerify(pw, await UsrEntry.get("pw") ?? "")) return "password";
+  if (!await pwVerify(pw, await usrEntry.get("pw") ?? "")) return "password";
   if (rehash) {
-    await UsrEntry.set("pw", await pwHash(pw));
-    await UsrEntry.save();
+    await usrEntry.set("pw", await pwHash(pw));
+    await usrEntry.save();
   }
   return await login(ctx, user.id) ? "" : "username";
 }

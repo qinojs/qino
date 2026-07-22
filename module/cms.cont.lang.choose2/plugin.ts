@@ -48,11 +48,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const langs = node.app.languages.all;
   if (langs.length < 2) return "<span></span>";
 
-  const Page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
+  const page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
 
   if (type === "select") {
     const options = await Promise.all(langs.map(async (l) => {
-      const url = hee(await Page.url(l));
+      const url = hee(await page.url(l));
       const label = hee(longText ? (long[l] ?? l) : l);
       const selected = l === ctx.lang ? " selected" : "";
       return `<option${selected} value="${url}" lang="${hee(l)}" class="-${hee(l)}">${label}`;
@@ -63,7 +63,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   // links (default)
   const items = await Promise.all(langs.map(async (l) => {
     if (hideActive && l === ctx.lang) return "";
-    const url = hee(await Page.url(l));
+    const url = hee(await page.url(l));
     const isActive = l === ctx.lang;
     const cls = [`-${l}`, isActive ? "-active" : ""].filter(Boolean).join(" ");
     const ariaLabel = !longText ? ` aria-label="${hee(long[l] ?? l)}"` : "";

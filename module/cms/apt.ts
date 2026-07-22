@@ -195,10 +195,10 @@ const node = {
         }
         let done = 0, has = 0;
         const bough = await node.bough({ type: "p" });
-        for (const P of bough.values()) {
+        for (const page of bough.values()) {
           has++;
-          if ((await P.access()) < 2) continue;
-          await P.set("module", module);
+          if ((await page.access()) < 2) continue;
+          await page.set("module", module);
           done++;
         }
         return { done, has };
@@ -348,10 +348,10 @@ const node = {
             if (!recursive) return { ok: true };
             let done = 0, has = 0;
             const bough = await node.bough({ type: "p" });
-            for (const P of bough.values()) {
+            for (const page of bough.values()) {
               has++;
-              if ((await P.access()) < 3) continue;
-              await P.changeUser(user, access);
+              if ((await page.access()) < 3) continue;
+              await page.changeUser(user, access);
               done++;
             }
             return { done, has };
@@ -605,8 +605,8 @@ export const api = {
       input: s.object({ value: s.optional(s.number()).describe("Node-ID to cut. Omit to clear clipboard.") }),
       execute: async ({ value }: any, ctx: Ctx) => {
         if (value) {
-          const P = await cms(ctx.app).node(value);
-          if ((await P.access()) < 2) throw new AccessError();
+          const page = await cms(ctx.app).node(value);
+          if ((await page.access()) < 2) throw new AccessError();
         }
         await ctx.settings.cms.clipboard(Number(value ?? 0));
         return { ok: true };

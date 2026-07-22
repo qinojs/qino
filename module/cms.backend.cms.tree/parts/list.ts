@@ -30,9 +30,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   await renderChildren(rootNode, 0);
   return html.raw(out);
 
-  async function loopConts(Page: Node): Promise<{ onlineStart: number; onlineEnd: number; access: number }> {
+  async function loopConts(page: Node): Promise<{ onlineStart: number; onlineEnd: number; access: number }> {
     const data = { onlineStart: 0, onlineEnd: 0, access: 0 };
-    for (const C of await Page.conts()) {
+    for (const C of await page.conts()) {
       const child = await loopConts(C);
       data.onlineStart += child.onlineStart;
       data.onlineEnd += child.onlineEnd;
@@ -44,19 +44,19 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return data;
   }
 
-  async function renderChildren(Parent: Node, level: number): Promise<void> {
-    const children = await Parent.children({ type: treeType });
-    for (const [, SubPage] of children) {
-      const subAccess = await SubPage.access();
-      const open = openPageNodes.has(String(SubPage.id));
-      const isCont = SubPage.vs.type === "c";
-      const contsData = await loopConts(SubPage);
+  async function renderChildren(parent: Node, level: number): Promise<void> {
+    const children = await parent.children({ type: treeType });
+    for (const [, subPage] of children) {
+      const subAccess = await subPage.access();
+      const open = openPageNodes.has(String(subPage.id));
+      const isCont = subPage.vs.type === "c";
+      const contsData = await loopConts(subPage);
 
       // Toggle button
-      const hasChildren = (await SubPage.children({ type: treeType })).size > 0;
+      const hasChildren = (await subPage.children({ type: treeType })).size > 0;
       let toggleBtn = '<span class=-toggle></span>';
       if (hasChildren) {
-        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${SubPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`;
+        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${subPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`;
       }
 
       // Title cell
@@ -64,7 +64,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       if (subAccess < 1) {
         titleCell = `<span style="flex:1; color:#bbb">(${await t`no access`})</span>`;
       } else {
-        const titleObj = await SubPage.title();
+        const titleObj = await subPage.title();
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
         const titleText = titleLang ? hee(await titleLang.get()) : "";
         const titleId = titleObj?.id ?? 0;
@@ -76,28 +76,28 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         }
       }
 
-      const pageUrl = await SubPage.url();
+      const pageUrl = await subPage.url();
       const linkCell = `<a style="vertical-align:middle" href="${hee(pageUrl)}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`;
 
       // Online start column
-      const onlineStartCell = renderOnlineStart(SubPage, subAccess);
+      const onlineStartCell = renderOnlineStart(subPage, subAccess);
 
       // Online end column
-      const onlineEndCell = await renderOnlineEnd(SubPage, subAccess, contsData.onlineEnd);
+      const onlineEndCell = await renderOnlineEnd(subPage, subAccess, contsData.onlineEnd);
 
       // Access column
-      const accessCell = await renderAccess(SubPage, subAccess, contsData.access);
+      const accessCell = await renderAccess(subPage, subAccess, contsData.access);
 
       // Visible column
-      const visibleCell = renderVisible(SubPage, subAccess);
+      const visibleCell = renderVisible(subPage, subAccess);
 
       // Searchable column
-      const searchableCell = renderSearchable(SubPage, subAccess);
+      const searchableCell = renderSearchable(subPage, subAccess);
 
       out += `
 <tr${isCont ? ' class=-isCont' : ''}>
   <td style="text-align:right; font-weight:bold">
-    <a title="${await t`Set as start point`}" href="${hee("?rp=" + SubPage.id)}">${hee(SubPage.id)}</a>
+    <a title="${await t`Set as start point`}" href="${hee("?rp=" + subPage.id)}">${hee(subPage.id)}</a>
   <td style="padding-left:${level * 15}px">
     <div style="display:flex; align-items:center">
       ${toggleBtn}
@@ -109,15 +109,15 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   <td>${accessCell}
   <td>${visibleCell}
   <td>${searchableCell}
-  <td><span>${hee(SubPage.vs.module)}</span>`;
+  <td><span>${hee(subPage.vs.module)}</span>`;
 
-      if (open) await renderChildren(SubPage, level + 1);
+      if (open) await renderChildren(subPage, level + 1);
     }
   }
 
-  function renderOnlineStart(SubPage: Node, access: number): string {
+  function renderOnlineStart(subPage: Node, access: number): string {
     if (access === 0) return "---";
-    const onlineStart = SubPage.vs.online_start;
+    const onlineStart = subPage.vs.online_start;
     const ok = !onlineStart || Number(onlineStart) < unixTime();
     const iso = onlineStart ? new Date(Number(onlineStart) * 1000).toISOString() : "";
     const date = iso ? `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "---";
@@ -125,9 +125,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return `<span style="color:${ok ? "green" : "red"}">${date}</span>`;
   }
 
-  async function renderOnlineEnd(SubPage: Node, access: number, numNotInherit: number): Promise<string> {
+  async function renderOnlineEnd(subPage: Node, access: number, numNotInherit: number): Promise<string> {
     if (access === 0) return "---";
-    const onlineEnd = SubPage.vs.online_end;
+    const onlineEnd = subPage.vs.online_end;
     const ts = onlineEnd == null ? null : Number(onlineEnd);
     const iso = ts ? new Date(ts * 1000).toISOString() : "";
     const date = onlineEnd == null
@@ -150,9 +150,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     return `<span style="color:rgb(${r},${g},0)">${date}</span>${badge}`;
   }
 
-  async function renderAccess(SubPage: Node, access: number, numNotInherit: number): Promise<string> {
+  async function renderAccess(subPage: Node, access: number, numNotInherit: number): Promise<string> {
     if (access === 0) return "---";
-    const v = SubPage.vs.access;
+    const v = subPage.vs.access;
     const label = v == null ? await t`inherited` : (v ? await t`yes` : await t`no`);
     let badge = "";
     if (numNotInherit && access > 2) {
@@ -160,20 +160,20 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     }
     if (access <= 2) return `<span style="color:#666">${hee(label)}</span>${badge}`;
     const color = v == null ? "#aaa" : (v ? "green" : "red");
-    return `<button class=u2-unstyle data-toggle=access data-pid="${SubPage.id}" data-v="${v == null ? "" : v ? 1 : 0}" style="color:${color}">${hee(label)}</button>${badge}`;
+    return `<button class=u2-unstyle data-toggle=access data-pid="${subPage.id}" data-v="${v == null ? "" : v ? 1 : 0}" style="color:${color}">${hee(label)}</button>${badge}`;
   }
 
-  function renderVisible(SubPage: Node, access: number): string {
+  function renderVisible(subPage: Node, access: number): string {
     if (access === 0) return "---";
-    return checkbox("visible", SubPage, !!SubPage.vs.visible, access === 1);
+    return checkbox("visible", subPage, !!subPage.vs.visible, access === 1);
   }
 
-  function renderSearchable(SubPage: Node, access: number): string {
+  function renderSearchable(subPage: Node, access: number): string {
     if (access === 0) return "---";
-    return checkbox("searchable", SubPage, !!SubPage.vs.searchable, access === 1);
+    return checkbox("searchable", subPage, !!subPage.vs.searchable, access === 1);
   }
 
-  function checkbox(toggle: string, SubPage: Node, checked: boolean, readonly: boolean): string {
-    return `<input type=checkbox data-toggle=${toggle} data-pid="${SubPage.id}"${checked ? " checked" : ""}${readonly ? " disabled" : ""}>`;
+  function checkbox(toggle: string, subPage: Node, checked: boolean, readonly: boolean): string {
+    return `<input type=checkbox data-toggle=${toggle} data-pid="${subPage.id}"${checked ? " checked" : ""}${readonly ? " disabled" : ""}>`;
   }
 }

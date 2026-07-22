@@ -22,18 +22,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const settings = node.settings;
 
-  let Img = null;
+  let img = null;
   let url = await node.cms.url(settings.url());
 
   // Language-specific variants
   for (const l of node.app.languages.all) {
-    const LImg = await node.file("image_" + l);
-    if (ctx.lang === l && await LImg.exists()) Img = LImg;
-    else if (!Img && await LImg.exists()) Img = LImg;
+    const langImg = await node.file("image_" + l);
+    if (ctx.lang === l && await langImg.exists()) img = langImg;
+    else if (!img && await langImg.exists()) img = langImg;
     const lUrl = await node.cms.url(settings["url_" + l]());
     if (ctx.lang === l && lUrl) url = lUrl;
   }
-  Img ??= await node.file("image_" + ctx.lang);
+  img ??= await node.file("image_" + ctx.lang);
 
   const tag = !node.edit && url ? "a" : "div";
   const hrefAttr = url ? html` href="${url}"` : "";
@@ -55,10 +55,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if: 1,
     style,
     quality: Number(await settings["quality"]) || null,
-    editable: node.edit ? await Img.url() : null,
+    editable: node.edit ? await img.url() : null,
   };
 
-  const imgHtml = await cms_image2(Img, options);
+  const imgHtml = await cms_image2(img, options);
 
   let editHtml: HtmlString | string = "";
   if (node.edit) {

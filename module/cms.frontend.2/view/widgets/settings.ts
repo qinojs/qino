@@ -10,26 +10,26 @@ export default async function (node: Node): Promise<HtmlString> {
   const cms = node.cms;
   const ctx = getCtx();
 
-  const T = await node.title();
-  const titleVal = await T.string();
-  const titleEdit = node.edit ? html` cmstxt=${T.id}` : "";
+  const title = await node.title();
+  const titleVal = await title.string();
+  const titleEdit = node.edit ? html` cmstxt=${title.id}` : "";
 
   const svgIcon = await moduleIcon(node.vs.module, node.module?.dir);
 
-  const Module = db.table("module").entry(node.vs.module);
+  const module = db.table("module").entry(node.vs.module);
   const modules = node.vs.type === "p" ? await cms.getLayouts() : await cms.getModules();
   const moduleOptions = html.join(Object.keys(modules).map((name) =>
     html`<option value="${name}" ${name === node.vs.module ? "selected" : ""}>${name}`));
 
-  const Parent = await node.parent();
+  const parent = await node.parent();
   let parentHtml: HtmlString | string = "";
-  if (Parent) {
-    const parentType = Parent.vs?.type;
-    let parentTitle = (await (await Parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(Parent);
-    if (parentType === "c") parentTitle += ` ${Parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
-    parentHtml = await html.async`<div class=-editparent parent="${Parent.id}" page-type="${parentType}">
-      ${app.t`Parent:`}
-      <a href="${await Parent.url()}" style="font-weight:bold;">${html.raw(parentTitle)}</a>
+  if (parent) {
+    const parentType = parent.vs?.type;
+    let parentTitle = (await (await parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(parent);
+    if (parentType === "c") parentTitle += ` ${parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
+    parentHtml = await html.async`<div class=-editparent parent="${parent.id}" page-type="${parentType}">
+      ${app.t`parent:`}
+      <a href="${await parent.url()}" style="font-weight:bold;">${html.raw(parentTitle)}</a>
     </div>`;
   }
 
@@ -66,7 +66,7 @@ export default async function (node: Node): Promise<HtmlString> {
       </div>
     </div>
     <div style="display:flex;margin-bottom:4px;">
-      <span title="${await Module.get("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
+      <span title="${await module.get("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
       <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-4px;margin-bottom:-3px;background:transparent">
         ${moduleOptions}
       </select>

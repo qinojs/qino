@@ -6,7 +6,7 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
   let node = await cm.nodeByModule("cms.backend");
   if (!node) {
     const root = await cm.node(1);
-    const P = await root.createChild({
+    const page = await root.createChild({
       id: 100,
       module: "cms.layout.backend",
       access: 0,
@@ -15,14 +15,14 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       searchable: false,
       sort: 20,
     });
-    if (P) {
-      await P.changeGroup(1, 0);
-      await P.changeGroup(2, 0);
-      await P.changeGroup(3, 0);
-      const cont = await P.cont('1');
+    if (page) {
+      await page.changeGroup(1, 0);
+      await page.changeGroup(2, 0);
+      await page.changeGroup(3, 0);
+      const cont = await page.cont('1');
       await cont.set("module", "cms.backend");
-      P.settings.childXML = '<page visible="1"></page>';
-      app.settings.cms.backend(String(P.id));
+      page.settings.childXML = '<page visible="1"></page>';
+      app.settings.cms.backend(String(page.id));
     }
     node = await cm.nodeByModule("cms.backend");
   }
@@ -42,23 +42,23 @@ export async function install(app: App, module: string, titles?: Record<string, 
     const existing = await cm.nodeByModule(mod);
     if (!existing) {
       const parentNode = await cm.nodeByModule(parentModule);
-      const Parent = parentNode ? await parentNode.page() : parentNode;
-      if (Parent) {
-        const Node = await (await Parent.createChild({
+      const parent = parentNode ? await parentNode.page() : parentNode;
+      if (parent) {
+        const cont = await (await parent.createChild({
           module: "cms.layout.backend",
           access: 0,
           offline: 0,
           visible: true,
         })).cont('1');
-        await Node.set("module", mod);
+        await cont.set("module", mod);
       }
     }
     parentModule = mod;
   }
   const node = await cm.nodeByModule(module);
-  const P = await node?.page();
-  if (P && titles) for (const [lang, text] of Object.entries(titles)) await P.title(lang, text);
-  return P;
+  const page = await node?.page();
+  if (page && titles) for (const [lang, text] of Object.entries(titles)) await page.title(lang, text);
+  return page;
 }
 
 const UA_TESTS: [string, RegExp][] = [

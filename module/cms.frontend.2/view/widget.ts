@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, hee, html, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx, hee, html, type HtmlString } from "../../core/mod.ts";
+import type { Node } from "../../cms/mod.ts";
 
 export function widgetUrl(widget: string): string {
-  return new URL("./view/widgets/" + widget + ".ts", import.meta.url).href;
+  return new URL("./widgets/" + widget + ".ts", import.meta.url).href;
 }
 
 // `<use>` referencing a module's icon SVG, falling back to the default module icon when absent.
@@ -17,8 +17,8 @@ export async function moduleIcon(module: string | number | null, dir: string | n
 }
 
 /** Render widget content */
-export async function cmsFrontend2Widget(
-  widget: string,
+export async function widget(
+  name: string,
   open: boolean,
   node: Node,
   cls = "-content",
@@ -26,42 +26,42 @@ export async function cmsFrontend2Widget(
 ): Promise<string> {
   let inner = "";
   if (open) {
-    const mod = await import(widgetUrl(widget));
+    const mod = await import(widgetUrl(name));
     inner = String(await mod.default?.(node, { param }) ?? "");
   }
-  return `<div class="${cls}" widget=${widget}>${inner}</div>`;
+  return `<div class="${cls}" widget=${name}>${inner}</div>`;
 }
 
 /** Widget als Accordion */
-export async function cmsFrontend2WidgetAccordion(
-  widget: string,
+export async function accordion(
+  name: string,
   node: Node,
   title: string | null = null,
   param: Record<string, any> = {},
 ): Promise<string> {
   const ctx = getCtx();
 
-  const open = !!await ctx.settings["cms.frontend.2"].ui.widget[widget];
+  const open = !!await ctx.settings["cms.frontend.2"].ui.widget[name];
   const cls = "-widgetHead " + (open ? "-open" : "");
 
   let headHtml: string;
   try {
-    headHtml = await cmsFrontend2Widget(widget + ".head", true, node, cls, param);
+    headHtml = await widget(name + ".head", true, node, cls, param);
   } catch {
     headHtml = `<div class="${cls}"><span class=-title>${
-      title ?? widget
+      title ?? name
     }</span></div>`;
   }
-  return headHtml + await cmsFrontend2Widget(widget, open, node, "-content", param);
+  return headHtml + await widget(name, open, node, "-content", param);
 }
 
 /** Widget als Sidebar-Item */
-export async function cmsFrontend2WidgetSidebar(widget: string, node: Node, title: string, tooltip = ""): Promise<string> {
+export async function sidebar(name: string, node: Node, title: string, tooltip = ""): Promise<string> {
   const ctx = getCtx();
   const sidebarV = await ctx.settings["cms.frontend.2"].ui.sidebar;
-  const open = sidebarV === widget;
-  const content = await cmsFrontend2Widget(widget, open, node);
-  return `<div class="-item ${open ? "-open" : ""}" itemid="${widget}">
+  const open = sidebarV === name;
+  const content = await widget(name, open, node);
+  return `<div class="-item ${open ? "-open" : ""}" itemid="${name}">
   ${content}
   <div class=-title>
     <div class=-text title="${hee(tooltip)}">${title}</div>

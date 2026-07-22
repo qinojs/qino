@@ -17,9 +17,9 @@ export function healthChecks(app: App): HealthTypes {
           solutions: {
             "empty trash": {
               solve: async () => {
-                const TrashNode = await cms(app).node(trashId);
-                for (const Child of (await TrashNode.children({ type: "*" })).values()) {
-                  await TrashNode.removeChild(Child);
+                const trashNode = await cms(app).node(trashId);
+                for (const Child of (await trashNode.children({ type: "*" })).values()) {
+                  await trashNode.removeChild(Child);
                 }
               },
             },
@@ -38,11 +38,11 @@ export function healthChecks(app: App): HealthTypes {
               solve: async () => {
                 const trashId = Number(await settings.cms?.pageTrash);
                 if (!trashId) throw new Error("No trash page configured");
-                const TrashNode = await cms(app).node(trashId);
-                const trashCont = await TrashNode.cont("main");
+                const trashNode = await cms(app).node(trashId);
+                const trashCont = await trashNode.cont("main");
                 for (const pid of all) {
-                  const P = await cms(app).node(Number(pid));
-                  await TrashNode.insertBefore(P, trashCont);
+                  const page = await cms(app).node(Number(pid));
+                  await trashNode.insertBefore(page, trashCont);
                 }
               },
             },

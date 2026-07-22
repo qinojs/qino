@@ -1,5 +1,5 @@
-import { hee, getCtx } from "../../core/mod.ts";
-import { cmsFrontend2WidgetSidebar, } from "../mod.ts";
+import { getCtx } from "../../core/mod.ts";
+import { cmsFrontend2WidgetSidebar } from "../mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 export default async function (node: Node): Promise<string> {
@@ -16,7 +16,7 @@ export default async function (node: Node): Promise<string> {
   return `<qino-cms hidden>
 <div id=panel popover=manual class="qgCMS -open -sidebar-open">
   <div class=-sidebar>
-    <a class="-item qgCMS_editmode_switch -active" href="${hee("")}" title="Edit (E)">
+    <a class="-item qgCMS_editmode_switch -active" href="" title="Edit (E)">
       <div style="opacity:0"><i></i></div>
     </a>
     ${tree}

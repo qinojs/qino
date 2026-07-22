@@ -15,18 +15,18 @@ export async function isWritable(ctx: Ctx, fileId: number): Promise<boolean> {
 export async function writablePage(ctx: Ctx, fileId: number): Promise<any> {
     const rows = await ctx.app.db.query`SELECT page_id FROM page_file WHERE file_id = ${fileId}`;
     for (const row of rows) {
-        const Page = await cms(ctx.app).node(Number(row.page_id));
-        if ((await Page.access()) > 1) return Page;
+        const page = await cms(ctx.app).node(Number(row.page_id));
+        if ((await page.access()) > 1) return page;
     }
     return null;
 }
 
 export async function getMeta(ctx: Ctx, fileId: number): Promise<{ name: string; vpos: any; hpos: any }> {
-    const File = await ctx.app.dbFiles.file(fileId);
+    const dbFile = await ctx.app.dbFiles.file(fileId);
     return {
-        name: await File.get("name") ?? "",
-        vpos: await File.get("vpos") ?? null,
-        hpos: await File.get("hpos") ?? null,
+        name: await dbFile.get("name") ?? "",
+        vpos: await dbFile.get("vpos") ?? null,
+        hpos: await dbFile.get("hpos") ?? null,
     };
 }
 
@@ -81,9 +81,9 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
 async function versionThumb(app: App, fileId: number, row: any): Promise<string | undefined> {
     if (!row.md5) return;
     try {
-        const File = await app.dbFiles.file(fileId, row); // setLocalVs → path points at this version's md5
-        if (!File.path) return;
-        const { path, mime } = await File.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
+        const dbFile = await app.dbFiles.file(fileId, row); // setLocalVs → path points at this version's md5
+        if (!dbFile.path) return;
+        const { path, mime } = await dbFile.transform({ w: 60, h: 40, max: true, q: 50, fmt: "avif" });
         const buf = await Deno.readFile(path);
         return `data:${mime};base64,${btoa(String.fromCharCode(...buf))}`;
     } catch {}

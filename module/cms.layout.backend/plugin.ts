@@ -52,7 +52,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
 
   html.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
 
-  const Page = await node.page();
+  const page = await node.page();
 
   // Create default cont if none exists
   const conts = await node.conts();
@@ -60,13 +60,13 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
 
   // Nav: get backend root page and its children
   const backendId = Number(await app.settings.cms.backend ?? "0");
-  const BackendRoot = backendId ? await node.cms.node(backendId) : null;
-  const navItems = BackendRoot ? [...(await BackendRoot.children({ access: 1 })).values()] : [];
+  const backendRoot = backendId ? await node.cms.node(backendId) : null;
+  const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
 
   let navHtml = "";
   for (const C of navItems) {
     const subC = [...(await C.children({ access: 1 })).values()];
-    const isActive = await Page.in(C);
+    const isActive = await page.in(C);
     const hasSub = subC.length > 0;
     const cUrl = hee(await C.url());
     const cTitle = hee(await (await C.title()).string());
@@ -74,7 +74,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
     if (isActive) {
       for (const SC of subC) {
         const subSC = [...(await SC.children({ access: 1 })).values()];
-        const isActiveSC = await Page.in(SC);
+        const isActiveSC = await page.in(SC);
         const hasSubSC = subSC.length > 0;
         const scUrl = hee(await SC.url());
         const scTitle = hee(await (await SC.title()).string());
@@ -83,7 +83,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
           for (const SSC of subSC) {
             const sscUrl = hee(await SSC.url());
             const sscTitle = hee(await (await SSC.title()).string());
-            const isActiveSSC = await Page.in(SSC);
+            const isActiveSSC = await page.in(SSC);
             subSubHtml += `<ul><li><a class="-item ${isActiveSSC ? "-active" : ""}" href="${sscUrl}">${sscTitle}</a></ul>`;
           }
         }
@@ -117,11 +117,11 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
     contentHtml += await C.html();
   }
 
-  const pathHtml = (await Promise.all(Array.from(await Page.path()).filter(([id]) => id !== 1).map(([, p]) => node.cms.link(p)))).join("");
+  const pathHtml = (await Promise.all([...await page.path()].filter(([id]) => id !== 1).map(([, p]) => node.cms.link(p)))).join("");
 
   return `
   <div class=qgCMS id=container>
-    <a id=logo href="${BackendRoot ? hee(await BackendRoot.url()) : "/"}">
+    <a id=logo href="${backendRoot ? hee(await backendRoot.url()) : "/"}">
       <svg viewBox="0 0 90 30" xmlns="http://www.w3.org/2000/svg">
         <text x="0" y="24" font-family="system-ui,sans-serif" font-weight="900" font-size="26" fill="currentColor" letter-spacing="-1">q<tspan opacity=".4">i</tspan>no</text>
       </svg>

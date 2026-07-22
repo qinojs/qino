@@ -95,12 +95,12 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   await renderChildren(rootNode, 0);
   return html.raw(out);
 
-  async function renderChildren(Parent: Node, level: number): Promise<void> {
-    for (const [id, SubPage] of await Parent.children({ type: treeType })) {
+  async function renderChildren(parent: Node, level: number): Promise<void> {
+    for (const [id, SubPage] of await parent.children({ type: treeType })) {
       const access = await SubPage.access();
       const open = openPageNodes.has(String(id));
       const isCont = SubPage.vs.type === "c";
-      const AccessP = await SubPage.accessInheritParent();
+      const accessPage = await SubPage.accessInheritParent();
       const inherited = SubPage.vs.access === null;
 
       const hasChildren = (await SubPage.children({ type: treeType })).size > 0;
@@ -128,16 +128,16 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
       // one cell per group
       let grpCells = "";
-      const grpAccess = await pageGroupAccess(db, AccessP, groups);
+      const grpAccess = await pageGroupAccess(db, accessPage, groups);
       for (const g of groups) {
         const v = grpAccess[String(g.id)] ?? 0;
         grpCells += editable
-          ? `<td class=-cell data-pid="${AccessP}" data-gid="${g.id}" v="${v}" title="${hee(g.name)} (${g.id})">`
+          ? `<td class=-cell data-pid="${accessPage}" data-gid="${g.id}" v="${v}" title="${hee(g.name)} (${g.id})">`
           : "<td>";
       }
 
       out += `
-<tr${(isCont || inherited) ? ` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${AccessP}">
+<tr${(isCont || inherited) ? ` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage}">
   <td style="text-align:right; font-weight:bold">
     <a title="${await app.t`Set as start point`}" href="${hee("?rp=" + id)}">${hee(id)}</a>
   <td style="padding-left:${level * 15}px; white-space:nowrap">

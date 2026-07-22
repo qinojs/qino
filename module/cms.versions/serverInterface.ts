@@ -6,8 +6,8 @@ import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 
 export async function publishNode(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = Number(pid);
-    const Page = await cms(ctx.app).node(id);
-    if ((await Page.access()) < 2) return false;
+    const page = await cms(ctx.app).node(id);
+    if ((await page.access()) < 2) return false;
     const cmsVersSpace = getCmsVers(ctx).space;
     options = {
         fromSpace: cmsVersSpace,
@@ -20,8 +20,8 @@ export async function publishNode(ctx: any, pid: any, options: any = {}): Promis
 }
 
 export async function getForNode(ctx: any, pid: any): Promise<any[]> {
-    const Page = await cms(ctx.app).node(Number(pid));
-    if ((await Page.access()) < 2) return [];
+    const page = await cms(ctx.app).node(Number(pid));
+    if ((await page.access()) < 2) return [];
     const data = await versProtocolForNodeTree(ctx, Number(pid));
     const map: Record<number, any> = {};
     for (const row of data) map[row.vers] = row;
@@ -45,10 +45,10 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
     // rows on unreachable pages are skipped, so no foreign node leaks through.
     // Logs without any editable affected page (or none captured) stay closed.
     const t = ctx.app.t;
-    const contOrPage = async (Page: any): Promise<string> => {
-        const title = (await (await Page.title())?.string?.() ?? "").trim();
-        const label = `${Page.vs?.type === "p" ? await t`Page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${Page.id})`;
-        return `<div mark="[qcms-id='${Page.id}']">${label}</div>`;
+    const contOrPage = async (page: any): Promise<string> => {
+        const title = (await (await page.title())?.string?.() ?? "").trim();
+        const label = `${page.vs?.type === "p" ? await t`page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${page.id})`;
+        return `<div mark="[qcms-id='${page.id}']">${label}</div>`;
     };
 
     const changed = await ctx.app.db.query`SELECT node_id, page_id, data FROM node_changed WHERE log_id = ${id} ORDER BY id`;
@@ -58,8 +58,8 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         const pageId = Number(c.page_id);
         access[pageId] ??= await (await cms(ctx.app).node(pageId)).access();
         if (access[pageId] < 2) continue;
-        const P = await cms(ctx.app).node(Number(c.node_id));
-        messages.push((await contOrPage(P)) + " " + await describeChange(c.data, t));
+        const page = await cms(ctx.app).node(Number(c.node_id));
+        messages.push((await contOrPage(page)) + " " + await describeChange(c.data, t));
     }
     if (!messages.length) return null;
 
@@ -75,11 +75,11 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 // ─── Protocol helpers ────────────────────────────────────────────────────────
 
 async function versProtocolForNodeTree(ctx: any, pid: number): Promise<any[]> {
-    const P = await cms(ctx.app).node(pid);
-    const conts = await P.conts();
+    const page = await cms(ctx.app).node(pid);
+    const conts = await page.conts();
     const [data, ...subs] = await Promise.all([
         versProtocolForNode(ctx, pid),
-        ...conts.map((C: any) => versProtocolForNodeTree(ctx, C.id)),
+        ...conts.map((cont: any) => versProtocolForNodeTree(ctx, cont.id)),
     ]);
     return [...data, ...subs.flat()];
 }

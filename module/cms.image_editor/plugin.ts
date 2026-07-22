@@ -81,13 +81,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!upload) return;
 
     const fileId = Number(ctx.req.query.file_id ?? "0");
-    const Page = await writablePage(ctx, fileId);
-    if (!Page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
+    const page = await writablePage(ctx, fileId);
+    if (!page) { ctx.res.status = 403; throw new Output({ error: "not allowed" }); }
 
-    const File = await app.dbFiles.file(fileId);
-    upload.name = await File.get("name"); // dont change file-name
-    await File.replaceFromUpload(upload);
+    const dbFile = await app.dbFiles.file(fileId);
+    upload.name = await dbFile.get("name"); // dont change file-name
+    await dbFile.replaceFromUpload(upload);
 
-    throw new Output({ id: String(File), url: await File.url() });
+    throw new Output({ id: String(dbFile), url: await dbFile.url() });
   }, { signal });
 }

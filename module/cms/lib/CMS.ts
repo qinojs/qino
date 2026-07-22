@@ -99,12 +99,12 @@ export class CMS {
   }
 
   // deno-lint-ignore no-explicit-any
-  async filter(Pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
+  async filter(pages: Map<number, Node>, filter: any): Promise<Map<number, Node>> {
     const tags = Array.isArray(filter) ? filter : undefined;
     filter = tags ?? { ...filter };
     if (!tags) filter.type ||= "p";
     const ret = new Map<number, Node>();
-    for (const [id, C] of Pages) {
+    for (const [id, C] of pages) {
       const vs = C.vs;
       if (!tags) {
         if (filter.type && filter.type !== "*") {
@@ -138,28 +138,28 @@ export class CMS {
 
   async link(node: Node | number): Promise<HtmlString> {
     const ctx = getCtx();
-    const P = await this.node(Number(node));
-    await P.urlSeo(ctx.lang);
-    const urls = await P.urls();
+    const page = await this.node(Number(node));
+    await page.urlSeo(ctx.lang);
+    const urls = await page.urls();
     const t = urls[ctx.lang]?.target;
     const target = t ? ` target="${hee(t)}"` : "";
-    const title = await (await P.title()).string();
-    return html.raw(`<a${await this.link_attributes(P)}${target}>${title}</a>`);
+    const title = await (await page.title()).string();
+    return html.raw(`<a${await this.link_attributes(page)}${target}>${title}</a>`);
   }
 
   async link_attributes(node: Node | number): Promise<HtmlString> {
     const ctx = getCtx();
-    const P = await this.node(Number(node));
-    await P.urlSeo(ctx.lang);
-    const MainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
-    const href = ` href="${hee(await P.url())}"`;
-    const access = await P.access();
-    const inside = await MainNode.in?.(P);
-    const online = await P.isOnline();
-    const cls = ` class="cmsLink${P}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}"`;
-    const titleObj = await P.title();
-    const cmstxt = P.edit ? ` cmstxt=${titleObj?.id ?? ""}` : "";
-    const ariaCurrent = MainNode === P ? " aria-current=page" : "";
+    const page = await this.node(Number(node));
+    await page.urlSeo(ctx.lang);
+    const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
+    const href = ` href="${hee(await page.url())}"`;
+    const access = await page.access();
+    const inside = await mainNode.in?.(page);
+    const online = await page.isOnline();
+    const cls = ` class="cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}"`;
+    const titleObj = await page.title();
+    const cmstxt = page.edit ? ` cmstxt=${titleObj?.id ?? ""}` : "";
+    const ariaCurrent = mainNode === page ? " aria-current=page" : "";
     return html.raw(href + cls + cmstxt + ariaCurrent);
   }
 
@@ -169,11 +169,11 @@ export class CMS {
     pidOrUrl = pidOrUrl.trim();
     ret.target = "_blank";
     if (/^\d+$/.test(pidOrUrl)) {
-      const P = await this.node(Number(pidOrUrl));
-      if (P.exists()) {
+      const page = await this.node(Number(pidOrUrl));
+      if (page.exists()) {
         ret.target = "_self";
-        ret.Node = P;
-        return P.url();
+        ret.Node = page;
+        return page.url();
       }
       return;
     }
@@ -186,26 +186,26 @@ export class CMS {
   // deno-lint-ignore no-explicit-any
   async text(pid: Node | number, name: string, options: Record<string, any> = {}): Promise<HtmlString | string> {
     const node = await this.node(Number(pid));
-    const T = name === "title" ? await node.title() : await node.text(name);
+    const textObj = name === "title" ? await node.title() : await node.text(name);
     const tag = options.tag ?? "div";
     options.contenteditable ??= node.edit;
     if (node.edit) {
       options["cmstxt-placeholder"] ||= name;
     }
     if (options.contenteditable || tag === "input" || tag === "textarea") {
-      options.cmstxt = T.id;
+      options.cmstxt = textObj.id;
     }
-    let text = await T.string();
+    let text = await textObj.string();
     if (text === "" && options.initial !== undefined) {
       if (typeof options.initial === "object" && !Array.isArray(options.initial)) {
         for (const l of this.app.languages.all) {
-          const LT = T.lang(l);
+          const LT = textObj.lang(l);
           if ((await LT.get()) === "") await LT.set(options.initial[l] ?? "");
         }
-        text = await T.string();
+        text = await textObj.string();
       } else {
         text = options.initial;
-        await T.lang(this.app.languages.def).set(text);
+        await textObj.lang(this.app.languages.def).set(text);
       }
     }
 
@@ -244,8 +244,8 @@ export class CMS {
   async parentFile(node: Node, name: string): Promise<DbFile | undefined> {
     let currentNode: Node | undefined = node;
     while (currentNode) {
-      const File = await currentNode.hasFile(name);
-      if (File) return File;
+      const dbFile = await currentNode.hasFile(name);
+      if (dbFile) return dbFile;
       currentNode = await currentNode.parent();
     }
   }

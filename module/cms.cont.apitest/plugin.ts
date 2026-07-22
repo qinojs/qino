@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { Access, hee, walk, type AptNode, type Ctx, type Route, type Verb } from "../core/mod.ts";
+import { Access, hee, walk, type Ctx, type Route, type Verb } from "../core/mod.ts";
 
 export const name = "cms.cont.apitest";
 export const needs = ["cms"];
@@ -54,8 +54,10 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
     <span class="-legend">✓ granted &nbsp; ✗ denied &nbsp; ⊘ csrf/origin gate &nbsp; … needs param</span>
     <input type="search" class="-filter" placeholder="filter…">
   </div>
-  <table class="-matrix">
-    <thead><tr><th class="-route">route</th><th class="-cells"></th></tr></thead>
+  <table class=-matrix>
+    <thead><tr>
+      <th class=-route>route
+      <th class=-cells>
     <tbody>${rows}</tbody>
   </table>
 </div>`;

@@ -98,21 +98,21 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (cmsPageFile) {
             // Fix EXIF orientation for JPEG (Deno doesn't have built-in exif support, stub for now)
             const cmspid = Number(ctx.req.query.cmspid ?? "0");
-            const P = await cms(app).node(cmspid);
-            if ((await P.access()) > 1) {
+            const page = await cms(app).node(cmspid);
+            if ((await page.access()) > 1) {
                 const replace = ctx.req.query.replace;
-                const File = await (replace ? P.file(replace) : P.addFile());
-                await File.replaceFromUpload(cmsPageFile);
-                throw new Output({ id: String(File), url: await File.url() });
+                const dbFile = await (replace ? page.file(replace) : page.addFile());
+                await dbFile.replaceFromUpload(cmsPageFile);
+                throw new Output({ id: String(dbFile), url: await dbFile.url() });
             }
         }
 
         // Page files as ZIP
         const zipPid = ctx.req.query.cms_nodeFilesZip;
         if (zipPid) {
-            const P = await cms(app).node(Number(zipPid));
-            if (!(await P.isReadable())) { ctx.res.status = 403; return; }
-            const files = Object.values(await P.files());
+            const page = await cms(app).node(Number(zipPid));
+            if (!(await page.isReadable())) { ctx.res.status = 403; return; }
+            const files = Object.values(await page.files());
             if (!files.length) { ctx.res.status = 404; return; }
             const stream = await dbFiles2Zip(files).catch((e) => {
                 console.error(e);
@@ -120,7 +120,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
             });
             throw new Output(stream, { headers: [
                 ["Content-Type", "application/zip"],
-                header.contentDisposition("attachment", `files_${P}.zip`),
+                header.contentDisposition("attachment", `files_${page}.zip`),
             ] });
         }
     }, { signal });
@@ -128,10 +128,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     // File access check
     app.on("dbFile:access-fallback", async (e) => {
         if (e.access) return;
-        const File = e.file;
-        for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${File.id}`) {
-            const P = await cms(app).node(vs.page_id);
-            if (await P.isReadable()) {
+        const dbFile = e.file;
+        for (const vs of await app.db.query`SELECT page_id FROM page_file WHERE file_id = ${dbFile.id}`) {
+            const page = await cms(app).node(vs.page_id);
+            if (await page.isReadable()) {
                 e.access = true;
                 return;
             }

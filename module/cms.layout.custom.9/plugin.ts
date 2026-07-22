@@ -11,7 +11,7 @@ const settingsSchema = {
 
 async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
   const module = node.vs.module;
-  const LPage = await node.cms.layoutPage(String(module));
+  const layoutPage = await node.cms.layoutPage(String(module));
 
   // App-specific layout CSS
   try {
@@ -20,7 +20,7 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
   } catch {/**/}
 
   // Font CSS from layout settings
-  const fontCss = LPage.settings["font-css-file"]();
+  const fontCss = layoutPage.settings["font-css-file"]();
   if (fontCss) {
     data.ctx.res.html.head += `<link rel=stylesheet href="${
       hee(fontCss.replace(/\|/g, "%7C"))

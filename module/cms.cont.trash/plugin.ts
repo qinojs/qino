@@ -9,8 +9,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const trash = Number(await app.settings.cms?.pageTrash);
   if (!trash) return `<div>No trash page configured</div>`;
 
-  const TrashNode = await node.cms.node(trash);
-  const items     = [...(await TrashNode.children({ type: "*", access: 2 })).values()];
+  const trashNode = await node.cms.node(trash);
+  const items     = [...(await trashNode.children({ type: "*", access: 2 })).values()];
 
   let listHtml = "";
   for (const P of items) {

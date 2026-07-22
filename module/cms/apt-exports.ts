@@ -49,7 +49,7 @@ export async function treeToJson(opts: {
 export async function tree(start: any, opt: any = {}): Promise<any[]> {
     const ctx = getCtx();
     const filter = opt.filter ?? "*";
-    const In = opt.in ? await cms(ctx.app).node(opt.in) : null;
+    const inNode = opt.in ? await cms(ctx.app).node(opt.in) : null;
     const self = String(start) === "0";
     return treeToJson({
         node: await cms(ctx.app).node(self ? 1 : start),
@@ -57,7 +57,7 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
         type: filter,
         access: 0, // no-access nodes stay listed, nodeToJson masks their title
         entry: (n: Node) => nodeToJson(n, filter),
-        expand: async (n: Node, level: number) => (!In || await In.in(n)) && (!opt.level || opt.level > level),
+        expand: async (n: Node, level: number) => (!inNode || await inNode.in(n)) && (!opt.level || opt.level > level),
         emptyChildren: true,
     });
 }
@@ -73,12 +73,12 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
         if (await node.access() < 3) throw new Output({ error: "Forbidden" }, { status: 403 });
         await (await node.parent()).removeChild(node);
     } else {
-        const TrashNode = await cms(ctx.app).node(trash);
+        const trashNode = await cms(ctx.app).node(trash);
         const parent = await node.parent();
         const siblings = parent ? [...(await parent.children({ type: node.vs.type })).values()] : [];
         const idx = siblings.findIndex(s => s.id === node.id);
         const before = siblings[idx + 1] ?? null;
-        await TrashNode.insertBefore(node, await TrashNode.cont("main"));
+        await trashNode.insertBefore(node, await trashNode.cont("main"));
         await node.settings.__deleted({
             from:   String(parent ?? ""),
             before: String(before ?? ""),
@@ -86,10 +86,10 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
             by:     String(await ctx.user?.get("email") ?? ""),
         });
         const bough = await node.bough();
-        for (const Child of bough.values()) {
-            if (Child.vs?.["access"] !== null) await Child.set("access", 0);
-            await ctx.app.db.exec`DELETE FROM page_access_usr WHERE page_id = ${Child.id} AND access < 2`;
-            await ctx.app.db.exec`DELETE FROM page_access_grp WHERE page_id = ${Child.id} AND access < 2`;
+        for (const child of bough.values()) {
+            if (child.vs?.["access"] !== null) await child.set("access", 0);
+            await ctx.app.db.exec`DELETE FROM page_access_usr WHERE page_id = ${child.id} AND access < 2`;
+            await ctx.app.db.exec`DELETE FROM page_access_grp WHERE page_id = ${child.id} AND access < 2`;
         }
     }
     return ret;
@@ -173,19 +173,19 @@ export async function searchNodes(search: string): Promise<any[]> {
         AND ( p.id = ${search} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
         p.id = ${search} DESC, t.lang = ${ctx.lang} DESC,
         t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
-        const Page = await cms(ctx.app).node(vs.id);
-        if (!await Page.access()) continue;
-        const titleStr = String(await Page.showTitle()).trim();
+        const page = await cms(ctx.app).node(vs.id);
+        if (!await page.access()) continue;
+        const titleStr = String(await page.showTitle()).trim();
         if (!titleStr) continue;
-        const parent   = await Page.parent();
+        const parent   = await page.parent();
         const pTitle   = parent ? String(await parent.showTitle()).trim() : "";
         const gp       = parent ? await parent.parent() : null;
         const gpTitle  = gp ? String(await gp.showTitle()).trim() : "";
         res.push({
-            html:  `<b>${hee(titleStr)}</b> (${Page.vs?.["type"] === "c" ? "Content" : "Page"} ${Page.id})` +
+            html:  `<b>${hee(titleStr)}</b> (${page.vs?.["type"] === "c" ? "Content" : "Page"} ${page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),
-            text:  titleStr ? `${hee(titleStr)} (${Page.id})` : String(Page.id),
-            value: Page.id,
+            text:  titleStr ? `${hee(titleStr)} (${page.id})` : String(page.id),
+            value: page.id,
         });
     }
     return res;
@@ -206,19 +206,19 @@ export async function searchFiles(search: string): Promise<any[]> {
         f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
         const node = await cms(ctx.app).node(vs["pid"]);
         if ((await node.access()) < 2) continue;
-        const F = await ctx.app.dbFiles.file(vs.id, vs);
-        if (!await F.exists()) continue;
+        const dbFile = await ctx.app.dbFiles.file(vs.id, vs);
+        if (!await dbFile.exists()) continue;
         const md5 = vs["md5"];
         if (md5 && used[md5]) continue;
         if (i++ > 10) break;
         if (md5) used[md5] = true;
-        const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(F.extension);
-        const imgSrc = isImg ? await F.url({w: 32, h: 32}) : "about:blank";
+        const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(dbFile.extension);
+        const imgSrc = isImg ? await dbFile.url({w: 32, h: 32}) : "about:blank";
         res.push({
             html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
                    `<b>${hee(vs["name"])}</b><br><i>${hee(await (await node.page()).showTitle())}</i>`,
             text:  vs["name"],
-            value: F.id,
+            value: dbFile.id,
         });
     }
     return res;

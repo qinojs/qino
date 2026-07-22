@@ -81,7 +81,7 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
   const res: Record<string, any> = {};
 
   for (const vs of rows) {
-    const Page = vs.pid ? await cms(ctx.app).node(Number(vs.pid)) : null;
+    const page = vs.pid ? await cms(ctx.app).node(Number(vs.pid)) : null;
     const dbFile = await ctx.app.dbFiles.file(Number(vs.id), vs);
 
     if (!await dbFile.exists()) continue;
@@ -95,9 +95,9 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
       name: dbFile.name,
       pages: {} as Record<string, string>,
     };
-    if (Page) {
-      const title = await Page.title();
-      res[md5].pages[String(Page.id)] = await title.string() ?? String(Page.id);
+    if (page) {
+      const title = await page.title();
+      res[md5].pages[String(page.id)] = await title.string() ?? String(page.id);
     }
   }
 

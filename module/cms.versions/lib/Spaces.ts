@@ -40,26 +40,26 @@ export async function tableEntriesCopyTo(
   fromLog: number,
   toSpace: number,
 ): Promise<void> {
-  const Table   = db.table(tableName);
-  const where   = Table.valuesToFragment(filter);
+  const tbl   = db.table(tableName);
+  const where   = tbl.valuesToFragment(filter);
   const fromView = await view(db, tableName, fromSpace, fromLog);
   const toView   = await view(db, tableName, toSpace, 0);
 
   const oldEntries: Record<string, Row> = {};
   const newEntries: Record<string, Row> = {};
 
-  for (const e of await db.query`SELECT * FROM ${sql.id(toView)} WHERE ${where}`)   oldEntries[Table.entryId(e)!] = e;
-  for (const e of await db.query`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[Table.entryId(e)!] = e;
+  for (const e of await db.query`SELECT * FROM ${sql.id(toView)} WHERE ${where}`)   oldEntries[tbl.entryId(e)!] = e;
+  for (const e of await db.query`SELECT * FROM ${sql.id(fromView)} WHERE ${where}`) newEntries[tbl.entryId(e)!] = e;
 
   const ctx = getCtx();
   const s = getVers(ctx);
   const oldVers = setVers(ctx, [toSpace, 0]);
   s.tableEntriesCopying = true;
   for (const [id, entry] of Object.entries(newEntries)) {
-    oldEntries[id] ? await Table.update(entry) : await Table.ensure(entry);
+    oldEntries[id] ? await tbl.update(entry) : await tbl.ensure(entry);
   }
   for (const [id, entry] of Object.entries(oldEntries)) {
-    if (!newEntries[id]) await Table.delete(entry);
+    if (!newEntries[id]) await tbl.delete(entry);
   }
   s.tableEntriesCopying = false;
   setVers(ctx, oldVers);

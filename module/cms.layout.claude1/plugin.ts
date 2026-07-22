@@ -39,17 +39,17 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ctx.res.html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
   ctx.res.html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 
-  const LPage = await getLayoutPage(node.cms, String(node.vs.module));
+  const layoutPage = await getLayoutPage(node.cms, String(node.vs.module));
 
   // Colors from settings override the CSS defaults; u2 derives the palettes.
-  const color = LPage.settings.color();
-  const accent = LPage.settings.accent();
+  const color = layoutPage.settings.color();
+  const accent = layoutPage.settings.accent();
   const decls = [color && `--color:${color}`, accent && `--accent:${accent}`].filter(Boolean);
   const skin = decls.length ? html` style="${decls.join(";")}"` : "";
 
   // Logo: image if set, otherwise text (custom or host name).
-  const logo = String(LPage.settings.logo() ?? "");
-  const brand = String(LPage.settings.logoText() ?? "") || (ctx.req.header("host") ?? "");
+  const logo = String(layoutPage.settings.logo() ?? "");
+  const brand = String(layoutPage.settings.logoText() ?? "") || (ctx.req.header("host") ?? "");
   const logoInner = logo ? html`<img src="${logo}" alt="${brand}" height=32>` : brand;
 
   return html.async`<div id=container u2-skin${skin}>
@@ -64,7 +64,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
             <g class=-close><path d="M5 5l14 14M5 19L19 5"/></g>
           </svg>
         </label>
-        <div id=nav>${LPage.cont("nav", "cms.cont.nav3")}</div>
+        <div id=nav>${layoutPage.cont("nav", "cms.cont.nav3")}</div>
       </div>
     </div>
   </header>
@@ -72,7 +72,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <div class=u2-width>${node.cont("main")}</div>
   </main>
   <footer id=foot role=contentinfo>
-    <div class=u2-width>${LPage.cont("foot")}</div>
+    <div class=u2-width>${layoutPage.cont("foot")}</div>
   </footer>
 </div>`;
 }
@@ -81,12 +81,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 async function getLayoutPage(cms: CMS, module: string): Promise<Node> {
   const sysPage = await cms.node(5);
   const children = await sysPage.children({ module });
-  let LPage = children.values().next().value;
-  if (!LPage) {
-    LPage = await sysPage.createChild({ module, name: module, access: 1 });
-    await LPage.title(undefined, module);
+  let layoutPage = children.values().next().value;
+  if (!layoutPage) {
+    layoutPage = await sysPage.createChild({ module, name: module, access: 1 });
+    await layoutPage.title(undefined, module);
   }
-  return LPage;
+  return layoutPage;
 }
 
 export const cms = {

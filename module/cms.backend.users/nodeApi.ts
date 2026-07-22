@@ -9,8 +9,8 @@ export default async function (node: Node, vars:any): Promise<any> {
 
   const db = node.app.db;
   const isSuperuser = !!(await ctx.user?.get("superuser"));
-  const usrOk = async (U: any) =>
-    !!(await U.exists()) && (!(await U.get("superuser")) || isSuperuser);
+  const usrOk = async (usr: any) =>
+    !!(await usr.exists()) && (!(await usr.get("superuser")) || isSuperuser);
 
   if ("email_used" in vars) {
     return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}`;
@@ -19,22 +19,22 @@ export default async function (node: Node, vars:any): Promise<any> {
   if ("login_as" in vars) {
     const allowLoginAs = !!(node.settings.allow_login_as()) || isSuperuser;
     if (!allowLoginAs) return false;
-    const TargetUsr = db.table("usr").entry(vars.login_as);
-    if (!(await usrOk(TargetUsr))) return false;
+    const targetUsr = db.table("usr").entry(vars.login_as);
+    if (!(await usrOk(targetUsr))) return false;
     await login(ctx, vars.login_as);
     return 1;
   }
 
   if ("delete" in vars) {
-    const TargetUsr = db.table("usr").entry(vars.delete);
-    if (!(await usrOk(TargetUsr))) return false;
+    const targetUsr = db.table("usr").entry(vars.delete);
+    if (!(await usrOk(targetUsr))) return false;
     await db.table("usr").delete(vars.delete);
     return 1;
   }
 
   if ("save" in vars) {
-    const TargetUsr = db.table("usr").entry(vars.save);
-    if (!(await usrOk(TargetUsr))) return false;
+    const targetUsr = db.table("usr").entry(vars.save);
+    if (!(await usrOk(targetUsr))) return false;
     const allowed: Record<string, boolean> = {
       active: true, email: true, firstname: true, lastname: true,
       company: true, superuser: true, pw: true,
@@ -44,14 +44,14 @@ export default async function (node: Node, vars:any): Promise<any> {
     if (name === "superuser" && !isSuperuser) return false;
     if (name === "pw" && !String(vars.value ?? "")) return false;
     const value = name === "pw" ? await pwHash(String(vars.value)) : vars.value;
-    await TargetUsr.set(name, value);
-    await TargetUsr.save();
+    await targetUsr.set(name, value);
+    await targetUsr.save();
     return 1;
   }
 
   if ("set_grp" in vars) {
-    const TargetUsr = db.table("usr").entry(vars.set_grp);
-    if (!(await usrOk(TargetUsr))) return false;
+    const targetUsr = db.table("usr").entry(vars.set_grp);
+    if (!(await usrOk(targetUsr))) return false;
     const grpId = Number(vars.grp_id);
     const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;

@@ -65,8 +65,8 @@ export class Node {
         } catch {/**/}
 
         if (!this.vs.title_id) {
-            const T = await this.app.dbTexts.generate();
-            await this.set("title_id", T.id);
+            const text = await this.app.dbTexts.generate();
+            await this.set("title_id", text.id);
         }
         return this;
     }
@@ -283,11 +283,11 @@ export class Node {
             const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} ORDER BY type DESC, sort, id DESC`;
             for (const row of rows) {
                 const id = Number(row.id);
-                const Child = await this.cms.node(id, row);
-                map.set(id, Child);
+                const child = await this.cms.node(id, row);
+                map.set(id, child);
                 if (row.name) {
                     this.#named[row.type] ??= {};
-                    this.#named[row.type][row.name] = Child;
+                    this.#named[row.type][row.name] = child;
                 }
             }
             return map;
@@ -305,7 +305,7 @@ export class Node {
         if (level === undefined) return parent;
         const path = await this.path();
         let i = 0;
-        for (const P of path.values()) if (i++ === level) return P;
+        for (const page of path.values()) if (i++ === level) return page;
     }
 
     async path(): Promise<Map<number, Node>> {
@@ -317,14 +317,14 @@ export class Node {
 
     async bough(filter?: any): Promise<Map<number, Node>> {
         const bough = new Map<number, Node>([[this.id, this]]);
-        for (const Child of (await this.children({ type: "*" })).values()) {
-            for (const [k, v] of (await Child.bough()).entries()) bough.set(k, v);
+        for (const child of (await this.children({ type: "*" })).values()) {
+            for (const [k, v] of (await child.bough()).entries()) bough.set(k, v);
         }
         return filter ? this.cms.filter(bough, filter) : bough;
     }
 
-    async in(PageRef: Node | number): Promise<boolean> {
-        return (await this.path()).has(Number(PageRef));
+    async in(ref: Node | number): Promise<boolean> {
+        return (await this.path()).has(Number(ref));
     }
 
     /* Texts */
@@ -356,8 +356,8 @@ export class Node {
             const rows = await this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`;
             this.#texts = {};
             for (const [name, id] of Object.entries(rows ?? {})) {
-                const T = this.app.dbTexts.text(Number(id));
-                this.#texts[name] = T;
+                const text = this.app.dbTexts.text(Number(id));
+                this.#texts[name] = text;
             }
         }
         return this.#texts;
@@ -370,9 +370,9 @@ export class Node {
         const texts = await this.texts();
         if (!(name in texts)) {
             texts[name] = await this.db.transaction(async () => {
-                const T = await this.app.dbTexts.generate();
-                await this.db.table("page_text").insert({ name, page_id: String(this), text_id: T.id });
-                return T;
+                const text = await this.app.dbTexts.generate();
+                await this.db.table("page_text").insert({ name, page_id: String(this), text_id: text.id });
+                return text;
             });
         }
         if (lang == null) return texts[name];
@@ -413,11 +413,11 @@ export class Node {
                       LEFT JOIN ${sql.id(tableRef("file"))} f ON f.id = pf.file_id
                     WHERE pf.page_id = ${this.id}
                     ORDER BY sort`;
-                const Fs = await Promise.all(rows.map((vs) => this.app.dbFiles.file(vs.id, vs)));
-                const exist = await Promise.all(Fs.map((F) => F.exists()));
+                const dbFiles = await Promise.all(rows.map((vs) => this.app.dbFiles.file(vs.id, vs)));
+                const exist = await Promise.all(dbFiles.map((f) => f.exists()));
                 rows.forEach((vs, i) => {
-                    this.#filesAll![vs.pf_name] = Fs[i];
-                    if (exist[i]) files[vs.pf_name] = Fs[i];
+                    this.#filesAll![vs.pf_name] = dbFiles[i];
+                    if (exist[i]) files[vs.pf_name] = dbFiles[i];
                 });
                 return files;
             })();
@@ -438,9 +438,9 @@ export class Node {
 
     async addFile(file?: DbFile | string, name?: string): Promise<DbFile> {
 
-        const File = file instanceof DbFile ? file : await this.app.dbFiles.add(file);
+        const dbFile = file instanceof DbFile ? file : await this.app.dbFiles.add(file);
 
-        const row: Record<string, string | number> = { page_id: String(this), file_id: String(File) };
+        const row: Record<string, string | number> = { page_id: String(this), file_id: String(dbFile) };
         if (!name) {
             const minSort = await this.db.one`SELECT min(sort) FROM ${sql.id(tableRef("page_file"))} WHERE page_id = ${this.id}`;
             row.sort = (Number(minSort) || 0) - 1;
@@ -449,7 +449,7 @@ export class Node {
         row.name = name;
         await this.db.table("page_file").ensure(row);
         this.#files = null; this.#filesAll = null;
-        return File;
+        return dbFile;
     }
 
     deleteFile(name: string): Promise<boolean> {
@@ -538,8 +538,8 @@ export class Node {
         const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
         const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
         await this.urlSet(lang, { url });
-        for (const C of (await this.children({ type: "*" })).values()) {
-            await C.urlSeoGen(lang);
+        for (const child of (await this.children({ type: "*" })).values()) {
+            await child.urlSeoGen(lang);
         }
         return url;
     }
@@ -566,21 +566,21 @@ export class Node {
             ...vs,
         };
         const id = await this.db.table("page").insert(vs);
-        const P = await this.cms.node(Number(id ?? "0"));
-        if (!id) return P;
+        const page = await this.cms.node(Number(id ?? "0"));
+        if (!id) return page;
 
         const accessUsrs = await this.db.query`SELECT * FROM page_access_usr WHERE page_id = ${this.id}`;
-        for (const data of accessUsrs) await this.db.table("page_access_usr").insert({ ...data, page_id: String(P) });
+        for (const data of accessUsrs) await this.db.table("page_access_usr").insert({ ...data, page_id: String(page) });
         const accessGrps = await this.db.query`SELECT * FROM page_access_grp WHERE page_id = ${this.id}`;
-        for (const data of accessGrps) await this.db.table("page_access_grp").insert({ ...data, page_id: String(P) });
+        for (const data of accessGrps) await this.db.table("page_access_grp").insert({ ...data, page_id: String(page) });
 
-        await P.texts();
-        await P.files();
+        await page.texts();
+        await page.files();
 
         // Apply this node's "subpage definition" (childXML) to the new page child; tolerate malformed user input
         if (vs.type === "p" && "childXML" in this.settings) {
             try {
-                await P.fromXml(String(this.settings.childXML() ?? ""));
+                await page.fromXml(String(this.settings.childXML() ?? ""));
             } catch (e) {
                 console.warn(`childXML of node ${this.id} could not be applied:`, e);
             }
@@ -590,11 +590,11 @@ export class Node {
         this.#children = this.#conts = null;
         this.#named = {};
         let i = 0;
-        for (const C of (await this.children({ type: vs.type })).values()) {
-            await C.set("sort", ++i);
+        for (const child of (await this.children({ type: vs.type })).values()) {
+            await child.set("sort", ++i);
         }
 
-        return P;
+        return page;
     }
 
     createCont(vs: Record<string, string | number | boolean | null> = {}): Promise<Node> {
@@ -617,8 +617,8 @@ export class Node {
             await this.set(name, value);
         }
         for (const child of [...node.children].reverse()) {
-            const C = child.tag === "cont" ? await this.createCont() : child.tag === "page" ? await this.createChild() : null;
-            if (C) await C.#fromXmlNode(child);
+            const created = child.tag === "cont" ? await this.createCont() : child.tag === "page" ? await this.createChild() : null;
+            if (created) await created.#fromXmlNode(child);
         }
     }
 
@@ -632,19 +632,19 @@ export class Node {
         delete row["id"];
         const newId = Number(await this.db.table("page").insert(row) ?? "0");
         if (!newId) return;
-        const P = await this.cms.node(newId);
+        const page = await this.cms.node(newId);
 
         const titleCopy = await (await this.title())!.copy();
         const ctx = getCtx();
-        await P.set({ log_id: await ctx.logId, title_id: titleCopy.id });
-        P.#title = titleCopy;
+        await page.set({ log_id: await ctx.logId, title_id: titleCopy.id });
+        page.#title = titleCopy;
 
         const texts = await this.texts();
         for (const [name, Text] of Object.entries(texts)) {
             const textCopy = await Text.copy();
             await this.db.table("page_text").insert({ page_id: newId, text_id: textCopy.id, name });
         }
-        P.#texts = null;
+        page.#texts = null;
 
         const old2new: Record<string, string> = {};
         const files = await this.files();
@@ -653,11 +653,11 @@ export class Node {
             old2new[String(file.id)] = String(newFile.id);
             await this.db.table("page_file").insert({ page_id: newId, file_id: newFile.id, name });
         }
-        P.#files = null;
-        P.#filesAll = null;
+        page.#files = null;
+        page.#filesAll = null;
 
         if (Object.keys(old2new).length) {
-            const newTexts = await P.texts();
+            const newTexts = await page.texts();
             for (const Text of Object.values(newTexts)) {
                 for (const l of this.app.languages.all) {
                     const tl = Text.lang(l);
@@ -671,61 +671,61 @@ export class Node {
         }
 
         for (const Cont of (await this.children({ type: deep ? "*" : "c" })).values()) {
-            const Copy = await Cont.copy(deep, ifFn);
-            if (Copy) await Copy.set("basis", newId);
+            const copy = await Cont.copy(deep, ifFn);
+            if (copy) await copy.set("basis", newId);
         }
 
-        P.#children = P.#conts = null;
+        page.#children = page.#conts = null;
 
         const parent = await this.parent();
         if (parent) parent.#children = parent.#conts = null;
         
-        return P;
+        return page;
     }
 
-    insertBefore(PageArg: Node | number, Before?: Node | number | null): Promise<boolean> {
-        return this.db.transaction(() => this.#insertBefore(PageArg, Before));
+    insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
+        return this.db.transaction(() => this.#insertBefore(pageArg, before));
     }
-    async #insertBefore(PageArg: Node | number, Before?: Node | number | null): Promise<boolean> {
-        const P = await this.cms.node(Number(PageArg));
-        const OldParent = await P.parent();
-        const BeforePage = Before ? await this.cms.node(Number(Before)) : null;
-        if (await this.in(P)) return false;
-        const type = P.vs.type;
+    async #insertBefore(pageArg: Node | number, before?: Node | number | null): Promise<boolean> {
+        const page = await this.cms.node(Number(pageArg));
+        const oldParent = await page.parent();
+        const beforePage = before ? await this.cms.node(Number(before)) : null;
+        if (await this.in(page)) return false;
+        const type = page.vs.type;
 
         let sort: number | null = null;
         let i = 1;
-        for (const Child of (await this.children({ type })).values()) {
-            if (String(P) === String(Child)) continue;
-            if (BeforePage && String(BeforePage) === String(Child)) sort = i++;
-            await Child.set("sort", i++);
+        for (const child of (await this.children({ type })).values()) {
+            if (String(page) === String(child)) continue;
+            if (beforePage && String(beforePage) === String(child)) sort = i++;
+            await child.set("sort", i++);
         }
         sort = sort !== null ? sort : i++;
-        await P.set({ basis: this.id, sort });
+        await page.set({ basis: this.id, sort });
 
         this.#children = this.#conts = null;
         this.#named = {};
 
-        if (OldParent) {
-            OldParent.#children = OldParent.#conts = null;
-            OldParent.#named = {};
+        if (oldParent) {
+            oldParent.#children = oldParent.#conts = null;
+            oldParent.#named = {};
         }
 
-        await P.urlsSeoGen();
+        await page.urlsSeoGen();
         return true;
     }
 
-    removeChild(Child: Node | number): Promise<boolean> {
-        return this.db.transaction(() => this.#removeChild(Child));
+    removeChild(child: Node | number): Promise<boolean> {
+        return this.db.transaction(() => this.#removeChild(child));
     }
-    async #removeChild(Child: Node | number): Promise<boolean> {
-        const P = await this.cms.node(Number(Child));
+    async #removeChild(child: Node | number): Promise<boolean> {
+        const page = await this.cms.node(Number(child));
         const children = await this.children({ type: "*" });
-        if (!children.has(Number(P))) return false;
-        for (const C of (await P.children({ type: "*" })).values()) await P.removeChild(C);
-        for (const name of Object.keys(await P.files())) await P.deleteFile(name);
-        for (const name of Object.keys(await P.texts())) await P.textDelete(name);
-        await this.db.table("page").delete(String(P));
+        if (!children.has(Number(page))) return false;
+        for (const sub of (await page.children({ type: "*" })).values()) await page.removeChild(sub);
+        for (const name of Object.keys(await page.files())) await page.deleteFile(name);
+        for (const name of Object.keys(await page.texts())) await page.textDelete(name);
+        await this.db.table("page").delete(String(page));
         this.#children = this.#conts = null;
         this.#named = {};
         return true;
