@@ -24,7 +24,7 @@ export default async function (node: Node): Promise<HtmlString> {
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
     const svgHtml = await moduleIcon(name, modDir);
     moduleBoxes.push(html`<div itemid="${name}" title="${desc}">
-      <div class=-title title="${await M.get?.("name") ?? name}">${title}</div>
+      <div class=-title title="${await M.get("name") ?? name}">${title}</div>
       <svg class=-img fill="#fff" aria-hidden=true>${svgHtml}</svg>
     </div>`);
   }

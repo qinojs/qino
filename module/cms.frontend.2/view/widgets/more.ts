@@ -6,9 +6,9 @@ export default async function (node: Node, vars: { param?: Record<string, string
   const ctx = getCtx();
   const app = node.app;
   const u = ctx.user;
-  const firstname = await u!.get?.("firstname") ?? "";
-  const lastname  = await u!.get?.("lastname")  ?? "";
-  const email     = await u!.get?.("email")     ?? "";
+  const firstname = await u!.get("firstname") ?? "";
+  const lastname  = await u!.get("lastname")  ?? "";
+  const email     = await u!.get("email")     ?? "";
 
   let feedbackConfirmation = "";
   if (vars.param?.msg) {
