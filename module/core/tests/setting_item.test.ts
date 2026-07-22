@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
 import { createSettingItem } from "../lib/SettingItem.ts";
