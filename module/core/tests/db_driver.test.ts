@@ -1,5 +1,6 @@
 import { assertEquals, assertThrows } from "./deps.ts";
 import { DbDriver } from "../lib/db/DbDriver.ts";
+import { Db } from "../lib/db/Db.ts";
 
 Deno.test("PostgreSQL driver exposes its dialect and escapes identifiers", async () => {
   const driver = DbDriver.from("postgresql://qino:secret@localhost/qino");
@@ -39,5 +40,49 @@ Deno.test("SQLite keeps concurrent access out of an open transaction", async () 
 
   const rows = await driver.query("SELECT v FROM t ORDER BY v");
   assertEquals(rows.map((r) => r.v), ["outside"]);
+  await driver.close();
+});
+
+Deno.test("afterCommit defers side effects to the outermost commit", async () => {
+  const db = new Db("sqlite:");
+  const done: string[] = [];
+
+  // No transaction → runs straight away.
+  await db.afterCommit(() => void done.push("bare"));
+  assertEquals(done, ["bare"]);
+
+  // Nested transaction: the hook must wait for the OUTER commit, not the inner one.
+  await db.transaction(async () => {
+    await db.transaction(() => db.afterCommit(() => void done.push("committed")));
+    assertEquals(done, ["bare"]);
+  });
+  assertEquals(done, ["bare", "committed"]);
+
+  // Rollback → the hook never runs.
+  await db.transaction(async () => {
+    await db.afterCommit(() => void done.push("rolled back"));
+    throw new Error("boom");
+  }).catch(() => {});
+  assertEquals(done, ["bare", "committed"]);
+
+  await db.close();
+});
+
+Deno.test("a write escaping its transaction does not run on the finished one", async () => {
+  const driver = DbDriver.from("sqlite:");
+  await driver.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)");
+
+  // Node settings save via a debounced setTimeout: the ALS context of the transaction is
+  // still active when it fires, but the transaction is long over.
+  let late!: Promise<unknown>;
+  await driver.transaction(async () => {
+    await driver.exec("INSERT INTO t (v) VALUES ('inside')");
+    late = new Promise((ok) => setTimeout(() => ok(driver.exec("INSERT INTO t (v) VALUES ('late')")), 5));
+  });
+  await late;
+
+  // Both rows are there and the late one committed on its own — not swallowed by a closed tx.
+  const rows = await driver.query("SELECT v FROM t ORDER BY v");
+  assertEquals(rows.map((r) => r.v), ["inside", "late"]);
   await driver.close();
 });

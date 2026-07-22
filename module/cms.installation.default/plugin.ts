@@ -50,7 +50,13 @@ export const needs = [
     // optional: cron1
 ];
 
-export async function install({app}: {app: App}): Promise<void> {
+// Atomic: a half-installed site (pages without their trash/login/not-found targets) is unrecoverable
+// on the next boot, because every step guards itself with "does this id already exist?".
+export function install({app}: {app: App}): Promise<void> {
+  return app.db.transaction(() => installTx(app));
+}
+
+async function installTx(app: App): Promise<void> {
   const s = app.settings;
   const cm = cms(app);
 

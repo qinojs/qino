@@ -62,7 +62,10 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
     });
 }
 
-export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
+export function nodeRemove(node: any): Promise<{ parent_id: number }> {
+    return getCtx().app.db.transaction(() => nodeRemoveTx(node));
+}
+async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
     const ctx  = getCtx();
     const ret  = { parent_id: Number(await node.parent()) };
     const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
@@ -90,7 +93,10 @@ export async function nodeRemove(node: any): Promise<{ parent_id: number }> {
     return ret;
 }
 
-export async function nodeRestore(node: any): Promise<{ url: string }> {
+export function nodeRestore(node: any): Promise<{ url: string }> {
+    return getCtx().app.db.transaction(() => nodeRestoreTx(node));
+}
+async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     const ctx   = getCtx();
     const trash = Number(await ctx.app.settings.cms.pageTrash ?? 0);
     if (!await node.in(trash)) throw new Output({ error: "Node is not in trash" }, { status: 400 });
@@ -108,7 +114,10 @@ export async function nodeRestore(node: any): Promise<{ url: string }> {
     return { url: await node.url() };
 }
 
-export async function nodeFileAdd(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
+export function nodeFileAdd(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
+    return getCtx().app.db.transaction(() => nodeFileAddTx(node, file, replace));
+}
+async function nodeFileAddTx(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
     const ctx = getCtx();
     let File: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {

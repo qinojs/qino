@@ -14,7 +14,10 @@ const clamp = (v: unknown, min = 0) => Math.min(Math.max(min, Number(v) || 0), 3
 const level = (v: unknown) => (v === "" || v == null ? "" : String(clamp(v)));
 
 /** One handler for every edit: override cell, CAP row, standard column, bulk (standard/override), add group. */
-async function save(node: Node, vars: Record<string, unknown>): Promise<void> {
+function save(node: Node, vars: Record<string, unknown>): Promise<void> {
+  return node.app.db.transaction(() => saveTx(node, vars));
+}
+async function saveTx(node: Node, vars: Record<string, unknown>): Promise<void> {
   const app = node.app;
   const modules = () => String(vars.modules ?? "").split(",").filter(Boolean);
   const setOverride = async (module: string, grpId: number, access: string) => {

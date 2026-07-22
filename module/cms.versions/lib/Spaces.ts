@@ -11,18 +11,21 @@ export async function ensureSpace(app: App, space: number): Promise<void> {
   const db = app.db;
   if (await db.row`SELECT space FROM vers_space WHERE space = ${space}`) return;
 
-  // Seed each versioned table with live data
-  for (const tableName of Object.keys(versedTables(db))) {
-    const vt = versTable(db, tableName);
-    if (!vt) continue;
-    // Build the select onto the shadow's own column order (not positional *,0,?,0),
-    // so it stays correct even when the shadow's column order diverged from the live table.
-    const selects = (await db.columns(vt)).map((c) =>
-      c.Field === "_vers_space" ? sql`${space}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql.id(c.Field));
-    await db.exec`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
-    await db.exec`INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
-  }
-  await db.table("vers_space").insert({ space, time_created: new Date() });
+  // Atomic: a half-seeded space would look complete to every later read (vers_space row present).
+  await db.transaction(async () => {
+    // Seed each versioned table with live data
+    for (const tableName of Object.keys(versedTables(db))) {
+      const vt = versTable(db, tableName);
+      if (!vt) continue;
+      // Build the select onto the shadow's own column order (not positional *,0,?,0),
+      // so it stays correct even when the shadow's column order diverged from the live table.
+      const selects = (await db.columns(vt)).map((c) =>
+        c.Field === "_vers_space" ? sql`${space}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql.id(c.Field));
+      await db.exec`DELETE FROM ${sql.id(vt)} WHERE _vers_space = ${space}`;
+      await db.exec`INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)}`;
+    }
+    await db.table("vers_space").insert({ space, time_created: new Date() });
+  });
   // fire so other modules can react
   await app.fire("vers:createSpace", { space });
 }

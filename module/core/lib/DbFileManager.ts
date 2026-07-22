@@ -207,13 +207,17 @@ export class DbFile extends File {
   }
 
   async remove() {
+    const db = this.#manager.db;
     const { md5 } = await this.ensureVs();
-    await this.#manager.db.table("file").delete(this.id);
+    await db.table("file").delete(this.id);
     const e = await this.#manager.app.fire("dbFile:unlink-before", { file: this, prevent: false });
     this.path = "";
     if (e.prevent || !md5) return;
-    const still = await this.#manager.db.one`SELECT id FROM ${sql.id(tableRef("file"))} WHERE md5 = ${md5}`;
-    if (!still) await Deno.remove(this.#manager.directory + md5).catch(() => {});
+    // Deferred: a blob is the only unrecoverable data, so never unlink before the transaction committed.
+    await db.afterCommit(async () => {
+      const still = await db.one`SELECT id FROM ${sql.id(tableRef("file"))} WHERE md5 = ${md5}`;
+      if (!still) await Deno.remove(this.#manager.directory + md5).catch(() => {});
+    });
   }
 
   async replaceBy(path: string) {

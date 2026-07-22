@@ -150,13 +150,15 @@ export class LangManager {
   async import(lang: string, ns: string, json: string | Record<string, string>): Promise<void> {
     const txts: Record<string, string> = typeof json === "string" ? JSON.parse(json) : json;
     const db = this.#app.db;
-    for (const [original, txt] of Object.entries(txts)) {
-      if (!txt) continue;
-      const hash = createHash("md5").update(original).digest("hex");
-      const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
-      if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
-      await db.exec`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
-    }
+    await db.transaction(async () => {
+      for (const [original, txt] of Object.entries(txts)) {
+        if (!txt) continue;
+        const hash = createHash("md5").update(original).digest("hex");
+        const exists = await db.row`SELECT hash FROM smalltext WHERE hash = ${hash} AND namespace = ${ns}`;
+        if (!exists) await db.table("smalltext").insert({ namespace: ns, hash, original });
+        await db.exec`UPDATE smalltext SET ${sql.id(lang)} = ${txt} WHERE hash = ${hash} AND namespace = ${ns} AND COALESCE(${sql.id(lang)}, '') = ''`;
+      }
+    });
     this.clear(); // imported rows must be visible on the next lookup
   }
 

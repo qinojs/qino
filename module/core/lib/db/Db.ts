@@ -3,6 +3,7 @@ import { DbTable } from "./DbTable.ts";
 import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../../deps.ts";
 import { type DbDialect, type ExecResult, type MigrateOptions, type Row, DbDriver } from "./DbDriver.ts";
 import { Emitter } from "../Emitter.ts";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 export const dateTypes = new Set(["DATETIME", "DATE", "TIMESTAMP"]);
 export const stringTypes = new Set(["CHAR", "VARCHAR", "BINARY", "VARBINARY", "BLOB", "TEXT", "ENUM", "SET"]);
@@ -23,6 +24,7 @@ export class Db extends Emitter<DbEvents> {
   #tables: Record<string, DbTable> = {};
   #driver: DbDriver;
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
+  #tx = new AsyncLocalStorage<{ hooks: (() => unknown)[] | null }>();
   schema: Record<string, any> = { properties: {} };
 
   constructor(conn: string) {
@@ -83,8 +85,24 @@ export class Db extends Emitter<DbEvents> {
     return this.#run(() => this.#driver.exec(text, params, returning), text);
   }
 
-  transaction<T>(fn: () => Promise<T>): Promise<T> { /** Run fn atomically; nested calls join the outer transaction. */
-    return this.#driver.transaction(fn);
+  /** Run fn atomically; nested calls join the outer transaction. */
+  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.#tx.getStore()?.hooks) return this.#driver.transaction(fn); // nested → join
+    const tx: { hooks: (() => unknown)[] | null } = { hooks: [] };
+    try {
+      const r = await this.#tx.run(tx, () => this.#driver.transaction(fn));
+      for (const hook of tx.hooks!) await hook();
+      return r;
+    } finally {
+      tx.hooks = null; // a late call must not queue onto a finished transaction
+    }
+  }
+
+  /** Defer a non-rollbackable side effect (file unlink) until the outermost transaction committed. */
+  async afterCommit(fn: () => unknown): Promise<void> {
+    const hooks = this.#tx.getStore()?.hooks;
+    if (hooks) hooks.push(fn);
+    else await fn();
   }
 
   syncAutoIncrement(table: string, field: string, value: number): Promise<void> {

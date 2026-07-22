@@ -47,7 +47,9 @@ const sqlMode = [
 class MysqlDriver extends DbDriver {
   dialect = "mysql" as const;
   #pool: Pool;
-  #tx = new AsyncLocalStorage<any>();
+  // Holds a box, not the connection: clearing it on end cuts late writes (debounced saves,
+  // whose ALS context still points here) loose to the pool instead of a released connection.
+  #tx = new AsyncLocalStorage<{ conn: any }>();
   #database: string;
   #connParams: { host: string; port?: number; user: string; password: string };
 
@@ -66,7 +68,7 @@ class MysqlDriver extends DbDriver {
   }
 
   quoteId(id: string) { return mysqlDialect.quoteId(id); }
-  #conn() { return this.#tx.getStore() ?? this.#pool; }
+  #conn() { return this.#tx.getStore()?.conn ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     const [res] = await this.#conn().query(sql, params);
     return res as Row[];
@@ -76,12 +78,13 @@ class MysqlDriver extends DbDriver {
     return res as unknown as ExecResult;
   }
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.#tx.getStore()) return fn();
+    if (this.#tx.getStore()?.conn) return fn();
     const conn = await this.#pool.getConnection();
+    const box: { conn: any } = { conn };
     await conn.beginTransaction();
-    try { const r = await this.#tx.run(conn, fn); await conn.commit(); return r; }
+    try { const r = await this.#tx.run(box, fn); await conn.commit(); return r; }
     catch (e) { await conn.rollback(); throw e; }
-    finally { conn.release(); }
+    finally { box.conn = null; conn.release(); }
   }
   async listTables() {
     return (await this.query("SHOW TABLES")).map((r) => Object.values(r)[0]);
@@ -107,7 +110,9 @@ class SqliteDriver extends DbDriver {
   dialect = "sqlite" as const;
   #db: DatabaseSync;
   // One shared connection: while a transaction awaits, outside queries must not touch it.
-  #txAls = new AsyncLocalStorage<boolean>();
+  // Holds a box, not a flag: clearing it on end sends late writes (debounced saves, whose ALS
+  // context still points here) back through #chain instead of into the finished transaction.
+  #txAls = new AsyncLocalStorage<{ open: boolean }>();
   #chain: Promise<unknown> = Promise.resolve();
 
   constructor(path: string) {
@@ -121,7 +126,7 @@ class SqliteDriver extends DbDriver {
   #bind(params: unknown[]) { return params.map((p) => typeof p === "boolean" ? +p : p); }
   // Serialize access against an open transaction; the tx owner (#txAls set) runs directly to avoid deadlock.
   #serial<T>(fn: () => T | Promise<T>): Promise<T> {
-    if (this.#txAls.getStore()) return Promise.resolve(fn());
+    if (this.#txAls.getStore()?.open) return Promise.resolve(fn());
     const run = this.#chain.then(fn, fn);
     this.#chain = run.then(() => {}, () => {});
     return run;
@@ -136,11 +141,13 @@ class SqliteDriver extends DbDriver {
     });
   }
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.#txAls.getStore()) return fn(); // nested → join the running transaction
-    return this.#serial(() => this.#txAls.run(true, async () => {
+    if (this.#txAls.getStore()?.open) return fn(); // nested → join the running transaction
+    const box = { open: true };
+    return this.#serial(() => this.#txAls.run(box, async () => {
       this.#db.exec("BEGIN");
       try { const r = await fn(); this.#db.exec("COMMIT"); return r; }
       catch (e) { this.#db.exec("ROLLBACK"); throw e; }
+      finally { box.open = false; }
     }));
   }
   async listTables() {
@@ -169,7 +176,7 @@ class SqliteDriver extends DbDriver {
 class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
   #pool: any;
-  #tx = new AsyncLocalStorage<any>();
+  #tx = new AsyncLocalStorage<{ conn: any }>();
   #database: string;
   #adminParams: Record<string, unknown>;
 
@@ -183,7 +190,7 @@ class PostgresDriver extends DbDriver {
   }
 
   quoteId(id: string) { return pgDialect.quoteId(id); }
-  #conn() { return this.#tx.getStore() ?? this.#pool; }
+  #conn() { return this.#tx.getStore()?.conn ?? this.#pool; }
   async query(sql: string, params?: unknown[]) {
     return (await this.#conn().query(sql, params)).rows as Row[];
   }
@@ -197,12 +204,13 @@ class PostgresDriver extends DbDriver {
     return { insertId: Number(returning ? row[returning] : Object.values(row)[0] ?? 0), affectedRows: Number(res.rowCount ?? 0) };
   }
   async transaction<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.#tx.getStore()) return fn();
+    if (this.#tx.getStore()?.conn) return fn();
     const client = await this.#pool.connect();
+    const box: { conn: any } = { conn: client };
     await client.query("BEGIN");
-    try { const r = await this.#tx.run(client, fn); await client.query("COMMIT"); return r; }
+    try { const r = await this.#tx.run(box, fn); await client.query("COMMIT"); return r; }
     catch (e) { await client.query("ROLLBACK"); throw e; }
-    finally { client.release(); }
+    finally { box.conn = null; client.release(); }
   }
   override async syncAutoIncrement(table: string, field: string, value: number) {
     if (value < 1) return;

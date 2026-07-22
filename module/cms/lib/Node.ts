@@ -369,9 +369,11 @@ export class Node {
     async text(name = "main", lang?: string | null, value?: any): Promise<DbText | DbTextLang | undefined> {
         const texts = await this.texts();
         if (!(name in texts)) {
-            const T = await this.app.dbTexts.generate();
-            await this.db.table("page_text").insert({ name, page_id: String(this), text_id: T.id });
-            texts[name] = T;
+            texts[name] = await this.db.transaction(async () => {
+                const T = await this.app.dbTexts.generate();
+                await this.db.table("page_text").insert({ name, page_id: String(this), text_id: T.id });
+                return T;
+            });
         }
         if (lang == null) return texts[name];
         const textLang = await texts[name].lang(lang);
@@ -450,7 +452,10 @@ export class Node {
         return File;
     }
 
-    async deleteFile(name: string): Promise<boolean> {
+    deleteFile(name: string): Promise<boolean> {
+        return this.db.transaction(() => this.#deleteFile(name));
+    }
+    async #deleteFile(name: string): Promise<boolean> {
         await this.files();
         if (!this.#filesAll![name]) return false;
         const dbFile = this.#filesAll![name];
@@ -466,10 +471,12 @@ export class Node {
     }
 
     async sortFiles(sort: string[]): Promise<void> {  // todo, just existing files allowed!
-        let i = 1;
-        for (const file of sort) {
-            await this.db.table("page_file").update({ page_id: String(this), name: file, sort: i++ });
-        }
+        await this.db.transaction(async () => {
+            let i = 1;
+            for (const file of sort) {
+                await this.db.table("page_file").update({ page_id: String(this), name: file, sort: i++ });
+            }
+        });
         this.#files = null; this.#filesAll = null;
     }
 
@@ -524,7 +531,10 @@ export class Node {
         return url;
     }
 
-    async urlSeoGen(lang: string): Promise<string> {
+    urlSeoGen(lang: string): Promise<string> {
+        return this.db.transaction(() => this.#urlSeoGen(lang));
+    }
+    async #urlSeoGen(lang: string): Promise<string> {
         const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
         const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
         await this.urlSet(lang, { url });
@@ -534,14 +544,17 @@ export class Node {
         return url;
     }
 
-    async urlsSeoGen(): Promise<void> {
-        for (const l of this.cms.app.languages.all) {
-            await this.urlSeoGen(l);
-        }
+    urlsSeoGen(): Promise<void> {
+        return this.db.transaction(async () => {
+            for (const l of this.cms.app.languages.all) await this.urlSeoGen(l);
+        });
     }
 
     /* Tree manipulation */
-    async createChild(vs: Record<string, any> = {}): Promise<Node> {
+    createChild(vs: Record<string, any> = {}): Promise<Node> {
+        return this.db.transaction(() => this.#createChild(vs));
+    }
+    async #createChild(vs: Record<string, any>): Promise<Node> {
         vs = {
             basis: this.id,
             online_start: unixTime(),
@@ -609,7 +622,10 @@ export class Node {
         }
     }
 
-    async copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
+    copy(deep = false, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
+        return this.db.transaction(() => this.#copy(deep, ifFn));
+    }
+    async #copy(deep: boolean, ifFn?: (p: Node) => Promise<boolean | void> | boolean | void): Promise<Node | undefined> {
         if (await ifFn?.(this) === false) return;
 
         const row: Record<string, any> = { ...this.vs };
@@ -667,7 +683,10 @@ export class Node {
         return P;
     }
 
-    async insertBefore(PageArg: Node | number, Before?: Node | number | null): Promise<boolean> {
+    insertBefore(PageArg: Node | number, Before?: Node | number | null): Promise<boolean> {
+        return this.db.transaction(() => this.#insertBefore(PageArg, Before));
+    }
+    async #insertBefore(PageArg: Node | number, Before?: Node | number | null): Promise<boolean> {
         const P = await this.cms.node(Number(PageArg));
         const OldParent = await P.parent();
         const BeforePage = Before ? await this.cms.node(Number(Before)) : null;
@@ -696,7 +715,10 @@ export class Node {
         return true;
     }
 
-    async removeChild(Child: Node | number): Promise<boolean> {
+    removeChild(Child: Node | number): Promise<boolean> {
+        return this.db.transaction(() => this.#removeChild(Child));
+    }
+    async #removeChild(Child: Node | number): Promise<boolean> {
         const P = await this.cms.node(Number(Child));
         const children = await this.children({ type: "*" });
         if (!children.has(Number(P))) return false;
