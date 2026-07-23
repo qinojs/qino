@@ -15,3 +15,4 @@ mail.get = (app: App): MailManager | undefined => mailInstances.get(app);
 
 export { MailManager } from "./lib/MailManager.ts";
 export { MailMessage } from "./lib/MailMessage.ts";
+export { addressOf } from "./lib/helpers.ts";

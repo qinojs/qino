@@ -1,7 +1,7 @@
 import { backend } from "../cms.backend/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import { mail } from "../mail/mod.ts";
+import { mail, addressOf } from "../mail/mod.ts";
 
 export const name = "cms.backend.mail.create";
 export const needs = ["cms.backend.mail"];
@@ -29,40 +29,40 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const toGroups = [post.to_groups ?? []].flat().map(Number).filter(Boolean);
     const toCustom = String(post.to_custom ?? "").trim();
 
+    // parse custom addresses up-front so format errors surface before anything is created
+    const custom = (toCustom ? toCustom.split(/[\n,;]+/) : [])
+      .map((line) => line.trim()).filter(Boolean)
+      .map((line) => ({ line, rec: addressOf(line) }));
+    const invalidCustom = custom.filter((c) => !c.rec).map((c) => c.line);
+
     if (!subject) {
       message = await html.async`<u2-alert open variant=danger>${t`Subject is required.`}</u2-alert>`;
+    } else if (invalidCustom.length) {
+      message = await html.async`<u2-alert open variant=danger>${t`Invalid email addresses`}: ${invalidCustom.join(", ")}</u2-alert>`;
     } else {
       const msg = await mail(app).create({ subject, html: body, sender: sender || undefined, replyTo: replyTo || undefined });
 
       const addedEmails = new Set<string>();
+      const add = (email: string, name?: string) => {
+        const key = email.trim().toLowerCase();
+        if (addedEmails.has(key)) return;
+        msg.addTo(email, name);
+        addedEmails.add(key);
+      };
 
       for (const uid of toUsers) {
         const usr = await db.row`SELECT email, firstname, lastname FROM usr WHERE id=${uid} AND active=${true}`;
-        if (usr?.email && !addedEmails.has(usr.email)) {
-          msg.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
-          addedEmails.add(usr.email);
-        }
+        if (usr?.email) add(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
       }
 
       for (const gid of toGroups) {
         const members = await db.query`SELECT u.email, u.firstname, u.lastname FROM usr u INNER JOIN usr_grp ug ON ug.usr_id=u.id WHERE ug.grp_id=${gid} AND u.active=${true}`;
         for (const usr of members) {
-          if (usr.email && !addedEmails.has(usr.email)) {
-            msg.addTo(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
-            addedEmails.add(usr.email);
-          }
+          if (usr.email) add(usr.email, `${usr.firstname ?? ""} ${usr.lastname ?? ""}`.trim() || undefined);
         }
       }
 
-      if (toCustom) {
-        for (const raw of toCustom.split(/[\n,;]+/)) {
-          const addr = raw.trim();
-          if (addr && !addedEmails.has(addr)) {
-            msg.addTo(addr);
-            addedEmails.add(addr);
-          }
-        }
-      }
+      for (const { rec } of custom) if (rec) add(rec.address, rec.name);
 
       await msg.save();
       const savedId = msg.id;
