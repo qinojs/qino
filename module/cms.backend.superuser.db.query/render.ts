@@ -52,7 +52,7 @@ export async function render(node: Node): Promise<HtmlString> {
 
 function renderAi(app: App, question: string, note: string): Promise<HtmlString> | string {
   if (!ai.get(app)) return "";
-  const msg = note ? html`<u2-alert open variant=danger style="margin-top:4px">${note}</u2-alert>` : "";
+  const msg = note ? html`<u2-alert open variant=danger style="margin-top:.25rem">${note}</u2-alert>` : "";
   return html.async`<form method=post class=-ai>
     <input type=hidden name=csrfToken value="${getCtx().csrfToken}">
     <input type=hidden name=sql class=-aisql>

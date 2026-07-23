@@ -7,7 +7,7 @@
 
 [contenteditable]:focus td {
   outline:1px dashed #F4E2DC;
-  outline-offset:0px;
+  outline-offset:0;
 }
 [contenteditable] td {
   min-width:1em;
@@ -23,15 +23,15 @@ body #qgRteToolbar [hidden] {
 
 #qgRteToolbar {
   position:absolute;
-  top:90px;
-  left:90px;
+  top:5.625rem;
+  left:5.625rem;
   z-index:1999;
-  box-shadow: 0 0 10px rgba(0,0,0,.4);
+  box-shadow: 0 0 .625rem rgba(0,0,0,.4);
   font-size:14px;
   font-family:Arial;
   background-color:#222;
   color:#fff;
-  max-width:297px;
+  max-width:18.5625rem;
   transition:top .14s;
   transition-property:top, left, opacity;
   will-change:top, left;
@@ -59,7 +59,7 @@ body #qgRteToolbar [hidden] {
     box-sizing:border-box;
     border:1px solid;
     width:100%;
-    padding:3px;
+    padding:.1875rem;
     color:#fff;
   }
   & input[type=checkbox] {
@@ -73,10 +73,10 @@ body #qgRteToolbar [hidden] {
   }
 
   & td {
-    height:39px;
+    height:2.4375rem;
     box-sizing:border-box;
     vertical-align: middle;
-    padding:8px 10px;
+    padding:.5rem .625rem;
   }
   & input {
     border:none;
@@ -96,28 +96,28 @@ body #qgRteToolbar [hidden] {
     box-sizing:border-box;
     cursor:pointer;
     line-height:1.2;
-    width:36px;
-    height:36px;
-    padding:5px 8px;
-    outline:.5px solid #444;
-    margin:.5px;
+    width:2.25rem;
+    height:2.25rem;
+    padding:.3125rem .5rem;
+    outline:.0313rem solid #444;
+    margin:.0313rem;
   }
   & .-item:hover {
     background:#555;
   }
 
   & .-item.-select {
-    width:73px;
+    width:4.5625rem;
     position:relative;
-    padding:5px 8px;
+    padding:.3125rem .5rem;
     flex:1 1 auto;
-    padding-right:16px;
+    padding-right:1rem;
   }
   & .-item.-select:after {
     content:'▼';
     position:absolute;
     top:50%;
-    right:5px;
+    right:.3125rem;
     transform:translateY(-50%);
     font-size:.8em;
   }
@@ -127,14 +127,14 @@ body #qgRteToolbar [hidden] {
   }
 
   & .-state {
-    max-width:125px;
+    max-width:7.8125rem;
     overflow:hidden;
     white-space:nowrap;
   }
 
   & .-options {
     display:none;
-    padding:3px 3px 3px 3px;
+    padding:.1875rem .1875rem .1875rem .1875rem;
     position: absolute;
     left:-1px;
     top:100%;
@@ -143,11 +143,11 @@ body #qgRteToolbar [hidden] {
     color:#000;
     overflow:visible;
     border:1px solid #bbb;
-    box-shadow:1px 1px 2px rgba(0,0,0,.4);
+    box-shadow:1px 1px .125rem rgba(0,0,0,.4);
     min-width:100%;
   }
   & .-options > * {
-    padding:1px 4px;
+    padding:1px .25rem;
     display:block !important;
     clear:both !important;
     width:auto !important;
@@ -168,8 +168,8 @@ body #qgRteToolbar [hidden] {
     display:inline-block;
     text-align:center;
     font-size:14px;
-    min-width:20px;
-    padding-left: 0px;
+    min-width:1.25rem;
+    padding-left: 0;
   }
 
   & .-item.-Bold::before                 { content:'\e02a'; }

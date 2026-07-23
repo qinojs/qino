@@ -294,13 +294,13 @@ export class DbTable {
   selectEntries(tail?: Sql): Promise<Record<string, DbEntry>>;
   async selectEntries(a?: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<Record<string, DbEntry>> {
     const tail = a == null ? sql.raw("") : isTemplate(a) ? sql(a, ...rest) : a;
-    const Es: Record<string, any> = {};
+    const out: Record<string, any> = {};
     const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} ${tail}`;
     for (const row of rows) {
       const entry = this.entry(row);
-      Es[String(entry)] = entry;
+      out[String(entry)] = entry;
     }
-    return Es;
+    return out;
   }
 
   toString(): string { return this.#name; }

@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         parse(item, sub);
       }
     }
-    if (list === poly) list.append(el('<li style="font-size:12px; padding:5px" class=-disabled>shift + rightclick to show the<br> native menu'));
+    if (list === poly) list.append(el('<li style="font-size:12px; padding:.3125rem" class=-disabled>shift + rightclick to show the<br> native menu'));
   }
 
   const arrow = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="32" fill="none" viewBox="0 0 16 32"><path stroke="#000" stroke-width="2" d="M2 2l12 12L2 26" stroke-linecap="round"/></svg>';

@@ -1,10 +1,10 @@
 [qcms-mod="cont.trash"] .-toolbar {
-  margin-bottom: 10px;
+  margin-bottom: .625rem;
 }
 [qcms-mod="cont.trash"] .-list {
   xdisplay: grid;
-  xgap: 10px;
-  xgrid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  xgap: .625rem;
+  xgrid-template-columns: repeat(auto-fill, minmax(16.25rem, 1fr));
 }
 [qcms-mod="cont.trash"] .-item {
   position: relative;
@@ -23,7 +23,7 @@
 [qcms-mod="cont.trash"] .-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: .5rem;
 }
 [qcms-mod="cont.trash"] .-preview {
   width: 90vw;

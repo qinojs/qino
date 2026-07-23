@@ -43,30 +43,30 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
   // Determine active page
   const activeByRenderPath = await settings["active page by renderpath"];
-  let ActivePage: Node;
+  let activePage: Node;
   if (activeByRenderPath) {
     const firstId = cmsCtx(ctx).renderPath.values().next().value;
     const firstPage = firstId ? await cms.node(firstId) : null;
-    ActivePage = firstPage ? await firstPage.page() : cmsCtx(ctx).mainNode;
+    activePage = firstPage ? await firstPage.page() : cmsCtx(ctx).mainNode;
   } else {
-    ActivePage = cmsCtx(ctx).mainNode;
+    activePage = cmsCtx(ctx).mainNode;
   }
 
   // Determine start page
   const startPageSetting = settings.startPage();
   const startLevelSetting = settings.startLevel();
 
-  let StartPage: Node | undefined;
+  let startPage: Node | undefined;
   if (startPageSetting) {
-    StartPage = await cms.node(Number(startPageSetting));
-    if (!StartPage.exists()) StartPage = await node.page();
+    startPage = await cms.node(Number(startPageSetting));
+    if (!startPage.exists()) startPage = await node.page();
   } else {
-    StartPage = await node.page();
+    startPage = await node.page();
   }
 
   if (startLevelSetting) {
-    StartPage = await ActivePage.parent(Number(startLevelSetting));
-    if (!StartPage || !StartPage.exists()) StartPage = await node.page();
+    startPage = await activePage.parent(Number(startLevelSetting));
+    if (!startPage || !startPage.exists()) startPage = await node.page();
   }
 
   // Settings for rendering
@@ -112,7 +112,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const levelLimit = Number(levelLimitSetting || 0);
     if (levelLimit && level >= levelLimit) return "";
 
-    if (pathOnly && level > 0 && !(await ActivePage.in(curPage))) return "";
+    if (pathOnly && level > 0 && !(await activePage.in(curPage))) return "";
 
     level++;
     let str = `<ul class="cmsChilds${curPage}">`;
@@ -120,8 +120,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       const childStr = await getUl(child);
 
       const childPage = await child.page();
-      const isInside = await ActivePage.in(childPage);
-      const isActive = ActivePage === childPage;
+      const isInside = await activePage.in(childPage);
+      const isActive = activePage === childPage;
       const hasSub = childStr !== undefined;
       const isOnline = await child.isOnline();
 
@@ -140,7 +140,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     return str;
   };
 
-  return `<nav>${await getUl(StartPage) || ""}</nav>`;
+  return `<nav>${await getUl(startPage) || ""}</nav>`;
 }
 
 export const cms = {

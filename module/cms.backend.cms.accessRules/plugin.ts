@@ -101,7 +101,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const bulkCols = html.join(groupRows.map((g) => html`<option value="${g.id}">${g.name}`));
 
   return html.async`<div class="u2-flex cmsAccessRules" data-labels="${JSON.stringify(word)}">
-  <div class="u2-card -matrix" style="flex:1 1 700px; max-height:90vh; overflow:auto">
+  <div class="u2-card -matrix" style="flex:1 1 43.75rem; max-height:90vh; overflow:auto">
     <div class=-head>${t`Access rules`}</div>
     <div class="-body -toolbar">
       <div>

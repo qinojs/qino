@@ -26,8 +26,8 @@ export default async function (node: Node): Promise<HtmlString> {
     <tr><td><span class=-access-1 style="font-size:1.7em;">&#x2B24;</span><td>${app.t`View page`}
     <tr><td><span class=-access-2 style="font-size:1.7em;">&#x2B24;</span><td>${app.t`Edit page`}
     <tr><td><span class=-access-3 style="font-size:1.7em;">&#x2B24;</span><td>${app.t`Edit page and manage permissions`}
-    <tr><td style="padding-left:2px;"><span style="font-family:'qg_cms';font-size:1.7em;">&#xe900;</span><td>${app.t`The page is not publicly accessible`}
-    <tr><td style="padding-left:2px"><span style="font-family:'qg_cms';font-size:1.7em;">&#xe901;</span><td>${app.t`The page is scheduled and currently not online`}
+    <tr><td style="padding-left:.125rem;"><span style="font-family:'qg_cms';font-size:1.7em;">&#xe900;</span><td>${app.t`The page is not publicly accessible`}
+    <tr><td style="padding-left:.125rem"><span style="font-family:'qg_cms';font-size:1.7em;">&#xe901;</span><td>${app.t`The page is scheduled and currently not online`}
   </table>
 </div>`;
 }

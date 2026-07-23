@@ -34,20 +34,20 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   }
 
   const groups = await accessGroups(app);
-  const head = html.join(groups.map(g => html`<th style="width:30px"><div>${String(g.name)}</div>`));
+  const head = html.join(groups.map(g => html`<th style="width:1.875rem"><div>${String(g.name)}</div>`));
 
   const listHtml = await list(node, { ctx });
 
   const showContents = !!ctx.settings.cms.admin.showContents();
 
-  return html.async`<div class="u2-card" style="flex:0 1 1200px">
+  return html.async`<div class="u2-card" style="flex:0 1 75rem">
   <div class=-head>${t`Access`}</div>
   <div class=-body style="display:flex; justify-content:space-between; align-items:center">
     <div>
       <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
       <div>${html.join(pathParts)}</div>
     </div>
-    <div style="display:flex; align-items:center; gap:4px">
+    <div style="display:flex; align-items:center; gap:.25rem">
       <span class=-access-1-box></span> ${t`View`}
       <span class=-access-2-box></span> ${t`Edit`}
       <span class=-access-3-box></span> ${t`Administer`}
@@ -56,9 +56,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <table class="u2-table cmsBeTree">
     <thead>
       <tr>
-        <th style="width:20px"> ${t`No.`}
-        <th style="min-width:250px; width:100%"> ${t`Page`}
-        <th style="width:30px"><div>${t`Public`}</div>
+        <th style="width:1.25rem"> ${t`No.`}
+        <th style="min-width:15.625rem; width:100%"> ${t`Page`}
+        <th style="width:1.875rem"><div>${t`Public`}</div>
         ${head}
     <tbody cms-part=list>
       ${listHtml}

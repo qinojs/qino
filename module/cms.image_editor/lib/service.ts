@@ -67,8 +67,8 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
         if (!thumb) continue;
         const log = String(row._vers_log); // restore token = this capture's version log (log-table join is display-only)
         str += "<tr>";
-        str += `<td style="padding:3px 4px 3px 0; width:60px"><img log="${hee(log)}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">`;
-        str += `<td style="padding:3px 0 3px 0;">${hee(niceDate(Number(row.log_time)))}`;
+        str += `<td style="padding:.1875rem .25rem .1875rem 0; width:3.75rem"><img log="${hee(log)}" style="display:block; margin:auto; border:1px solid black; cursor:pointer" src="${thumb}">`;
+        str += `<td style="padding:.1875rem 0 .1875rem 0;">${hee(niceDate(Number(row.log_time)))}`;
         const usr = [row.usr_firstname, row.usr_lastname].filter(Boolean).join(" ");
         if (usr) str += `<br>${hee(usr)}`;
     }

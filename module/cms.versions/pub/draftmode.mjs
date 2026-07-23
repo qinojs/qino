@@ -43,14 +43,14 @@ const el = c1.dom.fragment('<div class=-item itemid=publish>'+
       '<div class=-h1>Draft</div>'+
       '<div>Overwrite your draft with the current live version</div>'+
       '<div style="text-align:right">'+
-        '<button class=-versionUnPublish style="width:200px">Reset draft</button><br><br>'+
+        '<button class=-versionUnPublish style="width:12.5rem">Reset draft</button><br><br>'+
         '<label>including subpages <input class=-subPages type=checkbox style="vertical-align:text-bottom"></label><br>'+
       '</div>'+
       '<br><br><br>'+
       '<div class=-h1>Compare</div>'+
       '<div>Compare the differences between draft and live version</div>'+
       '<div style="text-align:right">'+
-        '<button style="width:200px" class=-versionCompare>Compare</button>'+
+        '<button style="width:12.5rem" class=-versionCompare>Compare</button>'+
       '</div>'+
       '<br><br><br>'+
       '<div class=-h1>Publish</div>'+
@@ -58,7 +58,7 @@ const el = c1.dom.fragment('<div class=-item itemid=publish>'+
       '<div class=qgCms_vers_page_changed hidden style="color:var(--cms-access-2);">You have unpublished changes!</div>'+
       '<br>'+
       '<div style="text-align:right">'+
-        '<button class=-versionPublish style="width:200px">Publish</button><br><br>'+
+        '<button class=-versionPublish style="width:12.5rem">Publish</button><br><br>'+
         '<label>including subpages <input class=-subPages type=checkbox style="vertical-align:text-bottom"></label><br>'+
       '</div>'+
     '</div>'+

@@ -4,10 +4,10 @@ cms-image2 {
   overflow:hidden;
   box-sizing:border-box;
 
-  max-width:80px; /* shout be overwritten */
+  max-width:5rem; /* shout be overwritten */
   width:100%; /* if max-width:100% => somtimes "with" wins in containers */
-  min-width:10px;
-  min-height:10px;
+  min-width:.625rem;
+  min-height:.625rem;
 
   background-size:cover; /* can be overwritten */
   background-repeat:no-repeat;
@@ -53,6 +53,6 @@ cms-image2::after {
   transition: backdrop-filter .4s ease-in;
 }
 cms-image2:not([loaded])::after {
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(.75rem);
 }
 /* */

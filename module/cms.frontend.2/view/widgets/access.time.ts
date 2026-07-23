@@ -13,7 +13,7 @@ export default function (node: Node): Promise<HtmlString> {
 
   return html.async`<div class=access-time-manager pid=${node.id}>
   <div>
-    <div style="flex:0 1 100px">${app.t`visible`} ${app.t`from`}:</div>
+    <div style="flex:0 1 6.25rem">${app.t`visible`} ${app.t`from`}:</div>
     <div class=-accessTimeBtns>
       <button class=-start_always  ${node.vs.online_start === 0 ? "disabled" : ""}>${app.t`unlimited`}</button>
       <button class=-start_inherit ${node.vs.online_start === null ? "disabled" : ""}>${app.t`inherited`}</button>
@@ -22,7 +22,7 @@ export default function (node: Node): Promise<HtmlString> {
     </div>
   </div>
   <div>
-    <div style="flex:0 1 100px">${app.t`until`}:</div>
+    <div style="flex:0 1 6.25rem">${app.t`until`}:</div>
     <div class=-accessTimeBtns>
       <button class=-end_always  ${node.vs.online_end === 0 ? "disabled" : ""}>${app.t`unlimited`}</button>
       <button class=-end_inherit ${node.vs.online_end === null ? "disabled" : ""}>${app.t`inherited`}</button>

@@ -67,7 +67,7 @@ qino-cms:not(:defined) { display:none; }
   & input:is([type=checkbox], [type=radio]) {
     width:1.5em;
     height:1.5em;
-    margin:0 2px;
+    margin:0 .125rem;
     min-width:1em;
     min-height:1em;
     vertical-align: text-bottom;
@@ -96,7 +96,7 @@ qino-cms:not(:defined) { display:none; }
 
   /* tables */
   & table.-padding > * > tr > * {
-    padding:3px;
+    padding:.1875rem;
     vertical-align:middle;
   }
   & table.-styled {
@@ -162,7 +162,7 @@ qino-cms:not(:defined) { display:none; }
 #cmsConsole {
   position:fixed;
   width:max-content;
-  padding:4px 18px;
+  padding:.25rem 1.125rem;
   left:0;
   right:0;
   top:auto;        /* reset [popover] UA inset:0 */
@@ -171,7 +171,7 @@ qino-cms:not(:defined) { display:none; }
   border:0;        /* reset [popover] UA border */
   overflow:visible;/* don't clip the .-new scale pop */
   background:var(--cms-color);
-  border-radius:15px;
+  border-radius:.9375rem;
   text-align:center;
   color:#fff;
   opacity:0;

@@ -160,7 +160,7 @@ Viewer.on('before-load',function(e){
     const date = new Date(data.time * 1000);
     let str = '';
     for (const msg of data.messages) {
-      str += `<div style="padding:5px 0 5px 8px; margin:8px 0; border-left:1px solid #fff; background:#555">${msg}</div>`;
+      str += `<div style="padding:.3125rem 0 .3125rem .5rem; margin:.5rem 0; border-left:1px solid #fff; background:#555">${msg}</div>`;
     }
     str +=
       `<div class=-date>${exactDate.format(date)}</div>` +

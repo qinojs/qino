@@ -76,8 +76,8 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
   }
 
   return html`
-  <div class=superuser-manager pid=${node.id} style="display:flex;flex-flow:wrap;margin:-2px;">
-    <div scope=custom style="margin:2px;flex:1 1 auto">
+  <div class=superuser-manager pid=${node.id} style="display:flex;flex-flow:wrap;margin:-.125rem;">
+    <div scope=custom style="margin:.125rem;flex:1 1 auto">
       <div class="-widgetHead -open">Custom Files</div>
       <div class=-content>
         <table class=-styled style="width:100%">
@@ -86,7 +86,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
         </table>
       </div>
     </div>
-    <div scope=app style="margin:2px;flex:1 1 auto">
+    <div scope=app style="margin:.125rem;flex:1 1 auto">
       <div class="-widgetHead -open">App Files</div>
       <div class=-content>
         <table class=-styled style="width:100%">

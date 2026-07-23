@@ -16,7 +16,7 @@ function render(node: Node): HtmlString {
   return html`<div class=u2-flex>
   <div class="u2-card" style="flex:1 1 100%">
     <div class="-head">State</div>
-    <div class="-body" style="flex:1 1 100%; xdisplay:flex; gap:8px; align-items:start; flex-wrap:wrap">
+    <div class="-body" style="flex:1 1 100%; xdisplay:flex; gap:.5rem; align-items:start; flex-wrap:wrap">
       <button type=button onclick="cms.reloadPart(${Number(node.id)}, 'state')">neu laden</button>
     </div>
   </div>

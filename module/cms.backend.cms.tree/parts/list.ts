@@ -68,7 +68,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
         const titleText = titleLang ? hee(await titleLang.get()) : "";
         const titleId = titleObj?.id ?? 0;
-        const inputStyle = 'style="flex:1; background:transparent; border:none; margin:0 10px 0 0; padding:0"';
+        const inputStyle = 'style="flex:1; background:transparent; border:none; margin:0 .625rem 0 0; padding:0"';
         if (subAccess < 2) {
           titleCell = `<input value="${titleText}" ${inputStyle} disabled>`;
         } else {
@@ -136,7 +136,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
 
     let badge = "";
     if (numNotInherit && access > 2) {
-      badge = ` <span title="Contents where &quot;online until&quot; is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
+      badge = ` <span title="Contents where &quot;online until&quot; is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${numNotInherit}</span>`;
     }
 
     if (access <= 2) return `<span style="color:#8a8">${date}</span>${badge}`;
@@ -156,7 +156,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     const label = v == null ? await t`inherited` : (v ? await t`yes` : await t`no`);
     let badge = "";
     if (numNotInherit && access > 2) {
-      badge = ` <span title="Contents where access is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 3px">${numNotInherit}</span>`;
+      badge = ` <span title="Contents where access is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${numNotInherit}</span>`;
     }
     if (access <= 2) return `<span style="color:#666">${hee(label)}</span>${badge}`;
     const color = v == null ? "#aaa" : (v ? "green" : "red");

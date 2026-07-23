@@ -31,7 +31,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
   const showContents = !!ctx.settings.cms.admin.showContents();
 
   const t = node.app.t;
-  return html.async`<div class="u2-card" style="flex:0 1 1200px">
+  return html.async`<div class="u2-card" style="flex:0 1 75rem">
   <div class=-head>${t`Structure`}</div>
   <div class=-body>
     <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
@@ -40,14 +40,14 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
   <table class="u2-table cmsBeTree">
     <thead>
       <tr>
-        <th style="width:20px"> ${t`No.`}
-        <th style="min-width:250px"> ${t`Page`}
-        <th style="width:80px"> ${t`Online from`}
-        <th style="width:80px"> ${t`Online until`}
-        <th style="width:80px"> ${t`Public`}
-        <th style="width:80px"> ${t`Visible`}
-        <th style="width:80px"> ${t`Searchable`}
-        <th style="width:160px"> ${t`Layout`}
+        <th style="width:1.25rem"> ${t`No.`}
+        <th style="min-width:15.625rem"> ${t`Page`}
+        <th style="width:5rem"> ${t`Online from`}
+        <th style="width:5rem"> ${t`Online until`}
+        <th style="width:5rem"> ${t`Public`}
+        <th style="width:5rem"> ${t`Visible`}
+        <th style="width:5rem"> ${t`Searchable`}
+        <th style="width:10rem"> ${t`Layout`}
     <tbody cms-part=list>
       ${await list(node, { ctx, vars: {} })}
   </table>

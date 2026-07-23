@@ -300,7 +300,7 @@ Rte.ui.setItem('LinkTarget', {
 });
 /* Titletag *
 {
-  let el = c1.dom.fragment('<table style="clear:both"><tr><td style="width:84px">Titel<td><input>').firstChild;
+  let el = c1.dom.fragment('<table style="clear:both"><tr><td style="width:5.25rem">Titel<td><input>').firstChild;
   let inp = find(el, 'input');
   inp.addEventListener('keyup', function() {
     Rte.element.setAttribute('title',inp.value);
@@ -317,7 +317,7 @@ Rte.ui.setItem('LinkTarget', {
 /* Image Attributes */ {
   const inp = c1.dom.fragment(
     '<table>'+
-      '<tr><td style="width:84px">Width:<td><input class=-x>'+
+      '<tr><td style="width:5.25rem">Width:<td><input class=-x>'+
       '<tr><td>Height:<td><input class=-y>'+
       '<tr><td title="Alternativer Text">Alt-Text:<td><input class=-alt>'+
     '</table>').firstChild;

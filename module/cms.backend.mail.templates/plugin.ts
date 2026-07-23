@@ -66,14 +66,14 @@ async function render(node: Node): Promise<HtmlString | string> {
     : await html.async`<tr><td colspan=3><em>${t`No templates yet.`}</em>`;
 
   return html.async`<div class="u2-flex -m-mail-templates">
-  <div class=u2-card style="flex:0 1 280px">
+  <div class=u2-card style="flex:0 1 17.5rem">
     <div class=-head>${t`New template`}</div>
     ${message ? html`<div class=-body>${message}</div>` : ""}
     <form method=post>
       <input type=hidden name=csrfToken value="${ctx.csrfToken}">
       <table class=u2-table>
         <tr>
-          <th style="width:80px">${t`Name`}
+          <th style="width:5rem">${t`Name`}
           <td><input name=tname required placeholder="e.g. newsletter" style="width:100%">
         <tr>
           <td colspan=2>
@@ -149,7 +149,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
     : await html.async`<em>${t`No content yet.`}</em>`;
 
   return html.async`<div class="u2-flex -m-mail-templates">
-  <div class=u2-card style="flex:1 1 600px">
+  <div class=u2-card style="flex:1 1 37.5rem">
     <div class=-head>${row.name}</div>
     <div class=-body>
       ${message}
@@ -157,7 +157,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
         <input type=hidden name=csrfToken value="${ctx.csrfToken}">
         <table class=u2-table>
           <tr>
-            <th style="width:110px">${t`Name`}
+            <th style="width:6.875rem">${t`Name`}
             <td><input name=tname value="${row.name}" required style="width:100%">
           <tr>
             <th>${t`Description`}
@@ -179,7 +179,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
       </form>
     </div>
   </div>
-  <div class=u2-card style="flex:1 1 400px">
+  <div class=u2-card style="flex:1 1 25rem">
     <div class=-head>${t`Preview`}</div>
     <div class=-body style="padding:0">${preview}</div>
   </div>

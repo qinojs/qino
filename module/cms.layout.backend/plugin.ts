@@ -108,7 +108,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
       u.searchParams.set("lang", l);
       links += `<a href="${hee(u.pathname + u.search)}">${hee(l)}</a> `;
     }
-    langHtml = `<li><span class=-item style="padding:6px 16px; text-align:right">${links}</span>`;
+    langHtml = `<li><span class=-item style="padding:.375rem 1rem; text-align:right">${links}</span>`;
   }
 
   // Content conts

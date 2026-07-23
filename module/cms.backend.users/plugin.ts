@@ -85,7 +85,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
   <div class=u2-card style="flex:1">
     <div class=-head> ${t`Search users`} </div>
     <div class=-body>
-      <input type=search placeholder="${t`search`}..." id=usrSearch style="width:300px; max-width:100%">
+      <input type=search placeholder="${t`search`}..." id=usrSearch style="width:18.75rem; max-width:100%">
       <select id=usrGrp>${html.join(await Promise.all(grpOpts))}</select>
     </div>
     <div style="overflow:auto; padding:0">
@@ -173,7 +173,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
           <input type=checkbox value=${g.id} ${g.has ? "checked" : ""}>`));
 
   return html.async`<div class=u2-flex itemid="${id}">
-  <div class=u2-card style="flex:0 1 340px">
+  <div class=u2-card style="flex:0 1 21.25rem">
     <div class=-head>${t`User`} ${vs.id}</div>
     <div style="overflow:auto; padding:0">
       <table class="u2-table -detail">

@@ -62,7 +62,7 @@ export default async function codemirrorView(file: string): Promise<string> {
   const col = ctx.req.query.col ?? "";
 
   return `<button id=saveButton
-    style="position:fixed;right:-1px;top:10px;z-index:10;padding:10px 12px;display:none;background-image:linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5))">
+    style="position:fixed;right:-1px;top:.625rem;z-index:10;padding:.625rem .75rem;display:none;background-image:linear-gradient(rgba(255,255,255,.5),rgba(205,205,205,.5))">
     ${isWritable ? "save" : "no write permission!"}
   </button>
   <div style="height:100%;width:100%">

@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<HtmlString> {
   <input style="width:100%;display:block" cmstxt=${titleText.id} value="${await titleText.string()}" required pattern=".{10,55}" maxlength=100 placeholder="${placeholderTitle}">
   <br>
   ${app.t`Description`}:
-  <textarea class=-desc style="display:block;width:100%;height:45px" cmstxt=${descrText.id} required pattern=".{60,156}" maxlength=220 placeholder="${app.t`max. 156 characters`}" rows=4 cols=70>${await descrText.string()}</textarea>
+  <textarea class=-desc style="display:block;width:100%;height:2.8125rem" cmstxt=${descrText.id} required pattern=".{60,156}" maxlength=220 placeholder="${app.t`max. 156 characters`}" rows=4 cols=70>${await descrText.string()}</textarea>
   <br>
   <style>
   .seo-manager :invalid,

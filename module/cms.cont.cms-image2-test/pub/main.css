@@ -4,8 +4,8 @@
   --c2t-warn:#8a5a00;
   --c2t-bad:#a72a2a;
   --c2t-ok:#1d6d3a;
-  --c2t-tight-w:260px;
-  --c2t-card-min:240px;
+  --c2t-tight-w:16.25rem;
+  --c2t-card-min:15rem;
   display:block;
   font:14px/1.4 system-ui, sans-serif;
 }
@@ -39,11 +39,11 @@
 
 .c2t-lab-form {
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns:repeat(auto-fit, minmax(13.75rem, 1fr));
   gap:.55rem .85rem;
   padding:.65rem;
   border:1px solid var(--c2t-border);
-  border-radius:8px;
+  border-radius:.5rem;
   background:var(--c2t-soft);
 }
 
@@ -56,7 +56,7 @@
 
 .c2t-lab-form label:not(.c2t-auto) {
   display:grid;
-  grid-template-columns:4em minmax(100px, 1fr) 4.5em;
+  grid-template-columns:4em minmax(6.25rem, 1fr) 4.5em;
   gap:.45rem;
   align-items:center;
 }
@@ -95,7 +95,7 @@
   min-width:0;
   padding:.75rem;
   border:1px solid var(--c2t-border);
-  border-radius:8px;
+  border-radius:.5rem;
   background:#fff;
 }
 
@@ -107,8 +107,8 @@
   background:
     linear-gradient(45deg, #eef2f7 25%, transparent 25% 75%, #eef2f7 75%),
     linear-gradient(45deg, #eef2f7 25%, #fff 25% 75%, #eef2f7 75%);
-  background-position:0 0, 8px 8px;
-  background-size:16px 16px;
+  background-position:0 0, .5rem .5rem;
+  background-size:1rem 1rem;
 }
 
 .c2t-stage cms-image2 {
@@ -120,7 +120,7 @@
   display:block;
   min-height:1.5em;
   padding:.35rem .45rem;
-  border-radius:6px;
+  border-radius:.375rem;
   background:var(--c2t-soft);
   color:#344154;
   font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -135,7 +135,7 @@
   display:block;
   min-height:1.5em;
   padding:.35rem .45rem;
-  border-radius:6px;
+  border-radius:.375rem;
   background:#f8fafc;
   color:#344154;
   font:11px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -183,14 +183,14 @@
   display:grid;
   grid-template-columns:min-content minmax(0, 1fr);
   gap:.5rem;
-  max-width:260px;
+  max-width:16.25rem;
   overflow:hidden;
   border:1px solid var(--c2t-border);
 }
 
 .c2t-inline {
   margin:0;
-  max-width:220px;
+  max-width:13.75rem;
 }
 
 .c2t-inline cms-image2 { vertical-align:middle; }

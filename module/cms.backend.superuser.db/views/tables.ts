@@ -56,7 +56,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 
   return html.async`<div class="u2-card -full">
     <div class="-head">${t`Tables`} (${tables.length})</div>
-    <div class="-body"><input type=search data-table-search placeholder="${t`Search`}..." style="width:300px;max-width:100%"></div>
+    <div class="-body"><input type=search data-table-search placeholder="${t`Search`}..." style="width:18.75rem;max-width:100%"></div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead>
@@ -103,7 +103,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
   });
 
   const meta = status
-    ? html.async`<span style="font-size:.85em;opacity:.6;margin-left:12px">${status.rows ?? "?"} ${
+    ? html.async`<span style="font-size:.85em;opacity:.6;margin-left:.75rem">${status.rows ?? "?"} ${
       t`rows`
     } · ${status.engine} · <u2-bytes>${status.bytes ?? 0}</u2-bytes></span>`
     : "";

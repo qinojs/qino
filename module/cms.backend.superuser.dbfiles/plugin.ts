@@ -31,7 +31,7 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
   else if (AUD.has(ext))
     inner = html`<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
-    inner = html`<iframe src="${url}" style="width:100%;height:600px;border:0"></iframe>`;
+    inner = html`<iframe src="${url}" style="width:100%;height:37.5rem;border:0"></iframe>`;
   return inner ? html`<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>` : "";
 }
 

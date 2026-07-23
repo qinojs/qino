@@ -118,23 +118,23 @@ export function nodeFileAdd(node: Node, file: any, replace?: any): Promise<{ url
 }
 async function nodeFileAddTx(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
     const ctx = getCtx();
-    let File: any;
+    let added: any;
     if (typeof file === "number" || (typeof file === "string" && !isNaN(Number(file)))) {
         const dbF = await ctx.app.dbFiles.file(Number(file));
         if (!await dbF.access()) throw new Output({ error: "Forbidden" }, { status: 403 });
         if (replace) {
             const existing = await node.file(replace);
-            File = await dbF.clone(existing?.id);
+            added = await dbF.clone(existing?.id);
         } else {
-            File = await node.addFile(await dbF.clone());
+            added = await node.addFile(await dbF.clone());
         }
     } else {
         if (file != null && !/^https?:\/\//.test(String(file))) {
             throw new Output({ error: "Forbidden" }, { status: 403 });
         }
-        File = await node.addFile(file, replace);
+        added = await node.addFile(file, replace);
     }
-    return { url: await File?.url() ?? "", name: File?.name ?? "" };
+    return { url: await added?.url() ?? "", name: added?.name ?? "" };
 }
 
 export async function filesSetOrder(node: any, by: string): Promise<void> {
@@ -215,7 +215,7 @@ export async function searchFiles(search: string): Promise<any[]> {
         const isImg = ["jpg", "jpeg", "gif", "svg", "png"].includes(dbFile.extension);
         const imgSrc = isImg ? await dbFile.url({w: 32, h: 32}) : "about:blank";
         res.push({
-            html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:32px; height:32px; float:left; display:block; margin-right:3px"></div>` +
+            html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:2rem; height:2rem; float:left; display:block; margin-right:.1875rem"></div>` +
                    `<b>${hee(vs["name"])}</b><br><i>${hee(await (await node.page()).showTitle())}</i>`,
             text:  vs["name"],
             value: dbFile.id,

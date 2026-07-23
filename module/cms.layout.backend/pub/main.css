@@ -138,23 +138,23 @@ thead [l1\:order=DESC]:after { content:'\e800'; }
 
 
 /* mobile: */
-@media (max-width: 900px) {
+@media (max-width: 56.25rem) {
   #nav {
     position: fixed;
     top:0;
     z-index:1;
-    width:30px;
-    height:30px;
+    width:1.875rem;
+    height:1.875rem;
     overflow:visible;
-    margin:5px;
+    margin:.3125rem;
   }
   #nav:before {
     content: "";
     position: absolute;
-    left: 5px;
-    top: 5px;
-    bottom: 5px;
-    right:5px;
+    left: .3125rem;
+    top: .3125rem;
+    bottom: .3125rem;
+    right:.3125rem;
     background: linear-gradient(
       to bottom,
       var(--cms-dark), var(--cms-dark) 20%,
@@ -175,11 +175,11 @@ thead [l1\:order=DESC]:after { content:'\e800'; }
     transition:transform .2s;
     background:#fff;
     z-index:1;
-    box-shadow: 0 0 10px rgba(0,0,0,.4);
+    box-shadow: 0 0 .625rem rgba(0,0,0,.4);
   }
   #nav:hover > ul {
     transform: translateY(0);
   }
-  #content { padding:40px 0 0 0; }
+  #content { padding:2.5rem 0 0 0; }
 
 }

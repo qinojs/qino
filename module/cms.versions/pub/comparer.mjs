@@ -13,16 +13,16 @@ export const CmsVersComparer = {
         <div id=qgCmsVersionComparer class=qgCMS popover=manual>
             <style>${css}</style>
             <div class=-tools>
-                <div style="flex:1 0 200px">
+                <div style="flex:1 0 12.5rem">
                     <button class=-mode-side>Switch view</button>
                     <button class=-diffs>Show differences</button>
                 </div>
                 <div style="flex:auto; display:flex; align-items:center; justify-content:center">
-                    <span class=-toText style="flex:1 0 30px; text-align:right">Live</span>
+                    <span class=-toText style="flex:1 0 1.875rem; text-align:right">Live</span>
                     &nbsp;&nbsp; <input class=-fade min=0 max=1 step=any type=range><span class=-splitter></span> &nbsp;&nbsp;
-                    <span class=-fromText style="flex:1 0 30px"> &nbsp; Draft</span>
+                    <span class=-fromText style="flex:1 0 1.875rem"> &nbsp; Draft</span>
                 </div>
-                <div style="flex:1 0 200px; text-align:right">
+                <div style="flex:1 0 12.5rem; text-align:right">
                     <button class=-accept>publish</button>
                     <button class=-close>close</button>
                 </div>

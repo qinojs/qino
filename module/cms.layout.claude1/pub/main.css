@@ -22,7 +22,7 @@
   z-index: 10;
   padding-block: .9rem;
   background: color-mix(in srgb, var(--color-bg), transparent 25%);
-  backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(.875rem) saturate(1.4);
   border-bottom: 1px solid color-mix(in srgb, var(--color-line), transparent 88%);
   box-shadow: 0 .4rem 1.2rem color-mix(in srgb, var(--color), transparent 92%);
 }
@@ -91,7 +91,7 @@
   padding-block: 3rem;
   /* brand-tinted dark, not flat black */
   background: linear-gradient(var(--color-darker), var(--color-darkest));
-  border-top: 3px solid var(--accent);
+  border-top: .1875rem solid var(--accent);
   color: color-mix(in srgb, var(--color-lightest), transparent 20%);
   line-height: 1.7;
 }
@@ -102,7 +102,7 @@
 #foot a:hover { color: #fff; }
 
 /* Mobile: collapse nav into a burger dropdown --------------------------- */
-@media (max-width: 720px) {
+@media (max-width: 45rem) {
   #burger { display: inline-flex; }
 
   #nav {

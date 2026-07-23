@@ -91,7 +91,7 @@ async function render(node: Node): Promise<string> {
     if (!items.length) continue;
     healthHtml += `<div class="u2-card">
   <div class="-head">${hee(cap(type))}</div>
-  <div class="-body" style="max-height:700px;overflow:auto">
+  <div class="-body" style="max-height:43.75rem;overflow:auto">
     <div class="healty_container">${items.join("")}</div>
   </div>
 </div>`;
@@ -165,7 +165,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   }
 
   const badge = (n: number, label: string, color: string) =>
-    n ? `<span style="background:${color};color:#fff;border-radius:3px;padding:1px 7px;margin-right:4px">${n} ${label}</span>` : "";
+    n ? `<span style="background:${color};color:#fff;border-radius:.1875rem;padding:1px .4375rem;margin-right:.25rem">${n} ${label}</span>` : "";
 
   const statusHtml = (errors || warnings)
     ? badge(errors, await t`Errors`, "hsl(0,80%,45%)") + badge(warnings, await t`Warnings`, "hsl(40,90%,40%)")

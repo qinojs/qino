@@ -109,7 +109,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   }
 
   return html.async`<div class=u2-flex itemid="${id}">
-  <div class=u2-card style="flex:0 1 340px">
+  <div class=u2-card style="flex:0 1 21.25rem">
     <div class=-head>${t`Group`} ${vs.id}</div>
     <div style="overflow:auto; padding:0">
       <table class="u2-table -detail">

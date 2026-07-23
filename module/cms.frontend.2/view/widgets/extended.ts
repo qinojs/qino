@@ -28,11 +28,11 @@ export default async function (node: Node): Promise<HtmlString> {
     ${app.t`Show as template under "Modules"`}
   </label><br><br>
   <table><tbody style="vertical-align:middle">
-    <tr><td>${app.t`Identifier`} (${app.t`Layout position`}):<td><input class=-name value="${node.vs.name}" style="width:250px">
-    <tr><td>${app.t`Base`}:<td><input class=-basis type=qgcms-page value="${node.vs.basis}" style="width:250px">
+    <tr><td>${app.t`Identifier`} (${app.t`Layout position`}):<td><input class=-name value="${node.vs.name}" style="width:15.625rem">
+    <tr><td>${app.t`Base`}:<td><input class=-basis type=qgcms-page value="${node.vs.basis}" style="width:15.625rem">
   </table><br>
   ${app.t`Subpage definition`}
-  <textarea class=-childXML style="display:block;width:100%;height:120px" rows=4 cols=70>${childXML}</textarea>
+  <textarea class=-childXML style="display:block;width:100%;height:7.5rem" rows=4 cols=70>${childXML}</textarea>
   <br>
 </div>
 ${html.raw(extras)}`;

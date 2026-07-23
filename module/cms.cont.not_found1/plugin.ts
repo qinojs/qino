@@ -59,7 +59,7 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<string> {
     }
   }
 
-  return `<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:10px auto">
+  return `<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:.625rem auto">
   ${savedMsg}
   <div class=-head>${await t`Admin: define direct link to:`}</div>
   <form class=-body method=post style="display:flex; margin:0">

@@ -26,7 +26,7 @@ export default async function (node: Node): Promise<HtmlString> {
   if (parent) {
     const parentType = parent.vs?.type;
     let parentTitle = (await (await parent.title()).string()).replace(/<[^>]*>/g, "").trim() || String(parent);
-    if (parentType === "c") parentTitle += ` ${parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-2px">✎</span>`;
+    if (parentType === "c") parentTitle += ` ${parent.vs?.module} <span style="font-weight:normal;color:#000;font-size:20px;line-height:.5em;position:relative;margin-bottom:-.125rem">✎</span>`;
     parentHtml = await html.async`<div class=-editparent parent="${parent.id}" page-type="${parentType}">
       ${app.t`parent:`}
       <a href="${await parent.url()}" style="font-weight:bold;">${html.raw(parentTitle)}</a>
@@ -59,15 +59,15 @@ export default async function (node: Node): Promise<HtmlString> {
     <div class=-h1>
       ${node.vs.type === "p" ? app.t`Page` : app.t`Content`}:&nbsp;
       <input${titleEdit} value="${titleVal}" style="color:inherit;background:transparent;letter-spacing:.1em;flex:1;padding:0;border:none;outline:none;font-size:inherit" placeholder="no title">
-      <div style="margin-top:-15px">
+      <div style="margin-top:-.9375rem">
         <svg class=-img fill="var(--cms-dark)" width="46" height="46" style="display:block">
           ${svgIcon}
         </svg>
       </div>
     </div>
-    <div style="display:flex;margin-bottom:4px;">
+    <div style="display:flex;margin-bottom:.25rem;">
       <span title="${await module.get("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
-      <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-4px;margin-bottom:-3px;background:transparent">
+      <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-.25rem;margin-bottom:-.1875rem;background:transparent">
         ${moduleOptions}
       </select>
     </div>

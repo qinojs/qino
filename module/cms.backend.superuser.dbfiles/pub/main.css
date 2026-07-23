@@ -5,11 +5,11 @@
   & .-sidebar { flex: 0 0 auto; overflow: auto; }
   & .-main { flex: 1 1 auto; overflow: auto; max-height: 80vh; }
   & .-main > table { padding: 0; }
-  & .-thumb { width: 75px; }
-  & .-thumb img { display: block; max-width: 70px; max-height: 40px; }
+  & .-thumb { width: 4.6875rem; }
+  & .-thumb img { display: block; max-width: 4.375rem; max-height: 2.5rem; }
   & .-preview-img {
     max-width: 100%; display: block; max-height: 80vh;
-    background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
-    &:hover { background: repeating-conic-gradient(#888 0% 25%, #bbb 0% 50%) 0 0 / 16px 16px; }
+    background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 1rem 1rem;
+    &:hover { background: repeating-conic-gradient(#888 0% 25%, #bbb 0% 50%) 0 0 / 1rem 1rem; }
   }
 }

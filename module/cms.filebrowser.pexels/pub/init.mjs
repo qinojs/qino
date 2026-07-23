@@ -35,7 +35,7 @@ customElements.whenDefined('qino-cms').then(async () => {
         if (hasPixabay && item.photographer === 'Pixabay') continue;
         const el = c1.dom.fragment(
           '<label data-type=url>'+
-                    '<input type="checkbox" style="position:absolute; top:8px; left:8px">'+
+                    '<input type="checkbox" style="position:absolute; top:.5rem; left:.5rem">'+
                     '<div class=-title></div>'+
                 '</label>'
         ).firstChild;

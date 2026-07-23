@@ -56,11 +56,11 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   <div class=-head>${t`E-Mails`}</div>
   <div class=-body>
     ${t`Maximum 1000 are shown.`}
-    <form method=get style="margin-top:10px">
+    <form method=get style="margin-top:.625rem">
       <input type=search name=search value="${search}" placeholder="${t`Search...`}">
       <button>${t`Search`}</button>
     </form>
-    <div style="margin-top:10px">${actions}</div>
+    <div style="margin-top:.625rem">${actions}</div>
   </div>
   <div style="max-height:85vh; overflow:auto; padding:0">
     <table class=u2-table style="white-space:nowrap">
@@ -135,10 +135,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const preview = await renderPreview(node, id);
 
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex-basis:800px">
+  <div class=u2-card style="flex-basis:50rem">
     <div class=-head>${t`Mail details`}</div>
     <table class=u2-table>
-      <tr><td style="width:100px">${t`Date`}<td>${html.raw(u2time(row.time))} <small>${row.log_id}</small>
+      <tr><td style="width:6.25rem">${t`Date`}<td>${html.raw(u2time(row.time))} <small>${row.log_id}</small>
       <tr><td>${t`Subject`}<td>${row.subject}
       <tr><td>${t`Sender`}<td>${row.sender}
       <tr><td>${t`Reply to`}<td>${row.reply_to}
@@ -146,12 +146,12 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
         ${todo
           ? html.async`<form method=post style="display:inline">${hiddenToken(ctx.csrfToken)}<button name=send u2-confirm="${t`Send the e-mails?`}">${t`Send`} (${todo})</button></form>`
           : t`all sent`}
-        <form method=post style="display:inline; margin-left:10px">
+        <form method=post style="display:inline; margin-left:.625rem">
           ${hiddenToken(ctx.csrfToken)}
           <input type=email name=add_recipient placeholder="${t`Add recipient`}">
           <button>${t`add`}</button>
         </form>
-      <tr><td colspan=2 style="padding:10px">${preview}
+      <tr><td colspan=2 style="padding:.625rem">${preview}
     </table>
   </div>
   ${attachments}
@@ -173,13 +173,13 @@ async function renderPreview(node: Node, id: number): Promise<HtmlString> {
       body = body.replaceAll(`cid:${f.hash}`, `data:${mime};base64,${data}`);
     } catch { /* ignore missing inline files */ }
   }
-  return html`<iframe sandbox srcdoc="${body}" style="border:none; background:#fff; width:100%; height:500px; box-sizing:border-box; box-shadow:0 0 8px rgba(0,0,0,.25); display:block"></iframe>`;
+  return html`<iframe sandbox srcdoc="${body}" style="border:none; background:#fff; width:100%; height:31.25rem; box-sizing:border-box; box-shadow:0 0 .5rem rgba(0,0,0,.25); display:block"></iframe>`;
 }
 
 async function renderAttachments(node: Node, id: number): Promise<HtmlString | string> {
   const files = await node.app.db.query`SELECT * FROM mail_attachment WHERE mail_id=${id}`;
   if (!files.length) return "";
-  const rows = html.join(files.map(f => html`<div style="padding:7px 0">
+  const rows = html.join(files.map(f => html`<div style="padding:.4375rem 0">
     ${f.name || basename(f.path || "")}
     ${f.inline ? html`<small>(inline)</small>` : ""}
     <br><small>${f.path}</small>
@@ -202,9 +202,9 @@ async function renderRecipients(node: Node, id: number): Promise<HtmlString> {
       <td>${html.raw(u2time(r.sent))}
       <td>${html.raw(u2time(r.opened))}
       <td>${r.error}
-      <td><div style="overflow:auto; max-height:60px; font-size:10px">${dataHtml}</div>`;
+      <td><div style="overflow:auto; max-height:3.75rem; font-size:10px">${dataHtml}</div>`;
   }));
-  return html.async`<div class=u2-card style="flex:1 1 500px">
+  return html.async`<div class=u2-card style="flex:1 1 31.25rem">
     <div class=-head>${t`Recipients`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">
@@ -230,7 +230,7 @@ async function renderTracking(node: Node, id: number): Promise<HtmlString | stri
     <td>${r.num}
     <td>${html.raw(u2time(r.last_time))}
   `));
-  return html.async`<div class=u2-card style="flex:1 1 500px">
+  return html.async`<div class=u2-card style="flex:1 1 31.25rem">
     <div class=-head>${t`Tracking`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">

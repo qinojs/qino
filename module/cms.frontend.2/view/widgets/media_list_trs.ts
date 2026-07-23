@@ -32,7 +32,7 @@ export default async function (node: Node): Promise<HtmlString> {
           preview = `<img src="${await F.url({w: 70, h: 40, max: true})}" alt="" draggable=true
             onerror="this.replaceWith(Object.assign(document.createElement('audio'),{src:'${url}',controls:true,draggable:true,style:'min-width:70px;width:100%'}))">`;
         } else {
-          preview = `<audio src="${url}" controls style="min-width:70px;width:100%" draggable=true>`;
+          preview = `<audio src="${url}" controls style="min-width:4.375rem;width:100%" draggable=true>`;
         }
         break;
       }

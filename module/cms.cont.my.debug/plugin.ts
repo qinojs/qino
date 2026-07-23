@@ -31,7 +31,7 @@ async function render(_node: Node): Promise<string> {
       `<h3>Groups: ${hee(grps)}</h3>\n`;
   }
 
-  return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:8px;display:inline-block">
+  return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:.5rem;display:inline-block">
   <h3>session</h3>
   ${dump(sessionData)}
   <h3>settings</h3>

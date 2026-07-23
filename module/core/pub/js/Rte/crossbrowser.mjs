@@ -239,7 +239,7 @@ document.addEventListener('mousedown', e=>{
     '<div class=-x  style="cursor:e-resize '+itemCss+'"></div>'+
     '<div class=-y  style="cursor:s-resize '+itemCss+'"></div>'+
     '<div class=-xy style="cursor:se-resize'+itemCss+'" title="press ctrl to disable aspect ratio"></div>'+
-    '<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 3px; font-size:11px; color:#333; padding:2px 4px; border-radius:2px"></div>'+
+    '<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 .1875rem; font-size:11px; color:#333; padding:.125rem .25rem; border-radius:.125rem"></div>'+
   '</div>').firstChild;
   const X  = find(cont, '>.-x');
   const Y  = find(cont, '>.-y');

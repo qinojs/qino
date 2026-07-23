@@ -214,7 +214,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-card>
   <div class=-head>${t`Modules`}</div>
   <div class=-body>
-    <input type=search placeholder="${t`search`}..." style="width:300px; max-width:100%" data-module-search>
+    <input type=search placeholder="${t`search`}..." style="width:18.75rem; max-width:100%" data-module-search>
   </div>
   <div style="overflow:auto; max-height:80vh; padding:0">
     <table class=u2-table style="white-space:nowrap">

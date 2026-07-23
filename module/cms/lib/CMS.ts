@@ -185,8 +185,8 @@ export class CMS {
     if (text === "" && options.initial !== undefined) {
       if (typeof options.initial === "object" && !Array.isArray(options.initial)) {
         for (const l of this.app.languages.all) {
-          const LT = textObj.lang(l);
-          if ((await LT.get()) === "") await LT.set(options.initial[l] ?? "");
+          const lt = textObj.lang(l);
+          if ((await lt.get()) === "") await lt.set(options.initial[l] ?? "");
         }
         text = await textObj.string();
       } else {

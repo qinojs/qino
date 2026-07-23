@@ -5,7 +5,7 @@
   & .-toggle {
     display:inline-block;
     vertical-align:middle;
-    width:20px;
+    width:1.25rem;
   }
   & tbody tr {
     background: #fff;
@@ -19,7 +19,7 @@
     font-size:9px;
     background:#f0f0f0;
   }
-  u2-ico { --size:20px; }
+  u2-ico { --size:1.25rem; }
 
   & tbody tr.-mark { background: #ff09; }
   & tbody tr.-inherited > [v] { color:#000; }
@@ -35,7 +35,7 @@
 }
 
 .-access-1-box, .-access-2-box, .-access-3-box {
-  display:inline-block; width:30px; height:20px;
+  display:inline-block; width:1.875rem; height:1.25rem;
 }
 .-access-1-box { background-color:var(--cms-access-1); }
 .-access-2-box { background-color:var(--cms-access-2); }

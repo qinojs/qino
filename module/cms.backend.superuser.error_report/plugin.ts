@@ -196,12 +196,12 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ${hee(row.source)}
   <td style="width:6rem; white-space:nowrap">
     <small>
-      <div style="display:inline-block; border:1px solid; width:30px; vertical-align:middle">
+      <div style="display:inline-block; border:1px solid; width:1.875rem; vertical-align:middle">
         <div style="height:.6em; width:${num ? Math.round(numBot * 100 / num) : 0}%; background:currentColor"></div>
       </div> bots: ${numBot}
     </small><br>
     <small>
-      <div style="display:inline-block; border:1px solid; width:30px; vertical-align:middle">
+      <div style="display:inline-block; border:1px solid; width:1.875rem; vertical-align:middle">
         <div style="height:.6em; width:${num ? Math.round(numUns * 100 / num) : 0}%; background:currentColor"></div>
       </div> oldies: ${numUns}
     </small>
@@ -272,7 +272,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <br>${hee(row.email)}
   <td>
     <a href="${hee(eUrl)}" target="_blank" title="${hee(row.file)}" style="color:inherit; text-decoration:none">
-      ${row.sample ? `<pre style="font-size:10px; box-shadow:0 0 5px; padding:4px">${hee(row.sample)}</pre>` : "edit File"}
+      ${row.sample ? `<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${hee(row.sample)}</pre>` : "edit File"}
     </a>
   <td>${bt.length ? `<table>${btHtml}</table>` : ""}`;
   }
@@ -342,7 +342,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       for (const eItem of errorItems) {
         const active = eItem.id === error.id ? "&#x25B6;&#xFE0E;" : "";
         eu.searchParams.set("id", String(eItem.id));
-        errorLinks += `<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:3px 0; margin-bottom:-1px; display:block" href="${hee(eu.search)}">${active} ${hee(eItem.message)}</a>`;
+        errorLinks += `<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:.1875rem 0; margin-bottom:-1px; display:block" href="${hee(eu.search)}">${active} ${hee(eItem.message)}</a>`;
       }
       historyRows += `
 <tr>
@@ -351,7 +351,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     <a href="${hee(item.url)}" target="_blank">${hee(item.url)}</a><br>
     <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
     ${errorLinks}
-  <td><div style="max-width:600px; overflow:auto">${hee(item.post)}</div>`;
+  <td><div style="max-width:37.5rem; overflow:auto">${hee(item.post)}</div>`;
     }
   }
 
@@ -365,10 +365,10 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
   const fileBlock = isLocalFile
     ? `<a style="color:inherit; text-decoration:none" target="_blank" href="${hee(editorLink(error.file, error.line, error.col))}">
       <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(error.line)} column: ${hee(error.col)}
-      ${error.sample ? `<pre style="box-shadow:0 0 10px; padding:10px">${hee(error.sample)}</pre>` : ""}
+      ${error.sample ? `<pre style="box-shadow:0 0 .625rem; padding:.625rem">${hee(error.sample)}</pre>` : ""}
     </a>`
     : `<b>${hee(error.file)}</b> line: ${hee(error.line)} column: ${hee(error.col)}
-    ${error.sample ? `<pre style="box-shadow:0 0 10px; padding:10px">${hee(error.sample)}</pre>` : ""}`;
+    ${error.sample ? `<pre style="box-shadow:0 0 .625rem; padding:.625rem">${hee(error.sample)}</pre>` : ""}`;
 
   return `
 <div class="u2-flex" style="font-size:.95em">
@@ -447,7 +447,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     const c = color[row.prio] ?? "#333";
     const qs = "?show=entries&source=" + encodeURIComponent(row.source) + "&file=" + encodeURIComponent(row.file) + "&line=" + encodeURIComponent(row.line) + "&col=" + encodeURIComponent(row.col);
     const detailUrl = baseUrl ? hee(baseUrl.replace(/(#|$)/, qs + "$1")) : null;
-    const msg = `<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${hee(row.message)}</span>`;
+    const msg = `<span style="max-width:12.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${hee(row.message)}</span>`;
     tableRows += `<tr>
     <td><span style="color:${c};font-weight:bold">${hee(row.prio)}</span>
     <td>${hee(row.source)}

@@ -38,7 +38,7 @@ export class DbTextManager {
 
 export class DbText {
   #manager: DbTextManager;
-  #langCache: Map<string, DbTextLang> = new Map();
+  #langCache = new Map<string, DbTextLang>();
   id: number;
 
   constructor(manager: DbTextManager, id: number | string) {

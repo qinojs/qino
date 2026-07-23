@@ -5,7 +5,7 @@
   & .-toggle {
     display:inline-block;
     vertical-align:middle;
-    width:20px;
+    width:1.25rem;
   }
   & tbody tr {
     background: #fff;
@@ -21,5 +21,5 @@
   & tbody td:has(> input[type=checkbox]) {
     text-align:center;
   }
-  u2-ico { --size:20px; }
+  u2-ico { --size:1.25rem; }
 }

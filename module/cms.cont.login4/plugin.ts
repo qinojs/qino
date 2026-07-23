@@ -125,10 +125,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     const logoutRedirectId = Number(settings.logout_redirect());
     let action = "";
     if (logoutRedirectId) {
-      const P = await cms.node(logoutRedirectId);
-      if (P.exists()) {
-        action = ` action="${await P.url()}"`;
-      }
+      const page = await cms.node(logoutRedirectId);
+      if (page.exists()) action = ` action="${await page.url()}"`;
     }
     out += `<form method=post${action}>
   <input type=hidden name=csrfToken value="${csrfToken}">

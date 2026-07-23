@@ -54,15 +54,15 @@ export default async function (node: Node, vars: { param?: Record<string, string
   <div class="-widgetHead -open"><span class=-title>${app.t`Feedback / Support`}</span></div>
   <div>
     <form class=-feedbackform>
-      <textarea placeholder="${app.t`Message to:`} ${feedbackEmail}" name=msg required style="width:100%;height:200px">${feedbackText}</textarea>
+      <textarea placeholder="${app.t`Message to:`} ${feedbackEmail}" name=msg required style="width:100%;height:12.5rem">${feedbackText}</textarea>
       <br>
-      <button style="padding:10px 50px;width:100%">${app.t`send`}</button>
+      <button style="padding:.625rem 3.125rem;width:100%">${app.t`send`}</button>
     </form>
   </div>
   <div class=-widgetHead><span class=-title>${app.t`Change password`}</span></div>
   <div>
     <form class=-pwchange>
-      <table style="width:215px" class=c1-padding>
+      <table style="width:13.4375rem" class=c1-padding>
         <tr><td><input autocomplete=current-password style="width:100%" placeholder="${app.t`old password`}" type=password name=old>
         <tr><td><input autocomplete=new-password style="width:100%" placeholder="${app.t`new password`}" type=password name=new>
         <tr><td><input autocomplete=new-password style="width:100%" placeholder="${app.t`repeat new password`}" type=password name=new2>
