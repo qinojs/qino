@@ -73,6 +73,11 @@ export class Node {
 
     exists(): this | undefined { return this.#is ? this : undefined; }
 
+    /* Cache invalidation */
+    #clearTreeCache(): void { this.#children = this.#conts = null; this.#named = {}; }
+    #clearFileCache(): void { this.#files = this.#filesAll = null; }
+    #clearUrlCache(): void { this.#urls = null; }
+
     async set(data: string | Record<string, any>, value?: any): Promise<void> {
         if (!this.#is) {
             console.warn(`Node ${this.id} does not exist! (::set)`);
@@ -448,7 +453,7 @@ export class Node {
         }
         row.name = name;
         await this.db.table("page_file").ensure(row);
-        this.#files = null; this.#filesAll = null;
+        this.#clearFileCache();
         return dbFile;
     }
 
@@ -462,7 +467,7 @@ export class Node {
         await this.db.table("page_file").delete({ page_id: String(this), name });
         const used = await dbFile.used();
         if (!used) await dbFile.remove();
-        this.#files = null; this.#filesAll = null;
+        this.#clearFileCache();
         return true;
     }
 
@@ -477,7 +482,7 @@ export class Node {
                 await this.db.table("page_file").update({ page_id: String(this), name: file, sort: i++ });
             }
         });
-        this.#files = null; this.#filesAll = null;
+        this.#clearFileCache();
     }
 
     /* URLs */
@@ -512,7 +517,7 @@ export class Node {
         // hit the db nor show up as bogus "URL changed" history entries.
         if (row && Object.keys(data).every((k) => row[k] === data[k])) return;
         await this.db.table("page_url")[row ? "update" : "insert"](data);
-        this.#urls = null; // neu
+        this.#clearUrlCache();
     }
 
     async urlSeoGenerated(lang: string): Promise<string> {
@@ -585,8 +590,7 @@ export class Node {
         }
 
         // Re-sort children so the new child gets a proper sort position
-        this.#children = this.#conts = null;
-        this.#named = {};
+        this.#clearTreeCache();
         let i = 0;
         for (const child of (await this.children({ type: vs.type })).values()) {
             await child.set("sort", ++i);
@@ -651,8 +655,7 @@ export class Node {
             old2new[String(file.id)] = String(newFile.id);
             await this.db.table("page_file").insert({ page_id: newId, file_id: newFile.id, name });
         }
-        page.#files = null;
-        page.#filesAll = null;
+        page.#clearFileCache();
 
         if (Object.keys(old2new).length) {
             const newTexts = await page.texts();
@@ -673,10 +676,10 @@ export class Node {
             if (copy) await copy.set("basis", newId);
         }
 
-        page.#children = page.#conts = null;
+        page.#clearTreeCache();
 
         const parent = await this.parent();
-        if (parent) parent.#children = parent.#conts = null;
+        if (parent) parent.#clearTreeCache();
         
         return page;
     }
@@ -701,13 +704,9 @@ export class Node {
         sort = sort !== null ? sort : i++;
         await page.set({ basis: this.id, sort });
 
-        this.#children = this.#conts = null;
-        this.#named = {};
+        this.#clearTreeCache();
 
-        if (oldParent) {
-            oldParent.#children = oldParent.#conts = null;
-            oldParent.#named = {};
-        }
+        if (oldParent) oldParent.#clearTreeCache();
 
         await page.urlsSeoGen();
         return true;
@@ -724,8 +723,7 @@ export class Node {
         for (const name of Object.keys(await page.files())) await page.deleteFile(name);
         for (const name of Object.keys(await page.texts())) await page.textDelete(name);
         await this.db.table("page").delete(String(page));
-        this.#children = this.#conts = null;
-        this.#named = {};
+        this.#clearTreeCache();
         return true;
     }
 
