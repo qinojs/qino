@@ -475,13 +475,16 @@ export class Node {
         return (await this.files())[name];
     }
 
-    async sortFiles(sort: string[]): Promise<void> {  // todo, just existing files allowed!
-        await this.db.transaction(async () => {
-            let i = 1;
-            for (const file of sort) {
-                await this.db.table("page_file").update({ page_id: String(this), name: file, sort: i++ });
-            }
-        });
+    /** Reorder files by name. Unknown names are ignored; existing files left out
+     *  of the list keep their relative order and are appended at the end. */
+    async sortFiles(sort: string[]): Promise<void> {
+        const names = Object.keys(await this.filesAndPlaceholders());
+        const wanted = [...new Set(sort)].filter((n) => names.includes(n));
+        const ordered = [...wanted, ...names.filter((n) => !wanted.includes(n))];
+        const table = this.db.table("page_file");
+        await this.db.transaction(() =>
+            Promise.all(ordered.map((name, i) => table.update({ page_id: String(this), name, sort: i + 1 }))),
+        );
         this.#clearFileCache();
     }
 
