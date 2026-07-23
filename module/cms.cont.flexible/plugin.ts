@@ -12,11 +12,15 @@ export const settingsSchema = {
 async function render(node: Node, { vars }: any = {}): Promise<string> {
   let conts = await node.conts();
 
-  // If no children yet, optionally init a default child module
-  if (!conts.length) {
+  // Init a default child module once per node; deleting all children must not bring it back
+  if (!conts.length && !node.settings.__inited()) {
     const defaultModule = await node.app.settings[name]["init-child-module"];
     const initModule = vars["init-child-module"] ?? defaultModule;
-    if (initModule) { await node.cont("init", initModule); conts = await node.conts(); }
+    if (initModule) {
+      node.settings.__inited(true);
+      await node.cont("init", initModule);
+      conts = await node.conts();
+    }
   }
 
   let str = "";
