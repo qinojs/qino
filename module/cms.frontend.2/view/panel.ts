@@ -17,7 +17,7 @@ export default async function (node: Node): Promise<string> {
 <div id=panel popover=manual class="qgCMS -open -sidebar-open">
   <div class=-sidebar>
     <a class="-item qgCMS_editmode_switch -active" href="" title="Edit (E)">
-      <div style="opacity:0"><i></i></div>
+      <div><i></i></div>
     </a>
     ${tree}
     ${settings}

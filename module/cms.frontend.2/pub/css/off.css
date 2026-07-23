@@ -3,9 +3,9 @@
   top:0;
   padding:.625rem 0;
   right:0;
-  width:3.125rem;
+  min-width:2.7rem;
   text-align:center;
-  opacity:0;
+  xopacity:0;
   transition:opacity .3s;
 
   html:hover & { opacity:1; }
