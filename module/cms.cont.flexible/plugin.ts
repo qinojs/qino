@@ -5,7 +5,7 @@ export const name = "cms.cont.flexible";
 
 export const settingsSchema = {
   properties: {
-    "init-child-module": { type: "string", description: "Module name for the first automatically created child element when any flexible container is empty." },
+    "init-child-module": { type: "string", description: "Module for the first automatically created child element when any flexible container is empty." },
   },
 };
 

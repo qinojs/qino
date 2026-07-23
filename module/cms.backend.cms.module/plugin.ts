@@ -20,6 +20,9 @@ const modAccess = (app: App, module: string) =>
 const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;
 const contentModules = (app: App) => Object.keys(app.modules.all()).sort().filter((n) => isContent(app, n));
 
+/** Detail link of a module list page (this one or cms.backend.module). */
+const modUrl = (base: string, module: string) => base + (base.includes("?") ? "&" : "?") + "mod=" + module;
+
 const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number(v)] ?? "?";
 const accessWord = word(["none", "read", "edit", "admin"]);
 // module.cms_access: null = no rule, 0 = off for everyone, 1-3 = default level (see cms/ACCESS.md)
@@ -212,6 +215,9 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
   }
 
   const canReplace = access >= ADMIN && editable > 0 && targets.length > 0;
+  // the code/plugin view of the same module, if that backend page is installed and readable
+  const codePage = await (await node.cms.nodeByModule("cms.backend.module"))?.page();
+  const codeUrl = codePage && await codePage.access() ? await codePage.url() : "";
   const history = await historyRows(node, visible, titles);
 
   return html.async`<div class="u2-flex cmsBackendCmsModule" data-mod="${modName}">
@@ -222,6 +228,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
       <tr><th>${t`Used`}<td>${usedTotal}
       <tr><th>${t`Module access`}<td>${accessWord(access)}
       <tr><th>${t`Standard`}<td>${stdWord(standard)}
+      ${codeUrl ? html.async`<tr><th>${t`Code`}<td><a href="${modUrl(codeUrl, modName)}">cms.backend.module</a>` : ""}
     </table>
     ${message ? html`<div class=-body><strong>${message}</strong></div>` : ""}
   </div>
@@ -278,7 +285,7 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   const rows = (await moduleStats(app)).filter((r) => isContent(app, String(r.name)));
   const base = page ? await page.url() : "";
   const link = (r: Record<string, unknown>, extra: HtmlString | string) =>
-    html`<div><a href="${base + (base.includes("?") ? "&" : "?") + "mod=" + r.name}">${r.name}</a> ${extra}</div>`;
+    html`<div><a href="${modUrl(base, String(r.name))}">${r.name}</a> ${extra}</div>`;
 
   const top = [...rows].sort((a, b) => Number(b.used) - Number(a.used)).slice(0, 7);
   const recent = [...rows].filter((r) => r.changed).sort((a, b) => Number(b.changed) - Number(a.changed)).slice(0, 3);
