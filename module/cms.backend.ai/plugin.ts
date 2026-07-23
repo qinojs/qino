@@ -93,13 +93,14 @@ async function handleAction(app: App, vars: Record<string, any>): Promise<Messag
 
   if (action === "save-provider") {
     const key = String(vars.api_key ?? "").trim();
-    if (key) app.settings.ai.provider[provider.name].key(key);
+    if (key) await app.settings.ai.provider[provider.name].key(key);
     await app.db.table("ai_provider").update(providerId, { endpoint: String(vars.endpoint ?? provider.endpoint).trim() });
     return { type: "ok", text: `Provider ${provider.name} saved.` };
   }
 
   if (action === "delete-provider") {
     await app.db.table("ai_provider").delete(providerId); // ai_provider_model rows cascade
+    await app.settings.ai.provider[provider.name].key(undefined); // clear the leftover api key
     return { type: "ok", text: `Provider ${provider.name} removed.` };
   }
 
