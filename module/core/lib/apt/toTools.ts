@@ -1,6 +1,6 @@
 import type { Ctx } from "../ctx/Ctx.ts";
 import { toJsonSchema } from "../StandardSchema.ts";
-import { asParams, coerce, invoke } from "./invoke.ts";
+import { asParams, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";
 import type { AptTree, Method } from "./types.ts";
 
@@ -38,7 +38,7 @@ export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> }
       parameters: Object.keys(properties).length ? { type: "object", properties, required } : {},
       execute: (args) => {
         const raw = { ...asParams(args) };
-        for (const [name, schema] of routeParams(r)) if (schema && name in raw) raw[name] = coerce(raw[name], schema);
+        // zzz needed? for (const [name, schema] of routeParams(r)) if (schema && name in raw) raw[name] = coerce(raw[name], schema);
         const concretePath = r.segments
           .flatMap((seg) => seg.startsWith(":") ? pathValue(raw[paramName(seg)], isCatchall(seg)) : seg)
           .join("/");
