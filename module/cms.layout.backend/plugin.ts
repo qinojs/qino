@@ -63,38 +63,21 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
   const backendRoot = backendId ? await node.cms.node(backendId) : null;
   const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
 
-  let navHtml = "";
-  for (const child of navItems) {
-    const subC = [...(await child.children({ access: 1 })).values()];
-    const isActive = await page.in(child);
-    const hasSub = subC.length > 0;
-    const cUrl = hee(await child.url());
-    const cTitle = hee(await (await child.title()).string());
-    let subHtml = "";
-    if (isActive) {
-      for (const SC of subC) {
-        const subSC = [...(await SC.children({ access: 1 })).values()];
-        const isActiveSC = await page.in(SC);
-        const hasSubSC = subSC.length > 0;
-        const scUrl = hee(await SC.url());
-        const scTitle = hee(await (await SC.title()).string());
-        let subSubHtml = "";
-        if (isActiveSC) {
-          for (const SSC of subSC) {
-            const sscUrl = hee(await SSC.url());
-            const sscTitle = hee(await (await SSC.title()).string());
-            const isActiveSSC = await page.in(SSC);
-            subSubHtml += `<ul><li><a class="-item ${isActiveSSC ? "-active" : ""}" href="${sscUrl}">${sscTitle}</a></ul>`;
-          }
-        }
-        subHtml += `<ul><li><a class="-item ${isActiveSC ? "-active" : ""} ${hasSubSC ? "-hasSub" : ""}" href="${scUrl}">${scTitle}</a>${subSubHtml}</ul>`;
-      }
+  /** Nav levels 1-3; only the active branch expands, only level 1 shows the module icon. */
+  async function nav(nodes: Node[], level: number): Promise<string> {
+    let out = "";
+    for (const child of nodes) {
+      const active = await page.in(child);
+      const subs = level < 3 ? [...(await child.children({ access: 1 })).values()] : [];
+      const sub = active && subs.length ? await nav(subs, level + 1) : "";
+      const mod = level === 1 ? String((await child.conts())[0]?.vs?.module ?? "") : "";
+      const icon = mod ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.modulePath}${mod}/pub/module.svg#main"/></svg> ` : "";
+      const item = `<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${hee(await child.url())}">${icon}${hee(await (await child.title()).string())}</a>${sub}`;
+      out += level === 1 ? item : `<ul>${item}</ul>`;
     }
-    const cConts = [...(await child.conts()).values()];
-    const cModName = String(cConts[0]?.vs?.module ?? "");
-    const cIcon = cModName ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.modulePath}${cModName}/pub/module.svg#main"/></svg> ` : "";
-    navHtml += `<li><a class="-item ${isActive ? "-active" : ""} ${hasSub ? "-hasSub" : ""}" href="${cUrl}">${cIcon}${cTitle}</a>${subHtml}`;
+    return out;
   }
+  const navHtml = await nav(navItems, 1);
 
   // Language switcher
   const allLangs = app.languages.all;
