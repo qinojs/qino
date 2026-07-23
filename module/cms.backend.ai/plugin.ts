@@ -367,4 +367,11 @@ ${rows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
 </div>`;
 }
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { models } } };
+export const cms = {
+  node: {
+    css: ["pub/main.css"],
+    js: ["pub/main.js"],
+    render,
+    parts: { models },
+  },
+};

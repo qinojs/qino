@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import { html, type App, type HtmlString } from "../../core/mod.ts";
 import { cms, type Node } from "../../cms/mod.ts";
 
 export async function checkInstalled(app: App): Promise<Node | undefined> {
@@ -78,4 +78,34 @@ export function uaInfo(ua: string): { browser: string; version: string; bot: boo
     if (m) return { browser, version: m[1], bot };
   }
   return { browser: ua ? "?" : "-", version: "", bot };
+}
+
+// Linked breadcrumb from the tree root down to a node (a page or a content
+// within it). Pass a `titles` map to cache ancestors across many breadcrumbs.
+// Contents usually have no title, so fall back to their (shortened) module name,
+// then the id.
+export async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string> = new Map()): Promise<HtmlString> {
+  const node = await host.cms.node(nodeId);
+  const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
+  // the containing page is the deepest type='p' node; contents hang below it → show it in bold
+  let pageIdx = -1;
+  for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
+  const crumbs: HtmlString[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const n = nodes[i];
+    const title = (await nodeTitle(n, titles)) || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
+    let url = "";
+    try { url = await n.url(); } catch { /* no url (e.g. detached) */ }
+    crumbs.push(html`<a href="${url}">${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
+  }
+  if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
+  return html.join(crumbs, ' <span class="-sep">›</span> ');
+}
+
+async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
+  const hit = cache.get(n.id);
+  if (hit !== undefined) return hit;
+  const s = (await (await n.title()).string()).trim();
+  cache.set(n.id, s);
+  return s;
 }

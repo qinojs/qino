@@ -121,7 +121,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
 <tr class=-row data-key="${ev.key}" data-nc="${ev.ncMax}">
   <td class=-when><u2-time datetime="${iso}" type=relative title="${stamp}">${stamp}</u2-time>
   <td class=-who>${await actorCell(r, t)}
-  <td class=-where>${await breadcrumb(node, Number(r.node_id), titles)}
+  <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
   <td class=-what>${html.join(labels)}
   <td class=-client>${r.ip ?? "-"}<br><small>${ua.browser} ${ua.version.split(".")[0]}${ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : html.raw("")}</small>`;
 }
@@ -130,36 +130,6 @@ async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {
   if (!r.usr_id) return html`<small>${await t`guest`}</small>`;
   const name = `${r.firstname ?? ""} ${r.lastname ?? ""}`.trim();
   return html.async`<b>${name || r.email}</b>${name && r.email ? html`<br><small>${r.email}</small>` : ""}`;
-}
-
-// Linked breadcrumb from the tree root down to the changed node (a page or a
-// content within it). Titles are cached across rows so shared ancestors are
-// looked up once per request; content nodes usually have no title, so fall back
-// to their (shortened) module name, then the id.
-async function breadcrumb(host: Node, nodeId: number, titles: Map<number, string>): Promise<HtmlString> {
-  const node = await host.cms.node(nodeId);
-  const nodes = [...(await node.path()).values()].filter((n) => n.id !== 1); // drop system root
-  // the containing page is the deepest type='p' node; contents hang below it → show it in bold
-  let pageIdx = -1;
-  for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
-  const crumbs: HtmlString[] = [];
-  for (let i = 0; i < nodes.length; i++) {
-    const n = nodes[i];
-    const title = (await nodeTitle(n, titles)) || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;
-    let url = "";
-    try { url = await n.url(); } catch { /* no url (e.g. detached) */ }
-    crumbs.push(html`<a href="${url}" target=_blank>${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
-  }
-  if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
-  return html.join(crumbs, ' <span class="-sep">›</span> ');
-}
-
-async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {
-  const hit = cache.get(n.id);
-  if (hit !== undefined) return hit;
-  const s = (await (await n.title()).string()).trim();
-  cache.set(n.id, s);
-  return s;
 }
 
 // ── render ──────────────────────────────────────────────────────────────────
@@ -225,12 +195,11 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   }
   if (!latest.size) return "";
 
-  const titles = new Map<number, string>();
   const items = [...latest.values()].sort((a, b) => b.time - a.time);
   const trs: HtmlString[] = [];
   for (const it of items) {
     const page = await cmsOf(app).node(it.pageId);
-    const title = (await nodeTitle(page, titles)) || "#" + it.pageId;
+    const title = (await (await page.title()).string()).trim() || "#" + it.pageId;
     let url = "";
     try { url = await page.url(); } catch { /* no url */ }
     const iso = new Date(it.time * 1000).toISOString();

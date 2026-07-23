@@ -330,4 +330,11 @@ function renderCachePart(node: Node): Promise<HtmlString> {
   return renderCache(node.app);
 }
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, parts: { cache: renderCachePart } } };
+export const cms = {
+  node: {
+    css: ["pub/main.css"],
+    js: ["pub/main.js"],
+    render,
+    parts: { cache: renderCachePart },
+  },
+};

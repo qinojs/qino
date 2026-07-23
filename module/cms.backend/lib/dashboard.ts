@@ -15,7 +15,7 @@ export async function renderDashboard(node: Node): Promise<string> {
     const widget = cont?.module?.plugin.backendDashboardWidget;
     if (typeof widget !== "function") continue;
     try {
-      const body = await widget(node.app);
+      const body = await widget(node.app, child); // child = the widget's own backend page, for deep links
       if (!body) continue;
       const url = hee(await child.url());
       const title = hee(await (await child.title()).string());

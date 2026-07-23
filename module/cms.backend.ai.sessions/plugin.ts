@@ -121,4 +121,10 @@ function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, parts: { list } } };
+export const cms = {
+  node: {
+    js: ["pub/main.js"],
+    render,
+    parts: { list },
+  },
+};

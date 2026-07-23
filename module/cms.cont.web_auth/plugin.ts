@@ -13,7 +13,13 @@ const settingsSchema = {
   },
 };
 
-export const cms = { node: { js: ["pub/main.js"], render, settingsSchema } };
+export const cms = {
+  node: {
+    js: ["pub/main.js"],
+    render,
+    settingsSchema,
+  },
+};
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlString> {
   const settings = node.settings;

@@ -22,4 +22,10 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 export { backendDashboardWidget };
 
-export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render } };
+export const cms = {
+  node: {
+    css: ["pub/main.css"],
+    js: ["pub/main.js"],
+    render,
+  },
+};
