@@ -55,11 +55,8 @@ export default async function (node: Node, vars:any): Promise<any> {
     const grpId = Number(vars.grp_id);
     const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;
-    if (vars.add) {
-      await db.table("usr_grp").ensure({ grp_id: grpId, usr_id: usrId });
-    } else {
-      await db.table("usr_grp").delete({ grp_id: grpId, usr_id: usrId });
-    }
+    const rel = { grp_id: grpId, usr_id: usrId };
+    await (vars.add ? db.table("usr_grp").ensure(rel) : db.table("usr_grp").delete(rel));
     return 1;
   }
 

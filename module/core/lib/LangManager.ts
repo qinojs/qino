@@ -39,11 +39,7 @@ export class LangManager {
     if (!this.#langs.includes(ctx.langUsr)) ctx.langUsr = "";
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
-    if (usr) {
-      usr.set("lang", ctx.langUsr);
-    } else {
-      ctx.sess.data.core.lang(ctx.langUsr);
-    }
+    usr ? usr.set("lang", ctx.langUsr) : ctx.sess.data.core.lang(ctx.langUsr);
 
     ctx.lang = ctx.langUsr;
     ctx.langNs ??= "";

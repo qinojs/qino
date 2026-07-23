@@ -89,16 +89,6 @@ type CspSources = Record<string, true>;
 const origins = (s: CspSources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...set].map(fn));
 
-function hasPrefix(values: Iterable<string>, url: string): boolean {
-  for (const v of values) if (url.startsWith(v)) return true;
-  return false;
-}
-
-function hasValueWithPrefix(values: Iterable<string>, prefix: string): boolean {
-  for (const v of values) if (v.startsWith(prefix)) return true;
-  return false;
-}
-
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const cacheDir = app.appPATH + CACHE_SUBDIR;
   const allowed = new Set<string>(); // origins any page declared via CSP — fetchable by anyone
@@ -119,7 +109,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const data = await Deno.readFile(filePath).catch(() => null);
     if (data) serveResponse(mediaType, data);
 
-    if (!hasPrefix(allowed, url)) { // undeclared URLs still go through fetchPolicy
+    if (![...allowed].some(o => url.startsWith(o))) { // undeclared URLs still go through fetchPolicy
       const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
       const denied =
         policy === "none" ? "fetchPolicy=none" :
@@ -163,6 +153,6 @@ export function rewriteHtml(html: ResHtml, appURL: string, csp: ResCsp): void {
 }
 
 function stripDead(src: CspSources, ...refs: Iterable<string>[]): void {
-  const urls = refs.map(ref => [...ref]);
-  for (const o of origins(src)) if (!urls.some(ref => hasValueWithPrefix(ref, o))) delete src[o];
+  const urls = refs.flatMap(ref => [...ref]);
+  for (const o of origins(src)) if (!urls.some(u => u.startsWith(o))) delete src[o];
 }

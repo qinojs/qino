@@ -17,15 +17,15 @@ function accessGroups(app: App): Promise<Record<string, string | number>[]> {
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // only accept existing nodes the user may read
+  const admin = ctx.settings.cms.admin;
   if (ctx.req.query.rp) {
     const rp = await node.cms.node(Number(ctx.req.query.rp));
-    if (rp.exists() && await rp.access() > 0) ctx.settings.cms.admin.rootPageNode(rp.id);
+    if (rp.exists() && await rp.access() > 0) admin.rootPageNode(rp.id);
   }
 
   const app = node.app;
   const t = app.t;
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
-  const rootNode = await node.cms.node(rootId);
+  const rootNode = await node.cms.node(Number(admin.rootPageNode()) || 1);
 
   const pathParts: HtmlString[] = [];
   for (const child of (await rootNode.path()).values()) {
@@ -38,7 +38,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const listHtml = await list(node, { ctx });
 
-  const showContents = !!ctx.settings.cms.admin.showContents();
+  const showContents = !!admin.showContents();
 
   return html.async`<div class="u2-card" style="flex:0 1 75rem">
   <div class=-head>${t`Access`}</div>
@@ -69,26 +69,25 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const app = node.app;
   const db = app.db;
+  const admin = ctx.settings.cms.admin;
 
   if (vars?.toggleOpen != null) {
     const p = String(vars.toggleOpen);
-    const cur: string = ctx.settings.cms.admin.openPageNodes() ?? "";
+    const cur: string = admin.openPageNodes() ?? "";
     const open = new Set(cur.split(",").filter(Boolean));
     if (vars.value == "1") open.add(p);
     else open.delete(p);
-    ctx.settings.cms.admin.openPageNodes([...open].join(","));
+    admin.openPageNodes([...open].join(","));
   }
 
-  if (vars?.showContents != null) ctx.settings.cms.admin.showContents(vars.showContents == "1");
+  if (vars?.showContents != null) admin.showContents(vars.showContents == "1");
 
-  const openStr: string = ctx.settings.cms.admin.openPageNodes() ?? "";
+  const openStr: string = admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
-  const showContents = !!ctx.settings.cms.admin.showContents();
-  const treeType = showContents ? "*" : "p";
+  const treeType = admin.showContents() ? "*" : "p";
 
-  const rootId = Number(ctx.settings.cms.admin.rootPageNode()) || 1;
-  const rootNode = await node.cms.node(rootId);
+  const rootNode = await node.cms.node(Number(admin.rootPageNode()) || 1);
   const groups = await accessGroups(app);
 
   let out = "";
@@ -96,32 +95,27 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   return html.raw(out);
 
   async function renderChildren(parent: Node, level: number): Promise<void> {
-    for (const [id, SubPage] of await parent.children({ type: treeType })) {
-      const access = await SubPage.access();
+    for (const [id, subPage] of await parent.children({ type: treeType })) {
+      const access = await subPage.access();
       const open = openPageNodes.has(String(id));
-      const isCont = SubPage.vs.type === "c";
-      const accessPage = await SubPage.accessInheritParent();
-      const inherited = SubPage.vs.access === null;
+      const isCont = subPage.vs.type === "c";
+      const accessPage = await subPage.accessInheritParent();
+      const inherited = subPage.vs.access === null;
 
-      const hasChildren = (await SubPage.children({ type: treeType })).size > 0;
-      let toggleBtn = "<span class=-toggle></span>";
-      if (hasChildren) {
-        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`;
-      }
+      const toggleBtn = (await subPage.children({ type: treeType })).size
+        ? `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
+        : "<span class=-toggle></span>";
 
-      const titleObj = await SubPage.title();
+      const titleObj = await subPage.title();
       const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
       const titleCell = access >= 1
-        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(
-  SubPage.vs.name
-)}</span></span><a style="vertical-align:middle" href="${hee(
-  await SubPage.url()
-)}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`
+        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(subPage.vs.name)}</span></span>` +
+          `<a style="vertical-align:middle" href="${hee(await subPage.url())}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`
         : `<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
 
       // "Public" cell — toggles this page's own access (null = inherited)
       const editable = access > 2;
-      const publicV = SubPage.vs.access;
+      const publicV = subPage.vs.access;
       const publicCell = editable
         ? `<td class=-cell data-pid="${id}" v="${publicV == null ? "" : (publicV ? 1 : 0)}">`
         : `<td style="font-style:italic">`;
@@ -145,7 +139,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   ${publicCell}
   ${grpCells}`;
 
-      if (open) await renderChildren(SubPage, level + 1);
+      if (open) await renderChildren(subPage, level + 1);
     }
   }
 }

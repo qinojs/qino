@@ -129,11 +129,7 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
 
     for (const col of liveFields) {
         const f = col.Field;
-        if (fieldSpec === true || fieldSpec[f]) {
-            selects.push(`m.\`${f}\``);
-        } else {
-            selects.push(`original.\`${f}\``);
-        }
+        selects.push(`${fieldSpec === true || fieldSpec[f] ? "m" : "original"}.\`${f}\``);
         if (col.Key === "PRI") {
             pkJoins.push(`mm.\`${f}\` = m.\`${f}\``);
             origJoins.push(`m.\`${f}\` = original.\`${f}\``);

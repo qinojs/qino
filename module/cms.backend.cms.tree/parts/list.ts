@@ -52,12 +52,9 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       const isCont = subPage.vs.type === "c";
       const contsData = await loopConts(subPage);
 
-      // Toggle button
-      const hasChildren = (await subPage.children({ type: treeType })).size > 0;
-      let toggleBtn = '<span class=-toggle></span>';
-      if (hasChildren) {
-        toggleBtn = `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${subPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`;
-      }
+      const toggleBtn = (await subPage.children({ type: treeType })).size
+        ? `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${subPage.id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
+        : '<span class=-toggle></span>';
 
       // Title cell
       let titleCell: string;
@@ -67,32 +64,12 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         const titleObj = await subPage.title();
         const titleLang = titleObj ? await titleObj.orFallback(ctx.lang) : null;
         const titleText = titleLang ? hee(await titleLang.get()) : "";
-        const titleId = titleObj?.id ?? 0;
         const inputStyle = 'style="flex:1; background:transparent; border:none; margin:0 .625rem 0 0; padding:0"';
-        if (subAccess < 2) {
-          titleCell = `<input value="${titleText}" ${inputStyle} disabled>`;
-        } else {
-          titleCell = `<input value="${titleText}" ${inputStyle} cmstxt="${hee(titleId)}">`;
-        }
+        const edit = subAccess < 2 ? "disabled" : `cmstxt="${hee(titleObj?.id ?? 0)}"`;
+        titleCell = `<input value="${titleText}" ${inputStyle} ${edit}>`;
       }
 
-      const pageUrl = await subPage.url();
-      const linkCell = `<a style="vertical-align:middle" href="${hee(pageUrl)}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`;
-
-      // Online start column
-      const onlineStartCell = renderOnlineStart(subPage, subAccess);
-
-      // Online end column
-      const onlineEndCell = await renderOnlineEnd(subPage, subAccess, contsData.onlineEnd);
-
-      // Access column
-      const accessCell = await renderAccess(subPage, subAccess, contsData.access);
-
-      // Visible column
-      const visibleCell = renderVisible(subPage, subAccess);
-
-      // Searchable column
-      const searchableCell = renderSearchable(subPage, subAccess);
+      const linkCell = `<a style="vertical-align:middle" href="${hee(await subPage.url())}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`;
 
       out += `
 <tr${isCont ? ' class=-isCont' : ''}>
@@ -104,11 +81,11 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       ${titleCell}
       ${linkCell}
     </div>
-  <td>${onlineStartCell}
-  <td>${onlineEndCell}
-  <td>${accessCell}
-  <td>${visibleCell}
-  <td>${searchableCell}
+  <td>${renderOnlineStart(subPage, subAccess)}
+  <td>${await renderOnlineEnd(subPage, subAccess, contsData.onlineEnd)}
+  <td>${await renderAccess(subPage, subAccess, contsData.access)}
+  <td>${renderFlag("visible", subPage, subAccess)}
+  <td>${renderFlag("searchable", subPage, subAccess)}
   <td><span>${hee(subPage.vs.module)}</span>`;
 
       if (open) await renderChildren(subPage, level + 1);
@@ -134,10 +111,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
       ? await t`inherited`
       : (ts === 0 ? await t`always` : `<u2-time datetime="${iso}" type=relative>${iso.slice(0, 16).replace("T", " ")}</u2-time>`);
 
-    let badge = "";
-    if (numNotInherit && access > 2) {
-      badge = ` <span title="Contents where &quot;online until&quot; is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${numNotInherit}</span>`;
-    }
+    const badge = notInheritBadge(numNotInherit, access, "&quot;online until&quot;");
 
     if (access <= 2) return `<span style="color:#8a8">${date}</span>${badge}`;
 
@@ -154,26 +128,21 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
     if (access === 0) return "---";
     const v = subPage.vs.access;
     const label = v == null ? await t`inherited` : (v ? await t`yes` : await t`no`);
-    let badge = "";
-    if (numNotInherit && access > 2) {
-      badge = ` <span title="Contents where access is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${numNotInherit}</span>`;
-    }
+    const badge = notInheritBadge(numNotInherit, access, "access");
     if (access <= 2) return `<span style="color:#666">${hee(label)}</span>${badge}`;
     const color = v == null ? "#aaa" : (v ? "green" : "red");
     return `<button class=u2-unstyle data-toggle=access data-pid="${subPage.id}" data-v="${v == null ? "" : v ? 1 : 0}" style="color:${color}">${hee(label)}</button>${badge}`;
   }
 
-  function renderVisible(subPage: Node, access: number): string {
+  /** Checkbox column for a boolean node flag ("visible" / "searchable"). */
+  function renderFlag(flag: string, subPage: Node, access: number): string {
     if (access === 0) return "---";
-    return checkbox("visible", subPage, !!subPage.vs.visible, access === 1);
+    return `<input type=checkbox data-toggle=${flag} data-pid="${subPage.id}"${subPage.vs[flag] ? " checked" : ""}${access === 1 ? " disabled" : ""}>`;
   }
+}
 
-  function renderSearchable(subPage: Node, access: number): string {
-    if (access === 0) return "---";
-    return checkbox("searchable", subPage, !!subPage.vs.searchable, access === 1);
-  }
-
-  function checkbox(toggle: string, subPage: Node, checked: boolean, readonly: boolean): string {
-    return `<input type=checkbox data-toggle=${toggle} data-pid="${subPage.id}"${checked ? " checked" : ""}${readonly ? " disabled" : ""}>`;
-  }
+/** Warning badge counting contents that override an inherited value. */
+function notInheritBadge(num: number, access: number, what: string): string {
+  if (!num || access <= 2) return "";
+  return ` <span title="Contents where ${what} is not inherited!" style="display:inline-block; background:yellow; border-radius:50%; padding:0 .1875rem">${num}</span>`;
 }

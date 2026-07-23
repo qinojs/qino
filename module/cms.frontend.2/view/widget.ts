@@ -44,14 +44,8 @@ export async function accordion(
   const open = !!await ctx.settings["cms.frontend.2"].ui.widget[name];
   const cls = "-widgetHead " + (open ? "-open" : "");
 
-  let headHtml: string;
-  try {
-    headHtml = await widget(name + ".head", true, node, cls, param);
-  } catch {
-    headHtml = `<div class="${cls}"><span class=-title>${
-      title ?? name
-    }</span></div>`;
-  }
+  const headHtml = await widget(name + ".head", true, node, cls, param)
+    .catch(() => `<div class="${cls}"><span class=-title>${title ?? name}</span></div>`);
   return headHtml + await widget(name, open, node, "-content", param);
 }
 

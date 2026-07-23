@@ -46,11 +46,7 @@ class CmsTextService {
 
         if (/^[A-Z]/.test(input)) output = output.charAt(0).toUpperCase() + output.slice(1);
 
-        if (await db.one`SELECT id FROM text WHERE id = ${txt_id} AND lang = ${target_lang}`) {
-            await db.table("text").update({ id: txt_id, lang: target_lang, text: output });
-        } else {
-            await db.table("text").insert({ id: txt_id, lang: target_lang, text: output });
-        }
+        await db.table("text").ensure({ id: txt_id, lang: target_lang, text: output });
         return true;
     }
 
