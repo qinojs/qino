@@ -70,20 +70,17 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   ];
   const presentExports = knownKeys.filter(({ key }) => mod[key] !== undefined);
 
+  // the members an export contributes, shown next to its badge
+  const members = (key: string): string[] => {
+    if (key === "needs") return mod.needs!;
+    if (key === "api" || key === "cms") return Object.keys(mod[key] ?? {});
+    if (key !== "settingsSchema" && key !== "ctxSettingsSchema") return [];
+    const props = (mod[key] as { properties?: unknown })?.properties;
+    return props && typeof props === "object" ? Object.keys(props) : [];
+  };
   const exportBadges = html.join(presentExports.map(({ key, label }) => {
-    let detail: HtmlString | string = "";
-    if (key === "needs") {
-      detail = html` <small>(${mod.needs!.join(", ")})</small>`;
-    } else if (key === "api") {
-      detail = html` <small>(${Object.keys(mod.api ?? {}).join(", ")})</small>`;
-    } else if (key === "cms") {
-      detail = html` <small>(${Object.keys(mod.cms ?? {}).join(", ")})</small>`;
-    } else if (key === "settingsSchema" || key === "ctxSettingsSchema") {
-      const schema = mod[key];
-      const props = schema && typeof schema === "object" && "properties" in schema && schema.properties && typeof schema.properties === "object" ? Object.keys(schema.properties) : [];
-      if (props.length) detail = html` <small>(${props.join(", ")})</small>`;
-    }
-    return html`${label}${detail} `;
+    const list = members(key);
+    return html`${label}${list.length ? html` <small>(${list.join(", ")})</small>` : ""} `;
   }));
 
   // --- Dependencies (needs) ---

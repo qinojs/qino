@@ -20,13 +20,6 @@ const TYPE_TABLES: Record<string, string[]> = {
   access: ["page_access_grp", "page_access_usr"],
 };
 
-// from/to arrive as unix seconds (converted in the browser, where the TZ is known);
-// fall back to parsing a raw datetime string for direct API calls.
-const toUnix = (v: string): number => {
-  if (/^\d+$/.test(v)) return Number(v);
-  const ms = Date.parse(v);
-  return isNaN(ms) ? 0 : Math.floor(ms / 1000);
-};
 
 
 // Candidate node_changed rows (newest first). Search/date/own-client narrow the
@@ -35,8 +28,8 @@ const toUnix = (v: string): number => {
 function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
   const db = app.db;
   const where: Sql[] = [sql.raw("1")];
-  if (f.from)          where.push(sql`l.time >= ${toUnix(f.from)}`);
-  if (f.to)            where.push(sql`l.time <= ${toUnix(f.to)}`);
+  if (f.from)          where.push(sql`l.time >= ${backend.toUnix(f.from)}`);
+  if (f.to)            where.push(sql`l.time <= ${backend.toUnix(f.to)}`);
   if (f.mine === "no") where.push(sql`l.client_id != ${ctx.clientId}`);
   if (f.sinceId)       where.push(sql`nc.id > ${Number(f.sinceId)}`);
   const s = (f.search ?? "").trim();

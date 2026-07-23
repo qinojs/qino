@@ -19,13 +19,6 @@ const uniqueColor = (v: unknown): string => {
 };
 
 
-// from/to arrive as unix seconds (converted in the browser, where the TZ is known);
-// fall back to parsing a raw datetime string (server-local TZ) for direct API calls.
-const toUnix = (v: string): number => {
-  if (/^\d+$/.test(v)) return Number(v);
-  const ms = Date.parse(v);
-  return isNaN(ms) ? 0 : Math.floor(ms / 1000);
-};
 
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first
 const dumpData = (raw: unknown): string => {
@@ -56,8 +49,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   if (f.not_my_client) where.push(sql`log.client_id != ${ctx.clientId}`);
   if (f.loggedin === "yes") where.push(sql.raw("usr.id IS NOT NULL"));
   if (f.loggedin === "no")  where.push(sql.raw("usr.id IS NULL"));
-  if (f.from)          where.push(sql`log.time >= ${toUnix(f.from)}`);
-  if (f.to)            where.push(sql`log.time <= ${toUnix(f.to)}`);
+  if (f.from)          where.push(sql`log.time >= ${backend.toUnix(f.from)}`);
+  if (f.to)            where.push(sql`log.time <= ${backend.toUnix(f.to)}`);
   // Search hits a single indexed path (never an OR across joined tables, which would
   // force a full log scan). Input shape decides the dimension: number → id/client,
   // dotted/colon → ip (via unique log_ip), else → url (fulltext on the small log_url).

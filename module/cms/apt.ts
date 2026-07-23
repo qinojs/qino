@@ -19,6 +19,19 @@ const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
 };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
 
+/** PUT verb for online_start / online_end — accepts an ISO string or a Unix timestamp. */
+const onlineVerb = (edge: "start" | "end", sample: string) => ({
+  put: {
+    description: `Set node online-${edge} time (ISO string or Unix timestamp)`,
+    ...nodeWrite,
+    input: s.object({ value: s.optional(s.string()).describe(`ISO string ("${sample}") or Unix timestamp. Omit to remove limit.`) }),
+    execute: async ({ node, value }: any) => {
+      await node.set(`online_${edge}`, typeof value === "string" && value.includes("T") ? Math.floor(new Date(value).getTime() / 1000) : value);
+      return { ok: true };
+    },
+  },
+});
+
 
 // ───── Node ───────────────────────────────────────────────────────────────
 
@@ -206,33 +219,8 @@ const node = {
     },
   },
 
-  "online-start": {
-    put: {
-      description: "Set node online-start time (ISO string or Unix timestamp)",
-      ...nodeWrite,
-      input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-01-01T00:00:00\") or Unix timestamp. Omit to remove limit.") }),
-      execute: async ({ node, value }: any) => {
-        let v = value;
-        if (typeof v === "string" && v.includes("T")) v = Math.floor(new Date(v).getTime() / 1000);
-        await node.set("online_start", v);
-        return { ok: true };
-      },
-    },
-  },
-
-  "online-end": {
-    put: {
-      description: "Set node online-end time (ISO string or Unix timestamp)",
-      ...nodeWrite,
-      input: s.object({ value: s.optional(s.string()).describe("ISO string (\"2024-12-31T23:59:59\") or Unix timestamp. Omit to remove limit.") }),
-      execute: async ({ node, value }: any) => {
-        let v = value;
-        if (typeof v === "string" && v.includes("T")) v = Math.floor(new Date(v).getTime() / 1000);
-        await node.set("online_end", v);
-        return { ok: true };
-      },
-    },
-  },
+  "online-start": onlineVerb("start", "2024-01-01T00:00:00"),
+  "online-end": onlineVerb("end", "2024-12-31T23:59:59"),
 
   children: {
     post: {

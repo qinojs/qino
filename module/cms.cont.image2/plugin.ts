@@ -39,13 +39,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const hrefAttr = url ? html` href="${url}"` : "";
 
   // Style
-  let style = "";
-  let minHeight = String(await settings["min-height"] ?? "");
-  if (/^\d+$/.test(minHeight)) minHeight += "px";
-  if (minHeight) style += `min-height:${minHeight};`;
-  let maxHeight = String(await settings["max-height"] ?? "");
-  if (/^\d+$/.test(maxHeight)) maxHeight += "px";
-  if (maxHeight) style += `max-height:${maxHeight};`;
+  // bare numbers are pixel values
+  const cssLen = async (prop: string) => {
+    const v = String(await settings[prop] ?? "");
+    return v ? `${prop}:${/^\d+$/.test(v) ? v + "px" : v};` : "";
+  };
+  const style = await cssLen("min-height") + await cssLen("max-height");
 
   const options = {
     alt: String(text),

@@ -1,21 +1,20 @@
 import { html, type HtmlString } from "../../../core/mod.ts";
-import { accessRadios, accessTail } from "../accessList.ts";
+import { accessRadios, accessTable, accessTail } from "../accessList.ts";
 import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<HtmlString> {
   const app = node.app;
-  const db = app.db;
   const hasMany = vars.hasMany ?? true;
   const search  = vars.param?.search ?? "";
   const tail = accessTail(hasMany, search, ["grp.name"]);
 
-  const rows = await db.query`
+  const rows = await app.db.query`
     SELECT grp.*, a.access
     FROM grp
     LEFT JOIN page_access_grp a ON grp.id = a.grp_id AND a.page_id = ${node.id}
     WHERE cms_access ${tail}, grp.name LIMIT 100`;
   const publicAccess = node.vs.access;
-  const trs: Array<HtmlString | Promise<HtmlString>> = [html.async`<tr>
+  const trs: HtmlString[] = [await html.async`<tr>
     <td>${app.t`Public`}
     <td><input type=radio name=public value=0 ${!publicAccess ? "checked" : ""}>
     <td><input type=radio name=public value=1 ${publicAccess ? "checked" : ""}>
@@ -27,14 +26,5 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
       ${accessRadios(`g_${vs.id}`, vs.access)}`);
   }
 
-  return html.async`<table id=cmsGrpAccessTable class=-styled style="width:100%">
-  <thead><tr class=-vertical>
-    <th style="text-align:left;width:auto">${app.t`Group`}
-    <th><span class=-access-0>${app.t`no access`}</span>
-    <th><span class=-access-1>${app.t`view`}</span>
-    <th><span class=-access-2>${app.t`edit`}</span>
-    <th><span class=-access-3>${app.t`administer`}</span>
-  <tbody>${html.join(await Promise.all(trs))}
-</table>
-<style>#cmsGrpAccessTable input { display:block; margin:auto; }</style>`;
+  return accessTable(app, "Grp", app.t`Group`, html.join(trs));
 }

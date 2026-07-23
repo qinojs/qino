@@ -1,6 +1,14 @@
 import { html, type App, type HtmlString } from "../../core/mod.ts";
 import { cms, type Node } from "../../cms/mod.ts";
 
+// Filter dates arrive as unix seconds (converted in the browser, where the TZ is
+// known); fall back to parsing a raw datetime string for direct API calls.
+export const toUnix = (v: string): number => {
+  if (/^\d+$/.test(v)) return Number(v);
+  const ms = Date.parse(v);
+  return isNaN(ms) ? 0 : Math.floor(ms / 1000);
+};
+
 export async function checkInstalled(app: App): Promise<Node | undefined> {
   const cm = cms(app);
   let node = await cm.nodeByModule("cms.backend");
