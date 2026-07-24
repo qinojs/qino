@@ -23,10 +23,28 @@
           "response_time": {
             "type": "integer"
           },
+          "final_url": {
+            "type": "string"
+          },
           "cert_valid": {
             "type": "boolean"
           },
+          "cert_days": {
+            "type": "integer"
+          },
           "redirect_https": {
+            "type": "boolean"
+          },
+          "ipv6": {
+            "type": "boolean"
+          },
+          "www_ok": {
+            "type": "boolean"
+          },
+          "ns_answering": {
+            "type": "integer"
+          },
+          "ns_in_sync": {
             "type": "boolean"
           },
           "dns_ns": {
@@ -42,6 +60,18 @@
             "type": "string"
           },
           "dns_txt": {
+            "type": "string"
+          },
+          "dns_caa": {
+            "type": "string"
+          },
+          "dns_dmarc": {
+            "type": "string"
+          },
+          "dns_changed": {
+            "type": "integer"
+          },
+          "expect": {
             "type": "string"
           },
           "error": {
