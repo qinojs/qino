@@ -61,7 +61,8 @@ cms.initNode("backend.api", (el) => {
         if (!field.name) continue;
         let val = field.value;
         if (val === "") continue;
-        if (val === "true") val = true;
+        if (field.dataset.json) val = JSON.parse(val);
+        else if (val === "true") val = true;
         else if (val === "false") val = false;
         else if (!isNaN(val)) val = Number(val);
 

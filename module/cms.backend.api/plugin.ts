@@ -69,7 +69,10 @@ function schemaToFormFields(s: StandardSchema | undefined): string {
     const field = v as StandardSchema;
     const inner = field.kind === "optional" ? field.inner ?? field : field;
     const required = field.kind !== "optional" && !field.defaultValue;
-    const jsonSchema = toJsonSchema(inner);
+    const isJson = inner.kind === "array" || inner.kind === "object" || inner.kind === "record";
+    const jsonSchema = isJson
+      ? { ...toJsonSchema(inner), "x-html": { tag: "textarea", "data-json": "1" }, examples: [inner.kind === "array" ? '["one", "two"]' : '{"key": "value"}'] }
+      : toJsonSchema(inner);
     const description = field.description ?? inner.description;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name: k, required });
     const label = hee(k) + (required ? "" : "?");
@@ -78,7 +81,7 @@ function schemaToFormFields(s: StandardSchema | undefined): string {
         <span>
           ${label}
           <br>
-          <small>${description ? ` - ${hee(description)}` : ""}</small>
+          <small>${hee(description)}</small>
         </span>
         <span>${inputHtml}</span>
       </label>`;
