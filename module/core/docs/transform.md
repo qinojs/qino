@@ -29,8 +29,8 @@ The app builds one instance at boot (`app.fileTransformer`); the normal entry po
 | `page` | PDF page (1-based) |
 | `frame` | video frame (1-based) |
 
-`fmt: "auto"` picks the smallest of AVIF/JPEG (or PNG when alpha is present and AVIF is
-unavailable). `fmt: "md"` extracts text (documents → Pandoc, PDF → pdftotext/OCR, images → OCR,
+`fmt: "auto"` encodes candidates and keeps the smallest: AVIF vs JPEG when AVIF is available,
+else PNG for images with alpha, else JPEG vs PNG. `fmt: "md"` extracts text (documents → Pandoc, PDF → pdftotext/OCR, images → OCR,
 media → transcript). `fmt: "json"` yields a raw transcript.
 
 ## Result
@@ -63,6 +63,18 @@ Each transformer gets a shared `TransformContext` and mutates `currentPath` / `m
 it hands off to the next. `handles(ctx)` is the guard (mime, options, tool availability); only
 matching transformers run. If `currentPath` is unchanged at the end, the source is returned
 untouched.
+
+The context is your whole working surface:
+
+| Field | Use |
+|---|---|
+| `currentPath` | current input; **write your output to a new file and point this at it** |
+| `mime` | current MIME; update it when you change the format |
+| `sourcePath` | the original source (read-only) |
+| `tmpDir` | scratch dir for output files — cleaned up after the run |
+| `meta` | notes passed between transformers, e.g. `geometryApplied` lets `encode` know a resize ran |
+| `signal` | the shared timeout `AbortSignal` — pass to every external command |
+| `options` | the (dpr-resolved) `TransformOptions` |
 
 ```ts
 interface TransformerDef {

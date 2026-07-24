@@ -118,6 +118,11 @@ hono.route("/app", honoAdapter(app));
 Deno.serve(hono.fetch);
 ```
 
+## Documentation
+
+The [core docs](module/core/docs/) walk through the main building blocks — [modules](module/core/docs/module.md),
+[database access](module/core/docs/db.md), and [file transforms](module/core/docs/transform.md).
+
 ## License
 
 [MIT](LICENSE)
