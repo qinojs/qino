@@ -1,0 +1,67 @@
+{
+  "properties": {
+    "monitor_site": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 255,
+            "x-index": "unique"
+          },
+          "online": {
+            "type": "boolean",
+            "x-index": true
+          },
+          "status_code": {
+            "type": "integer"
+          },
+          "response_time": {
+            "type": "integer"
+          },
+          "cert_valid": {
+            "type": "boolean"
+          },
+          "redirect_https": {
+            "type": "boolean"
+          },
+          "dns_ns": {
+            "type": "string"
+          },
+          "dns_a": {
+            "type": "string"
+          },
+          "dns_aaaa": {
+            "type": "string"
+          },
+          "dns_mx": {
+            "type": "string"
+          },
+          "dns_txt": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "checked": {
+            "type": "integer",
+            "x-index": true
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "required": ["id", "url", "created"]
+      }
+    }
+  }
+}
