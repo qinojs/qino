@@ -508,7 +508,7 @@ export class Node {
 
     async urlSeo(lang: string): Promise<string> {
         const urls = await this.urls();
-        urls[lang] ??= { url: await this.urlSeoGen(lang), target: "" };
+        urls[lang] ??= { url: await this.#urlSeoOwn(lang), target: "" };
         return urls[lang].url;
     }
 
@@ -537,17 +537,25 @@ export class Node {
         return url;
     }
 
-    urlSeoGen(lang: string): Promise<string> {
-        return this.db.transaction(() => this.#urlSeoGen(lang));
+    /** Generate + persist this node's own SEO url. No subtree walk, so it's safe to call from a read. */
+    #urlSeoOwn(lang: string): Promise<string> {
+        return this.db.transaction(async () => {
+            const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
+            const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
+            await this.urlSet(lang, { url });
+            return url;
+        });
     }
-    async #urlSeoGen(lang: string): Promise<string> {
-        const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id} AND lang = ${lang}`;
-        const url = row?.custom ? row.url : await this.urlSeoGenerated(lang);
-        await this.urlSet(lang, { url });
-        for (const child of (await this.children({ type: "*" })).values()) {
-            await child.urlSeoGen(lang);
-        }
-        return url;
+
+    /** Regenerate this node's url and the whole subtree (after move/rename). */
+    urlSeoGen(lang: string): Promise<string> {
+        return this.db.transaction(async () => {
+            const url = await this.#urlSeoOwn(lang);
+            for (const child of (await this.children({ type: "*" })).values()) {
+                await child.urlSeoGen(lang);
+            }
+            return url;
+        });
     }
 
     urlsSeoGen(): Promise<void> {
