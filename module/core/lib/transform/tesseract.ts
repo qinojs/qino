@@ -1,15 +1,12 @@
 /** Thin wrapper around Tesseract OCR */
 
-import { tryCommand } from "./tryCommand.ts";
+import { probe } from "./tryCommand.ts";
 
-let _available: boolean | null = null;
 let _langs: Promise<string> | null = null;
 
-export async function isTesseractAvailable(): Promise<boolean> {
-  return _available ??= await tryCommand('tesseract', ['--version']);
-}
-
-export function resetTesseractCache(): void { _available = null; _langs = null; }
+export const available = probe('tesseract', ['--version']);
+const _resetAvailable = available.reset;
+available.reset = () => { _resetAvailable(); _langs = null; };
 
 /** All installed languages joined for -l (e.g. "deu+eng"), 'osd' excluded */
 function tesseractLangs(): Promise<string> {
@@ -21,7 +18,7 @@ function tesseractLangs(): Promise<string> {
 }
 
 /** Runs OCR on an image, returns the extracted plain text */
-export async function tesseract(input: string, signal?: AbortSignal): Promise<string> {
+export async function run(input: string, signal?: AbortSignal): Promise<string> {
   const langs = await tesseractLangs();
   const { code, stdout, stderr } = await new Deno.Command('tesseract', {
     args: [input, 'stdout', ...(langs ? ['-l', langs] : [])],

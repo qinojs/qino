@@ -1,7 +1,7 @@
-import { pandoc, isPandocAvailable } from '../pandoc.ts';
-import { pdftotext, isPdftotextAvailable } from '../poppler.ts';
+import * as pandoc from '../pandoc.ts';
+import * as pdftotext from '../pdftotext.ts';
 import { ocrPdf } from '../ocr.ts';
-import { isMagickAvailable } from '../imagemagick.ts';
+import * as magick from '../magick.ts';
 import * as nodePath from 'node:path';
 import type { Transcript, TransformContext, TransformerDef } from '../types.ts';
 import { TRANSCRIPT_MIME } from './transcript.ts';
@@ -34,14 +34,14 @@ export const markdown: TransformerDef = {
     ctx.mime === TRANSCRIPT_MIME
       ? true
       : ctx.mime === 'application/pdf'
-      ? await isPdftotextAvailable() || (!!await ctx.transformer.ocrEngine(ctx) && await isMagickAvailable())
-      : ctx.mime in PANDOC_FORMATS && await isPandocAvailable()
+      ? await pdftotext.available() || (!!await ctx.transformer.ocrEngine(ctx) && await magick.available())
+      : ctx.mime in PANDOC_FORMATS && await pandoc.available()
   ),
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'out.md');
     if (ctx.mime === TRANSCRIPT_MIME) await Deno.writeTextFile(out, transcriptToMarkdown(JSON.parse(await Deno.readTextFile(ctx.currentPath))));
     else if (ctx.mime === 'application/pdf') await pdfToMarkdown(ctx, out);
-    else await pandoc(ctx.currentPath, PANDOC_FORMATS[ctx.mime], out, ctx.signal);
+    else await pandoc.run(ctx.currentPath, PANDOC_FORMATS[ctx.mime], out, ctx.signal);
     ctx.currentPath = out;
     ctx.mime = 'text/markdown';
   },
@@ -50,8 +50,8 @@ export const markdown: TransformerDef = {
 /** Text layer via pdftotext; OCR when the engine beats it (AI) or there is no text layer (scan) */
 async function pdfToMarkdown(ctx: TransformContext, out: string): Promise<void> {
   let text: string | undefined;
-  if (await isPdftotextAvailable()) {
-    await pdftotext(ctx.currentPath, out, ctx.signal);
+  if (await pdftotext.available()) {
+    await pdftotext.run(ctx.currentPath, out, ctx.signal);
     text = (await Deno.readTextFile(out)).trim();
   }
   const engine = await ctx.transformer.ocrEngine(ctx);

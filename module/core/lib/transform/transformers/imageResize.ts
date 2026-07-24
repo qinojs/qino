@@ -1,4 +1,4 @@
-import { magick, magickIdentify, isMagickAvailable } from '../imagemagick.ts';
+import * as magick from '../magick.ts';
 import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
@@ -11,7 +11,7 @@ export const imageResize: TransformerDef = {
   phase: 'geometry',
   props: ['w', 'h', 'vpos', 'hpos', 'zoom', 'max'],
   handles: async (ctx) =>
-    await isMagickAvailable() &&
+    await magick.available() &&
     ctx.mime.startsWith('image/') &&
     ctx.mime !== 'image/svg+xml' &&
     !ctx.meta.animated &&
@@ -24,7 +24,7 @@ export const imageResize: TransformerDef = {
     const zoom = ctx.options.zoom ?? 0;
     const max = ctx.options.max;
 
-    const dims = await magickIdentify(ctx.currentPath, '%wx%h', ctx.signal);
+    const dims = await magick.identify(ctx.currentPath, '%wx%h', ctx.signal);
     const [origW, origH] = dims.split('x').map(Number);
 
     // Prevent upscaling
@@ -36,7 +36,7 @@ export const imageResize: TransformerDef = {
     if (max || h === 0 || w === 0) {
       // Scale only, no crop – '>' prevents upscaling
       const size = w && h ? `${w}x${h}>` : w ? `${w}>` : `x${h}>`;
-      await magick(ctx.currentPath, ['-resize', size], out, { signal: ctx.signal });
+      await magick.run(ctx.currentPath, ['-resize', size], out, { signal: ctx.signal });
     } else {
       // After upscale lock, restore target aspect ratio (PHP: makeProportional before getAutoCroped)
       if (targetW / targetH > w / h) {
@@ -55,7 +55,7 @@ export const imageResize: TransformerDef = {
       const cropX = Math.round((rW - w) * hpos / 100);
       const cropY = Math.round((rH - h) * vpos / 100);
 
-      await magick(
+      await magick.run(
         ctx.currentPath,
         [
           '-resize', `${rW}x${rH}`,

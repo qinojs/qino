@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, html, magickIdentify, type HtmlString, isMagickAvailable, getCtx, type DbFile } from "../core/mod.ts";
+import { hee, html, magick, type HtmlString, getCtx, type DbFile } from "../core/mod.ts";
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
@@ -69,9 +69,9 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
 
   const filePath = dbFile.path;
   let ow = 0, oh = 0;
-  if (await isMagickAvailable() && filePath) {
+  if (await magick.available() && filePath) {
     try {
-      const dim = await magickIdentify(filePath, "%wx%h");
+      const dim = await magick.identify(filePath, "%wx%h");
       [ow, oh] = dim.split("x").map(Number);
     } catch { /* svg or unknown */ }
   }

@@ -1,6 +1,10 @@
-import { magick, magickIdentify, checkAvifSupport, fileSize, isMagickAvailable } from '../imagemagick.ts';
+import * as magick from '../magick.ts';
 import type { TransformerDef } from '../types.ts';
+import { typeByExtension } from '../../../../../deps.ts';
 import * as nodePath from 'node:path';
+
+/** File size in bytes; a missing file is `Infinity` so it loses the smaller-output comparison. */
+const fileSize = async (path: string): Promise<number> => (await Deno.stat(path).catch(() => null))?.size ?? Infinity;
 
 /**
  * Encode phase: selects optimal output format (AVIF > JPEG > PNG) and sets quality.
@@ -11,36 +15,35 @@ export const imageEncode: TransformerDef = {
   phase: 'encode',
   props: ['q', 'fmt'],
   handles: async (ctx) =>
-    await isMagickAvailable() &&
+    await magick.available() &&
     ctx.mime.startsWith('image/') &&
     ctx.mime !== 'image/svg+xml' &&
     (ctx.meta.geometryApplied || ctx.options.q !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md')),
   transform: async (ctx) => {
     const q = Math.min(Math.max(ctx.options.q ?? 77, 1), 100);
-    const fmt = ctx.options.fmt === 'jpg' ? 'jpeg' : (ctx.options.fmt === 'md' ? 'auto' : ctx.options.fmt ?? 'auto');
+    const fmt = ctx.options.fmt === 'md' ? 'auto' : ctx.options.fmt ?? 'auto';
 
     // Explicit format requested
     if (fmt !== 'auto') {
-      const ext = fmt === 'jpeg' ? 'jpg' : fmt;
-      const out = nodePath.join(ctx.tmpDir, `out.${ext}`);
-      await magick(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
+      const out = nodePath.join(ctx.tmpDir, `out.${fmt}`);
+      await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;
-      ctx.mime = mimeForFmt(fmt);
+      ctx.mime = typeByExtension(fmt) ?? 'application/octet-stream';
       return;
     }
 
     // Check alpha channel
-    ctx.meta.hasAlpha = await magickIdentify(ctx.currentPath, '%A', ctx.signal) === 'True';
+    ctx.meta.hasAlpha = await magick.identify(ctx.currentPath, '%A', ctx.signal) === 'True';
 
-    const avifAvailable = await checkAvifSupport();
+    const avifSupported = await magick.avifSupported();
 
-    if (avifAvailable) {
+    if (avifSupported) {
       // AVIF supports alpha natively – AVIF vs JPEG, smaller file wins
       const avif = nodePath.join(ctx.tmpDir, 'out.avif');
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       await Promise.all([
-        magick(ctx.currentPath, ['-quality', String(q)], avif, { signal: ctx.signal }),
-        magick(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
+        magick.run(ctx.currentPath, ['-quality', String(q)], avif, { signal: ctx.signal }),
+        magick.run(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
       ]);
       const [sizeAvif, sizeJpg] = await Promise.all([fileSize(avif), fileSize(jpg)]);
       if (sizeAvif <= sizeJpg) {
@@ -53,7 +56,7 @@ export const imageEncode: TransformerDef = {
     } else if (ctx.meta.hasAlpha) {
       // Kein AVIF, Alpha vorhanden → PNG
       const out = nodePath.join(ctx.tmpDir, 'out.png');
-      await magick(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
+      await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;
       ctx.mime = 'image/png';
     } else {
@@ -61,8 +64,8 @@ export const imageEncode: TransformerDef = {
       const jpg = nodePath.join(ctx.tmpDir, 'out.jpg');
       const png = nodePath.join(ctx.tmpDir, 'out.png');
       await Promise.all([
-        magick(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
-        magick(ctx.currentPath, [], png, { signal: ctx.signal }),
+        magick.run(ctx.currentPath, ['-quality', String(q)], jpg, { signal: ctx.signal }),
+        magick.run(ctx.currentPath, [], png, { signal: ctx.signal }),
       ]);
       const [sizeJpg, sizePng] = await Promise.all([fileSize(jpg), fileSize(png)]);
       if (sizeJpg <= sizePng) {
@@ -75,7 +78,3 @@ export const imageEncode: TransformerDef = {
     }
   },
 };
-
-function mimeForFmt(fmt: string): string {
-  return { avif: 'image/avif', jpeg: 'image/jpeg', png: 'image/png' }[fmt] ?? 'application/octet-stream';
-}

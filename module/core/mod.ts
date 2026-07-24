@@ -59,7 +59,7 @@ export { login, pwHash, pwVerify } from "./lib/auth.ts";
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";
 export type { OcrEngine, Transcript, TranscriptEngine, TranscriptSegment, TranscriptWord, TransformContext } from "./lib/transform/mod.ts";
-export { isMagickAvailable, magickIdentify } from "./lib/transform/imagemagick.ts";
+export * as magick from "./lib/transform/magick.ts";
 
 // Server helpers used by modules
 export { ResHtml } from "./lib/ctx/ResHtml.ts";

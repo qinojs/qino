@@ -1,4 +1,4 @@
-import { isFfmpegAvailable, ffmpegCoverArt } from '../ffmpeg.ts';
+import * as ffmpeg from '../ffmpeg.ts';
 import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
@@ -19,12 +19,12 @@ export const audioDecode: TransformerDef = {
   phase: 'decode',
   props: [],
   handles: async (ctx) =>
-    await isFfmpegAvailable() &&
+    await ffmpeg.available() &&
     AUDIO_MIMES.has(ctx.mime) &&
     (ctx.options.w !== undefined || ctx.options.h !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md' && ctx.options.fmt !== 'json') || ctx.options.q !== undefined),
   transform: async (ctx) => {
     const out = nodePath.join(ctx.tmpDir, 'audio-cover.png');
-    await ffmpegCoverArt(ctx.currentPath, out, ctx.signal);
+    await ffmpeg.coverArt(ctx.currentPath, out, ctx.signal);
     ctx.currentPath = out;
     ctx.mime = 'image/png';
   },

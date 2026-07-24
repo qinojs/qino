@@ -1,4 +1,4 @@
-import { magick } from '../imagemagick.ts';
+import * as magick from '../magick.ts';
 import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
@@ -14,7 +14,7 @@ export const pdfDecode: TransformerDef = {
   transform: async (ctx) => {
     const page = (ctx.options.page ?? 1) - 1; // ImageMagick is 0-based
     const out = nodePath.join(ctx.tmpDir, 'pdf-page.png');
-    await magick(
+    await magick.run(
       `${ctx.currentPath}[${page}]`,
       ['-background', 'white', '-flatten'],
       out,

@@ -1,5 +1,5 @@
 import * as nodePath from 'node:path';
-import { ffmpegAudio, isFfmpegAvailable } from '../ffmpeg.ts';
+import * as ffmpeg from '../ffmpeg.ts';
 import type { TransformerDef } from '../types.ts';
 import { AUDIO_MIMES } from './audioDecode.ts';
 import { VIDEO_MIMES } from './videoDecode.ts';
@@ -19,9 +19,9 @@ export const transcript: TransformerDef = {
     let path = ctx.currentPath;
     let mime = ctx.mime;
     if (VIDEO_MIMES.has(mime)) {
-      if (!await isFfmpegAvailable()) throw new Error('transcript: ffmpeg missing for video audio extraction');
+      if (!await ffmpeg.available()) throw new Error('transcript: ffmpeg missing for video audio extraction');
       path = nodePath.join(ctx.tmpDir, 'transcript-audio.m4a');
-      await ffmpegAudio(ctx.currentPath, path, ctx.signal);
+      await ffmpeg.audio(ctx.currentPath, path, ctx.signal);
       mime = 'audio/mp4';
     }
     const out = nodePath.join(ctx.tmpDir, 'transcript.json');

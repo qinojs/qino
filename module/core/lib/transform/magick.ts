@@ -10,7 +10,7 @@ let _identifyCmd = 'magick';
 let _identifyArgs: string[] = ['identify'];
 
 
-export async function isMagickAvailable(): Promise<boolean> {
+export async function available(): Promise<boolean> {
   if (_available !== null) return _available;
   return await checkMagick().then(() => true).catch(() => false);
 }
@@ -35,7 +35,7 @@ async function checkMagick(): Promise<void> {
   _checked = true;
 }
 
-export async function checkAvifSupport(): Promise<boolean> {
+export async function avifSupported(): Promise<boolean> {
   if (_avifSupported !== null) return _avifSupported;
   await checkMagick().catch(() => { _avifSupported = false; });
   if (_avifSupported !== null) return _avifSupported;
@@ -53,7 +53,7 @@ export async function checkAvifSupport(): Promise<boolean> {
 }
 
 /** Runs convert/magick [...preArgs, input, ...args, output]. preArgs are input-settings that must precede the file (e.g. -density for PDF rasterization). */
-export async function magick(input: string, args: string[], output: string, opts: { preArgs?: string[]; signal?: AbortSignal } = {}): Promise<void> {
+export async function run(input: string, args: string[], output: string, opts: { preArgs?: string[]; signal?: AbortSignal } = {}): Promise<void> {
   const { code, stderr, stdout } = await new Deno.Command(_convertCmd, {
     args: [...opts.preArgs ?? [], input, ...args, output],
     signal: opts.signal,
@@ -68,7 +68,7 @@ export async function magick(input: string, args: string[], output: string, opts
 }
 
 /** Returns identify format string, e.g. "%wx%h" → "1920x1080" */
-export async function magickIdentify(input: string, format: string, signal?: AbortSignal): Promise<string> {
+export async function identify(input: string, format: string, signal?: AbortSignal): Promise<string> {
   const { stdout } = await new Deno.Command(_identifyCmd, {
     args: [..._identifyArgs, '-format', format, `${input}[0]`],
     signal,
@@ -78,15 +78,11 @@ export async function magickIdentify(input: string, format: string, signal?: Abo
   return new TextDecoder().decode(stdout).trim();
 }
 
-export function resetMagickCache(): void {
+export function resetCache(): void {
   _checked = false;
   _available = null;
   _avifSupported = null;
   _convertCmd = 'magick';
   _identifyCmd = 'magick';
   _identifyArgs = ['identify'];
-}
-
-export async function fileSize(path: string): Promise<number> {
-  return (await Deno.stat(path).catch(() => null))?.size ?? Infinity;
 }

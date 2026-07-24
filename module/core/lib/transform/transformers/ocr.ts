@@ -1,4 +1,4 @@
-import { isMagickAvailable, magick } from '../imagemagick.ts';
+import * as magick from '../magick.ts';
 import * as nodePath from 'node:path';
 import type { TransformerDef } from '../types.ts';
 
@@ -19,9 +19,9 @@ export const ocr: TransformerDef = {
     if (!engine) return;
     let path = ctx.currentPath;
     let mime = ctx.mime;
-    if (!DIRECT.has(mime) && await isMagickAvailable()) { // e.g. AVIF/HEIC/TIFF
+    if (!DIRECT.has(mime) && await magick.available()) { // e.g. AVIF/HEIC/TIFF
       path = nodePath.join(ctx.tmpDir, 'ocr-src.png');
-      await magick(`${ctx.currentPath}[0]`, [], path, { signal: ctx.signal }); // [0]: first frame/page only
+      await magick.run(`${ctx.currentPath}[0]`, [], path, { signal: ctx.signal }); // [0]: first frame/page only
       mime = 'image/png';
     }
     const out = nodePath.join(ctx.tmpDir, 'ocr.md');

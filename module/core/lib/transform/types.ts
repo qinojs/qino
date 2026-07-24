@@ -1,6 +1,6 @@
 import type { FileTransformer } from './FileTransformer.ts';
 
-export type Phase = 'decode' | 'geometry' | 'filter' | 'encode';
+export type Phase = 'decode' | 'geometry' | 'encode';
 
 export interface TransformOptions {
   w?: number;
@@ -13,7 +13,7 @@ export interface TransformOptions {
   dpr?: number;
   page?: number;
   frame?: number;
-  fmt?: 'avif' | 'jpeg' | 'jpg' | 'png' | 'md' | 'json' | 'auto';
+  fmt?: 'avif' | 'jpg' | 'png' | 'md' | 'json' | 'auto';
   [key: string]: unknown;
 }
 

@@ -2,12 +2,13 @@ import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
 import { typeByExtension } from '../../../../deps.ts';
 import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult, TranscriptEngine } from './types.ts';
-import { checkAvifSupport, isMagickAvailable, resetMagickCache } from './imagemagick.ts';
-import { isFfmpegAvailable, resetFfmpegCache } from './ffmpeg.ts';
-import { resetPngquantCache, isPngquantAvailable } from './pngquant.ts';
-import { resetPandocCache, isPandocAvailable } from './pandoc.ts';
-import { resetPdftotextCache, isPdftotextAvailable } from './poppler.ts';
-import { resetTesseractCache, isTesseractAvailable } from './tesseract.ts';
+import { resetProbes } from './tryCommand.ts';
+import * as magick from './magick.ts';
+import * as ffmpeg from './ffmpeg.ts';
+import * as pngquantCli from './pngquant.ts';
+import * as pandoc from './pandoc.ts';
+import * as pdftotext from './pdftotext.ts';
+import * as tesseract from './tesseract.ts';
 import { tesseractEngine } from './ocr.ts';
 import { gifGuard } from './transformers/gifGuard.ts';
 import { pdfDecode } from './transformers/pdfDecode.ts';
@@ -20,7 +21,7 @@ import { imageResize } from './transformers/imageResize.ts';
 import { imageEncode } from './transformers/imageEncode.ts';
 import { pngquant } from './transformers/pngquant.ts';
 
-const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'filter', 'encode'];
+const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'encode'];
 
 /** Built-in transformers (array order = registration order within a phase) */
 export const builtinTransformers: TransformerDef[] =
@@ -50,22 +51,18 @@ export class FileTransformer {
   }
 
   static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract', Promise<boolean>>> = {
-    get magick(): Promise<boolean> { return isMagickAvailable(); },
-    get ffmpeg(): Promise<boolean> { return isFfmpegAvailable(); },
-    get avif(): Promise<boolean> { return checkAvifSupport(); },
-    get pngquant(): Promise<boolean> { return isPngquantAvailable(); },
-    get pandoc(): Promise<boolean> { return isPandocAvailable(); },
-    get pdftotext(): Promise<boolean> { return isPdftotextAvailable(); },
-    get tesseract(): Promise<boolean> { return isTesseractAvailable(); },
+    get magick(): Promise<boolean> { return magick.available(); },
+    get ffmpeg(): Promise<boolean> { return ffmpeg.available(); },
+    get avif(): Promise<boolean> { return magick.avifSupported(); },
+    get pngquant(): Promise<boolean> { return pngquantCli.available(); },
+    get pandoc(): Promise<boolean> { return pandoc.available(); },
+    get pdftotext(): Promise<boolean> { return pdftotext.available(); },
+    get tesseract(): Promise<boolean> { return tesseract.available(); },
   };
 
   static resetCapabilityCache(): void {
-    resetMagickCache();
-    resetFfmpegCache();
-    resetPngquantCache();
-    resetPandocCache();
-    resetPdftotextCache();
-    resetTesseractCache();
+    resetProbes();       // ffmpeg, pngquant, pandoc, pdftotext, tesseract
+    magick.resetCache(); // special-cased (IM6/IM7 command detection)
   }
 
   register(def: TransformerDef): void {

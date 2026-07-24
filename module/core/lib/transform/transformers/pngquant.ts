@@ -1,4 +1,4 @@
-import { isPngquantAvailable } from '../pngquant.ts';
+import * as pngquantCli from '../pngquant.ts';
 import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
 
@@ -9,16 +9,10 @@ export const pngquant: TransformerDef = {
   props: ['q'],
   handles: (ctx) => ctx.mime === 'image/png',
   transform: async (ctx) => {
-    if (!await isPngquantAvailable()) return;
+    if (!await pngquantCli.available()) return;
     const q = Math.min(Math.max(ctx.options.q ?? 77, 1), 100);
     const min = Math.max(1, q - 20);
     const out = nodePath.join(ctx.tmpDir, 'out.pngquant.png');
-    const proc = new Deno.Command('pngquant', {
-      args: ['--quality', `${min}-${q}`, '--strip', '--output', out, ctx.currentPath],
-      signal: ctx.signal,
-      stdout: 'piped', stderr: 'piped',
-    });
-    const { code } = await proc.output();
-    if (code === 0) ctx.currentPath = out;
+    if (await pngquantCli.run(ctx.currentPath, out, `${min}-${q}`, ctx.signal)) ctx.currentPath = out;
   },
 };

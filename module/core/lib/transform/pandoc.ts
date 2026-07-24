@@ -1,17 +1,11 @@
 /** Thin wrapper around Pandoc (document → markdown conversion) */
 
-import { tryCommand } from "./tryCommand.ts";
+import { probe } from "./tryCommand.ts";
 
-let _available: boolean | null = null;
-
-export async function isPandocAvailable(): Promise<boolean> {
-  return _available ??= await tryCommand('pandoc', ['--version']);
-}
-
-export function resetPandocCache(): void { _available = null; }
+export const available = probe('pandoc', ['--version']);
 
 /** Converts input (format `from`) to GitHub-flavored Markdown */
-export async function pandoc(input: string, from: string, output: string, signal?: AbortSignal): Promise<void> {
+export async function run(input: string, from: string, output: string, signal?: AbortSignal): Promise<void> {
   const { code, stderr } = await new Deno.Command('pandoc', {
     args: ['-f', from, '-t', 'gfm-raw_html', '--wrap=none', '-o', output, input],
     signal,

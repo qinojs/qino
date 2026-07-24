@@ -1,19 +1,13 @@
 /** Thin wrapper around FFmpeg */
 
-import { tryCommand } from "./tryCommand.ts";
+import { probe } from "./tryCommand.ts";
 
-let _available: boolean | null = null;
-
-export async function isFfmpegAvailable(): Promise<boolean> {
-  return _available ??= await tryCommand('ffmpeg', ['-version']);
-}
-
-export function resetFfmpegCache(): void { _available = null; }
+export const available = probe('ffmpeg', ['-version']);
 
 /** Extracts the embedded cover art from an audio file and writes it to `output`
  *  in its original format (`-vcodec copy`, typically JPEG).
  *  Throws an error if no cover art is embedded. */
-export async function ffmpegCoverArt(input: string, output: string, signal?: AbortSignal): Promise<void> {
+export async function coverArt(input: string, output: string, signal?: AbortSignal): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {
     args: ['-i', input, '-an', '-vcodec', 'copy', '-y', output],
     signal,
@@ -27,7 +21,7 @@ export async function ffmpegCoverArt(input: string, output: string, signal?: Abo
 
 /** Extracts a single frame from a video and writes it to `output`;
  *  the image format is derived from the `output` file extension. */
-export async function ffmpegFrame(
+export async function frame(
   input: string,
   frameIndex: number, // 0-based
   output: string,
@@ -52,7 +46,7 @@ export async function ffmpegFrame(
   }
 }
 
-export async function ffmpegAudio(input: string, output: string, signal?: AbortSignal): Promise<void> {
+export async function audio(input: string, output: string, signal?: AbortSignal): Promise<void> {
   const { code, stderr } = await new Deno.Command('ffmpeg', {
     args: ['-i', input, '-map', '0:a:0', '-vn', '-acodec', 'aac', '-b:a', '128k', '-y', output],
     signal,
