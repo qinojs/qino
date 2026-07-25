@@ -2,7 +2,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { html, type HtmlString, sql, u2time, unixTime, type App } from "../core/mod.ts";
 import { cms as getCms, type Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { apex, checkDomain, wwwAlt } from "./lib/check.ts";
+import { checkDomain, wwwAlt } from "./lib/check.ts";
 
 export const name = "cms.backend.domain-monitor";
 export const needs = ["cms.backend"];
@@ -128,7 +128,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
 }
 
 // Traffic light. The weight is both the severity and the sort value of the status column.
-const levels = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
+const levels = { green: 0, gray: 1, orange: 2, red: 3 };
 type Level = keyof typeof levels;
 
 const dot = (level: Level, title: string): HtmlString => html`<span title="${title}" style="color:var(--${level})">●</span>`;
@@ -139,8 +139,6 @@ const flag = (v: unknown, title: string): HtmlString => dot(v == null ? "gray" :
 // Sort rank for tri-state flag columns: unknown < bad < good.
 const rank = (v: unknown) => v == null ? 0 : v ? 2 : 1;
 
-const hostOf = (url: string): string => { try { return new URL(url).hostname; } catch { return ""; } };
-
 // What the last check says about the domain as a whole. An answer is an answer: 401 and 404
 // mean the server is up, so they are a warning rather than downtime.
 function status(r: Row): { level: Level; title: string } {
@@ -150,10 +148,7 @@ function status(r: Row): { level: Level; title: string } {
   if (code >= 500) return { level: "red", title: `server error ${code}` };
   if (code >= 400) return { level: "orange", title: `client error ${code}` };
   if (r.error) return { level: "orange", title: errShort(r.error) };
-  // a redirect within the own domain (apex ↔ www, language paths) is normal, leaving it is news
-  const to = r.final_url ? hostOf(r.final_url) : "";
-  if (to && apex(to) !== apex(r.domain)) return { level: "blue", title: `forwards to ${r.final_url}` };
-  return { level: "green", title: `online, ${code}` };
+  return { level: "green", title: r.final_url ? `forwards to ${r.final_url}` : `online, ${code}` };
 }
 
 const lines = (v: string): string[] => (v ?? "").split("\n").filter(Boolean);

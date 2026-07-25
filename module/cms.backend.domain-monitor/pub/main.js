@@ -60,8 +60,8 @@ cms.initNode("backend.domain-monitor", (el) => {
     const q = (search.value || "").toLowerCase();
     const f = filter.value; // "", "ok", "problem"
     for (const tr of tbody.querySelectorAll("tr")) {
-      const level = Number(tr.firstElementChild?.dataset.value); // status severity, 0 = green … 4 = red
-      const okFilter = !f || (f === "ok" ? level <= 1 : level >= 3);
+      const level = Number(tr.firstElementChild?.dataset.value); // status severity, 0 = green … 3 = red
+      const okFilter = !f || (f === "ok" ? level === 0 : level >= 2);
       const okSearch = tr.textContent.toLowerCase().includes(q);
       tr.style.display = okFilter && okSearch ? "" : "none";
     }
