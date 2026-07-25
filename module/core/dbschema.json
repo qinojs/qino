@@ -263,46 +263,6 @@
         "required": ["name"]
       }
     },
-    "qg_hashaction": {
-      "additionalProperties": {
-        "properties": {
-          "log_id": {
-            "type": "integer",
-            "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
-          },
-          "log_id_ch": {
-            "type": "integer",
-            "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
-          },
-          "hash": {
-            "type": "string",
-            "maxLength": 127,
-            "x-index": "primary"
-          },
-          "fn": {
-            "type": "string",
-            "maxLength": 191,
-            "x-index": true
-          },
-          "expires": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "times": {
-            "type": "integer"
-          },
-          "data": {
-            "type": "string"
-          }
-        },
-        "required": ["hash", "fn", "expires", "times", "data"]
-      }
-    },
     "qg_setting": {
       "additionalProperties": {
         "properties": {
@@ -338,35 +298,9 @@
           "options": {
             "type": "string",
             "default": ""
-          },
-          "w": {
-            "type": "boolean",
-            "default": false
           }
         },
         "required": ["id", "basis", "offset", "type", "w"]
-      }
-    },
-    "qg_setting_usr": {
-      "additionalProperties": {
-        "properties": {
-          "setting_id": {
-            "type": "integer",
-            "x-index": "primary",
-            "x-qg-parent": "qg_setting",
-            "x-qg-on-parent-delete": "cascade"
-          },
-          "usr_id": {
-            "type": "integer",
-            "x-index": "primary",
-            "x-qg-parent": "usr",
-            "x-qg-on-parent-delete": "cascade"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "required": ["setting_id", "usr_id", "value"]
       }
     },
     "sess": {

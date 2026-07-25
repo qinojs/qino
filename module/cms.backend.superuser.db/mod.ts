@@ -1,0 +1,2 @@
+export { tableStatus } from "./lib/tableStatus.ts";
+export type { TableStatus } from "./lib/tableStatus.ts";
