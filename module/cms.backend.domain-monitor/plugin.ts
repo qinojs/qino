@@ -1,6 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { html, type HtmlString, sql, u2time, unixTime, type App } from "../core/mod.ts";
-import { cms as getCms, type Node } from "../cms/mod.ts";
+import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { checkDomain, wwwAlt } from "./lib/check.ts";
 
@@ -10,10 +10,6 @@ export { dbSchema };
 export const cms = { node: { js: ["pub/main.js"], render, api } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  const cm = getCms(app);
-  const old = await cm.nodeByModule("cms.backend.monitor");
-  if (old && !await cm.nodeByModule(name)) await old.set("module", name);
-  await migrateSites(app);
   await backend.install(app, name, { en: "Domain monitor", de: "Domain-Überwachung" });
 }
 
@@ -34,25 +30,6 @@ const normalizeDomain = (s: string): string => {
     return u.hostname.length <= 191 && /^([a-z0-9](-*[a-z0-9])*\.)+([a-z]{2,}|xn--[a-z0-9-]+)$/i.test(u.hostname) ? u.hostname : ""; // labels + real TLD
   } catch { return ""; }
 };
-
-// Move entries from the former URL-based table once. Successfully converted rows are removed
-// so a deliberately deleted domain cannot reappear on the next start.
-async function migrateSites(app: App): Promise<void> {
-  const source = app.db.tables.monitor_site;
-  if (!source?.field("url")) return;
-  const rows: Row[] = await app.db.query`SELECT * FROM ${sql.id(source)} ORDER BY ${sql.id("id")}`;
-  if (!rows.length) return;
-  const target = table(app);
-  await app.db.transaction(async () => {
-    for (const row of rows) {
-      const domain = normalizeDomain(String(row.url ?? ""));
-      if (!domain) continue;
-      const { id, url: _url, ...values } = row;
-      if (!await target.selectByID(domain)) await target.insert({ ...values, domain });
-      await app.db.exec`DELETE FROM ${sql.id(source)} WHERE ${sql.id("id")} = ${id}`;
-    }
-  });
-}
 
 async function runCheck(app: App, row: Row): Promise<void> {
   const r = await checkDomain(row.domain, row.expect);
@@ -128,7 +105,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
 }
 
 // Traffic light. The weight is both the severity and the sort value of the status column.
-const levels = { green: 0, gray: 1, orange: 2, red: 3 };
+const levels = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
 type Level = keyof typeof levels;
 
 const dot = (level: Level, title: string): HtmlString => html`<span title="${title}" style="color:var(--${level})">●</span>`;
@@ -146,6 +123,7 @@ function status(r: Row): { level: Level; title: string } {
   if (!r.online) return { level: "red", title: r.error ? errShort(r.error) : "no answer" };
   const code = r.status_code ?? 0;
   if (code >= 500) return { level: "red", title: `server error ${code}` };
+  if (code === 401) return { level: "blue", title: "authentication required, 401" };
   if (code >= 400) return { level: "orange", title: `client error ${code}` };
   if (r.error) return { level: "orange", title: errShort(r.error) };
   return { level: "green", title: r.final_url ? `forwards to ${r.final_url}` : `online, ${code}` };
