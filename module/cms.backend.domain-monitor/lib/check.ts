@@ -1,15 +1,16 @@
-// Health probe for a single site: HTTP reachability, TLS validity and expiry, http→https
+// Health probe for a single domain: HTTP reachability, TLS validity and expiry, http→https
 // redirect, IPv6 reachability, DNS records, mail policy and nameserver agreement.
+// Always probes https://<domain>/ — the scheme is not part of what a domain is.
 // Pure and dependency-free, except for an optional `openssl` call for the certificate expiry.
 
 export type Dns = { ns: string[]; a: string[]; aaaa: string[]; mx: string[]; txt: string[]; caa: string[]; dmarc: string[] };
 
 export type CheckResult = {
-  online: boolean;
+  online: boolean; // the server answered at all — 401/404 are answers, not downtime
   statusCode: number | null;
   responseTime: number | null; // ms
   finalUrl: string | null; // only when redirects landed somewhere else
-  certValid: boolean | null; // null when not https
+  certValid: boolean | null; // null when the connection never got that far
   certDays: number | null; // days until the certificate expires
   redirectHttps: boolean | null;
   ipv6: boolean | null; // null when there is no AAAA or no IPv6 route here
@@ -22,12 +23,16 @@ export type CheckResult = {
 
 // Registrable-domain heuristic: NS/MX/TXT live on the apex, A/AAAA on the exact host.
 // Good enough for the common `sub.example.com` case; multi-label TLDs (co.uk) fall short.
-const apex = (host: string): string => {
+export const apex = (host: string): string => {
   const p = host.split(".");
   return p.length <= 2 ? host : p.slice(-2).join(".");
 };
 
-const agent = "qino-monitor";
+/** The other half of the www ↔ apex pair. */
+export const wwwAlt = (host: string): string => host.startsWith("www.") ? host.slice(4) : "www." + host;
+
+const port = 443;
+const agent = "qino-domain-monitor";
 const ua = { "user-agent": agent };
 
 // `server` asks one specific nameserver instead of the system resolver.
@@ -86,7 +91,7 @@ async function nsAgreement(root: string, ns: string[]): Promise<{ answering: num
 }
 
 // Deno exposes no peer certificate, so the expiry comes from openssl; null when it is unavailable.
-async function certExpiryDays(host: string, port: number): Promise<number | null> {
+async function certExpiryDays(host: string): Promise<number | null> {
   const openssl = async (args: string[], input?: string) => {
     const p = new Deno.Command("openssl", { args, stdin: "piped", stdout: "piped", stderr: "null" }).spawn();
     const w = p.stdin.getWriter();
@@ -117,12 +122,12 @@ function errText(e: unknown): string {
 }
 
 // An AAAA record says nothing about the server, so speak real HTTP to that address.
-// Unreachable networks (no IPv6 route here) stay unknown rather than marking the site broken.
-async function ipv6Answers(host: string, ip: string, port: number, https: boolean): Promise<boolean | null> {
+// Unreachable networks (no IPv6 route here) stay unknown rather than marking the domain broken.
+async function ipv6Answers(host: string, ip: string): Promise<boolean | null> {
   let conn: Deno.Conn | undefined;
   try {
     conn = await Deno.connect({ hostname: ip, port, signal: AbortSignal.timeout(8000) });
-    if (https) conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
+    conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
     await conn.write(new TextEncoder().encode(`HEAD / HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: ${agent}\r\nConnection: close\r\n\r\n`));
     const buf = new Uint8Array(64);
     const n = await conn.read(buf);
@@ -137,21 +142,20 @@ async function ipv6Answers(host: string, ip: string, port: number, https: boolea
 }
 
 // The www ↔ apex counterpart should be served too, not merely resolve.
-async function wwwCounterpart(u: URL): Promise<boolean | null> {
-  const alt = new URL(u.href);
-  alt.hostname = u.hostname.startsWith("www.") ? u.hostname.slice(4) : "www." + u.hostname;
-  if (alt.hostname.split(".").length < 2) return null;
-  const [a, aaaa] = await Promise.all([dnsList(alt.hostname, "A"), dnsList(alt.hostname, "AAAA")]);
+async function wwwCounterpart(host: string): Promise<boolean | null> {
+  const alt = wwwAlt(host);
+  if (alt.split(".").length < 2) return null;
+  const [a, aaaa] = await Promise.all([dnsList(alt, "A"), dnsList(alt, "AAAA")]);
   if (!a.length && !aaaa.length) return null; // deliberately not published
-  return await fetch(alt, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000), headers: ua })
+  return await fetch(`https://${alt}/`, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000), headers: ua })
     .then((r) => { r.body?.cancel(); return r.status < 500; })
     .catch(() => false);
 }
 
 // http→https enforcement (best-effort; stays null on any hiccup).
-async function redirectsToHttps(url: string): Promise<boolean | null> {
+async function redirectsToHttps(host: string): Promise<boolean | null> {
   try {
-    const res = await fetch(url.replace(/^https?:/, "http:"), { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000), headers: ua });
+    const res = await fetch(`http://${host}/`, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000), headers: ua });
     await res.body?.cancel();
     return res.status >= 300 && res.status < 400 && (res.headers.get("location") ?? "").startsWith("https:");
   } catch {
@@ -162,44 +166,38 @@ async function redirectsToHttps(url: string): Promise<boolean | null> {
 // One request: reachability, timing, final URL, cert validity and the optional content check.
 type Probe = Pick<CheckResult, "online" | "statusCode" | "responseTime" | "finalUrl" | "certValid" | "error">;
 
-async function probeHttp(url: string, https: boolean, expect?: string): Promise<Probe> {
+async function probeHttp(url: string, expect?: string): Promise<Probe> {
   const probe: Probe = { online: false, statusCode: null, responseTime: null, finalUrl: null, certValid: null, error: null };
   try {
     const start = performance.now();
     const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10000), headers: ua });
     probe.responseTime = Math.round(performance.now() - start);
     probe.statusCode = res.status;
-    probe.online = res.ok;
-    if (res.url.replace(/\/$/, "") !== url) probe.finalUrl = res.url;
-    if (https) probe.certValid = true; // fetch validates the chain; a bad cert would have thrown
+    probe.online = true; // whatever it says, something answered
+    probe.certValid = true; // fetch validates the chain; a bad cert would have thrown
+    if (res.url !== url) probe.finalUrl = res.url;
     if (expect && res.ok) {
-      if (!(await res.text()).includes(expect)) {
-        probe.online = false;
-        probe.error = `expected text missing: ${expect}`;
-      }
+      if (!(await res.text()).includes(expect)) probe.error = `expected text missing: ${expect}`;
     } else await res.body?.cancel();
   } catch (e) {
     probe.error = errText(e);
-    if (https) probe.certValid = isCertError(probe.error) ? false : null;
+    probe.certValid = isCertError(probe.error) ? false : null;
   }
   return probe;
 }
 
 // `expect` is optional text that must appear in the body — a 200 alone does not prove the site works.
-export async function checkSite(url: string, expect?: string): Promise<CheckResult> {
-  const u = new URL(url);
-  const https = u.protocol === "https:";
-  const port = Number(u.port) || (https ? 443 : 80);
-  const dnsTask = resolveDns(u.hostname); // resolves while the HTTP request is in flight
-  const probe = await probeHttp(url, https, expect);
+export async function checkDomain(domain: string, expect?: string): Promise<CheckResult> {
+  const dnsTask = resolveDns(domain); // resolves while the HTTP request is in flight
+  const probe = await probeHttp(`https://${domain}/`, expect);
   const dns = await dnsTask;
 
   const [certDays, redirectHttps, ipv6, wwwOk, ns] = await Promise.all([
-    https && probe.certValid ? certExpiryDays(u.hostname, port) : null,
-    redirectsToHttps(url),
-    dns.aaaa.length ? ipv6Answers(u.hostname, dns.aaaa[0], port, https) : null,
-    wwwCounterpart(u),
-    nsAgreement(apex(u.hostname), dns.ns),
+    probe.certValid ? certExpiryDays(domain) : null,
+    redirectsToHttps(domain),
+    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0]) : null,
+    wwwCounterpart(domain),
+    nsAgreement(apex(domain), dns.ns),
   ]);
   return { ...probe, certDays, redirectHttps, ipv6, wwwOk, nsAnswering: ns.answering, nsInSync: ns.inSync, dns };
 }

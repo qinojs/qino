@@ -1,17 +1,12 @@
 {
   "properties": {
-    "monitor_site": {
+    "monitor_domain": {
       "additionalProperties": {
         "properties": {
-          "id": {
-            "type": "integer",
-            "x-index": "primary",
-            "x-autoincrement": true
-          },
-          "url": {
+          "domain": {
             "type": "string",
-            "maxLength": 255,
-            "x-index": "unique"
+            "maxLength": 191,
+            "x-index": "primary"
           },
           "online": {
             "type": "boolean",
@@ -90,7 +85,7 @@
             "default": 0
           }
         },
-        "required": ["id", "url", "created"]
+        "required": ["domain", "created"]
       }
     }
   }
