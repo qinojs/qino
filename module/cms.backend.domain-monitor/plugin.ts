@@ -123,7 +123,7 @@ function status(r: Row): { level: Level; title: string } {
   if (!r.online) return { level: "red", title: r.error ? errShort(r.error) : "no answer" };
   const code = r.status_code ?? 0;
   if (code >= 500) return { level: "red", title: `server error ${code}` };
-  if (code === 401) return { level: "blue", title: "authentication required, 401" };
+  if (code === 401 || code === 403) return { level: "blue", title: `access restricted, ${code}` };
   if (code >= 400) return { level: "orange", title: `client error ${code}` };
   if (r.error) return { level: "orange", title: errShort(r.error) };
   return { level: "green", title: r.final_url ? `forwards to ${r.final_url}` : `online, ${code}` };
