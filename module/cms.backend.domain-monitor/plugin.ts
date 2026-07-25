@@ -108,7 +108,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> 
 const levels = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
 type Level = keyof typeof levels;
 
-const dot = (level: Level, title: string): HtmlString => html`<span title="${title}" style="color:var(--${level})">●</span>`;
+const dot = (level: Level, title: string): HtmlString => html`<span title="${title}" style="color:var(--${level});font-size:1.5em;line-height:1">●</span>`;
 
 // Tri-state flag for the boolean columns: unknown stays gray rather than accusing anyone.
 const flag = (v: unknown, title: string): HtmlString => dot(v == null ? "gray" : v ? "green" : "red", title);
