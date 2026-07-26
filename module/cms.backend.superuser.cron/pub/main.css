@@ -1,0 +1,17 @@
+.cron-jobs td {
+  vertical-align: top;
+}
+
+.cron-jobs small {
+  color: var(--color-dimmed);
+}
+
+.cron-jobs .-error {
+  color: var(--red);
+  max-width: 28rem;
+  white-space: pre-wrap;
+}
+
+.cron-jobs .-state {
+  white-space: nowrap;
+}
