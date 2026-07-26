@@ -2,8 +2,10 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, type AptTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@simplewebauthn/server@13";
+import type { Jobs } from "../cron/mod.ts";
 
 export const name = "web_auth";
+export const needs = ["core", "cron"];
 export { dbSchema };
 
 export const settingsSchema = {
@@ -13,6 +15,14 @@ export const settingsSchema = {
     origin: { type: "string", description: "Accepted origin(s), comma-separated, e.g. https://example.com:8443 — default: request origin if its host matches rpId" },
   },
 };
+
+export const cron = {
+  challenges: {
+    every: "hour",
+    jitter: 15 * 60,
+    run: (app) => app.db.exec`DELETE FROM web_auth_challenge WHERE expires < ${unixTime()}`,
+  },
+} satisfies Jobs;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,7 +46,6 @@ async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
 async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
   const token = randB64(24);
   await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
-  await db.exec`DELETE FROM web_auth_challenge WHERE expires < ${unixTime()}`;
   return token;
 }
 

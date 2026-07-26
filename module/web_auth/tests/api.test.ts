@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { AccessError, invoke, toTools, requestStorage } from "../../core/mod.ts";
-import { name, api, settingsSchema } from "../plugin.ts";
+import { name, api, cron, settingsSchema } from "../plugin.ts";
 
 function makeApp() {
   const challenges: Record<string, unknown>[] = [];
@@ -79,7 +79,7 @@ Deno.test("web_auth: user-only endpoints reject guests", async () => {
   });
 });
 
-Deno.test("web_auth: public login challenge stores bounded challenge state", async () => {
+Deno.test("web_auth: public login challenge stores challenge state without extra queries", async () => {
   const { app, challenges, execs } = makeApp();
   const c = await testContext({ app });
   const out = await requestStorage.run(c, () =>
@@ -93,5 +93,11 @@ Deno.test("web_auth: public login challenge stores bounded challenge state", asy
   assertEquals(challenges.length, 1);
   assertEquals(challenges[0].type, "login");
   assertEquals(challenges[0].usr_id, 0);
+  assertEquals(execs.length, 0);
+});
+
+Deno.test("web_auth: cron purges expired challenges", async () => {
+  const { app, execs } = makeApp();
+  await cron.challenges.run(app as any, { signal: new AbortController().signal });
   assertEquals(execs.length, 1);
 });

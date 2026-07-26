@@ -1,7 +1,7 @@
 import { Output, clientIp, type App, type Ctx } from "../core/mod.ts";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
-import { addEvent, addEventDb, cleanup, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
+import { addEvent, addEventDb, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
 
 // Per app, not module-global: apps in the same runtime must not share blocks.
 const pathBlocks = new WeakMap<App, Map<string, number>>();
@@ -43,7 +43,6 @@ export function initSecurity(app: App, signal: AbortSignal) {
       return block(ctx, set.pathBlockSeconds);
     }
     ctx.state.security = { start: performance.now() };
-    if (Math.random() < .01) await cleanup(ctx.app.db, set);
 
     const info = reqInfo(ctx);
     const signals = rankSignals(actionSignals(ctx, info), info, set);
