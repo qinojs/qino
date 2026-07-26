@@ -16,6 +16,7 @@ export async function nodeApi(node: Node, vars: Record<string, unknown>) {
   const action = String(vars.action ?? "");
   const table = String(vars.table ?? "");
   const field = String(vars.field ?? "");
+  const index = String(vars.index ?? "");
   try {
     if (action === "clean-orphans") {
       const r = await cleanOrphans(db, table, field);
@@ -34,12 +35,10 @@ export async function nodeApi(node: Node, vars: Record<string, unknown>) {
       return { message: `Index for ${table}.${field} created`, tables: [table] };
     }
     if (action === "drop-index") {
-      const index = String(vars.index ?? "");
       await dropRedundantIndex(db, table, index);
       return { message: `Index ${index} deleted`, tables: [table] };
     }
     if (action === "reindex-index") {
-      const index = String(vars.index ?? "");
       await reindexInvalid(db, table, index);
       return { message: `Index ${index} rebuilt`, tables: [table] };
     }

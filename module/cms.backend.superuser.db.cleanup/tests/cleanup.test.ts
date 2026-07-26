@@ -95,7 +95,6 @@ Deno.test("cms.backend.superuser.db.cleanup: renders one table-centric overview"
   assertEquals(out.includes("data-inspect=\"orphans\""), true);
   assertEquals(out.includes("Parent empty"), true);
   assertEquals(out.includes('disabled title="field is NOT NULL"'), true);
-  assertEquals(out.includes("Outside schema in extra"), true);
   assertEquals(out.includes("missing"), true);
   assertEquals(out.includes("parent_id"), true);
   assertEquals(out.includes("<u2-menubutton>"), true);

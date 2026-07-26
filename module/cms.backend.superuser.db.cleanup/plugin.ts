@@ -17,9 +17,11 @@ export const cms = { node: { js: ["pub/main.js"], render, api } };
 async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const result = await nodeApi(node, vars);
   if (result.error || result.remove) return result;
-  const orphans = await findOrphans(node.app.db);
+  const tables = result.tables ?? [];
+  if (!tables.length) return result;
+  const orphans = await findOrphans(node.app.db, tables.length === 1 ? tables[0] : undefined);
   const extras = schemaExtras(node.app.db);
-  const rows = await Promise.all((result.tables ?? []).map(async (table) => [table, String(await renderRow(node, table, orphans, extras))] as const));
+  const rows = await Promise.all(tables.map(async (table) => [table, String(await renderRow(node, table, orphans, extras))] as const));
   return { ...result, rows: Object.fromEntries(rows) };
 }
 

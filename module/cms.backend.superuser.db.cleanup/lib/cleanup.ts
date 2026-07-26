@@ -28,20 +28,23 @@ function orphanWhere(field: DbField, parentField: DbField) {
 
 /** Broken x-qg-parent relations, with a few entry ids for review. */
 export async function findOrphans(db: Db, tableName?: string) {
-  const relations = Object.values(db.tables).filter((table) => !tableName || table.name === tableName).flatMap((table) =>
-    Object.values(table.fields ?? {}).flatMap((field) => {
+  const relations = [];
+  for (const table of Object.values(db.tables)) {
+    if (tableName && table.name !== tableName) continue;
+    for (const field of Object.values(table.fields ?? {})) {
       const r = relation(db, table.name, field.name);
-      return r ? [r] : [];
-    })
-  );
+      if (r) relations.push(r);
+    }
+  }
   const issues = await Promise.all(relations.map(async ({ table, field, parent, parentField }) => {
     const where = orphanWhere(field, parentField);
     const count = Number(await db.one`SELECT COUNT(*) FROM ${sql.id(table)} ${sql.id("child")} WHERE ${where}`);
     if (!count) return null;
     const rows = await db.query`SELECT ${sql.id("child")}.* FROM ${sql.id(table)} ${sql.id("child")} WHERE ${where} LIMIT 5`;
     const parentEmpty = !await db.one`SELECT 1 FROM ${sql.id(parent)} LIMIT 1`;
-    const actionable = Object.keys(table.primaries).length > 0 && (field.onParentDelete === "cascade" || field.onParentDelete === "setnull" && field.null);
-    const blocked = !Object.keys(table.primaries).length
+    const hasPrimary = Object.keys(table.primaries).length > 0;
+    const actionable = hasPrimary && (field.onParentDelete === "cascade" || field.onParentDelete === "setnull" && field.null);
+    const blocked = !hasPrimary
       ? "table has no primary key"
       : field.onParentDelete === "setnull" && !field.null
       ? "field is NOT NULL"

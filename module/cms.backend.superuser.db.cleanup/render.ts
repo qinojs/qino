@@ -18,6 +18,14 @@ function issueBadge(name: string, label: string, count: number, body: HtmlString
     <template data-inspect-body="${name}">${body}</template>`;
 }
 
+function issueTable(title: string, head: HtmlString, rows: HtmlString[]): HtmlString {
+  return html`<h3>${title}</h3>
+    <table class=u2-table>
+      <thead><tr>${head}
+      <tbody>${html.join(rows)}
+    </table>`;
+}
+
 export async function renderRow(
   node: Node,
   table: string,
@@ -25,10 +33,14 @@ export async function renderRow(
   extras = schemaExtras(node.app.db),
 ): Promise<HtmlString> {
   const db = node.app.db;
-  orphans ??= await findOrphans(db, table);
-  const status = await tableStatus(db, table).catch(() => null);
+  const [allOrphans, status, indexes, sequence] = await Promise.all([
+    orphans ?? findOrphans(db, table),
+    tableStatus(db, table).catch(() => null),
+    indexIssues(db, table),
+    sequenceIssue(db, table),
+  ]);
   if (!status) return html``;
-  const tableOrphans = orphans.filter((issue) => issue.table === table);
+  const tableOrphans = allOrphans.filter((issue) => issue.table === table);
   const orphanRows = tableOrphans.map((issue) => {
     const operation = issue.onDelete === "cascade" ? "delete" : issue.onDelete === "setnull" ? "set null" : "unresolved";
     const action = issue.actionable
@@ -41,15 +53,11 @@ export async function renderRow(
       <td>${action}`;
   });
   const orphanCount = tableOrphans.reduce((sum, issue) => sum + issue.count, 0);
-  const orphanBody = html`<h3>Orphans in ${table}</h3>
-    <table class=u2-table>
-      <thead><tr>
-        <th>Relation
-        <th>Parent empty
-        <th>Rows
-        <th>Action
-      <tbody>${html.join(orphanRows)}
-    </table>`;
+  const orphanBody = issueTable(`Orphans in ${table}`, html`
+    <th>Relation
+    <th>Parent empty
+    <th>Rows
+    <th>Action`, orphanRows);
 
   const tableExtra = extras.find((issue) => issue.table === table && issue.status === "no-schema-table");
   let schemaRows: HtmlString[];
@@ -72,17 +80,12 @@ export async function renderRow(
         <td><button type=button data-action=drop-field data-table="${table}" data-field="${field}" u2-confirm="Delete field ${table}.${field} and all of its data? This cannot be undone.">delete</button>`;
     }));
   }
-  const schemaBody = html`<h3>Outside schema in ${table}</h3>
-    <table class=u2-table>
-      <thead><tr>
-        <th>Kind
-        <th>Name
-        <th>Empty
-        <th>Action
-      <tbody>${html.join(schemaRows)}
-    </table>`;
+  const schemaBody = issueTable(`Outside schema in ${table}`, html`
+    <th>Kind
+    <th>Name
+    <th>Empty
+    <th>Action`, schemaRows);
 
-  const indexes = await indexIssues(db, table);
   const indexRows = indexes.map((issue) => {
     let action: HtmlString | string = "review";
     if (issue.actionable && issue.kind === "invalid") {
@@ -98,30 +101,23 @@ export async function renderRow(
       <td>${issue.wanted ?? issue.other ?? "–"}
       <td>${action}`;
   });
-  const indexBody = html`<h3>Index issues in ${table}</h3>
-    <table class=u2-table>
-      <thead><tr>
-        <th>Issue
-        <th>Index / field
-        <th>Expected / covered by
-        <th>Action
-      <tbody>${html.join(indexRows)}
-    </table>`;
+  const indexBody = issueTable(`Index issues in ${table}`, html`
+    <th>Issue
+    <th>Index / field
+    <th>Expected / covered by
+    <th>Action`, indexRows);
 
-  const sequence = await sequenceIssue(db, table);
-  const sequenceBody = sequence ? html`<h3>Auto-id sequence in ${table}</h3>
-    <table class=u2-table>
-      <thead><tr>
-        <th>Field
-        <th>Current
-        <th>Required
-        <th>Action
-      <tbody><tr>
-        <td><code>${sequence.field}</code>
-        <td>${sequence.current}
-        <td>${sequence.max}
-        <td><button type=button data-action=sync-sequence data-table="${table}" u2-confirm="Move the auto-id sequence for ${table}.${sequence.field} from ${sequence.current} to ${sequence.max}?">synchronize</button>
-    </table>` : html``;
+  const sequenceBody = sequence
+    ? issueTable(`Auto-id sequence in ${table}`, html`
+      <th>Field
+      <th>Current
+      <th>Required
+      <th>Action`, [html`<tr>
+      <td><code>${sequence.field}</code>
+      <td>${sequence.current}
+      <td>${sequence.max}
+      <td><button type=button data-action=sync-sequence data-table="${table}" u2-confirm="Move the auto-id sequence for ${table}.${sequence.field} from ${sequence.current} to ${sequence.max}?">synchronize</button>`])
+    : html``;
 
   const issueCount = tableOrphans.length + schemaRows.length + indexes.length + Number(Boolean(sequence));
   const issueCell = issueCount ? html`${issueBadge("orphans", "Orphans", orphanCount, orphanBody)}

@@ -3,6 +3,7 @@ import { apt } from "../../core/pub/js/qino.js";
 cms.initNode("backend.superuser.db.cleanup", (el) => {
   const nid = Number(cms.el.nid(el));
   const search = el.querySelector("[data-table-search]");
+  const dialogs = () => import("@qino/u2/js/dialog/dialog.js");
   const rows = () => [...el.querySelectorAll("tbody tr[data-table-name]")];
   const apply = () => {
     const value = search.value.trim().toLowerCase();
@@ -26,7 +27,7 @@ cms.initNode("backend.superuser.db.cleanup", (el) => {
     } catch (e) {
       result = { error: e instanceof Error ? e.message : String(e) };
     }
-    const { alert } = await import("@qino/u2/js/dialog/dialog.js");
+    const { alert } = await dialogs();
     await alert(result.error ?? result.message ?? "Done");
     if (button.isConnected) button.disabled = false;
   };
@@ -34,7 +35,7 @@ cms.initNode("backend.superuser.db.cleanup", (el) => {
   const inspect = async (button) => {
     const body = button.closest("tr").querySelector(`template[data-inspect-body="${button.dataset.inspect}"]`);
     if (!body) return;
-    const { modal } = await import("@qino/u2/js/dialog/dialog.js");
+    const { modal } = await dialogs();
     await modal({
       body: body.innerHTML,
       buttons: [{ title: "Close" }],
