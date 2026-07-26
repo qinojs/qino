@@ -1,7 +1,7 @@
 import { sql, unixTime, type App } from "../../core/mod.ts";
 import { checkDomain } from "./check.ts";
 
-export const frequencies = ["disabled", "hourly", "daily"] as const;
+export const frequencies = ["disabled", "hourly", "daily", "weekly"] as const;
 export type CheckFrequency = typeof frequencies[number];
 
 export type DomainRow = {
@@ -120,25 +120,14 @@ export async function addDomains(app: App, list: string): Promise<string[]> {
   return skipped;
 }
 
-// Which rows a check covers: everything, everything with a problem, or an explicit domain list.
-// "all" and "problem" can never collide with a domain — a domain always has a dot.
-export async function rowsFor(app: App, scope: string): Promise<DomainRow[]> {
-  const db = app.db;
-  if (scope === "all") return await db.query<DomainRow>`SELECT * FROM monitor_domain`;
-  if (scope === "problem") {
-    return await db.query<DomainRow>`SELECT * FROM monitor_domain
-      WHERE checked IS NULL OR error IS NOT NULL OR online = ${false} OR status_code >= 400
-        OR cert_valid = ${false} OR cert_days < 14 OR redirect_https = ${false}
-        OR ipv6 = ${false} OR www_ok = ${false} OR ns_in_sync = ${false}`;
-  }
-  const list = scope.split(",").filter(Boolean);
-  if (!list.length) return [];
-  return await db.query<DomainRow>`SELECT * FROM monitor_domain WHERE domain IN (${sql.join(list.map((domain) => sql`${domain}`), ",")})`;
+export async function rowsFor(app: App, domains: string[]): Promise<DomainRow[]> {
+  if (!domains.length) return [];
+  return await app.db.query<DomainRow>`SELECT * FROM monitor_domain WHERE domain IN (${sql.join(domains.map((domain) => sql`${domain}`), ",")})`;
 }
 
-export async function setFrequency(app: App, domain: string, frequency: string): Promise<void> {
+export async function setFrequency(app: App, domains: string[], frequency: string): Promise<void> {
   if (!frequencies.includes(frequency as CheckFrequency)) throw new TypeError(`Invalid check frequency: ${frequency}`);
-  await table(app).update(domain, { check_frequency: frequency });
+  for (const domain of domains) await table(app).update(domain, { check_frequency: frequency });
 }
 
 export async function runScheduled(app: App, frequency: Exclude<CheckFrequency, "disabled">, signal: AbortSignal): Promise<void> {

@@ -5,10 +5,7 @@ cms.initNode("backend.superuser.cron", (el) => {
   const list = el.querySelector("[cms-part=list]");
   let busy = false;
 
-  const show = async (message) => {
-    const dialog = await import("@qino/u2/js/dialog/dialog.js");
-    await dialog.alert(message);
-  };
+  const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
   const refresh = async () => {
     list.innerHTML = await node.html.part("list").get();
   };

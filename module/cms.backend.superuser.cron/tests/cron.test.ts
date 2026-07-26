@@ -7,6 +7,13 @@ import { counts, renderJobs } from "../render.ts";
 const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));
 const app = { t } as unknown as App;
 
+type JobStatus = Parameters<typeof renderJobs>[1][number];
+const jobStatus = (o: Partial<JobStatus>): JobStatus => ({
+  id: "shop:sync", active: true, every: undefined, at: undefined, jitter: undefined, timeout: undefined,
+  nextRun: 0, running: false, lastStarted: undefined, lastFinished: undefined, lastSuccess: undefined,
+  durationMs: undefined, failures: 0, lastError: undefined, ...o,
+});
+
 Deno.test("cms.backend.superuser.cron: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.cron");
   assertEquals(needs, ["cms.backend", "cron"]);
@@ -16,22 +23,17 @@ Deno.test("cms.backend.superuser.cron: metadata is wired", () => {
 });
 
 Deno.test("cms.backend.superuser.cron: job table shows operational state safely", async () => {
-  const out = String(await renderJobs(app, [{
+  const out = String(await renderJobs(app, [jobStatus({
     id: 'shop:<script>alert("x")</script>',
-    active: true,
     every: "week",
     at: { weekday: "sunday", hour: 12 },
     jitter: 12 * 60 * 60,
     timeout: 900,
     nextRun: 1_800_000_000,
-    running: false,
-    lastStarted: 1_700_000_000,
-    lastFinished: 1_700_000_005,
-    lastSuccess: 1_700_000_005,
     durationMs: 5123,
     failures: 1,
     lastError: '<img src=x onerror="alert(1)">',
-  }]));
+  })]));
   assertEquals(out.includes("every week · at sunday 12:00:00 · jitter ±12h"), true);
   assertEquals(out.includes("timeout 15m"), true);
   assertEquals(out.includes("data-run-job=\"shop:&lt;script&gt;"), true);
@@ -40,12 +42,20 @@ Deno.test("cms.backend.superuser.cron: job table shows operational state safely"
   assertEquals(out.includes("5123 ms"), true);
 });
 
+Deno.test("cms.backend.superuser.cron: a job whose module was unlinked stays, greyed out and without actions", async () => {
+  const out = String(await renderJobs(app, [jobStatus({ id: "gone:cleanup", active: false, lastSuccess: 1_700_000_005 })]));
+  assertEquals(out.includes("<tr data-inactive>"), true);
+  assertEquals(out.includes("inactive"), true);
+  assertEquals(out.includes("data-run-job"), false); // no way to run a job nothing declares any more
+  assertEquals(out.includes("gone:cleanup"), true); // but its history is still readable
+});
+
 Deno.test("cms.backend.superuser.cron: counts only regard active jobs", () => {
   assertEquals(counts([
-    { active: true, running: true, failures: 0 },
-    { active: true, running: false, failures: 3 },
-    { active: false, running: false, failures: 9 },
-  ] as Parameters<typeof counts>[0]), { active: 2, running: 1, failed: 1 });
+    jobStatus({ running: true }),
+    jobStatus({ failures: 3 }),
+    jobStatus({ active: false, failures: 9 }),
+  ]), { active: 2, running: 1, failed: 1 });
 });
 
 Deno.test("cms.backend.superuser.cron: node API reports failures instead of throwing", async () => {

@@ -23,6 +23,12 @@ export const cron = {
     jitter: 12 * 60 * 60,
     run: (app, { signal }) => runScheduled(app, "daily", signal),
   },
+  weekly: {
+    every: "week",
+    at: { weekday: "sunday", hour: 4 },
+    jitter: 4 * 60 * 60,
+    run: (app, { signal }) => runScheduled(app, "weekly", signal),
+  },
 } satisfies Jobs;
 
 export async function install({ app }: { app: App }): Promise<void> {

@@ -21,6 +21,10 @@ Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   assertEquals(cron.daily.every, "day");
   assertEquals(cron.daily.at, { hour: 12 });
   assertEquals(cron.daily.jitter, 43200);
+  assertEquals(cron.weekly.every, "week");
+  assertEquals(cron.weekly.at, { weekday: "sunday", hour: 4 });
+  // every selectable frequency except "disabled" needs a job, or it would never run
+  assertEquals(Object.keys(cron).sort(), frequencies.filter((v) => v !== "disabled").sort());
 });
 
 Deno.test("cms.backend.domain-monitor: frequency follows node access and validates values", async () => {
@@ -31,11 +35,30 @@ Deno.test("cms.backend.domain-monitor: frequency follows node access and validat
     const response = await api(node as never, { frequency: "example.com", value: "hourly" }) as { rows: Record<string, string> };
     assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"example.com"}`, "hourly");
     assertEquals(response.rows["example.com"].includes("value=\"hourly\" selected"), true);
-    assertEquals((await rowsFor(app, "example.com"))[0].domain, "example.com");
-    await assertRejects(() => setFrequency(app, "example.com", "weekly"), TypeError, "Invalid check frequency");
+    assertEquals((await rowsFor(app, ["example.com"]))[0].domain, "example.com");
+    await assertRejects(() => setFrequency(app, ["example.com"], "yearly"), TypeError, "Invalid check frequency");
     await db.table("monitor_domain_check").insert({ domain: "example.com", checked_at: 1, result: "{}" });
     assertEquals(await api(node as never, { delete: "example.com" }), { done: true });
     assertEquals(await db.one`SELECT count(*) FROM monitor_domain_check`, 0);
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("cms.backend.domain-monitor: one frequency call covers a whole selection", async () => {
+  const { db, app } = await testApp();
+  try {
+    for (const domain of ["a.example", "b.example", "c.example"]) {
+      await db.exec`INSERT INTO monitor_domain (domain, check_frequency, created, sort) VALUES (${domain}, ${"disabled"}, ${1}, ${0})`;
+    }
+    const response = await api({ app } as never, { frequency: "a.example,c.example", value: "weekly" }) as { rows: Record<string, string> };
+    assertEquals(Object.keys(response.rows).sort(), ["a.example", "c.example"]);
+    assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"a.example"}`, "weekly");
+    assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"c.example"}`, "weekly");
+    assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"b.example"}`, "disabled");
+
+    assertEquals(await api({ app } as never, { delete: "a.example,c.example" }), { done: true });
+    assertEquals(await db.query`SELECT domain FROM monitor_domain`, [{ domain: "b.example" }]);
   } finally {
     await db.close();
   }
@@ -79,14 +102,26 @@ Deno.test("cms.backend.domain-monitor: detail renders current and historical val
       log_id_ch: 12,
     };
     await db.exec`INSERT INTO monitor_domain
-      (domain, check_frequency, online, status_code, response_time, cert_valid, cert_days, checked, created, sort)
-      VALUES (${"example.com"}, ${"daily"}, ${true}, ${200}, ${123}, ${true}, ${42}, ${1000}, ${1}, ${0})`;
+      (domain, check_frequency, online, status_code, response_time, cert_valid, cert_days, checked, created, sort,
+       ipv6, www_ok, redirect_https, ns_answering, ns_in_sync, dns_ns, dns_a, dns_txt)
+      VALUES (${"example.com"}, ${"daily"}, ${true}, ${200}, ${123}, ${true}, ${42}, ${1000}, ${1}, ${0},
+       ${false}, ${true}, ${true}, ${2}, ${true}, ${"ns1.example.com\nns2.example.com"}, ${"192.0.2.1"},
+       ${'v=spf1 <script>alert(1)</script>'})`;
     await db.exec`INSERT INTO monitor_domain_check (domain, checked_at, result) VALUES (${"example.com"}, ${900}, ${JSON.stringify(previous)})`;
     await db.exec`INSERT INTO monitor_domain_check (domain, checked_at, result) VALUES (${"example.com"}, ${1000}, ${JSON.stringify(result)})`;
     const ctx = await testContext({ url: "http://qino.test/backend?domain=example.com", app: { db } });
     const out = String(await render({ app } as never, { ctx }));
     assertEquals(out.includes("Check history (2)"), true);
     assertEquals(out.includes("123 ms"), true);
+
+    // grouped facts: every DNS record on its own line, tri-state flags spelled out
+    assertEquals(out.includes("<th colspan=2 class=-group>DNS"), true);
+    assertEquals(out.includes("<div>ns1.example.com</div><div>ns2.example.com</div>"), true);
+    assertEquals(out.includes("<div>192.0.2.1</div>"), true);
+    assertEquals(out.includes("42 days remaining"), true);
+    // TXT records are foreign input and must not reach the page as markup
+    assertEquals(out.includes("v=spf1 &lt;script&gt;alert(1)&lt;/script&gt;"), true);
+    assertEquals(out.includes("<div>v=spf1 <script>"), false);
     assertEquals(out.includes("<b>status_code</b>"), true);
     assertEquals(out.includes("<b>dns_a</b>"), true);
     assertEquals(out.includes("<b>response_time</b>"), false);

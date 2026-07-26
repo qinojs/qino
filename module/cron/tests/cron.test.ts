@@ -151,10 +151,14 @@ Deno.test({
       row = (await status(app)).find((v) => v.id === id)!;
       assertEquals(row.failures, 0);
       assertEquals(row.lastError, undefined);
+      const succeededAt = row.lastSuccess;
+      assert(succeededAt);
 
       behavior = "timeout";
       await due();
       assert((await run(app)).failed[id].startsWith("TimeoutError:"));
+      row = (await status(app)).find((v) => v.id === id)!;
+      assertEquals(row.lastSuccess, succeededAt); // a failure must not clear the last success
     } finally {
       console.error = consoleError;
       ctrl.abort();

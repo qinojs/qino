@@ -71,7 +71,7 @@
           },
           "check_frequency": {
             "type": "string",
-            "enum": ["disabled", "hourly", "daily"],
+            "enum": ["disabled", "hourly", "daily", "weekly"],
             "default": "disabled",
             "x-index": true
           },

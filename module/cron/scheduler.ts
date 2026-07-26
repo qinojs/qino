@@ -1,4 +1,4 @@
-import { uid, unixTime, type App, type Row } from "../core/mod.ts";
+import { sql, uid, unixTime, type App, type Row } from "../core/mod.ts";
 import type { Job, Jobs } from "./mod.ts";
 import { nextRun, scheduleKey, validateJob } from "./calendar.ts";
 
@@ -70,13 +70,13 @@ export class Scheduler {
         active: !!job,
         every: job?.every,
         at: job?.at,
-        jitter: job ? job.jitter ?? 0 : undefined,
-        timeout: job ? job.timeout ?? DEFAULT_TIMEOUT : undefined,
+        jitter: job?.jitter,
+        timeout: job && (job.timeout ?? DEFAULT_TIMEOUT),
         nextRun: Number(row.next_run),
         running: Number(row.locked_until) > now,
-        lastStarted: optionalNumber(row.last_started),
-        lastFinished: optionalNumber(row.last_finished),
-        lastSuccess: optionalNumber(row.last_success),
+        lastStarted: Number(row.last_started) || undefined,
+        lastFinished: Number(row.last_finished) || undefined,
+        lastSuccess: Number(row.last_success) || undefined,
         durationMs: Number(row.last_finished) ? Number(row.duration_ms) : undefined,
         failures: Number(row.failures),
         lastError: String(row.last_error || "") || undefined,
@@ -147,39 +147,37 @@ export class Scheduler {
     const timer = setTimeout(() => ctrl.abort(new DOMException(`Cron job timed out after ${timeout} seconds`, "TimeoutError")), timeout * 1000);
     Deno.unrefTimer(timer);
 
+    let failure: string | undefined;
     try {
       await Promise.race([
         job.run(this.#app, { signal }),
         new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true })),
       ]);
-      const finished = unixTime();
-      await db.exec`
-        UPDATE cron_job
-        SET next_run = ${keepSlot || nextRun(job, finished, { timeZone: o.timeZone, nextPeriod: true })},
-          lock_id = ${""}, locked_until = ${0}, last_finished = ${finished}, last_success = ${finished},
-          duration_ms = ${Math.round(performance.now() - started)}, failures = ${0}, last_error = ${""}
-        WHERE id = ${id} AND lock_id = ${lock}`;
-      result.ran.push(id);
     } catch (e) {
       // Shutdown is not a job failure: drop the lease and leave the schedule alone.
       if (this.#signal?.aborted) {
         await db.exec`UPDATE cron_job SET lock_id = ${""}, locked_until = ${0} WHERE id = ${id} AND lock_id = ${lock}`;
         return true;
       }
-      const message = errorMessage(e);
-      const failures = Number(row.failures ?? 0) + 1;
-      const finished = unixTime();
-      await db.exec`
-        UPDATE cron_job
-        SET next_run = ${keepSlot || finished + Math.min(2 ** Math.min(failures - 1, 10) * 60, RETRY_MAX)},
-          lock_id = ${""}, locked_until = ${0}, last_finished = ${finished},
-          duration_ms = ${Math.round(performance.now() - started)}, failures = ${failures}, last_error = ${message}
-        WHERE id = ${id} AND lock_id = ${lock}`;
-      result.failed[id] = message;
+      failure = (e instanceof Error ? `${e.name}: ${e.message}` : String(e)).slice(0, 65535); // fits last_error
       console.error(`cron job "${id}":`, e);
     } finally {
       clearTimeout(timer);
     }
+
+    const finished = unixTime();
+    const failures = failure ? Number(row.failures ?? 0) + 1 : 0;
+    const next = failure
+      ? finished + Math.min(2 ** Math.min(failures - 1, 10) * 60, RETRY_MAX)
+      : nextRun(job, finished, { timeZone: o.timeZone, nextPeriod: true });
+    await db.exec`
+      UPDATE cron_job
+      SET next_run = ${keepSlot || next}, lock_id = ${""}, locked_until = ${0}, last_finished = ${finished},
+        last_success = ${failure ? sql.raw("last_success") : finished},
+        duration_ms = ${Math.round(performance.now() - started)}, failures = ${failures}, last_error = ${failure ?? ""}
+      WHERE id = ${id} AND lock_id = ${lock}`;
+    if (failure) result.failed[id] = failure;
+    else result.ran.push(id);
     return true;
   }
 }
@@ -221,12 +219,4 @@ function collect(app: App, timeZone: string): RegisteredJob[] {
 
 async function timezone(app: App): Promise<string> {
   return String(await app.settings.cron.timezone);
-}
-
-function errorMessage(e: unknown): string {
-  return (e instanceof Error ? `${e.name}: ${e.message}` : String(e)).slice(0, 65535);
-}
-
-function optionalNumber(value: unknown): number | undefined {
-  return Number(value) || undefined;
 }

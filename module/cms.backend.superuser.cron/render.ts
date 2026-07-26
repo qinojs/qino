@@ -5,7 +5,7 @@ import { status } from "../cron/mod.ts";
 type JobStatus = Awaited<ReturnType<typeof status>>[number];
 
 /** active / running / failed, as shown in the card head and the dashboard widget. */
-export function counts(jobs: JobStatus[]): { active: number; running: number; failed: number } {
+export function counts(jobs: JobStatus[]) {
   const active = jobs.filter((job) => job.active);
   return { active: active.length, running: active.filter((job) => job.running).length, failed: active.filter((job) => job.failures).length };
 }
@@ -18,7 +18,7 @@ export function render(node: Node): Promise<HtmlString> {
       <button type=button data-run-due>${t`Run due jobs`}</button>
       <button type=button data-refresh>${t`Refresh`}</button>
     </div>
-    <div cms-part=list>${list(node)}</div>
+    <u2-table cms-part=list>${list(node)}</u2-table>
   </div>`;
 }
 
@@ -35,22 +35,20 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
     · ${running} ${app.t`running`}
     · ${failed} ${app.t`failed`}
   </div>
-  <div class=-scroll>
-    <table class="u2-table -jobs">
-      <thead><tr>
-        <th>${app.t`Job`}
-        <th>${app.t`Schedule`}
-        <th>${app.t`State`}
-        <th>${app.t`Next run`}
-        <th>${app.t`Last started`}
-        <th>${app.t`Last finished`}
-        <th>${app.t`Last success`}
-        <th>${app.t`Duration`}
-        <th>${app.t`Failures`}
-        <th>
-      <tbody>${html.join(rows)}
-    </table>
-  </div>`;
+  <table class="u2-table -jobs -Sticky">
+    <thead><tr>
+      <th>${app.t`Job`}
+      <th>${app.t`Schedule`}
+      <th>${app.t`State`}
+      <th>${app.t`Next run`}
+      <th>${app.t`Last started`}
+      <th>${app.t`Last finished`}
+      <th>${app.t`Last success`}
+      <th>${app.t`Duration`}
+      <th>${app.t`Failures`}
+      <th>
+    <tbody>${html.join(rows)}
+  </table>`;
 }
 
 async function renderRow(app: App, job: JobStatus): Promise<HtmlString> {
@@ -62,7 +60,7 @@ async function renderRow(app: App, job: JobStatus): Promise<HtmlString> {
         u2-confirm="${await app.t`Run this job now?`}">${await app.t`Run now`}</button>`
     : "";
 
-  return html.async`<tr>
+  return html.async`<tr ${job.active ? "" : "data-inactive"}>
     <td><code>${job.id}</code>
     <td>${cadence(job)}
     <td class=-state><span class=u2-badge style="background:${stateColor}">${state}</span>${error}
@@ -101,8 +99,7 @@ function atText(job: JobStatus): string {
 
 function time(value?: number): HtmlString {
   if (!value) return html`–`;
-  const iso = new Date(value * 1000).toISOString();
-  return html`<u2-time datetime="${iso}" second type=relative></u2-time><br><small title="${iso}">${iso.slice(0, 19).replace("T", " ")} UTC</small>`;
+  return html`<u2-time datetime="${new Date(value * 1000).toISOString()}" second type=relative></u2-time>`;
 }
 
 function duration(seconds: number): string {

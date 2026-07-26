@@ -1,9 +1,13 @@
 [qcms-mod="backend.superuser.cron"] {
   & > .-head { display: flex; align-items: center; gap: .5rem; }
   & > .-head > button:first-of-type { margin-left: auto; }
-  & .-scroll { overflow: auto; padding: 0; }
+  /* the part wrapper is a direct card child, so it carries the card gap — the table must not */
+  & > u2-table { padding: 0; overflow: auto; }
+  & > u2-table > .-body { padding: var(--gap); }
 
   & .-jobs td { vertical-align: top; }
+  /* inactive = the declaring module is no longer linked; the row stays for diagnostics */
+  & tr[data-inactive] { opacity: .5; }
   & .-jobs small { color: var(--color-dimmed); }
   & .-state { white-space: nowrap; }
   & .-error { color: var(--red); max-width: 28rem; white-space: pre-wrap; }

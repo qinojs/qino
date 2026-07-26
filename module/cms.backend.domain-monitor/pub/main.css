@@ -1,37 +1,24 @@
-.domain-monitor-detail {
-  align-items: flex-start;
-}
+[qcms-mod="backend.domain-monitor"] {
+  &.-detail { align-items: flex-start; }
+  &.-detail pre { margin: .5rem 0 0; max-width: 40rem; overflow: auto; white-space: pre-wrap; }
 
-.domain-monitor-detail pre {
-  margin: .5rem 0 0;
-  max-width: 40rem;
-  overflow: auto;
-  white-space: pre-wrap;
-}
+  /* both tables sit directly in a card, so without this they carry the card gap */
+  & > u2-table,
+  & .-history { padding: 0; overflow: auto; }
+  & > u2-table { max-height: 85vh; }
+  & .-domains { white-space: nowrap; }
+  & .-empty { text-align: center; padding: 1em; }
+  & .-history { max-height: 80vh; }
+  & .-history td { vertical-align: top; }
 
-.domain-monitor-history {
-  max-height: 80vh;
-  overflow: auto;
-}
+  /* a DNS row can hold several records, so the label must stay on the first line */
+  & .-facts th { vertical-align: top; }
+  /* the group heading is a th like every label — only air above sets it apart */
+  & .-facts tbody + tbody .-group { padding-top: var(--gap); }
 
-.domain-monitor-history td {
-  vertical-align: top;
-}
-
-.domain-monitor-changes {
-  max-width: 35rem;
-  white-space: normal;
-}
-
-.domain-monitor-changes del,
-.domain-monitor-changes ins {
-  text-decoration: none;
-}
-
-.domain-monitor-changes del {
-  color: var(--red);
-}
-
-.domain-monitor-changes ins {
-  color: var(--green);
+  & .-changes { max-width: 35rem; white-space: normal; }
+  & .-changes del,
+  & .-changes ins { text-decoration: none; }
+  & .-changes del { color: var(--red); }
+  & .-changes ins { color: var(--green); }
 }
