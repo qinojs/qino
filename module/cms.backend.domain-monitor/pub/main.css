@@ -1,0 +1,37 @@
+.domain-monitor-detail {
+  align-items: flex-start;
+}
+
+.domain-monitor-detail pre {
+  margin: .5rem 0 0;
+  max-width: 40rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.domain-monitor-history {
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.domain-monitor-history td {
+  vertical-align: top;
+}
+
+.domain-monitor-changes {
+  max-width: 35rem;
+  white-space: normal;
+}
+
+.domain-monitor-changes del,
+.domain-monitor-changes ins {
+  text-decoration: none;
+}
+
+.domain-monitor-changes del {
+  color: var(--red);
+}
+
+.domain-monitor-changes ins {
+  color: var(--green);
+}

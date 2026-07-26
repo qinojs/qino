@@ -11,6 +11,7 @@
     "./cms.versions": "./module/cms.versions/mod.ts",
     "./cms.webmcp": "./module/cms.webmcp/mod.ts",
     "./core": "./module/core/mod.ts",
+    "./cron": "./module/cron/mod.ts",
     "./mail": "./module/mail/mod.ts",
     "./mcp": "./module/mcp/mod.ts",
     "./uncdn": "./module/uncdn/mod.ts"
@@ -21,6 +22,6 @@
     "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/"
   },
   "tasks": {
-    "test": "deno test --no-check --allow-read --allow-write=/tmp --allow-run=git --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM module/core/tests module/ai/tests module/cms/tests module/cms.versions/tests module/cms.cont.table2/tests module/cms.cont.text/tests module/cms.cont.flexible/tests module/cms.cont.login4/tests module/cms.image2/tests module/cms.image_editor/tests module/cms.filebrowser/tests module/cms.layout.login/tests module/cms.installation.default/tests module/cms.backend/tests module/cms.backend.superuser.db.cleanup/tests module/cms.backend.settings/tests module/cms.backend.cms.tree/tests module/cms.backend.users/tests module/cms.backend.groups/tests module/uncdn/tests module/web_auth/tests"
+    "test": "deno test --no-check --allow-read --allow-write=/tmp --allow-run=git --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM module/core/tests module/cron/tests module/ai/tests module/cms/tests module/cms.versions/tests module/cms.cont.table2/tests module/cms.cont.text/tests module/cms.cont.flexible/tests module/cms.cont.login4/tests module/cms.image2/tests module/cms.image_editor/tests module/cms.filebrowser/tests module/cms.layout.login/tests module/cms.installation.default/tests module/cms.backend/tests module/cms.backend.domain-monitor/tests module/cms.backend.superuser.cron/tests module/cms.backend.superuser.db.cleanup/tests module/cms.backend.settings/tests module/cms.backend.cms.tree/tests module/cms.backend.users/tests module/cms.backend.groups/tests module/uncdn/tests module/web_auth/tests"
   }
 }

@@ -2,7 +2,7 @@ import { html, type App, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { status, type JobStatus } from "../cron/mod.ts";
 
-export async function render(node: Node): Promise<HtmlString> {
+export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<div class="u2-card -full">
     <div class=-head style="display:flex;align-items:center;gap:.5rem">

@@ -69,6 +69,12 @@
           "expect": {
             "type": "string"
           },
+          "check_frequency": {
+            "type": "string",
+            "enum": ["disabled", "hourly", "daily"],
+            "default": "disabled",
+            "x-index": true
+          },
           "error": {
             "type": "string"
           },
@@ -86,6 +92,34 @@
           }
         },
         "required": ["domain", "created"]
+      }
+    },
+    "monitor_domain_check": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "domain": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "x-qg-parent": "monitor_domain",
+            "x-qg-parent-field": "domain",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "checked_at": {
+            "type": "integer",
+            "x-index": true
+          },
+          "result": {
+            "type": "string",
+            "maxLength": 1073741823
+          }
+        },
+        "required": ["id", "domain", "checked_at", "result"]
       }
     }
   }

@@ -2,12 +2,24 @@ import { apt } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.domain-monitor", (el) => {
   const nid = Number(cms.el.nid(el));
-  const tbody = el.querySelector("tbody");
+  const node = apt.cms.node(nid);
+  const tbody = el.querySelector("tbody[data-monitor-list]");
   const search = el.querySelector("[data-monitor-search]");
   const filter = el.querySelector("[data-monitor-filter]");
   const count = el.querySelector("[data-monitor-count]");
 
-  const rows = () => [...tbody.querySelectorAll("tr[data-domain]")];
+  const rows = () => [...(tbody?.querySelectorAll("tr[data-domain]") ?? [])];
+
+  const replaceRows = (response) => {
+    let replaced = false;
+    for (const [domain, html] of Object.entries(response?.rows ?? {})) {
+      const tr = tbody?.querySelector(`tr[data-domain="${domain}"]`);
+      if (!tr) continue;
+      tr.outerHTML = html;
+      replaced = true;
+    }
+    return replaced;
+  };
 
   // background mutations. every check returns its rows and swaps them in place, so search,
   // filter and sort survive; only add re-renders the whole node (new rows have to appear).
@@ -41,22 +53,36 @@ cms.initNode("backend.domain-monitor", (el) => {
     } else return;
 
     btn.disabled = true;
-    const r = await apt.cms.node(nid).api.post(vars);
-    if (a === "delete" && r?.done) {
-      btn.closest("tr").remove();
-      count.textContent = rows().length;
-      return;
+    try {
+      const response = await node.api.post(vars);
+      if (a === "delete" && response?.done) {
+        btn.closest("tr").remove();
+        count.textContent = rows().length;
+        return;
+      }
+      if (!replaceRows(response) && !tbody) location.reload();
+      apply();
+    } finally {
+      btn.disabled = false;
     }
-    for (const [domain, html] of Object.entries(r?.rows ?? {})) {
-      const tr = tbody.querySelector(`tr[data-domain="${domain}"]`);
-      if (tr) tr.outerHTML = html;
+  });
+
+  el.addEventListener("change", async (event) => {
+    const select = event.target.closest("[data-frequency]");
+    if (!select) return;
+    select.disabled = true;
+    try {
+      const response = await node.api.post({ frequency: select.dataset.domain, value: select.value });
+      if (!replaceRows(response) && !tbody) location.reload();
+      apply();
+    } finally {
+      select.disabled = false;
     }
-    apply();
-    btn.disabled = false;
   });
 
   // client-side search + severity filter (sorting is handled by <u2-table>)
   const apply = () => {
+    if (!tbody || !search || !filter) return;
     const q = (search.value || "").toLowerCase();
     const f = filter.value; // "", "ok", "problem"
     for (const tr of tbody.querySelectorAll("tr")) {

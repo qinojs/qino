@@ -34,6 +34,8 @@ export const wwwAlt = (host: string): string => host.startsWith("www.") ? host.s
 const port = 443;
 const agent = "qino-domain-monitor";
 const ua = { "user-agent": agent };
+const timedSignal = (signal: AbortSignal | undefined, ms: number): AbortSignal =>
+  signal ? AbortSignal.any([signal, AbortSignal.timeout(ms)]) : AbortSignal.timeout(ms);
 
 // `server` asks one specific nameserver instead of the system resolver.
 async function dnsList(host: string, type: Deno.RecordType, server?: string): Promise<string[]> {
@@ -91,15 +93,23 @@ async function nsAgreement(root: string, ns: string[]): Promise<{ answering: num
 }
 
 // Deno exposes no peer certificate, so the expiry comes from openssl; null when it is unavailable.
-async function certExpiryDays(host: string): Promise<number | null> {
+async function certExpiryDays(host: string, signal?: AbortSignal): Promise<number | null> {
   const openssl = async (args: string[], input?: string) => {
+    signal?.throwIfAborted();
     const p = new Deno.Command("openssl", { args, stdin: "piped", stdout: "piped", stderr: "null" }).spawn();
-    const w = p.stdin.getWriter();
-    if (input) await w.write(new TextEncoder().encode(input));
-    await w.close();
-    const kill = setTimeout(() => { try { p.kill(); } catch { /* already exited */ } }, 8000);
-    const out = await p.output().finally(() => clearTimeout(kill));
-    return new TextDecoder().decode(out.stdout);
+    const abort = () => { try { p.kill(); } catch { /* already exited */ } };
+    signal?.addEventListener("abort", abort, { once: true });
+    const kill = setTimeout(abort, 8000);
+    try {
+      const w = p.stdin.getWriter();
+      if (input) await w.write(new TextEncoder().encode(input));
+      await w.close();
+      const out = await p.output();
+      return new TextDecoder().decode(out.stdout);
+    } finally {
+      clearTimeout(kill);
+      signal?.removeEventListener("abort", abort);
+    }
   };
   try {
     const s = await openssl(["s_client", "-connect", `${host}:${port}`, "-servername", host]);
@@ -123,10 +133,13 @@ function errText(e: unknown): string {
 
 // An AAAA record says nothing about the server, so speak real HTTP to that address.
 // Unreachable networks (no IPv6 route here) stay unknown rather than marking the domain broken.
-async function ipv6Answers(host: string, ip: string): Promise<boolean | null> {
+async function ipv6Answers(host: string, ip: string, signal?: AbortSignal): Promise<boolean | null> {
   let conn: Deno.Conn | undefined;
+  const requestSignal = timedSignal(signal, 8000);
+  const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
+  requestSignal.addEventListener("abort", abort, { once: true });
   try {
-    conn = await Deno.connect({ hostname: ip, port, signal: AbortSignal.timeout(8000) });
+    conn = await Deno.connect({ hostname: ip, port, signal: requestSignal });
     conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
     await conn.write(new TextEncoder().encode(`HEAD / HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: ${agent}\r\nConnection: close\r\n\r\n`));
     const buf = new Uint8Array(64);
@@ -137,25 +150,26 @@ async function ipv6Answers(host: string, ip: string): Promise<boolean | null> {
     if (isCertError(msg)) return true; // the handshake reached a webserver, that is what we asked
     return /unreachable|no route|address family/i.test(msg) ? null : false;
   } finally {
+    requestSignal.removeEventListener("abort", abort);
     try { conn?.close(); } catch { /* already gone */ }
   }
 }
 
 // The www ↔ apex counterpart should be served too, not merely resolve.
-async function wwwCounterpart(host: string): Promise<boolean | null> {
+async function wwwCounterpart(host: string, signal?: AbortSignal): Promise<boolean | null> {
   const alt = wwwAlt(host);
   if (alt.split(".").length < 2) return null;
   const [a, aaaa] = await Promise.all([dnsList(alt, "A"), dnsList(alt, "AAAA")]);
   if (!a.length && !aaaa.length) return null; // deliberately not published
-  return await fetch(`https://${alt}/`, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000), headers: ua })
+  return await fetch(`https://${alt}/`, { method: "HEAD", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
     .then((r) => { r.body?.cancel(); return r.status < 500; })
     .catch(() => false);
 }
 
 // http→https enforcement (best-effort; stays null on any hiccup).
-async function redirectsToHttps(host: string): Promise<boolean | null> {
+async function redirectsToHttps(host: string, signal?: AbortSignal): Promise<boolean | null> {
   try {
-    const res = await fetch(`http://${host}/`, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(8000), headers: ua });
+    const res = await fetch(`http://${host}/`, { method: "HEAD", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua });
     await res.body?.cancel();
     return res.status >= 300 && res.status < 400 && (res.headers.get("location") ?? "").startsWith("https:");
   } catch {
@@ -166,11 +180,11 @@ async function redirectsToHttps(host: string): Promise<boolean | null> {
 // One request: reachability, timing, final URL, cert validity and the optional content check.
 type Probe = Pick<CheckResult, "online" | "statusCode" | "responseTime" | "finalUrl" | "certValid" | "error">;
 
-async function probeHttp(url: string, expect?: string): Promise<Probe> {
+async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Promise<Probe> {
   const probe: Probe = { online: false, statusCode: null, responseTime: null, finalUrl: null, certValid: null, error: null };
   try {
     const start = performance.now();
-    const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10000), headers: ua });
+    const res = await fetch(url, { redirect: "follow", signal: timedSignal(signal, 10000), headers: ua });
     probe.responseTime = Math.round(performance.now() - start);
     probe.statusCode = res.status;
     probe.online = true; // whatever it says, something answered
@@ -187,17 +201,20 @@ async function probeHttp(url: string, expect?: string): Promise<Probe> {
 }
 
 // `expect` is optional text that must appear in the body — a 200 alone does not prove the site works.
-export async function checkDomain(domain: string, expect?: string): Promise<CheckResult> {
+export async function checkDomain(domain: string, expect?: string, signal?: AbortSignal): Promise<CheckResult> {
+  signal?.throwIfAborted();
   const dnsTask = resolveDns(domain); // resolves while the HTTP request is in flight
-  const probe = await probeHttp(`https://${domain}/`, expect);
+  const probe = await probeHttp(`https://${domain}/`, expect, signal);
   const dns = await dnsTask;
+  signal?.throwIfAborted();
 
   const [certDays, redirectHttps, ipv6, wwwOk, ns] = await Promise.all([
-    probe.certValid ? certExpiryDays(domain) : null,
-    redirectsToHttps(domain),
-    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0]) : null,
-    wwwCounterpart(domain),
+    probe.certValid ? certExpiryDays(domain, signal) : null,
+    redirectsToHttps(domain, signal),
+    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0], signal) : null,
+    wwwCounterpart(domain, signal),
     nsAgreement(apex(domain), dns.ns),
   ]);
+  signal?.throwIfAborted();
   return { ...probe, certDays, redirectHttps, ipv6, wwwOk, nsAnswering: ns.answering, nsInSync: ns.inSync, dns };
 }

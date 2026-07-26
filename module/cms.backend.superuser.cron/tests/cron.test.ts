@@ -46,7 +46,7 @@ Deno.test("cms.backend.superuser.cron: API triggers jobs through the protected n
   const result: RunResult = { jobs: 1, due: 0, ran: ["shop:sync"], failed: {}, nextRun: 123 };
   const app = {
     t,
-    fire: async (name: string, event: Record<string, unknown>) => {
+    fire: (name: string, event: Record<string, unknown>) => {
       calls.push(`${name}:${event.id ?? ""}`);
       event.result = result;
       return event;
