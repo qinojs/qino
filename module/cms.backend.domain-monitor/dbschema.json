@@ -27,7 +27,31 @@
           "cert_days": {
             "type": "integer"
           },
+          "cert_issuer": {
+            "type": "string"
+          },
+          "cert_names": {
+            "type": "string"
+          },
+          "cert_names_ok": {
+            "type": "boolean"
+          },
           "redirect_https": {
+            "type": "boolean"
+          },
+          "hsts": {
+            "type": "integer"
+          },
+          "hsts_flags": {
+            "type": "string"
+          },
+          "headers_missing": {
+            "type": "string"
+          },
+          "alt_svc": {
+            "type": "string"
+          },
+          "soft_404": {
             "type": "boolean"
           },
           "ipv6": {
@@ -40,6 +64,27 @@
             "type": "integer"
           },
           "ns_in_sync": {
+            "type": "boolean"
+          },
+          "ns_subnets": {
+            "type": "integer"
+          },
+          "ns_parent_match": {
+            "type": "boolean"
+          },
+          "soa_primary": {
+            "type": "string"
+          },
+          "soa_serial": {
+            "type": "integer"
+          },
+          "soa_expire": {
+            "type": "integer"
+          },
+          "soa_minimum": {
+            "type": "integer"
+          },
+          "dnssec": {
             "type": "boolean"
           },
           "dns_ns": {
@@ -63,8 +108,98 @@
           "dns_dmarc": {
             "type": "string"
           },
+          "dns_cname": {
+            "type": "string"
+          },
+          "dns_ds": {
+            "type": "string"
+          },
+          "dns_https": {
+            "type": "string"
+          },
+          "dns_ttl": {
+            "type": "string"
+          },
           "dns_changed": {
             "type": "integer"
+          },
+          "reg_found": {
+            "type": "boolean"
+          },
+          "reg_expires": {
+            "type": "integer"
+          },
+          "reg_created": {
+            "type": "integer"
+          },
+          "reg_registrar": {
+            "type": "string"
+          },
+          "reg_status": {
+            "type": "string"
+          },
+          "reg_locked": {
+            "type": "boolean"
+          },
+          "mail_hosts": {
+            "type": "string"
+          },
+          "mail_hosts_ok": {
+            "type": "boolean"
+          },
+          "mail_null_mx": {
+            "type": "boolean"
+          },
+          "mail_starttls": {
+            "type": "boolean"
+          },
+          "mail_tls_valid": {
+            "type": "boolean"
+          },
+          "mail_banner": {
+            "type": "string"
+          },
+          "mail_dane": {
+            "type": "string"
+          },
+          "spf": {
+            "type": "string"
+          },
+          "spf_policy": {
+            "type": "string"
+          },
+          "spf_lookups": {
+            "type": "integer"
+          },
+          "spf_error": {
+            "type": "string"
+          },
+          "dmarc_policy": {
+            "type": "string"
+          },
+          "dmarc_sub": {
+            "type": "string"
+          },
+          "dmarc_pct": {
+            "type": "integer"
+          },
+          "dmarc_rua": {
+            "type": "boolean"
+          },
+          "dkim": {
+            "type": "string"
+          },
+          "mta_sts": {
+            "type": "string"
+          },
+          "mta_sts_mode": {
+            "type": "string"
+          },
+          "tls_rpt": {
+            "type": "string"
+          },
+          "bimi": {
+            "type": "string"
           },
           "expect": {
             "type": "string"
@@ -81,6 +216,9 @@
           "checked": {
             "type": "integer",
             "x-index": true
+          },
+          "checked_deep": {
+            "type": "integer"
           },
           "created": {
             "type": "integer",

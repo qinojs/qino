@@ -10,6 +10,12 @@ export const name = "cms.backend.domain-monitor";
 export const needs = ["cms.backend", "cron"];
 export { dbSchema };
 
+export const ctxSettingsSchema = {
+  properties: {
+    cols: { type: "string", description: "Column groups folded away in the overview, comma separated." },
+  },
+};
+
 export const cron = {
   hourly: {
     every: "hour",

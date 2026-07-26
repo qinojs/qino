@@ -1,7 +1,12 @@
 // Health probe for a single domain: HTTP reachability, TLS validity and expiry, http→https
 // redirect, IPv6 reachability, DNS records, mail policy and nameserver agreement.
 // Always probes https://<domain>/ — the scheme is not part of what a domain is.
-// Pure and dependency-free, except for an optional `openssl` call for the certificate expiry.
+// Pure and dependency-free, except for an optional `openssl` call for the certificate details.
+
+import { resolve, serverIps, systemServer, type Type } from "./dns.ts";
+import * as mail from "./mail.ts";
+import * as rdap from "./rdap.ts";
+import { agent, errText, isCertError, timedSignal, ua } from "./net.ts";
 
 export type Dns = { ns: string[]; a: string[]; aaaa: string[]; mx: string[]; txt: string[]; caa: string[]; dmarc: string[] };
 
@@ -12,12 +17,33 @@ export type CheckResult = {
   finalUrl: string | null; // only when redirects landed somewhere else
   certValid: boolean | null; // null when the connection never got that far
   certDays: number | null; // days until the certificate expires
+  certIssuer: string;
+  certNames: string; // subjectAltName entries, one per line
+  certNamesOk: boolean | null; // ... and the probed host is among them
   redirectHttps: boolean | null;
+  hsts: number | null; // max-age in seconds, 0 when the header is absent
+  hstsFlags: string;
+  headersMissing: string; // security headers the answer did not carry
+  altSvc: string;
+  soft404: boolean | null; // a made-up path answers like a made-up path should
   ipv6: boolean | null; // null when there is no AAAA or no IPv6 route here
   wwwOk: boolean | null; // www ↔ apex counterpart, null when it has no address
   nsAnswering: number | null; // authoritative nameservers that answered
   nsInSync: boolean | null; // ... and all agreed on serial + NS set
+  nsSubnets: number | null; // distinct /24 they sit in — redundancy that shares a subnet is none
+  nsParentMatch: boolean | null; // delegation at the parent equals the NS set in the zone
+  soaSerial: number | null;
+  soaExpire: number | null;
+  soaMinimum: number | null; // negative-answer caching, a mistake here outlives the fix
+  soaPrimary: string;
   dns: Dns;
+  dnsCname: string;
+  dnsDs: string;
+  dnsHttps: string;
+  dnsTtl: string; // "a=300" per line, read from the authoritative servers
+  dnssec: boolean | null;
+  registry: Awaited<ReturnType<typeof rdap.lookup>> | undefined; // undefined = not looked up this run
+  mail: Awaited<ReturnType<typeof mail.check>> | undefined;
   error: string | null;
 };
 
@@ -32,10 +58,7 @@ export const apex = (host: string): string => {
 export const wwwAlt = (host: string): string => host.startsWith("www.") ? host.slice(4) : "www." + host;
 
 const port = 443;
-const agent = "qino-domain-monitor";
-const ua = { "user-agent": agent };
-const timedSignal = (signal: AbortSignal | undefined, ms: number): AbortSignal =>
-  signal ? AbortSignal.any([signal, AbortSignal.timeout(ms)]) : AbortSignal.timeout(ms);
+const bare = (name: string) => name.replace(/\.$/, ""); // Deno.resolveDns keeps the root dot, our own client does not
 
 // `server` asks one specific nameserver instead of the system resolver.
 async function dnsList(host: string, type: Deno.RecordType, server?: string): Promise<string[]> {
@@ -72,28 +95,83 @@ async function resolveDns(host: string): Promise<Dns> {
 
 // Asks every authoritative nameserver directly: does it answer, and do they all serve the
 // same zone? Catches dead redundancy and zones that drifted apart after a manual edit.
-async function nsAgreement(root: string, ns: string[]): Promise<{ answering: number | null; inSync: boolean | null }> {
-  if (!ns.length) return { answering: null, inSync: null };
+// Hands back the addresses it resolved so the later batches can reuse them.
+async function nsAgreement(root: string, ns: string[]) {
+  if (!ns.length) return { answering: null, inSync: null, ips: [] as string[], subnets: null, soa: null };
   const answers = await Promise.all(ns.map(async (name) => {
-    const [ip] = await dnsList(name, "A");
+    const [ip] = await dnsList(bare(name), "A");
     if (!ip) return null;
     const soa = await Deno.resolveDns(root, "SOA", { nameServer: { ipAddr: ip, port: 53 } }).catch(() => null);
     if (!soa?.length) return null;
     const zone = await dnsList(root, "NS", ip);
-    return { primary: soa[0].mname, serial: soa[0].serial, zone: zone.join(",") };
+    return { ip, primary: soa[0].mname, serial: soa[0].serial, expire: soa[0].expire, minimum: soa[0].minimum, zone: zone.join(",") };
   }));
   const ok = answers.filter((a) => a != null);
-  if (!ok.length) return { answering: 0, inSync: false };
+  if (!ok.length) return { answering: 0, inSync: false, ips: [] as string[], subnets: 0, soa: null };
   // The NS set must match everywhere, an empty answer counts as "did not say" rather than as drift.
   const zones = new Set(ok.map((a) => a.zone).filter(Boolean));
   // Serials only compare per primary: two providers (say Route53 + NS1) run their own numbering,
   // but every server behind one primary must have received the same zone version.
   const serialsAgree = [...Map.groupBy(ok, (a) => a.primary).values()].every((g) => new Set(g.map((a) => a.serial)).size === 1);
-  return { answering: ok.length, inSync: serialsAgree && zones.size <= 1 };
+  return {
+    answering: ok.length,
+    inSync: serialsAgree && zones.size <= 1,
+    ips: ok.map((a) => a.ip),
+    // Four nameservers in one /24 fall over together — that is one nameserver wearing four hats.
+    subnets: new Set(ok.map((a) => a.ip.split(".").slice(0, 3).join("."))).size,
+    soa: ok[0],
+  };
 }
 
-// Deno exposes no peer certificate, so the expiry comes from openssl; null when it is unavailable.
-async function certExpiryDays(host: string, signal?: AbortSignal): Promise<number | null> {
+// Everything the runtime resolver cannot answer, in as few round trips as possible: one pipelined
+// batch to the zone's own servers, one to the parent for the delegation and the DS record.
+async function dnsExtras(host: string, root: string, nsIps: string[], signal?: AbortSignal) {
+  const blank = { ttl: "", cname: "", https: "", ds: "", dnssec: null as boolean | null, parentMatch: null as boolean | null };
+  if (!nsIps.length) return blank;
+  const wanted: [string, string, Type][] = [
+    ["a", host, "A"],
+    ["aaaa", host, "AAAA"],
+    ["mx", root, "MX"],
+    ["txt", root, "TXT"],
+    ["ns", root, "NS"],
+  ];
+  const questions: { name: string; type: Type }[] = [
+    ...wanted.map(([, name, type]) => ({ name, type })),
+    { name: host, type: "CNAME" },
+    { name: host, type: "HTTPS" },
+    { name: root, type: "DNSKEY" },
+  ];
+  const zone = await resolve(nsIps, questions, signal);
+  const [cname, https, dnskey] = zone.slice(wanted.length);
+
+  // DS proves the delegation is signed and only ever lives at the parent, never in the zone.
+  const tld = root.split(".").slice(-1)[0];
+  const parent = (await Promise.all((await dnsList(tld, "NS")).slice(0, 2).map((name) => serverIps(bare(name))))).flat();
+  const [ds, delegation] = parent.length
+    ? await resolve(parent, [{ name: root, type: "DS" }, { name: root, type: "NS" }], signal)
+    : [null, null];
+  // A referral puts the NS set in the authority section, a direct answer in the answer section.
+  const delegated = delegation && (delegation.values.length ? delegation.values : delegation.authority);
+  const zoneNs = zone[4]?.values ?? [];
+
+  return {
+    // TTLs are only meaningful straight from the source: a resolver hands back what is left of a
+    // cached record, which always looks shorter than what the zone actually publishes.
+    ttl: wanted.map(([label], i) => zone[i]?.ttl != null ? `${label}=${zone[i]!.ttl}` : "").filter(Boolean).join("\n"),
+    cname: cname?.values.join("\n") ?? "",
+    https: https?.values.join("\n") ?? "",
+    ds: ds?.values.join("\n") ?? "",
+    // The parent has the last word on whether a zone is signed. A DS with no key behind it is
+    // worse than no DS at all, so that stays unknown rather than being reported as unsigned.
+    dnssec: !ds ? null : !ds.values.length ? false : dnskey ? dnskey.values.length > 0 : null,
+    parentMatch: delegated?.length && zoneNs.length
+      ? delegated.map(bare).sort().join(",") === zoneNs.map(bare).sort().join(",")
+      : null,
+  };
+}
+
+// Deno exposes no peer certificate, so the details come from openssl; empty when it is unavailable.
+async function certInfo(host: string, signal?: AbortSignal) {
   const openssl = async (args: string[], input?: string) => {
     signal?.throwIfAborted();
     const p = new Deno.Command("openssl", { args, stdin: "piped", stdout: "piped", stderr: "null" }).spawn();
@@ -111,25 +189,28 @@ async function certExpiryDays(host: string, signal?: AbortSignal): Promise<numbe
       signal?.removeEventListener("abort", abort);
     }
   };
+  const blank = { days: null as number | null, issuer: "", names: "" };
   try {
     const s = await openssl(["s_client", "-connect", `${host}:${port}`, "-servername", host]);
     const pem = s.match(/-----BEGIN CERTIFICATE-----[^]*?-----END CERTIFICATE-----/)?.[0];
-    const end = pem && (await openssl(["x509", "-noout", "-enddate"], pem)).match(/notAfter=(.+)/)?.[1];
-    const ms = end ? Date.parse(end) - Date.now() : NaN;
-    return isNaN(ms) ? null : Math.floor(ms / 86400000);
+    if (!pem) return blank;
+    // One pass over the certificate we already fetched — expiry, who signed it, what it covers.
+    const text = await openssl(["x509", "-noout", "-enddate", "-issuer", "-ext", "subjectAltName"], pem);
+    const ms = Date.parse(text.match(/notAfter=(.+)/)?.[1] ?? "") - Date.now();
+    const issuer = text.match(/issuer=.*?\bO\s*=\s*([^,\n]+)/)?.[1] ?? text.match(/issuer=.*?\bCN\s*=\s*([^,\n]+)/)?.[1] ?? "";
+    return {
+      days: isNaN(ms) ? null : Math.floor(ms / 86400000),
+      issuer: issuer.trim(),
+      names: [...text.matchAll(/DNS:([^\s,]+)/g)].map((m) => m[1]).sort().join("\n"),
+    };
   } catch {
-    return null; // no openssl binary, or the runtime lacks --allow-run
+    return blank; // no openssl binary, or the runtime lacks --allow-run
   }
 }
 
-const isCertError = (msg: string): boolean => /certificate|cert|tls|ssl|handshake/i.test(msg);
-
-// fetch reports TLS problems as a bare "fetch failed" — the reason sits in the cause chain.
-function errText(e: unknown): string {
-  let msg = e instanceof Error ? e.message : String(e);
-  for (let c = (e as Error)?.cause; c instanceof Error; c = c.cause) msg += ": " + c.message;
-  return msg.length > 300 ? msg.slice(0, 300) + "…" : msg;
-}
+/** Does a certificate name cover this host — exact, or as a one-label wildcard. */
+export const covers = (name: string, host: string): boolean =>
+  name === host || (name.startsWith("*.") && host.endsWith(name.slice(1)) && !host.slice(0, -name.slice(1).length).includes("."));
 
 // An AAAA record says nothing about the server, so speak real HTTP to that address.
 // Unreachable networks (no IPv6 route here) stay unknown rather than marking the domain broken.
@@ -177,11 +258,39 @@ async function redirectsToHttps(host: string, signal?: AbortSignal): Promise<boo
   }
 }
 
-// One request: reachability, timing, final URL, cert validity and the optional content check.
-type Probe = Pick<CheckResult, "online" | "statusCode" | "responseTime" | "finalUrl" | "certValid" | "error">;
+// A path nobody published must not answer 200. Sites that serve the homepage for every URL turn
+// every typo and every dead link into a silent success.
+async function missingPage(host: string, signal?: AbortSignal): Promise<boolean | null> {
+  const url = `https://${host}/qino-monitor-probe-${Math.random().toString(36).slice(2, 10)}`;
+  return await fetch(url, { method: "GET", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
+    .then((r) => { r.body?.cancel(); return r.status >= 400 && r.status < 500; })
+    .catch(() => null);
+}
+
+// Headers a site is expected to carry. Frame protection counts either way — CSP frame-ancestors
+// is the modern spelling of X-Frame-Options, requiring both would be nagging.
+const wantedHeaders = ["content-security-policy", "x-content-type-options", "referrer-policy", "permissions-policy"];
+
+function headers(res: Response) {
+  const has = (name: string) => !!res.headers.get(name);
+  const csp = res.headers.get("content-security-policy") ?? "";
+  const missing = wantedHeaders.filter((name) => !has(name));
+  if (!/frame-ancestors/i.test(csp) && !has("x-frame-options")) missing.push("x-frame-options");
+  const sts = res.headers.get("strict-transport-security") ?? "";
+  const flags = ["includeSubDomains", "preload"].filter((flag) => new RegExp(flag, "i").test(sts));
+  return {
+    hsts: sts ? Number(sts.match(/max-age\s*=\s*"?(\d+)/i)?.[1] ?? 0) : 0,
+    hstsFlags: flags.join(", "),
+    headersMissing: missing.sort().join(", "),
+    altSvc: (res.headers.get("alt-svc") ?? "").slice(0, 200),
+  };
+}
+
+// One request: reachability, timing, final URL, cert validity, headers and the optional content check.
+type Probe = Pick<CheckResult, "online" | "statusCode" | "responseTime" | "finalUrl" | "certValid" | "error" | "hsts" | "hstsFlags" | "headersMissing" | "altSvc">;
 
 async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Promise<Probe> {
-  const probe: Probe = { online: false, statusCode: null, responseTime: null, finalUrl: null, certValid: null, error: null };
+  const probe: Probe = { online: false, statusCode: null, responseTime: null, finalUrl: null, certValid: null, error: null, hsts: null, hstsFlags: "", headersMissing: "", altSvc: "" };
   try {
     const start = performance.now();
     const res = await fetch(url, { redirect: "follow", signal: timedSignal(signal, 10000), headers: ua });
@@ -189,6 +298,7 @@ async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Pr
     probe.statusCode = res.status;
     probe.online = true; // whatever it says, something answered
     probe.certValid = true; // fetch validates the chain; a bad cert would have thrown
+    Object.assign(probe, headers(res));
     if (res.url !== url) probe.finalUrl = res.url;
     if (expect && res.ok) {
       if (!(await res.text()).includes(expect)) probe.error = `expected text missing: ${expect}`;
@@ -200,21 +310,72 @@ async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Pr
   return probe;
 }
 
-// `expect` is optional text that must appear in the body — a 200 alone does not prove the site works.
-export async function checkDomain(domain: string, expect?: string, signal?: AbortSignal): Promise<CheckResult> {
+/**
+ * `expect` is optional text that must appear in the body — a 200 alone does not prove the site works.
+ * `deep` adds the checks that are wasteful to repeat hourly: registry data, the MTA-STS policy file
+ * and guessing DKIM selectors. Those move on the scale of days.
+ */
+export async function checkDomain(domain: string, opt: {
+  expect?: string;
+  deep?: boolean;
+  dkim?: string[];
+  reach?: { silent: number };
+  signal?: AbortSignal;
+} = {}): Promise<CheckResult> {
+  const { expect, deep = true, signal } = opt;
   signal?.throwIfAborted();
+  const root = apex(domain);
   const dnsTask = resolveDns(domain); // resolves while the HTTP request is in flight
+  const resolverTask = systemServer(); // for names outside the zone, DANE above all
   const probe = await probeHttp(`https://${domain}/`, expect, signal);
   const dns = await dnsTask;
   signal?.throwIfAborted();
 
-  const [certDays, redirectHttps, ipv6, wwwOk, ns] = await Promise.all([
-    probe.certValid ? certExpiryDays(domain, signal) : null,
+  // Nothing here needs the nameserver addresses, so it runs while those are still being worked out.
+  const httpTasks = Promise.all([
+    probe.certValid ? certInfo(domain, signal) : Promise.resolve({ days: null, issuer: "", names: "" }),
     redirectsToHttps(domain, signal),
-    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0], signal) : null,
+    dns.aaaa.length ? ipv6Answers(domain, dns.aaaa[0], signal) : Promise.resolve(null),
     wwwCounterpart(domain, signal),
-    nsAgreement(apex(domain), dns.ns),
+    probe.online ? missingPage(domain, signal) : Promise.resolve(null),
+  ]);
+  const ns = await nsAgreement(root, dns.ns);
+  signal?.throwIfAborted();
+
+  const [[cert, redirectHttps, ipv6, wwwOk, soft404], extras, registry, mailInfo] = await Promise.all([
+    httpTasks,
+    dnsExtras(domain, root, ns.ips, signal),
+    deep ? rdap.lookup(root, signal) : Promise.resolve(undefined),
+    mail.check(root, dns.mx, { servers: ns.ips, resolver: await resolverTask, deep, dkim: opt.dkim, reach: opt.reach, signal }),
   ]);
   signal?.throwIfAborted();
-  return { ...probe, certDays, redirectHttps, ipv6, wwwOk, nsAnswering: ns.answering, nsInSync: ns.inSync, dns };
+
+  const names = cert.names.split("\n").filter(Boolean);
+  return {
+    ...probe,
+    certDays: cert.days,
+    certIssuer: cert.issuer,
+    certNames: cert.names,
+    certNamesOk: names.length ? names.some((name) => covers(name, domain)) : null,
+    soft404,
+    redirectHttps,
+    ipv6,
+    wwwOk,
+    nsAnswering: ns.answering,
+    nsInSync: ns.inSync,
+    nsSubnets: ns.subnets,
+    nsParentMatch: extras.parentMatch,
+    soaSerial: ns.soa?.serial ?? null,
+    soaExpire: ns.soa?.expire ?? null,
+    soaMinimum: ns.soa?.minimum ?? null,
+    soaPrimary: bare(ns.soa?.primary ?? ""),
+    dns,
+    dnsCname: extras.cname,
+    dnsDs: extras.ds,
+    dnsHttps: extras.https,
+    dnsTtl: extras.ttl,
+    dnssec: extras.dnssec,
+    registry,
+    mail: mailInfo,
+  };
 }

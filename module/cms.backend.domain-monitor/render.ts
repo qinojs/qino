@@ -4,7 +4,14 @@ import { wwwAlt } from "./lib/check.ts";
 import { addDomains, type CheckFrequency, type DomainRow, parseResult } from "./lib/monitor.ts";
 
 const historyLimit = 500;
-const ignoredChanges = new Set(["response_time", "cert_days", "checked", "dns_changed", "log_id", "log_id_ch"]);
+// mail_banner carries the server's clock in most greetings, so it "changes" on every single check.
+const ignoredChanges = new Set(["response_time", "cert_days", "checked", "checked_deep", "dns_changed", "log_id", "log_id_ch", "mail_banner"]);
+
+// Optional column groups. The table carries a "-no-<name>" class per hidden group, so toggling one
+// is a single class change instead of a walk over every cell.
+const groups = ["http", "tls", "dns", "mail"] as const;
+type Group = typeof groups[number];
+const groupLabels: Record<Group, string> = { http: "HTTP", tls: "TLS", dns: "DNS", mail: "Mail" };
 
 // Traffic light. The weight is both the severity and the sort value of the status column.
 const levels = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
@@ -18,6 +25,10 @@ const flag = (value: unknown, title: string): HtmlString => dot(value == null ? 
 
 // Sort rank for tri-state flag columns: unknown < bad < good.
 const rank = (value: unknown) => value == null ? 0 : value ? 2 : 1;
+
+// "Checked, and it is not so" — never `=== false`: boolean columns come back from the driver as
+// 1/0 rather than as real booleans, so null is the only thing that means "nothing is known".
+const no = (value: unknown): boolean => value != null && !value;
 
 // What the last check says about the domain as a whole. An answer is an answer: 401 and 404
 // mean the server is up, so they are a warning rather than downtime.
@@ -108,6 +119,84 @@ const dnsCell = (value?: string | null): HtmlString => {
   return list.length ? html`<small>${html.join(list, "<br>")}</small>` : html`–`;
 };
 
+// A short TTL is a moving-house setting: right for the day of a migration, a liability every other
+// day, because it forces every resolver on earth to ask again that often.
+const ttlLevel = (seconds: number): Level => seconds < 60 ? "red" : seconds < 300 ? "orange" : "green";
+
+function ttlCell(row: DomainRow): HtmlString {
+  const list = lines(row.dns_ttl).map((line) => line.split("="));
+  const seconds = list.map(([, value]) => Number(value)).filter((n) => n > 0);
+  if (!seconds.length) return html`–`;
+  const low = Math.min(...seconds);
+  return html`${dot(ttlLevel(low), list.map(([type, value]) => `${type.toUpperCase()} ${value}s`).join(", "))} <small>${low}s</small>`;
+}
+
+// The registration outliving the certificate is not a given, and this deadline takes the whole
+// domain down rather than one service. Many ccTLDs publish no RDAP at all, hence the blank.
+function expiresCell(row: DomainRow): HtmlString {
+  if (no(row.reg_found)) return html`${dot("red", "the registry does not know this domain")} <small>gone</small>`;
+  if (!row.reg_expires) return html`–`;
+  const days = Math.floor((row.reg_expires * 1000 - Date.now()) / 86400000);
+  const on = new Date(row.reg_expires * 1000).toISOString().slice(0, 10);
+  const title = `expires ${on}${row.reg_registrar ? ", " + row.reg_registrar : ""}${row.reg_locked ? ", transfer locked" : ""}`;
+  return html`${dot(days < 14 ? "red" : days < 45 ? "orange" : "green", title)} <small>${days} d</small>`;
+}
+
+function headersCell(row: DomainRow): HtmlString {
+  const missing = lines((row.headers_missing ?? "").replace(/, /g, "\n"));
+  const hsts = row.hsts ?? 0;
+  const title = [
+    hsts ? `HSTS ${Math.round(hsts / 86400)} days${row.hsts_flags ? ` (${row.hsts_flags})` : ""}` : "no HSTS",
+    missing.length ? "missing: " + missing.join(", ") : "all present",
+  ].join(" · ");
+  return html`${dot(row.hsts == null ? "gray" : !hsts || missing.length ? "orange" : "green", title)}${missing.length ? html` <small>${missing.length}</small>` : ""}`;
+}
+
+// Not being signed is the norm rather than a fault, so unsigned stays neutral. A DS at the parent
+// with no key behind it is the one alarming case — that breaks the domain for validating resolvers.
+function dnssecCell(row: DomainRow): HtmlString {
+  if (row.dnssec) return dot("green", "signed and delegated");
+  if (no(row.dnssec)) return dot("gray", "not signed");
+  return dot(row.dns_ds ? "orange" : "gray", row.dns_ds ? "DS at the parent, but no key found in the zone" : "unknown");
+}
+
+function spfCell(row: DomainRow): HtmlString {
+  if (!row.spf) return html`${dot("gray", "no SPF record")}`;
+  const lookups = row.spf_lookups ?? 0;
+  const policy = row.spf_policy ?? "";
+  // Past ten lookups a receiver stops evaluating and the whole record turns into a permerror.
+  const level: Level = row.spf_error || lookups > 10 ? "red" : policy === "-all" || policy === "~all" ? "green" : "orange";
+  const title = [row.spf_error, `${policy || "no all mechanism"}, ${lookups}/10 lookups`].filter(Boolean).join(" · ");
+  return html`${dot(level, title)} <small>${policy || "?"}</small>`;
+}
+
+function dmarcCell(row: DomainRow): HtmlString {
+  const policy = row.dmarc_policy ?? "";
+  if (!policy) return html`${dot("gray", "no DMARC record")}`;
+  const pct = row.dmarc_pct ?? 100;
+  const title = `p=${policy}${row.dmarc_sub ? `, sp=${row.dmarc_sub}` : ""}, pct=${pct}${row.dmarc_rua ? ", reports on" : ", no reports"}`;
+  // p=none only watches, and a pct below 100 exempts the rest of the mail from whatever it says.
+  const level: Level = policy === "none" ? "orange" : pct < 100 ? "orange" : "green";
+  return html`${dot(level, title)} <small>${policy}</small>`;
+}
+
+function smtpCell(row: DomainRow): HtmlString {
+  if (row.mail_null_mx) return html`${dot("gray", "null MX — this domain receives no mail on purpose")} <small>none</small>`;
+  if (!lines(row.mail_hosts).length) return html`${dot("gray", "no MX record")}`;
+  const dane = lines(row.mail_dane).length > 0;
+  const level: Level = no(row.mail_hosts_ok) || no(row.mail_tls_valid) ? "red"
+    : no(row.mail_starttls) ? "orange"
+    : row.mail_starttls == null ? "gray"
+    : "green";
+  const title = [
+    no(row.mail_hosts_ok) ? "an MX host does not resolve" : "",
+    row.mail_starttls == null ? "port 25 not reachable from this server" : row.mail_starttls ? "STARTTLS offered" : "no STARTTLS",
+    no(row.mail_tls_valid) ? "mail certificate invalid" : "",
+    dane ? "DANE published" : "",
+  ].filter(Boolean).join(", ");
+  return html`${dot(level, title)}${dane ? html` <small title="DANE">DANE</small>` : ""}`;
+}
+
 function frequencySelect(row: DomainRow): HtmlString {
   const selected = row.check_frequency ?? "disabled";
   const option = (value: CheckFrequency, label: string) =>
@@ -122,37 +211,58 @@ export function rowHtml(row: DomainRow): HtmlString {
   const alt = wwwAlt(domain);
   const state = status(row);
   const nsTotal = lines(row.dns_ns).length;
-  const nsOk = nsTotal ? row.ns_in_sync && row.ns_answering === nsTotal : null;
-  const nsTitle = !nsTotal ? "no NS records" : `${row.ns_answering ?? 0}/${nsTotal} answering, ${row.ns_in_sync ? "zones in sync" : "zones differ"}`;
+  const nsOk = nsTotal ? row.ns_in_sync && row.ns_answering === nsTotal && !no(row.ns_parent_match) : null;
+  const nsTitle = !nsTotal ? "no NS records" : [
+    `${row.ns_answering ?? 0}/${nsTotal} answering`,
+    row.ns_in_sync ? "zones in sync" : "zones differ",
+    // Nameservers sharing one /24 fall over together, which is one nameserver wearing several hats.
+    row.ns_subnets != null && row.ns_subnets < 2 && nsTotal > 1 ? "all in one /24" : "",
+    no(row.ns_parent_match) ? "delegation at the parent differs from the zone" : "",
+  ].filter(Boolean).join(", ");
   const certLow = row.cert_valid && row.cert_days != null && row.cert_days < 14; // renew now, not later
-  const certTitle = row.cert_valid == null ? "no answer" : !row.cert_valid ? "cert invalid" : row.cert_days == null ? "cert valid" : `cert valid, ${row.cert_days} days left`;
+  const certTitle = [
+    row.cert_valid == null ? "no answer" : !row.cert_valid ? "cert invalid" : row.cert_days == null ? "cert valid" : `cert valid, ${row.cert_days} days left`,
+    row.cert_issuer,
+    no(row.cert_names_ok) ? `certificate does not cover ${domain}` : "",
+  ].filter(Boolean).join(" · ");
   const caa = lines(row.dns_caa);
-  const spf = lines(row.dns_txt).some((text) => /^v=spf1/i.test(text));
-  const dmarc = lines(row.dns_dmarc).length > 0;
   const ipv6Title = !lines(row.dns_aaaa).length ? "no AAAA record" : row.ipv6 == null ? "no IPv6 route from this server" : row.ipv6 ? "answers over IPv6" : "AAAA record, but no answer over IPv6";
   const wwwTitle = row.www_ok == null ? `${alt} has no address` : row.www_ok ? `${alt} is served too` : `${alt} resolves but does not answer`;
 
-  const del = html`<button class=u2-unstyle data-action=delete data-domain="${domain}" u2-confirm="Delete ${domain}?"><u2-ico icon=delete>✕</u2-ico></button>`;
-  const check = html`<button class=u2-unstyle data-action=check data-domain="${domain}" title="Check now"><u2-ico icon=refresh>↻</u2-ico></button>`;
-  const expect = html`<button class=u2-unstyle data-action=expect data-domain="${domain}" data-expect="${row.expect}" title="${row.expect ? `Expected in body: ${row.expect}` : "Expect text in the body"}"><u2-ico icon=edit>✎</u2-ico></button>`;
+  const dkim = lines(row.dkim);
   return html`<tr data-domain="${domain}">
       <td><input type=checkbox data-select title="Select for bulk actions">
       <td data-value="${levels[state.level]}">${dot(state.level, state.title)}
       <td data-value="${domain}"><a href="?domain=${encodeURIComponent(domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
-      <td data-value="${row.status_code}">${row.status_code ?? "–"}
-      <td data-value="${row.response_time}">${row.response_time != null ? row.response_time + " ms" : "–"}
-      <td data-value="${rank(row.cert_valid) === 1 ? -1 : row.cert_days}">${flag(certLow ? false : row.cert_valid, certTitle)}${row.cert_days != null ? html` <small>${row.cert_days} d</small>` : ""} ${flag(caa.length ? true : null, caa.length ? `CAA: ${caa.join(", ")}` : "no CAA record")}
-      <td data-value="${rank(row.redirect_https)}">${flag(row.redirect_https, row.redirect_https == null ? "unknown" : row.redirect_https ? "http→https" : "no https redirect")}
-      <td data-value="${rank(row.ipv6)}">${flag(row.ipv6, ipv6Title)}
-      <td data-value="${rank(row.www_ok)}">${flag(row.www_ok, wwwTitle)}
-      <td data-value="${rank(nsOk)}|${row.dns_ns}">${flag(nsOk, nsTitle)} ${dnsCell(row.dns_ns)}
-      <td data-value="${row.dns_a}">${dnsCell(row.dns_a)}
-      <td data-value="${row.dns_aaaa}">${dnsCell(row.dns_aaaa)}
-      <td data-value="${row.dns_mx}">${dnsCell(row.dns_mx)}
-      <td data-value="${rank(spf && dmarc)}|${row.dns_txt}">${flag(spf, spf ? "SPF set" : "no SPF record")}${flag(dmarc, dmarc ? `DMARC: ${lines(row.dns_dmarc).join(" ")}` : "no DMARC record")} ${dnsCell(row.dns_txt)}
+      <td data-value="${row.reg_expires ?? 0}">${expiresCell(row)}
+      <td data-g=http data-value="${row.status_code}">${row.status_code ?? "–"}
+      <td data-g=http data-value="${row.response_time}">${row.response_time != null ? row.response_time + " ms" : "–"}
+      <td data-g=http data-value="${rank(row.redirect_https)}">${flag(row.redirect_https, row.redirect_https == null ? "unknown" : row.redirect_https ? "http→https" : "no https redirect")}
+      <td data-g=http data-value="${row.hsts == null ? -1 : lines((row.headers_missing ?? "").replace(/, /g, "\n")).length}">${headersCell(row)}
+      <td data-g=http data-value="${rank(row.ipv6)}">${flag(row.ipv6, ipv6Title)}
+      <td data-g=http data-value="${rank(row.www_ok)}">${flag(row.www_ok, wwwTitle)}
+      <td data-g=http data-value="${rank(row.soft_404)}">${flag(row.soft_404, row.soft_404 == null ? "unknown" : row.soft_404 ? "unknown paths answer 404" : "an unknown path answers like a real page")}
+      <td data-g=tls data-value="${rank(row.cert_valid) === 1 ? -1 : row.cert_days}">${flag(certLow ? false : row.cert_valid, certTitle)}${row.cert_days != null ? html` <small>${row.cert_days} d</small>` : ""} ${flag(caa.length ? true : null, caa.length ? `CAA: ${caa.join(", ")}` : "no CAA record")}
+      <td data-g=dns data-value="${rank(nsOk)}|${row.dns_ns}">${flag(nsOk, nsTitle)} ${dnsCell(row.dns_ns)}
+      <td data-g=dns data-value="${row.dns_a}">${dnsCell(row.dns_a)}
+      <td data-g=dns data-value="${row.dns_aaaa}">${dnsCell(row.dns_aaaa)}
+      <td data-g=dns data-value="${row.dns_mx}">${dnsCell(row.dns_mx)}
+      <td data-g=dns data-value="${row.dns_txt}">${dnsCell(row.dns_txt)}
+      <td data-g=dns data-value="${lines(row.dns_ttl).map((l) => Number(l.split("=")[1]) || 0).reduce((a, b) => Math.min(a, b), Infinity)}">${ttlCell(row)}
+      <td data-g=dns data-value="${rank(row.dnssec)}">${dnssecCell(row)}
+      <td data-g=mail data-value="${row.spf_error ? 1 : rank(row.spf_policy)}|${row.spf_lookups ?? 0}">${spfCell(row)}
+      <td data-g=mail data-value="${row.dmarc_policy ?? ""}">${dmarcCell(row)}
+      <td data-g=mail data-value="${rank(dkim.length ? true : null)}">${flag(dkim.length ? true : null, dkim.length ? `DKIM selectors: ${dkim.join(", ")}` : "no DKIM key found under the known selectors")}
+      <td data-g=mail data-value="${row.mta_sts_mode ?? ""}">${row.mta_sts_mode ? html`${dot(row.mta_sts_mode === "enforce" ? "green" : "orange", `MTA-STS ${row.mta_sts_mode}`)} <small>${row.mta_sts_mode}</small>` : html`${dot("gray", row.mta_sts ? "MTA-STS record, but no policy fetched" : "no MTA-STS")}`}
+      <td data-g=mail data-value="${rank(row.mail_starttls)}">${smtpCell(row)}
       <td data-value="${row.checked ?? 0}">${html.raw(u2time(row.checked))}${row.dns_changed ? html`<br><small title="DNS records changed">Δ ${html.raw(u2time(row.dns_changed))}</small>` : ""}
       <td>${frequencySelect(row)}
-      <td style="white-space:nowrap">${check}${expect}${del}`;
+      <td style="white-space:nowrap"
+        ><button class=u2-unstyle data-action=check data-domain="${domain}" title="Check now"><u2-ico icon=refresh>↻</u2-ico></button
+        ><button class=u2-unstyle data-action=expect data-domain="${domain}" data-expect="${row.expect}" title="${
+    row.expect ? `Expected in body: ${row.expect}` : "Expect text in the body"
+  }"><u2-ico icon=edit>✎</u2-ico></button
+        ><button class=u2-unstyle data-action=delete data-domain="${domain}" u2-confirm="Delete ${domain}?"><u2-ico icon=delete>✕</u2-ico></button>`;
 }
 
 async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlString> {
@@ -184,14 +294,12 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
       <td><details><summary>Data</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>`;
   });
 
-  const check = html`<button data-action=check data-domain="${domain}">Check now</button>`;
-  const expect = html`<button data-action=expect data-domain="${domain}" data-expect="${row.expect}">Expected text</button>`;
   return html`<div class="u2-flex -detail">
-    <div class="u2-card" style="flex:1 1 20rem">
+    <div class="u2-card">
       <div class=-head><a href="${back.search || "?"}">← Domains</a> · ${domain}</div>
       <div class=-body>
         <p>${dot(current.level, current.title)} <b>${current.title}</b></p>
-        <p>${check} ${expect} ${frequencySelect(row)} <a href="https://${domain}/" target=_blank>Open website ↗</a></p>
+        <p><button data-action=check data-domain="${domain}">Check now</button> <button data-action=expect data-domain="${domain}" data-expect="${row.expect}">Expected text</button> ${frequencySelect(row)} <a href="https://${domain}/" target=_blank>Open website ↗</a></p>
       </div>
       <table class="u2-table -facts">
         ${factGroup("HTTP", [
@@ -199,24 +307,68 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
           fact("Response time", row.response_time != null ? `${row.response_time} ms` : "–"),
           fact("Final URL", row.final_url ?? "–"),
           fact("HTTPS redirect", state(row.redirect_https, "redirects to HTTPS")),
+          fact("HSTS", row.hsts ? `${Math.round(row.hsts / 86400)} days${row.hsts_flags ? ` · ${row.hsts_flags}` : ""}` : "–"),
+          fact("Missing headers", row.headers_missing || "none"),
+          fact("HTTP/3", row.alt_svc || "–"),
+          fact("Unknown paths", state(row.soft_404, "answer with a 4xx status")),
           fact("www", state(row.www_ok, `${wwwAlt(domain)} answers`)),
           fact("IPv6", state(row.ipv6, "reachable over IPv6")),
-          fact("Certificate", row.cert_valid == null ? "–" : row.cert_valid ? `${row.cert_days ?? "?"} days remaining` : "invalid"),
+        ])}
+        ${factGroup("Certificate", [
+          fact("Validity", row.cert_valid == null ? "–" : row.cert_valid ? `${row.cert_days ?? "?"} days remaining` : "invalid"),
+          fact("Issuer", row.cert_issuer || "–"),
+          fact("Covers this host", state(row.cert_names_ok, "the host is among the certificate names")),
+          fact("Names", records(row.cert_names)),
+          fact("CAA", records(row.dns_caa)),
         ])}
         ${factGroup("DNS", [
           fact("NS", records(row.dns_ns)),
           fact("NS answering", row.ns_answering ?? "–"),
           fact("NS in sync", state(row.ns_in_sync, "all name servers return the same records")),
+          fact("NS subnets", row.ns_subnets ?? "–"),
+          fact("Parent delegation", state(row.ns_parent_match, "the parent delegates to the same servers")),
+          fact("DNSSEC", state(row.dnssec, "signed and delegated")),
+          fact("DS", records(row.dns_ds)),
+          fact("SOA", row.soa_primary ? `${row.soa_primary} · serial ${row.soa_serial ?? "?"}` : "–"),
+          fact("SOA expire", row.soa_expire ? `${Math.round(row.soa_expire / 86400)} days` : "–"),
+          fact("Negative TTL", row.soa_minimum != null ? `${row.soa_minimum} s` : "–"),
+          fact("Record TTL", records(row.dns_ttl)),
           fact("A", records(row.dns_a)),
           fact("AAAA", records(row.dns_aaaa)),
+          fact("CNAME", records(row.dns_cname)),
+          fact("HTTPS", records(row.dns_https)),
           fact("MX", records(row.dns_mx)),
           fact("TXT", records(row.dns_txt)),
-          fact("CAA", records(row.dns_caa)),
-          fact("DMARC", records(row.dns_dmarc)),
           fact("Last change", time(row.dns_changed, "never")),
+        ])}
+        ${factGroup("Mail", [
+          fact("MX hosts", row.mail_null_mx ? "null MX — receives no mail" : records(row.mail_hosts)),
+          fact("MX resolve", state(row.mail_hosts_ok, "every MX host has an address")),
+          fact("STARTTLS", state(row.mail_starttls, "the mail server offers STARTTLS")),
+          fact("Mail certificate", state(row.mail_tls_valid, "valid for the mail host")),
+          fact("Greeting", row.mail_banner || "–"),
+          fact("DANE", records(row.mail_dane)),
+          fact("SPF", row.spf || "–"),
+          fact("SPF policy", row.spf_policy ? `${row.spf_policy} · ${row.spf_lookups ?? 0}/10 lookups${row.spf_error ? ` · ${row.spf_error}` : ""}` : "–"),
+          fact("DMARC", records(row.dns_dmarc)),
+          fact("DMARC policy", row.dmarc_policy ? `p=${row.dmarc_policy}${row.dmarc_sub ? `, sp=${row.dmarc_sub}` : ""}, pct=${row.dmarc_pct ?? 100}` : "–"),
+          fact("DMARC reports", state(row.dmarc_rua, "a report address is published")),
+          fact("DKIM selectors", records(row.dkim)),
+          fact("MTA-STS", row.mta_sts ? `${row.mta_sts_mode || "no policy"} · ${row.mta_sts}` : "–"),
+          fact("TLS reporting", row.tls_rpt || "–"),
+          fact("BIMI", row.bimi || "–"),
+        ])}
+        ${factGroup("Registry", [
+          fact("Registered", no(row.reg_found) ? "not registered" : state(row.reg_found, "known to the registry")),
+          fact("Expires", time(row.reg_expires, "–")),
+          fact("Created", time(row.reg_created, "–")),
+          fact("Registrar", row.reg_registrar || "–"),
+          fact("Transfer lock", state(row.reg_locked, "the registry blocks transfers")),
+          fact("Status", row.reg_status || "–"),
         ])}
         ${factGroup("Monitoring", [
           fact("Last checked", time(row.checked, "never")),
+          fact("Last full check", time(row.checked_deep, "never")),
           fact("Frequency", row.check_frequency ?? "–"),
           fact("Expected text", row.expect || "–"),
           fact("Added", time(row.created)),
@@ -228,7 +380,16 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
       <div class=-head>Check history (${checks.length}${checks.length === historyLimit ? "+" : ""})</div>
       <u2-table class=-history>
         <table class="u2-table -Sticky">
-          <thead><tr><th>Checked<th>Result<th>Changes<th>Code<th>Time<th>Cert<th>HTTPS<th>IPv6<th>
+          <thead><tr>
+            <th>Checked
+            <th>Result
+            <th>Changes
+            <th>Code
+            <th>Time
+            <th>Cert
+            <th>HTTPS
+            <th>IPv6
+            <th>
           <tbody>${history.length ? html.join(history) : html`<tr><td colspan=9>No checks yet.`}
         </table>
       </u2-table>
@@ -244,7 +405,12 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const skipped = vars.add ? await addDomains(app, String(vars.domains ?? "")) : [];
   const rows = await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`;
   const body = html.join(rows.map(rowHtml), "\n");
-  const empty = html`<tr><td colspan="17" class=-empty>No domains yet.`;
+  const empty = html`<tr><td colspan="27" class=-empty>No domains yet.`;
+
+  // Which groups the user folded away, kept per user rather than per browser. Mail is off to begin
+  // with — it is the most specialised block and the table is wide enough without it.
+  const stored = String(ctx.settings["cms.backend.domain-monitor"].cols() ?? "mail").split(",");
+  const hidden = groups.filter((group) => stored.includes(group));
 
   return html`<div class="u2-card">
   <div class="-head">Domain monitor (<span data-monitor-count>${rows.length}</span>)</div>
@@ -266,24 +432,37 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
       <button data-action=checkSelected>Check</button>
       <button data-action=deleteSelected data-bulk-delete>Delete</button>
     </span>
+    <span class=-cols>${html.join(groups.map((group) =>
+      html`<label><input type=checkbox data-col="${group}" ${hidden.includes(group) ? "" : "checked"}> ${groupLabels[group]}</label>`
+    ))}</span>
   </div>
   <u2-table>
-    <table class="u2-table -Sticky -domains">
+    <table class="u2-table -Sticky -domains ${hidden.map((group) => "-no-" + group).join(" ")}">
       <thead><tr>
         <th width=1><input type=checkbox data-select-all title="Select every row the search and filter leave visible">
         <th data-sort-handler width=2>Status
         <th data-sort-handler>Domain
-        <th data-sort-handler width=5>Code
-        <th data-sort-handler>Time
-        <th data-sort-handler width=3>Cert
-        <th data-sort-handler>HTTPS
-        <th data-sort-handler width=2>IPv6
-        <th data-sort-handler width=2>www
-        <th data-sort-handler>NS
-        <th data-sort-handler>A
-        <th data-sort-handler>AAAA
-        <th data-sort-handler>MX
-        <th data-sort-handler>TXT
+        <th data-sort-handler width=3>Expires
+        <th data-g=http data-sort-handler width=5>Code
+        <th data-g=http data-sort-handler>Time
+        <th data-g=http data-sort-handler>HTTPS
+        <th data-g=http data-sort-handler width=2>Headers
+        <th data-g=http data-sort-handler width=2>IPv6
+        <th data-g=http data-sort-handler width=2>www
+        <th data-g=http data-sort-handler width=2>404
+        <th data-g=tls data-sort-handler width=3>Cert
+        <th data-g=dns data-sort-handler>NS
+        <th data-g=dns data-sort-handler>A
+        <th data-g=dns data-sort-handler>AAAA
+        <th data-g=dns data-sort-handler>MX
+        <th data-g=dns data-sort-handler>TXT
+        <th data-g=dns data-sort-handler width=3>TTL
+        <th data-g=dns data-sort-handler width=2>DNSSEC
+        <th data-g=mail data-sort-handler width=3>SPF
+        <th data-g=mail data-sort-handler width=3>DMARC
+        <th data-g=mail data-sort-handler width=2>DKIM
+        <th data-g=mail data-sort-handler width=3>MTA-STS
+        <th data-g=mail data-sort-handler width=2>SMTP
         <th data-sort-handler width=5>Checked
         <th data-sort-handler>Automatic
         <th width=1>

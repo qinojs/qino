@@ -12,11 +12,26 @@ export type DomainRow = {
   final_url?: string | null;
   cert_valid?: boolean | null;
   cert_days?: number | null;
+  cert_issuer?: string | null;
+  cert_names?: string | null;
+  cert_names_ok?: boolean | null;
   redirect_https?: boolean | null;
+  hsts?: number | null;
+  hsts_flags?: string | null;
+  headers_missing?: string | null;
+  alt_svc?: string | null;
+  soft_404?: boolean | null;
   ipv6?: boolean | null;
   www_ok?: boolean | null;
   ns_answering?: number | null;
   ns_in_sync?: boolean | null;
+  ns_subnets?: number | null;
+  ns_parent_match?: boolean | null;
+  soa_primary?: string | null;
+  soa_serial?: number | null;
+  soa_expire?: number | null;
+  soa_minimum?: number | null;
+  dnssec?: boolean | null;
   dns_ns?: string | null;
   dns_a?: string | null;
   dns_aaaa?: string | null;
@@ -24,11 +39,42 @@ export type DomainRow = {
   dns_txt?: string | null;
   dns_caa?: string | null;
   dns_dmarc?: string | null;
+  dns_cname?: string | null;
+  dns_ds?: string | null;
+  dns_https?: string | null;
+  dns_ttl?: string | null;
   dns_changed?: number | null;
+  reg_found?: boolean | null;
+  reg_expires?: number | null;
+  reg_created?: number | null;
+  reg_registrar?: string | null;
+  reg_status?: string | null;
+  reg_locked?: boolean | null;
+  mail_hosts?: string | null;
+  mail_hosts_ok?: boolean | null;
+  mail_null_mx?: boolean | null;
+  mail_starttls?: boolean | null;
+  mail_tls_valid?: boolean | null;
+  mail_banner?: string | null;
+  mail_dane?: string | null;
+  spf?: string | null;
+  spf_policy?: string | null;
+  spf_lookups?: number | null;
+  spf_error?: string | null;
+  dmarc_policy?: string | null;
+  dmarc_sub?: string | null;
+  dmarc_pct?: number | null;
+  dmarc_rua?: boolean | null;
+  dkim?: string | null;
+  mta_sts?: string | null;
+  mta_sts_mode?: string | null;
+  tls_rpt?: string | null;
+  bimi?: string | null;
   expect?: string | null;
   check_frequency?: CheckFrequency | null;
   error?: string | null;
   checked?: number | null;
+  checked_deep?: number | null;
   created?: number;
   sort?: number;
   [key: string]: unknown;
@@ -53,28 +99,88 @@ export const normalizeDomain = (value: string): string => {
   } catch { return ""; }
 };
 
-export async function runCheck(app: App, row: DomainRow, signal?: AbortSignal): Promise<void> {
+const deepAfter = 24 * 60 * 60;
+
+export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent: number }; signal?: AbortSignal } = {}): Promise<void> {
+  const signal = opt.signal;
   signal?.throwIfAborted();
-  const check = await checkDomain(row.domain, row.expect || undefined, signal);
+  // Registry data, the MTA-STS policy file and guessing DKIM selectors are wasted effort on an
+  // hourly schedule — those move in days. Everything else is checked every time.
+  const deep = !row.checked_deep || unixTime() - row.checked_deep > deepAfter;
+  const check = await checkDomain(row.domain, {
+    expect: row.expect || undefined,
+    deep,
+    dkim: (row.dkim ?? "").split("\n").filter(Boolean),
+    reach: opt.reach,
+    signal,
+  });
   signal?.throwIfAborted();
-  const dns: Record<string, string> = {};
+  const dns: Record<string, string> = { dns_cname: check.dnsCname, dns_ds: check.dnsDs, dns_https: check.dnsHttps };
   for (const [key, list] of Object.entries(check.dns)) dns["dns_" + key] = list.join("\n");
   // remember when a record set last moved — silent DNS changes are worth noticing
   const changed = Object.entries(dns).some(([key, value]) => row[key] != null && row[key] !== value);
   const checkedAt = unixTime();
+  const mail = check.mail;
+  // A run that skipped the registry lookup must not wipe what an earlier one found.
+  const registry = check.registry === undefined ? {} : {
+    reg_found: check.registry?.found ?? null,
+    reg_expires: check.registry?.expires ?? null,
+    reg_created: check.registry?.registered ?? null,
+    reg_registrar: check.registry?.registrar ?? "",
+    reg_status: check.registry?.status ?? "",
+    reg_locked: check.registry?.locked ?? null,
+  };
   const result = {
     ...dns,
+    ...registry,
     online: check.online,
     status_code: check.statusCode,
     response_time: check.responseTime,
     final_url: check.finalUrl,
     cert_valid: check.certValid,
     cert_days: check.certDays,
+    cert_issuer: check.certIssuer,
+    cert_names: check.certNames,
+    cert_names_ok: check.certNamesOk,
     redirect_https: check.redirectHttps,
+    hsts: check.hsts,
+    hsts_flags: check.hstsFlags,
+    headers_missing: check.headersMissing,
+    alt_svc: check.altSvc,
+    soft_404: check.soft404,
     ipv6: check.ipv6,
     www_ok: check.wwwOk,
     ns_answering: check.nsAnswering,
     ns_in_sync: check.nsInSync,
+    ns_subnets: check.nsSubnets,
+    ns_parent_match: check.nsParentMatch,
+    soa_primary: check.soaPrimary,
+    soa_serial: check.soaSerial,
+    soa_expire: check.soaExpire,
+    soa_minimum: check.soaMinimum,
+    dnssec: check.dnssec,
+    dns_ttl: check.dnsTtl,
+    mail_hosts: mail?.hosts.join("\n") ?? "",
+    mail_hosts_ok: mail?.hostsOk ?? null,
+    mail_null_mx: mail?.nullMx ?? null,
+    mail_starttls: mail?.starttls ?? null,
+    mail_tls_valid: mail?.tlsValid ?? null,
+    mail_banner: mail?.banner ?? "",
+    mail_dane: mail?.dane ?? "",
+    spf: mail?.spf ?? "",
+    spf_policy: mail?.spfPolicy ?? "",
+    spf_lookups: mail?.spfLookups ?? null,
+    spf_error: mail?.spfError ?? "",
+    dmarc_policy: mail?.dmarcPolicy ?? "",
+    dmarc_sub: mail?.dmarcSub ?? "",
+    dmarc_pct: mail?.dmarcPct ?? null,
+    dmarc_rua: mail?.dmarcRua ?? null,
+    dkim: mail?.dkim ?? "",
+    mta_sts: mail?.mtaSts ?? "",
+    tls_rpt: mail?.tlsRpt ?? "",
+    bimi: mail?.bimi ?? "",
+    // Only a deep run fetches the policy file, a shallow one would report it as gone.
+    ...(deep ? { mta_sts_mode: mail?.mtaStsMode ?? "", checked_deep: checkedAt } : {}),
     dns_changed: changed ? checkedAt : row.dns_changed ?? null,
     error: check.error,
     checked: checkedAt,
@@ -92,11 +198,14 @@ export async function runCheck(app: App, row: DomainRow, signal?: AbortSignal): 
 
 export async function runChecks(app: App, rows: DomainRow[], signal?: AbortSignal): Promise<void> {
   let index = 0;
+  // Shared for the whole run: once two mail servers stay silent, this host clearly blocks
+  // outgoing port 25 and every further attempt would only buy another timeout.
+  const reach = { silent: 0 };
   const worker = async () => {
     while (index < rows.length) {
       signal?.throwIfAborted();
       const row = rows[index++];
-      await runCheck(app, row, signal);
+      await runCheck(app, row, { reach, signal });
     }
   };
   const results = await Promise.allSettled(Array.from({ length: Math.min(concurrency, rows.length) }, worker));

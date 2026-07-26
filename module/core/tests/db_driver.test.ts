@@ -20,6 +20,39 @@ Deno.test("DB driver rejects unsupported connection strings", () => {
   assertThrows(() => DbDriver.from("mysql:host=localhost;dbname=qino"));
 });
 
+Deno.test("a schema boolean survives a dialect without a boolean type", async () => {
+  const schema = {
+    properties: {
+      t: {
+        additionalProperties: {
+          properties: {
+            id: { type: "integer", "x-index": "primary", "x-autoincrement": true },
+            flag: { type: "boolean" },
+            count: { type: "integer" },
+          },
+          required: ["id"],
+        },
+      },
+    },
+  };
+  const db = new Db("sqlite::memory:");
+  await db.migrate(schema, { patch: true });
+  db.schema = schema;
+  await db.loadTables();
+  try {
+    await db.table("t").insert({ id: 1, flag: true, count: 7 });
+    await db.table("t").insert({ id: 2, flag: false, count: 0 });
+    // SQLite writes a boolean into an INTEGER column, so the wrong path here stores the text
+    // "false" — which is truthy, turning every later check of the value into a silent yes.
+    const rows = await db.query`SELECT id, flag, typeof(flag) AS kind, count FROM t ORDER BY id`;
+    assertEquals(rows.map((r) => r.kind), ["integer", "integer"]);
+    assertEquals(rows.map((r) => !!r.flag), [true, false]);
+    assertEquals(rows.map((r) => r.count), [7, 0]);
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("SQLite keeps concurrent access out of an open transaction", async () => {
   const driver = DbDriver.from("sqlite:");
   await driver.exec("CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)");

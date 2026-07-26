@@ -7,6 +7,13 @@
   & .-history { padding: 0; overflow: auto; }
   & > u2-table { max-height: 85vh; }
   & .-domains { white-space: nowrap; }
+  /* column groups: one class on the table folds a whole group away, so toggling costs a single
+     class change instead of a walk over every cell — and sorting keeps working untouched */
+  & .-domains.-no-http [data-g=http],
+  & .-domains.-no-tls [data-g=tls],
+  & .-domains.-no-dns [data-g=dns],
+  & .-domains.-no-mail [data-g=mail] { display: none; }
+  & .-cols { display: flex; gap: .5rem; flex-wrap: wrap; }
   & .-empty { text-align: center; padding: 1em; }
   & .-history { max-height: 80vh; }
   & .-history td { vertical-align: top; }

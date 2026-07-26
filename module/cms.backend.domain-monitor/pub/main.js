@@ -1,8 +1,9 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { apt, ctx } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.domain-monitor", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = apt.cms.node(nid);
+  const table = el.querySelector("table.-domains");
   const tbody = el.querySelector("tbody[data-monitor-list]");
   const search = el.querySelector("[data-monitor-search]");
   const filter = el.querySelector("[data-monitor-filter]");
@@ -103,8 +104,18 @@ cms.initNode("backend.domain-monitor", (el) => {
     }
   };
 
+  // Column groups. The class on the table does the hiding, so this only has to remember the choice
+  // for the user — the server renders the same class set on the next load.
+  const setCols = (group, show) => {
+    table?.classList.toggle("-no-" + group, !show);
+    const hidden = [...el.querySelectorAll("[data-col]")].filter((box) => !box.checked).map((box) => box.dataset.col);
+    ctx.settings["cms.backend.domain-monitor"].cols(hidden.join(","));
+  };
+
   el.addEventListener("change", (event) => {
     const target = event.target;
+    const col = target.closest("[data-col]");
+    if (col) return setCols(col.dataset.col, col.checked);
     if (target.closest("[data-select]")) return showSelection();
     if (target.closest("[data-select-all]")) {
       for (const tr of visible()) tr.querySelector("[data-select]").checked = target.checked;
