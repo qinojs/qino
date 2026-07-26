@@ -146,11 +146,6 @@ export async function runScheduled(app: App, frequency: Exclude<CheckFrequency, 
   await runChecks(app, rows, signal);
 }
 
-export async function pruneHistory(app: App): Promise<void> {
-  const keepDays = Math.max(1, Number(await app.settings["cms.backend.domain-monitor"].historyDays) || 90);
-  await app.db.exec`DELETE FROM monitor_domain_check WHERE checked_at < ${unixTime() - keepDays * 86400}`;
-}
-
 export function parseResult(value: unknown): Partial<DomainRow> | undefined {
   try {
     const result = JSON.parse(String(value));

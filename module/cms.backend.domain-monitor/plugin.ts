@@ -2,19 +2,13 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import type { App } from "../core/mod.ts";
 import type { Jobs } from "../cron/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { pruneHistory, runScheduled } from "./lib/monitor.ts";
+import { runScheduled } from "./lib/monitor.ts";
 import api from "./nodeApi.ts";
 import { render } from "./render.ts";
 
 export const name = "cms.backend.domain-monitor";
 export const needs = ["cms.backend", "cron"];
 export { dbSchema };
-
-export const settingsSchema = {
-  properties: {
-    historyDays: { type: "integer", minimum: 1, default: 90, description: "Check history retention (days)." },
-  },
-};
 
 export const cron = {
   hourly: {
@@ -27,18 +21,12 @@ export const cron = {
     every: "day",
     at: { hour: 12 },
     jitter: 12 * 60 * 60,
-    run: async (app, { signal }) => {
-      await pruneHistory(app);
-      await runScheduled(app, "daily", signal);
-    },
+    run: (app, { signal }) => runScheduled(app, "daily", signal),
   },
 } satisfies Jobs;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Domain monitor", de: "Domain-Überwachung" });
-  const setting = app.settings[name].historyDays;
-  const value = await setting;
-  if (value == null || value === "") await setting(settingsSchema.properties.historyDays.default);
 }
 
 export const cms = {

@@ -3,10 +3,10 @@ import { Db } from "../../core/lib/db/Db.ts";
 import type { App } from "../../core/mod.ts";
 import { frequencies, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
 import api from "../nodeApi.ts";
-import { cron, dbSchema, name, needs, settingsSchema } from "../plugin.ts";
+import { cron, dbSchema, name, needs } from "../plugin.ts";
 import { render } from "../render.ts";
 
-Deno.test("cms.backend.domain-monitor: schema, settings, and cron jobs are wired", () => {
+Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   const domain = dbSchema.properties.monitor_domain.additionalProperties.properties;
   const check = dbSchema.properties.monitor_domain_check.additionalProperties.properties;
   assertEquals(name, "cms.backend.domain-monitor");
@@ -15,7 +15,6 @@ Deno.test("cms.backend.domain-monitor: schema, settings, and cron jobs are wired
   assertEquals(domain.check_frequency.default, "disabled");
   assertEquals(check.domain["x-qg-parent"], "monitor_domain");
   assertEquals(check.domain["x-qg-on-parent-delete"], "cascade");
-  assertEquals(settingsSchema.properties.historyDays.default, 90);
   assertEquals(cron.hourly.every, "hour");
   assertEquals(cron.hourly.at, { minute: 30 });
   assertEquals(cron.hourly.jitter, 1800);
@@ -121,9 +120,5 @@ async function testApp(): Promise<{ db: Db; app: App }> {
   )`;
   db.schema = dbSchema;
   await db.loadTables();
-  const app = {
-    db,
-    settings: { "cms.backend.domain-monitor": { historyDays: 90 } },
-  } as unknown as App;
-  return { db, app };
+  return { db, app: { db } as unknown as App };
 }
