@@ -2,7 +2,6 @@
   "version": "5",
   "specifiers": {
     "jsr:@nuxodin/dump@^1.5.2": "1.5.2",
-    "jsr:@nuxodin/item@0.6.1": "0.6.1",
     "jsr:@nuxodin/item@0.6.2": "0.6.2",
     "jsr:@nuxodin/item@0.6.3": "0.6.3",
     "jsr:@std/assert@1": "1.0.19",
@@ -31,9 +30,6 @@
   "jsr": {
     "@nuxodin/dump@1.5.2": {
       "integrity": "0e5af5667b22edecb40555e17331c9597096c2f3485a18c12bed86c30673de32"
-    },
-    "@nuxodin/item@0.6.1": {
-      "integrity": "7d07c7e1aa0e38df551c4611f192c0f92d4f932dadd1346667a0a7161371e243"
     },
     "@nuxodin/item@0.6.2": {
       "integrity": "9a6fa85d97e05e0f2453c0a04f4b307051c02915770b87a7a912a8ec72a97da4"
@@ -564,7 +560,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@nuxodin/item@0.6.1"
+      "jsr:@nuxodin/item@0.6.3"
     ]
   }
 }
