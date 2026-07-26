@@ -7,7 +7,9 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 export const dateTypes = new Set(["DATETIME", "DATE", "TIMESTAMP"]);
 export const stringTypes = new Set(["CHAR", "VARCHAR", "BINARY", "VARBINARY", "BLOB", "TEXT", "ENUM", "SET"]);
-export const numTypes = new Set(["TINYINT", "SMALLINT", "MEDIUMINT", "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE"]);
+// INTEGER is SQLite's spelling of INT — without it the same schema coerces on MySQL and lets
+// non-numeric text through on SQLite, where column affinity then stores it verbatim.
+export const numTypes = new Set(["TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE"]);
 
 /** Core db events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface DbEvents {
