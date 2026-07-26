@@ -1,15 +1,19 @@
-import { sql, uid, unixTime, type App } from "../core/mod.ts";
-import type { Job, Jobs, JobStatus, RunResult } from "./mod.ts";
-import { nextRun, scheduleKey, validateJob } from "./schedule.ts";
+import { uid, unixTime, type App, type Row } from "../core/mod.ts";
+import type { Job, Jobs } from "./mod.ts";
+import { nextRun, scheduleKey, validateJob } from "./calendar.ts";
 
 const DEFAULT_TIMEOUT = 15 * 60;
 const RETRY_MAX = 60 * 60;
+const IDLE = { lock_id: "", locked_until: 0, last_started: 0, last_finished: 0, last_success: 0, duration_ms: 0, failures: 0, last_error: "" };
 
-type RegisteredJob = { id: string; job: Job; scheduleKey: string };
+const schedulers = new WeakMap<App, Scheduler>();
+
+type RegisteredJob = { id: string; job: Job; key: string };
+type Result = { ran: string[]; failed: Record<string, string> };
 
 export class Scheduler {
   #app: App;
-  #running?: Promise<RunResult>;
+  #running?: Promise<Result>;
   #timer?: ReturnType<typeof setTimeout>;
   #nextKick = 0;
   #poll = 60_000;
@@ -19,12 +23,18 @@ export class Scheduler {
 
   async init(signal: AbortSignal): Promise<void> {
     this.#signal = signal;
-    this.#poll = Math.max(5_000, Number(await this.#app.settings.cron.pollSeconds || 60) * 1000);
-    collectJobs(this.#app, await timezone(this.#app), false); // fail during boot on malformed declarations
+    this.#poll = Math.max(5, Number(await this.#app.settings.cron.pollSeconds)) * 1000;
+    Temporal.Now.zonedDateTimeISO(await timezone(this.#app)); // throws on an unknown IANA name
+    await this.#load(unixTime()); // fails during boot on a malformed declaration
+    schedulers.set(this.#app, this);
     this.#schedule();
-    signal.addEventListener("abort", () => clearTimeout(this.#timer), { once: true });
+    signal.addEventListener("abort", () => {
+      clearTimeout(this.#timer);
+      if (schedulers.get(this.#app) === this) schedulers.delete(this.#app);
+    }, { once: true });
   }
 
+  /** Throttled nudge from incoming requests — never waits for the jobs. */
   kick(): void {
     const now = Date.now();
     if (now < this.#nextKick) return;
@@ -32,8 +42,46 @@ export class Scheduler {
     this.run().catch((e) => console.error("cron:", e));
   }
 
-  run(): Promise<RunResult> {
+  /** Run every due job. Concurrent calls share one run. */
+  run(): Promise<Result> {
     return this.#running ??= this.#tick().finally(() => { this.#running = undefined; });
+  }
+
+  /** Run one job now, without consuming a scheduled slot that is still ahead. */
+  async trigger(id: string): Promise<Result> {
+    const now = unixTime();
+    const { jobs, rows, timeZone } = await this.#load(now);
+    const registered = jobs.find((v) => v.id === id);
+    if (!registered) throw new Error(`Unknown cron job "${id}"`);
+    const result: Result = { ran: [], failed: {} };
+    if (!await this.#runJob(registered, rows.get(id)!, result, { timeZone, force: true })) throw new Error(`Cron job "${id}" is already running`);
+    return result;
+  }
+
+  /** Persisted state of every job, including rows left behind by unlinked modules. */
+  async status() {
+    const now = unixTime();
+    const { jobs, rows } = await this.#load(now);
+    const active = new Map(jobs.map((v) => [v.id, v.job]));
+    return [...rows.values()].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((row) => {
+      const job = active.get(String(row.id));
+      return {
+        id: String(row.id),
+        active: !!job,
+        every: job?.every,
+        at: job?.at,
+        jitter: job ? job.jitter ?? 0 : undefined,
+        timeout: job ? job.timeout ?? DEFAULT_TIMEOUT : undefined,
+        nextRun: Number(row.next_run),
+        running: Number(row.locked_until) > now,
+        lastStarted: optionalNumber(row.last_started),
+        lastFinished: optionalNumber(row.last_finished),
+        lastSuccess: optionalNumber(row.last_success),
+        durationMs: Number(row.last_finished) ? Number(row.duration_ms) : undefined,
+        failures: Number(row.failures),
+        lastError: String(row.last_error || "") || undefined,
+      };
+    });
   }
 
   #schedule(): void {
@@ -45,65 +93,54 @@ export class Scheduler {
     Deno.unrefTimer(timer);
   }
 
-  async #tick(): Promise<RunResult> {
-    const app = this.#app;
-    const timeZone = await timezone(app);
-    const registered = collectJobs(app, timeZone);
+  /** Declared jobs plus their persisted rows; seeds new jobs and reschedules changed ones. */
+  async #load(now: number): Promise<{ jobs: RegisteredJob[]; rows: Map<string, Row>; timeZone: string }> {
+    const db = this.#app.db;
+    const timeZone = await timezone(this.#app);
+    const jobs = collect(this.#app, timeZone);
+    const rows = new Map((await db.query`SELECT * FROM cron_job`).map((row) => [String(row.id), row]));
+    for (const { id, job, key } of jobs) {
+      const row = rows.get(id);
+      if (row && row.schedule_key === key) continue;
+      const next_run = nextRun(job, now, { timeZone });
+      if (!row) {
+        const fresh = { ...IDLE, id, schedule_key: key, next_run };
+        await db.table("cron_job").insert(fresh).catch(() => {}); // a competing process may have seeded it first
+        rows.set(id, fresh);
+      } else {
+        await db.exec`
+          UPDATE cron_job SET schedule_key = ${key}, next_run = ${next_run}, lock_id = ${""}, locked_until = ${0}
+          WHERE id = ${id} AND schedule_key = ${row.schedule_key} AND locked_until <= ${now}`;
+        Object.assign(row, { schedule_key: key, next_run, locked_until: 0 });
+      }
+    }
+    return { jobs, rows, timeZone };
+  }
+
+  async #tick(): Promise<Result> {
     const now = unixTime();
-    await syncRows(app, registered, now, timeZone);
-
-    const active = new Map(registered.map((v) => [v.id, v]));
-    const rows = await app.db.query`
-      SELECT * FROM cron_job
-      WHERE next_run <= ${now}
-      ORDER BY next_run, id`;
-    const result: RunResult = { jobs: registered.length, due: 0, ran: [], failed: {} };
-
-    for (const row of rows) {
-      const registeredJob = active.get(String(row.id));
-      if (!registeredJob) continue;
-      result.due++;
-      await this.#runJob(registeredJob, row, result, { timeZone });
-    }
-
-    if (registered.length) {
-      result.nextRun = Number(await app.db.one`
-        SELECT MIN(next_run) FROM cron_job
-        WHERE id IN (${sql.join(registered.map((v) => sql`${v.id}`))})` ?? 0) || undefined;
-    }
+    const { jobs, rows, timeZone } = await this.#load(now);
+    const result: Result = { ran: [], failed: {} };
+    const due = jobs.filter((v) => Number(rows.get(v.id)!.next_run) <= now);
+    await Promise.all(due.map((v) => this.#runJob(v, rows.get(v.id)!, result, { timeZone })));
     return result;
   }
 
-  async trigger(id: string): Promise<RunResult> {
-    const app = this.#app;
-    const timeZone = await timezone(app);
-    const registered = collectJobs(app, timeZone);
-    const target = registered.find((v) => v.id === id);
-    if (!target) throw new Error(`Unknown cron job "${id}"`);
+  /** Claims the lease, runs the job, writes the outcome back. False = another process holds it. */
+  async #runJob(registered: RegisteredJob, row: Row, result: Result, o: { timeZone: string; force?: boolean }): Promise<boolean> {
+    const db = this.#app.db;
+    const { id, job } = registered;
     const now = unixTime();
-    await syncRows(app, registered, now, timeZone);
-    const row = await app.db.row`SELECT * FROM cron_job WHERE id = ${id}`;
-    if (!row) throw new Error(`Cron job "${id}" has no persisted state`);
-    const result: RunResult = { jobs: 1, due: Number(row.next_run) <= now ? 1 : 0, ran: [], failed: {} };
-    if (!await this.#runJob(target, row, result, { timeZone, force: true })) throw new Error(`Cron job "${id}" is already running`);
-    result.nextRun = Number(await app.db.one`SELECT next_run FROM cron_job WHERE id = ${id}`) || undefined;
-    return result;
-  }
-
-  async #runJob(registered: RegisteredJob, row: Record<string, unknown>, result: RunResult, options: { timeZone: string; force?: boolean }): Promise<boolean> {
-    const { timeZone, force = false } = options;
-    const now = unixTime();
-    const timeout = registered.job.timeout ?? DEFAULT_TIMEOUT;
+    const timeout = job.timeout ?? DEFAULT_TIMEOUT;
     const lock = uid(22);
-    const leaseUntil = now + timeout + 60;
-    const due = force ? sql.raw("true") : sql`next_run <= ${now}`;
-    const claimed = await this.#app.db.exec`
+    const claimed = await db.exec`
       UPDATE cron_job
-      SET lock_id = ${lock}, locked_until = ${leaseUntil}, last_started = ${now}
-      WHERE id = ${registered.id} AND ${due} AND locked_until <= ${now}`;
+      SET lock_id = ${lock}, locked_until = ${now + timeout + 60}, last_started = ${now}
+      WHERE id = ${id} AND locked_until <= ${now} AND (${o.force ?? false} OR next_run <= ${now})`;
     if (!claimed.affectedRows) return false;
 
-    const preserveSchedule = force && Number(row.next_run) > now;
+    // A forced run of a job that is not due yet must not consume its scheduled slot.
+    const keepSlot = o.force && Number(row.next_run) > now ? Number(row.next_run) : 0;
     const started = performance.now();
     const ctrl = new AbortController();
     const signal = this.#signal ? AbortSignal.any([this.#signal, ctrl.signal]) : ctrl.signal;
@@ -112,30 +149,34 @@ export class Scheduler {
 
     try {
       await Promise.race([
-        registered.job.run(this.#app, { signal, scheduledAt: force ? now : Number(row.next_run), manual: force }),
+        job.run(this.#app, { signal }),
         new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true })),
       ]);
       const finished = unixTime();
-      const next = preserveSchedule ? Number(row.next_run) : nextRun(registered.job, finished, timeZone, true);
-      await this.#app.db.exec`
+      await db.exec`
         UPDATE cron_job
-        SET next_run = ${next}, lock_id = ${""}, locked_until = ${0}, last_finished = ${finished},
-          last_success = ${finished}, duration_ms = ${Math.round(performance.now() - started)}, failures = ${0}, last_error = ${""}
-        WHERE id = ${registered.id} AND lock_id = ${lock}`;
-      result.ran.push(registered.id);
+        SET next_run = ${keepSlot || nextRun(job, finished, { timeZone: o.timeZone, nextPeriod: true })},
+          lock_id = ${""}, locked_until = ${0}, last_finished = ${finished}, last_success = ${finished},
+          duration_ms = ${Math.round(performance.now() - started)}, failures = ${0}, last_error = ${""}
+        WHERE id = ${id} AND lock_id = ${lock}`;
+      result.ran.push(id);
     } catch (e) {
+      // Shutdown is not a job failure: drop the lease and leave the schedule alone.
+      if (this.#signal?.aborted) {
+        await db.exec`UPDATE cron_job SET lock_id = ${""}, locked_until = ${0} WHERE id = ${id} AND lock_id = ${lock}`;
+        return true;
+      }
       const message = errorMessage(e);
       const failures = Number(row.failures ?? 0) + 1;
       const finished = unixTime();
-      const retry = Math.min(2 ** Math.min(failures - 1, 10) * 60, RETRY_MAX);
-      const next = preserveSchedule ? Number(row.next_run) : finished + retry;
-      await this.#app.db.exec`
+      await db.exec`
         UPDATE cron_job
-        SET next_run = ${next}, lock_id = ${""}, locked_until = ${0}, last_finished = ${finished},
+        SET next_run = ${keepSlot || finished + Math.min(2 ** Math.min(failures - 1, 10) * 60, RETRY_MAX)},
+          lock_id = ${""}, locked_until = ${0}, last_finished = ${finished},
           duration_ms = ${Math.round(performance.now() - started)}, failures = ${failures}, last_error = ${message}
-        WHERE id = ${registered.id} AND lock_id = ${lock}`;
-      result.failed[registered.id] = message;
-      console.error(`cron job "${registered.id}":`, e);
+        WHERE id = ${id} AND lock_id = ${lock}`;
+      result.failed[id] = message;
+      console.error(`cron job "${id}":`, e);
     } finally {
       clearTimeout(timer);
     }
@@ -143,96 +184,43 @@ export class Scheduler {
   }
 }
 
-export async function requestRun(app: App): Promise<RunResult> {
-  const event = await app.fire("cron:run", {}) as { result?: RunResult };
-  if (!event.result) throw new Error('Module "cron" is not linked');
-  return event.result;
+function of(app: App): Scheduler {
+  const scheduler = schedulers.get(app);
+  if (!scheduler) throw new Error('Module "cron" is not linked');
+  return scheduler;
 }
 
-export async function requestTrigger(app: App, id: string): Promise<RunResult> {
-  const event = await app.fire("cron:trigger", { id }) as { id: string; result?: RunResult };
-  if (!event.result) throw new Error('Module "cron" is not linked');
-  return event.result;
-}
+/** Run every due job. Concurrent calls on the same App share one run. */
+export function run(app: App): Promise<Result> { return of(app).run(); }
 
-export async function readStatus(app: App): Promise<JobStatus[]> {
-  const timeZone = await timezone(app);
-  const registered = collectJobs(app, timeZone);
-  const now = unixTime();
-  await syncRows(app, registered, now, timeZone);
-  const rows = await app.db.query`SELECT * FROM cron_job ORDER BY id`;
-  const active = new Map(registered.map((v) => [v.id, v.job]));
-  return rows.map((row) => {
-    const job = active.get(String(row.id));
-    return {
-      id: String(row.id),
-      active: !!job,
-      every: job?.every,
-      at: job?.at,
-      jitter: job ? job.jitter ?? 0 : undefined,
-      timeout: job ? job.timeout ?? DEFAULT_TIMEOUT : undefined,
-      nextRun: Number(row.next_run),
-      running: Number(row.locked_until) > now,
-      lastStarted: optionalNumber(row.last_started),
-      lastFinished: optionalNumber(row.last_finished),
-      lastSuccess: optionalNumber(row.last_success),
-      durationMs: Number(row.last_finished) ? Number(row.duration_ms) : undefined,
-      failures: Number(row.failures),
-      lastError: String(row.last_error || "") || undefined,
-    };
-  });
-}
+/** Run one job now, without consuming a scheduled slot that is still ahead. */
+export function trigger(app: App, id: string): Promise<Result> { return of(app).trigger(id); }
 
-function collectJobs(app: App, timeZone: string, linkedOnly = true): RegisteredJob[] {
+/** Persisted state of every job, including rows left behind by unlinked modules. */
+export function status(app: App): ReturnType<Scheduler["status"]> { return of(app).status(); }
+
+/** Jobs declared by linked modules, sorted by id. */
+function collect(app: App, timeZone: string): RegisteredJob[] {
   const ret: RegisteredJob[] = [];
   for (const mod of Object.values(app.modules.all()).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (linkedOnly && !app.modules.linked(mod.name)) continue;
+    if (!app.modules.linked(mod.name)) continue;
     const declared = mod.plugin.cron as Jobs | undefined;
     if (declared == null) continue;
-    if (!declared || typeof declared !== "object" || Array.isArray(declared)) throw new Error(`Module "${mod.name}": cron must be an object`);
+    if (typeof declared !== "object" || Array.isArray(declared)) throw new Error(`Module "${mod.name}": cron must be an object`);
     if (!(mod.plugin.needs ?? []).includes("cron")) throw new Error(`Module "${mod.name}": needs must include "cron" when declaring cron jobs`);
     for (const name of Object.keys(declared).sort()) {
       if (!/^[a-zA-Z0-9._-]+$/.test(name)) throw new Error(`Module "${mod.name}": invalid cron job name "${name}"`);
       const job = declared[name];
-      validateJob(`${mod.name}:${name}`, job);
-      ret.push({
-        id: `${mod.name}:${name}`,
-        job,
-        scheduleKey: scheduleKey(job, timeZone),
-      });
+      const id = `${mod.name}:${name}`;
+      validateJob(id, job);
+      ret.push({ id, job, key: scheduleKey(job, timeZone) });
     }
   }
   return ret;
 }
 
-async function syncRows(app: App, registeredJobs: RegisteredJob[], now: number, timeZone: string): Promise<void> {
-  if (!registeredJobs.length) return;
-  const rows = new Map((await app.db.query`SELECT id, schedule_key FROM cron_job`).map((row) => [String(row.id), row]));
-  for (const registered of registeredJobs) {
-    const row = rows.get(registered.id);
-    if (!row) {
-      const next = nextRun(registered.job, now, timeZone);
-      const prefix = app.db.dialect === "mysql" ? "INSERT IGNORE" : app.db.dialect === "sqlite" ? "INSERT OR IGNORE" : "INSERT";
-      const suffix = app.db.dialect === "postgres" ? "ON CONFLICT (id) DO NOTHING" : "";
-      await app.db.exec(sql`
-        ${sql.raw(prefix)} INTO cron_job
-          (id, schedule_key, next_run, lock_id, locked_until, last_started, last_finished, last_success, duration_ms, failures, last_error)
-        VALUES (${registered.id}, ${registered.scheduleKey}, ${next}, ${""}, ${0}, ${0}, ${0}, ${0}, ${0}, ${0}, ${""})
-        ${sql.raw(suffix)}`);
-    } else if (row.schedule_key !== registered.scheduleKey) {
-      const next = nextRun(registered.job, now, timeZone);
-      await app.db.exec`
-        UPDATE cron_job SET schedule_key = ${registered.scheduleKey}, next_run = ${next}, lock_id = ${""}, locked_until = ${0}
-        WHERE id = ${registered.id} AND schedule_key = ${row.schedule_key} AND locked_until <= ${now}`;
-    }
-  }
-}
-
 async function timezone(app: App): Promise<string> {
-  const value = String(await app.settings.cron.timezone || "UTC");
-  try { Temporal.Now.zonedDateTimeISO(value); }
-  catch { throw new Error(`Invalid cron timezone "${value}"`); }
-  return value;
+  return String(await app.settings.cron.timezone);
 }
 
 function errorMessage(e: unknown): string {

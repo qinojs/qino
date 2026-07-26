@@ -1,17 +1,10 @@
-.cron-jobs td {
-  vertical-align: top;
-}
+[qcms-mod="backend.superuser.cron"] {
+  & > .-head { display: flex; align-items: center; gap: .5rem; }
+  & > .-head > button:first-of-type { margin-left: auto; }
+  & .-scroll { overflow: auto; padding: 0; }
 
-.cron-jobs small {
-  color: var(--color-dimmed);
-}
-
-.cron-jobs .-error {
-  color: var(--red);
-  max-width: 28rem;
-  white-space: pre-wrap;
-}
-
-.cron-jobs .-state {
-  white-space: nowrap;
+  & .-jobs td { vertical-align: top; }
+  & .-jobs small { color: var(--color-dimmed); }
+  & .-state { white-space: nowrap; }
+  & .-error { color: var(--red); max-width: 28rem; white-space: pre-wrap; }
 }

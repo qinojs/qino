@@ -1,23 +1,24 @@
 import { assert, assertEquals, assertThrows } from "../../core/tests/deps.ts";
 import { Db, type App } from "../../core/mod.ts";
 import { Emitter } from "../../core/lib/Emitter.ts";
-import type { Every, Job, RunResult } from "../mod.ts";
+import type { Every, Job } from "../mod.ts";
 import { run, status, trigger } from "../mod.ts";
 import { init } from "../plugin.ts";
-import { nextRun, scheduleKey, validateJob } from "../schedule.ts";
+import { nextRun, scheduleKey, validateJob } from "../calendar.ts";
 import { Scheduler } from "../scheduler.ts";
 
 const noop = () => {};
 const job = (every: Every, options: Partial<Job> = {}): Job => ({ every, run: noop, ...options } as Job);
 const unix = (iso: string) => Date.parse(iso) / 1000;
+const utc = { timeZone: "UTC" };
 
 Deno.test("cron schedules intervals, hours, and zoned daily times", () => {
-  assertEquals(nextRun(job(90), 100, "UTC"), 190);
-  assertEquals(nextRun(job(90, { jitter: 30 }), 100, "UTC", false, () => 0), 160);
-  assert(nextRun(job(90, { jitter: 30 }), 100, "UTC", false, () => 0.999999) < 220);
-  assertEquals(nextRun(job("hour"), unix("2026-01-01T12:34:56Z"), "UTC"), unix("2026-01-01T13:00:00Z"));
+  assertEquals(nextRun(job(90), 100, utc), 190);
+  assertEquals(nextRun(job(90, { jitter: 30 }), 100, { ...utc, random: () => 0 }), 160);
+  assert(nextRun(job(90, { jitter: 30 }), 100, { ...utc, random: () => 0.999999 }) < 220);
+  assertEquals(nextRun(job("hour"), unix("2026-01-01T12:34:56Z"), utc), unix("2026-01-01T13:00:00Z"));
   assertEquals(
-    nextRun(job("day", { at: { hour: 3 } }), unix("2026-01-01T20:00:00Z"), "Europe/Zurich"),
+    nextRun(job("day", { at: { hour: 3 } }), unix("2026-01-01T20:00:00Z"), { timeZone: "Europe/Zurich" }),
     unix("2026-01-02T02:00:00Z"),
   );
 });
@@ -25,8 +26,8 @@ Deno.test("cron schedules intervals, hours, and zoned daily times", () => {
 Deno.test("cron applies and persists jitter around a daily time", () => {
   const now = unix("2026-01-01T20:00:00Z");
   const daily = job("day", { at: { hour: 3 }, jitter: 2 * 60 * 60 });
-  const first = nextRun(daily, now, "Europe/Zurich", false, () => 0);
-  const last = nextRun(daily, now, "Europe/Zurich", false, () => 0.999999);
+  const first = nextRun(daily, now, { timeZone: "Europe/Zurich", random: () => 0 });
+  const last = nextRun(daily, now, { timeZone: "Europe/Zurich", random: () => 0.999999 });
   assertEquals(first, unix("2026-01-02T00:00:00Z"));
   assert(last >= first);
   assert(last < unix("2026-01-02T04:00:00Z"));
@@ -34,13 +35,15 @@ Deno.test("cron applies and persists jitter around a daily time", () => {
 
 Deno.test("cron positions jobs within hours and weeks", () => {
   const hourly = job("hour", { at: { minute: 27, second: 30 }, jitter: 5 * 60 + 30 });
-  assertEquals(nextRun(hourly, unix("2026-01-01T12:00:00Z"), "UTC", false, () => 0), unix("2026-01-01T12:22:00Z"));
-  assert(nextRun(hourly, unix("2026-01-01T12:00:00Z"), "UTC", false, () => 0.999999) < unix("2026-01-01T12:33:00Z"));
-  assertEquals(nextRun(hourly, unix("2026-01-01T12:23:00Z"), "UTC", true, () => 0), unix("2026-01-01T13:22:00Z"));
+  const noon = unix("2026-01-01T12:00:00Z");
+  assertEquals(nextRun(hourly, noon, { ...utc, random: () => 0 }), unix("2026-01-01T12:22:00Z"));
+  assert(nextRun(hourly, noon, { ...utc, random: () => 0.999999 }) < unix("2026-01-01T12:33:00Z"));
+  assertEquals(nextRun(hourly, unix("2026-01-01T12:23:00Z"), { ...utc, nextPeriod: true, random: () => 0 }), unix("2026-01-01T13:22:00Z"));
 
   const sunday = job("week", { at: { weekday: "sunday", hour: 12 }, jitter: 12 * 60 * 60 });
-  assertEquals(nextRun(sunday, unix("2026-03-28T12:00:00Z"), "Europe/Zurich", false, () => 0), unix("2026-03-28T23:00:00Z"));
-  assert(nextRun(sunday, unix("2026-03-28T12:00:00Z"), "Europe/Zurich", false, () => 0.999999) < unix("2026-03-29T22:00:00Z"));
+  const zurich = { timeZone: "Europe/Zurich" };
+  assertEquals(nextRun(sunday, unix("2026-03-28T12:00:00Z"), { ...zurich, random: () => 0 }), unix("2026-03-28T23:00:00Z"));
+  assert(nextRun(sunday, unix("2026-03-28T12:00:00Z"), { ...zurich, random: () => 0.999999 }) < unix("2026-03-29T22:00:00Z"));
 });
 
 Deno.test("cron rejects invalid schedules", () => {
@@ -57,60 +60,49 @@ Deno.test("cron fingerprints only settings relevant to the cadence", () => {
   assert(scheduleKey(job("day"), "UTC") !== scheduleKey(job("day"), "Europe/Zurich"));
 });
 
+Deno.test("cron reaches the scheduler only while the module is linked", () => {
+  assertThrows(() => run({} as App), Error, "not linked");
+});
+
 Deno.test({
   name: "cron discovers manifest jobs, leases a due run, and stores its result",
   fn: async () => {
-    let testRuns = 0, testScheduledAt: number | undefined, testManual: boolean | undefined;
-    const cron = {
-      refresh: {
-        every: 1,
-        run(_app: App, { signal, scheduledAt, manual }: { signal: AbortSignal; scheduledAt: number; manual: boolean }) {
-          if (signal.aborted) throw signal.reason;
-          testRuns++;
-          testScheduledAt = scheduledAt;
-          testManual = manual;
-        },
-      },
-    } satisfies Record<string, Job>;
+    let runs = 0;
+    const id = "test.jobs:refresh";
+    const cron = { refresh: { every: 1, run: () => { runs++; } } } satisfies Record<string, Job>;
     const { app, db, ctrl } = await createTestApp(cron);
+    const nextRunOf = async () => Number(await db.one`SELECT next_run FROM cron_job WHERE id = ${id}`);
     try {
-      const initial = await run(app);
-      assertEquals(initial.jobs, 1);
-      assertEquals(initial.ran, []);
-      const manual = await trigger(app, "test.jobs:refresh");
-      assertEquals(manual.ran, ["test.jobs:refresh"]);
-      assertEquals(manual.due, 0);
-      assertEquals(manual.nextRun, initial.nextRun);
-      assertEquals(testRuns, 1);
-      assertEquals(testManual, true);
-      assert(Number(testScheduledAt) < Number(initial.nextRun));
+      assertEquals((await run(app)).ran, []); // seeded one second ahead, nothing due yet
 
-      await app.db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${"test.jobs:refresh"}`;
+      const scheduled = await nextRunOf();
+      assertEquals((await trigger(app, id)).ran, [id]);
+      assertEquals(runs, 1);
+      assertEquals(await nextRunOf(), scheduled); // a forced run keeps the pending slot
 
+      await db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${id}`;
       const [a, b] = await Promise.all([run(app), run(app)]);
-      assertEquals(a.ran, ["test.jobs:refresh"]);
-      assertEquals(b.ran, ["test.jobs:refresh"]);
-      assertEquals(testRuns, 2);
-      assertEquals(testScheduledAt, 0);
-      assertEquals(testManual, false);
+      assertEquals(a.ran, [id]);
+      assertEquals(b.ran, [id]); // concurrent callers share one run
+      assertEquals(runs, 2);
 
-      await app.db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${"test.jobs:refresh"}`;
-      const ctrlA = new AbortController(), ctrlB = new AbortController();
-      const schedulerA = new Scheduler(app), schedulerB = new Scheduler(app);
-      await Promise.all([schedulerA.init(ctrlA.signal), schedulerB.init(ctrlB.signal)]);
-      const competing = await Promise.all([schedulerA.run(), schedulerB.run()]);
-      ctrlA.abort();
-      ctrlB.abort();
-      assertEquals(testRuns, 3);
-      assertEquals(competing.flatMap((v: RunResult) => v.ran), ["test.jobs:refresh"]);
-
-      const rows = await status(app);
-      const row = rows.find((v) => v.id === "test.jobs:refresh")!;
+      const row = (await status(app)).find((v) => v.id === id)!;
       assertEquals(row.active, true);
       assertEquals(row.running, false);
       assertEquals(row.failures, 0);
       assert(Number(row.lastSuccess) > 0);
       assert(row.nextRun > Number(row.lastSuccess));
+
+      // Two schedulers on the same table: only one may claim the lease.
+      await db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${id}`;
+      const ctrlA = new AbortController(), ctrlB = new AbortController();
+      const a2 = new Scheduler(app), b2 = new Scheduler(app);
+      await Promise.all([a2.init(ctrlA.signal), b2.init(ctrlB.signal)]);
+      const competing = await Promise.all([a2.run(), b2.run()]);
+      ctrlA.abort();
+      ctrlB.abort();
+      assertEquals(runs, 3);
+      assertEquals(competing.flatMap((v) => v.ran), [id]);
     } finally {
       ctrl.abort();
       await db.close();
@@ -128,40 +120,41 @@ Deno.test({
         timeout: 1,
         run(_app: App, { signal }: { signal: AbortSignal }) {
           if (behavior === "fail") throw new Error("broken");
-          if (behavior === "timeout") return new Promise((_, reject) => {
-            const keepAlive = setTimeout(noop, 2_000);
-            signal.addEventListener("abort", () => {
-              clearTimeout(keepAlive);
-              reject(signal.reason);
-            }, { once: true });
-          });
+          if (behavior === "timeout") {
+            return new Promise((_, reject) => {
+              const keepAlive = setTimeout(noop, 2_000);
+              signal.addEventListener("abort", () => {
+                clearTimeout(keepAlive);
+                reject(signal.reason);
+              }, { once: true });
+            });
+          }
         },
       },
     } satisfies Record<string, Job>;
     const { app, db, ctrl } = await createTestApp(cron);
     const id = "test.jobs:unstable";
+    const due = () => db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${id}`;
     const consoleError = console.error;
     console.error = noop;
     try {
       await run(app);
-      await db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${id}`;
-      const failed = await run(app);
-      assertEquals(failed.failed[id], "Error: broken");
+      await due();
+      assertEquals((await run(app)).failed[id], "Error: broken");
       let row = (await status(app)).find((v) => v.id === id)!;
       assertEquals(row.failures, 1);
       assertEquals(row.lastError, "Error: broken");
 
       behavior = "succeed";
-      await db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${id}`;
+      await due();
       assertEquals((await run(app)).ran, [id]);
       row = (await status(app)).find((v) => v.id === id)!;
       assertEquals(row.failures, 0);
       assertEquals(row.lastError, undefined);
 
       behavior = "timeout";
-      await db.exec`UPDATE cron_job SET next_run = ${0} WHERE id = ${id}`;
-      const timedOut = await run(app);
-      assert(timedOut.failed[id].startsWith("TimeoutError:"));
+      await due();
+      assert((await run(app)).failed[id].startsWith("TimeoutError:"));
     } finally {
       console.error = consoleError;
       ctrl.abort();
@@ -178,6 +171,7 @@ async function createTestApp(cron: Record<string, Job>) {
     last_finished INTEGER NOT NULL, last_success INTEGER NOT NULL, duration_ms INTEGER NOT NULL,
     failures INTEGER NOT NULL, last_error TEXT NOT NULL
   )`;
+  await db.loadTables();
   const plugin = { name: "test.jobs", needs: ["cron"], cron };
   const events = new Emitter<Record<string, Record<string, unknown>>>();
   const app = {
@@ -188,7 +182,6 @@ async function createTestApp(cron: Record<string, Job>) {
       linked: (name: string) => name === plugin.name,
     },
     on: events.on.bind(events),
-    fire: events.fire.bind(events),
   } as unknown as App;
   const ctrl = new AbortController();
   await init(app, { signal: ctrl.signal });

@@ -9,8 +9,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (!result) return false;
     const errors = Object.values(result.failed);
     const runLabel = result.ran.length === 1 ? await node.app.t`job run` : await node.app.t`jobs run`;
-    const message = errors.join("\n") || `${result.ran.length} ${runLabel}`;
-    return { ok: !errors.length, message, result };
+    return { ok: !errors.length, message: errors.join("\n") || `${result.ran.length} ${runLabel}` };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : String(e) };
   }

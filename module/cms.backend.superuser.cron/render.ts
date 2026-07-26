@@ -1,13 +1,21 @@
 import { html, type App, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import { status, type JobStatus } from "../cron/mod.ts";
+import { status } from "../cron/mod.ts";
+
+type JobStatus = Awaited<ReturnType<typeof status>>[number];
+
+/** active / running / failed, as shown in the card head and the dashboard widget. */
+export function counts(jobs: JobStatus[]): { active: number; running: number; failed: number } {
+  const active = jobs.filter((job) => job.active);
+  return { active: active.length, running: active.filter((job) => job.running).length, failed: active.filter((job) => job.failures).length };
+}
 
 export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   return html.async`<div class="u2-card -full">
-    <div class=-head style="display:flex;align-items:center;gap:.5rem">
+    <div class=-head>
       <span>${t`Cron jobs`}</span>
-      <button type=button data-run-due style="margin-left:auto">${t`Run due jobs`}</button>
+      <button type=button data-run-due>${t`Run due jobs`}</button>
       <button type=button data-refresh>${t`Refresh`}</button>
     </div>
     <div cms-part=list>${list(node)}</div>
@@ -19,9 +27,7 @@ export async function list(node: Node): Promise<HtmlString> {
 }
 
 export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlString> {
-  const active = jobs.filter((job) => job.active).length;
-  const running = jobs.filter((job) => job.active && job.running).length;
-  const failed = jobs.filter((job) => job.active && job.failures).length;
+  const { active, running, failed } = counts(jobs);
   const rows = await Promise.all(jobs.map((job) => renderRow(app, job)));
 
   return html.async`<div class=-body>
@@ -29,8 +35,8 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
     · ${running} ${app.t`running`}
     · ${failed} ${app.t`failed`}
   </div>
-  <div style="overflow:auto;padding:0">
-    <table class="u2-table cron-jobs">
+  <div class=-scroll>
+    <table class="u2-table -jobs">
       <thead><tr>
         <th>${app.t`Job`}
         <th>${app.t`Schedule`}
@@ -78,11 +84,11 @@ async function stateInfo(app: App, job: JobStatus, due: boolean) {
 }
 
 function cadence(job: JobStatus): HtmlString {
-  if (!job.active || job.every == null) return html`–`;
+  if (!job.active) return html`–`;
   const every = typeof job.every === "number" ? duration(job.every) : job.every;
   const at = typeof job.every === "number" ? "" : ` · at ${atText(job)}`;
   const jitter = job.jitter ? ` · jitter ±${duration(job.jitter)}` : "";
-  return html`<code>every ${every}${at}${jitter}</code><br><small>timeout ${duration(job.timeout ?? 0)}</small>`;
+  return html`<code>every ${every}${at}${jitter}</code><br><small>timeout ${duration(job.timeout!)}</small>`;
 }
 
 function atText(job: JobStatus): string {

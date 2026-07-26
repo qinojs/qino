@@ -1,8 +1,7 @@
 # Cron
 
 `cron` runs recurring module jobs without requiring an operating-system cron entry. A timer is
-the primary trigger; incoming requests provide a throttled fallback. An external scheduler can
-call `POST /api/cron/run` as a superuser when an independent heartbeat is required.
+the primary trigger; incoming requests provide a throttled fallback.
 
 ## Declaring jobs
 
@@ -29,7 +28,7 @@ export const cron = {
   },
 } satisfies Jobs;
 
-async function cleanup(app: App, { signal, manual }: { signal: AbortSignal; manual: boolean }) {
+async function cleanup(app: App, { signal }: { signal: AbortSignal }) {
   // Keep jobs idempotent and pass signal to cancellable operations.
 }
 
@@ -41,7 +40,8 @@ async function sync(app: App) {
 `every` accepts `"hour"`, `"day"`, `"week"`, or seconds. `at` positions a calendar job within
 its period: `{ minute: 15 }` for an hourly job, `{ hour: 3 }` for a daily job, or
 `{ weekday: "sunday", hour: 12 }` for a weekly job. Missing fields default to the start of the
-period; a weekly job defaults to Monday.
+period; a weekly job defaults to Monday. An interval job (`every: 900`) counts from the end of
+its last run, so a long run shifts the following ones.
 
 `jitter` is the maximum random deviation in seconds before or after an `every` schedule; the
 example therefore runs between 01:00 and 05:00. The selected time is persisted, so every process
@@ -66,14 +66,16 @@ Calendar schedules use `settings.cron.timezone` (`UTC` by default). Temporal han
 arithmetic and daylight-saving transitions.
 
 Job IDs are derived as `<module>:<job>`. State and leases live in `cron_job`; simultaneous timer,
-request, and external triggers therefore cannot claim the same run. Failed jobs retry with
-exponential backoff. A process crash can cause a job to run again after its lease expires, so jobs
-should be idempotent.
+request, and external triggers therefore cannot claim the same run. Due jobs of one tick run in
+parallel. Failed jobs retry with exponential backoff, while a job cancelled by a shutdown only
+releases its lease and keeps its schedule. A process crash can cause a job to run again after its
+lease expires, so jobs should be idempotent.
 
-The public `run(app)`, `trigger(app, id)`, and `status(app)` helpers from `@qino/qino/cron` are
-useful for host-level integration. `trigger` runs one job immediately without moving a future
-scheduled run; its context has `manual: true`. Normal requests only kick the scheduler and never
-wait for a job.
+The `run(app)`, `trigger(app, id)`, and `status(app)` helpers from `@qino/qino/cron` are the
+public API — for host-level integration, or for an external heartbeat mounted by the host.
+`trigger` runs one job immediately without consuming a scheduled slot that is still ahead.
+Normal requests only kick the scheduler and never wait for a job. All three throw while the
+module is not linked.
 
 Link the optional `cms.backend.superuser.cron` module to inspect job state, run due jobs, and
 trigger individual jobs from the backend.

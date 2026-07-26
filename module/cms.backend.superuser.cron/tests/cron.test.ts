@@ -1,11 +1,11 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import type { App } from "../../core/mod.ts";
-import type { JobStatus, RunResult } from "../../cron/mod.ts";
 import api from "../nodeApi.ts";
 import { cms, name, needs } from "../plugin.ts";
-import { renderJobs } from "../render.ts";
+import { counts, renderJobs } from "../render.ts";
 
 const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));
+const app = { t } as unknown as App;
 
 Deno.test("cms.backend.superuser.cron: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.cron");
@@ -16,7 +16,7 @@ Deno.test("cms.backend.superuser.cron: metadata is wired", () => {
 });
 
 Deno.test("cms.backend.superuser.cron: job table shows operational state safely", async () => {
-  const jobs: JobStatus[] = [{
+  const out = String(await renderJobs(app, [{
     id: 'shop:<script>alert("x")</script>',
     active: true,
     every: "week",
@@ -31,8 +31,7 @@ Deno.test("cms.backend.superuser.cron: job table shows operational state safely"
     durationMs: 5123,
     failures: 1,
     lastError: '<img src=x onerror="alert(1)">',
-  }];
-  const out = String(await renderJobs({ t } as unknown as App, jobs));
+  }]));
   assertEquals(out.includes("every week · at sunday 12:00:00 · jitter ±12h"), true);
   assertEquals(out.includes("timeout 15m"), true);
   assertEquals(out.includes("data-run-job=\"shop:&lt;script&gt;"), true);
@@ -41,19 +40,18 @@ Deno.test("cms.backend.superuser.cron: job table shows operational state safely"
   assertEquals(out.includes("5123 ms"), true);
 });
 
-Deno.test("cms.backend.superuser.cron: API triggers jobs through the protected node", async () => {
-  const calls: string[] = [];
-  const result: RunResult = { jobs: 1, due: 0, ran: ["shop:sync"], failed: {}, nextRun: 123 };
-  const app = {
-    t,
-    fire: (name: string, event: Record<string, unknown>) => {
-      calls.push(`${name}:${event.id ?? ""}`);
-      event.result = result;
-      return event;
-    },
-  } as unknown as App;
-  const node = { app };
-  assertEquals(await api(node as never, { runJob: "shop:sync" }), { ok: true, message: "1 job run", result });
-  assertEquals(await api(node as never, { runDue: true }), { ok: true, message: "1 job run", result });
-  assertEquals(calls, ["cron:trigger:shop:sync", "cron:run:"]);
+Deno.test("cms.backend.superuser.cron: counts only regard active jobs", () => {
+  assertEquals(counts([
+    { active: true, running: true, failures: 0 },
+    { active: true, running: false, failures: 3 },
+    { active: false, running: false, failures: 9 },
+  ] as Parameters<typeof counts>[0]), { active: 2, running: 1, failed: 1 });
+});
+
+Deno.test("cms.backend.superuser.cron: node API reports failures instead of throwing", async () => {
+  const node = { app } as never;
+  assertEquals(await api(node, {}), false);
+  // cron is not linked in this test app, so run/trigger throw — the node API must surface that.
+  assertEquals(await api(node, { runDue: true }), { ok: false, message: 'Module "cron" is not linked' });
+  assertEquals(await api(node, { runJob: "shop:sync" }), { ok: false, message: 'Module "cron" is not linked' });
 });
