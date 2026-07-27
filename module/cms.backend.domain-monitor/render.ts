@@ -119,6 +119,42 @@ const dnsCell = (value?: string | null): HtmlString => {
   return list.length ? html`<small>${html.join(list, "<br>")}</small>` : html`–`;
 };
 
+// TXT records share no syntax, so the badge takes whatever names the record: the key of a
+// "key=value" record, the scheme behind "v=", the vendor prefix of a token — "token" when
+// nothing in it names anything, which is what most verification strings look like.
+// Records write their names in every casing there is, so the label ends up lowercase throughout.
+function txtLabel(record: string): string {
+  const value = record.trim();
+  const eq = value.indexOf("=");
+  const key = eq > 0 ? value.slice(0, eq) : "";
+  const first = value.split(/\s/)[0];
+  const label = key === "v"
+    ? value.slice(eq + 1).split(/[\s;]/)[0].replace(/v?\d+$/i, "") || "?"
+    // "google-site-verification", "apple-domain-verification" and friends all say the same thing twice
+    : key && !/\s/.test(key)
+    ? key.replace(/[-_]?(?:domain|site|dns|host)?[-_]?verification$/i, "") || key
+    : /^[a-z]{2,8}-/i.test(first)
+    ? first.split("-")[0]
+    : first && first.length <= 12
+    ? first
+    : "token";
+  return label.slice(0, 12).toLowerCase();
+}
+
+// Records that end up under the same label share one badge — a domain with four verification
+// strings would otherwise widen the column with four identical ones.
+const txtGroups = (value?: string | null): [string, string[]][] => [...Map.groupBy(lines(value), txtLabel)];
+
+const txtCell = (groups: [string, string[]][]): HtmlString =>
+  groups.length
+    ? html`<div class=-txt>${
+      html.join(
+        groups.map(([label, records]) => html`<small class=u2-badge title="${records.join("\n")}">${label}${records.length > 1 ? ` ${records.length}` : ""}</small>`),
+        " ",
+      )
+    }</div>`
+    : html`–`;
+
 const bare = (name: string) => name.replace(/\.$/, "");
 
 // What each nameserver answered, as recorded by the check: "<name> <ip> <serial> <primary> <ns,ns>",
@@ -281,10 +317,12 @@ export function rowHtml(row: DomainRow): HtmlString {
     no(row.cert_names_ok) ? `certificate does not cover ${domain}` : "",
   ].filter(Boolean).join(" · ");
   const caa = lines(row.dns_caa);
-  const ipv6Title = !lines(row.dns_aaaa).length ? "no AAAA record" : row.ipv6 == null ? "no IPv6 route from this server" : row.ipv6 ? "answers over IPv6" : "AAAA record, but no answer over IPv6";
+  const aaaa = lines(row.dns_aaaa);
+  const ipv6Title = !aaaa.length ? "no AAAA record" :row.ipv6 == null ? "no IPv6 route from this server" : row.ipv6 ? "answers over IPv6" : "AAAA record, but no answer over IPv6";
   const wwwTitle = row.www_ok == null ? `${alt} has no address` : row.www_ok ? `${alt} is served too` : `${alt} resolves but does not answer`;
 
   const dkim = lines(row.dkim);
+  const txt = txtGroups(row.dns_txt);
   return html`<tr data-domain="${domain}">
       <td><input type=checkbox data-select title="Select for bulk actions">
       <td data-value="${levels[state.level]}">${dot(state.level, state.title)}
@@ -300,9 +338,9 @@ export function rowHtml(row: DomainRow): HtmlString {
       <td data-g=tls data-value="${rank(row.cert_valid) === 1 ? -1 : row.cert_days}">${flag(certLow ? false : row.cert_valid, certTitle)}${row.cert_days != null ? html` <small>${row.cert_days} d</small>` : ""} ${flag(caa.length ? true : null, caa.length ? `CAA: ${caa.join(", ")}` : "no CAA record")}
       <td data-g=dns data-value="${rank(ns.ok)}|${row.dns_ns}">${nsCell(row, ns)}
       <td data-g=dns data-value="${row.dns_a}">${dnsCell(row.dns_a)}
-      <td data-g=dns data-value="${row.dns_aaaa}">${dnsCell(row.dns_aaaa)}
+      <td data-g=dns data-value="${aaaa.length ? 1 : 0}">${aaaa.length ? dot("green", aaaa.join(", ")) : dot("blue", "no AAAA record")}
       <td data-g=dns data-value="${row.dns_mx}">${dnsCell(row.dns_mx)}
-      <td data-g=dns data-value="${row.dns_txt}">${dnsCell(row.dns_txt)}
+      <td data-g=dns data-value="${txt.map(([label]) => label).join(",")}">${txtCell(txt)}
       <td data-g=dns data-value="${lines(row.dns_ttl).map((l) => Number(l.split("=")[1]) || 0).reduce((a, b) => Math.min(a, b), Infinity)}">${ttlCell(row)}
       <td data-g=dns data-value="${rank(row.dnssec)}">${dnssecCell(row)}
       <td data-g=mail data-value="${row.spf_error ? 1 : rank(row.spf_policy)}|${row.spf_lookups ?? 0}">${spfCell(row)}
@@ -497,29 +535,29 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
     <table class="u2-table -Sticky -domains ${hidden.map((group) => "-no-" + group).join(" ")}">
       <thead><tr>
         <th width=1><input type=checkbox data-select-all title="Select every row the search and filter leave visible">
-        <th data-sort-handler width=2>Status
+        <th data-sort-handler width=2 class=-v>Status
         <th data-sort-handler>Domain
         <th data-sort-handler width=3>Expires
         <th data-g=http data-sort-handler width=5>Code
         <th data-g=http data-sort-handler>Time
-        <th data-g=http data-sort-handler>HTTPS
-        <th data-g=http data-sort-handler width=2>Headers
-        <th data-g=http data-sort-handler width=2>IPv6
-        <th data-g=http data-sort-handler width=2>www
-        <th data-g=http data-sort-handler width=2>404
-        <th data-g=tls data-sort-handler width=3>Cert
+        <th data-g=http data-sort-handler class=-v>HTTPS
+        <th data-g=http data-sort-handler width=2 class=-v>Headers
+        <th data-g=http data-sort-handler width=2 class=-v>IPv6
+        <th data-g=http data-sort-handler width=2 class=-v>www
+        <th data-g=http data-sort-handler width=2 class=-v>404
+        <th data-g=tls data-sort-handler width=3 class=-v>Cert
         <th data-g=dns data-sort-handler>NS
         <th data-g=dns data-sort-handler>A
-        <th data-g=dns data-sort-handler>AAAA
+        <th data-g=dns data-sort-handler width=2 class=-v>AAAA
         <th data-g=dns data-sort-handler>MX
         <th data-g=dns data-sort-handler>TXT
-        <th data-g=dns data-sort-handler width=3>TTL
-        <th data-g=dns data-sort-handler width=2>DNSSEC
-        <th data-g=mail data-sort-handler width=3>SPF
-        <th data-g=mail data-sort-handler width=3>DMARC
-        <th data-g=mail data-sort-handler width=2>DKIM
-        <th data-g=mail data-sort-handler width=3>MTA-STS
-        <th data-g=mail data-sort-handler width=2>SMTP
+        <th data-g=dns data-sort-handler width=3 class=-v>TTL
+        <th data-g=dns data-sort-handler width=2 class=-v>DNSSEC
+        <th data-g=mail data-sort-handler width=3 class=-v>SPF
+        <th data-g=mail data-sort-handler width=3 class=-v>DMARC
+        <th data-g=mail data-sort-handler width=2 class=-v>DKIM
+        <th data-g=mail data-sort-handler width=3 class=-v>MTA-STS
+        <th data-g=mail data-sort-handler width=2 class=-v>SMTP
         <th data-sort-handler width=5>Checked
         <th data-sort-handler>Automatic
         <th width=1>
