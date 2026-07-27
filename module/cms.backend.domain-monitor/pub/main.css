@@ -15,7 +15,8 @@
   & .-domains.-no-mail [data-g=mail] { display: none; }
   /* narrow columns hold little more than a dot, so their label stands upright instead of
      stretching the column to the width of the word */
-  & .-domains th.-v { writing-mode: sideways-lr; vertical-align: bottom; }
+  & .-domains th { vertical-align: bottom; z-index:1; }
+  & .-domains th.-v { writing-mode: sideways-lr; }
   /* the TXT badges wrap instead of pushing the column as wide as the whole record set */
   & .-domains .-txt { white-space: normal; max-width: 12rem; }
   & .-cols { display: flex; gap: .5rem; flex-wrap: wrap; }
