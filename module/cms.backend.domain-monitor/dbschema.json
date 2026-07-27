@@ -60,17 +60,8 @@
           "www_ok": {
             "type": "boolean"
           },
-          "ns_answering": {
-            "type": "integer"
-          },
-          "ns_in_sync": {
-            "type": "boolean"
-          },
-          "ns_subnets": {
-            "type": "integer"
-          },
-          "ns_parent_match": {
-            "type": "boolean"
+          "ns_servers": {
+            "type": "string"
           },
           "soa_primary": {
             "type": "string"
@@ -88,6 +79,9 @@
             "type": "boolean"
           },
           "dns_ns": {
+            "type": "string"
+          },
+          "dns_ns_parent": {
             "type": "string"
           },
           "dns_a": {

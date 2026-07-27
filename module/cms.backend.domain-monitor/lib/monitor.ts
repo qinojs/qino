@@ -23,16 +23,14 @@ export type DomainRow = {
   soft_404?: boolean | null;
   ipv6?: boolean | null;
   www_ok?: boolean | null;
-  ns_answering?: number | null;
-  ns_in_sync?: boolean | null;
-  ns_subnets?: number | null;
-  ns_parent_match?: boolean | null;
+  ns_servers?: string | null;
   soa_primary?: string | null;
   soa_serial?: number | null;
   soa_expire?: number | null;
   soa_minimum?: number | null;
   dnssec?: boolean | null;
   dns_ns?: string | null;
+  dns_ns_parent?: string | null;
   dns_a?: string | null;
   dns_aaaa?: string | null;
   dns_mx?: string | null;
@@ -115,7 +113,7 @@ export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent
     signal,
   });
   signal?.throwIfAborted();
-  const dns: Record<string, string> = { dns_cname: check.dnsCname, dns_ds: check.dnsDs, dns_https: check.dnsHttps };
+  const dns: Record<string, string> = { dns_cname: check.dnsCname, dns_ds: check.dnsDs, dns_https: check.dnsHttps, dns_ns_parent: check.dnsNsParent };
   for (const [key, list] of Object.entries(check.dns)) dns["dns_" + key] = list.join("\n");
   // remember when a record set last moved — silent DNS changes are worth noticing
   const changed = Object.entries(dns).some(([key, value]) => row[key] != null && row[key] !== value);
@@ -150,10 +148,7 @@ export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent
     soft_404: check.soft404,
     ipv6: check.ipv6,
     www_ok: check.wwwOk,
-    ns_answering: check.nsAnswering,
-    ns_in_sync: check.nsInSync,
-    ns_subnets: check.nsSubnets,
-    ns_parent_match: check.nsParentMatch,
+    ns_servers: check.nsServers,
     soa_primary: check.soaPrimary,
     soa_serial: check.soaSerial,
     soa_expire: check.soaExpire,

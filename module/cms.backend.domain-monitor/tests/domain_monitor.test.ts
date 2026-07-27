@@ -79,8 +79,7 @@ Deno.test("cms.backend.domain-monitor: detail renders current and historical val
       redirect_https: true,
       ipv6: false,
       www_ok: true,
-      ns_answering: 2,
-      ns_in_sync: true,
+      ns_servers: "ns1.example.com 192.0.2.10 2024010101 ns1.example.com ns1.example.com,ns2.example.com\nns2.example.com",
       dns_ns: "ns1.example.com",
       dns_a: "192.0.2.1",
       dns_aaaa: "",
@@ -105,9 +104,11 @@ Deno.test("cms.backend.domain-monitor: detail renders current and historical val
     };
     await db.exec`INSERT INTO monitor_domain
       (domain, check_frequency, online, status_code, response_time, cert_valid, cert_days, checked, created, sort,
-       ipv6, www_ok, redirect_https, ns_answering, ns_in_sync, dns_ns, dns_a, dns_txt)
+       ipv6, www_ok, redirect_https, ns_servers, dns_ns, dns_a, dns_txt)
       VALUES (${"example.com"}, ${"daily"}, ${true}, ${200}, ${123}, ${true}, ${42}, ${1000}, ${1}, ${0},
-       ${false}, ${true}, ${true}, ${2}, ${true}, ${"ns1.example.com\nns2.example.com"}, ${"192.0.2.1"},
+       ${false}, ${true}, ${true},
+       ${"ns1.example.com 192.0.2.10 2024010101 ns1.example.com ns1.example.com,ns2.example.com\nns2.example.com"},
+       ${"ns1.example.com\nns2.example.com"}, ${"192.0.2.1"},
        ${'v=spf1 <script>alert(1)</script>'})`;
     await db.exec`INSERT INTO monitor_domain_check (domain, checked_at, result) VALUES (${"example.com"}, ${900}, ${JSON.stringify(previous)})`;
     await db.exec`INSERT INTO monitor_domain_check (domain, checked_at, result) VALUES (${"example.com"}, ${1000}, ${JSON.stringify(result)})`;
@@ -118,7 +119,10 @@ Deno.test("cms.backend.domain-monitor: detail renders current and historical val
 
     // grouped facts: every DNS record on its own line, tri-state flags spelled out
     assertEquals(out.includes("<th colspan=2 class=-group>DNS"), true);
-    assertEquals(out.includes("<div>ns1.example.com</div><div>ns2.example.com</div>"), true);
+    // the raw per-server lines carry the reading, the panel spells out what follows from them
+    assertEquals(out.includes("<div>ns1.example.com <small>192.0.2.10 · serial 2024010101</small></div>"), true);
+    assertEquals(out.includes("<div>ns2.example.com <small>no answer</small></div>"), true);
+    assertEquals(out.includes("<th>NS answering<td>1/2"), true);
     assertEquals(out.includes("<div>192.0.2.1</div>"), true);
     assertEquals(out.includes("42 days remaining"), true);
     // TXT records are foreign input and must not reach the page as markup

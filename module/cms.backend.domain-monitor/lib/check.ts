@@ -28,10 +28,8 @@ export type CheckResult = {
   soft404: boolean | null; // a made-up path answers like a made-up path should
   ipv6: boolean | null; // null when there is no AAAA or no IPv6 route here
   wwwOk: boolean | null; // www ↔ apex counterpart, null when it has no address
-  nsAnswering: number | null; // authoritative nameservers that answered
-  nsInSync: boolean | null; // ... and all agreed on serial + NS set
-  nsSubnets: number | null; // distinct /24 they sit in — redundancy that shares a subnet is none
-  nsParentMatch: boolean | null; // delegation at the parent equals the NS set in the zone
+  nsServers: string; // what each authoritative nameserver answered, one per line — see nsAgreement
+  dnsNsParent: string; // the delegation as the parent hands it out, one name per line
   soaSerial: number | null;
   soaExpire: number | null;
   soaMinimum: number | null; // negative-answer caching, a mistake here outlives the fix
@@ -93,40 +91,35 @@ async function resolveDns(host: string): Promise<Dns> {
   return { ns, a, aaaa, mx, txt, caa, dmarc };
 }
 
-// Asks every authoritative nameserver directly: does it answer, and do they all serve the
-// same zone? Catches dead redundancy and zones that drifted apart after a manual edit.
+// Asks every authoritative nameserver directly and writes down what it said, one line per server:
+//   <name> <address> <soa serial> <soa primary> <ns set it serves, comma separated>
+// A server that did not answer is its bare name. Whether the redundancy is real and the zones
+// agree is read out of these lines later — this only records.
 // Hands back the addresses it resolved so the later batches can reuse them.
 async function nsAgreement(root: string, ns: string[]) {
-  if (!ns.length) return { answering: null, inSync: null, ips: [] as string[], subnets: null, soa: null };
   const answers = await Promise.all(ns.map(async (name) => {
     const [ip] = await dnsList(bare(name), "A");
     if (!ip) return null;
     const soa = await Deno.resolveDns(root, "SOA", { nameServer: { ipAddr: ip, port: 53 } }).catch(() => null);
     if (!soa?.length) return null;
     const zone = await dnsList(root, "NS", ip);
-    return { ip, primary: soa[0].mname, serial: soa[0].serial, expire: soa[0].expire, minimum: soa[0].minimum, zone: zone.join(",") };
+    return { ip, primary: soa[0].mname, serial: soa[0].serial, expire: soa[0].expire, minimum: soa[0].minimum, zone: zone.map(bare).join(",") };
   }));
   const ok = answers.filter((a) => a != null);
-  if (!ok.length) return { answering: 0, inSync: false, ips: [] as string[], subnets: 0, soa: null };
-  // The NS set must match everywhere, an empty answer counts as "did not say" rather than as drift.
-  const zones = new Set(ok.map((a) => a.zone).filter(Boolean));
-  // Serials only compare per primary: two providers (say Route53 + NS1) run their own numbering,
-  // but every server behind one primary must have received the same zone version.
-  const serialsAgree = [...Map.groupBy(ok, (a) => a.primary).values()].every((g) => new Set(g.map((a) => a.serial)).size === 1);
   return {
-    answering: ok.length,
-    inSync: serialsAgree && zones.size <= 1,
+    servers: ns.map((name, i) => {
+      const a = answers[i];
+      return a ? `${bare(name)} ${a.ip} ${a.serial} ${bare(a.primary)} ${a.zone}` : bare(name);
+    }).join("\n"),
     ips: ok.map((a) => a.ip),
-    // Four nameservers in one /24 fall over together — that is one nameserver wearing four hats.
-    subnets: new Set(ok.map((a) => a.ip.split(".").slice(0, 3).join("."))).size,
-    soa: ok[0],
+    soa: ok[0] ?? null,
   };
 }
 
 // Everything the runtime resolver cannot answer, in as few round trips as possible: one pipelined
 // batch to the zone's own servers, one to the parent for the delegation and the DS record.
 async function dnsExtras(host: string, root: string, nsIps: string[], signal?: AbortSignal) {
-  const blank = { ttl: "", cname: "", https: "", ds: "", dnssec: null as boolean | null, parentMatch: null as boolean | null };
+  const blank = { ttl: "", cname: "", https: "", ds: "", dnssec: null as boolean | null, parent: "" };
   if (!nsIps.length) return blank;
   const wanted: [string, string, Type][] = [
     ["a", host, "A"],
@@ -152,7 +145,6 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
     : [null, null];
   // A referral puts the NS set in the authority section, a direct answer in the answer section.
   const delegated = delegation && (delegation.values.length ? delegation.values : delegation.authority);
-  const zoneNs = zone[4]?.values ?? [];
 
   return {
     // TTLs are only meaningful straight from the source: a resolver hands back what is left of a
@@ -164,9 +156,7 @@ async function dnsExtras(host: string, root: string, nsIps: string[], signal?: A
     // The parent has the last word on whether a zone is signed. A DS with no key behind it is
     // worse than no DS at all, so that stays unknown rather than being reported as unsigned.
     dnssec: !ds ? null : !ds.values.length ? false : dnskey ? dnskey.values.length > 0 : null,
-    parentMatch: delegated?.length && zoneNs.length
-      ? delegated.map(bare).sort().join(",") === zoneNs.map(bare).sort().join(",")
-      : null,
+    parent: (delegated ?? []).map(bare).sort().join("\n"),
   };
 }
 
@@ -361,10 +351,8 @@ export async function checkDomain(domain: string, opt: {
     redirectHttps,
     ipv6,
     wwwOk,
-    nsAnswering: ns.answering,
-    nsInSync: ns.inSync,
-    nsSubnets: ns.subnets,
-    nsParentMatch: extras.parentMatch,
+    nsServers: ns.servers,
+    dnsNsParent: extras.parent,
     soaSerial: ns.soa?.serial ?? null,
     soaExpire: ns.soa?.expire ?? null,
     soaMinimum: ns.soa?.minimum ?? null,

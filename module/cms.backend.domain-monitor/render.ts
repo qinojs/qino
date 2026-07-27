@@ -119,6 +119,69 @@ const dnsCell = (value?: string | null): HtmlString => {
   return list.length ? html`<small>${html.join(list, "<br>")}</small>` : html`–`;
 };
 
+const bare = (name: string) => name.replace(/\.$/, "");
+
+// What each nameserver answered, as recorded by the check: "<name> <ip> <serial> <primary> <ns,ns>",
+// the bare name alone when it stayed silent. Everything below is read out of these lines.
+type NsServer = { name: string; ip: string; serial: string; primary: string; zone: string[] };
+
+const nsServers = (row: DomainRow): NsServer[] => lines(row.ns_servers).map((line) => {
+  const [name, ip = "", serial = "", primary = "", zone = ""] = line.split(" ");
+  return { name, ip, serial, primary, zone: zone.split(",").filter(Boolean) };
+});
+
+// Serials only compare per primary: two providers (say Route53 + NS1) run their own numbering, but
+// every server behind one primary must have received the same zone version. An empty NS set counts
+// as "did not say" rather than as drift.
+function nsInSync(list: NsServer[]): boolean {
+  const zones = new Set(list.map((s) => s.zone.join(",")).filter(Boolean));
+  const groups = [...Map.groupBy(list, (s) => s.primary).values()];
+  return zones.size <= 1 && groups.every((g) => new Set(g.map((s) => s.serial)).size === 1);
+}
+
+// Long names would push the column wide; the tail carries the zone, which is what tells them apart.
+const shorten = (name: string) => name.length > 33 ? name.slice(0, 6) + "…" + name.slice(-24) : name;
+
+// The parent's delegation against the NS set the zone itself serves — null while either is unknown.
+function nsParentMatch(row: DomainRow, answering: NsServer[]): boolean | null {
+  const parent = lines(row.dns_ns_parent).map(bare).sort().join(",");
+  const zone = answering.find((s) => s.zone.length)?.zone.map(bare).sort().join(",") ?? "";
+  return parent && zone ? parent === zone : null;
+}
+
+function nsState(row: DomainRow) {
+  const list = nsServers(row);
+  const answering = list.filter((s) => s.ip);
+  const sync = nsInSync(answering);
+  const parent = nsParentMatch(row, answering);
+  // Four nameservers in one /24 fall over together — that is one nameserver wearing four hats.
+  const subnets = new Set(answering.map((s) => s.ip.split(".").slice(0, 3).join("."))).size;
+  return { list, answering, sync, parent, subnets, ok: list.length ? answering.length === list.length && sync && !no(parent) : null };
+}
+
+// One line per nameserver, because a single dot cannot say which of them is the broken one:
+// red is a server that never answered, orange means the answering ones serve different zones.
+function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
+  const names = ns.list.length ? ns.list.map((s) => s.name) : lines(row.dns_ns).map(bare);
+  if (!names.length) return html`${dot("gray", "no NS records")}`;
+  const line = (name: string): HtmlString => {
+    const server = ns.list.find((s) => s.name === name);
+    const [level, title]: [Level, string] = !server
+      ? ["gray", "not checked"]
+      : !server.ip
+      ? ["red", "does not answer"]
+      : ns.sync
+      ? ["green", `${server.ip}, zone in sync`]
+      : ["orange", `${server.ip}, but the zones differ`];
+    return html`<div>${dot(level, title)} <small title="${name}">${shorten(name)}</small></div>`;
+  };
+  // Whole-delegation faults belong to no single server, so they get a line of their own.
+  const faults: [string, string][] = [];
+  if (ns.answering.length > 1 && ns.subnets < 2) faults.push(["one /24", "all nameservers sit in the same /24 and fall over together"]);
+  if (no(ns.parent)) faults.push(["parent differs", "the delegation at the parent differs from the NS set in the zone"]);
+  return html`${html.join(names.map(line))}${html.join(faults.map(([short, title]) => html`<div>${dot("orange", title)} <small>${short}</small></div>`))}`;
+}
+
 // A short TTL is a moving-house setting: right for the day of a migration, a liability every other
 // day, because it forces every resolver on earth to ask again that often.
 const ttlLevel = (seconds: number): Level => seconds < 60 ? "red" : seconds < 300 ? "orange" : "green";
@@ -210,15 +273,7 @@ export function rowHtml(row: DomainRow): HtmlString {
   const domain = row.domain;
   const alt = wwwAlt(domain);
   const state = status(row);
-  const nsTotal = lines(row.dns_ns).length;
-  const nsOk = nsTotal ? row.ns_in_sync && row.ns_answering === nsTotal && !no(row.ns_parent_match) : null;
-  const nsTitle = !nsTotal ? "no NS records" : [
-    `${row.ns_answering ?? 0}/${nsTotal} answering`,
-    row.ns_in_sync ? "zones in sync" : "zones differ",
-    // Nameservers sharing one /24 fall over together, which is one nameserver wearing several hats.
-    row.ns_subnets != null && row.ns_subnets < 2 && nsTotal > 1 ? "all in one /24" : "",
-    no(row.ns_parent_match) ? "delegation at the parent differs from the zone" : "",
-  ].filter(Boolean).join(", ");
+  const ns = nsState(row);
   const certLow = row.cert_valid && row.cert_days != null && row.cert_days < 14; // renew now, not later
   const certTitle = [
     row.cert_valid == null ? "no answer" : !row.cert_valid ? "cert invalid" : row.cert_days == null ? "cert valid" : `cert valid, ${row.cert_days} days left`,
@@ -243,7 +298,7 @@ export function rowHtml(row: DomainRow): HtmlString {
       <td data-g=http data-value="${rank(row.www_ok)}">${flag(row.www_ok, wwwTitle)}
       <td data-g=http data-value="${rank(row.soft_404)}">${flag(row.soft_404, row.soft_404 == null ? "unknown" : row.soft_404 ? "unknown paths answer 404" : "an unknown path answers like a real page")}
       <td data-g=tls data-value="${rank(row.cert_valid) === 1 ? -1 : row.cert_days}">${flag(certLow ? false : row.cert_valid, certTitle)}${row.cert_days != null ? html` <small>${row.cert_days} d</small>` : ""} ${flag(caa.length ? true : null, caa.length ? `CAA: ${caa.join(", ")}` : "no CAA record")}
-      <td data-g=dns data-value="${rank(nsOk)}|${row.dns_ns}">${flag(nsOk, nsTitle)} ${dnsCell(row.dns_ns)}
+      <td data-g=dns data-value="${rank(ns.ok)}|${row.dns_ns}">${nsCell(row, ns)}
       <td data-g=dns data-value="${row.dns_a}">${dnsCell(row.dns_a)}
       <td data-g=dns data-value="${row.dns_aaaa}">${dnsCell(row.dns_aaaa)}
       <td data-g=dns data-value="${row.dns_mx}">${dnsCell(row.dns_mx)}
@@ -276,6 +331,7 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
     SELECT id, checked_at, result FROM monitor_domain_check
     WHERE domain = ${domain} ORDER BY checked_at DESC LIMIT ${historyLimit}`;
   const current = status(row);
+  const ns = nsState(row);
   const results = checks.map((check) => parseResult(check.result));
   const history = checks.map((check, index) => {
     const result = results[index];
@@ -322,11 +378,12 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
           fact("CAA", records(row.dns_caa)),
         ])}
         ${factGroup("DNS", [
-          fact("NS", records(row.dns_ns)),
-          fact("NS answering", row.ns_answering ?? "–"),
-          fact("NS in sync", state(row.ns_in_sync, "all name servers return the same records")),
-          fact("NS subnets", row.ns_subnets ?? "–"),
-          fact("Parent delegation", state(row.ns_parent_match, "the parent delegates to the same servers")),
+          fact("NS", ns.list.length ? html.join(ns.list.map((s) => html`<div>${s.name} <small>${s.ip || "no answer"}${s.serial ? ` · serial ${s.serial}` : ""}</small></div>`)) : records(row.dns_ns)),
+          fact("NS answering", ns.list.length ? `${ns.answering.length}/${ns.list.length}` : "–"),
+          fact("NS in sync", state(ns.answering.length ? ns.sync : null, "all name servers return the same records")),
+          fact("NS subnets", ns.answering.length ? ns.subnets : "–"),
+          fact("Parent delegation", state(ns.parent, "the parent delegates to the same servers")),
+          fact("Parent NS", records(row.dns_ns_parent)),
           fact("DNSSEC", state(row.dnssec, "signed and delegated")),
           fact("DS", records(row.dns_ds)),
           fact("SOA", row.soa_primary ? `${row.soa_primary} · serial ${row.soa_serial ?? "?"}` : "–"),
