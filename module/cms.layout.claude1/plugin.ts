@@ -4,7 +4,7 @@ import type { CMS, Node } from "../cms/mod.ts";
 export const name = "cms.layout.claude1";
 
 // Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/";
+const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/";
 
 const u2css = [
   "css/norm/norm.css",
