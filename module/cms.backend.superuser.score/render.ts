@@ -59,17 +59,17 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
     html`<tr>
       <td>${i + 1}
       <td><code>${row.id}</code>
+      <td><code>${Number(row.score).toFixed(3)}</code>
       <td>${accesses(strength(app.db, tbl, Number(row.score), now))}
-      <td>${time(Number(row.time))}
-      <td><code>${Number(row.score).toFixed(3)}</code>`
+      <td>${time(Number(row.time))}`
   );
   return html.async`<table class="u2-table -Sticky">
     <thead><tr>
       <th>#
-      <th>${app.t`Row`}
-      <th>${app.t`Strength`}
-      <th>${app.t`Last access`}
-      <th>${app.t`Stored`}
+      <th>${app.t`Row`} <small>${app.t`db`}</small>
+      <th><code>score</code> <small>${app.t`db`}</small>
+      <th>${app.t`Strength`} <small>${app.t`computed`}</small>
+      <th><code>time</code> <small>${app.t`db`}</small>
     <tbody>${html.join(rows)}
   </table>`;
 }

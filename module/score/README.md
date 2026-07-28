@@ -70,12 +70,15 @@ Consequences worth knowing:
 ## Tables
 
     score_scope(id, tbl)                 one row per scored table
-    score(scope_id, id, score, time)     primary key (scope_id, id)
+    score(scope_id, id, score, time)     primary key (scope_id, id), index (scope_id, score)
 
 The table name lives in `score_scope` and nowhere else: `scope_id` is a `SMALLINT`, two bytes in
 the primary key and in the `score` index instead of up to 64. `id` is an integer — the scored
 row's primary key. `time` (last access) takes no part in the ranking; it is what a rescale and the
 weighting below would need. Composite primary keys are not scored; score the owning entry instead.
+
+Every read filters `scope_id` first, so `(scope_id, score)` carries them all. Stopgap: `install()`
+creates it with hand-written SQL, because the schema layer cannot declare composite indexes yet.
 
 A daily cron job deletes rows that faded below 0.02 accesses. Scopes that are no longer registered,
 and their scores, stay until they are removed by hand.
@@ -92,12 +95,7 @@ plain table name and would then have to forget every scope belonging to it.
 **A join variant of `sqlScore()`.** The correlated subquery costs one primary-key lookup per
 candidate row, which is right for a selective query and wrong for one that ranks a million rows.
 A `LEFT JOIN score` returning the same expression would suit that case — as a second function
-next to `sqlScore()`, not as a rewrite of it, and it wants the composite index below.
-
-**A composite index `(scope_id, score)`.** For `WHERE scope_id = ? ORDER BY score DESC LIMIT n` the
-single column index is a compromise: the database walks it in score order and discards everything
-belonging to another scope. The schema layer cannot express composite secondary indexes yet, so
-this waits for item.js (equal `x-index` names forming one index, in field order).
+next to `sqlScore()`, not as a rewrite of it.
 
 **A second, faster-decaying score.** One number cannot tell "ten hits last week, nothing since"
 from "two hits yesterday, rising" — both can land on the same value. A second column with a short

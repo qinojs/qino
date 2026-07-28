@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertThrows } from "../../core/tests/deps.ts";
 import { App, Db, unixTime } from "../../core/mod.ts";
 import { forget, hit, prune, scored, sqlScore, strength } from "../mod.ts";
-import { cron, dbSchema, init, name, needs } from "../plugin.ts";
+import { cron, dbSchema, init, install, name, needs } from "../plugin.ts";
 
 const DAY = 86400;
 
@@ -34,6 +34,21 @@ Deno.test("score: the table name is stored once, the scores carry its id", async
   // a second registration reuses the row instead of inserting another
   await scored(db, "doc", 30 * DAY);
   assertEquals(await db.one`SELECT COUNT(*) FROM score_scope`, 2);
+  await db.close();
+});
+
+Deno.test("score: the composite index is created once and survives a migration", async () => {
+  const db = await testDb();
+  const indexes = () => db.col<string>`SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'score'`;
+  const app = { db } as App;
+
+  await install({ app });
+  await install({ app }); // idempotent — install runs on every link
+  assertEquals((await indexes()).filter((i) => i === "score_scope_score").length, 1);
+
+  // The module migrates with { patch: true }; a name outside the "idx_score_" namespace stays.
+  await db.migrate(dbSchema, { patch: true });
+  assert((await indexes()).includes("score_scope_score"));
   await db.close();
 });
 
