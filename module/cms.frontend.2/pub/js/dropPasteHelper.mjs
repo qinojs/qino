@@ -105,8 +105,8 @@ cms.NodeCleanerConf_ForeignContent = {
   removeNbsp: 1,
 };
 
-const Cleaner = new c1.NodeCleaner(cms.NodeCleanerConf_ForeignContent);
+const cleaner = new c1.NodeCleaner(cms.NodeCleanerConf_ForeignContent);
 
 globalThis.onPasteFormatNode = function(node) {
-  Cleaner.cleanContents(node, true);
+  cleaner.cleanContents(node, true);
 };

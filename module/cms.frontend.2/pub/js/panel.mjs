@@ -1,7 +1,6 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
 import { apt, t, ctx } from "../../../core/pub/js/qino.js";
-import { alert, confirm } from "@qino/u2/js/dialog/dialog.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
@@ -77,7 +76,7 @@ const loadWidget = (widget, params, cb) => {
   import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
     params ||= {};
-    params.pid ||= cms.cont.active || nodeId; // neu
+    params.pid ||= cms.cont.active || nodeId;
     apt['cms.frontend.2'].widget(widget).post({ params }).then((res) => {
       loading.done(widgetEl);
       setHtml(widgetEl, res);

@@ -81,14 +81,14 @@ c1Combobox.prototype = {
       this.lastValue = this.input.value;
       this.showDialog();
       this.searchOptions();
-      dialog.onmouseover = e=>{ // neu
+      dialog.onmouseover = e=>{
         const el = e.target.closest('[value]');
         this.mark(el);
       };
       dialog.onmouseup = e=>{
         const el = e.target.closest('[value]');
         this.select(el);
-        this.hideDialog(); // neu
+        this.hideDialog();
         this.input.dispatchEvent(new CustomEvent('select_by_pointer')); // new
       };
       dialog.c1Combobox = this;

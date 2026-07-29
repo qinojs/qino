@@ -187,10 +187,10 @@ document.addEventListener('mousedown', e =>
 
 /* cleaner */
 {
-  let Cleaner;
+  let cleaner;
   Rte.on('input', () => {
-    Cleaner ||= new c1.NodeCleaner();
-    Cleaner.cleanContents(Rte.active, true);
+    cleaner ||= new c1.NodeCleaner();
+    cleaner.cleanContents(Rte.active, true);
   });
 }
 

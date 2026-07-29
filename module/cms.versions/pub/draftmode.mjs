@@ -71,8 +71,8 @@ const el = c1.dom.fragment('<div class=-item itemid=publish>'+
 panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.append(el);
 
 el.querySelector('.-versionCompare').addEventListener('click', async ()=>{
-  const { CmsVersComparer } = await import('./comparer.mjs');
-  CmsVersComparer.compare(nodeId,{
+  const { comparer } = await import('./comparer.mjs');
+  comparer.compare(nodeId,{
     toSpace:0,
     accept(){ publish(nodeId); },
     acceptText:'Publish'

@@ -44,6 +44,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
 export { api } from "./api.ts";
 
-export function install({ app }: { app: App }): void { // tobi: ich glaube das braucht es nicht
+export function install({ app }: { app: App }): void { // tobi: I do not think this is needed
   app.settings["cms.text"]["translation service"];
 }

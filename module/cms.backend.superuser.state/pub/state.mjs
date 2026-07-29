@@ -1,5 +1,5 @@
-// dump des client-seitigen ctx aus qino.js — zum vergleich mit den server-boxen.
-// gleiche dump()-lib wie serverseitig (jsr:@nuxodin/dump), gleiche optionen.
+// dump of the client-side ctx from qino.js — to compare against the server boxes.
+// same dump() lib as on the server (jsr:@nuxodin/dump), same options.
 import { ctx } from "../../core/pub/js/qino.js";
 import { dump } from "https://jsr.io/@nuxodin/dump/1.5.2/mod.js";
 

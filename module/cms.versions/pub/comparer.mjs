@@ -6,7 +6,7 @@ let div, iframe1, iframe2, pid, view1;
 
 const frameSrc = (space, log) => `${appURL}?cmspid=${nodeId}&cms_versions_space=${space}&cms_versions_log=${log}&cms_versions_page=${pid}&cms_noFrontend=1`;
 
-export const CmsVersComparer = {
+export const comparer = {
   _ensure(){
     if (div) return;
     const html = `
@@ -81,7 +81,7 @@ export const CmsVersComparer = {
     iframe2.addEventListener('load',initFrame);
   },
   keyListener(e){
-    e.key === 'Escape' && CmsVersComparer.close();
+    e.key === 'Escape' && comparer.close();
   },
   compare(page_id, options) {
     this._ensure();

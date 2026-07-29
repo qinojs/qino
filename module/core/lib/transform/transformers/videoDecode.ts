@@ -26,7 +26,7 @@ export const videoDecode: TransformerDef = {
     VIDEO_MIMES.has(ctx.mime) &&
     (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.frame !== undefined || (ctx.options.fmt !== undefined && ctx.options.fmt !== 'md' && ctx.options.fmt !== 'json') || ctx.options.q !== undefined),
   transform: async (ctx) => {
-    const frame = toFrameIndex(ctx.options.frame); // FFmpeg ist 0-basiert
+    const frame = toFrameIndex(ctx.options.frame); // FFmpeg is 0-based
     const out = nodePath.join(ctx.tmpDir, 'video-frame.png');
     await ffmpeg.frame(ctx.currentPath, frame, out, ctx.signal);
     ctx.currentPath = out;

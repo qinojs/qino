@@ -28,7 +28,6 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
   const tableRows = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    const delBtn   = `<form method=post style="display:inline"><input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}"><input type=hidden name=delete_key value="${hee(r.id)}"><button class=u2-unstyle u2-confirm="${hee(`Really delete ${String(r.name ?? r.id)}?`)}"><u2-ico icon=delete>✕</u2-ico></button></form>`;
     return `<tr>
       <td>${hee(r.id)}
       <td>${hee(userName)}<br><small>${hee(r.email)}</small>
@@ -36,7 +35,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       <td><code>${hee(r.prefix)}…</code>
       <td>${fmt(r.created)}
       <td>${r.expires ? fmt(r.expires) : "–"}
-      <td>${delBtn}`;
+      <td><form method=post style="display:inline">
+        <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
+        <input type=hidden name=delete_key value="${hee(r.id)}">
+        <button class=u2-unstyle u2-confirm="${hee(`Really delete ${r.name ?? r.id}?`)}"><u2-ico icon=delete>✕</u2-ico></button>
+      </form>`;
   }).join("\n");
 
   const empty = rows.length === 0

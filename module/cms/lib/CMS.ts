@@ -218,6 +218,7 @@ export class CMS {
 
   async fileLang(node: Node, name: string, lang?: string): Promise<DbFile | undefined> {
     lang ||= getCtx().lang;
+    // creates every language slot — the lookup below returns early and would leave the rest missing
     for (const l of node.cms.app.languages.all) await node.file(name + " " + l);
     const file = await node.file(name + " " + lang);
     if (await file.exists()) return file;

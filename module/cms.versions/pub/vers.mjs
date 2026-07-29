@@ -136,8 +136,8 @@ CmsVersViewer.prototype = {
 };
 Object.assign(CmsVersViewer.prototype, c1.Eventer);
 
-/* create Viewer */
-const Viewer = new CmsVersViewer();
+/* create viewer */
+const viewer = new CmsVersViewer();
 
 /* more */
 const more = c1.dom.fragment(`
@@ -147,8 +147,8 @@ const more = c1.dom.fragment(`
     <div class=-txt></div>
   </div>`).firstElementChild;
 const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
-find(Viewer.container, '.-control').append(more, pointer);
-Viewer.on('before-load',function(e){
+find(viewer.container, '.-control').append(more, pointer);
+viewer.on('before-load',function(e){
   const li = find(this.container, `.-list > li[v="${e.vers}"]`);
   const pos = li.getBoundingClientRect();
   let top = pos.top;
@@ -170,13 +170,13 @@ Viewer.on('before-load',function(e){
   });
   find(more, '.-reactivate').onclick = () => {
     body.style.opacity = 0.3;
-    apt['cms.versions']['publish-node'].post({ pid: Number(Viewer.pid), options: {fromLog:e.vers+1} }).then(() => {
+    apt['cms.versions']['publish-node'].post({ pid: Number(viewer.pid), options: {fromLog:e.vers+1} }).then(() => {
       location.href = location.href.replace(/#.*$/,'');
     });
   };
   find(more, '.-compareActive').onclick = async () => {
-    const { CmsVersComparer } = await import('./comparer.mjs');
-    CmsVersComparer.compare(Viewer.pid, {
+    const { comparer } = await import('./comparer.mjs');
+    comparer.compare(viewer.pid, {
       fromLog: e.vers+1,
       fromText: find(li, '.-date').innerHTML,
       toText: 'aktuell',
@@ -188,11 +188,11 @@ Viewer.on('before-load',function(e){
 more.addEventListener('mouseover', e => {
   const mark = e.target.getAttribute('mark');
   if (!mark) return;
-  const all = Viewer.activeIframe.contentWindow.document.querySelectorAll(mark);
+  const all = viewer.activeIframe.contentWindow.document.querySelectorAll(mark);
   for (const el of all) {
     el.style.outline = '10px dotted red';
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    Viewer.activeIframe.contentWindow.scrollBy(-100,-100)
+    viewer.activeIframe.contentWindow.scrollBy(-100,-100)
   }
 });
 
@@ -203,7 +203,7 @@ document.addEventListener('keydown',e=>{
   if (target.isContentEditable || target.form !== undefined) return; // inputs/contenteditable in the light DOM (page content)
   if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
   if (e.code === 'KeyH') {
-    Viewer.show(nodeId);
+    viewer.show(nodeId);
     e.preventDefault();
   }
 });
@@ -216,7 +216,7 @@ cms.contextMenueContent.addItem('Verlauf', {
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
   },
   onclick() {
-    Viewer.show(this.activePid);
+    viewer.show(this.activePid);
   }
 });
 
@@ -230,7 +230,7 @@ const sidebarItem = c1.dom.fragment(`
 panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.after(sidebarItem)
 sidebarItem.addEventListener('mousedown', e=>{
   e.stopPropagation();
-  Viewer.show(nodeId)
+  viewer.show(nodeId)
 });
 
 

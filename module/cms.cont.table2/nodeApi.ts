@@ -14,10 +14,10 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     for (let i = 0; i < rows; i++) {
       for (let j = 0; j < cols; j++) {
         if (i > row) {
-          const T1 = await node.text(`${i}_${j}`);
-          for (const l of node.app.languages.all) {
-            const value = await T1.lang(l).get();
-            await node.text(`${i - 1}_${j}`, l, value);
+          const text = await node.text(`${i}_${j}`);
+          for (const lang of node.app.languages.all) {
+            const value = await text.lang(lang).get();
+            await node.text(`${i - 1}_${j}`, lang, value);
           }
         }
       }
@@ -31,11 +31,11 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
       const r = rows - 1 - i;
       for (let j = 0; j < cols; j++) {
         if (r > row) {
-          const T1 = await node.text(`${r}_${j}`);
-          for (const l of node.app.languages.all) {
-            const value = await T1.lang(l).get();
-            await node.text(`${r + 1}_${j}`, l, value);
-            await node.text(`${r}_${j}`, l, "");
+          const text = await node.text(`${r}_${j}`);
+          for (const lang of node.app.languages.all) {
+            const value = await text.lang(lang).get();
+            await node.text(`${r + 1}_${j}`, lang, value);
+            await node.text(`${r}_${j}`, lang, "");
           }
         }
       }
@@ -49,10 +49,10 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
       for (let j = cols; j > 0; j--) {
         const c = cols - j;
         if (c > col) {
-          const T1 = await node.text(`${r}_${c}`);
-          for (const l of node.app.languages.all) {
-            const value = await T1.lang(l).get();
-            await node.text(`${r}_${c - 1}`, l, value);
+          const text = await node.text(`${r}_${c}`);
+          for (const lang of node.app.languages.all) {
+            const value = await text.lang(lang).get();
+            await node.text(`${r}_${c - 1}`, lang, value);
           }
         }
       }

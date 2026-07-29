@@ -48,7 +48,7 @@ Use the user's language. Be concise, practical, and use tools for CMS changes.
 - Files use post_node_files. Settings use put_node_settings. Copies use post_node_copy.
 `.trim();
 
-export const CmsHelperBot: Bot = {
+export const cmsHelper: Bot = {
   id: "cms-helper",
   systemPrompt: async (ctx: unknown, clientContext: ClientContext): Promise<string> => {
     const { user } = ctx as { user?: { get(k: string): Promise<string> } };

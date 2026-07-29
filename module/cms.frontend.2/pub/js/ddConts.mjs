@@ -23,7 +23,7 @@ cms.contDrag = function() {
 
   const up = () => {
     moveToTargetEffect(active);
-    if (!dropCont) return; // neu
+    if (!dropCont) return;
     ghost.remove();
     dropCont.insertBefore(active,dropBefore);
     active.style.cssText = oldCss;

@@ -52,7 +52,7 @@ export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;
   const oldSession = ctx.sess.data;
   await logout(ctx);
-  // neue Session-ID nach Logout verhindert Session-Fixation
+  // new session id after logout prevents session fixation
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
   ctx.sess = session;
   ctx.sess.data.core.userId(id);
