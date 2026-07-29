@@ -21,9 +21,10 @@ export function render(node: Node): Promise<HtmlString> {
 
 export async function list(node: Node): Promise<HtmlString> {
   const { app } = node;
+  const { db } = app;
   const now = unixTime();
-  const known = scopes(app.db);
-  const total = Number(await app.db.one`SELECT COUNT(*) FROM score`);
+  const known = scopes(db);
+  const total = Number(await db.one`SELECT COUNT(*) FROM score`);
   const cards: HtmlString[] = [];
   for (const [tbl, scope] of known) cards.push(await renderScope(app, tbl, scope, now));
 

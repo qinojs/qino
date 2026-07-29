@@ -34,7 +34,7 @@ export default function (node: Node): Promise<HtmlString> {
 <style>
 .access-time-manager > div { display:flex; flex-wrap:wrap; align-items:baseline; margin:0 -6px; }
 .access-time-manager > div > div { margin:3px 6px; }
-.-accessTimeBtns { display:inline-flex; white-space:nowrap; gap:1px; }
-.-accessTimeBtns > * { border-radius:0; margin:0 -.5px; }
+.access-time-manager .-accessTimeBtns { display:inline-flex; white-space:nowrap; gap:1px; }
+.access-time-manager .-accessTimeBtns > * { border-radius:0; margin:0 -.5px; }
 </style>`;
 }
