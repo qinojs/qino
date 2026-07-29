@@ -67,7 +67,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const typeTables = TYPE_TABLES[f.type ?? ""];
   const events = new Map<string, Event>();
   const order: string[] = [];
-  const max = 150;
+  const MAX = 150;
 
   for (const r of rows) {
     const nodeId = Number(r.node_id);
@@ -80,7 +80,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const key = r.log_id + ":" + nodeId; // one event per request × changed node
     let ev = events.get(key);
     if (!ev) {
-      if (order.length >= max) continue;
+      if (order.length >= MAX) continue;
       ev = { key, ncMax: Number(r.id), row: r, datas: [] };
       events.set(key, ev);
       order.push(key);

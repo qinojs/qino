@@ -98,6 +98,6 @@ Deno.test("web_auth: public login challenge stores challenge state without extra
 
 Deno.test("web_auth: cron purges expired challenges", async () => {
   const { app, execs } = makeApp();
-  await cron.challenges.run(app as any, { signal: new AbortController().signal });
+  await cron.challenges.run(app as any);
   assertEquals(execs.length, 1);
 });

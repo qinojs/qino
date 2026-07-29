@@ -180,10 +180,10 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
   const access = await modAccess(app, modName);
   const standard = await app.db.one`SELECT cms_access FROM module WHERE name = ${modName}`;
 
-  const limit = 500;
+  const LIMIT = 500;
   const rows = await app.db.query`
-    SELECT id, type FROM page WHERE module = ${modName} ORDER BY type DESC, id DESC LIMIT ${limit}`;
-  const usedTotal = rows.length < limit ? rows.length
+    SELECT id, type FROM page WHERE module = ${modName} ORDER BY type DESC, id DESC LIMIT ${LIMIT}`;
+  const usedTotal = rows.length < LIMIT ? rows.length
     : Number(await app.db.one`SELECT COUNT(*) FROM page WHERE module = ${modName}`);
 
   const [lCont, lPage] = await Promise.all([t`content`, t`page`]); // plain html`` does not await
