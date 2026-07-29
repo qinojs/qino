@@ -109,6 +109,8 @@ export const s = {
       return issues.length ? { issues } : { value: out };
     }, { inner: item }),
 
+  // null counts as "not set" here, so JSON inputs pass
+  // todo: check which apis rely on that, then move to strict (v === undefined) plus an s.nullable()
   optional: <T>(inner: StandardSchema<T>) =>
     new StandardSchema<T | undefined>("optional", (v) =>
       v == null ? { value: undefined } : inner["~standard"].validate(v) as StandardResult<T | undefined>,
