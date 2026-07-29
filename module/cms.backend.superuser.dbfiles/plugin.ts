@@ -62,7 +62,12 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const relSubs = sql.join(children.map((dbFile: DbField, i: number) =>
     sql`,(SELECT COUNT(*) FROM ${sql.id(dbFile.table.name)} WHERE ${sql.id(dbFile.name)}=f.id) AS ${sql.id("r" + i)}`), "");
 
-  const orderSql: Record<string, Sql> = { newest:sql`f.log_id DESC`, oldest:sql`f.log_id ASC`, changed:sql`f.log_id_ch DESC`, biggest:sql`f.size DESC` };
+  const orderSql: Record<string, Sql> = {
+    newest:sql`f.log_id DESC`,
+    oldest:sql`f.log_id ASC`,
+    changed:sql`f.log_id_ch DESC`,
+    biggest:sql`f.size DESC`
+  };
   const orderBy = orderSql[order] ?? sql.join([sql`f.size = ${0} DESC`, ...children.map((_: DbField, i: number) => sql.id("r" + i))], ",");
 
   // one indexed path per input shape (never an OR across joined tables, which would full-scan):

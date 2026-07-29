@@ -12,12 +12,13 @@ class CmsTextService {
     }
 
     get ctx(): Ctx { return this.#ctx; }
+    get #app() { return this.#ctx.app; }
 
     async textAccess(text_id: any): Promise<boolean> {
         text_id = Number(text_id);
-        const pid = await this.ctx.app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
+        const pid = await this.#app.apt.cms["node-id-from-txt-id"].get({ id: text_id }).then((r: any) => r?.id ?? null).catch(() => null);
         if (!pid) return false;
-        const node = await cms(this.ctx.app).node(pid);
+        const node = await cms(this.#app).node(pid);
         return (await node.access()) >= 2;
     }
 
@@ -25,8 +26,8 @@ class CmsTextService {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const results: any[] = [];
-        for (const lang of this.ctx.app.languages.all) {
-            const text = await this.ctx.app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${lang}`;
+        for (const lang of this.#app.languages.all) {
+            const text = await this.#app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${lang}`;
             results.push({
                 lang,
                 text: !text ? false : sanitizeHtml(String(text)),
@@ -38,7 +39,7 @@ class CmsTextService {
     async translate(txt_id: any, target_lang: string, source_lang: string): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) throw new AptError(403, "No access to this text");
-        const db = this.ctx.app.db;
+        const db = this.#app.db;
         const input = String(await db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${source_lang}` ?? "");
         if (!input.trim()) throw new AptError(400, "Source text is empty");
         let output = await this.transl(input, target_lang, source_lang);
@@ -52,7 +53,7 @@ class CmsTextService {
 
     async translatePageAllLangs(pid: any, ifNeeded: boolean, subpages: boolean): Promise<{ count: number; fail: number }> {
         const stats = { count: 0, fail: 0 };
-        for (const lang of this.ctx.app.languages.all) {
+        for (const lang of this.#app.languages.all) {
             const result = await this.translatePage(pid, lang, "auto", ifNeeded, subpages);
             stats.count += result.count;
             stats.fail += result.fail;
@@ -71,7 +72,7 @@ class CmsTextService {
         const done = await this.translateCont(pid, target_lang, source_lang, ifNeeded);
         if (done === false) ++stats.fail;
         else stats.count += done;
-        const node = await cms(this.ctx.app).node(pid);
+        const node = await cms(this.#app).node(pid);
         const children = await node.children({ type: subpages ? "*" : "c" }) ?? new Map();
         for (const child of children.values()) {
             const result = await this.translatePage(child.id, target_lang, source_lang, ifNeeded, subpages);
@@ -82,7 +83,7 @@ class CmsTextService {
     }
 
     async translateCont(pid: any, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number | false> {
-        const node = await cms(this.ctx.app).node(pid);
+        const node = await cms(this.#app).node(pid);
         if ((await node.access()) < 2) return false;
         let count = 0;
         const title = await node.title();
@@ -95,13 +96,13 @@ class CmsTextService {
     }
 
     async translateText(tid: number, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number> {
-        const textEntry = this.ctx.app.dbTexts.text(tid);
+        const textEntry = this.#app.dbTexts.text(tid);
 
         if (ifNeeded && source_lang !== "clean" && (await textEntry.lang(target_lang).get()).trim()) return 0;
 
         if (source_lang === "auto") {
             source_lang = "";
-            for (const lang of this.ctx.app.languages.all) {
+            for (const lang of this.#app.languages.all) {
                 if (lang === target_lang) continue;
                 const source_text = await textEntry.lang(lang).get();
                 if (source_text.trim() === "") continue;
@@ -125,7 +126,7 @@ class CmsTextService {
 
     async transl(text: string, target_lang: string, source_lang: string): Promise<string | false> {
         if (source_lang && source_lang === target_lang) return text; // nothing to translate
-        const service = String(await this.ctx.app.settings["cms.text"]["translation service"] ?? "");
+        const service = String(await this.#app.settings["cms.text"]["translation service"] ?? "");
         if (service === "google") return this.googleTranslate(text, source_lang, target_lang);
         if (service === "deepl")  return this.deeplTranslate(text, source_lang, target_lang);
         throw new AptError(400, "No translation service configured");
@@ -133,7 +134,7 @@ class CmsTextService {
 
     async deeplTranslate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         console.warn("deprecated? deepl used");
-        const st = this.ctx.app.settings["cms.text"];
+        const st = this.#app.settings["cms.text"];
         const params = new URLSearchParams({
             text,
             source_lang,
@@ -156,10 +157,10 @@ class CmsTextService {
     }
 
     async googleTranslate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
-        const st = this.ctx.app.settings["cms.text"];
+        const st = this.#app.settings["cms.text"];
         const key =
             String(await st["google"]["key"] ?? "") ||
-            String(await this.ctx.app.settings["cms.backend.webmaster"]["google.api.key"] ?? "");
+            String(await this.#app.settings["cms.backend.webmaster"]["google.api.key"] ?? "");
         const params = new URLSearchParams({
             q: text,
             target: target_lang,
@@ -183,7 +184,7 @@ class CmsTextService {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
         const space = 0; // cms_vers::$space — cms.versions not ported yet
-        const rows = await this.ctx.app.db.query`
+        const rows = await this.#app.db.query`
             SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email
             FROM
              _vers_text text
@@ -205,7 +206,7 @@ class CmsTextService {
         const ids = (Array.isArray(txt_ids) ? txt_ids : [txt_ids]).map(Number).filter(Number.isFinite);
         if (!ids.length) return Array.isArray(txt_ids) ? {} : false;
         lang ??= this.ctx.lang;
-        const rows = await this.ctx.app.db.query`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
+        const rows = await this.#app.db.query`SELECT id, text FROM text WHERE id IN (${sql.join(ids.map((i) => sql`${i}`))}) AND lang = ${lang}`;
         const map: Record<number, boolean> = {};
         for (const row of rows) map[row.id] = !!row.text;
         if (!Array.isArray(txt_ids)) return map[ids[0]] ?? false;
