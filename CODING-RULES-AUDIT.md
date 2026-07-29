@@ -5,7 +5,6 @@
 - **Multi-Tenant-State an `App`/`Db` verschieben:** Instanz-Registries in [AiApi.ts](module/ai/lib/AiApi.ts#L14), [CMS.ts](module/cms/lib/CMS.ts#L6), [MailManager.ts](module/mail/lib/MailManager.ts#L16), [uncdn/internal.ts](module/uncdn/internal.ts#L4); Laufzeit-State in [scheduler.ts](module/cron/scheduler.ts#L9), [score/mod.ts](module/score/mod.ts#L25), [Vers.ts](module/cms.versions/lib/Vers.ts#L17), [standards.ts](module/cms.accessRules/lib/standards.ts#L4); Security-State in [guard.ts](module/cms.backend.security/guard.ts#L7) und [store.ts](module/cms.backend.security/store.ts#L7). `bucketWrite` zusätzlich nach App/Db isolieren.
 - **Prozess-Caches kapseln und beim Unlink aufräumen:** Template-Cache/Watcher in [cms.templateParser/plugin.ts](module/cms.templateParser/plugin.ts#L9), OIDC-Cache in [oauth/plugin.ts](module/oauth/plugin.ts#L16).
 - **Versions-SQL dialektfähig bauen:** Stringinterpolation, Backticks und rohe PK-Joins in [Vers.ts](module/cms.versions/lib/Vers.ts#L130) durch `sql`, `sql.id()` und `sql.join()` ersetzen; `AUTO_INCREMENT` in [Spaces.ts](module/cms.versions/lib/Spaces.ts#L73) über Dialektzweig oder `Db.syncAutoIncrement()` lösen.
-- **DbFile-SQL korrekt zusammensetzen:** Qualifizierte Spalten und `ORDER BY` in [dbfiles/plugin.ts](module/cms.backend.superuser.dbfiles/plugin.ts#L65) aus `sql.id()`-Fragmenten bauen.
 
 ## Priorität 2
 

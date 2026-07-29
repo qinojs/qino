@@ -1,4 +1,3 @@
-/* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { FullScreenDialog } from './fullScreenDialog.js';
 import { ImageCropper } from './imageCropper.js';
 import { ImageCanvas } from './imageCanvas.js';

@@ -1,4 +1,4 @@
-import { getCtx, html, type HtmlString, sql, u2time, FileTransformer, type App, type DbField, type DbFile, type Ctx } from "../core/mod.ts";
+import { getCtx, html, type HtmlString, sql, u2time, FileTransformer, type App, type DbField, type DbFile, type Ctx, type Sql } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { deleteUnlinkedDb } from "./cleanup.ts";
 import type { Node } from "../cms/mod.ts";
@@ -62,18 +62,18 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const relSubs = sql.join(children.map((dbFile: DbField, i: number) =>
     sql`,(SELECT COUNT(*) FROM ${sql.id(dbFile.table.name)} WHERE ${sql.id(dbFile.name)}=f.id) AS ${sql.id("r" + i)}`), "");
 
-  const orderSql: Record<string, string> = { newest:"f.log_id DESC", oldest:"f.log_id ASC", changed:"f.log_id_ch DESC", biggest:"f.size DESC" };
-  const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: DbField, i: number) => `r${i}`)].join(",");
+  const orderSql: Record<string, Sql> = { newest:sql`f.log_id DESC`, oldest:sql`f.log_id ASC`, changed:sql`f.log_id_ch DESC`, biggest:sql`f.size DESC` };
+  const orderBy = orderSql[order] ?? sql.join([sql`f.size = ${0} DESC`, ...children.map((_: DbField, i: number) => sql.id("r" + i))], ",");
 
   // one indexed path per input shape (never an OR across joined tables, which would full-scan):
   // number → id (PK), 32-hex → md5, contains @ → creator/editor email, else → name fulltext
   let cond = sql.raw("");
   if (search) {
     const s = search.trim();
-    const emailSub = (col: string) => sql`${sql.raw(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.email=${s})`;
+    const emailSub = (col: string) => sql`f.${sql.id(col)} IN (SELECT l.id FROM log l JOIN sess se ON se.id=l.sess_id JOIN usr u ON u.id=se.usr_id WHERE u.email=${s})`;
     if (/^\d+$/.test(s)) cond = sql` AND f.id = ${Number(s)}`;
     else if (/^[0-9a-f]{32}$/i.test(s)) cond = sql` AND f.md5 = ${s}`;
-    else if (s.includes("@")) cond = sql` AND (${emailSub("f.log_id")} OR ${emailSub("f.log_id_ch")})`;
+    else if (s.includes("@")) cond = sql` AND (${emailSub("log_id")} OR ${emailSub("log_id_ch")})`;
     else if (db.dialect === "mysql") cond = sql` AND MATCH(f.name) AGAINST (${s + "*"} IN BOOLEAN MODE)`;
     else cond = sql` AND f.name LIKE ${"%" + s + "%"}`;
   }
@@ -83,8 +83,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     FROM file f
       LEFT JOIN log log_i ON log_i.id=f.log_id LEFT JOIN sess sess_i ON sess_i.id=log_i.sess_id LEFT JOIN usr ui ON ui.id=sess_i.usr_id
       LEFT JOIN log log_e ON log_e.id=f.log_id_ch LEFT JOIN sess sess_e ON sess_e.id=log_e.sess_id LEFT JOIN usr ue ON ue.id=sess_e.usr_id
-    WHERE true${cond}
-    ORDER BY ${sql.raw(orderBy)} LIMIT 1000`;
+    WHERE ${true}${cond}
+    ORDER BY ${orderBy} LIMIT 1000`;
 
   const relHeaders = html.join(children.map((dbFile: DbField) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`));
 
