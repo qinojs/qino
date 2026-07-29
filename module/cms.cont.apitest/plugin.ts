@@ -43,7 +43,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
     </tr>`;
   }).join("");
 
-  return `<div class=-m-apitest data-app-url="${hee(ctx.req.basePath ?? "/")}">
+  return `<div data-app-url="${hee(ctx.req.basePath ?? "/")}">
   <div class=-bar>
     <span class=-identities></span>
     <form class=-add>

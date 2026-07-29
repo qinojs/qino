@@ -1,4 +1,4 @@
-.-m-apitest {
+[qcms-mod="cont.apitest"] {
   /* self-contained dark "API console" — intentional look regardless of CMS theme */
   --bg: #1b1e24;
   --bg2: #232732;

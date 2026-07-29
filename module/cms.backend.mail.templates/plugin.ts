@@ -65,7 +65,7 @@ async function render(node: Node): Promise<HtmlString | string> {
       }))
     : await html.async`<tr><td colspan=3><em>${t`No templates yet.`}</em>`;
 
-  return html.async`<div class="u2-flex -m-mail-templates">
+  return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:0 1 17.5rem">
     <div class=-head>${t`New template`}</div>
     ${message ? html`<div class=-body>${message}</div>` : ""}
@@ -148,7 +148,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
     ? html`<iframe sandbox srcdoc="${row.html}" class=-preview-frame></iframe>`
     : await html.async`<em>${t`No content yet.`}</em>`;
 
-  return html.async`<div class="u2-flex -m-mail-templates">
+  return html.async`<div class=u2-flex>
   <div class=u2-card style="flex:1 1 37.5rem">
     <div class=-head>${row.name}</div>
     <div class=-body>
