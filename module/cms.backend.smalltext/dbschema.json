@@ -1,0 +1,34 @@
+{
+  "properties": {
+    "smalltext_code_log": {
+      "additionalProperties": {
+        "properties": {
+          "hash": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary",
+            "x-qg-parent": "smalltext",
+            "x-qg-parent-field": "hash"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": "primary",
+            "x-qg-parent": "smalltext",
+            "x-qg-parent-field": "namespace"
+          },
+          "file": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "line": {
+            "type": "integer",
+            "x-index": "primary"
+          }
+        },
+        "required": ["hash", "namespace", "file", "line"]
+      }
+    }
+  }
+}

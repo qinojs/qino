@@ -1,10 +1,12 @@
-import type { App } from "../core/mod.ts";
+import type { App } from "../../core/mod.ts";
 
+/** One offered fix for a failed check; `form` describes optional inputs passed to `solve`. */
 export type Solution = {
   form?: Record<string, Record<string, unknown>>;
   solve: (formData?: Record<string, unknown>) => Promise<unknown> | unknown;
 };
 
+/** Undefined = the check passed. */
 export type CheckResult = {
   info?: string;
   solutions?: Record<string, Solution>;
@@ -12,8 +14,10 @@ export type CheckResult = {
 
 export type CheckFn = { (): Promise<CheckResult> | CheckResult; mod?: string };
 
+/** Checks grouped by severity: error, warning, notice, cleanup, repair. */
 export type HealthTypes = Record<string, Record<string, CheckFn>>;
 
+/** Collects the healthChecks hook of every linked module, tagging each check with its module name. */
 export async function getHealthTypes(app: App): Promise<HealthTypes> {
   const types: HealthTypes = {
     error:   {},

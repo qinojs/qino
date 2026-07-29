@@ -1,6 +1,6 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import { init } from "../plugin.ts";
-import { aiInstances } from "../../ai/lib/AiApi.ts";
+import { fakeAi } from "../../ai/tests/deps.ts";
 import type { Bot } from "../../ai/types.ts";
 
 Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in editmode", () => {
@@ -11,7 +11,7 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
       (handlers[name] ??= []).push(fn);
     },
   };
-  aiInstances.set(app, { registerBot: (bot: Bot) => bots.push(bot) } as never);
+  fakeAi(app, { registerBot: (bot: Bot) => bots.push(bot) } as never);
   init(app as never, { signal: new AbortController().signal });
   assertEquals(bots.map((b) => b.id), ["cms-helper"]);
 

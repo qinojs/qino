@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cmsInstances } from "../../cms/lib/CMS.ts";
+import { fakeCms } from "../../cms/tests/deps.ts";
 import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
 
 // Fake tree node: fixed access level + a tiny breadcrumb path (root is filtered out).
@@ -128,7 +128,7 @@ Deno.test("history widget: latest change per user, newest first, access-filtered
     t: (s: TemplateStringsArray) => Promise.resolve(s.join("")),
     db: { query: () => Object.assign(Promise.resolve(rows), { catch: () => Promise.resolve(rows) }) },
   };
-  cmsInstances.set(app, {
+  fakeCms(app, {
     node: (id: number) => ({
       id: Number(id),
       access: () => Promise.resolve(access[Number(id)] ?? 0),

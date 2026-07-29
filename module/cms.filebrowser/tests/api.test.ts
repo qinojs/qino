@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cmsInstances } from "../../cms/lib/CMS.ts";
+import { fakeCms } from "../../cms/tests/deps.ts";
 import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { toTools } from "../../core/mod.ts";
 import { api, init, name, needs } from "../plugin.ts";
@@ -76,7 +76,7 @@ Deno.test("cms.filebrowser: search groups existing accessible files by md5", asy
       file: (id: number) => dbFiles[id],
     },
   };
-  cmsInstances.set(app, {
+  fakeCms(app, {
     node: (id: number) => ({
       id,
       title: () => ({ string: () => `Page ${id}` }),

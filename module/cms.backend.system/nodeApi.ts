@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { getHealthTypes } from "./healthRegistry.ts";
+import { getHealthTypes } from "./lib/healthRegistry.ts";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars?.solve_health_item) return;

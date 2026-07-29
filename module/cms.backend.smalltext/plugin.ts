@@ -1,3 +1,4 @@
+import dbSchema from "./dbschema.json" with { type: "json" };
 import { html, type HtmlString, getCtx, sql, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -5,6 +6,7 @@ import api from "./nodeApi.ts";
 
 export const name = "cms.backend.smalltext";
 export const needs = ["cms.backend", "cms.text"];
+export { dbSchema };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.smalltext", { en: "Translate", de: "Übersetzen" });

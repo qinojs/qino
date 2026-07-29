@@ -1,6 +1,5 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
-import { Db } from "../../core/lib/db/Db.ts";
-import type { App } from "../../core/mod.ts";
+import { Db, type App } from "../../core/mod.ts";
 import { apex, covers, wwwAlt } from "../lib/check.ts";
 import { dmarc, spf } from "../lib/mail.ts";
 import { frequencies, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";

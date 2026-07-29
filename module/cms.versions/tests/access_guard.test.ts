@@ -3,7 +3,7 @@ import { assertEquals } from "../../core/tests/deps.ts";
 import { testContext } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
 import { fakeRender } from "../../core/tests/sqlFake.ts";
-import { cmsInstances } from "../../cms/lib/CMS.ts";
+import { fakeCms } from "../../cms/tests/deps.ts";
 import { getForNode, logDetails } from "../serverInterface.ts";
 
 // Fake cms with per-node access levels + a db answering the guard queries.
@@ -21,7 +21,7 @@ async function setup(access: Record<number, number>, changed: Array<{ node_id: n
       row: () => Promise.resolve({ time: 1, ip: "1.2.3.4", user_agent: "UA", email: "a@b.c" }),
     },
   } });
-  cmsInstances.set(ctx.app, {
+  fakeCms(ctx.app, {
     node: (id: number) => ({
       id: Number(id),
       vs: { type: "p" },

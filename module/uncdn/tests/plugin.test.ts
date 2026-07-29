@@ -1,6 +1,5 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { ResHtml } from "../../core/lib/ctx/ResHtml.ts";
-import { ResCsp } from "../../core/lib/ctx/ResCsp.ts";
+import { ResCsp, ResHtml } from "../../core/mod.ts";
 import { rewriteHtml } from "../plugin.ts";
 
 Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () => {

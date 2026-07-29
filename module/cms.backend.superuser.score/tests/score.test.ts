@@ -1,7 +1,7 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import { Db, type App } from "../../core/mod.ts";
 import { hit, scored } from "../../score/mod.ts";
-import { dbSchema } from "../../score/plugin.ts";
+import { dbSchema } from "../../score/tests/deps.ts";
 import api from "../nodeApi.ts";
 import { cms, name, needs } from "../plugin.ts";
 import { list } from "../render.ts";

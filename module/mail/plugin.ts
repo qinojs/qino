@@ -6,8 +6,7 @@ import { settingsSchema } from "./lib/transport.ts";
 
 export const name = "mail";
 export const needs = ["core"];
-export { dbSchema, MailManager, settingsSchema };
-export { MailMessage } from "./lib/MailMessage.ts";
+export { dbSchema, settingsSchema };
 export { healthChecks } from "./healthChecks.ts";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

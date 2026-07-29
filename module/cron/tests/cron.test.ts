@@ -1,6 +1,5 @@
-import { assert, assertEquals, assertThrows } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertThrows, Emitter } from "../../core/tests/deps.ts";
 import { Db, type App } from "../../core/mod.ts";
-import { Emitter } from "../../core/lib/Emitter.ts";
 import type { Every, Job } from "../mod.ts";
 import { run, status, trigger } from "../mod.ts";
 import { init } from "../plugin.ts";

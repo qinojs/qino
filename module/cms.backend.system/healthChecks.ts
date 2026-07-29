@@ -1,5 +1,5 @@
 import { hee, getCtx, sql, unixTime, pwVerify, type App } from "../core/mod.ts";
-import type { HealthTypes, Solution } from "./healthRegistry.ts";
+import type { HealthTypes, Solution } from "./lib/healthRegistry.ts";
 
 export async function healthChecks(app: App): Promise<HealthTypes> {
   const db       = app.db;

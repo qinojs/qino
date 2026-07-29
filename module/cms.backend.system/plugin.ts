@@ -1,5 +1,5 @@
 import { hee, sql, type App } from "../core/mod.ts";
-import { getHealthTypes, type CheckResult } from "./healthRegistry.ts";
+import { getHealthTypes, type CheckResult } from "./lib/healthRegistry.ts";
 export { healthChecks } from "./healthChecks.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
 import { backend } from "../cms.backend/mod.ts";

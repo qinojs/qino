@@ -1,7 +1,7 @@
-import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
 import type { App } from "../core/mod.ts";
 
-export function healthChecks(app: App): HealthTypes {
+// Shape is duck-typed by whoever collects the checks — see cms.backend.system.
+export function healthChecks(app: App) {
   const db = app.db;
   return {
     cleanup: {

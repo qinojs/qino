@@ -1,4 +1,4 @@
-import type { HealthTypes } from "../cms.backend.system/healthRegistry.ts";
+import type { HealthTypes } from "../cms.backend.system/mod.ts";
 import type { App } from "../core/mod.ts";
 import { cms, type Node } from "../cms/mod.ts";
 

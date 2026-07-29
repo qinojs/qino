@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { requestStorage, type Ctx } from "../../core/mod.ts";
-import { mailInstances } from "../../mail/lib/MailManager.ts";
+import { fakeMail } from "../../mail/tests/deps.ts";
 import more from "../view/widgets/more.ts";
 
 Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () => {
@@ -24,7 +24,7 @@ Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () =
     languages: { all: [] },
     t: (strings: TemplateStringsArray) => strings[0],
   };
-  mailInstances.set(app, {
+  fakeMail(app, {
     create: (data: Record<string, unknown>) => {
       values = data;
       return {
@@ -61,7 +61,7 @@ Deno.test("cms.frontend.2 more: keeps feedback draft when sending fails", async 
     },
   } as unknown as Ctx;
   const app = { settings: { cms: { feedback: { email: "support@example.test" } } } };
-  mailInstances.set(app, { create: () => ({ addTo: () => {}, send: () => false }) } as never);
+  fakeMail(app, { create: () => ({ addTo: () => {}, send: () => false }) } as never);
   const node = { app };
 
   await assertRejects(

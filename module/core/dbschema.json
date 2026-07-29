@@ -244,25 +244,6 @@
         "required": ["id", "ip"]
       }
     },
-    "module": {
-      "additionalProperties": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 127,
-            "x-index": "primary"
-          },
-          "access": {
-            "deprecated": true,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 6,
-            "default": 0
-          }
-        },
-        "required": ["name"]
-      }
-    },
     "qg_setting": {
       "additionalProperties": {
         "properties": {
@@ -387,36 +368,6 @@
           }
         },
         "required": ["hash", "namespace", "original", "count"]
-      }
-    },
-    "smalltext_code_log": {
-      "additionalProperties": {
-        "properties": {
-          "hash": {
-            "type": "string",
-            "maxLength": 32,
-            "x-index": "primary",
-            "x-qg-parent": "smalltext",
-            "x-qg-parent-field": "hash"
-          },
-          "namespace": {
-            "type": "string",
-            "maxLength": 16,
-            "x-index": "primary",
-            "x-qg-parent": "smalltext",
-            "x-qg-parent-field": "namespace"
-          },
-          "file": {
-            "type": "string",
-            "maxLength": 191,
-            "x-index": "primary"
-          },
-          "line": {
-            "type": "integer",
-            "x-index": "primary"
-          }
-        },
-        "required": ["hash", "namespace", "file", "line"]
       }
     },
     "text": {

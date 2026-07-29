@@ -2,7 +2,7 @@ import { assertEquals } from "../../core/tests/deps.ts";
 import { Db, requestStorage, type App, type Ctx } from "../../core/mod.ts";
 import { cmsCtx } from "../../cms/mod.ts";
 import { scored } from "../../score/mod.ts";
-import { dbSchema } from "../../score/plugin.ts";
+import { dbSchema } from "../../score/tests/deps.ts";
 import api from "../nodeApi.ts";
 import { fileHit, pageHit, TABLES } from "../hooks.ts";
 import { cms, name, needs } from "../plugin.ts";
