@@ -108,10 +108,10 @@ export class Scheduler {
         await db.table("cron_job").insert(fresh).catch(() => {}); // a competing process may have seeded it first
         rows.set(id, fresh);
       } else {
-        await db.exec`
+        const rescheduled = await db.exec`
           UPDATE cron_job SET schedule_key = ${key}, next_run = ${next_run}, lock_id = ${""}, locked_until = ${0}
           WHERE id = ${id} AND schedule_key = ${row.schedule_key} AND locked_until <= ${now}`;
-        Object.assign(row, { schedule_key: key, next_run, locked_until: 0 });
+        if (rescheduled.affectedRows) Object.assign(row, { schedule_key: key, next_run, locked_until: 0 });
       }
     }
     return { jobs, rows, timeZone };
