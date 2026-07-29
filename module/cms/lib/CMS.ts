@@ -134,10 +134,10 @@ export class CMS {
     const t = urls[ctx.lang]?.target;
     const target = t ? ` target="${hee(t)}"` : "";
     const title = await (await page.title()).string();
-    return html.raw(`<a${await this.link_attributes(page)}${target}>${title}</a>`);
+    return html.raw(`<a${await this.linkAttributes(page)}${target}>${title}</a>`);
   }
 
-  async link_attributes(node: Node | number): Promise<HtmlString> {
+  async linkAttributes(node: Node | number): Promise<HtmlString> {
     const ctx = getCtx();
     const page = await this.node(Number(node));
     await page.urlSeo(ctx.lang);
@@ -162,7 +162,7 @@ export class CMS {
       const page = await this.node(Number(pidOrUrl));
       if (page.exists()) {
         ret.target = "_self";
-        ret.Node = page;
+        ret.node = page;
         return page.url();
       }
       return;

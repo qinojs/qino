@@ -185,7 +185,7 @@ cms.cont.on("upload", (ev) => {
     }
   });
   ev.on("complete", () => {
-    cms.console.show(t`Datei hochgeladen`);
+    cms.console.show(t`File uploaded`);
     cms.cont(ev.pid).showWidget("media", true);
   });
 });

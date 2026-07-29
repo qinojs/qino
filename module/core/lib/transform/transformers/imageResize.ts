@@ -39,13 +39,10 @@ export const imageResize: TransformerDef = {
       await magick.run(ctx.currentPath, ['-resize', size], out, { signal: ctx.signal });
     } else {
       // After upscale lock, restore target aspect ratio (PHP: makeProportional before getAutoCroped)
-      if (targetW / targetH > w / h) {
-        h = Math.round((targetH / targetW) * w);
-      } else {
-        w = Math.round((targetW / targetH) * h);
-      }
+      if (targetW / targetH > w / h) h = Math.round((targetH / targetW) * w);
+      else w = Math.round((targetW / targetH) * h);
 
-      // Scale-to-fill + Crop um Fokuspunkt
+      // Scale-to-fill + crop around the focus point
       const scaleDefault = Math.max(w / origW, h / origH);
       const scale = zoom ? Math.max(1 / zoom, scaleDefault) : scaleDefault;
       const rW = Math.round(origW * scale);

@@ -97,21 +97,21 @@ class SettingsEditorElement extends HTMLElement {
     try {
       this.#source = aptPath(raw);
       this.#loadedSource = raw;
-      this.innerHTML = "<em>Lade Einstellungen...</em>";
+      this.innerHTML = "<em>Loading settings…</em>";
       const [data, schema] = await Promise.all([this.#source.get(), this.#source.get({ schema: true })]);
       this.#item = (await itemJs).item(data ?? {});
       this.#item.setSchema(schema ?? {});
       await this.#render();
     } catch (err) {
       console.error("settings-editor load failed", err);
-      this.textContent = "Einstellungen konnten nicht geladen werden.";
+      this.textContent = "Settings could not be loaded.";
     }
   }
 
   async #render() {
     ensureSettingsEditorCss(this.getRootNode());
     const html = await renderItems(this.#item);
-    this.innerHTML = `<div class=qgSettingsEditor>${html || "<em>Keine Einstellungen vorhanden.</em>"}</div>`;
+    this.innerHTML = `<div class=qgSettingsEditor>${html || "<em>No settings available.</em>"}</div>`;
   }
 
   async #saveInput(event) {

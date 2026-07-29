@@ -54,7 +54,7 @@ export const imageEncode: TransformerDef = {
         ctx.mime = 'image/jpeg';
       }
     } else if (ctx.meta.hasAlpha) {
-      // Kein AVIF, Alpha vorhanden → PNG
+      // No AVIF, alpha present → PNG
       const out = nodePath.join(ctx.tmpDir, 'out.png');
       await magick.run(ctx.currentPath, ['-quality', String(q)], out, { signal: ctx.signal });
       ctx.currentPath = out;

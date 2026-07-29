@@ -34,9 +34,11 @@
   & td.-cell[v="3"] { background-color:var(--cms-access-3); }
 }
 
-.-access-1-box, .-access-2-box, .-access-3-box {
-  display:inline-block; width:1.875rem; height:1.25rem;
+[qcms-mod="backend.cms.tree.access"] {
+  & .-access-1-box, & .-access-2-box, & .-access-3-box {
+    display:inline-block; width:1.875rem; height:1.25rem;
+  }
+  & .-access-1-box { background-color:var(--cms-access-1); }
+  & .-access-2-box { background-color:var(--cms-access-2); }
+  & .-access-3-box { background-color:var(--cms-access-3); }
 }
-.-access-1-box { background-color:var(--cms-access-1); }
-.-access-2-box { background-color:var(--cms-access-2); }
-.-access-3-box { background-color:var(--cms-access-3); }

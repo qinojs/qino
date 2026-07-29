@@ -19,8 +19,8 @@ cms.contextMenueContent.addItem('Publish', {
     publish(this.activePid);
   }
 });
-function publish(pid, subPages){
-  if (!confirm('Really overwrite the current live version?')) return;
+async function publish(pid, subPages){
+  if (!await cms.dialogs.confirm('Really overwrite the current live version?')) return;
   apt['cms.versions']['publish-node'].post({ pid: Number(pid), options: {toSpace:0, subPages} }).then(() => {
     location.href = location.href.replace(/#.*$/,'');
   });
@@ -82,9 +82,9 @@ el.querySelector('.-versionPublish').addEventListener('click',function(){
   const subPages = this.parentNode.querySelector('.-subPages').checked;
   publish(nodeId, subPages);
 });
-el.querySelector('.-versionUnPublish').addEventListener('click',function(){
+el.querySelector('.-versionUnPublish').addEventListener('click',async function(){
   const subPages = this.parentNode.querySelector('.-subPages').checked;
-  if (!confirm("Warning!\nReally overwrite the draft?")) return;
+  if (!await cms.dialogs.confirm("Warning!\nReally overwrite the draft?")) return;
   apt['cms.versions']['publish-node'].post({ pid: nodeId, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
     location.href = location.href.replace(/#.*$/,'');
   });

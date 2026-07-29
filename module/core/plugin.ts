@@ -77,7 +77,7 @@ export const ctxSettingsSchema = {
             description: "Whether to enable development mode for this context.",
         },
         lang_ns: {
-            description: "Optionale Sprachvorgaben pro Namespace.",
+            description: "Optional language override per namespace.",
             additionalProperties: { type: "string" },
         },
         settingsTree: {

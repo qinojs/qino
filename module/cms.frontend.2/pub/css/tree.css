@@ -3,8 +3,8 @@
   position:relative;
   line-height: 1.5;
 
-  /* versteckte Wurzel: nur gemeinsamer Container (single active/selection) – eigene Zeile
-  * ausblenden und den Basis-Einzug der Top-Level-Knoten zurückholen (-1 * --indent). */
+  /* Hidden root: only a shared container (single active/selection) – hide its own row
+  * and take back the base indent of the top-level nodes (-1 * --indent). */
   & > u2-tree.-root::part(row) { display: none; }
   & > u2-tree.-root { margin-inline-start: -1rem; }
 

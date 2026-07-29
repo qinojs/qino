@@ -49,7 +49,7 @@ export class DbEntry {
     if (!this.table.fields) return false;
     const nonPrimaries = Object.entries(this.table.fields)
       .filter(([, field]) => !field.isPrimary())
-      .map(([field]) => field);
+      .map(([name]) => name);
     if (!nonPrimaries.length) return false;
     this.#full = nonPrimaries.every(field => field in this.#vs);
     if (this.#full) this.#is = true;
@@ -120,7 +120,7 @@ export class DbEntry {
   async save(): Promise<void> {
     if (!this.#changed) return;
     this.#ensureEid();
-    if (this.#eid === undefined) throw new Error(`dbEntry.save(): eid is unknown, cannot update`);
+    if (this.#eid === undefined) throw new Error("dbEntry.save(): eid is unknown, cannot update");
     this.#changed = false; // before the await, so a concurrent save() can't double-update
     await this.table.update(this.#eid, this.#vs);
   }

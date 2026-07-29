@@ -15,7 +15,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   let listHtml = "";
   for (const page of items) {
     if (await node.in(page)) continue;
-    const title       = hee(await (await page.title()).string() || "(kein Titel)");
+    const title       = hee(await (await page.title()).string() || "(no title)");
     const id          = page.id;
     const deletedTime = Number(await page.settings.__deleted.time);
     const deletedBy   = hee(await page.settings.__deleted.by);
@@ -29,16 +29,16 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   <strong>${title}</strong>
   <div style="padding-block:0">
     <table class="u2-table -NoSideGaps" style="--u2-Gap:.2rem;">
-      ${deletedTime ? `<tr><th>Gelöscht<td>${timeHtml}` : ""}
-      ${deletedBy   ? `<tr><th>Von<td>${deletedBy}` : ""}
-      ${fromTitle   ? `<tr><th>Aus<td>${fromTitle}` : ""}
-      ${module      ? `<tr><th>Modul<td>${module}` : ""}
+      ${deletedTime ? `<tr><th>Deleted<td>${timeHtml}` : ""}
+      ${deletedBy   ? `<tr><th>By<td>${deletedBy}` : ""}
+      ${fromTitle   ? `<tr><th>From<td>${fromTitle}` : ""}
+      ${module      ? `<tr><th>Module<td>${module}` : ""}
       <tr><th>ID<td>${id}
     </table>
   </div>
   <div class=-actions>
-    <button class=-restore>Wiederherstellen</button>
-    <button class=-remove>Endgültig löschen</button>
+    <button class=-restore>Restore</button>
+    <button class=-remove>Delete permanently</button>
   </div>
 </div>`;
   }

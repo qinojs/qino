@@ -42,7 +42,7 @@ if (savedScroll) {
 }
 
 if (editable) {
-  const editToggle = c1.dom.fragment('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Bearbeiten (E)"><div><i></i></div></a>').firstChild;
+  const editToggle = c1.dom.fragment('<a style="position:fixed; z-index:3; cursor:pointer" class="qgCMS_editmode_switch '+(globalThis.qino.cms.editmode?'-active':'')+' '+(ctx.dev?'-dev':'')+'" title="Edit (E)"><div><i></i></div></a>').firstChild;
   document.body.append(editToggle);
   editToggle.addEventListener('click', e => {
     qgCmsToggleEdit();

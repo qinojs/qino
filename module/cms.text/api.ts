@@ -126,12 +126,12 @@ class CmsTextService {
     async transl(text: string, target_lang: string, source_lang: string): Promise<string | false> {
         if (source_lang && source_lang === target_lang) return text; // nothing to translate
         const service = String(await this.ctx.app.settings["cms.text"]["translation service"] ?? "");
-        if (service === "google") return this.google_translate(text, source_lang, target_lang);
-        if (service === "deepl")  return this.deepl_translate(text, source_lang, target_lang);
+        if (service === "google") return this.googleTranslate(text, source_lang, target_lang);
+        if (service === "deepl")  return this.deeplTranslate(text, source_lang, target_lang);
         throw new AptError(400, "No translation service configured");
     }
 
-    async deepl_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
+    async deeplTranslate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         console.warn("deprecated? deepl used");
         const st = this.ctx.app.settings["cms.text"];
         const params = new URLSearchParams({
@@ -155,7 +155,7 @@ class CmsTextService {
         return translation;
     }
 
-    async google_translate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
+    async googleTranslate(text: string, source_lang: string, target_lang: string): Promise<string | false> {
         const st = this.ctx.app.settings["cms.text"];
         const key =
             String(await st["google"]["key"] ?? "") ||
@@ -169,7 +169,7 @@ class CmsTextService {
             key,
         });
         const resp = await fetch("https://translation.googleapis.com/language/translate/v2?" + params);
-        if (!resp.ok) { console.error("[google_translate]", resp.status, await resp.text()); throw new AptError(502, "Translation service request failed"); }
+        if (!resp.ok) { console.error("[googleTranslate]", resp.status, await resp.text()); throw new AptError(502, "Translation service request failed"); }
         const result = await resp.json();
         const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {

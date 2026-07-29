@@ -142,8 +142,8 @@ const viewer = new CmsVersViewer();
 /* more */
 const more = c1.dom.fragment(`
   <div class=-more>
-    <button class=-compareActive>Mit Aktuell vergleichen</button>
-    <button class=-reactivate>Stand wiederherstellen</button>
+    <button class=-compareActive>Compare with current</button>
+    <button class=-reactivate>Restore this version</button>
     <div class=-txt></div>
   </div>`).firstElementChild;
 const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
@@ -179,9 +179,9 @@ viewer.on('before-load',function(e){
     comparer.compare(viewer.pid, {
       fromLog: e.vers+1,
       fromText: find(li, '.-date').innerHTML,
-      toText: 'aktuell',
+      toText: 'current',
       accept(){ find(more, '.-reactivate').onclick(); },
-      acceptText:'Stand wiederherstellen',
+      acceptText:'Restore this version',
     });
   };
 });

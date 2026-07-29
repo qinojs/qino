@@ -16,7 +16,7 @@ const showEditor = async el => {
   const icon = document.createElement('div');
   icon.style.cssText = 'transition:opacity .3s; border-radius:.125rem; overflow:hidden; position:absolute; background:#fff; cursor:pointer';
   icon.innerHTML = EDIT_SVG;
-  icon.title = 'Bild bearbeiten';
+  icon.title = 'Edit image';
 
   let hideTimeout;
   let iconActive = null;
@@ -81,7 +81,7 @@ customElements.whenDefined('qino-cms').then(async () => {
     const img = tr.querySelector('.-preview img');
     if (!img || !img.src.match(/dbFile\/[0-9]+\/.*\.(jpg|jpeg|png)/i)) return;
     td.style.cursor = 'pointer';
-    td.title = 'Bild bearbeiten';
+    td.title = 'Edit image';
     td.innerHTML = EDIT_SVG;
     td.onclick = () => showEditor(img);
   }}).observe('.file-manager tr[itemid]', { root });

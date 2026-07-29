@@ -73,13 +73,13 @@ export class DbTable {
     // encoding only disambiguates the ":" separator, so single-primary ids stay raw
     const composite = Object.keys(this.#primaries).length > 1;
     const part: string[] = [];
-    for (const [primary, Field] of Object.entries(this.#primaries)) {
+    for (const [primary, field] of Object.entries(this.#primaries)) {
       if (!(primary in vs)) {
         console.warn("db-table-entryId: too few fields");
         return;
       }
       let value = vs[primary];
-      if (numTypes.has(Field.type.toUpperCase())) value = String(parseFloat(String(value))); // numeric values never contain ":" or "%", so they skip encoding (hot path)
+      if (numTypes.has(field.type.toUpperCase())) value = String(parseFloat(String(value))); // numeric values never contain ":" or "%", so they skip encoding (hot path)
       else if (composite) value = encodeURIComponent(value);
       part.push(value);
     }
@@ -96,10 +96,10 @@ export class DbTable {
       const primaries = Object.values(this.#primaries);
       const composite = primaries.length > 1;
       const vs = String(id).split(":");
-      primaries.forEach((Field, i) => {
+      primaries.forEach((field, i) => {
         let value = composite ? vs[i] : String(id); // single primary keeps the whole raw string (may contain ":")
-        if (composite && !numTypes.has(Field.type.toUpperCase())) value = decodeURIComponent(value);
-        arr[Field.name] = value;
+        if (composite && !numTypes.has(field.type.toUpperCase())) value = decodeURIComponent(value);
+        arr[field.name] = value;
       });
     }
     return arr;
@@ -131,10 +131,10 @@ export class DbTable {
 
   valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): Sql {
     const frags: Sql[] = [];
-    for (const [field, Field] of Object.entries(this.#fields!)) {
-      if (!(field in values)) continue;
-      const value = Field.valueTransform(values[field]);
-      const ref = alias ? sql`${sql.id(alias)}.${sql.id(field)}` : sql.id(field);
+    for (const [name, field] of Object.entries(this.#fields!)) {
+      if (!(name in values)) continue;
+      const value = field.valueTransform(values[name]);
+      const ref = alias ? sql`${sql.id(alias)}.${sql.id(name)}` : sql.id(name);
       if (!isSet && value === null) { frags.push(sql`${ref} IS NULL`); continue; }
       frags.push(sql`${ref} = ${value}`);
     }
@@ -173,18 +173,15 @@ export class DbTable {
     await this.#db.fire("table:update-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
     const set = this.valuesToFragment(values!, undefined, true);
-    if (set.parts.length) {
-      const whereValues = this.entryIdValues(id);
-      if (!whereValues) return;
-      const where = this.valuesToFragment(whereValues);
-      if (!where.parts.length) return;
-      const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
-      if (!rows) return;
-      if (!rows.affectedRows) return; // no row matched (drivers report matched rows, not changed)
-      await this.#db.fire("table:update-after", { table: this, id, data: values! });
-      return this.entryId(id);
-    }
-    return;
+    if (!set.parts.length) return;
+    const whereValues = this.entryIdValues(id);
+    if (!whereValues) return;
+    const where = this.valuesToFragment(whereValues);
+    if (!where.parts.length) return;
+    const rows = await this.#db.exec`UPDATE ${sql.id(this)} SET ${set} WHERE ${where}`;
+    if (!rows?.affectedRows) return; // no row matched (drivers report matched rows, not changed)
+    await this.#db.fire("table:update-after", { table: this, id, data: values! });
+    return this.entryId(id);
   }
 
   async ensure(values: Record<string, any> = {}): Promise<string | undefined> {

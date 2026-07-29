@@ -18,9 +18,9 @@ export class Node {
     id: number = 0;
     vs: Record<string, string | number | null> = {};
 
-    #is: boolean = true;
+    #is = true;
 
-    #title: DbText | null= null;
+    #title: DbText | null = null;
     #texts: Record<string, DbText> | null = null;
     #files: Promise<Record<string, DbFile>> | null = null;
     #filesAll: Record<string, DbFile> | null = null;
@@ -109,7 +109,7 @@ export class Node {
         return cache[key];
     }
 
-    /** Node-bezug before node:access adjustments (module axis). Inheritance builds on
+    /** Node-level access before node:access adjustments (module axis). Inheritance builds on
      *  this — a parent's module rules only apply to the parent, never to its children. */
     async #rawAccess(user?: dbEntry_usr | null): Promise<number> {
         const cache = cmsCtx(getCtx()).accessCache;
@@ -143,11 +143,10 @@ export class Node {
     }
     async #accessGroupLevel(grps?: number[] | null): Promise<number> {
         if (!grps || !grps.length) return 0;
-        const access = Number(await this.db.one`
+        return Number(await this.db.one`
             SELECT max(access) AS access FROM page_access_grp
             WHERE page_id = ${this.id}
                 AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`) || 0;
-        return access;
     }
     async #accessUserLevel(user?: dbEntry_usr | null): Promise<number> {
         if (!user) return 0;
@@ -650,8 +649,8 @@ export class Node {
         page.#title = titleCopy;
 
         const texts = await this.texts();
-        for (const [name, Text] of Object.entries(texts)) {
-            const textCopy = await Text.copy();
+        for (const [name, text] of Object.entries(texts)) {
+            const textCopy = await text.copy();
             await this.db.table("page_text").insert({ page_id: newId, text_id: textCopy.id, name });
         }
         page.#texts = null;
@@ -667,9 +666,9 @@ export class Node {
 
         if (Object.keys(old2new).length) {
             const newTexts = await page.texts();
-            for (const Text of Object.values(newTexts)) {
+            for (const dbText of Object.values(newTexts)) {
                 for (const l of this.app.languages.all) {
-                    const tl = Text.lang(l);
+                    const tl = dbText.lang(l);
                     let text = await tl.get();
                     for (const [oldId, newFileId] of Object.entries(old2new)) {
                         text = text.replaceAll(`/dbFile/${oldId}/`, `/dbFile/${newFileId}/`);
@@ -679,8 +678,8 @@ export class Node {
             }
         }
 
-        for (const Cont of (await this.children({ type: deep ? "*" : "c" })).values()) {
-            const copy = await Cont.copy(deep, ifFn);
+        for (const cont of (await this.children({ type: deep ? "*" : "c" })).values()) {
+            const copy = await cont.copy(deep, ifFn);
             if (copy) await copy.set("basis", newId);
         }
 

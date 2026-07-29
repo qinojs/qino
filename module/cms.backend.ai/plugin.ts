@@ -344,7 +344,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     .map((m) => `<tr>
       <td>${hee(m.kind)}:
       <td>${hee(`${m.provider} · ${m.model_id}`)}`).join("")
-    || `<tr><td colspan=2 style="color:#999">Kein Default konfiguriert.`;
+    || `<tr><td colspan=2 style="color:#999">No default configured.`;
 
   let rows = "";
   for (const m of models) {
