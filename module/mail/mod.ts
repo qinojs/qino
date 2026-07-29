@@ -13,6 +13,4 @@ export function mail(app: App): MailManager {
 /** Undefined when mail is not loaded — for optional dependencies. */
 mail.get = (app: App): MailManager | undefined => mailInstances.get(app);
 
-export { MailManager } from "./lib/MailManager.ts";
-export { MailMessage } from "./lib/MailMessage.ts";
 export { addressOf } from "./lib/helpers.ts";

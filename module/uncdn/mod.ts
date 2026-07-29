@@ -11,7 +11,7 @@ export function uncdn(app: App): { origins: Set<string> } {
 }
 
 export const CACHE_SUBDIR = "cache/uncdn/";
-export const DEFAULT_FETCH_POLICY = "superuser";
+const DEFAULT_FETCH_POLICY = "superuser";
 export const DEFAULT_MAX_CACHE_BYTES = 50 * 1024 * 1024;
 
 export function cacheByteLimit(value: unknown): number {

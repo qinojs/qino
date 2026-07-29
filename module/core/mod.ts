@@ -7,21 +7,17 @@
 // App + request context
 export { App } from "./lib/App.ts";
 export type { AppEvents } from "./lib/App.ts";
-export { Req } from "./lib/ctx/Req.ts";
-export { ReqUrl } from "./lib/ctx/ReqUrl.ts";
-export { Res } from "./lib/ctx/Res.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
 
 // HTML & general utilities
-export { hee, u2time, unixTime, html, Output, Redirect, uid, b64url, unb64url, randB64, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, enableItemSchemaDefaults } from "./lib/util.ts";
+export { hee, u2time, unixTime, html, Output, Redirect, uid, b64url, unb64url, randB64, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header } from "./lib/util.ts";
 // HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
 export type { HtmlString } from "./lib/util.ts";
 
 // Schema
 export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";
-export type { StandardIssue, StandardResult } from "./lib/StandardSchema.ts";
 
 // apt framework: action tree, errors, introspection
 export { Access } from "./lib/apt/access.ts";
@@ -33,7 +29,6 @@ export { toTools } from "./lib/apt/toTools.ts";
 export type { Tool } from "./lib/apt/toTools.ts";
 export { VERBS, RESERVED } from "./lib/apt/types.ts";
 export type { AptNode, AptTree, Method, Params, Verb } from "./lib/apt/types.ts";
-export type { AptProxy } from "./lib/apt/client.ts";
 
 // Database
 export { Db } from "./lib/db/Db.ts";
@@ -50,15 +45,14 @@ export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export type { dbEntry_usr } from "./lib/qgEntries.ts";
 
 // Modules
-export { Module, ModuleManager } from "./lib/ModuleManager.ts";
-export type { Plugin } from "./lib/ModuleManager.ts";
+export { Module } from "./lib/ModuleManager.ts";
 
 // Auth
 export { login, pwHash, pwVerify } from "./lib/auth.ts";
 
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";
-export type { OcrEngine, Transcript, TranscriptEngine, TranscriptSegment, TranscriptWord, TransformContext } from "./lib/transform/mod.ts";
+export type { Transcript, TranscriptSegment, TranscriptWord } from "./lib/transform/mod.ts";
 export * as magick from "./lib/transform/magick.ts";
 
 // Server helpers used by modules
