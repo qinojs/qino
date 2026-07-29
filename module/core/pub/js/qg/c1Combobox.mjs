@@ -10,7 +10,7 @@ dialog.addEventListener('mousedown', e=>{
   e.stopPropagation(); // prevent closing cms-panel
 });
 dialog.addEventListener('touchstart', e => e.stopPropagation()); // prevent closing cms-panel
-const Placer = new c1.Placer(dialog);
+const placer = new c1.Placer(dialog);
 
 globalThis.c1Combobox = function(input){
   if (input.c1Combobox) return input.c1Combobox;
@@ -26,7 +26,7 @@ c1Combobox.prototype = {
     if (dialog.parentNode !== doc.body) doc.body.append(dialog);
     if (!dialog.matches(':popover-open')) dialog.showPopover(); // top-layer statt z-index, sonst hinter dem panel-popover
     dialog.style.minWidth = this.input.offsetWidth + 'px';
-    Placer.follow(this.input);
+    placer.follow(this.input);
   },
   hideDialog(){
     if (dialog.matches(':popover-open')) dialog.hidePopover();

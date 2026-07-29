@@ -290,9 +290,8 @@ async function probeHttp(url: string, expect?: string, signal?: AbortSignal): Pr
     probe.certValid = true; // fetch validates the chain; a bad cert would have thrown
     Object.assign(probe, headers(res));
     if (res.url !== url) probe.finalUrl = res.url;
-    if (expect && res.ok) {
-      if (!(await res.text()).includes(expect)) probe.error = `expected text missing: ${expect}`;
-    } else await res.body?.cancel();
+    if (expect && res.ok && !(await res.text()).includes(expect)) probe.error = `expected text missing: ${expect}`;
+    else if (!expect || !res.ok) await res.body?.cancel();
   } catch (e) {
     probe.error = errText(e);
     probe.certValid = isCertError(probe.error) ? false : null;

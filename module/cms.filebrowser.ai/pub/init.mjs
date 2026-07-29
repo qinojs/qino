@@ -3,7 +3,7 @@ import { apt } from '../../core/pub/js/qino.js';
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);
 
-// Der Filebrowser-Dialog lebt im Shadow-DOM des CMS-Panels.
+// The file-browser dialog lives in the CMS panel's shadow DOM.
 customElements.whenDefined('qino-cms').then(async () => {
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
   const root = document.querySelector('qino-cms').shadowRoot;

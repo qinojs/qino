@@ -5,11 +5,11 @@ function run() {
   globalThis.error_report_count = 1000; // dont send errors
 
   const ua = navigator.userAgent;
-  let OS = '';
-  if (ua.includes('Win'))   OS = 'Windows';
-  if (ua.includes('Mac'))   OS = 'Mac';
-  if (ua.includes('X11'))   OS = 'UNIX';
-  if (ua.includes('Linux')) OS = 'Linux';
+  let os = '';
+  if (ua.includes('Win'))   os = 'Windows';
+  if (ua.includes('Mac'))   os = 'Mac';
+  if (ua.includes('X11'))   os = 'UNIX';
+  if (ua.includes('Linux')) os = 'Linux';
 
   const browsers = {
     'Safari' : {
@@ -32,7 +32,7 @@ function run() {
     }
   };
 
-  if (OS !== 'Mac') delete browsers.Safari;
+  if (os !== 'Mac') delete browsers.Safari;
 
   let html =
         '<div style="position:fixed; top:20px; left:0; right:0; margin:auto; width:310px; background:#fff; border:1px solid var(--cms-light); padding:20px; box-shadow:0 0 8px rgba(0,0,0,.5)" class="qgCMS">'+

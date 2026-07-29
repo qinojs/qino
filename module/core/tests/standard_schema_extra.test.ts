@@ -2,13 +2,13 @@ import { assertEquals } from "./deps.ts";
 import { s, toJsonSchema } from "../lib/StandardSchema.ts";
 
 Deno.test("StandardSchema: nested object/array issues include paths", () => {
-  const Schema = s.object({
+  const schema = s.object({
     title: s.string(),
     tags: s.array(s.string()),
     meta: s.object({ visible: s.boolean() }),
   });
 
-  const res = Schema["~standard"].validate({
+  const res = schema["~standard"].validate({
     title: 5,
     tags: ["ok", 7],
     meta: { visible: "yes" },
@@ -22,13 +22,13 @@ Deno.test("StandardSchema: nested object/array issues include paths", () => {
 });
 
 Deno.test("StandardSchema: optional accepts null and default applies on undefined", () => {
-  const Schema = s.object({
+  const schema = s.object({
     optional: s.optional(s.string()),
     count: s.number().default(3),
   });
 
-  assertEquals(Schema["~standard"].validate({ optional: null }), { value: { count: 3 } });
-  assertEquals(Schema["~standard"].validate({ optional: "x", count: 4 }), { value: { optional: "x", count: 4 } });
+  assertEquals(schema["~standard"].validate({ optional: null }), { value: { count: 3 } });
+  assertEquals(schema["~standard"].validate({ optional: "x", count: 4 }), { value: { optional: "x", count: 4 } });
 });
 
 Deno.test("StandardSchema: record validates values and reports keyed paths", () => {
@@ -42,14 +42,14 @@ Deno.test("StandardSchema: toJsonSchema maps record value schema to additionalPr
 });
 
 Deno.test("StandardSchema: toJsonSchema keeps descriptions and required fields", () => {
-  const Schema = s.object({
+  const schema = s.object({
     title: s.string().describe("Title"),
     tags: s.array(s.string()).describe("Tags"),
     opt: s.optional(s.boolean()).describe("Optional flag"),
     count: s.number().default(1),
   }).describe("Root");
 
-  assertEquals(toJsonSchema(Schema), {
+  assertEquals(toJsonSchema(schema), {
     type: "object",
     properties: {
       title: { type: "string", description: "Title" },

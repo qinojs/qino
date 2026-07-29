@@ -35,5 +35,5 @@ export const branch = (v: unknown): Branch | undefined => v && typeof v === "obj
 export const VERBS = ["get", "post", "put", "delete", "patch"] as const;
 export type Method = typeof VERBS[number];
 export const VERB_SET = new Set<string>(VERBS);
-export const RESERVED: Set<string> = new Set(["resolve", ...VERBS]);
+export const RESERVED = new Set<string>(["resolve", ...VERBS]);
 export const BODY_METHODS = new Set<Method>(["post", "put", "patch"]);

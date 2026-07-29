@@ -13,24 +13,24 @@ Deno.test("schema: string/number/boolean primitives", () => {
 });
 
 Deno.test("schema: object with optional and default", () => {
-  const Sch = s.object({
+  const schema = s.object({
     name: s.string(),
     age:  s.optional(s.number()),
     deep: s.boolean().default(false),
   });
 
-  assertEquals(Sch["~standard"].validate({ name: "a" }).value, {
+  assertEquals(schema["~standard"].validate({ name: "a" }).value, {
     name: "a", deep: false,
   });
-  assertEquals(Sch["~standard"].validate({ name: "a", age: 9, deep: true }).value, {
+  assertEquals(schema["~standard"].validate({ name: "a", age: 9, deep: true }).value, {
     name: "a", age: 9, deep: true,
   });
 });
 
 Deno.test("schema: object exposes keys + shape for introspection", () => {
-  const Sch = s.object({ a: s.string(), b: s.number() });
-  assertEquals(Sch.kind, "object");
-  assertEquals(Object.keys(Sch.shape!), ["a", "b"]);
+  const schema = s.object({ a: s.string(), b: s.number() });
+  assertEquals(schema.kind, "object");
+  assertEquals(Object.keys(schema.shape!), ["a", "b"]);
 });
 
 Deno.test("schema: array + record", () => {

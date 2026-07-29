@@ -48,22 +48,22 @@ export class TableHandles {
   positionize(td) {
     const tr = td.parentNode;
     if (!tr) return;
-    let Cpos = td.getBoundingClientRect();
-    Cpos = {
-      top:  Cpos.top + scrollY,
-      left: Cpos.left + scrollX,
+    let cpos = td.getBoundingClientRect();
+    cpos = {
+      top:  cpos.top + scrollY,
+      left: cpos.left + scrollX,
     }
     const table = tr.closest('table');
     if (!table) return;
-    let Tpos = table.getBoundingClientRect();
-    Tpos = {
-      top:  Tpos.top + scrollY,
-      left: Tpos.left + scrollX,
+    let tpos = table.getBoundingClientRect();
+    tpos = {
+      top:  tpos.top + scrollY,
+      left: tpos.left + scrollX,
     }
-    this.rowRemove.style.cssText = 'top:'+(Cpos.top + (tr.offsetHeight / 2) - 11)+'px; left:'+(Tpos.left - 25)+'px;';
-    this.rowAdd.style.cssText    = 'top:'+(Cpos.top + tr.offsetHeight - 4)+'px;        left:'+(Tpos.left - 25)+'px;';
-    this.colRemove.style.cssText = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + (td.offsetWidth / 2) - 8)+'px;';
-    this.colAdd.style.cssText    = 'top:'+(Tpos.top - 25)+'px;                         left:'+(Cpos.left + td.offsetWidth - 2)+'px;';
+    this.rowRemove.style.cssText = 'top:'+(cpos.top + (tr.offsetHeight / 2) - 11)+'px; left:'+(tpos.left - 25)+'px;';
+    this.rowAdd.style.cssText    = 'top:'+(cpos.top + tr.offsetHeight - 4)+'px;        left:'+(tpos.left - 25)+'px;';
+    this.colRemove.style.cssText = 'top:'+(tpos.top - 25)+'px;                         left:'+(cpos.left + (td.offsetWidth / 2) - 8)+'px;';
+    this.colAdd.style.cssText    = 'top:'+(tpos.top - 25)+'px;                         left:'+(cpos.left + td.offsetWidth - 2)+'px;';
   }
   handleEvent() {
     setTimeout(()=>{

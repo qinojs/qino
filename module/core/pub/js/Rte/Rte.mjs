@@ -294,7 +294,7 @@ document.addEventListener('input', e => {
 
 /* prevent phx inside phx */
 {
-  const PHX = {P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,};
+  const phx = {P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,};
   document.addEventListener('input', e => {
     if (!e.target.isContentEditable) return;
     const check = node => {
@@ -307,7 +307,7 @@ document.addEventListener('input', e => {
       }
     }
     function isPHX (node){
-      return PHX[node.tagName];
+      return phx[node.tagName];
     }
     check(e.target)
   });

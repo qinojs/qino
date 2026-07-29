@@ -1,7 +1,7 @@
 
 const listeners = [];
 const root = document;
-let Observer;
+let observer;
 
 c1.onElement = function(selector, options) {
   if (typeof options === 'function') {
@@ -29,9 +29,9 @@ c1.onElement = function(selector, options) {
   }
 
   listeners.push(listener);
-  if (!Observer) {
-    Observer = new MutationObserver(checkMutations);
-    Observer.observe(root, {
+  if (!observer) {
+    observer = new MutationObserver(checkMutations);
+    observer.observe(root, {
       childList: true,
       subtree: true
     });

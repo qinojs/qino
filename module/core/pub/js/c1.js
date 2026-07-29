@@ -48,9 +48,9 @@
     },
     off: function(ns, fn) {
       for (const n of ns.split(' ')) {
-        const Events = this._getEvents(n);
-        const i = Events.indexOf(fn);
-        if (i !== -1) Events.splice(i, 1);
+        const events = this._getEvents(n);
+        const i = events.indexOf(fn);
+        if (i !== -1) events.splice(i, 1);
       }
     },
     trigger: function(ns, e) {

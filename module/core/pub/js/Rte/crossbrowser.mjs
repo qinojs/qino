@@ -18,7 +18,7 @@ globalThis.qgExecCommand = function(com,x,val) {
   if (!_.cmdUsed) {
     try {
       document.execCommand("styleWithCSS", false, false);
-    } catch { /* egal */ }
+    } catch { /* ignore */ }
     _.cmdUsed = true;
   }
   switch (com) {
@@ -29,7 +29,7 @@ globalThis.qgExecCommand = function(com,x,val) {
     default:
       try {
         document.execCommand(com,x,val);
-      } catch { /* egal */ }
+      } catch { /* ignore */ }
   }
 };
 
@@ -84,7 +84,7 @@ globalThis.qgSelection = {
   collapse(where) {
     try { // firefox has an error
       where === 'start' ? getSelection().collapseToStart() : getSelection().collapseToEnd();
-    } catch { /* egal */ }
+    } catch { /* ignore */ }
   },
   rect() {
     const r = getSelection().c1GetRange();
@@ -111,7 +111,7 @@ document.addEventListener('click', e=>{
     if (e.explicitOriginalTarget?.isContentEditable) {
       e.preventDefault();
     }
-  } catch { /* egal */ }
+  } catch { /* ignore */ }
 });
 // prevent (Firefox) placing cursor incorrectly
 document.addEventListener('mousedown', e=>{
@@ -192,9 +192,9 @@ document.addEventListener('mousedown', e=>{
       bottom = c.bottom - body.top  - 6,
       right  = c.right  - body.left - 6;
     requestAnimationFrame(()=>{
-      X.style.left    = right + 'px';                       X.style.top    = (bottom - img.offsetHeight / 2) + 'px';
-      Y.style.left    = (right - img.offsetWidth / 2)+'px'; Y.style.top    = bottom + 'px';
-      XY.style.left   = right + 'px';                       XY.style.top   = bottom + 'px';
+      x.style.left    = right + 'px';                       x.style.top    = (bottom - img.offsetHeight / 2) + 'px';
+      y.style.left    = (right - img.offsetWidth / 2)+'px'; y.style.top    = bottom + 'px';
+      xy.style.left   = right + 'px';                       xy.style.top   = bottom + 'px';
       info.style.left = right + 16 + 'px';                  info.style.top = bottom + 16 + 'px';
     });
   };
@@ -203,9 +203,9 @@ document.addEventListener('mousedown', e=>{
     const startDim = {x: img.offsetWidth, y: img.offsetHeight};
     const dragger = e.target;
     const moveFn = e => {
-      let w = dragger === Y ? startDim.x : Math.max(1, startDim.x + e.pageX - startM.x);
-      let h = dragger === X ? startDim.y : Math.max(1, startDim.y + e.pageY - startM.y);
-      if (!e.ctrlKey && dragger === XY) {
+      let w = dragger === y ? startDim.x : Math.max(1, startDim.x + e.pageX - startM.x);
+      let h = dragger === x ? startDim.y : Math.max(1, startDim.y + e.pageY - startM.y);
+      if (!e.ctrlKey && dragger === xy) {
         if (startDim.x / startDim.y < w / h) {
           h = parseInt(startDim.y / startDim.x * w);
         } else {
@@ -241,9 +241,9 @@ document.addEventListener('mousedown', e=>{
     '<div class=-xy style="cursor:se-resize'+itemCss+'" title="press ctrl to disable aspect ratio"></div>'+
     '<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 .1875rem; font-size:11px; color:#333; padding:.125rem .25rem; border-radius:.125rem"></div>'+
   '</div>').firstChild;
-  const X  = find(cont, '>.-x');
-  const Y  = find(cont, '>.-y');
-  const XY = find(cont, '>.-xy');
+  const x  = find(cont, '>.-x');
+  const y  = find(cont, '>.-y');
+  const xy = find(cont, '>.-xy');
   const info = find(cont, '>.-info');
   cont.addEventListener('mousedown', startFn);
 }

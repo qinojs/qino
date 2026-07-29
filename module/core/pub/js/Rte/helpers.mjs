@@ -58,7 +58,7 @@ globalThis.getPossibleClasses = function (el) { /* eventuell better performance?
     if (sheet.href === null) {
       try {
         if (sheet.ownerNode.innerHTML === '') continue; // adblock chrome
-      } catch { /* egal */ }
+      } catch { /* ignore */ }
     }
     try { // (not same domain) security error in ff
       if (sheet.cssRules)

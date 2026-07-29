@@ -32,7 +32,7 @@ export async function widget(
   return `<div class="${cls}" widget=${name}>${inner}</div>`;
 }
 
-/** Widget als Accordion */
+/** Widget as an accordion. */
 export async function accordion(
   name: string,
   node: Node,
@@ -49,7 +49,7 @@ export async function accordion(
   return headHtml + await widget(name, open, node, "-content", param);
 }
 
-/** Widget als Sidebar-Item */
+/** Widget as a sidebar item. */
 export async function sidebar(name: string, node: Node, title: string, tooltip = ""): Promise<string> {
   const ctx = getCtx();
   const sidebarV = await ctx.settings["cms.frontend.2"].ui.sidebar;

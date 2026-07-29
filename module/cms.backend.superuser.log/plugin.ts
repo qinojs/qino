@@ -179,14 +179,14 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const stats = await tableStats(node);
   const int = (n: number) => n.toLocaleString("de-CH");
 
-  const DAY = 86400;
+  const day = 86400;
   const now = unixTime();
   const ages = [
-    [now - DAY * 366 * 5, await t`older than 5 years`],
-    [now - DAY * 366, await t`older than 1 year`],
-    [now - DAY * 183, await t`older than 6 months`],
-    [now - DAY * 31, await t`older than 1 month`],
-    [now - DAY * 7, await t`older than 1 week`],
+    [now - day * 366 * 5, await t`older than 5 years`],
+    [now - day * 366, await t`older than 1 year`],
+    [now - day * 183, await t`older than 6 months`],
+    [now - day * 31, await t`older than 1 month`],
+    [now - day * 7, await t`older than 1 week`],
     ["", await t`all`],
   ] as const;
   const ageOptions = (sel: number) =>

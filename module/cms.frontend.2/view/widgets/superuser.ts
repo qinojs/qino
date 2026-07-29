@@ -36,14 +36,14 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
   if (vars.param?.delete) {
     const file = String(vars.param.delete);
     if (!root || !inRoot(file, root)) throw new Output("invalid path", { status: 400 });
-    try { await Deno.remove(file); } catch { /* egal */ }
+    try { await Deno.remove(file); } catch { /* ignore */ }
   }
   if (vars.param?.create) {
     if (!root || typeof vars.param.create !== "string") throw new Output("invalid path", { status: 400 });
     const file = nodePath.resolve(root, vars.param.create);
     if (!inRoot(file, root)) throw new Output("invalid path", { status: 400 });
-    try { await Deno.mkdir(nodePath.dirname(file), { recursive: true }); } catch { /* egal */ }
-    try { await Deno.writeTextFile(file, ""); } catch { /* egal */ }
+    try { await Deno.mkdir(nodePath.dirname(file), { recursive: true }); } catch { /* ignore */ }
+    try { await Deno.writeTextFile(file, ""); } catch { /* ignore */ }
   }
 
   const fileRow = (filePath: string, base: number, info: Deno.FileInfo): HtmlString =>

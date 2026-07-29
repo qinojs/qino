@@ -11,7 +11,7 @@ const str = (v: unknown): string | undefined => v == null ? undefined : String(v
 export const CHAT_DEFAULTS = { temperature: 0.6, max_tokens: 5512 };
 
 // Per-app instances; the plugin's init binds, ai()/ai.get() read. Internal — mod.ts does not export it.
-export const aiInstances: WeakMap<object, AiApi> = new WeakMap();
+export const aiInstances = new WeakMap<object, AiApi>();
 
 // ai(app) facade: bot registry, provider clients, raw passthroughs, sessions.
 export class AiApi {

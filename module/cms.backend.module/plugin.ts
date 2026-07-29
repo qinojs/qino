@@ -55,8 +55,8 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const modDir  = modPath?.replace(/\/?[^/]+$/, "") ?? null;
 
   // --- Exports ---
-  const SKIP = new Set(["name", "needs", "cms", "install", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
-  const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
+  const skip = new Set(["name", "needs", "cms", "install", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
+  const extraExports = Object.keys(mod).filter(k => !skip.has(k));
   const knownKeys: { key: string; label: string }[] = [
     { key: "needs",             label: "needs" },
     { key: "settingsSchema",    label: "settingsSchema" },

@@ -2,13 +2,13 @@
   'use strict';
   if (globalThis.cms_image2) return;
 
-  const InitializedSet = new WeakSet();
+  const initialized = new WeakSet();
 
   globalThis.cms_image2 = {
     init(c1Img){
       // init once
-      if (InitializedSet.has(c1Img)) return;
-      InitializedSet.add(c1Img);
+      if (initialized.has(c1Img)) return;
+      initialized.add(c1Img);
 
       let img = null;
       // add image
@@ -23,7 +23,7 @@
       if (!img) { // sometimes immediate is to fast and noscript.innerHTML is not complete (firefox 71)
       //console.warn('immediate was too fast');
         requestAnimationFrame(() => {
-          InitializedSet.delete(c1Img);
+          initialized.delete(c1Img);
           cms_image2.init(c1Img);
         });
         return;

@@ -13,7 +13,7 @@ const defaultTemplate: Template = ({ main }) => `<!DOCTYPE html>
 </html>`;
 
 // Per-app instances; the plugin's init binds, mail()/mail.get() read. Internal — mod.ts does not export it.
-export const mailInstances: WeakMap<object, MailManager> = new WeakMap();
+export const mailInstances = new WeakMap<object, MailManager>();
 
 export class MailManager {
   templates: Record<string, Template> = { default: defaultTemplate };
@@ -105,10 +105,10 @@ export class MailManager {
     await this.#builtTransport?.close?.();
     const entry = transports[config.type];
     if (!entry) throw new Error(`Unknown mail transport "${config.type}"`);
-    const TransportClass = (await importUpyo(config.type))[entry.exportName] as TransportCtor | undefined;
-    if (!TransportClass) throw new Error(`Upyo transport export missing: ${entry.exportName}`);
+    const transportClass = (await importUpyo(config.type))[entry.exportName] as TransportCtor | undefined;
+    if (!transportClass) throw new Error(`Upyo transport export missing: ${entry.exportName}`);
     this.#builtKey = key;
-    return this.#builtTransport = new TransportClass(config.options);
+    return this.#builtTransport = new transportClass(config.options);
   }
 
   async transportConfig(): Promise<{ type: string; options: Dict }> {

@@ -22,7 +22,7 @@ c1.scroll = {
       lastX: scrollX,
       lastY: scrollY,
       duration: opt.duration,
-      easing: Easing[opt.easing],
+      easing: easing[opt.easing],
       onFinish: opt.onfinish,
       startTime: Date.now(),
     };
@@ -65,7 +65,7 @@ function step () {
     requestAnimationFrame(step.bind(this));
   },12)
 }
-const Easing = {
+const easing = {
   linear:         t => t,
   easeInQuad:     t => t*t,
   easeOutQuad:    t => t*(2-t),
