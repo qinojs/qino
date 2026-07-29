@@ -4,14 +4,14 @@ import { apt, ctx, t } from '../../../core/pub/js/qino.js';
 import '../../../cms/pub/js/cms.mjs';
 
 const sysURL = ctx.sysURL;
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 const blockSelector = '[qcms-edit], #qgCmsContPosMenu';
 
-const Menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
+const menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
   icon: sysURL+'cms.frontend.2/pub/img/module_default.svg',
   selector: blockSelector,
 });
-Menu.addItem(t`Settings`, {
+menu.addItem(t`Settings`, {
   icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
   selector: blockSelector,
   onshow() {
@@ -23,7 +23,7 @@ Menu.addItem(t`Settings`, {
     cms.panel.sidebar.set('settings');
   }
 });
-Menu.addItem(t`Move`, {
+menu.addItem(t`Move`, {
   icon: sysURL+'cms.frontend.2/pub/img/move.svg',
   selector: blockSelector,
   onshow() {
@@ -32,7 +32,7 @@ Menu.addItem(t`Move`, {
   },
   onclick() { cms.contPos.dd.start(this.activeEl);  }
 });
-Menu.addItem(t`Copy`, {
+menu.addItem(t`Copy`, {
   icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
   selector: blockSelector,
   onshow() {
@@ -45,7 +45,7 @@ Menu.addItem(t`Copy`, {
     });
   }
 });
-Menu.addItem(t`Cut`, {
+menu.addItem(t`Cut`, {
   icon: sysURL+'cms.frontend.2/pub/img/cut.svg',
   selector: blockSelector,
   onshow() {
@@ -60,7 +60,7 @@ Menu.addItem(t`Cut`, {
     });
   }
 });
-Menu.addItem(t`Delete`, {
+menu.addItem(t`Delete`, {
   icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
   selector: blockSelector,
   onshow() {
@@ -77,8 +77,8 @@ Menu.addItem(t`Delete`, {
   }
 });
 
-const TreeMenu = c1.globalContextMenu;
-TreeMenu.addItem(t`Settings`, {
+const treeMenu = c1.globalContextMenu;
+treeMenu.addItem(t`Settings`, {
   icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
   selector: '#tree .-title',
   onshow(e) {
@@ -92,7 +92,7 @@ TreeMenu.addItem(t`Settings`, {
     cms.panel.sidebar.set('settings');
   }
 });
-TreeMenu.addItem(t`Rename`, {
+treeMenu.addItem(t`Rename`, {
   icon: sysURL+'cms.frontend.2/pub/img/pencil.svg',
   selector:'#tree .-title',
   onshow(e) {
@@ -105,7 +105,7 @@ TreeMenu.addItem(t`Rename`, {
     cms.Tree.editNode(node);
   }
 });
-TreeMenu.addItem(t`Copy`, {
+treeMenu.addItem(t`Copy`, {
   icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
   selector:'#tree .-title',
   onshow(e) {
@@ -134,7 +134,7 @@ TreeMenu.addItem(t`Copy`, {
     ]);
   }
 });
-TreeMenu.addItem(t`Delete`, {
+treeMenu.addItem(t`Delete`, {
   icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
   selector: '#tree .-title',
   onshow(e) {
@@ -147,7 +147,7 @@ TreeMenu.addItem(t`Delete`, {
     const n = cms.Tree.getNodeById(this.lastPid);
     if (!await cms.dialogs.confirm(t`Really delete page "${n.data.title}"?`)) return;
     apt.cms.node(n.data.id).delete().then(ret => {
-      if (ret.parent_id && n.data.id==Page) {
+      if (ret.parent_id && n.data.id==nodeId) {
         location.href = "?cmspid="+ret.parent_id;
       } else {
         const s = cms.Tree.neighbor(n);

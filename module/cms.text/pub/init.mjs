@@ -5,7 +5,7 @@ import '../../core/pub/js/c1/onElement.mjs';
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 const activeLang = document.documentElement.lang;
 
 // contextmenu
@@ -171,7 +171,7 @@ function hee(string){
 const addTranslateWidget = el=>{
   const lang = document.documentElement.getAttribute('lang');
   const fragment = c1.dom.fragment(`
-        <div class="-widgetHead -open" tabindex="0"><span class="-title">Translate</span></div>
+        <div class="-widgetHead -open" tabindex=0><span class=-title>Translate</span></div>
         <div>
             <form class=-content>
         <b>${lang}</b> texts on this page: <br>
@@ -187,7 +187,7 @@ const addTranslateWidget = el=>{
     const sourceLang = e.submitter.name;
     const done = c1.loading.mark(e.target);
     try {
-      const result = await apt['cms.text'].page(Page).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
+      const result = await apt['cms.text'].page(nodeId).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
       alert('translated texts: '+result.count);
       if (result.fail) alert('not allowed on '+result.fail+' pages');
       result.count && location.reload();

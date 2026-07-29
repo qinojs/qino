@@ -113,7 +113,10 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     }
     filesHtml = rows.length
       ? await html.async`<table class=u2-table style="width:100%;white-space:nowrap">
-        <thead><tr><th>${t`File`}<th style="text-align:right">${t`Size`}<th>${t`Modified`}
+        <thead><tr>
+          <th>${t`File`}
+          <th style="text-align:right">${t`Size`}
+          <th>${t`Modified`}
         <tbody>${html.join(rows)}
       </table>`
       : await html.async`<em>${t`no files found`}</em>`;
@@ -142,9 +145,15 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Settings schema`}</div>
     <table class=u2-table>
-      <thead><tr><th>${t`Key`}<th>${t`Type`}<th>${t`Title`}
+      <thead><tr>
+        <th>${t`Key`}
+        <th>${t`Type`}
+        <th>${t`Title`}
       <tbody>${html.join(Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
-        html`<tr><td><code>${k}</code><td><code>${v?.type}</code><td>${v?.title}`))}
+        html`<tr>
+          <td><code>${k}</code>
+          <td><code>${v?.type}</code>
+          <td>${v?.title}`))}
     </table>
   </div>` : ""}
   ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div class=-body><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
@@ -263,7 +272,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const withDb = mods.filter((m) => m.plugin?.dbSchema).length;
   const withApi = mods.filter((m) => m.plugin?.api).length;
   return html.async`
-<table class="u2-table" style="white-space:nowrap">
+<table class=u2-table style="white-space:nowrap">
   <tr><td>${app.t`Total`}:<td>${total}
   <tr><td>${app.t`With DB schema`}:<td>${withDb}
   <tr><td>${app.t`With API`}:<td>${withApi}

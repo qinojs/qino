@@ -3,7 +3,7 @@
   * and server listeners. */
 import { t, apt } from "../../../core/pub/js/qino.js";
 
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
 const asTree = (el) => el?.localName === "u2-tree" ? el : null; // tree node or null (skip icon/anchor)
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -167,7 +167,7 @@ globalThis.cmsTreeInit = async (json) => {
 
   // Reload lazy branches (root without id -> full reload via goTo).
   function reloadChildren(node, cb) {
-    if (!node.dataset.id) return goTo(activeNode?.dataset.id ?? (cms.cont.active || Page)).then(() => cb?.());
+    if (!node.dataset.id) return goTo(activeNode?.dataset.id ?? (cms.cont.active || nodeId)).then(() => cb?.());
     for (const c of [...node.querySelectorAll(":scope > u2-tree")]) c.remove();
     node.setAttribute("aria-live", "off");
     node.removeAttribute("aria-busy");
@@ -214,7 +214,7 @@ globalThis.cmsTreeInit = async (json) => {
   };
   for (const n of json) rootNode.append(makeNode(n));
   treeEl.append(rootNode);
-  activate(cms.Tree.getNodeById(String(cms.cont.active || Page)));
+  activate(cms.Tree.getNodeById(String(cms.cont.active || nodeId)));
 };
 
 /* Live updates via the cms.Tree facade */

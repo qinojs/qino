@@ -32,7 +32,7 @@ customElements.whenDefined("qino-cms").then(async () => {
         </style>
         <div u2-movable class="cmsChatWrapper qgCMS">
           <div u2-movable-handler style="background:var(--cms-color); color:#fff; padding:.5rem; cursor:move">CMS Helper</div>
-          <ai-chat bot="cms-helper"></ai-chat>
+          <ai-chat bot=cms-helper></ai-chat>
         </div>
       </div>`);
     root.append(wrap.firstElementChild);

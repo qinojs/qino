@@ -115,8 +115,13 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   // returns only the table's inner content — the <table cms-part=list> wrapper lives in render()
   return `
 <thead><tr style="vertical-align:top">
-    <th>${await t`Time`}<th>${await t`Url / Referer`}<th>${await t`Client`}
-    <th>${await t`User`}<th>${await t`IP`}<th>${await t`POST`}<th>ID
+    <th>${await t`Time`}
+    <th>${await t`Url / Referer`}
+    <th>${await t`Client`}
+    <th>${await t`User`}
+    <th>${await t`IP`}
+    <th>${await t`POST`}
+    <th>ID
 <tbody style="vertical-align:top">${body || `<tr><td colspan=7>${await t`No entries`}`}`;
 }
 
@@ -266,7 +271,12 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   let relations = "";
   for (const { table, col } of logRefColumns(db)) {
     const refRows = await db.query`SELECT * FROM ${sql.id(table)} WHERE ${sql.id(col)} = ${id}`.catch(() => []);
-    if (refRows.length) relations += `<tr><td>${hee(table)}<td>${hee(col)}<td><div style="max-width:50rem; max-height:30rem; overflow:auto">${dump(refRows)}</div>`;
+    if (refRows.length) {
+      relations += `<tr>
+        <td>${hee(table)}
+        <td>${hee(col)}
+        <td><div style="max-width:50rem; max-height:30rem; overflow:auto">${dump(refRows)}</div>`;
+    }
   }
 
   // history of session / client / ip

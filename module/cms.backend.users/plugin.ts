@@ -121,14 +121,14 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
      WHERE sess.usr_id IS NOT NULL AND sess.access IS NOT NULL
      ORDER BY sess.access DESC LIMIT 5`.catch(() => []).then(logins =>
     logins.length
-      ? html.async`<table class="u2-table" style="white-space:nowrap;margin-top:1px">
+      ? html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${t`Recent logins`}<th>
   <tbody>${html.join(logins.map((row) => html`<tr><td>${row.email ?? "–"}<td><u2-time datetime="${new Date(Number(row.access) * 1000).toISOString()}" type=relative></u2-time>`))}
 </table>`
       : html.raw(""));
 
   return html.async`<div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">
+<table class=u2-table style="white-space:nowrap">
   <tr><td>${t`Total`}:<td>${db.one`SELECT count(*) FROM usr`}
   <tr><td>${t`Active`}:<td>${db.one`SELECT count(*) FROM usr WHERE active = ${true}`}
 </table>

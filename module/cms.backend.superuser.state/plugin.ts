@@ -14,13 +14,13 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 function render(node: Node): HtmlString {
   return html`<div class=u2-flex>
-  <div class="u2-card" style="flex:1 1 100%">
-    <div class="-head">State</div>
-    <div class="-body" style="flex:1 1 100%; xdisplay:flex; gap:.5rem; align-items:start; flex-wrap:wrap">
+  <div class=u2-card style="flex:1 1 100%">
+    <div class=-head>State</div>
+    <div class=-body style="flex:1 1 100%; xdisplay:flex; gap:.5rem; align-items:start; flex-wrap:wrap">
       <button type=button onclick="cms.reloadPart(${Number(node.id)}, 'state')">neu laden</button>
     </div>
   </div>
-  <div class="u2-flex" cms-part="state">${renderState(node)}</div>
+  <div class=u2-flex cms-part=state>${renderState(node)}</div>
 </div>`;
 }
 
@@ -37,9 +37,9 @@ function renderState(node: Node): HtmlString {
 
 // empty box, filled client-side by pub/state.mjs with dump(getCtx())
 function clientCtxBox(title: string): HtmlString {
-  return html`<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
-  <div class="-head">${title}</div>
-  <div class="-body" id="qg-client-ctx" style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
+  return html`<div class=u2-card style="min-width:0; overflow:auto; height:80vh">
+  <div class=-head>${title}</div>
+  <div class=-body id=qg-client-ctx style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
 </div>`;
 }
 
@@ -57,9 +57,9 @@ function dumpBox(title: string, value: unknown, depth: number): HtmlString {
   } catch (err) {
     out = `<pre>${hee(err instanceof Error ? err.stack ?? err.message : String(err))}</pre>`;
   }
-  return html`<div class="u2-card" style="min-width:0; overflow:auto; height:80vh">
-  <div class="-head">${title}</div>
-  <div class="-body" style="overflow:auto; max-height:90vh">${html.raw(out)}</div>
+  return html`<div class=u2-card style="min-width:0; overflow:auto; height:80vh">
+  <div class=-head>${title}</div>
+  <div class=-body style="overflow:auto; max-height:90vh">${html.raw(out)}</div>
 </div>`;
 }
 

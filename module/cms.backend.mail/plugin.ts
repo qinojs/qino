@@ -208,7 +208,13 @@ async function renderRecipients(node: Node, id: number): Promise<HtmlString> {
     <div class=-head>${t`Recipients`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">
-        <thead><tr><th>${t`Recipient`}<th>${t`Type`}<th>${t`Sent`}<th>${t`Opened`}<th>${t`Error`}<th>${t`Data`}
+        <thead><tr>
+          <th>${t`Recipient`}
+          <th>${t`Type`}
+          <th>${t`Sent`}
+          <th>${t`Opened`}
+          <th>${t`Error`}
+          <th>${t`Data`}
         <tbody>${trs}
       </table>
     </div>
@@ -234,7 +240,10 @@ async function renderTracking(node: Node, id: number): Promise<HtmlString | stri
     <div class=-head>${t`Tracking`}</div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table style="white-space:nowrap">
-        <thead><tr><th>${t`Link`}<th>${t`Views`}<th>${t`Last`}
+        <thead><tr>
+          <th>${t`Link`}
+          <th>${t`Views`}
+          <th>${t`Last`}
         <tbody>${trs}
       </table>
     </div>

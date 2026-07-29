@@ -6,7 +6,7 @@ const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 
 const sysURL = ctx.sysURL;
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 const cmsFrontend = globalThis.cmsFrontend || 'cms.frontend.2';
 
 const body = document.body;
@@ -203,7 +203,7 @@ document.addEventListener('keydown',e=>{
   if (target.isContentEditable || target.form !== undefined) return; // inputs/contenteditable in the light DOM (page content)
   if (e.shiftKey || e.metaKey || e.altKey || e.ctrlKey) return;
   if (e.code === 'KeyH') {
-    Viewer.show(Page);
+    Viewer.show(nodeId);
     e.preventDefault();
   }
 });
@@ -230,7 +230,7 @@ const sidebarItem = c1.dom.fragment(`
 panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.after(sidebarItem)
 sidebarItem.addEventListener('mousedown', e=>{
   e.stopPropagation();
-  Viewer.show(Page)
+  Viewer.show(nodeId)
 });
 
 

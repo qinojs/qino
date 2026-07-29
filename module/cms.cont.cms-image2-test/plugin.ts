@@ -47,16 +47,16 @@ async function render(node: Node, { vars }: { vars?: Record<string, unknown> } =
   ])).join(""));
 
   return html.async`
-    <section class="cms-image2-test" data-delay="${delay}">
-      <header class="c2t-head">
+    <section class=cms-image2-test data-delay="${delay}">
+      <header class=c2t-head>
         <h2>cms-image2 test</h2>
         <p>${exists ? "Testing the uploaded image." : "Upload an image in edit mode to start the test."} A partly transparent PNG or AVIF is useful for comparing preview, contain and loading states.</p>
       </header>
-      <div cms-part="lab">${labPart(node, { vars })}</div>
+      <div cms-part=lab>${labPart(node, { vars })}</div>
       <h3>Options</h3>
-      <div class="c2t-grid">${basic}</div>
+      <div class=c2t-grid>${basic}</div>
       <h3>Critical layout</h3>
-      <div class="c2t-grid">${flex}</div>
+      <div class=c2t-grid>${flex}</div>
     </section>
   `;
 }
@@ -79,26 +79,26 @@ async function labPart(node: Node, { vars }: { vars?: Record<string, unknown> } 
 
 function renderLab(file: DbFile, options: ImgOptions, lab: LabVars): Promise<HtmlString> {
   return html.async`
-    <article class="c2t-card c2t-lab" data-c2t-case="lab" data-c2t-params="${optionsText(options)}">
+    <article class="c2t-card c2t-lab" data-c2t-case=lab data-c2t-params="${optionsText(options)}">
       <h3>Interactive image</h3>
-      <form class="c2t-lab-form">
-        <div class="c2t-field">
-          <label>Width <input type="range" min="40" max="1400" value="${lab.width}" data-c2t-param="width"><output></output></label>
-          <label class="c2t-auto"><input type="checkbox" data-c2t-auto="width" ${lab.autoW ? "checked" : ""}> auto</label>
+      <form class=c2t-lab-form>
+        <div class=c2t-field>
+          <label>Width <input type=range min=40 max=1400 value="${lab.width}" data-c2t-param=width><output></output></label>
+          <label class=c2t-auto><input type=checkbox data-c2t-auto=width ${lab.autoW ? "checked" : ""}> auto</label>
         </div>
-        <div class="c2t-field">
-          <label>Height <input type="range" min="40" max="900" value="${lab.height}" data-c2t-param="height"><output></output></label>
-          <label class="c2t-auto"><input type="checkbox" data-c2t-auto="height" ${lab.autoH ? "checked" : ""}> auto</label>
+        <div class=c2t-field>
+          <label>Height <input type=range min=40 max=900 value="${lab.height}" data-c2t-param=height><output></output></label>
+          <label class=c2t-auto><input type=checkbox data-c2t-auto=height ${lab.autoH ? "checked" : ""}> auto</label>
         </div>
-        <label>Fit <select data-c2t-param="fit"><option value="cover" ${lab.fit === "cover" ? "selected" : ""}>cover</option><option value="contain" ${lab.fit === "contain" ? "selected" : ""}>contain</option></select><output></output></label>
-        <label>H pos <input type="range" min="0" max="100" value="${lab.hpos}" data-c2t-param="hpos"><output></output></label>
-        <label>V pos <input type="range" min="0" max="100" value="${lab.vpos}" data-c2t-param="vpos"><output></output></label>
-        <label>Box <input type="range" min="120" max="1100" value="${lab.box}" data-c2t-param="box"><output></output></label>
-        <button type="button" data-c2t-reload>Reload preview</button>
+        <label>Fit <select data-c2t-param=fit><option value=cover ${lab.fit === "cover" ? "selected" : ""}>cover</option><option value=contain ${lab.fit === "contain" ? "selected" : ""}>contain</option></select><output></output></label>
+        <label>H pos <input type=range min=0 max=100 value="${lab.hpos}" data-c2t-param=hpos><output></output></label>
+        <label>V pos <input type=range min=0 max=100 value="${lab.vpos}" data-c2t-param=vpos><output></output></label>
+        <label>Box <input type=range min=120 max=1100 value="${lab.box}" data-c2t-param=box><output></output></label>
+        <button type=button data-c2t-reload>Reload preview</button>
       </form>
-      <div class="c2t-stage" style="width:min(100%, ${lab.box}px)">${cms_image2(file, options)}</div>
-      <output class="c2t-metric"></output>
-      <code class="c2t-params">${optionsText(options)}</code>
+      <div class=c2t-stage style="width:min(100%, ${lab.box}px)">${cms_image2(file, options)}</div>
+      <output class=c2t-metric></output>
+      <code class=c2t-params>${optionsText(options)}</code>
     </article>
   `;
 }
@@ -118,12 +118,12 @@ function renderCard(
   id: string, title: string, note: string, content: Promise<HtmlString> | HtmlString, params: string,
 ): Promise<string> {
   return html.async`
-    <article class="c2t-card" data-c2t-case="${id}" data-c2t-params="${params}">
+    <article class=c2t-card data-c2t-case="${id}" data-c2t-params="${params}">
       <h4>${title}</h4>
       <p>${note}</p>
-      <div class="c2t-stage">${content}</div>
-      <output class="c2t-metric"></output>
-      <code class="c2t-params">${params}</code>
+      <div class=c2t-stage>${content}</div>
+      <output class=c2t-metric></output>
+      <code class=c2t-params>${params}</code>
     </article>
   `.then(String);
 }
@@ -181,12 +181,12 @@ function renderFlexWrap(file: DbFile, base: ImgOptions, cls: string): Promise<Ht
 }
 
 function renderMinContent(file: DbFile, base: ImgOptions): Promise<HtmlString> {
-  return html.async`<div class="c2t-min-content">${image(file, base, "min-content", { css: { "max-width": "100%" } })}</div>`;
+  return html.async`<div class=c2t-min-content>${image(file, base, "min-content", { css: { "max-width": "100%" } })}</div>`;
 }
 
 function renderGridMin(file: DbFile, base: ImgOptions): Promise<HtmlString> {
   return html.async`
-    <div class="c2t-grid-min">
+    <div class=c2t-grid-min>
       ${image(file, base, "grid-min", { css: { "max-width": "100%" } })}
       <span>grid-side-content</span>
     </div>
@@ -195,7 +195,7 @@ function renderGridMin(file: DbFile, base: ImgOptions): Promise<HtmlString> {
 
 function renderInline(file: DbFile, base: ImgOptions): Promise<HtmlString> {
   return html.async`
-    <p class="c2t-inline">before ${image(file, base, "inline", { css: { "max-width": "120px" } })} after</p>
+    <p class=c2t-inline>before ${image(file, base, "inline", { css: { "max-width": "120px" } })} after</p>
   `;
 }
 

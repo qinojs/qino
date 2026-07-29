@@ -12,9 +12,9 @@ const dragOver = e => {
   if (internalDrag) return;
   e.preventDefault(); // firefox dont need this to access droped data!
   const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-  const Sel = getSelection();
-  Sel.removeAllRanges();
-  Sel.addRange(range);
+  const sel = getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
 };
 
 const drop = async e => {

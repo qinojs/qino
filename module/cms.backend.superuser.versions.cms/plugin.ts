@@ -43,14 +43,20 @@ async function render(node: Node): Promise<HtmlString> {
   for (const r of recent) {
     const anchor = await nodeAnchor(node, Number(r.page_id));
     const iso = new Date(Number(r.last) * 1000).toISOString();
-    recentParts.push(html`<tr><td>${anchor}<td><u2-time datetime="${iso}" type=relative></u2-time><td>${r.email ?? "guest"}`);
+    recentParts.push(html`<tr>
+      <td>${anchor}
+      <td><u2-time datetime="${iso}" type=relative></u2-time>
+      <td>${r.email ?? "guest"}`);
   }
   const recentBox = html.async`
 <div class=u2-card>
   <div class=-head>${app.t`Recently edited`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <thead><tr><th>${app.t`Node`}<th>${app.t`Edited`}<th>${app.t`By`}
+      <thead><tr>
+        <th>${app.t`Node`}
+        <th>${app.t`Edited`}
+        <th>${app.t`By`}
       <tbody>${recentParts.length ? html.join(recentParts) : html.async`<tr><td colspan=3>${app.t`No history yet`}`}
     </table>
   </div>

@@ -19,7 +19,7 @@ customElements.whenDefined('qino-cms').then(async () => {
                 Free images from:
                 <a href="https://pexels.com/" target=_blank><img src="https://images.pexels.com/lib/api/pexels.png" style="height:1.5em; margin-left:.5em" alt="pexels.com"></a>
             </h3>
-            <div class="-list"></div>
+            <div class=-list></div>
         </div>`
     ).firstChild;
     mainList.after(container);
@@ -35,7 +35,7 @@ customElements.whenDefined('qino-cms').then(async () => {
         if (hasPixabay && item.photographer === 'Pixabay') continue;
         const el = c1.dom.fragment(
           '<label data-type=url>'+
-                    '<input type="checkbox" style="position:absolute; top:.5rem; left:.5rem">'+
+                    '<input type=checkbox style="position:absolute; top:.5rem; left:.5rem">'+
                     '<div class=-title></div>'+
                 '</label>'
         ).firstChild;

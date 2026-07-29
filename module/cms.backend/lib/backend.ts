@@ -29,7 +29,7 @@ export async function checkInstalled(app: App): Promise<Node | undefined> {
       await page.changeGroup(3, 0);
       const c = await page.cont('1');
       await c.set("module", "cms.backend");
-      page.settings.childXML = '<page visible="1"></page>';
+      page.settings.childXML = '<page visible=1></page>';
       app.settings.cms.backend(String(page.id));
     }
     node = await cm.nodeByModule("cms.backend");
@@ -107,7 +107,7 @@ export async function breadcrumb(host: Node, nodeId: number, titles: Map<number,
     crumbs.push(html`<a href="${url}">${i === pageIdx ? html`<b>${title}</b>` : title}</a>`);
   }
   if (!crumbs.length) crumbs.push(html`<span>#${nodeId}</span>`);
-  return html.join(crumbs, ' <span class="-sep">›</span> ');
+  return html.join(crumbs, ' <span class=-sep>›</span> ');
 }
 
 async function nodeTitle(n: Node, cache: Map<number, string>): Promise<string> {

@@ -4,12 +4,16 @@ import type { Node } from "../cms/mod.ts";
 
 export async function backendDashboardWidget(app: App): Promise<string> {
   const row = await app.db.row`SELECT COUNT(*) events, SUM(CASE WHEN blocked THEN 1 ELSE 0 END) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event`.catch(() => null);
-  if (!row || !Number(row.events)) return `<div class="-body">${await app.t`No security events.`}</div>`;
+  if (!row || !Number(row.events)) return `<div class=-body>${await app.t`No security events.`}</div>`;
   const buckets = await app.db.query`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
-  return `<div class="-body">
+  return `<div class=-body>
     <b>${hee(row.events)}</b> ${await app.t`Events`}, <b>${hee(row.fresh ?? 0)}</b> ${await app.t`new`}, <b>${hee(row.blocked ?? 0)}</b> ${await app.t`blocked`}<br>
     <small>${await app.t`Last alarm:`} ${u2time(row.last)}</small>
-    ${buckets.length ? `<table class="u2-table">${buckets.map((r) => `<tr><td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.reason)}`).join("")}</table>` : ""}
+    ${buckets.length ? `<table class=u2-table>${buckets.map((r) => `<tr>
+      <td>${hee(r.score)}
+      <td>${hee(r.scope)}
+      <td><code>${hee(r.ident)}</code>
+      <td>${hee(r.reason)}`).join("")}</table>` : ""}
   </div>`;
 }
 
@@ -34,7 +38,7 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const stats: Record<string, unknown> = await db.row`SELECT COUNT(*) events, SUM(CASE WHEN blocked THEN 1 ELSE 0 END) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event` ?? {};
   const tab = String(ctx.req.query.tab ?? "live");
   return `<div>
-    <div class="u2-flex">
+    <div class=u2-flex>
       ${await statusBox(app, stats)}
       <div>
         ${tabs(ctx, tab)}
@@ -48,10 +52,10 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
 }
 
 async function statusBox(app: App, stats: Record<string, unknown>) {
-  return `<div class="u2-card -kpi"><div class="-head">${await app.t`Status`}</div><div class="-body">
+  return `<div class="u2-card -kpi"><div class=-head>${await app.t`Status`}</div><div class=-body>
     <b>${hee(stats.events ?? 0)}</b> ${await app.t`Events`}<br><b>${hee(stats.fresh ?? 0)}</b> ${await app.t`new`}<br><b>${hee(stats.blocked ?? 0)}</b> ${await app.t`Blocked`}<br>
-    <button data-action="clearEvents" u2-confirm>${await app.t`Clear events`}</button>
-    <button data-action="clearBuckets" u2-confirm>${await app.t`Clear buckets`}</button>
+    <button data-action=clearEvents u2-confirm>${await app.t`Clear events`}</button>
+    <button data-action=clearBuckets u2-confirm>${await app.t`Clear buckets`}</button>
   </div></div>`;
 }
 
@@ -63,17 +67,30 @@ function tabs(ctx: Ctx, active: string) {
 
 function settingsEditor(ctx: Ctx) {
   ctx.res.html.scripts.add(ctx.req.modulePath + "core/pub/js/SettingsEditor.mjs");
-  return `<div class="u2-card"><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
+  return `<div class=u2-card><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
 }
 
 async function bucketTable(app: App, rows: Record<string, unknown>[]) {
   const [tHead, tScore, tScope, tIdent, tCount, tLast, tReason, tRelease, tBlock] = await Promise.all([
     app.t`Suspicious buckets`, app.t`Score`, app.t`Scope`, app.t`Ident`, app.t`Count`, app.t`Last`, app.t`Reason`, app.t`release`, app.t`block`,
   ]);
-  return `<div class="u2-card -table"><div class="-head">${tHead}</div><table class="u2-table -Sticky">
-    <thead><tr><th>${tScore}<th>${tScope}<th>${tIdent}<th>${tCount}<th>${tLast}<th>${tReason}<th>
+  return `<div class="u2-card -table"><div class=-head>${tHead}</div><table class="u2-table -Sticky">
+    <thead><tr>
+      <th>${tScore}
+      <th>${tScope}
+      <th>${tIdent}
+      <th>${tCount}
+      <th>${tLast}
+      <th>${tReason}
+      <th>
     <tbody>${rows.map(r => `<tr class="${r.blocked?"-blocked":""}">
-      <td>${hee(r.score)}<td>${hee(r.scope)}<td><code>${hee(r.ident)}</code><td>${hee(r.count)}<td>${u2time(r.last_seen)}<td>${hee(r.reason)}<td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`).join("")}
+      <td>${hee(r.score)}
+      <td>${hee(r.scope)}
+      <td><code>${hee(r.ident)}</code>
+      <td>${hee(r.count)}
+      <td>${u2time(r.last_seen)}
+      <td>${hee(r.reason)}
+      <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`).join("")}
   </table></div>`;
 }
 
@@ -81,12 +98,29 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
   const [tHead, tTime, tEvent, tScore, tAffected, tAction, tReason, tRequest, tStatus] = await Promise.all([
     app.t`Alarms / Requests`, app.t`Time`, app.t`Event`, app.t`Score`, app.t`Affected`, app.t`Action`, app.t`Reason`, app.t`Request`, app.t`Status`,
   ]);
-  return `<div class="u2-card -table"><div class="-head">${tHead}</div>
+  return `<div class="u2-card -table"><div class=-head>${tHead}</div>
     ${await eventFilter(app, get)}
     <table class="u2-table -Sticky">
-      <thead><tr><th>${tTime}<th>${tEvent}<th>${tScore}<th>${tAffected}<th>${tAction}<th>${tReason}<th>${tRequest}<th>${tStatus}<th>
+      <thead><tr>
+        <th>${tTime}
+        <th>${tEvent}
+        <th>${tScore}
+        <th>${tAffected}
+        <th>${tAction}
+        <th>${tReason}
+        <th>${tRequest}
+        <th>${tStatus}
+        <th>
     <tbody>${rows.map(r => `<tr class="-${hee(r.prio)}">
-      <td>${u2time(r.time)}<td>${eventCell(r)}<td>${scoreCell(r)}<td>${bucketCell(r)}<td>${actionCell(r)}<td>${hee(r.reason)}<td>${requestCell(r)}<td>${stateCell(r)}<td>${eventActions(r)}`).join("")}
+      <td>${u2time(r.time)}
+      <td>${eventCell(r)}
+      <td>${scoreCell(r)}
+      <td>${bucketCell(r)}
+      <td>${actionCell(r)}
+      <td>${hee(r.reason)}
+      <td>${requestCell(r)}
+      <td>${stateCell(r)}
+      <td>${eventActions(r)}`).join("")}
   </table></div>`;
 }
 
@@ -129,21 +163,24 @@ function eventActions(r: Row) {
 function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key: string) {
   const u = ctx.req.url.toURL();
   const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return hee(u.search); };
-  return `<div class="u2-card -table -toplist"><div class="-head">${hee(title)}</div><table class="u2-table">
-    ${rows.map(r => `<tr><td>${hee(r.num)}<td><a href="${href(r[key])}"><code>${hee(r[key])}</code></a><td>${u2time(r.last)}`).join("")}
+  return `<div class="u2-card -table -toplist"><div class=-head>${hee(title)}</div><table class=u2-table>
+    ${rows.map(r => `<tr>
+      <td>${hee(r.num)}
+      <td><a href="${href(r[key])}"><code>${hee(r[key])}</code></a>
+      <td>${u2time(r.last)}`).join("")}
   </table></div>`;
 }
 
 async function eventFilter(app: App, get: Record<string, string>) {
-  return `<form class="u2-flex">
-    <input type="hidden" name="tab" value="live">
-    <input name="q" value="${hee(get.q)}" placeholder="${await app.t`IP, path, reason`}">
-    <select name="prio"><option value="">${await app.t`Severity`}${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
-    <select name="kind"><option value="">${await app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, kindLabels)}</select>
-    <select name="scope"><option value="">${await app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, scopeLabels)}</select>
-    <select name="blocked"><option value="">${await app.t`Action`}${opts(["blocked","delayed"], get.blocked, actionLabels)}</select>
-    <select name="state"><option value="">${await app.t`Status`}${opts(["new","seen","ignore"], get.state, stateLabels)}</select>
-    <input name="min" value="${hee(get.min)}" placeholder="${await app.t`min severity`}">
+  return `<form class=u2-flex>
+    <input type=hidden name=tab value=live>
+    <input name=q value="${hee(get.q)}" placeholder="${await app.t`IP, path, reason`}">
+    <select name=prio><option value="">${await app.t`Severity`}${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
+    <select name=kind><option value="">${await app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, kindLabels)}</select>
+    <select name=scope><option value="">${await app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, scopeLabels)}</select>
+    <select name=blocked><option value="">${await app.t`Action`}${opts(["blocked","delayed"], get.blocked, actionLabels)}</select>
+    <select name=state><option value="">${await app.t`Status`}${opts(["new","seen","ignore"], get.state, stateLabels)}</select>
+    <input name=min value="${hee(get.min)}" placeholder="${await app.t`min severity`}">
     <button>${await app.t`filter`}</button>
   </form>`;
 }
@@ -168,7 +205,7 @@ const stateLabels: Record<string, string> = { new: "new", seen: "seen", ignore: 
 const actionLabels: Record<string, string> = { blocked: "blocked", delayed: "delayed" };
 
 const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => vs.map(v => `<option value="${hee(v)}"${v===active?" selected":""}>${hee(labels[v] ?? v)}`).join("");
-const tag = (v: unknown) => `<span class="u2-badge">${hee(v)}</span>`;
+const tag = (v: unknown) => `<span class=u2-badge>${hee(v)}</span>`;
 const bytes = (n: unknown, name: string) => Number(n) ? name + " " + hee(humanBytes(Number(n))) : "";
 
 function humanBytes(n: number) {

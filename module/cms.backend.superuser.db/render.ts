@@ -40,8 +40,8 @@ export async function render(node: Node): Promise<HtmlString> {
 
   return html.async`<div>
   <div class=u2-card>
-    <div class="-head">DB Manager</div>
-    <nav class="-nav">${nav}</nav>
+    <div class=-head>DB Manager</div>
+    <nav class=-nav>${nav}</nav>
   </div>
   ${content}
 </div>`;

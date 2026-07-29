@@ -54,7 +54,7 @@ export async function renderModules(app: App, modules: Record<string, any>): Pro
       }`);
   });
 
-  if (!moduleRows.length) return html.async`<div class=u2-card><div class="-body">${t`No modules with dbSchema.`}</div></div>`;
+  if (!moduleRows.length) return html.async`<div class=u2-card><div class=-body>${t`No modules with dbSchema.`}</div></div>`;
 
   const moduleCount = Object.keys(index).length;
   const tableCount = Object.values(index).reduce((sum, tables) => sum + Object.keys(tables).length, 0);
@@ -62,7 +62,7 @@ export async function renderModules(app: App, modules: Record<string, any>): Pro
     sum + Object.values(tables).reduce((s, fields) => s + fields.length, 0), 0);
 
   return html.async`<div class="u2-card -full">
-    <div class="-head">${t`Modules with DB schema`} <small>${moduleCount} ${t`modules`} &middot; ${tableCount} ${tablesLabel} &middot; ${fieldCount} ${fieldsLabel}</small></div>
+    <div class=-head>${t`Modules with DB schema`} <small>${moduleCount} ${t`modules`} &middot; ${tableCount} ${tablesLabel} &middot; ${fieldCount} ${fieldsLabel}</small></div>
     <table class=u2-table>
       <thead>
         <tr>

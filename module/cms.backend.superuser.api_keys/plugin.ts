@@ -40,13 +40,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   }).join("\n");
 
   const empty = rows.length === 0
-    ? '<tr><td colspan="7" style="text-align:center;padding:1em">No API keys.'
+    ? '<tr><td colspan=7 style="text-align:center;padding:1em">No API keys.'
     : "";
 
-  return `<div class="u2-card">
-  <div class="-head">API keys (${rows.length})</div>
+  return `<div class=u2-card>
+  <div class=-head>API keys (${rows.length})</div>
   <div style="overflow:auto; padding:0">
-    <table class="u2-table">
+    <table class=u2-table>
       <thead><tr>
         <th>ID
         <th>User

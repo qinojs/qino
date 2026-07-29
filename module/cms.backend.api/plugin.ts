@@ -77,7 +77,7 @@ function schemaToFormFields(s: StandardSchema | undefined): string {
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name: k, required });
     const label = hee(k) + (required ? "" : "?");
     return `
-      <label class="-field">
+      <label class=-field>
         <span>
           ${label}
           <br>
@@ -101,7 +101,7 @@ function pathParamFields(params: PathParam[]): string {
     const jsonSchema = schema ? toJsonSchema(schema) : { type: "string" };
     const description = schema?.description;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name, required: true });
-    return `<label class="-field"><span>${hee(name)}</span><span>${inputHtml}</span></label>`;
+    return `<label class=-field><span>${hee(name)}</span><span>${inputHtml}</span></label>`;
   }).join("");
 }
 
@@ -117,9 +117,9 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
     <span style="width:5rem">
       <small class="u2-badge -method -${hee(r.method)}">${hee(r.method.toUpperCase())}</small>
     </span>
-    <code class="-path">${hee(r.path)}</code>
-    <small class="-desc">${hee(r.description)}</small>
-    <span class="-access" style="color:${hee(accessColor)}">${hee(r.accessLevel)}</span>
+    <code class=-path>${hee(r.path)}</code>
+    <small class=-desc>${hee(r.description)}</small>
+    <span class=-access style="color:${hee(accessColor)}">${hee(r.accessLevel)}</span>
   </h4>
   <div class="-body -route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
     <u2-tabs>
@@ -127,13 +127,13 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
       <div>
         <form class="-form u2-table" style="width:auto">
           ${hasForm ? `
-            ${r.pathParams.length ? `<div class="-section"><b>Path params</b>${paramForm}</div>` : ""}
-            ${inputForm           ? `<div class="-section"><b>Body</b>${inputForm}</div>` : ""}
-            ${queryForm           ? `<div class="-section"><b>Query</b>${queryForm}</div>` : ""}
+            ${r.pathParams.length ? `<div class=-section><b>Path params</b>${paramForm}</div>` : ""}
+            ${inputForm           ? `<div class=-section><b>Body</b>${inputForm}</div>` : ""}
+            ${queryForm           ? `<div class=-section><b>Query</b>${queryForm}</div>` : ""}
           ` : ""}
           <u2-buttongroup>
-            <button type="submit">Send</button>
-            <button type="button" data-check-access="${idx}">Check access</button>
+            <button type=submit>Send</button>
+            <button type=button data-check-access="${idx}">Check access</button>
           </u2-buttongroup>
         </form>
         <u2-code id="api-result-${idx}"></u2-code>
@@ -168,10 +168,10 @@ function render(): string {
   return `
 <div class=u2-card data-routes="${hee(routesJson)}" data-app-url="${hee(appURL)}">
   <div class="u2-flex -filter -head">
-    API <input type="search" placeholder="Filter routes…" id="api-search">
+    API <input type=search placeholder="Filter routes…" id=api-search>
   </div>
   <div>
-    <u2-accordion id="api-list">
+    <u2-accordion id=api-list>
       ${routesHtml}
     </u2-accordion>
   </div>

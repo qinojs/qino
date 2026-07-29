@@ -113,10 +113,11 @@ export const api: AptTree = {
         access: Access.USER,
         execute: async () => {
           const ctx = getCtx();
+          const db  = ctx.app.db;
           const { rpId, rpName } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const token     = await storeChallenge(ctx.app.db, challenge, ctx.userId, "register");
-          const usr       = await ctx.app.db.row`SELECT email, firstname, lastname FROM usr WHERE id = ${ctx.userId}`;
+          const token     = await storeChallenge(db, challenge, ctx.userId, "register");
+          const usr       = await db.row`SELECT email, firstname, lastname FROM usr WHERE id = ${ctx.userId}`;
           return {
             token,
             publicKey: {
@@ -277,10 +278,11 @@ export const api: AptTree = {
         access: Access.USER,
         execute: async () => {
           const ctx = getCtx();
+          const db  = ctx.app.db;
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const creds = await ctx.app.db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${ctx.userId}`;
-          const token = await storeChallenge(ctx.app.db, challenge, ctx.userId, "confirm");
+          const creds = await db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${ctx.userId}`;
+          const token = await storeChallenge(db, challenge, ctx.userId, "confirm");
           return {
             token,
             publicKey: {
@@ -301,7 +303,8 @@ export const api: AptTree = {
         input: assertionInput,
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
           const ctx    = getCtx();
-          const stored = await consumeChallenge(ctx.app.db, token, "confirm");
+          const db     = ctx.app.db;
+          const stored = await consumeChallenge(db, token, "confirm");
           if (!stored)                      return { ok: false, error: "challenge_expired" };
           if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
@@ -309,7 +312,7 @@ export const api: AptTree = {
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          await ctx.app.db.table("web_auth_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
+          await db.table("web_auth_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
           ctx.sess.data.web_auth_confirmed(unixTime());
           return { ok: true };
         },

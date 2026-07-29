@@ -46,7 +46,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
           <td>${field ? field : ""}
           <td>${badges[status]}`))}
       </table>`
-    : html`<div class="-body">Schema and DB match.</div>`;
+    : html`<div class=-body>Schema and DB match.</div>`;
 
   // --- schema from db ---
   const fromDb = await schemaFromDb((text: string) => db.query`${sql.raw(text)}`);
@@ -70,17 +70,17 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
 
   return html.async`
   <div class="u2-card -full">
-    <div class="-head">Diff (${rows.length})</div>
+    <div class=-head>Diff (${rows.length})</div>
     ${diffTable}
   </div>
   ${Object.keys(missingTables).length ? html.async`
   <div class="u2-card -full">
-    <div class="-head">${t`Missing tables as schema JSON`}</div>
-    <div class="-body"><textarea style="width:100%;height:18.75rem;font-family:monospace;font-size:.85em" readonly>${JSON.stringify({ properties: missingTables }, null, 2)}</textarea></div>
+    <div class=-head>${t`Missing tables as schema JSON`}</div>
+    <div class=-body><textarea style="width:100%;height:18.75rem;font-family:monospace;font-size:.85em" readonly>${JSON.stringify({ properties: missingTables }, null, 2)}</textarea></div>
   </div>` : ""}
   ${diffs.length ? html.async`
   <div class="u2-card -full">
-    <div class="-head">${t`Schema deviations from DB`} (${diffs.length})</div>
+    <div class=-head>${t`Schema deviations from DB`} (${diffs.length})</div>
     <table class=u2-table>
       <thead>
         <tr>

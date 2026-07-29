@@ -92,7 +92,7 @@ function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString> {
   const more = rows.length > MAX_ROWS ? html.async` · ${app.t`showing first`} ${MAX_ROWS}` : "";
 
   return html.async`<div class="u2-card -full -result">
-    <div class="-head">${rows.length} ${app.t`rows`} · ${ms.toFixed(1)} ms${more}</div>
+    <div class=-head>${rows.length} ${app.t`rows`} · ${ms.toFixed(1)} ms${more}</div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead><tr>${head}<tbody>${body}
@@ -162,8 +162,8 @@ function renderHelper(app: App, tables: Table[]): Promise<HtmlString> {
   }));
 
   return html.async`<div class="u2-card -full -helper">
-    <div class="-head">${app.t`Tables & fields`} (${tables.length})</div>
-    <div class="-body">
+    <div class=-head>${app.t`Tables & fields`} (${tables.length})</div>
+    <div class=-body>
       <input type=search class=-tsearch placeholder="${app.t`Filter`}…">
       <div class=-tables>${items}</div>
     </div>

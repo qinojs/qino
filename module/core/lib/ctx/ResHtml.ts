@@ -22,7 +22,7 @@ export class ResHtml {
   get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
   #renderHead(): string {
-    let ret = '<meta charset="utf-8">\n';
+    let ret = '<meta charset=utf-8>\n';
 
     for (const [name, value] of Object.entries(this.meta)) {
       if (value === "") continue;

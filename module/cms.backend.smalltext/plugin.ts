@@ -55,8 +55,8 @@ export async function table(node: Node, { vars }: { vars?: Record<string, unknow
       ${langTds}
       <td>${row.count}
       ${codeLogTd}
-      <td><button class=u2-unstyle data-action="translate_entry"><u2-ico icon=translate>↻</u2-ico></button>
-      <td><button class=u2-unstyle data-action="delete_entry"><u2-ico icon=delete>✕</u2-ico></button>
+      <td><button class=u2-unstyle data-action=translate_entry><u2-ico icon=translate>↻</u2-ico></button>
+      <td><button class=u2-unstyle data-action=delete_entry><u2-ico icon=delete>✕</u2-ico></button>
     `);
   }
 
@@ -103,7 +103,7 @@ async function render(node: Node): Promise<HtmlString> {
     <button data-action=translate_untranslated>${t`Translate missing`} (${missing})</button>
     <br>
   </div>
-  <div style="overflow:auto; padding:0; max-height:90vh" cms-part="table">
+  <div style="overflow:auto; padding:0; max-height:90vh" cms-part=table>
     ${await table(node)}
   </div>
 </div>`;
@@ -114,7 +114,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   const langs = app.languages.all;
   return html.async`<div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">
+<table class=u2-table style="white-space:nowrap">
   <tr><td>${t`Entries`}:<td>${db.one`SELECT count(*) FROM smalltext`}
   <tr><td>${t`Missing translations`}:<td>${db.one`SELECT count(*) FROM smalltext WHERE ${sql.join(langs.map(l => sql`COALESCE(${sql.id(l)}, '') = ''`), " OR ")}`}
 </table>

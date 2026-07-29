@@ -41,16 +41,16 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   }).join("\n");
 
   const empty = rows.length === 0
-    ? '<tr><td colspan="9" style="text-align:center;color:#888;padding:1em">No credentials registered.'
+    ? '<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.'
     : "";
 
   const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(not configured)";
   const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(not configured)";
 
-  return `<div class="u2-flex">
+  return `<div class=u2-flex>
 <div class=u2-card style="flex:0 1 24rem">
-  <div class="-head">Configuration</div>
-  <table class="u2-table">
+  <div class=-head>Configuration</div>
+  <table class=u2-table>
     <tr><th style="width:8em">Relying Party ID<td>${hee(rpId)}
     <tr><th>RP Name<td>${hee(rpName)}
   </table>
@@ -59,9 +59,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   </div>
 </div>
 <div class=u2-card style="flex:1">
-  <div class="-head">Registered passkeys (${rows.length})</div>
+  <div class=-head>Registered passkeys (${rows.length})</div>
   <div style="overflow:auto; padding:0">
-    <table class="u2-table">
+    <table class=u2-table>
       <thead><tr>
         <th>ID
         <th>User

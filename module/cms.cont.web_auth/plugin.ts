@@ -44,29 +44,29 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlS
 }
 
 function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, csrfToken: string): Promise<HtmlString> {
-  return html.async`<div class="web-auth-login" data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">
-  <input type="email" placeholder="${app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
-  <button data-action="login">${app.t`Sign in with passkey`}</button>
+  return html.async`<div class=web-auth-login data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">
+  <input type=email placeholder="${app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
+  <button data-action=login>${app.t`Sign in with passkey`}</button>
   ${showPw ? html.async`<details>
     <summary>${app.t`Sign in with password`}</summary>
-    <form method="post">
+    <form method=post>
       <input type=hidden name=csrfToken value="${csrfToken}">
       <table>
-        <tr><th>${app.t`E-Mail`}:<td><input name="email" type="email" required>
-        <tr><th>${app.t`Password`}:<td><input name="pw" type="password" required>
-        <tr><th><td><button name="core_login">${app.t`Sign in`}</button>
+        <tr><th>${app.t`E-Mail`}:<td><input name=email type=email required>
+        <tr><th>${app.t`Password`}:<td><input name=pw type=password required>
+        <tr><th><td><button name=core_login>${app.t`Sign in`}</button>
       </table>
     </form>
   </details>` : ""}
-  <output class="-msg"></output>
+  <output class=-msg></output>
 </div>`;
 }
 
 function renderManage(app: App, apiBase: string): Promise<HtmlString> {
-  return html.async`<div class="web-auth-manage" data-api-base="${apiBase}">
+  return html.async`<div class=web-auth-manage data-api-base="${apiBase}">
   <div data-list>${app.t`Loading…`}</div>
-  <input type="text" data-name placeholder="${app.t`Name for this authenticator`}">
-  <button data-action="register">${app.t`Add passkey`}</button>
-  <output class="-msg"></output>
+  <input type=text data-name placeholder="${app.t`Name for this authenticator`}">
+  <button data-action=register>${app.t`Add passkey`}</button>
+  <output class=-msg></output>
 </div>`;
 }

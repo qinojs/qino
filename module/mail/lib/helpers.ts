@@ -100,6 +100,18 @@ export function sha1(value: string): string {
 export const trackCert = (secret: string, trackId: number, url = ""): string =>
   sha1("mail1-track" + secret + trackId + "\n" + url).slice(0, 16);
 
+/** Rewrites an http(s) link to the click-tracking redirect; undefined for anything else. */
+export function trackURL(raw: string, base: string, secret: string, trackId: number): string | undefined {
+  try {
+    const target = new URL(raw, base);
+    if (!["http:", "https:"].includes(target.protocol)) return;
+    const url = new URL("mail-track", base);
+    url.searchParams.set("mail1tr", `${trackId}-${trackCert(secret, trackId, target.href)}`);
+    url.searchParams.set("url", target.href);
+    return url.href;
+  } catch { return; }
+}
+
 function pathAttachment(v: string, opts: Dict = {}): Dict {
   const filename = opts.name ?? opts.filename ?? basename(v);
   const contentType = opts.type ?? opts.contentType ?? typeByExtension(extname(v).replace(/^\./, "")) ?? "application/octet-stream";

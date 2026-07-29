@@ -1,7 +1,7 @@
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
 const sysURL = ctx.sysURL;
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 function panelRoot() {
   return document.querySelector('qino-cms')?.shadowRoot || document;
 }
@@ -72,20 +72,20 @@ panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [it
 
 el.querySelector('.-versionCompare').addEventListener('click', async ()=>{
   const { CmsVersComparer } = await import('./comparer.mjs');
-  CmsVersComparer.compare(Page,{
+  CmsVersComparer.compare(nodeId,{
     toSpace:0,
-    accept(){ publish(Page); },
+    accept(){ publish(nodeId); },
     acceptText:'Publish'
   });
 });
 el.querySelector('.-versionPublish').addEventListener('click',function(){
   const subPages = this.parentNode.querySelector('.-subPages').checked;
-  publish(Page, subPages);
+  publish(nodeId, subPages);
 });
 el.querySelector('.-versionUnPublish').addEventListener('click',function(){
   const subPages = this.parentNode.querySelector('.-subPages').checked;
   if (!confirm("Warning!\nReally overwrite the draft?")) return;
-  apt['cms.versions']['publish-node'].post({ pid: Page, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
+  apt['cms.versions']['publish-node'].post({ pid: nodeId, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
     location.href = location.href.replace(/#.*$/,'');
   });
 });
@@ -94,6 +94,6 @@ el.querySelector('.-versionUnPublish').addEventListener('click',function(){
 // Ask.on('complete', function(res) {
 //   if (!res || !res.cms_vers_changed) return;
 //   for (var pid in res.cms_vers_changed) {
-//     pid == Page && el.classList.add('-HasChanges');
+//     pid == nodeId && el.classList.add('-HasChanges');
 //   }
 // });

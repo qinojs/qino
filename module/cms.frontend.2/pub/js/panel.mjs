@@ -1,8 +1,9 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
 import { apt, t, ctx } from "../../../core/pub/js/qino.js";
+import { alert, confirm } from "@qino/u2/js/dialog/dialog.js";
 
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 
 const panelStyles = [
   import.meta.resolve("@qino/u2/css/norm/norm.css"),
@@ -76,7 +77,7 @@ const loadWidget = (widget, params, cb) => {
   import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
     params ||= {};
-    params.pid ||= cms.cont.active || Page; // neu
+    params.pid ||= cms.cont.active || nodeId; // neu
     apt['cms.frontend.2'].widget(widget).post({ params }).then((res) => {
       loading.done(widgetEl);
       setHtml(widgetEl, res);
@@ -102,7 +103,7 @@ function syncSidebar(value = sidebar.value) {
     el.classList.add("-open");
     const content = findEl(el, '> .-sidebar > [itemid="' + value + '"] > .-content');
     if (!content) return;
-    loadWidget(value, { pid: cms.cont.active || Page });
+    loadWidget(value, { pid: cms.cont.active || nodeId });
   } else {
     el.classList.remove("-open");
   }
@@ -112,14 +113,14 @@ sidebar.addEventListener("set", e => syncSidebar(e.value)); // load only on chan
 el.addEventListener("click", (e) => {
   const titelEl = e.target.closest(".-sidebar > .-item > .-title");
   if (!titelEl) return;
-  cms.cont.active = Page;
+  cms.cont.active = nodeId;
   sidebar.set(titelEl.closest("[itemid]").getAttribute("itemid"));
 });
 
 /* widgets */
 widgets.addEventListener("setIn", e => {
   if (e.target.parent !== widgets) return;
-  if (e.value) loadWidget(e.target.key, { pid: cms.cont.active || Page });
+  if (e.value) loadWidget(e.target.key, { pid: cms.cont.active || nodeId });
 });
 el.addEventListener("click", (e) => {
   if (e.button !== 0) return;
@@ -568,7 +569,7 @@ onEl(".more-manager", (el) => {
   findEl(el, ".-feedbackform").addEventListener("submit", (e) => {
     e.preventDefault();
     loadWidget("more", {
-      pid: Page,
+      pid: nodeId,
       msg: findEl(e.currentTarget, "[name=msg]").value,
       link: location.href,
     });

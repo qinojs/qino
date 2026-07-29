@@ -51,7 +51,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
       <td><a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base + 1)}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
-        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt="delete">`;
+        <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt=delete>`;
 
   const customFiles: HtmlString[] = [];
   for await (const { filePath } of walkDir(customPath)) {
@@ -71,7 +71,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
   let globalSettings: HtmlString | string = "";
   if (module && module in node.app.settings) {
     // SettingsEditor.mjs is loaded by panel.mjs
-    globalSettings = html`<div class="-widgetHead -open" tabindex="0"><span class=-title>Global Settings</span></div>
+    globalSettings = html`<div class="-widgetHead -open" tabindex=0><span class=-title>Global Settings</span></div>
     <div class=-content><settings-editor source="/api/core/settings/${module}"></settings-editor></div>`;
   }
 

@@ -31,7 +31,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
   const showContents = !!ctx.settings.cms.admin.showContents();
 
   const t = node.app.t;
-  return html.async`<div class="u2-card" style="flex:0 1 75rem">
+  return html.async`<div class=u2-card style="flex:0 1 75rem">
   <div class=-head>${t`Structure`}</div>
   <div class=-body>
     <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
@@ -62,7 +62,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const offline = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND ((online_start != 0 AND online_start > ${now}) OR (online_end != 0 AND online_end < ${now}))`);
   const hidden  = Number(await db.one`SELECT count(*) FROM page WHERE type='p' AND visible=${false}`);
   return html.async`<div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">
+<table class=u2-table style="white-space:nowrap">
   <tr><td>${t`Pages total`}:<td>${total}
   <tr><td>${t`Offline`}:<td>${offline}
   <tr><td>${t`Hidden`}:<td>${hidden}

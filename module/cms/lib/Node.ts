@@ -593,11 +593,8 @@ export class Node {
 
         // Apply this node's "subpage definition" (childXML) to the new page child; tolerate malformed user input
         if (vs.type === "p" && "childXML" in this.settings) {
-            try {
-                await page.fromXml(String(this.settings.childXML() ?? ""));
-            } catch (e) {
-                console.warn(`childXML of node ${this.id} could not be applied:`, e);
-            }
+            await page.fromXml(String(this.settings.childXML() ?? ""))
+                .catch(e => console.warn(`childXML of node ${this.id} could not be applied:`, e));
         }
 
         // Re-sort children so the new child gets a proper sort position

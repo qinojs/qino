@@ -83,7 +83,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   </form>`;
 
   const tools = `
-  <div class="-body">
+  <div class=-body>
     ${filterForm}
     <div>
       <button data-delete-matching u2-confirm="${await t`Really delete all matching entries?`}">${await t`Delete matching`}</button>
@@ -168,7 +168,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY ${sql.raw(orderSql)}`;
 
   const filtered = [vars.search, vars.source, vars.prio, vars.range].some(v => String(v ?? "").trim());
-  if (!rows.length) return `<div class="-body">${filtered ? await t`No matching entries` : await t`Great, no errors so far!`}</div>`;
+  if (!rows.length) return `<div class=-body>${filtered ? await t`No matching entries` : await t`Great, no errors so far!`}</div>`;
 
   const { editorLink } = makeFileHelper(ctx);
   const u = ctx.req.url.toURL();
@@ -206,7 +206,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       </div> oldies: ${numUns}
     </small>
   <td>
-    <a target="_blank" href="${hee(editorUrl)}">${hee(msg.slice(0, 300))}${msg.length > 300 ? "…" : ""}</a><br>
+    <a target=_blank href="${hee(editorUrl)}">${hee(msg.slice(0, 300))}${msg.length > 300 ? "…" : ""}</a><br>
     <small>${u2time(row.time)}</small>
     <div>${hee(row.usr_email)}</div>
   <td>
@@ -216,7 +216,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       data-file="${hee(row.file)}"
       data-line="${hee(row.line)}"
       data-col="${hee(row.col)}"
-      aria-label="Delete"><u2-ico icon=delete aria-hidden="true">✕</u2-ico></button>`;
+      aria-label=Delete><u2-ico icon=delete aria-hidden=true>✕</u2-ico></button>`;
   }
 
   return `
@@ -252,7 +252,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     const bt = row.backtrace ? JSON.parse(row.backtrace) : [];
     for (const item of bt) {
       btHtml += `<tr>
-  <td style="padding-right:1rem"><a href="${hee(editorLink(item.file ?? "", item.line, item.col))}" target="_blank">${hee(fileDisplay(item.file ?? ""))}</a>
+  <td style="padding-right:1rem"><a href="${hee(editorLink(item.file ?? "", item.line, item.col))}" target=_blank>${hee(fileDisplay(item.file ?? ""))}</a>
   <td style="padding-right:1rem">${hee(item.function)}
   <td>${hee(item.args ? JSON.stringify(item.args) : "")}`;
     }
@@ -265,13 +265,13 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(row.id)}'}}); this.disabled=true">delete</button>
   <td>
     <b>${hee(row.message)}</b><br>
-    <a href="${hee(row.request)}" target="_blank">${hee(row.request)}</a><br>
-    <a href="${hee(row.referer)}" target="_blank">${hee(row.referer)}</a><br>
+    <a href="${hee(row.request)}" target=_blank>${hee(row.request)}</a><br>
+    <a href="${hee(row.referer)}" target=_blank>${hee(row.referer)}</a><br>
     <small>${hee(row.browser)}</small>
     <br>${hee(row.ip)}
     <br>${hee(row.email)}
   <td>
-    <a href="${hee(eUrl)}" target="_blank" title="${hee(row.file)}" style="color:inherit; text-decoration:none">
+    <a href="${hee(eUrl)}" target=_blank title="${hee(row.file)}" style="color:inherit; text-decoration:none">
       ${row.sample ? `<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${hee(row.sample)}</pre>` : "edit File"}
     </a>
   <td>${bt.length ? `<table>${btHtml}</table>` : ""}`;
@@ -308,7 +308,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     const isLocal = localPath(item.file ?? "") !== null;
     const position = `<span style="opacity:.6">: ${hee(item.line)}${item.col ? " : " + hee(item.col) : ""}</span>`;
     const fileCell = isLocal
-      ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target="_blank">${
+      ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target=_blank>${
         hee(fileDisplay(item.file ?? ""))
       } ${position}</a>`
       : `${hee(item.file)} ${position}`;
@@ -348,7 +348,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
 <tr>
   <td>${u2time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(item.id)}
   <td>
-    <a href="${hee(item.url)}" target="_blank">${hee(item.url)}</a><br>
+    <a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br>
     <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
     ${errorLinks}
   <td><div style="max-width:37.5rem; overflow:auto">${hee(item.post)}</div>`;
@@ -363,7 +363,7 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
 
   const isLocalFile = localPath(error.file ?? "") !== null;
   const fileBlock = isLocalFile
-    ? `<a style="color:inherit; text-decoration:none" target="_blank" href="${hee(editorLink(error.file, error.line, error.col))}">
+    ? `<a style="color:inherit; text-decoration:none" target=_blank href="${hee(editorLink(error.file, error.line, error.col))}">
       <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(error.line)} column: ${hee(error.col)}
       ${error.sample ? `<pre style="box-shadow:0 0 .625rem; padding:.625rem">${hee(error.sample)}</pre>` : ""}
     </a>`
@@ -371,17 +371,17 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
     ${error.sample ? `<pre style="box-shadow:0 0 .625rem; padding:.625rem">${hee(error.sample)}</pre>` : ""}`;
 
   return `
-<div class="u2-flex" style="font-size:.95em">
-  <div class="u2-card" style="overflow:auto; width:auto; flex:1 1 20rem">
-    <div class="-head">${await t`Error`}</div>
-    <div class="-body">
+<div class=u2-flex style="font-size:.95em">
+  <div class=u2-card style="overflow:auto; width:auto; flex:1 1 20rem">
+    <div class=-head>${await t`Error`}</div>
+    <div class=-body>
       <p>
         <span style="color:var(--red)">${hee(error.source)} ${hee(error.prio)}:</span>
         ${hee(error.message)}
       </p>
       ${fileBlock}
     </div>
-    <table class="u2-table">
+    <table class=u2-table>
       <tr><th>${await t`Id`}<td>${error.id}
       <tr><th>${await t`Request`}<td>
         <a href="${hee(error.request)}">${hee(error.request)}</a><br>
@@ -390,32 +390,38 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
       <tr><th>${await t`Time`}<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
       <tr><th>${await t`IP`}<td>${hee(error.ip)}
     </table>
-    <div class="-body">
+    <div class=-body>
       ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
       <button onclick="cmsApi(${node.id},{delete:{id:'${hee(error.id)}'}}); this.disabled=true">delete</button>
     </div>
   </div>
 
-  <div class="u2-card" style="overflow:auto;">
-    <div class="-head">${await t`Backtrace`}</div>
-    <table class="u2-table">
-      <thead><tr><th>${await t`File`}<th>${await t`Function`}<th>${await t`Arguments`}
+  <div class=u2-card style="overflow:auto;">
+    <div class=-head>${await t`Backtrace`}</div>
+    <table class=u2-table>
+      <thead><tr>
+        <th>${await t`File`}
+        <th>${await t`Function`}
+        <th>${await t`Arguments`}
       <tbody>${btHtml}
     </table>
   </div>
 
-  <div class="u2-card" style="overflow:auto;">
-    <div class="-head">${await t`User`}</div>
-    <div class="-body">
+  <div class=u2-card style="overflow:auto;">
+    <div class=-head>${await t`User`}</div>
+    <div class=-body>
       ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : `(${await t`no user`})`}
     </div>
   </div>
 
-  <div class="u2-card" style="overflow:auto;">
-    <div class="-head">${await t`History`}</div>
-    <div class="-body" style="flex-grow:0">${await t`History of:`} ${historyLinks}</div>
-    <table class="u2-table">
-      <thead><tr><th>${await t`Time / Session`}<th>${await t`URL / Referer`}<th>${await t`POST`}
+  <div class=u2-card style="overflow:auto;">
+    <div class=-head>${await t`History`}</div>
+    <div class=-body style="flex-grow:0">${await t`History of:`} ${historyLinks}</div>
+    <table class=u2-table>
+      <thead><tr>
+        <th>${await t`Time / Session`}
+        <th>${await t`URL / Referer`}
+        <th>${await t`POST`}
       <tbody>${historyRows}
     </table>
   </div>
@@ -456,8 +462,12 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   }
 
   return `<div style="overflow:auto; padding:0">
-<table class="u2-table" style="width:100%">
-  <thead><tr><th>Prio<th>Source<th>Message<th>Anzahl
+<table class=u2-table style="width:100%">
+  <thead><tr>
+    <th>Prio
+    <th>Source
+    <th>Message
+    <th>Count
   <tbody>${tableRows}
 </table></div>`;
 }

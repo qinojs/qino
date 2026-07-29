@@ -26,19 +26,19 @@ async function mediaView(f: DbFile): Promise<HtmlString | string> {
   const url = await f.url();
   let inner: HtmlString | string = "";
   if (IMG.has(ext) && await FileTransformer.capabilities.magick)
-    inner = html`<img src="${url}" class="-preview-img" alt="">`;
+    inner = html`<img src="${url}" class=-preview-img alt="">`;
   else if (VID.has(ext))
     inner = html`<video src="${url}" controls style="max-width:100%"></video>`;
   else if (AUD.has(ext))
     inner = html`<audio src="${url}" controls></audio>`;
   else if (ext === "pdf")
     inner = html`<iframe src="${url}" style="width:100%;height:37.5rem;border:0"></iframe>`;
-  return inner ? html`<div class="u2-card" style="flex:0 1 auto"><div class="-body">${inner}</div></div>` : "";
+  return inner ? html`<div class=u2-card style="flex:0 1 auto"><div class=-body>${inner}</div></div>` : "";
 }
 
 async function textView(f: DbFile): Promise<HtmlString | string> {
   if (!TXT.has(f.extension)) return "";
-  return html`<div class="u2-card" style="flex:0 1 auto"><div class="-body"><u2-code trim><textarea>${await
+  return html`<div class=u2-card style="flex:0 1 auto"><div class=-body><u2-code trim><textarea>${await
     f.contents()}</textarea></u2-code></div></div>`;
 }
 
@@ -96,7 +96,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     u.searchParams.set("id", String(row.id));
     const cells = html.join(children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻")));
     trs.push(html.async`<tr u2-href>
-  <td class="-thumb">${mediaPreview(f, !!exists)}
+  <td class=-thumb>${mediaPreview(f, !!exists)}
   <td>${row.id}
   <td><a href="${u.search}">${row.name}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
@@ -106,12 +106,21 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>
-    <button data-delete="${row.id}" class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
+    <button data-delete="${row.id}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
   }
 
   return html.async`
 <caption>${app.t`Total`}: ${rows.length}</caption>
-<thead><tr><th>${app.t`File`}<th>${app.t`ID`}<th>${app.t`Name`}<th>${app.t`Size`}${relHeaders}<th>${app.t`Created`}<th>${app.t`Changed`}<th>${app.t`Used`}<th>${app.t`Pub`}<th>
+<thead><tr>
+  <th>${app.t`File`}
+  <th>${app.t`ID`}
+  <th>${app.t`Name`}
+  <th>${app.t`Size`}${relHeaders}
+  <th>${app.t`Created`}
+  <th>${app.t`Changed`}
+  <th>${app.t`Used`}
+  <th>${app.t`Pub`}
+  <th>
 <tbody>${html.join(await Promise.all(trs))}`;
 }
 
@@ -151,17 +160,17 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const orderOpts = html.join(ORDERS.map(o => html`<option>${o}`));
 
   return html.async`
-<div class="u2-flex">
+<div class=u2-flex>
   <div class="u2-card -sidebar">
-    <div class="-head">${app.t`Filter`}</div>
-    <div class="-body">
+    <div class=-head>${app.t`Filter`}</div>
+    <div class=-body>
       <form data-filter>
         <label>${app.t`Search`}<br><input name=search></label><br><br>
         <label>${app.t`Order`}<br><select name=order>${orderOpts}</select></label>
       </form>
     </div>
-    <div class="-head">${app.t`Actions`}</div>
-    <div class="-body">
+    <div class=-head>${app.t`Actions`}</div>
+    <div class=-body>
       ${message ? html`<p>${message}</p>` : ""}
       <button data-reload='{"do":"delete_unlinked"}'>${app.t`Delete files without DB entry`}</button><br>
       <small>${app.t`Files in version history will not be deleted.`}</small><br><br>
@@ -201,37 +210,43 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const text = exists ? await textView(f) : "";
 
   return html.async`
-<div class="u2-flex">
+<div class=u2-flex>
 
   <div class=u2-flex style="flex-direction:column; ">
-    <div class="u2-card" style="flex:0 0 auto" data-file-id="${row.id}">
-      <div class="-head">${row.name}</div>
-      ${!exists ? html.async`<div class="-body" style="color:red">${app.t`file missing on disk!`}</div>` : ""}
+    <div class=u2-card style="flex:0 0 auto" data-file-id="${row.id}">
+      <div class=-head>${row.name}</div>
+      ${!exists ? html.async`<div class=-body style="color:red">${app.t`file missing on disk!`}</div>` : ""}
       <table class="u2-table -Fields">
         <tr><th>${app.t`ID`}<td>${row.id}
         <tr>
           <th>${app.t`Name`}
-          <td><input value="${row.name}" data-set="set_name">
+          <td><input value="${row.name}" data-set=set_name>
         <tr>
           <th>${app.t`Public`}
-          <td><input type=checkbox ${row.access?"checked":""} data-set="set_public">
+          <td><input type=checkbox ${row.access?"checked":""} data-set=set_public>
         <tr>
           <th>${app.t`Mime`}
-          <td><input value="${row.mime}" data-set="set_mime">
+          <td><input value="${row.mime}" data-set=set_mime>
         <tr><th>${app.t`Size`}<td><u2-bytes>${row.size}</u2-bytes> <small>(${Number(row.size).toLocaleString()} bytes)</small>
         <tr><th>${app.t`MD5`}<td><code>${row.md5}</code>
         <tr><th>${app.t`URL`}<td><a href="${f.url()}" target=_blank data-url>${app.t`open`}</a> <a href="${f.url({dl:true})}" download>${app.t`download`}</a> <button data-copy-url>${app.t`copy url`}</button>
       </table>
     </div>
 
-    <div class="u2-card" style="flex:0 0 auto">
+    <div class=u2-card style="flex:0 0 auto">
       <div class=-head>${app.t`Duplicates`}</div>
       ${dupes.length
-          ? html.async`<table class=u2-table><tr><th>${app.t`ID`}<th>${app.t`Name`}${html.join(dupes.map((d) => { dupeU.searchParams.set("id", String(d.id)); return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`; }))}</table>`
+          ? html.async`<table class=u2-table>
+            <tr><th>${app.t`ID`}<th>${app.t`Name`}
+            ${html.join(dupes.map((d) => {
+              dupeU.searchParams.set("id", String(d.id));
+              return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`;
+            }))}
+          </table>`
           : html.async`<div class=-body>${app.t`none`}</div>`}
     </div>
 
-    <div class="u2-card" style="flex:0 0 auto">
+    <div class=u2-card style="flex:0 0 auto">
       <div class=-head>${app.t`Links`}</div>
       ${linksHtml}
     </div>

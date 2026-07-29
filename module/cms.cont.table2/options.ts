@@ -24,10 +24,10 @@ export default function (node: Node, _vars: unknown): Promise<HtmlString> {
   }
 
   return html.async`
-<input type=number value="${rows}" min=1 max=300 data-node="${node.id}" data-key="rows" data-table2-setting style="width:5em;">
+<input type=number value="${rows}" min=1 max=300 data-node="${node.id}" data-key=rows data-table2-setting style="width:5em;">
 ${t`Rows (max: 300)`}<br>
 <br>
-<input type=number value="${cols}" min=1 max=15 data-node="${node.id}" data-key="cols" data-table2-setting data-reload-options style="width:5em;">
+<input type=number value="${cols}" min=1 max=15 data-node="${node.id}" data-key=cols data-table2-setting data-reload-options style="width:5em;">
 ${t`Columns (max: 15)`}<br>
 
 <br>

@@ -19,8 +19,8 @@ async function render(node: Node): Promise<HtmlString> {
     <div style="background:${color}">
       <h2>${cms.text(node, "title", { tag: "span", initial: { de: "Titel", en: "Title" } })}</h2>
       ${image && cms_image2(image, { width: 110, height: 110, fit: "contain" })}
-      <div class="-text">${cms.text(node, "main", { initial: { de: "Text hier...", en: "Text here..." } })}</div>
-      <div cms-part="teaser">${teaser(node)}</div>
+      <div class=-text>${cms.text(node, "main", { initial: { de: "Text hier...", en: "Text here..." } })}</div>
+      <div cms-part=teaser>${teaser(node)}</div>
     </div>`;
 }
 

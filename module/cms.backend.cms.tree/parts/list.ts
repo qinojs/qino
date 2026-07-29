@@ -69,7 +69,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
         titleCell = `<input value="${titleText}" ${inputStyle} ${edit}>`;
       }
 
-      const linkCell = `<a style="vertical-align:middle" href="${hee(await subPage.url())}" title="open"><u2-ico icon=open_in_new>↗</u2-ico></a>`;
+      const linkCell = `<a style="vertical-align:middle" href="${hee(await subPage.url())}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`;
 
       out += `
 <tr${isCont ? ' class=-isCont' : ''}>

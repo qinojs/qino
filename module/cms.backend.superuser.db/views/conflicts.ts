@@ -22,7 +22,7 @@ export function renderConflicts(app: App, modules: Record<string, any>): Promise
   });
 
   return html.async`<div class="u2-card -full">
-    <div class="-head">${t`Schema conflicts`} (${conflicts.length})</div>
+    <div class=-head>${t`Schema conflicts`} (${conflicts.length})</div>
     <table class="u2-table -conflicts">
       <thead>
         <tr>

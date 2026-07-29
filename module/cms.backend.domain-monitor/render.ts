@@ -293,7 +293,7 @@ function smtpCell(row: DomainRow): HtmlString {
     no(row.mail_tls_valid) ? "mail certificate invalid" : "",
     dane ? "DANE published" : "",
   ].filter(Boolean).join(", ");
-  return html`${dot(level, title)}${dane ? html` <small title="DANE">DANE</small>` : ""}`;
+  return html`${dot(level, title)}${dane ? html` <small title=DANE>DANE</small>` : ""}`;
 }
 
 function frequencySelect(row: DomainRow): HtmlString {
@@ -389,7 +389,7 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
   });
 
   return html`<div class="u2-flex -detail">
-    <div class="u2-card">
+    <div class=u2-card>
       <div class=-head><a href="${back.search || "?"}">← Domains</a> · ${domain}</div>
       <div class=-body>
         <p>${dot(current.level, current.title)} <b>${current.title}</b></p>
@@ -500,21 +500,21 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const skipped = vars.add ? await addDomains(app, String(vars.domains ?? "")) : [];
   const rows = await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`;
   const body = html.join(rows.map(rowHtml), "\n");
-  const empty = html`<tr><td colspan="27" class=-empty>No domains yet.`;
+  const empty = html`<tr><td colspan=27 class=-empty>No domains yet.`;
 
   // Which groups the user folded away, kept per user rather than per browser. Mail is off to begin
   // with — it is the most specialised block and the table is wide enough without it.
   const stored = String(ctx.settings["cms.backend.domain-monitor"].cols() ?? "mail").split(",");
   const hidden = groups.filter((group) => stored.includes(group));
 
-  return html`<div class="u2-card">
-  <div class="-head">Domain monitor (<span data-monitor-count>${rows.length}</span>)</div>
-  <div class="-body" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center">
+  return html`<div class=u2-card>
+  <div class=-head>Domain monitor (<span data-monitor-count>${rows.length}</span>)</div>
+  <div class=-body style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center">
     <input type=search placeholder="search…" data-monitor-search style="width:15rem; max-width:100%">
     <select data-monitor-filter>
       <option value="">all</option>
-      <option value="ok">ok</option>
-      <option value="problem">problems</option>
+      <option value=ok>ok</option>
+      <option value=problem>problems</option>
     </select>
     <span data-bulk hidden><b data-bulk-count>0</b> selected ·
       <select data-bulk-frequency title="Set automatic checks for the selected domains">
@@ -564,7 +564,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
       <tbody data-monitor-list>${rows.length ? body : empty}
     </table>
   </u2-table>
-  <div class="-body" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:end">
+  <div class=-body style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:end">
     <label style="flex:1">Add domains <small>(one per line)</small><br><textarea name=domains rows=3 placeholder="example.com&#10;sub.example.org" style="width:100%"></textarea>${
       skipped.length ? html`<small>Skipped, no valid domain: ${skipped.join(", ")}</small>` : ""
     }</label>

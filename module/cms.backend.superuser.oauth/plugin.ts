@@ -41,9 +41,9 @@ function providerForm(csrf: string, selfBase: string, p: any = {}): string {
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
   const text = (k: string, ph = "") => `<input name=${k} value="${v(k)}" placeholder="${hee(ph)}">`;
-  return `<form method=post class="u2-card">
-  <div class="-head">${isNew ? "Add provider" : v("name")}</div>
-  <div class="-body">
+  return `<form method=post class=u2-card>
+  <div class=-head>${isNew ? "Add provider" : v("name")}</div>
+  <div class=-body>
     <input type=hidden name=csrfToken value="${hee(csrf)}">
     <input type=hidden name=id value="${v("id")}">
     <u2-fields>

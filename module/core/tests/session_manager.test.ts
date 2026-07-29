@@ -24,11 +24,11 @@ function fakeDb() {
       return {
         insert(values: Record<string, unknown>) {
           calls.push([`INSERT INTO ${name}`, [values]]);
-          return String(insertId++);
+          return Promise.resolve(String(insertId++));
         },
         update(id: unknown, values: Record<string, unknown>) {
           calls.push([`UPDATE ${name}`, [id, values]]);
-          return String(id);
+          return Promise.resolve(String(id));
         },
       };
     },

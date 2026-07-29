@@ -13,7 +13,7 @@ function keyBadge(key: string): HtmlString {
 function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<HtmlString> | HtmlString {
   if (!inSchema)   return html.async`<small class=u2-badge style="background:var(--red)">${app.t`no schema`}</small>`;
   if (uncovered)   return html.async`<small class=u2-badge style="background:var(--orange)">${uncovered} ${app.t`without schema`}</small>`;
-  return html`<u2-ico inline icon=check_circle aria-label="ok" style="color:var(--green)">✓</u2-ico>`;
+  return html`<u2-ico inline icon=check_circle aria-label=ok style="color:var(--green)">✓</u2-ico>`;
 }
 
 export function renderTables(app: App, db: any, modules: Record<string, any>, table: string): Promise<HtmlString> {
@@ -55,8 +55,8 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
   );
 
   return html.async`<div class="u2-card -full">
-    <div class="-head">${t`Tables`} (${tables.length})</div>
-    <div class="-body"><input type=search data-table-search placeholder="${t`Search`}..." style="width:18.75rem;max-width:100%"></div>
+    <div class=-head>${t`Tables`} (${tables.length})</div>
+    <div class=-body><input type=search data-table-search placeholder="${t`Search`}..." style="width:18.75rem;max-width:100%"></div>
     <u2-table style="padding:0">
       <table class=u2-table>
         <thead>
@@ -76,7 +76,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
 async function tableDetail(app: App, db: any, modules: Record<string, any>, tableName: string): Promise<HtmlString> {
   const t = app.t;
   const table = db.tables?.[tableName];
-  if (!table) return html.async`<div class=u2-card><div class="-body">${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;
+  if (!table) return html.async`<div class=u2-card><div class=-body>${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;
 
   const fields = await table.init();
   const schemaFields: Record<string, any> = table.schema?.additionalProperties?.properties ?? {};
@@ -110,7 +110,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
 
   const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables"); u.searchParams.delete("table");
   return html.async`<div class="u2-card -full">
-    <div class="-head"><a href="${u.search}">← ${t`Tables`}</a> &nbsp; ${tableName} ${meta}</div>
+    <div class=-head><a href="${u.search}">← ${t`Tables`}</a> &nbsp; ${tableName} ${meta}</div>
     <table class=u2-table>
       <thead>
         <tr>

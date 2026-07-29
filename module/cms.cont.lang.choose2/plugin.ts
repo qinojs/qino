@@ -75,7 +75,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const filteredItems = items.filter(Boolean).join("");
   if (!filteredItems) return "<span></span>";
 
-  return `<nav aria-label="Languages"><ul>${filteredItems}</ul></nav>`;
+  return `<nav aria-label=Languages><ul>${filteredItems}</ul></nav>`;
 }
 
 export const cms = {

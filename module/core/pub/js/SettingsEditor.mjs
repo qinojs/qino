@@ -1,4 +1,5 @@
 import { apt } from "./qino.js";
+import { confirm } from "@qino/u2/js/dialog/dialog.js";
 
 const opened = new Set();
 export const itemJs = import("@qino/item/item.js");
@@ -38,7 +39,7 @@ async function renderItems(item) {
       ? `<a class="toggle -${isOpen ? "minus" : "plus"}"></a>`
       : "<a class=toggle></a>";
     const input = objectNode
-      ? `<input type="hidden" name="${eid}">`
+      ? `<input type=hidden name="${eid}">`
       : (await itemJsHtmlRenderer)(cs, { value: child.get({ silent: true }), name: id });
     const sub = objectNode && isOpen ? await renderItems(child) : "";
     html += `<li><span class=-row data-path="${eid}">` +
@@ -140,7 +141,7 @@ class SettingsEditorElement extends HTMLElement {
       await this.#render();
       return;
     }
-    if (!confirm("Really delete this setting?")) return;
+    if (!await confirm("Really delete this setting?")) return;
     const path = JSON.parse(id);
     try {
       await apiWrite("DELETE", this.#source, path);

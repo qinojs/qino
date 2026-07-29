@@ -248,7 +248,7 @@ async function renderBinary(bin: Binary, platform: Platform, root: boolean): Pro
       <td style="white-space:nowrap">${PLATFORM_LABELS[p] || p}
       <td>
         <code>${displayCmd}</code>
-        <button class=u2-unstyle data-copy="${displayCmd}" title="Copy"><u2-ico icon=content_copy>⧉</u2-ico></button>${installBtn}`;
+        <button class=u2-unstyle data-copy="${displayCmd}" title=Copy><u2-ico icon=content_copy>⧉</u2-ico></button>${installBtn}`;
   }));
 }
 
@@ -259,20 +259,20 @@ async function renderCache(app: App): Promise<HtmlString> {
   const dir = cacheDir(app);
   const stats = await cacheStats(dir);
   return html.async`
-<div class="u2-card">
-  <div class="-head">${t`Transform Cache`}</div>
+<div class=u2-card>
+  <div class=-head>${t`Transform Cache`}</div>
   <table class="u2-table -Fields">
     <tr><th>${t`Directory`}<td><code>${dir}</code>
     <tr><th>${t`Files`}<td>${stats.count}
     <tr><th>${t`Size`}<td>${fmtBytes(stats.size)}
   </table>
-  <div class="-body">
+  <div class=-body>
     <u2-menubutton>
       <button><u2-ico icon=delete_sweep>✕</u2-ico> ${t`Clear cache`} ▾</button>
       <menu>
-        <li><button data-clear-cache="7" u2-confirm>${t`Older than 1 week`}</button>
-        <li><button data-clear-cache="30" u2-confirm>${t`Older than 1 month`}</button>
-        <li><button data-clear-cache="true" u2-confirm>${t`All`}</button>
+        <li><button data-clear-cache=7 u2-confirm>${t`Older than 1 week`}</button>
+        <li><button data-clear-cache=30 u2-confirm>${t`Older than 1 month`}</button>
+        <li><button data-clear-cache=true u2-confirm>${t`All`}</button>
       </menu>
     </u2-menubutton>
   </div>
@@ -305,13 +305,13 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   return html.async`
 <div>
-  <div class="u2-flex">
+  <div class=u2-flex>
 
-    <div cms-part="cache">${renderCache(node.app)}</div>
+    <div cms-part=cache>${renderCache(node.app)}</div>
 
-    <div class="u2-card">
-      <div class="-head">${t`Transform Binaries`}</div>
-      <div class="-body">${rootHint}</div>
+    <div class=u2-card>
+      <div class=-head>${t`Transform Binaries`}</div>
+      <div class=-body>${rootHint}</div>
       <table class="u2-table -transform-table">
         <thead>
           <tr>

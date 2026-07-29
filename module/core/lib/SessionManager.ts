@@ -30,10 +30,9 @@ export class Session {
   /** Debounced per-session write of last access time and current user. */
   touch(userId = 0): void {
     clearTimeout(this.#touchTimer);
-    this.#touchTimer = setTimeout(async () => {
-      try {
-        await this.#db.table("sess").update(this.id, { access: unixTime(), usr_id: userId || null });
-      } catch (e) { console.error("session touch error:", e); }
+    this.#touchTimer = setTimeout(() => {
+      this.#db.table("sess").update(this.id, { access: unixTime(), usr_id: userId || null })
+        .catch(e => console.error("session touch error:", e));
     }, 50);
   }
 }

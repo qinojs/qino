@@ -31,7 +31,7 @@ async function render(node: Node): Promise<string> {
 <div class=u2-card>
   <div class=-head>${await t`System info`}</div>
   <div class=-body style="padding:0">
-    <table class="u2-table" style="white-space:nowrap">
+    <table class=u2-table style="white-space:nowrap">
       <tr><td>${await t`Deno Version`}:<td>${hee(Deno.version.deno)}
       <tr><td>${await t`PID`}:<td>${hee(Deno.pid)}
       <tr><td>${await t`App Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
@@ -76,7 +76,7 @@ async function render(node: Node): Promise<string> {
           `<li><button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}">${hee(cap(solution))}</button>`
         ).join("");
         solutionsHtml = `<form><u2-menubutton>
-  <button type="button">solve ▾</button>
+  <button type=button>solve ▾</button>
   <menu>${menuItems}</menu>
 </u2-menubutton></form>`;
       }
@@ -89,10 +89,10 @@ async function render(node: Node): Promise<string> {
 </div>`);
     }
     if (!items.length) continue;
-    healthHtml += `<div class="u2-card">
-  <div class="-head">${hee(cap(type))}</div>
-  <div class="-body" style="max-height:43.75rem;overflow:auto">
-    <div class="healty_container">${items.join("")}</div>
+    healthHtml += `<div class=u2-card>
+  <div class=-head>${hee(cap(type))}</div>
+  <div class=-body style="max-height:43.75rem;overflow:auto">
+    <div class=healty_container>${items.join("")}</div>
   </div>
 </div>`;
   }
@@ -106,26 +106,35 @@ async function render(node: Node): Promise<string> {
   const dbRaw   = await db.one`${sql.raw(dbUtcNowSql(db.dialect))}`;
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
   const localesBox = `
-<div class="u2-card">
-  <div class="-head">${await t`Time`}</div>
-  <div class="-body" style="padding:0">
+<div class=u2-card>
+  <div class=-head>${await t`Time`}</div>
+  <div class=-body style="padding:0">
     <table class=u2-table>
-      <tr><td>${await t`OS`}<td>${osIso.slice(0, 19).replace("T", " ")}<td>UTC+0
-      <tr><td>${await t`DB`}<td>${dbIso.slice(0, 19).replace("T", " ")}<td>UTC+0
-      <tr><td>${await t`Browser`}<td class="-browser-time"><td class="-browser-tz">
+      <tr>
+        <td>${await t`OS`}
+        <td>${osIso.slice(0, 19).replace("T", " ")}
+        <td>UTC+0
+      <tr>
+        <td>${await t`DB`}
+        <td>${dbIso.slice(0, 19).replace("T", " ")}
+        <td>UTC+0
+      <tr>
+        <td>${await t`Browser`}
+        <td class=-browser-time>
+        <td class=-browser-tz>
     </table>
   </div>
 </div>`;
 
   // ── storage ───────────────────────────────────────────────────────────
   const statsBox = `
-<div class="u2-card" style="flex-grow:0">
-  <div class="-head">Speicher</div>
+<div class=u2-card style="flex-grow:0">
+  <div class=-head>Speicher</div>
   ${await statistic(node)}
 </div>`;
 
   return `
-<div class="u2-flex">
+<div class=u2-flex>
   <style>
     .u2-card {
       min-width:25rem;
@@ -189,12 +198,12 @@ export async function backendDashboardWidget(app: App): Promise<string> {
 
   return `<div class=-body>${statusHtml}</div>
 <div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">` + await systemInfoRows(app) + `</table>
-<table class="u2-table" style="white-space:nowrap;margin-top:1px">
+<table class=u2-table style="white-space:nowrap">` + await systemInfoRows(app) + `</table>
+<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${await t`Top DB tables`}<th style="text-align:right">${await t`Size`}
   <tbody>${dbRows}
 </table>
-<table class="u2-table" style="white-space:nowrap;margin-top:1px">
+<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <tr><td>${await t`Cache files`}:<td>${hee(cacheCount)}
   <tr><td>${await t`Cache size`}:<td><u2-bytes>${cacheSize}</u2-bytes>
 </table>
@@ -224,16 +233,16 @@ function dbUtcNowSql(dialect: string): string {
 }
 
 const kvTable = (rows: [string, string][]) =>
-  `<table class="u2-table"><tbody>${rows.map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(v)}`).join("")}</table>`;
+  `<table class=u2-table><tbody>${rows.map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(v)}`).join("")}</table>`;
 
 // Summary card with a "Details" button that lazy-loads the dialect-specific `db-details` part.
 function dbCard(title: string, summaryRows: string): string {
   return `
-<div class="u2-card">
-  <div class="-head">${hee(title)}</div>
-  <table class="u2-table" style="width:auto"><tbody>${summaryRows}</table>
-  <div class="-body" cms-part="db-details" style="max-width:30rem; max-height:30rem; overflow:auto">
-    <button data-load-part="db-details">Details</button>
+<div class=u2-card>
+  <div class=-head>${hee(title)}</div>
+  <table class=u2-table style="width:auto"><tbody>${summaryRows}</table>
+  <div class=-body cms-part=db-details style="max-width:30rem; max-height:30rem; overflow:auto">
+    <button data-load-part=db-details>Details</button>
   </div>
 </div>`;
 }

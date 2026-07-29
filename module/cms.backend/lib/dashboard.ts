@@ -19,13 +19,13 @@ export async function renderDashboard(node: Node): Promise<string> {
       if (!body) continue;
       const url = hee(await child.url());
       const title = hee(await (await child.title()).string());
-      widgets.push(`<div class=u2-card><a class="-head" href="${url}">${title}</a>${body}</div>`);
+      widgets.push(`<div class=u2-card><a class=-head href="${url}">${title}</a>${body}</div>`);
     } catch (e) { console.error(e); }
   }
 
   const widgetsHtml = widgets.length
     ? widgets.join("\n")
-    : `<div class="u2-card"><div class="-body" style="color:#999">No widgets available.</div></div>`;
+    : `<div class=u2-card><div class=-body style="color:#999">No widgets available.</div></div>`;
 
-  return `<div class="u2-flex">${widgetsHtml}</div>`;
+  return `<div class=u2-flex>${widgetsHtml}</div>`;
 }

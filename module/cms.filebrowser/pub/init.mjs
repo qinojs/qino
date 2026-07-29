@@ -1,7 +1,7 @@
 import { apt } from '../../core/pub/js/qino.js';
 import { cms } from '../../cms/pub/js/cms.mjs';
 
-const Page = globalThis.qino?.cms?.nodeId;
+const nodeId = globalThis.qino?.cms?.nodeId;
 
 // The CMS panel (cms.frontend.2) lives in the shadow DOM of <qino-cms>.
 // SelectorObserver with {root} sees into it, c1.onElement (document only) does not.
@@ -16,7 +16,7 @@ panelRoot.then(async root => {
       const fB = new cms.fileBrowser({ multiple:true });
       fB.show();
       fB.on('select', async e => {
-        const pid = cms.cont.active || Page;
+        const pid = cms.cont.active || nodeId;
         for (const id of e.dbFiles) await apt.cms.node(pid).files.post({ file: String(id) });
         for (const url of e.urls) await apt.cms.node(pid).files.post({ file: url });
       });
@@ -32,7 +32,7 @@ panelRoot.then(async root => {
       const fB = new cms.fileBrowser({ multiple:false, local:1 });
       fB.show();
       fB.on('select', async e => {
-        const pid = cms.cont.active || Page;
+        const pid = cms.cont.active || nodeId;
         const item = e.dbFiles[0] || e.urls[0];
         if (item) {
           await apt.cms.node(pid).files.post({ file: String(item), replace });

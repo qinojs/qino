@@ -209,32 +209,32 @@ addEventListener('dblclick', e => {
       }
     });
     zoomImg.onload = () => {
-      const Zoomer = new ImageZoomer(zoomImg);
-      Zoomer.activate();
+      const zoomer = new ImageZoomer(zoomImg);
+      zoomer.activate();
       const change = () => {
-        const vpos = Zoomer.y / ( Zoomer.img.height - Zoomer.h ) || 0;
-        const hpos = Zoomer.x / ( Zoomer.img.width  - Zoomer.w ) || 0;
-        new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', Zoomer.factor() );
+        const vpos = zoomer.y / ( zoomer.img.height - zoomer.h ) || 0;
+        const hpos = zoomer.x / ( zoomer.img.width  - zoomer.w ) || 0;
+        new dbFile(img).set( 'vpos', vpos*100 ).set( 'hpos', hpos*100 ).set( 'zoom', zoomer.factor() );
         img.dispatchEvent(new Event('qgResize',{bubbles:true}));
       };
-      Zoomer.on('change',c1.debounce(change, 500));
+      zoomer.on('change',c1.debounce(change, 500));
       const pos = img.getBoundingClientRect();
       const left = pos.left + scrollX;
       const top  = pos.top  + scrollY;
-      Zoomer.canvas.style.cssText = 'outline:3px solid red; cursor:move; position:absolute; top:'+top+'px; left:'+left+'px';
-      Zoomer.setDimension( pos.width, pos.height );
+      zoomer.canvas.style.cssText = 'outline:3px solid red; cursor:move; position:absolute; top:'+top+'px; left:'+left+'px';
+      zoomer.setDimension( pos.width, pos.height );
 
       /* set clip */
-      const f = clip.zoom || Math.min( Zoomer.img.height/Zoomer.ctx.height, Zoomer.img.width/Zoomer.ctx.width );
-      Zoomer.w = pos.width  * f;
-      Zoomer.h = pos.height * f;
-      Zoomer.x = (clip.hpos/100) * (Zoomer.img.width  - Zoomer.w ) || 0;
-      Zoomer.y = (clip.vpos/100) * (Zoomer.img.height - Zoomer.h ) || 0;
+      const f = clip.zoom || Math.min( zoomer.img.height/zoomer.ctx.height, zoomer.img.width/zoomer.ctx.width );
+      zoomer.w = pos.width  * f;
+      zoomer.h = pos.height * f;
+      zoomer.x = (clip.hpos/100) * (zoomer.img.width  - zoomer.w ) || 0;
+      zoomer.y = (clip.vpos/100) * (zoomer.img.height - zoomer.h ) || 0;
 
-      Zoomer.draw();
+      zoomer.draw();
 
       const deactivate = () => {
-        Zoomer.canvas.remove();
+        zoomer.canvas.remove();
         document.removeEventListener('mousedown', deactivate);
         change();
       };

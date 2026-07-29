@@ -94,7 +94,7 @@ function render(node: Node): Promise<HtmlString> {
   const selected = ctx.req.query.s ? Number(ctx.req.query.s) : 0;
 
   return html.async`
-<div class="u2-flex">
+<div class=u2-flex>
   <style>
     .ai-role { display:inline-block; color:#fff; padding:1px 6px; border-radius:3px; font-size:.8em; }
     .ai-msg { margin:0 0 12px; }
@@ -109,8 +109,13 @@ function render(node: Node): Promise<HtmlString> {
       <input type=search id=aiSessionSearch placeholder="${app.t`Search bot or message content`}…" style="width:18.75rem;max-width:100%">
     </div>
     <div class=-body style="padding:0;overflow:auto">
-      <table class="u2-table">
-        <thead><tr><th>ID<th>Bot<th>User<th>Msgs<th>Updated
+      <table class=u2-table>
+        <thead><tr>
+          <th>ID
+          <th>Bot
+          <th>User
+          <th>Msgs
+          <th>Updated
         <tbody cms-part=list>${list(node, { ctx, vars: {} })}</tbody>
       </table>
     </div>

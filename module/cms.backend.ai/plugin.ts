@@ -167,7 +167,7 @@ function providerBox(provider: Row, modelCount: number, key: string, open: boole
   const pid = hee(provider.id);
   return `
 <details${open ? " open" : ""}>
-  <summary class="ai-provider-summary">
+  <summary class=ai-provider-summary>
     ${hee(provider.name)}
     <span class=ai-summary-pills>
       ${badge(`${modelCount} Models`)}
@@ -175,8 +175,8 @@ function providerBox(provider: Row, modelCount: number, key: string, open: boole
     </span>
   </summary>
   <div class=ai-provider-panel>
-    <form class="ai-provider-form" data-provider="${pid}">
-      <table class="u2-table">
+    <form class=ai-provider-form data-provider="${pid}">
+      <table class=u2-table>
         <tr>
           <th>Endpoint
           <td><input name=endpoint value="${hee(provider.endpoint)}">
@@ -199,7 +199,7 @@ function modelRow(model: Row): string {
   const pid = hee(model.provider_id), mid = hee(model.id);
   const usage = `${Number(model.used_input_tokens).toLocaleString("en-US")} / ${Number(model.used_output_tokens).toLocaleString("en-US")}`;
   const defaultCell = model.is_default
-    ? `<u2-ico icon=radio_button_checked title="default" style="color:var(--cms-color,#16794d)">●</u2-ico>`
+    ? `<u2-ico icon=radio_button_checked title=default style="color:var(--cms-color,#16794d)">●</u2-ico>`
     : `<button class=u2-unstyle data-action=save-default data-kind="${hee(model.kind)}" data-model="${mid}" title="set as default"><u2-ico icon=radio_button_unchecked>○</u2-ico></button>`;
   const kindCell = `<select style="text-align:right" class=u2-unstyle data-action=set-kind data-provider="${pid}" data-model="${mid}">${kindOptions(model.kind)}</select>`;
   return `<tr>
@@ -207,7 +207,7 @@ function modelRow(model: Row): string {
     <td>${kindCell}
     <td style="text-align:center">${defaultCell}
     <td>${hee(usage)}
-    <td><button class=u2-unstyle data-action=delete-model data-provider="${pid}" data-model="${mid}" u2-confirm="Delete model ${hee(model.model_id)}?" title="delete"><u2-ico icon=delete>✕</u2-ico></button>`;
+    <td><button class=u2-unstyle data-action=delete-model data-provider="${pid}" data-model="${mid}" u2-confirm="Delete model ${hee(model.model_id)}?" title=delete><u2-ico icon=delete>✕</u2-ico></button>`;
 }
 
 // Models grouped by provider with a sticky provider header. Filterable by kind / search.
@@ -264,7 +264,7 @@ function defaultsOverview(allModels: Row[], providersById: Map<number, Row>): st
       <th>${hee(kind)}
       <td>${hee(label)}`;
   }).join("");
-  return `<table class="u2-table">${rows}</table>`;
+  return `<table class=u2-table>${rows}</table>`;
 }
 
 
@@ -295,7 +295,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   const emptyHint = providers.length ? "" : `<p>No providers configured yet — add one below.</p>`;
 
   return `
-<div class="u2-flex">
+<div class=u2-flex>
   ${messageHtml}
 
   <div class=u2-card style="flex-grow:0">
@@ -357,8 +357,8 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   }
 
   return `<div style="overflow:auto; padding:0">
-<table class="u2-table" style="white-space:nowrap">${defaults}</table>
-${rows ? `<table class="u2-table" style="white-space:nowrap;margin-top:1px">
+<table class=u2-table style="white-space:nowrap">${defaults}</table>
+${rows ? `<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr>
     <th>Model
     <th style="text-align:right">Input

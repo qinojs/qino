@@ -35,7 +35,7 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
             <u2-ico slot=icon icon=folder>🗀</u2-ico>
             ${hee(e.name)}
             <small style="margin-left:auto"><u2-bytes>${sub.size}</u2-bytes></small>
-            <button data-delete=${JSON.stringify(rel + "/")} class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
+            <button data-delete=${JSON.stringify(rel + "/")} class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
             ${sub.html}
           </u2-tree>`,
         };
@@ -47,7 +47,7 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
             <u2-ico slot=icon icon=description>🗎</u2-ico>
             <code>${hee(e.name)}</code>
             <small style="margin-left:auto"><u2-bytes>${fileSize}</u2-bytes></small>
-            <button data-delete=${JSON.stringify(rel)} class="u2-unstyle" u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
+            <button data-delete=${JSON.stringify(rel)} class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
           </u2-tree>`,
         };
       }
@@ -94,10 +94,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     t`No origins declared yet.`,
   ]);
 
-  return `<div class="u2-flex">
+  return `<div class=u2-flex>
   <div class="u2-card -sidebar" style="flex:0 0 auto">
-    <div class="-head">${tInfo}</div>
-    <div class="-body">
+    <div class=-head>${tInfo}</div>
+    <div class=-body>
       <table class=u2-table>
         <tr><td>${tCacheSize}<td><u2-bytes>${totalSize}</u2-bytes>
         <tr><td>${tMaxCacheBytes}<td><u2-bytes>${maxCacheBytes}</u2-bytes>
@@ -105,19 +105,19 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
         <tr><td>${tCachePath}<td><small><code>${hee(cacheDir)}</code></small>
       </table>
     </div>
-    <div class="-head">${tAllowList}</div>
-    <div class="-body">
+    <div class=-head>${tAllowList}</div>
+    <div class=-body>
       ${origins.length ? `<table class=u2-table>${origins.map(o => `<tr><td><small><code>${hee(o)}</code></small>`).join("")}</table>` : `<em>${tNoOrigins}</em>`}
     </div>
-    <div class="-head">${tActions}</div>
-    <div class="-body">
+    <div class=-head>${tActions}</div>
+    <div class=-body>
       <button data-reload='{"deleteAll":1}' u2-confirm><u2-ico icon=delete>✕</u2-ico> ${tDeleteAll}</button>
     </div>
   </div>
-  <div class="u2-card" style="flex:1">
-    <div class="-head">${tCachedFiles}</div>
-    <div class="-body">
-      ${tree ? `<u2-tree aria-expanded="true"><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : `<em>${tNoCached}</em>`}
+  <div class=u2-card style="flex:1">
+    <div class=-head>${tCachedFiles}</div>
+    <div class=-body>
+      ${tree ? `<u2-tree aria-expanded=true><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : `<em>${tNoCached}</em>`}
     </div>
   </div>
 </div>`;

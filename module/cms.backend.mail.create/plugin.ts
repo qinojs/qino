@@ -90,7 +90,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     ? html.join(groups.map((g) => html`<option value="${g.id}">${g.name}`))
     : await html.async`<option disabled>${t`No groups found`}`;
 
-  return html.async`<div class="u2-card">
+  return html.async`<div class=u2-card>
   <div class=-head>${t`Create Mail`}</div>
   <div class=-body>
     ${message}

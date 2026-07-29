@@ -26,33 +26,33 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
   const rows = [...walk(ctx.app.aptTree)].map((r) => {
     const path = "/" + r.segments.join("/");
     const g = r.segments[0] ?? "";
-    const groupRow = g !== group ? (group = g, `<tr class="-group" data-group="${hee(g)}"><td colspan="2"><button data-gtoggle>▾</button> ${hee(g)}</td></tr>`) : "";
+    const groupRow = g !== group ? (group = g, `<tr class=-group data-group="${hee(g)}"><td colspan=2><button data-gtoggle>▾</button> ${hee(g)}</td></tr>`) : "";
     const params = paramNames(r).map((p) =>
-      `<label class="-param">:${hee(p)}<input data-param="${hee(p)}" value="${hee(prefill[p])}"></label>`
+      `<label class=-param>:${hee(p)}<input data-param="${hee(p)}" value="${hee(prefill[p])}"></label>`
     ).join("");
     return `${groupRow}
     <tr data-method="${hee(r.method)}" data-path="${hee(path)}" data-group="${hee(g)}">
-      <td class="-route">
-        <span class="-method">${hee(r.method.toUpperCase())}</span>
+      <td class=-route>
+        <span class=-method>${hee(r.method.toUpperCase())}</span>
         <code>${hee(path)}</code>
         <span class="-access -a-${accessLabel(r.verb)}">${accessLabel(r.verb)}</span>
-        <span class="-params">${params}</span>
-        ${r.verb.description ? `<small class="-desc">${hee(r.verb.description)}</small>` : ""}
+        <span class=-params>${params}</span>
+        ${r.verb.description ? `<small class=-desc>${hee(r.verb.description)}</small>` : ""}
       </td>
-      <td class="-cells"></td>
+      <td class=-cells></td>
     </tr>`;
   }).join("");
 
-  return `<div class="-m-apitest" data-app-url="${hee(ctx.req.basePath ?? "/")}">
-  <div class="-bar">
-    <span class="-identities"></span>
-    <form class="-add">
-      <input data-label placeholder="label">
+  return `<div class=-m-apitest data-app-url="${hee(ctx.req.basePath ?? "/")}">
+  <div class=-bar>
+    <span class=-identities></span>
+    <form class=-add>
+      <input data-label placeholder=label>
       <input data-token placeholder="qk_… bearer token">
       <button>+ identity</button>
     </form>
-    <span class="-legend">✓ granted &nbsp; ✗ denied &nbsp; ⊘ csrf/origin gate &nbsp; … needs param</span>
-    <input type="search" class="-filter" placeholder="filter…">
+    <span class=-legend>✓ granted &nbsp; ✗ denied &nbsp; ⊘ csrf/origin gate &nbsp; … needs param</span>
+    <input type=search class=-filter placeholder="filter…">
   </div>
   <table class=-matrix>
     <thead><tr>
