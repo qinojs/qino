@@ -3,7 +3,7 @@ import { cmsCtx } from "./CmsContext.ts";
 import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "../../core/mod.ts";
 
 // Per-app instances; the plugin's init binds, cms()/cms.get() read. Internal — mod.ts does not export it.
-export const cmsInstances: WeakMap<object, CMS> = new WeakMap();
+export const cmsInstances = new WeakMap<object, CMS>();
 
 /** The app's cms instance. Throws when cms is not loaded. */
 export function cms(app: App): CMS {

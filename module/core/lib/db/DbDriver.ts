@@ -35,7 +35,7 @@ export abstract class DbDriver {
   }
 }
 
-const sqlMode = [
+const SQL_MODE = [
   "STRICT_TRANS_TABLES",
   "ONLY_FULL_GROUP_BY",
   "NO_ZERO_IN_DATE",
@@ -64,7 +64,7 @@ class MysqlDriver extends DbDriver {
       charset: "utf8mb4", multipleStatements: false,
       waitForConnections: true, connectionLimit: 4, timezone: "Z",
     });
-    this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [sqlMode]));
+    this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [SQL_MODE]));
   }
 
   quoteId(id: string) { return mysqlDialect.quoteId(id); }

@@ -31,11 +31,11 @@ async function imageHtml(dbFile: DbFile, options: Record<string, any>, appPATH: 
   for (const [k, v] of Object.entries(styles)) styleStr += `${k}:${v}; `;
   styleStr += options.style ?? "";
 
-  const skip = new Set(["quality", "alt", "width", "height", "css", "style", "if", "editable"]);
+  const SKIP = new Set(["quality", "alt", "width", "height", "css", "style", "if", "editable"]);
   let attrStr = ` style="${hee(styleStr)}"`;
   if (options.editable) attrStr += ` dbfile-editable="${hee(options.editable)}"`;
   for (const [k, v] of Object.entries(options)) {
-    if (skip.has(k)) continue;
+    if (SKIP.has(k)) continue;
     attrStr += v === true ? ` ${k}` : v === false ? "" : ` ${k}="${hee(v)}"`;
   }
 
@@ -57,11 +57,11 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
   let h = Number(options.height) || 0;
   const hpos = options.hpos ?? await dbFile.get("hpos") ?? 50;
   const vpos = options.vpos ?? await dbFile.get("vpos") ?? 50;
-  const faktor = 42;
-  const maxHW = 30;
+  const FACTOR = 42;
+  const MAX_HW = 30;
 
   const md5 = await dbFile.get("md5");
-  const cacheFile = appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${faktor}.${maxHW}.${options.fit ?? ""}.json`;
+  const cacheFile = appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${MAX_HW}.${options.fit ?? ""}.json`;
 
   if (md5) {
     try { return JSON.parse(await Deno.readTextFile(cacheFile)); } catch { /* no cache */ }
@@ -94,8 +94,8 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
     setTimeout(async () => {
       try {
         if (!ow) return;
-        const smallW = Math.max(Math.min(Math.round(w / faktor), maxHW), 1);
-        const smallH = Math.max(Math.min(Math.round(h / faktor), maxHW), 1);
+        const smallW = Math.max(Math.min(Math.round(w / FACTOR), MAX_HW), 1);
+        const smallH = Math.max(Math.min(Math.round(h / FACTOR), MAX_HW), 1);
         const { path: tmpPath, mime } = await dbFile.transform({ w: smallW, h: smallH, q: 5, fmt: "png", hpos, vpos });
         const buf = await Deno.readFile(tmpPath);
         const prev = "data:" + mime + ";base64," + btoa(String.fromCharCode(...buf));

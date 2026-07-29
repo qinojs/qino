@@ -125,7 +125,7 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
 }
 
 function eventCell(r: Row) {
-  return `${tag(r.kind || "-")}<br><small>${hee(prioLabels[r.prio] ?? r.prio)}</small>`;
+  return `${tag(r.kind || "-")}<br><small>${hee(PRIO_LABELS[r.prio] ?? r.prio)}</small>`;
 }
 
 function scoreCell(r: Row) {
@@ -134,7 +134,7 @@ function scoreCell(r: Row) {
 }
 
 function bucketCell(r: Row) {
-  return r.scope || r.ident ? `${tag(scopeLabels[r.scope] ?? (r.scope || "-"))}<br><code>${hee(r.ident || "-")}</code>` : "-";
+  return r.scope || r.ident ? `${tag(SCOPE_LABELS[r.scope] ?? (r.scope || "-"))}<br><code>${hee(r.ident || "-")}</code>` : "-";
 }
 
 function actionCell(r: Row) {
@@ -152,7 +152,7 @@ function requestCell(r: Row) {
 }
 
 function stateCell(r: Row) {
-  return tag(stateLabels[r.state] ?? r.state ?? "-");
+  return tag(STATE_LABELS[r.state] ?? r.state ?? "-");
 }
 
 function eventActions(r: Row) {
@@ -175,11 +175,11 @@ async function eventFilter(app: App, get: Record<string, string>) {
   return `<form class=u2-flex>
     <input type=hidden name=tab value=live>
     <input name=q value="${hee(get.q)}" placeholder="${await app.t`IP, path, reason`}">
-    <select name=prio><option value="">${await app.t`Severity`}${opts(["notice","warning","error"], get.prio, prioLabels)}</select>
-    <select name=kind><option value="">${await app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, kindLabels)}</select>
-    <select name=scope><option value="">${await app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, scopeLabels)}</select>
-    <select name=blocked><option value="">${await app.t`Action`}${opts(["blocked","delayed"], get.blocked, actionLabels)}</select>
-    <select name=state><option value="">${await app.t`Status`}${opts(["new","seen","ignore"], get.state, stateLabels)}</select>
+    <select name=prio><option value="">${await app.t`Severity`}${opts(["notice","warning","error"], get.prio, PRIO_LABELS)}</select>
+    <select name=kind><option value="">${await app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, KIND_LABELS)}</select>
+    <select name=scope><option value="">${await app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, SCOPE_LABELS)}</select>
+    <select name=blocked><option value="">${await app.t`Action`}${opts(["blocked","delayed"], get.blocked, ACTION_LABELS)}</select>
+    <select name=state><option value="">${await app.t`Status`}${opts(["new","seen","ignore"], get.state, STATE_LABELS)}</select>
     <input name=min value="${hee(get.min)}" placeholder="${await app.t`min severity`}">
     <button>${await app.t`filter`}</button>
   </form>`;
@@ -198,11 +198,11 @@ function eventWhere(get: Record<string, string>): Sql {
   return sql.join(parts, " AND ");
 }
 
-const prioLabels: Record<string, string> = { notice: "Info", warning: "Warning", error: "Critical" };
-const kindLabels: Record<string, string> = { attack: "Attack", "path-block": "Path block", probe: "Probe", login: "Login", load: "Load", throttle: "Throttle", request: "Request" };
-const scopeLabels: Record<string, string> = { ip: "IP", range: "IP range", client: "Client", user: "User", path: "Path", "attack:ip": "Attack/IP", "attack:range": "Attack/Range", "attack:path": "Attack/Path", "login:ip": "Login/IP", "login:range": "Login/Range", "login:user": "Login/User" };
-const stateLabels: Record<string, string> = { new: "new", seen: "seen", ignore: "ignored" };
-const actionLabels: Record<string, string> = { blocked: "blocked", delayed: "delayed" };
+const PRIO_LABELS: Record<string, string> = { notice: "Info", warning: "Warning", error: "Critical" };
+const KIND_LABELS: Record<string, string> = { attack: "Attack", "path-block": "Path block", probe: "Probe", login: "Login", load: "Load", throttle: "Throttle", request: "Request" };
+const SCOPE_LABELS: Record<string, string> = { ip: "IP", range: "IP range", client: "Client", user: "User", path: "Path", "attack:ip": "Attack/IP", "attack:range": "Attack/Range", "attack:path": "Attack/Path", "login:ip": "Login/IP", "login:range": "Login/Range", "login:user": "Login/User" };
+const STATE_LABELS: Record<string, string> = { new: "new", seen: "seen", ignore: "ignored" };
+const ACTION_LABELS: Record<string, string> = { blocked: "blocked", delayed: "delayed" };
 
 const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => vs.map(v => `<option value="${hee(v)}"${v===active?" selected":""}>${hee(labels[v] ?? v)}`).join("");
 const tag = (v: unknown) => `<span class=u2-badge>${hee(v)}</span>`;

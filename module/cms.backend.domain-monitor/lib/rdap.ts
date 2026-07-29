@@ -24,8 +24,8 @@ const eventDate = (events: unknown, action: string): number | null => {
   return isNaN(ms) ? null : Math.floor(ms / 1000);
 };
 
-const service = "https://rdap.org/domain/";
-const blank = { expires: null, registered: null, registrar: null, status: "", locked: false };
+const SERVICE = "https://rdap.org/domain/";
+const BLANK = { expires: null, registered: null, registrar: null, status: "", locked: false };
 
 /**
  * Registration facts, or null when the TLD has no RDAP service or it did not answer.
@@ -33,7 +33,7 @@ const blank = { expires: null, registered: null, registrar: null, status: "", lo
  * is not registered, which for a monitored domain is an alarm, not a blank.
  */
 export async function lookup(domain: string, signal?: AbortSignal) {
-  const res = await fetch(service + encodeURIComponent(domain), {
+  const res = await fetch(SERVICE + encodeURIComponent(domain), {
     headers: { ...ua, accept: "application/rdap+json" },
     signal: timedSignal(signal, 10000),
   }).catch(() => null);
@@ -41,7 +41,7 @@ export async function lookup(domain: string, signal?: AbortSignal) {
     await res?.body?.cancel();
     // Landing on a registry means the TLD is served and the domain really is unknown there;
     // a 404 still on rdap.org only means it could not route the TLD anywhere.
-    return res?.status === 404 && !res.url.startsWith(service) ? { found: false, ...blank } : null;
+    return res?.status === 404 && !res.url.startsWith(SERVICE) ? { found: false, ...BLANK } : null;
   }
   const data = await res.json().catch(() => null);
   if (!data) return null;

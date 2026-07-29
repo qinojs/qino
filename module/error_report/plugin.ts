@@ -7,11 +7,11 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { getCtx, type Ctx, Output, type App } from "../core/mod.ts";
 
-const reporterRoot = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
-const reporterPath = reporterRoot + "mod.js";
+const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
+const REPORTER_PATH = REPORTER_ROOT + "mod.js";
 
 (globalThis as any).reporterJsOptions = { console: ["error", "warn"] };
-await import(reporterPath);
+await import(REPORTER_PATH);
 
 type Report = Record<string, unknown>;
 
@@ -148,8 +148,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (!ctx.res.hasHtml) return;
     if (!await ctx.app.settings.error_report.browserErrors) return;
     ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.basePath + "js-error", max: 50 };
-    ctx.res.csp["script-src"][reporterRoot] = true;
-    ctx.res.html.legacyScripts.add(reporterPath);
+    ctx.res.csp["script-src"][REPORTER_ROOT] = true;
+    ctx.res.html.legacyScripts.add(REPORTER_PATH);
     ctx.res.csp.reportTo = ctx.req.basePath + "csp-error";
   }, { signal });
 }

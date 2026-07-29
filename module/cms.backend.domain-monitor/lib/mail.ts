@@ -7,10 +7,10 @@ import { agent, isCertError, errText, timedSignal, ua } from "./net.ts";
 
 // Selectors worth guessing when a domain publishes DKIM but does not tell us where.
 // There is no way to enumerate them — the name is only known to the sender and the verifier.
-const dkimSelectors = ["default", "google", "selector1", "selector2", "k1", "k2", "s1", "s2", "mail", "dkim", "smtp", "zoho", "protonmail", "mandrill", "fm1"];
+const DKIM_SELECTORS = ["default", "google", "selector1", "selector2", "k1", "k2", "s1", "s2", "mail", "dkim", "smtp", "zoho", "protonmail", "mandrill", "fm1"];
 
 // Mechanisms that cost one of the ten DNS lookups an SPF record is allowed (RFC 7208 §4.6.4).
-const spfCost = /^[+\-~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
+const SPF_COST = /^[+\-~?]?(include:|a[:/]|a$|mx[:/]|mx$|ptr|exists:|redirect=)/i;
 
 const txtOf = (name: string): Promise<string[]> =>
   Deno.resolveDns(name, "TXT").then((r) => r.map((parts) => parts.join(""))).catch(() => []);
@@ -24,7 +24,7 @@ async function spfCount(record: string, seen: Set<string>): Promise<number> {
   let count = 0;
   const nested: string[] = [];
   for (const term of record.split(/\s+/)) {
-    if (!spfCost.test(term)) continue;
+    if (!SPF_COST.test(term)) continue;
     count++;
     const target = term.match(/^[+\-~?]?(?:include:|redirect=)(\S+)/i)?.[1];
     if (target && !seen.has(target)) { seen.add(target); nested.push(target); }
@@ -146,7 +146,7 @@ export async function check(apex: string, mx: string[], opt: {
 
   // Everything below _domainkey and the policy records lives in the zone itself, so one batch to
   // the authoritative servers covers them. Selectors are only guessed when asked for.
-  const selectors = [...new Set([...(opt.dkim ?? []), ...(deep ? dkimSelectors : [])])];
+  const selectors = [...new Set([...(opt.dkim ?? []), ...(deep ? DKIM_SELECTORS : [])])];
   const zoneQuestions: { name: string; type: Type }[] = [
     { name: "_mta-sts." + apex, type: "TXT" },
     { name: "_smtp._tls." + apex, type: "TXT" },

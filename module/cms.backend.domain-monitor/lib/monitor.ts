@@ -78,7 +78,7 @@ export type DomainRow = {
   [key: string]: unknown;
 };
 
-const concurrency = 4;
+const CONCURRENCY = 4;
 const table = (app: App) => app.db.table("monitor_domain");
 
 // A pasted entry is reduced to its host: scheme and path are dropped, everything that is not
@@ -97,14 +97,14 @@ export const normalizeDomain = (value: string): string => {
   } catch { return ""; }
 };
 
-const deepAfter = 24 * 60 * 60;
+const DEEP_AFTER = 24 * 60 * 60;
 
 export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent: number }; signal?: AbortSignal } = {}): Promise<void> {
   const signal = opt.signal;
   signal?.throwIfAborted();
   // Registry data, the MTA-STS policy file and guessing DKIM selectors are wasted effort on an
   // hourly schedule — those move in days. Everything else is checked every time.
-  const deep = !row.checked_deep || unixTime() - row.checked_deep > deepAfter;
+  const deep = !row.checked_deep || unixTime() - row.checked_deep > DEEP_AFTER;
   const check = await checkDomain(row.domain, {
     expect: row.expect || undefined,
     deep,
@@ -203,7 +203,7 @@ export async function runChecks(app: App, rows: DomainRow[], signal?: AbortSigna
       await runCheck(app, row, { reach, signal });
     }
   };
-  const results = await Promise.allSettled(Array.from({ length: Math.min(concurrency, rows.length) }, worker));
+  const results = await Promise.allSettled(Array.from({ length: Math.min(CONCURRENCY, rows.length) }, worker));
   const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
   if (failed) throw failed.reason;
 }

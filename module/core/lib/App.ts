@@ -16,7 +16,7 @@ import { initRequest } from "./ctx/init.ts";
 
 const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
-const defaultConfig = {
+const DEFAULT_CONFIG = {
     appPATH: mainDir,
     basePath: "",
     https: false,
@@ -66,9 +66,9 @@ export class App extends Emitter<AppEvents> {
     // the proxy reads aptTree lazily, so modules added at runtime stay visible
     get apt(): AptProxy { return this.#apt ??= aptClient(this.aptTree); }
 
-    constructor(config: Partial<typeof defaultConfig> = {}) {
+    constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
-        const cfg = { ...defaultConfig, ...config };
+        const cfg = { ...DEFAULT_CONFIG, ...config };
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
         this.appPATH   = ensureSlash(appPATH);

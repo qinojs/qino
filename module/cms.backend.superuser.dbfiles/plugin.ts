@@ -60,7 +60,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const order  = String(vars.order  ?? "newest");
 
   const relSubs = sql.join(children.map((dbFile: DbField, i: number) =>
-    sql`,(SELECT COUNT(*) FROM ${sql.id(dbFile.table.name)} WHERE ${sql.id(dbFile.name)}=f.id) AS ${sql.raw("r" + i)}`), "");
+    sql`,(SELECT COUNT(*) FROM ${sql.id(dbFile.table.name)} WHERE ${sql.id(dbFile.name)}=f.id) AS ${sql.id("r" + i)}`), "");
 
   const orderSql: Record<string, string> = { newest:"f.log_id DESC", oldest:"f.log_id ASC", changed:"f.log_id_ch DESC", biggest:"f.size DESC" };
   const orderBy = orderSql[order] ?? ["f.size=0 DESC", ...children.map((_: DbField, i: number) => `r${i}`)].join(",");

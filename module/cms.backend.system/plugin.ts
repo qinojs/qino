@@ -255,29 +255,29 @@ function renderDbBox(node: Node): Promise<string> {
 
 async function mysqlBox(node: Node): Promise<string> {
   const db = node.app.db;
-  const relevant = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
+  const RELEVANT = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
   const vars = await db.query`SHOW VARIABLES`;
   const map = new Map(vars.map((r: Record<string, string>) => [r.Variable_name, r.Value]));
   const fmt = (name: string, value: string) =>
     (name === "max_allowed_packet" || name === "innodb_buffer_pool_size")
       ? (Number(value) / 1024 / 1024).toFixed(1) + " MB" : value;
-  const rows = relevant.map((n) => `<tr><td>${hee(n)}<td>${hee(fmt(n, map.get(n) ?? ""))}`).join("");
+  const rows = RELEVANT.map((n) => `<tr><td>${hee(n)}<td>${hee(fmt(n, map.get(n) ?? ""))}`).join("");
   return dbCard("MySQL", rows);
 }
 
 async function postgresBox(node: Node): Promise<string> {
   const db = node.app.db;
-  const names = ["server_version", "max_connections", "shared_buffers", "work_mem"];
-  const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(names.map((n) => sql`${n}`))}) ORDER BY name`;
+  const NAMES = ["server_version", "max_connections", "shared_buffers", "work_mem"];
+  const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(NAMES.map((n) => sql`${n}`))}) ORDER BY name`;
   const body = rows.map((r: Record<string, string>) => `<tr><td>${hee(r.name)}<td>${hee(r.setting + (r.unit ? " " + r.unit : ""))}`).join("");
   return dbCard("PostgreSQL", body);
 }
 
 async function sqliteBox(node: Node): Promise<string> {
   const db = node.app.db;
-  const pragmas = ["journal_mode", "page_size", "foreign_keys"];
+  const PRAGMAS = ["journal_mode", "page_size", "foreign_keys"];
   let rows = `<tr><td>version<td>${hee(await db.one`SELECT sqlite_version()`)}`;
-  for (const p of pragmas) {
+  for (const p of PRAGMAS) {
     const r = await db.row`PRAGMA ${sql.raw(p)}`;
     rows += `<tr><td>${hee(p)}<td>${hee(r ? Object.values(r)[0] : "")}`;
   }
@@ -291,9 +291,9 @@ async function dbDetails(node: Node): Promise<string> {
     return kvTable(rows.map((r: Record<string, string>) => [r.name, String(r.setting)]));
   }
   if (db.dialect === "sqlite") {
-    const pragmas = ["journal_mode", "page_size", "cache_size", "foreign_keys", "synchronous", "auto_vacuum"];
+    const PRAGMAS = ["journal_mode", "page_size", "cache_size", "foreign_keys", "synchronous", "auto_vacuum"];
     const rows: [string, string][] = [];
-    for (const p of pragmas) { const r = await db.row`PRAGMA ${sql.raw(p)}`; rows.push([p, String(r ? Object.values(r)[0] : "")]); }
+    for (const p of PRAGMAS) { const r = await db.row`PRAGMA ${sql.raw(p)}`; rows.push([p, String(r ? Object.values(r)[0] : "")]); }
     return kvTable(rows);
   }
   const vars = await db.query`SHOW VARIABLES`;

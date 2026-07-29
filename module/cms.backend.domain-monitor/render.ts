@@ -3,19 +3,19 @@ import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
 import { addDomains, type CheckFrequency, type DomainRow, parseResult } from "./lib/monitor.ts";
 
-const historyLimit = 500;
+const HISTORY_LIMIT = 500;
 // mail_banner carries the server's clock in most greetings, so it "changes" on every single check.
-const ignoredChanges = new Set(["response_time", "cert_days", "checked", "checked_deep", "dns_changed", "log_id", "log_id_ch", "mail_banner"]);
+const IGNORED_CHANGES = new Set(["response_time", "cert_days", "checked", "checked_deep", "dns_changed", "log_id", "log_id_ch", "mail_banner"]);
 
 // Optional column groups. The table carries a "-no-<name>" class per hidden group, so toggling one
 // is a single class change instead of a walk over every cell.
-const groups = ["http", "tls", "dns", "mail"] as const;
-type Group = typeof groups[number];
-const groupLabels: Record<Group, string> = { http: "HTTP", tls: "TLS", dns: "DNS", mail: "Mail" };
+const GROUPS = ["http", "tls", "dns", "mail"] as const;
+type Group = typeof GROUPS[number];
+const GROUP_LABELS: Record<Group, string> = { http: "HTTP", tls: "TLS", dns: "DNS", mail: "Mail" };
 
 // Traffic light. The weight is both the severity and the sort value of the status column.
-const levels = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
-type Level = keyof typeof levels;
+const LEVELS = { green: 0, blue: 1, gray: 2, orange: 3, red: 4 };
+type Level = keyof typeof LEVELS;
 
 const dot = (level: Level, title: string): HtmlString =>
   html`<span title="${title}" style="color:var(--${level});font-size:1.3em;line-height:1">●</span>`;
@@ -55,7 +55,7 @@ function checkedStatus(
 function flattened(value: unknown, path = "", target = new Map<string, unknown>()): Map<string, unknown> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     for (const [key, child] of Object.entries(value)) {
-      if (ignoredChanges.has(key)) continue;
+      if (IGNORED_CHANGES.has(key)) continue;
       flattened(child, path ? `${path}.${key}` : key, target);
     }
   } else target.set(path, value);
@@ -99,7 +99,7 @@ const time = (value?: number | null, fallback = "–"): HtmlString => value ? ht
 const lines = (value?: string | null): string[] => (value ?? "").split("\n").filter(Boolean);
 
 // Fetch and TLS messages are far too long for a cell — show a label, keep the text in the title.
-const errLabels: [RegExp, string][] = [
+const ERR_LABELS: [RegExp, string][] = [
   [/failed to lookup|dns error/i, "dns not found"],
   [/timed out|timeout|aborted/i, "timeout"],
   [/certificate expired/i, "cert expired"],
@@ -111,7 +111,7 @@ const errLabels: [RegExp, string][] = [
   [/reset|closed before|incomplete/i, "connection lost"],
   [/expected text missing/i, "text missing"],
 ];
-const errShort = (message: string): string => errLabels.find(([regexp]) => regexp.test(message))?.[1] ?? "error";
+const errShort = (message: string): string => ERR_LABELS.find(([regexp]) => regexp.test(message))?.[1] ?? "error";
 
 // One DNS record per line so the same type lines up across rows for comparison.
 const dnsCell = (value?: string | null): HtmlString => {
@@ -325,7 +325,7 @@ export function rowHtml(row: DomainRow): HtmlString {
   const txt = txtGroups(row.dns_txt);
   return html`<tr data-domain="${domain}">
       <td><input type=checkbox data-select title="Select for bulk actions">
-      <td data-value="${levels[state.level]}">${dot(state.level, state.title)}
+      <td data-value="${LEVELS[state.level]}">${dot(state.level, state.title)}
       <td data-value="${domain}"><a href="?domain=${encodeURIComponent(domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
       <td data-value="${row.reg_expires ?? 0}">${expiresCell(row)}
       <td data-g=http data-value="${row.status_code}">${row.status_code ?? "–"}
@@ -367,7 +367,7 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
 
   const checks = await node.app.db.query<{ id: number; checked_at: number; result: string }>`
     SELECT id, checked_at, result FROM monitor_domain_check
-    WHERE domain = ${domain} ORDER BY checked_at DESC LIMIT ${historyLimit}`;
+    WHERE domain = ${domain} ORDER BY checked_at DESC LIMIT ${HISTORY_LIMIT}`;
   const current = status(row);
   const ns = nsState(row);
   const results = checks.map((check) => parseResult(check.result));
@@ -472,7 +472,7 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
       </table>
     </div>
     <div class="u2-card -full" style="flex:2 1 50rem">
-      <div class=-head>Check history (${checks.length}${checks.length === historyLimit ? "+" : ""})</div>
+      <div class=-head>Check history (${checks.length}${checks.length === HISTORY_LIMIT ? "+" : ""})</div>
       <u2-table class=-history>
         <table class="u2-table -Sticky">
           <thead><tr>
@@ -505,7 +505,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   // Which groups the user folded away, kept per user rather than per browser. Mail is off to begin
   // with — it is the most specialised block and the table is wide enough without it.
   const stored = String(ctx.settings["cms.backend.domain-monitor"].cols() ?? "mail").split(",");
-  const hidden = groups.filter((group) => stored.includes(group));
+  const hidden = GROUPS.filter((group) => stored.includes(group));
 
   return html`<div class=u2-card>
   <div class=-head>Domain monitor (<span data-monitor-count>${rows.length}</span>)</div>
@@ -527,8 +527,8 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
       <button data-action=checkSelected>Check</button>
       <button data-action=deleteSelected data-bulk-delete>Delete</button>
     </span>
-    <span class=-cols>${html.join(groups.map((group) =>
-      html`<label><input type=checkbox data-col="${group}" ${hidden.includes(group) ? "" : "checked"}> ${groupLabels[group]}</label>`
+    <span class=-cols>${html.join(GROUPS.map((group) =>
+      html`<label><input type=checkbox data-col="${group}" ${hidden.includes(group) ? "" : "checked"}> ${GROUP_LABELS[group]}</label>`
     ))}</span>
   </div>
   <u2-table>

@@ -5,10 +5,10 @@ import { createMissingIndex, dropRedundantIndex, reindexInvalid } from "./lib/in
 import { syncSequence } from "./lib/sequences.ts";
 import { validateTable } from "./lib/validate.ts";
 
-const largeRows = 100_000;
-const largeBytes = 100_000_000;
+const LARGE_ROWS = 100_000;
+const LARGE_BYTES = 100_000_000;
 
-export const isLarge = (status: TableStatus): boolean => (status.rows ?? 0) >= largeRows || (status.bytes ?? 0) >= largeBytes;
+export const isLarge = (status: TableStatus): boolean => (status.rows ?? 0) >= LARGE_ROWS || (status.bytes ?? 0) >= LARGE_BYTES;
 const errorText = (e: unknown): string => e instanceof Error ? e.message : String(e);
 
 export async function nodeApi(node: Node, vars: Record<string, unknown>) {

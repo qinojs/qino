@@ -4,9 +4,9 @@ import type { CMS, Node } from "../cms/mod.ts";
 export const name = "cms.layout.claude1";
 
 // Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
-const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/";
+const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/";
 
-const u2css = [
+const U2_CSS = [
   "css/norm/norm.css",
   "css/base/base.css",
   "css/classless/variables.css", // color system: derives the palette from --color
@@ -30,12 +30,12 @@ const settingsSchema = {
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  ctx.res.csp["style-src"][u2Root] = true;
-  ctx.res.csp["script-src"][u2Root] = true;
-  ctx.res.csp["connect-src"][u2Root] = true;
+  ctx.res.csp["style-src"][U2_ROOT] = true;
+  ctx.res.csp["script-src"][U2_ROOT] = true;
+  ctx.res.csp["connect-src"][U2_ROOT] = true;
 
-  for (const f of u2css) ctx.res.html.styles.add(u2Root + f);
-  ctx.res.html.scripts.add(u2Root + "u2/auto.js");
+  for (const f of U2_CSS) ctx.res.html.styles.add(U2_ROOT + f);
+  ctx.res.html.scripts.add(U2_ROOT + "u2/auto.js");
   ctx.res.html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
   ctx.res.html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 

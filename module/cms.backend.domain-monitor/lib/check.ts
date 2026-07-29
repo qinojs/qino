@@ -55,7 +55,7 @@ export const apex = (host: string): string => {
 /** The other half of the www ↔ apex pair. */
 export const wwwAlt = (host: string): string => host.startsWith("www.") ? host.slice(4) : "www." + host;
 
-const port = 443;
+const PORT = 443;
 const bare = (name: string) => name.replace(/\.$/, ""); // Deno.resolveDns keeps the root dot, our own client does not
 
 // `server` asks one specific nameserver instead of the system resolver.
@@ -181,7 +181,7 @@ async function certInfo(host: string, signal?: AbortSignal) {
   };
   const blank = { days: null as number | null, issuer: "", names: "" };
   try {
-    const s = await openssl(["s_client", "-connect", `${host}:${port}`, "-servername", host]);
+    const s = await openssl(["s_client", "-connect", `${host}:${PORT}`, "-servername", host]);
     const pem = s.match(/-----BEGIN CERTIFICATE-----[^]*?-----END CERTIFICATE-----/)?.[0];
     if (!pem) return blank;
     // One pass over the certificate we already fetched — expiry, who signed it, what it covers.
@@ -210,7 +210,7 @@ async function ipv6Answers(host: string, ip: string, signal?: AbortSignal): Prom
   const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
   requestSignal.addEventListener("abort", abort, { once: true });
   try {
-    conn = await Deno.connect({ hostname: ip, port, signal: requestSignal });
+    conn = await Deno.connect({ hostname: ip, port: PORT, signal: requestSignal });
     conn = await Deno.startTls(conn as Deno.TcpConn, { hostname: host });
     await conn.write(new TextEncoder().encode(`HEAD / HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: ${agent}\r\nConnection: close\r\n\r\n`));
     const buf = new Uint8Array(64);
@@ -259,12 +259,12 @@ async function missingPage(host: string, signal?: AbortSignal): Promise<boolean 
 
 // Headers a site is expected to carry. Frame protection counts either way — CSP frame-ancestors
 // is the modern spelling of X-Frame-Options, requiring both would be nagging.
-const wantedHeaders = ["content-security-policy", "x-content-type-options", "referrer-policy", "permissions-policy"];
+const WANTED_HEADERS = ["content-security-policy", "x-content-type-options", "referrer-policy", "permissions-policy"];
 
 function headers(res: Response) {
   const has = (name: string) => !!res.headers.get(name);
   const csp = res.headers.get("content-security-policy") ?? "";
-  const missing = wantedHeaders.filter((name) => !has(name));
+  const missing = WANTED_HEADERS.filter((name) => !has(name));
   if (!/frame-ancestors/i.test(csp) && !has("x-frame-options")) missing.push("x-frame-options");
   const sts = res.headers.get("strict-transport-security") ?? "";
   const flags = ["includeSubDomains", "preload"].filter((flag) => new RegExp(flag, "i").test(sts));

@@ -4,7 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
 // response timing can't reveal whether an e-mail is registered (user enumeration).
-const dummyHash = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi";
+const DUMMY_HASH = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi";
 
 export type LoginError = "username" | "inactive" | "password";
 
@@ -31,7 +31,7 @@ export async function authListen(ctx: Ctx): Promise<void> {
 
 export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
-  if (!user || !user.active) { await pwVerify(pw, dummyHash); return user ? "inactive" : "username"; }
+  if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usrEntry = ctx.app.db.table("usr").entry(user.id);
   const rehash = pwNeedsRehash(await usrEntry.get("pw"));
   if (!rehash) {

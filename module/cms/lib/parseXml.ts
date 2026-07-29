@@ -1,7 +1,7 @@
 export type XmlNode = { tag: string; attrs: Record<string, string>; children: XmlNode[] };
 
-const entities: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
-const decode = (s: string) => s.replace(/&(#?\w+);/g, (m, e) => entities[e] ?? m);
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
+const decode = (s: string) => s.replace(/&(#?\w+);/g, (m, e) => ENTITIES[e] ?? m);
 
 /** Minimal XML parser for CMS subpage definitions (elements + attributes only). */
 export function parseXml(xml: string): XmlNode | null {
