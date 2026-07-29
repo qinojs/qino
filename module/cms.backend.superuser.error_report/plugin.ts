@@ -129,10 +129,10 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
     if (/^\d+$/.test(search)) conds.push(sql`(id = ${Number(search)} OR log_id = ${Number(search)})`);
     else if (/[.:]/.test(search) && /^[0-9a-f.:]+$/i.test(search)) conds.push(sql`ip = ${search}`);
     // words below ft_min_token_size can never hit the fulltext index — empty result beats a full scan
-    else if (db.dialect === "mysql") conds.push(words.length ? sql`MATCH(${sql.id(ftCol)}) AGAINST (${words.map(w => `+${w}*`).join(" ")} IN BOOLEAN MODE)` : sql.raw("false"));
+    else if (db.dialect === "mysql") conds.push(words.length ? sql`MATCH(${sql.id(ftCol)}) AGAINST (${words.map(w => `+${w}*`).join(" ")} IN BOOLEAN MODE)` : sql`${false}`);
     else conds.push(sqlSearch(search, [ftCol]).where);
   }
-  return conds.length ? sql.join(conds, " AND ") : sql.raw("true");
+  return conds.length ? sql.join(conds, " AND ") : sql`${true}`;
 }
 
 // List part — re-rendered live on filter input via cms.reloadPart(nid, "list", form values).

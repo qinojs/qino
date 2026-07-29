@@ -36,11 +36,12 @@ export async function list(node: Node): Promise<HtmlString> {
 
 /** One scope: its numbers, then the strongest rows. */
 async function renderScope(app: App, tbl: string, { id, half }: Scope, now: number): Promise<HtmlString> {
-  const limit = fadeLimit(app.db, tbl, now);
-  const stats = await app.db.row<Stats>`
+  const db = app.db;
+  const limit = fadeLimit(db, tbl, now);
+  const stats = await db.row<Stats>`
     SELECT COUNT(*) AS total, SUM(CASE WHEN score < ${limit} THEN 1 ELSE 0 END) AS faded, MAX(time) AS last
     FROM score WHERE scope_id = ${id}`;
-  const top = await app.db.query<ScoreRow>`
+  const top = await db.query<ScoreRow>`
     SELECT id, score, time FROM score WHERE scope_id = ${id} ORDER BY score DESC LIMIT ${TOP}`;
   const faded = Number(stats?.faded ?? 0);
 

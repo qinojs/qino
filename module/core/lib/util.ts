@@ -167,7 +167,7 @@ export function sqlSearch(input: string, like: string[], opt: { exact?: string[]
   const trimmed = (input ?? "").trim();
   const words = trimmed.toLowerCase().split(/\s+/).slice(0, 4).filter(Boolean);
   const exact = opt.exact ?? [];
-  if (!words.length || !(like.length + exact.length)) return { where: sql.raw("true"), order: sql.raw("NULL") };
+  if (!words.length || !(like.length + exact.length)) return { where: sql`${true}`, order: sql.raw("NULL") };
   const id = (name: string) => sql.join(name.split(".").map(sql.id), ".");
   // '!' is a neutral escape char in every dialect's string literals.
   const esc = (s: string) => s.replace(/[!%_]/g, "!$&");

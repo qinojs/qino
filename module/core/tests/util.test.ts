@@ -88,7 +88,7 @@ Deno.test("util: sqlSearch exact columns, qualified names, wildcard escaping", (
 
 Deno.test("util: sqlSearch is neutral on empty input", () => {
   const res = sqlSearch("   ", ["title"]);
-  assertEquals(fakeRender(res.where, [])[0], "true");
+  assertEquals(fakeRender(res.where, []), ["?", [true]]);
   assertEquals(fakeRender(res.order, [])[0], "NULL");
 });
 

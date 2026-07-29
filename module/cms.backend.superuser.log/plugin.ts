@@ -44,7 +44,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   const { t, db } = node.app;
   const f = (vars.filter ?? {}) as Record<string, string>;
 
-  const where = [sql.raw("1")];
+  const where = [sql`${true}`];
   if (f.id)            where.push(sql`log.id = ${Number(f.id)}`);
   if (f.not_my_client) where.push(sql`log.client_id != ${ctx.clientId}`);
   if (f.loggedin === "yes") where.push(sql.raw("usr.id IS NOT NULL"));
@@ -150,7 +150,7 @@ async function runTool(node: Node, doName: string, data: Record<string, unknown>
     const r = await db.exec`UPDATE log SET post = '' WHERE post != ''${before ? sql` AND time < ${before}` : sql.raw("")}`;
     msg = `${r.affectedRows} ${await t`entries processed`}`;
   } else if (doName === "clean_items") {
-    const cond = [sql.raw("1")];
+    const cond = [sql`${true}`];
     if (before) cond.push(sql`time < ${before}`);
     if (data.check_if_used) {
       const refs = logRefColumns(db);

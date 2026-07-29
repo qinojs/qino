@@ -15,7 +15,7 @@
 export const types = { A: 1, NS: 2, CNAME: 5, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, DS: 43, DNSKEY: 48, TLSA: 52, HTTPS: 65, CAA: 257 } as const;
 export type Type = keyof typeof types;
 
-const port = 53;
+const PORT = 53;
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 const hex = (bytes: Uint8Array): string => [...bytes].map((n) => n.toString(16).padStart(2, "0")).join("");
@@ -161,7 +161,7 @@ async function exchange(
   const abort = () => { try { conn?.close(); } catch { /* already closed */ } };
   limit.addEventListener("abort", abort, { once: true });
   try {
-    conn = await Deno.connect({ hostname: server, port, signal: limit });
+    conn = await Deno.connect({ hostname: server, port: PORT, signal: limit });
     connected = true;
     const base = Math.floor(Math.random() * 0xf000);
     const index = new Map(open.map((question, i) => [base + i, question.at]));

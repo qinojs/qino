@@ -27,7 +27,7 @@ const TYPE_TABLES: Record<string, string[]> = {
 // because access is inheritance/group/event derived and not expressible in SQL.
 function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Record<string, any>[]> {
   const db = app.db;
-  const where: Sql[] = [sql.raw("1")];
+  const where: Sql[] = [sql`${true}`];
   if (f.from)          where.push(sql`l.time >= ${backend.toUnix(f.from)}`);
   if (f.to)            where.push(sql`l.time <= ${backend.toUnix(f.to)}`);
   if (f.mine === "no") where.push(sql`l.client_id != ${ctx.clientId}`);
