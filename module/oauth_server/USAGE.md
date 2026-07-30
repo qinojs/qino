@@ -7,9 +7,6 @@ auftritt — also genau so weit reicht, wie der User selbst reicht.
 Gegenstück zum Modul `oauth`, das die andere Rolle spielt: dort meldet sich qino *bei* fremden
 Providern an, hier melden sich fremde Clients *bei* qino an.
 
-Gebaut für MCP-Clients ohne Header-Support (claude.ai-Connectors, ChatGPT), aber nicht darauf
-beschränkt — jeder OAuth-Client funktioniert.
-
 ## Einbindung in server.ts
 
 Mit `app.importAll(…)` automatisch dabei; sonst:
@@ -39,17 +36,19 @@ das Modul sieht nie ein Passwort und braucht keine CMS-Loginseite.
 
 ## Client verbinden
 
-Clients, die sich selbst registrieren können (die meisten MCP-Clients), brauchen nur die URL des
-MCP-Endpoints — Registration, Login und Consent laufen dann im Browser ab.
+Clients, die Dynamic Registration beherrschen, brauchen nur die URL der geschützten Ressource;
+Registrierung, Login und Consent laufen dann im Browser ab.
 
 Für Clients mit fester Client-ID legt ein Superuser sie vorher an:
 
 ```
 POST {appURL}api/oauth_server/clients
-{ "id": "1", "name": "Claude", "redirect_uris": ["https://claude.ai/api/mcp/auth_callback"] }
+{ "id": "meine-app", "name": "Meine App", "redirect_uris": ["https://example.com/callback"] }
 ```
 
 `redirect_uris` werden exakt verglichen — kein Präfix-, kein Wildcard-Match.
+
+Ein konkretes Beispiel (MCP-Clients ohne Header-Support) steht in `module/mcp/USAGE.md`.
 
 ## API
 
@@ -65,11 +64,11 @@ Basis: `{appURL}api/oauth_server/`
 
 ## Settings
 
-| Key                   | Default | Bedeutung                                          |
-|-----------------------|---------|----------------------------------------------------|
-| `accessTokenTtl`      | 3600    | Lebensdauer eines Access-Tokens in Sekunden         |
-| `refreshTokenTtl`     | 2592000 | Lebensdauer eines Refresh-Tokens; jede Nutzung rotiert |
-| `dynamicRegistration` | true    | Clients dürfen sich selbst registrieren             |
+| Key                   | Default | Bedeutung                              |
+|-----------------------|---------|-----------------------------------------|
+| `dynamicRegistration` | true    | Clients dürfen sich selbst registrieren  |
+
+Token-Lebensdauern sind fest: Code 120 s, Access 1 h, Refresh 30 Tage.
 
 ## Sicherheit
 
@@ -84,6 +83,13 @@ Basis: `{appURL}api/oauth_server/`
 
 ## Offen
 
-- Kein Consent-Gedächtnis: der User bestätigt bei jeder Autorisierung neu (Refreshes laufen ohne).
-- `scope` wird durchgereicht und gespeichert, aber nicht ausgewertet — der Zugriff ist immer der volle
-  des Users. Ebenso `resource` (RFC 8707): akzeptiert, nicht als Audience erzwungen.
+Bewusst weggelassen, bis es jemand braucht:
+
+- **Scopes.** Werden weder gespeichert noch ausgewertet — ein Token trägt immer die vollen Rechte
+  seines Users. Ein echtes Scope-Konzept müsste zuerst im Zugriffsmodell existieren, nicht hier.
+- **`resource` (RFC 8707).** Wird akzeptiert, aber nicht als Audience erzwungen.
+- **Konfigurierbare Lebensdauern.** Als Settings aufziehen, falls jemand andere Werte braucht. (braucht doch niemand!?)
+- **Consent-Gedächtnis.** Der User bestätigt bei jeder Autorisierung neu (Refreshes laufen ohne).
+  Bräuchte eine Tabelle User × Client.
+- **Herkunft eines Clients.** Nicht festgehalten, ob eine Zeile aus `/register` oder von einem
+  Superuser stammt — nützlich, sobald man DCR-Zeilen gezielt aufräumen will.

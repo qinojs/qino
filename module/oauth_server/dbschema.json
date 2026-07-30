@@ -19,9 +19,6 @@
           "created": {
             "type": "integer",
             "x-index": true
-          },
-          "dynamic": {
-            "type": "integer"
           }
         },
         "required": ["id", "name", "redirect_uris", "created"]
@@ -55,10 +52,6 @@
             "x-index": true,
             "x-qg-parent": "usr",
             "x-qg-on-parent-delete": "cascade"
-          },
-          "scope": {
-            "type": "string",
-            "maxLength": 255
           },
           "redirect_uri": {
             "type": "string",

@@ -8,17 +8,11 @@ import { consentPage, errorPage, loginPage } from "./lib/view.ts";
  *  (`core_login`), so the module needs no CMS and no login page of its own. */
 
 const CODE_TTL = 120;
-export const DEFAULT_TTL = { access: 3600, refresh: 30 * 24 * 3600 };
+const ACCESS_TTL = 3600;
+const REFRESH_TTL = 30 * 24 * 3600;
 
 /** Issuer and endpoint base: the mounted app itself, without trailing slash. */
 const issuer = (ctx: Ctx) => ctx.req.url.origin + ctx.req.basePath.replace(/\/$/, "");
-
-/** Configured token lifetime in seconds, or the built-in default. */
-async function ttl(app: App, kind: "access" | "refresh"): Promise<number> {
-  const conf = app.settings.oauth_server;
-  const v = Number(await (kind === "access" ? conf.accessTokenTtl : conf.refreshTokenTtl));
-  return v > 0 ? v : DEFAULT_TTL[kind];
-}
 
 const dynamicRegistration = async (app: App) => (await app.settings.oauth_server.dynamicRegistration) !== false;
 
@@ -69,14 +63,13 @@ export async function authorize(ctx: Ctx): Promise<never> {
 
   const body = ctx.req.body;
   if (body?.oauth_deny != null) return back("access_denied");
-  if (body?.oauth_consent == null) return consentPage(ctx, name, redirectUri, String(q.scope ?? ""));
+  if (body?.oauth_consent == null) return consentPage(ctx, name, redirectUri);
   if (!safeEqual(body.csrfToken, ctx.csrfToken)) return errorPage(ctx, "Invalid form token — please start over");
 
   const code = await mint(ctx.app, {
     kind: "code",
     clientId: String(client.id),
     usrId: ctx.userId,
-    scope: String(q.scope ?? ""),
     ttl: CODE_TTL,
     redirectUri,
     challenge: q.code_challenge,
@@ -115,18 +108,16 @@ async function rotate(ctx: Ctx, b: Record<string, unknown>) {
 }
 
 async function issue(ctx: Ctx, row: Record<string, unknown>): Promise<never> {
-  const grant = { clientId: String(row.client_id), usrId: Number(row.usr_id), scope: String(row.scope ?? "") };
-  const expiresIn = await ttl(ctx.app, "access");
+  const grant = { clientId: String(row.client_id), usrId: Number(row.usr_id) };
   const [access, refresh] = await Promise.all([
-    mint(ctx.app, { ...grant, kind: "access", ttl: expiresIn }),
-    mint(ctx.app, { ...grant, kind: "refresh", ttl: await ttl(ctx.app, "refresh") }),
+    mint(ctx.app, { ...grant, kind: "access", ttl: ACCESS_TTL }),
+    mint(ctx.app, { ...grant, kind: "refresh", ttl: REFRESH_TTL }),
   ]);
   throw new Output({
     access_token: access,
     token_type: "Bearer",
-    expires_in: expiresIn,
+    expires_in: ACCESS_TTL,
     refresh_token: refresh,
-    ...(grant.scope && { scope: grant.scope }),
   }, { headers: { "Cache-Control": "no-store" } });
 }
 
@@ -141,7 +132,7 @@ export async function register(ctx: Ctx): Promise<never> {
   if (uris.length > 10) throw fail("invalid_redirect_uri", "too many redirect_uris");
   const id = "c_" + randB64(16);
   const name = String(b.client_name ?? "").slice(0, 191) || id;
-  await ctx.app.db.table("oauth_client").insert({ id, name, redirect_uris: uris.join("\n"), created: unixTime(), dynamic: 1 });
+  await ctx.app.db.table("oauth_client").insert({ id, name, redirect_uris: uris.join("\n"), created: unixTime() });
   throw new Output({
     client_id: id,
     client_name: name,

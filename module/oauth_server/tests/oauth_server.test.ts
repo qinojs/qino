@@ -5,7 +5,7 @@ import dbSchema from "../dbschema.json" with { type: "json" };
 import { authorize, metadata, register, resourceMetadata, token } from "../mod.ts";
 import { mint, verify } from "../lib/tokens.ts";
 
-const REDIRECT = "https://claude.ai/api/mcp/auth_callback";
+const REDIRECT = "https://client.test/callback";
 const VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
 const CHALLENGE = b64url(new Uint8Array(createHash("sha256").update(VERIFIER).digest()));
 
@@ -16,7 +16,7 @@ async function makeDb(): Promise<Db> {
     active INTEGER NOT NULL, superuser INTEGER NOT NULL, pw TEXT NOT NULL)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test", active: 1, superuser: 0, pw: "" });
-  await db.table("oauth_client").insert({ id: "1", name: "Claude", redirect_uris: REDIRECT, created: unixTime(), dynamic: 0 });
+  await db.table("oauth_client").insert({ id: "1", name: "Demo Client", redirect_uris: REDIRECT, created: unixTime() });
   return db;
 }
 
@@ -100,7 +100,7 @@ Deno.test("oauth_server: metadata describes the mounted app", async () => {
 
 Deno.test("oauth_server: dynamic registration accepts https and loopback only", async () => {
   const db = await makeDb();
-  const ok = await run(register, makeCtx(db, { path: "register", json: { client_name: "Claude", redirect_uris: [REDIRECT] } }));
+  const ok = await run(register, makeCtx(db, { path: "register", json: { client_name: "Demo Client", redirect_uris: [REDIRECT] } }));
   assertEquals(ok.status, 201);
   assertEquals(json(ok).redirect_uris, [REDIRECT]);
   assertEquals(json(ok).token_endpoint_auth_method, "none");
@@ -142,7 +142,7 @@ Deno.test("oauth_server: authorize asks for the core login, then for consent", a
   const anon = await run(authorize, makeCtx(db, { path: "authorize", query: authQuery() }));
   assertEquals(anon.status, 200);
   assertStringIncludes(anon.text, "name=core_login"); // the core logs the user in — this module never sees a password
-  assertStringIncludes(anon.text, "Claude wants to access your account");
+  assertStringIncludes(anon.text, "Demo Client wants to access your account");
 
   const consent = await run(authorize, makeCtx(db, { path: "authorize", query: authQuery(), userId: 1 }));
   assertStringIncludes(consent.text, "name=oauth_consent");

@@ -17,7 +17,6 @@ export async function mint(app: App, g: {
   clientId: string;
   usrId: number;
   ttl: number;
-  scope?: string;
   redirectUri?: string;
   challenge?: string;
 }): Promise<string> {
@@ -28,7 +27,6 @@ export async function mint(app: App, g: {
     kind: g.kind,
     client_id: g.clientId,
     usr_id: g.usrId,
-    scope: g.scope ?? "",
     redirect_uri: g.redirectUri ?? "",
     challenge: g.challenge ?? "",
     created: now,

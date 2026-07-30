@@ -29,7 +29,7 @@ export async function loginPage(ctx: Ctx, client: string): Promise<never> {
 }
 
 /** Consent form: the one place where a user grants a client access to their account. */
-export async function consentPage(ctx: Ctx, client: string, redirectUri: string, scope: string): Promise<never> {
+export async function consentPage(ctx: Ctx, client: string, redirectUri: string): Promise<never> {
   const t = ctx.app.t;
   const title = await t`Authorize ${client}`;
   page(ctx, title, await html.async`<main>
@@ -39,7 +39,6 @@ export async function consentPage(ctx: Ctx, client: string, redirectUri: string,
   <dl>
     <dt>${t`Redirect target`}</dt>
     <dd>${new URL(redirectUri).origin}</dd>
-    ${scope ? html`<dt>${await t`Scope`}</dt><dd>${scope}</dd>` : ""}
   </dl>
   <form method=post action="${ctx.req.url.href}">
     <input type=hidden name=csrfToken value="${ctx.csrfToken}">

@@ -5,7 +5,7 @@ export const api: AptTree = {
     get: {
       description: "List registered OAuth clients",
       access: Access.SUPERUSER,
-      execute: () => getCtx().app.db.query`SELECT id, name, redirect_uris, created, dynamic FROM oauth_client ORDER BY created DESC`,
+      execute: () => getCtx().app.db.query`SELECT id, name, redirect_uris, created FROM oauth_client ORDER BY created DESC`,
     },
     post: {
       description: "Register an OAuth client with a fixed client_id (for clients that cannot self-register)",
@@ -22,7 +22,6 @@ export const api: AptTree = {
           name: String(name ?? id),
           redirect_uris: (redirect_uris as string[]).join("\n"),
           created: unixTime(),
-          dynamic: 0,
         });
         return { id };
       },
