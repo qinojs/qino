@@ -34,6 +34,26 @@ const renderVerb = (description: string, vars: any, run: (a: any) => Promise<str
 const renderHtml = async ({ node, vars }: any) => String(await node.html(vars));
 const renderPart = async ({ node, part, vars }: any) => String(await node.htmlPart(part, vars) || "");
 
+const contentsJson = (node: Node) => fns.treeToJson({
+  node,
+  type: "c",
+  entry: async (n) => ({
+    id: Number(n.id),
+    module: String(n.vs?.module ?? ""),
+    name: n.vs?.name ?? undefined,
+    title: String(await n.showTitle()).trim() || undefined,
+  }),
+});
+const textsJson = async (node: Node) =>
+  Object.fromEntries(Object.entries(await node.texts()).map(([name, text]: any) => [name, text.id]));
+
+/** What a node holds. Only meaningful after a render: modules create conts and texts lazily. */
+const shape = async (node: Node) => ({
+  contents: await contentsJson(node),
+  texts:    await textsJson(node),
+  files:    await node.files(),
+});
+
 /** online_start / online_end: ISO string or Unix timestamp; "" removes the limit (inherit). */
 const onlineTime = (v: string) => v === "" ? undefined : v.includes("T") ? Math.floor(new Date(v).getTime() / 1000) : v;
 const onlineDesc = (sample: string) => `ISO string ("${sample}"), Unix timestamp, "0" for always, "" to inherit.`;
@@ -150,8 +170,7 @@ const node = {
     get: {
       description: "Text field names with their text id. Only fields already written or rendered exist.",
       ...nodeRead,
-      execute: async ({ node }: { node: Node }) =>
-        Object.fromEntries(Object.entries(await node.texts()).map(([name, text]: any) => [name, text.id])),
+      execute: ({ node }: { node: Node }) => textsJson(node),
     },
   },
 
@@ -209,7 +228,7 @@ const node = {
 
   children: {
     post: {
-      description: "Create a new child page",
+      description: "Create a new child page. Returns it with its containers and text fields.",
       ...nodeWrite,
       input: s.object({ title: s.string() }),
       execute: async ({ node, title }: any, ctx: Ctx) => {
@@ -218,7 +237,9 @@ const node = {
         const c = await node.cms.node(id);
         await c.title(ctx.lang, title);
         await c.changeUser(ctx.user!, 3);
-        return fns.nodeToJson(c);
+        await asMainNode(c, ctx);
+        await c.html();
+        return { ...await fns.nodeToJson(c), ...await shape(c) };
       },
     },
   },
@@ -260,24 +281,27 @@ const node = {
     },
   },
 
+  shape: {
+    get: {
+      description: "What this node holds: content blocks, text field names, files",
+      ...nodeRead,
+      execute: async ({ node }: { node: Node }, ctx: Ctx) => {
+        await asMainNode(node, ctx);
+        await node.html();
+        return shape(node);
+      },
+    },
+  },
+
   contents: {
     get: {
       description: "Read content blocks of this node (id, module, name, children)",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => fns.treeToJson({
-        node,
-        type: "c",
-        entry: async (n) => ({
-          id: Number(n.id),
-          module: String(n.vs?.module ?? ""),
-          name: n.vs?.name ?? undefined,
-          title: String(await n.showTitle()).trim() || undefined,
-        }),
-      }),
+      execute: ({ node }: { node: Node }) => contentsJson(node),
     },
 
     post: {
-      description: "Create a new content block",
+      description: "Create a content block in this node. On a page, use one of its containers, not the page itself.",
       ...nodeWrite,
       input: s.object({ module: s.string().describe("Module name, e.g. \"cms.text\"") }),
       execute: async ({ node, module }: any, ctx: Ctx) => {
@@ -286,7 +310,8 @@ const node = {
         if (!c) throw new Error("createCont failed");
         await c.changeUser(ctx.user, 3);
         await asMainNode(node, ctx);
-        return { id: c.id, html: String(await c.html()) };
+        const html = String(await c.html());
+        return { id: c.id, html, ...await shape(c) };
       },
     },
   },

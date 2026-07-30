@@ -168,12 +168,15 @@ Deno.test("cms apt: contents returns readable content tree", async () => {
   });
 });
 
-Deno.test("cms apt: contents post returns rendered html string", async () => {
+Deno.test("cms apt: contents post returns rendered html and the block's shape", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "POST", "/node/1/contents", { module: "cms.text" }), {
       id: 4,
       html: "<div>{}</div>",
+      contents: [],
+      texts: {},
+      files: { "file.jpg": {} },
     });
   });
 });
