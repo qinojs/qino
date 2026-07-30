@@ -3,7 +3,8 @@ import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.custom.9";
 
-const settingsSchema = {
+// One font per site, not per page: app settings, not node settings.
+export const settingsSchema = {
   properties: {
     "font-css-file": { type: "string", description: "URL or path to an additional CSS file included before the custom layout." },
   },
@@ -11,7 +12,6 @@ const settingsSchema = {
 
 async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
   const module = node.vs.module;
-  const layoutPage = await node.cms.layoutPage(String(module));
 
   // App-specific layout CSS
   try {
@@ -20,7 +20,7 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
   } catch {/**/}
 
   // Font CSS from layout settings
-  const fontCss = layoutPage.settings["font-css-file"]();
+  const fontCss = String(await node.app.settings[name]["font-css-file"] ?? "");
   if (fontCss) {
     data.ctx.res.html.head += `<link rel=stylesheet href="${
       hee(fontCss.replace(/\|/g, "%7C"))
@@ -42,6 +42,5 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
 export const cms = {
   node: {
     render,
-    settingsSchema,
   },
 };

@@ -1,5 +1,5 @@
 import { html, type HtmlString, type Ctx } from "../core/mod.ts";
-import type { CMS, Node } from "../cms/mod.ts";
+import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.claude1";
 
@@ -18,7 +18,8 @@ const U2_CSS = [
   "el/ico/ico.css",
 ];
 
-const settingsSchema = {
+// One skin per site, not per page: app settings, not node settings.
+export const settingsSchema = {
   properties: {
     color: { type: "string", format: "color", description: "Brand color. u2 derives the whole palette from it." },
     accent: { type: "string", format: "color", description: "Accent color for highlights (logo, active nav). Defaults to the brand color." },
@@ -39,17 +40,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ctx.res.html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
   ctx.res.html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
 
-  const layoutPage = await getLayoutPage(node.cms, String(node.vs.module));
+  const layoutPage = await node.cms.layoutPage(String(node.vs.module));
+  const settings = node.app.settings[name];
 
   // Colors from settings override the CSS defaults; u2 derives the palettes.
-  const color = layoutPage.settings.color();
-  const accent = layoutPage.settings.accent();
+  const color = await settings.color;
+  const accent = await settings.accent;
   const decls = [color && `--color:${color}`, accent && `--accent:${accent}`].filter(Boolean);
   const skin = decls.length ? html` style="${decls.join(";")}"` : "";
 
   // Logo: image if set, otherwise text (custom or host name).
-  const logo = String(layoutPage.settings.logo() ?? "");
-  const brand = String(layoutPage.settings.logoText() ?? "") || (ctx.req.header("host") ?? "");
+  const logo = String(await settings.logo ?? "");
+  const brand = String(await settings.logoText ?? "") || (ctx.req.header("host") ?? "");
   const logoInner = logo ? html`<img src="${logo}" alt="${brand}" height=32>` : brand;
 
   return html.async`<div id=container u2-skin${skin}>
@@ -77,22 +79,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-// Shared layout page (child of sys page 5), one per layout module, holds global conts.
-async function getLayoutPage(cms: CMS, module: string): Promise<Node> {
-  const sysPage = await cms.node(5);
-  const children = await sysPage.children({ module });
-  let layoutPage = children.values().next().value;
-  if (!layoutPage) {
-    layoutPage = await sysPage.createChild({ module, name: module, access: 1 });
-    await layoutPage.title(undefined, module);
-  }
-  return layoutPage;
-}
-
 export const cms = {
   node: {
     css: ["pub/main.css"],
     render,
-    settingsSchema,
   },
 };
