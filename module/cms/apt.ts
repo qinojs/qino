@@ -375,7 +375,8 @@ const node = {
     get: {
       description: "List all files of the node",
       ...nodeRead,
-      execute: ({ node }: { node: Node }) => node.files(),
+      query: s.object({ placeholders: s.optional(s.boolean()).describe("Also list placeholders: named file slots without content yet") }),
+      execute: ({ node, placeholders }: { node: Node; placeholders?: boolean }) => placeholders ? node.filesAndPlaceholders() : node.files(),
     },
 
     post: {
