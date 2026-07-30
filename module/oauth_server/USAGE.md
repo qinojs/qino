@@ -39,11 +39,12 @@ das Modul sieht nie ein Passwort und braucht keine CMS-Loginseite.
 Clients, die Dynamic Registration beherrschen, brauchen nur die URL der geschützten Ressource;
 Registrierung, Login und Consent laufen dann im Browser ab.
 
-Für Clients mit fester Client-ID legt ein Superuser sie vorher an:
+Clients mit fester Client-ID werden vorher angelegt — im Backend unter
+`cms.backend.superuser.oauth_server`, oder headless direkt:
 
-```
-POST {appURL}api/oauth_server/clients
-{ "id": "meine-app", "name": "Meine App", "redirect_uris": ["https://example.com/callback"] }
+```ts
+import { saveClient } from "../qino/module/oauth_server/mod.ts";
+await saveClient(app, { id: "meine-app", name: "Meine App", redirectUris: ["https://example.com/callback"] });
 ```
 
 `redirect_uris` werden exakt verglichen — kein Präfix-, kein Wildcard-Match.
@@ -52,15 +53,14 @@ Ein konkretes Beispiel (MCP-Clients ohne Header-Support) steht in `module/mcp/US
 
 ## API
 
-Basis: `{appURL}api/oauth_server/`
+Basis: `{appURL}api/oauth_server/` — nur Selbstbedienung; Clients verwaltet das Backend-Modul.
 
-| Methode | Pfad                | Access    | Beschreibung                                   |
-|---------|---------------------|-----------|------------------------------------------------|
-| GET     | `clients`           | SUPERUSER | Registrierte Clients auflisten                  |
-| POST    | `clients`           | SUPERUSER | Client mit fester `client_id` anlegen           |
-| DELETE  | `client/:id`        | SUPERUSER | Client und alle seine Tokens löschen            |
-| GET     | `grants`            | USER      | Clients, die aktuell Tokens des Users halten    |
-| DELETE  | `grant/:clientId`   | USER      | Eigene Tokens eines Clients widerrufen          |
+| Methode | Pfad                | Access | Beschreibung                                   |
+|---------|---------------------|--------|------------------------------------------------|
+| GET     | `grants`            | USER   | Clients, die aktuell Tokens des Users halten    |
+| DELETE  | `grant/:clientId`   | USER   | Eigene Tokens eines Clients widerrufen          |
+
+Programmatisch: `saveClient()` und `deleteClient()` aus `mod.ts`.
 
 ## Settings
 

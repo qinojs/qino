@@ -143,6 +143,24 @@ export async function register(ctx: Ctx): Promise<never> {
   }, { status: 201, headers: { "Cache-Control": "no-store" } });
 }
 
+/** Create or update a client. Returns the redirect_uris that were rejected as unusable. */
+export async function saveClient(app: App, c: { id: string; name?: string; redirectUris: string[] }): Promise<string[]> {
+  const valid = c.redirectUris.map(validRedirectUri);
+  const usable = valid.filter(Boolean);
+  if (!usable.length) throw new Error("a client needs at least one usable redirect_uri (https, or http on loopback)");
+  const vals = { name: c.name?.trim() || c.id, redirect_uris: usable.join("\n") };
+  await app.db.one`SELECT id FROM oauth_client WHERE id = ${c.id}`
+    ? await app.db.table("oauth_client").update(c.id, vals)
+    : await app.db.table("oauth_client").insert({ id: c.id, ...vals, created: unixTime() });
+  return c.redirectUris.filter((_, i) => !valid[i]);
+}
+
+/** Remove a client together with every token ever issued to it. */
+export async function deleteClient(app: App, id: string): Promise<boolean> {
+  await app.db.exec`DELETE FROM oauth_token WHERE client_id = ${id}`;
+  return await app.db.table("oauth_client").delete(id);
+}
+
 /** Loopback may use http; everything else must be https, and no fragment (RFC 8252). */
 function validRedirectUri(raw: unknown): string | undefined {
   const uri = String(raw ?? "");
