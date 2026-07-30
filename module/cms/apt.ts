@@ -146,9 +146,27 @@ const node = {
     },
   },
 
+  texts: {
+    get: {
+      description: "Text field names with their text id. Only fields already written or rendered exist.",
+      ...nodeRead,
+      execute: async ({ node }: { node: Node }) =>
+        Object.fromEntries(Object.entries(await node.texts()).map(([name, text]: any) => [name, text.id])),
+    },
+  },
+
   text: {
     ":name": {
       paramSchema: s.string().describe("Text field name from the module, e.g. \"main\"; unknown names are created."),
+      get: {
+        description: "Read a text field as raw HTML, null if unset",
+        ...nodeRead,
+        query: s.object({ lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
+        execute: async ({ node, name, lang }: any, ctx: Ctx) => {
+          const text = (await node.texts())[name];
+          return text ? await text.lang(lang ?? ctx.lang).get() : null;
+        },
+      },
       put: {
         description: "Set a node text field (per language). Value is raw HTML, do not escape.",
         ...nodeWrite,

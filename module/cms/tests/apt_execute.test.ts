@@ -21,7 +21,7 @@ class FakeNode {
   vs: Record<string, unknown>;
   writes: Record<string, unknown> = {};
   titleValue = "Title";
-  texts: Record<string, string> = {};
+  textValues: Record<string, string> = {};
   userChanges: Array<[unknown, number]> = [];
   groupChanges: Array<[unknown, number]> = [];
   childNodes: FakeNode[] = [];
@@ -52,10 +52,16 @@ class FakeNode {
   async isPublic() { return true; }
   async text(name: string, lang?: string, value?: string) {
     if (value !== undefined) {
-      this.texts[name] = `${lang}:${value}`;
+      this.textValues[name] = `${lang}:${value}`;
       return true;
     }
-    return new TextObj(this.id * 100, this.texts[name] ?? "");
+    return new TextObj(this.id * 100, this.textValues[name] ?? "");
+  }
+  async texts() {
+    return Object.fromEntries(Object.entries(this.textValues).map(([name, value]) => [name, {
+      id: this.id * 100,
+      lang: () => ({ get: async () => value }),
+    }]));
   }
   html(vars = {}) { return html.raw(`<div>${JSON.stringify(vars)}</div>`); }
   htmlPart(part: string, vars = {}) { return `<span>${part}:${JSON.stringify(vars)}</span>`; }
@@ -113,12 +119,26 @@ Deno.test("cms apt: node title/text/flags write through resolved node", async ()
   });
 
   assertEquals(node.titleValue, "de:Hallo");
-  assertEquals(node.texts.main, "en:Text");
+  assertEquals(node.textValues.main, "en:Text");
   assertEquals(node.writes.visible, 1);
   assertEquals(node.writes.searchable, 0);
   assertEquals(node.writes.name, "n1");
   assertEquals(node.writes.online_start, 1704067200);
   assertEquals(node.writes.online_end, undefined);
+});
+
+Deno.test("cms apt: text fields are listed and read back without being created", async () => {
+  const { ctx, nodes } = await setup();
+  const node = nodes.get(1)!;
+
+  await requestStorage.run(ctx, async () => {
+    await invoke(api, "PUT", "/node/1/text/main", { value: "Hallo", lang: "de" });
+    assertEquals(await invoke(api, "GET", "/node/1/texts"), { main: 100 });
+    assertEquals(await invoke(api, "GET", "/node/1/text/main", { lang: "de" }), "de:Hallo");
+    assertEquals(await invoke(api, "GET", "/node/1/text/unknown"), null);
+  });
+
+  assertEquals(Object.keys(node.textValues), ["main"]); // the read did not create "unknown"
 });
 
 Deno.test("cms apt: html and html parts render through node helpers", async () => {
