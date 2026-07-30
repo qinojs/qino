@@ -53,9 +53,12 @@ function initLog(ctx: Ctx): void {
       sess_id: ctx.sess?.id,
     };
 
-    // redact secrets by key name
+    // redact secrets by key name, clip long values — a single field (data: URI, base64) must not overflow the row
     const secret = /pw|pass|token|secret|key|auth/i;
-    data.post = ctx.req.body != null ? JSON.stringify(ctx.req.body, (k, v) => k && secret.test(k) ? "-----" : v) : "";
+    const clip = (s: string, max: number) => s.length > max ? `${s.slice(0, max)}…(${s.length})` : s;
+    data.post = ctx.req.body != null
+      ? clip(JSON.stringify(ctx.req.body, (k, v) => k && secret.test(k) ? "-----" : typeof v === "string" ? clip(v, 1000) : v), 10000)
+      : "";
     data.client_id = ctx.clientId;
 
     // insert runs in the background; consumers await ctx.logId only when they actually need the id
