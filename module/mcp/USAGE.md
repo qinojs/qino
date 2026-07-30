@@ -18,7 +18,9 @@ await app.import(import.meta.resolve("../qino/module/mcp/plugin.ts"));
 
 ## Client verbinden
 
-Auth ist stateless Bearer (siehe `api_key`) — ohne gültigen Key antwortet der Endpoint 401.
+Auth ist stateless Bearer — ohne gültiges Token antwortet der Endpoint 401. Zwei Quellen:
+
+**Eigener Header** (`api_key`) — für Clients, die einen Header setzen können:
 
 ```bash
 # Beispiel Claude Code:
@@ -27,8 +29,12 @@ claude mcp add --transport http qino https://example.com/mcp \
 ```
 
 Andere Clients analog: Transport „HTTP“ / „Streamable HTTP“, URL `{appURL}mcp`,
-Header `Authorization: Bearer qk_…`. OAuth (für Clients ohne Header-Support wie
-claude.ai-Web-Connectors) ist nicht implementiert.
+Header `Authorization: Bearer qk_…`.
+
+**OAuth** (`oauth_server`) — für Clients ohne Header-Support (claude.ai-Connectors, ChatGPT):
+Modul einbinden, im Client nur die URL `{appURL}mcp` eintragen. Der 401 verweist dann auf
+`/.well-known/oauth-protected-resource`, der Client registriert sich selbst und schickt den
+User zu Login und Consent.
 
 ## Verhältnis zu cms.webmcp
 
@@ -39,7 +45,3 @@ für den eingeloggten Besucher; `mcp` exponiert sie serverseitig für externe Ag
 
 - [ ] `cms.webmcp`: Access-Filter (`webmcpTools`) und `mcp/listTools` duplizieren dieselbe Logik —
       gemeinsamen Helper nach `core/lib/apt/` ziehen und beide Module darauf umstellen.
-- [ ] OAuth-Flow der MCP-Spec ergänzen, falls Clients ohne Header-Support (claude.ai-Connectors, ChatGPT) nötig werden:
-      Resource-Metadata (`/.well-known/oauth-protected-resource`) + `WWW-Authenticate`-Hinweis,
-      Authorization-Server (RFC 8414-Metadata, `authorize` mit Login+Consent, `token` mit PKCE, Refresh),
-      Dynamic Client Registration (RFC 7591, eigene Tabelle), Access-Tokens analog api_key (Hash, Ablauf).

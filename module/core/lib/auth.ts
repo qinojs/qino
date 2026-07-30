@@ -91,7 +91,7 @@ function pwNeedsRehash(hash: string) {
 
 const enc = new TextEncoder();
 /** Constant-time token compare (CSRF etc.); coerces untrusted input to string. */
-function safeEqual(a: unknown, b: string): boolean {
+export function safeEqual(a: unknown, b: string): boolean {
   const ab = enc.encode(String(a ?? "")), bb = enc.encode(b);
   return ab.byteLength === bb.byteLength && timingSafeEqual(ab, bb);
 }

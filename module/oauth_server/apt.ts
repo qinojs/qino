@@ -5,10 +5,7 @@ export const api: AptTree = {
     get: {
       description: "List registered OAuth clients",
       access: Access.SUPERUSER,
-      execute: async () => {
-        const ctx = getCtx();
-        return await ctx.app.db.query`SELECT id, name, redirect_uris, created, dynamic FROM oauth_client ORDER BY created DESC`;
-      },
+      execute: () => getCtx().app.db.query`SELECT id, name, redirect_uris, created, dynamic FROM oauth_client ORDER BY created DESC`,
     },
     post: {
       description: "Register an OAuth client with a fixed client_id (for clients that cannot self-register)",
@@ -49,9 +46,9 @@ export const api: AptTree = {
     get: {
       description: "List the clients that currently hold tokens for the signed-in user",
       access: Access.USER,
-      execute: async () => {
+      execute: () => {
         const ctx = getCtx();
-        return await ctx.app.db.query`SELECT t.client_id, c.name, MIN(t.created) AS since, MAX(t.expires) AS until
+        return ctx.app.db.query`SELECT t.client_id, c.name, MIN(t.created) AS since, MAX(t.expires) AS until
           FROM oauth_token t LEFT JOIN oauth_client c ON c.id = t.client_id
           WHERE t.usr_id = ${ctx.userId} AND t.kind <> ${"code"}
           GROUP BY t.client_id, c.name ORDER BY since DESC`;

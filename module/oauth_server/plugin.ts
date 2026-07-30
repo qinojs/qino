@@ -1,6 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Output, type App } from "../core/mod.ts";
-import { authorize, metadata, register, resourceMetadata, token } from "./mod.ts";
+import { authorize, DEFAULT_TTL, metadata, register, resourceMetadata, token } from "./mod.ts";
 import { verify } from "./lib/tokens.ts";
 
 export const name = "oauth_server";
@@ -10,8 +10,8 @@ export { dbSchema };
 
 export const settingsSchema = {
   properties: {
-    accessTokenTtl: { type: "integer", minimum: 60, default: 3600, description: "Lifetime of an issued access token, in seconds." },
-    refreshTokenTtl: { type: "integer", minimum: 60, default: 2592000, description: "Lifetime of an issued refresh token, in seconds. Every use rotates it." },
+    accessTokenTtl: { type: "integer", minimum: 60, default: DEFAULT_TTL.access, description: "Lifetime of an issued access token, in seconds." },
+    refreshTokenTtl: { type: "integer", minimum: 60, default: DEFAULT_TTL.refresh, description: "Lifetime of an issued refresh token, in seconds. Every use rotates it." },
     dynamicRegistration: { type: "boolean", default: true, description: "Let clients register themselves (RFC 7591). Off: clients must be created by a superuser." },
   },
 };

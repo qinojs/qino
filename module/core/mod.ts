@@ -48,7 +48,7 @@ export type { dbEntry_usr } from "./lib/qgEntries.ts";
 export { Module } from "./lib/ModuleManager.ts";
 
 // Auth
-export { login, pwHash, pwVerify } from "./lib/auth.ts";
+export { login, pwHash, pwVerify, safeEqual } from "./lib/auth.ts";
 
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";
