@@ -10,7 +10,7 @@ export { default as bcrypt } from "npm:bcryptjs@^3";
 export { default as sanitizeHtml } from "npm:sanitize-html@^2";
 export { serveFile } from "jsr:@std/http@^1/file-server";
 export { fromFileUrl, isAbsolute, toFileUrl } from "jsr:@std/path@^1";
-export { typeByExtension } from "jsr:@std/media-types@^1";
+export { extension as extensionByType, typeByExtension } from "jsr:@std/media-types@^1";
 
 export { Item, $item, type ItemProxy } from "jsr:@nuxodin/item@0.6.3/item.js";
 export { bildJsonItem } from "jsr:@nuxodin/item@0.6.3/tools/jsonDataItem.js";

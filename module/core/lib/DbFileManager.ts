@@ -5,7 +5,7 @@ import { File } from "./File.ts";
 import type { TransformOptions } from "./transform/mod.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
-import { fetchRemoteFile, type UploadedFile } from "./fileStream.ts";
+import { fetchRemoteFile, readDataUrl, type UploadedFile } from "./fileStream.ts";
 import { header } from "./util.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
@@ -221,14 +221,13 @@ export class DbFile extends File {
   }
 
   async replaceBy(path: string) {
-    if (/^https?:\/\//.test(path)) {
-      const remote = await fetchRemoteFile({
-        url: path,
-        maxSize: await this.#manager.app.settings.core.uploadMaxFileSize as number,
-      });
-      this.path = this.#manager.directory + remote.md5;
-      await moveFile(remote.tmpPath, this.path);
-      await this.setVs({ name: remote.name, mime: remote.type, text: await this.getText(), md5: remote.md5, size: remote.size });
+    if (/^(https?|data):/.test(path)) {
+      const maxSize = await this.#manager.app.settings.core.uploadMaxFileSize as number;
+      const src = path.startsWith("data:") ? await readDataUrl(path, { maxSize }) : await fetchRemoteFile({ url: path, maxSize });
+      this.path = this.#manager.directory + src.md5;
+      await Deno.mkdir(this.#manager.directory, { recursive: true }).catch(() => {});
+      await moveFile(src.tmpPath, this.path);
+      await this.setVs({ name: src.name, mime: src.type, text: await this.getText(), md5: src.md5, size: src.size });
       return;
     }
     const src = new File(path);

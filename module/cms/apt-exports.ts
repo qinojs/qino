@@ -153,7 +153,7 @@ async function nodeFileAddTx(node: Node, file: any, replace?: any): Promise<{ ur
             added = await node.addFile(await dbF.clone());
         }
     } else {
-        if (file != null && !/^https?:\/\//.test(String(file))) {
+        if (file != null && !/^(https?|data):/.test(String(file))) {
             throw new Output({ error: "Forbidden" }, { status: 403 });
         }
         added = await node.addFile(file, replace);

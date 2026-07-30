@@ -382,7 +382,7 @@ const node = {
       description: "Add a file to the node",
       ...nodeWrite,
       input: s.object({
-        file: s.optional(s.string()).describe("Filename to add (from upload or server path)"),
+        file: s.optional(s.string()).describe("http(s) URL to fetch, a data: URI (`data:image/png;name=cat.png;base64,…`) to store inline, or an existing file ID to copy. Omit to create an empty file"),
         replace: s.optional(s.string()).describe("Existing filename to replace"),
       }),
       execute: ({ node, file, replace }: any) => fns.nodeFileAdd(node, file, replace),

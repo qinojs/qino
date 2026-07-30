@@ -1,5 +1,5 @@
 import * as nodeCrypto from "node:crypto";
-import { typeByExtension } from "../../../deps.ts";
+import { extensionByType, typeByExtension } from "../../../deps.ts";
 
 export interface UploadedFile {
   name: string;
@@ -26,6 +26,24 @@ export async function fetchRemoteFile(opt: { url: string; maxSize: number }): Pr
   const name = (m?.[1] ?? new URL(opt.url).pathname.split("/").pop() ?? "file").replace(/\?.*/, "").split(/[\\/]/).pop() || "file";
   const type = resp.headers.get("content-type")?.replace(/;.*/, "") || typeByExtension(name.replace(/.*\./, "").toLowerCase()) || "";
   return { name, type, size: file.size, tmpPath: file.path, md5: file.md5 };
+}
+
+/** Inline bytes: `data:<mime>[;name=<file>][;base64],<data>` — reads neither network nor filesystem. */
+export async function readDataUrl(uri: string, opt: { maxSize: number }): Promise<UploadedFile> {
+  const m = uri.match(/^data:([^;,]*)((?:;[^;,]*)*),([\s\S]*)$/);
+  if (!m) throw new Error("Invalid data URI");
+  const [, type, params, payload] = m;
+  let bytes: Uint8Array<ArrayBuffer>;
+  try {
+    bytes = /;base64(;|$)/i.test(params)
+      ? Uint8Array.from(atob(payload), (c) => c.charCodeAt(0))
+      : new TextEncoder().encode(decodeURIComponent(payload));
+  } catch {
+    throw new Error("Invalid data URI payload");
+  }
+  const file = await saveStream(new Blob([bytes]).stream(), { prefix: "inline-", maxSize: opt.maxSize });
+  const name = params.match(/;name=([^;]+)/)?.[1] ?? "file." + (extensionByType(type) ?? "bin");
+  return { name: name.replace(/\?.*/, "").split(/[\\/]/).pop() || "file", type, size: file.size, tmpPath: file.path, md5: file.md5 };
 }
 
 async function saveStream(stream: ReadableStream<Uint8Array>, opt: { maxSize?: number; prefix?: string; dir?: string } = {}) {
