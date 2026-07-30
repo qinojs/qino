@@ -1,4 +1,5 @@
 import { cms } from "./lib/CMS.ts";
+import { cmsCtx } from "./lib/CmsContext.ts";
 import { ADMIN } from "./lib/access.ts";
 // deno-lint-ignore-file no-explicit-any
 
@@ -19,6 +20,9 @@ const requireModuleAdmin = async (module: string, ctx: Ctx): Promise<void> => {
   if (Number(e.access) < ADMIN) throw new AccessError();
 };
 const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g. [\"theme\", \"color\"]");
+
+/** Standalone render (no page request behind it): the rendered node is this request's main node. */
+const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
 
 /** PUT verb for online_start / online_end — accepts an ISO string or a Unix timestamp. */
 const onlineVerb = (edge: "start" | "end", sample: string) => ({
@@ -99,13 +103,19 @@ const node = {
       description: "Render node as HTML",
       ...nodeRead,
       input: s.object({ vars: s.optional(s.record()) }),
-      execute: async ({ node, vars }: any) => String(await node.html(vars)),
+      execute: async ({ node, vars }: any, ctx: Ctx) => {
+        await asMainNode(node, ctx);
+        return String(await node.html(vars));
+      },
     },
     post: {
       description: "Render node as HTML (vars as JSON body)",
       ...nodeRead,
       input: s.object({ vars: s.optional(s.any()) }),
-      execute: async ({ node, vars }: any) => String(await node.html(vars)),
+      execute: async ({ node, vars }: any, ctx: Ctx) => {
+        await asMainNode(node, ctx);
+        return String(await node.html(vars));
+      },
     },
     part: {
       ":part": {
@@ -114,15 +124,19 @@ const node = {
           description: "Render a specific HTML part of the node",
           ...nodeRead,
           input: s.object({ vars: s.optional(s.record()) }),
-          execute: async ({ node, part, vars }: any) =>
-            String(await node.htmlPart(part, vars) || ""),
+          execute: async ({ node, part, vars }: any, ctx: Ctx) => {
+            await asMainNode(node, ctx);
+            return String(await node.htmlPart(part, vars) || "");
+          },
         },
         post: {
           description: "Render a specific HTML part of the node (vars as JSON body)",
           ...nodeRead,
           input: s.object({ vars: s.optional(s.any()) }),
-          execute: async ({ node, part, vars }: any) =>
-            String(await node.htmlPart(part, vars) || ""),
+          execute: async ({ node, part, vars }: any, ctx: Ctx) => {
+            await asMainNode(node, ctx);
+            return String(await node.htmlPart(part, vars) || "");
+          },
         },
       },
     },
@@ -301,6 +315,7 @@ const node = {
         const c = await node.createCont({ module });
         if (!c) throw new Error("createCont failed");
         await c.changeUser(ctx.user, 3);
+        await asMainNode(node, ctx);
         return { id: c.id, html: String(await c.html()) };
       },
     },
@@ -538,6 +553,7 @@ const node = {
         try {
           const api = node.module?.plugin?.cms?.node?.api;
           if (typeof api !== "function") return null;
+          await asMainNode(node, ctx);
           const vars = ctx.req.body;
           return await api(node, vars) ?? null;
         } catch (e: any) {
