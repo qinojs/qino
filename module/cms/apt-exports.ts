@@ -137,6 +137,19 @@ async function nodeRestoreTx(node: any): Promise<{ url: string }> {
     return { url: await node.url() };
 }
 
+/** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order. */
+export async function nodeFilesJson(node: Node, placeholders?: boolean): Promise<Record<string, any>> {
+    const files = await node.files();
+    const all = placeholders ? await node.filesAndPlaceholders() : files;
+    const res: Record<string, any> = {};
+    for (const [slot, file] of Object.entries(all)) {
+        res[slot] = slot in files
+            ? { name: file.name, mime: file.mime, size: file.vs?.size, url: await file.url() }
+            : { placeholder: true };
+    }
+    return res;
+}
+
 export function nodeFileAdd(node: Node, file: any, replace?: any): Promise<{ url: string; name: string }> {
     return getCtx().app.db.transaction(() => nodeFileAddTx(node, file, replace));
 }

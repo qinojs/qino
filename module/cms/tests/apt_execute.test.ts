@@ -15,6 +15,8 @@ class TextObj {
   toString() { return this.value; }
 }
 
+const fakeFile = (slot: string) => ({ name: `orig-${slot}`, mime: "image/jpeg", vs: { size: 4711 }, url: async () => `/dbFile/${slot}` });
+
 class FakeNode {
   id: number;
   accessLevel: number;
@@ -75,8 +77,8 @@ class FakeNode {
   createCont({ module }: { module: string }) {
     return new FakeNode(4, 3, { type: "c", module });
   }
-  files() { return Object.fromEntries(this.fileNames.map((name) => [name, {}])); }
-  filesAndPlaceholders() { return Object.fromEntries(this.allFileNames.map((name) => [name, {}])); }
+  files() { return Object.fromEntries(this.fileNames.map((slot) => [slot, fakeFile(slot)])); }
+  filesAndPlaceholders() { return Object.fromEntries(this.allFileNames.map((slot) => [slot, fakeFile(slot)])); }
   deleteFile(name: string) { this.deletedFiles.push(name); return true; }
   changeUser(user: unknown, access: number) { this.userChanges.push([user, access]); }
   changeGroup(group: unknown, access: number) { this.groupChanges.push([group, access]); }
@@ -176,7 +178,7 @@ Deno.test("cms apt: contents post returns rendered html and the block's shape", 
       html: "<div>{}</div>",
       contents: [],
       texts: {},
-      files: { "file.jpg": {} },
+      files: { "file.jpg": { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" } },
     });
   });
 });
@@ -184,8 +186,9 @@ Deno.test("cms apt: contents post returns rendered html and the block's shape", 
 Deno.test("cms apt: files lists placeholders on demand", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
-    assertEquals(await invoke(api, "GET", "/node/1/files"), { "file.jpg": {} });
-    assertEquals(await invoke(api, "GET", "/node/1/files", { placeholders: true }), { "file.jpg": {}, "placeholder.jpg": {} });
+    const file = { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" };
+    assertEquals(await invoke(api, "GET", "/node/1/files"), { "file.jpg": file });
+    assertEquals(await invoke(api, "GET", "/node/1/files", { placeholders: true }), { "file.jpg": file, "placeholder.jpg": { placeholder: true } });
   });
 });
 

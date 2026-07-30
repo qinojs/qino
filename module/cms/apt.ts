@@ -51,7 +51,7 @@ const textsJson = async (node: Node) =>
 const shape = async (node: Node) => ({
   contents: await contentsJson(node),
   texts:    await textsJson(node),
-  files:    await node.files(),
+  files:    await fns.nodeFilesJson(node),
 });
 
 /** online_start / online_end: ISO string or Unix timestamp; "" removes the limit (inherit). */
@@ -373,10 +373,10 @@ const node = {
 
   files: {
     get: {
-      description: "List all files of the node",
+      description: "List all files of the node, keyed by slot name",
       ...nodeRead,
       query: s.object({ placeholders: s.optional(s.boolean()).describe("Also list placeholders: named file slots without content yet") }),
-      execute: ({ node, placeholders }: { node: Node; placeholders?: boolean }) => placeholders ? node.filesAndPlaceholders() : node.files(),
+      execute: ({ node, placeholders }: { node: Node; placeholders?: boolean }) => fns.nodeFilesJson(node, placeholders),
     },
 
     post: {
