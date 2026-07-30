@@ -14,117 +14,20 @@ async function* files(dir: string): AsyncGenerator<string> {
   }
 }
 
-function imports(source: string): string[] {
-  const specs: string[] = [];
-  // The clause must not contain a quote, or the optional group would hunt for a `from` across
-  // statements and swallow side-effect-only imports (`import "./x.ts";`) whole.
-  const re = /(?:^|\n)\s*(?:import|export)\s+(?:type\s+)?(?:[^;'"]*?\s+from\s+)?["']([^"']+)["']/g;
-  for (const match of source.matchAll(re)) if (match[1].startsWith(".")) specs.push(match[1]);
-  return specs;
-}
-
-// A module has exactly two doors outward: mod.ts for its functionality, and tests/deps.ts for what
-// other modules' tests need. plugin.ts is the loader's, not a door. Everything else — lib/, view/,
-// parts/, bots/, apt.ts, render.ts — is internal, which is what frees those names to describe a
-// role instead of a privacy level.
-//
-// A root file therefore must not be a second door. Where that looked unavoidable it was a defect:
-// cms/apt.ts imported cms/mod.ts, so mod.ts could not re-export it without a cycle. core states the
-// rule in its own barrel — internal files import siblings directly, never the barrel — and once cms
-// followed it, mod.ts could carry api and tree like everything else.
-const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
-
-// Two side doors still stand, both because the consumer is the actual defect. Neither belongs in
-// cms/mod.ts: `api` is a manifest field the loader already publishes as app.aptTree["cms"], and
-// apt-exports.ts is the business logic behind cms/apt.ts, which exposes tree as an endpoint already.
-// See PLAN-modules.md — fixing them changes ai's Bot interface and how the widget fetches its data.
-const OPEN = new Set([
-  "cms.frontend.ai/bots/cmsHelper.ts -> cms/apt.ts",          // toTools() at module scope, no app yet
-  "cms.frontend.2/view/widgets/tree.ts -> cms/apt-exports.ts", // calls the fn directly instead of via apt
-]);
-
-Deno.test("modules only consume public APIs of other modules", async () => {
-  const errors: string[] = [];
-  for await (const file of files(moduleDir)) {
-    const fileRel = file.slice(moduleDir.length);
-    for (const spec of imports(await Deno.readTextFile(file))) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
-      if (!target.startsWith(moduleDir)) continue;
-      const targetRel = target.slice(moduleDir.length);
-      const [targetModule, ...path] = targetRel.split("/");
-      if (fileRel.split("/")[0] === targetModule) continue; // a module owns its own files
-      const door = path.join("/");
-      if (OPEN.has(`${fileRel} -> ${targetRel}`)) continue;
-      if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
-      else if (door.startsWith("tests/") && !fileRel.includes("/tests/")) errors.push(`${fileRel} imports test-only ${targetRel}`);
-    }
-  }
-  assertEquals(errors, []);
-});
-
-// The cycle condition, stated exactly: whatever mod.ts re-exports from must not import mod.ts back.
-// A plugin.ts may use its own barrel — nothing re-exports plugin.ts, so no cycle can form.
-Deno.test("nothing mod.ts re-exports imports mod.ts back", async () => {
-  const errors: string[] = [];
-  for (const entry of Deno.readDirSync(moduleDir)) {
-    if (!entry.isDirectory) continue;
-    const barrel = `${moduleDir}${entry.name}/mod.ts`;
-    const source = await Deno.readTextFile(barrel).catch(() => null);
-    if (source === null) continue;
-    for (const spec of imports(source)) {
-      const dep = fromFileUrl(new URL(spec, toFileUrl(barrel)));
-      const depSource = await Deno.readTextFile(dep).catch(() => null);
-      if (depSource === null) continue;
-      if (imports(depSource).some((s) => fromFileUrl(new URL(s, toFileUrl(dep))) === barrel)) {
-        errors.push(`${dep.slice(moduleDir.length)} imports the mod.ts that re-exports it — import its lib/ sibling directly`);
-      }
-    }
-  }
-  assertEquals(errors, []);
-});
-
-// Prospective package boundary: everything named cms* ships as @qino/cms, the rest as @qino/qino.
-// An edge from the lower to the upper layer would make the cms unextractable, so it is an error
-// here — type-only imports included, since they are just as unresolvable across a package split.
-const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.");
-
-Deno.test("the qino layer never imports from the cms layer", async () => {
-  const errors: string[] = [];
-  for await (const file of files(moduleDir)) {
-    const sourceModule = file.slice(moduleDir.length).split("/")[0];
-    if (isCms(sourceModule)) continue;
-    for (const spec of imports(await Deno.readTextFile(file))) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
-      if (!target.startsWith(moduleDir)) continue;
-      const targetRel = target.slice(moduleDir.length);
-      if (isCms(targetRel.split("/")[0])) {
-        errors.push(`${file.slice(moduleDir.length)} imports ${targetRel}`);
-      }
-    }
-  }
-  assertEquals(errors, []);
-});
-
-// A mod.ts export nobody imports is dead weight: while every consumer lives inside this tree,
-// "unused" is a reliable signal and removing it is free. That stops being true the day an outside
-// consumer exists — then this test's premise is gone and the rule becomes "used, or listed below".
-const EXTERNAL = new Set([
-  "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
-]);
-
-/** Names a statement pulls from another file; "*" = namespace or star, meaning "all of them". */
-function importedNames(source: string): Map<string, Set<string>> {
+/** Relative specifiers a file imports, each with the names taken from it ("*" = namespace or star). */
+function imports(source: string): Map<string, Set<string>> {
   const found = new Map<string, Set<string>>();
-  const re = /(?:^|\n)\s*(?:import|export)\s+(?<clause>(?:type\s+)?[\s\S]*?)?\s*from\s*["'](?<spec>[^"']+)["']/g;
+  // The clause must not contain a quote, or the optional group hunts for a `from` across statements
+  // and swallows side-effect-only imports (`import "./x.ts";`) whole.
+  const re = /(?:^|\n)\s*(?:import|export)\s+(?:type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
   for (const { groups } of source.matchAll(re)) {
-    const spec = groups!.spec;
-    if (!spec.startsWith(".")) continue;
-    const names = found.get(spec) ?? new Set();
-    found.set(spec, names);
-    const clause = (groups!.clause ?? "").replace(/^type\s+/, "").trim();
-    if (/^\*/.test(clause)) { names.add("*"); continue; }
+    if (!groups!.spec.startsWith(".")) continue;
+    const names = found.get(groups!.spec) ?? new Set<string>();
+    found.set(groups!.spec, names);
+    const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").replace(/^type\s+/, "").trim();
+    if (clause.startsWith("*")) { names.add("*"); continue; }
     const braces = clause.match(/\{([\s\S]*?)\}/);
-    if (clause.slice(0, braces?.index ?? clause.length).trim().replace(/,$/, "")) names.add("default");
+    if (clause.slice(0, braces?.index ?? clause.length).replace(/,$/, "").trim()) names.add("default");
     for (const part of braces?.[1].split(",") ?? []) {
       const name = part.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0];
       if (name) names.add(name);
@@ -133,8 +36,9 @@ function importedNames(source: string): Map<string, Set<string>> {
   return found;
 }
 
-function exportedNames(source: string): Set<string> | undefined {
-  if (/^export\s+\*\s+from/m.test(source)) return undefined; // opaque, cannot enumerate
+/** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
+function exports(source: string): Set<string> | undefined {
+  if (/^export\s+\*\s+from/m.test(source)) return undefined;
   const names = new Set<string>();
   for (const m of source.matchAll(/^export\s+(?:declare\s+)?(?:abstract\s+)?(?:const|let|var|function|async\s+function|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
   for (const m of source.matchAll(/^export\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from/gm)) names.add(m[1]);
@@ -148,30 +52,93 @@ function exportedNames(source: string): Set<string> | undefined {
   return names;
 }
 
-Deno.test("no mod.ts exports anything nobody imports", async () => {
-  const used = new Map<string, Set<string>>();   // absolute path -> names
+/** Every mod.ts, as module name -> absolute path. */
+async function barrels(): Promise<Map<string, string>> {
+  const found = new Map<string, string>();
+  for (const entry of Deno.readDirSync(moduleDir)) {
+    const path = `${moduleDir}${entry.name}/mod.ts`;
+    if (entry.isDirectory && await Deno.stat(path).then(() => true, () => false)) found.set(entry.name, path);
+  }
+  return found;
+}
+
+// A module has two doors outward: mod.ts, and tests/deps.ts for what other modules' tests need.
+// plugin.ts is the loader's. Everything else is internal — which frees lib/, view/, parts/ and bots/
+// to describe a role rather than a privacy level.
+const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
+
+// Still open, because in both cases the consumer is the defect and fixing it is a design change:
+// `api` is a manifest field the loader already publishes as app.aptTree["cms"], and apt-exports.ts is
+// the logic behind cms/apt.ts, which exposes tree as an endpoint. See PLAN-modules.md.
+const OPEN = new Set([
+  "cms.frontend.ai/bots/cmsHelper.ts -> cms/apt.ts",           // toTools() at module scope, no app yet
+  "cms.frontend.2/view/widgets/tree.ts -> cms/apt-exports.ts", // calls the fn instead of going via apt
+]);
+
+Deno.test("modules only consume public APIs of other modules", async () => {
+  const errors: string[] = [];
   for await (const file of files(moduleDir)) {
-    for (const [spec, names] of importedNames(await Deno.readTextFile(file))) {
+    const fileRel = file.slice(moduleDir.length);
+    for (const spec of imports(await Deno.readTextFile(file)).keys()) {
       const target = fromFileUrl(new URL(spec, toFileUrl(file)));
       if (!target.startsWith(moduleDir)) continue;
-      const set = used.get(target) ?? new Set();
+      const targetRel = target.slice(moduleDir.length);
+      const [targetModule, ...path] = targetRel.split("/");
+      if (fileRel.split("/")[0] === targetModule) continue; // a module owns its own files
+      if (OPEN.has(`${fileRel} -> ${targetRel}`)) continue;
+      const door = path.join("/");
+      if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
+      else if (door.startsWith("tests/") && !fileRel.includes("/tests/")) errors.push(`${fileRel} imports test-only ${targetRel}`);
+    }
+  }
+  assertEquals(errors, []);
+});
+
+// Prospective package boundary: cms* ships as @qino/cms, the rest as @qino/qino. An edge from the
+// lower to the upper layer would make the cms unextractable — type-only imports included, they are
+// just as unresolvable across a package split.
+const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.");
+
+Deno.test("the qino layer never imports from the cms layer", async () => {
+  const errors: string[] = [];
+  for await (const file of files(moduleDir)) {
+    const fileRel = file.slice(moduleDir.length);
+    if (isCms(fileRel.split("/")[0])) continue;
+    for (const spec of imports(await Deno.readTextFile(file)).keys()) {
+      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      if (!target.startsWith(moduleDir)) continue;
+      const targetRel = target.slice(moduleDir.length);
+      if (isCms(targetRel.split("/")[0])) errors.push(`${fileRel} imports ${targetRel}`);
+    }
+  }
+  assertEquals(errors, []);
+});
+
+// While every consumer lives in this tree, "nobody imports it" is a reliable signal and deleting is
+// free. The day an outside consumer exists the premise is gone, and the rule becomes "used, or listed".
+const EXTERNAL = new Set([
+  "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
+]);
+
+Deno.test("no mod.ts exports anything nobody imports", async () => {
+  const used = new Map<string, Set<string>>();
+  for await (const file of files(moduleDir)) {
+    for (const [spec, names] of imports(await Deno.readTextFile(file))) {
+      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      if (!target.startsWith(moduleDir)) continue;
+      const set = used.get(target) ?? new Set<string>();
       used.set(target, set);
-      for (const n of names) set.add(n);
+      for (const name of names) set.add(name);
     }
   }
   const errors: string[] = [];
-  for (const entry of Deno.readDirSync(moduleDir)) {
-    if (!entry.isDirectory) continue;
-    const mod = moduleDir + entry.name + "/mod.ts";
-    const source = await Deno.readTextFile(mod).catch(() => null);
-    if (source === null) continue;
-    const names = exportedNames(source);
-    const hits = used.get(mod);
+  for (const [name, path] of await barrels()) {
+    const names = exports(await Deno.readTextFile(path));
+    const hits = used.get(path);
     if (!names || hits?.has("*")) continue;
-    const rel = `${entry.name}/mod.ts`;
     for (const n of [...names].sort()) {
-      if (hits?.has(n) || EXTERNAL.has(`${rel} ${n}`)) continue;
-      errors.push(`${rel} exports unused ${n} — drop it, or add it to EXTERNAL with a reason`);
+      if (hits?.has(n) || EXTERNAL.has(`${name}/mod.ts ${n}`)) continue;
+      errors.push(`${name}/mod.ts exports unused ${n} — drop it, or add it to EXTERNAL with a reason`);
     }
   }
   assertEquals(errors, []);

@@ -1,4 +1,3 @@
-// Test-only surface of mail. Keeps the instance registry out of mod.ts, which stays minimal.
 import { mailInstances } from "../lib/MailManager.ts";
 
 /** Binds a stand-in mail manager to a (usually faked) app, so `mail(app)` resolves in tests. */

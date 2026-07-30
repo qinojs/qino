@@ -1,5 +1,5 @@
 import { sql, uid, unixTime, type App, type Row } from "../core/mod.ts";
-import type { Job, Jobs } from "./types.ts";
+import type { Job, Jobs } from "./mod.ts";
 import { nextRun, scheduleKey, validateJob } from "./calendar.ts";
 
 const DEFAULT_TIMEOUT = 15 * 60;

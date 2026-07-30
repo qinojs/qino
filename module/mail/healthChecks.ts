@@ -1,6 +1,5 @@
 import { hee, getCtx, type App } from "../core/mod.ts";
 
-// Shape is duck-typed by whoever collects the checks — see cms.backend.system.
 export function healthChecks(app: App) {
   const ctx      = getCtx();
   const settings = app.settings;
