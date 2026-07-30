@@ -1,9 +1,9 @@
 import { getCtx, html, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import { renderTables } from "./views/tables.ts";
-import { renderDiff } from "./views/diff.ts";
-import { renderModules } from "./views/modules.ts";
-import { renderConflicts } from "./views/conflicts.ts";
+import { renderTables } from "./view/tables.ts";
+import { renderDiff } from "./view/diff.ts";
+import { renderModules } from "./view/modules.ts";
+import { renderConflicts } from "./view/conflicts.ts";
 
 const VIEWS = [
   { key: "tables",    label: "Tables" },

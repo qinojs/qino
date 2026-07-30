@@ -1,7 +1,7 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import { init } from "../plugin.ts";
 import { fakeAi } from "../../ai/tests/deps.ts";
-import type { Bot } from "../../ai/types.ts";
+import type { Bot } from "../../ai/mod.ts";
 
 Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in editmode", () => {
   const bots: Bot[] = [];

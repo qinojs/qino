@@ -16,3 +16,4 @@ ai.get = (app: App): AiApi | undefined => aiInstances.get(app);
 export { AiApi } from "./lib/AiApi.ts";
 export { providerCatalog } from "./catalog.ts";
 export { KINDS } from "./types.ts";
+export type { Bot, ClientContext } from "./types.ts";

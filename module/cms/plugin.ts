@@ -1,7 +1,8 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS, cmsInstances } from "./lib/CMS.ts";
 import { initNodeChanged } from "./lib/nodeChanged.ts";
-import { cms, cmsCtx } from "./mod.ts";
+import { cms } from "./lib/CMS.ts";
+import { cmsCtx } from "./lib/CmsContext.ts";
 import { render } from "./lib/render.ts";
 export { api } from "./apt.ts";
 import { header, Output, type App, type DbFile } from "../core/mod.ts";

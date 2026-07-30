@@ -1,6 +1,6 @@
 import type { HealthTypes } from "../cms.backend.system/mod.ts";
 import type { App } from "../core/mod.ts";
-import { cms } from "./mod.ts";
+import { cms } from "./lib/CMS.ts";
 
 export function healthChecks(app: App): HealthTypes {
   const db       = app.db;

@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals, fakeRender } from "../../core/tests/deps.ts";
 import { fakeCms } from "../../cms/tests/deps.ts";
-import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { toTools } from "../../core/mod.ts";
 import { api, init, name, needs } from "../plugin.ts";
 

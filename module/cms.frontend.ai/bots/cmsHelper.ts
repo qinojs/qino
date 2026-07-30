@@ -1,4 +1,4 @@
-import type { Bot, ClientContext } from "../../ai/types.ts";
+import type { Bot, ClientContext } from "../../ai/mod.ts";
 import { toTools } from "../../core/mod.ts";
 import { api as cmsApi } from "../../cms/apt.ts";
 

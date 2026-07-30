@@ -1,4 +1,5 @@
-import { cms, ADMIN } from "./mod.ts";
+import { cms } from "./lib/CMS.ts";
+import { ADMIN } from "./lib/access.ts";
 // deno-lint-ignore-file no-explicit-any
 
 import { s, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep, type Ctx } from "../core/mod.ts";

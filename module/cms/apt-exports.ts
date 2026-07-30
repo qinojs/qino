@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, hee, Output, sql, unixTime } from "../core/mod.ts";
-import { cms, type Node } from "./mod.ts";
+import { cms } from "./lib/CMS.ts";
+import type { Node } from "./lib/Node.ts";
 // ─── business logic used by REST ──────────────
 
 export async function nodeToJson(node: Node, type = "*"): Promise<any> {

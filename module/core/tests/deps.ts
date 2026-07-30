@@ -1,6 +1,7 @@
 export { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@^1";
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
+export { fakeRender } from "./sqlFake.ts";
 
 import { aptFetch, type AptTree } from "../lib/apt/mod.ts";
 import { Req } from "../lib/ctx/Req.ts";

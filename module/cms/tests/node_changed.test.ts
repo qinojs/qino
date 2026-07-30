@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals, fakeRender } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
-import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { initNodeChanged } from "../lib/nodeChanged.ts";
 
 // Minimal db fake: captures node_changed inserts, answers tree/link lookups.

@@ -1,8 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
-import { testContext } from "../../core/tests/deps.ts";
+import { assertEquals, testContext, fakeRender } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
-import { fakeRender } from "../../core/tests/sqlFake.ts";
 import { fakeCms } from "../../cms/tests/deps.ts";
 import { getForNode, logDetails } from "../serverInterface.ts";
 

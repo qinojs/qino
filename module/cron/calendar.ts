@@ -1,4 +1,4 @@
-import type { Job, Weekday } from "./mod.ts";
+import type { Job, Weekday } from "./types.ts";
 
 const PERIODS = { hour: 60 * 60, day: 24 * 60 * 60, week: 7 * 24 * 60 * 60 } as const;
 const WEEKDAYS: readonly Weekday[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
