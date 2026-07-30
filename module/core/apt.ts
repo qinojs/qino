@@ -51,6 +51,17 @@ export const api: AptTree = {
     },
   },
 
+  languages: {
+    get: {
+      description: "Available languages: all (first = default) and the one this request uses when a call omits `lang`",
+      access: Access.PUBLIC,
+      execute: () => {
+        const ctx = getCtx();
+        return { all: ctx.app.languages.all, def: ctx.app.languages.def, current: ctx.lang };
+      },
+    },
+  },
+
   password: {
     put: {
       description: "Change the password of the logged-in user",

@@ -24,18 +24,19 @@ const settingsPath = s.array(s.string()).describe("Sub-path within settings, e.g
 /** Standalone render (no page request behind it): the rendered node is this request's main node. */
 const asMainNode = async (node: Node, ctx: Ctx) => { cmsCtx(ctx).mainNode ??= await node.page(); };
 
-/** PUT verb for online_start / online_end — accepts an ISO string or a Unix timestamp. */
-const onlineVerb = (edge: "start" | "end", sample: string) => ({
-  put: {
-    description: `Set node online-${edge} time (ISO string or Unix timestamp)`,
-    ...nodeWrite,
-    input: s.object({ value: s.optional(s.string()).describe(`ISO string ("${sample}") or Unix timestamp. Omit to remove limit.`) }),
-    execute: async ({ node, value }: any) => {
-      await node.set(`online_${edge}`, typeof value === "string" && value.includes("T") ? Math.floor(new Date(value).getTime() / 1000) : value);
-      return { ok: true };
-    },
-  },
+/** GET and POST of a render route differ only in how `vars` arrives. */
+const renderVerb = (description: string, vars: any, run: (a: any) => Promise<string>) => ({
+  description,
+  ...nodeRead,
+  input: s.object({ vars }),
+  execute: async (a: any, ctx: Ctx) => { await asMainNode(a.node, ctx); return run(a); },
 });
+const renderHtml = async ({ node, vars }: any) => String(await node.html(vars));
+const renderPart = async ({ node, part, vars }: any) => String(await node.htmlPart(part, vars) || "");
+
+/** online_start / online_end: ISO string or Unix timestamp; "" removes the limit (inherit). */
+const onlineTime = (v: string) => v === "" ? undefined : v.includes("T") ? Math.floor(new Date(v).getTime() / 1000) : v;
+const onlineDesc = (sample: string) => `ISO string ("${sample}"), Unix timestamp, "0" for always, "" to inherit.`;
 
 
 // ───── Node ───────────────────────────────────────────────────────────────
@@ -61,6 +62,28 @@ const node = {
     description: "Delete node (may go to trash)",
     ...nodeWrite,
     execute: ({ node }: { node: Node }) => fns.nodeRemove(node),
+  },
+
+  patch: {
+    description: "Update node properties; only the given fields change. Returns the node as JSON.",
+    ...nodeWrite,
+    input: s.object({
+      name: s.optional(s.string()).describe("Internal name"),
+      visible: s.optional(s.boolean()),
+      searchable: s.optional(s.boolean()),
+      onlineStart: s.optional(s.string()).describe(onlineDesc("2024-01-01T00:00:00")),
+      onlineEnd: s.optional(s.string()).describe(onlineDesc("2024-12-31T23:59:59")),
+      // title: per language — PUT /cms/node/:node/title
+      // module: own gate (requireModuleAdmin) and a recursive mode — PUT /cms/node/:node/module
+    }),
+    execute: async ({ node, name, visible, searchable, onlineStart, onlineEnd }: any) => {
+      if (name !== undefined) await node.set("name", name);
+      if (visible !== undefined) await node.set("visible", visible ? 1 : 0);
+      if (searchable !== undefined) await node.set("searchable", searchable ? 1 : 0);
+      if (onlineStart !== undefined) await node.set("online_start", onlineTime(onlineStart));
+      if (onlineEnd !== undefined) await node.set("online_end", onlineTime(onlineEnd));
+      return fns.nodeToJson(node);
+    },
   },
 
   restore: {
@@ -99,57 +122,13 @@ const node = {
   },
 
   html: {
-    get: {
-      description: "Render node as HTML",
-      ...nodeRead,
-      input: s.object({ vars: s.optional(s.record()) }),
-      execute: async ({ node, vars }: any, ctx: Ctx) => {
-        await asMainNode(node, ctx);
-        return String(await node.html(vars));
-      },
-    },
-    post: {
-      description: "Render node as HTML (vars as JSON body)",
-      ...nodeRead,
-      input: s.object({ vars: s.optional(s.any()) }),
-      execute: async ({ node, vars }: any, ctx: Ctx) => {
-        await asMainNode(node, ctx);
-        return String(await node.html(vars));
-      },
-    },
+    get: renderVerb("Render node as HTML", s.optional(s.record()), renderHtml),
+    post: renderVerb("Render node as HTML (vars as JSON body)", s.optional(s.any()), renderHtml),
     part: {
       ":part": {
         paramSchema: s.string(),
-        get: {
-          description: "Render a specific HTML part of the node",
-          ...nodeRead,
-          input: s.object({ vars: s.optional(s.record()) }),
-          execute: async ({ node, part, vars }: any, ctx: Ctx) => {
-            await asMainNode(node, ctx);
-            return String(await node.htmlPart(part, vars) || "");
-          },
-        },
-        post: {
-          description: "Render a specific HTML part of the node (vars as JSON body)",
-          ...nodeRead,
-          input: s.object({ vars: s.optional(s.any()) }),
-          execute: async ({ node, part, vars }: any, ctx: Ctx) => {
-            await asMainNode(node, ctx);
-            return String(await node.htmlPart(part, vars) || "");
-          },
-        },
-      },
-    },
-  },
-
-  name: {
-    put: {
-      description: "Set the internal name of the node",
-      ...nodeWrite,
-      input: s.object({ value: s.string() }),
-      execute: async ({ node, value }: any) => {
-        await node.set("name", value);
-        return { ok: true };
+        get: renderVerb("Render a specific HTML part of the node", s.optional(s.record()), renderPart),
+        post: renderVerb("Render a specific HTML part of the node (vars as JSON body)", s.optional(s.any()), renderPart),
       },
     },
   },
@@ -183,30 +162,6 @@ const node = {
     },
   },
 
-  visible: {
-    put: {
-      description: "Set node visibility flag",
-      ...nodeWrite,
-      input: s.object({ value: s.boolean() }),
-      execute: async ({ node, value }: any) => {
-        await node.set("visible", value ? 1 : 0);
-        return { ok: true };
-      },
-    },
-  },
-
-  searchable: {
-    put: {
-      description: "Set node searchability flag",
-      ...nodeWrite,
-      input: s.object({ value: s.boolean() }),
-      execute: async ({ node, value }: any) => {
-        await node.set("searchable", value ? 1 : 0);
-        return { ok: true };
-      },
-    },
-  },
-
   module: {
     put: {
       description: "Set the module of the node",
@@ -233,9 +188,6 @@ const node = {
       },
     },
   },
-
-  "online-start": onlineVerb("start", "2024-01-01T00:00:00"),
-  "online-end": onlineVerb("end", "2024-12-31T23:59:59"),
 
   children: {
     post: {

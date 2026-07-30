@@ -46,6 +46,10 @@ class FakeNode {
     return new TextObj(this.id * 10, this.titleValue);
   }
   async showTitle() { return new TextObj(this.id * 10, this.titleValue); }
+  async page() { return this; }
+  async url() { return `/n${this.id}`; }
+  async isOnline() { return true; }
+  async isPublic() { return true; }
   async text(name: string, lang?: string, value?: string) {
     if (value !== undefined) {
       this.texts[name] = `${lang}:${value}`;
@@ -103,14 +107,18 @@ Deno.test("cms apt: node title/text/flags write through resolved node", async ()
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "PUT", "/node/1/title", { value: "Hallo" }), { changed: true });
     assertEquals(await invoke(api, "PUT", "/node/1/text/main", { value: "Text", lang: "en" }), { changed: true });
-    assertEquals(await invoke(api, "PUT", "/node/1/visible", { value: true }), { ok: true });
-    assertEquals(await invoke(api, "PUT", "/node/1/searchable", { value: false }), { ok: true });
+    const patched: any = await invoke(api, "PATCH", "/node/1", { visible: true, searchable: false, name: "n1", onlineStart: "2024-01-01T00:00:00Z", onlineEnd: "" });
+    assertEquals(patched.id, 1);
+    assertEquals(patched.visible, 1);
   });
 
   assertEquals(node.titleValue, "de:Hallo");
   assertEquals(node.texts.main, "en:Text");
   assertEquals(node.writes.visible, 1);
   assertEquals(node.writes.searchable, 0);
+  assertEquals(node.writes.name, "n1");
+  assertEquals(node.writes.online_start, 1704067200);
+  assertEquals(node.writes.online_end, undefined);
 });
 
 Deno.test("cms apt: html and html parts render through node helpers", async () => {

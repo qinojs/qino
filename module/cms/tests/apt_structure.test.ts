@@ -25,7 +25,7 @@ Deno.test("cms: apt tree exposes expected core tools", () => {
     "delete_node",
     "get_node_tree",
     "put_node_title",
-    "put_node_visible",
+    "patch_node",
     "post_node_copy",
     "put_node_access_users",
     "post_node_api",

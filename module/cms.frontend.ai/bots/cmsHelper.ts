@@ -5,7 +5,7 @@ import { api as cmsApi } from "../../cms/apt.ts";
 const cmsTools = toTools(cmsApi, {
   apis: {
     "/nodes": ["get"],
-    "/node/:node": ["get", "delete"],
+    "/node/:node": ["get", "delete", "patch"],
     "/node/:node/sitemap": ["get"],
     "/node/:node/children": ["post"],
     "/node/:node/contents": ["get", "post"],
@@ -16,7 +16,6 @@ const cmsTools = toTools(cmsApi, {
     "/node/:node/module": ["put"],
     "/node/:node/settings": ["get", "put"],
     "/node/:node/files": ["get", "post"],
-    "/node/:node/visible": ["put"],
     "/node/:node/insert-before": ["put"],
   }
 });

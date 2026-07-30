@@ -220,8 +220,7 @@ for (const switc of switches) {
 }
 
 /* update accordion-heads */
-apt.on("PUT cms/node/:id/online-start", () => loadWidget("access.time.head"));
-apt.on("PUT cms/node/:id/online-end",   () => loadWidget("access.time.head"));
+apt.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time.head"); });
 apt.on("PUT cms/node/:id/access",       () => loadWidget("access.grp.head"));
 apt.on("PUT cms/node/:id/access/groups/*", () => loadWidget("access.grp.head"));
 apt.on("PUT cms/node/:id/access/users/*",  () => loadWidget("access.usr.head"));
@@ -426,53 +425,20 @@ onEl(".access-users-manager", (el) => {
   });
 });
 onEl(".access-time-manager", (el) => {
-  const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = apt.cms.node(el.getAttribute("pid"));
   const reload = () => widgets.item("access.time").set(1);
 
-  const inpStart = findEl(el, ".-start");
-  inpStart.addEventListener("blur", () => {
-    const value = inpStart.value;
-    node["online-start"].put({ value });
-    reload();
-  });
-  findEl(el, ".-start_always").addEventListener("click", () => {
-    node["online-start"].put({ value: "0" });
-    reload();
-  });
-  const startNow = findEl(el, ".-start_now");
-  startNow.addEventListener("click", () => {
-    node["online-start"].put({ value: String(Math.ceil(Date.now() / 1000)) });
-    reload();
-  });
-  findEl(el, ".-start_inherit").addEventListener("click", () => {
-    node["online-start"].put({ value: null });
-    reload();
-  });
-  inpStart.style.display = inpStart.value ? "block" : "none";
-  startNow.style.display = inpStart.value ? "none" : "block";
-
-  const inpEnd = findEl(el, ".-end");
-  inpEnd.addEventListener("blur", () => {
-    const value = inpEnd.value;
-    node["online-end"].put({ value });
-    reload();
-  });
-  findEl(el, ".-end_always").addEventListener("click", () => {
-    node["online-end"].put({ value: "0" });
-    reload();
-  });
-  const endNow = findEl(el, ".-end_now");
-  endNow.addEventListener("click", () => {
-    node["online-end"].put({ value: String(Math.ceil(Date.now() / 1000)) });
-    reload();
-  });
-  findEl(el, ".-end_inherit").addEventListener("click", () => {
-    node["online-end"].put({ value: null });
-    reload();
-  });
-  inpEnd.style.display = inpEnd.value ? "block" : "none";
-  endNow.style.display = inpEnd.value ? "none" : "block";
+  for (const [edge, field] of [["start", "onlineStart"], ["end", "onlineEnd"]]) {
+    const set = (value) => { node.patch({ [field]: value }); reload(); };
+    const inp = findEl(el, `.-${edge}`);
+    const now = findEl(el, `.-${edge}_now`);
+    inp.addEventListener("blur", () => set(inp.value));
+    findEl(el, `.-${edge}_always`).addEventListener("click", () => set("0"));
+    now.addEventListener("click", () => set(String(Math.ceil(Date.now() / 1000))));
+    findEl(el, `.-${edge}_inherit`).addEventListener("click", () => set(""));
+    inp.style.display = inp.value ? "block" : "none";
+    now.style.display = inp.value ? "none" : "block";
+  }
 });
 onEl(".url-manager", (el) => {
   const pid = el.getAttribute("pid");
@@ -526,19 +492,19 @@ onEl(".advanced-manager", (el) => {
   const pid = el.getAttribute("pid");
   const node = apt.cms.node(pid);
   findEl(el, ".-visible").addEventListener("change", (e) => {
-    node.visible.put({ value: e.currentTarget.checked });
+    node.patch({ visible: e.currentTarget.checked });
   });
   findEl(el, ".-searchable").addEventListener("change", (e) => {
-    node.searchable.put({ value: e.currentTarget.checked });
+    node.patch({ searchable: e.currentTarget.checked });
   });
   findEl(el, ".-name").addEventListener(
     "input",
     c1.debounce((e) => {
-      node.name.put({ value: e.target.value });
+      node.patch({ name: e.target.value });
     }, 400),
   );
   findEl(el, ".-name").addEventListener("change", (e) => {
-    node.name.put({ value: e.currentTarget.value });
+    node.patch({ name: e.currentTarget.value });
   });
   findEl(el, ".-model").addEventListener("change", (e) => {
     setSetting(e.currentTarget.value, e.currentTarget.name);

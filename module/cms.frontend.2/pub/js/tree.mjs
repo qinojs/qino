@@ -219,15 +219,22 @@ globalThis.cmsTreeInit = async (json) => {
 
 /* Live updates via the cms.Tree facade */
 const onNode = (route, fn) => apt.on(route, (ctx) => { const n = cms.Tree?.getNodeById(ctx.params.id); n && fn(n, ctx); });
-onNode("PUT cms/node/:id/online-start|PUT cms/node/:id/online-end|PUT cms/node/:id/access", (node) => {
+const applyNode = (node, data) => {
+  const { id, title, numChildren, type, ...rest } = data;
+  Object.assign(node.data, rest, { ptype: type, id: String(id), title });
+  cms.Tree.update(node);
+  return numChildren;
+};
+onNode("PUT cms/node/:id/access", (node) => {
   apt.cms.node(node.dataset.id).get().then((data) => {
-    const { id, title, numChildren, type, ...rest } = data;
-    Object.assign(node.data, rest, { ptype: type, id: String(id), title });
-    cms.Tree.update(node);
-    if (numChildren) cms.Tree.reloadChildren(node, () => cms.Tree.activate(node));
+    if (applyNode(node, data)) cms.Tree.reloadChildren(node, () => cms.Tree.activate(node));
   });
 });
-onNode("PUT cms/node/:id/visible", (node, { input }) => { node.data.visible = input?.value; cms.Tree.update(node); });
+// PATCH answers with the node itself — no refetch; only inherited online state affects the subtree
+onNode("PATCH cms/node/:id", (node, { value, input }) => {
+  const numChildren = applyNode(node, value);
+  if (numChildren && ("onlineStart" in input || "onlineEnd" in input)) cms.Tree.reloadChildren(node, () => cms.Tree.activate(node));
+});
 onNode("DELETE cms/node/:id", (node) => {
   if (cms.Tree.activeNode === node) cms.Tree.activate(cms.Tree.neighbor(node));
   node.remove();
