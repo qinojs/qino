@@ -8,6 +8,7 @@ import {
   ValidationError,
   aptClient,
   invoke,
+  camelName,
   toTools,
 } from "../lib/apt/mod.ts";
 import { requestStorage } from "../lib/ctx/Ctx.ts";
@@ -276,4 +277,12 @@ Deno.test("apt: aptClient mirrors the action tree", async () => {
     });
     assertThrows(() => client.missing.get(), TypeError);
   });
+});
+
+Deno.test("apt: tool names stay within the MCP name charset", () => {
+  assertEquals(camelName("get", ["cms.frontend.2", "widget"]), "get_cmsFrontend2_widget");
+  assertEquals(camelName("post", ["cms.backend.superuser.oauth_server"]), "post_cmsBackendSuperuserOauth_server");
+  assertEquals(camelName("delete", ["file-store.9", ":id"]), "delete_fileStore9");
+  const tools = toTools({ "cms.frontend.2": { widget: { post: { execute: () => null } } } } as never);
+  assertEquals(/^[a-zA-Z0-9_-]{1,64}$/.test(tools[0].name), true);
 });
