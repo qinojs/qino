@@ -373,10 +373,9 @@ const node = {
 
   files: {
     get: {
-      description: "List all files of the node, keyed by slot name",
+      description: "List all files of the node, keyed by slot name, including empty placeholder slots",
       ...nodeRead,
-      query: s.object({ placeholders: s.optional(s.boolean()).describe("Also list placeholders: named file slots without content yet") }),
-      execute: ({ node, placeholders }: { node: Node; placeholders?: boolean }) => fns.nodeFilesJson(node, placeholders),
+      execute: ({ node }: { node: Node }) => fns.nodeFilesJson(node),
     },
 
     post: {

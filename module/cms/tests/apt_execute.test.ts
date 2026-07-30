@@ -178,17 +178,16 @@ Deno.test("cms apt: contents post returns rendered html and the block's shape", 
       html: "<div>{}</div>",
       contents: [],
       texts: {},
-      files: { "file.jpg": { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" } },
+      files: { "file.jpg": { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" }, "placeholder.jpg": { placeholder: true } },
     });
   });
 });
 
-Deno.test("cms apt: files lists placeholders on demand", async () => {
+Deno.test("cms apt: files lists placeholders", async () => {
   const { ctx } = await setup();
   await requestStorage.run(ctx, async () => {
     const file = { name: "orig-file.jpg", mime: "image/jpeg", size: 4711, url: "/dbFile/file.jpg" };
-    assertEquals(await invoke(api, "GET", "/node/1/files"), { "file.jpg": file });
-    assertEquals(await invoke(api, "GET", "/node/1/files", { placeholders: true }), { "file.jpg": file, "placeholder.jpg": { placeholder: true } });
+    assertEquals(await invoke(api, "GET", "/node/1/files"), { "file.jpg": file, "placeholder.jpg": { placeholder: true } });
   });
 });
 

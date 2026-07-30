@@ -138,9 +138,9 @@ async function nodeRestoreTx(node: any): Promise<{ url: string }> {
 }
 
 /** Files keyed by slot name; empty slots are `{ placeholder: true }`. Order is the file order. */
-export async function nodeFilesJson(node: Node, placeholders?: boolean): Promise<Record<string, any>> {
+export async function nodeFilesJson(node: Node): Promise<Record<string, any>> {
     const files = await node.files();
-    const all = placeholders ? await node.filesAndPlaceholders() : files;
+    const all = await node.filesAndPlaceholders();
     const res: Record<string, any> = {};
     for (const [slot, file] of Object.entries(all)) {
         res[slot] = slot in files
