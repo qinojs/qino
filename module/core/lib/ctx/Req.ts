@@ -103,7 +103,7 @@ export class Req {
     url?: URL; basePath?: string; peerAddr?: string; time?: number;
     maxSize?: number; trustedProxyHops?: number;
   } = {}): Promise<Req> {
-    const url = opt.url ?? new URL(request.url);
+    const url = publicScheme(request, opt.url ?? new URL(request.url), opt.trustedProxyHops ?? 0);
     const basePath = ensureSlash(opt.basePath || "/");
     const peerAddr = opt.peerAddr ?? "";
     const body = await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
@@ -120,6 +120,17 @@ export class Req {
       clientIp: clientIp(request, peerAddr, opt.trustedProxyHops ?? 0),
     });
   }
+}
+
+/** A TLS-terminating proxy forwards plain http to the local port, so `request.url` would make every
+ *  absolute self-link `http://`. Same trust model as `clientIp`: only honoured when hops > 0. */
+function publicScheme(request: Request, url: URL, hops: number): URL {
+  if (hops <= 0) return url;
+  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0].trim();
+  if ((proto !== "http" && proto !== "https") || url.protocol === proto + ":") return url;
+  const out = new URL(url);
+  out.protocol = proto + ":";
+  return out;
 }
 
 export function parseCookies(header: string | undefined): Record<string, string> {
