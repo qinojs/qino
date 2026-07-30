@@ -155,9 +155,9 @@ const node = {
 
   text: {
     ":name": {
-      paramSchema: s.string().describe("Text field name"),
+      paramSchema: s.string().describe("Text field name from the module, e.g. \"main\"; unknown names are created."),
       put: {
-        description: "Set a text field (html) of the node (language-specific)",
+        description: "Set a node text field (per language). Value is raw HTML, do not escape.",
         ...nodeWrite,
         input: s.object({ value: s.string(), lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         output: s.object({ changed: s.boolean() }),
@@ -260,11 +260,11 @@ const node = {
 
   "insert-before": {
     put: {
-      description: "Move a node into this node",
+      description: "Move node `id` into this node; also reorders existing children",
       ...nodeWrite,
       input: s.object({
         id: s.string().describe("ID of the node to move"),
-        before: s.optional(s.string()).describe("Insert before this node-ID. Omit to append."),
+        before: s.optional(s.string()).describe("Child of this node to insert above. Omit to append."),
       }),
       execute: async ({ node, id, before }: any) => {
         const child = await node.cms.node(id);
