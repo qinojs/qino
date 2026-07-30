@@ -11,7 +11,7 @@ const aptTree = {
   },
 };
 
-async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Promise<Ctx> {
+async function makeCtx(body: unknown, { auth = true, method = "POST", oauth = false } = {}): Promise<Ctx> {
   const ctx = await testContext({
     url: "http://localhost/mcp",
     method,
@@ -20,6 +20,7 @@ async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Pr
     app: {
       dev: true,
       db: { table: () => ({ entry: (id: number) => id ? { get: () => Promise.resolve(0) } : null }) },
+      modules: { get: (name: string) => oauth && name === "oauth_server" ? {} : undefined },
       aptTree,
     },
   });
@@ -29,11 +30,11 @@ async function makeCtx(body: unknown, { auth = true, method = "POST" } = {}): Pr
 
 /** mcpFetch always signals via thrown Output; capture and parse it. */
 // deno-lint-ignore no-explicit-any
-async function call(ctx: Ctx): Promise<{ status: number; body: any }> {
+async function call(ctx: Ctx): Promise<{ status: number; body: any; headers: Headers }> {
   try {
     await requestStorage.run(ctx, () => mcpFetch(ctx));
   } catch (e) {
-    if (e instanceof Output) return { status: e.status, body: typeof e.body === "string" ? JSON.parse(e.body) : undefined };
+    if (e instanceof Output) return { status: e.status, body: typeof e.body === "string" ? JSON.parse(e.body) : undefined, headers: e.buildHeaders() };
     throw e;
   }
   throw new Error("expected Output");
@@ -45,6 +46,12 @@ Deno.test("mcp: rejects unauthenticated requests", async () => {
   const res = await call(await makeCtx(rpc("tools/list"), { auth: false }));
   assertEquals(res.status, 401);
   assertEquals(res.body.error.code, -32001);
+  assertEquals(res.headers.get("WWW-Authenticate"), "Bearer");
+});
+
+Deno.test("mcp: 401 advertises the resource metadata when oauth_server is installed", async () => {
+  const res = await call(await makeCtx(rpc("tools/list"), { auth: false, oauth: true }));
+  assertEquals(res.headers.get("WWW-Authenticate"), 'Bearer resource_metadata="http://localhost/.well-known/oauth-protected-resource"');
 });
 
 Deno.test("mcp: rejects non-POST", async () => {

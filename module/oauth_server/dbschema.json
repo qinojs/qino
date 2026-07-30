@@ -1,0 +1,83 @@
+{
+  "properties": {
+    "oauth_client": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "redirect_uris": {
+            "type": "string",
+            "maxLength": 65535
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "dynamic": {
+            "type": "integer"
+          }
+        },
+        "required": ["id", "name", "redirect_uris", "created"]
+      }
+    },
+    "oauth_token": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          },
+          "kind": {
+            "type": "string",
+            "maxLength": 8,
+            "x-index": true
+          },
+          "client_id": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "scope": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "redirect_uri": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "challenge": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "created": {
+            "type": "integer"
+          },
+          "expires": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id", "hash", "kind", "client_id", "usr_id", "created", "expires"]
+      }
+    }
+  }
+}

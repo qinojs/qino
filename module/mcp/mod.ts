@@ -18,13 +18,26 @@ class RpcErr extends Error {
 /** Handle one MCP request; always signals the response via thrown `Output`. */
 export async function mcpFetch(ctx: Ctx): Promise<never> {
   if (ctx.req.method !== "POST") throw new Output({ error: "Method Not Allowed" }, { status: 405, headers: { Allow: "POST" } });
-  if (!ctx.statelessAuth) throw new Output(rpcError(null, -32001, "Unauthorized: send an api key as Bearer token"), { status: 401, headers: { "WWW-Authenticate": "Bearer" } });
+  if (!ctx.statelessAuth) throw unauthorized(ctx);
   const msg = ctx.req.body as Rpc; // parsed in Req.create; null = no/invalid JSON body
   if (msg === null) throw new Output(rpcError(null, -32700, "Parse error"), { status: 400 });
   if (!msg || typeof msg !== "object" || Array.isArray(msg) || typeof msg.method !== "string")
     throw new Output(rpcError(null, -32600, "Invalid Request"), { status: 400 });
   if (msg.id == null) throw new Output(undefined, { status: 202 }); // notification, e.g. notifications/initialized
   throw new Output(await respond(msg, ctx));
+}
+
+/** 401 challenge. With `oauth_server` present it points at the resource metadata, so clients that
+ *  cannot send a preconfigured header (browser connectors) can discover the authorization server. */
+function unauthorized(ctx: Ctx): Output {
+  const base = ctx.req.url.origin + ctx.req.basePath.replace(/\/$/, "");
+  const challenge = ctx.app.modules.get("oauth_server")
+    ? `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`
+    : "Bearer";
+  return new Output(rpcError(null, -32001, "Unauthorized: send an api key or OAuth access token as Bearer"), {
+    status: 401,
+    headers: { "WWW-Authenticate": challenge },
+  });
 }
 
 async function respond(msg: Rpc, ctx: Ctx): Promise<unknown> {
