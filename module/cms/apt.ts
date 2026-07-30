@@ -565,6 +565,15 @@ export const api = {
     },
   },
 
+  modules: {
+    get: {
+      description: "List modules assignable to a node — kind \"cont\" for content blocks, \"layout\" for pages",
+      access: Access.USER,
+      query: s.object({ schema: s.optional(s.boolean()).describe("If true, include each module's settings schema") }),
+      execute: ({ schema }: any) => fns.modules(!!schema),
+    },
+  },
+
   nodes: {
     get: {
       description: "Search nodes by title",

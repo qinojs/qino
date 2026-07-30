@@ -89,6 +89,8 @@ async function setup(access = 3) {
   } });
   cmsInstances.set(ctx.app, {
     node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
+    getModules: () => ({ "cms.cont.text": { dir: undefined, plugin: { cms: { node: { settingsSchema: { properties: { cols: {} } } } } } } }),
+    getLayouts: () => ({ "cms.layout.login": { dir: undefined, plugin: {} } }),
   } as never);
   ctx.lang = "de";
   return { ctx, nodes };
@@ -199,6 +201,28 @@ Deno.test("cms apt: validation rejects wrong params and payloads before writing"
 
   assertEquals(node.titleValue, "Title");
   assertEquals(node.writes, {});
+});
+
+Deno.test("cms apt: modules lists content and layout modules, schema on demand", async () => {
+  const { ctx } = await setup();
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "GET", "/modules"), [
+      { name: "cms.cont.text", kind: "cont" },
+      { name: "cms.layout.login", kind: "layout" },
+    ]);
+    const withSchema = await invoke(api, "GET", "/modules", { schema: true }) as Array<Record<string, unknown>>;
+    assertEquals(withSchema[0].settings, { properties: { cols: {} } });
+    assertEquals(withSchema[1].settings, {});
+  });
+});
+
+Deno.test("cms apt: modules hides what the user may not insert", async () => {
+  const { ctx } = await setup();
+  // deno-lint-ignore no-explicit-any
+  (ctx.app as any).fire = (_n: string, e: any) => ({ ...e, access: 2 }); // below ADMIN
+  await requestStorage.run(ctx, async () => {
+    assertEquals(await invoke(api, "GET", "/modules"), []);
+  });
 });
 
 Deno.test("cms apt: admin access is required for access mutations", async () => {

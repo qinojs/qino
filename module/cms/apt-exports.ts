@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, hee, Output, sql, unixTime } from "../core/mod.ts";
 import { cms } from "./lib/CMS.ts";
+import { ADMIN } from "./lib/access.ts";
 import type { Node } from "./lib/Node.ts";
 // ─── business logic used by REST ──────────────
 
@@ -61,6 +62,28 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
         expand: async (n: Node, level: number) => (!inNode || await inNode.in(n)) && (!opt.level || opt.level > level),
         emptyChildren: true,
     });
+}
+
+// Assignable modules, same source and gate as the backend's add widget. cms.cont.flexible stays
+// in — the widget hides it because it is the drop target, not because it cannot be created.
+export async function modules(schema = false): Promise<any[]> {
+    const ctx = getCtx();
+    const c = cms(ctx.app);
+    const res: any[] = [];
+    for (const [kind, mods] of Object.entries({ cont: c.getModules(), layout: c.getLayouts() })) {
+        for (const [name, mod] of Object.entries(mods)) {
+            const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
+            if (Number(e.access) < ADMIN) continue;
+            const desc = mod.dir ? await Deno.readTextFile(mod.dir + "description.txt").catch(() => "") : "";
+            res.push({
+                name,
+                kind,
+                ...(desc.trim() && { description: desc.trim() }),
+                ...(schema && { settings: mod.plugin.cms?.node?.settingsSchema ?? {} }),
+            });
+        }
+    }
+    return res;
 }
 
 export function nodeRemove(node: any): Promise<{ parent_id: number }> {
