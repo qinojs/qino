@@ -1,10 +1,12 @@
 import type { Node } from "../cms/mod.ts";
 import { renderTemplateFile } from "../cms.templateParser/mod.ts";
 import { codeFiles } from "./codeFiles.ts";
+import { nodeApi } from "./api.ts";
 import options from "./options.ts";
 
 export const name = "cms.cont.html";
 export const needs = ["cms", "cms.templateParser", "fileEditor"];
+export const api = nodeApi(name);
 
 // Commented out on purpose: the parser strips comments, so nothing is created before you want it.
 const initialSrc = `<div>

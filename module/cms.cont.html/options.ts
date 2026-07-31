@@ -1,10 +1,10 @@
 import type { Node } from "../cms/mod.ts";
-import { getCtx, html, type HtmlString } from "../core/mod.ts";
+import { html, type HtmlString } from "../core/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
 import { codeFiles } from "./codeFiles.ts";
 
 export default async function (node: Node): Promise<HtmlString | false> {
-  if (!await getCtx().user?.get("superuser")) return false;
+  if (await node.access() < 2) return false;
   const code = codeFiles(node);
   const t = node.app.t;
   return html.async`
