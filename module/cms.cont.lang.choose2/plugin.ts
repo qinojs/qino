@@ -2,6 +2,7 @@ import { cmsCtx, type Node } from "../cms/mod.ts";
 import { hee, type Ctx } from "../core/mod.ts";
 
 export const name = "cms.cont.lang.choose2";
+export const description = "Language links or selection menu.";
 
 const long: Record<string, string> = {
   de: "Deutsch",

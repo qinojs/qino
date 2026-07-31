@@ -2,9 +2,10 @@ import type { Node } from "../cms/mod.ts";
 import { hee, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
-export const name  = "cms.backend.web_auth";
-export const needs = ["cms.backend", "web_auth"];
-export const cms   = { node: { render } };
+export const name        = "cms.backend.web_auth";
+export const description = "Lists and manages users' passkey credentials.";
+export const needs       = ["cms.backend", "web_auth"];
+export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.web_auth", { en: "WebAuthn", de: "WebAuthn" });

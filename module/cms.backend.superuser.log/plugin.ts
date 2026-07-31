@@ -4,6 +4,7 @@ import { dump } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.log";
+export const description = "Inspects request logs, sessions, clients, users, and related records.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

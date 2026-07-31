@@ -6,6 +6,7 @@ import { getCtx, html, type HtmlString, sqlSearch, u2time, unixTime, type App } 
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.mail";
+export const description = "Browses mail, recipients, attachments, delivery, and tracking details.";
 export const needs = ["cms.backend", "mail"];
 
 export async function install({ app }: { app: App }): Promise<void> {

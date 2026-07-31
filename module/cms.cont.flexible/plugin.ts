@@ -2,6 +2,7 @@
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.flexible";
+export const description = "Open-ended sequence of child content blocks.";
 
 export const settingsSchema = {
   properties: {

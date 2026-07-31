@@ -75,6 +75,16 @@ const OPEN = new Set([
   "cms.frontend.2/view/widgets/tree.ts -> cms/apt-exports.ts", // calls the fn instead of going via apt
 ]);
 
+Deno.test("every module manifest has a description", async () => {
+  const missing: string[] = [];
+  for await (const file of files(moduleDir)) {
+    if (!file.endsWith("/plugin.ts")) continue;
+    const source = await Deno.readTextFile(file);
+    if (!/^export const description = "[^"]+";$/m.test(source)) missing.push(file.slice(moduleDir.length));
+  }
+  assertEquals(missing, []);
+});
+
 Deno.test("modules only consume public APIs of other modules", async () => {
   const errors: string[] = [];
   for await (const file of files(moduleDir)) {

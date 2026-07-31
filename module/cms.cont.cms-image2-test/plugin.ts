@@ -3,6 +3,7 @@ import { cms_image2 } from "../cms.image2/mod.ts";
 import { html, type HtmlString, type DbFile } from "../core/mod.ts";
 
 export const name = "cms.cont.cms-image2-test";
+export const description = "CMS image options and critical responsive-layout tests.";
 export const needs = ["cms", "cms.image2"];
 
 const settingsSchema = {

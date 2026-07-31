@@ -3,6 +3,7 @@ import type { Node } from "../cms/mod.ts";
 import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.login4";
+export const description = "Configurable login, recent-user, and logout forms.";
 
 const settingsSchema = {
   properties: {

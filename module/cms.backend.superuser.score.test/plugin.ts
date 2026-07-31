@@ -6,6 +6,7 @@ import { list, render } from "./render.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.superuser.score.test";
+export const description = "Exercises score tracking with CMS page and file access events.";
 export const needs = ["cms.backend", "cms", "score"];
 
 export async function install({ app }: { app: App }): Promise<void> {

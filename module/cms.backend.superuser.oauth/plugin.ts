@@ -4,6 +4,7 @@ import { hee, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.superuser.oauth";
+export const description = "Configures OAuth and OpenID login providers.";
 export const needs = ["cms.backend", "oauth"];
 export const cms = { node: { render } };
 

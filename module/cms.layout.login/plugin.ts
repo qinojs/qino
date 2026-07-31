@@ -2,6 +2,7 @@ import type { Node } from "../cms/mod.ts";
 import { html, u2Root, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.layout.login";
+export const description = "Renders a focused CMS login page layout.";
 
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 

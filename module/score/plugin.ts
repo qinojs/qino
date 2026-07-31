@@ -3,6 +3,7 @@ import type { Jobs } from "../cron/mod.ts";
 import { forget, prune } from "./mod.ts";
 
 export const name = "score";
+export const description = "Tracks decaying scores for arbitrary database records.";
 export const needs = ["core", "cron"];
 
 export const dbSchema = {

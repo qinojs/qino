@@ -4,6 +4,7 @@ import { collectConflicts } from "./lib/analyze.ts";
 import { html, type App, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.backend.superuser.db";
+export const description = "Inspects database schemas, tables, and module schema conflicts.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

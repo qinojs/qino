@@ -7,6 +7,7 @@ import api from "./nodeApi.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.system";
+export const description = "Shows runtime, database, cache, and health information.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

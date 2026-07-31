@@ -3,6 +3,7 @@ import { cms_image2 } from "../cms.image2/mod.ts";
 import { html, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.example";
+export const description = "CMS module example with text, images, settings, assets, and parts.";
 export const needs = ["cms", "cms.image2"];
 
 const settingsSchema = {

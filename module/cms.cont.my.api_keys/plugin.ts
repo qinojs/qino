@@ -2,6 +2,7 @@ import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.my.api_keys";
+export const description = "Personal API key creation and revocation.";
 export const needs = ["cms", "api_key"];
 export const cms = { node: { js: ["pub/main.js"], render } };
 

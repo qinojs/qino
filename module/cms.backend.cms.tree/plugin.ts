@@ -4,6 +4,7 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.cms.tree";
+export const description = "Displays the CMS page tree and page statistics.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

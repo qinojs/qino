@@ -4,6 +4,7 @@ import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } fr
 import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 
 export const name = "uncdn";
+export const description = "Proxies and caches approved external frontend assets locally.";
 export const needs = ["core"];
 
 export const settingsSchema = {

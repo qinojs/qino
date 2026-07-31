@@ -5,6 +5,7 @@ import { versedTables, versTable, thinHistory } from "../cms.versions/mod.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.superuser.versions";
+export const description = "Manages version storage, draft spaces, and history cleanup.";
 export const needs = ["cms.backend", "cms.versions"];
 
 export async function install({ app }: { app: App }): Promise<void> {

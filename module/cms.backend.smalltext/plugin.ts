@@ -5,6 +5,7 @@ import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.smalltext";
+export const description = "Edits, translates, searches, and cleans interface translations.";
 export const needs = ["cms.backend", "cms.text"];
 export { dbSchema };
 

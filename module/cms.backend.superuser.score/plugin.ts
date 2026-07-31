@@ -5,6 +5,7 @@ import { list, render } from "./render.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.superuser.score";
+export const description = "Inspects and manages scored database records by scope.";
 export const needs = ["cms.backend", "score"];
 
 export async function install({ app }: { app: App }): Promise<void> {

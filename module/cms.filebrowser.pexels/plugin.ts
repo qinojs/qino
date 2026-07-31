@@ -2,6 +2,7 @@ import { Access, type AptTree, type App, type Ctx, type Params, s } from "../cor
 import { cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.filebrowser.pexels";
+export const description = "Adds Pexels stock photo search to the CMS file browser.";
 export const needs = ["cms", "cms.filebrowser"];
 
 export const api: AptTree = {

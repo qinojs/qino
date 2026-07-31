@@ -3,6 +3,7 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.module";
+export const description = "Inspects loaded modules, dependencies, exports, source files, and runtime state.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -55,7 +56,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const modDir  = modPath?.replace(/\/?[^/]+$/, "") ?? null;
 
   // --- Exports ---
-  const SKIP = new Set(["name", "needs", "cms", "install", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
+  const SKIP = new Set(["name", "description", "needs", "cms", "install", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
   const knownKeys: { key: string; label: string }[] = [
     { key: "needs",             label: "needs" },
@@ -135,6 +136,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     <div class=-head><a href="${backHref}">← Module</a> ${modName} <small>${linked ? t`active` : t`disabled`}</small></div>
     <div class=-body>${toggleBtn}${error ? html` <strong>${error}</strong>` : ""}</div>
     <table class=u2-table>
+      <tr><th>${t`Description`}<td>${mod.description}
       <tr><th>${t`Source`}<td>${sourceHtml}
       <tr><th>${t`Exports`}<td>${exportBadges}
       <tr><th>${t`needs`}<td>${depsHtml}

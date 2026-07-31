@@ -2,6 +2,7 @@ import { hee, u2Root, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.layout.backend";
+export const description = "Renders the CMS administration layout and navigation.";
 
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
 

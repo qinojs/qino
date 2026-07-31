@@ -5,6 +5,7 @@ import { codeFiles } from "./codeFiles.ts";
 import options from "./options.ts";
 
 export const name = "cms.cont.ts";
+export const description = "Executable per-node TypeScript with editable assets.";
 export const needs = ["cms", "fileEditor"];
 
 // The examples are commented out on purpose: nothing is created before you want it.

@@ -3,6 +3,7 @@ import { Output, getCtx, type Ctx, Access, type AptTree, s, type App, type Param
 import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";
+export const description = "Provides an access-controlled browser editor for application files.";
 
 async function saveFile(ctx: Ctx, file: string, content: string): Promise<number> {
   ctx.app.assertAllowedPath(file);

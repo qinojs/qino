@@ -29,6 +29,7 @@ import { applyDraftSpace, initDraftmode } from "./draftmode.ts";
 export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.versions";
+export const description = "Tracks CMS content history, drafts, snapshots, and publishing.";
 export const needs = ["cms"];
 
 // Which cms tables are versioned (qg_setting and page_class intentionally excluded).

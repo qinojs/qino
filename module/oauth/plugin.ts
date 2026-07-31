@@ -3,6 +3,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { login, Output, Redirect, unixTime, b64url, unb64url, randB64, type App, type Ctx } from "../core/mod.ts";
 
 export const name = "oauth";
+export const description = "Authenticates users through configured OAuth 2.0 and OpenID providers.";
 export const needs = ["core"];
 export { dbSchema };
 

@@ -4,6 +4,7 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.smalltext.export";
+export const description = "Previews and exports translations into module locale files.";
 export const needs = ["cms.backend.smalltext"];
 
 export async function install({ app }: { app: App }): Promise<void> {

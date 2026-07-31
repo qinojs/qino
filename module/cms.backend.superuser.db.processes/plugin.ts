@@ -4,6 +4,7 @@ import api from "./nodeApi.ts";
 import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.superuser.db.processes";
+export const description = "Inspects and terminates active database processes.";
 export const needs = ["cms.backend.superuser.db"];
 
 export async function install({ app }: { app: App }): Promise<void> {

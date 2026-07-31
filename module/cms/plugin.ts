@@ -8,6 +8,7 @@ export { api } from "./apt.ts";
 import { header, Output, type App, type DbFile } from "../core/mod.ts";
 
 export const name = "cms";
+export const description = "Provides the CMS page tree, content rendering, files, and access model.";
 export { healthChecks } from "./healthChecks.ts";
 export const needs = ["core"];
 export { dbSchema };

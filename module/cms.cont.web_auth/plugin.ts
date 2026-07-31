@@ -2,6 +2,7 @@ import type { Node } from "../cms/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.web_auth";
+export const description = "Passkey login and credential management.";
 export const needs = ["web_auth"];
 
 const settingsSchema = {

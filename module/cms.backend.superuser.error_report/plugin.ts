@@ -3,6 +3,7 @@ import { backend } from "../cms.backend/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
+export const description = "Searches, groups, analyzes, and clears collected error reports.";
 export const needs = ["cms.backend", "error_report"];
 
 export async function install({ app }: { app: App }): Promise<void> {

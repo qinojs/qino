@@ -4,6 +4,7 @@ import { dump, $item } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.state";
+export const description = "Shows live server runtime and request context state.";
 export const needs = ["cms.backend"];
 
 const dumpJs = "https://jsr.io/@nuxodin/dump/1.5.2/mod.js";

@@ -3,6 +3,7 @@ import type {} from "../cms/mod.ts";
 import { webmcpTools } from "./mod.ts";
 
 export const name = "cms.webmcp";
+export const description = "Exposes accessible application tools to browsers through WebMCP.";
 export const needs = ["cms"];
 
 export const api: AptTree = {

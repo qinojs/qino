@@ -4,6 +4,7 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.cms.tree.access";
+export const description = "Edits public and group access across the CMS page tree.";
 export const needs = ["cms.backend", "cms.backend.cms.tree"];
 
 export async function install({ app }: { app: App }): Promise<void> {

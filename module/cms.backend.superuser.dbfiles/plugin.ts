@@ -4,6 +4,7 @@ import { deleteUnlinkedDb } from "./cleanup.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.dbfiles";
+export const description = "Inspects, edits, deduplicates, and cleans stored database files.";
 export const needs = ["cms.backend"];
 export { healthChecks } from "./healthChecks.ts";
 

@@ -5,6 +5,7 @@ import { counts, render, list } from "./render.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.superuser.cron";
+export const description = "Monitors scheduled jobs and runs them on demand.";
 export const needs = ["cms.backend", "cron"];
 
 export async function install({ app }: { app: App }): Promise<void> {

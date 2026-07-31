@@ -2,6 +2,7 @@ import { hee, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.trash";
+export const description = "Deleted CMS nodes with restore and permanent-delete actions.";
 export const needs = ["cms"];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {

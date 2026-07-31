@@ -3,6 +3,7 @@ import { toInput } from "../../deps.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.api";
+export const description = "Documents and interactively tests the application Apt API.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

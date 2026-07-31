@@ -2,9 +2,10 @@ import type { Node } from "../cms/mod.ts";
 import { hee, type App, type Ctx } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
-export const name  = "cms.backend.superuser.api_keys";
-export const needs = ["cms.backend", "api_key"];
-export const cms   = { node: { render } };
+export const name        = "cms.backend.superuser.api_keys";
+export const description = "Manages API keys across all users.";
+export const needs       = ["cms.backend", "api_key"];
+export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.api_keys", { en: "API Keys", de: "API-Schlüssel" });

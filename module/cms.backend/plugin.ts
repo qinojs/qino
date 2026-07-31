@@ -3,6 +3,7 @@ import type { App } from "../core/mod.ts";
 export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.backend";
+export const description = "Provides the base CMS backend dashboard and page installer.";
 export const needs = ["cms"];
 
 import { backend, renderDashboard } from "./mod.ts";

@@ -2,6 +2,7 @@ import type { Node } from "../cms/mod.ts";
 import { Access, hee, walk, type Ctx, type Route, type Verb } from "../core/mod.ts";
 
 export const name = "cms.cont.apitest";
+export const description = "Apt route access matrix for users and API keys.";
 export const needs = ["cms"];
 
 /** Static access category — the baseline badge; a dynamic guard may still differ per identity. */

@@ -1,6 +1,7 @@
 import type { App } from "../core/mod.ts";
 
 export const name = "dev";
+export const description = "Logs request durations and exposes them through Server-Timing headers.";
 export const needs = ["core"];
 
 /** Dev helpers */

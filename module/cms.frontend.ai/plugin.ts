@@ -4,6 +4,7 @@ import { ai } from "../ai/mod.ts";
 import { cmsHelper } from "./bots/cmsHelper.ts";
 
 export const name = "cms.frontend.ai";
+export const description = "Adds an AI assistant to the in-page CMS editor.";
 export const needs = ["cms.frontend.2", "ai"];
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {

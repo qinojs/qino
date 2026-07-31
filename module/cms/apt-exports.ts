@@ -74,11 +74,11 @@ export async function modules(schema = false): Promise<any[]> {
         for (const [name, mod] of Object.entries(mods)) {
             const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
             if (Number(e.access) < ADMIN) continue;
-            const desc = mod.dir ? await Deno.readTextFile(mod.dir + "description.txt").catch(() => "") : "";
+            const description = mod.plugin.description?.trim();
             res.push({
                 name,
                 kind,
-                ...(desc.trim() && { description: desc.trim() }),
+                description,
                 ...(schema && { settings: mod.plugin.cms?.node?.settingsSchema ?? {} }),
             });
         }

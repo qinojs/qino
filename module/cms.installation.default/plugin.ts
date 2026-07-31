@@ -2,6 +2,7 @@ import { pwHash, type App } from "../core/mod.ts";
 import { cms } from "../cms/mod.ts";
 
 export const name = "cms.installation.default";
+export const description = "Installs a ready-to-use default CMS site and administrator accounts.";
 export const needs = [
   "cms",
   "cms.frontend.2",

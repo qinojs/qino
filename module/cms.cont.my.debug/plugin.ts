@@ -3,6 +3,7 @@ import { hee, getCtx } from "../core/mod.ts";
 import { dump } from "../../deps.ts";
 
 export const name = "cms.cont.my.debug";
+export const description = "Current session, settings, client, user, and group details.";
 export const needs = ["cms"];
 
 function vsTable(vs: Record<string, unknown>, exclude: string[] = []): string {

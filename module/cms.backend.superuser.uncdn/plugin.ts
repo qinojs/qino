@@ -6,6 +6,7 @@ import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy, uncdn } from "../uncdn/mod.t
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.uncdn";
+export const description = "Inspects configuration and cached assets of the uncdn proxy.";
 export const needs = ["cms.backend", "uncdn"];
 
 export async function install({ app }: { app: App }) {

@@ -4,6 +4,7 @@ import { backend } from "../cms.backend/mod.ts";
 import api, { canManageMembers } from "./nodeApi.ts";
 
 export const name = "cms.backend.groups";
+export const description = "Manages user groups and their memberships.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

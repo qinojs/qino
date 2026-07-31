@@ -2,6 +2,7 @@ import { cmsCtx, type Node } from "../cms/mod.ts";
 import type { Ctx } from "../core/mod.ts";
 
 export const name = "cms.cont.nav3";
+export const description = "Configurable nested navigation from the CMS page tree.";
 
 const settingsSchema = {
   properties: {

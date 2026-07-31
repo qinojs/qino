@@ -5,6 +5,7 @@ import { verifyAuthenticationResponse, verifyRegistrationResponse } from "npm:@s
 import type { Jobs } from "../cron/mod.ts";
 
 export const name = "web_auth";
+export const description = "Provides passkey registration, login, and step-up authentication.";
 export const needs = ["core", "cron"];
 export { dbSchema };
 

@@ -3,6 +3,7 @@ import { backend } from "../cms.backend/mod.ts";
 import { ADMIN, WRITE, describeChange, type Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.cms.module";
+export const description = "Manages CMS node modules, usage, assignments, access, and history.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }) {

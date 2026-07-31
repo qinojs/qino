@@ -16,6 +16,7 @@ await import(REPORTER_PATH);
 type Report = Record<string, unknown>;
 
 export const name = "error_report";
+export const description = "Collects backend, browser, CSS, and CSP errors for diagnosis.";
 export const needs = ["core"];
 export { healthChecks } from "./healthChecks.ts";
 export { dbSchema };

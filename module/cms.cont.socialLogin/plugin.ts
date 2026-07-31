@@ -3,6 +3,7 @@ import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { providers } from "../oauth/mod.ts";
 
 export const name = "cms.cont.socialLogin";
+export const description = "Login links for configured OAuth providers.";
 export const needs = ["cms", "oauth"];
 
 /** Renders one "Log in with …" link per configured login provider. */

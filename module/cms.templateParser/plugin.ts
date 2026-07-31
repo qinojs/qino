@@ -3,6 +3,7 @@ import type { Node } from "../cms/mod.ts";
 import { loadTemplate, renderTemplateFile } from "./mod.ts";
 
 export const name = "cms.templateParser";
+export const description = "Renders declarative HTML templates with editable CMS fields and content.";
 export const needs = ["cms", "cms.image2"];
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {

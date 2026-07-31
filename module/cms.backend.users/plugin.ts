@@ -5,6 +5,7 @@ import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.users";
+export const description = "Manages users, profiles, passwords, status, and group memberships.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

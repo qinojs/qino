@@ -8,6 +8,7 @@ type DbSchema = { properties: Record<string, unknown> };
 
 export type Plugin = Record<string, any> & {
   name: string;
+  description?: string;
   needs?: string[];
   // Object = static schema. Function = computed from the merged schema (runs after all
   // static ones), e.g. for tables derived from other modules' tables.

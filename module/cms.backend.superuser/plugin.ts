@@ -2,6 +2,7 @@ import { backend, renderDashboard } from "../cms.backend/mod.ts";
 import type { App } from "../core/mod.ts";
 
 export const name = "cms.backend.superuser";
+export const description = "Provides the superuser administration dashboard.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {

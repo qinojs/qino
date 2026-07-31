@@ -2,6 +2,7 @@ import { hee, sql, type Ctx } from "../core/mod.ts";
 import { cmsCtx, type Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.not_found1";
+export const description = "Not-found page with suggestions and redirect editing.";
 export const needs = ["cms"];
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {

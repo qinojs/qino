@@ -3,6 +3,7 @@ import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.superuser.versions.cms";
+export const description = "Summarizes CMS history by page, activity, and editor.";
 export const needs = ["cms.backend.superuser.versions", "cms"];
 
 export async function install({ app }: { app: App }): Promise<void> {

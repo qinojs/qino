@@ -3,6 +3,7 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.dbfiles.transform";
+export const description = "Manages file-transformation binaries and their cache.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }) {

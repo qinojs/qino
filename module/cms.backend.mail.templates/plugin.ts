@@ -5,6 +5,7 @@ import type { Node } from "../cms/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
 export const name = "cms.backend.mail.templates";
+export const description = "Manages reusable mail subjects and HTML templates.";
 export const needs = ["cms.backend.mail"];
 export { dbSchema };
 

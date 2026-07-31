@@ -6,6 +6,7 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.ai";
+export const description = "Configures AI providers, models, defaults, and token usage.";
 export const needs = ["cms.backend", "ai"];
 
 export async function install({ app }: { app: App }): Promise<void> {
