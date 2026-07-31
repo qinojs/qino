@@ -13,6 +13,8 @@ type Token =
   | { t: "text";  value: string }
 
 export const VOID = new Set(["area","base","br","col","embed","hr","img","input","link","meta","param","source","track","wbr"]);
+// content is text, never markup — `if (a < b)` in a script must survive
+const RAW_TEXT = new Set(["script","style","textarea"]);
 
 function tokenize(html: string): Token[] {
   const tokens: Token[] = [];
@@ -35,8 +37,15 @@ function tokenize(html: string): Token[] {
     const raw = html.slice(i + 1, end);
     const self = raw.trimEnd().endsWith("/");
     const { tag, attrs } = parseTagContent(self ? raw.trimEnd().slice(0, -1) : raw);
+    const name = tag.toLowerCase();
     i = end + 1;
-    tokens.push({ t: "open", tag: tag.toLowerCase(), attrs, self: self || VOID.has(tag.toLowerCase()) });
+    tokens.push({ t: "open", tag: name, attrs, self: self || VOID.has(name) });
+    if (RAW_TEXT.has(name) && !self) {
+      const close = html.toLowerCase().indexOf(`</${name}`, i);
+      const to = close === -1 ? html.length : close;
+      if (to > i) tokens.push({ t: "text", value: html.slice(i, to) });
+      i = to;
+    }
   }
   return tokens;
 }

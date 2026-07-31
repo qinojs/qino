@@ -2,8 +2,11 @@
 
 Lets a CMS module render its node from a plain `template.html` instead of a
 `render()` function. If a module directory contains `template.html`, this module
-hooks `cms.node.render`, parses the file once (cached by file path, hot-reloaded
-in dev) and renders it per request.
+hooks `cms.node.render`, parses the file (cached by path, reparsed when its
+mtime changes) and renders it per request.
+
+`renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
+other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.
 
 Deliberately minimal: static HTML plus three constructs — no expressions, no
 logic. Simple and safe, but built to be extended (`cms-if`, `cms-each`,

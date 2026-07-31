@@ -70,6 +70,19 @@ Deno.test("parseTemplate: tag names are lowercased", () => {
   assertEquals(el(ast[0]).children, [{ type: "text", value: "x" }]);
 });
 
+Deno.test("parseTemplate: script/style/textarea content stays raw text", () => {
+  const ast = parseTemplate("<div><script>if (a < b) x('</b>');</script></div>");
+  const script = el(el(ast[0]).children[0]);
+  assertEquals(script.tag, "script");
+  assertEquals(script.children, [{ type: "text", value: "if (a < b) x('</b>');" }]);
+  assertEquals(el(ast[0]).children.length, 1);
+});
+
+Deno.test("parseTemplate: unclosed raw text element takes the rest", () => {
+  const ast = parseTemplate("<style>a { color: red }");
+  assertEquals(el(ast[0]).children, [{ type: "text", value: "a { color: red }" }]);
+});
+
 Deno.test("parseTemplate: braces are plain text (no expressions)", () => {
   const ast = parseTemplate(`<span class="lang-{lang}">a {x} b</span>`);
   assertEquals(el(ast[0]).attrs, [{ name: "class", value: "lang-{lang}" }]);
