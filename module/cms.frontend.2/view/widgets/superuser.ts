@@ -7,17 +7,18 @@ function inRoot(file: string, root: string): boolean {
   return !!rel && !rel.startsWith("..") && !nodePath.isAbsolute(rel);
 }
 
+// dir ends with a slash, as do the roots it is called with
 async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: string }> {
   const entries: { filePath: string; name: string; isDir: boolean }[] = [];
   try {
     for await (const entry of Deno.readDir(dir)) {
-      entries.push({ filePath: dir + "/" + entry.name, name: entry.name, isDir: entry.isDirectory });
+      entries.push({ filePath: dir + entry.name, name: entry.name, isDir: entry.isDirectory });
     }
   } catch { return; }
   entries.sort((a, b) => a.filePath.localeCompare(b.filePath));
   for (const entry of entries) {
     if (entry.isDir) {
-      yield* walkDir(entry.filePath);
+      yield* walkDir(entry.filePath + "/");
     } else {
       yield { filePath: entry.filePath, name: entry.name };
     }
@@ -29,7 +30,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
   const ctx = getCtx();
   if (!await ctx.user?.get("superuser")) throw new Output("Access denied", { status: 403 });
 
-  const customPath = node.app.appPATH + "qg/" + node.vs.module;
+  const customPath = node.module?.appDir ?? "";
   const modPath = node.module?.dir ?? "";
   const root = vars.param?.in === "app" ? modPath : customPath;
 
@@ -48,7 +49,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
 
   const fileRow = (filePath: string, base: number, info: Deno.FileInfo): HtmlString =>
     html`<tr itemid="${filePath}">
-      <td><a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base + 1)}</a>
+      <td><a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base)}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
         <img src="${ctx.req.modulePath}cms.frontend.2/pub/img/delete.svg" alt=delete>`;

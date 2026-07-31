@@ -11,12 +11,12 @@ export const settingsSchema = {
 };
 
 async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
-  const module = node.vs.module;
+  const module = node.module!;
 
   // App-specific layout CSS
   try {
-    await Deno.stat(node.app.appPATH + "qg/" + module + "/pub/main.css");
-    data.ctx.res.html.styles.add(data.ctx.req.basePath + "qg/" + module + "/pub/main.css");
+    await Deno.stat(module.appDir + "pub/main.css");
+    data.ctx.res.html.styles.add(module.appUrl + "pub/main.css");
   } catch {/**/}
 
   // Font CSS from layout settings
@@ -28,7 +28,7 @@ async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlStri
   }
 
   // Delegate to app-specific layout override: qg/<module>/index.ts
-  const customPath = node.app.appPATH + "qg/" + module + "/index.ts";
+  const customPath = module.appDir + "index.ts";
   try {
     await Deno.stat(customPath);
     const mod = await import(customPath);

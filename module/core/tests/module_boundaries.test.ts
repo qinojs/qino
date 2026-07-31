@@ -118,6 +118,7 @@ Deno.test("the qino layer never imports from the cms layer", async () => {
 // free. The day an outside consumer exists the premise is gone, and the rule becomes "used, or listed".
 const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
+  "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
 ]);
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {

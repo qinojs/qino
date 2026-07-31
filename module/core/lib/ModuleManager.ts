@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
 import type { App } from "./App.ts";
+import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
@@ -28,12 +29,14 @@ function mergeSchema(a: any, b: any): any {
 }
 
 export class Module {
+  #app: App;
   #plugin: Plugin;
   #url: string;
   #path: string | undefined;
   #abort = new AbortController();
 
-  constructor(plugin: Plugin, url: string, path?: string) {
+  constructor(app: App, plugin: Plugin, url: string, path?: string) {
+    this.#app = app;
     this.#plugin = plugin;
     this.#url = url;
     this.#path = path;
@@ -43,6 +46,10 @@ export class Module {
   get url(): string { return this.#url; }
   get path(): string | undefined { return this.#path; }
   get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
+  /** Where the app keeps its own files for this module; what lies in pub/ is served. */
+  get appDir(): string { return `${this.#app.appPATH}qg/${this.name}/`; }
+  /** The same dir as a URL. */
+  get appUrl(): string { return `${getCtx().req.basePath}qg/${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
   abort(): void { this.#abort.abort(); }
@@ -86,7 +93,7 @@ export class ModuleManager {
 
     if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
 
-    const mod = new Module(plugin, url, path);
+    const mod = new Module(this.#app, plugin, url, path);
     this.#modules[name] = mod;
     return mod;
   }
