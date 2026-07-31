@@ -1,11 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { getCtx, hee, html, type HtmlString } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { ADMIN, type Node } from "../../cms/mod.ts";
 
 export function widgetUrl(widget: string): string {
   return new URL("./widgets/" + widget + ".ts", import.meta.url).href;
 }
+
+// Adding/assigning a module = ADMIN ("insertable") on the module axis — edit-only groups don't see it.
+// cms.accessRules lowers e.access to the user's module cap; without it everything stays insertable.
+export const moduleAccess = (node: Node, module: string): Promise<number> =>
+  node.app.fire("module:access", { module, user: getCtx().user, access: ADMIN }).then((e) => Number(e.access));
 
 // `<use>` referencing a module's icon SVG, falling back to the default module icon when absent.
 export async function moduleIcon(module: string | number | null, dir: string | null | undefined): Promise<HtmlString> {

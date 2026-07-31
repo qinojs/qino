@@ -1,4 +1,5 @@
 import { AptError, Output, toTools, walk, type Params, type Ctx, type Tool } from "../core/mod.ts";
+import denoJson from "../../deno.json" with { type: "json" };
 
 /** MCP server (Streamable HTTP, stateless): exposes the app's apt tree as MCP tools.
  *  Requires stateless Bearer auth (e.g. api_key); every call re-runs access/guard via invoke. */
@@ -59,15 +60,12 @@ async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
       return {
         protocolVersion: PROTOCOL_VERSIONS.includes(requested) ? requested : PROTOCOL_VERSIONS[0],
         capabilities: { tools: {} },
-        serverInfo: { name: "qino", version: "1" },
+        serverInfo: { name: "qino", version: denoJson.version },
       };
     }
-    case "ping":
-      return {};
-    case "tools/list":
-      return { tools: await listTools(ctx) };
-    case "tools/call":
-      return callTool(params, ctx);
+    case "ping": return {};
+    case "tools/list": return { tools: await listTools(ctx) };
+    case "tools/call": return callTool(params, ctx);
   }
   throw new RpcErr(-32601, `Method not found: ${msg.method}`);
 }

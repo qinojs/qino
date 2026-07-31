@@ -31,7 +31,7 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
       const files = codeFiles(node);
       await Deno.mkdir(`${node.module!.appDir}pub/`, { recursive: true });
       await Deno.writeTextFile(files[key], content);
-      return String(await node.html());
+      return String(await node.html()); // tobi: macht es sinn bei einem css/js file die node.html zu rendern? oder ist das nur token-verbrauch?
     },
   },
 });

@@ -16,7 +16,7 @@ export function codeFiles(node: Node) {
     async create(src: string) {
       await Deno.mkdir(`${mod.appDir}pub/`, { recursive: true });
       await write(this.src, src);
-      await write(this.css, `${sel} {\n}\n`);
+      await write(this.css, initialCss(sel));
       await write(this.js, initialJs(sel));
     },
 
@@ -36,3 +36,8 @@ const initialJs = (sel: string) =>
 new SelectorObserver({ on: el => {
 } }).observe('${sel}');
 `;
+
+const initialCss = (sel: string) =>
+`/* root-elements attributes are generated at render-time: qcms-id="385" qcms-mod="cont.html" */
+${sel} { /* nesting syntax */
+}\n`;

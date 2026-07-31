@@ -1,8 +1,7 @@
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { accordion } from "../widget.ts";
-import type { Node } from "../../../cms/mod.ts";
+import { accordion, moduleAccess, moduleIcon } from "../widget.ts";
+import { ADMIN, type Node } from "../../../cms/mod.ts";
 import { $item } from "../../../../deps.ts";
-import { moduleIcon } from "../widget.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
@@ -17,9 +16,14 @@ export default async function (node: Node): Promise<HtmlString> {
   const svgIcon = await moduleIcon(node.vs.module, node.module?.dir);
 
   const module = db.table("module").entry(node.vs.module);
-  const modules = node.vs.type === "p" ? await cms.getLayouts() : await cms.getModules();
-  const moduleOptions = html.join(Object.keys(modules).map((name) =>
-    html`<option value="${name}" ${name === node.vs.module ? "selected" : ""}>${name}`));
+  const modules = node.vs.type === "p" ? cms.getLayouts() : cms.getModules();
+  const options: HtmlString[] = [];
+  for (const name of Object.keys(modules)) {
+    const current = name === node.vs.module;
+    if (!current && await moduleAccess(node, name) < ADMIN) continue; // the write path rejects them anyway; the current one stays visible
+    options.push(html`<option value="${name}" ${current ? "selected" : ""}>${name}`);
+  }
+  const moduleOptions = html.join(options);
 
   const parent = await node.parent();
   let parentHtml: HtmlString | string = "";
