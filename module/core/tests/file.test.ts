@@ -1,16 +1,15 @@
 import { assertEquals } from "./deps.ts";
 import { File } from "../lib/File.ts";
 
-Deno.test("File: contents read/write, basename, size and md5", async () => {
+Deno.test("File: basename, size and md5", async () => {
   const dir = await Deno.makeTempDir();
   try {
     const path = dir + "/hello.txt";
     const file = new File(path);
 
     assertEquals(await file.exists(), undefined);
-    assertEquals(await file.contents("hello"), 5);
+    await Deno.writeTextFile(path, "hello");
     assertEquals(await file.exists(), file);
-    assertEquals(await file.contents(), "hello");
     assertEquals(file.basename(), "hello.txt");
     assertEquals(file.basename(".txt"), "hello");
     assertEquals(await file.size(), 5);
@@ -27,12 +26,12 @@ Deno.test("File: copyTo and getText handle common text/html files", async () => 
     const html = new File(dir + "/b.html");
     const bin = new File(dir + "/c.bin");
 
-    await txt.contents("plain");
-    await html.contents("<h1>Hello</h1><p>World</p>");
-    await bin.contents(new Uint8Array([1, 2, 3]));
+    await Deno.writeTextFile(txt.path, "plain");
+    await Deno.writeTextFile(html.path, "<h1>Hello</h1><p>World</p>");
+    await Deno.writeFile(bin.path, new Uint8Array([1, 2, 3]));
 
     assertEquals(await txt.copyTo(dir + "/copy.txt"), true);
-    assertEquals(await new File(dir + "/copy.txt").contents(), "plain");
+    assertEquals(await Deno.readTextFile(dir + "/copy.txt"), "plain");
     assertEquals(await txt.getText(), "plain");
     assertEquals(await html.getText(), "HelloWorld");
     assertEquals(await bin.getText(), "");
@@ -46,8 +45,8 @@ Deno.test("File: empty and spaced filenames keep stable metadata", async () => {
   try {
     const empty = new File(dir + "/empty file.txt");
     const same = new File(dir + "/same content.txt");
-    await empty.contents("");
-    await same.contents("");
+    await Deno.writeTextFile(empty.path, "");
+    await Deno.writeTextFile(same.path, "");
 
     assertEquals(empty.basename(), "empty file.txt");
     assertEquals(empty.basename(".html"), "empty file.txt");

@@ -193,11 +193,11 @@ export class DbFile extends File {
     return e.access;
   }
 
-  async updateDb() {
-    const { md5 } = await this.ensureVs();
-    this.path = this.#manager.directory + md5;
-    await this.setVs({ text: await this.getText(), size: await this.size() });
-  }
+  // async updateDb() { // not ussed?
+  //   const { md5 } = await this.ensureVs();
+  //   this.path = this.#manager.directory + md5;
+  //   await this.setVs({ text: await this.getText(), size: await this.size() });
+  // }
 
   async used(): Promise<boolean> {
     for (const field of this.#manager.db.table("file").children) {

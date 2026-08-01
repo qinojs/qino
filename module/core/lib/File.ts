@@ -16,11 +16,11 @@ export class File {
     return typeByExtension(this.extension) || "application/octet-stream";
   }
 
-  async contents(set?: string | Uint8Array | null): Promise<string | number> {
-    if (set == null) return Deno.readTextFile(this.path);
-    await (typeof set === "string" ? Deno.writeTextFile(this.path, set) : Deno.writeFile(this.path, set));
-    return set.length;
-  }
+  // async contents(set?: string | Uint8Array | null): Promise<string | number> { // not used
+  //   if (set == null) return Deno.readTextFile(this.path);
+  //   await (typeof set === "string" ? Deno.writeTextFile(this.path, set) : Deno.writeFile(this.path, set));
+  //   return set.length;
+  // }
 
   basename(suffix = ""): string {
     const base = this.path.split(/[\\/]/).pop() ?? "";
