@@ -37,7 +37,9 @@ small { color: var(--gray); }
 .u2-table > thead > tr {
   background:var(--color-darker);
   color: var(--color-bg);
-  & > :is(*,#xx) { background-color:inherit; }
+}
+.u2-table.-Sticky > thead > tr > th {
+  background-color:inherit;
 }
 
 u2-ico[icon="delete"] { color: var(--red) }
