@@ -1,6 +1,6 @@
 import { assertEquals } from "./deps.ts";
 import { Db } from "../lib/db/Db.ts";
-import { sql } from "../../../deps.ts";
+import { sql } from "../deps.ts";
 
 Deno.test("sql`` builds params, ids, raw and joins", () => {
   const f = sql`a = ${1} AND ${sql.id("b")} = ${2}`;

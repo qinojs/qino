@@ -1,4 +1,4 @@
-import { Item, sql } from "../../../deps.ts";
+import { Item, sql } from "../deps.ts";
 import type { Db } from "./db/Db.ts";
 
 class SettingItem extends Item<SettingItem> {

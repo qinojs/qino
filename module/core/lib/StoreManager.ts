@@ -1,4 +1,4 @@
-import { fromFileUrl } from "../../../deps.ts";
+import { fromFileUrl } from "../deps.ts";
 import type { App } from "./App.ts";
 import { isModuleName, resolveSpecifier } from "./ModuleManager.ts";
 

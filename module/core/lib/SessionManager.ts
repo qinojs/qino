@@ -1,4 +1,4 @@
-import { bildJsonItem, type ItemProxy } from "../../../deps.ts";
+import { bildJsonItem, type ItemProxy } from "../deps.ts";
 import { header, cookiePrefix, uid, unixTime } from "./util.ts";
 import type { Db } from "./db/Db.ts";
 import type { Req } from "./ctx/Req.ts";

@@ -1,7 +1,6 @@
-import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
+import { $item, html, type HtmlString, getCtx } from "../../../core/mod.ts";
 import { accordion, moduleAccess, moduleIcon } from "../widget.ts";
 import { ADMIN, type Node } from "../../../cms/mod.ts";
-import { $item } from "../../../../deps.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;

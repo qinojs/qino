@@ -1,6 +1,6 @@
+import { dump } from "@nuxodin/dump";
 import { hee, getCtx, sql, u2time, unixTime, type Sql, type Ctx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { dump } from "../../deps.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.log";

@@ -1,6 +1,6 @@
 import { basename, extname } from "node:path";
 import { mail } from "../mail/mod.ts";
-import { typeByExtension } from "../../deps.ts";
+import { typeByExtension } from "@std/media-types";
 import { backend } from "../cms.backend/mod.ts";
 import { getCtx, html, type HtmlString, sqlSearch, u2time, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";

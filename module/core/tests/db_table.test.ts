@@ -3,7 +3,7 @@ import { assertEquals } from "./deps.ts";
 import { DbTable } from "../lib/db/DbTable.ts";
 import { Db } from "../lib/db/Db.ts";
 import { fakeRender } from "./sqlFake.ts";
-import { sql } from "../../../deps.ts";
+import { sql } from "../deps.ts";
 
 function db() {
   const calls: Array<[string, unknown[] | undefined]> = [];

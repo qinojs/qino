@@ -1,5 +1,5 @@
 import { basename, extname } from "node:path";
-import { typeByExtension } from "../../../deps.ts";
+import { typeByExtension } from "@std/media-types";
 import { hee, unixTime } from "../../core/mod.ts";
 import { addressOf, attachmentOf, clean, formatAddress, htmlToText, importUpyo, jsonDecode, jsonEncode, listOf, mergeHeaders, renderMarkers, sha1 } from "./helpers.ts";
 import type { MailManager } from "./MailManager.ts";

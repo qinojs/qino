@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { Item, ItemProxy } from "../../../../deps.ts";
+import type { Item, ItemProxy } from "../../deps.ts";
 import { Res } from "./Res.ts";
 import { uid } from "../util.ts";
 import * as nodePath from "node:path";

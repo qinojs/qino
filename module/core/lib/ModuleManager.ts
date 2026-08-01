@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../../../deps.ts";
+import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import type { App } from "./App.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults } from "./util.ts";

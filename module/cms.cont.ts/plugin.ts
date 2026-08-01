@@ -1,6 +1,6 @@
 import type { Node } from "../cms/mod.ts";
+import { toFileUrl } from "@std/path";
 import { html, type Ctx } from "../core/mod.ts";
-import { toFileUrl } from "../../deps.ts";
 import { codeFiles } from "./codeFiles.ts";
 import options from "./options.ts";
 

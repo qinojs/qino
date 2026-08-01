@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { basename, extname } from "node:path";
-import { typeByExtension } from "../../../deps.ts";
+import { typeByExtension } from "@std/media-types";
 import { hee } from "../../core/mod.ts";
 import type { AddressInput, AttachmentInput, Dict, Recipient } from "./types.ts";
 

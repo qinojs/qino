@@ -1,4 +1,4 @@
-export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "jsr:@std/assert@^1";
+export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";

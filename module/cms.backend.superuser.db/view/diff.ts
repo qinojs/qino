@@ -1,5 +1,4 @@
-import { html, type HtmlString, sql, type Db, type App } from "../../core/mod.ts";
-import { schemaFromDb, schemaDiff } from "../../../deps.ts";
+import { html, type HtmlString, schemaDiff, schemaFromDb, sql, type Db, type App } from "../../core/mod.ts";
 import { sortTableNames } from "../lib/analyze.ts";
 
 export async function renderDiff(app: App, db: Db): Promise<HtmlString> {

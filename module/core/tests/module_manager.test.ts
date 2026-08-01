@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assert, assertEquals, assertRejects } from "./deps.ts";
-import { toFileUrl, $item } from "../../../deps.ts";
+import { toFileUrl, $item } from "../deps.ts";
 import { ModuleManager } from "../lib/ModuleManager.ts";
 import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";

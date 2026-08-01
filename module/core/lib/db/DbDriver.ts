@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, postgres, type Pool, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../../../deps.ts";
+import { mysql, postgres, type Pool, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
 import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 

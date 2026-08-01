@@ -2,8 +2,7 @@ import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
-import { $item, bildJsonItem } from "../../../deps.ts";
+import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
 
 /** Node class

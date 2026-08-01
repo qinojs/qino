@@ -1,4 +1,5 @@
-import { sanitizeHtml as sanitize } from "../../../deps.ts";
+// @ts-types="@types/sanitize-html"
+import sanitize from "sanitize-html";
 
 const DIM = /^\d+(?:\.\d+)?(?:px|%|r?em|vw|vh)$/;
 

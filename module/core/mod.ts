@@ -34,7 +34,7 @@ export type { AptNode, AptTree, Method, Params, Verb } from "./lib/apt/types.ts"
 export { Db } from "./lib/db/Db.ts";
 export type { DbEvents } from "./lib/db/Db.ts";
 export type { Row } from "./lib/db/DbDriver.ts";
-export { Sql, sql } from "../../deps.ts";
+export { Sql, sql } from "./deps.ts";
 export { tableRef, scopeCache } from "./lib/db/dbScope.ts";
 export type { DbScope } from "./lib/db/dbScope.ts";
 export { DbEntry } from "./lib/db/DbEntry.ts";
@@ -43,6 +43,10 @@ export { DbField } from "./lib/db/DbField.ts";
 export { DbFile } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
 export type { dbEntry_usr } from "./lib/qgEntries.ts";
+
+// item.js is core's dependency; other modules take it from here so there is only ever one copy of
+// it — `$item` is a module-local Symbol that a second copy would silently stop matching.
+export { $item, bildJsonItem, schemaDiff, schemaFromDb, toInput } from "./deps.ts";
 
 // Modules
 export { Module } from "./lib/ModuleManager.ts";

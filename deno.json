@@ -18,10 +18,22 @@
     "./score": "./module/score/mod.ts",
     "./uncdn": "./module/uncdn/mod.ts"
   },
-  "minimumDependencyAge": "0",
   "imports": {
-    "@qino/item/": "jsr:/@nuxodin/item@0.6.3/",
-    "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/"
+    "@qino/item/": "jsr:/@nuxodin/item@^0.6.3/",
+    "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/",
+    "@nuxodin/dump": "jsr:@nuxodin/dump@^1.5.2",
+    "@simplewebauthn/server": "npm:@simplewebauthn/server@13",
+    "@std/assert": "jsr:@std/assert@^1",
+    "@std/http/": "jsr:/@std/http@^1/",
+    "@std/media-types": "jsr:@std/media-types@^1",
+    "@std/path": "jsr:@std/path@^1",
+    "@types/sanitize-html": "npm:@types/sanitize-html@^2",
+    "bcryptjs": "npm:bcryptjs@^3",
+    "hono": "npm:hono@^4",
+    "hono/": "npm:/hono@^4/",
+    "mysql2/": "npm:/mysql2@^3/",
+    "pg": "npm:pg@^8",
+    "sanitize-html": "npm:sanitize-html@^2"
   },
   "tasks": {
     "test": "deno test --no-check --allow-read --allow-write=/tmp --allow-run=git --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM module/core/tests module/cron/tests module/ai/tests module/cms/tests module/cms.templateParser/tests module/cms.cont.html/tests module/cms.cont.ts/tests module/cms.versions/tests module/cms.cont.table2/tests module/cms.cont.text/tests module/cms.cont.flexible/tests module/cms.cont.login4/tests module/cms.image2/tests module/cms.image_editor/tests module/cms.filebrowser/tests module/cms.layout.login/tests module/cms.installation.default/tests module/cms.backend/tests module/cms.backend.domain-monitor/tests module/cms.backend.superuser.cron/tests module/cms.backend.superuser.db.cleanup/tests module/cms.backend.settings/tests module/cms.backend.cms.tree/tests module/cms.backend.users/tests module/cms.backend.groups/tests module/uncdn/tests module/web_auth/tests test-modules/cms.backend.superuser.score.test/tests"

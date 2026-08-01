@@ -3,8 +3,7 @@ import { cmsCtx } from "./lib/CmsContext.ts";
 import { ADMIN } from "./lib/access.ts";
 // deno-lint-ignore-file no-explicit-any
 
-import { s, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep, type Ctx } from "../core/mod.ts";
-import { $item } from "../../deps.ts";
+import { $item, s, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep, type Ctx } from "../core/mod.ts";
 import * as fns from "./apt-exports.ts";
 import type { Node } from "./lib/Node.ts";
 

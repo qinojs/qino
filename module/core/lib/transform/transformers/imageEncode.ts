@@ -1,6 +1,6 @@
 import * as magick from '../magick.ts';
 import type { TransformerDef } from '../types.ts';
-import { typeByExtension } from '../../../../../deps.ts';
+import { typeByExtension } from '../../../deps.ts';
 import * as nodePath from 'node:path';
 
 /** File size in bytes; a missing file is `Infinity` so it loses the smaller-output comparison. */

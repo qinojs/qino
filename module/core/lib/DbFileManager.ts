@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { typeByExtension, sql } from "../../../deps.ts";
+import { typeByExtension, sql } from "../deps.ts";
 import { File } from "./File.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";

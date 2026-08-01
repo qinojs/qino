@@ -1,6 +1,6 @@
 import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
-import { typeByExtension } from '../../../../deps.ts';
+import { typeByExtension } from '../../deps.ts';
 import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult, TranscriptEngine } from './types.ts';
 import { resetProbes } from './tryCommand.ts';
 import * as magick from './magick.ts';

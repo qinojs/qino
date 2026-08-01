@@ -1,5 +1,5 @@
 import * as nodeCrypto from "node:crypto";
-import { extensionByType, typeByExtension } from "../../../deps.ts";
+import { extensionByType, typeByExtension } from "../deps.ts";
 
 export interface UploadedFile {
   name: string;

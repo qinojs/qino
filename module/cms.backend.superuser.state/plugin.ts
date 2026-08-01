@@ -1,6 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
-import { getCtx, hee, html, type HtmlString, type App } from "../core/mod.ts";
-import { dump, $item } from "../../deps.ts";
+import { dump } from "@nuxodin/dump";
+import { $item, getCtx, hee, html, type HtmlString, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.state";

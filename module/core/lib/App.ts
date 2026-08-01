@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { fromFileUrl, serveFile, type ItemProxy } from "../../../deps.ts";
+import { fromFileUrl, serveFile, type ItemProxy } from "../deps.ts";
 import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";

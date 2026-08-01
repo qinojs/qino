@@ -1,5 +1,6 @@
 import { assertEquals } from "./deps.ts";
-import { fromFileUrl, toFileUrl } from "../../../deps.ts";
+import { fromFileUrl, toFileUrl } from "../deps.ts";
+import { itemRoot } from "../lib/util.ts";
 
 const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
@@ -104,11 +105,12 @@ Deno.test("module stores list every plugin directory", async () => {
   await assertStore(testModuleDir);
 });
 
-Deno.test("local import map mirrors package exports", async () => {
+// The browser gets item.js from a CDN URL, which no import map can derive from the server pin
+// (import.meta.resolve returns an opaque jsr: specifier). So the two are kept in step by hand.
+Deno.test("browser itemRoot matches the pinned item.js version", async () => {
   const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
-  const map = JSON.parse(await Deno.readTextFile(qinoDir + "import-map.local.json"));
-  const expected = Object.fromEntries(Object.entries(config.exports).map(([key, path]) => [config.name + (key === "." ? "" : key.slice(1)), path]));
-  assertEquals(map.imports, expected);
+  const pinned = config.imports["@qino/item/"].match(/@(?:\^|~)?([\d.]+)\//)?.[1];
+  assertEquals(itemRoot, `https://jsr.io/@nuxodin/item/${pinned}/`);
 });
 
 Deno.test("test-store modules only consume public package APIs", async () => {

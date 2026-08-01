@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { DbTable } from "./DbTable.ts";
-import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../../../deps.ts";
+import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../deps.ts";
 import { type DbDialect, type ExecResult, type MigrateOptions, type Row, DbDriver } from "./DbDriver.ts";
 import { Emitter } from "../Emitter.ts";
 import { AsyncLocalStorage } from "node:async_hooks";

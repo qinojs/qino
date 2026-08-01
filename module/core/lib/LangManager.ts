@@ -1,6 +1,6 @@
 import { getCtx, type Ctx } from "./ctx/Ctx.ts";
 import { createHash } from "node:crypto";
-import { sql } from "../../../deps.ts";
+import { sql } from "../deps.ts";
 import type { App } from "./App.ts";
 
 export class LangManager {

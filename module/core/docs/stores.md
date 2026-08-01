@@ -131,15 +131,20 @@ import type { Node } from "@qino/qino/cms";
 import { scored } from "@qino/qino/score";
 ```
 
-The source stays identical in both environments:
+The source stays identical in both environments, and nothing has to be redirected by hand: the
+repository root is a Deno workspace whose members are `qino/` and the demos. Inside it, `@qino/qino`
+resolves to the local source tree because `qino/` is the package of that name; outside it, the same
+specifier resolves to the published JSR package. That covers the demos, `test-modules/`, and
+`privat-module/` alike — a plain directory inside the workspace can import a member by name.
 
-- During local Git development, [`import-map.local.json`](../../../import-map.local.json) redirects
-  every public `@qino/qino` export to the local source tree.
-- The demo `deno.json` files reference that map.
-- For general use, the same canonical specifiers resolve to the published JSR package.
+Third-party versions are pinned once, in [`qino/deno.json`](../../../deno.json) `imports`. Module
+sources only ever write bare specifiers (`@std/media-types`, `@qino/item/tools/db/sql.js`), so a
+version bump is a single edit and Deno's `no-import-prefix` lint stays satisfied.
 
-The local map intentionally duplicates the package export list, and a boundary test verifies that
-both remain identical. Adding an export without updating the map now fails the tests.
+To work against a local item.js checkout, uncomment `patch` in the workspace root `deno.json` —
+Deno then resolves `@qino/item/` to the working copy instead of JSR. The `patch` entry only applies
+if the local version satisfies the pinned range, which is why the range is `^0.6.3` rather than an
+exact version; `deno.lock` keeps the actual resolution reproducible.
 
 `import.meta.resolve("jsr:...")` may continue to return an opaque `jsr:` specifier. It is useful for
 loading but not a reliable hierarchical asset URL. Consequently a store itself currently needs a
@@ -189,7 +194,7 @@ the real CMS package split and would mix a large import rewrite into the store e
 
 - The SQLite, MySQL, multi-tenant, and PostgreSQL demos load the relevant store catalogs.
 - Demo boot configuration uses the shared `base`/`url` resolver shown above.
-- All demo configurations use the central local import map.
+- Demos are workspace members; no per-demo import map.
 - Module usage documentation now uses `app.modules.add()` for boot and preserves `app.import()` for
   actual runtime loading.
 
@@ -204,7 +209,6 @@ The boundary and module-manager tests now verify:
 - exact agreement between each catalog and its plugin directories;
 - importability of every test-store plugin;
 - no runtime import from a test-store module into Qino internals;
-- exact agreement between package exports and the local import map;
 - existing duplicate, missing-dependency, and cycle errors.
 
 The previously failing `cms.cont.html` CSS test was also corrected: the CSS generator intentionally

@@ -1,5 +1,5 @@
 import type { Db } from "../db/Db.ts";
-import { bildJsonItem } from "../../../../deps.ts";
+import { bildJsonItem } from "../../deps.ts";
 import { enableItemSchemaDefaults } from "../util.ts";
 
 async function buildRoot(
