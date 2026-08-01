@@ -2,6 +2,7 @@
 import { assert, assertEquals, assertRejects } from "./deps.ts";
 import { toFileUrl, $item } from "../../../deps.ts";
 import { ModuleManager } from "../lib/ModuleManager.ts";
+import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";
 
 Deno.test({
@@ -18,7 +19,6 @@ Deno.test({
     await Deno.mkdir(appPATH + "remote-ish/", { recursive: true });
 
     await Deno.writeTextFile(localModDir + "local.foo/plugin.ts", `
-    export const name = "local.foo";
     export const value = "local";
   `);
     await Deno.writeTextFile(appPATH + "private/private.foo/plugin.ts", `
@@ -45,8 +45,7 @@ Deno.test({
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
     };
     const modules = new ModuleManager(app as any);
-    await modules.importAll(toFileUrl(localModDir).href);
-    const local = modules.get("local.foo")!;
+    const local = await modules.import(toFileUrl(localModDir + "local.foo/plugin.ts").href);
     assertEquals(local.name, "local.foo");
     assertEquals(local.plugin.value, "local");
     assert(local.path?.endsWith("/local.foo/plugin.ts"));
@@ -54,7 +53,7 @@ Deno.test({
     await assertRejects(
       () => modules.import("./private/private.foo/"),
       Error,
-      "Use app.import(import.meta.resolve",
+      "Use app.modules.add",
     );
 
     const privateModule = await modules.import(toFileUrl(appPATH + "private/private.foo/plugin.ts").href);
@@ -89,7 +88,6 @@ Deno.test({
     await Deno.mkdir(modDir + "sig.foo/", { recursive: true });
     // init() registers a listener bound to the per-module signal
     await Deno.writeTextFile(modDir + "sig.foo/plugin.ts", `
-      export const name = "sig.foo";
       export function init(app, { signal }) {
         app.on("ping", (e) => { e.count++; }, { signal });
       }
@@ -106,7 +104,7 @@ Deno.test({
     };
 
     const modules = new ModuleManager(app as any);
-    await modules.importAll(toFileUrl(modDir).href);
+    modules.add("./m/sig.foo/plugin.ts");
     await modules.init();
     assertEquals((await app.fire("ping", { count: 0 })).count, 1); // linked → handler runs
 
@@ -124,14 +122,14 @@ Deno.test("ModuleManager rejects invalid plugins", async () => {
   const root = await Deno.makeTempDir();
   try {
     await Deno.mkdir(root + "/bad/", { recursive: true });
-    await Deno.writeTextFile(root + "/plugin.ts", `export const value = 1;`);
+    await Deno.writeTextFile(root + "/plugin.ts", `export const name = 1;`);
     await Deno.writeTextFile(root + "/bad/plugin.ts", `export const name = "bad.needs"; export const needs = "core";`);
 
     const modules = new ModuleManager({} as any);
     await assertRejects(
       () => modules.import(toFileUrl(root + "/plugin.ts").href),
       Error,
-      "Plugin has no exported name",
+      "Plugin has an invalid exported name",
     );
     await assertRejects(
       () => modules.import(toFileUrl(root + "/bad/plugin.ts").href),
@@ -143,6 +141,54 @@ Deno.test("ModuleManager rejects invalid plugins", async () => {
       Error,
       "Plugin import needs a file",
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("Store selects modules by directory name", async () => {
+  const root = await Deno.makeTempDir();
+  try {
+    await Deno.mkdir(root + "/hello.world/", { recursive: true });
+    await Deno.mkdir(root + "/hello.analytics/", { recursive: true });
+    await Deno.writeTextFile(root + "/store.json", JSON.stringify({
+      modules: {
+        "hello.world": {},
+        "hello.analytics": {},
+      },
+    }));
+    await Deno.writeTextFile(root + "/hello.world/plugin.ts", `
+      export function init(app) { app.loaded.push("hello.world"); }
+    `);
+    await Deno.writeTextFile(root + "/hello.analytics/plugin.ts", `
+      export function init(app) { app.loaded.push("hello.analytics"); }
+    `);
+
+    const createApp = () => {
+      const app: any = {
+        appPATH: root + "/",
+        loaded: [],
+        aptTree: {},
+        db: {},
+        settings: { [$item]: { setSchema() {}, addEventListener() {} } },
+      };
+      app.modules = new ModuleManager(app);
+      app.stores = new StoreManager(app);
+      return app;
+    };
+
+    const selected = createApp();
+    selected.stores.add("./store.json").add("hello.world");
+    await selected.stores.init();
+    await selected.modules.init();
+    assertEquals(selected.loaded, ["hello.world"]);
+    assertEquals(Object.keys(selected.modules.all()), ["hello.world"]);
+
+    const all = createApp();
+    all.stores.add(toFileUrl(root + "/store.json").href).addAll();
+    await all.stores.init();
+    await all.modules.init();
+    assertEquals(all.loaded, ["hello.analytics", "hello.world"]);
   } finally {
     await Deno.remove(root, { recursive: true });
   }

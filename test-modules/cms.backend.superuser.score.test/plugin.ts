@@ -1,6 +1,6 @@
-import type { App, Ctx } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import { scored } from "../score/mod.ts";
+import type { App, Ctx } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import { scored } from "@qino/qino/score";
 import { fileHit, pageHit, TABLES } from "./hooks.ts";
 import { list, render } from "./render.ts";
 import api from "./nodeApi.ts";

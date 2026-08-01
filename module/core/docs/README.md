@@ -8,6 +8,10 @@ start here, then dive into a topic.
   `plugin.ts` manifest; the `ModuleManager` imports it, runs its hooks in dependency order, and
   can link/unlink it at runtime without a restart. Read this first if you're adding features.
 
+- **[Module stores](stores.md)** — why stores are an optional catalog layer, the chosen `add` API,
+  local source mapping versus JSR, implemented safeguards, and the deliberately deferred remote
+  asset/locale work.
+
 - **[Database access](db.md)** — three layers from raw to high-level: composable `` sql`…` ``
   fragments, `db.query`/`exec` to run them, and schema-aware `db.table()` CRUD helpers. Dialect
   (mysql/sqlite/pg) is applied only at render time, so the same code runs on all three.

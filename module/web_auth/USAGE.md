@@ -5,11 +5,11 @@ WebAuthn-Modul (Passkeys, Fingerabdruck, Face ID, Hardware-Key). Unabhängig vom
 ## Einbindung in server.ts
 
 ```ts
-await app.import(import.meta.resolve("../qino/module/web_auth/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/web_auth/plugin.ts"));
 
 // Optional:
-await app.import(import.meta.resolve("../qino/module/cms.cont.web_auth/plugin.ts"));
-await app.import(import.meta.resolve("../qino/module/cms.backend.web_auth/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.cont.web_auth/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.web_auth/plugin.ts"));
 ```
 
 ## Settings

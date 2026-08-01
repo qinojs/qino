@@ -9,6 +9,7 @@ import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
 import { FileTransformer } from "./transform/mod.ts";
 import { ModuleManager, type Module } from "./ModuleManager.ts";
+import { StoreManager } from "./StoreManager.ts";
 import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
 import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
@@ -58,6 +59,7 @@ export class App extends Emitter<AppEvents> {
     fileTransformer: FileTransformer;
     sessions: SessionManager;
     modules: ModuleManager;
+    stores: StoreManager;
     languages: LangManager;
     t: LangManager["t"];
     aptTree: AptTree = {};
@@ -84,6 +86,7 @@ export class App extends Emitter<AppEvents> {
         this.fileTransformer = FileTransformer.create({ cacheDir: this.appPATH + "cache/pri/" });
         this.sessions  = new SessionManager(this.db);
         this.modules   = new ModuleManager(this);
+        this.stores    = new StoreManager(this);
         this.languages = new LangManager(this);
         this.t         = this.languages.t;
     }
@@ -92,6 +95,7 @@ export class App extends Emitter<AppEvents> {
      *  schema (DDL), and runs module init. Call once before serving — keeps DDL out of the request path. */
     async init(): Promise<void> {
         await this.db.ensureDatabase();  // DB must exist before migration queries run against it
+        await this.stores.init();
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
     }
 
@@ -101,7 +105,6 @@ export class App extends Emitter<AppEvents> {
     }
 
     import(spec: string): Promise<Module> { return this.modules.import(spec); }
-    importAll(dir: string): Promise<void> { return this.modules.importAll(dir); }
     link(name: string): Promise<void> { return this.modules.link(name); }
     unlink(name: string): void { this.modules.unlink(name); }
 

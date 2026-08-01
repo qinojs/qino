@@ -1,0 +1,10 @@
+{
+  "modules": {
+    "cms.backend.superuser.score.test": {},
+    "cms.cont.apitest": {},
+    "cms.cont.cms-image2-test": {},
+    "cms.cont.example": {},
+    "cms.cont.example.ml": {},
+    "cms.cont.my.debug": {}
+  }
+}

@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { cms_image2 } from "../cms.image2/mod.ts";
-import { html, type HtmlString } from "../core/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { cms_image2 } from "@qino/qino/cms.image2";
 
 export const name = "cms.cont.example";
 export const description = "CMS module example with text, images, settings, assets, and parts.";

@@ -6,8 +6,17 @@ import { enableItemSchemaDefaults } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 
+export const isModuleName = (name: string): boolean =>
+  /^[a-zA-Z0-9._-]+$/.test(name) && name !== "." && name !== ".." && !Object.hasOwn(Object.prototype, name);
+
+export function resolveSpecifier(app: App, spec: string): string {
+  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, toFileUrl(app.appPATH)).href;
+  if (isAbsolute(spec)) return toFileUrl(spec).href;
+  return import.meta.resolve(spec);
+}
+
 export type Plugin = Record<string, any> & {
-  name: string;
+  name?: string;
   description?: string;
   needs?: string[];
   // Object = static schema. Function = computed from the merged schema (runs after all
@@ -31,18 +40,20 @@ function mergeSchema(a: any, b: any): any {
 
 export class Module {
   #app: App;
+  #name: string;
   #plugin: Plugin;
   #url: string;
   #path: string | undefined;
   #abort = new AbortController();
 
-  constructor(app: App, plugin: Plugin, url: string, path?: string) {
+  constructor(app: App, name: string, plugin: Plugin, url: string, path?: string) {
     this.#app = app;
+    this.#name = name;
     this.#plugin = plugin;
     this.#url = url;
     this.#path = path;
   }
-  get name(): string { return this.#plugin.name; }
+  get name(): string { return this.#name; }
   get plugin(): Plugin { return this.#plugin; }
   get url(): string { return this.#url; }
   get path(): string | undefined { return this.#path; }
@@ -57,13 +68,10 @@ export class Module {
   toString(): string { return this.name; }
 }
 
-async function fileExists(path: string): Promise<boolean> {
-  return (await Deno.stat(path).catch(() => null))?.isFile ?? false;
-}
-
 export class ModuleManager {
   #app: App;
   #modules: Record<string, Module> = {};
+  #pending: { spec: string; name?: string }[] = [];
   #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
 
   constructor(app: App) {
@@ -77,15 +85,26 @@ export class ModuleManager {
   // True once a module's hooks have run (imported ⊇ linked). Unlink flips it back.
   linked(name: string): boolean { return this.#linked.has(name); }
 
-  async import(spec: string): Promise<Module> {
-    if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported. Use app.import(import.meta.resolve("${spec}"))`);
+  /** Declare a module for import during app.init(). */
+  add(spec: string, name?: string): this {
+    this.#pending.push({ spec: resolveSpecifier(this.#app, spec), ...(name && { name }) });
+    return this;
+  }
+
+  async import(spec: string, expectedName?: string): Promise<Module> {
+    if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported by import(). Use app.modules.add("${spec}") before app.init()`);
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
     if (!/\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts, plugin.js, or plugin.mjs file: ${spec}`);
     const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
     const url = path ? toFileUrl(path).href : spec;
     const plugin = await import(url);
-    const name = plugin.name;
-    if (typeof name !== "string" || !name) throw new Error(`Plugin has no exported name: ${url}`);
+    if (plugin.name !== undefined && (typeof plugin.name !== "string" || !plugin.name)) throw new Error(`Plugin has an invalid exported name: ${url}`);
+    const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.exec(url)?.[1];
+    const name = expectedName ?? plugin.name ?? (inferredName && decodeURIComponent(inferredName));
+    if (!name) throw new Error(`Plugin name cannot be inferred: ${url}`);
+    if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${url}`);
+    if (expectedName && plugin.name && expectedName !== plugin.name)
+      throw new Error(`Plugin name mismatch: store has "${expectedName}", plugin exports "${plugin.name}"`);
     const existing = this.#modules[name];
     if (existing) {
       if (existing.url !== url) throw new Error(`Duplicate module name "${name}": ${existing.url} vs ${url}`);
@@ -94,27 +113,17 @@ export class ModuleManager {
 
     if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
 
-    const mod = new Module(this.#app, plugin, url, path);
+    const same = Object.values(this.#modules).find((mod) => mod.url === url);
+    if (same) throw new Error(`Plugin ${url} is already registered as "${same.name}"`);
+
+    const mod = new Module(this.#app, name, plugin, url, path);
     this.#modules[name] = mod;
     return mod;
   }
 
-  async importAll(dir: string): Promise<void> {
-    const base = (dir.startsWith("file:") ? fromFileUrl(dir) : dir).replace(/\/?$/, "/");
-    const entries: string[] = [];
-    for await (const entry of Deno.readDir(base)) {
-      if (!entry.name.startsWith(".") && entry.isDirectory) entries.push(entry.name);
-    }
-    entries.sort();
-    for (const name of entries) {
-      const dir = base + name + "/";
-      if (await fileExists(dir + "plugin.ts")) await this.import(dir + "plugin.ts");
-      else if (await fileExists(dir + "plugin.js")) await this.import(dir + "plugin.js");
-      else if (await fileExists(dir + "plugin.mjs")) await this.import(dir + "plugin.mjs");
-    }
-  }
-
   async init(): Promise<void> {
+    for (const { spec, name } of this.#pending) await this.import(spec, name);
+    this.#pending = [];
     const order = this.#order();
     await this.#applyDbSchema(order);
     this.#applySchemas(order);

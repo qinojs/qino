@@ -85,12 +85,12 @@ export function sqlScore(db: Db, tbl: string, id: string | Sql = tbl + ".id"): S
 }
 
 /** Stored score → current strength in accesses, for display. */
-export function strength(db: Db, tbl: string, score: number, now = unixTime()): number {
+export function strength(db: Db, tbl: string, score: number, now: number = unixTime()): number {
   return Math.exp(score - rate(scope(db, tbl).half) * now);
 }
 
 /** Scores below this are faded and go at the next prune — a plain number in the same log space. */
-export function fadeLimit(db: Db, tbl: string, now = unixTime()): number {
+export function fadeLimit(db: Db, tbl: string, now: number = unixTime()): number {
   return rate(scope(db, tbl).half) * now + Math.log(FORGET);
 }
 

@@ -2,6 +2,8 @@ import { assertEquals } from "./deps.ts";
 import { fromFileUrl, toFileUrl } from "../../../deps.ts";
 
 const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
+const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
+const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -77,12 +79,54 @@ const OPEN = new Set([
 
 Deno.test("every module manifest has a description", async () => {
   const missing: string[] = [];
-  for await (const file of files(moduleDir)) {
-    if (!file.endsWith("/plugin.ts")) continue;
-    const source = await Deno.readTextFile(file);
-    if (!/^export const description = "[^"]+";$/m.test(source)) missing.push(file.slice(moduleDir.length));
+  for (const dir of [moduleDir, testModuleDir]) {
+    for await (const file of files(dir)) {
+      if (!file.endsWith("/plugin.ts")) continue;
+      const source = await Deno.readTextFile(file);
+      if (!/^export const description = "[^"]+";$/m.test(source)) missing.push(file.slice(dir.length));
+    }
   }
   assertEquals(missing, []);
+});
+
+async function assertStore(dir: string): Promise<void> {
+  const store = JSON.parse(await Deno.readTextFile(dir + "store.json"));
+  const plugins: string[] = [];
+  for await (const entry of Deno.readDir(dir)) {
+    const hasPlugin = entry.isDirectory && await Deno.stat(`${dir}${entry.name}/plugin.ts`).then((stat) => stat.isFile, () => false);
+    if (hasPlugin) plugins.push(entry.name);
+  }
+  assertEquals(Object.keys(store.modules).sort(), plugins.sort());
+}
+
+Deno.test("module stores list every plugin directory", async () => {
+  await assertStore(moduleDir);
+  await assertStore(testModuleDir);
+});
+
+Deno.test("local import map mirrors package exports", async () => {
+  const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
+  const map = JSON.parse(await Deno.readTextFile(qinoDir + "import-map.local.json"));
+  const expected = Object.fromEntries(Object.entries(config.exports).map(([key, path]) => [config.name + (key === "." ? "" : key.slice(1)), path]));
+  assertEquals(map.imports, expected);
+});
+
+Deno.test("test-store modules only consume public package APIs", async () => {
+  const errors: string[] = [];
+  for await (const file of files(testModuleDir)) {
+    if (file.includes("/tests/")) continue;
+    const moduleRoot = testModuleDir + file.slice(testModuleDir.length).split("/")[0] + "/";
+    for (const spec of imports(await Deno.readTextFile(file)).keys()) {
+      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      if (!target.startsWith(moduleRoot)) errors.push(`${file.slice(testModuleDir.length)} imports ${target}`);
+    }
+  }
+  assertEquals(errors, []);
+});
+
+Deno.test("test-store plugins are importable", async () => {
+  const store = JSON.parse(await Deno.readTextFile(testModuleDir + "store.json"));
+  for (const name of Object.keys(store.modules)) await import(toFileUrl(`${testModuleDir}${name}/plugin.ts`).href);
 });
 
 Deno.test("modules only consume public APIs of other modules", async () => {
@@ -128,6 +172,7 @@ Deno.test("the qino layer never imports from the cms layer", async () => {
 // free. The day an outside consumer exists the premise is gone, and the rule becomes "used, or listed".
 const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
+  "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
 ]);
 

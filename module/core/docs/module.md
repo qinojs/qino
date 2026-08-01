@@ -7,7 +7,7 @@ order, and can **link/unlink** them at runtime without a restart.
 ## The plugin manifest
 
 ```ts
-export const name = "shop";          // required, unique — the registry key
+export const name = "shop";          // optional; inferred from shop/plugin.ts or its store
 export const needs = ["core"];       // module names that must be linked first
 
 export const settingsSchema = { … }; // app-wide settings, under settings.<name>
@@ -20,8 +20,8 @@ export function init(app, { signal }) { … }   // wire up listeners/timers/rout
 export async function install({ app, module }) { … } // one-time content seeding
 ```
 
-Everything except `name` is optional. `plugin.ts` is the manifest the loader reads; keep the
-public API in `mod.ts` (see the module convention).
+Everything is optional — a module may consist only of `export function init(app) {}`. `plugin.ts`
+is the manifest the loader reads; keep the public API in `mod.ts` (see the module convention).
 
 ## Lifecycle
 
@@ -29,12 +29,15 @@ Three separate phases — runtime mirrors boot, one module at a time:
 
 | | Boot (all modules) | Runtime (one module) |
 |---|---|---|
-| register | `app.importAll(dir)` | `await app.import(spec)` |
+| register | `app.modules.add(spec)` / `store.add(name)` | `await app.import(spec)` |
 | run hooks | `await app.init()` | `await app.link(name)` |
 | tear down | — | `app.unlink(name)` |
 
-- **`import(spec)`** loads the file, reads `name`/`needs`, and registers the module. It is the
-  only call that takes a locator (path/url). It does **not** run any hooks.
+- **`modules.add(spec)`** declares a local or remote module. `init()` imports it later.
+- **`store.add(name)`** declares a module whose conventional `<name>/plugin.ts` location comes
+  from a store catalog. `store.addAll()` declares every module in that catalog.
+- **`import(spec)`** immediately loads and registers a module for runtime linking. It does
+  **not** run any hooks.
 - **`init()`** is the boot step: migrate the merged DB schema, apply all settings schemas, then
   run every module's hooks in dependency order.
 - **`link(name)`** runs one already-imported module's hooks. Idempotent; its `needs` must be

@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { Access, hee, walk, type Ctx, type Route, type Verb } from "../core/mod.ts";
+import { Access, hee, walk, type Ctx, type Route, type Verb } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export const name = "cms.cont.apitest";
 export const description = "Apt route access matrix for users and API keys.";

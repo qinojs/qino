@@ -1,7 +1,7 @@
-import { requestStorage, type App, type Ctx } from "../core/mod.ts";
-import { cmsCtx } from "../cms/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import { hit } from "../score/mod.ts";
+import { requestStorage, type App, type Ctx } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
+import { hit } from "@qino/qino/score";
 
 /** What this module scores, and with which half-life in seconds. */
 export const TABLES: Record<string, number> = { page: 30 * 86400, file: 30 * 86400 };

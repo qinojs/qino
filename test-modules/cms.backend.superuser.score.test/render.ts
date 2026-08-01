@@ -1,6 +1,6 @@
-import { html, unixTime, type App, type HtmlString } from "../core/mod.ts";
-import { cms, type Node } from "../cms/mod.ts";
-import { scopes, strength } from "../score/mod.ts";
+import { html, unixTime, type App, type HtmlString } from "@qino/qino";
+import { cms, type Node } from "@qino/qino/cms";
+import { scopes, strength } from "@qino/qino/score";
 import { TABLES } from "./hooks.ts";
 
 export function render(node: Node): Promise<HtmlString> {

@@ -12,10 +12,10 @@ Providern an, hier melden sich fremde Clients *bei* qino an.
 
 ## Einbindung in server.ts
 
-Mit `app.importAll(…)` automatisch dabei; sonst:
+Mit `store.addAll()` automatisch dabei; sonst:
 
 ```ts
-await app.import(import.meta.resolve("../qino/module/oauth_server/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/oauth_server/plugin.ts"));
 ```
 
 ## Endpoints

@@ -1,6 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { hee, getCtx } from "../core/mod.ts";
-import { dump } from "../../deps.ts";
+import { getCtx, hee } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export const name = "cms.cont.my.debug";
 export const description = "Current session, settings, client, user, and group details.";
@@ -14,6 +13,8 @@ function vsTable(vs: Record<string, unknown>, exclude: string[] = []): string {
     .join("\n") +
     '</table>';
 }
+
+const inspect = (value: unknown): string => `<pre>${hee(Deno.inspect(value, { depth: 6 }))}</pre>`;
 
 async function render(_node: Node): Promise<string> {
   const ctx = getCtx();
@@ -34,9 +35,9 @@ async function render(_node: Node): Promise<string> {
 
   return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:.5rem;display:inline-block">
   <h3>session</h3>
-  ${dump(sessionData)}
+  ${inspect(sessionData)}
   <h3>settings</h3>
-  ${dump(settingsData)}
+  ${inspect(settingsData)}
   <h3>client</h3>
   ${vsTable(clientVs)}
   ${usrHtml}

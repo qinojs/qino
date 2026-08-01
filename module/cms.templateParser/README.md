@@ -15,7 +15,7 @@ logic. Simple and safe, but built to be extended (`cms-if`, `cms-each`,
 The rule: a `cms-*` **attribute** (`cms-text`) keeps your tag as the wrapper;
 a `<cms-*>` **element** (`<cms-image>`, `<cms-cont>`) is replaced by its output.
 
-A full example: [cms.cont.example.ml/template.html](../cms.cont.example.ml/template.html)
+A full example: [cms.cont.example.ml/template.html](../../test-modules/cms.cont.example.ml/template.html)
 
 Each example below shows the template form, then the equivalent in a plain
 TS `render()` (see [cms/README.md](../cms/README.md)).

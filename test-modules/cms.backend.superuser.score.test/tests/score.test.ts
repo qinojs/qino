@@ -1,8 +1,8 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { Db, requestStorage, type App, type Ctx } from "../../core/mod.ts";
-import { cmsCtx } from "../../cms/mod.ts";
-import { scored } from "../../score/mod.ts";
-import { dbSchema } from "../../score/tests/deps.ts";
+// deno-lint-ignore no-import-prefix -- test store must not depend on the host application's import map
+import { assertEquals } from "jsr:@std/assert@1";
+import { Db, requestStorage, type App, type Ctx } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
+import { scored } from "@qino/qino/score";
 import api from "../nodeApi.ts";
 import { fileHit, pageHit, TABLES } from "../hooks.ts";
 import { cms, name, needs } from "../plugin.ts";
@@ -13,7 +13,8 @@ const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));
 
 async function testApp() {
   const db = new Db("sqlite:");
-  await db.migrate(dbSchema);
+  await db.exec`CREATE TABLE score_scope (id INTEGER PRIMARY KEY AUTOINCREMENT, tbl TEXT)`;
+  await db.exec`CREATE TABLE score (scope_id INTEGER, id INTEGER, score REAL, time INTEGER DEFAULT 0, PRIMARY KEY (scope_id, id))`;
   for (const [tbl, half] of Object.entries(TABLES)) await scored(db, tbl, half);
   return { db, app: { db, t } as unknown as App };
 }

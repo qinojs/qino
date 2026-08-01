@@ -9,11 +9,11 @@ Endpoint: `POST {appURL}mcp` — handled methods: `initialize`, `ping`, `tools/l
 
 ## Einbindung in server.ts
 
-Mit `app.importAll(…)` automatisch dabei; sonst:
+Mit `store.addAll()` automatisch dabei; sonst:
 
 ```ts
-await app.import(import.meta.resolve("../qino/module/api_key/plugin.ts")); // Bearer auth
-await app.import(import.meta.resolve("../qino/module/mcp/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/api_key/plugin.ts")); // Bearer auth
+app.modules.add(import.meta.resolve("../qino/module/mcp/plugin.ts"));
 ```
 
 ## Client verbinden

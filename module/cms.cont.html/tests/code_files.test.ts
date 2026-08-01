@@ -30,7 +30,10 @@ Deno.test("codeFiles: create writes the initial content, existing files are kept
   await files.create("<div>first</div>");
   await files.create("<div>second</div>");
   assertEquals(await read(files.src), "<div>first</div>");
-  assertEquals(await read(files.css), `[qcms-id="7"] {\n}\n`);
+  assertEquals(await read(files.css), `/* root-elements attributes are generated at render-time: qcms-id="385" qcms-mod="cont.html" */
+[qcms-id="7"] { /* nesting syntax */
+}
+`);
   assertEquals((await read(files.js))?.includes(`observe('[qcms-id="7"]')`), true);
   await Deno.remove(dir, { recursive: true });
 });

@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { scopes } from "../score/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { scopes } from "@qino/qino/score";
 import { TABLES } from "./hooks.ts";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {

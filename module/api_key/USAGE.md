@@ -9,11 +9,11 @@ so a token is shown **once** at creation and can never be read back — only rev
 ## Einbindung in server.ts
 
 ```ts
-await app.import(import.meta.resolve("../qino/module/api_key/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/api_key/plugin.ts"));
 
 // Optional UI:
-await app.import(import.meta.resolve("../qino/module/cms.cont.my.api_keys/plugin.ts"));         // self-service
-await app.import(import.meta.resolve("../qino/module/cms.backend.superuser.api_keys/plugin.ts")); // admin
+app.modules.add(import.meta.resolve("../qino/module/cms.cont.my.api_keys/plugin.ts"));         // self-service
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.api_keys/plugin.ts")); // admin
 ```
 
 ## API (session-authenticated)
