@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { html, type HtmlString, type App } from "../core/mod.ts";
+import { ConflictError, html, type HtmlString, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -16,7 +16,11 @@ type Change = { ns: string; lang: string; file: string; added: { key: string; ne
 // Compare export map against the current file; null = no difference
 async function diffFile(ns: string, lang: string, file: string, map: Record<string, string>): Promise<Change | null> {
   let old: Record<string, string> = {};
-  try { old = JSON.parse(await Deno.readTextFile(file)); } catch { /* file does not exist yet */ }
+  try { old = JSON.parse(await Deno.readTextFile(file)); }
+  catch (e) {
+    if (e instanceof SyntaxError) throw new ConflictError(`Invalid locale file: ${ns}/locale/${lang}.json`);
+    if (!(e instanceof Deno.errors.NotFound)) throw e;
+  }
   const added: Change["added"] = [], removed: string[] = [], changed: Change["changed"] = [];
   for (const [k, v] of Object.entries(map)) {
     if (!(k in old)) added.push({ key: k, new: v });
@@ -37,14 +41,15 @@ async function api(node: Node, vars: any): Promise<any> {
   const skipped: string[] = [];
   const changes: Change[] = [];
   for (const [ns, byLang] of Object.entries(await app.languages.export())) {
-    const dir = app.modules.get(ns || "core")?.dir;
-    if (!dir) { skipped.push(ns || "core"); continue; } // url-based module, not on disk
+    const name = ns || "core";
+    const dir = app.modules.get(name)?.dir;
+    if (!dir) { skipped.push(name); continue; } // url-based module, not on disk
     const localeDir = dir + "locale/";
     for (const [lang, map] of Object.entries(byLang as Record<string, Record<string, string>>)) {
       const file = localeDir + lang + ".json";
+      const change = await diffFile(name, lang, file, map);
       if (preview) {
-        const c = await diffFile(ns || "core", lang, file, map);
-        if (c) changes.push(c);
+        if (change) changes.push(change);
       } else {
         await Deno.mkdir(localeDir, { recursive: true });
         await Deno.writeTextFile(file, JSON.stringify(map, null, 2) + "\n");

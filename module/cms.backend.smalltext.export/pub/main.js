@@ -12,6 +12,8 @@ cms.initNode("backend.smalltext.export", (el) => {
       result.textContent = r?.written?.length
         ? `${r.written.length} files written`
         : "nothing exported";
+    } catch (e) {
+      result.textContent = e.message;
     } finally {
       e.target.disabled = false;
     }
@@ -23,6 +25,8 @@ cms.initNode("backend.smalltext.export", (el) => {
     try {
       const r = await node.api.post({ preview: 1 });
       result.replaceChildren(renderChanges(r?.changes));
+    } catch (e) {
+      result.textContent = e.message;
     } finally {
       e.target.disabled = false;
     }
