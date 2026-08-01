@@ -1,11 +1,29 @@
+// deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
 import { toTools } from "../../core/mod.ts";
-import { api, name, needs, settingsSchema } from "../plugin.ts";
+import { api, init, name, needs, settingsSchema } from "../plugin.ts";
+import { getCmsVers } from "../mod.ts";
 
 Deno.test("cms.versions: module metadata is wired", () => {
   assertEquals(name, "cms.versions");
   assertEquals(needs, ["cms"]);
-  assertEquals(settingsSchema.properties.draftmode.type, "boolean");
+  assertEquals(settingsSchema.properties, {});
+});
+
+Deno.test("cms.versions: parked draft space stays inactive", async () => {
+  const routes: ((event: any) => unknown)[] = [];
+  const app = {
+    db: { on() {} },
+    on(name: string, listener: (event: any) => unknown) {
+      if (name === "route") routes.push(listener);
+    },
+  };
+  init(app as never, { signal: new AbortController().signal });
+  const ctx = { state: {}, req: { query: { cms_versions_space: "1" } } };
+
+  await routes.at(-1)!({ ctx });
+
+  assertEquals(getCmsVers(ctx as never).space, 0);
 });
 
 Deno.test("cms.versions: apt API exposes publish/page/log endpoints", () => {

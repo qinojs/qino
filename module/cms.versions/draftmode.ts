@@ -7,7 +7,8 @@ import { cmsCtx } from "../cms/mod.ts";
  * works in space 1 while visitors see live (space 0); `publish-node`
  * copies draft → live.
  *
- * What is active:
+ * Parked: plugin.ts does not wire this file until read/write routing is complete.
+ * Implemented pieces:
  *   - editmode → draft space selection (applyDraftSpace)
  *   - cross-space field sync for `page`
  *

@@ -13,7 +13,7 @@
  *
  * lib/Vers.ts + History.ts + Spaces.ts are the generic, cms-agnostic
  * versioning engine — keep them that way.
- * Draft-mode (space routing, partly TODO) is separated into draftmode.ts.
+ * Draft-mode (space routing, partly TODO) is parked in draftmode.ts.
  */
 
 // deno-lint-ignore-file no-explicit-any
@@ -22,14 +22,15 @@ import { type DbScope, Access, type AptTree, s, sql, type App } from "../core/mo
 import { cms, cmsCtx } from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
-import { ensureSpace, initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
+import { initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
+// import { ensureSpace } from "./lib/Spaces.ts"; // parked with draft/space mode
 import { getCmsVers, nodeLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
-import { applyDraftSpace, initDraftmode } from "./draftmode.ts";
+// import { applyDraftSpace, initDraftmode } from "./draftmode.ts"; // parked until read/write routing is complete
 export { healthChecks } from "./healthChecks.ts";
 
 export const name = "cms.versions";
-export const description = "Tracks CMS content history, drafts, snapshots, and publishing.";
+export const description = "Tracks CMS content history, snapshots, and restoration.";
 export const needs = ["cms"];
 
 // Which cms tables are versioned (qg_setting and page_class intentionally excluded).
@@ -60,10 +61,11 @@ export function dbSchema(merged: { properties: Record<string, any> }) {
 
 export const settingsSchema = {
     properties: {
-        draftmode: {
-            type: "boolean",
-            description: "Enables draft mode for versioned content.",
-        },
+        // Draft/space mode is parked until its read/write routing is complete.
+        // draftmode: {
+        //     type: "boolean",
+        //     description: "Enables draft mode for versioned content.",
+        // },
     },
 };
 
@@ -113,15 +115,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     // settings + request params.
     app.on("route", async ({ ctx }) => {
         const vs = getCmsVers(ctx);
-        await ensureSpace(ctx.app, vs.space);
-
-        // Determine space from draftmode setting (see draftmode.ts)
-        await applyDraftSpace(ctx);
-
-        // Override from request params
-        if (ctx.req.query.cms_versions_space !== undefined && ctx.req.query.cms_versions_space !== "active") {
-            vs.space = Number(ctx.req.query.cms_versions_space) || 0;
-        }
+        // Draft/space mode is parked; active history stays in live space 0.
+        // await ensureSpace(ctx.app, vs.space);
+        // await applyDraftSpace(ctx);
+        // if (ctx.req.query.cms_versions_space !== undefined && ctx.req.query.cms_versions_space !== "active") {
+        //     vs.space = Number(ctx.req.query.cms_versions_space) || 0;
+        // }
         vs.log = Number(ctx.req.query.cms_versions_log) || 0;
 
         // ── Log-mode: render a historical snapshot ────────────────────────────
@@ -170,14 +169,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/vers.mjs");
     }, { signal });
 
-    initDraftmode(app, signal);
+    // initDraftmode(app, signal); // parked until draft reads and writes are fully routed
 }
 
 /**
  * cms.versions install()
  * Tables (vers_space) are created via dbSchema/migrate.
  */
-export function install({app}: { app: App }): void { // tobi: I do not think this is needed
-    // Autovivify settings
-    app.settings["cms.versions"].draftmode;
-}
+// export function install({app}: { app: App }): void { // tobi: I do not think this is needed
+//     // Autovivify settings
+//     app.settings["cms.versions"].draftmode;
+// }
