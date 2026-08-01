@@ -65,10 +65,10 @@ export class StoreManager {
     this.#app = app;
   }
 
-  add(spec: string): Store {
+  add(spec: string | URL): Store {
     const url = resolveSpecifier(this.#app, spec);
-    const store = this.#stores.get(url) ?? new Store(this.#app, url);
-    this.#stores.set(url, store);
+    let store = this.#stores.get(url);
+    if (!store) this.#stores.set(url, store = new Store(this.#app, url));
     return store;
   }
 

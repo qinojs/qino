@@ -74,7 +74,10 @@ Every manifest field is optional. In particular, `name` is no longer mandatory:
 
 Module names are validated. Duplicate names, duplicate URLs under different names, missing
 dependencies, and dependency cycles fail explicitly. Stores do not overwrite each other in a map;
-there is currently no implicit precedence or local-wins policy.
+there is currently no implicit precedence or local-wins policy. Failing loudly keeps every later
+option open — an apt-style priority rule can still be added, silent shadowing could not be taken
+back. What keeps two stores from colliding in the first place is the vendor segment in the module
+name; see [module.md](module.md#module-names).
 
 ## Store format and URL convention
 
@@ -107,18 +110,16 @@ A function that receives only `"../module/plugin.ts"` cannot know which source f
 Relative strings passed to `app.modules.add()` are therefore resolved against `app.appPATH`, not
 against the caller's `import.meta.url`.
 
-Call sites that mean “relative to this source file” resolve while that context still exists:
+Call sites that mean “relative to this source file” resolve while that context still exists. `add()`
+takes a `URL` as well as a string, so that is the whole pattern:
 
 ```ts
-const base = import.meta.resolve("./");
-const url = (path: string): string => new URL(path, base).href;
-
-app.modules.add(url("../modules/example/plugin.ts"));
+app.modules.add(new URL("../modules/example/plugin.ts", import.meta.url));
 ```
 
-This pattern is now used by the demos. It needs one `import.meta.resolve()` per source file, not one
-per module. A more convenient API may be added later, but it cannot reconstruct caller context from
-a plain string.
+The demos additionally keep a small `url()` helper, because `appPATH` and similar options still want
+a string. No API can reconstruct caller context from a plain string, so the caller has to supply it
+one way or the other.
 
 ## Local source development and JSR
 

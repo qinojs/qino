@@ -23,6 +23,26 @@ export async function install({ app, module }) { … } // one-time content seedi
 Everything is optional — a module may consist only of `export function init(app) {}`. `plugin.ts`
 is the manifest the loader reads; keep the public API in `mod.ts` (see the module convention).
 
+## Module names
+
+A name is `[<role prefix>.]<vendor>.<name>`, e.g. `cms.cont.acme.blog` or `acme.shop`. Qino's own
+modules omit the vendor segment — that absence is what marks them as core.
+
+The name is not just a label: it is the apt tree key, the locale namespace, the settings key, the
+`/m/<name>/pub/` route, and what other modules reference in `needs`. It can therefore never be
+renamed after the fact, which is why the two things it encodes need fixed positions.
+
+- **Role prefixes** say where a module plugs in and are looked up by prefix — `CMS.getModules()`
+  scans `cms.cont.`, `getLayouts()` scans `cms.layout.`. They are defined and reserved by Qino.
+- **The vendor segment** follows the role prefix and belongs to whoever publishes the module. It
+  is what keeps two stores from colliding: `cms.cont.acme.blog` vs `cms.cont.other.blog`.
+  Uniqueness inside one vendor is that vendor's own problem.
+
+Open: a third party that brings a new plug-in point of its own has nowhere to put a role prefix,
+because the prefix set has no owner. Solving that means moving the role out of the name into the
+manifest — today `cms.cont.*` and `cms.layout.*` are structurally identical there (both export
+`cms.node.render`), so only the name distinguishes them.
+
 ## Lifecycle
 
 Three separate phases — runtime mirrors boot, one module at a time:

@@ -9,7 +9,8 @@ type DbSchema = { properties: Record<string, unknown> };
 export const isModuleName = (name: string): boolean =>
   /^[a-zA-Z0-9._-]+$/.test(name) && name !== "." && name !== ".." && !Object.hasOwn(Object.prototype, name);
 
-export function resolveSpecifier(app: App, spec: string): string {
+export function resolveSpecifier(app: App, spec: string | URL): string {
+  if (spec instanceof URL) return spec.href;
   if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, toFileUrl(app.appPATH)).href;
   if (isAbsolute(spec)) return toFileUrl(spec).href;
   return import.meta.resolve(spec);
@@ -85,8 +86,9 @@ export class ModuleManager {
   // True once a module's hooks have run (imported ⊇ linked). Unlink flips it back.
   linked(name: string): boolean { return this.#linked.has(name); }
 
-  /** Declare a module for import during app.init(). */
-  add(spec: string, name?: string): this {
+  /** Declare a module for import during app.init(). A relative string resolves against appPATH —
+   *  pass `new URL("./x/plugin.ts", import.meta.url)` for "relative to this source file". */
+  add(spec: string | URL, name?: string): this {
     this.#pending.push({ spec: resolveSpecifier(this.#app, spec), ...(name && { name }) });
     return this;
   }
