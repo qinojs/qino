@@ -26,19 +26,22 @@ Deno.test("mail health solutions await settings writes", async () => {
     req: { url: new URL("https://www.example.test/") },
     user: { get: (key: string) => key === "superuser" ? true : "admin@example.test" },
   };
-  const types = requestStorage.run(ctx as never, () => healthChecks(app as never));
+  const types = healthChecks(app as never);
 
-  for (const check of Object.values(types.notice)) {
-    const result = await check();
-    const solution = Object.values(result!.solutions!)[0];
-    let done = false;
-    const solved = Promise.resolve(solution.solve()).then((value) => { done = true; return value; });
-    await Promise.resolve();
-    assertEquals(done, false);
-    writes.at(-1).resolve({ written: true });
-    assertEquals(await solved, undefined);
-    assertEquals(done, true);
-  }
+  await requestStorage.run(ctx as never, async () => {
+    for (const check of Object.values(types.notice)) {
+      const result = await check();
+      const solution = Object.values(result!.solutions!)[0];
+      let done = false;
+      const solved = Promise.resolve(solution.solve()).then((value) => { done = true; return value; });
+      await Promise.resolve();
+      assertEquals(done, false);
+      writes.at(-1).resolve({ written: true });
+      assertEquals(await solved, undefined);
+      assertEquals(done, true);
+    }
+  });
 
   assertEquals(writes.map(({ value }) => value), ["info@example.test", "info@example.test", "admin@example.test"]);
+  for (const check of Object.values(types.notice)) assertEquals(await check(), undefined);
 });
