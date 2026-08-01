@@ -136,21 +136,25 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
             // own caches (core dbScope) — the shared app caches stay untouched.
             const db = ctx.app.db;
             const tables: Record<string, string> = {};
-            for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, vs.space, vs.log);
-            const scope: DbScope = ctx.state.dbScope = { tables, cache: {} };
+            let scope: DbScope | undefined;
+            try {
+                for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, vs.space, vs.log);
+                scope = ctx.state.dbScope = { tables, cache: {} };
 
-            // Pre-load the viewed page (incl. conts) from the views into the
-            // request cache; the rest of the request (layout, nav) renders live.
-            const generate = async (id: number): Promise<void> => {
-                const node = await cms(ctx.app).node(id);
-                for (const subCont of await node.conts()) await generate(subCont.id);
-                if ((await node.access()) < 2) return;
-                (node.vs as any).online_start = (node.vs as any).online_end = 0; // request-scoped node — safe
-                await nodeLoadRuntimeCache(node);
-            };
-            await generate(pid);
-            delete scope.tables; // stop routing — the pre-loaded request cache stays
-            for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; // historical views are one-shot
+                // Pre-load the viewed page (incl. conts) from the views into the
+                // request cache; the rest of the request (layout, nav) renders live.
+                const generate = async (id: number): Promise<void> => {
+                    const node = await cms(ctx.app).node(id);
+                    for (const subCont of await node.conts()) await generate(subCont.id);
+                    if ((await node.access()) < 2) return;
+                    (node.vs as any).online_start = (node.vs as any).online_end = 0; // request-scoped node — safe
+                    await nodeLoadRuntimeCache(node);
+                };
+                await generate(pid);
+            } finally {
+                if (scope) delete scope.tables; // stop routing — the pre-loaded request cache stays
+                for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; // historical views are one-shot
+            }
         }
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────
