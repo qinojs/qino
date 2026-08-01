@@ -105,12 +105,9 @@ a.cmsOffline { text-decoration: line-through !important; }
 :hover [qcms-drop] { outline:none; }
 
 
-[qcms-id].qgCmsMarked.qgCmsMarked {
-  outline:.1875rem solid var(--cms-color);
-}
-[qcms-id].qgCmsMarked.qgCmsMarked[qcms-offline] {
-  outline-color:var(--cms-access-2);
-}
+[qcms-id].qgCmsMarked.qgCmsMarked { outline:.1875rem solid var(--cms-color); }
+[qcms-id][qcms-offline] { opacity:.6; }
+[qcms-id].qgCmsMarked.qgCmsMarked[qcms-offline] { outline-color:var(--cms-access-2); }
 
 
 [qcms-id].-moving {

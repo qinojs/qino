@@ -10,13 +10,13 @@ export function healthChecks(app: App) {
     'default "mail from" is not in this domain': async () => {
       const value = String(await settings.mail.sender ?? "");
       if (value.endsWith("@" + domain)) return;
-      return { info: "its: " + hee(value), solutions: { [`set it to: info@${domain}`]: { solve: () => { settings.mail.sender("info@" + domain); } } } };
+      return { info: "its: " + hee(value), solutions: { [`set it to: info@${domain}`]: { solve: async () => { await settings.mail.sender("info@" + domain); } } } };
     },
 
     'mail "reply-to" not from this domain': async () => {
       const value = String(await settings.mail.reply_to ?? "");
       if (value.endsWith("@" + domain)) return;
-      return { info: "its: " + hee(value), solutions: { [`set it to: info@${domain}`]: { solve: () => { settings.mail.reply_to("info@" + domain); } } } };
+      return { info: "its: " + hee(value), solutions: { [`set it to: info@${domain}`]: { solve: async () => { await settings.mail.reply_to("info@" + domain); } } } };
     },
 
     "no mail recipient on debug mode": async () => {
@@ -24,7 +24,7 @@ export function healthChecks(app: App) {
       const usr = ctx.user;
       if (!usr || !await usr.get("superuser")) return;
       const email = String(await usr.get("email") ?? "");
-      return { solutions: { [`set it to: ${hee(email)}`]: { solve: () => { settings.mail.debug_to(email); } } } };
+      return { solutions: { [`set it to: ${hee(email)}`]: { solve: async () => { await settings.mail.debug_to(email); } } } };
     },
 
   } };
