@@ -87,25 +87,27 @@ export async function copyNode(
 
     // Switch to fromSpace so Page.access() reads correct data
     const oldVers = setVers(ctx, [fromSpace, fromLog]);
-    // Clear CMS page cache so space change takes effect
-    cms(ctx.app).clearCache();
-    await generate(pid);
+    try {
+        // Clear CMS page cache so space change takes effect
+        cms(ctx.app).clearCache();
+        await generate(pid);
 
-    // Regenerate URLs in toSpace
-    cms(ctx.app).clearCache();
-    setVers(ctx, [toSpace, 0]);
-    const page = await cms(ctx.app).node(pid);
-    for (const l of ctx.app.languages.all) {
-        const genUrl = await page.urlSeoGenerated(l);
-        const curUrl = await page.urlSeo(l);
-        if (genUrl !== curUrl) await page.urlSeoGen(l);
+        // Regenerate URLs in toSpace
+        cms(ctx.app).clearCache();
+        setVers(ctx, [toSpace, 0]);
+        const page = await cms(ctx.app).node(pid);
+        for (const l of ctx.app.languages.all) {
+            const genUrl = await page.urlSeoGenerated(l);
+            const curUrl = await page.urlSeo(l);
+            if (genUrl !== curUrl) await page.urlSeoGen(l);
+        }
+    } finally {
+        setVers(ctx, oldVers);
+        // The copy wrote rows past the managers — drop all derived caches
+        cms(ctx.app).clearCache();
+        ctx.app.dbTexts.clearCache();
+        ctx.app.dbFiles.clearCache();
     }
-
-    setVers(ctx, oldVers);
-    // The copy wrote rows past the managers — drop all derived caches
-    cms(ctx.app).clearCache();
-    ctx.app.dbTexts.clearCache();
-    ctx.app.dbFiles.clearCache();
 }
 
 /**
