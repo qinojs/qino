@@ -57,11 +57,11 @@ export class File {
     switch (this.extension) {
       case "csv":
       case "txt":
-        //return String(await this.contents());
+        return Deno.readTextFile(this.path);
       case "php":
       case "htm":
       case "html":
-        //return String(await this.contents()).replace(/<[^>]+>/g, "");
+        return (await Deno.readTextFile(this.path)).replace(/<[^>]+>/g, "");
       default:
         return "";
     }
