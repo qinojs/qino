@@ -94,6 +94,8 @@ Deno.test("util: sqlSearch is neutral on empty input", () => {
 
 Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () => {
   const ctx = await testContext({
+    url: "http://h/app/",
+    basePath: "/app/",
     app: {
       appPATH: "/app/",
       modules: {
@@ -103,14 +105,15 @@ Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () =
       },
     },
   });
-  assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/main.css"), "/sys/cms.foo/pub/main.css");
-  assertEquals(ctx.urlToLocalPath("http://h/m/local.foo/pub/main.css"), "/app/m/local.foo/pub/main.css");
-  assertEquals(ctx.urlToLocalPath("http://h/qg/custom/pub/main.css"), "/app/qg/custom/pub/main.css");
-  assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/../mod.ts"), null);
-  assertEquals(ctx.urlToLocalPath("http://h/m/cms.foo/pub/../../deps.ts"), null);
-  assertEquals(ctx.urlToLocalPath("http://h/qg/custom/pub/../mod.ts"), null);
-  assertEquals(ctx.urlToLocalPath("http://h/m/../pub/main.css"), null);
-  assertEquals(ctx.urlToLocalPath("http://h/qg/../pub/main.css"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/main.css"), "/sys/cms.foo/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/app/m/local.foo/pub/main.css"), "/app/m/local.foo/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/app/qg/custom/pub/main.css"), "/app/qg/custom/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../mod.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../../deps.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/qg/custom/pub/../mod.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/m/../pub/main.css"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/qg/../pub/main.css"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/xxxxm/local.foo/pub/main.css"), null);
   assertEquals(ctx.urlToLocalPath("http://h/other/main.css"), null);
   assertEquals(ctx.urlToLocalPath("file:///etc/passwd"), null);
   assertEquals(ctx.urlToLocalPath("file:///app/m/local.foo/pub/main.css"), null);

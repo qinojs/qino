@@ -19,6 +19,13 @@ Deno.test("req paths: appPath is decoded, without base prefix and query", async 
   assertEquals(root.req.appPath, "");
 });
 
+Deno.test("req paths: requests outside basePath are rejected", async () => {
+  for (const path of ["/application/page", "/other/"]) {
+    const err = await assertRejects(() => testContext({ url: "http://qino.test" + path, basePath: "/app/" }), Output);
+    assertEquals((err as Output).status, 404);
+  }
+});
+
 Deno.test("ctx paths: malformed percent-encoding rejects with a 400 Output", async () => {
   const err = await assertRejects(() => testContext({ url: "http://qino.test/%zz" }), Output);
   assertEquals((err as Output).status, 400);

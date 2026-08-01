@@ -87,6 +87,7 @@ export function urlToLocalPath(url: string | URL, appURL: string, app: App): str
   try {
     const u = typeof url === "string" ? new URL(url) : url;
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (!u.pathname.startsWith(appURL)) return null;
     const appRequestPath = decodeURIComponent(u.pathname.slice(appURL.length));
     return appRequestPathToLocalPath(appRequestPath, app);
   } catch { /* not a URL */ }

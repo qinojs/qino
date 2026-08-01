@@ -105,6 +105,7 @@ export class Req {
   } = {}): Promise<Req> {
     const url = publicScheme(request, opt.url ?? new URL(request.url), opt.trustedProxyHops ?? 0);
     const basePath = ensureSlash(opt.basePath || "/");
+    if (!url.pathname.startsWith(basePath)) throw new Output("Not Found", { status: 404 });
     const peerAddr = opt.peerAddr ?? "";
     const body = await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
 
