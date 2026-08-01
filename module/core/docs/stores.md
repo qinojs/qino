@@ -141,6 +141,16 @@ Third-party versions are pinned once, in [`qino/deno.json`](../../../deno.json) 
 sources only ever write bare specifiers (`@std/media-types`, `@qino/item/tools/db/sql.js`), so a
 version bump is a single edit and Deno's `no-import-prefix` lint stays satisfied.
 
+A deployment whose entry point lives outside the repository workspace but imports a local Qino
+checkout must select that checkout's configuration explicitly:
+
+```sh
+deno run --config=qino/deno.json --frozen ...
+```
+
+Without `--config`, the bare third-party specifiers are unavailable. `--frozen` also makes a stale
+standalone `qino/deno.lock` fail during deployment instead of being changed by the running service.
+
 To work against a local item.js checkout, uncomment `patch` in the workspace root `deno.json` —
 Deno then resolves `@qino/item/` to the working copy instead of JSR. The `patch` entry only applies
 if the local version satisfies the pinned range, which is why the range is `^0.6.3` rather than an
@@ -244,9 +254,9 @@ support improves or a real selection use case justifies such an API.
 
 ### Existing project-wide findings
 
-The store work itself is covered and lint-clean. Full-project checks still expose unrelated older
-work: `File.contents()`/`DbFile.contents()` references that do not exist and a larger existing lint
-backlog. These were not folded into the store architecture change.
+The full-project type-check and test suite pass. Standalone checks additionally select
+`qino/deno.json` explicitly and use its lock file with `--frozen`, so the parent workspace cannot
+hide a stale package lock.
 
 ## Recommended next sequence
 
@@ -255,4 +265,3 @@ backlog. These were not folded into the store architecture change.
 3. Replace locale directory enumeration with an explicit, optional remote-safe contract.
 4. Re-run the test store through both local source mapping and published JSR dependencies.
 5. Only then split the CMS modules into their own package/store and later their own repository.
-
