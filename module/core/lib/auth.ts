@@ -9,14 +9,15 @@ const DUMMY_HASH = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi
 export type LoginError = "username" | "inactive" | "password";
 
 export async function authListen(ctx: Ctx): Promise<void> {
-  if (ctx.req.body?.core_login != null) {
-    if (!safeEqual(ctx.req.body.csrfToken, ctx.csrfToken)) return;
-    const saveLogin = !!ctx.req.body.save_login;
-    ctx.loginError = await auth(ctx, String(ctx.req.body.email ?? ""), String(ctx.req.body.pw ?? "")) || undefined;
+  const body = ctx.req.method === "POST" ? ctx.req.body : null;
+  if (body?.core_login != null) {
+    if (!safeEqual(body.csrfToken, ctx.csrfToken)) return;
+    const saveLogin = !!body.save_login;
+    ctx.loginError = await auth(ctx, String(body.email ?? ""), String(body.pw ?? "")) || undefined;
     await rememberLogin(ctx, saveLogin);
   }
-  if (ctx.req.body?.core_logout != null) {
-    if (!safeEqual(ctx.req.body.csrfToken, ctx.csrfToken)) return;
+  if (body?.core_logout != null) {
+    if (!safeEqual(body.csrfToken, ctx.csrfToken)) return;
     await logout(ctx);
   }
   if (!ctx.userId && ctx.clientId) {
