@@ -1,8 +1,11 @@
 # oauth_server
 
-OAuth 2.1 Authorization Server: Autorisierungscode-Flow mit PKCE für öffentliche Clients. Ein
-Client bekommt nach der Zustimmung des Users ein opakes Bearer-Token, mit dem er als dieser User
-auftritt — also genau so weit reicht, wie der User selbst reicht.
+Mit diesem Modul können andere Apps qino mit der ausdrücklichen Zustimmung eines Users in dessen
+Namen verwenden.
+
+Technisch macht es qino zu einem OAuth-2.1-Authorization-Server. Nach Anmeldung und Zustimmung des
+Users erhält die App einen nicht lesbaren Zugangsschlüssel (Bearer-Token), der dieselben Rechte wie
+der User hat. Öffentliche Clients werden dabei über den Autorisierungscode-Flow mit PKCE abgesichert.
 
 Gegenstück zum Modul `oauth`, das die andere Rolle spielt: dort meldet sich qino *bei* fremden
 Providern an, hier melden sich fremde Clients *bei* qino an.
