@@ -543,6 +543,7 @@
   },
   "remote": {
     "https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js": "086b990606b844f86b2a2a0aa0db6c093b276df9fb4f62bc14a2d5b63175929f",
+    "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js": "6abaa70db9639befc5a50241204b1c951ca65bd1fd3f3a9b50ad5342f4943fc5",
     "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/draghandle/draghandle.js": "a4764f7390c23cfc5b5c9dc65fd11d4b320b7fc9e13983547eb9ab2ee43aede8",
     "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/dropzone/dropzone.js": "5136d9d76e014d9d2c6c600ac4766f9530f7cad6f1c6c2bfe7f55d400ff49c56",
     "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/focusgroup/focusgroup.js": "4438cce292b76991c9ca6ef5bf7c5c779dad3493ce9971215834bbe395ca5d1a",
