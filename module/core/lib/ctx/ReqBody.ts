@@ -52,9 +52,9 @@ export class ReqBody {
     body.#maxSize = opt.maxSize;
     if (!request.body) return body;
 
-    const ct = request.headers.get("content-type") ?? "";
-    const isJson = ct.includes("application/json") || ct.includes("application/csp-report");
-    const isForm = ct.includes("multipart/form-data") || ct.includes("application/x-www-form-urlencoded");
+    const type = request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() ?? "";
+    const isJson = type === "application/json" || type === "application/csp-report" || type.endsWith("+json");
+    const isForm = type === "multipart/form-data" || type === "application/x-www-form-urlencoded";
     if (!isJson && !isForm) return body; // raw/streaming bodies stay untouched, readable via req
 
     const lenHeader = request.headers.get("content-length");

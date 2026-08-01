@@ -21,6 +21,13 @@ Deno.test("ReqBody: json string body -> post === 'string'", async () => {
   assertEquals(b.value, "hello");
 });
 
+Deno.test("ReqBody: MIME matching is exact and supports +json", async () => {
+  const json = await parse({ method: "POST", body: '{"a":1}', headers: { "content-type": "Application/Problem+JSON; charset=UTF-8" } });
+  const raw = await parse({ method: "POST", body: '{"a":1}', headers: { "content-type": "text/application/json" } });
+  assertEquals(json.value, { a: 1 });
+  assertEquals(raw.value, null);
+});
+
 Deno.test("ReqBody: form -> flat frozen record", async () => {
   const b = await parse({ method: "POST", body: new URLSearchParams({ xyz: "1" }) });
   assertEquals(b.value.xyz, "1");
