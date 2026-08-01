@@ -1,4 +1,5 @@
-import { getCtx, hee, sql, u2time, type App, type Ctx, type Row, type Sql } from "../core/mod.ts";
+import { getCtx, hee, sql, type App, type Ctx, type Row, type Sql } from "../core/mod.ts";
+import { u2 } from "../cms.backend/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -8,7 +9,7 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   const buckets = await app.db.query`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
   return `<div class=-body>
     <b>${hee(row.events)}</b> ${await app.t`Events`}, <b>${hee(row.fresh ?? 0)}</b> ${await app.t`new`}, <b>${hee(row.blocked ?? 0)}</b> ${await app.t`blocked`}<br>
-    <small>${await app.t`Last alarm:`} ${u2time(row.last)}</small>
+    <small>${await app.t`Last alarm:`} ${u2.time(row.last)}</small>
     ${buckets.length ? `<table class=u2-table>${buckets.map((r) => `<tr>
       <td>${hee(r.score)}
       <td>${hee(r.scope)}
@@ -88,7 +89,7 @@ async function bucketTable(app: App, rows: Record<string, unknown>[]) {
       <td>${hee(r.scope)}
       <td><code>${hee(r.ident)}</code>
       <td>${hee(r.count)}
-      <td>${u2time(r.last_seen)}
+      <td>${u2.time(r.last_seen)}
       <td>${hee(r.reason)}
       <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`).join("")}
   </table></div>`;
@@ -112,7 +113,7 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
         <th>${tStatus}
         <th>
     <tbody>${rows.map(r => `<tr class="-${hee(r.prio)}">
-      <td>${u2time(r.time)}
+      <td>${u2.time(r.time)}
       <td>${eventCell(r)}
       <td>${scoreCell(r)}
       <td>${bucketCell(r)}
@@ -167,7 +168,7 @@ function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key:
     ${rows.map(r => `<tr>
       <td>${hee(r.num)}
       <td><a href="${href(r[key])}"><code>${hee(r[key])}</code></a>
-      <td>${u2time(r.last)}`).join("")}
+      <td>${u2.time(r.last)}`).join("")}
   </table></div>`;
 }
 

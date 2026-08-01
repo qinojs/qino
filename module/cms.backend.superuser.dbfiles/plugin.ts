@@ -1,5 +1,5 @@
-import { getCtx, html, type HtmlString, sql, u2time, FileTransformer, type App, type DbField, type DbFile, type Ctx, type Sql } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { getCtx, html, type HtmlString, sql, FileTransformer, type App, type DbField, type DbFile, type Ctx, type Sql } from "../core/mod.ts";
+import { backend, u2 } from "../cms.backend/mod.ts";
 import { deleteUnlinkedDb } from "./cleanup.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -107,8 +107,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <td><a href="${u.search}">${row.name}${!exists ? html.async` <small style="color:red">${app.t`missing`}</small>` : ""}</a>
   <td><u2-bytes>${row.size}</u2-bytes>
   ${cells}
-  <td>${html.raw(u2time(row.init_time))}<br><small>${row.usr_init_email}</small>
-  <td>${html.raw(u2time(row.edit_time))}<br><small>${row.usr_edit_email}</small>
+  <td>${u2.time(row.init_time)}<br><small>${row.usr_init_email}</small>
+  <td>${u2.time(row.edit_time)}<br><small>${row.usr_edit_email}</small>
   <td>${await f.used()?"◼":""}
   <td>${row.access?"◼":""}
   <td>

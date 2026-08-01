@@ -1,5 +1,5 @@
-import { hee, getCtx, sql, sqlSearch, u2time, type Sql, type Ctx, type App } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { hee, getCtx, sql, sqlSearch, type Sql, type Ctx, type App } from "../core/mod.ts";
+import { backend, u2 } from "../cms.backend/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
@@ -208,7 +208,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     </small>
   <td>
     <a target=_blank href="${hee(editorUrl)}">${hee(msg.slice(0, 300))}${msg.length > 300 ? "…" : ""}</a><br>
-    <small>${u2time(row.time)}</small>
+    <small>${u2.time(row.time)}</small>
     <div>${hee(row.usr_email)}</div>
   <td>
     <button class=u2-unstyle type=button
@@ -262,7 +262,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     tableRows += `
 <tr style="white-space:nowrap">
   <td>
-    <a href="${hee(u.search)}">${u2time(row.time)} <br> ${hee(row.log_id)}</a>
+    <a href="${hee(u.search)}">${u2.time(row.time)} <br> ${hee(row.log_id)}</a>
     <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(row.id)}'}}); this.disabled=true">delete</button>
   <td>
     <b>${hee(row.message)}</b><br>
@@ -347,7 +347,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
       }
       historyRows += `
 <tr>
-  <td>${u2time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(item.id)}
+  <td>${u2.time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(item.id)}
   <td>
     <a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br>
     <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
@@ -388,7 +388,7 @@ ${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client
         <a href="${hee(error.request)}">${hee(error.request)}</a><br>
         <small>${await t`Referer`} <a href="${hee(error.referer)}">${hee(error.referer)}</a></small>
       <tr><th>${await t`Browser`}<td><small>${hee(error.browser)}</small>
-      <tr><th>${await t`Time`}<td>${u2time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+      <tr><th>${await t`Time`}<td>${u2.time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
       <tr><th>${await t`IP`}<td>${hee(error.ip)}
     </table>
     <div class=-body>

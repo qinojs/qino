@@ -1,6 +1,6 @@
 import { dump } from "@nuxodin/dump";
-import { hee, getCtx, sql, u2time, unixTime, type Sql, type Ctx, type App } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { hee, getCtx, sql, unixTime, type Sql, type Ctx, type App } from "../core/mod.ts";
+import { backend, u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.log";
@@ -95,7 +95,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const post = row.post ? (row.post.length >= 2000 ? "(too big)" : row.post) : "";
     body += `
 <tr u2-href>
-    <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2time(row.time)}</a>
+    <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2.time(row.time)}</a>
     <td>
         <div class=-url>${hee(row.url)}</div>
         <small class=-url${foreignRef ? ' style="color:var(--red)"' : ""}>${hee(row.referer)}</small>
@@ -299,7 +299,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     for (const item of logs) {
       u.searchParams.set("id", String(item.id));
       historyRows += `<tr u2-href${item.id === id ? " aria-current=true" : ""}>
-        <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2time(item.time)}</a><br><small>${item.id}</small>
+        <td style="white-space:nowrap"><a href="${hee(u.search)}">${u2.time(item.time)}</a><br><small>${item.id}</small>
         <td><a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br><small>${hee(item.referer)}</small>
         <td>${item.post ? `<pre style="max-width:30rem; max-height:8rem; overflow:auto">${hee(item.post)}</pre>` : "-"}`;
     }
@@ -324,7 +324,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
               <th>${await t`Browser`}
               <td>${hee(info.browser)} ${hee(info.version)} ${info.bot ? '<small class=u2-badge>bot</small>' : ""}
                   <br><small>${hee(log.user_agent)}</small>
-            <tr><th>${await t`Time`}<td>${u2time(log.time)}
+            <tr><th>${await t`Time`}<td>${u2.time(log.time)}
             <tr>
               <th style="color:${uniqueColor(log.ip)}">${await t`IP`}
               <td>${log.ip ? `<a href="${searchLink(log.ip)}">${hee(log.ip)}</a>` : "-"}

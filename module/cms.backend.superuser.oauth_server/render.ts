@@ -1,5 +1,6 @@
 import type { Node } from "../cms/mod.ts";
-import { html, u2time, type App, type Ctx, type HtmlString, type Row } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString, type Row } from "../core/mod.ts";
+import { u2 } from "../cms.backend/mod.ts";
 
 /** Discovery hint plus the two live regions the client script re-renders. */
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
@@ -42,7 +43,7 @@ async function card(app: App, client: Partial<Row> = {}): Promise<HtmlString> {
       ${t`Redirect URIs`} <textarea name=redirect_uris rows=3 required>${client.redirect_uris ?? ""}</textarea>
     </u2-fields>
     <small>${t`One per line, compared exactly. https, or http on localhost.`}</small>
-    ${isNew ? "" : html`<div><small>${await t`Registered`} ${html.raw(u2time(client.created))} · ${client.tokens} ${await t`active tokens`}</small></div>`}
+    ${isNew ? "" : html`<div><small>${await t`Registered`} ${u2.time(client.created)} · ${client.tokens} ${await t`active tokens`}</small></div>`}
     <div>
       <button type=button data-save>${isNew ? t`Add` : t`Save`}</button>
       ${isNew ? "" : html`<button type=button data-delete="${client.id}" class=u2-unstyle
@@ -81,8 +82,8 @@ async function grantRow(app: App, g: Row): Promise<HtmlString> {
   return html.async`<tr>
     <td>${g.name ?? g.client_id}
     <td>${g.email ?? "#" + g.usr_id}
-    <td>${html.raw(u2time(g.since))}
-    <td>${html.raw(u2time(g.until))}
+    <td>${u2.time(g.since)}
+    <td>${u2.time(g.until)}
     <td><button type=button class=u2-unstyle data-revoke="${g.client_id}" data-usr="${g.usr_id}"
       u2-confirm="${await app.t`Revoke this access?`}"><u2-ico icon=delete>✕</u2-ico></button>`;
 }

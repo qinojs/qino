@@ -46,17 +46,6 @@ export function clientIp(request: Request, peerAddr: string, hops = 0): string {
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
 
-/** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-". */
-export function u2time(t: unknown): string {
-  if (t == null || t === "") return "-";
-  const d = t instanceof Date ? t
-    : Number.isFinite(Number(t)) ? new Date(Number(t) * 1000)
-    : new Date(String(t));
-  if (Number.isNaN(d.getTime()) || d.getTime() === 0) return "-";
-  const iso = d.toISOString();
-  return `<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
-}
-
 /** HTML utilities */
 const HEE: Record<string, string> = {"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"};
 export function hee(str: unknown): string {
