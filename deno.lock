@@ -3,7 +3,7 @@
   "specifiers": {
     "jsr:@nuxodin/dump@^1.5.2": "1.5.2",
     "jsr:@nuxodin/item@0.6.2": "0.6.2",
-    "jsr:@nuxodin/item@0.6.3": "0.6.3",
+    "jsr:@nuxodin/item@~0.6.3": "0.6.3",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/cli@^1.0.31": "1.0.32",
     "jsr:@std/encoding@^1.0.11": "1.0.11",
@@ -572,7 +572,19 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@nuxodin/item@0.6.3"
+      "jsr:@nuxodin/dump@^1.5.2",
+      "jsr:@nuxodin/item@~0.6.3",
+      "jsr:@std/assert@1",
+      "jsr:@std/http@1",
+      "jsr:@std/media-types@1",
+      "jsr:@std/path@1",
+      "npm:@simplewebauthn/server@13",
+      "npm:@types/sanitize-html@2",
+      "npm:bcryptjs@3",
+      "npm:hono@4",
+      "npm:mysql2@3",
+      "npm:pg@8",
+      "npm:sanitize-html@2"
     ]
   }
 }
