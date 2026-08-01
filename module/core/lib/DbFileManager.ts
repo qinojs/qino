@@ -2,13 +2,13 @@
 
 import { typeByExtension, sql } from "../../../deps.ts";
 import { File } from "./File.ts";
-import type { TransformOptions } from "./transform/mod.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { fetchRemoteFile, readDataUrl, type UploadedFile } from "./fileStream.ts";
 import { header } from "./util.ts";
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
+import type { TransformOptions } from "./transform/mod.ts";
 
 /** Move a file, falling back to copy+remove when rename fails (e.g. across filesystems). */
 async function moveFile(from: string, to: string) {
