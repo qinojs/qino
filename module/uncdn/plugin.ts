@@ -102,6 +102,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     if (Object.keys(ctx.req.query).length) done(ctx, 404, "Not allowed");
 
     const url = "https://" + rest;
+    const origin = new URL(url).origin;
     const filePath = urlToPath(cacheDir, url);
     if (!filePath) done(ctx, 404, "Not allowed");
     const mediaType = mediaTypeForPath(filePath);
@@ -110,7 +111,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const data = await Deno.readFile(filePath).catch(() => null);
     if (data) serveResponse(mediaType, data);
 
-    if (![...allowed].some(o => url.startsWith(o))) { // undeclared URLs still go through fetchPolicy
+    if (![...allowed].some(o => new URL(o).origin === origin && url.startsWith(o))) { // undeclared URLs still go through fetchPolicy
       const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
       const denied =
         policy === "none" ? "fetchPolicy=none" :

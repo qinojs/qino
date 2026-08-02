@@ -1,6 +1,19 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { ResCsp, ResHtml } from "../../core/mod.ts";
-import { rewriteHtml } from "../plugin.ts";
+import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
+import { Output, ResCsp, ResHtml } from "../../core/mod.ts";
+import { uncdnInstances } from "../internal.ts";
+import { init, rewriteHtml } from "../plugin.ts";
+
+async function routeFor(url: string, source: string) {
+  let route: (event: { ctx: any }) => Promise<void> = () => Promise.resolve();
+  const ctx = await testContext({ url, app: {
+    appPATH: "/tmp/uncdn-origin-test/",
+    settings: { uncdn: { fetchPolicy: "none" } },
+    on: (name: string, handler: typeof route) => { if (name === "route") route = handler; },
+  } });
+  init(ctx.app, { signal: new AbortController().signal });
+  uncdnInstances.get(ctx.app)!.origins.add(source);
+  return { ctx, route };
+}
 
 Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () => {
   const html = new ResHtml();
@@ -34,4 +47,25 @@ Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
   assertEquals([...html.scripts], ["https://other.example/x.js"]);
   assertEquals([...html.styles], [fonts]);
   assertEquals(csp["style-src"]["https://fonts.googleapis.com/"], true); // kept, still referenced
+});
+
+Deno.test("uncdn: lookalike origin does not bypass fetch policy", async () => {
+  const { ctx, route } = await routeFor(
+    "https://qino.test/uncdn/cdn.example.attacker.test/a.js",
+    "https://cdn.example",
+  );
+
+  await assertRejects(() => route({ ctx }), Output);
+  assertEquals(ctx.res.status, 404);
+  assertEquals(ctx.res.body, "Not cached");
+});
+
+Deno.test("uncdn: exact allowed origin still bypasses fetch policy", async () => {
+  const { ctx, route } = await routeFor(
+    "https://qino.test/uncdn/127.0.0.1/a.js",
+    "https://127.0.0.1",
+  );
+
+  await assertRejects(() => route({ ctx }), Error, "SSRF blocked: 127.0.0.1");
+  assertEquals(ctx.res.status, 200);
 });
