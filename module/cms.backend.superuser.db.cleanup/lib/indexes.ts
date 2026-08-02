@@ -82,7 +82,7 @@ export async function indexIssues(db: Db, tableName: string) {
   const fields = Object.entries(table.fields ?? {});
   const wantedPrimary = fields.filter(([, field]) => field.schema["x-index"] === "primary").map(([name]) => name);
   const primary = indexes.find((index) => index.primary);
-  const actualPrimary = primary?.fields ?? Object.keys(table.primaries);
+  const actualPrimary = primary?.fields ?? table.primaries.map(String);
   if (wantedPrimary.length && !same(wantedPrimary, actualPrimary)) {
     issues.push({ kind: "missing", wanted: "primary", actionable: false });
   }

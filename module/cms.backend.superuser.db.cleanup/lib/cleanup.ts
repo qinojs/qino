@@ -42,7 +42,7 @@ export async function findOrphans(db: Db, tableName?: string) {
     if (!count) return null;
     const rows = await db.query`SELECT ${sql.id("child")}.* FROM ${sql.id(table)} ${sql.id("child")} WHERE ${where} LIMIT 5`;
     const parentEmpty = !await db.one`SELECT 1 FROM ${sql.id(parent)} LIMIT 1`;
-    const hasPrimary = Object.keys(table.primaries).length > 0;
+    const hasPrimary = table.primaries.length > 0;
     const actionable = hasPrimary && (field.onParentDelete === "cascade" || field.onParentDelete === "setnull" && field.null);
     const blocked = !hasPrimary
       ? "table has no primary key"
@@ -71,7 +71,7 @@ export async function findOrphans(db: Db, tableName?: string) {
 export async function cleanOrphans(db: Db, tableName: string, fieldName: string) {
   const r = relation(db, tableName, fieldName);
   if (!r) throw new Error("relation no longer exists");
-  if (!Object.keys(r.table.primaries).length) throw new Error("table has no primary key");
+  if (!r.table.primaries.length) throw new Error("table has no primary key");
   if (r.field.onParentDelete !== "cascade" && r.field.onParentDelete !== "setnull") throw new Error("relation has no cleanup rule");
   if (r.field.onParentDelete === "setnull" && !r.field.null) throw new Error("field cannot be set to null");
   const where = orphanWhere(r.field, r.parentField);

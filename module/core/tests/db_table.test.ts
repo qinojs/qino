@@ -76,7 +76,15 @@ Deno.test("DbTable: entry id and where fragments use field transforms", async ()
   await table.init();
 
   assertEquals(table.entryId({ id: "7.9" }), "7.9");
+  assertEquals(table.entryId("007"), "7"); // raw ids are canonical too, one row is one key
+  assertEquals(table.entryId({ id: "007" }), "7");
+  for (const bad of ["12x", "", null, undefined, []] as any[]) {
+    assertEquals(table.entryId(bad), undefined);
+    assertEquals(table.entryId({ id: bad }), undefined);
+    assertEquals(table.entryIdValues(bad), undefined);
+  }
   assertEquals(table.entryIdValues("7"), { id: "7" });
+  assertEquals(table.entry("007") === table.entry(7), true); // same row, same entry
   assertEquals(fakeRender(table.entryIdToFragment("7"), []), ["`id` = ?", ["7"]]);
   assertEquals(
     fakeRender(table.valuesToFragment({ id: "7", name: "A", parent: null }, "t"), []),
@@ -86,6 +94,28 @@ Deno.test("DbTable: entry id and where fragments use field transforms", async ()
     fakeRender(table.valuesToFragment({ name: "A" }, undefined, true), []),
     ["`name` = ?", ["A"]],
   );
+});
+
+Deno.test("DbTable: composite entry ids round-trip and reject wrong part counts", async () => {
+  const fake: any = {
+    escapeId: (id: string) => `\`${id}\``,
+    columns: () => [
+      { Field: "lang", Type: "varchar(8)", Null: "NO", Key: "PRI", Extra: "", Default: null },
+      { Field: "text_id", Type: "int(11)", Null: "NO", Key: "PRI", Extra: "", Default: null },
+    ],
+  };
+  const table = new DbTable(fake, "text_lang");
+  await table.init();
+
+  const id = table.entryId({ lang: "de:x%", text_id: "07" })!;
+  assertEquals(id, "de%3Ax%25:7");
+  assertEquals(table.entryIdValues(id), { lang: "de:x%", text_id: "7" });
+  assertEquals(table.entryId(table.entryIdValues(id)!), id); // splitting and rebuilding is a no-op
+  assertEquals(table.entryId({ lang: [], text_id: 1 }), undefined);
+  assertEquals(table.entryIdValues("de"), undefined);
+  assertEquals(table.entryIdValues("de:7:8"), undefined);
+  assertEquals(table.entryIdValues("de:x"), undefined);
+  assertEquals(table.entryIdValues("a%:1"), undefined); // malformed escape, not a URIError
 });
 
 Deno.test("DbTable: schema fields and children come from db schema", async () => {

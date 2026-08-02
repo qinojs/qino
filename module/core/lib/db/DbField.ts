@@ -39,17 +39,16 @@ export class DbField {
   isAutoIncrement(): boolean { return this.vs.Extra === "auto_increment"; }
 
   valueTransform(value: any): any {
-    const type = this.type.toUpperCase();
     if (this.null && value === null) return null;
-    if (this.null && value === "" && !stringTypes.has(type)) return null;
+    if (this.null && value === "" && !stringTypes.has(this.#type)) return null;
     // What the schema declares beats what the dialect calls the column: SQLite has no boolean type
     // and stores one as INTEGER, so relying on the column type alone would let `true` fall through
     // to String() and land as the text "true" — which every later read then sees as truthy.
-    if (type === "BOOLEAN" || this.schema.type === "boolean") return value === true || value === 1 || value === "1" || value === "true";
-    if (typeof value === "number" && dateTypes.has(type)) {
+    if (this.#type === "boolean" || this.schema.type === "boolean") return value === true || value === 1 || value === "1" || value === "true";
+    if (typeof value === "number" && dateTypes.has(this.#type)) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }
-    if (numTypes.has(type)) {
+    if (numTypes.has(this.#type)) {
       // Number() is strict ("12abc" fails); "" and null become 0 on NOT NULL columns.
       const num = typeof value === "number" ? value : Number(value);
       if (!Number.isFinite(num)) throw new Error(`invalid numeric value for ${this.table}.${this.#name}: ${JSON.stringify(value)}`);

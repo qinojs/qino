@@ -5,9 +5,17 @@ import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { numTypes, type Db } from "./Db.ts";
 import { type Sql, sql, isTemplate } from "../../deps.ts";
 
+// One primary value as its canonical id part; undefined if it cannot identify a row.
+const idValue = (field: DbField, value: any): string | undefined => {
+  if (value == null || typeof value === "object") return; // String([]) and Number([]) would pass as ids
+  if (!numTypes.has(field.type)) return String(value);
+  const num = value === "" ? NaN : Number(value); // strict like DbField; an empty value is no id
+  return Number.isFinite(num) ? String(num) : undefined;
+};
+
 export class DbTable {
   #fields: Record<string, DbField> | null = null;
-  #primaries: Record<string, DbField> = {};
+  #primaries: DbField[] = []; // in id-part order
   #autoIncrement: DbField | undefined;
   #db: Db;
   #name: string;
@@ -27,8 +35,8 @@ export class DbTable {
   get fields(): Record<string, DbField> | null { return this.#fields; }
   get autoIncrement(): DbField | undefined { return this.#autoIncrement; }
   get schema(): Record<string, any> { return this.#db.schema?.properties?.[String(this)] ?? {}; }
-  get primaries(): Record<string, DbField> { return this.#primaries; }
-  get primary(): DbField | undefined { return Object.values(this.#primaries)[0]; }
+  get primaries(): DbField[] { return this.#primaries; }
+  get primary(): DbField | undefined { return this.#primaries[0]; }
   get name(): string { return this.#name; }
   get children(): DbField[] {
     if (this.#children === null) {
@@ -56,54 +64,52 @@ export class DbTable {
     if (this.#fields === null) {
       const fields = await this.#db.columns(String(this));
       this.#fields = {};
-      this.#primaries = {};
+      this.#primaries = [];
       this.#autoIncrement = undefined;
       for (const field of fields) {
         const name = field.Field;
         this.#fields[name] = new DbField(this, name, field);
-        if (this.#fields[name].isPrimary()) this.#primaries[name] = this.#fields[name];
+        if (this.#fields[name].isPrimary()) this.#primaries.push(this.#fields[name]);
         if (this.#fields[name].isAutoIncrement()) this.#autoIncrement = this.#fields[name];
       }
     }
     return this.#fields!;
   }
 
+  /** Canonical id of a row, values object or raw id; undefined if it identifies no row. */
   entryId(vs: any): string | undefined {
-    if (!Array.isArray(vs) && typeof vs !== "object") return String(vs);
-    // encoding only disambiguates the ":" separator, so single-primary ids stay raw
-    const composite = Object.keys(this.#primaries).length > 1;
-    const part: string[] = [];
-    for (const [primary, field] of Object.entries(this.#primaries)) {
-      if (!(primary in vs)) {
-        console.warn("db-table-entryId: too few fields");
-        return;
-      }
-      let value = vs[primary];
-      if (numTypes.has(field.type.toUpperCase())) value = String(parseFloat(String(value))); // numeric values never contain ":" or "%", so they skip encoding (hot path)
-      else if (composite) value = encodeURIComponent(value);
-      part.push(value);
+    const values = (vs != null && typeof vs === "object" ? vs : this.entryIdValues(vs)) ?? {};
+    const primaries = this.#primaries;
+    const composite = primaries.length > 1; // encoding only disambiguates the ":" separator, so single-primary ids stay raw
+    const parts: string[] = [];
+    for (const field of primaries) {
+      const value = idValue(field, values[field.name]);
+      if (value === undefined) { console.warn(`db-table-entryId: missing or invalid id for ${this}.${field}:`, vs); return; }
+      parts.push(composite && !numTypes.has(field.type) ? encodeURIComponent(value) : value); // numbers never contain ":" or "%"
     }
-    return part.join(":");
+    return parts.join(":");
   }
+
+  /** Primary values of an entry id (or row); undefined if the id is incomplete or invalid. */
   entryIdValues(id: any): Record<string, any> | undefined {
-    const arr: Record<string, any> = {};
-    if (id != null && typeof id === "object") {
-      for (const primary of Object.keys(this.#primaries)) {
-        if (!(primary in id)) return;
-        arr[primary] = id[primary];
+    const primaries = this.#primaries;
+    const composite = primaries.length > 1;
+    const str = id != null && typeof id === "object" ? undefined : String(id);
+    const parts = str === undefined ? undefined : composite ? str.split(":") : [str]; // single primary keeps the whole raw string (may contain ":")
+    if (parts && parts.length !== primaries.length) return; // an id names every primary exactly once
+    const values: Record<string, any> = {};
+    try { // ids travel in URLs: a malformed escape makes decodeURIComponent throw, but it is just an invalid id
+      for (let i = 0; i < primaries.length; i++) {
+        const field = primaries[i];
+        const raw = !parts ? id[field.name] : composite && !numTypes.has(field.type) ? decodeURIComponent(parts[i]) : parts[i];
+        const value = idValue(field, raw);
+        if (value === undefined) return;
+        values[field.name] = value;
       }
-    } else {
-      const primaries = Object.values(this.#primaries);
-      const composite = primaries.length > 1;
-      const vs = String(id).split(":");
-      primaries.forEach((field, i) => {
-        let value = composite ? vs[i] : String(id); // single primary keeps the whole raw string (may contain ":")
-        if (composite && !numTypes.has(field.type.toUpperCase())) value = decodeURIComponent(value);
-        arr[field.name] = value;
-      });
-    }
-    return arr;
+    } catch { return; }
+    return values;
   }
+
   /** WHERE fragment that identifies the row(s) for an entry id; undefined if the id is incomplete. */
   entryIdToFragment(id: any, alias?: string): Sql | undefined {
     const values = this.entryIdValues(id);
@@ -276,7 +282,7 @@ export class DbTable {
 
     const isCompositeId = Array.isArray(id) || (id != null && typeof id === "object");
     const values = isCompositeId ? id : this.entryIdValues(id);
-    const eid = isCompositeId ? String(this.entryId(id)) : String(id);
+    const eid = String(this.entryId(values ?? id) ?? id); // canonical, so one row is one entry whatever the caller passed
 
     const hit = this.#entries.get(eid)?.deref();
     if (hit) return hit;
