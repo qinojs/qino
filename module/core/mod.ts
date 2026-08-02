@@ -50,6 +50,7 @@ export { $item, bildJsonItem, schemaDiff, schemaFromDb, toInput } from "./deps.t
 
 // Modules
 export { Module } from "./lib/ModuleManager.ts";
+export { Store } from "./lib/StoreManager.ts";
 
 // Auth
 export { login, pwHash, pwVerify, safeEqual } from "./lib/auth.ts";

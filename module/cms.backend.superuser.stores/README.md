@@ -5,9 +5,12 @@ Registers module stores and installs modules from their catalogs.
 A store is a `store.json` catalog; a module named `x.y` lives beside it under `x.y/plugin.ts`
 (see [core/docs/stores.md](../core/docs/stores.md)). Any `file:`, `http:` or `https:` URL works.
 
-Stores added here are kept in this module's `urls` setting. Stores declared in `server.ts` come from
-the operator and are therefore not in that list and not removable — the difference in origin *is*
+Both lists come from core and so does their persistence: a store or module the application declares
+in `server.ts` has no row of its own and therefore no remove button — the difference in origin *is*
 the difference in removability.
 
-Installing imports and links a module at runtime, so a restart resets it — until the core keeps an
-installed-module list of its own.
+Per module the page offers what the state allows: install, then activate/deactivate (runtime only,
+a restart re-links) and uninstall, which lets the module clean up and forgets it.
+
+Note that anyone who reaches this page can import code from any URL — see the deferred host
+allow-list in the core document before exposing a remote store.

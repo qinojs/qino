@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { html, type App, type HtmlString } from "../core/mod.ts";
+import { html, type App, type HtmlString, type Store } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -7,25 +7,9 @@ export const name = "cms.backend.superuser.stores";
 export const description = "Registers module stores and installs modules from their catalogs.";
 export const needs = ["cms.backend"];
 
-export const settingsSchema = {
-  properties: {
-    urls: {
-      type: "string",
-      description: "Catalog URLs of stores added here, one per line. Stores declared in server.ts are not part of this list and stay unremovable.",
-    },
-  },
-};
-
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Module stores", de: "Modul-Stores" });
 }
-
-// --- stores ---------------------------------------------------------------
-
-const stores = async (app: App): Promise<string[]> =>
-  String(await app.settings[name].urls ?? "").split("\n").map((u) => u.trim()).filter(Boolean).map((u) => resolve(app, u));
-
-const saveStores = (app: App, list: string[]) => app.settings[name].urls(list.join("\n"));
 
 /** Like core's store loader, but over fetch — which reads file: and http(s): alike. */
 async function catalog(url: string): Promise<string[]> {
@@ -54,21 +38,19 @@ async function act(app: App, vars: Record<string, unknown>): Promise<string | un
     switch (vars.act) {
       case "addStore": {
         const url = resolve(app, store);
-        if (app.stores.all().some((s) => s.url === url)) throw new Error(`Already declared in server.ts: ${url}`);
         await catalog(url); // no catalog, no store
-        const list = await stores(app);
-        if (!list.includes(url)) saveStores(app, [...list, url]);
+        await app.stores.install(url);
         break;
       }
       case "removeStore":
-        saveStores(app, (await stores(app)).filter((u) => u !== store));
+        await app.stores.uninstall(store);
         break;
-      case "install": {
-        const imported = await app.import(moduleUrl(store, mod));
-        if (imported.name !== mod) throw new Error(`Name mismatch: store says "${mod}", plugin is "${imported.name}"`);
-        await app.link(mod);
+      case "install":
+        await app.modules.install(moduleUrl(store, mod), mod);
         break;
-      }
+      case "uninstall":
+        if (!locked.has(mod)) await app.modules.uninstall(mod);
+        break;
       case "link":
         await app.link(mod);
         break;
@@ -83,8 +65,9 @@ async function act(app: App, vars: Record<string, unknown>): Promise<string | un
 
 // --- view -----------------------------------------------------------------
 
-async function renderStore(app: App, url: string, removable: boolean): Promise<HtmlString> {
+async function renderStore(app: App, store: Store): Promise<HtmlString> {
   const t = app.t;
+  const url = store.url;
   const names = await catalog(url).catch((e) => String(e.message ?? e));
   if (typeof names === "string") {
     return html.async`<div class=u2-card>
@@ -94,27 +77,31 @@ async function renderStore(app: App, url: string, removable: boolean): Promise<H
   }
 
   // the row labels are plain strings: a `html` fragment is synchronous, only html.async awaits
-  const [install, activate, deactivate, active, inactive] = await Promise.all([t`Install`, t`Activate`, t`Deactivate`, t`active`, t`inactive`]);
+  const [install, uninstall, activate, deactivate, active, inactive] = await Promise.all([t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`active`, t`inactive`]);
   const rows = names.map((mod) => {
     const linked = app.modules.linked(mod);
     const imported = !!app.modules.get(mod);
-    const action = !imported
-      ? html`<button data-act=install data-mod="${mod}" data-store="${url}">${install}</button>`
-      : locked.has(mod)
+    const fixed = locked.has(mod) || app.modules.declared(mod);
+    const toggle = !imported || fixed
       ? ""
       : linked
       ? html`<button data-act=unlink data-mod="${mod}">${deactivate}</button>`
       : html`<button data-act=link data-mod="${mod}">${activate}</button>`;
+    const action = !imported
+      ? html`<button data-act=install data-mod="${mod}" data-store="${url}">${install}</button>`
+      : fixed
+      ? ""
+      : html`<button data-act=uninstall data-mod="${mod}" u2-confirm>${uninstall}</button>`;
     return html`<tr>
       <td>${mod}
       <td>${!imported ? "" : linked ? active : inactive}
-      <td style="text-align:right">${action}`;
+      <td style="text-align:right">${toggle} ${action}`;
   });
 
   const installed = names.filter((mod) => app.modules.get(mod)).length;
-  const origin = removable
-    ? html`<button data-act=removeStore data-store="${url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`
-    : html`<small>${await t`from server.ts`}</small>`;
+  const origin = store.declared
+    ? html`<small>${await t`from server.ts`}</small>`
+    : html`<button data-act=removeStore data-store="${url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
   return html.async`<div class=u2-card>
   <div class=-head>
     <code>${url}</code>
@@ -137,17 +124,15 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const app = node.app;
   const t = app.t;
   const error = Object.keys(vars).length ? await act(app, vars) : undefined;
-  // Declared in server.ts, so removing them here would be a lie; ours are whatever is left.
-  const fixed = app.stores.all().map((s) => s.url);
-  const list = [...fixed, ...(await stores(app)).filter((url) => !fixed.includes(url))];
-  const cards = await Promise.all(list.map((url, i) => renderStore(app, url, i >= fixed.length)));
+  const list = app.stores.all();
+  const cards = await Promise.all(list.map((store) => renderStore(app, store)));
 
   return html.async`<div class=u2-flex style="flex-direction:column">
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <div class=-body>
       <button data-act=addStore>${t`Add store`}</button>
-      <small>${t`Installing links a module at runtime — a restart resets it.`}</small>
+      <small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it.`}</small>
       ${error ? html` <strong>${error}</strong>` : ""}
     </div>
     ${list.length ? "" : html.async`<div class=-body><em>${t`No store added yet. A catalog is a store.json, e.g. ./qino/module/store.json`}</em></div>`}

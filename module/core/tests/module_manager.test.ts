@@ -5,6 +5,13 @@ import { ModuleManager } from "../lib/ModuleManager.ts";
 import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";
 
+// The managers read their `module` and `store` rows on init; these tests have no database.
+const fakeDb = () => ({
+  listTables: () => Promise.resolve([]),
+  query: () => Promise.resolve([]),
+  table: () => ({ ensure: () => Promise.resolve(), delete: () => Promise.resolve() }),
+});
+
 Deno.test({
   name: "ModuleManager imports modules and initializes by needs",
   sanitizeOps: false,
@@ -40,7 +47,7 @@ Deno.test({
 
     const app = {
       appPATH,
-      db: {},
+      db: fakeDb(),
       installed: [],
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
     };
@@ -96,7 +103,7 @@ Deno.test({
     const bus = new Emitter<{ ping: { count: number } }>();
     const app = {
       appPATH: root + "/",
-      db: {},
+      db: fakeDb(),
       aptTree: {} as Record<string, unknown>,
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       on: bus.on.bind(bus),
@@ -169,7 +176,7 @@ Deno.test("Store selects modules by directory name", async () => {
         appPATH: root + "/",
         loaded: [],
         aptTree: {},
-        db: {},
+        db: fakeDb(),
         settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       };
       app.modules = new ModuleManager(app);
@@ -216,7 +223,7 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     const app = {
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       fire() {},
-      db: {},
+      db: fakeDb(),
     };
 
     const missing = new ModuleManager(app as any);

@@ -16,15 +16,19 @@ async function read(url: string): Promise<unknown> {
 export class Store {
   #app: App;
   #url: string;
+  #declared: boolean;
   #selected = new Set<string>();
   #all = false;
 
-  constructor(app: App, url: string) {
+  constructor(app: App, url: string, declared: boolean) {
     this.#app = app;
     this.#url = url;
+    this.#declared = declared;
   }
 
   get url(): string { return this.#url; }
+  /** True for a store the application declares itself — it outlives any uninstall. */
+  get declared(): boolean { return this.#declared; }
 
   add(name: string): this {
     if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
@@ -38,6 +42,7 @@ export class Store {
   }
 
   async init(): Promise<void> {
+    if (!this.#all && !this.#selected.size) return; // nothing declared for boot — the catalog is read on demand
     const data = await read(this.#url);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error(`Store ${this.#url}: root must be an object`);
     const modules = (data as { modules?: unknown }).modules;
@@ -70,11 +75,34 @@ export class StoreManager {
   add(spec: string | URL): Store {
     const url = resolveSpecifier(this.#app, spec);
     let store = this.#stores.get(url);
-    if (!store) this.#stores.set(url, store = new Store(this.#app, url));
+    if (!store) this.#stores.set(url, store = new Store(this.#app, url, true));
     return store;
   }
 
+  /** Remember a store across restarts — the persistent counterpart of add(). */
+  async install(spec: string | URL): Promise<Store> {
+    const url = resolveSpecifier(this.#app, spec);
+    let store = this.#stores.get(url);
+    if (store) return store;
+    await this.#app.db.table("store").insert({ url });
+    this.#stores.set(url, store = new Store(this.#app, url, false));
+    return store;
+  }
+
+  async uninstall(url: string): Promise<void> {
+    const store = this.#stores.get(url);
+    if (!store) throw new Error(`Cannot uninstall store "${url}": unknown`);
+    if (store.declared) throw new Error(`Cannot uninstall store "${url}": the application declares it`);
+    await this.#app.db.table("store").delete(url);
+    this.#stores.delete(url);
+  }
+
   async init(): Promise<void> {
+    // Runs before the modules migrate the schema, so on a fresh database there is no table yet.
+    const rows = (await this.#app.db.listTables()).includes("store")
+      ? await this.#app.db.query<{ url: string }>`SELECT url FROM store`
+      : [];
+    for (const { url } of rows) if (!this.#stores.has(url)) this.#stores.set(url, new Store(this.#app, url, false));
     for (const store of this.#stores.values()) await store.init();
   }
 }

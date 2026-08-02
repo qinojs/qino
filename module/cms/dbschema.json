@@ -279,18 +279,6 @@
     "module": {
       "additionalProperties": {
         "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 127,
-            "x-index": "primary"
-          },
-          "access": {
-            "deprecated": true,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 6,
-            "default": 0
-          },
           "cms_access": {
             "type": "integer",
             "minimum": 0,

@@ -54,6 +54,47 @@ The same verb is used at both layers because both calls declare a module for boo
 `app.import(spec)` remains the immediate runtime operation. A runtime module is imported first and
 then linked explicitly. `link` and `unlink` keep their existing lifecycle meaning.
 
+## Installing at runtime
+
+`add()` declares for one boot; `install()` is its persistent counterpart, and both managers have it:
+
+```ts
+await app.stores.install(catalogUrl);          // remembered in the `store` table
+await app.modules.install(pluginUrl, name);    // remembered in the `module` table, then linked
+await app.modules.uninstall(name);             // unlink, plugin.uninstall(), row gone
+await app.stores.uninstall(catalogUrl);
+```
+
+Four verbs, two lifecycles, and they nest: **install** creates what a module owns and **uninstall**
+removes it again, while **link** and **unlink** only hook the module into the running app. Linking
+therefore requires an install, and unlinking keeps the data.
+
+Both tables are core's, because both are needed before any module can decide anything:
+
+```text
+store:   url
+module:  name | url | installed
+```
+
+`module` also carries the CMS access columns — the CMS extends the table, it does not own it.
+A row means installed, `installed` is when `plugin.install()` ran, and `url` is only set for modules
+that were installed at runtime: those are the ones `init()` has to import again. That is also what
+makes the two origins distinguishable without an extra column:
+
+| | Origin | removable through the UI |
+|---|---|---|
+| `add()` in server.ts | the application itself | **no** (`declared` is true) |
+| row in `store` / `module` | installed at runtime | yes |
+
+`plugin.install()` now runs **once per app** instead of on every boot, which is what makes an
+`uninstall()` counterpart meaningful. Modules whose `install()` used to double as self-healing (it
+recreates a deleted backend page, say) no longer heal on restart.
+
+Both managers read their table in `init()`, before the schema is migrated — hence the `listTables()`
+check: on a fresh database there is nothing to read yet.
+
+[cms.backend.superuser.stores](../../cms.backend.superuser.stores/) is the UI for all of this.
+
 The old `importAll` directory scan was removed. Adding every module is now exclusively a store
 operation, except for the temporary PostgreSQL demo compatibility scan described below.
 
@@ -175,6 +216,8 @@ opaque JSR URL would not solve public assets or directory enumeration.
   conventional module URLs.
 - [`App`](../lib/App.ts) owns one `StoreManager` per application instance. Stores initialize before
   modules, keeping all state tenant-local.
+- Both managers gained `install()`/`uninstall()`, `stores.all()`, `modules.declared()` and the
+  `store`/`module` tables described above; `Db.listTables()` lets them read those before migration.
 
 ### Catalogs
 
@@ -225,6 +268,20 @@ The previously failing `cms.cont.html` CSS test was also corrected: the CSS gene
 adds explanatory comments, while its older test still expected the original empty template.
 
 ## Deliberately deferred work
+
+### Host allow-list and integrity pinning
+
+Installing a module from a URL is remote code execution with full database rights — the same deal
+WordPress and Drupal make, and without it there is no ecosystem. Two guards are still missing, and
+neither can be added quietly later, because by then somebody is relying on the gap:
+
+- a `moduleHosts` allow-list in the app configuration, checked **before** the `import()`. Deno's
+  `--allow-import` cannot do this: it is a process flag, so one permitted host would apply to every
+  tenant in the runtime.
+- a hash in the `module` row, checked on re-import, the way `deno.lock` does it.
+
+Until then, anyone who can reach the store UI can import arbitrary code. Local `file:` stores are
+unaffected; the guard is what makes a remote store safe to expose.
 
 ### Remote public assets
 

@@ -148,12 +148,6 @@ export async function install({ app }: { app: App }): Promise<void> {
     await app.db.table('page').insert({ id: 1, access: 1, visible: true, searchable: true, module: "cms.layout.custom.9", basis: 0, type: "p" });
     await (await cms(app).node(1)).title("en", "root");
   }
-  // Register renderable modules (inventory); access caps live in the optional cms.accessRules module.
-  for (const mod of Object.values(app.modules.all())) {
-    if (!mod.plugin.cms?.node?.render) continue;
-    if (await app.db.one`SELECT name FROM module WHERE name = ${mod.name}`) continue;
-    await app.db.table('module').insert({ name: mod.name });
-  }
 }
 
 /** Streams the given DbFiles as a zip archive using the system `zip` command. */

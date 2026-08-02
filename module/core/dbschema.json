@@ -244,6 +244,37 @@
         "required": ["id", "ip"]
       }
     },
+    "module": {
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 127,
+            "x-index": "primary"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "installed": {
+            "type": "integer"
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "store": {
+      "additionalProperties": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          }
+        },
+        "required": ["url"]
+      }
+    },
     "qg_setting": {
       "additionalProperties": {
         "properties": {

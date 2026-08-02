@@ -2,7 +2,7 @@
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import type { App } from "./App.ts";
 import { getCtx } from "./ctx/Ctx.ts";
-import { enableItemSchemaDefaults } from "./util.ts";
+import { enableItemSchemaDefaults, unixTime } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 
@@ -24,7 +24,10 @@ export type Plugin = Record<string, any> & {
   // static ones), e.g. for tables derived from other modules' tables.
   dbSchema?: DbSchema | ((merged: DbSchema) => DbSchema);
   init?(app: App, opts: { signal: AbortSignal }): void | Promise<void>;
+  // Runs once per app, not per boot: install() creates what the module owns (tables are migrated
+  // anyway, so rather content and files), uninstall() removes it again.
   install?(ctx: { app: App; module: Plugin }): void | Promise<void>;
+  uninstall?(ctx: { app: App; module: Plugin }): void | Promise<void>;
   settingsSchema?: Record<string, unknown>;
   ctxSettingsSchema?: Record<string, unknown>;
   api?: Record<string, unknown>;
@@ -74,6 +77,8 @@ export class ModuleManager {
   #modules: Record<string, Module> = {};
   #pending: { spec: string; name?: string }[] = [];
   #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
+  #declared = new Set<string>(); // came from add(), i.e. the application itself — not uninstallable
+  #installed: Record<string, number> = {}; // name → time install() ran; the `module` table in memory
 
   constructor(app: App) {
     this.#app = app;
@@ -85,6 +90,9 @@ export class ModuleManager {
 
   // True once a module's hooks have run (imported ⊇ linked). Unlink flips it back.
   linked(name: string): boolean { return this.#linked.has(name); }
+
+  // True for modules the application declares itself — they outlive any uninstall.
+  declared(name: string): boolean { return this.#declared.has(name); }
 
   /** Declare a module for import during app.init(). A relative string resolves against appPATH —
    *  pass `new URL("./x/plugin.ts", import.meta.url)` for "relative to this source file". */
@@ -126,10 +134,37 @@ export class ModuleManager {
   async init(): Promise<void> {
     for (const { spec, name } of this.#pending) await this.import(spec, name);
     this.#pending = [];
+    this.#declared = new Set(Object.keys(this.#modules));
+    // The `module` table is migrated by this very run, so on a fresh database there is nothing yet.
+    const rows = (await this.#app.db.listTables()).includes("module")
+      ? await this.#app.db.query<{ name: string; url: string; installed: number }>`SELECT name, url, installed FROM module`
+      : [];
+    for (const { name, installed } of rows) this.#installed[name] = installed;
+    for (const { name, url } of rows) if (url && !this.#modules[name]) await this.import(url, name);
     const order = this.#order();
     await this.#applyDbSchema(order);
     this.#applySchemas(order);
     for (const name of order) await this.#linkOne(this.#modules[name]);
+  }
+
+  /** Import, remember and link a module — the persistent counterpart of add(). */
+  async install(spec: string, name?: string): Promise<Module> {
+    const mod = await this.import(spec, name);
+    await this.#app.db.table("module").ensure({ name: mod.name, url: mod.url });
+    await this.link(mod.name);
+    return mod;
+  }
+
+  /** Unlink, let the module clean up after itself and forget it. Its data goes, unlink() keeps it. */
+  async uninstall(name: string): Promise<void> {
+    const mod = this.#modules[name];
+    if (!mod) throw new Error(`Cannot uninstall "${name}": not imported`);
+    if (this.#declared.has(name)) throw new Error(`Cannot uninstall "${name}": the application declares it`);
+    this.unlink(name);
+    await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
+    await this.#app.db.table("module").delete(name);
+    delete this.#installed[name];
+    delete this.#modules[name];
   }
 
   // Run a registered module's hooks at runtime. Idempotent; its needs must already be linked.
@@ -162,7 +197,11 @@ export class ModuleManager {
   async #linkOne(mod: Module): Promise<void> {
     const { plugin } = mod;
     await plugin.init?.(this.#app, { signal: mod.newSignal() });
-    await plugin.install?.({ app: this.#app, module: plugin });
+    if (!this.#installed[mod.name]) {
+      await plugin.install?.({ app: this.#app, module: plugin });
+      this.#installed[mod.name] = unixTime();
+      await this.#app.db.table("module").ensure({ name: mod.name, installed: this.#installed[mod.name] });
+    }
     await this.#loadLocales(mod);
     if (plugin.api) this.#app.aptTree[mod.name] = plugin.api;
     this.#linked.add(mod.name);
