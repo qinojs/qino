@@ -65,6 +65,8 @@ export class StoreManager {
     this.#app = app;
   }
 
+  all(): Store[] { return [...this.#stores.values()]; }
+
   add(spec: string | URL): Store {
     const url = resolveSpecifier(this.#app, spec);
     let store = this.#stores.get(url);

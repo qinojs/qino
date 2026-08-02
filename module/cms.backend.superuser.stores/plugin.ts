@@ -54,6 +54,7 @@ async function act(app: App, vars: Record<string, unknown>): Promise<string | un
     switch (vars.act) {
       case "addStore": {
         const url = resolve(app, store);
+        if (app.stores.all().some((s) => s.url === url)) throw new Error(`Already declared in server.ts: ${url}`);
         await catalog(url); // no catalog, no store
         const list = await stores(app);
         if (!list.includes(url)) saveStores(app, [...list, url]);
@@ -136,8 +137,10 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const app = node.app;
   const t = app.t;
   const error = Object.keys(vars).length ? await act(app, vars) : undefined;
-  const list = await stores(app);
-  const cards = await Promise.all(list.map((url) => renderStore(app, url, true)));
+  // Declared in server.ts, so removing them here would be a lie; ours are whatever is left.
+  const fixed = app.stores.all().map((s) => s.url);
+  const list = [...fixed, ...(await stores(app)).filter((url) => !fixed.includes(url))];
+  const cards = await Promise.all(list.map((url, i) => renderStore(app, url, i >= fixed.length)));
 
   return html.async`<div class=u2-flex style="flex-direction:column">
   <div class=u2-card>
