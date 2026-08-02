@@ -132,9 +132,8 @@ export class CMS {
     await page.urlSeo(ctx.lang);
     const urls = await page.urls();
     const t = urls[ctx.lang]?.target;
-    const target = t ? ` target="${hee(t)}"` : "";
-    const title = await (await page.title()).string();
-    return html.raw(`<a${await this.linkAttributes(page)}${target}>${title}</a>`);
+    const target = t ? html` target="${t}"` : "";
+    return html.async`<a${this.linkAttributes(page)}${target}>${html.raw(await page.showTitle())}</a>`;
   }
 
   async linkAttributes(node: Node | number): Promise<HtmlString> {
