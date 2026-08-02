@@ -280,9 +280,8 @@ export class DbTable {
       // return Entry;
     }
 
-    const isCompositeId = Array.isArray(id) || (id != null && typeof id === "object");
-    const values = isCompositeId ? id : this.entryIdValues(id);
-    const eid = String(this.entryId(values ?? id) ?? id); // canonical, so one row is one entry whatever the caller passed
+    const values = id != null && typeof id === "object" ? id : this.entryIdValues(id); // a row keeps its columns, they prefill the entry
+    const eid = String(this.entryId(id) ?? id); // an unusable id keeps its raw key — that entry simply never exists
 
     const hit = this.#entries.get(eid)?.deref();
     if (hit) return hit;
