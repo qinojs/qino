@@ -158,15 +158,20 @@ viewer.on('before-load',function(e){
   find(more, '.-txt').innerHTML = 'please wait...';
   apt['cms.versions'].log(e.vers).get().then(data => {
     const date = new Date(data.time * 1000);
-    let str = '';
-    for (const msg of data.messages) {
-      str += `<div style="padding:.3125rem 0 .3125rem .5rem; margin:.5rem 0; border-left:1px solid #fff; background:#555">${msg}</div>`;
-    }
-    str +=
-      `<div class=-date>${exactDate.format(date)}</div>` +
-      `<div class=-usr>${data.usr}</div>` +
-      `<div class=-device title="${data.user_agent}">${data.browser} | ${data.ip}</div>`;
-    find(more, '.-txt').innerHTML = str;
+    const details = find(more, '.-txt');
+    details.innerHTML = data.messages.map(msg =>
+      `<div style="padding:.3125rem 0 .3125rem .5rem; margin:.5rem 0; border-left:1px solid #fff; background:#555">${msg}</div>`
+    ).join('');
+    const text = (className, value) => {
+      const row = document.createElement('div');
+      row.className = className;
+      row.textContent = String(value);
+      details.append(row);
+      return row;
+    };
+    text('-date', exactDate.format(date));
+    text('-usr', data.usr);
+    text('-device', `${data.browser} | ${data.ip}`).title = String(data.user_agent);
   });
   find(more, '.-reactivate').onclick = () => {
     body.style.opacity = 0.3;
