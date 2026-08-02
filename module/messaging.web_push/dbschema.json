@@ -1,0 +1,85 @@
+{
+  "properties": {
+    "web_push_subscription": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "client_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "client",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "endpoint": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "endpoint_hash": {
+            "type": "string",
+            "maxLength": 43,
+            "x-index": "unique"
+          },
+          "p256dh": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "auth": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id", "endpoint", "endpoint_hash", "p256dh", "auth", "created"]
+      }
+    },
+    "web_push_channel": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "unique"
+          }
+        },
+        "required": ["id", "name"]
+      }
+    },
+    "web_push_subscription_channel": {
+      "additionalProperties": {
+        "properties": {
+          "sub_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "web_push_subscription",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "channel_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "web_push_channel",
+            "x-qg-on-parent-delete": "cascade"
+          }
+        },
+        "required": ["sub_id", "channel_id"]
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+# messaging.web_push
+
+Web Push notifications (RFC 8291 / 8292). Stores what a browser hands out when it
+subscribes, and delivers notifications to it.
+
+## Sending
+
+```ts
+import { push } from "../messaging.web_push/mod.ts";
+
+await push(app, { channel: "news" }, { title: "New article", body: "…", url: "/blog" });
+await push(app, { usr: 42 }, { title: "New message" });
+```
+
+Recipients: `{ channel }`, `{ grp }`, `{ usr }`, `{ client }`, `{ sub }`, `{ all: true }`.
+Resolves with the number of browsers reached. Subscriptions the push service reports as
+gone (404/410) are deleted on the way, so the table stays clean without a cleanup job.
+
+Everything in the message but `url` reaches `showNotification()` unchanged — so
+`requireInteraction`, `tag`, `renotify`, `silent`, `icon`, `badge` and friends already
+work, even though the type only names the three documented fields.
+
+## Channels vs. groups
+
+A channel belongs to a **browser**, a group to a **user**. Someone with a laptop and a
+phone routinely wants different channels on each, which a group cannot express, and
+visitors who never log in have no user to group at all. They answer different questions
+and are meant to be used side by side.
+
+Channels are defined in the backend (`cms.backend.superuser.web_push`); a browser
+subscribing to a name that is not defined is silently ignored.
+
+The name avoids "topic" on purpose — RFC 8030 already uses `Topic` for coalescing at the
+push service, which is a different thing entirely.
+
+## Subscribing
+
+```js
+import { subscribe, unsubscribe, channels } from "/m/messaging.web_push/pub/web_push.js";
+await subscribe(["news"]);   // asks for permission; the list replaces what was there
+```
+
+The service worker comes from the `serviceworker` module — this module only declares
+`serviceWorker = true` and adds its `push` and `notificationclick` listeners.
+
+## VAPID
+
+Keys are generated on first use and stored in settings. Set
+`messaging.web_push.subject` to a `mailto:` or `https:` URL the push service operators
+can reach you at; the default is `mailto:admin@localhost`.
+
+## Storage
+
+`web_push_subscription` — one row per browser. `endpoint_hash` (SHA-256 of the endpoint)
+is the identity, because endpoints are up to 1000 characters and cannot be indexed.
+`usr_id` is null for visitors who subscribed without logging in.
+`web_push_channel` is the channel catalogue, `web_push_subscription_channel` the
+membership.
+
+## Possible extensions
+
+Deliberately not built yet — none of it is needed for the current feature set:
+
+- **Push protocol options.** `sendNotification()` accepts `TTL` (how long the push
+  service holds a message for an offline device, default four weeks), `urgency`
+  (`very-low`…`high`, whether to deliver while power saving) and `topic` (a new message
+  replaces an undelivered one with the same topic). Would be an `opts` argument on
+  `push()` — about three lines.
+- **Notification actions.** `showNotification` takes up to two buttons; the click
+  arrives in `notificationclick` as `event.action`. Needs a few lines in `pub/sw.js`.
+- **`pushsubscriptionchange`.** A browser that rotates its subscription stops receiving
+  until it subscribes again; today the stale row is dropped on the next send. Handling
+  the event means re-subscribing inside the worker and posting the new endpoint.
+- **The `messaging` layer.** A channel-neutral `notify(user, msg)` with per-user channel
+  preferences, once a second channel (SMS, Telegram, e-mail) exists — the right shape is
+  only visible with two implementations.
+- **Auto-dismissing notifications.** Not possible: the Notification API has no expiry.
+  Desktop Chrome hides them after ~20 s by itself, and `requireInteraction: true`
+  prevents exactly that. Closing them programmatically would need a timer inside the
+  service worker, which may be killed at any time.
