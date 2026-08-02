@@ -61,6 +61,9 @@ const confirmed = Number(await ctx.sess.data.web_auth_confirmed() ?? "0");
 if (now() - confirmed > 60) return { ok: false, error: "confirmation_required" };
 ```
 
+Bisher prüft das niemand. Wie daraus eine faktor-unabhängige Bestätigung am apt-Endpunkt werden
+könnte, steht im Workspace in `PLAN-confirm.md`.
+
 ## Hook
 
 ```ts

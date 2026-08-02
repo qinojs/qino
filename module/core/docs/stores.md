@@ -283,6 +283,11 @@ neither can be added quietly later, because by then somebody is relying on the g
 Until then, anyone who can reach the store UI can import arbitrary code. Local `file:` stores are
 unaffected; the guard is what makes a remote store safe to expose.
 
+A second factor in front of install/uninstall would cover the other half — a stolen session rather
+than a bad URL. `web_auth` already has the ceremony (`confirm/challenge` + `confirm/verify`) and
+nothing uses it yet; a sketch of how it could become a factor-agnostic check on any apt endpoint
+lives in the workspace as `PLAN-confirm.md`.
+
 ### Remote public assets
 
 Plugin imports work over HTTP, but Qino's `/m/<module>/pub/...` route still serves from a local
