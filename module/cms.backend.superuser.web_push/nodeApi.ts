@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { push } from "../messaging.web_push/mod.ts";
+import { addChannel, push, removeChannel, removeSubscription } from "../messaging.web_push/mod.ts";
 
 /** Node access is the permission — whoever may read this backend node may send from here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -8,18 +8,16 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     if (vars.channelAdd) {
       const name = String(vars.channelAdd).trim();
       if (!name) return { ok: false, message: await app.t`A name is required.` };
-      if (await app.db.one`SELECT id FROM web_push_channel WHERE name = ${name}`) {
-        return { ok: false, message: await app.t`That channel already exists.` };
-      }
-      await app.db.table("web_push_channel").insert({ name });
-      return { ok: true, message: await app.t`Channel added.` };
+      return await addChannel(app, name)
+        ? { ok: true, message: await app.t`Channel added.` }
+        : { ok: false, message: await app.t`That channel already exists.` };
     }
     if (vars.channelDelete) {
-      await app.db.table("web_push_channel").delete(Number(vars.channelDelete));
+      await removeChannel(app, Number(vars.channelDelete));
       return { ok: true, message: await app.t`Channel deleted.` };
     }
     if (vars.delete) {
-      await app.db.table("web_push_subscription").delete(Number(vars.delete));
+      await removeSubscription(app, Number(vars.delete));
       return { ok: true, message: await app.t`Subscription deleted.` };
     }
     if (vars.test) {

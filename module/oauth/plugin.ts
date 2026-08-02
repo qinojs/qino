@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { login, Output, Redirect, unixTime, b64url, unb64url, randB64, type App, type Ctx } from "../core/mod.ts";
+import { login, Output, Redirect, unixTime, unb64url, randB64, sha256, type App, type Ctx } from "../core/mod.ts";
 
 export const name = "oauth";
 export const description = "Authenticates users through configured OAuth 2.0 and OpenID providers.";
@@ -89,7 +89,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   u.searchParams.set("state", state);
   if (e.oidc) { // PKCE + nonce only for OIDC; plain-OAuth2 providers (e.g. GitHub) may reject them
     u.searchParams.set("nonce", nonce);
-    u.searchParams.set("code_challenge", b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)))));
+    u.searchParams.set("code_challenge", await sha256(verifier));
     u.searchParams.set("code_challenge_method", "S256");
   }
   throw new Redirect(u.href);

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, b64url, getCtx, s, unixTime, type AptTree } from "../core/mod.ts";
-import { vapid } from "./mod.ts";
+import { Access, getCtx, s, sha256, sql, unixTime, type AptTree } from "../core/mod.ts";
+import { publicKey } from "./mod.ts";
 
 export const name = "messaging.web_push";
 export const description = "Web Push — stores browser subscriptions and delivers notifications to them.";
@@ -11,15 +11,11 @@ export { dbSchema };
 
 export const settingsSchema = {
   properties: {
-    subject: { type: "string", description: "VAPID contact the push service can reach you at — mailto: or https: URL" },
+    subject: { type: "string", default: "mailto:admin@localhost", description: "VAPID contact the push service can reach you at — mailto: or https: URL" },
     publicKey: { type: "string", description: "VAPID public key — generated on first use" },
     privateKey: { type: "string", description: "VAPID private key — generated on first use" },
   },
 };
-
-/** Endpoints are too long to index; their hash is the subscription's identity. */
-const hashOf = async (endpoint: string): Promise<string> =>
-  b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint))));
 
 export const api: AptTree = {
 
@@ -27,7 +23,7 @@ export const api: AptTree = {
     get: {
       description: "VAPID public key for pushManager.subscribe()",
       access: Access.PUBLIC,
-      execute: async () => ({ publicKey: (await vapid(getCtx().app)).publicKey }),
+      execute: async () => ({ publicKey: (await publicKey(getCtx().app)).publicKey }),
     },
   },
 
@@ -41,7 +37,7 @@ export const api: AptTree = {
         const rows = await db.query`SELECT c.name FROM web_push_subscription_channel sc
           JOIN web_push_channel c ON c.id = sc.channel_id
           JOIN web_push_subscription s ON s.id = sc.sub_id
-          WHERE s.endpoint_hash = ${await hashOf(endpoint)}`;
+          WHERE s.endpoint_hash = ${await sha256(endpoint)}`;
         return { channels: rows.map((r) => r.name) };
       },
     },
@@ -54,19 +50,22 @@ export const api: AptTree = {
         const ctx = getCtx();
         const db = ctx.app.db;
         const table = db.table("web_push_subscription");
-        const endpoint_hash = await hashOf(endpoint);
+        // endpoints are too long to index; their hash is the subscription's identity
+        const endpoint_hash = await sha256(endpoint);
         const values = { usr_id: ctx.userId || null, client_id: ctx.clientId, endpoint, endpoint_hash, p256dh, auth };
         // the same browser re-subscribes with the same endpoint — adopt it instead of duplicating
-        const known = await db.row`SELECT id FROM web_push_subscription WHERE endpoint_hash = ${endpoint_hash}`;
-        const id = known ? (await table.update(known.id, values), known.id) : await table.insert({ ...values, created: unixTime() });
+        const known = await db.one`SELECT id FROM web_push_subscription WHERE endpoint_hash = ${endpoint_hash}`;
+        const id = known ? (await table.update(known, values), known) : await table.insert({ ...values, created: unixTime() });
 
         if (channels) {
           // the posted list is the whole truth for this browser; names the backend does not know are ignored
+          const wanted = [...new Set(channels as string[])];
+          const found = wanted.length
+            ? await db.query`SELECT id FROM web_push_channel WHERE name IN (${sql.join(wanted.map((n) => sql`${n}`))})`
+            : [];
+          const link = db.table("web_push_subscription_channel");
           await db.exec`DELETE FROM web_push_subscription_channel WHERE sub_id = ${id}`;
-          for (const name of new Set(channels as string[])) {
-            const channel = await db.row`SELECT id FROM web_push_channel WHERE name = ${name}`;
-            if (channel) await db.table("web_push_subscription_channel").insert({ sub_id: id, channel_id: channel.id });
-          }
+          await Promise.all(found.map((c) => link.insert({ sub_id: id, channel_id: c.id })));
         }
         return { ok: true };
       },
@@ -77,8 +76,7 @@ export const api: AptTree = {
       access: Access.PUBLIC,
       input: s.object({ endpoint: s.string() }),
       execute: async ({ endpoint }: any) => {
-        const ctx = getCtx();
-        await ctx.app.db.exec`DELETE FROM web_push_subscription WHERE endpoint_hash = ${await hashOf(endpoint)}`;
+        await getCtx().app.db.exec`DELETE FROM web_push_subscription WHERE endpoint_hash = ${await sha256(endpoint)}`;
         return { ok: true };
       },
     },

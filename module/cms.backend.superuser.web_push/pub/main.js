@@ -5,11 +5,9 @@ cms.initNode("backend.superuser.web_push", (el) => {
   let busy = false;
 
   const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
-  const refresh = async () => {
-    for (const name of ["channels", "send", "subscriptions"]) {
-      el.querySelector(`[cms-part=${name}]`).innerHTML = await node.html.part(name).get();
-    }
-  };
+  const refresh = () => Promise.all(["channels", "send", "subscriptions"].map(async (name) => {
+    el.querySelector(`[cms-part=${name}]`).innerHTML = await node.html.part(name).get();
+  }));
   const execute = async (button, data) => {
     if (busy) return;
     busy = true;
@@ -25,8 +23,11 @@ cms.initNode("backend.superuser.web_push", (el) => {
       button.disabled = false;
     }
   };
-  const field = (button, name) => button.closest("form").elements[name].value.trim();
-  const valid = (button) => button.closest("form").reportValidity();
+  // the button's own form, validated, with its trimmed values — null when invalid
+  const form = (button) => {
+    const el = button.closest("form");
+    return el.reportValidity() ? (name) => el.elements[name].value.trim() : null;
+  };
 
   el.addEventListener("click", (event) => {
     const send = event.target.closest("[data-send]");
@@ -35,11 +36,11 @@ cms.initNode("backend.superuser.web_push", (el) => {
     const channelAdd = event.target.closest("[data-channel-add]");
     const channelDelete = event.target.closest("[data-channel-delete]");
     if (send) {
-      if (!valid(send)) return;
-      execute(send, { send: { to: field(send, "to"), title: field(send, "title"), body: field(send, "body"), url: field(send, "url") } });
+      const field = form(send);
+      if (field) execute(send, { send: { to: field("to"), title: field("title"), body: field("body"), url: field("url") } });
     } else if (channelAdd) {
-      if (!valid(channelAdd)) return;
-      execute(channelAdd, { channelAdd: field(channelAdd, "channel") });
+      const field = form(channelAdd);
+      if (field) execute(channelAdd, { channelAdd: field("channel") });
     } else if (channelDelete) execute(channelDelete, { channelDelete: channelDelete.dataset.channelDelete });
     else if (test) execute(test, { test: test.dataset.test });
     else if (del) execute(del, { delete: del.dataset.delete });

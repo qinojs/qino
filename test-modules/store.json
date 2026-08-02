@@ -5,6 +5,7 @@
     "cms.cont.cms-image2-test": {},
     "cms.cont.example": {},
     "cms.cont.example.ml": {},
-    "cms.cont.my.debug": {}
+    "cms.cont.my.debug": {},
+    "cms.cont.web_push.test": {}
   }
 }

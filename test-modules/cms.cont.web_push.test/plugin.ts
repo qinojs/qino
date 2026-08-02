@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { html, type HtmlString } from "../core/mod.ts";
-import { channels } from "../messaging.web_push/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
+import { channels } from "@qino/qino/messaging.web_push";
+import type { Node } from "@qino/qino/cms";
 
 export const name = "cms.cont.web_push.test";
 export const description = "Lets a visitor subscribe this browser to push channels.";
@@ -15,7 +15,7 @@ export const cms = {
 
 async function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  const names = await channels(node.app);
+  const names = (await channels(node.app)).map((c) => String(c.name));
   if (!names.length) return html.async`<p>${t`No push channels are defined yet.`}`;
 
   const boxes = html.join(names.map((c) =>
