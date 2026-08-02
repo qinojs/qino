@@ -76,6 +76,10 @@ Deliberately not built yet — none of it is needed for the current feature set:
 - **`pushsubscriptionchange`.** A browser that rotates its subscription stops receiving
   until it subscribes again; today the stale row is dropped on the next send. Handling
   the event means re-subscribing inside the worker and posting the new endpoint.
+- **Group coverage in the backend.** Per group: how many of its members can actually be
+  reached, and who is missing — the people to remind. The send form's number counts
+  subscriptions, so a member with two browsers must not count twice
+  (`COUNT(DISTINCT usr_id)` against the group's member count).
 - **Delivery history.** Every message sent to a browser and what the push service
   answered, as a trail. That subsumes the `error` column: the column would stay as the
   "is it broken right now" state, the trail answers "what happened when". Needs a table
