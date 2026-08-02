@@ -57,6 +57,11 @@ is the identity, because endpoints are up to 1000 characters and cannot be index
 `web_push_channel` is the channel catalogue, `web_push_subscription_channel` the
 membership.
 
+`error` holds why the last delivery failed, and goes back to null as soon as one
+succeeds. It is a state, not a log: nothing acts on it, an admin decides whether to
+delete the row. A 404/410 needs no such handling — the browser is gone for good and the
+row is removed on the spot.
+
 ## Possible extensions
 
 Deliberately not built yet — none of it is needed for the current feature set:
@@ -71,6 +76,11 @@ Deliberately not built yet — none of it is needed for the current feature set:
 - **`pushsubscriptionchange`.** A browser that rotates its subscription stops receiving
   until it subscribes again; today the stale row is dropped on the next send. Handling
   the event means re-subscribing inside the worker and posting the new endpoint.
+- **Delivery history.** Every message sent to a browser and what the push service
+  answered, as a trail. That subsumes the `error` column: the column would stay as the
+  "is it broken right now" state, the trail answers "what happened when". Needs a table
+  that grows per delivery, so it wants a retention policy from day one — and probably
+  belongs to the future `messaging` layer rather than to this channel alone.
 - **The `messaging` layer.** A channel-neutral `notify(user, msg)` with per-user channel
   preferences, once a second channel (SMS, Telegram, e-mail) exists — the right shape is
   only visible with two implementations.

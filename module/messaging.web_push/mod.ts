@@ -29,9 +29,10 @@ export async function push(
     : null;
   if (!where) throw new Error("push needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
 
-  const rows = await app.db.query`SELECT id, endpoint, p256dh, auth FROM web_push_subscription ${where}`;
+  const rows = await app.db.query`SELECT id, endpoint, p256dh, auth, error FROM web_push_subscription ${where}`;
   if (!rows.length) return 0;
 
+  const table = app.db.table("web_push_subscription");
   const options = { vapidDetails: await vapid(app) };
   const payload = JSON.stringify(msg);
   const gone: number[] = [];
@@ -40,11 +41,14 @@ export async function push(
     try {
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
       sent++;
+      if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {
-      // 404/410 = the browser dropped the subscription for good; everything else is transient
+      // 404/410 = the browser dropped the subscription for good; anything else stays for the admin to judge
       const status = (e as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) gone.push(Number(row.id));
-      else console.warn(`web_push: subscription ${row.id} rejected with ${status ?? "no status"}:`, (e as Error).message);
+      if (status === 404 || status === 410) return gone.push(Number(row.id));
+      const error = `${status ?? "no status"}: ${(e as Error).message}`.slice(0, 255);
+      console.warn(`web_push: subscription ${row.id} rejected —`, error);
+      await table.update(row.id, { error });
     }
   }));
   if (gone.length) await app.db.exec`DELETE FROM web_push_subscription WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;

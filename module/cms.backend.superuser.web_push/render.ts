@@ -104,7 +104,7 @@ export async function subscriptions(node: Node): Promise<HtmlString> {
   const labels = { anonymous: await t`anonymous`, test: await t`Send a test notification`, del: await t`Delete this subscription?` };
   const body = rows.length
     ? html.join(rows.map((r) => subscription(r, labels)))
-    : html`<tr><td colspan=6>${await t`Nobody has subscribed yet.`}`;
+    : html`<tr><td colspan=7>${await t`Nobody has subscribed yet.`}`;
 
   return html.async`<div class=-head>${t`Subscriptions`} (${rows.length})</div>
   <table class=u2-table>
@@ -114,6 +114,7 @@ export async function subscriptions(node: Node): Promise<HtmlString> {
       <th>${t`Channels`}
       <th>${t`Push service`}
       <th>${t`Since`}
+      <th>${t`Last error`}
       <th>
     <tbody>${body}
   </table>`;
@@ -127,6 +128,7 @@ function subscription(s: Row, labels: Record<string, string>): HtmlString {
     <td>${s.channels.join(", ") || "-"}
     <td title="${s.endpoint}">${host}
     <td>${u2.time(s.created)}
+    <td>${s.error ? html`<span class=u2-badge title="${s.error}">${String(s.error).slice(0, 24)}</span>` : ""}
     <td>
       <button type=button class=u2-unstyle data-test="${s.id}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>
       <button type=button class=u2-unstyle data-delete="${s.id}"

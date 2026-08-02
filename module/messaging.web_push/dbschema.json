@@ -40,6 +40,11 @@
           "created": {
             "type": "integer",
             "x-index": true
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Why the last delivery failed — null once one succeeds again"
           }
         },
         "required": ["id", "endpoint", "endpoint_hash", "p256dh", "auth", "created"]
