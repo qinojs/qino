@@ -6,7 +6,7 @@ export default async function (node: Node): Promise<HtmlString | string> {
   const texts = await node.texts();
   const rows: HtmlString[] = [];
   for (const [name, T] of Object.entries(texts)) {
-    rows.push(html`<tr><td>${name}&nbsp;<td style="width:70%"><div class=-txt cmstxt=${T.id} contenteditable>${html.raw(await T.string())}</div>`);
+    rows.push(html`<tr><td>${name}&nbsp;<td style="width:70%"><div class=-txt cmstxt=${T.id} contenteditable>${html.raw(await node.showText(name))}</div>`);
   }
   return html`<table id=qgCmsTxtsWindow>${html.join(rows)}</table>
   <style>
