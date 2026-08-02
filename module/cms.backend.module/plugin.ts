@@ -192,6 +192,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   for (const name of modules) {
     const modObj = allMods[name];
     const mod = modObj.plugin;
+    const description = String(mod.description ?? "");
     const needs = mod.needs ?? [];
     const neededBy = Object.values(allMods).filter((m) => (m.plugin.needs ?? []).includes(name)).length;
     const exports = [
@@ -213,9 +214,10 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     u.searchParams.set("mod", name);
     rows.push(html`<tr>
       <td style="padding-right:0">${iconHtml}
-      <td><a href="${u.search}">${name}</a>${disabled ? html` <small>(${disabledLabel})</small>` : ""}
-      <td style="text-align:center">${needs.length}
-      <td style="text-align:center">${neededBy}
+      <td data-value="${name}"><a href="${u.search}">${name}</a>${disabled ? html` <small>(${disabledLabel})</small>` : ""}
+      <td data-value="${needs.length}" style="text-align:center">${needs.length}
+      <td data-value="${neededBy}" style="text-align:center">${neededBy}
+      <td title="${description}" style="max-width:30rem; overflow:hidden; text-overflow:ellipsis">${description}
       <td>${exports}`);
   }
 
@@ -224,19 +226,20 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   <div class=-body>
     <input type=search placeholder="${t`search`}..." style="width:18.75rem; max-width:100%" data-module-search>
   </div>
-  <div style="overflow:auto; max-height:80vh; padding:0">
-    <table class=u2-table style="white-space:nowrap">
+  <u2-table style="overflow:auto; max-height:80vh; padding:0">
+    <table class="u2-table -Sticky" style="white-space:nowrap">
       <thead>
         <tr>
           <th width=10>
-          <th>${t`Name`}
-          <th title="${t`Number of dependencies`}">${t`needs`}
-          <th title="${t`Required by`}">${t`used by`}
-          <th>${t`Exports`}
+          <th width=20 data-sort-handler>${t`Name`}
+          <th width=20 data-sort-handler title="${t`Number of dependencies`}">${t`needs`}
+          <th width=20 data-sort-handler title="${t`Required by`}">${t`used by`}
+          <th data-sort-handler>${t`Description`}
+          <th data-sort-handler>${t`Exports`}
       <tbody>
         ${html.join(rows)}
     </table>
-  </div>
+  </u2-table>
 </div>`;
 }
 
