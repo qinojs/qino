@@ -95,11 +95,7 @@ export async function subscriptions(app: App, limit = 500): Promise<Row[]> {
   ]);
   // grouped here rather than in SQL — GROUP_CONCAT/STRING_AGG differ per dialect
   const byId = new Map<number, string[]>();
-  for (const m of memberships) {
-    const id = Number(m.sub_id);
-    const list = byId.get(id);
-    list ? list.push(String(m.name)) : byId.set(id, [String(m.name)]);
-  }
+  for (const m of memberships) byId.getOrInsertComputed(Number(m.sub_id), () => []).push(String(m.name));
   return rows.map((row) => ({ ...row, channels: byId.get(Number(row.id)) ?? [] }));
 }
 

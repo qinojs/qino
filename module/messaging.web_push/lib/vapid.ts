@@ -13,9 +13,7 @@ export async function vapid(app: App): Promise<{ subject: string; publicKey: str
 const keys = new WeakMap<App, Promise<{ publicKey: string; privateKey: string }>>();
 
 function keyPair(app: App): Promise<{ publicKey: string; privateKey: string }> {
-  let pending = keys.get(app);
-  if (!pending) keys.set(app, pending = load(app).catch((e) => { keys.delete(app); throw e; }));
-  return pending;
+  return keys.getOrInsertComputed(app, () => load(app).catch((e) => { keys.delete(app); throw e; }));
 }
 
 async function load(app: App) {

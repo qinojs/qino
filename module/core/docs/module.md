@@ -90,7 +90,7 @@ Three separate phases — runtime mirrors boot, one module at a time:
 - **`modules.add(spec)`** declares a local or remote module. `init()` imports it later. `core` is the
   root of the `needs` graph, so `App` declares it itself — no application has to.
 - **`store.add(name)`** declares a module whose conventional `<name>/plugin.ts` location comes
-  from a store catalog. `store.addAll()` declares every module in that catalog.
+  from a store catalog. `await store.addAll()` declares every module in that catalog.
 - **`import(spec)`** immediately loads and registers a module for runtime linking. It does
   **not** run any hooks.
 - **`init()`** is the boot step: migrate the merged DB schema, apply all settings schemas, then

@@ -18,7 +18,6 @@ export class Store {
   #app: App;
   #url: string;
   #declared: boolean;
-  #all = false;
 
   constructor(app: App, url: string, declared: boolean) {
     this.#app = app;
@@ -37,8 +36,9 @@ export class Store {
     return this;
   }
 
-  addAll(): this {
-    this.#all = true;
+  /** Declare every module in the catalog — nothing but names() + add(). */
+  async addAll(): Promise<this> {
+    for (const name of await this.names()) this.add(name);
     return this;
   }
 
@@ -47,12 +47,6 @@ export class Store {
 
   /** The catalog URL is the base; a module lives beside it under its own name. */
   moduleUrl(name: string): string { return new URL(`${name}/plugin.ts`, new URL(".", this.#url)).href; }
-
-  /** Only addAll() needs the catalog; everything else was already declared by add(). */
-  async init(): Promise<void> {
-    if (!this.#all) return;
-    for (const name of await this.names()) this.#app.modules.add(this.moduleUrl(name), name);
-  }
 }
 
 export class StoreManager {
@@ -68,9 +62,7 @@ export class StoreManager {
   get(url: string): Store | undefined { return this.#stores.get(url); }
 
   #ensure(url: string, declared: boolean): Store {
-    let store = this.#stores.get(url);
-    if (!store) this.#stores.set(url, store = new Store(this.#app, url, declared));
-    return store;
+    return this.#stores.getOrInsertComputed(url, () => new Store(this.#app, url, declared));
   }
 
   add(spec: string | URL): Store {
@@ -95,10 +87,10 @@ export class StoreManager {
     this.#stores.delete(url);
   }
 
+  /** Register the remembered stores, so the backend can list and install from them. */
   async init(): Promise<void> {
     // Same bootstrap read as ModuleManager.init(), before this table's own migration — take it as it is.
     const rows = await this.#app.db.query`SELECT * FROM store`.catch(() => []);
     for (const { url } of rows) if (url) this.#ensure(url, false);
-    for (const store of this.#stores.values()) await store.init();
   }
 }

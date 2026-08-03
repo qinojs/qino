@@ -1,58 +1,36 @@
-# Module stores: decisions and current state
+# Module stores
 
-Stand: 1. August 2026
+A store is a catalog above ordinary modules — nothing more:
 
-## Goal
+- a module is loadable on its own, from its `plugin.ts`;
+- a store gives module names conventional URLs and lets you pick one or all of them;
+- a module never knows its store, and an app needs no store to add a single module.
 
-Qino modules should not depend on one central registry. Qino itself, third parties, projects, and
-developers should all be able to provide modules from their own locations. A project may combine
-several stores and individual local modules.
+That is the whole point. Qino, third parties and projects should each be able to publish modules
+from their own location, and an application may combine several stores. Keeping the store a thin
+catalog is what stops it from becoming a mandatory central service.
 
-A store is therefore only a catalog layer above ordinary modules:
-
-- A module is independently loadable from its `plugin.ts`.
-- A store gives module names conventional URLs and allows selecting one or all of them.
-- A module does not need to know its store.
-- An application does not need a store to add an individual module.
-
-This keeps the module contract small and prevents the store from becoming a mandatory central
-service.
-
-## Chosen API
-
-Boot configuration is declarative and synchronous. Loading happens later in `app.init()`:
+## API
 
 ```ts
-const base = import.meta.resolve("./");
-const url = (path: string): string => new URL(path, base).href;
-
-app.modules.add(url("./local/hello.world/plugin.ts"));
+app.modules.add(url("./local/hello.world/plugin.ts"));      // one module, by URL
 
 const store = app.stores.add(url("./vendor/store.json"));
-store.add("hello.analytics");
-
-app.stores.add(url("./qino/module/store.json")).addAll();
+store.add("hello.analytics");                               // one module, by name
+await app.stores.add(url("./other/store.json")).addAll();   // the whole catalog
 
 await app.init();
 ```
 
-The same verb is used at both layers because both calls declare a module for boot:
+`add()` declares for one boot and stays synchronous; `app.init()` imports, orders and links. Because
+the module URL is pure convention, `store.add(name)` reads nothing at all — `addAll()` is the one
+call that needs the catalog, and it is just `names()` + `add()`. The same two pieces are public for
+everyone else: `store.names()` reads the catalog, `store.moduleUrl(name)` builds the URL. The
+backend store page is written with them.
 
-- `app.modules.add(spec)` adds an individual module.
-- `store.add(name)` adds an individual module from a catalog.
-- `store.addAll()` adds the complete catalog.
-- `app.stores.add(spec)` adds or returns a store.
+`core` needs no declaration — it is the root of the `needs` graph, so `App` adds it itself.
 
-`add` was chosen over the other candidates for these reasons:
-
-- `use` commonly means ordered middleware in Express, Hono, and similar frameworks.
-- `import` suggests that the module is loaded immediately and is also a JavaScript keyword.
-- `load`, `activate`, `mount`, and `link` suggest an immediate runtime effect.
-- `install` already describes persistent installation work and is a module hook.
-- `registerModule`, `addModule`, and similar names repeat the receiver (`modules`).
-
-`app.import(spec)` remains the immediate runtime operation. A runtime module is imported first and
-then linked explicitly. `link` and `unlink` keep their existing lifecycle meaning.
+A store's own catalog is never cached: it may gain modules while the app runs.
 
 ## Installing at runtime
 
@@ -83,60 +61,44 @@ store:   url
 module:  name | url | installed
 ```
 
-`module` also carries the CMS access columns — the CMS extends the table, it does not own it.
 A row means installed, `installed` is when `plugin.install()` ran, and `url` is only set for modules
-that were installed at runtime: those are the ones `init()` has to import again. That is also what
-makes the two origins distinguishable without an extra column:
+installed at runtime — those are the ones `init()` has to import again. That is also what
+distinguishes the two origins without an extra column:
 
 | | Origin | removable through the UI |
 |---|---|---|
 | `add()` in server.ts | the application itself | **no** (`declared` is true) |
 | row in `store` / `module` | installed at runtime | yes |
 
-`plugin.install()` now runs **once per app** instead of on every boot, which is what makes an
-`uninstall()` counterpart meaningful. Modules whose `install()` used to double as self-healing (it
-recreates a deleted backend page, say) no longer heal on restart.
+`plugin.install()` runs **once per app**, not on every boot — that is what makes `uninstall()`
+meaningful, and it means a module whose `install()` used to double as self-healing no longer heals
+on restart.
 
-Both managers read their table in `init()`, before the schema is migrated — hence the `listTables()`
-check: on a fresh database there is nothing to read yet.
+**A module row that no longer imports must not keep the app down.** `init()` logs the failure, skips
+the row and remembers it in `modules.failures()`; the store page lists those under *Installed, not
+importable* and offers the uninstall that clears the row.
 
-**A module row that no longer imports must not keep the app down.** A deleted folder or an
-unreachable host would otherwise leave no way out but editing the database. So `init()` logs the
-failure, skips the row and remembers it in `modules.failures()`; the store page lists those under
-*Installed, not importable* — including modules whose store is gone, which have nowhere else to
-appear — and offers the uninstall that clears the row. `uninstall()` accepts such a name even
-though there is no plugin to ask.
+Both managers read their table in `init()` before the schema is migrated, hence the `listTables()`
+check: a fresh database has nothing to read yet.
 
 [cms.backend.superuser.stores](../../cms.backend.superuser.stores/) is the UI for all of this.
 
-The old `importAll` directory scan was removed. Adding every module is now exclusively a store
-operation, except for the temporary PostgreSQL demo compatibility scan described below.
-
 ## Minimal module contract
 
-A module may contain only this:
+A module may contain only `export function init(app) {}` — every manifest field is optional,
+including `name`:
 
-```ts
-export function init(app) {}
-```
+- a store supplies the catalog name;
+- a directly added `<name>/plugin.ts` infers its name from the parent directory;
+- an exported `name` still wins, and a mismatch with the store's name fails the boot rather than
+  silently changing identity.
 
-Every manifest field is optional. In particular, `name` is no longer mandatory:
+Duplicate names, duplicate URLs under different names, missing dependencies and cycles all fail
+explicitly. Stores do not overwrite each other, and there is no precedence rule — failing loudly
+keeps every later option open, silent shadowing could not be taken back. What keeps two stores from
+colliding is the vendor segment in the module name; see [module.md](module.md#module-names).
 
-- A store supplies the catalog name.
-- A directly added conventional `<name>/plugin.ts` infers its name from the parent directory.
-- An explicitly exported `name` is still supported.
-- If a store name and an exported name differ, boot fails instead of silently changing identity.
-
-Module names are validated. Duplicate names, duplicate URLs under different names, missing
-dependencies, and dependency cycles fail explicitly. Stores do not overwrite each other in a map;
-there is currently no implicit precedence or local-wins policy. Failing loudly keeps every later
-option open — an apt-style priority rule can still be added, silent shadowing could not be taken
-back. What keeps two stores from colliding in the first place is the vendor segment in the module
-name; see [module.md](module.md#module-names).
-
-## Store format and URL convention
-
-The minimal catalog is deliberately metadata-friendly:
+## Catalog format
 
 ```json
 {
@@ -147,194 +109,49 @@ The minimal catalog is deliberately metadata-friendly:
 }
 ```
 
-The catalog URL is the base. A module named `hello.world` resolves to:
-
-```text
-<catalog directory>/hello.world/plugin.ts
-```
-
-The empty objects reserve a place for future metadata without requiring any feature now. Unknown
-metadata can be ignored. The current implementation only validates that every value is an object.
-
-Because that resolution is pure convention, `store.add(name)` needs no catalog at all — it declares
-the conventional URL right away, exactly like `modules.add()`. Only `addAll()` has to read the
-catalog, and `store.names()` exposes the same read for anyone listing a store. Reading goes through
-`fetch`, which handles `file:` and `http(s):` alike, and validates the catalog's shape and names.
+The catalog URL is the base, so `hello.world` lives at `<catalog directory>/hello.world/plugin.ts`.
+The empty objects reserve a place for metadata; only "every value is an object" is validated today,
+and unknown keys are ignored. Reading goes through `fetch`, which handles `file:` and `http(s):`
+alike.
 
 ## URL resolution
 
-A function that receives only `"../module/plugin.ts"` cannot know which source file called it.
-Relative strings passed to `app.modules.add()` are therefore resolved against `app.appPATH`, not
-against the caller's `import.meta.url`.
-
-Call sites that mean “relative to this source file” resolve while that context still exists. `add()`
-takes a `URL` as well as a string, so that is the whole pattern:
+A function that receives `"../module/plugin.ts"` cannot know which source file called it. Relative
+strings are therefore resolved against `app.appPATH`. Call sites meaning "relative to this source
+file" resolve while that context still exists — `add()` takes a `URL` as well as a string:
 
 ```ts
 app.modules.add(new URL("../modules/example/plugin.ts", import.meta.url));
 ```
 
-The demos additionally keep a small `url()` helper, because `appPATH` and similar options still want
-a string. No API can reconstruct caller context from a plain string, so the caller has to supply it
-one way or the other.
+## Local source and JSR
 
-## Local source development and JSR
+Modules import Qino through canonical specifiers (`@qino/qino`, `@qino/qino/cms`). The repository
+root is a Deno workspace with `qino/` and the demos as members, so the same specifier resolves to
+the local tree inside it and to the published package outside — demos, `test-modules/` and
+`privat-module/` alike. Third-party versions are pinned once in
+[`qino/deno.json`](../../../deno.json) `imports`.
 
-Modules consume public Qino APIs through canonical specifiers such as:
+An entry point outside the workspace that imports a local checkout must select its config:
+`deno run --config=qino/deno.json --frozen …`. To work against a local item.js checkout, uncomment
+`patch` in the workspace root `deno.json`.
 
-```ts
-import { html, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
-import { scored } from "@qino/qino/score";
-```
+`import.meta.resolve("jsr:…")` returns an opaque specifier. It loads fine but is not a hierarchical
+asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
 
-The source stays identical in both environments, and nothing has to be redirected by hand: the
-repository root is a Deno workspace whose members are `qino/` and the demos. Inside it, `@qino/qino`
-resolves to the local source tree because `qino/` is the package of that name; outside it, the same
-specifier resolves to the published JSR package. That covers the demos, `test-modules/`, and
-`privat-module/` alike — a plain directory inside the workspace can import a member by name.
+## Not there yet
 
-Third-party versions are pinned once, in [`qino/deno.json`](../../../deno.json) `imports`. Module
-sources only ever write bare specifiers (`@std/media-types`, `@qino/item/tools/db/sql.js`), so a
-version bump is a single edit and Deno's `no-import-prefix` lint stays satisfied.
-
-A deployment whose entry point lives outside the repository workspace but imports a local Qino
-checkout must select that checkout's configuration explicitly:
-
-```sh
-deno run --config=qino/deno.json --frozen ...
-```
-
-Without `--config`, the bare third-party specifiers are unavailable. `--frozen` also makes a stale
-standalone `qino/deno.lock` fail during deployment instead of being changed by the running service.
-
-To work against a local item.js checkout, uncomment `patch` in the workspace root `deno.json` —
-Deno then resolves `@qino/item/` to the working copy instead of JSR. The `patch` entry only applies
-if the local version satisfies the pinned range, which is why the range is `^0.6.3` rather than an
-exact version; `deno.lock` keeps the actual resolution reproducible.
-
-`import.meta.resolve("jsr:...")` may continue to return an opaque `jsr:` specifier. It is useful for
-loading but not a reliable hierarchical asset URL. Consequently a store itself currently needs a
-real hierarchical `file:`, `http:`, or `https:` URL. Exporting `const url = import.meta.url` from
-every plugin was not adopted: the module manager already knows the specifier it imported, and an
-opaque JSR URL would not solve public assets or directory enumeration.
-
-## Concrete implementation changes
-
-### Core
-
-- [`ModuleManager`](../lib/ModuleManager.ts) now has synchronous `add()`, a pending queue, optional
-  manifest names, conventional name inference, name validation, and duplicate checks.
-- `ModuleManager.init()` imports the pending queue before dependency ordering, schema migration,
-  settings, locales, installation, and module initialization.
-- `ModuleManager.importAll()` and the `App.importAll()` facade were removed.
-- [`StoreManager`](../lib/StoreManager.ts) and `Store` implement catalog loading, selection, and
-  conventional module URLs.
-- [`App`](../lib/App.ts) owns one `StoreManager` per application instance. Stores initialize before
-  modules, keeping all state tenant-local.
-- Both managers gained `install()`/`uninstall()`, `stores.all()`, `modules.declared()` and the
-  `store`/`module` tables described above; `Db.listTables()` lets them read those before migration.
-
-### Catalogs
-
-- [`module/store.json`](../../store.json) is the standard Qino store.
-- [`test-modules/store.json`](../../../test-modules/store.json) is an optional test store.
-- The separate `experimental-modules/store.json` catalog holds the experimental modules. The MySQL
-  demo registers it without `addAll()` — a catalog to install from, nothing active by default.
-
-The test store's modules were moved out of the standard store. Their runtime code imports Qino only through
-public package exports, which makes the store a practical isolation test for a later repository or
-package split. `cms.backend.api` stayed in the standard store because it is a regular API explorer
-and documentation module, not a test fixture.
-
-`qino/cms` and `qino/cms-tests` were deliberately not introduced yet. That move would already be
-the real CMS package split and would mix a large import rewrite into the store experiment.
-
-### Demos and documentation
-
-- The SQLite, MySQL, multi-tenant, and PostgreSQL demos load the relevant store catalogs.
-- Demo boot configuration uses the shared `base`/`url` resolver shown above.
-- Demos are workspace members; no per-demo import map.
-- Module usage documentation now uses `app.modules.add()` for boot and preserves `app.import()` for
-  actual runtime loading.
-
-## Tests and guardrails
-
-The boundary and module-manager tests now verify:
-
-- direct modules without an exported name;
-- selective `store.add()` and complete `store.addAll()`;
-- deterministic catalog order;
-- catalog validity;
-- exact agreement between each catalog and its plugin directories;
-- importability of every test-store plugin;
-- no runtime import from a test-store module into Qino internals;
-- existing duplicate, missing-dependency, and cycle errors.
-
-[`module_install.test.ts`](../tests/module_install.test.ts) boots a real SQLite app twice against
-two throwaway modules and covers the persistent half: `install()` runs once and not again on the
-second boot, an installed module returns after a restart, `uninstall()` removes hook, row and
-registration, a row pointing nowhere is survivable and removable, and both a declared module and a
-declared store refuse to be uninstalled.
-
-## Deliberately deferred work
-
-### Host allow-list and integrity pinning
-
-Installing a module from a URL is remote code execution with full database rights — the same deal
-WordPress and Drupal make, and without it there is no ecosystem. Two guards are still missing, and
-neither can be added quietly later, because by then somebody is relying on the gap:
-
-- a `moduleHosts` allow-list in the app configuration, checked **before** the `import()`. Deno's
-  `--allow-import` cannot do this: it is a process flag, so one permitted host would apply to every
-  tenant in the runtime.
-- a hash in the `module` row, checked on re-import, the way `deno.lock` does it.
-
-Until then, anyone who can reach the store UI can import arbitrary code. Local `file:` stores are
-unaffected; the guard is what makes a remote store safe to expose.
-
-A second factor in front of install/uninstall would cover the other half — a stolen session rather
-than a bad URL. `web_auth` already has the ceremony (`confirm/challenge` + `confirm/verify`) and
-nothing uses it yet; a sketch of how it could become a factor-agnostic check on any apt endpoint
-lives in the workspace as `PLAN-confirm.md`.
-
-### Remote public assets
-
-Plugin imports work over HTTP, but Qino's `/m/<module>/pub/...` route still serves from a local
-`Module.dir`. A useful remote store therefore needs a resource strategy: proxy or cache public
-assets from a hierarchical module base URL, or install the module locally. This should be proven
-with a small HTTP store before moving the CMS store.
-
-### Remote locales
-
-Locales are currently discovered with `Deno.readDir(<module>/locale/)`, which only works for local
-directories. Remote modules need an explicit locale export or catalog metadata because HTTP does
-not provide portable directory listing. The likely minimal contract is an optional locale object
-export; it has not been fixed yet.
-
-### Opaque JSR store locations
-
-JSR is suitable for public code imports, but an opaque `jsr:` value is not yet a store base for
-`store.json`, `pub/`, and `locale/`. This remains separate from installing Qino itself through JSR.
-
-### PostgreSQL demo
-
-`demo-postgres/server.ts` temporarily scans the standard module directory and excludes modules
-that are not PostgreSQL-compatible. Replacing this with `store.addAll({ except: ... })` would add a
-general API solely for one compatibility demo, so the exception remains until either PostgreSQL
-support improves or a real selection use case justifies such an API.
-
-### Existing project-wide findings
-
-The full-project type-check and test suite pass. Standalone checks additionally select
-`qino/deno.json` explicitly and use its lock file with `--frozen`, so the parent workspace cannot
-hide a stale package lock.
-
-## Recommended next sequence
-
-1. Build a tiny HTTP-hosted store containing `init()`, one `pub/` asset, and one locale.
-2. Add a stable module base URL and decide whether remote assets are proxied, cached, or installed.
-3. Replace locale directory enumeration with an explicit, optional remote-safe contract.
-4. Add the host allow-list before the first remote store is used in earnest.
-5. Re-run the test store through both local source mapping and published JSR dependencies.
-6. Only then split the CMS modules into their own package/store and later their own repository.
+- **Host allow-list and integrity pinning.** Installing a module from a URL is remote code execution
+  with full database rights — the deal WordPress and Drupal make, and without it there is no
+  ecosystem. Two guards are missing and neither can be added quietly later: a `moduleHosts`
+  allow-list in the app config, checked *before* the `import()` (Deno's `--allow-import` cannot do
+  it — a process flag would apply to every tenant), and a hash in the `module` row, checked on
+  re-import the way `deno.lock` does. Until then, anyone who reaches the store UI can import
+  arbitrary code; local `file:` stores are unaffected. A second factor in front of install/uninstall
+  would cover the other half — `web_auth` has the ceremony, see `PLAN-confirm.md`.
+- **Remote public assets.** Plugin imports work over HTTP, but `/m/<module>/pub/…` still serves from
+  a local `Module.dir`. A useful remote store needs a strategy: proxy, cache, or install locally.
+- **Remote locales.** Discovery is `Deno.readDir(<module>/locale/)`; HTTP has no portable directory
+  listing, so remote modules need an explicit locale export or catalog metadata.
+- **PostgreSQL demo.** `demo-postgres/server.ts` scans the module directory and excludes what is not
+  PostgreSQL-compatible. A general selection API for one compatibility demo is not worth it yet.

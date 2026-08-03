@@ -195,8 +195,7 @@ Deno.test("Store selects modules by directory name", async () => {
     assertEquals(Object.keys(selected.modules.all()), ["hello.world"]);
 
     const all = createApp();
-    all.stores.add(toFileUrl(root + "/store.json").href).addAll();
-    await all.stores.init();
+    await all.stores.add(toFileUrl(root + "/store.json").href).addAll();
     await all.modules.init();
     assertEquals(all.loaded, ["hello.analytics", "hello.world"]);
   } finally {
