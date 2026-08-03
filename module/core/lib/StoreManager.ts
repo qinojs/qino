@@ -98,11 +98,9 @@ export class StoreManager {
   }
 
   async init(): Promise<void> {
-    // Runs before the modules migrate the schema, so on a fresh database there is no table yet.
-    const rows = (await this.#app.db.listTables()).includes("store")
-      ? await this.#app.db.query<{ url: string }>`SELECT url FROM store`
-      : [];
-    for (const { url } of rows) if (!this.#stores.has(url)) this.#stores.set(url, new Store(this.#app, url, false));
+    // Same bootstrap read as ModuleManager.init(), before this table's own migration — take it as it is.
+    const rows = await this.#app.db.query`SELECT * FROM store`.catch(() => []);
+    for (const { url } of rows) if (url && !this.#stores.has(url)) this.#stores.set(url, new Store(this.#app, url, false));
     for (const store of this.#stores.values()) await store.init();
   }
 }

@@ -193,14 +193,11 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   // Cache size
   let cacheSize = 0, cacheCount = 0;
   async function measureCache(dir: string) {
-    try {
-      for await (const entry of Deno.readDir(dir)) {
-        if (entry.isDirectory) { await measureCache(dir + entry.name + "/"); continue; }
-        const s = await Deno.stat(dir + entry.name).catch(() => null);
-        cacheSize += s?.size ?? 0;
-        cacheCount++;
-      }
-    } catch { /* cache dir may not exist */ }
+    for (const entry of await Array.fromAsync(Deno.readDir(dir)).catch(() => [])) {
+      if (entry.isDirectory) { await measureCache(dir + entry.name + "/"); continue; }
+      cacheSize += (await Deno.stat(dir + entry.name).catch(() => null))?.size ?? 0;
+      cacheCount++;
+    }
   }
   await measureCache(app.appPATH + "cache/");
 

@@ -143,12 +143,12 @@ export class ModuleManager {
     for (const { spec, name } of this.#pending) await this.import(spec, name);
     this.#pending = [];
     this.#declared = new Set(Object.keys(this.#modules));
-    // The `module` table is migrated by this very run, so on a fresh database there is nothing yet.
-    const rows = (await this.#app.db.listTables()).includes("module")
-      ? await this.#app.db.query<{ name: string; url: string; installed: number }>`SELECT name, url, installed FROM module`
-      : [];
-    for (const { name, installed } of rows) this.#installed[name] = installed;
-    for (const { name, url } of rows) {
+    // Chicken-and-egg: `url` says which modules to import, but importing them is what completes the
+    // schema this table is migrated to. So read it before its own migration — as it is, since a fresh
+    // database has no table and an install older than the column has no `url`.
+    const rows = await this.#app.db.query`SELECT * FROM module`.catch(() => []);
+    for (const { name, url, installed } of rows) {
+      if (installed) this.#installed[name] = installed;
       if (!url || this.#modules[name]) continue;
       // A deleted folder or an unreachable host must not keep the app from booting: shout, skip,
       // and let the module page offer the uninstall that clears the row.

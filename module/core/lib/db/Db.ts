@@ -126,9 +126,6 @@ export class Db extends Emitter<DbEvents> {
     return this.#driver.columns(table);
   }
 
-  /** The table names the database really has — readable before the schema is migrated. */
-  listTables(): Promise<string[]> { return this.#driver.listTables(); }
-
   /** Introspect the current tables into memory. Run after the schema is migrated. */
   async loadTables(): Promise<void> {
     const tables = await this.#driver.listTables();

@@ -7,7 +7,6 @@ import { Emitter } from "../lib/Emitter.ts";
 
 // The managers read their `module` and `store` rows on init; these tests have no database.
 const fakeDb = () => ({
-  listTables: () => Promise.resolve([]),
   query: () => Promise.resolve([]),
   table: () => ({ ensure: () => Promise.resolve(), delete: () => Promise.resolve() }),
 });
