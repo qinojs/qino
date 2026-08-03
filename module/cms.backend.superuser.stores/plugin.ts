@@ -11,18 +11,6 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Module stores", de: "Modul-Stores" });
 }
 
-/** Like core's store loader, but over fetch — which reads file: and http(s): alike. */
-async function catalog(url: string): Promise<string[]> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`);
-  const modules = (await res.json())?.modules;
-  if (!modules || typeof modules !== "object" || Array.isArray(modules)) throw new Error(`${url}: modules must be an object`);
-  return Object.keys(modules).sort();
-}
-
-// The catalog URL is the base; a module lives beside it under its own name (core's convention).
-const moduleUrl = (store: string, mod: string) => new URL(`${mod}/plugin.ts`, new URL(".", store)).href;
-
 // A typed URL wins, everything else is a path below the app.
 const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.appPATH)).href;
 
@@ -36,18 +24,18 @@ async function act(app: App, vars: Record<string, unknown>): Promise<string | un
   const mod = String(vars.mod ?? "");
   try {
     switch (vars.act) {
-      case "addStore": {
-        const url = resolve(app, store);
-        await catalog(url); // no catalog, no store
-        await app.stores.install(url);
+      case "addStore":
+        await app.stores.install(resolve(app, store));
         break;
-      }
       case "removeStore":
         await app.stores.uninstall(store);
         break;
-      case "install":
-        await app.modules.install(moduleUrl(store, mod), mod);
+      case "install": {
+        const from = app.stores.get(store);
+        if (!from) throw new Error(`Unknown store: ${store}`);
+        await app.modules.install(from.moduleUrl(mod), mod);
         break;
+      }
       case "uninstall":
         if (!locked.has(mod)) await app.modules.uninstall(mod);
         break;
@@ -127,7 +115,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const error = Object.keys(vars).length ? await act(app, vars) : undefined;
   const uninstallLabel = await t`Uninstall`;
   const list = app.stores.all();
-  const catalogs = await Promise.all(list.map((store) => catalog(store.url).catch((e) => String(e.message ?? e))));
+  const catalogs = await Promise.all(list.map((store) => store.names().catch((e) => String(e.message ?? e))));
   const cards = await Promise.all(list.map((store, i) => renderStore(app, store, catalogs[i])));
 
   // Modules whose row survived their store — otherwise they would have no place to be uninstalled.

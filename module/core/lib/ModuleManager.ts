@@ -84,6 +84,7 @@ export class ModuleManager {
   #declared = new Set<string>(); // came from add(), i.e. the application itself — not uninstallable
   #installed: Record<string, number> = {}; // name → time install() ran; the `module` table in memory
   #failed: Record<string, string> = {}; // installed but not importable this boot → name: why
+  #booting = false; // inside init(): install() only registers, the link pass follows
 
   constructor(app: App) {
     this.#app = app;
@@ -157,17 +158,30 @@ export class ModuleManager {
         console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
       });
     }
-    const order = this.#order();
-    await this.#applyDbSchema(order);
-    this.#applySchemas(order);
-    for (const name of order) await this.#linkOne(this.#modules[name]);
+    // In passes: an install() hook may install further modules (a bundle bringing its set), and
+    // those need the same ordering and schema merge as the first round, not a nested link().
+    this.#booting = true;
+    for (let count = 0; count !== Object.keys(this.#modules).length;) {
+      count = Object.keys(this.#modules).length;
+      const order = this.#order();
+      await this.#applyDbSchema(order);
+      this.#applySchemas(order);
+      for (const name of order) if (!this.#linked.has(name)) await this.#linkOne(this.#modules[name]);
+    }
+    this.#booting = false;
   }
 
   /** Import, remember and link a module — the persistent counterpart of add(). */
   async install(spec: string, name?: string): Promise<Module> {
     const mod = await this.import(spec, name);
+    // An unorderable module would break the next boot, so it must not reach the table at all.
+    const missing = (mod.plugin.needs ?? []).filter((need: string) => !this.#modules[need]);
+    if (missing.length) {
+      delete this.#modules[mod.name];
+      throw new Error(`Cannot install "${mod.name}": needs ${missing.join(", ")}`);
+    }
     await this.#app.db.table("module").ensure({ name: mod.name, url: mod.url });
-    await this.link(mod.name);
+    if (!this.#booting) await this.link(mod.name); // during boot init() links it in a later pass
     return mod;
   }
 

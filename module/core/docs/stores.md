@@ -69,6 +69,13 @@ Four verbs, two lifecycles, and they nest: **install** creates what a module own
 removes it again, while **link** and **unlink** only hook the module into the running app. Linking
 therefore requires an install, and unlinking keeps the data.
 
+A module may install other modules from its own `install()` hook — that is how
+[cms.installation.default](../../cms.installation.default/plugin.ts) brings a usable CMS without
+declaring anything. During boot such an install only registers: `init()` links in passes, so the new
+modules get the same ordering and schema merge as the first round instead of a nested `link()` whose
+`needs` are not linked yet. Modules that arrive this way are ordinary installed rows — each one can
+be uninstalled again, which a `needs` entry could never allow.
+
 Both tables are core's, because both are needed before any module can decide anything:
 
 ```text
@@ -149,8 +156,10 @@ The catalog URL is the base. A module named `hello.world` resolves to:
 The empty objects reserve a place for future metadata without requiring any feature now. Unknown
 metadata can be ignored. The current implementation only validates that every value is an object.
 
-Store catalogs can currently be read from `file:`, `http:`, and `https:` URLs. The store validates
-its shape, module names, and selected names before queueing plugins in the module manager.
+Because that resolution is pure convention, `store.add(name)` needs no catalog at all — it declares
+the conventional URL right away, exactly like `modules.add()`. Only `addAll()` has to read the
+catalog, and `store.names()` exposes the same read for anyone listing a store. Reading goes through
+`fetch`, which handles `file:` and `http(s):` alike, and validates the catalog's shape and names.
 
 ## URL resolution
 
@@ -256,7 +265,7 @@ The boundary and module-manager tests now verify:
 - direct modules without an exported name;
 - selective `store.add()` and complete `store.addAll()`;
 - deterministic catalog order;
-- catalog validity and existence of selected modules;
+- catalog validity;
 - exact agreement between each catalog and its plugin directories;
 - importability of every test-store plugin;
 - no runtime import from a test-store module into Qino internals;

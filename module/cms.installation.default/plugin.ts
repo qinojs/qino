@@ -3,58 +3,46 @@ import { cms } from "../cms/mod.ts";
 
 export const name = "cms.installation.default";
 export const description = "Installs a ready-to-use default CMS site and administrator accounts.";
-export const needs = [
-  "cms",
+export const needs = ["cms"]; // the code below; everything else is a recommendation, see `recommended`
+
+// Installed once, in this order — from here on the module table is the truth: each one can be
+// uninstalled again, and more can be installed from the same store.
+export const recommended = [
   "cms.frontend.2",
-  "cms.backend",
-  "error_report",
-  //"cms.versions",
-  "cms.backend.superuser.error_report",
-  "cms.backend.settings",
-  "cms.backend.users",
-  "cms.backend.cms.tree",
+  "cms.text",
+  "cms.image2",
+  "cms.filebrowser",
+  "cms.cont.text",
   "cms.cont.flexible",
-  "cms.cont.login4",
   "cms.cont.nav3",
   "cms.cont.table2",
-  "cms.cont.text",
+  "cms.cont.login4",
+  "cms.cont.trash",
+  "cms.cont.not_found1",
+  "cms.layout.custom.9",
   "cms.layout.backend",
   "cms.layout.login",
-  "cms.layout.custom.9",
-  "cms.image2",
-  "cms.text",
-    // optional: cms.cont.phpfile1
-    // optional: cms.cont.not_found1
-    // optional: cms.backend.superuser
-    // optional: cms.backend.superuser.db
-    // optional: cms.backend.superuser.db.query
-    // optional: cms.backend.superuser.db-clean
-    // optional: cms.backend.superuser.dbfile_clean
-    // optional: cms.backend.superuser.vers
-    // optional: cms.backend.superuser.log
-    // optional: cms.backend.superuser.client1
-    // optional: cms.backend.module
-    // optional: cms.backend.system
-    // optional: cms.backend.mails
-    // optional: cms.backend.groups
-    // optional: cms.backend.struct.grpaccess
-    // optional: cms.backend.webmaster
-    // optional: cms.backend.app1
-    // optional: cms.cont.search1
-    // optional: cms.cont.redirect
-    // optional: cms.cont.impressum2
-    // optional: cms.encrypt_emails
-    // optional: cms.image_editor
-    // optional: cms.filebrowser
-    // optional: cms.filebrowser.pexels
-    // optional: reporting
-    // optional: cron1
+  "cms.backend",
+  "cms.backend.cms",
+  "cms.backend.cms.tree",
+  "cms.backend.settings",
+  "cms.backend.users",
+  "cms.backend.module",
+  "cms.backend.system",
+  "cms.backend.superuser",
+  "cms.backend.superuser.stores", // installing further modules starts here
+  "error_report",
+  "cms.backend.superuser.error_report",
 ];
 
 // Atomic: a half-installed site (pages without their trash/login/not-found targets) is unrecoverable
 // on the next boot, because every step guards itself with "does this id already exist?".
-export function install({app}: {app: App}): Promise<void> {
-  return app.db.transaction(() => installTx(app));
+export async function install({ app }: { app: App }): Promise<void> {
+  const store = await app.stores.install(new URL("../store.json", import.meta.url));
+  for (const mod of recommended)
+    await app.modules.install(store.moduleUrl(mod), mod)
+      .catch((e) => console.error(`[qino] recommended module "${mod}" was skipped:`, e.message ?? e));
+  await app.db.transaction(() => installTx(app));
 }
 
 async function installTx(app: App): Promise<void> {
