@@ -53,12 +53,18 @@ function checkedStatus(
   return { level: "green", title: finalUrl ? `forwards to ${finalUrl}` : `online, ${code}` };
 }
 
+const LONG_VALUE = 60; // beyond this the two values only compare when they line up
+
 function changeCell(current: unknown, previous: unknown): HtmlString {
   const changes = diffResults(previous, current);
   if (!changes.length) return html`–`;
-  return html`<div class=-changes>${html.join(changes.map((change) => html`<div>
-    <b>${change.key}</b>: <del>${changeValue(change.before)}</del> → <ins>${changeValue(change.after)}</ins>
-  </div>`))}</div>`;
+  return html`<div class=-changes>${html.join(changes.map((change) => {
+    const before = changeValue(change.before);
+    const after = changeValue(change.after);
+    return Math.max(before.length, after.length) > LONG_VALUE
+      ? html`<div><b>${change.key}</b>:<div><del>${before}</del></div><div><ins>${after}</ins></div></div>`
+      : html`<div><b>${change.key}</b>: <del>${before}</del> → <ins>${after}</ins></div>`;
+  }))}</div>`;
 }
 
 function changeValue(value: unknown): string {

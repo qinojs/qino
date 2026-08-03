@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { Db, requestStorage, type App } from "../../core/mod.ts";
 import { apex, covers, wwwAlt } from "../lib/check.ts";
+import { errText } from "../lib/net.ts";
 import { diffResults, pruneHistory } from "../lib/changes.ts";
 import { dmarc, spf } from "../lib/mail.ts";
 import { frequencies, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
@@ -271,6 +272,16 @@ Deno.test("cms.backend.domain-monitor: a change is what the last check found dif
   assertEquals(String(rowHtml(base as never, page)).includes("data-changed data-value=\"0\""), true);
   // the detail link carries the page's own parameters, or it would leave the backend page
   assertEquals(cell(now).includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;domain=example.com"'), true);
+});
+
+Deno.test("cms.backend.domain-monitor: an expired certificate reads the same on every check", () => {
+  // rustls puts the moment of the check into the message; the same dead cert must not look new
+  const message = (now: number, ago: number) =>
+    `client error (Connect): invalid peer certificate: certificate expired: verification time ${now} (UNIX), but certificate is not valid after 1619219664 (${ago} seconds ago)`;
+  const first = errText(new Error("fetch failed", { cause: new Error(message(1785753422, 166533758)) }));
+  assertEquals(first, errText(new Error("fetch failed", { cause: new Error(message(1785755736, 166536072)) })));
+  assertEquals(first.includes("not valid after 1619219664"), true); // the cert's own date stays
+  assertEquals(diffResults({ status_code: null, checked: 1, error: first }, { status_code: null, checked: 2, error: first }), []);
 });
 
 Deno.test("cms.backend.domain-monitor: the dashboard widget lists what changed last", async () => {
