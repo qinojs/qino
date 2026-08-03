@@ -7,6 +7,7 @@ cms.initNode("backend.domain-monitor", (el) => {
   const tbody = el.querySelector("tbody[data-monitor-list]");
   const search = el.querySelector("[data-monitor-search]");
   const filter = el.querySelector("[data-monitor-filter]");
+  const noSub = el.querySelector("[data-monitor-nosub]");
   const count = el.querySelector("[data-monitor-count]");
 
   const bulk = el.querySelector("[data-bulk]");
@@ -134,16 +135,28 @@ cms.initNode("backend.domain-monitor", (el) => {
 
   // client-side search + severity filter (sorting is handled by <u2-table>)
   const week = () => Date.now() / 1000 - 7 * 24 * 60 * 60;
+
+  // A row is a subdomain when one of its parent names is monitored too — "sub.a.ch" hides
+  // behind "a.ch", but not behind an unrelated "ch" nobody watches.
+  const subOf = (domain, monitored) => {
+    for (let i = domain.indexOf("."); i >= 0; i = domain.indexOf(".", i + 1)) {
+      if (monitored.has(domain.slice(i + 1))) return true;
+    }
+    return false;
+  };
+
   const apply = () => {
     if (!tbody || !search || !filter) return;
     const q = (search.value || "").toLowerCase();
     const f = filter.value; // "", "ok", "problem", "changed"
+    const monitored = noSub?.checked ? new Set(rows().map((tr) => tr.dataset.domain)) : null;
     for (const tr of tbody.querySelectorAll("tr")) {
       const level = Number(tr.querySelector("[data-value]")?.dataset.value); // status severity, 0 = green … 4 = red
       const changed = Number(tr.querySelector("[data-changed]")?.dataset.value); // 0 = never changed
       const okFilter = !f || (f === "changed" ? changed > week() : f === "ok" ? level <= 1 : level >= 3);
       const okSearch = tr.textContent.toLowerCase().includes(q);
-      const show = okFilter && okSearch;
+      const okSub = !monitored || !subOf(tr.dataset.domain ?? "", monitored);
+      const show = okFilter && okSearch && okSub;
       tr.style.display = show ? "" : "none";
       // a row that drops out of sight drops its tick, so the count and every bulk
       // action only ever mean the rows you can actually see
@@ -154,4 +167,5 @@ cms.initNode("backend.domain-monitor", (el) => {
   };
   search?.addEventListener("input", apply);
   filter?.addEventListener("change", apply);
+  noSub?.addEventListener("change", apply);
 });

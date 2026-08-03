@@ -3,7 +3,7 @@ import { u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
 import { diffResults } from "./lib/changes.ts";
-import { addDomains, FREQUENCIES, type DomainRow, parseResult } from "./lib/monitor.ts";
+import { addDomains, domainKey, FREQUENCIES, type DomainRow, parseResult } from "./lib/monitor.ts";
 
 const HISTORY_LIMIT = 500;
 const DAY = 24 * 60 * 60;
@@ -340,7 +340,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
   return html`<tr data-domain="${domain}" u2-href>
       <td><input type=checkbox data-select title="Select for bulk actions">
       <td data-value="${LEVELS[state.level]}">${dot(state.level, state.title)}
-      <td data-value="${domain}"><a href="${detailLink(pageUrl, domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
+      <td data-value="${domainKey(domain)}"><a href="${detailLink(pageUrl, domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
       <td data-changed data-value="${row.changed ?? 0}">${changedCell(row)}
       <td data-value="${row.reg_expires ?? 0}">${expiresCell(row)}
       <td data-g=http data-value="${row.status_code}">${row.status_code ?? "–"}
@@ -533,7 +533,9 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
 
   const app = node.app;
   const skipped = vars.add ? await addDomains(app, String(vars.domains ?? "")) : [];
-  const rows = await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`;
+  // Ordered by the reversed name rather than by SQL, so subdomains sit under their parent.
+  const rows = (await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`)
+    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || (domainKey(a.domain) < domainKey(b.domain) ? -1 : 1));
   const pageUrl = await nodeUrl(node, ctx);
   const body = html.join(rows.map((row) => rowHtml(row, pageUrl)), "\n");
   const empty = html`<tr><td colspan=28 class=-empty>No domains yet.`;
@@ -553,6 +555,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
       <option value=problem>problems</option>
       <option value=changed>changed (7 days)</option>
     </select>
+    <label title="Hide domains that sit under another monitored domain"><input type=checkbox data-monitor-nosub> hide subdomains</label>
     <span data-bulk hidden><b data-bulk-count>0</b> selected ·
       <select data-bulk-frequency title="Set automatic checks for the selected domains">
         <option value="">set interval…</option>

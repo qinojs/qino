@@ -99,6 +99,10 @@ export const normalizeDomain = (value: string): string => {
   } catch { return ""; }
 };
 
+// Sort key that files a domain under its parent: the labels reversed, so abc.a.ch and xyz.a.ch
+// follow a.ch and b.com comes after all of them.
+export const domainKey = (domain: string): string => domain.split(".").reverse().join(".");
+
 const DEEP_AFTER = 24 * 60 * 60;
 
 export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent: number }; signal?: AbortSignal } = {}): Promise<void> {
