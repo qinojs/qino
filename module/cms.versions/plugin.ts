@@ -169,8 +169,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (ctx.req.query.cms_noFrontend) return;
         const frontend = String(await ctx.app.settings.cms.frontend || "cms.frontend.2");
         ctx.res.html.jsData.cmsFrontend = frontend;
-        ctx.res.html.scripts.add(ctx.req.modulePath + frontend + "/pub/js/frontend.mjs");
-        ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/vers.mjs");
+        ctx.res.html.scripts.add(ctx.req.moduleUrl + frontend + "/pub/js/frontend.mjs");
+        ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/vers.mjs");
     }, { signal });
 
     // initDraftmode(app, signal); // parked until draft reads and writes are fully routed

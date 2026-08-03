@@ -7,8 +7,8 @@ const fakeCtx = () => ({ req: { basePath: "/app/" }, res: { html: { styles: new 
 const fakeNode = (appPATH: string) => ({
   id: 7,
   module: {
-    appDir: `${appPATH}qg/cms.cont.html/`,
-    appUrl: "/app/qg/cms.cont.html/",
+    data: `${appPATH}data/cms.cont.html/`,
+    dataUrl: "/app/d/cms.cont.html/",
   },
 });
 
@@ -18,9 +18,9 @@ const read = (path: string) => Deno.readTextFile(path).catch(() => undefined);
 Deno.test("codeFiles: source lies next to pub/, assets inside", async () => {
   const dir = await tmpDir();
   const files = codeFiles(fakeNode(dir) as any);
-  assertEquals(files.src, `${dir}qg/cms.cont.html/7.html`);
-  assertEquals(files.css, `${dir}qg/cms.cont.html/pub/7.css`);
-  assertEquals(files.js, `${dir}qg/cms.cont.html/pub/7.js`);
+  assertEquals(files.src, `${dir}data/cms.cont.html/7.html`);
+  assertEquals(files.css, `${dir}data/cms.cont.html/pub/7.css`);
+  assertEquals(files.js, `${dir}data/cms.cont.html/pub/7.js`);
   await Deno.remove(dir, { recursive: true });
 });
 
@@ -41,11 +41,11 @@ Deno.test("codeFiles: create writes the initial content, existing files are kept
 Deno.test("codeFiles: addAssets only links files that exist", async () => {
   const dir = await tmpDir();
   const files = codeFiles(fakeNode(dir) as any);
-  await Deno.mkdir(`${dir}qg/cms.cont.html/pub/`, { recursive: true });
+  await Deno.mkdir(`${dir}data/cms.cont.html/pub/`, { recursive: true });
   await Deno.writeTextFile(files.css, "");
   const ctx = fakeCtx();
   await requestStorage.run(ctx as any, () => files.addAssets());
-  assertEquals([...ctx.res.html.styles], ["/app/qg/cms.cont.html/pub/7.css"]);
+  assertEquals([...ctx.res.html.styles], ["/app/d/cms.cont.html/pub/7.css"]);
   assertEquals([...ctx.res.html.scripts], []);
   await Deno.remove(dir, { recursive: true });
 });

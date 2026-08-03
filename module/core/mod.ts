@@ -5,7 +5,7 @@
 // siblings in ./lib/* directly, to avoid import cycles.
 
 // App + request context
-export { App } from "./lib/App.ts";
+export { App, appPathInstances } from "./lib/App.ts";
 export type { AppEvents } from "./lib/App.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";

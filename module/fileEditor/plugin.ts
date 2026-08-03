@@ -11,7 +11,7 @@ async function saveFile(ctx: Ctx, file: string, content: string): Promise<number
   if (!allowed && !(await ctx.user?.get('superuser'))) return 0;
 
   const backupName = `fileEditorBackup_${encodeURIComponent(file)}_${Date.now()}`;
-  const backupDir = ctx.app.appPATH + "cache/tmp/pri/";
+  const backupDir = ctx.app.modules.get(name)!.tmp;
   await nodeFs.mkdir(backupDir, { recursive: true }).catch(() => {});
   await nodeFs.copyFile(file, backupDir + backupName).catch(() => {});
   await nodeFs.writeFile(file, content);

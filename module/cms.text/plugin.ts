@@ -39,7 +39,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
     if (!cmsCtx(ctx).editmode) return;
     if (ctx.req.query.cms_noFrontend) return;
-    ctx.res.html.scripts.add(ctx.req.modulePath + "cms.text/pub/init.mjs");
+    ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.text/pub/init.mjs");
   }, { signal });
 }
 

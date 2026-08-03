@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "../core/mod.ts";
-import { CACHE_SUBDIR, DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
+import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
 import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 
 export const name = "uncdn";
@@ -91,7 +91,7 @@ const origins = (s: CspSources) => Object.keys(s).filter(k => /^https?:\/\//.tes
 const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...set].map(fn));
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  const cacheDir = app.appPATH + CACHE_SUBDIR;
+  const cacheDir = app.modules.get(name)!.cache;
   const allowed = new Set<string>(); // origins any page declared via CSP — fetchable by anyone
   uncdnInstances.set(app, { origins: allowed });
 

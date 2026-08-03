@@ -44,6 +44,15 @@ export interface AppEvents {
     [name: string]: any;
 }
 
+// Deliberately runtime-global, not per-app: it exists to spot instances sharing one appPATH,
+// which would have them write over each other in data/, cache/ and tmp/. Paths only, no App refs.
+const appPathUses = new Map<string, number>();
+
+/** How many App instances of this runtime resolved to that appPATH. More than one is a misconfiguration. */
+export function appPathInstances(appPATH: string): number {
+    return appPathUses.get(appPATH) ?? 0;
+}
+
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App extends Emitter<AppEvents> {
     appPATH: string;
@@ -74,6 +83,7 @@ export class App extends Emitter<AppEvents> {
         const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
 
         this.appPATH   = ensureSlash(appPATH);
+        appPathUses.set(this.appPATH, (appPathUses.get(this.appPATH) ?? 0) + 1);
         this.basePath  = ensureSlash(cfg.basePath || "/");
         this.https     = cfg.https;
         this.dev       = cfg.dev;
@@ -81,9 +91,9 @@ export class App extends Emitter<AppEvents> {
 
         this.db        = new Db(cfg.db || `sqlite:${this.appPATH}qino.sqlite`);
         this.settings  = createSettingItem(this.db).proxy;
-        this.dbFiles   = new DbFileManager(this, this.appPATH + "qg/file/");
+        this.dbFiles   = new DbFileManager(this, this.appPATH + "data/core/file/");
         this.dbTexts   = new DbTextManager(this);
-        this.fileTransformer = FileTransformer.create({ cacheDir: this.appPATH + "cache/pri/" });
+        this.fileTransformer = FileTransformer.create({ cacheDir: this.appPATH + "cache/core/file/" });
         this.sessions  = new SessionManager(this.db);
         this.modules   = new ModuleManager(this);
         this.stores    = new StoreManager(this);

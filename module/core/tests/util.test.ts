@@ -92,7 +92,7 @@ Deno.test("util: sqlSearch is neutral on empty input", () => {
   assertEquals(fakeRender(res.order, [])[0], "NULL");
 });
 
-Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () => {
+Deno.test("util: ctx.urlToLocalPath maps module and data public files", async () => {
   const ctx = await testContext({
     url: "http://h/app/",
     basePath: "/app/",
@@ -107,12 +107,12 @@ Deno.test("util: ctx.urlToLocalPath maps module and qg public files", async () =
   });
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/main.css"), "/sys/cms.foo/pub/main.css");
   assertEquals(ctx.urlToLocalPath("http://h/app/m/local.foo/pub/main.css"), "/app/m/local.foo/pub/main.css");
-  assertEquals(ctx.urlToLocalPath("http://h/app/qg/custom/pub/main.css"), "/app/qg/custom/pub/main.css");
+  assertEquals(ctx.urlToLocalPath("http://h/app/d/custom/pub/main.css"), "/app/data/custom/pub/main.css");
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../mod.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/app/m/cms.foo/pub/../../deps.ts"), null);
-  assertEquals(ctx.urlToLocalPath("http://h/app/qg/custom/pub/../mod.ts"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/d/custom/pub/../mod.ts"), null);
   assertEquals(ctx.urlToLocalPath("http://h/app/m/../pub/main.css"), null);
-  assertEquals(ctx.urlToLocalPath("http://h/app/qg/../pub/main.css"), null);
+  assertEquals(ctx.urlToLocalPath("http://h/app/d/../pub/main.css"), null);
   assertEquals(ctx.urlToLocalPath("http://h/xxxxm/local.foo/pub/main.css"), null);
   assertEquals(ctx.urlToLocalPath("http://h/other/main.css"), null);
   assertEquals(ctx.urlToLocalPath("file:///etc/passwd"), null);
@@ -128,7 +128,7 @@ Deno.test("util: app.assertAllowedPath accepts app/module roots and rejects sibl
       },
     },
   }) as App;
-  app.assertAllowedPath("/var/www/workplace/qinojs/demo/qg/file/a.txt");
+  app.assertAllowedPath("/var/www/workplace/qinojs/demo/data/core/file/a.txt");
   app.assertAllowedPath("/var/www/workplace/qinojs/qino/module/cms.foo/pub/a.css");
   assertThrows(
     () => app.assertAllowedPath("/var/www/workplace/qinojs/other/a.txt"),

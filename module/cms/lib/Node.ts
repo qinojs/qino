@@ -277,7 +277,7 @@ export class Node {
 
     settings: any = {};
 
-    get modUrl(): string { return getCtx().req.modulePath + this.vs.module + "/"; }
+    get modUrl(): string { return getCtx().req.moduleUrl + this.vs.module + "/"; }
 
     /* Tree traversal */
     children(filter?: any): Promise<Map<number, Node>> {

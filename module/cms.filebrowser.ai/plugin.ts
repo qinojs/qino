@@ -11,6 +11,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!cmsCtx(ctx).editmode) return;
     const csp = ctx.res.csp;
     csp["img-src"]["https://image.pollinations.ai"] = true;
-    ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser.ai/pub/init.mjs");
+    ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser.ai/pub/init.mjs");
   }, { signal });
 }

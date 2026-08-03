@@ -54,8 +54,8 @@ export class Req {
   get clientIp(): string { return this.#clientIp; }
   /** Mount prefix of this request, always with trailing slash (e.g. `/cms1/`). */
   get basePath(): string { return this.#basePath; }
-  /** Module prefix: `basePath` + `m/`. */
-  get modulePath(): string { return this.#basePath + "m/"; }
+  /** Where module files are served from: `basePath` + `m/`. Data files are below `Module.dataUrl`. */
+  get moduleUrl(): string { return this.#basePath + "m/"; }
   /** Decoded app-relative routing path, without base prefix and query.
    *  A URL path — not to be confused with `app.appPATH` (filesystem path). */
   get appPath(): string { return this.#appPath; }

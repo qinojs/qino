@@ -82,7 +82,7 @@ export class Ctx {
   }
 }
 
-/** Resolve a request URL to a servable local file (module/qg pub dirs); null if it is no static path. */
+/** Resolve a request URL to a servable local file (module/data pub dirs); null if it is no static path. */
 export function urlToLocalPath(url: string | URL, appURL: string, app: App): string | null {
   try {
     const u = typeof url === "string" ? new URL(url) : url;
@@ -94,7 +94,7 @@ export function urlToLocalPath(url: string | URL, appURL: string, app: App): str
   return null;
 }
 
-// module/qg segment must be a plain name, never "."/".." (would shift the served root)
+// module/data segment must be a plain name, never "."/".." (would shift the served root)
 const safeSeg = (s: string) => s !== "." && s !== ".." ? s : null;
 
 function appRequestPathToLocalPath(appRequestPath: string, app: App) {
@@ -103,8 +103,8 @@ function appRequestPathToLocalPath(appRequestPath: string, app: App) {
     const mod = app.modules.get(matchM[1]);
     return pubPath(mod?.dir ?? (app.appPATH + "m/" + matchM[1] + "/"), matchM[2]);
   }
-  const matchQg = appRequestPath.match(/^qg\/([^/]+)\/pub\/(.*)/);
-  return matchQg && safeSeg(matchQg[1]) ? pubPath(app.appPATH + "qg/" + matchQg[1] + "/", matchQg[2]) : null;
+  const matchD = appRequestPath.match(/^d\/([^/]+)\/pub\/(.*)/);
+  return matchD && safeSeg(matchD[1]) ? pubPath(app.appPATH + "data/" + matchD[1] + "/", matchD[2]) : null;
 }
 
 function pubPath(root: string, file: string) {

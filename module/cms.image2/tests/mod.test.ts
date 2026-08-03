@@ -6,9 +6,9 @@ import { requestStorage } from "../../core/mod.ts";
 Deno.test("cms.image2: cms_image2 renders escaped image component from cached data", async () => {
   const dir = await Deno.makeTempDir();
   try {
-    await Deno.mkdir(dir + "/cache/");
+    await Deno.mkdir(dir + "/cache/cms.image2/", { recursive: true });
     const md5 = "abc123";
-    const cacheFile = dir + `/cache/cms-image2-data-${md5}.45.55.320.180.42.30..json`;
+    const cacheFile = dir + `/cache/cms.image2/data-${md5}.45.55.320.180.42.30..json`;
     await Deno.writeTextFile(cacheFile, JSON.stringify({
       w: 320,
       h: 180,
@@ -17,7 +17,7 @@ Deno.test("cms.image2: cms_image2 renders escaped image component from cached da
       preview: "data:image/png;base64,preview",
     }));
 
-    const ctx = await testContext({ app: { appPATH: dir + "/" } });
+    const ctx = await testContext({ app: { modules: { get: () => ({ cache: dir + "/cache/cms.image2/" }) } } });
     const dbFile = {
       path: dir + "/image.jpg",
       get: (key: string) => ({
@@ -52,9 +52,9 @@ Deno.test("cms.image2: cms_image2 renders escaped image component from cached da
 Deno.test("cms.image2: cms_image2 derives alt text from file name", async () => {
   const dir = await Deno.makeTempDir();
   try {
-    await Deno.mkdir(dir + "/cache/");
+    await Deno.mkdir(dir + "/cache/cms.image2/", { recursive: true });
     const md5 = "def456";
-    const cacheFile = dir + `/cache/cms-image2-data-${md5}.50.50.100.50.42.30.contain.json`;
+    const cacheFile = dir + `/cache/cms.image2/data-${md5}.50.50.100.50.42.30.contain.json`;
     await Deno.writeTextFile(cacheFile, JSON.stringify({
       w: 100,
       h: 50,
@@ -63,7 +63,7 @@ Deno.test("cms.image2: cms_image2 derives alt text from file name", async () => 
       preview: "",
     }));
 
-    const ctx = await testContext({ app: { appPATH: dir + "/" } });
+    const ctx = await testContext({ app: { modules: { get: () => ({ cache: dir + "/cache/cms.image2/" }) } } });
     const dbFile = {
       path: dir + "/image.jpg",
       get: (key: string) => ({

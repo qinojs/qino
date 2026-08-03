@@ -11,9 +11,9 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   resHtml.styles.add(u2Root + "css/base/base.css");
   resHtml.scripts.add(u2Root + "u2/auto.js");
 
-  resHtml.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
-  resHtml.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
-  resHtml.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
+  resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
+  resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
+  resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   const title = await (await node.title()).string();
 

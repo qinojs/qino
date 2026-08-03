@@ -8,13 +8,13 @@ const write = (path: string, content: string) => Deno.writeTextFile(path, conten
 export function codeFiles(node: Node) {
   const mod = node.module!, id = node.id, sel = `[qcms-id="${id}"]`;
   return {
-    src: `${mod.appDir}${id}.html`,
-    css: `${mod.appDir}pub/${id}.css`,
-    js: `${mod.appDir}pub/${id}.js`,
+    src: `${mod.data}${id}.html`,
+    css: `${mod.data}pub/${id}.css`,
+    js: `${mod.data}pub/${id}.js`,
 
     /** Create the files with their initial content; existing files are kept. */
     async create(src: string) {
-      await Deno.mkdir(`${mod.appDir}pub/`, { recursive: true });
+      await Deno.mkdir(`${mod.data}pub/`, { recursive: true });
       await write(this.src, src);
       await write(this.css, initialCss(sel));
       await write(this.js, initialJs(sel));
@@ -23,8 +23,8 @@ export function codeFiles(node: Node) {
     /** Add the css and js that exist to the current response. */
     async addAssets() {
       const html = getCtx().res.html;
-      if (await isFile(this.css)) html.styles.add(`${mod.appUrl}pub/${id}.css`);
-      if (await isFile(this.js)) html.scripts.add(`${mod.appUrl}pub/${id}.js`);
+      if (await isFile(this.css)) html.styles.add(`${mod.dataUrl}pub/${id}.css`);
+      if (await isFile(this.js)) html.scripts.add(`${mod.dataUrl}pub/${id}.js`);
     },
   };
 }

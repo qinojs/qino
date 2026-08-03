@@ -27,7 +27,7 @@ function render(node: Node): HtmlString {
 
 function renderState(node: Node): HtmlString {
   const ctx = getCtx();
-  ctx.res.html.scripts.add(ctx.req.modulePath + "cms.backend.superuser.state/pub/state.mjs");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.backend.superuser.state/pub/state.mjs");
   ctx.res.html.importMap.set(dumpJs, dumpJs); // ugly
   ctx.res.csp["script-src"]["https://jsr.io/@nuxodin/"] = true;
   return html`

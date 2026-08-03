@@ -11,7 +11,7 @@ export default async function codemirrorView(file: string): Promise<string> {
   html.styles.add(u2Root + "css/norm/norm.css");
   html.styles.add(u2Root + "css/base/base.css");
 
-  html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
+  html.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
 
   const url = "https://cdn.jsdelivr.net/npm/codemirror@5.65.5";
   const min = "min.";
@@ -44,8 +44,8 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   html.legacyScripts.add(`${url}/keymap/sublime.${min}js`);
 
-  html.scripts.add(ctx.req.modulePath + "fileEditor/pub/main.mjs");
-  html.styles.add(ctx.req.modulePath + "fileEditor/pub/main.css");
+  html.scripts.add(ctx.req.moduleUrl + "fileEditor/pub/main.mjs");
+  html.styles.add(ctx.req.moduleUrl + "fileEditor/pub/main.css");
 
   html.title = nodePath.basename(file) + " | Editor";
 

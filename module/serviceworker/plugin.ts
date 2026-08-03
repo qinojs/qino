@@ -17,7 +17,7 @@ const parts = (app: App) =>
 async function serve(ctx: Ctx): Promise<void> {
   const modules = parts(ctx.app);
   if (!modules.length) return; // no part, no worker
-  const script = modules.map((m) => `import ${JSON.stringify(`${ctx.req.modulePath + m.name}/pub/sw.js`)};\n`).join("");
+  const script = modules.map((m) => `import ${JSON.stringify(`${ctx.req.moduleUrl + m.name}/pub/sw.js`)};\n`).join("");
   // "no-cache" stores the worker but revalidates it; the ETag then answers most checks with a 304
   const headers = {
     "Content-Type": "text/javascript; charset=utf-8",
@@ -32,5 +32,5 @@ async function serve(ctx: Ctx): Promise<void> {
 function register(ctx: Ctx): void {
   const app = ctx.app;
   if (!Object.values(app.modules.all()).some((mod) => mod.plugin.serviceWorker && app.modules.linked(mod.name))) return;
-  ctx.res.html.scripts.add(ctx.req.modulePath + "serviceworker/pub/register.js");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "serviceworker/pub/register.js");
 }

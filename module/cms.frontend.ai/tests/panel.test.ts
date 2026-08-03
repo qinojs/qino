@@ -17,7 +17,7 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
 
   const scripts: string[] = [];
   const ctx = {
-    req: { query: {}, modulePath: "/m/" },
+    req: { query: {}, moduleUrl: "/m/" },
     state: { cms: { editmode: true } },
     res: { html: { scripts: { add: (u: string) => scripts.push(u) } } },
   };

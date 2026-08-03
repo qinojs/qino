@@ -189,13 +189,18 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   ).join("");
 
   // Cache size
-  const cacheDir = app.appPATH + "cache/";
   let cacheSize = 0, cacheCount = 0;
-  try {
-    for await (const entry of Deno.readDir(cacheDir)) {
-      if (entry.isFile) { const s = await Deno.stat(cacheDir + entry.name).catch(() => null); cacheSize += s?.size ?? 0; cacheCount++; }
-    }
-  } catch { /* cache dir may not exist */ }
+  async function measureCache(dir: string) {
+    try {
+      for await (const entry of Deno.readDir(dir)) {
+        if (entry.isDirectory) { await measureCache(dir + entry.name + "/"); continue; }
+        const s = await Deno.stat(dir + entry.name).catch(() => null);
+        cacheSize += s?.size ?? 0;
+        cacheCount++;
+      }
+    } catch { /* cache dir may not exist */ }
+  }
+  await measureCache(app.appPATH + "cache/");
 
   return `<div class=-body>${statusHtml}</div>
 <div style="overflow:auto; padding:0">

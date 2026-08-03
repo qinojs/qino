@@ -5,10 +5,10 @@ import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { Output } from "../lib/util.ts";
 import { parseCookies } from "../lib/ctx/Req.ts";
 
-Deno.test("req paths: basePath gets a trailing slash, modulePath derives from it", async () => {
+Deno.test("req paths: basePath gets a trailing slash, moduleUrl derives from it", async () => {
   const ctx = await testContext({ url: "http://qino.test/cms1/de/page", basePath: "/cms1" });
   assertEquals(ctx.req.basePath, "/cms1/");
-  assertEquals(ctx.req.modulePath, "/cms1/m/");
+  assertEquals(ctx.req.moduleUrl, "/cms1/m/");
 });
 
 Deno.test("req paths: appPath is decoded, without base prefix and query", async () => {

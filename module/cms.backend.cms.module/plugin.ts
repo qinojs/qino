@@ -72,7 +72,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     const dir = app.modules.get(modName)?.dir;
     const icon = dir && await Deno.stat(dir + "pub/module.svg").then(() => true, () => false);
     trs.push(html`<tr data-type="${type}" u2-href>
-      <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.modulePath + modName}/pub/module.svg#main"/></svg>` : ""}
+      <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.moduleUrl + modName}/pub/module.svg#main"/></svg>` : ""}
       <td><a href="${u.search}">${modName}</a>
       <td>${type}
       <td style="text-align:right" data-value="${row.used}">${Number(row.used) || ""}

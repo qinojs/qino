@@ -4,15 +4,15 @@ import { requestStorage } from "../../core/mod.ts";
 import { cms, name } from "../plugin.ts";
 
 const fakeCtx = () => ({ req: { basePath: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
-const fakeModule = (dir: string) => ({ name, appDir: `${dir}qg/${name}/`, appUrl: `/app/qg/${name}/` });
+const fakeModule = (dir: string) => ({ name, data: `${dir}data/${name}/`, dataUrl: `/app/d/${name}/` });
 const fakeNode = (dir: string, edit: boolean) => ({ id: 7, edit, app: { appPATH: dir, dev: false }, module: fakeModule(dir) });
 
 const render = (node: any, ctx: any) => requestStorage.run(ctx, () => cms.node.render(node, { ctx, vars: {} }));
 
 async function withSource(source: string): Promise<string> {
   const dir = await Deno.makeTempDir() + "/";
-  await Deno.mkdir(`${dir}qg/${name}/pub/`, { recursive: true });
-  await Deno.writeTextFile(`${dir}qg/${name}/7.ts`, source);
+  await Deno.mkdir(`${dir}data/${name}/pub/`, { recursive: true });
+  await Deno.writeTextFile(`${dir}data/${name}/7.ts`, source);
   return dir;
 }
 
@@ -44,6 +44,6 @@ Deno.test("cms.cont.ts: the first render in edit mode creates a working file", a
   const dir = await Deno.makeTempDir() + "/";
   const ctx = fakeCtx();
   assertEquals((await render(fakeNode(dir, true), ctx)).includes("Node 7"), true);
-  assertEquals([...ctx.res.html.styles], [`/app/qg/${name}/pub/7.css`]);
+  assertEquals([...ctx.res.html.styles], [`/app/d/${name}/pub/7.css`]);
   await Deno.remove(dir, { recursive: true });
 });

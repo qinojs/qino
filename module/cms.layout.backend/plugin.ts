@@ -10,8 +10,8 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
   const html = ctx.res.html;
   
   html.class.add("qgCMS");
-  html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
-  html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
+  html.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
+  html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   ctx.res.csp["style-src"][u2Root] = true;
   ctx.res.csp["script-src"][u2Root] = true;
@@ -51,7 +51,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
   // html.scripts.add(u2Root + "el/menubutton/menubutton.js");
   html.scripts.add(u2Root + "u2/auto.js");
 
-  html.styles.add(ctx.req.modulePath + "cms/pub/css/ui.css");
+  html.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
 
   const page = await node.page();
 
@@ -72,7 +72,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<string> {
       const subs = level < 3 ? [...(await child.children({ access: 1 })).values()] : [];
       const sub = active && subs.length ? await nav(subs, level + 1) : "";
       const mod = level === 1 ? String((await child.conts())[0]?.vs?.module ?? "") : "";
-      const icon = mod ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.modulePath}${mod}/pub/module.svg#main"/></svg> ` : "";
+      const icon = mod ? `<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.moduleUrl}${mod}/pub/module.svg#main"/></svg> ` : "";
       const item = `<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${hee(await child.url())}">${icon}${hee(await (await child.title()).string())}</a>${sub}`;
       out += level === 1 ? item : `<ul>${item}</ul>`;
     }

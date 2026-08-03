@@ -7,7 +7,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const db = app.db;
 
   const base = (ctx.req.header("host") ?? "") + ctx.req.basePath;
-  const deleteSrc = ctx.req.modulePath + "cms.frontend.2/pub/img/delete.svg";
+  const deleteSrc = ctx.req.moduleUrl + "cms.frontend.2/pub/img/delete.svg";
 
   const urlRows = await db.query`SELECT * FROM page_url WHERE page_id = ${node}`;
   const urlTrs: Promise<HtmlString>[] = [];

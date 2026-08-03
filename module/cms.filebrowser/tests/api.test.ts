@@ -30,7 +30,7 @@ Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () 
   const added: string[] = [];
   await handlers["cms:page-ready"][0]({
     ctx: {
-      req: { query: {}, modulePath: "/m/" },
+      req: { query: {}, moduleUrl: "/m/" },
       state: { cms: { editmode: true } },
       res: { html: { scripts: { add: (url: string) => added.push(url) } } },
     },

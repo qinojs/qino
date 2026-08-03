@@ -13,6 +13,6 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend) return;
     if (!cmsCtx(ctx).editmode) return;
-    ctx.res.html.scripts.add(ctx.req.modulePath + "cms.frontend.ai/pub/init.mjs");
+    ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.ai/pub/init.mjs");
   }, { signal });
 }

@@ -4,7 +4,7 @@ A content node rendered by its own TS file — [cms.cont.html](../cms.cont.html/
 for cases where a template is not enough.
 
 ```ts
-// qg/cms.cont.ts/12.ts
+// data/cms.cont.ts/12.ts
 import type { NodeRender } from "jsr:@qino/qino/cms.cont.ts";
 
 const render: NodeRender = async (node, { html, ctx, vars }) =>

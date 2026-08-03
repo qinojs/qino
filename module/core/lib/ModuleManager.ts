@@ -62,10 +62,14 @@ export class Module {
   get url(): string { return this.#url; }
   get path(): string | undefined { return this.#path; }
   get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
-  /** Where the app keeps its own files for this module; what lies in pub/ is served. */
-  get appDir(): string { return `${this.#app.appPATH}qg/${this.name}/`; }
-  /** The same dir as a URL. */
-  get appUrl(): string { return `${getCtx().req.basePath}qg/${this.name}/`; }
+  /** App files of this module — backed up, never deleted. What lies in pub/ is served. */
+  get data(): string { return `${this.#app.appPATH}data/${this.name}/`; }
+  /** Derived files, reproducible from data/ alone — droppable at any time, no backup. */
+  get cache(): string { return `${this.#app.appPATH}cache/${this.name}/`; }
+  /** Scratch space for a single operation — droppable when nothing runs, no backup. */
+  get tmp(): string { return `${this.#app.appPATH}tmp/${this.name}/`; }
+  /** data/ as a URL; only pub/ below it is reachable. */
+  get dataUrl(): string { return `${getCtx().req.basePath}d/${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
   abort(): void { this.#abort.abort(); }

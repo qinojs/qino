@@ -1,19 +1,20 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee, html, magick, type HtmlString, getCtx, type DbFile } from "../core/mod.ts";
+import { name } from "./plugin.ts";
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();
-  ctx.res.html.legacyScripts.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.js");
-  ctx.res.html.styles.add(ctx.req.modulePath + "cms.image2/pub/cms-image2.css");
+  ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "cms.image2/pub/cms-image2.js");
+  ctx.res.html.styles.add(ctx.req.moduleUrl + "cms.image2/pub/cms-image2.css");
   if (options["if"] && !await dbFile.exists() && !options["editable"]) return html.raw("");
   options["quality"] ||= "85";
   delete options["if"];
-  return html.raw(await imageHtml(dbFile, options, ctx.app.appPATH));
+  return html.raw(await imageHtml(dbFile, options, ctx.app.modules.get(name)!.cache));
 }
 
-async function imageHtml(dbFile: DbFile, options: Record<string, any>, appPATH: string): Promise<string> {
-  const data = await getData(dbFile, options, appPATH);
+async function imageHtml(dbFile: DbFile, options: Record<string, any>, cacheDir: string): Promise<string> {
+  const data = await getData(dbFile, options, cacheDir);
   const w = data.w || 1;
   const h = data.h || 1;
   const { vpos, hpos } = data;
@@ -52,7 +53,7 @@ function fileUrl(dbFile: DbFile, data: any, options: Record<string, any>): Promi
   return dbFile.url(params);
 }
 
-async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = getCtx().app.appPATH): Promise<any> {
+async function getData(dbFile: DbFile, options: Record<string, any>, cacheDir: string): Promise<any> {
   let w = Number(options.width) || 0;
   let h = Number(options.height) || 0;
   const hpos = options.hpos ?? await dbFile.get("hpos") ?? 50;
@@ -61,7 +62,7 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
   const MAX_HW = 30;
 
   const md5 = await dbFile.get("md5");
-  const cacheFile = appPATH + `cache/cms-image2-data-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${MAX_HW}.${options.fit ?? ""}.json`;
+  const cacheFile = cacheDir + `data-${md5}.${vpos}.${hpos}.${w}.${h}.${FACTOR}.${MAX_HW}.${options.fit ?? ""}.json`;
 
   if (md5) {
     try { return JSON.parse(await Deno.readTextFile(cacheFile)); } catch { /* no cache */ }
@@ -99,6 +100,7 @@ async function getData(dbFile: DbFile, options: Record<string, any>, appPATH = g
         const { path: tmpPath, mime } = await dbFile.transform({ w: smallW, h: smallH, q: 5, fmt: "png", hpos, vpos });
         const buf = await Deno.readFile(tmpPath);
         const prev = "data:" + mime + ";base64," + btoa(String.fromCharCode(...buf));
+        await Deno.mkdir(cacheDir, { recursive: true });
         await Deno.writeTextFile(cacheFile, JSON.stringify({ w, h, vpos, hpos, preview: prev }));
       } catch { /* skip */ }
     }, 0);

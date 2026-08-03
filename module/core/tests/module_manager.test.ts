@@ -63,6 +63,10 @@ Deno.test({
       "Use app.modules.add",
     );
 
+    assertEquals(local.data,  appPATH + "data/local.foo/");
+    assertEquals(local.cache, appPATH + "cache/local.foo/");
+    assertEquals(local.tmp,   appPATH + "tmp/local.foo/");
+
     const privateModule = await modules.import(toFileUrl(appPATH + "private/private.foo/plugin.ts").href);
     assertEquals(privateModule.name, "private.foo");
     assertEquals(privateModule.plugin.value, "private");

@@ -71,7 +71,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     const inBackend = node.vs?.module === "cms.layout.backend";
 
     const html = ctx.res.html;
-    const sysURL = ctx.req.modulePath;
+    const sysURL = ctx.req.moduleUrl;
     const qino = html.jsData.qino ??= {};
 
     if (access > 1 || inBackend) {

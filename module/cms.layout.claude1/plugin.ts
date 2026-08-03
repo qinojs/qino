@@ -38,8 +38,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   for (const f of U2_CSS) ctx.res.html.styles.add(U2_ROOT + f);
   ctx.res.html.scripts.add(U2_ROOT + "u2/auto.js");
-  ctx.res.html.legacyScripts.add(ctx.req.modulePath + "core/pub/js/c1.js");
-  ctx.res.html.scripts.add(ctx.req.modulePath + "cms/pub/js/cms.mjs");
+  ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
+  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   const layoutPage = await node.cms.layoutPage(String(node.vs.module));
   const settings = node.app.settings[name];

@@ -6,7 +6,7 @@ import { init, rewriteHtml } from "../plugin.ts";
 async function routeFor(url: string, source: string) {
   let route: (event: { ctx: any }) => Promise<void> = () => Promise.resolve();
   const ctx = await testContext({ url, app: {
-    appPATH: "/tmp/uncdn-origin-test/",
+    modules: { get: () => ({ cache: "/tmp/uncdn-origin-test/cache/uncdn/" }) },
     settings: { uncdn: { fetchPolicy: "none" } },
     on: (name: string, handler: typeof route) => { if (name === "route") route = handler; },
   } });

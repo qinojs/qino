@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, unixTime, pwVerify, type App } from "../core/mod.ts";
+import { hee, getCtx, sql, unixTime, pwVerify, appPathInstances, type App } from "../core/mod.ts";
 import type { HealthTypes, Solution } from "./lib/healthRegistry.ts";
 
 export async function healthChecks(app: App): Promise<HealthTypes> {
@@ -84,6 +84,13 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
     return { info: "set https: true in the app config" };
   };
 
+  // Nothing separates the instances below appPATH, so they overwrite each other's module files.
+  warning["appPATH shared with another instance"] = () => {
+    const n = appPathInstances(app.appPATH);
+    if (n < 2) return;
+    return { info: `${n} apps of this runtime use ${hee(app.appPATH)} — give each its own appPATH, or they share data/, cache/ and tmp/` };
+  };
+
   // ── db-time vs os-time ───────────────────────────────────────────────────
   notice["db-time unlike os-time"] = async () => {
     const dbTime = Number(await db.one`${sql.raw(dbEpochSql(db.dialect))}`);
@@ -150,8 +157,8 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
     return {
       info: "100+ files",
       solutions: {
-        all:          { solve: async () => kb(await deleteCacheFiles(cacheDir,           twoDays)) },
-        "temp files": { solve: async () => kb(await deleteCacheFiles(cacheDir + "tmp/",  twoDays)) },
+        all:          { solve: async () => kb(await deleteCacheFiles(cacheDir,             twoDays)) },
+        "temp files": { solve: async () => kb(await deleteCacheFiles(app.appPATH + "tmp/", twoDays)) },
       },
     };
   };

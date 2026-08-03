@@ -2,7 +2,7 @@
 import * as nodePath from "node:path";
 import { hee, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import { CACHE_SUBDIR, cacheByteLimit, fetchPolicy, uncdn } from "../uncdn/mod.ts";
+import { cacheByteLimit, fetchPolicy, uncdn } from "../uncdn/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.uncdn";
@@ -59,7 +59,7 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
-  const cacheDir = node.app.appPATH + CACHE_SUBDIR;
+  const cacheDir = node.app.modules.get("uncdn")!.cache;
 
   if (vars.delete) {
     const target = nodePath.resolve(cacheDir, String(vars.delete).replace(/^\/+/, ""));

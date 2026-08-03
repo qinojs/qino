@@ -34,7 +34,7 @@ function isRoot(): boolean {
 // --- Cache ---
 
 function cacheDir(app: App): string {
-  return app.appPATH + "cache/pri/";
+  return app.fileTransformer.cacheDir;
 }
 
 async function cacheStats(dir: string): Promise<{ count: number; size: number }> {

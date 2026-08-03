@@ -207,7 +207,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     const modDir = modObj.path?.replace(/\/?[^/]+$/, "") ?? null;
     const hasSvg = modDir ? await Deno.stat(modDir + "/pub/module.svg").then(() => true, () => false) : false;
     const iconHtml = hasSvg
-      ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.modulePath}${name}/pub/module.svg#main"/></svg>`
+      ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.moduleUrl}${name}/pub/module.svg#main"/></svg>`
       : "";
 
     const disabled = !app.modules.linked(name);

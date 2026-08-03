@@ -181,6 +181,6 @@ export function initDraftmode(app: App, signal: AbortSignal) {
         if (ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
-        ctx.res.html.scripts.add(ctx.req.modulePath + "cms.versions/pub/draftmode.mjs");
+        ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/draftmode.mjs");
     }, { signal });
 }

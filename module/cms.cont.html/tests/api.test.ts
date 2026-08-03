@@ -11,8 +11,8 @@ const fakeNode = (dir: string, module = name, access = 2) => ({
   access: () => Promise.resolve(access),
   html: () => Promise.resolve("<div>rendered</div>"),
   module: {
-    appDir: `${dir}qg/${name}/`,
-    appUrl: `/qg/${name}/`,
+    data: `${dir}data/${name}/`,
+    dataUrl: `/d/${name}/`,
   },
 });
 

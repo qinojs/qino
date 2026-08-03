@@ -16,7 +16,7 @@ Deno.test("cms.frontend.2: stores request URI without base path", async () => {
     req: {
       appPath: "backend/page",
       basePath: "/cms1/",
-      modulePath: "/cms1/m/",
+      moduleUrl: "/cms1/m/",
       url: new URL("https://example.test/cms1/backend/page?tab=settings"),
       query: {},
     },
@@ -47,7 +47,7 @@ Deno.test("cms.frontend.2: exposes stored app path unchanged", async () => {
     req: {
       appPath: "backend/page",
       basePath: "/cms1/",
-      modulePath: "/cms1/m/",
+      moduleUrl: "/cms1/m/",
       url: new URL("https://example.test/cms1/backend/page"),
       query: {},
     },

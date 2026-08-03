@@ -10,7 +10,6 @@ export function uncdn(app: App): { origins: Set<string> } {
   return state;
 }
 
-export const CACHE_SUBDIR = "cache/uncdn/";
 const DEFAULT_FETCH_POLICY = "superuser";
 export const DEFAULT_MAX_CACHE_BYTES = 50 * 1024 * 1024;
 

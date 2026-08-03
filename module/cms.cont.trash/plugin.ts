@@ -54,7 +54,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   <div class="-list u2-grid">${listHtml}</div>
   <dialog class=-preview><iframe></iframe></dialog>
 </div>
-<script type=module src="${hee(ctx.req.modulePath)}cms.cont.trash/pub/main.js"></script>`;
+<script type=module src="${hee(ctx.req.moduleUrl)}cms.cont.trash/pub/main.js"></script>`;
 }
 
 export const cms = {

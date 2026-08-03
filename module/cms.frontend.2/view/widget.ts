@@ -14,7 +14,7 @@ export const moduleAccess = (node: Node, module: string): Promise<number> =>
 
 // `<use>` referencing a module's icon SVG, falling back to the default module icon when absent.
 export async function moduleIcon(module: string | number | null, dir: string | null | undefined): Promise<HtmlString> {
-  const base = getCtx().req.modulePath;
+  const base = getCtx().req.moduleUrl;
   const url = dir && await Deno.stat(dir + "pub/module.svg").then(() => true, () => false)
     ? base + module + "/pub/module.svg"
     : base + "cms.frontend.2/pub/img/module_default.svg";

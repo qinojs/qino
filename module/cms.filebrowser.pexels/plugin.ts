@@ -22,7 +22,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     if (!cmsCtx(ctx).editmode) return;
     if (!await app.settings["cms.filebrowser.pexels"].key) return; // no key, no Pexels UI
     ctx.res.csp["img-src"]["https://*.pexels.com"] = true;
-    ctx.res.html.scripts.add(ctx.req.modulePath + "cms.filebrowser.pexels/pub/init.mjs");
+    ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser.pexels/pub/init.mjs");
   }, { signal });
 }
 
