@@ -1,6 +1,6 @@
 import { assertEquals } from "./deps.ts";
 import { fromFileUrl, toFileUrl } from "../deps.ts";
-import { itemRoot } from "../lib/util.ts";
+import { itemRoot, u2Root } from "../lib/util.ts";
 
 const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
@@ -110,7 +110,23 @@ Deno.test("module stores list every plugin directory", async () => {
 Deno.test("browser itemRoot matches the pinned item.js version", async () => {
   const config = JSON.parse(await Deno.readTextFile(qinoDir + "deno.json"));
   const pinned = config.imports["@qino/item/"].match(/@(?:\^|~)?([\d.]+)\//)?.[1];
-  assertEquals(itemRoot, `https://jsr.io/@nuxodin/item/${pinned}/`);
+  assertEquals(itemRoot, `https://cdn.jsdelivr.net/gh/nuxodin/item.js@v${pinned}/`);
+});
+
+// A browser must be able to load them as modules: right MIME type, and CORS for a cross-origin
+// import. That is exactly what jsr.io does not do, and why these are jsDelivr URLs.
+Deno.test({
+  name: "the browser CDN roots are loadable cross-origin",
+  ignore: !Deno.env.get("NET_TESTS"),
+  fn: async () => {
+    for (const url of [itemRoot + "item.js", u2Root + "js/dialog/dialog.js"]) {
+      const res = await fetch(url);
+      assertEquals(res.ok, true, url);
+      assertEquals(res.headers.get("access-control-allow-origin"), "*", url);
+      assertEquals(res.headers.get("content-type")?.startsWith("application/javascript"), true, url);
+      await res.body?.cancel();
+    }
+  },
 });
 
 Deno.test("test-store modules only consume public package APIs", async () => {

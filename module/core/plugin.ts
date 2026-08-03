@@ -94,7 +94,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("html-ready", ({ ctx }) => {
         ctx.res.html.importMap.set("@qino/item/", itemRoot);
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
-        // core's own qino.js imports item.js; declare so uncdn proxies it (jsr.io serves raw files as text/html)
+        // core's own qino.js imports item.js — allow the origin, and let uncdn proxy it when installed
         ctx.res.csp["script-src"][itemRoot] = true;
     }, { signal });
 

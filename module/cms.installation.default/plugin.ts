@@ -5,8 +5,17 @@ export const name = "cms.installation.default";
 export const description = "Installs a ready-to-use default CMS site and administrator accounts.";
 export const needs = ["cms"]; // the code below; everything else is a recommendation, see `recommended`
 
-// Installed once, in this order — from here on the module table is the truth: each one can be
-// uninstalled again, and more can be installed from the same store.
+export const settingsSchema = {
+  properties: {
+    seeded: {
+      type: "string",
+      description: "Recommended modules already offered, comma separated. Remove a name to install it again.",
+    },
+  },
+};
+
+// Offered in this order — from here on the module table is the truth: each one can be uninstalled
+// again, and more can be installed from the same store.
 export const recommended = [
   "cms.frontend.2",
   "cms.text",
@@ -17,6 +26,7 @@ export const recommended = [
   "cms.cont.nav3",
   "cms.cont.table2",
   "cms.cont.login4",
+  "cms.cont.search1",
   "cms.cont.trash",
   "cms.cont.not_found1",
   "cms.layout.custom.9",
@@ -35,14 +45,27 @@ export const recommended = [
   "cms.backend.superuser.error_report",
 ];
 
+// Once per name, not once per app — install() would leave an older installation without the set,
+// and its backend, which is where one would install the modules by hand.
+export async function init(app: App): Promise<void> {
+  const setting = app.settings[name].seeded;
+  const seeded = String(await setting ?? "").split(",").filter(Boolean);
+  const todo = recommended.filter((mod) => !seeded.includes(mod));
+  if (!todo.length) return;
+
+  const store = await app.stores.install(new URL("../store.json", import.meta.url));
+  for (const mod of todo) {
+    const done = await app.modules.install(store.moduleUrl(mod), mod)
+      .catch((e) => void console.error(`[qino] recommended module "${mod}" was skipped:`, e.message ?? e));
+    if (done) seeded.push(mod);
+  }
+  await setting(seeded.join(","));
+}
+
 // Atomic: a half-installed site (pages without their trash/login/not-found targets) is unrecoverable
 // on the next boot, because every step guards itself with "does this id already exist?".
-export async function install({ app }: { app: App }): Promise<void> {
-  const store = await app.stores.install(new URL("../store.json", import.meta.url));
-  for (const mod of recommended)
-    await app.modules.install(store.moduleUrl(mod), mod)
-      .catch((e) => console.error(`[qino] recommended module "${mod}" was skipped:`, e.message ?? e));
-  await app.db.transaction(() => installTx(app));
+export function install({ app }: { app: App }): Promise<void> {
+  return app.db.transaction(() => installTx(app));
 }
 
 async function installTx(app: App): Promise<void> {

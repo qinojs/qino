@@ -1,0 +1,4 @@
+[qcms-mod="backend.superuser.stores"] {
+  /* uninstall and reset delete what a module keeps — they look like it */
+  & .-delete { background: var(--red); }
+}

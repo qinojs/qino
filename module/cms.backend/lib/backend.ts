@@ -69,6 +69,16 @@ export async function install(app: App, module: string, titles?: Record<string, 
   return p;
 }
 
+/** Remove the backend page install() created — the counterpart every cms.backend.* module needs.
+ *  A page that still carries sub-pages stays: those belong to other modules that are installed. */
+export async function uninstall(app: App, module: string): Promise<void> {
+  const cm = cms(app);
+  const page = await (await cm.nodeByModule(module))?.page();
+  if (!page || (await page.children()).size) return;
+  const parent = await page.parent();
+  await parent?.removeChild(page);
+}
+
 const UA_TESTS: [string, RegExp][] = [
   ["Edge", /Edg(?:e|A|iOS)?\/([\d.]+)/],
   ["Opera", /(?:OPR|Opera)\/([\d.]+)/],

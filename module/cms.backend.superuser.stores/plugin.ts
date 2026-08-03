@@ -15,21 +15,116 @@ export async function install({ app }: { app: App }): Promise<void> {
 const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.appPATH)).href;
 
 // core is the root of the needs graph, and this module renders the page you are looking at.
-const locked = new Set(["core", name]);
+const LOCKED = new Set(["core", name]);
 
-// --- actions --------------------------------------------------------------
+// What is worth asking about, and what deletes what a module keeps.
+const CONFIRM = new Set(["repair", "reset", "uninstall"]);
+const DESTRUCTIVE = new Set(["reset", "uninstall"]);
 
-async function act(app: App, vars: Record<string, unknown>): Promise<string | undefined> {
-  const store = String(vars.store ?? "");
+// Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
+const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared(mod);
+
+/** The one thing a row is about: everything it offers follows from this. */
+function state(app: App, mod: string): "active" | "inactive" | "available" | "broken" {
+  if (app.modules.failures()[mod]) return "broken";
+  if (!app.modules.get(mod)) return "available";
+  return app.modules.linked(mod) ? "active" : "inactive";
+}
+
+/** Short store name: the host of a remote catalog, the folder of a local one. */
+function storeLabel(url: string): string {
+  const u = new URL(url);
+  return u.host || decodeURIComponent(u.pathname).split("/").filter(Boolean).at(-2) || url;
+}
+
+/** Read every catalog in parallel; an unreachable store keeps its error instead of names. */
+function catalogs(app: App) {
+  return Promise.all(app.stores.all().map((store) =>
+    store.names().then(
+      (names) => ({ store, names, error: "" }),
+      (e) => ({ store, names: [] as string[], error: String(e?.message ?? e) }),
+    )
+  ));
+}
+
+/** Every module the app knows of → the store it comes from ("" = none), sorted by name. */
+function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): [string, string][] {
+  const from = new Map<string, string>();
+  for (const { store, names } of cats) {
+    // The store a module is installed from wins over the first one that merely lists it.
+    for (const mod of names) if (!from.has(mod) || app.modules.get(mod)?.url === store.moduleUrl(mod)) from.set(mod, store.url);
+  }
+  for (const mod of [...Object.keys(app.modules.all()), ...Object.keys(app.modules.failures())]) if (!from.has(mod)) from.set(mod, "");
+  return [...from].sort(([a], [b]) => a.localeCompare(b));
+}
+
+// Keyed by action and by state, so a row picks its texts by what it is.
+async function labels(app: App) {
+  const t = app.t;
+  const [install, uninstall, link, unlink, repair, reset, addStore, active, inactive, available, broken] = await Promise.all([
+    t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`Repair`, t`Reset`, t`Add store`,
+    t`active`, t`inactive`, t`available`, t`not importable`,
+  ]);
+  return { install, uninstall, link, unlink, repair, reset, addStore, active, inactive, available, broken };
+}
+type Labels = Awaited<ReturnType<typeof labels>>;
+type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
+
+// --- rows -----------------------------------------------------------------
+// The row carries mod, store and state: the client reads them for its filter and its API calls.
+
+function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlString {
+  const st = state(app, mod);
+  const why = app.modules.failures()[mod];
+  const plugin = app.modules.get(mod)?.plugin;
+  const btn = (act: ModAct) =>
+    html`<button data-act=${act}${DESTRUCTIVE.has(act) ? html` class=-delete` : ""}${CONFIRM.has(act) ? html` u2-confirm` : ""}>${l[act]}</button>`;
+  // Seeding again works for anything linked, declared modules included — that is how an older
+  // installation gets the default set it was never installed with.
+  const acts = st === "available"
+    ? [btn("install")]
+    : st === "broken"
+    ? [btn("uninstall")]
+    : [
+      ...(st === "active" ? [btn("repair"), ...(plugin?.uninstall ? [btn("reset")] : [])] : []),
+      ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
+    ];
+  return html`<tr data-mod="${mod}" data-store="${storeUrl}" data-state=${st}>
+    <td title="${why ?? plugin?.description}">${mod}
+    <td><small>${storeUrl ? storeLabel(storeUrl) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
+    <td>${why ? html`<strong>${l.broken}</strong>` : l[st]}
+    <td style="text-align:right">${html.join(acts, " ")}`;
+}
+
+function storeRow(store: Store, error: string): HtmlString {
+  return html`<tr>
+    <td><button class=u2-unstyle data-pick="${store.url}" title="${store.url}"><code>${storeLabel(store.url)}</code></button>
+    <td>${error ? html`<strong>${error}</strong>` : html`<small data-count="${store.url}"></small>`}
+    <td style="text-align:right">${
+    store.declared
+      ? html`<small>server.ts</small>`
+      : html`<button data-act=removeStore data-store="${store.url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`
+  }`;
+}
+
+// --- node API -------------------------------------------------------------
+
+/** One action, answered with the module's fresh row (null = it is gone). The new row is the
+ *  feedback, so only a failure has a message. Without a row the page reloads: a store came or
+ *  went, and with it its modules. */
+async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boolean; message?: string; row?: string | null }> {
+  const app = node.app;
+  const act = String(vars.act ?? "");
   const mod = String(vars.mod ?? "");
+  const store = String(vars.store ?? "");
   try {
-    switch (vars.act) {
+    switch (act) {
       case "addStore":
         await app.stores.install(resolve(app, store));
-        break;
+        return { ok: true };
       case "removeStore":
         await app.stores.uninstall(store);
-        break;
+        return { ok: true };
       case "install": {
         const from = app.stores.get(store);
         if (!from) throw new Error(`Unknown store: ${store}`);
@@ -37,114 +132,97 @@ async function act(app: App, vars: Record<string, unknown>): Promise<string | un
         break;
       }
       case "uninstall":
-        if (!locked.has(mod)) await app.modules.uninstall(mod);
+        if (LOCKED.has(mod)) throw new Error(`Cannot uninstall "${mod}"`);
+        await app.modules.uninstall(mod);
+        break;
+      case "repair":
+        await app.modules.repair(mod);
+        break;
+      case "reset":
+        await app.modules.reset(mod);
         break;
       case "link":
         await app.link(mod);
         break;
       case "unlink":
-        if (!locked.has(mod)) app.unlink(mod);
+        if (LOCKED.has(mod)) throw new Error(`Cannot deactivate "${mod}"`);
+        app.unlink(mod);
         break;
+      default:
+        throw new Error(`Unknown action: ${act}`);
     }
   } catch (e) {
-    return e instanceof Error ? e.message : String(e);
+    return { ok: false, message: e instanceof Error ? e.message : String(e) };
   }
+  // A module no store lists and no one knows any more has nothing left to show.
+  const gone = !store && !app.modules.get(mod) && !app.modules.failures()[mod];
+  return { ok: true, row: gone ? null : String(moduleRow(app, mod, store, await labels(app))) };
 }
 
 // --- view -----------------------------------------------------------------
 
-async function renderStore(app: App, store: Store, names: string[] | string): Promise<HtmlString> {
+async function render(node: Node): Promise<HtmlString> {
+  const app = node.app;
   const t = app.t;
-  const url = store.url;
-  if (typeof names === "string") {
-    return html.async`<div class=u2-card>
-      <div class=-head><code>${url}</code></div>
-      <div class=-body><strong>${names}</strong></div>
-    </div>`;
-  }
+  const l = await labels(app);
+  const cats = await catalogs(app);
 
-  // the row labels are plain strings: a `html` fragment is synchronous, only html.async awaits
-  const [install, uninstall, activate, deactivate, active, inactive, broken] = await Promise.all([t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`active`, t`inactive`, t`not importable`]);
-  const failures = app.modules.failures();
-  const rows = names.map((mod) => {
-    const linked = app.modules.linked(mod);
-    const imported = !!app.modules.get(mod);
-    const failed = failures[mod];
-    const fixed = locked.has(mod) || app.modules.declared(mod);
-    const toggle = !imported || fixed
-      ? ""
-      : linked
-      ? html`<button data-act=unlink data-mod="${mod}">${deactivate}</button>`
-      : html`<button data-act=link data-mod="${mod}">${activate}</button>`;
-    const action = !imported && !failed
-      ? html`<button data-act=install data-mod="${mod}" data-store="${url}">${install}</button>`
-      : fixed
-      ? ""
-      : html`<button data-act=uninstall data-mod="${mod}" u2-confirm>${uninstall}</button>`;
-    return html`<tr>
-      <td>${mod}
-      <td>${failed ? html`<strong title="${failed}">${broken}</strong>` : !imported ? "" : linked ? active : inactive}
-      <td style="text-align:right">${toggle} ${action}`;
-  });
-
-  const installed = names.filter((mod) => app.modules.get(mod)).length;
-  const origin = store.declared
-    ? html`<small>${await t`from server.ts`}</small>`
-    : html`<button data-act=removeStore data-store="${url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`;
-  return html.async`<div class=u2-card>
-  <div class=-head>
-    <code>${url}</code>
-    <small style="margin-left:auto">${installed}/${names.length}</small>
-    ${origin}
-  </div>
-  <div style="overflow:auto; max-height:60vh; padding:0">
-    <table class=u2-table style="white-space:nowrap; width:100%">
-      <thead><tr>
-        <th>${t`Module`}
-        <th>${t`State`}
-        <th>
-      <tbody>${html.join(rows)}
+  return html.async`<div class="u2-flex">
+  <div class=u2-card>
+    <div class=-head>${t`Module stores`}</div>
+    <table class=u2-table>
+      ${html.join(cats.map(({ store, error }) => storeRow(store, error)))}
+      <tr><td colspan=3><button data-act=addStore>${l.addStore}</button>
     </table>
+    <div class=-body><small>${t`A catalog is a store.json, e.g. ./qino/module/store.json`}</small></div>
+  </div>
+
+  <div class=u2-card>
+    <div class=-head>${t`Modules`}</div>
+    <div class="-body u2-flex">
+      <select data-filter=store>
+        <option value="">${t`all stores`}
+        ${html.join(cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(store.url)}`))}
+        <option value="-">${t`no store`}
+      </select>
+      <select data-filter=state>
+        <option value="">${t`any state`}
+        <option value=active>${l.active}
+        <option value=inactive>${l.inactive}
+        <option value=available>${l.available}
+        <option value=broken>${l.broken}
+      </select>
+      <input type=search autofocus data-filter=search placeholder="${t`Search`}">
+    </div>
+    <div style="overflow:auto; max-height:70vh; padding:0">
+      <table class="u2-table -Sticky" style="white-space:nowrap">
+        <thead><tr>
+          <th>${t`Module`}
+          <th>${t`Store`}
+          <th>${t`State`}
+          <th>
+        <tbody>${html.join(moduleList(app, cats).map(([mod, store]) => moduleRow(app, mod, store, l)))}
+      </table>
+    </div>
+    <div class=-body><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>
   </div>
 </div>`;
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
-  const app = node.app;
+/** Counts, plus the inactive modules by name — those are the ones you may want back. */
+export function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
-  const error = Object.keys(vars).length ? await act(app, vars) : undefined;
-  const uninstallLabel = await t`Uninstall`;
-  const list = app.stores.all();
-  const catalogs = await Promise.all(list.map((store) => store.names().catch((e) => String(e.message ?? e))));
-  const cards = await Promise.all(list.map((store, i) => renderStore(app, store, catalogs[i])));
-
-  // Modules whose row survived their store — otherwise they would have no place to be uninstalled.
-  const listed = new Set(catalogs.flatMap((names) => typeof names === "string" ? [] : names));
-  const orphans = Object.entries(app.modules.failures()).filter(([mod]) => !listed.has(mod));
-
-  return html.async`<div class=u2-flex style="flex-direction:column">
-  <div class=u2-card>
-    <div class=-head>${t`Module stores`}</div>
-    <div class=-body>
-      <button data-act=addStore>${t`Add store`}</button>
-      <small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it.`}</small>
-      ${error ? html` <strong>${error}</strong>` : ""}
-    </div>
-    ${list.length ? "" : html.async`<div class=-body><em>${t`No store added yet. A catalog is a store.json, e.g. ./qino/module/store.json`}</em></div>`}
-  </div>
-  ${orphans.length ? html.async`<div class=u2-card>
-    <div class=-head>${t`Installed, not importable`}</div>
-    <table class=u2-table>${html.join(orphans.map(([mod, why]) =>
-      html`<tr>
-        <td>${mod}
-        <td><small>${why}</small>
-        <td style="text-align:right"><button data-act=uninstall data-mod="${mod}" u2-confirm>${uninstallLabel}</button>`))}
-    </table>
-  </div>` : ""}
-  ${html.join(cards)}
-</div>`;
+  const mods = Object.keys(app.modules.all());
+  const inactive = mods.filter((mod) => !app.modules.linked(mod));
+  const broken = Object.keys(app.modules.failures()).length;
+  return html.async`<div class=-body>
+    <b>${mods.length - inactive.length}</b> ${t`active`}
+    ${inactive.length ? html.async` · <small class=u2-badge>${inactive.length} ${t`inactive`}</small>` : ""}
+    ${broken ? html.async` · <small class=u2-badge style="background:var(--red)">${broken} ${t`not importable`}</small>` : ""}
+    ${inactive.length ? html`<br><small>${inactive.join(", ")}</small>` : ""}
+  </div>`;
 }
 
 export const cms = {
-  node: { js: ["pub/main.js"], render },
+  node: { css: ["pub/main.css"], js: ["pub/main.js"], render, api },
 };

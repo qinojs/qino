@@ -185,6 +185,26 @@ export class ModuleManager {
     return mod;
   }
 
+  /** Run install() again — the hooks are written to fill gaps, so this restores what was deleted.
+   *  It does not touch what was changed: a seed guarded by "does this exist?" skips what is there. */
+  async repair(name: string): Promise<void> {
+    const mod = this.#modules[name];
+    if (!mod || !this.#linked.has(name)) throw new Error(`Cannot repair "${name}": not linked`);
+    await mod.plugin.install?.({ app: this.#app, module: mod.plugin });
+    this.#installed[name] = unixTime();
+    await this.#app.db.table("module").ensure({ name, installed: this.#installed[name] });
+  }
+
+  /** Back to factory: let the module remove what it owns, then install it again. Needs an
+   *  uninstall() hook — without one there is nothing to undo and repair() is the honest option. */
+  async reset(name: string): Promise<void> {
+    const mod = this.#modules[name];
+    if (!mod || !this.#linked.has(name)) throw new Error(`Cannot reset "${name}": not linked`);
+    if (!mod.plugin.uninstall) throw new Error(`Cannot reset "${name}": the module has no uninstall()`);
+    await mod.plugin.uninstall({ app: this.#app, module: mod.plugin });
+    await this.repair(name);
+  }
+
   /** Unlink, let the module clean up after itself and forget it. Its data goes, unlink() keeps it. */
   async uninstall(name: string): Promise<void> {
     if (this.#declared.has(name)) throw new Error(`Cannot uninstall "${name}": the application declares it`);
