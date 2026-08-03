@@ -3,17 +3,14 @@ import { $item, type App } from "../../core/mod.ts";
 
 // Module-internal: these details carry the private key. mod.ts exposes only the public half.
 
-/** The app's VAPID details — the key pair is generated and stored in settings on first use. */
-export async function vapid(app: App): Promise<{ subject: string; publicKey: string; privateKey: string }> {
-  const subject = String(await app.settings["messaging.web_push"].subject);
-  return { subject, ...await keyPair(app) };
-}
-
 // One in-flight generation per app — parallel requests must not create two key pairs.
 const keys = new WeakMap<App, Promise<{ publicKey: string; privateKey: string }>>();
 
-function keyPair(app: App): Promise<{ publicKey: string; privateKey: string }> {
-  return keys.getOrInsertComputed(app, () => load(app).catch((e) => { keys.delete(app); throw e; }));
+/** The app's VAPID details — the key pair is generated and stored in settings on first use. */
+export async function vapid(app: App): Promise<{ subject: string; publicKey: string; privateKey: string }> {
+  const subject = String(await app.settings["messaging.web_push"].subject);
+  const pair = await keys.getOrInsertComputed(app, () => load(app).catch((e) => { keys.delete(app); throw e; }));
+  return { subject, ...pair };
 }
 
 async function load(app: App) {
