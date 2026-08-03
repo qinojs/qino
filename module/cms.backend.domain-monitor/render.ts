@@ -1,4 +1,4 @@
-import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import { getCtx, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
@@ -303,16 +303,18 @@ function frequencySelect(row: DomainRow): HtmlString {
   </select>`;
 }
 
-// Search-only link: it keeps the page's own parameters (cmspid, lang, editmode) and swaps just the
-// domain, and it resolves against whatever page the row hangs in — a row swapped in after an api
-// call is rendered by a request that knows nothing but the api url.
-const detailLink = (params: URLSearchParams, domain: string): string => {
-  const search = new URLSearchParams(params);
-  search.set("domain", domain);
-  return "?" + search;
+/** The page the table lives on. Taken from the node, not from the request: an api call that
+ *  re-renders a row runs on the api url and would build the links against that. */
+export const nodeUrl = async (node: Node, ctx: Ctx): Promise<URL> => new URL(await node.url(), ctx.req.url.href);
+
+// Same page, one parameter more — a bare "?domain=…" would drop cmspid, lang and editmode.
+const detailLink = (pageUrl: URL, domain: string): string => {
+  const url = new URL(pageUrl);
+  url.searchParams.set("domain", domain);
+  return url.pathname + url.search;
 };
 
-export function rowHtml(row: DomainRow, params: URLSearchParams): HtmlString {
+export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
   const domain = row.domain;
   const alt = wwwAlt(domain);
   const state = status(row);
@@ -330,10 +332,11 @@ export function rowHtml(row: DomainRow, params: URLSearchParams): HtmlString {
 
   const dkim = lines(row.dkim);
   const txt = txtGroups(row.dns_txt);
-  return html`<tr data-domain="${domain}">
+  return html`<tr data-domain="${domain}" u2-href>
       <td><input type=checkbox data-select title="Select for bulk actions">
       <td data-value="${LEVELS[state.level]}">${dot(state.level, state.title)}
-      <td data-value="${domain}"><a href="${detailLink(params, domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
+      <td data-value="${domain}"><a href="${detailLink(pageUrl, domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
+      <td data-changed data-value="${row.changed ?? 0}">${changedCell(row)}
       <td data-value="${row.reg_expires ?? 0}">${expiresCell(row)}
       <td data-g=http data-value="${row.status_code}">${row.status_code ?? "–"}
       <td data-g=http data-value="${row.response_time}">${row.response_time != null ? row.response_time + " ms" : "–"}
@@ -355,7 +358,6 @@ export function rowHtml(row: DomainRow, params: URLSearchParams): HtmlString {
       <td data-g=mail data-value="${rank(dkim.length ? true : null)}">${flag(dkim.length ? true : null, dkim.length ? `DKIM selectors: ${dkim.join(", ")}` : "no DKIM key found under the known selectors")}
       <td data-g=mail data-value="${row.mta_sts_mode ?? ""}">${row.mta_sts_mode ? html`${dot(row.mta_sts_mode === "enforce" ? "green" : "orange", `MTA-STS ${row.mta_sts_mode}`)} <small>${row.mta_sts_mode}</small>` : html`${dot("gray", row.mta_sts ? "MTA-STS record, but no policy fetched" : "no MTA-STS")}`}
       <td data-g=mail data-value="${rank(row.mail_starttls)}">${smtpCell(row)}
-      <td data-changed data-value="${row.changed ?? 0}">${changedCell(row)}
       <td data-value="${row.checked ?? 0}">${u2.time(row.checked, { narrow: true })}
       <td>${frequencySelect(row)}
       <td style="white-space:nowrap"
@@ -501,6 +503,25 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
   </div>`;
 }
 
+const WIDGET_ROWS = 8;
+
+/** Dashboard card: what moved lately, which is the one thing worth seeing without opening the module. */
+export async function backendDashboardWidget(app: App, node: Node): Promise<HtmlString | string> {
+  const rows = await app.db.query<DomainRow>`
+    SELECT domain, changed, changes FROM monitor_domain WHERE changed > 0 ORDER BY changed DESC LIMIT ${WIDGET_ROWS}`;
+  if (!rows.length) return ""; // nothing has ever changed — no card rather than an empty one
+  const pageUrl = await nodeUrl(node, getCtx());
+  return html.async`<table class=u2-table style="white-space:nowrap">${
+    html.join(rows.map((row) => {
+      const fields = lines(row.changes);
+      return html`<tr>
+      <td><a href="${detailLink(pageUrl, row.domain)}">${row.domain}</a>
+      <td><small title="${fields.join(", ")}">${fields.slice(0, 2).join(", ")}${fields.length > 2 ? ` +${fields.length - 2}` : ""}</small>
+      <td>${changedCell(row)}`;
+    }))
+  }</table>`;
+}
+
 export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const domain = String(ctx.req.query.domain ?? "");
   if (domain) return renderDetail(node, ctx, domain);
@@ -508,8 +529,8 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const app = node.app;
   const skipped = vars.add ? await addDomains(app, String(vars.domains ?? "")) : [];
   const rows = await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`;
-  const params = ctx.req.url.toURL().searchParams;
-  const body = html.join(rows.map((row) => rowHtml(row, params)), "\n");
+  const pageUrl = await nodeUrl(node, ctx);
+  const body = html.join(rows.map((row) => rowHtml(row, pageUrl)), "\n");
   const empty = html`<tr><td colspan=28 class=-empty>No domains yet.`;
 
   // Which groups the user folded away, kept per user rather than per browser. Mail is off to begin
@@ -548,6 +569,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
         <th width=1><input type=checkbox data-select-all title="Select every row the search and filter leave visible">
         <th data-sort-handler width=2 class=-v>Status
         <th data-sort-handler>Domain
+        <th data-sort-handler width=5>Changed
         <th data-sort-handler width=3>Expires
         <th data-g=http data-sort-handler width=5>Code
         <th data-g=http data-sort-handler>Time
@@ -569,7 +591,6 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
         <th data-g=mail data-sort-handler width=2 class=-v>DKIM
         <th data-g=mail data-sort-handler width=3 class=-v>MTA-STS
         <th data-g=mail data-sort-handler width=2 class=-v>SMTP
-        <th data-sort-handler width=5>Changed
         <th data-sort-handler width=5>Checked
         <th data-sort-handler>Automatic
         <th width=1>

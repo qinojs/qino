@@ -1,12 +1,12 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
-import { Db, type App } from "../../core/mod.ts";
+import { Db, requestStorage, type App } from "../../core/mod.ts";
 import { apex, covers, wwwAlt } from "../lib/check.ts";
 import { diffResults, pruneHistory } from "../lib/changes.ts";
 import { dmarc, spf } from "../lib/mail.ts";
 import { frequencies, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
 import api from "../nodeApi.ts";
 import { cron, ctxSettingsSchema, dbSchema, name, needs } from "../plugin.ts";
-import { render, rowHtml } from "../render.ts";
+import { backendDashboardWidget, render, rowHtml } from "../render.ts";
 
 Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   const domain = dbSchema.properties.monitor_domain.additionalProperties.properties;
@@ -34,14 +34,14 @@ Deno.test("cms.backend.domain-monitor: frequency follows node access and validat
   const { db, app } = await testApp();
   try {
     await db.exec`INSERT INTO monitor_domain (domain, check_frequency, created, sort) VALUES (${"example.com"}, ${"disabled"}, ${1}, ${0})`;
-    const node = { app };
-    const response = await api(node as never, { frequency: "example.com", value: "hourly" }) as { rows: Record<string, string> };
+    const node = testNode(app);
+    const response = await inRequest(() => api(node as never, { frequency: "example.com", value: "hourly" })) as { rows: Record<string, string> };
     assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"example.com"}`, "hourly");
     assertEquals(response.rows["example.com"].includes("value=\"hourly\" selected"), true);
     assertEquals((await rowsFor(app, ["example.com"]))[0].domain, "example.com");
     await assertRejects(() => setFrequency(app, ["example.com"], "yearly"), TypeError, "Invalid check frequency");
     await db.table("monitor_domain_check").insert({ domain: "example.com", checked_at: 1, result: "{}" });
-    assertEquals(await api(node as never, { delete: "example.com" }), { done: true });
+    assertEquals(await inRequest(() => api(node as never, { delete: "example.com" })), { done: true });
     assertEquals(await db.one`SELECT count(*) FROM monitor_domain_check`, 0);
   } finally {
     await db.close();
@@ -54,13 +54,13 @@ Deno.test("cms.backend.domain-monitor: one frequency call covers a whole selecti
     for (const domain of ["a.example", "b.example", "c.example"]) {
       await db.exec`INSERT INTO monitor_domain (domain, check_frequency, created, sort) VALUES (${domain}, ${"disabled"}, ${1}, ${0})`;
     }
-    const response = await api({ app } as never, { frequency: "a.example,c.example", value: "weekly" }) as { rows: Record<string, string> };
+    const response = await inRequest(() => api(testNode(app) as never, { frequency: "a.example,c.example", value: "weekly" })) as { rows: Record<string, string> };
     assertEquals(Object.keys(response.rows).sort(), ["a.example", "c.example"]);
     assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"a.example"}`, "weekly");
     assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"c.example"}`, "weekly");
     assertEquals(await db.one`SELECT check_frequency FROM monitor_domain WHERE domain = ${"b.example"}`, "disabled");
 
-    assertEquals(await api({ app } as never, { delete: "a.example,c.example" }), { done: true });
+    assertEquals(await inRequest(() => api(testNode(app) as never, { delete: "a.example,c.example" })), { done: true });
     assertEquals(await db.query`SELECT domain FROM monitor_domain`, [{ domain: "b.example" }]);
   } finally {
     await db.close();
@@ -197,7 +197,7 @@ Deno.test("cms.backend.domain-monitor: overview folds column groups per user", a
         app: { db },
         set: { settings: { "cms.backend.domain-monitor": { cols: () => cols } } },
       });
-      return String(await render({ app } as never, { ctx }));
+      return String(await render(testNode(app) as never, { ctx }));
     };
 
     // mail starts folded away — it is the widest, most specialised block
@@ -225,7 +225,7 @@ Deno.test("cms.backend.domain-monitor: overview folds column groups per user", a
 Deno.test("cms.backend.domain-monitor: row grades TTL, expiry and mail policy", () => {
   const day = 86400;
   const base = { domain: "example.com", checked: 1, online: true, status_code: 200 };
-  const cell = (row: Record<string, unknown>) => String(rowHtml({ ...base, ...row } as never));
+  const cell = (row: Record<string, unknown>) => String(rowHtml({ ...base, ...row } as never, new URL("http://qino.test/cms2/?cmspid=1488&lang=en")));
 
   // TTLs are graded by the shortest one: a minute is a migration setting, not a resting state
   assertEquals(cell({ dns_ttl: "a=30\nmx=3600" }).includes("var(--red)"), true);
@@ -263,11 +263,33 @@ Deno.test("cms.backend.domain-monitor: a change is what the last check found dif
   const day = 86400;
   const now = Math.floor(Date.now() / 1000);
   const base = { domain: "example.com", checked: now, online: true, status_code: 200 };
-  const cell = (changed: number) => String(rowHtml({ ...base, changed, changes: "dns_a" } as never));
+  const page = new URL("http://qino.test/cms2/?cmspid=1488&lang=en");
+  const cell = (changed: number) => String(rowHtml({ ...base, changed, changes: "dns_a" } as never, page));
   assertEquals(cell(now - day / 2).includes("var(--red)"), true);
   assertEquals(cell(now - 3 * day).includes("var(--orange)"), true);
   assertEquals(cell(now - 30 * day).includes("changed: dns_a"), true);
-  assertEquals(String(rowHtml(base as never)).includes("data-changed data-value=\"0\""), true);
+  assertEquals(String(rowHtml(base as never, page)).includes("data-changed data-value=\"0\""), true);
+  // the detail link carries the page's own parameters, or it would leave the backend page
+  assertEquals(cell(now).includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;domain=example.com"'), true);
+});
+
+Deno.test("cms.backend.domain-monitor: the dashboard widget lists what changed last", async () => {
+  const { db, app } = await testApp();
+  try {
+    const node = testNode(app) as never;
+    await db.table("monitor_domain").insert({ domain: "quiet.example", created: 1 });
+    // nothing has ever changed → no card at all
+    assertEquals(await inRequest(() => backendDashboardWidget(app, node)), "");
+
+    const now = Math.floor(Date.now() / 1000);
+    await db.table("monitor_domain").insert({ domain: "moved.example", created: 1, changed: now, changes: "dns_a" });
+    const out = String(await inRequest(() => backendDashboardWidget(app, node)));
+    assertEquals(out.includes('href="/cms2/?cmspid=1488&amp;lang=en&amp;domain=moved.example"'), true);
+    assertEquals(out.includes("changed: dns_a"), true);
+    assertEquals(out.includes("quiet.example"), false);
+  } finally {
+    await db.close();
+  }
 });
 
 Deno.test("cms.backend.domain-monitor: pruning keeps the checks that dated a state", async () => {
@@ -296,6 +318,15 @@ Deno.test("cms.backend.domain-monitor: pruning keeps the checks that dated a sta
     await db.close();
   }
 });
+
+// The api renders rows, and those link back to the page the node sits on — so it needs both a node
+// that can name its url and a request to resolve it against.
+const testNode = (app: App) => ({ app, url: () => "/cms2/?cmspid=1488&lang=en" });
+
+async function inRequest<T>(fn: () => Promise<T>): Promise<T> {
+  const ctx = await testContext({ url: "http://qino.test/cms2/api/cms/node/1488/api" });
+  return await requestStorage.run(ctx, fn);
+}
 
 // Built from the shipped schema instead of a copy of it — the column list keeps growing and a
 // hand-written CREATE TABLE here would quietly drift out of date.

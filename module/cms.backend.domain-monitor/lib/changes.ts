@@ -34,16 +34,10 @@ export async function lastResult(app: App, domain: string): Promise<Partial<Doma
 const KEEP = 7 * 24 * 60 * 60; // young checks stay whether they changed anything or not
 const PAGE = 500;
 
-async function deleteChecks(app: App, ids: number[]): Promise<void> {
-  for (let index = 0; index < ids.length; index += PAGE) {
-    const chunk = ids.slice(index, index + PAGE);
-    await app.db.exec`DELETE FROM monitor_domain_check WHERE id IN (${sql.join(chunk.map((id) => sql`${id}`), ",")})`;
-  }
-}
-
 // Of a run of identical checks the first one survives — it is the one that dates the state, and
 // keeping it means a later check still diffs against the same content the deleted ones held.
-// Ids run in check order per domain, so paging by id walks the history in time order.
+// Ids run in check order per domain, so paging by id walks the history in time order; only rows
+// behind the cursor are deleted, which leaves the paging untouched.
 /** Drop old checks that recorded no relevant change. Returns how many rows went. */
 export async function pruneHistory(
   app: App,
@@ -52,7 +46,6 @@ export async function pruneHistory(
   let removed = 0;
   for (const domain of await app.db.col<string>`SELECT DISTINCT domain FROM monitor_domain_check`) {
     signal?.throwIfAborted();
-    const stale: number[] = [];
     let kept: unknown;
     let cursor = 0;
     for (;;) {
@@ -61,15 +54,16 @@ export async function pruneHistory(
         WHERE domain = ${domain} AND id > ${cursor} ORDER BY id LIMIT ${PAGE}`;
       if (!page.length) break;
       cursor = page[page.length - 1].id;
+      const stale = [];
       for (const check of page) {
         const result = parseResult(check.result);
-        if (kept && check.checked_at < before && !diffResults(kept, result).length) stale.push(check.id);
+        if (kept && check.checked_at < before && !diffResults(kept, result).length) stale.push(sql`${check.id}`);
         else kept = result;
       }
+      if (stale.length) await app.db.exec`DELETE FROM monitor_domain_check WHERE id IN (${sql.join(stale, ",")})`;
+      removed += stale.length;
       if (page.length < PAGE) break;
     }
-    await deleteChecks(app, stale);
-    removed += stale.length;
   }
   return removed;
 }

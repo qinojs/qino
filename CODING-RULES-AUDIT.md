@@ -135,10 +135,11 @@ aufgemacht werden.
   abgeleitet — keine Stelle mit Benutzereingabe.
 - **HTML-Escaping:** die geprüften Interpolationen aus DB-/Benutzerdaten stehen alle in `html`/`html.async`
   und werden damit escaped; kein rohes Template-Literal mit ungeprüften Werten gefunden.
-- **Objekt-Bindings in SQL:** `${node}`/`${page}` banden ein Node-Objekt als Parameter (funktioniert nur,
-  weil der Treiber `toString()` nimmt — Postgres würde JSON serialisieren). Auf `${node.id}` umgestellt:
-  [urls.ts](module/cms.frontend.2/view/widgets/urls.ts#L12), [urls.head.ts](module/cms.frontend.2/view/widgets/urls.head.ts#L6),
-  [tree.access](module/cms.backend.cms.tree.access/plugin.ts#L152).
+- **Objekt-Bindings in SQL:** ungefährlich — `sql``` normalisiert Parameter zentral und dialektneutral
+  (`toParam` in item.js: eigenes `toString` → String, plain object/Array → `TypeError`), der Treiber
+  bekommt nie ein Objekt. `${node}` band die id nur als String statt als Zahl; auf `${node.id}`
+  umgestellt, weil man es der Zeile sonst nicht ansieht: [urls.ts](module/cms.frontend.2/view/widgets/urls.ts#L12),
+  [urls.head.ts](module/cms.frontend.2/view/widgets/urls.head.ts#L6), [tree.access](module/cms.backend.cms.tree.access/plugin.ts#L152).
 - **`deno lint`:** 107× `no-explicit-any` (siehe oben) und 4× `no-slow-types` (laut Regelwerk bewusst in
   Kauf genommen), sonst nur noch 3× `require-await` an signaturgetriebenen Methoden, 3× `no-import-prefix`
   an Browser-Modulen und 2× `ban-types` in einem Test. `ban-unused-ignore`, `no-empty` und

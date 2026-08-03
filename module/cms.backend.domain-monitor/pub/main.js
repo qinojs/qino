@@ -18,9 +18,6 @@ cms.initNode("backend.domain-monitor", (el) => {
   const visible = () => rows().filter((tr) => tr.style.display !== "none");
   const selected = () => rows().filter((tr) => tr.querySelector("[data-select]")?.checked);
 
-  // the server renders the replacement rows and needs this page's parameters for their detail links
-  const post = (vars) => node.api.post({ ...vars, page: location.search });
-
   const replaceRows = (response) => {
     let replaced = false;
     for (const [domain, html] of Object.entries(response?.rows ?? {})) {
@@ -81,7 +78,7 @@ cms.initNode("backend.domain-monitor", (el) => {
 
     btn.disabled = true;
     try {
-      const response = await post(vars);
+      const response = await node.api.post(vars);
       if (removing && response?.done) {
         for (const tr of removing) tr.remove();
         count.textContent = rows().length;
@@ -98,7 +95,7 @@ cms.initNode("backend.domain-monitor", (el) => {
   const setFrequency = async (control, domains, value) => {
     control.disabled = true;
     try {
-      const response = await post({ frequency: domains.join(","), value });
+      const response = await node.api.post({ frequency: domains.join(","), value });
       if (!replaceRows(response) && !tbody) location.reload();
       apply();
       showSelection();

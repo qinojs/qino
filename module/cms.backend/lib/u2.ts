@@ -9,5 +9,5 @@ export function time(value: unknown, { narrow }: { narrow?: boolean } = {}): Htm
     : new Date(String(value));
   if (Number.isNaN(date.getTime()) || date.getTime() === 0) return html`-`;
   const iso = date.toISOString();
-  return html`<u2-time datetime="${iso}" type=relative minute ${narrow ? "mode=narrow" : ""}>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
+  return html`<u2-time datetime="${iso}" type=relative minute${narrow ? " mode=narrow" : ""}>${iso.slice(0, 16).replace("T", " ")}</u2-time>`;
 }

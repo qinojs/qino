@@ -7,6 +7,8 @@ import { runScheduled } from "./lib/monitor.ts";
 import api from "./nodeApi.ts";
 import { render } from "./render.ts";
 
+export { backendDashboardWidget } from "./render.ts";
+
 export const name = "cms.backend.domain-monitor";
 export const description = "Monitors domain, DNS, TLS, HTTP, and mail health.";
 export const needs = ["cms.backend", "cron"];
