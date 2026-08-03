@@ -190,3 +190,9 @@ qino-cms:not(:defined) { display:none; }
   &[data-type=warning] { background:var(--cms-access-2); }
   &[data-type=error]   { background:var(--cms-access-3); }
 }
+
+/* possibly move to u2-framework? */
+.u2-unstyle.u2-unstyle.u2-unstyle:is(:hover, :focus) {
+  background-color: unset;
+  color: unset;
+}

@@ -1,6 +1,6 @@
 import { toFileUrl } from "@std/path";
 import { html, type App, type HtmlString, type Store } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { backend, u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.stores";
@@ -209,18 +209,34 @@ async function render(node: Node): Promise<HtmlString> {
 </div>`;
 }
 
-/** Counts, plus the inactive modules by name — those are the ones you may want back. */
-export function backendDashboardWidget(app: App): Promise<HtmlString> {
+/** What is there, what came last, and the inactive modules — those are the ones you may want back. */
+export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   const mods = Object.keys(app.modules.all());
   const inactive = mods.filter((mod) => !app.modules.linked(mod));
   const broken = Object.keys(app.modules.failures()).length;
+  const latest = await app.db.query`SELECT name, installed FROM module WHERE installed > 0 ORDER BY installed DESC LIMIT 3`.catch(() => []);
+
+  const recent = !latest.length ? "" : html.async`<table class=u2-table style="white-space:nowrap">
+  <thead><tr>
+    <th>${t`Recently installed`}
+    <th>
+  <tbody>${
+    html.join(latest.map((row) => html`<tr>
+    <td>${row.name}
+    <td style="text-align:right">${u2.time(row.installed, { narrow: true })}`))
+  }
+</table>`;
+
+  const sleeping = !inactive.length ? "" : html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
+  <thead><tr><th>${inactive.length} ${t`inactive`}
+  <tbody>${html.join(inactive.map((mod) => html`<tr><td>${mod}`))}
+</table>`;
+
   return html.async`<div class=-body>
-    <b>${mods.length - inactive.length}</b> ${t`active`}
-    ${inactive.length ? html.async` · <small class=u2-badge>${inactive.length} ${t`inactive`}</small>` : ""}
-    ${broken ? html.async` · <small class=u2-badge style="background:var(--red)">${broken} ${t`not importable`}</small>` : ""}
-    ${inactive.length ? html`<br><small>${inactive.join(", ")}</small>` : ""}
-  </div>`;
+  <b>${mods.length - inactive.length}</b> ${t`active`} · <b>${app.stores.all().length}</b> ${t`stores`}
+  ${broken ? html.async` · <small class=u2-badge style="background:var(--red)">${broken} ${t`not importable`}</small>` : ""}
+</div>${recent}${sleeping}`;
 }
 
 export const cms = {
