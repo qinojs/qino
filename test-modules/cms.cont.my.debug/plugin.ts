@@ -1,22 +1,20 @@
-import { getCtx, hee } from "@qino/qino";
+import { getCtx, html, type HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const name = "cms.cont.my.debug";
 export const description = "Current session, settings, client, user, and group details.";
 export const needs = ["cms"];
 
-function vsTable(vs: Record<string, unknown>, exclude: string[] = []): string {
-  return '<table>' +
-    Object.entries(vs)
+function vsTable(vs: Record<string, unknown>, exclude: string[] = []): HtmlString {
+  const rows = Object.entries(vs)
     .filter(([k]) => !exclude.includes(k))
-    .map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(v)}`)
-    .join("\n") +
-    '</table>';
+    .map(([k, v]) => html`<tr><td>${k}<td>${v}`);
+  return html`<table>${html.join(rows, "\n")}</table>`;
 }
 
-const inspect = (value: unknown): string => `<pre>${hee(Deno.inspect(value, { depth: 6 }))}</pre>`;
+const inspect = (value: unknown): HtmlString => html`<pre>${Deno.inspect(value, { depth: 6 })}</pre>`;
 
-async function render(_node: Node): Promise<string> {
+async function render(_node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const usr = ctx.user;
   const client = ctx.client;
@@ -25,15 +23,14 @@ async function render(_node: Node): Promise<string> {
   const sessionData = await ctx.sess.data();
   const settingsData = await ctx.settings();
 
-  let usrHtml = `<em>not logged in</em>\n`;
+  let usrHtml = html`<em>not logged in</em>\n`;
   if (usr) {
     const vs = await usr.values();
     const grps = (await usr.grps()).join(", ") || "–";
-    usrHtml = `<h3>User #${hee(usr)}</h3>` + vsTable(vs, ["pw"]) +
-      `<h3>Groups: ${hee(grps)}</h3>\n`;
+    usrHtml = html`<h3>User #${usr}</h3>${vsTable(vs, ["pw"])}<h3>Groups: ${grps}</h3>\n`;
   }
 
-  return `<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:.5rem;display:inline-block">
+  return html`<div style="font-size:11px;font-family:monospace;background:#f5f5f5;color:black; padding:.5rem;display:inline-block">
   <h3>session</h3>
   ${inspect(sessionData)}
   <h3>settings</h3>

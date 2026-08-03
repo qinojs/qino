@@ -1,12 +1,12 @@
-import { hee } from "../../core/mod.ts";
+import { html, type HtmlString } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 // Renders the backendDashboardWidget of every visible child page as a card.
 // Shared by the backend dashboard and the grouping pages (e.g. superuser).
-export async function renderDashboard(node: Node): Promise<string> {
+export async function renderDashboard(node: Node): Promise<HtmlString> {
   const page = await node.page();
   const children = [...(await page.children()).values()];
-  const widgets: string[] = [];
+  const widgets: HtmlString[] = [];
 
   for (const child of children) {
     if (!child.vs.visible) continue;
@@ -17,15 +17,16 @@ export async function renderDashboard(node: Node): Promise<string> {
     try {
       const body = await widget(node.app, child); // child = the widget's own backend page, for deep links
       if (!body) continue;
-      const url = hee(await child.url());
-      const title = hee(await (await child.title()).string());
-      widgets.push(`<div class=u2-card><a class=-head href="${url}">${title}</a>${body}</div>`);
+      const url = await child.url();
+      const title = await (await child.title()).string();
+      // widget bodies are trusted markup from the module itself
+      widgets.push(html`<div class=u2-card><a class=-head href="${url}">${title}</a>${html.raw(body)}</div>`);
     } catch (e) { console.error(e); }
   }
 
   const widgetsHtml = widgets.length
-    ? widgets.join("\n")
-    : `<div class=u2-card><div class=-body style="color:#999">No widgets available.</div></div>`;
+    ? html.join(widgets, "\n")
+    : html`<div class=u2-card><div class=-body style="color:#999">No widgets available.</div></div>`;
 
-  return `<div class=u2-flex>${widgetsHtml}</div>`;
+  return html`<div class=u2-flex>${widgetsHtml}</div>`;
 }

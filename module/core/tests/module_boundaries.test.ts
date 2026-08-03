@@ -117,7 +117,7 @@ Deno.test("browser itemRoot matches the pinned item.js version", async () => {
 // import. That is exactly what jsr.io does not do, and why these are jsDelivr URLs.
 Deno.test({
   name: "the browser CDN roots are loadable cross-origin",
-  ignore: !Deno.env.get("NET_TESTS"),
+  ignore: !(() => { try { return Deno.env.get("NET_TESTS"); } catch { return false; } })(),
   fn: async () => {
     for (const url of [itemRoot + "item.js", u2Root + "js/dialog/dialog.js"]) {
       const res = await fetch(url);

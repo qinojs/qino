@@ -1,6 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
 import { dump } from "@nuxodin/dump";
-import { $item, getCtx, hee, html, type HtmlString, type App } from "../core/mod.ts";
+import { $item, getCtx, html, type HtmlString, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.backend.superuser.state";
@@ -56,7 +56,7 @@ function dumpBox(title: string, value: unknown, depth: number): HtmlString {
       customRender: safeRender,
     });
   } catch (err) {
-    out = `<pre>${hee(err instanceof Error ? err.stack ?? err.message : String(err))}</pre>`;
+    out = String(html`<pre>${err instanceof Error ? err.stack ?? err.message : String(err)}</pre>`);
   }
   return html`<div class=u2-card style="min-width:0; overflow:auto; height:80vh">
   <div class=-head>${title}</div>
@@ -67,7 +67,7 @@ function dumpBox(title: string, value: unknown, depth: number): HtmlString {
 function safeRender(value: unknown): string | undefined {
   if (typeof value !== "function") return;
   if ((value as unknown as Record<symbol, unknown>)[$item]) return `<em>[item.js proxy]</em>`; // don't read .name/.length → no autoviv
-  return `<function>function <b>${hee(value.name)}</b>(${hee(value.length)})</function>`;
+  return String(html`<function>function <b>${value.name}</b>(${value.length})</function>`);
 }
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {

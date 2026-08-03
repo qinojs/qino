@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { hee, type App, type Ctx } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.superuser.oauth";
@@ -37,21 +37,21 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 /** One editable card per provider (blank `p` = the "add" form). */
-function providerForm(csrf: string, selfBase: string, p: any = {}): string {
-  const v = (k: string) => hee(p[k]);
+function providerForm(csrf: string, selfBase: string, p: any = {}): HtmlString {
+  const v = (k: string) => p[k];
   const isNew = !p.id;
   const checked = (isNew || Number(p.auto_create)) ? " checked" : "";
-  const text = (k: string, ph = "") => `<input name=${k} value="${v(k)}" placeholder="${hee(ph)}">`;
-  return `<form method=post class=u2-card>
+  const text = (k: string, ph = "") => html`<input name=${k} value="${v(k)}" placeholder="${ph}">`;
+  return html`<form method=post class=u2-card>
   <div class=-head>${isNew ? "Add provider" : v("name")}</div>
   <div class=-body>
-    <input type=hidden name=csrfToken value="${hee(csrf)}">
+    <input type=hidden name=csrfToken value="${csrf}">
     <input type=hidden name=id value="${v("id")}">
     <u2-fields>
       Name <input name=name value="${v("name")}"${isNew ? "" : " readonly"} required>
       Issuer (OIDC) ${text("issuer", "https://accounts.google.com")}
       Client ID ${text("client_id")}
-      Client secret <input type=password name=client_secret value=""${isNew ? "" : ` placeholder="•••••• (unchanged)"`}>
+      Client secret <input type=password name=client_secret value=""${isNew ? "" : html.raw(` placeholder="•••••• (unchanged)"`)}>
       Scopes ${text("scopes", "openid email profile")}
       Allowed domains ${text("allowed_domains", "example.com")}
       <div><label><input type=checkbox name=auto_create value=1${checked}> auto-create users</label></div>
@@ -65,13 +65,13 @@ function providerForm(csrf: string, selfBase: string, p: any = {}): string {
         E-mail URL ${text("email_url")}
       </u2-fields>
     </details>
-    ${isNew ? "" : `<div><small>Redirect URI: <code>${hee(selfBase + "oauth/callback/" + String(p.name))}</code></small></div>`}
-    <div><button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>${isNew ? "" : ` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" class=u2-unstyle>✕</button>`}</div>
+    ${isNew ? "" : html`<div><small>Redirect URI: <code>${selfBase + "oauth/callback/" + String(p.name)}</code></small></div>`}
+    <div><button name=oauth_save value=1>${isNew ? "Add" : "Save"}</button>${isNew ? "" : html` <button name=oauth_delete value="${v("id")}" formnovalidate u2-confirm="Delete ${v("name")}?" class=u2-unstyle>✕</button>`}</div>
   </div>
 </form>`;
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db = node.app.db;
   const b = ctx.req.body as Record<string, unknown> | undefined;
 
@@ -102,10 +102,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const rows = await db.query`SELECT * FROM social_login_provider ORDER BY name`;
   const csrf = ctx.csrfToken;
   const selfBase = ctx.req.url.origin + ctx.req.appUrl;
-  const cards = rows.map((r) => providerForm(csrf, selfBase, r)).join("\n");
+  const cards = rows.map((r) => providerForm(csrf, selfBase, r));
 
-  return `<div class=u2-flex>
-  ${cards}
+  return html`<div class=u2-flex>
+  ${html.join(cards, "\n")}
   ${providerForm(csrf, selfBase)}
 </div>`;
 }

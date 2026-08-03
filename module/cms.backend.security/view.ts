@@ -1,24 +1,24 @@
-import { getCtx, hee, sql, type App, type Ctx, type Row, type Sql } from "../core/mod.ts";
+import { getCtx, html, sql, type App, type Ctx, type HtmlString, type Row, type Sql } from "../core/mod.ts";
 import { u2 } from "../cms.backend/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const row = await app.db.row`SELECT COUNT(*) events, SUM(CASE WHEN blocked THEN 1 ELSE 0 END) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event`.catch(() => null);
-  if (!row || !Number(row.events)) return `<div class=-body>${await app.t`No security events.`}</div>`;
+  if (!row || !Number(row.events)) return html`<div class=-body>${await app.t`No security events.`}</div>`;
   const buckets = await app.db.query`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
-  return `<div class=-body>
-    <b>${hee(row.events)}</b> ${await app.t`Events`}, <b>${hee(row.fresh ?? 0)}</b> ${await app.t`new`}, <b>${hee(row.blocked ?? 0)}</b> ${await app.t`blocked`}<br>
-    <small>${await app.t`Last alarm:`} ${u2.time(row.last)}</small>
-    ${buckets.length ? `<table class=u2-table>${buckets.map((r) => `<tr>
-      <td>${hee(r.score)}
-      <td>${hee(r.scope)}
-      <td><code>${hee(r.ident)}</code>
-      <td>${hee(r.reason)}`).join("")}</table>` : ""}
+  return html.async`<div class=-body>
+    <b>${row.events}</b> ${app.t`Events`}, <b>${row.fresh ?? 0}</b> ${app.t`new`}, <b>${row.blocked ?? 0}</b> ${app.t`blocked`}<br>
+    <small>${app.t`Last alarm:`} ${u2.time(row.last)}</small>
+    ${buckets.length ? html`<table class=u2-table>${html.join(buckets.map((r) => html`<tr>
+      <td>${r.score}
+      <td>${r.scope}
+      <td><code>${r.ident}</code>
+      <td>${r.reason}`))}</table>` : ""}
   </div>`;
 }
 
-export async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<string> {
+export async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;
   const db = app.db;
@@ -38,44 +38,44 @@ export async function render(node: Node, { vars = {} }: { vars?: Record<string, 
   const topUa = await db.query`SELECT ua, COUNT(*) num, MAX(time) last FROM m_security_event WHERE ua!='' GROUP BY ua ORDER BY num DESC,last DESC LIMIT 10`;
   const stats: Record<string, unknown> = await db.row`SELECT COUNT(*) events, SUM(CASE WHEN blocked THEN 1 ELSE 0 END) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh FROM m_security_event` ?? {};
   const tab = String(ctx.req.query.tab ?? "live");
-  return `<div>
+  return html.async`<div>
     <div class=u2-flex>
-      ${await statusBox(app, stats)}
+      ${statusBox(app, stats)}
       <div>
         ${tabs(ctx, tab)}
         ${tab === "settings" ? settingsEditor(ctx) : ""}
-        ${tab === "buckets" ? await bucketTable(app, buckets) : ""}
-        ${tab === "analyse" ? '<div class=u2-flex>' + topTable(ctx, "Top IPs", topIps, "ip") + topTable(ctx, "Top Paths", topPaths, "path") + topTable(ctx, "Top Kinds", topKinds, "kind") + topTable(ctx, "Top Clients", topUa, "ua") : ""}
-        ${tab === "live" ? await eventTable(app, events, ctx.req.query) : ""}
+        ${tab === "buckets" ? bucketTable(app, buckets) : ""}
+        ${tab === "analyse" ? html`<div class=u2-flex>${topTable(ctx, "Top IPs", topIps, "ip")}${topTable(ctx, "Top Paths", topPaths, "path")}${topTable(ctx, "Top Kinds", topKinds, "kind")}${topTable(ctx, "Top Clients", topUa, "ua")}` : ""}
+        ${tab === "live" ? eventTable(app, events, ctx.req.query) : ""}
       </div>
     </div>
   </div>`;
 }
 
-async function statusBox(app: App, stats: Record<string, unknown>) {
-  return `<div class="u2-card -kpi"><div class=-head>${await app.t`Status`}</div><div class=-body>
-    <b>${hee(stats.events ?? 0)}</b> ${await app.t`Events`}<br><b>${hee(stats.fresh ?? 0)}</b> ${await app.t`new`}<br><b>${hee(stats.blocked ?? 0)}</b> ${await app.t`Blocked`}<br>
-    <button data-action=clearEvents u2-confirm>${await app.t`Clear events`}</button>
-    <button data-action=clearBuckets u2-confirm>${await app.t`Clear buckets`}</button>
+function statusBox(app: App, stats: Record<string, unknown>) {
+  return html.async`<div class="u2-card -kpi"><div class=-head>${app.t`Status`}</div><div class=-body>
+    <b>${stats.events ?? 0}</b> ${app.t`Events`}<br><b>${stats.fresh ?? 0}</b> ${app.t`new`}<br><b>${stats.blocked ?? 0}</b> ${app.t`Blocked`}<br>
+    <button data-action=clearEvents u2-confirm>${app.t`Clear events`}</button>
+    <button data-action=clearBuckets u2-confirm>${app.t`Clear buckets`}</button>
   </div></div>`;
 }
 
 function tabs(ctx: Ctx, active: string) {
   const u = ctx.req.url.toURL();
-  const href = (tab: string) => { u.searchParams.set("tab", tab); return hee(u.search); };
-  return `<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => `<a href="${href(v)}" class="btn ${v===active?"-active":""}">${hee(v)}</a>`).join("")}</u2-buttongroup>`;
+  const href = (tab: string) => { u.searchParams.set("tab", tab); return u.search; };
+  return html`<u2-buttongroup style="margin-bottom:1rem">${html.join(["live","buckets","analyse","settings"].map(v => html`<a href="${href(v)}" class="btn ${v===active?"-active":""}">${v}</a>`))}</u2-buttongroup>`;
 }
 
 function settingsEditor(ctx: Ctx) {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/SettingsEditor.mjs");
-  return `<div class=u2-card><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
+  return html`<div class=u2-card><settings-editor source="/api/core/settings/cms.backend.security"></settings-editor></div>`;
 }
 
 async function bucketTable(app: App, rows: Record<string, unknown>[]) {
   const [tHead, tScore, tScope, tIdent, tCount, tLast, tReason, tRelease, tBlock] = await Promise.all([
     app.t`Suspicious buckets`, app.t`Score`, app.t`Scope`, app.t`Ident`, app.t`Count`, app.t`Last`, app.t`Reason`, app.t`release`, app.t`block`,
   ]);
-  return `<div class="u2-card -table"><div class=-head>${tHead}</div><table class="u2-table -Sticky">
+  return html`<div class="u2-card -table"><div class=-head>${tHead}</div><table class="u2-table -Sticky">
     <thead><tr>
       <th>${tScore}
       <th>${tScope}
@@ -84,14 +84,14 @@ async function bucketTable(app: App, rows: Record<string, unknown>[]) {
       <th>${tLast}
       <th>${tReason}
       <th>
-    <tbody>${rows.map(r => `<tr class="${r.blocked?"-blocked":""}">
-      <td>${hee(r.score)}
-      <td>${hee(r.scope)}
-      <td><code>${hee(r.ident)}</code>
-      <td>${hee(r.count)}
+    <tbody>${html.join(rows.map(r => html`<tr class="${r.blocked?"-blocked":""}">
+      <td>${r.score}
+      <td>${r.scope}
+      <td><code>${r.ident}</code>
+      <td>${r.count}
       <td>${u2.time(r.last_seen)}
-      <td>${hee(r.reason)}
-      <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`).join("")}
+      <td>${r.reason}
+      <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`))}
   </table></div>`;
 }
 
@@ -99,8 +99,8 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
   const [tHead, tTime, tEvent, tScore, tAffected, tAction, tReason, tRequest, tStatus] = await Promise.all([
     app.t`Alarms / Requests`, app.t`Time`, app.t`Event`, app.t`Score`, app.t`Affected`, app.t`Action`, app.t`Reason`, app.t`Request`, app.t`Status`,
   ]);
-  return `<div class="u2-card -table"><div class=-head>${tHead}</div>
-    ${await eventFilter(app, get)}
+  return html.async`<div class="u2-card -table"><div class=-head>${tHead}</div>
+    ${eventFilter(app, get)}
     <table class="u2-table -Sticky">
       <thead><tr>
         <th>${tTime}
@@ -112,44 +112,44 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
         <th>${tRequest}
         <th>${tStatus}
         <th>
-    <tbody>${rows.map(r => `<tr class="-${hee(r.prio)}">
+    <tbody>${html.join(rows.map(r => html`<tr class="-${r.prio}">
       <td>${u2.time(r.time)}
       <td>${eventCell(r)}
       <td>${scoreCell(r)}
       <td>${bucketCell(r)}
       <td>${actionCell(r)}
-      <td>${hee(r.reason)}
+      <td>${r.reason}
       <td>${requestCell(r)}
       <td>${stateCell(r)}
-      <td>${eventActions(r)}`).join("")}
+      <td>${eventActions(r)}`))}
   </table></div>`;
 }
 
 function eventCell(r: Row) {
-  return `${tag(r.kind || "-")}<br><small>${hee(PRIO_LABELS[r.prio] ?? r.prio)}</small>`;
+  return html`${tag(r.kind || "-")}<br><small>${PRIO_LABELS[r.prio] ?? r.prio}</small>`;
 }
 
 function scoreCell(r: Row) {
   const meta = [`Conf. ${r.confidence ?? 0}`, `Severity ${r.severity ?? 0}`].join(" / ");
-  return `<b>${hee(r.score)}</b><br><small>${hee(meta)}</small>`;
+  return html`<b>${r.score}</b><br><small>${meta}</small>`;
 }
 
 function bucketCell(r: Row) {
-  return r.scope || r.ident ? `${tag(SCOPE_LABELS[r.scope] ?? (r.scope || "-"))}<br><code>${hee(r.ident || "-")}</code>` : "-";
+  return r.scope || r.ident ? html`${tag(SCOPE_LABELS[r.scope] ?? (r.scope || "-"))}<br><code>${r.ident || "-"}</code>` : "-";
 }
 
 function actionCell(r: Row) {
-  const parts = [];
+  const parts: unknown[] = [];
   if (Number(r.blocked)) parts.push("Block");
-  if (Number(r.delay_ms)) parts.push(hee(r.delay_ms) + "ms Delay");
-  if (Number(r.status)) parts.push("http " + hee(r.status));
-  return parts.length ? parts.join("<br>") : "-";
+  if (Number(r.delay_ms)) parts.push(html`${r.delay_ms}ms Delay`);
+  if (Number(r.status)) parts.push(html`http ${r.status}`);
+  return parts.length ? html.join(parts, "<br>") : "-";
 }
 
 function requestCell(r: Row) {
   const meta = [r.method, r.ip, r.duration_ms ? r.duration_ms + "ms" : "", bytes(r.bytes_in, "in"), bytes(r.bytes_out, "out")].filter(Boolean);
   const ids = [r.log_id ? "log " + r.log_id : "", r.usr_id ? "user " + r.usr_id : "", r.client_id ? "client " + r.client_id : ""].filter(Boolean);
-  return `<code>${hee(r.path)}</code>${meta.length ? `<br><small>${hee(meta.join(" · "))}</small>` : ""}${ids.length ? `<br><small>${hee(ids.join(" · "))}</small>` : ""}`;
+  return html`<code>${r.path}</code>${meta.length ? html`<br><small>${meta.join(" · ")}</small>` : ""}${ids.length ? html`<br><small>${ids.join(" · ")}</small>` : ""}`;
 }
 
 function stateCell(r: Row) {
@@ -158,31 +158,31 @@ function stateCell(r: Row) {
 
 function eventActions(r: Row) {
   if (r.prio === "notice") return "";
-  return `<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
+  return html`<button data-seen="${r.id}">seen</button> <button data-ignore="${r.id}">ignore</button>`;
 }
 
 function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key: string) {
   const u = ctx.req.url.toURL();
-  const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return hee(u.search); };
-  return `<div class="u2-card -table -toplist"><div class=-head>${hee(title)}</div><table class=u2-table>
-    ${rows.map(r => `<tr>
-      <td>${hee(r.num)}
-      <td><a href="${href(r[key])}"><code>${hee(r[key])}</code></a>
-      <td>${u2.time(r.last)}`).join("")}
+  const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return u.search; };
+  return html`<div class="u2-card -table -toplist"><div class=-head>${title}</div><table class=u2-table>
+    ${html.join(rows.map(r => html`<tr>
+      <td>${r.num}
+      <td><a href="${href(r[key])}"><code>${r[key]}</code></a>
+      <td>${u2.time(r.last)}`))}
   </table></div>`;
 }
 
-async function eventFilter(app: App, get: Record<string, string>) {
-  return `<form class=u2-flex>
+function eventFilter(app: App, get: Record<string, string>) {
+  return html.async`<form class=u2-flex>
     <input type=hidden name=tab value=live>
-    <input name=q value="${hee(get.q)}" placeholder="${await app.t`IP, path, reason`}">
-    <select name=prio><option value="">${await app.t`Severity`}${opts(["notice","warning","error"], get.prio, PRIO_LABELS)}</select>
-    <select name=kind><option value="">${await app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, KIND_LABELS)}</select>
-    <select name=scope><option value="">${await app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, SCOPE_LABELS)}</select>
-    <select name=blocked><option value="">${await app.t`Action`}${opts(["blocked","delayed"], get.blocked, ACTION_LABELS)}</select>
-    <select name=state><option value="">${await app.t`Status`}${opts(["new","seen","ignore"], get.state, STATE_LABELS)}</select>
-    <input name=min value="${hee(get.min)}" placeholder="${await app.t`min severity`}">
-    <button>${await app.t`filter`}</button>
+    <input name=q value="${get.q}" placeholder="${app.t`IP, path, reason`}">
+    <select name=prio><option value="">${app.t`Severity`}${opts(["notice","warning","error"], get.prio, PRIO_LABELS)}</select>
+    <select name=kind><option value="">${app.t`Event`}${opts(["attack","path-block","probe","login","load","throttle","request"], get.kind, KIND_LABELS)}</select>
+    <select name=scope><option value="">${app.t`Bucket`}${opts(["ip","range","client","user","path","attack:ip","attack:range","attack:path","login:ip","login:range","login:user"], get.scope, SCOPE_LABELS)}</select>
+    <select name=blocked><option value="">${app.t`Action`}${opts(["blocked","delayed"], get.blocked, ACTION_LABELS)}</select>
+    <select name=state><option value="">${app.t`Status`}${opts(["new","seen","ignore"], get.state, STATE_LABELS)}</select>
+    <input name=min value="${get.min}" placeholder="${app.t`min severity`}">
+    <button>${app.t`filter`}</button>
   </form>`;
 }
 
@@ -205,9 +205,9 @@ const SCOPE_LABELS: Record<string, string> = { ip: "IP", range: "IP range", clie
 const STATE_LABELS: Record<string, string> = { new: "new", seen: "seen", ignore: "ignored" };
 const ACTION_LABELS: Record<string, string> = { blocked: "blocked", delayed: "delayed" };
 
-const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => vs.map(v => `<option value="${hee(v)}"${v===active?" selected":""}>${hee(labels[v] ?? v)}`).join("");
-const tag = (v: unknown) => `<span class=u2-badge>${hee(v)}</span>`;
-const bytes = (n: unknown, name: string) => Number(n) ? name + " " + hee(humanBytes(Number(n))) : "";
+const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => html.join(vs.map(v => html`<option value="${v}"${v===active?" selected":""}>${labels[v] ?? v}`));
+const tag = (v: unknown) => html`<span class=u2-badge>${v}</span>`;
+const bytes = (n: unknown, name: string) => Number(n) ? name + " " + humanBytes(Number(n)) : "";
 
 function humanBytes(n: number) {
   if (n < 1024) return n + "B";

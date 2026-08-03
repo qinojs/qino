@@ -1,4 +1,4 @@
-import { Access, hee, walk, type Ctx, type Route, type Verb } from "@qino/qino";
+import { Access, html, walk, type Ctx, type HtmlString, type Route, type Verb } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export const name = "cms.cont.apitest";
@@ -18,7 +18,7 @@ function accessLabel(verb: Verb): string {
 const paramNames = (r: Route): string[] =>
   r.segments.flatMap((seg, i) => seg.startsWith(":") && r.nodes[i] ? [seg.slice(1).replace(/\*$/, "")] : []);
 
-function render(node: Node, { ctx }: { ctx: Ctx }): string {
+function render(node: Node, { ctx }: { ctx: Ctx }): HtmlString {
   // smart prefill: current node feeds node-ish params, current user feeds user-ish ones
   const nid = String(node.id), uid = ctx.userId ? String(ctx.userId) : "";
   const prefill: Record<string, string> = { id: nid, pid: nid, node: nid, page: nid, lang: ctx.lang, user: uid, usr: uid, uid };
@@ -27,24 +27,24 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
   const rows = [...walk(ctx.app.aptTree)].map((r) => {
     const path = "/" + r.segments.join("/");
     const g = r.segments[0] ?? "";
-    const groupRow = g !== group ? (group = g, `<tr class=-group data-group="${hee(g)}"><td colspan=2><button data-gtoggle>▾</button> ${hee(g)}</td></tr>`) : "";
-    const params = paramNames(r).map((p) =>
-      `<label class=-param>:${hee(p)}<input data-param="${hee(p)}" value="${hee(prefill[p])}"></label>`
-    ).join("");
-    return `${groupRow}
-    <tr data-method="${hee(r.method)}" data-path="${hee(path)}" data-group="${hee(g)}">
+    const groupRow = g !== group ? (group = g, html`<tr class=-group data-group="${g}"><td colspan=2><button data-gtoggle>▾</button> ${g}</td></tr>`) : "";
+    const params = html.join(paramNames(r).map((p) =>
+      html`<label class=-param>:${p}<input data-param="${p}" value="${prefill[p]}"></label>`
+    ));
+    return html`${groupRow}
+    <tr data-method="${r.method}" data-path="${path}" data-group="${g}">
       <td class=-route>
-        <span class=-method>${hee(r.method.toUpperCase())}</span>
-        <code>${hee(path)}</code>
+        <span class=-method>${r.method.toUpperCase()}</span>
+        <code>${path}</code>
         <span class="-access -a-${accessLabel(r.verb)}">${accessLabel(r.verb)}</span>
         <span class=-params>${params}</span>
-        ${r.verb.description ? `<small class=-desc>${hee(r.verb.description)}</small>` : ""}
+        ${r.verb.description ? html`<small class=-desc>${r.verb.description}</small>` : ""}
       </td>
       <td class=-cells></td>
     </tr>`;
-  }).join("");
+  });
 
-  return `<div data-app-url="${hee(ctx.req.appUrl ?? "/")}">
+  return html`<div data-app-url="${ctx.req.appUrl ?? "/"}">
   <div class=-bar>
     <span class=-identities></span>
     <form class=-add>
@@ -59,7 +59,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
     <thead><tr>
       <th class=-route>route
       <th class=-cells>
-    <tbody>${rows}</tbody>
+    <tbody>${html.join(rows)}</tbody>
   </table>
 </div>`;
 }

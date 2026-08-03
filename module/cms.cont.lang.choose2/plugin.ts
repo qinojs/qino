@@ -1,5 +1,5 @@
 import { cmsCtx, type Node } from "../cms/mod.ts";
-import { hee, type Ctx } from "../core/mod.ts";
+import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.lang.choose2";
 export const description = "Language links or selection menu.";
@@ -37,7 +37,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const cms = node.cms;
   const settings = node.settings;
 
@@ -47,36 +47,34 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const toPageId   = settings.toPage();
 
   const langs = node.app.languages.all;
-  if (langs.length < 2) return "<span></span>";
+  if (langs.length < 2) return html`<span></span>`;
 
   const page = toPageId ? await cms.node(Number(toPageId)) : cmsCtx(ctx).mainNode;
 
   if (type === "select") {
     const options = await Promise.all(langs.map(async (l) => {
-      const url = hee(await page.url(l));
-      const label = hee(longText ? (long[l] ?? l) : l);
+      const label = longText ? (long[l] ?? l) : l;
       const selected = l === ctx.lang ? " selected" : "";
-      return `<option${selected} value="${url}" lang="${hee(l)}" class="-${hee(l)}">${label}`;
+      return html`<option${selected} value="${await page.url(l)}" lang="${l}" class="-${l}">${label}`;
     }));
-    return `<select onchange="location.href=this.value+location.hash">${options.join("")}</select>`;
+    return html`<select onchange="location.href=this.value+location.hash">${html.join(options)}</select>`;
   }
 
   // links (default)
   const items = await Promise.all(langs.map(async (l) => {
     if (hideActive && l === ctx.lang) return "";
-    const url = hee(await page.url(l));
     const isActive = l === ctx.lang;
     const cls = [`-${l}`, isActive ? "-active" : ""].filter(Boolean).join(" ");
-    const ariaLabel = !longText ? ` aria-label="${hee(long[l] ?? l)}"` : "";
-    const ariaCurrent = isActive ? " aria-current=page" : "";
+    const ariaLabel = !longText ? html` aria-label="${long[l] ?? l}"` : "";
+    const ariaCurrent = isActive ? html.raw(" aria-current=page") : "";
     const label = longText ? (long[l] ?? l) : l;
-    return `<li><a href="${url}" onclick="event.preventDefault();location.href=this.href+location.hash" class="${cls}" lang="${hee(l)}" hreflang="${hee(l)}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
+    return html`<li><a href="${await page.url(l)}" onclick="event.preventDefault();location.href=this.href+location.hash" class="${cls}" lang="${l}" hreflang="${l}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
   }));
 
-  const filteredItems = items.filter(Boolean).join("");
-  if (!filteredItems) return "<span></span>";
+  const filteredItems = items.filter(Boolean);
+  if (!filteredItems.length) return html`<span></span>`;
 
-  return `<nav aria-label=Languages><ul>${filteredItems}</ul></nav>`;
+  return html`<nav aria-label=Languages><ul>${html.join(filteredItems)}</ul></nav>`;
 }
 
 export const cms = {

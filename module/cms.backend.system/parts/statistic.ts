@@ -1,4 +1,4 @@
-import { hee, sql, type Db } from "../../core/mod.ts";
+import { html, sql, type Db, type HtmlString } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 
 type DbTableStat = { name: string; bytes: number };
@@ -82,7 +82,7 @@ async function dirTree(appPATH: string): Promise<Record<string, TreeNode>> {
   return tree;
 }
 
-export default async function summary(node: Node): Promise<string> {
+export default async function summary(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
   const appPATH = node.app.appPATH;
 
@@ -94,18 +94,18 @@ export default async function summary(node: Node): Promise<string> {
   const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", appPATH] }).output();
   const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop() ?? "0");
 
-  const loadBtn = `<button data-load-part=statistic-details>Details</button>`;
-
-  return `
+  return html`
 <table class=u2-table style="width:auto;">
   <tr><td>DB Gesamt<td style="text-align:right"><u2-bytes>${dbTotal}</u2-bytes>
   <tr><td>Daten auf Disk<td style="text-align:right"><u2-bytes>${diskTotal}</u2-bytes>
   <tr><td>Freier Speicher<td style="text-align:right"><u2-bytes>${diskFree}</u2-bytes>
 </table>
-<div class=-body cms-part=statistic-details>${loadBtn}</div>`;
+<div class=-body cms-part=statistic-details>
+  <button data-load-part=statistic-details>Details</button>
+</div>`;
 }
 
-export async function details(node: Node): Promise<string> {
+export async function details(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
   const appPATH = node.app.appPATH;
 
@@ -115,19 +115,19 @@ export async function details(node: Node): Promise<string> {
     .sort((a, b) => b[1] - a[1]);
 
   const folderRows = array.map(([folder, size]) =>
-    `<tr><td>${hee(folder)}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`
-  ).join("");
+    html`<tr><td>${folder}<td style="text-align:right"><u2-bytes>${size}</u2-bytes>`
+  );
 
   const tables = await dbTableStats(db);
   tables.sort((a, b) => b.bytes - a.bytes);
   const tableRows = tables.map((t) =>
-    `<tr><td>${hee(t.name)}<td style="text-align:right"><u2-bytes>${t.bytes}</u2-bytes>`
-  ).join("");
+    html`<tr><td>${t.name}<td style="text-align:right"><u2-bytes>${t.bytes}</u2-bytes>`
+  );
 
-  return `
+  return html`
 <h2>Ordner</h2>
-<table class=u2-table style="width:auto"><tbody>${folderRows}</table>
+<table class=u2-table style="width:auto"><tbody>${html.join(folderRows)}</table>
 
 <h2>DB-Tabellen</h2>
-<table class=u2-table style="width:auto"><tbody>${tableRows}</table>`;
+<table class=u2-table style="width:auto"><tbody>${html.join(tableRows)}</table>`;
 }

@@ -1,4 +1,4 @@
-import { hee, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type AptNode, type Verb, type App } from "../core/mod.ts";
+import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type AptNode, type Verb, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.api";
@@ -63,9 +63,9 @@ function* walk(node: AptNode, ctx: Ctx, segments: string[] = [], nodes: AptNode[
 }
 
 
-function schemaToFormFields(s: StandardSchema | undefined): string {
+function schemaToFormFields(s: StandardSchema | undefined): HtmlString | "" {
   if (!s || s.kind !== "object" || !s.shape) return "";
-  return Object.entries(s.shape).map(([k, v]) => {
+  return html.join(Object.entries(s.shape).map(([k, v]) => {
     const field = v as StandardSchema;
     const inner = field.kind === "optional" ? field.inner ?? field : field;
     const required = field.kind !== "optional" && !field.defaultValue;
@@ -75,17 +75,16 @@ function schemaToFormFields(s: StandardSchema | undefined): string {
       : toJsonSchema(inner);
     const description = field.description ?? inner.description;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name: k, required });
-    const label = hee(k) + (required ? "" : "?");
-    return `
+    return html`
       <label class=-field>
         <span>
-          ${label}
+          ${k + (required ? "" : "?")}
           <br>
-          <small>${hee(description)}</small>
+          <small>${description}</small>
         </span>
-        <span>${inputHtml}</span>
+        <span>${html.raw(inputHtml)}</span>
       </label>`;
-  }).join("");
+  }));
 }
 
 const ACCESS_COLORS: Record<Route["accessLevel"], string> = {
@@ -96,40 +95,40 @@ const ACCESS_COLORS: Record<Route["accessLevel"], string> = {
   none:      "var(--red)",
 };
 
-function pathParamFields(params: PathParam[]): string {
-  return params.map(({ name, schema }) => {
+function pathParamFields(params: PathParam[]): HtmlString {
+  return html.join(params.map(({ name, schema }) => {
     const jsonSchema = schema ? toJsonSchema(schema) : { type: "string" };
     const description = schema?.description;
     const inputHtml = toInput({ title: description, ...jsonSchema }, { name, required: true });
-    return `<label class=-field><span>${hee(name)}</span><span>${inputHtml}</span></label>`;
-  }).join("");
+    return html`<label class=-field><span>${name}</span><span>${html.raw(inputHtml)}</span></label>`;
+  }));
 }
 
-function routeHtml(r: Route, idx: number, toolJson: string): string {
+function routeHtml(r: Route, idx: number, toolJson: string): HtmlString {
   const accessColor = ACCESS_COLORS[r.accessLevel];
   const paramForm = pathParamFields(r.pathParams);
   const inputForm = schemaToFormFields(r.input);
   const queryForm = schemaToFormFields(r.query);
   const hasForm = r.pathParams.length || !!inputForm || !!queryForm;
 
-  return `
+  return html`
   <h4>
     <span style="width:5rem">
-      <small class="u2-badge -method -${hee(r.method)}">${hee(r.method.toUpperCase())}</small>
+      <small class="u2-badge -method -${r.method}">${r.method.toUpperCase()}</small>
     </span>
-    <code class=-path>${hee(r.path)}</code>
-    <small class=-desc>${hee(r.description)}</small>
-    <span class=-access style="color:${hee(accessColor)}">${hee(r.accessLevel)}</span>
+    <code class=-path>${r.path}</code>
+    <small class=-desc>${r.description}</small>
+    <span class=-access style="color:${accessColor}">${r.accessLevel}</span>
   </h4>
-  <div class="-body -route" data-idx="${idx}" data-method="${hee(r.method)}" data-path="${hee(r.path)}">
+  <div class="-body -route" data-idx="${idx}" data-method="${r.method}" data-path="${r.path}">
     <u2-tabs>
       <h3>Test</h3>
       <div>
         <form class="-form u2-table" style="width:auto">
-          ${hasForm ? `
-            ${r.pathParams.length ? `<div class=-section><b>Path params</b>${paramForm}</div>` : ""}
-            ${inputForm           ? `<div class=-section><b>Body</b>${inputForm}</div>` : ""}
-            ${queryForm           ? `<div class=-section><b>Query</b>${queryForm}</div>` : ""}
+          ${hasForm ? html`
+            ${r.pathParams.length ? html`<div class=-section><b>Path params</b>${paramForm}</div>` : ""}
+            ${inputForm           ? html`<div class=-section><b>Body</b>${inputForm}</div>` : ""}
+            ${queryForm           ? html`<div class=-section><b>Query</b>${queryForm}</div>` : ""}
           ` : ""}
           <u2-buttongroup>
             <button type=submit>Send</button>
@@ -139,12 +138,12 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
         <u2-code id="api-result-${idx}"></u2-code>
       </div>
       <h3>Tool-Json</h3>
-      <u2-code id="api-tool-${idx}">${hee(toolJson)}</u2-code>
+      <u2-code id="api-tool-${idx}">${toolJson}</u2-code>
     </u2-tabs>
   </div>`;
 }
 
-function render(): string {
+function render(): HtmlString {
   const ctx = getCtx();
   const appUrl = ctx.req.appUrl ?? "/";
 
@@ -163,10 +162,10 @@ function render(): string {
     })),
   );
 
-  const routesHtml = routes.map((r, i) => routeHtml(r, i, toolJsonByName.get(r.name) ?? "{}")).join("");
+  const routesHtml = html.join(routes.map((r, i) => routeHtml(r, i, toolJsonByName.get(r.name) ?? "{}")));
 
-  return `
-<div class=u2-card data-routes="${hee(routesJson)}" data-app-url="${hee(appUrl)}">
+  return html`
+<div class=u2-card data-routes="${routesJson}" data-app-url="${appUrl}">
   <div class="u2-flex -filter -head">
     API <input type=search placeholder="Filter routes…" id=api-search>
   </div>

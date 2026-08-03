@@ -1,4 +1,4 @@
-import { hee, html, sql, sqlSearch, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, sql, sqlSearch, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.search1";
@@ -41,13 +41,13 @@ const terms = (search: string) => search.toLowerCase().split(/\s+/).filter(Boole
 /** Text around the hits: matches marked, the stretches between them cut down to their edges. */
 function snippet(text: string, words: string[], parts = 7, before = 30, after = 10): HtmlString {
   const plain = text.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
-  if (!words.length) return html.raw(hee(plain.slice(0, before + after)));
+  if (!words.length) return html`${plain.slice(0, before + after)}`;
   const out = plain.split(new RegExp(`(${words.map(escapeRe).join("|")})`, "i")).slice(0, parts).map((piece) =>
     words.includes(piece.toLowerCase())
-      ? `<mark>${hee(piece)}</mark>`
-      : hee(piece.length > before + after + 3 ? `${piece.slice(0, after)}… ${piece.slice(-before)}` : piece)
+      ? html`<mark>${piece}</mark>`
+      : html`${piece.length > before + after + 3 ? `${piece.slice(0, after)}… ${piece.slice(-before)}` : piece}`
   );
-  return html.raw(out.join(""));
+  return html.join(out);
 }
 
 /** Matching pages, best first. A hit on a content counts for the page that carries it. */

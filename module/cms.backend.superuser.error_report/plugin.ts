@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, sqlSearch, type Sql, type Ctx, type App } from "../core/mod.ts";
+import { html, getCtx, sql, sqlSearch, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
 import { backend, u2 } from "../cms.backend/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
 
@@ -39,7 +39,7 @@ function makeFileHelper(ctx: Ctx) {
   return { editorLink, fileDisplay, localPath };
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
@@ -60,42 +60,39 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
   const sources = await db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`;
   const prios   = await db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`;
-  const opts    = (vals: string[], cur: string) => vals.map(v => `<option ${v === cur ? "selected" : ""}>${hee(v)}</option>`).join("");
+  const opts    = (vals: string[], cur: string) => html.join(vals.map(v => html`<option ${v === cur ? "selected" : ""}>${v}</option>`));
   const ranges: [string, string][] = [["", await t`all time`], ["1", await t`last 24h`], ["7", await t`last 7 days`], ["30", await t`last 30 days`]];
   const range  = get.range ?? "30"; // default window keeps the group scan off the full table
 
-  const filterForm = `
+  const filterForm = html.async`
   <form>
-    <input type=search name=search value="${hee(get.search)}" placeholder="${await t`message, /path, IP or id`}"
-      title="${await t`Words search the message, a path (with /) the file, an IP address or a numeric id match exactly`}">
+    <input type=search name=search value="${get.search}" placeholder="${t`message, /path, IP or id`}"
+      title="${t`Words search the message, a path (with /) the file, an IP address or a numeric id match exactly`}">
     <select name=source>
-      <option value="">${await t`All sources`}</option>${opts(sources, get.source ?? "")}
+      <option value="">${t`All sources`}</option>${opts(sources, get.source ?? "")}
     </select>
     <select name=prio>
-      <option value="">${await t`All priorities`}</option>${opts(prios, get.prio ?? "")}
+      <option value="">${t`All priorities`}</option>${opts(prios, get.prio ?? "")}
     </select>
     <select name=range>
-      ${ranges.map(([v, l]) => `<option value="${v}" ${v === range ? "selected" : ""}>${hee(l)}</option>`).join("")}
+      ${html.join(ranges.map(([v, l]) => html`<option value="${v}" ${v === range ? "selected" : ""}>${l}</option>`))}
     </select>
     <select name=order>
-      <option value=max_id>${await t`sort by date`}</option>
-      <option value=num_ip ${get.order === "num_ip" ? "selected" : ""}>${await t`sort by number of IPs`}</option>
+      <option value=max_id>${t`sort by date`}</option>
+      <option value=num_ip ${get.order === "num_ip" ? "selected" : ""}>${t`sort by number of IPs`}</option>
     </select>
   </form>`;
 
-  const tools = `
+  return html.async`
+<div class=u2-card>
+  <div class=-head>${t`Errors`}</div>
   <div class=-body>
     ${filterForm}
     <div>
-      <button data-delete-matching u2-confirm="${await t`Really delete all matching entries?`}">${await t`Delete matching`}</button>
+      <button data-delete-matching u2-confirm="${t`Really delete all matching entries?`}">${t`Delete matching`}</button>
     </div>
-  </div>`;
-
-  return `
-<div class=u2-card>
-  <div class=-head>${await t`Errors`}</div>
-  ${tools}
-  <div cms-part=list style="overflow:auto; max-height:80vh; padding:0; border-top:.4rem solid var(--color-darker)">${await list(node, { ctx, vars: { ...get, range } })}</div>
+  </div>
+  <div cms-part=list style="overflow:auto; max-height:80vh; padding:0; border-top:.4rem solid var(--color-darker)">${list(node, { ctx, vars: { ...get, range } })}</div>
 </div>`;
 }
 
@@ -137,7 +134,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
 }
 
 // List part — re-rendered live on filter input via cms.reloadPart(nid, "list", form values).
-async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<string> {
+async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const { t, db } = node.app;
   const orderSql = vars.order !== "num_ip" ? "g.max_id DESC" : "g.num_ip DESC, g.num DESC";
   const where = filterWhere(db, vars);
@@ -169,11 +166,11 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     ORDER BY ${sql.raw(orderSql)}`;
 
   const filtered = [vars.search, vars.source, vars.prio, vars.range].some(v => String(v ?? "").trim());
-  if (!rows.length) return `<div class=-body>${filtered ? await t`No matching entries` : await t`Great, no errors so far!`}</div>`;
+  if (!rows.length) return html`<div class=-body>${filtered ? await t`No matching entries` : await t`Great, no errors so far!`}</div>`;
 
   const { editorLink } = makeFileHelper(ctx);
   const u = ctx.req.url.toURL();
-  let tableRows = "";
+  const trs: HtmlString[] = [];
   for (const row of rows) {
     const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" })[String(row.prio)] ?? "var(--gray)";
     const num     = Number(row.num)     || 0;
@@ -187,14 +184,14 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     u.searchParams.set("col", String(row.col));
     const entriesUrl = u.search;
     const editorUrl  = editorLink(row.file, row.line, row.col);
-    tableRows += `
+    trs.push(html`
 <tr u2-href>
   <td style="width:3rem; white-space:nowrap">
-    <small class=u2-badge style="background-color:${color}">${hee(row.prio || "?")}</small> <small>${num}x</small>
+    <small class=u2-badge style="background-color:${color}">${row.prio || "?"}</small> <small>${num}x</small>
   <td style="width:6rem">
-    <a href="${hee(entriesUrl)}">${hee(row.num_ip)} IPs</a>
+    <a href="${entriesUrl}">${row.num_ip} IPs</a>
   <td style="width:6rem">
-    ${hee(row.source)}
+    ${row.source}
   <td style="width:6rem; white-space:nowrap">
     <small>
       <div style="display:inline-block; border:1px solid; width:1.875rem; vertical-align:middle">
@@ -207,31 +204,31 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       </div> oldies: ${numUns}
     </small>
   <td>
-    <a target=_blank href="${hee(editorUrl)}">${hee(msg.slice(0, 300))}${msg.length > 300 ? "…" : ""}</a><br>
+    <a target=_blank href="${editorUrl}">${msg.slice(0, 300)}${msg.length > 300 ? "…" : ""}</a><br>
     <small>${u2.time(row.time)}</small>
-    <div>${hee(row.usr_email)}</div>
+    <div>${row.usr_email}</div>
   <td>
     <button class=u2-unstyle type=button
       data-delete-group
-      data-source="${hee(row.source)}"
-      data-file="${hee(row.file)}"
-      data-line="${hee(row.line)}"
-      data-col="${hee(row.col)}"
-      aria-label=Delete><u2-ico icon=delete aria-hidden=true>✕</u2-ico></button>`;
+      data-source="${row.source}"
+      data-file="${row.file}"
+      data-line="${row.line}"
+      data-col="${row.col}"
+      aria-label=Delete><u2-ico icon=delete aria-hidden=true>✕</u2-ico></button>`);
   }
 
-  return `
+  return html`
 <table class=u2-table>
   <tbody style="vertical-align:baseline">
-    ${tableRows}
+    ${html.join(trs)}
 </table>`;
 }
 
-async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>): Promise<string> {
+async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>): Promise<HtmlString> {
   const db = node.app.db;
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
-  if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return `<div>${await node.app.t`Invalid parameters`}</div>`;
+  if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return html`<div>${await node.app.t`Invalid parameters`}</div>`;
   const where = groupWhere(get);
 
   const rows = await db.query`
@@ -242,82 +239,78 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
       LEFT JOIN usr  ON sess.usr_id = usr.id
     WHERE ${where} ORDER BY e.time DESC LIMIT 200`;
 
-  let tableRows = "";
+  const trs: HtmlString[] = [];
   const u = ctx.req.url.toURL();
   const back = ctx.req.url.toURL();
   for (const k of ["show", "source", "file", "line", "col"]) back.searchParams.delete(k);
   for (const row of rows) {
     const eUrl = editorLink(row.file ?? "", row.line, row.col);
 
-    let btHtml = "";
+    const btTrs: HtmlString[] = [];
     const bt = row.backtrace ? JSON.parse(row.backtrace) : [];
     for (const item of bt) {
-      btHtml += `<tr>
-  <td style="padding-right:1rem"><a href="${hee(editorLink(item.file ?? "", item.line, item.col))}" target=_blank>${hee(fileDisplay(item.file ?? ""))}</a>
-  <td style="padding-right:1rem">${hee(item.function)}
-  <td>${hee(item.args ? JSON.stringify(item.args) : "")}`;
+      btTrs.push(html`<tr>
+  <td style="padding-right:1rem"><a href="${editorLink(item.file ?? "", item.line, item.col)}" target=_blank>${fileDisplay(item.file ?? "")}</a>
+  <td style="padding-right:1rem">${item.function}
+  <td>${item.args ? JSON.stringify(item.args) : ""}`);
     }
 
     u.searchParams.set("id", String(row.id));
-    tableRows += `
+    trs.push(html`
 <tr style="white-space:nowrap">
   <td>
-    <a href="${hee(u.search)}">${u2.time(row.time)} <br> ${hee(row.log_id)}</a>
-    <br><button onclick="cmsApi(${node.id},{delete:{id:'${hee(row.id)}'}}); this.disabled=true">delete</button>
+    <a href="${u.search}">${u2.time(row.time)} <br> ${row.log_id}</a>
+    <br><button onclick="cmsApi(${node.id},{delete:{id:'${row.id}'}}); this.disabled=true">delete</button>
   <td>
-    <b>${hee(row.message)}</b><br>
-    <a href="${hee(row.request)}" target=_blank>${hee(row.request)}</a><br>
-    <a href="${hee(row.referer)}" target=_blank>${hee(row.referer)}</a><br>
-    <small>${hee(row.browser)}</small>
-    <br>${hee(row.ip)}
-    <br>${hee(row.email)}
+    <b>${row.message}</b><br>
+    <a href="${row.request}" target=_blank>${row.request}</a><br>
+    <a href="${row.referer}" target=_blank>${row.referer}</a><br>
+    <small>${row.browser}</small>
+    <br>${row.ip}
+    <br>${row.email}
   <td>
-    <a href="${hee(eUrl)}" target=_blank title="${hee(row.file)}" style="color:inherit; text-decoration:none">
-      ${row.sample ? `<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${hee(row.sample)}</pre>` : "edit File"}
+    <a href="${eUrl}" target=_blank title="${row.file}" style="color:inherit; text-decoration:none">
+      ${row.sample ? html`<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${row.sample}</pre>` : "edit File"}
     </a>
-  <td>${bt.length ? `<table>${btHtml}</table>` : ""}`;
+  <td>${bt.length ? html`<table>${html.join(btTrs)}</table>` : ""}`);
   }
 
-  return `
+  return html.async`
 <div class=u2-card style="height:88vh; overflow:auto; flex:1 1 80rem">
-  <div class=-head><a href="${hee(back.search || "?")}">← ${await node.app.t`Errors`}</a> &nbsp; ${hee(
-    get.file
-  )} : ${hee(get.line)} : ${hee(get.col)}</div>
+  <div class=-head><a href="${back.search || "?"}">← ${node.app.t`Errors`}</a> &nbsp; ${get.file} : ${get.line} : ${get.col}</div>
   <table class=u2-table>
     <tbody style="vertical-align:baseline">
-      ${tableRows}
+      ${html.join(trs)}
   </table>
 </div>`;
 }
 
-async function renderDetail(node: Node, id: number): Promise<string> {
+async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
   const { editorLink, fileDisplay, localPath } = makeFileHelper(ctx);
 
   const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;
-  if (!error) return `<div>${await t`Error entry not found`}</div>`;
+  if (!error) return html`<div>${await t`Error entry not found`}</div>`;
 
   const log  = error.log_id ? await db.row`SELECT * FROM log WHERE id = ${error.log_id}` : null;
   const sess = log?.sess_id  ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr  = sess?.usr_id  ? await db.row`SELECT * FROM usr  WHERE id = ${sess.usr_id}` : null;
 
-  let btHtml = "";
+  const btTrs: HtmlString[] = [];
   const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
   for (const item of bt) {
     const isLocal = localPath(item.file ?? "") !== null;
-    const position = `<span style="opacity:.6">: ${hee(item.line)}${item.col ? " : " + hee(item.col) : ""}</span>`;
+    const position = html`<span style="opacity:.6">: ${item.line}${item.col ? " : " + item.col : ""}</span>`;
     const fileCell = isLocal
-      ? `<a href="${hee(editorLink(item.file, item.line, item.col))}" target=_blank>${
-        hee(fileDisplay(item.file ?? ""))
-      } ${position}</a>`
-      : `${hee(item.file)} ${position}`;
-    btHtml += `
+      ? html`<a href="${editorLink(item.file, item.line, item.col)}" target=_blank>${fileDisplay(item.file ?? "")} ${position}</a>`
+      : html`${item.file} ${position}`;
+    btTrs.push(html`
 <tr>
   <td>${fileCell}
-  <td>${hee(item.function)}
-  <td>${hee(item.args ? JSON.stringify(item.args) : "")}`;
+  <td>${item.function}
+  <td>${item.args ? JSON.stringify(item.args) : ""}`);
   }
 
   const historyOf = get.history_of ?? "ip";
@@ -326,7 +319,7 @@ async function renderDetail(node: Node, id: number): Promise<string> {
   else if (historyOf === "sess"   && log?.sess_id)   historyWhere = sql`log.sess_id = ${log.sess_id}`;
   else if (historyOf === "client" && log?.client_id) historyWhere = sql`log.client_id = ${log.client_id}`;
 
-  let historyRows = "";
+  const historyTrs: HtmlString[] = [];
   if (historyWhere) {
     const logs = await db.query`
       SELECT log.*, url.url, referer.url AS referer
@@ -339,97 +332,98 @@ async function renderDetail(node: Node, id: number): Promise<string> {
     const eu = ctx.req.url.toURL(); eu.searchParams.delete("history_of");
     for (const item of logs) {
       const errorItems = await db.query`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
-      let errorLinks = "";
+      const errorLinks: HtmlString[] = [];
       for (const eItem of errorItems) {
-        const active = eItem.id === error.id ? "&#x25B6;&#xFE0E;" : "";
+        const active = eItem.id === error.id ? html.raw("&#x25B6;&#xFE0E;") : "";
         eu.searchParams.set("id", String(eItem.id));
-        errorLinks += `<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:.1875rem 0; margin-bottom:-1px; display:block" href="${hee(eu.search)}">${active} ${hee(eItem.message)}</a>`;
+        errorLinks.push(html`<a style="color:var(--red); border:1px solid; border-width:1px 0; padding:.1875rem 0; margin-bottom:-1px; display:block" href="${eu.search}">${active} ${eItem.message}</a>`);
       }
-      historyRows += `
+      historyTrs.push(html`
 <tr>
-  <td>${u2.time(item.time)} <br> Session: ${hee(item.sess_id)} <br> Log-ID: ${hee(item.id)}
+  <td>${u2.time(item.time)} <br> Session: ${item.sess_id} <br> Log-ID: ${item.id}
   <td>
-    <a href="${hee(item.url)}" target=_blank>${hee(item.url)}</a><br>
-    <div style="font-size:.9em; color:#aaa">${hee(item.referer)}</div>
-    ${errorLinks}
-  <td><div style="max-width:37.5rem; overflow:auto">${hee(item.post)}</div>`;
+    <a href="${item.url}" target=_blank>${item.url}</a><br>
+    <div style="font-size:.9em; color:#aaa">${item.referer}</div>
+    ${html.join(errorLinks)}
+  <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`);
     }
   }
 
   const hu = ctx.req.url.toURL(); hu.searchParams.set("id", String(id));
-  const histHref = (h: string) => { hu.searchParams.set("history_of", h); return hee(hu.search); };
-  const historyLinks = `
+  const histHref = (h: string) => { hu.searchParams.set("history_of", h); return hu.search; };
+  const historyLinks = html`
 <a href="${histHref("ip")}">IP</a>
-${log ? `<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client")}">Client</a>` : ""}`;
+${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client")}">Client</a>` : ""}`;
 
   const isLocalFile = localPath(error.file ?? "") !== null;
+  const sample = error.sample ? html`<pre style="box-shadow:0 0 .625rem; padding:.625rem">${error.sample}</pre>` : "";
   const fileBlock = isLocalFile
-    ? `<a style="color:inherit; text-decoration:none" target=_blank href="${hee(editorLink(error.file, error.line, error.col))}">
-      <b>${hee(fileDisplay(error.file ?? ""))}</b> line: ${hee(error.line)} column: ${hee(error.col)}
-      ${error.sample ? `<pre style="box-shadow:0 0 .625rem; padding:.625rem">${hee(error.sample)}</pre>` : ""}
+    ? html`<a style="color:inherit; text-decoration:none" target=_blank href="${editorLink(error.file, error.line, error.col)}">
+      <b>${fileDisplay(error.file ?? "")}</b> line: ${error.line} column: ${error.col}
+      ${sample}
     </a>`
-    : `<b>${hee(error.file)}</b> line: ${hee(error.line)} column: ${hee(error.col)}
-    ${error.sample ? `<pre style="box-shadow:0 0 .625rem; padding:.625rem">${hee(error.sample)}</pre>` : ""}`;
+    : html`<b>${error.file}</b> line: ${error.line} column: ${error.col}
+    ${sample}`;
 
-  return `
+  return html.async`
 <div class=u2-flex style="font-size:.95em">
   <div class=u2-card style="overflow:auto; width:auto; flex:1 1 20rem">
-    <div class=-head>${await t`Error`}</div>
+    <div class=-head>${t`Error`}</div>
     <div class=-body>
       <p>
-        <span style="color:var(--red)">${hee(error.source)} ${hee(error.prio)}:</span>
-        ${hee(error.message)}
+        <span style="color:var(--red)">${error.source} ${error.prio}:</span>
+        ${error.message}
       </p>
       ${fileBlock}
     </div>
     <table class=u2-table>
-      <tr><th>${await t`Id`}<td>${error.id}
-      <tr><th>${await t`Request`}<td>
-        <a href="${hee(error.request)}">${hee(error.request)}</a><br>
-        <small>${await t`Referer`} <a href="${hee(error.referer)}">${hee(error.referer)}</a></small>
-      <tr><th>${await t`Browser`}<td><small>${hee(error.browser)}</small>
-      <tr><th>${await t`Time`}<td>${u2.time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
-      <tr><th>${await t`IP`}<td>${hee(error.ip)}
+      <tr><th>${t`Id`}<td>${error.id}
+      <tr><th>${t`Request`}<td>
+        <a href="${error.request}">${error.request}</a><br>
+        <small>${t`Referer`} <a href="${error.referer}">${error.referer}</a></small>
+      <tr><th>${t`Browser`}<td><small>${error.browser}</small>
+      <tr><th>${t`Time`}<td>${u2.time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+      <tr><th>${t`IP`}<td>${error.ip}
     </table>
     <div class=-body>
-      ${sess ? `<b>Sess</b><pre>${hee(JSON.stringify(sess, null, 2))}</pre>` : ""}
-      <button onclick="cmsApi(${node.id},{delete:{id:'${hee(error.id)}'}}); this.disabled=true">delete</button>
+      ${sess ? html`<b>Sess</b><pre>${JSON.stringify(sess, null, 2)}</pre>` : ""}
+      <button onclick="cmsApi(${node.id},{delete:{id:'${error.id}'}}); this.disabled=true">delete</button>
     </div>
   </div>
 
   <div class=u2-card style="overflow:auto;">
-    <div class=-head>${await t`Backtrace`}</div>
+    <div class=-head>${t`Backtrace`}</div>
     <table class=u2-table>
       <thead><tr>
-        <th>${await t`File`}
-        <th>${await t`Function`}
-        <th>${await t`Arguments`}
-      <tbody>${btHtml}
+        <th>${t`File`}
+        <th>${t`Function`}
+        <th>${t`Arguments`}
+      <tbody>${html.join(btTrs)}
     </table>
   </div>
 
   <div class=u2-card style="overflow:auto;">
-    <div class=-head>${await t`User`}</div>
+    <div class=-head>${t`User`}</div>
     <div class=-body>
-      ${usr ? `<pre>${hee(JSON.stringify(usr, null, 2))}</pre>` : `(${await t`no user`})`}
+      ${usr ? html`<pre>${JSON.stringify(usr, null, 2)}</pre>` : html`(${await t`no user`})`}
     </div>
   </div>
 
   <div class=u2-card style="overflow:auto;">
-    <div class=-head>${await t`History`}</div>
-    <div class=-body style="flex-grow:0">${await t`History of:`} ${historyLinks}</div>
+    <div class=-head>${t`History`}</div>
+    <div class=-body style="flex-grow:0">${t`History of:`} ${historyLinks}</div>
     <table class=u2-table>
       <thead><tr>
-        <th>${await t`Time / Session`}
-        <th>${await t`URL / Referer`}
-        <th>${await t`POST`}
-      <tbody>${historyRows}
+        <th>${t`Time / Session`}
+        <th>${t`URL / Referer`}
+        <th>${t`POST`}
+      <tbody>${html.join(historyTrs)}
     </table>
   </div>
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const db = app.db;
   const rows = await db.query`
     SELECT e.prio, e.source, e.file, e.line, e.col, e.message, g.num
@@ -443,33 +437,33 @@ export async function backendDashboardWidget(app: App): Promise<string> {
     ORDER BY CASE e.prio WHEN 'error' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END, g.max_id DESC
     LIMIT 5`.catch(() => []);
 
-  if (!rows.length) return `<span style="color:var(--green)">&#10003; No entries (last 7 days)</span>`;
+  if (!rows.length) return html`<span style="color:var(--green)">&#10003; No entries (last 7 days)</span>`;
 
   const errNode = await cmsOf(app).nodeByModule("cms.backend.superuser.error_report");
   const baseUrl = errNode ? await errNode.url() : null;
 
   const color: Record<string, string> = { error: "var(--red)", warning: "var(--orange)", notice: "var(--gray)" };
-  let tableRows = "";
+  const trs: HtmlString[] = [];
   for (const row of rows) {
     const c = color[row.prio] ?? "#333";
     const qs = "?show=entries&source=" + encodeURIComponent(row.source) + "&file=" + encodeURIComponent(row.file) + "&line=" + encodeURIComponent(row.line) + "&col=" + encodeURIComponent(row.col);
-    const detailUrl = baseUrl ? hee(baseUrl.replace(/(#|$)/, qs + "$1")) : null;
-    const msg = `<span style="max-width:12.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${hee(row.message)}</span>`;
-    tableRows += `<tr>
-    <td><span style="color:${c};font-weight:bold">${hee(row.prio)}</span>
-    <td>${hee(row.source)}
-    <td>${detailUrl ? `<a href="${detailUrl}">${msg}</a>` : msg}
-    <td style="color:#888">${hee(row.num)}x`;
+    const detailUrl = baseUrl ? baseUrl.replace(/(#|$)/, qs + "$1") : null;
+    const msg = html`<span style="max-width:12.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${row.message}</span>`;
+    trs.push(html`<tr>
+    <td><span style="color:${c};font-weight:bold">${row.prio}</span>
+    <td>${row.source}
+    <td>${detailUrl ? html`<a href="${detailUrl}">${msg}</a>` : msg}
+    <td style="color:#888">${row.num}x`);
   }
 
-  return `<div style="overflow:auto; padding:0">
+  return html`<div style="overflow:auto; padding:0">
 <table class=u2-table style="width:100%">
   <thead><tr>
     <th>Prio
     <th>Source
     <th>Message
     <th>Count
-  <tbody>${tableRows}
+  <tbody>${html.join(trs)}
 </table></div>`;
 }
 

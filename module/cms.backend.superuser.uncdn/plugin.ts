@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import * as nodePath from "node:path";
-import { hee, type App } from "../core/mod.ts";
+import { html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { cacheByteLimit, fetchPolicy, uncdn } from "../uncdn/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -13,10 +13,10 @@ export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "UnCDN Cache", de: "UnCDN Cache" });
 }
 
-type TreeResult = { html: string; size: number };
+type TreeResult = { html: HtmlString; size: number };
 
 async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
-  let html = "";
+  const parts: HtmlString[] = [];
   let size = 0;
   try {
     const entries: Deno.DirEntry[] = [];
@@ -32,9 +32,9 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
         const sub = await buildTree(full + "/", baseLen);
         return {
           size: sub.size,
-          html: `<u2-tree>
+          html: html`<u2-tree>
             <u2-ico slot=icon icon=folder>🗀</u2-ico>
-            ${hee(e.name)}
+            ${e.name}
             <small style="margin-left:auto"><u2-bytes>${sub.size}</u2-bytes></small>
             <button data-delete=${JSON.stringify(rel + "/")} class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
             ${sub.html}
@@ -44,21 +44,21 @@ async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
         const fileSize = (await Deno.stat(full).catch(() => null))?.size ?? 0;
         return {
           size: fileSize,
-          html: `<u2-tree>
+          html: html`<u2-tree>
             <u2-ico slot=icon icon=description>🗎</u2-ico>
-            <code>${hee(e.name)}</code>
+            <code>${e.name}</code>
             <small style="margin-left:auto"><u2-bytes>${fileSize}</u2-bytes></small>
             <button data-delete=${JSON.stringify(rel)} class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>
           </u2-tree>`,
         };
       }
     }));
-    for (const r of results) { html += r.html; size += r.size; }
+    for (const r of results) { parts.push(r.html); size += r.size; }
   } catch { /* empty or missing dir */ }
-  return { html, size };
+  return { html: html.join(parts), size };
 }
 
-async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<string> {
+async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
   const cacheDir = node.app.modules.get("uncdn")!.cache;
 
   if (vars.delete) {
@@ -95,20 +95,20 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     t`No origins declared yet.`,
   ]);
 
-  return `<div class=u2-flex>
+  return html`<div class=u2-flex>
   <div class="u2-card -sidebar" style="flex:0 0 auto">
     <div class=-head>${tInfo}</div>
     <div class=-body>
       <table class=u2-table>
         <tr><td>${tCacheSize}<td><u2-bytes>${totalSize}</u2-bytes>
         <tr><td>${tMaxCacheBytes}<td><u2-bytes>${maxCacheBytes}</u2-bytes>
-        <tr><td>${tFetchPolicy}<td><code>${hee(policy)}</code>
-        <tr><td>${tCachePath}<td><small><code>${hee(cacheDir)}</code></small>
+        <tr><td>${tFetchPolicy}<td><code>${policy}</code>
+        <tr><td>${tCachePath}<td><small><code>${cacheDir}</code></small>
       </table>
     </div>
     <div class=-head>${tAllowList}</div>
     <div class=-body>
-      ${origins.length ? `<table class=u2-table>${origins.map(o => `<tr><td><small><code>${hee(o)}</code></small>`).join("")}</table>` : `<em>${tNoOrigins}</em>`}
+      ${origins.length ? html`<table class=u2-table>${html.join(origins.map(o => html`<tr><td><small><code>${o}</code></small>`))}</table>` : html`<em>${tNoOrigins}</em>`}
     </div>
     <div class=-head>${tActions}</div>
     <div class=-body>
@@ -118,7 +118,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   <div class=u2-card style="flex:1">
     <div class=-head>${tCachedFiles}</div>
     <div class=-body>
-      ${tree ? `<u2-tree aria-expanded=true><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : `<em>${tNoCached}</em>`}
+      ${tree.html ? html`<u2-tree aria-expanded=true><u2-ico slot=icon icon=folder>🗀</u2-ico>root ${tree}</u2-tree>` : html`<em>${tNoCached}</em>`}
     </div>
   </div>
 </div>`;

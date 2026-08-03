@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { hee, type App, type Ctx } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name        = "cms.backend.web_auth";
@@ -11,7 +11,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.web_auth", { en: "WebAuthn", de: "WebAuthn" });
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db  = node.app.db;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_cred" in ctx.req.body) {
@@ -27,37 +27,37 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     ORDER BY wac.last_used DESC LIMIT 500`;
 
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
-  const tableRows = rows.map((r) => {
+  const trs = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    return `<tr>
-      <td>${hee(r.id)}
-      <td>${hee(userName)}<br><small style="color:#888">${hee(r.email)}</small>
-      <td>${hee(r.name)}
-      <td title="${hee(r.credential_id)}">${hee(String(r.credential_id ?? "").slice(0, 20))}…
-      <td>${hee(r.aaguid)}
-      <td>${hee(r.sign_count ?? "0")}
+    return html`<tr>
+      <td>${r.id}
+      <td>${userName}<br><small style="color:#888">${r.email}</small>
+      <td>${r.name}
+      <td title="${r.credential_id}">${r.credential_id?.slice(0, 20)}…
+      <td>${r.aaguid}
+      <td>${r.sign_count ?? "0"}
       <td>${fmt(r.created)}
       <td>${fmt(r.last_used)}
       <td><form method=post style="display:inline">
-        <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
-        <input type=hidden name=delete_cred value="${hee(r.id)}">
-        <button class=u2-unstyle u2-confirm="${hee(`Really delete ${r.name ?? r.id}?`)}"><u2-ico icon=delete>✕</u2-ico></button>
+        <input type=hidden name=csrfToken value="${ctx.csrfToken}">
+        <input type=hidden name=delete_cred value="${r.id}">
+        <button class=u2-unstyle u2-confirm="${`Really delete ${r.name ?? r.id}?`}"><u2-ico icon=delete>✕</u2-ico></button>
       </form>`;
-  }).join("\n");
+  });
 
   const empty = rows.length === 0
-    ? '<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.'
+    ? html`<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.`
     : "";
 
   const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(not configured)";
   const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(not configured)";
 
-  return `<div class=u2-flex>
+  return html.async`<div class=u2-flex>
 <div class=u2-card style="flex:0 1 24rem">
   <div class=-head>Configuration</div>
   <table class=u2-table>
-    <tr><th style="width:8em">Relying Party ID<td>${hee(rpId)}
-    <tr><th>RP Name<td>${hee(rpName)}
+    <tr><th style="width:8em">Relying Party ID<td>${rpId}
+    <tr><th>RP Name<td>${rpName}
   </table>
   <div class=-body>
     <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → web_auth</code>.</p>
@@ -77,7 +77,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
         <th>Registered
         <th>Last used
         <th width=80>
-      <tbody>${tableRows || empty}
+      <tbody>${trs.length ? html.join(trs, "\n") : empty}
     </table>
   </div>
 </div>

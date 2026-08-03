@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { hee, type App, type Ctx } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name        = "cms.backend.superuser.api_keys";
@@ -11,7 +11,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.api_keys", { en: "API Keys", de: "API-Schlüssel" });
 }
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const db  = node.app.db;
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_key" in ctx.req.body) {
@@ -27,27 +27,25 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     ORDER BY k.created DESC LIMIT 500`;
 
   const fmt = (ts: number) => ts ? new Date(ts * 1000).toLocaleDateString("en") : "-";
-  const tableRows = rows.map((r) => {
+  const trs = rows.map((r) => {
     const userName = [r.firstname, r.lastname].filter(Boolean).join(" ") || r.email || `#${r.usr_id}`;
-    return `<tr>
-      <td>${hee(r.id)}
-      <td>${hee(userName)}<br><small>${hee(r.email)}</small>
-      <td>${hee(r.name)}
-      <td><code>${hee(r.prefix)}…</code>
+    return html`<tr>
+      <td>${r.id}
+      <td>${userName}<br><small>${r.email}</small>
+      <td>${r.name}
+      <td><code>${r.prefix}…</code>
       <td>${fmt(r.created)}
       <td>${r.expires ? fmt(r.expires) : "–"}
       <td><form method=post style="display:inline">
-        <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
-        <input type=hidden name=delete_key value="${hee(r.id)}">
-        <button class=u2-unstyle u2-confirm="${hee(`Really delete ${r.name ?? r.id}?`)}"><u2-ico icon=delete>✕</u2-ico></button>
+        <input type=hidden name=csrfToken value="${ctx.csrfToken}">
+        <input type=hidden name=delete_key value="${r.id}">
+        <button class=u2-unstyle u2-confirm="${`Really delete ${r.name ?? r.id}?`}"><u2-ico icon=delete>✕</u2-ico></button>
       </form>`;
-  }).join("\n");
+  });
 
-  const empty = rows.length === 0
-    ? '<tr><td colspan=7 style="text-align:center;padding:1em">No API keys.'
-    : "";
+  const empty = html`<tr><td colspan=7 style="text-align:center;padding:1em">No API keys.`;
 
-  return `<div class=u2-card>
+  return html`<div class=u2-card>
   <div class=-head>API keys (${rows.length})</div>
   <div style="overflow:auto; padding:0">
     <table class=u2-table>
@@ -59,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
         <th>Created
         <th>Expires
         <th width=80>
-      <tbody>${tableRows || empty}
+      <tbody>${trs.length ? html.join(trs, "\n") : empty}
     </table>
   </div>
 </div>`;

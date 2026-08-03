@@ -1,5 +1,5 @@
 // Port of legacy m/cms.backend.struct.grpaccess — group access matrix per page.
-import { hee, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -91,9 +91,9 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
   const rootNode = await node.cms.node(Number(admin.rootPageNode()) || 1);
   const groups = await accessGroups(app);
 
-  let out = "";
+  const trs: HtmlString[] = [];
   await renderChildren(rootNode, 0);
-  return html.raw(out);
+  return html.join(trs);
 
   async function renderChildren(parent: Node, level: number): Promise<void> {
     for (const [id, subPage] of await parent.children({ type: treeType })) {
@@ -104,41 +104,40 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
       const inherited = subPage.vs.access === null;
 
       const toggleBtn = (await subPage.children({ type: treeType })).size
-        ? `<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
-        : "<span class=-toggle></span>";
+        ? html`<button class="u2-unstyle -toggle" data-toggle-node="${node.id}" data-toggle-id="${id}" data-toggle-value="${open ? 0 : 1}"><u2-ico icon="${open ? "remove" : "add"}">${open ? "−" : "+"}</u2-ico></button>`
+        : html`<span class=-toggle></span>`;
 
       const titleObj = await subPage.title();
       const titleStr = titleObj ? await (await titleObj.orFallback(ctx.lang)).get() : "";
       const titleCell = access >= 1
-        ? `<span style="flex:1">${hee(titleStr) || "(no text)"} <span style="color:#888">${hee(subPage.vs.name)}</span></span>` +
-          `<a style="vertical-align:middle" href="${hee(await subPage.url())}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
-        : `<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
+        ? html`<span style="flex:1">${titleStr || "(no text)"} <span style="color:#888">${subPage.vs.name}</span></span><a style="vertical-align:middle" href="${await subPage.url()}" title=open><u2-ico icon=open_in_new>↗</u2-ico></a>`
+        : html`<span style="flex:1; color:#bbb">(${await app.t`no access`})</span>`;
 
       // "Public" cell — toggles this page's own access (null = inherited)
       const editable = access > 2;
       const publicV = subPage.vs.access;
       const publicCell = editable
-        ? `<td class=-cell data-pid="${id}" v="${publicV == null ? "" : (publicV ? 1 : 0)}">`
-        : `<td style="font-style:italic">`;
+        ? html`<td class=-cell data-pid="${id}" v="${publicV == null ? "" : (publicV ? 1 : 0)}">`
+        : html`<td style="font-style:italic">`;
 
       // one cell per group
-      let grpCells = "";
+      const grpCells: HtmlString[] = [];
       const grpAccess = await pageGroupAccess(db, accessPage, groups);
       for (const g of groups) {
         const v = grpAccess[String(g.id)] ?? 0;
-        grpCells += editable
-          ? `<td class=-cell data-pid="${accessPage}" data-gid="${g.id}" v="${v}" title="${hee(g.name)} (${g.id})">`
-          : "<td>";
+        grpCells.push(editable
+          ? html`<td class=-cell data-pid="${accessPage}" data-gid="${g.id}" v="${v}" title="${g.name} (${g.id})">`
+          : html`<td>`);
       }
 
-      out += `
-<tr${(isCont || inherited) ? ` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage}">
+      trs.push(html`
+<tr${(isCont || inherited) ? html` class="${[isCont && "-isCont", inherited && "-inherited"].filter(Boolean).join(" ")}"` : ""} data-inherited="${accessPage}">
   <td style="text-align:right; font-weight:bold">
-    <a title="${await app.t`Set as start point`}" href="${hee("?rp=" + id)}">${hee(id)}</a>
+    <a title="${await app.t`Set as start point`}" href="${"?rp=" + id}">${id}</a>
   <td style="padding-left:${level * 15}px; white-space:nowrap">
     <div style="display:flex; align-items:center">${toggleBtn}${titleCell}</div>
   ${publicCell}
-  ${grpCells}`;
+  ${html.join(grpCells)}`);
 
       if (open) await renderChildren(subPage, level + 1);
     }

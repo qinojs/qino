@@ -1,11 +1,11 @@
-import { hee, sql, type Ctx } from "../core/mod.ts";
+import { html, sql, type Ctx, type HtmlString } from "../core/mod.ts";
 import { cmsCtx, type Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.not_found1";
 export const description = "Not-found page with suggestions and redirect editing.";
 export const needs = ["cms"];
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   // Extract words from request URI for fulltext search
   const words = (ctx.req.appPath.match(/\p{L}+/gu) ?? []).join(" ").trim();
@@ -26,21 +26,21 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   // Always include the home page (id=2)
   possiblePages.add("2");
 
-  let listItems = "";
+  const listItems: HtmlString[] = [];
   for (const pid of possiblePages) {
-    listItems += `<li>${await node.cms.link(await node.cms.node(Number(pid)))}`;
+    listItems.push(html`<li>${await node.cms.link(await node.cms.node(Number(pid)))}`);
   }
 
-  return `<div>
+  return html.async`<div>
   <div thm1-width class=u1-width>
-    ${await node.cms.text(node, "main")}
-    <ul>${listItems}</ul>
-    ${await renderEditBox(node, ctx)}
+    ${node.cms.text(node, "main")}
+    <ul>${html.join(listItems)}</ul>
+    ${renderEditBox(node, ctx)}
   </div>
 </div>`;
 }
 
-async function renderEditBox(node: Node, ctx: Ctx): Promise<string> {
+async function renderEditBox(node: Node, ctx: Ctx): Promise<HtmlString | string> {
   if (!node.edit) return "";
   const t = node.app.t;
   // Only show when the rendered page differs from the request target (i.e. we're on the real 404 page)
@@ -49,24 +49,24 @@ async function renderEditBox(node: Node, ctx: Ctx): Promise<string> {
   ctx.res.html.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.2/pub/js/frontend.mjs");
 
-  let savedMsg = "";
+  let savedMsg: HtmlString | string = "";
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "setRedirect" in ctx.req.body) {
     const redirect = String(ctx.req.body.redirect ?? "").trim();
     if (/^(javascript|data|vbscript|file):/i.test(redirect)) {
-      savedMsg = `<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
+      savedMsg = html`<p style="color:red">${await t`Unsupported redirect target.`}</p>`;
     } else if (redirect) {
       await node.app.db.table("page_redirect").ensure({ request: ctx.req.appPath, redirect });
-      savedMsg = `<p style="color:green">${await t`Redirect saved.`}</p>`;
+      savedMsg = html`<p style="color:green">${await t`Redirect saved.`}</p>`;
     }
   }
 
-  return `<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:.625rem auto">
+  return html.async`<div class="qgCMS u2-card" style="border:1px solid rgba(0,0,0,.5); background:#fff; margin:.625rem auto">
   ${savedMsg}
-  <div class=-head>${await t`Admin: define direct link to:`}</div>
+  <div class=-head>${t`Admin: define direct link to:`}</div>
   <form class=-body method=post style="display:flex; margin:0">
-    <input type=hidden name=csrfToken value="${hee(ctx.csrfToken)}">
+    <input type=hidden name=csrfToken value="${ctx.csrfToken}">
     <input type=qgcms-page name=redirect style="flex:1 1 auto; box-sizing:border-box; border-right:0">
-    <button name=setRedirect>${await t`ok`}</button>
+    <button name=setRedirect>${t`ok`}</button>
   </form>
 </div>`;
 }

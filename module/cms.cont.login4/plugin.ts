@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
 export const name = "cms.cont.login4";
 export const description = "Configurable login, recent-user, and logout forms.";
@@ -21,7 +21,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const edit = node.edit;
   const cms = node.cms;
   const settings = node.settings;
-  const csrfToken = hee(ctx.csrfToken);
+  const csrfToken = ctx.csrfToken;
 
   // Redirect if already logged in
   if (!edit && ctx.user) {
@@ -37,14 +37,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   }
 
   // Login error message
-  let errorHtml = "";
+  let errorHtml: HtmlString | string = "";
   const errorT = await node.text("login failed");
   if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
   if (ctx.loginError) {
-    errorHtml = `<div class=loginError>${await errorT.string()}</div>`;
+    errorHtml = html`<div class=loginError>${html.raw(await errorT.string())}</div>`;
   }
 
-  let out = `<div>\n${errorHtml}\n`;
+  const out: HtmlString[] = [html`<div>\n${errorHtml}\n`];
 
   const usrIsLoggedIn = ctx.user;
 
@@ -57,24 +57,24 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       let i = 0;
       for (const clientUsr of Object.values(clientUsrs)) {
         if (++i > historyLimit) break;
-        const email = hee(await (await clientUsr.user()).get("email"));
+        const email = await (await clientUsr.user()).get("email");
         const saveLogin = await (clientUsr as any).get("save_login");
         const saveLoginChecked = saveLogin ? " checked" : "";
         const showSaveLogin = settings.saveLogin();
         const showPwField = !saveLogin;
 
-        out += `<form method=post>
+        out.push(html`<form method=post>
   ${
           showSaveLogin
-            ? `<input name=save_login type=checkbox value=1${saveLoginChecked}>`
+            ? html`<input name=save_login type=checkbox value=1${saveLoginChecked}>`
             : ""
         }
   ${email}
   <input name=email type=hidden value="${email}">
   <input type=hidden name=csrfToken value="${csrfToken}">
-  ${showPwField ? `<input name=pw type=password>` : ""}
+  ${showPwField ? html`<input name=pw type=password>` : ""}
   <button name=core_login>${await app.t`Log in`}</button>
-</form>\n`;
+</form>\n`);
       }
     }
 
@@ -83,13 +83,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     const noAutofocus = settings["no autofocus"]();
     const showSaveLogin = settings.saveLogin();
 
-    out += `<form method=post>
+    out.push(html`<form method=post>
   <input type=hidden name=csrfToken value="${csrfToken}">
-  ${fixUser ? `<input type=hidden name=email value="${hee(fixUser)}">` : ""}
+  ${fixUser ? html`<input type=hidden name=email value="${fixUser}">` : ""}
   <table>
     ${
       !fixUser
-        ? `<tr class=-email>
+        ? html`<tr class=-email>
       <th>${await cms.text(node, "user", {
           tag: "div",
           initial: { en: "E-Mail:" },
@@ -110,7 +110,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
       <td><button name=core_login>${await app.t`Log in`}</button>
     ${
       showSaveLogin
-        ? `<tr class=-save_login>
+        ? html`<tr class=-save_login>
       <th>
         ${await cms.text(node, "saveLogin", {
           tag: "div",
@@ -120,23 +120,23 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
         : ""
     }
   </table>
-</form>\n`;
+</form>\n`);
   } else {
     // Logout form
     const logoutRedirectId = Number(settings.logout_redirect());
-    let action = "";
+    let action: HtmlString | string = "";
     if (logoutRedirectId) {
       const page = await cms.node(logoutRedirectId);
-      if (page.exists()) action = ` action="${await page.url()}"`;
+      if (page.exists()) action = html` action="${await page.url()}"`;
     }
-    out += `<form method=post${action}>
+    out.push(html`<form method=post${action}>
   <input type=hidden name=csrfToken value="${csrfToken}">
   <button name=core_logout>${await app.t`Log out`}</button>
-</form>\n`;
+</form>\n`);
   }
 
-  out += "</div>";
-  return html.raw(out);
+  out.push(html`</div>`);
+  return html.join(out);
 }
 
 export const cms = {

@@ -168,7 +168,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 // Dashboard widget: most recently active editors — one row per user with their
 // latest change (time + page). Access-filtered like the list, so a viewer only
 // sees activity on pages they may edit (superuser: all).
-export async function backendDashboardWidget(app: App): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<HtmlString | string> {
   const t = app.t;
   const rows = await app.db.query`
     SELECT nc.id, nc.node_id, nc.page_id, l.time, u.id AS usr_id, u.email, u.firstname, u.lastname
@@ -202,9 +202,9 @@ export async function backendDashboardWidget(app: App): Promise<string> {
       <td style="white-space:nowrap"><u2-time datetime="${iso}" type=relative></u2-time>
       <td><a href="${url}" target=_blank>${title}</a>`);
   }
-  return String(await html.async`<div class=-body style="padding:0">
+  return html`<div class=-body style="padding:0">
     <table class=u2-table style="vertical-align:top">${html.join(trs)}</table>
-  </div>`);
+  </div>`;
 }
 
 export const cms = {

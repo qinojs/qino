@@ -1,4 +1,4 @@
-import { hee, sql, type App } from "../core/mod.ts";
+import { html, sql, type App, type HtmlString } from "../core/mod.ts";
 import { getHealthTypes, type CheckResult } from "./lib/healthRegistry.ts";
 export { healthChecks } from "./healthChecks.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });
 }
 
-async function render(node: Node): Promise<string> {
+async function render(node: Node): Promise<HtmlString> {
   const { t, db } = node.app;
   const app  = node.app;
 
@@ -28,20 +28,20 @@ async function render(node: Node): Promise<string> {
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
   const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
 
-  const serverInfoHtml = `
+  const serverInfoHtml = html.async`
 <div class=u2-card>
-  <div class=-head>${await t`System info`}</div>
+  <div class=-head>${t`System info`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table style="white-space:nowrap">
-      <tr><td>${await t`Deno Version`}:<td>${hee(Deno.version.deno)}
-      <tr><td>${await t`PID`}:<td>${hee(Deno.pid)}
-      <tr><td>${await t`App Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
-      <tr><td>${await t`Server Uptime`}:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
-      <tr><td>${await t`System Load`}:<td>${hee(load[0].toFixed(2))} (1m) / ${hee(load[1].toFixed(2))} (5m)
-      <tr><td>${await t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
-      <tr><td>${await t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>
-      <tr><td>${await t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
-      <tr><td>${await t`APP-Path`}:<td>${hee(app.appPATH)}
+      <tr><td>${t`Deno Version`}:<td>${Deno.version.deno}
+      <tr><td>${t`PID`}:<td>${Deno.pid}
+      <tr><td>${t`App Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+      <tr><td>${t`Server Uptime`}:<td><u2-time datetime="${osStartIso}" second type=relative></u2-time>
+      <tr><td>${t`System Load`}:<td>${load[0].toFixed(2)} (1m) / ${load[1].toFixed(2)} (5m)
+      <tr><td>${t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+      <tr><td>${t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>
+      <tr><td>${t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
+      <tr><td>${t`APP-Path`}:<td>${app.appPATH}
     </table>
   </div>
 </div>`;
@@ -51,51 +51,51 @@ async function render(node: Node): Promise<string> {
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  let healthHtml = "";
+  const healthCards: HtmlString[] = [];
   for (const [type, checks] of Object.entries(types)) {
-    const items: string[] = [];
+    const items: HtmlString[] = [];
     for (const [name, checkFn] of Object.entries(checks)) {
       let data: CheckResult;
       try { data = await checkFn(); } catch { continue; }
       if (!data) continue;
 
       const solutions = Object.entries(data.solutions ?? {});
-      let solutionsHtml = "";
+      let solutionsHtml: HtmlString | string = "";
       if (solutions.length === 1) {
         const [solution, solveData] = solutions[0];
-        let formFields = "";
+        const formFields: HtmlString[] = [];
         for (const [fname, field] of Object.entries(solveData.form ?? {})) {
           const inputType = typeof field.type === "string" ? field.type : "text";
-          formFields += `<tr><td>${hee(cap(fname))}:<td><input name="${hee(fname)}" type="${hee(inputType)}">`;
+          formFields.push(html`<tr><td>${cap(fname)}:<td><input name="${fname}" type="${inputType}">`);
         }
-        solutionsHtml = `<form>
-  ${formFields ? `<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
-  <button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}">${hee(cap(solution))}</button>
+        solutionsHtml = html`<form>
+  ${formFields.length ? html`<table><tbody style="vertical-align:baseline">${html.join(formFields)}</table>` : ""}
+  <button data-type="${type}" data-item="${name}" data-solution="${solution}">${cap(solution)}</button>
 </form>`;
       } else if (solutions.length > 1) {
         const menuItems = solutions.map(([solution]) =>
-          `<li><button data-type="${hee(type)}" data-item="${hee(name)}" data-solution="${hee(solution)}">${hee(cap(solution))}</button>`
-        ).join("");
-        solutionsHtml = `<form><u2-menubutton>
+          html`<li><button data-type="${type}" data-item="${name}" data-solution="${solution}">${cap(solution)}</button>`
+        );
+        solutionsHtml = html`<form><u2-menubutton>
   <button type=button>solve ▾</button>
-  <menu>${menuItems}</menu>
+  <menu>${html.join(menuItems)}</menu>
 </u2-menubutton></form>`;
       }
 
-      items.push(`<div class="healty_item -${hee(type)}" data-type="${hee(type)}" data-item="${hee(name)}">
-  ${checkFn.mod ? ` <small>${hee(checkFn.mod)}</small><br>` : ""}
-  <strong>${hee(cap(name))}</strong>
-  ${data.info ? `<p>${data.info}</p>` : ""}
+      items.push(html`<div class="healty_item -${type}" data-type="${type}" data-item="${name}">
+  ${checkFn.mod ? html` <small>${checkFn.mod}</small><br>` : ""}
+  <strong>${cap(name)}</strong>
+  ${data.info ? html`<p>${html.raw(data.info)}</p>` : ""}
   <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;margin-top:.5rem">${solutionsHtml}</div>
 </div>`);
     }
     if (!items.length) continue;
-    healthHtml += `<div class=u2-card>
-  <div class=-head>${hee(cap(type))}</div>
+    healthCards.push(html`<div class=u2-card>
+  <div class=-head>${cap(type)}</div>
   <div class=-body style="max-height:43.75rem;overflow:auto">
-    <div class=healty_container>${items.join("")}</div>
+    <div class=healty_container>${html.join(items)}</div>
   </div>
-</div>`;
+</div>`);
   }
 
 
@@ -106,21 +106,21 @@ async function render(node: Node): Promise<string> {
   const osIso   = new Date().toISOString();
   const dbRaw   = await db.one`${sql.raw(dbUtcNowSql(db.dialect))}`;
   const dbIso   = (dbRaw instanceof Date ? dbRaw : new Date(String(dbRaw))).toISOString();
-  const localesBox = `
+  const localesBox = html.async`
 <div class=u2-card>
-  <div class=-head>${await t`Time`}</div>
+  <div class=-head>${t`Time`}</div>
   <div class=-body style="padding:0">
     <table class=u2-table>
       <tr>
-        <td>${await t`OS`}
+        <td>${t`OS`}
         <td>${osIso.slice(0, 19).replace("T", " ")}
         <td>UTC+0
       <tr>
-        <td>${await t`DB`}
+        <td>${t`DB`}
         <td>${dbIso.slice(0, 19).replace("T", " ")}
         <td>UTC+0
       <tr>
-        <td>${await t`Browser`}
+        <td>${t`Browser`}
         <td class=-browser-time>
         <td class=-browser-tz>
     </table>
@@ -128,13 +128,13 @@ async function render(node: Node): Promise<string> {
 </div>`;
 
   // ── storage ───────────────────────────────────────────────────────────
-  const statsBox = `
+  const statsBox = html.async`
 <div class=u2-card style="flex-grow:0">
-  <div class=-head>${await t`Storage`}</div>
-  ${await statistic(node)}
+  <div class=-head>${t`Storage`}</div>
+  ${statistic(node)}
 </div>`;
 
-  return `
+  return html.async`
 <div class=u2-flex>
   <style>
     .u2-card {
@@ -154,14 +154,14 @@ async function render(node: Node): Promise<string> {
     }
   </style>
   ${serverInfoHtml}
-  ${healthHtml}
+  ${html.join(healthCards)}
   ${dbBox}
   ${localesBox}
   ${statsBox}
 </div>`;
 }
 
-export async function backendDashboardWidget(app: App): Promise<string> {
+export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
   const types = await getHealthTypes(app);
 
@@ -177,18 +177,18 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   }
 
   const badge = (n: number, label: string, color: string) =>
-    n ? `<span style="background:${color};color:#fff;border-radius:.1875rem;padding:1px .4375rem;margin-right:.25rem">${n} ${label}</span>` : "";
+    n ? html`<span style="background:${color};color:#fff;border-radius:.1875rem;padding:1px .4375rem;margin-right:.25rem">${n} ${label}</span>` : "";
 
   const statusHtml = (errors || warnings)
-    ? badge(errors, await t`Errors`, "hsl(0,80%,45%)") + badge(warnings, await t`Warnings`, "hsl(40,90%,40%)")
-    : `<span style="color:green">&#10003; ${await t`All OK`}</span>`;
+    ? html`${badge(errors, await t`Errors`, "hsl(0,80%,45%)")}${badge(warnings, await t`Warnings`, "hsl(40,90%,40%)")}`
+    : html`<span style="color:green">&#10003; ${await t`All OK`}</span>`;
 
   // DB top tables
   const tables = await dbTableStats(app.db).catch(() => []);
   tables.sort((a, b) => b.bytes - a.bytes);
-  const dbRows = tables.slice(0, 3).map((tbl) =>
-    `<tr><td>${hee(tbl.name)}<td style="text-align:right"><u2-bytes>${tbl.bytes}</u2-bytes>`
-  ).join("");
+  const dbRows = html.join(tables.slice(0, 3).map((tbl) =>
+    html`<tr><td>${tbl.name}<td style="text-align:right"><u2-bytes>${tbl.bytes}</u2-bytes>`
+  ));
 
   // Cache size
   let cacheSize = 0, cacheCount = 0;
@@ -201,33 +201,33 @@ export async function backendDashboardWidget(app: App): Promise<string> {
   }
   await measureCache(app.appPATH + "cache/");
 
-  return `<div class=-body>${statusHtml}</div>
+  return html.async`<div class=-body>${statusHtml}</div>
 <div style="overflow:auto; padding:0">
-<table class=u2-table style="white-space:nowrap">` + await systemInfoRows(app) + `</table>
+<table class=u2-table style="white-space:nowrap">${systemInfoRows(app)}</table>
 <table class=u2-table style="white-space:nowrap;margin-top:1px">
-  <thead><tr><th>${await t`Top DB tables`}<th style="text-align:right">${await t`Size`}
+  <thead><tr><th>${t`Top DB tables`}<th style="text-align:right">${t`Size`}
   <tbody>${dbRows}
 </table>
 <table class=u2-table style="white-space:nowrap;margin-top:1px">
-  <tr><td>${await t`Cache files`}:<td>${hee(cacheCount)}
-  <tr><td>${await t`Cache size`}:<td><u2-bytes>${cacheSize}</u2-bytes>
+  <tr><td>${t`Cache files`}:<td>${cacheCount}
+  <tr><td>${t`Cache size`}:<td><u2-bytes>${cacheSize}</u2-bytes>
 </table>
 </div>`;
 }
 
-async function systemInfoRows(app: App): Promise<string> {
+function systemInfoRows(app: App): Promise<HtmlString> {
   const t = app.t;
   const mem = Deno.memoryUsage();
   const load = Deno.loadavg();
   const appUptimeSec = performance.now() / 1000;
   const appStartIso = new Date(Date.now() - appUptimeSec * 1000).toISOString();
-  return `
-  <tr><td>${await t`Deno`}:<td>${hee(Deno.version.deno)}
-  <tr><td>${await t`Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
-  <tr><td>${await t`Load (1m/5m/15m)`}:<td>${hee(load[0].toFixed(2))} / ${hee(load[1].toFixed(2))} / ${hee(load[2].toFixed(2))}
-  <tr><td>${await t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
-  <tr><td>${await t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
-  <tr><td>${await t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>`;
+  return html.async`
+  <tr><td>${t`Deno`}:<td>${Deno.version.deno}
+  <tr><td>${t`Uptime`}:<td><u2-time datetime="${appStartIso}" second type=relative></u2-time>
+  <tr><td>${t`Load (1m/5m/15m)`}:<td>${load[0].toFixed(2)} / ${load[1].toFixed(2)} / ${load[2].toFixed(2)}
+  <tr><td>${t`RAM (RSS)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
+  <tr><td>${t`Heap`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
+  <tr><td>${t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>`;
 }
 
 // SQL for "now in UTC" per dialect (MySQL gives 'YYYY-MM-DD HH:MM:SS', others ISO).
@@ -238,13 +238,13 @@ function dbUtcNowSql(dialect: string): string {
 }
 
 const kvTable = (rows: [string, string][]) =>
-  `<table class=u2-table><tbody>${rows.map(([k, v]) => `<tr><td>${hee(k)}<td>${hee(v)}`).join("")}</table>`;
+  html`<table class=u2-table><tbody>${html.join(rows.map(([k, v]) => html`<tr><td>${k}<td>${v}`))}</table>`;
 
 // Summary card with a "Details" button that lazy-loads the dialect-specific `db-details` part.
-function dbCard(title: string, summaryRows: string): string {
-  return `
+function dbCard(title: string, summaryRows: HtmlString): HtmlString {
+  return html`
 <div class=u2-card>
-  <div class=-head>${hee(title)}</div>
+  <div class=-head>${title}</div>
   <table class=u2-table style="width:auto"><tbody>${summaryRows}</table>
   <div class=-body cms-part=db-details style="max-width:30rem; max-height:30rem; overflow:auto">
     <button data-load-part=db-details>Details</button>
@@ -252,13 +252,13 @@ function dbCard(title: string, summaryRows: string): string {
 </div>`;
 }
 
-function renderDbBox(node: Node): Promise<string> {
+function renderDbBox(node: Node): Promise<HtmlString> {
   if (node.app.db.dialect === "postgres") return postgresBox(node);
   if (node.app.db.dialect === "sqlite") return sqliteBox(node);
   return mysqlBox(node);
 }
 
-async function mysqlBox(node: Node): Promise<string> {
+async function mysqlBox(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   const RELEVANT = ["version", "max_allowed_packet", "innodb_buffer_pool_size", "max_connections"];
   const vars = await db.query`SHOW VARIABLES`;
@@ -266,30 +266,30 @@ async function mysqlBox(node: Node): Promise<string> {
   const fmt = (name: string, value: string) =>
     (name === "max_allowed_packet" || name === "innodb_buffer_pool_size")
       ? (Number(value) / 1024 / 1024).toFixed(1) + " MB" : value;
-  const rows = RELEVANT.map((n) => `<tr><td>${hee(n)}<td>${hee(fmt(n, map.get(n) ?? ""))}`).join("");
-  return dbCard("MySQL", rows);
+  const rows = RELEVANT.map((n) => html`<tr><td>${n}<td>${fmt(n, map.get(n) ?? "")}`);
+  return dbCard("MySQL", html.join(rows));
 }
 
-async function postgresBox(node: Node): Promise<string> {
+async function postgresBox(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   const NAMES = ["server_version", "max_connections", "shared_buffers", "work_mem"];
   const rows = await db.query`SELECT name, setting, unit FROM pg_settings WHERE name IN (${sql.join(NAMES.map((n) => sql`${n}`))}) ORDER BY name`;
-  const body = rows.map((r: Record<string, string>) => `<tr><td>${hee(r.name)}<td>${hee(r.setting + (r.unit ? " " + r.unit : ""))}`).join("");
-  return dbCard("PostgreSQL", body);
+  const body = rows.map((r: Record<string, string>) => html`<tr><td>${r.name}<td>${r.setting + (r.unit ? " " + r.unit : "")}`);
+  return dbCard("PostgreSQL", html.join(body));
 }
 
-async function sqliteBox(node: Node): Promise<string> {
+async function sqliteBox(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   const PRAGMAS = ["journal_mode", "page_size", "foreign_keys"];
-  let rows = `<tr><td>version<td>${hee(await db.one`SELECT sqlite_version()`)}`;
+  const rows = [html`<tr><td>version<td>${await db.one`SELECT sqlite_version()`}`];
   for (const p of PRAGMAS) {
     const r = await db.row`PRAGMA ${sql.raw(p)}`;
-    rows += `<tr><td>${hee(p)}<td>${hee(r ? Object.values(r)[0] : "")}`;
+    rows.push(html`<tr><td>${p}<td>${r ? Object.values(r)[0] : ""}`);
   }
-  return dbCard("SQLite", rows);
+  return dbCard("SQLite", html.join(rows));
 }
 
-async function dbDetails(node: Node): Promise<string> {
+async function dbDetails(node: Node): Promise<HtmlString> {
   const db = node.app.db;
   if (db.dialect === "postgres") {
     const rows = await db.query`SELECT name, setting FROM pg_settings ORDER BY name`;
