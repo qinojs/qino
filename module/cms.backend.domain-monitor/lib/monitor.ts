@@ -2,8 +2,8 @@ import { sql, unixTime, type App } from "../../core/mod.ts";
 import { checkDomain } from "./check.ts";
 import { diffResults, lastResult } from "./changes.ts";
 
-export const frequencies = ["disabled", "hourly", "daily", "weekly"] as const;
-export type CheckFrequency = typeof frequencies[number];
+export const FREQUENCIES = ["disabled", "hourly", "daily", "weekly"] as const;
+export type CheckFrequency = typeof FREQUENCIES[number];
 
 export type DomainRow = {
   domain: string;
@@ -236,7 +236,7 @@ export async function rowsFor(app: App, domains: string[]): Promise<DomainRow[]>
 }
 
 export async function setFrequency(app: App, domains: string[], frequency: string): Promise<void> {
-  if (!frequencies.includes(frequency as CheckFrequency)) throw new TypeError(`Invalid check frequency: ${frequency}`);
+  if (!FREQUENCIES.includes(frequency as CheckFrequency)) throw new TypeError(`Invalid check frequency: ${frequency}`);
   for (const domain of domains) await table(app).update(domain, { check_frequency: frequency });
 }
 

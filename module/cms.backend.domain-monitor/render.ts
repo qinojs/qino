@@ -3,7 +3,7 @@ import { u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
 import { diffResults } from "./lib/changes.ts";
-import { addDomains, frequencies, type DomainRow, parseResult } from "./lib/monitor.ts";
+import { addDomains, FREQUENCIES, type DomainRow, parseResult } from "./lib/monitor.ts";
 
 const HISTORY_LIMIT = 500;
 const DAY = 24 * 60 * 60;
@@ -304,7 +304,7 @@ function smtpCell(row: DomainRow): HtmlString {
 function frequencySelect(row: DomainRow): HtmlString {
   const selected = row.check_frequency ?? "disabled";
   return html`<select data-frequency data-domain="${row.domain}" title="Automatic checks">${
-    html.join(frequencies.map((value) => html`<option value="${value}" ${selected === value ? "selected" : ""}>${value === "disabled" ? "off" : value}`))
+    html.join(FREQUENCIES.map((value) => html`<option value="${value}" ${selected === value ? "selected" : ""}>${value === "disabled" ? "off" : value}`))
   }</select>`;
 }
 
@@ -556,7 +556,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
     <span data-bulk hidden><b data-bulk-count>0</b> selected ·
       <select data-bulk-frequency title="Set automatic checks for the selected domains">
         <option value="">set interval…</option>
-        ${html.join(frequencies.map((value) => html`<option value="${value}">${value === "disabled" ? "off" : value}`))}
+        ${html.join(FREQUENCIES.map((value) => html`<option value="${value}">${value === "disabled" ? "off" : value}`))}
       </select>
       <button data-action=checkSelected>Check</button>
       <button data-action=deleteSelected data-bulk-delete>Delete</button>

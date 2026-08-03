@@ -5,11 +5,11 @@ import { type DbDialect, type ExecResult, type MigrateOptions, type Row, DbDrive
 import { Emitter } from "../Emitter.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export const dateTypes = new Set(["datetime", "date", "timestamp"]);
-export const stringTypes = new Set(["char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set"]);
+export const DATE_TYPES = new Set(["datetime", "date", "timestamp"]);
+export const STRING_TYPES = new Set(["char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set"]);
 // INTEGER is SQLite's spelling of INT — without it the same schema coerces on MySQL and lets
 // non-numeric text through on SQLite, where column affinity then stores it verbatim.
-export const numTypes = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double"]);
+export const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double"]);
 
 /** Core db events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface DbEvents {

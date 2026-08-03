@@ -110,7 +110,7 @@ export class DbFileImageEditor extends ImageEditor {
 
     // history
     this.el('.-tools').insertAdjacentHTML('beforeend',
-      '<div class="-accordion" tabindex="-1">Verlauf</div><div class="-history"></div>');
+      '<div class=-accordion tabindex=-1>Verlauf</div><div class=-history></div>');
     setTimeout(() => this.loadHistory(), 100);
 
     // accordion-style the title heads; the first one doubles as a close button
@@ -124,8 +124,8 @@ export class DbFileImageEditor extends ImageEditor {
     // meta
     this.meta = {};
     this.el('.-tools').insertAdjacentHTML('beforeend',
-      '<div class="-accordion" tabindex="-1">Meta-Daten</div>' +
-            '<div class="-meta"><input name="name" placeholder="Dateiname" style="width:100%"><br></div>');
+      '<div class=-accordion tabindex=-1>Meta-Daten</div>' +
+            '<div class=-meta><input name=name placeholder="Dateiname" style="width:100%"><br></div>');
     const saveName = c1.debounce(name => { this.meta.name = name; meta(this.file_id).put({ name }); }, 500);
     this.el('.-meta [name=name]').addEventListener('input', e => saveName(e.target.value));
 
@@ -144,7 +144,7 @@ export class DbFileImageEditor extends ImageEditor {
 
     meta(this.file_id).get().then(data => {
       this.meta = data;
-      this.el('.-viewport').insertAdjacentHTML('beforeend', '<div class="-hotspot"><div>Hotspot</div></div>');
+      this.el('.-viewport').insertAdjacentHTML('beforeend', '<div class=-hotspot><div>Hotspot</div></div>');
       this.renderHotspot();
       this.el('.-meta [name=name]').value = data.name;
     });

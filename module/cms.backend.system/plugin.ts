@@ -141,7 +141,7 @@ async function render(node: Node): Promise<string> {
       flex-basis:28rem;
     }
     .healty_container {
-      display:grid; grid-gap:8px;
+      display:grid; gap:.5rem;
     }
     .healty_item {
       padding:.5rem;

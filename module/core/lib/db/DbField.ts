@@ -1,4 +1,4 @@
-import { dateTypes, stringTypes, numTypes, type Db } from "./Db.ts";
+import { DATE_TYPES, STRING_TYPES, NUM_TYPES, type Db } from "./Db.ts";
 import type { DbTable } from "./DbTable.ts";
 
 export class DbField {
@@ -40,15 +40,15 @@ export class DbField {
 
   valueTransform(value: any): any {
     if (this.null && value === null) return null;
-    if (this.null && value === "" && !stringTypes.has(this.#type)) return null;
+    if (this.null && value === "" && !STRING_TYPES.has(this.#type)) return null;
     // What the schema declares beats what the dialect calls the column: SQLite has no boolean type
     // and stores one as INTEGER, so relying on the column type alone would let `true` fall through
     // to String() and land as the text "true" — which every later read then sees as truthy.
     if (this.#type === "boolean" || this.schema.type === "boolean") return value === true || value === 1 || value === "1" || value === "true";
-    if (typeof value === "number" && dateTypes.has(this.#type)) {
+    if (typeof value === "number" && DATE_TYPES.has(this.#type)) {
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
     }
-    if (numTypes.has(this.#type)) {
+    if (NUM_TYPES.has(this.#type)) {
       // Number() is strict ("12abc" fails); "" and null become 0 on NOT NULL columns.
       const num = typeof value === "number" ? value : Number(value);
       if (!Number.isFinite(num)) throw new Error(`invalid numeric value for ${this.table}.${this.#name}: ${JSON.stringify(value)}`);

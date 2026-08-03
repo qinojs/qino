@@ -2,13 +2,13 @@
 
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
-import { numTypes, type Db } from "./Db.ts";
+import { NUM_TYPES, type Db } from "./Db.ts";
 import { type Sql, sql, isTemplate } from "../../deps.ts";
 
 // One primary value as its canonical id part; undefined if it cannot identify a row.
 const idValue = (field: DbField, value: any): string | undefined => {
   if (value == null || typeof value === "object") return; // String([]) and Number([]) would pass as ids
-  if (!numTypes.has(field.type)) return String(value);
+  if (!NUM_TYPES.has(field.type)) return String(value);
   const num = value === "" ? NaN : Number(value); // strict like DbField; an empty value is no id
   return Number.isFinite(num) ? String(num) : undefined;
 };
@@ -85,7 +85,7 @@ export class DbTable {
     for (const field of primaries) {
       const value = idValue(field, values[field.name]);
       if (value === undefined) { console.warn(`db-table-entryId: missing or invalid id for ${this}.${field}:`, vs); return; }
-      parts.push(composite && !numTypes.has(field.type) ? encodeURIComponent(value) : value); // numbers never contain ":" or "%"
+      parts.push(composite && !NUM_TYPES.has(field.type) ? encodeURIComponent(value) : value); // numbers never contain ":" or "%"
     }
     return parts.join(":");
   }
@@ -101,7 +101,7 @@ export class DbTable {
     try { // ids travel in URLs: a malformed escape makes decodeURIComponent throw, but it is just an invalid id
       for (let i = 0; i < primaries.length; i++) {
         const field = primaries[i];
-        const raw = !parts ? id[field.name] : composite && !numTypes.has(field.type) ? decodeURIComponent(parts[i]) : parts[i];
+        const raw = !parts ? id[field.name] : composite && !NUM_TYPES.has(field.type) ? decodeURIComponent(parts[i]) : parts[i];
         const value = idValue(field, raw);
         if (value === undefined) return;
         values[field.name] = value;

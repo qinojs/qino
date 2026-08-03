@@ -97,9 +97,9 @@ function render(node: Node): Promise<HtmlString> {
   return html.async`
 <div class=u2-flex>
   <style>
-    .ai-role { display:inline-block; color:#fff; padding:1px 6px; border-radius:3px; font-size:.8em; }
-    .ai-msg { margin:0 0 12px; }
-    .ai-msg-head { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+    .ai-role { display:inline-block; color:#fff; padding:1px .4rem; border-radius:.2rem; font-size:.8em; }
+    .ai-msg { margin:0 0 .75rem; }
+    .ai-msg-head { display:flex; align-items:center; gap:.4rem; margin-bottom:.2rem; }
     .ai-dim { color:#999; font-size:.8em; }
     .ai-msg-body { white-space:pre-wrap; word-break:break-word; }
   </style>

@@ -48,10 +48,10 @@ class AiChat extends HTMLElement {
       ai-chat form { display: flex; gap: 4px; padding: 8px; border-top: 1px solid #ddd; }
       ai-chat input { flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
     </style>
-    <div class="msgs"></div>
+    <div class=msgs></div>
     <form>
-      <input type="text" placeholder="${await t`Ask a question…`}" autocomplete="off">
-      <button type="submit">${await t`Send`}</button>
+      <input type=text placeholder="${await t`Ask a question…`}" autocomplete=off>
+      <button type=submit>${await t`Send`}</button>
     </form>`;
 
     this.#messages = this.querySelector('.msgs');

@@ -4,7 +4,7 @@ import { apex, covers, wwwAlt } from "../lib/check.ts";
 import { errText } from "../lib/net.ts";
 import { diffResults, pruneHistory } from "../lib/changes.ts";
 import { dmarc, spf } from "../lib/mail.ts";
-import { frequencies, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
+import { FREQUENCIES, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
 import api from "../nodeApi.ts";
 import { cron, ctxSettingsSchema, dbSchema, name, needs } from "../plugin.ts";
 import { backendDashboardWidget, render, rowHtml } from "../render.ts";
@@ -14,7 +14,7 @@ Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   const check = dbSchema.properties.monitor_domain_check.additionalProperties.properties;
   assertEquals(name, "cms.backend.domain-monitor");
   assertEquals(needs, ["cms.backend", "cron"]);
-  assertEquals(domain.check_frequency.enum, [...frequencies]);
+  assertEquals(domain.check_frequency.enum, [...FREQUENCIES]);
   assertEquals(domain.check_frequency.default, "disabled");
   assertEquals(check.domain["x-qg-parent"], "monitor_domain");
   assertEquals(check.domain["x-qg-on-parent-delete"], "cascade");
@@ -27,7 +27,7 @@ Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   assertEquals(cron.weekly.every, "week");
   assertEquals(cron.weekly.at, { weekday: "sunday", hour: 4 });
   // every selectable frequency except "disabled" needs a job, or it would never run
-  assertEquals(frequencies.filter((v) => v !== "disabled").every((v) => v in cron), true);
+  assertEquals(FREQUENCIES.filter((v) => v !== "disabled").every((v) => v in cron), true);
   assertEquals(cron.prune.every, "day");
 });
 

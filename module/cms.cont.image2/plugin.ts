@@ -71,8 +71,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         [qcms-mod="cont.image2"] .-alt-edit { position:relative; }
         [qcms-mod="cont.image2"] .-alt-edit > input {
             opacity:0; transition:opacity .3s;
-            width:calc(100% - 6px);
-            position:absolute; bottom:3px; left:3px; right:3px; margin:0;
+            width:calc(100% - .4rem);
+            position:absolute; bottom:.2rem; left:.2rem; right:.2rem; margin:0;
         }
         [qcms-mod="cont.image2"]:hover .-alt-edit > input,
         [qcms-mod="cont.image2"] .-alt-edit > input:focus { opacity:1; }

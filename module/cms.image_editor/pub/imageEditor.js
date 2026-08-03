@@ -123,50 +123,50 @@ export class ImageEditor extends FullScreenDialog {
     init() {
       this.el().innerHTML = `
             <div style="display:flex; flex:1 1 auto;">
-                <div class="-viewport" style="position:relative; flex:1 1 auto; background:#000">
+                <div class=-viewport style="position:relative; flex:1 1 auto; background:#000">
                     <div style="display:flex; justify-content:center; position:absolute; inset:0; overflow:auto; padding:1.25rem;">
-                        <canvas class="-canvas" style="background:#bbb; display:block; box-shadow:0 0 2.5rem #888; margin:auto; max-height:100%; max-width:100%; ${checkerboard}"></canvas>
-                        <img class="-img" style="display:none; margin:auto; max-height:100%; max-width:100%">
+                        <canvas class=-canvas style="background:#bbb; display:block; box-shadow:0 0 2.5rem #888; margin:auto; max-height:100%; max-width:100%; ${checkerboard}"></canvas>
+                        <img class=-img style="display:none; margin:auto; max-height:100%; max-width:100%">
                     </div>
                 </div>
-                <div class="-sidebar" style="min-width:17.5rem; padding:1.25rem; display:flex; flex-flow:column">
-                    <div class="-tools" style="flex:auto; overflow:auto">
-                        <div class="-title">Bild bearbeiten</div>
+                <div class=-sidebar style="min-width:17.5rem; padding:1.25rem; display:flex; flex-flow:column">
+                    <div class=-tools style="flex:auto; overflow:auto">
+                        <div class=-title>Bild bearbeiten</div>
                         <br>
-                        <button class="-rotate">90° drehen</button>
-                        <button class="-crop">zuschneiden</button>
-                        <button class="-upload">hochladen</button>
-                        <div class="-accordion" tabindex="-1">Einstellen</div>
+                        <button class=-rotate>90° drehen</button>
+                        <button class=-crop>zuschneiden</button>
+                        <button class=-upload>hochladen</button>
+                        <div class=-accordion tabindex=-1>Einstellen</div>
                         <div>
                             <div>Helligkeit</div>
-                            <input class="-brightness" type="range" style="width:100%" min=".4" max="2" step="any" value="1">
+                            <input class=-brightness type=range style="width:100%" min=".4" max=2 step=any value=1>
                             <div>Kontrast</div>
-                            <input class="-contrast" type="range" style="width:100%" min=".4" max="2" step="any" value="1">
+                            <input class=-contrast type=range style="width:100%" min=".4" max=2 step=any value=1>
                         </div>
                     </div>
-                    <div class="-toolsCrop" style="flex:auto; overflow:auto" hidden>
-                        <div class="-title">Bild zuschneiden</div>
+                    <div class=-toolsCrop style="flex:auto; overflow:auto" hidden>
+                        <div class=-title>Bild zuschneiden</div>
                         <br>
                         <div style="display:flex;">
-                            <button class="-cancelCrop" style="flex:1">abbrechen</button>
+                            <button class=-cancelCrop style="flex:1">abbrechen</button>
                             <span style="flex:.1 1 .5rem;"></span>
-                            <button class="-cropit" style="flex:1">zuschneiden</button>
+                            <button class=-cropit style="flex:1">zuschneiden</button>
                         </div>
-                        <button class="-autocrop" style="width:100%; margin-top:.5rem">automatisch</button>
+                        <button class=-autocrop style="width:100%; margin-top:.5rem">automatisch</button>
                         <br>
-                        <form class="-cropValues">
+                        <form class=-cropValues>
                             <table style="width:100%"><tbody style="vertical-align:middle">
-                                <tr> <td> X:      <td> <input name="left"   type="number" style="width:100%">
-                                <tr> <td> Y:      <td> <input name="top"    type="number" style="width:100%">
-                                <tr> <td> Breite: <td> <input name="width"  type="number" style="width:100%">
-                                <tr> <td> Höhe:   <td> <input name="height" type="number" style="width:100%">
+                                <tr> <td> X:      <td> <input name=left   type=number style="width:100%">
+                                <tr> <td> Y:      <td> <input name=top    type=number style="width:100%">
+                                <tr> <td> Breite: <td> <input name=width  type=number style="width:100%">
+                                <tr> <td> Höhe:   <td> <input name=height type=number style="width:100%">
                             </table>
                         </form>
                     </div>
-                    <div class="-btns" style="flex:0">
+                    <div class=-btns style="flex:0">
                         <div style="display:flex; margin:-.625rem">
-                            <button style="flex:1; margin:.625rem" class="-save">Speichern</button>
-                            <button style="display:none; flex:1; margin:.625rem" class="-cancel">Abbrechen</button>
+                            <button style="flex:1; margin:.625rem" class=-save>Speichern</button>
+                            <button style="display:none; flex:1; margin:.625rem" class=-cancel>Abbrechen</button>
                         </div>
                     </div>
                 </div>

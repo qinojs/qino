@@ -12,8 +12,8 @@
 // arrive. `QTYPE=ANY` would look like the cheaper trick but RFC 8482 killed it, authoritative
 // servers may answer it with a synthetic placeholder.
 
-export const types = { A: 1, NS: 2, CNAME: 5, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, DS: 43, DNSKEY: 48, TLSA: 52, HTTPS: 65, CAA: 257 } as const;
-export type Type = keyof typeof types;
+export const TYPES = { A: 1, NS: 2, CNAME: 5, SOA: 6, PTR: 12, MX: 15, TXT: 16, AAAA: 28, DS: 43, DNSKEY: 48, TLSA: 52, HTTPS: 65, CAA: 257 } as const;
+export type Type = keyof typeof TYPES;
 
 const PORT = 53;
 const enc = new TextEncoder();
@@ -74,20 +74,20 @@ function rdata(r: Reader, type: number, len: number): string {
   const end = r.pos + len;
   const value = (() => {
     switch (type) {
-      case types.A: return [...r.take(4)].join(".");
-      case types.AAAA: return ipv6(r.take(16));
-      case types.NS: case types.CNAME: case types.PTR: return r.name();
-      case types.SOA: return `${r.name()} ${r.name()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()}`;
-      case types.MX: return `${r.u16()} ${r.name()}`;
-      case types.TXT: { // one record can hold several strings, they belong together
+      case TYPES.A: return [...r.take(4)].join(".");
+      case TYPES.AAAA: return ipv6(r.take(16));
+      case TYPES.NS: case TYPES.CNAME: case TYPES.PTR: return r.name();
+      case TYPES.SOA: return `${r.name()} ${r.name()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()} ${r.u32()}`;
+      case TYPES.MX: return `${r.u16()} ${r.name()}`;
+      case TYPES.TXT: { // one record can hold several strings, they belong together
         const parts: string[] = [];
         while (r.pos < end) parts.push(dec.decode(r.take(r.u8())));
         return parts.join("");
       }
-      case types.CAA: { r.u8(); const tag = dec.decode(r.take(r.u8())); return `${tag} ${dec.decode(r.take(end - r.pos))}`; }
-      case types.DS: case types.DNSKEY: return `${r.u16()} ${r.u8()} ${r.u8()} ${hex(r.take(end - r.pos))}`;
-      case types.TLSA: return `${r.u8()} ${r.u8()} ${r.u8()} ${hex(r.take(end - r.pos))}`;
-      case types.HTTPS: return `${r.u16()} ${r.name() || "."}`; // priority and target, SvcParams skipped
+      case TYPES.CAA: { r.u8(); const tag = dec.decode(r.take(r.u8())); return `${tag} ${dec.decode(r.take(end - r.pos))}`; }
+      case TYPES.DS: case TYPES.DNSKEY: return `${r.u16()} ${r.u8()} ${r.u8()} ${hex(r.take(end - r.pos))}`;
+      case TYPES.TLSA: return `${r.u8()} ${r.u8()} ${r.u8()} ${hex(r.take(end - r.pos))}`;
+      case TYPES.HTTPS: return `${r.u16()} ${r.name() || "."}`; // priority and target, SvcParams skipped
       default: return hex(r.take(end - r.pos));
     }
   })();
@@ -112,7 +112,7 @@ function parse(msg: Uint8Array) {
       const recordTtl = r.u32();
       const value = rdata(r, type, r.u16());
       if (section === 2) {
-        if (type === types.NS) authority.push(value);
+        if (type === TYPES.NS) authority.push(value);
         continue;
       }
       if (type !== qtype) continue; // a CNAME on the way to the answer is not the answer
@@ -170,7 +170,7 @@ async function exchange(
       const id = base + i;
       const body = [id >> 8, id & 0xff, 0x01, 0x00, 0, 1, 0, 0, 0, 0, 0, 0]; // recursion desired, one question
       writeName(question.name, body);
-      const type = types[question.type];
+      const type = TYPES[question.type];
       body.push(type >> 8, type & 0xff, 0, 1); // QTYPE, QCLASS=IN
       frames.push(body.length >> 8, body.length & 0xff, ...body);
     });
