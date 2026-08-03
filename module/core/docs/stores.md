@@ -93,6 +93,13 @@ recreates a deleted backend page, say) no longer heal on restart.
 Both managers read their table in `init()`, before the schema is migrated — hence the `listTables()`
 check: on a fresh database there is nothing to read yet.
 
+**A module row that no longer imports must not keep the app down.** A deleted folder or an
+unreachable host would otherwise leave no way out but editing the database. So `init()` logs the
+failure, skips the row and remembers it in `modules.failures()`; the store page lists those under
+*Installed, not importable* — including modules whose store is gone, which have nowhere else to
+appear — and offers the uninstall that clears the row. `uninstall()` accepts such a name even
+though there is no plugin to ask.
+
 [cms.backend.superuser.stores](../../cms.backend.superuser.stores/) is the UI for all of this.
 
 The old `importAll` directory scan was removed. Adding every module is now exclusively a store
@@ -258,7 +265,8 @@ The boundary and module-manager tests now verify:
 [`module_install.test.ts`](../tests/module_install.test.ts) boots a real SQLite app twice against
 two throwaway modules and covers the persistent half: `install()` runs once and not again on the
 second boot, an installed module returns after a restart, `uninstall()` removes hook, row and
-registration, and both a declared module and a declared store refuse to be uninstalled.
+registration, a row pointing nowhere is survivable and removable, and both a declared module and a
+declared store refuse to be uninstalled.
 
 ## Deliberately deferred work
 
@@ -280,14 +288,6 @@ A second factor in front of install/uninstall would cover the other half — a s
 than a bad URL. `web_auth` already has the ceremony (`confirm/challenge` + `confirm/verify`) and
 nothing uses it yet; a sketch of how it could become a factor-agnostic check on any apt endpoint
 lives in the workspace as `PLAN-confirm.md`.
-
-### An installed module that no longer imports
-
-`init()` imports every `module` row that has a URL, and a failing import aborts the boot. Delete a
-module folder, or lose the host a remote module came from, and the app stops starting — the only
-way out is editing the database. Skipping the row with a loud log would degrade instead: the app
-boots, that one module is missing, and the UI can show the row as installed-but-unimportable. Not
-decided, because "boots with a silently missing module" is its own kind of wrong.
 
 ### Remote public assets
 
@@ -323,11 +323,9 @@ hide a stale package lock.
 
 ## Recommended next sequence
 
-1. Decide what a failing import at boot does (see above) — it is the one failure mode with no
-   recovery path from inside the app.
-2. Build a tiny HTTP-hosted store containing `init()`, one `pub/` asset, and one locale.
-3. Add a stable module base URL and decide whether remote assets are proxied, cached, or installed.
-4. Replace locale directory enumeration with an explicit, optional remote-safe contract.
-5. Add the host allow-list before the first remote store is used in earnest.
-6. Re-run the test store through both local source mapping and published JSR dependencies.
-7. Only then split the CMS modules into their own package/store and later their own repository.
+1. Build a tiny HTTP-hosted store containing `init()`, one `pub/` asset, and one locale.
+2. Add a stable module base URL and decide whether remote assets are proxied, cached, or installed.
+3. Replace locale directory enumeration with an explicit, optional remote-safe contract.
+4. Add the host allow-list before the first remote store is used in earnest.
+5. Re-run the test store through both local source mapping and published JSR dependencies.
+6. Only then split the CMS modules into their own package/store and later their own repository.

@@ -12,6 +12,10 @@ the difference in removability.
 Per module the page offers what the state allows: install, then activate/deactivate (runtime only,
 a restart re-links) and uninstall, which lets the module clean up and forgets it.
 
+*Installed, not importable* collects modules whose row survived their code — a deleted folder, an
+unreachable host. Those are skipped at boot instead of stopping it, and this is where their row can
+be removed. Modules whose store is gone too are listed there, since no catalog would show them.
+
 Catalogs are read on every render, never cached — a store is always shown as it is right now. Fine
 for a local file, one HTTP round trip per store and page view for a remote one.
 

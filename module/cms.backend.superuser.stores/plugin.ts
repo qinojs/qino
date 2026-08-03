@@ -65,10 +65,9 @@ async function act(app: App, vars: Record<string, unknown>): Promise<string | un
 
 // --- view -----------------------------------------------------------------
 
-async function renderStore(app: App, store: Store): Promise<HtmlString> {
+async function renderStore(app: App, store: Store, names: string[] | string): Promise<HtmlString> {
   const t = app.t;
   const url = store.url;
-  const names = await catalog(url).catch((e) => String(e.message ?? e));
   if (typeof names === "string") {
     return html.async`<div class=u2-card>
       <div class=-head><code>${url}</code></div>
@@ -77,24 +76,26 @@ async function renderStore(app: App, store: Store): Promise<HtmlString> {
   }
 
   // the row labels are plain strings: a `html` fragment is synchronous, only html.async awaits
-  const [install, uninstall, activate, deactivate, active, inactive] = await Promise.all([t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`active`, t`inactive`]);
+  const [install, uninstall, activate, deactivate, active, inactive, broken] = await Promise.all([t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`active`, t`inactive`, t`not importable`]);
+  const failures = app.modules.failures();
   const rows = names.map((mod) => {
     const linked = app.modules.linked(mod);
     const imported = !!app.modules.get(mod);
+    const failed = failures[mod];
     const fixed = locked.has(mod) || app.modules.declared(mod);
     const toggle = !imported || fixed
       ? ""
       : linked
       ? html`<button data-act=unlink data-mod="${mod}">${deactivate}</button>`
       : html`<button data-act=link data-mod="${mod}">${activate}</button>`;
-    const action = !imported
+    const action = !imported && !failed
       ? html`<button data-act=install data-mod="${mod}" data-store="${url}">${install}</button>`
       : fixed
       ? ""
       : html`<button data-act=uninstall data-mod="${mod}" u2-confirm>${uninstall}</button>`;
     return html`<tr>
       <td>${mod}
-      <td>${!imported ? "" : linked ? active : inactive}
+      <td>${failed ? html`<strong title="${failed}">${broken}</strong>` : !imported ? "" : linked ? active : inactive}
       <td style="text-align:right">${toggle} ${action}`;
   });
 
@@ -124,8 +125,14 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
   const app = node.app;
   const t = app.t;
   const error = Object.keys(vars).length ? await act(app, vars) : undefined;
+  const uninstallLabel = await t`Uninstall`;
   const list = app.stores.all();
-  const cards = await Promise.all(list.map((store) => renderStore(app, store)));
+  const catalogs = await Promise.all(list.map((store) => catalog(store.url).catch((e) => String(e.message ?? e))));
+  const cards = await Promise.all(list.map((store, i) => renderStore(app, store, catalogs[i])));
+
+  // Modules whose row survived their store — otherwise they would have no place to be uninstalled.
+  const listed = new Set(catalogs.flatMap((names) => typeof names === "string" ? [] : names));
+  const orphans = Object.entries(app.modules.failures()).filter(([mod]) => !listed.has(mod));
 
   return html.async`<div class=u2-flex style="flex-direction:column">
   <div class=u2-card>
@@ -137,6 +144,15 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     </div>
     ${list.length ? "" : html.async`<div class=-body><em>${t`No store added yet. A catalog is a store.json, e.g. ./qino/module/store.json`}</em></div>`}
   </div>
+  ${orphans.length ? html.async`<div class=u2-card>
+    <div class=-head>${t`Installed, not importable`}</div>
+    <table class=u2-table>${html.join(orphans.map(([mod, why]) =>
+      html`<tr>
+        <td>${mod}
+        <td><small>${why}</small>
+        <td style="text-align:right"><button data-act=uninstall data-mod="${mod}" u2-confirm>${uninstallLabel}</button>`))}
+    </table>
+  </div>` : ""}
   ${html.join(cards)}
 </div>`;
 }

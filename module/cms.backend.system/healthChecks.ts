@@ -85,7 +85,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   };
 
   // Nothing separates the instances below appPATH, so they overwrite each other's module files.
-  warning["appPATH shared with another instance"] = () => {
+  error["appPATH shared with another instance"] = () => {
     const n = appPathInstances(app.appPATH);
     if (n < 2) return;
     return { info: `${n} apps of this runtime use ${hee(app.appPATH)} — give each its own appPATH, or they share data/, cache/ and tmp/` };

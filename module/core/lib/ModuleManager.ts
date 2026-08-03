@@ -83,6 +83,7 @@ export class ModuleManager {
   #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
   #declared = new Set<string>(); // came from add(), i.e. the application itself — not uninstallable
   #installed: Record<string, number> = {}; // name → time install() ran; the `module` table in memory
+  #failed: Record<string, string> = {}; // installed but not importable this boot → name: why
 
   constructor(app: App) {
     this.#app = app;
@@ -97,6 +98,9 @@ export class ModuleManager {
 
   // True for modules the application declares itself — they outlive any uninstall.
   declared(name: string): boolean { return this.#declared.has(name); }
+
+  // Installed modules that could not be imported this boot, and why; uninstall() is the way out.
+  failures(): Record<string, string> { return this.#failed; }
 
   /** Declare a module for import during app.init(). A relative string resolves against appPATH —
    *  pass `new URL("./x/plugin.ts", import.meta.url)` for "relative to this source file". */
@@ -144,7 +148,15 @@ export class ModuleManager {
       ? await this.#app.db.query<{ name: string; url: string; installed: number }>`SELECT name, url, installed FROM module`
       : [];
     for (const { name, installed } of rows) this.#installed[name] = installed;
-    for (const { name, url } of rows) if (url && !this.#modules[name]) await this.import(url, name);
+    for (const { name, url } of rows) {
+      if (!url || this.#modules[name]) continue;
+      // A deleted folder or an unreachable host must not keep the app from booting: shout, skip,
+      // and let the module page offer the uninstall that clears the row.
+      await this.import(url, name).catch((e) => {
+        this.#failed[name] = e instanceof Error ? e.message : String(e);
+        console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
+      });
+    }
     const order = this.#order();
     await this.#applyDbSchema(order);
     this.#applySchemas(order);
@@ -161,13 +173,16 @@ export class ModuleManager {
 
   /** Unlink, let the module clean up after itself and forget it. Its data goes, unlink() keeps it. */
   async uninstall(name: string): Promise<void> {
-    const mod = this.#modules[name];
-    if (!mod) throw new Error(`Cannot uninstall "${name}": not imported`);
     if (this.#declared.has(name)) throw new Error(`Cannot uninstall "${name}": the application declares it`);
-    this.unlink(name);
-    await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
+    const mod = this.#modules[name];
+    if (!mod && !this.#failed[name]) throw new Error(`Cannot uninstall "${name}": not imported`);
+    if (mod) { // a failed one has no hooks to reverse and no plugin to ask — only the row goes
+      this.unlink(name);
+      await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
+    }
     await this.#app.db.table("module").delete(name);
     delete this.#installed[name];
+    delete this.#failed[name];
     delete this.#modules[name];
   }
 

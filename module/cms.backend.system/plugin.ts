@@ -138,9 +138,11 @@ async function render(node: Node): Promise<string> {
 <div class=u2-flex>
   <style>
     .u2-card {
-      min-width:25rem;
+      flex-basis:28rem;
     }
-    .healty_container { display:grid; grid-gap:8px; }
+    .healty_container {
+      display:grid; grid-gap:8px;
+    }
     .healty_item {
       padding:.5rem;
       background:color-mix(in srgb, var(--gray), #fff 80%);

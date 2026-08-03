@@ -72,6 +72,37 @@ Deno.test({
 });
 
 Deno.test({
+  name: "an installed module that cannot be imported is shouted about, not fatal",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const dir = await fixture();
+    const boot = async () => {
+      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      app.modules.add(corePlugin);
+      await app.init();
+      return app;
+    };
+
+    const app1 = await boot();
+    // A row pointing nowhere — same situation as a deleted folder or an unreachable host.
+    await app1.db.table("module").ensure({ name: "t.gone", url: toFileUrl(`${dir}t.gone/plugin.ts`).href });
+    await app1.db.close();
+
+    const app2 = await boot(); // boots at all: that is the assertion
+    assert(app2.modules.failures()["t.gone"], "the failed import is reported");
+    assertEquals(app2.modules.get("t.gone"), undefined);
+
+    await app2.modules.uninstall("t.gone"); // the way out, without a plugin to ask
+    assertEquals(app2.modules.failures(), {});
+    assertEquals(await app2.db.query`SELECT name FROM module WHERE name = 't.gone'`, []);
+    await app2.db.close();
+
+    await Deno.remove(dir, { recursive: true });
+  },
+});
+
+Deno.test({
   name: "stores are removable exactly when the application does not declare them",
   sanitizeOps: false,
   sanitizeResources: false,
