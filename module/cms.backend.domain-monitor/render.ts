@@ -3,7 +3,7 @@ import { u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
 import { diffResults } from "./lib/changes.ts";
-import { addDomains, type CheckFrequency, type DomainRow, parseResult } from "./lib/monitor.ts";
+import { addDomains, frequencies, type DomainRow, parseResult } from "./lib/monitor.ts";
 
 const HISTORY_LIMIT = 500;
 const DAY = 24 * 60 * 60;
@@ -294,13 +294,12 @@ function smtpCell(row: DomainRow): HtmlString {
   return html`${dot(level, title)}${dane ? html` <small title=DANE>DANE</small>` : ""}`;
 }
 
+// Options come from the frequency list itself, so the select cannot drift from the schema enum.
 function frequencySelect(row: DomainRow): HtmlString {
   const selected = row.check_frequency ?? "disabled";
-  const option = (value: CheckFrequency, label: string) =>
-    html`<option value="${value}" ${selected === value ? "selected" : ""}>${label}`;
-  return html`<select data-frequency data-domain="${row.domain}" title="Automatic checks">
-    ${option("disabled", "off")}${option("hourly", "hourly")}${option("daily", "daily")}${option("weekly", "weekly")}
-  </select>`;
+  return html`<select data-frequency data-domain="${row.domain}" title="Automatic checks">${
+    html.join(frequencies.map((value) => html`<option value="${value}" ${selected === value ? "selected" : ""}>${value === "disabled" ? "off" : value}`))
+  }</select>`;
 }
 
 /** The page the table lives on. Taken from the node, not from the request: an api call that
@@ -551,10 +550,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
     <span data-bulk hidden><b data-bulk-count>0</b> selected ·
       <select data-bulk-frequency title="Set automatic checks for the selected domains">
         <option value="">set interval…</option>
-        <option value=disabled>off</option>
-        <option value=hourly>hourly</option>
-        <option value=daily>daily</option>
-        <option value=weekly>weekly</option>
+        ${html.join(frequencies.map((value) => html`<option value="${value}">${value === "disabled" ? "off" : value}`))}
       </select>
       <button data-action=checkSelected>Check</button>
       <button data-action=deleteSelected data-bulk-delete>Delete</button>
