@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { Db, type App } from "../../core/mod.ts";
 import { apex, covers, wwwAlt } from "../lib/check.ts";
+import { diffResults, pruneHistory } from "../lib/changes.ts";
 import { dmarc, spf } from "../lib/mail.ts";
 import { frequencies, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
 import api from "../nodeApi.ts";
@@ -25,7 +26,8 @@ Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   assertEquals(cron.weekly.every, "week");
   assertEquals(cron.weekly.at, { weekday: "sunday", hour: 4 });
   // every selectable frequency except "disabled" needs a job, or it would never run
-  assertEquals(Object.keys(cron).sort(), frequencies.filter((v) => v !== "disabled").sort());
+  assertEquals(frequencies.filter((v) => v !== "disabled").every((v) => v in cron), true);
+  assertEquals(cron.prune.every, "day");
 });
 
 Deno.test("cms.backend.domain-monitor: frequency follows node access and validates values", async () => {
@@ -249,6 +251,50 @@ Deno.test("cms.backend.domain-monitor: row grades TTL, expiry and mail policy", 
   const nasty = cell({ spf_policy: "<script>", cert_issuer: "<script>", reg_registrar: "<script>" });
   assertEquals(nasty.includes("<script>"), false);
   assertEquals(nasty.includes("&lt;script&gt;"), true);
+});
+
+Deno.test("cms.backend.domain-monitor: a change is what the last check found different", () => {
+  const result = { status_code: 200, checked: 1000, dns_a: "192.0.2.1", response_time: 10 };
+  // a first check compares against nothing, and the fields that move on their own do not count
+  assertEquals(diffResults(undefined, result), []);
+  assertEquals(diffResults({ ...result, response_time: 999, cert_days: 3, log_id: 7 }, result), []);
+  assertEquals(diffResults({ ...result, dns_a: "192.0.2.2" }, result), [{ key: "dns_a", before: "192.0.2.2", after: "192.0.2.1" }]);
+
+  const day = 86400;
+  const now = Math.floor(Date.now() / 1000);
+  const base = { domain: "example.com", checked: now, online: true, status_code: 200 };
+  const cell = (changed: number) => String(rowHtml({ ...base, changed, changes: "dns_a" } as never));
+  assertEquals(cell(now - day / 2).includes("var(--red)"), true);
+  assertEquals(cell(now - 3 * day).includes("var(--orange)"), true);
+  assertEquals(cell(now - 30 * day).includes("changed: dns_a"), true);
+  assertEquals(String(rowHtml(base as never)).includes("data-changed data-value=\"0\""), true);
+});
+
+Deno.test("cms.backend.domain-monitor: pruning keeps the checks that dated a state", async () => {
+  const { db, app } = await testApp();
+  try {
+    const check = async (checked_at: number, result: Record<string, unknown>) =>
+      await db.table("monitor_domain_check").insert({
+        domain: "example.com",
+        checked_at,
+        result: JSON.stringify({ status_code: 200, checked: checked_at, ...result }),
+      });
+    await check(100, { dns_a: "192.0.2.1", response_time: 10 });
+    await check(200, { dns_a: "192.0.2.1", response_time: 99 }); // nothing but the timing moved
+    await check(300, { dns_a: "192.0.2.2", response_time: 10 }); // the record moved
+    await check(400, { dns_a: "192.0.2.2", response_time: 10 });
+    await check(500, { dns_a: "192.0.2.2", response_time: 10 });
+
+    // young checks stay whatever they hold, so a cutoff below them all removes nothing
+    assertEquals(await pruneHistory(app, { before: 100 }), 0);
+    assertEquals(await pruneHistory(app, { before: 450 }), 2);
+    assertEquals(await db.col`SELECT checked_at FROM monitor_domain_check ORDER BY id`, [100, 300, 500]);
+    // the survivors differ from each other, so a second run has nothing left to do
+    assertEquals(await pruneHistory(app, { before: 600 }), 1);
+    assertEquals(await db.col`SELECT checked_at FROM monitor_domain_check ORDER BY id`, [100, 300]);
+  } finally {
+    await db.close();
+  }
 });
 
 // Built from the shipped schema instead of a copy of it — the column list keeps growing and a

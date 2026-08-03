@@ -114,9 +114,6 @@
           "dns_ttl": {
             "type": "string"
           },
-          "dns_changed": {
-            "type": "integer"
-          },
           "reg_found": {
             "type": "boolean"
           },
@@ -205,6 +202,13 @@
             "x-index": true
           },
           "error": {
+            "type": "string"
+          },
+          "changed": {
+            "type": "integer",
+            "x-index": true
+          },
+          "changes": {
             "type": "string"
           },
           "checked": {

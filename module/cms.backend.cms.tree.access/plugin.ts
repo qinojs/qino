@@ -149,7 +149,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
 async function pageGroupAccess(db: App["db"], page: Node, groups: Record<string, string | number>[]): Promise<Record<string, number>> {
   const ret: Record<string, number> = {};
   if (!groups.length) return ret;
-  const rows = await db.query`SELECT grp_id, access FROM page_access_grp WHERE page_id = ${page}`;
+  const rows = await db.query`SELECT grp_id, access FROM page_access_grp WHERE page_id = ${page.id}`;
   for (const r of rows) ret[String(r.grp_id)] = Number(r.access) || 0;
   return ret;
 }

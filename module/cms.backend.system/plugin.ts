@@ -130,7 +130,7 @@ async function render(node: Node): Promise<string> {
   // ── storage ───────────────────────────────────────────────────────────
   const statsBox = `
 <div class=u2-card style="flex-grow:0">
-  <div class=-head>Speicher</div>
+  <div class=-head>${await t`Storage`}</div>
   ${await statistic(node)}
 </div>`;
 

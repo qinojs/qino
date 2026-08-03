@@ -1,4 +1,4 @@
-import { type Node } from "../cms/mod.ts";
+import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.text";
 export const description = "Single directly editable rich-text field.";

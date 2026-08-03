@@ -1,5 +1,6 @@
 import { sql, unixTime, type App } from "../../core/mod.ts";
 import { checkDomain } from "./check.ts";
+import { diffResults, lastResult } from "./changes.ts";
 
 export const frequencies = ["disabled", "hourly", "daily", "weekly"] as const;
 export type CheckFrequency = typeof frequencies[number];
@@ -41,7 +42,6 @@ export type DomainRow = {
   dns_ds?: string | null;
   dns_https?: string | null;
   dns_ttl?: string | null;
-  dns_changed?: number | null;
   reg_found?: boolean | null;
   reg_expires?: number | null;
   reg_created?: number | null;
@@ -71,6 +71,8 @@ export type DomainRow = {
   expect?: string | null;
   check_frequency?: CheckFrequency | null;
   error?: string | null;
+  changed?: number | null;
+  changes?: string | null;
   checked?: number | null;
   checked_deep?: number | null;
   created?: number;
@@ -115,8 +117,6 @@ export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent
   signal?.throwIfAborted();
   const dns: Record<string, string> = { dns_cname: check.dnsCname, dns_ds: check.dnsDs, dns_https: check.dnsHttps, dns_ns_parent: check.dnsNsParent };
   for (const [key, list] of Object.entries(check.dns)) dns["dns_" + key] = list.join("\n");
-  // remember when a record set last moved — silent DNS changes are worth noticing
-  const changed = Object.entries(dns).some(([key, value]) => row[key] != null && row[key] !== value);
   const checkedAt = unixTime();
   const mail = check.mail;
   // A run that skipped the registry lookup must not wipe what an earlier one found.
@@ -176,13 +176,19 @@ export async function runCheck(app: App, row: DomainRow, opt: { reach?: { silent
     bimi: mail?.bimi ?? "",
     // Only a deep run fetches the policy file, a shallow one would report it as gone.
     ...(deep ? { mta_sts_mode: mail?.mtaStsMode ?? "", checked_deep: checkedAt } : {}),
-    dns_changed: changed ? checkedAt : row.dns_changed ?? null,
     error: check.error,
     checked: checkedAt,
   };
+  // What moved since the last stored measurement — silent changes are the ones worth noticing.
+  // Comparing against the stored result rather than against the row keeps both sides in the same
+  // shape; the row comes back from the driver with 1/0 where the result has booleans.
+  const changes = diffResults(await lastResult(app, row.domain), result);
   await app.db.transaction(async () => {
     // Update hooks add metadata such as log_id_ch; keep it out of the measured result.
-    await table(app).update(row.domain, { ...result });
+    await table(app).update(row.domain, {
+      ...result,
+      ...(changes.length ? { changed: checkedAt, changes: changes.map((change) => change.key).join("\n") } : {}),
+    });
     await app.db.table("monitor_domain_check").insert({
       domain: row.domain,
       checked_at: checkedAt,

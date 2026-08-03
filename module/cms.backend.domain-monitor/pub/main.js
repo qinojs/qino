@@ -18,6 +18,9 @@ cms.initNode("backend.domain-monitor", (el) => {
   const visible = () => rows().filter((tr) => tr.style.display !== "none");
   const selected = () => rows().filter((tr) => tr.querySelector("[data-select]")?.checked);
 
+  // the server renders the replacement rows and needs this page's parameters for their detail links
+  const post = (vars) => node.api.post({ ...vars, page: location.search });
+
   const replaceRows = (response) => {
     let replaced = false;
     for (const [domain, html] of Object.entries(response?.rows ?? {})) {
@@ -78,7 +81,7 @@ cms.initNode("backend.domain-monitor", (el) => {
 
     btn.disabled = true;
     try {
-      const response = await node.api.post(vars);
+      const response = await post(vars);
       if (removing && response?.done) {
         for (const tr of removing) tr.remove();
         count.textContent = rows().length;
@@ -95,7 +98,7 @@ cms.initNode("backend.domain-monitor", (el) => {
   const setFrequency = async (control, domains, value) => {
     control.disabled = true;
     try {
-      const response = await node.api.post({ frequency: domains.join(","), value });
+      const response = await post({ frequency: domains.join(","), value });
       if (!replaceRows(response) && !tbody) location.reload();
       apply();
       showSelection();
@@ -133,13 +136,15 @@ cms.initNode("backend.domain-monitor", (el) => {
   });
 
   // client-side search + severity filter (sorting is handled by <u2-table>)
+  const week = () => Date.now() / 1000 - 7 * 24 * 60 * 60;
   const apply = () => {
     if (!tbody || !search || !filter) return;
     const q = (search.value || "").toLowerCase();
-    const f = filter.value; // "", "ok", "problem"
+    const f = filter.value; // "", "ok", "problem", "changed"
     for (const tr of tbody.querySelectorAll("tr")) {
       const level = Number(tr.querySelector("[data-value]")?.dataset.value); // status severity, 0 = green … 4 = red
-      const okFilter = !f || (f === "ok" ? level <= 1 : level >= 3);
+      const changed = Number(tr.querySelector("[data-changed]")?.dataset.value); // 0 = never changed
+      const okFilter = !f || (f === "changed" ? changed > week() : f === "ok" ? level <= 1 : level >= 3);
       const okSearch = tr.textContent.toLowerCase().includes(q);
       const show = okFilter && okSearch;
       tr.style.display = show ? "" : "none";

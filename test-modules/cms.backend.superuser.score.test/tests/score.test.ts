@@ -1,4 +1,4 @@
-// deno-lint-ignore no-import-prefix -- test store must not depend on the host application's import map
+// imported by package name: a test store must not depend on the host application's import map
 import { assertEquals } from "@std/assert";
 import { Db, requestStorage, type App, type Ctx } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";

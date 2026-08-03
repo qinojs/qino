@@ -2,11 +2,11 @@ import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
+import { diffResults } from "./lib/changes.ts";
 import { addDomains, type CheckFrequency, type DomainRow, parseResult } from "./lib/monitor.ts";
 
 const HISTORY_LIMIT = 500;
-// mail_banner carries the server's clock in most greetings, so it "changes" on every single check.
-const IGNORED_CHANGES = new Set(["response_time", "cert_days", "checked", "checked_deep", "dns_changed", "log_id", "log_id_ch", "mail_banner"]);
+const DAY = 24 * 60 * 60;
 
 // Optional column groups. The table carries a "-no-<name>" class per hidden group, so toggling one
 // is a single class change instead of a walk over every cell.
@@ -53,25 +53,11 @@ function checkedStatus(
   return { level: "green", title: finalUrl ? `forwards to ${finalUrl}` : `online, ${code}` };
 }
 
-function flattened(value: unknown, path = "", target = new Map<string, unknown>()): Map<string, unknown> {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    for (const [key, child] of Object.entries(value)) {
-      if (IGNORED_CHANGES.has(key)) continue;
-      flattened(child, path ? `${path}.${key}` : key, target);
-    }
-  } else target.set(path, value);
-  return target;
-}
-
 function changeCell(current: unknown, previous: unknown): HtmlString {
-  if (!previous) return html`–`;
-  const before = flattened(previous);
-  const after = flattened(current);
-  const keys = new Set([...before.keys(), ...after.keys()]);
-  const changed = [...keys].filter((key) => JSON.stringify(before.get(key)) !== JSON.stringify(after.get(key)));
-  if (!changed.length) return html`–`;
-  return html`<div class=-changes>${html.join(changed.map((key) => html`<div>
-    <b>${key}</b>: <del>${changeValue(before.get(key))}</del> → <ins>${changeValue(after.get(key))}</ins>
+  const changes = diffResults(previous, current);
+  if (!changes.length) return html`–`;
+  return html`<div class=-changes>${html.join(changes.map((change) => html`<div>
+    <b>${change.key}</b>: <del>${changeValue(change.before)}</del> → <ins>${changeValue(change.after)}</ins>
   </div>`))}</div>`;
 }
 
@@ -242,6 +228,17 @@ function expiresCell(row: DomainRow): HtmlString {
   return html`${dot(days < 14 ? "red" : days < 45 ? "orange" : "green", title)} <small>${days} d</small>`;
 }
 
+// A change is news rather than a fault, so the marker fades with age instead of ranking severity:
+// the fields the last check found different are named in the title.
+function changedCell(row: DomainRow): HtmlString {
+  if (!row.changed) return html`–`;
+  const age = Date.now() / 1000 - row.changed;
+  const fields = lines(row.changes);
+  const title = fields.length ? `changed: ${fields.join(", ")}` : "changed";
+  const mark = age < DAY ? dot("red", title) : age < 7 * DAY ? dot("orange", title) : html``;
+  return html`${mark} <small title="${title}">${u2.time(row.changed, { narrow: true })}</small>`;
+}
+
 function headersCell(row: DomainRow): HtmlString {
   const missing = lines((row.headers_missing ?? "").replace(/, /g, "\n"));
   const hsts = row.hsts ?? 0;
@@ -306,7 +303,16 @@ function frequencySelect(row: DomainRow): HtmlString {
   </select>`;
 }
 
-export function rowHtml(row: DomainRow): HtmlString {
+// Search-only link: it keeps the page's own parameters (cmspid, lang, editmode) and swaps just the
+// domain, and it resolves against whatever page the row hangs in — a row swapped in after an api
+// call is rendered by a request that knows nothing but the api url.
+const detailLink = (params: URLSearchParams, domain: string): string => {
+  const search = new URLSearchParams(params);
+  search.set("domain", domain);
+  return "?" + search;
+};
+
+export function rowHtml(row: DomainRow, params: URLSearchParams): HtmlString {
   const domain = row.domain;
   const alt = wwwAlt(domain);
   const state = status(row);
@@ -327,7 +333,7 @@ export function rowHtml(row: DomainRow): HtmlString {
   return html`<tr data-domain="${domain}">
       <td><input type=checkbox data-select title="Select for bulk actions">
       <td data-value="${LEVELS[state.level]}">${dot(state.level, state.title)}
-      <td data-value="${domain}"><a href="?domain=${encodeURIComponent(domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
+      <td data-value="${domain}"><a href="${detailLink(params, domain)}">${domain}</a> <a href="https://${domain}/" target=_blank title="Open website">↗</a>${row.final_url ? html`<br><small>→ ${row.final_url}</small>` : ""}${row.error ? html`<br><small title="${row.error}">${errShort(row.error)}</small>` : ""}
       <td data-value="${row.reg_expires ?? 0}">${expiresCell(row)}
       <td data-g=http data-value="${row.status_code}">${row.status_code ?? "–"}
       <td data-g=http data-value="${row.response_time}">${row.response_time != null ? row.response_time + " ms" : "–"}
@@ -349,7 +355,8 @@ export function rowHtml(row: DomainRow): HtmlString {
       <td data-g=mail data-value="${rank(dkim.length ? true : null)}">${flag(dkim.length ? true : null, dkim.length ? `DKIM selectors: ${dkim.join(", ")}` : "no DKIM key found under the known selectors")}
       <td data-g=mail data-value="${row.mta_sts_mode ?? ""}">${row.mta_sts_mode ? html`${dot(row.mta_sts_mode === "enforce" ? "green" : "orange", `MTA-STS ${row.mta_sts_mode}`)} <small>${row.mta_sts_mode}</small>` : html`${dot("gray", row.mta_sts ? "MTA-STS record, but no policy fetched" : "no MTA-STS")}`}
       <td data-g=mail data-value="${rank(row.mail_starttls)}">${smtpCell(row)}
-      <td data-value="${row.checked ?? 0}">${u2.time(row.checked)}${row.dns_changed ? html`<br><small title="DNS records changed">Δ ${u2.time(row.dns_changed)}</small>` : ""}
+      <td data-changed data-value="${row.changed ?? 0}">${changedCell(row)}
+      <td data-value="${row.checked ?? 0}">${u2.time(row.checked, { narrow: true })}
       <td>${frequencySelect(row)}
       <td style="white-space:nowrap"
         ><button class=u2-unstyle data-action=check data-domain="${domain}" title="Check now"><u2-ico icon=refresh>↻</u2-ico></button
@@ -435,7 +442,6 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
           fact("HTTPS", records(row.dns_https)),
           fact("MX", records(row.dns_mx)),
           fact("TXT", records(row.dns_txt)),
-          fact("Last change", time(row.dns_changed, "never")),
         ])}
         ${factGroup("Mail", [
           fact("MX hosts", row.mail_null_mx ? "null MX — receives no mail" : records(row.mail_hosts)),
@@ -465,6 +471,8 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
         ${factGroup("Monitoring", [
           fact("Last checked", time(row.checked, "never")),
           fact("Last full check", time(row.checked_deep, "never")),
+          fact("Last change", time(row.changed, "never")),
+          fact("Changed fields", records(row.changes)),
           fact("Frequency", row.check_frequency ?? "–"),
           fact("Expected text", row.expect || "–"),
           fact("Added", time(row.created)),
@@ -500,8 +508,9 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
   const app = node.app;
   const skipped = vars.add ? await addDomains(app, String(vars.domains ?? "")) : [];
   const rows = await app.db.query<DomainRow>`SELECT * FROM monitor_domain ORDER BY sort, domain`;
-  const body = html.join(rows.map(rowHtml), "\n");
-  const empty = html`<tr><td colspan=27 class=-empty>No domains yet.`;
+  const params = ctx.req.url.toURL().searchParams;
+  const body = html.join(rows.map((row) => rowHtml(row, params)), "\n");
+  const empty = html`<tr><td colspan=28 class=-empty>No domains yet.`;
 
   // Which groups the user folded away, kept per user rather than per browser. Mail is off to begin
   // with — it is the most specialised block and the table is wide enough without it.
@@ -516,6 +525,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
       <option value="">all</option>
       <option value=ok>ok</option>
       <option value=problem>problems</option>
+      <option value=changed>changed (7 days)</option>
     </select>
     <span data-bulk hidden><b data-bulk-count>0</b> selected ·
       <select data-bulk-frequency title="Set automatic checks for the selected domains">
@@ -559,6 +569,7 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
         <th data-g=mail data-sort-handler width=2 class=-v>DKIM
         <th data-g=mail data-sort-handler width=3 class=-v>MTA-STS
         <th data-g=mail data-sort-handler width=2 class=-v>SMTP
+        <th data-sort-handler width=5>Changed
         <th data-sort-handler width=5>Checked
         <th data-sort-handler>Automatic
         <th width=1>

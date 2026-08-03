@@ -9,7 +9,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const base = (ctx.req.header("host") ?? "") + ctx.req.appUrl;
   const deleteSrc = ctx.req.moduleUrl + "cms.frontend.2/pub/img/delete.svg";
 
-  const urlRows = await db.query`SELECT * FROM page_url WHERE page_id = ${node}`;
+  const urlRows = await db.query`SELECT * FROM page_url WHERE page_id = ${node.id}`;
   const urlTrs: Promise<HtmlString>[] = [];
   for (const row of urlRows) {
     urlTrs.push(html.async`<tr data-lang="${row.lang}">
@@ -19,7 +19,7 @@ export default async function (node: Node): Promise<HtmlString> {
       <td style="width:.625rem"><input class=-target ${row.target ? "checked" : ""} type=checkbox title="${app.t`New window`}">`);
   }
 
-  const redirectRows = await db.query`SELECT * FROM page_redirect WHERE redirect = ${node} ORDER BY request`;
+  const redirectRows = await db.query`SELECT * FROM page_redirect WHERE redirect = ${node.id} ORDER BY request`;
   const redirectTrs: Array<HtmlString | Promise<HtmlString>> = [html.async`<tr>
     <td style="width:1.25rem;white-space:nowrap;padding-right:0"><small style="font-size:.7em">${base}</small>
     <td style="padding-left:.3125rem"><input class=-add_inp style="width:100%" maxlength=180>

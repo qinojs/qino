@@ -1,7 +1,7 @@
-import { type Node } from "../cms/mod.ts";
 import { Output, header, type Ctx } from "../core/mod.ts";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
+import type { Node } from "../cms/mod.ts";
 
 export const name = "cms.cont.table2";
 export const description = "Editable text table with configurable columns and export.";

@@ -38,7 +38,9 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   if (ctx.req.body?.csrfToken === ctx.csrfToken) {
     if ("delete_all" in ctx.req.body) await db.exec`DELETE FROM mail`;
     if ("delete_before1year" in ctx.req.body) {
-      await db.exec`DELETE m FROM mail m LEFT JOIN log l ON l.id=m.log_id WHERE COALESCE(l.time,0) < ${unixTime() - 60 * 60 * 24 * 365}`;
+      // subquery instead of a joined DELETE: log.id is the primary key, so it matches at most one
+      // row — and multi-table DELETE is MySQL-only
+      await db.exec`DELETE FROM mail WHERE COALESCE((SELECT time FROM log WHERE log.id = mail.log_id), 0) < ${unixTime() - 60 * 60 * 24 * 365}`;
     }
   }
 

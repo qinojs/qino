@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertThrows } from "../../core/tests/deps.ts";
-import { App, Db, unixTime } from "../../core/mod.ts";
+import { Db, unixTime, type App } from "../../core/mod.ts";
 import { forget, hit, prune, scored, sqlScore, strength } from "../mod.ts";
 import { cron, dbSchema, init, install, name, needs } from "../plugin.ts";
 
