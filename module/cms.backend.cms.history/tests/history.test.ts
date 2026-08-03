@@ -49,7 +49,7 @@ function fixture() {
   return { rows, reg };
 }
 
-const ctx = { clientId: 7, lang: "en", req: { basePath: "/" } } as any;
+const ctx = { clientId: 7, lang: "en", req: { appUrl: "/" } } as any;
 const listPart = (node: any, filter: any = {}) => cms.node.parts.history(node, { ctx, vars: { filter } }).then(String);
 
 Deno.test("history: metadata is wired", () => {

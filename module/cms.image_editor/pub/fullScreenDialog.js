@@ -41,7 +41,7 @@ export class FullScreenDialog {
       this.#host = document.createElement(TAG);
       this.#shadow = this.#host.attachShadow({ mode: 'open' });
       for (const href of styleHrefs) {
-        const url = /^https?:/.test(href) ? href : ctx.sysURL + href;
+        const url = /^https?:/.test(href) ? href : ctx.moduleUrl + href;
         this.#shadow.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: url }));
       }
       this.#shadow.append(Object.assign(document.createElement('style'), { textContent: baseCss }));

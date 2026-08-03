@@ -14,7 +14,7 @@ type Fake = Record<string, any>;
 export interface TestContextInit extends RequestInit {
   url?: string;
   /** Mount prefix, default "/". */
-  basePath?: string;
+  appUrl?: string;
   /** Partial `App` fake, merged over the built-in minimal one. */
   app?: Fake;
   /** Partial `Session` fake; default is a guest session driven by `userId`. */
@@ -26,7 +26,7 @@ export interface TestContextInit extends RequestInit {
 
 /** Build a Ctx through the production `Ctx.create()` path. */
 export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
-  const { url = "http://qino.test/", basePath = "/", app = {}, sess, userId = 0, set, ...reqInit } = init;
+  const { url = "http://qino.test/", appUrl = "/", app = {}, sess, userId = 0, set, ...reqInit } = init;
   const session = sess ?? { data: { core: { userId: () => userId } } };
   const appFake = {
     sessions: { loadFromRequest: () => session },
@@ -34,7 +34,7 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
     ...app,
     settings: { core: {}, ...app.settings },
   };
-  const ctx = await Ctx.create(appFake as never, new Request(url, reqInit), { basePath });
+  const ctx = await Ctx.create(appFake as never, new Request(url, reqInit), { appUrl });
   for (const [k, v] of Object.entries(set ?? {}))
     Object.defineProperty(ctx, k, { value: v, configurable: true, writable: true });
   return ctx;

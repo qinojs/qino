@@ -22,9 +22,9 @@ app.modules.add(import.meta.resolve("../qino/module/oauth_server/plugin.ts"));
 
 | Pfad                                          | Zweck                                        |
 |-----------------------------------------------|----------------------------------------------|
-| `GET\|POST {appURL}authorize`                  | Login + Consent, gibt den Code aus            |
-| `POST {appURL}token`                           | Code einlösen, Refresh rotieren               |
-| `POST {appURL}register`                        | Dynamic Client Registration (RFC 7591)        |
+| `GET\|POST {appUrl}authorize`                  | Login + Consent, gibt den Code aus            |
+| `POST {appUrl}token`                           | Code einlösen, Refresh rotieren               |
+| `POST {appUrl}register`                        | Dynamic Client Registration (RFC 7591)        |
 | `GET /.well-known/oauth-authorization-server`  | AS-Metadata (RFC 8414)                        |
 | `GET /.well-known/oauth-protected-resource`    | Resource-Metadata (RFC 9728)                  |
 
@@ -56,7 +56,7 @@ Ein konkretes Beispiel (MCP-Clients ohne Header-Support) steht in `module/mcp/US
 
 ## API
 
-Basis: `{appURL}api/oauth_server/` — nur Selbstbedienung; Clients verwaltet das Backend-Modul.
+Basis: `{appUrl}api/oauth_server/` — nur Selbstbedienung; Clients verwaltet das Backend-Modul.
 
 | Methode | Pfad                | Access | Beschreibung                                   |
 |---------|---------------------|--------|------------------------------------------------|

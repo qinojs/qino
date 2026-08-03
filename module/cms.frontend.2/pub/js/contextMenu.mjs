@@ -3,16 +3,16 @@ import '../../../core/pub/js/c1/contextMenu.mjs';
 import { apt, ctx, t } from '../../../core/pub/js/qino.js';
 import '../../../cms/pub/js/cms.mjs';
 
-const sysURL = ctx.sysURL;
+const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
 const blockSelector = '[qcms-edit], #qgCmsContPosMenu';
 
 const menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
-  icon: sysURL+'cms.frontend.2/pub/img/module_default.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/module_default.svg',
   selector: blockSelector,
 });
 menu.addItem(t`Settings`, {
-  icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/settings.svg',
   selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
@@ -24,7 +24,7 @@ menu.addItem(t`Settings`, {
   }
 });
 menu.addItem(t`Move`, {
-  icon: sysURL+'cms.frontend.2/pub/img/move.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/move.svg',
   selector: blockSelector,
   onshow() {
     this.activeEl = cms.contPos.active.el;
@@ -33,7 +33,7 @@ menu.addItem(t`Move`, {
   onclick() { cms.contPos.dd.start(this.activeEl);  }
 });
 menu.addItem(t`Copy`, {
-  icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/copy.svg',
   selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
@@ -46,7 +46,7 @@ menu.addItem(t`Copy`, {
   }
 });
 menu.addItem(t`Cut`, {
-  icon: sysURL+'cms.frontend.2/pub/img/cut.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/cut.svg',
   selector: blockSelector,
   onshow() {
     this.activePid = cms.contPos.active.pid;
@@ -61,7 +61,7 @@ menu.addItem(t`Cut`, {
   }
 });
 menu.addItem(t`Delete`, {
-  icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/delete.svg',
   selector: blockSelector,
   onshow() {
     this.activeEl = cms.contPos.active.el;
@@ -79,7 +79,7 @@ menu.addItem(t`Delete`, {
 
 const treeMenu = c1.globalContextMenu;
 treeMenu.addItem(t`Settings`, {
-  icon: sysURL+'cms.frontend.2/pub/img/settings.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/settings.svg',
   selector: '#tree .-title',
   onshow(e) {
     const node = e.currentTarget.closest('u2-tree');
@@ -93,7 +93,7 @@ treeMenu.addItem(t`Settings`, {
   }
 });
 treeMenu.addItem(t`Rename`, {
-  icon: sysURL+'cms.frontend.2/pub/img/pencil.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/pencil.svg',
   selector:'#tree .-title',
   onshow(e) {
     const node = e.currentTarget.closest('u2-tree');
@@ -106,7 +106,7 @@ treeMenu.addItem(t`Rename`, {
   }
 });
 treeMenu.addItem(t`Copy`, {
-  icon: sysURL+'cms.frontend.2/pub/img/copy.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/copy.svg',
   selector:'#tree .-title',
   onshow(e) {
     const node = e.currentTarget.closest('u2-tree');
@@ -135,7 +135,7 @@ treeMenu.addItem(t`Copy`, {
   }
 });
 treeMenu.addItem(t`Delete`, {
-  icon: sysURL+'cms.frontend.2/pub/img/delete.svg',
+  icon: moduleUrl+'cms.frontend.2/pub/img/delete.svg',
   selector: '#tree .-title',
   onshow(e) {
     const node = e.currentTarget.closest('u2-tree');

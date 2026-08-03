@@ -14,7 +14,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const list = await providers(app);
   if (!list.length) return html.raw(node.edit ? `<em>${hee(await app.t`No login providers configured.`)}</em>` : "");
 
-  const base = ctx.req.basePath;
+  const base = ctx.req.appUrl;
   const returnTo = ctx.req.url.pathname + ctx.req.url.search;
   const label = await app.t`Log in with`;
   const buttons = list.map((p) => {

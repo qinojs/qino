@@ -4,13 +4,13 @@ import '../../core/pub/js/c1/contextMenu.mjs';
 import '../../core/pub/js/c1/onElement.mjs';
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
-const sysURL = ctx.sysURL;
+const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
 const activeLang = document.documentElement.lang;
 
 // contextmenu
 c1.globalContextMenu.addItem('CMS Text',{
-  icon: sysURL+'cms.text/pub/text.png',
+  icon: moduleUrl+'cms.text/pub/text.png',
   selector: '[cmstxt]',
   onshow(e) { this.qgCurrentTarget = e.currentTarget; },
   onclick() { showEditor(this.qgCurrentTarget); }

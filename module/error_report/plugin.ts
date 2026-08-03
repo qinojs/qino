@@ -98,7 +98,7 @@ async function addReport(app: App, vs: Report): Promise<void> {
   };
   try {
     const ctx = getCtx();
-    row.request ??= ctx.req.basePath + ctx.req.appPath;
+    row.request ??= ctx.req.appUrl + ctx.req.appPath;
     row.referer ??= ctx.req.header("referer");
     row.browser ??= ctx.req.header("user-agent");
     row.ip ??= ctx.req.clientIp;
@@ -148,9 +148,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("render", async ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
     if (!await ctx.app.settings.error_report.browserErrors) return;
-    ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.basePath + "js-error", max: 50 };
+    ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.appUrl + "js-error", max: 50 };
     ctx.res.csp["script-src"][REPORTER_ROOT] = true;
     ctx.res.html.legacyScripts.add(REPORTER_PATH);
-    ctx.res.csp.reportTo = ctx.req.basePath + "csp-error";
+    ctx.res.csp.reportTo = ctx.req.appUrl + "csp-error";
   }, { signal });
 }

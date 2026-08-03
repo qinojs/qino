@@ -44,8 +44,8 @@ export class SessionManager {
     this.#db = db;
   }
 
-  loadFromRequest(req: Req, https: boolean, appURL: string): Promise<Session> {
-    return this.load(req.cookies[cookiePrefix(https, appURL) + COOKIE_NAME]);
+  loadFromRequest(req: Req, https: boolean, appUrl: string): Promise<Session> {
+    return this.load(req.cookies[cookiePrefix(https, appUrl) + COOKIE_NAME]);
   }
 
   async load(cookieSessionToken?: string): Promise<Session> {
@@ -69,7 +69,7 @@ export class SessionManager {
   setCookieIfNew(ctx: Ctx): void {
     if (!ctx.sess.isNew || ctx.sess.cookieSent) return;
     ctx.sess.cookieSent = true;
-    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, ctx.req.basePath, ctx.app.https));
+    ctx.res.headers.append(...header.setCookie(COOKIE_NAME, ctx.sess.token, ctx.req.appUrl, ctx.app.https));
   }
 
   async #create(): Promise<Session> {

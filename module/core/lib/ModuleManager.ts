@@ -69,7 +69,7 @@ export class Module {
   /** Scratch space for a single operation — droppable when nothing runs, no backup. */
   get tmp(): string { return `${this.#app.appPATH}tmp/${this.name}/`; }
   /** data/ as a URL; only pub/ below it is reachable. */
-  get dataUrl(): string { return `${getCtx().req.basePath}d/${this.name}/`; }
+  get dataUrl(): string { return `${getCtx().req.appUrl}d/${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
   abort(): void { this.#abort.abort(); }

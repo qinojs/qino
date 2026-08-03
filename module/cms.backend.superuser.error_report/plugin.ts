@@ -11,7 +11,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function makeFileHelper(ctx: Ctx) {
-  const appURL = ctx.req.basePath;
+  const appUrl = ctx.req.appUrl;
   /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
   function localPath(file: string): string | null {
     if (!file.startsWith("file:")) return ctx.urlToLocalPath(file);
@@ -23,7 +23,7 @@ function makeFileHelper(ctx: Ctx) {
   }
   function editorLink(file: string, line: unknown, col: unknown): string {
     const path = localPath(file) ?? file;
-    return appURL + "editor/?file=" + encodeURIComponent(path)
+    return appUrl + "editor/?file=" + encodeURIComponent(path)
       + "&line=" + encodeURIComponent(String(line ?? ""))
       + "&col="  + encodeURIComponent(String(col  ?? ""));
   }

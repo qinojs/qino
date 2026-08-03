@@ -79,7 +79,7 @@ Deno.test("SessionManager: regenerateId resets an existing session", async () =>
 
 Deno.test("SessionManager: setCookieIfNew uses __Secure- prefix on sub-path mounts", async () => {
   const sessions = new SessionManager(fakeDb() as any);
-  const ctx = await testContext({ url: "http://qino.test/app/", basePath: "/app/", app: { https: true }, sess: { token: "token", isNew: true } });
+  const ctx = await testContext({ url: "http://qino.test/app/", appUrl: "/app/", app: { https: true }, sess: { token: "token", isNew: true } });
 
   sessions.setCookieIfNew(ctx);
   assertEquals(ctx.res.headers.get("Set-Cookie"), "__Secure-qinoSess=token; Path=/app/; HttpOnly;SameSite=Lax; Secure");

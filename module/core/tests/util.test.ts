@@ -95,7 +95,7 @@ Deno.test("util: sqlSearch is neutral on empty input", () => {
 Deno.test("util: ctx.urlToLocalPath maps module and data public files", async () => {
   const ctx = await testContext({
     url: "http://h/app/",
-    basePath: "/app/",
+    appUrl: "/app/",
     app: {
       appPATH: "/app/",
       modules: {

@@ -101,7 +101,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
 
   const rows = await db.query`SELECT * FROM social_login_provider ORDER BY name`;
   const csrf = ctx.csrfToken;
-  const selfBase = ctx.req.url.origin + ctx.req.basePath;
+  const selfBase = ctx.req.url.origin + ctx.req.appUrl;
   const cards = rows.map((r) => providerForm(csrf, selfBase, r)).join("\n");
 
   return `<div class=u2-flex>

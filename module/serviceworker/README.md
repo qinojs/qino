@@ -12,7 +12,7 @@ That is the whole contract — no registration call, and nothing to undo: the wo
 assembled per request from the modules that are linked right then, so unlinking a module
 drops its part by itself.
 
-The worker is served at `<appURL>sw.js` and contains nothing but `import` statements —
+The worker is served at `<appUrl>sw.js` and contains nothing but `import` statements —
 one per part. A part is a plain ES module that adds its own listeners:
 
 ```js

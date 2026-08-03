@@ -26,8 +26,8 @@ cms.txtCleanElement = function(el,tid){
       else el.addEventListener('load', () => requestAnimationFrame(dim), { once: true });
     }
   }
-  if (el.src?.includes('dbFile/')  && el.src .includes(location.host)) { el.src  = ctx.appURL+el.src .replace(/.*dbFile\//,'dbFile/'); }
-  if (el.href?.includes('dbFile/') && el.href.includes(location.host)) { el.href = ctx.appURL+el.href.replace(/.*dbFile\//,'dbFile/'); }
+  if (el.src?.includes('dbFile/')  && el.src .includes(location.host)) { el.src  = ctx.appUrl+el.src .replace(/.*dbFile\//,'dbFile/'); }
+  if (el.href?.includes('dbFile/') && el.href.includes(location.host)) { el.href = ctx.appUrl+el.href.replace(/.*dbFile\//,'dbFile/'); }
   el.removeAttribute('cmstxt');
   for (const a of ['qcms-id', 'qcms-mod', 'qcms-edit', 'qcms-drop', 'qcms-offline', 'qcms-name']) el.removeAttribute(a);
 };

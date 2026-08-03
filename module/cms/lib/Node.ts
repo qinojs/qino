@@ -166,7 +166,7 @@ export class Node {
 
         const mod = this.module;
         const nodeExports = mod?.plugin.cms?.node;
-        const modBase = ctx.req.basePath + "m/" + this.vs.module + "/";
+        const modBase = ctx.req.appUrl + "m/" + this.vs.module + "/";
         const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
         for (const file of nodeExports?.css ?? []) ctx.res.html.styles.add(isAbsolute(file) ? file : modBase + file);
         for (const file of nodeExports?.js ?? [])  ctx.res.html.scripts.add(isAbsolute(file) ? file : modBase + file);
@@ -500,8 +500,8 @@ export class Node {
         const ctx = getCtx();
         lang ??= ctx.lang;
         const hash = this.vs.type === "c" ? await this.urlSeo(lang) : "";
-        if (this.edit) return ctx.req.basePath + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
-        return ctx.req.basePath + (await (await this.page()).urlSeo(lang)) + hash;
+        if (this.edit) return ctx.req.appUrl + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
+        return ctx.req.appUrl + (await (await this.page()).urlSeo(lang)) + hash;
     }
 
     async urlSeo(lang: string): Promise<string> {

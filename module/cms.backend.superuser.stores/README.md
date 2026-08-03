@@ -12,5 +12,8 @@ the difference in removability.
 Per module the page offers what the state allows: install, then activate/deactivate (runtime only,
 a restart re-links) and uninstall, which lets the module clean up and forgets it.
 
+Catalogs are read on every render, never cached — a store is always shown as it is right now. Fine
+for a local file, one HTTP round trip per store and page view for a remote one.
+
 Note that anyone who reaches this page can import code from any URL — see the deferred host
 allow-list in the core document before exposing a remote store.

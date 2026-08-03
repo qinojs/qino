@@ -6,5 +6,5 @@ import { getCtx } from "../core/mod.ts";
 export function editorUrl(file: string): string {
   const ctx = getCtx();
   ctx.sess.data.fileEditor.allow[file](1);
-  return ctx.req.basePath + "editor?file=" + encodeURIComponent(file);
+  return ctx.req.appUrl + "editor?file=" + encodeURIComponent(file);
 }

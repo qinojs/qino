@@ -180,7 +180,7 @@ export class DbFileImageEditor extends ImageEditor {
       blob = jpeg.size > png.size ? png : jpeg;
     }
     qgfileUpload(blob, 'editedImage', {
-      url: ctx.appURL + '?file_id=' + this.file_id,
+      url: ctx.appUrl + '?file_id=' + this.file_id,
       complete: () => {
         this.reloadElements();
                 cb?.();

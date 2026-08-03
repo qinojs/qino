@@ -16,7 +16,7 @@ The mode is chosen per provider: set `authorize_url` → OAuth2; leave it empty 
 Am einfachsten über das Backend-Modul **`cms.backend.superuser.oauth`** (Superuser →
 Social login). Gängige Provider sind bei Installation als Vorlagen angelegt — meist nur
 noch `client_id`/`client_secret` eintragen. Die Redirect-URI zum Eintragen beim Provider
-zeigt das Formular pro Provider an: **`{appURL}oauth/callback/<name>`**.
+zeigt das Formular pro Provider an: **`{appUrl}oauth/callback/<name>`**.
 
 Tabelle `social_login_provider`:
 
@@ -48,7 +48,7 @@ Frontend-Modul **`cms.cont.socialLogin`** rendert einen „Log in with …"-Link
 konfiguriertem Provider. Oder direkt verlinken:
 
 ```html
-<a href="{appURL}oauth/start/github">Login mit GitHub</a>
+<a href="{appUrl}oauth/start/github">Login mit GitHub</a>
 ```
 
 Optional `?return_to=/pfad` (nur lokale Pfade werden akzeptiert).

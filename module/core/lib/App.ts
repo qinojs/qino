@@ -19,7 +19,7 @@ const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
 const DEFAULT_CONFIG = {
     appPATH: mainDir,
-    basePath: "",
+    appUrl: "",
     https: false,
     dev: false,
     trustedProxyHops: 0, // proxies in front of the app; 0 = none, x-forwarded-for ignored
@@ -56,7 +56,7 @@ export function appPathInstances(appPATH: string): number {
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App extends Emitter<AppEvents> {
     appPATH: string;
-    basePath: string;
+    appUrl: string;
     https: boolean;
     dev: boolean;
     trustedProxyHops: number;
@@ -84,7 +84,7 @@ export class App extends Emitter<AppEvents> {
 
         this.appPATH   = ensureSlash(appPATH);
         appPathUses.set(this.appPATH, (appPathUses.get(this.appPATH) ?? 0) + 1);
-        this.basePath  = ensureSlash(cfg.basePath || "/");
+        this.appUrl    = ensureSlash(cfg.appUrl || "/");
         this.https     = cfg.https;
         this.dev       = cfg.dev;
         this.trustedProxyHops = cfg.trustedProxyHops;
@@ -111,24 +111,24 @@ export class App extends Emitter<AppEvents> {
 
     /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
     get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
-        return (req, info) => this.handle(req, this.basePath, info?.remoteAddr?.hostname);
+        return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
     }
 
     import(spec: string): Promise<Module> { return this.modules.import(spec); }
     link(name: string): Promise<void> { return this.modules.link(name); }
     unlink(name: string): void { this.modules.unlink(name); }
 
-    /** The single entry point: `Request` in, `Response` out. `basePath` = the prefix this request is served under. */
-    async handle(request: Request, basePath: string = this.basePath, peerAddr = ""): Promise<Response> {
+    /** The single entry point: `Request` in, `Response` out. `appUrl` = the prefix this request is served under. */
+    async handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {
         const time = performance.now();
-        const base = ensureSlash(basePath || "/");
+        const base = ensureSlash(appUrl || "/");
         let ctx: Ctx;
         try {
             await this.fire("request-start", { request, peerAddr, time }); // cheap pre-filter, before any DB/session work
             const url = new URL(request.url);
             const localPath = urlToLocalPath(url, base, this);
             if (localPath) return await this.#static(request, peerAddr, time, localPath);
-            ctx = await Ctx.create(this, request, { basePath: base, peerAddr, time, url });
+            ctx = await Ctx.create(this, request, { appUrl: base, peerAddr, time, url });
         } catch (e: unknown) {
             return earlyError(e);
         }
@@ -183,7 +183,7 @@ export class App extends Emitter<AppEvents> {
             html.lang = ctx.lang;
             const qino = html.jsData.qino ??= {};
             qino.csrfToken = ctx.csrfToken;
-            qino.appURL = ctx.req.basePath;
+            qino.appUrl = ctx.req.appUrl;
             ctx.res.body = html.render();
         }
         return this.#buildResponse(ctx);

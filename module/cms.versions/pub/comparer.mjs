@@ -1,10 +1,10 @@
 import { ctx } from '../../core/pub/js/qino.js';
 
-const { appURL } = ctx;
+const { appUrl } = ctx;
 const nodeId = globalThis.qino?.cms?.nodeId;
 let div, iframe1, iframe2, pid, view1;
 
-const frameSrc = (space, log) => `${appURL}?cmspid=${nodeId}&cms_versions_space=${space}&cms_versions_log=${log}&cms_versions_page=${pid}&cms_noFrontend=1`;
+const frameSrc = (space, log) => `${appUrl}?cmspid=${nodeId}&cms_versions_space=${space}&cms_versions_log=${log}&cms_versions_page=${pid}&cms_noFrontend=1`;
 
 export const comparer = {
   _ensure(){

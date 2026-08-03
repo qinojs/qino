@@ -56,7 +56,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const modDir  = modPath?.replace(/\/?[^/]+$/, "") ?? null;
 
   // --- Exports ---
-  const SKIP = new Set(["name", "description", "needs", "cms", "install", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
+  const SKIP = new Set(["name", "description", "needs", "cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
   const knownKeys: { key: string; label: string }[] = [
     { key: "needs",             label: "needs" },
@@ -67,6 +67,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     { key: "cms",               label: "cms" },
     { key: "init",              label: "init()" },
     { key: "install",           label: "install()" },
+    { key: "uninstall",         label: "uninstall()" },
     ...extraExports.map(k => ({ key: k, label: k })),
   ];
   const presentExports = knownKeys.filter(({ key }) => mod[key] !== undefined);
@@ -105,7 +106,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
       if (!info?.isFile) continue;
       const mtimeIso = info.mtime?.toISOString() ?? "";
       const nameCell = isSuperuser
-        ? html`<a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${rel}</a>`
+        ? html`<a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${rel}</a>`
         : rel;
       rows.push(html`<tr>
         <td>${nameCell}
@@ -128,7 +129,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   // --- Source info ---
   const sourceDisplay = modPath ?? modUrl;
   const sourceHtml = isSuperuser && modPath
-    ? html`<a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(modPath)}" target="${encodeURIComponent(modPath)}">${sourceDisplay}</a>`
+    ? html`<a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(modPath)}" target="${encodeURIComponent(modPath)}">${sourceDisplay}</a>`
     : html`<code>${sourceDisplay}</code>`;
 
   return html.async`<div class=u2-flex>

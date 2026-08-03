@@ -17,21 +17,21 @@ export class Req {
   #time: number;
   #body: ReqBody;
   #clientIp: string;
-  #basePath: string;
+  #appUrl: string;
   #appPath: string;
   #query: Readonly<Record<string, string>> | undefined;
   #queryAll: Readonly<Record<string, readonly string[]>> | undefined;
   #cookies: Readonly<Record<string, string>> | undefined;
   #deadline: ReqDeadline | null = null;
 
-  constructor(raw: Request, url: URL, body: ReqBody, opt: { peerAddr: string; time: number; basePath: string; appPath: string; clientIp: string }) {
+  constructor(raw: Request, url: URL, body: ReqBody, opt: { peerAddr: string; time: number; appUrl: string; appPath: string; clientIp: string }) {
     this.#raw = raw;
     this.#nativeUrl = url;
     this.#url = new ReqUrl(url);
     this.#body = body;
     this.#peerAddr = opt.peerAddr;
     this.#time = opt.time;
-    this.#basePath = opt.basePath;
+    this.#appUrl = opt.appUrl;
     this.#appPath = opt.appPath;
     this.#clientIp = opt.clientIp;
   }
@@ -53,9 +53,9 @@ export class Req {
   /** Client IP after `trustedProxyHops`. */
   get clientIp(): string { return this.#clientIp; }
   /** Mount prefix of this request, always with trailing slash (e.g. `/cms1/`). */
-  get basePath(): string { return this.#basePath; }
-  /** Where module files are served from: `basePath` + `m/`. Data files are below `Module.dataUrl`. */
-  get moduleUrl(): string { return this.#basePath + "m/"; }
+  get appUrl(): string { return this.#appUrl; }
+  /** Where module files are served from: `appUrl` + `m/`. Data files are below `Module.dataUrl`. */
+  get moduleUrl(): string { return this.#appUrl + "m/"; }
   /** Decoded app-relative routing path, without base prefix and query.
    *  A URL path — not to be confused with `app.appPATH` (filesystem path). */
   get appPath(): string { return this.#appPath; }
@@ -100,23 +100,23 @@ export class Req {
   }
 
   static async create(request: Request, opt: {
-    url?: URL; basePath?: string; peerAddr?: string; time?: number;
+    url?: URL; appUrl?: string; peerAddr?: string; time?: number;
     maxSize?: number; trustedProxyHops?: number;
   } = {}): Promise<Req> {
     const url = publicScheme(request, opt.url ?? new URL(request.url), opt.trustedProxyHops ?? 0);
-    const basePath = ensureSlash(opt.basePath || "/");
-    if (!url.pathname.startsWith(basePath)) throw new Output("Not Found", { status: 404 });
+    const appUrl = ensureSlash(opt.appUrl || "/");
+    if (!url.pathname.startsWith(appUrl)) throw new Output("Not Found", { status: 404 });
     const peerAddr = opt.peerAddr ?? "";
     const body = await ReqBody.parse(request, { maxSize: opt.maxSize || 100 * 1024 * 1024 });
 
     let appPath: string;
-    try { appPath = decodeURIComponent(url.pathname.slice(basePath.length)); }
+    try { appPath = decodeURIComponent(url.pathname.slice(appUrl.length)); }
     catch { throw new Output("Bad Request", { status: 400 }); }
 
     return new Req(request, url, body, {
       peerAddr,
       time: opt.time ?? performance.now(),
-      basePath,
+      appUrl,
       appPath,
       clientIp: clientIp(request, peerAddr, opt.trustedProxyHops ?? 0),
     });

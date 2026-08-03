@@ -20,7 +20,7 @@ async function pool(items, limit, fn) {
 }
 
 cms.initNode("cont.apitest", (root) => {
-  const appURL = root.dataset.appUrl;
+  const appUrl = root.dataset.appUrl;
   const csrf = globalThis.qino?.csrfToken;
   const rows = [...root.querySelectorAll("tbody tr[data-method]")];
   let seq = 0;
@@ -65,7 +65,7 @@ cms.initNode("cont.apitest", (root) => {
     }
     headers["X-Apt-Check"] = "access";
     try {
-      const res = await fetch(appURL + "api" + path, opts);
+      const res = await fetch(appUrl + "api" + path, opts);
       if (res.ok) return "ok";
       const err = await res.json().then((b) => b.error).catch(() => "");
       if (res.status === 403) return err === "Forbidden" ? "csrf" : "denied";

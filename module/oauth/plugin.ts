@@ -34,7 +34,7 @@ async function endpoints(p: any): Promise<{ authorize: string; token: string; us
   return { authorize: m.authorization_endpoint, token: m.token_endpoint, userinfo: m.userinfo_endpoint, oidc: true };
 }
 
-const callbackUrl = (ctx: Ctx, name: string): string => ctx.req.url.origin + ctx.req.basePath + "oauth/callback/" + encodeURIComponent(name);
+const callbackUrl = (ctx: Ctx, name: string): string => ctx.req.url.origin + ctx.req.appUrl + "oauth/callback/" + encodeURIComponent(name);
 
 /** Only allow local, same-app return targets — blocks open-redirect via ?return_to=. */
 const safeReturn = (base: string, raw: unknown): string =>
@@ -79,7 +79,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
 
   const d = ctx.sess.data.oauth; // one-shot transient, mirrors ctx.sess.data.core.*
   d.prov(name); d.state(state); d.nonce(nonce); d.verifier(verifier);
-  d.returnTo(safeReturn(ctx.req.basePath, ctx.req.query.return_to));
+  d.returnTo(safeReturn(ctx.req.appUrl, ctx.req.query.return_to));
 
   const u = new URL(e.authorize);
   u.searchParams.set("response_type", "code");
@@ -143,7 +143,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
 
   const usrId = await resolveUser(ctx, p, identity(claims));
   if (!usrId || !await login(ctx, usrId)) throw new Output("oauth login denied", { status: 403 });
-  throw new Redirect(safeReturn(ctx.req.basePath, returnTo));
+  throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

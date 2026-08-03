@@ -3,7 +3,7 @@ import { assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
 import { cms, name } from "../plugin.ts";
 
-const fakeCtx = () => ({ req: { basePath: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
+const fakeCtx = () => ({ req: { appUrl: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
 
 function fakeNode(dir: string, edit: boolean) {
   return {

@@ -49,7 +49,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
 
   const fileRow = (filePath: string, base: number, info: Deno.FileInfo): HtmlString =>
     html`<tr itemid="${filePath}">
-      <td><a href="${ctx.req.basePath + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base)}</a>
+      <td><a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base)}</a>
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
         <img src="${ctx.req.moduleUrl}cms.frontend.2/pub/img/delete.svg" alt=delete>`;

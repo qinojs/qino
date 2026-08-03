@@ -22,7 +22,7 @@ app.modules.add(import.meta.resolve("../qino/module/cms.backend.web_auth/plugin.
 
 ## API
 
-Basis: `{appURL}api/web_auth/`
+Basis: `{appUrl}api/web_auth/`
 
 | Methode | Pfad                    | Auth    | Beschreibung                          |
 |---------|-------------------------|---------|---------------------------------------|

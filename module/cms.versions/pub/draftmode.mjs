@@ -1,6 +1,6 @@
 import { apt, ctx } from '../../core/pub/js/qino.js';
 
-const sysURL = ctx.sysURL;
+const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
 function panelRoot() {
   return document.querySelector('qino-cms')?.shadowRoot || document;
@@ -9,7 +9,7 @@ function panelEl(selector) {
   return panelRoot().querySelector(selector);
 }
 cms.contextMenueContent.addItem('Publish', {
-  icon: sysURL+'cms.versions/pub/check.png',
+  icon: moduleUrl+'cms.versions/pub/check.png',
   selector: '[qcms-id]',
   onshow(e) {
     this.activePid = cms.contPos.active.pid;

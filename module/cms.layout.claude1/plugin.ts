@@ -59,7 +59,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <header id=head role=banner>
     <div class=u2-width>
       <div class="u2-flex -Between">
-        <a id=logo href="${ctx.req.basePath}">${logoInner}</a>
+        <a id=logo href="${ctx.req.appUrl}">${logoInner}</a>
         <input type=checkbox id=navtoggle hidden>
         <label for=navtoggle id=burger aria-label=Menu>
           <svg viewBox="0 0 24 24" width=28 height=28 fill=none stroke=currentColor stroke-width=2 stroke-linecap=round>

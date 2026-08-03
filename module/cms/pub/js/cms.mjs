@@ -41,7 +41,7 @@ const proto = {
       src += '/' + part;
       if (this.parts[part] !== undefined) src += '-' + this.parts[part];
     }
-    return ctx.appURL + 'dbFile/' + this.id + src + '/' + this.name;
+    return ctx.appUrl + 'dbFile/' + this.id + src + '/' + this.name;
   },
 };
 

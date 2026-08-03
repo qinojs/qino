@@ -2,7 +2,7 @@ import { apt, t } from "../../core/pub/js/qino.js";
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 
-const apiBase = new URL("api/", location.origin + (globalThis.qino?.appURL ?? "/"));
+const apiBase = new URL("api/", location.origin + (globalThis.qino?.appUrl ?? "/"));
 
 class AiChat extends HTMLElement {
   static observedAttributes = ['bot'];

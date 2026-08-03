@@ -5,23 +5,23 @@ import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
 import { Output } from "../lib/util.ts";
 import { parseCookies } from "../lib/ctx/Req.ts";
 
-Deno.test("req paths: basePath gets a trailing slash, moduleUrl derives from it", async () => {
-  const ctx = await testContext({ url: "http://qino.test/cms1/de/page", basePath: "/cms1" });
-  assertEquals(ctx.req.basePath, "/cms1/");
+Deno.test("req paths: appUrl gets a trailing slash, moduleUrl derives from it", async () => {
+  const ctx = await testContext({ url: "http://qino.test/cms1/de/page", appUrl: "/cms1" });
+  assertEquals(ctx.req.appUrl, "/cms1/");
   assertEquals(ctx.req.moduleUrl, "/cms1/m/");
 });
 
 Deno.test("req paths: appPath is decoded, without base prefix and query", async () => {
-  const ctx = await testContext({ url: "http://qino.test/cms1/a%2Fb/c?q=1", basePath: "/cms1/" });
+  const ctx = await testContext({ url: "http://qino.test/cms1/a%2Fb/c?q=1", appUrl: "/cms1/" });
   assertEquals(ctx.req.appPath, "a/b/c");
 
   const root = await testContext({ url: "http://qino.test/" });
   assertEquals(root.req.appPath, "");
 });
 
-Deno.test("req paths: requests outside basePath are rejected", async () => {
+Deno.test("req paths: requests outside appUrl are rejected", async () => {
   for (const path of ["/application/page", "/other/"]) {
-    const err = await assertRejects(() => testContext({ url: "http://qino.test" + path, basePath: "/app/" }), Output);
+    const err = await assertRejects(() => testContext({ url: "http://qino.test" + path, appUrl: "/app/" }), Output);
     assertEquals((err as Output).status, 404);
   }
 });

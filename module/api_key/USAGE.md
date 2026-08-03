@@ -1,7 +1,7 @@
 # api_key
 
 Per-user API keys. A logged-in user can mint, list and revoke keys; a key is meant to
-authenticate machine calls to the apt API (`{appURL}api/…`) as that user.
+authenticate machine calls to the apt API (`{appUrl}api/…`) as that user.
 
 Tokens are opaque (`qk_` + 256 random bits). Only their SHA-256 is stored (unique index),
 so a token is shown **once** at creation and can never be read back — only revoked.
@@ -18,7 +18,7 @@ app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.api_ke
 
 ## API (session-authenticated)
 
-Basis: `{appURL}api/api_key/`
+Basis: `{appUrl}api/api_key/`
 
 | Methode | Pfad        | Access | Beschreibung                                   |
 |---------|-------------|--------|------------------------------------------------|
@@ -31,7 +31,7 @@ Basis: `{appURL}api/api_key/`
 ## Client verwendet einen Key
 
 ```
-curl -H "Authorization: Bearer qk_…" {appURL}api/<module>/<endpoint>
+curl -H "Authorization: Bearer qk_…" {appUrl}api/<module>/<endpoint>
 ```
 
 Der Request wird als der Key-User behandelt; jeder `Access.USER`-Endpoint funktioniert damit.

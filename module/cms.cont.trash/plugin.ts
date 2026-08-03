@@ -24,7 +24,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     const fromTitle   = deletedFrom ? hee(await (await (await node.cms.node(deletedFrom)).title()).string()) : "";
     const timeHtml    = deletedTime ? `<u2-time datetime="${new Date(deletedTime * 1000).toISOString()}" type=relative></u2-time>` : "";
     const module      = hee(page.vs.module);
-    const previewUrl = hee(ctx.req.basePath + "?cmspid=" + id);
+    const previewUrl = hee(ctx.req.appUrl + "?cmspid=" + id);
     listHtml += `
 <div class="u2-card -item" data-id="${id}" data-url="${previewUrl}">
   <strong>${title}</strong>

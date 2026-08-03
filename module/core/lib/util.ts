@@ -7,16 +7,16 @@ export const itemRoot = "https://jsr.io/@nuxodin/item/0.6.3/"; // pin lives in d
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
 /** Cookie name prefix. `__Host-` requires Path=/, so fall back to `__Secure-` on sub-path mounts. */
-export function cookiePrefix(https: boolean, appURL: string): string {
+export function cookiePrefix(https: boolean, appUrl: string): string {
   if (!https) return "";
-  return appURL === "/" ? "__Host-" : "__Secure-";
+  return appUrl === "/" ? "__Host-" : "__Secure-";
 }
 
 /** Header builders (like sql.id/html.raw): each returns a [name, value] tuple
  *  for headers.set(...) / .append(...) or HeadersInit arrays. */
 interface HeaderBuilders {
   contentDisposition(type: "inline" | "attachment", name: string): [string, string];
-  setCookie(name: string, value: string, basePath: string, https: boolean, maxAge?: number): [string, string];
+  setCookie(name: string, value: string, appUrl: string, https: boolean, maxAge?: number): [string, string];
 }
 
 export const header: HeaderBuilders = {
@@ -27,9 +27,9 @@ export const header: HeaderBuilders = {
     return ["Content-Disposition", `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`];
   },
   /** Secure Set-Cookie (HttpOnly, SameSite=Lax, prefix). Optional Max-Age (seconds) for persistent cookies. */
-  setCookie(name: string, value: string, basePath: string, https: boolean, maxAge?: number): [string, string] {
-    const fullName = cookiePrefix(https, basePath) + name;
-    const parts = [`${fullName}=${value}`, `Path=${basePath}`];
+  setCookie(name: string, value: string, appUrl: string, https: boolean, maxAge?: number): [string, string] {
+    const fullName = cookiePrefix(https, appUrl) + name;
+    const parts = [`${fullName}=${value}`, `Path=${appUrl}`];
     if (maxAge != null) parts.push(`Max-Age=${maxAge}`);
     parts.push("HttpOnly;SameSite=Lax");
     if (https) parts.push("Secure");

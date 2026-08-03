@@ -20,7 +20,7 @@ async function initClient(ctx: Ctx): Promise<void> {
     const db = ctx.app.db;
     if (ctx.clientId) return;
 
-    const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.basePath) + "cid"];
+    const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
     if (!cid) {
       await registerClient(ctx);
       return;
@@ -35,7 +35,7 @@ async function initClient(ctx: Ctx): Promise<void> {
 
 async function registerClient(ctx: Ctx): Promise<void> {
     const hash = uid();
-    ctx.res.headers.append(...header.setCookie("cid", hash, ctx.req.basePath, ctx.app.https, 5 * 365 * 24 * 60 * 60));
+    ctx.res.headers.append(...header.setCookie("cid", hash, ctx.req.appUrl, ctx.app.https, 5 * 365 * 24 * 60 * 60));
     const clientId = await ctx.app.db.table("client").insert({ hash });
     ctx.clientId = String(clientId);
 }

@@ -7,7 +7,7 @@
 //   await ctx.app.t`Hallo ${name}`;         // translation (like server-side app.t`…`)
 //   await ctx.settings.foo.bar;             // user/session settings (like ctx.settings)
 //   await ctx.settings.foo.bar.set("x");
-//   ctx.lang / ctx.csrfToken / ctx.appURL / ctx.sysURL / ctx.dev
+//   ctx.lang / ctx.csrfToken / ctx.appUrl / ctx.moduleUrl / ctx.dev
 //
 // ctx.settings == server-side ctx.settings (NOT app.settings — those are server-only).
 // Backed by the existing apt endpoint  core/ctx-settings/:path*  (Access.USER).
@@ -18,9 +18,9 @@ import { t } from "./t.mjs";
 
 function defaultBase() {
   const el = document.querySelector('#qino-data');
-  let appURL = globalThis.qino?.appURL;
-  if (!appURL && el?.textContent) try { appURL = JSON.parse(el.textContent)?.qino?.appURL; } catch { /* not json */ }
-  return new URL("api/", location.origin + (appURL ?? "/"));
+  let appUrl = globalThis.qino?.appUrl;
+  if (!appUrl && el?.textContent) try { appUrl = JSON.parse(el.textContent)?.qino?.appUrl; } catch { /* not json */ }
+  return new URL("api/", location.origin + (appUrl ?? "/"));
 }
 
 export const apt = new AptClient(defaultBase());
@@ -43,13 +43,13 @@ class CtxSetting extends Item {
   };
 }
 
-const appURL = globalThis.qino?.appURL ?? "/";
+const appUrl = globalThis.qino?.appUrl ?? "/";
 
 export const ctx = {
   app: { apt, t },         // server-side: ctx.app → app.apt / app.t
   lang: document.documentElement.getAttribute("lang"),
-  appURL,
-  sysURL: appURL + "m/",   // same as server-side: appURL + "m/"
+  appUrl,
+  moduleUrl: appUrl + "m/",   // same as server-side: appUrl + "m/"
   settings: new CtxSetting().proxy,
   dev: !!globalThis.qino?.dev,
   csrfToken: globalThis.qino?.csrfToken,

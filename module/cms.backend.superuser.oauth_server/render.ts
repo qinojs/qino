@@ -5,7 +5,7 @@ import { u2 } from "../cms.backend/mod.ts";
 /** Discovery hint plus the two live regions the client script re-renders. */
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
-  const base = ctx.req.url.origin + ctx.req.basePath.replace(/\/$/, "");
+  const base = ctx.req.url.origin + ctx.req.appUrl.replace(/\/$/, "");
   return html.async`<div>
   <div class=u2-card>
     <div class=-head>${t`Discovery`}</div>

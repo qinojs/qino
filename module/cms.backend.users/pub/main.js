@@ -29,7 +29,7 @@ cms.initNode("backend.users", (el) => {
       return;
     }
     const loginAs = e.target.closest(".-loginAs");
-    if (loginAs) node.api.post({ login_as: itemId(loginAs) }).then((ok) => { if (ok) location.href = globalThis.qino?.appURL ?? "/"; });
+    if (loginAs) node.api.post({ login_as: itemId(loginAs) }).then((ok) => { if (ok) location.href = globalThis.qino?.appUrl ?? "/"; });
   });
 
   // detail: save field on change / toggle group membership

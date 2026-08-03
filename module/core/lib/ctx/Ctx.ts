@@ -65,10 +65,10 @@ export class Ctx {
   }
 
   urlToLocalPath(url: string): string | null {
-    return urlToLocalPath(url, this.req.basePath, this.app);
+    return urlToLocalPath(url, this.req.appUrl, this.app);
   }
 
-  static async create(app: App, request: Request, opt: { basePath: string; peerAddr?: string; time?: number; url?: URL }): Promise<Ctx> {
+  static async create(app: App, request: Request, opt: { appUrl: string; peerAddr?: string; time?: number; url?: URL }): Promise<Ctx> {
     const req = await Req.create(request, {
       ...opt,
       maxSize: await app.settings.core.uploadMaxFileSize as number | undefined,
@@ -77,18 +77,18 @@ export class Ctx {
     const ctx = new Ctx();
     ctx.req = req;
     ctx.app = app;
-    ctx.sess = await app.sessions.loadFromRequest(req, app.https, req.basePath);
+    ctx.sess = await app.sessions.loadFromRequest(req, app.https, req.appUrl);
     return ctx;
   }
 }
 
 /** Resolve a request URL to a servable local file (module/data pub dirs); null if it is no static path. */
-export function urlToLocalPath(url: string | URL, appURL: string, app: App): string | null {
+export function urlToLocalPath(url: string | URL, appUrl: string, app: App): string | null {
   try {
     const u = typeof url === "string" ? new URL(url) : url;
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    if (!u.pathname.startsWith(appURL)) return null;
-    const appRequestPath = decodeURIComponent(u.pathname.slice(appURL.length));
+    if (!u.pathname.startsWith(appUrl)) return null;
+    const appRequestPath = decodeURIComponent(u.pathname.slice(appUrl.length));
     return appRequestPathToLocalPath(appRequestPath, app);
   } catch { /* not a URL */ }
   return null;

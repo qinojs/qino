@@ -17,7 +17,8 @@ export const dbSchema = { … };       // tables this module owns (see below)
 export const api = { … };            // apt tree, mounted at aptTree.<name> (→ /api/<name>/…)
 
 export function init(app, { signal }) { … }   // wire up listeners/timers/routes
-export async function install({ app, module }) { … } // one-time content seeding
+export async function install({ app, module }) { … }   // once per app: seed content
+export async function uninstall({ app, module }) { … } // …and remove it again
 ```
 
 Everything is optional — a module may consist only of `export function init(app) {}`. `plugin.ts`
@@ -42,6 +43,39 @@ Open: a third party that brings a new plug-in point of its own has nowhere to pu
 because the prefix set has no owner. Solving that means moving the role out of the name into the
 manifest — today `cms.cont.*` and `cms.layout.*` are structurally identical there (both export
 `cms.node.render`), so only the name distinguishes them.
+
+## Files
+
+A module gets three directories below `app.appPATH`, each named after the module. They differ in
+one thing only — what an operator may throw away:
+
+| Accessor | Directory | Backup | May be deleted |
+|---|---|---|---|
+| `mod.data` | `data/<module>/` | **yes** | never |
+| `mod.cache` | `cache/<module>/` | no | any time |
+| `mod.tmp` | `tmp/<module>/` | no | when nothing runs |
+
+That split is what makes the operator's three jobs one path each: back up `data/`, clear `tmp/` on
+boot, drop `tmp/` + `cache/` to reclaim space. Below the module name the layout is yours.
+
+**The invariant that carries it:** everything in `cache/` must be reproducible from `data/` alone.
+Otherwise "no backup" is not safe — so originals belong in `data/`, only derivatives in `cache/`.
+`tmp/` is separate from `cache/` because of *when* it may go: `cache/` can be cleared mid-request
+without breaking anything, `tmp/` cannot — a running upload or zip build dies with it.
+
+The accessors are plain strings; create the directory where you write:
+
+```ts
+const dir = mod.cache;
+await Deno.mkdir(dir, { recursive: true });
+await Deno.writeTextFile(dir + key + ".json", body);
+```
+
+What lies in `data/<module>/pub/` is served at `Module.dataUrl` (`<appUrl>d/<module>/`), the
+counterpart to the module's own code under `<appUrl>m/<module>/pub/` (`ctx.req.moduleUrl`).
+Nothing else below `data/` is reachable over HTTP.
+
+Uploads are core's: `data/core/file/`, managed by `app.dbFiles`.
 
 ## Lifecycle
 
@@ -72,6 +106,11 @@ app.unlink("shop");
 await app.link("shop"); // re-link is fine — the module stays registered
 ```
 
+`add()` and `import()` last for one boot. `modules.install(spec)` is the persistent version —
+it remembers the module in the `module` table and links it, `modules.uninstall(name)` reverses
+that including the `uninstall()` hook. See [stores.md](stores.md#installing-at-runtime); the two
+lifecycles nest, so linking presumes an install and unlinking keeps the data.
+
 ## Writing a hot-plug-safe module
 
 `init(app, { signal })` receives an `AbortSignal` that fires when the module is unlinked.
@@ -98,11 +137,11 @@ isn't fully gone. Each link gets a **fresh** signal, so re-linking rebinds clean
 
 **Kept on purpose — this is data, not runtime state:**
 
-- **DB tables.** Migration is additive (`patch: true`) and never drops. `unlink` leaves tables
-  intact; dropping them is an *uninstall*, not an unlink.
+- **DB tables.** Migration is additive (`patch: true`) and never drops. Neither `unlink` nor
+  `uninstall` drops a table; a module that wants its rows gone deletes them in `uninstall()`.
 - **Locales** seeded into `smalltext` (additive, only fills empty rows).
-- **`install()` content.** `install` runs on every `link`, so it must be idempotent (or track
-  "already installed"); `unlink` does not undo it.
+- **`install()` content.** It runs once per app, not per link — `unlink` does not undo it, only
+  `uninstall` does, through the module's own `uninstall()` hook.
 
 ## Dependencies & ordering
 

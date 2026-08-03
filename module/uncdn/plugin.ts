@@ -129,19 +129,19 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("html-ready", ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
     for (const o of [...origins(ctx.res.csp["script-src"]), ...origins(ctx.res.csp["style-src"])]) allowed.add(o);
-    rewriteHtml(ctx.res.html, ctx.req.basePath, ctx.res.csp);
+    rewriteHtml(ctx.res.html, ctx.req.appUrl, ctx.res.csp);
   }, { signal });
 }
 
 // Rewrite assets to the proxy, but only for origins the page declared in its CSP
 // (per directive: script-src gates scripts, style-src gates styles). Fonts/images
 // referenced relatively inside a proxied CSS cascade through the proxy on their own.
-export function rewriteHtml(html: ResHtml, appURL: string, csp: ResCsp): void {
+export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
   const rewriter = (src: CspSources) => {
     const allow = origins(src);
     return (url: string): string =>
       /^https?:\/\//.test(url) && !/[?#]/.test(url) && allow.some(p => url.startsWith(p))
-        ? appURL + PROXY_PREFIX + url.replace(/^https?:\/\//, "") : url;
+        ? appUrl + PROXY_PREFIX + url.replace(/^https?:\/\//, "") : url;
   };
   const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
   for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));

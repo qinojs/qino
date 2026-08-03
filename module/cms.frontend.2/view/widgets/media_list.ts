@@ -9,7 +9,7 @@ export default async function (node: Node): Promise<HtmlString | string> {
   const trsHtml = await trs(node);
   const fileCount = Object.keys(await node.files()).length;
 
-  const zipLink = fileCount ? html`<div style="text-align:right;">${fileCount} Files | <a target=_blank href="${ctx.req.basePath}?cms_nodeFilesZip=${node.id}">Download ZIP</a></div>` : "";
+  const zipLink = fileCount ? html`<div style="text-align:right;">${fileCount} Files | <a target=_blank href="${ctx.req.appUrl}?cms_nodeFilesZip=${node.id}">Download ZIP</a></div>` : "";
 
   return html`<table class="-cmsFileList -styled"><tbody cmsconf=media_list_trs u2-dropzone>${trsHtml}</table>${zipLink}`;
 }

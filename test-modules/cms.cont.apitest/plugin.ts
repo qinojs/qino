@@ -44,7 +44,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): string {
     </tr>`;
   }).join("");
 
-  return `<div data-app-url="${hee(ctx.req.basePath ?? "/")}">
+  return `<div data-app-url="${hee(ctx.req.appUrl ?? "/")}">
   <div class=-bar>
     <span class=-identities></span>
     <form class=-add>

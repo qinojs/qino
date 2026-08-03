@@ -221,21 +221,12 @@ opaque JSR URL would not solve public assets or directory enumeration.
 
 ### Catalogs
 
-- [`module/store.json`](../../store.json) is the standard Qino store and currently lists 87 modules.
-- [`test-modules/store.json`](../../../test-modules/store.json) is an optional test store with six
-  modules.
-- The separate `experimental-modules/store.json` catalog currently lists 21 experimental modules.
+- [`module/store.json`](../../store.json) is the standard Qino store.
+- [`test-modules/store.json`](../../../test-modules/store.json) is an optional test store.
+- The separate `experimental-modules/store.json` catalog holds the experimental modules. The MySQL
+  demo registers it without `addAll()` — a catalog to install from, nothing active by default.
 
-The test store contains:
-
-- `cms.cont.example`
-- `cms.cont.example.ml`
-- `cms.cont.my.debug`
-- `cms.cont.cms-image2-test`
-- `cms.cont.apitest`
-- `cms.backend.superuser.score.test`
-
-These modules were moved out of the standard store. Their runtime code imports Qino only through
+The test store's modules were moved out of the standard store. Their runtime code imports Qino only through
 public package exports, which makes the store a practical isolation test for a later repository or
 package split. `cms.backend.api` stayed in the standard store because it is a regular API explorer
 and documentation module, not a test fixture.
@@ -264,8 +255,10 @@ The boundary and module-manager tests now verify:
 - no runtime import from a test-store module into Qino internals;
 - existing duplicate, missing-dependency, and cycle errors.
 
-The previously failing `cms.cont.html` CSS test was also corrected: the CSS generator intentionally
-adds explanatory comments, while its older test still expected the original empty template.
+[`module_install.test.ts`](../tests/module_install.test.ts) boots a real SQLite app twice against
+two throwaway modules and covers the persistent half: `install()` runs once and not again on the
+second boot, an installed module returns after a restart, `uninstall()` removes hook, row and
+registration, and both a declared module and a declared store refuse to be uninstalled.
 
 ## Deliberately deferred work
 
@@ -287,6 +280,14 @@ A second factor in front of install/uninstall would cover the other half — a s
 than a bad URL. `web_auth` already has the ceremony (`confirm/challenge` + `confirm/verify`) and
 nothing uses it yet; a sketch of how it could become a factor-agnostic check on any apt endpoint
 lives in the workspace as `PLAN-confirm.md`.
+
+### An installed module that no longer imports
+
+`init()` imports every `module` row that has a URL, and a failing import aborts the boot. Delete a
+module folder, or lose the host a remote module came from, and the app stops starting — the only
+way out is editing the database. Skipping the row with a loud log would degrade instead: the app
+boots, that one module is missing, and the UI can show the row as installed-but-unimportable. Not
+decided, because "boots with a silently missing module" is its own kind of wrong.
 
 ### Remote public assets
 
@@ -322,8 +323,11 @@ hide a stale package lock.
 
 ## Recommended next sequence
 
-1. Build a tiny HTTP-hosted store containing `init()`, one `pub/` asset, and one locale.
-2. Add a stable module base URL and decide whether remote assets are proxied, cached, or installed.
-3. Replace locale directory enumeration with an explicit, optional remote-safe contract.
-4. Re-run the test store through both local source mapping and published JSR dependencies.
-5. Only then split the CMS modules into their own package/store and later their own repository.
+1. Decide what a failing import at boot does (see above) — it is the one failure mode with no
+   recovery path from inside the app.
+2. Build a tiny HTTP-hosted store containing `init()`, one `pub/` asset, and one locale.
+3. Add a stable module base URL and decide whether remote assets are proxied, cached, or installed.
+4. Replace locale directory enumeration with an explicit, optional remote-safe contract.
+5. Add the host allow-list before the first remote store is used in earnest.
+6. Re-run the test store through both local source mapping and published JSR dependencies.
+7. Only then split the CMS modules into their own package/store and later their own repository.

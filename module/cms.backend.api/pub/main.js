@@ -3,7 +3,7 @@ const apiHeaders = (method = "POST") =>
 
 cms.initNode("backend.api", (el) => {
   const routes = JSON.parse(el.dataset.routes);
-  const appURL = el.dataset.appUrl;
+  const appUrl = el.dataset.appUrl;
 
   el.querySelector("#api-search")?.addEventListener("input", (e) => {
     const q = e.target.value.toLowerCase();
@@ -34,7 +34,7 @@ cms.initNode("backend.api", (el) => {
         }
         result.value ="Checking…";
         const method = r.method.toUpperCase();
-        const res = await fetch(appURL + "api" + path, { method, headers: { ...apiHeaders(method), "X-Apt-Check": "access" } });
+        const res = await fetch(appUrl + "api" + path, { method, headers: { ...apiHeaders(method), "X-Apt-Check": "access" } });
         result.value =res.ok ? "✓ access granted" : "✗ " + res.status + " access denied";
       } catch (err) {
         result.value =String(err);
@@ -82,7 +82,7 @@ cms.initNode("backend.api", (el) => {
         : Object.keys(query).length
           ? "?" + new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
           : "";
-      const url = appURL + "api" + path + qs;
+      const url = appUrl + "api" + path + qs;
       const opts = { method, headers: apiHeaders(method) };
       if (isBodyMethod && Object.keys(body).length) opts.body = JSON.stringify(body);
 

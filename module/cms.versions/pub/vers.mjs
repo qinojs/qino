@@ -5,7 +5,7 @@ import { apt, ctx } from '../../core/pub/js/qino.js';
 const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 
-const sysURL = ctx.sysURL;
+const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
 const cmsFrontend = globalThis.cmsFrontend || 'cms.frontend.2';
 
@@ -214,7 +214,7 @@ document.addEventListener('keydown',e=>{
 });
 
 cms.contextMenueContent.addItem('Verlauf', {
-  icon: sysURL+cmsFrontend+'/pub/img/undo.svg',
+  icon: moduleUrl+cmsFrontend+'/pub/img/undo.svg',
   selector: '[qcms-edit], #qgCmsContPosMenu',
   onshow() {
     this.activePid = cms.contPos.active.pid;

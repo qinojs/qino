@@ -71,7 +71,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     const inBackend = node.vs?.module === "cms.layout.backend";
 
     const html = ctx.res.html;
-    const sysURL = ctx.req.moduleUrl;
+    const moduleUrl = ctx.req.moduleUrl;
     const qino = html.jsData.qino ??= {};
 
     if (access > 1 || inBackend) {
@@ -80,9 +80,9 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         const lastKey = inBackend ? "last_backend_page" : "last_frontend_page";
         const otherKey = inBackend ? "last_frontend_page" : "last_backend_page";
         const url = ctx.req.url;
-        settings.cms[lastKey](url.pathname.slice(ctx.req.basePath.length) + url.search);
+        settings.cms[lastKey](url.pathname.slice(ctx.req.appUrl.length) + url.search);
         (qino.cms ??= {}).beUrl = String(settings.cms[otherKey]() ?? "");
-        html.scripts.add(sysURL + "cms.frontend.2/pub/js/init.mjs");
+        html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/init.mjs");
       }
     }
 
@@ -105,17 +105,17 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
     }
 
     if (access < 2) return;
-    html.legacyScripts.add(sysURL + "core/pub/js/c1.js");
-    html.styles.add(sysURL + "cms.frontend.2/pub/css/off.css");
+    html.legacyScripts.add(moduleUrl + "core/pub/js/c1.js");
+    html.styles.add(moduleUrl + "cms.frontend.2/pub/css/off.css");
 
     const editmode = access > 1 && Number(settings.cms.editmode());
     if (editmode) {
-      html.scripts.add(sysURL + "cms/pub/js/cms.mjs");
-      html.scripts.add(sysURL + "cms.frontend.2/pub/js/frontend.mjs");
-      html.scripts.add(sysURL + "cms.frontend.2/pub/js/panel.mjs");
-      html.styles.add(sysURL + "core/pub/js/Rte/main.css");
-      html.styles.add(sysURL + "cms/pub/css/ui.css");
-      html.styles.add(sysURL + "cms.frontend.2/pub/css/inline.css");
+      html.scripts.add(moduleUrl + "cms/pub/js/cms.mjs");
+      html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/frontend.mjs");
+      html.scripts.add(moduleUrl + "cms.frontend.2/pub/js/panel.mjs");
+      html.styles.add(moduleUrl + "core/pub/js/Rte/main.css");
+      html.styles.add(moduleUrl + "cms/pub/css/ui.css");
+      html.styles.add(moduleUrl + "cms.frontend.2/pub/css/inline.css");
     }
   }, { signal });
 }

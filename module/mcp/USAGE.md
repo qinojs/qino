@@ -5,7 +5,7 @@ app's apt tree as MCP tools, so any MCP-capable client (Claude, ChatGPT-CLIs, ID
 can operate the CMS. Access filtering and per-call `access`/`guard` checks are the same
 as for the REST API — the client can only do what the authenticated user may do.
 
-Endpoint: `POST {appURL}mcp` — handled methods: `initialize`, `ping`, `tools/list`, `tools/call`.
+Endpoint: `POST {appUrl}mcp` — handled methods: `initialize`, `ping`, `tools/list`, `tools/call`.
 
 ## Einbindung in server.ts
 
@@ -28,11 +28,11 @@ claude mcp add --transport http qino https://example.com/mcp \
   --header "Authorization: Bearer qk_…"
 ```
 
-Andere Clients analog: Transport „HTTP“ / „Streamable HTTP“, URL `{appURL}mcp`,
+Andere Clients analog: Transport „HTTP“ / „Streamable HTTP“, URL `{appUrl}mcp`,
 Header `Authorization: Bearer qk_…`.
 
 **OAuth** (`oauth_server`) — für Clients ohne Header-Support (claude.ai-Connectors, ChatGPT):
-Modul einbinden, im Client nur die URL `{appURL}mcp` eintragen. Der 401 verweist dann auf
+Modul einbinden, im Client nur die URL `{appUrl}mcp` eintragen. Der 401 verweist dann auf
 `/.well-known/oauth-protected-resource`, der Client registriert sich selbst und schickt den
 User zu Login und Consent.
 

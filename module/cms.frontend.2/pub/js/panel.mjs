@@ -17,7 +17,7 @@ customElements.define("qino-cms", class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
     const root = this.attachShadow({ mode: "open" });
-    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : ctx.sysURL + href }));
+    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : ctx.moduleUrl + href }));
     while (this.firstChild) root.append(this.firstChild);
     requestAnimationFrame(() => this.hidden = false);
   }

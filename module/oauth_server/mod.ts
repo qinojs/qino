@@ -12,7 +12,7 @@ const ACCESS_TTL = 3600;
 const REFRESH_TTL = 30 * 24 * 3600;
 
 /** Issuer and endpoint base: the mounted app itself, without trailing slash. */
-const issuer = (ctx: Ctx) => ctx.req.url.origin + ctx.req.basePath.replace(/\/$/, "");
+const issuer = (ctx: Ctx) => ctx.req.url.origin + ctx.req.appUrl.replace(/\/$/, "");
 
 const dynamicRegistration = async (app: App) => (await app.settings.oauth_server.dynamicRegistration) !== false;
 

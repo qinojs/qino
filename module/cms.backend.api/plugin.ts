@@ -146,7 +146,7 @@ function routeHtml(r: Route, idx: number, toolJson: string): string {
 
 function render(): string {
   const ctx = getCtx();
-  const appURL = ctx.req.basePath ?? "/";
+  const appUrl = ctx.req.appUrl ?? "/";
 
   const aptTree = ctx.app.aptTree;
   const routes = [...walk(aptTree, ctx)];
@@ -166,7 +166,7 @@ function render(): string {
   const routesHtml = routes.map((r, i) => routeHtml(r, i, toolJsonByName.get(r.name) ?? "{}")).join("");
 
   return `
-<div class=u2-card data-routes="${hee(routesJson)}" data-app-url="${hee(appURL)}">
+<div class=u2-card data-routes="${hee(routesJson)}" data-app-url="${hee(appUrl)}">
   <div class="u2-flex -filter -head">
     API <input type=search placeholder="Filter routes…" id=api-search>
   </div>

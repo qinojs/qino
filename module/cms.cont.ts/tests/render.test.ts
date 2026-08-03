@@ -3,7 +3,7 @@ import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
 import { cms, name } from "../plugin.ts";
 
-const fakeCtx = () => ({ req: { basePath: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
+const fakeCtx = () => ({ req: { appUrl: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
 const fakeModule = (dir: string) => ({ name, data: `${dir}data/${name}/`, dataUrl: `/app/d/${name}/` });
 const fakeNode = (dir: string, edit: boolean) => ({ id: 7, edit, app: { appPATH: dir, dev: false }, module: fakeModule(dir) });
 
