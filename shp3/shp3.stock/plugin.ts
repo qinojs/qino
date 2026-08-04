@@ -1,6 +1,6 @@
 import { hee, type App } from "../../module/core/mod.ts";
 import { mail } from "../../module/mail/mod.ts";
-import { Product, shp3, type Order, type OrderItem } from "../shp3/mod.ts";
+import { shp3, type Order, type Product } from "../shp3/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
 export const name = "shp3.stock";
@@ -15,25 +15,26 @@ export const settingsSchema = {
   },
 };
 
-/** The columns this module adds belong to the product, so they extend its class. */
-class StockProduct extends Product {
-  declare stock: number;
-  declare stock_is_fix: boolean;
-  declare stock_trigger: number | null;
+// The columns this module adds belong to the product itself — there is no second kind of product.
+// The accessors come from the table, this only tells the compiler about them.
+declare module "../shp3/mod.ts" {
+  interface Product {
+    stock: number;
+    stock_is_fix: boolean;
+    stock_trigger: number | null;
+  }
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.db.table("shp3_product").rowClass = StockProduct;
-
   // A fixed stock is a hard limit — nobody orders what is not there.
-  shp3(app).on("item-quantity", async (e: { item: OrderItem; quantity: number }) => {
-    const product = await e.item.product() as StockProduct | undefined;
+  shp3(app).on("item-quantity", async (e) => {
+    const product = await e.item.product();
     if (product?.stock_is_fix) e.quantity = Math.min(product.stock, e.quantity);
   }, { signal });
 
-  shp3(app).on("ordered", async ({ order }: { order: Order }) => {
+  shp3(app).on("ordered", async ({ order }) => {
     for (const item of await order.items()) {
-      const product = await item.product() as StockProduct | undefined;
+      const product = await item.product();
       if (!product) continue;
       product.stock -= item.quantity;
       const trigger = product.stock_trigger ?? Number(await app.settings["shp3.stock"].trigger ?? 0);
@@ -42,7 +43,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }, { signal });
 }
 
-async function warn(app: App, order: Order, product: StockProduct, trigger: number) {
+async function warn(app: App, order: Order, product: Product, trigger: number) {
   const to = String(await app.settings["shp3.stock"].notification_email ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (!to.length) return;
   const title = await app.db.one`SELECT name FROM page WHERE id = ${product.$id}`;

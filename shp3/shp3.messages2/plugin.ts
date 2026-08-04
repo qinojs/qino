@@ -20,7 +20,7 @@ export const settingsSchema = {
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // The order is placed and saved by now. A mail that cannot go out is worth a log line,
   // never a failed checkout for a customer whose order went through.
-  shp3(app).on("ordered", ({ order }: { order: Order }) =>
+  shp3(app).on("ordered", ({ order }) =>
     confirm(app, order).catch((e) => console.error(`shp3.messages2: order ${order.$id} not confirmed:`, e)), { signal });
 }
 

@@ -3,9 +3,14 @@
 // so the calculation beside it is `pricesFor()`, not `price()`.
 
 import { DbRow, type Db, unixTime } from "../../../module/core/mod.ts";
-import { shopOf } from "./Shp3.ts";
+import { shp3, type Shp3 } from "./Shp3.ts";
 import { cms } from "../../../module/cms/mod.ts";
 import type { Node } from "../../../module/cms/mod.ts";
+
+/** The shop a row belongs to — every table here lives in one. */
+class ShopRow extends DbRow {
+  get $shop(): Shp3 { return shp3(this.$table.db); }
+}
 
 // A rounding step carries float noise: the legacy column was FLOAT, so 0.01 comes back as
 // 0.009999999776482582 once widened to DOUBLE. Six significant digits are more than any
@@ -14,7 +19,7 @@ const step = (v: number) => Number(Number(v).toPrecision(6));
 const decimals = (s: number) => String(s).split(".")[1]?.length ?? 0;
 const snap = (price: number, s: number) => Number((Math.round(price / s) * s).toFixed(decimals(s)));
 
-export class Currency extends DbRow {
+export class Currency extends ShopRow {
   declare id: string;
   declare factor: number;
   declare smallest: number;
@@ -33,7 +38,7 @@ export class Currency extends DbRow {
   changeAndRound(price: number): number { return this.round(this.change(price)); }
 }
 
-export class Product extends DbRow {
+export class Product extends ShopRow {
   declare id: number;
   declare price: number;
   declare weight: number;
@@ -44,7 +49,7 @@ export class Product extends DbRow {
   async vatRateFor(country: string): Promise<number> {
     if (!(country in this.#vatRates)) {
       const rate = await this.$table.db.one`SELECT rate FROM shp3_product_mwst WHERE product_id = ${this.$id} AND country = ${country}`;
-      this.#vatRates[country] = rate == null ? await shopOf(this.$table.db).vatRate(country) : Number(rate);
+      this.#vatRates[country] = rate == null ? await this.$shop.vatRate(country) : Number(rate);
     }
     return this.#vatRates[country];
   }
@@ -54,10 +59,10 @@ export class Product extends DbRow {
   async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[]; time?: number }): Promise<{ net: number; gross: number }> {
     // time lets an offer module ask "what would this cost at that moment" — 0 is before any offer.
     const e = { product: this, price: this.price, time: unixTime(), ...opts };
-    for (const phase of PRICE_PHASES) await shopOf(this.$table.db).fire(`price-${phase}`, e);
+    for (const phase of PRICE_PHASES) await this.$shop.fire(`price-${phase}`, e);
     const factor = (await this.vatRateFor(opts.country ?? "")) / 100 + 1;
     const price = opts.currency ? opts.currency.change(e.price) : e.price;
-    return await shopOf(this.$table.db).vatIncluded()
+    return await this.$shop.vatIncluded()
       ? { net: price / factor, gross: price }
       : { net: price, gross: price * factor };
   }
@@ -65,12 +70,12 @@ export class Product extends DbRow {
   /** What keeps this product out of a cart; empty when it can be sold. */
   async errors(): Promise<Record<string, string>> {
     const e = { product: this, errors: {} as Record<string, string> };
-    await shopOf(this.$table.db).fire("product-check", e);
+    await this.$shop.fire("product-check", e);
     return e.errors;
   }
 }
 
-export class OrderItem extends DbRow {
+export class OrderItem extends ShopRow {
   declare id: number;
   declare order_id: number;
   declare product_id: number;
@@ -97,7 +102,7 @@ export class OrderItem extends DbRow {
     const order = await this.order();
     if (order?.time_ordered) return this.description;
     const e = { item: this, description: "" };
-    await shopOf(this.$table.db).fire("item-description", e);
+    await this.$shop.fire("item-description", e);
     return e.description;
   }
 
@@ -119,7 +124,7 @@ export class OrderItem extends DbRow {
   /** Changing the amount re-prices the row — quantity discounts are a price event. */
   async setQuantity(quantity: number): Promise<this> {
     const e = { item: this, quantity: Math.trunc(quantity) };
-    await shopOf(this.$table.db).fire("item-quantity", e);
+    await this.$shop.fire("item-quantity", e);
     this.quantity = e.quantity;
     this.price = await this.calcPrice();
     return this;
@@ -133,14 +138,14 @@ export class OrderItem extends DbRow {
 
   async weight(): Promise<number> {
     const e = { item: this, weight: (await this.product())?.weight ?? 0 };
-    await shopOf(this.$table.db).fire("item-weight", e);
+    await this.$shop.fire("item-weight", e);
     return e.weight;
   }
 
   /** What is wrong with this line; empty when it is fine. */
   async errors(): Promise<Record<string, string>> {
     const e = { item: this, errors: {} as Record<string, string> };
-    await shopOf(this.$table.db).fire("item-check", e);
+    await this.$shop.fire("item-check", e);
     return e.errors;
   }
 
@@ -150,7 +155,7 @@ export class OrderItem extends DbRow {
   async rowGross(): Promise<number> { return (await this.oneGross()) * this.quantity; }
 }
 
-export class Order extends DbRow {
+export class Order extends ShopRow {
   declare id: number;
   declare usr_id: number;
   declare time_created: number;
@@ -183,7 +188,7 @@ export class Order extends DbRow {
   async currencyRow(): Promise<Currency | undefined> {
     const db = this.$table.db;
     const own = this.currency ? await db.table("shp3_currency").get<Currency>(this.currency) : undefined;
-    return own?.active ? own : await shopOf(this.$table.db).mainCurrency();
+    return own?.active ? own : await this.$shop.mainCurrency();
   }
 
   /** Switching currency re-prices every line — a stored price is in the order's currency. */
@@ -216,30 +221,30 @@ export class Order extends DbRow {
 
   /** Enabled methods, minus what a module vetoes for this order. */
   async allowedPayments(): Promise<Record<string, string>> {
-    const e = { order: this, payments: await shopOf(this.$table.db).methods("payments") };
-    await shopOf(this.$table.db).fire("payments", e);
+    const e = { order: this, payments: await this.$shop.methods("payments") };
+    await this.$shop.fire("payments", e);
     return e.payments;
   }
   async allowedShippings(): Promise<Record<string, string>> {
-    const e = { order: this, shippings: await shopOf(this.$table.db).methods("shippings") };
-    await shopOf(this.$table.db).fire("shippings", e);
+    const e = { order: this, shippings: await this.$shop.methods("shippings") };
+    await this.$shop.fire("shippings", e);
     return e.shippings;
   }
 
   /** The method in force. Frozen once placed, otherwise the chosen or auto-selected one. */
   async activePayment(): Promise<string> {
     if (this.time_ordered) return this.payment;
-    return await shopOf(this.$table.db).pick("payments", this.payment, await this.allowedPayments());
+    return await this.$shop.pick("payments", this.payment, await this.allowedPayments());
   }
   async activeShipping(): Promise<string> {
     if (this.time_ordered) return this.shipping;
-    return await shopOf(this.$table.db).pick("shippings", this.shipping, await this.allowedShippings());
+    return await this.$shop.pick("shippings", this.shipping, await this.allowedShippings());
   }
 
   /** What shipping costs — every rule is a listener. */
   async shippingCost(shipping?: string): Promise<number> {
     const e = { order: this, shipping: shipping ?? await this.activeShipping(), cost: 0 };
-    await shopOf(this.$table.db).fire("shipping-cost", e);
+    await this.$shop.fire("shipping-cost", e);
     return (await this.currencyRow())?.changeAndRound(e.cost) ?? e.cost;
   }
 
@@ -288,8 +293,8 @@ export class Order extends DbRow {
       return this.#generated = rows.map((r) => ({ ...r, price: Number(r.price), vat_rate: Number(r.vat_rate) }));
     }
     const e = { order: this, items: [] as GeneratedItem[] };
-    await shopOf(this.$table.db).fire("generated-items", e);
-    const included = await shopOf(this.$table.db).vatIncluded();
+    await this.$shop.fire("generated-items", e);
+    const included = await this.$shop.vatIncluded();
     // Keyed by name, like the legacy array: a module replaces another module's line, never doubles it.
     const byName = new Map<string, GeneratedItem>();
     e.items.forEach((item, i) => byName.set(item.name, {
@@ -297,7 +302,7 @@ export class Order extends DbRow {
       sort: item.sort || i + 1,
       price: included ? item.price / (item.vat_rate / 100 + 1) : item.price,
     }));
-    return this.#generated = [...byName.values()].sort((a, b) => a.sort - b.sort);
+    return this.#generated = [...byName.values()].sort((a, b) => a.sort! - b.sort!); // filled in just above
   }
 
   /** Net, gross and the tax per rate. */
@@ -319,7 +324,7 @@ export class Order extends DbRow {
   /** What blocks this order; empty when it can be placed. */
   async errors(): Promise<Record<string, string>> {
     const e = { order: this, errors: {} as Record<string, string> };
-    await shopOf(this.$table.db).fire("order-check", e);
+    await this.$shop.fire("order-check", e);
     return e.errors;
   }
 
@@ -329,7 +334,7 @@ export class Order extends DbRow {
     for (const item of await this.items()) await item.setQuantity(item.quantity); // let stock and friends look again
     const e = { order: this, errors: await this.errors(), redirect: "", prevent: false };
     e.prevent = Object.keys(e.errors).length > 0;
-    if (!e.prevent) await shopOf(this.$table.db).fire("order-try", e);
+    if (!e.prevent) await this.$shop.fire("order-try", e);
     if (!e.prevent) await this.place();
     return { success: !e.prevent, errors: e.errors, redirect: e.redirect };
   }
@@ -354,16 +359,16 @@ export class Order extends DbRow {
     this.ship_country = this.shipCountry();
     this.time_ordered = unixTime(); // last: everything above still reads the open state
     await db.flush();
-    await shopOf(this.$table.db).fire("ordered", { order: this });
+    await this.$shop.fire("ordered", { order: this });
     if (!this.cost) await this.pay(0); // nothing to pay
-    await shopOf(this.$table.db).fire("ordered-after", { order: this }); // everything settled, payment included
+    await this.$shop.fire("ordered-after", { order: this }); // everything settled, payment included
     return this;
   }
 
   async pay(value: number): Promise<this> {
     this.time_paid = unixTime();
     this.paid = Number(this.paid) + value;
-    await shopOf(this.$table.db).fire("paid", { order: this, value });
+    await this.$shop.fire("paid", { order: this, value });
     return this;
   }
 }
@@ -371,7 +376,7 @@ export class Order extends DbRow {
 /** A line the shop adds itself — shipping, discounts, fees. A table row only once ordered. */
 export interface GeneratedItem {
   name: string;
-  sort: number;
+  sort?: number; // the order fills it in when a listener leaves it open
   title: string;
   price: number;
   vat_rate: number;
@@ -388,12 +393,12 @@ export async function ensureProduct(node: Node): Promise<Product | undefined> {
 
 /** A product is a page, so its title is the page's — translated, with the page name as fallback. */
 async function productTitle(product: Product, lang?: string) {
-  const app = shopOf(product.$table.db).app;
+  const app = product.$shop.app;
   const node = await cms(app).node(Number(product.$id));
   // An untranslated language is an empty string, not null — so each step has to be checked.
   const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def) || node.vs.name;
   const e = { product, title: String(title || product.$id) };
-  await shopOf(product.$table.db).fire("item-title", e);
+  await product.$shop.fire("item-title", e);
   return e.title;
 }
 

@@ -114,14 +114,40 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
 </div>`;
 }
 
-export function backendDashboardWidget({ t, db }: App): Promise<HtmlString> {
+export async function backendDashboardWidget(app: App, page?: Node): Promise<HtmlString> {
+  const { t, db } = app;
   const zero = () => 0;
+  const url = page ? await page.url() : "";
+  const currency = await shp3.get(app)?.mainCurrency();
+
+  const rows = await db.query`SELECT o.id, o.time_ordered, o.cost, o.currency, o.paid, u.email
+    FROM shp3_order o LEFT JOIN usr u ON u.id = o.usr_id
+    WHERE o.time_ordered > ${0} ORDER BY o.id DESC LIMIT 5`.catch(() => []);
+
+  const trs = rows.map((vs) => html`<tr>
+    <td><a href="${url}?shp3_orderId=${vs.id}">${vs.id}</a>
+    <td>${showTime(Number(vs.time_ordered))}
+    <td>${vs.email ?? ""}
+    <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency ?? ""}
+    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}`);
+
   return html.async`<div style="overflow:auto; padding:0">
 <table class=u2-table style="white-space:nowrap">
   <tr><td>${t`Orders`}:<td>${db.one`SELECT count(*) FROM shp3_order WHERE time_ordered > ${0}`.catch(zero)}
   <tr><td>${t`Open carts`}:<td>${db.one`SELECT count(*) FROM shp3_order WHERE time_ordered = ${0}`.catch(zero)}
   <tr><td>${t`Unpaid`}:<td>${db.one`SELECT count(*) FROM shp3_order WHERE time_ordered > ${0} AND paid < cost`.catch(zero)}
 </table>
+${trs.length
+    ? html.async`<table class=u2-table style="white-space:nowrap">
+  <thead><tr>
+    <th> ID
+    <th> ${t`Ordered`}
+    <th> ${t`Customer`}
+    <th> ${t`Total`}
+    <th>
+  <tbody>${html.join(trs)}
+</table>`
+    : ""}
 </div>`;
 }
 

@@ -1,7 +1,7 @@
 import type { App } from "../../module/core/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { bindApp, shp3 } from "./lib/Shp3.ts";
-import { registerRows, type Order, type OrderItem, type Product } from "./lib/rows.ts";
+import { bindApp } from "./lib/Shp3.ts";
+import { registerRows } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
 import { cms } from "../../module/cms/mod.ts";
 export { api } from "./apt.ts";
@@ -72,7 +72,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   registerRows(app.db);
   const t = app.t;
   const on = <T>(event: string, fn: (e: T) => unknown) => app.on(event, fn as never, { signal });
-  const onShop = <T>(event: string, fn: (e: T) => unknown) => shop.on(event as never, fn as never, { signal });
+  // The shop types its own events, so these listeners need no annotations.
+  const onShop: typeof shop.on = (event, fn) => shop.on(event, fn, { signal });
 
   // An anonymous cart follows its owner into the session they just logged into.
   on("auth:login", (e: Parameters<typeof adoptCart>[1]) => adoptCart(app, e));
@@ -81,7 +82,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   on("currency:rates", () => shop.syncFactors());
 
   // Shipping is a line of its own. It carries the highest VAT rate of the goods it moves.
-  onShop("generated-items", async (e: { order: Order; items: Record<string, unknown>[] }) => {
+  onShop("generated-items", async (e) => {
     const shipping = await e.order.activeShipping();
     if (!shipping) return;
     let rate = 0;
@@ -90,15 +91,15 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   });
 
   // Nothing to carry means nothing to choose, and the same for nothing to pay.
-  onShop("shippings", async (e: { order: Order; shippings: Record<string, string> }) => {
+  onShop("shippings", async (e) => {
     if (await e.order.weight() <= 0) e.shippings = {};
   });
-  onShop("payments", async (e: { order: Order; payments: Record<string, string> }) => {
+  onShop("payments", async (e) => {
     if ((await e.order.costs()).gross <= 0) e.payments = {};
   });
 
   // What has to hold before an order may be placed.
-  onShop("order-check", async (e: { order: Order; errors: Record<string, string> }) => {
+  onShop("order-check", async (e) => {
     const items = await e.order.items();
     if (!items.length) e.errors["has items"] = await t`Your shopping cart is empty`;
     if (Object.keys(await e.order.allowedShippings()).length && !await e.order.activeShipping()) {
@@ -112,14 +113,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     }
   });
 
-  onShop("item-check", async (e: { item: OrderItem; errors: Record<string, string> }) => {
+  onShop("item-check", async (e) => {
     const product = await e.item.product();
     Object.assign(e.errors, product ? await product.errors() : { "not exists": await t`This product no longer exists` });
     // A price that drifted since it landed in the cart has to be shown, not silently applied.
     if (product && e.item.onePrice() < await e.item.calcPrice() * 0.999) e.errors["new prices"] = await t`The prices have changed`;
   });
 
-  onShop("product-check", async (e: { product: Product; errors: Record<string, string> }) => {
+  onShop("product-check", async (e) => {
     if (e.product.price < 0) e.errors["not orderable"] = await t`This product cannot be ordered`;
     // A product whose page went offline or private must not stay in a cart either.
     const node = await cms(app).node(Number(e.product.$id));

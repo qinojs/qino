@@ -2,6 +2,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
 import type { Node } from "../../../module/cms/mod.ts";
 import nodeApi from "../nodeApi.ts";
+import { shp3 } from "../../shp3/mod.ts";
 import { cms as panel } from "../plugin.ts";
 
 async function shop() {
@@ -28,6 +29,29 @@ Deno.test("backend.shp3.settings: writes only the settings it offers", async () 
     assertEquals(await call(app, { setting: "payments.invoice.enabled", value: "1" }), false);
     assertEquals(await call(app, { setting: "location.country", value: "DE" }, 1), false); // no access
     assertEquals(String(await app.settings.shp3.location.country), "CH");
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("backend.shp3.settings: methods are configured, and dragging writes their order", async () => {
+  const app = await shop();
+  try {
+    await shp3(app).registerMethod("payments", "invoice", "Invoice");
+    await shp3(app).registerMethod("payments", "advance", "Advance");
+
+    assertEquals(await call(app, { method: "invoice", kind: "payments", field: "description", value: "Pay later" }), 1);
+    assertEquals(String(await app.settings.shp3.payments.invoice.description), "Pay later");
+    assertEquals(await call(app, { method: "invoice", kind: "payments", field: "enabled", value: false }), 1);
+    assertEquals(await app.settings.shp3.payments.invoice.enabled(), false);
+
+    assertEquals(await call(app, { order: ["advance", "invoice"], kind: "payments" }), 1);
+    assertEquals(Number(await app.settings.shp3.payments.advance.sort), 1);
+    assertEquals(Number(await app.settings.shp3.payments.invoice.sort), 2);
+
+    // Only methods a module announced, and only the two kinds there are.
+    assertEquals(await call(app, { method: "nope", kind: "payments", field: "enabled", value: true }), false);
+    assertEquals(await call(app, { method: "invoice", kind: "wire", field: "enabled", value: true }), false);
   } finally {
     await app.db.close();
   }

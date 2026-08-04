@@ -11,11 +11,48 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     // Only what the panel offers — the settings tree itself is writable far beyond this form.
     const s = app.settings.shp3;
     const path = String(vars.setting);
-    const write = { "location.country": s.location.country, "location.city": s.location.city, "location.street": s.location.street, "vat.mode": s.vat.mode }[path];
+    const write = {
+      "location.country": s.location.country,
+      "location.city": s.location.city,
+      "location.street": s.location.street,
+      "vat.mode": s.vat.mode,
+      "default_product_module": s.default_product_module,
+      "auto_select_payment": s.auto_select_payment,
+      "auto_select_shipping": s.auto_select_shipping,
+    }[path];
     if (!write) return false;
-    const value = path === "vat.mode" ? (vars.value ? "included" : "excluded") : String(vars.value ?? "");
+    const value = path === "vat.mode" ? (vars.value ? "included" : "excluded")
+      : path.startsWith("auto_select_") ? !!vars.value
+      : String(vars.value ?? "");
     await write(value);
     return { value };
+  }
+
+  if ("method" in vars) {
+    const kind = String(vars.kind);
+    if (kind !== "payments" && kind !== "shippings") return false;
+    // Only a method a module announced — the panel configures, it does not invent methods.
+    const setting = app.settings.shp3[kind][String(vars.method)];
+    if (await setting.description === undefined) return false;
+    const field = String(vars.field ?? "");
+    if (field === "enabled") await setting.enabled(!!vars.value);
+    else if (field === "description") await setting.description(String(vars.value ?? ""));
+    else if (field === "sort") await setting.sort(Number(vars.value) || 0);
+    else return false;
+    return 1;
+  }
+
+  if ("order" in vars) {
+    const kind = String(vars.kind);
+    if (kind !== "payments" && kind !== "shippings") return false;
+    const s = app.settings.shp3[kind];
+    let sort = 0;
+    // Row order in, sort numbers out — unknown names are silently skipped, like every other write here.
+    for (const name of Array.isArray(vars.order) ? vars.order : []) {
+      const setting = s[String(name)];
+      if (await setting.description !== undefined) await setting.sort(++sort);
+    }
+    return 1;
   }
 
   if ("country" in vars) {

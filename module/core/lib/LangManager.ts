@@ -104,8 +104,8 @@ export class LangManager {
     const l = ctx.lang;
     const txts = await this.#getTxts(ns, l);
     if (!(hash in txts)) {
-      await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string });
-      txts[hash] = "";
+      txts[hash] = ""; // claim it before awaiting: the same new string, twice in one render, must insert once
+      await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string }).catch(() => {});
     }
     const translated = txts[hash] || string;
     if (ctx.dev && !txts[hash]) return `*${string}*`;

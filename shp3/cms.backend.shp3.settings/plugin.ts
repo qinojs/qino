@@ -1,4 +1,4 @@
-import { html, type HtmlString, getCtx, type App } from "../../module/core/mod.ts";
+import { $item, html, type HtmlString, getCtx, itemReadDeep, type App } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { backend } from "../../module/cms.backend/mod.ts";
 import { country } from "../../module/locale.country/mod.ts";
@@ -19,9 +19,69 @@ export async function uninstall({ app }: { app: App }): Promise<void> {
 async function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>
   ${await address(node)}
+  ${await methods(node)}
   ${await currencies(node)}
   ${await countries(node)}
 </div>`;
+}
+
+/** Payment and shipping methods: a module announces one, the shop names, sorts and switches it. */
+async function methods(node: Node): Promise<HtmlString> {
+  const { app } = node;
+  const t = app.t;
+  const set = app.settings.shp3;
+
+  const table = async (kind: "payments" | "shippings") => {
+    const all = (await itemReadDeep(set[kind][$item]) ?? {}) as Record<string, { enabled?: boolean; description?: string; sort?: number }>;
+    const entries = Object.entries(all).sort((a, b) => Number(a[1]?.sort ?? 0) - Number(b[1]?.sort ?? 0));
+    if (!entries.length) return html.async`<p><small>${t`No method is installed yet.`}</small></p>`;
+    const trs = entries.map(([id, m]) => html`<tr itemid=${id} draggable class="${m?.enabled ?? true ? "-on" : ""}">
+      <td><input class=-method data-kind=${kind} data-field=enabled type=checkbox ${m?.enabled ?? true ? html.raw("checked") : ""}>
+      <td>${id}
+      <td><input class=-method data-kind=${kind} data-field=description value="${m?.description ?? ""}">
+      <td class=-handle u2-draghandle><u2-ico icon=drag_indicator>⠿</u2-ico>`);
+    // The row order is the sort order — dragging writes it back, so there is no number to type.
+    return html.async`<table class=u2-table>
+      <thead><tr>
+        <th> ${t`On`}
+        <th> ${t`Module`}
+        <th> ${t`Label for the customer`}
+        <th>
+      <tbody data-kind=${kind} u2-dropzone>${html.join(trs)}
+    </table>`;
+  };
+
+  // A page module marks a page as a product; which ones exist depends on what is installed.
+  const chosen = String(await set.default_product_module ?? "");
+  const productModules = Object.keys(app.modules.all()).filter((n) => n.startsWith("cms.cont.shp3.product"));
+  if (chosen && !productModules.includes(chosen)) productModules.push(chosen);
+
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>${t`Payment`}</div>
+    ${table("payments")}
+    <div class=-head>${t`Delivery`}</div>
+    ${table("shippings")}
+    <div class=-head>${t`Defaults`}</div>
+    <table class=u2-table>
+      <tr>
+        <th>${t`Payment`}
+        <td><label>
+          <input class=-set type=checkbox data-setting=auto_select_payment ${await set.auto_select_payment ? html.raw("checked") : ""}>
+          ${await t`Preselect the first method`}
+        </label>
+      <tr>
+        <th>${t`Delivery`}
+        <td><label>
+          <input class=-set type=checkbox data-setting=auto_select_shipping ${await set.auto_select_shipping ? html.raw("checked") : ""}>
+          ${await t`Preselect the first method`}
+        </label>
+      <tr>
+        <th>${t`Product page`}
+        <td><select class=-set data-setting=default_product_module>${
+    html.join(productModules.map((n) => html`<option value=${n} ${n === chosen ? html.raw("selected") : ""}>${n}`))
+  }</select>
+    </table>
+  </div>`;
 }
 
 /** Where the shop stands — the country a price is calculated for before the customer names one. */

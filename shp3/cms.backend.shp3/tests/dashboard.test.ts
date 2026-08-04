@@ -51,6 +51,8 @@ Deno.test("backend.shp3: every shop page reports its numbers to the overview", a
     await requestStorage.run(ctx, async () => {
       const orders = String(await ordersWidget(app));
       assertStringIncludes(orders, "<td>1"); // one placed, one open, one unpaid
+      assertStringIncludes(orders, "shp3_orderId="); // and the newest ones, each linked
+      assertEquals(orders.includes("[object Promise]"), false);
       const products = String(await productsWidget(app));
       assertStringIncludes(products, "<td>2");
       const settings = String(await settingsWidget(app));

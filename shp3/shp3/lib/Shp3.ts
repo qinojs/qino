@@ -1,8 +1,7 @@
 // The shop of one app: everything that needs its settings or events hangs here — like mail(app)
 // and ai(app). What gets by with its arguments stays a free function (ensureProduct, cart).
 
-import { $item, type App, type Db, Emitter, itemReadDeep } from "../../../module/core/mod.ts";
-import type { ItemProxy } from "../../../module/core/deps.ts";
+import { $item, type App, Db, Emitter, itemReadDeep, type ItemProxy } from "../../../module/core/mod.ts";
 import type { Currency, GeneratedItem, Order, OrderItem, Product } from "./rows.ts";
 
 export type MethodKind = "payments" | "shippings";
@@ -134,27 +133,20 @@ export class Shp3 extends Emitter<Shp3Events> {
   }
 }
 
-/** The app's shop. Throws when shp3 is not loaded. */
-export function shp3(app: App): Shp3 {
-  const shop = instances.get(app);
+/** The shop of an app — or of its db, which is what the row layer holds. Throws when shp3 is not loaded. */
+export function shp3(owner: App | Db): Shp3 {
+  const shop = shp3.get(owner);
   if (!shop) throw new Error('module "shp3" is not loaded');
   return shop;
 }
 
 /** Undefined when shp3 is not loaded — for optional dependencies. */
-shp3.get = (app: App): Shp3 | undefined => instances.get(app);
+shp3.get = (owner: App | Db): Shp3 | undefined => owner instanceof Db ? byDb.get(owner) : instances.get(owner);
 
 /** Bind the shop to its app; the plugin does this once per app. */
 export function bindApp(app: App): Shp3 {
   const shop = new Shp3(app);
   instances.set(app, shop);
   byDb.set(app.db, shop);
-  return shop;
-}
-
-/** The row layer knows only its Db — this is its way back to the shop. */
-export function shopOf(db: Db): Shp3 {
-  const shop = byDb.get(db);
-  if (!shop) throw new Error("shp3: module not initialised for this database");
   return shop;
 }

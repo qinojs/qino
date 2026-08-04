@@ -6,6 +6,18 @@ cms.initNode("backend.shp3.settings", (el) => {
   const id = (target) => target.closest("[itemid]").getAttribute("itemid");
   const value = (input) => input.type === "checkbox" || input.type === "radio" ? input.checked : input.value;
 
+  // DnD sorting, like the file list: tbody[u2-dropzone] + tr[draggable], the handle makes it grabbable.
+  // import("@qino/u2/attr/dropzone/dropzone.js");
+  // import("@qino/u2/attr/draghandle/draghandle.js"); // its autoloaded in cms.backend.layout
+  el.addEventListener("u2-dropzone-drop", (e) => {
+    if (!e.detail?.add) return; // the same zone fires remove+add — react only once
+    const tbody = e.target.closest("tbody[u2-dropzone]");
+    if (!tbody) return;
+    requestAnimationFrame(() => {
+      node.api.post({ order: [...tbody.children].map((tr) => tr.getAttribute("itemid")), kind: tbody.dataset.kind });
+    });
+  });
+
   el.addEventListener("change", (e) => {
     const set = e.target.closest(".-set");
     if (set) return node.api.post({ setting: set.dataset.setting, value: value(set) });
@@ -16,6 +28,13 @@ cms.initNode("backend.shp3.settings", (el) => {
       const reload = cur.dataset.field === "active" || cur.dataset.field === "main";
       node.api.post({ currency: id(cur), field: cur.dataset.field, value: value(cur) })
         .then(() => { if (reload) cms.reloadNode(nid); });
+      return;
+    }
+
+    const method = e.target.closest(".-method");
+    if (method) {
+      node.api.post({ method: id(method), kind: method.dataset.kind, field: method.dataset.field, value: value(method) });
+      if (method.dataset.field === "enabled") method.closest("tr").classList.toggle("-on", method.checked);
       return;
     }
 

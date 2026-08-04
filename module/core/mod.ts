@@ -49,6 +49,7 @@ export type { dbEntry_usr } from "./lib/qgEntries.ts";
 // item.js is core's dependency; other modules take it from here so there is only ever one copy of
 // it — `$item` is a module-local Symbol that a second copy would silently stop matching.
 export { $item, bildJsonItem, schemaDiff, schemaFromDb, toInput } from "./deps.ts";
+export type { ItemProxy } from "./deps.ts";
 
 // Modules
 export { Module } from "./lib/ModuleManager.ts";
