@@ -1,6 +1,6 @@
 import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import { ensureProduct, mainCurrency } from "../shp3/mod.ts";
+import { ensureProduct, shp3 } from "../shp3/mod.ts";
 
 export const name = "cms.cont.shp3.product.default";
 export const description = "Product page: price and the button that puts it into the cart.";
@@ -15,10 +15,10 @@ const settingsSchema = {
 /** A product is a page — the page id is the product id, and the row is created with it. */
 async function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  const product = await ensureProduct(node.app.db, node.id);
+  const product = await ensureProduct(node);
   if (!product) return html.async`<div></div>`;
 
-  const currency = await mainCurrency(node.app.db);
+  const currency = await shp3(node.app).mainCurrency();
   const prices = await product.pricesFor({ currency, quantity: 1 });
   const errors = Object.values(await product.errors());
 

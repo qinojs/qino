@@ -1,6 +1,6 @@
 import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import { cart, shopCountries, type Order } from "../shp3/mod.ts";
+import { cart, shp3, type Order } from "../shp3/mod.ts";
 import { country } from "../../module/locale.country/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
@@ -91,7 +91,7 @@ async function fields(node: Node, order: Order, side: "bill" | "ship", lang: str
 
 /** The countries the shop delivers to, named in the visitor's language. */
 async function countryField(node: Node, name: string, value: string, autocomplete: string, required: boolean, lang: string) {
-  const options = (await shopCountries(node.app.db)).map((id) => ({ id, title: country.name(id, lang) }));
+  const options = (await shp3(node.app).countries()).map((id) => ({ id, title: country.name(id, lang) }));
   options.sort((a, b) => new Intl.Collator(lang).compare(a.title, b.title));
   return html`<select name=${name} autocomplete="${autocomplete}" ${required ? html.raw("required") : html.raw("")}>
       <option value="">

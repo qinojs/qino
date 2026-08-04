@@ -2,7 +2,7 @@
 // page, in a teaser or in a sidebar, and the cart is always the visitor's own.
 import { Access, getCtx, s, type AptTree } from "../../module/core/mod.ts";
 import { cart } from "./lib/cart.ts";
-import { mainCurrency, sellsTo, type Product } from "./mod.ts";
+import { shp3, type Product } from "./mod.ts";
 
 const item = s.object({
   product: s.string(),
@@ -135,14 +135,13 @@ export const api: AptTree = {
         execute: async ({ values }: { values: Record<string, unknown> }) => {
           const order = await cart(getCtx());
           if (!order) return { error: "no cart" };
-          const db = getCtx().app.db;
           // Only the address columns, and only the ones this shop actually has.
           for (const [name, value] of Object.entries(values)) {
             if (!/^(bill|ship)_/.test(name) || !order.$table.field(name)) continue;
             let v = typeof value === "string" ? value.trim() : value;
             if (name.endsWith("_email") && typeof v === "string") v = v.toLowerCase();
             // A country the shop does not deliver to is no address — it would carry a VAT rate.
-            if (name.endsWith("_country") && typeof v === "string") v = await sellsTo(db, v.toUpperCase()) ? v.toUpperCase() : "";
+            if (name.endsWith("_country") && typeof v === "string") v = await shp3(getCtx().app).sellsTo(v.toUpperCase()) ? v.toUpperCase() : "";
             order.$set(name, v);
           }
           await order.$save();
@@ -176,7 +175,7 @@ export const api: AptTree = {
         const order = await cart(getCtx(), false);
         // A price is shown long before anything is in the cart — without a fallback it would
         // skip the conversion and arrive unlabelled.
-        const currency = await order?.currencyRow() ?? await mainCurrency(getCtx().app.db);
+        const currency = await order?.currencyRow() ?? await shp3(getCtx().app).mainCurrency();
         const country = order?.shipCountry() ?? "";
         const prices = await sold.pricesFor({ currency, quantity, config, country, grps: await order?.grps() });
         return {

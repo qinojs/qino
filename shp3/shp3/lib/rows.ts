@@ -3,10 +3,9 @@
 // so the calculation beside it is `pricesFor()`, not `price()`.
 
 import { DbRow, type Db, unixTime } from "../../../module/core/mod.ts";
-import { appOf, vatIncluded } from "./shop.ts";
-import { vatRate } from "./country.ts";
-import { methods, pick } from "./methods.ts";
+import { shopOf } from "./Shp3.ts";
 import { cms } from "../../../module/cms/mod.ts";
+import type { Node } from "../../../module/cms/mod.ts";
 
 // A rounding step carries float noise: the legacy column was FLOAT, so 0.01 comes back as
 // 0.009999999776482582 once widened to DOUBLE. Six significant digits are more than any
@@ -45,7 +44,7 @@ export class Product extends DbRow {
   async vatRateFor(country: string): Promise<number> {
     if (!(country in this.#vatRates)) {
       const rate = await this.$table.db.one`SELECT rate FROM shp3_product_mwst WHERE product_id = ${this.$id} AND country = ${country}`;
-      this.#vatRates[country] = rate == null ? await vatRate(this.$table.db, country) : Number(rate);
+      this.#vatRates[country] = rate == null ? await shopOf(this.$table.db).vatRate(country) : Number(rate);
     }
     return this.#vatRates[country];
   }
@@ -55,11 +54,11 @@ export class Product extends DbRow {
   async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[]; time?: number }): Promise<{ net: number; gross: number }> {
     // time lets an offer module ask "what would this cost at that moment" — 0 is before any offer.
     const e = { product: this, price: this.price, time: unixTime(), ...opts };
-    const app = appOf(this.$table.db);
+    const app = shopOf(this.$table.db).app;
     for (const phase of PRICE_PHASES) await app.fire(`shp3:price-${phase}`, e);
     const factor = (await this.vatRateFor(opts.country ?? "")) / 100 + 1;
     const price = opts.currency ? opts.currency.change(e.price) : e.price;
-    return await vatIncluded(this.$table.db)
+    return await shopOf(this.$table.db).vatIncluded()
       ? { net: price / factor, gross: price }
       : { net: price, gross: price * factor };
   }
@@ -67,7 +66,7 @@ export class Product extends DbRow {
   /** What keeps this product out of a cart; empty when it can be sold. */
   async errors(): Promise<Record<string, string>> {
     const e = { product: this, errors: {} as Record<string, string> };
-    await appOf(this.$table.db).fire("shp3:product-check", e);
+    await shopOf(this.$table.db).app.fire("shp3:product-check", e);
     return e.errors;
   }
 }
@@ -99,7 +98,7 @@ export class OrderItem extends DbRow {
     const order = await this.order();
     if (order?.time_ordered) return this.description;
     const e = { item: this, description: "" };
-    await appOf(this.$table.db).fire("shp3:item-description", e);
+    await shopOf(this.$table.db).app.fire("shp3:item-description", e);
     return e.description;
   }
 
@@ -121,7 +120,7 @@ export class OrderItem extends DbRow {
   /** Changing the amount re-prices the row — quantity discounts are a price event. */
   async setQuantity(quantity: number): Promise<this> {
     const e = { item: this, quantity: Math.trunc(quantity) };
-    await appOf(this.$table.db).fire("shp3:item-quantity", e);
+    await shopOf(this.$table.db).app.fire("shp3:item-quantity", e);
     this.quantity = e.quantity;
     this.price = await this.calcPrice();
     return this;
@@ -135,14 +134,14 @@ export class OrderItem extends DbRow {
 
   async weight(): Promise<number> {
     const e = { item: this, weight: (await this.product())?.weight ?? 0 };
-    await appOf(this.$table.db).fire("shp3:item-weight", e);
+    await shopOf(this.$table.db).app.fire("shp3:item-weight", e);
     return e.weight;
   }
 
   /** What is wrong with this line; empty when it is fine. */
   async errors(): Promise<Record<string, string>> {
     const e = { item: this, errors: {} as Record<string, string> };
-    await appOf(this.$table.db).fire("shp3:item-check", e);
+    await shopOf(this.$table.db).app.fire("shp3:item-check", e);
     return e.errors;
   }
 
@@ -185,7 +184,7 @@ export class Order extends DbRow {
   async currencyRow(): Promise<Currency | undefined> {
     const db = this.$table.db;
     const own = this.currency ? await db.table("shp3_currency").get<Currency>(this.currency) : undefined;
-    return own?.active ? own : await mainCurrency(db);
+    return own?.active ? own : await shopOf(db).mainCurrency();
   }
 
   /** Switching currency re-prices every line — a stored price is in the order's currency. */
@@ -218,30 +217,30 @@ export class Order extends DbRow {
 
   /** Enabled methods, minus what a module vetoes for this order. */
   async allowedPayments(): Promise<Record<string, string>> {
-    const e = { order: this, payments: await methods(this.$table.db, "payments") };
-    await appOf(this.$table.db).fire("shp3:payments", e);
+    const e = { order: this, payments: await shopOf(this.$table.db).methods("payments") };
+    await shopOf(this.$table.db).app.fire("shp3:payments", e);
     return e.payments;
   }
   async allowedShippings(): Promise<Record<string, string>> {
-    const e = { order: this, shippings: await methods(this.$table.db, "shippings") };
-    await appOf(this.$table.db).fire("shp3:shippings", e);
+    const e = { order: this, shippings: await shopOf(this.$table.db).methods("shippings") };
+    await shopOf(this.$table.db).app.fire("shp3:shippings", e);
     return e.shippings;
   }
 
   /** The method in force. Frozen once placed, otherwise the chosen or auto-selected one. */
   async activePayment(): Promise<string> {
     if (this.time_ordered) return this.payment;
-    return await pick(this.$table.db, "payments", this.payment, await this.allowedPayments());
+    return await shopOf(this.$table.db).pick("payments", this.payment, await this.allowedPayments());
   }
   async activeShipping(): Promise<string> {
     if (this.time_ordered) return this.shipping;
-    return await pick(this.$table.db, "shippings", this.shipping, await this.allowedShippings());
+    return await shopOf(this.$table.db).pick("shippings", this.shipping, await this.allowedShippings());
   }
 
   /** What shipping costs — every rule is a listener. */
   async shippingCost(shipping?: string): Promise<number> {
     const e = { order: this, shipping: shipping ?? await this.activeShipping(), cost: 0 };
-    await appOf(this.$table.db).fire("shp3:shipping-cost", e);
+    await shopOf(this.$table.db).app.fire("shp3:shipping-cost", e);
     return (await this.currencyRow())?.changeAndRound(e.cost) ?? e.cost;
   }
 
@@ -290,8 +289,8 @@ export class Order extends DbRow {
       return this.#generated = rows.map((r) => ({ ...r, price: Number(r.price), vat_rate: Number(r.vat_rate) }));
     }
     const e = { order: this, items: [] as GeneratedItem[] };
-    await appOf(db).fire("shp3:generated-items", e);
-    const included = await vatIncluded(db);
+    await shopOf(db).app.fire("shp3:generated-items", e);
+    const included = await shopOf(db).vatIncluded();
     // Keyed by name, like the legacy array: a module replaces another module's line, never doubles it.
     const byName = new Map<string, GeneratedItem>();
     e.items.forEach((item, i) => byName.set(item.name, {
@@ -321,7 +320,7 @@ export class Order extends DbRow {
   /** What blocks this order; empty when it can be placed. */
   async errors(): Promise<Record<string, string>> {
     const e = { order: this, errors: {} as Record<string, string> };
-    await appOf(this.$table.db).fire("shp3:order-check", e);
+    await shopOf(this.$table.db).app.fire("shp3:order-check", e);
     return e.errors;
   }
 
@@ -331,7 +330,7 @@ export class Order extends DbRow {
     for (const item of await this.items()) await item.setQuantity(item.quantity); // let stock and friends look again
     const e = { order: this, errors: await this.errors(), redirect: "", prevent: false };
     e.prevent = Object.keys(e.errors).length > 0;
-    if (!e.prevent) await appOf(this.$table.db).fire("shp3:order-try", e);
+    if (!e.prevent) await shopOf(this.$table.db).app.fire("shp3:order-try", e);
     if (!e.prevent) await this.place();
     return { success: !e.prevent, errors: e.errors, redirect: e.redirect };
   }
@@ -356,16 +355,16 @@ export class Order extends DbRow {
     this.ship_country = this.shipCountry();
     this.time_ordered = unixTime(); // last: everything above still reads the open state
     await db.flush();
-    await appOf(db).fire("shp3:ordered", { order: this });
+    await shopOf(db).app.fire("shp3:ordered", { order: this });
     if (!this.cost) await this.pay(0); // nothing to pay
-    await appOf(db).fire("shp3:ordered-after", { order: this }); // everything settled, payment included
+    await shopOf(db).app.fire("shp3:ordered-after", { order: this }); // everything settled, payment included
     return this;
   }
 
   async pay(value: number): Promise<this> {
     this.time_paid = unixTime();
     this.paid = Number(this.paid) + value;
-    await appOf(this.$table.db).fire("shp3:paid", { order: this, value });
+    await shopOf(this.$table.db).app.fire("shp3:paid", { order: this, value });
     return this;
   }
 }
@@ -381,14 +380,16 @@ export interface GeneratedItem {
 
 const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
 
-/** The shop's own currency. Nobody marked one as main? Then the first active one has to do. */
-export async function mainCurrency(db: Db): Promise<Currency | undefined> {
-  return (await db.table("shp3_currency").all<Currency>`WHERE active = ${true} ORDER BY main DESC LIMIT 1`)[0];
+/** A product is a page that uses the product module, so the row belongs to the page and is created
+ *  on demand — a page built in the page tree would otherwise have no product at all. */
+export async function ensureProduct(node: Node): Promise<Product | undefined> {
+  const table = node.app.db.table("shp3_product");
+  return await table.get<Product>(node.id) ?? await table.add<Product>({ id: node.id });
 }
 
 /** A product is a page, so its title is the page's — translated, with the page name as fallback. */
 async function productTitle(product: Product, lang?: string) {
-  const app = appOf(product.$table.db);
+  const app = shopOf(product.$table.db).app;
   const node = await cms(app).node(Number(product.$id));
   // An untranslated language is an empty string, not null — so each step has to be checked.
   const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def) || node.vs.name;

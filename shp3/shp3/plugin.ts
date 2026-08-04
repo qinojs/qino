@@ -1,9 +1,8 @@
 import type { App } from "../../module/core/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { bindApp } from "./lib/shop.ts";
+import { bindApp, shp3 } from "./lib/Shp3.ts";
 import { registerRows, type Order, type OrderItem, type Product } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
-import { syncFactors } from "./lib/currency.ts";
 import { cms } from "../../module/cms/mod.ts";
 export { api } from "./apt.ts";
 
@@ -78,7 +77,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   on("auth:login", (e: Parameters<typeof adoptCart>[1]) => adoptCart(app, e));
 
   // Fresh reference rates: the shop's own factors follow them, relative to its main currency.
-  on("currency:rates", () => syncFactors(app.db));
+  on("currency:rates", () => shp3(app).syncFactors());
 
   // Shipping is a line of its own. It carries the highest VAT rate of the goods it moves.
   on("shp3:generated-items", async (e: { order: Order; items: Record<string, unknown>[] }) => {

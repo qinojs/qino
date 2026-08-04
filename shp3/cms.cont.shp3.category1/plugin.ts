@@ -1,6 +1,6 @@
 import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import { ensureProduct, mainCurrency, type Product } from "../shp3/mod.ts";
+import { ensureProduct, shp3, type Product } from "../shp3/mod.ts";
 
 export const name = "cms.cont.shp3.category1";
 export const description = "Lists the products below this page, each with its own add-to-cart form.";
@@ -22,13 +22,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const products = await node.children({ type: "*", module, access: 1 });
   if (!products.size) return html.async`<div></div>`;
 
-  const currency = await mainCurrency(app.db);
+  const currency = await shp3(app).mainCurrency();
   const withQuantity = await node.settings.quantity() !== false;
   const width = Number(await node.settings.width()) || 300;
 
   const items: HtmlString[] = [];
   for (const child of products.values()) {
-    const product = await ensureProduct(app.db, child.id) as Product | undefined;
+    const product = await ensureProduct(child) as Product | undefined;
     if (!product) continue;
     const prices = await product.pricesFor({ currency, quantity: 1 });
     // The regular price is the one before any time-limited offer — same amount, no moment.

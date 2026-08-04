@@ -10,7 +10,9 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
   if ("save" in vars) {
     const field = String(vars.field ?? "");
     if (!EDITABLE.has(field) || !db.table("shp3_product").field(field)) return false; // e.g. stock without shp3.stock
-    const product = await ensureProduct(db, vars.save as string);
+    const page = await node.cms.node(Number(vars.save));
+    if (!page.exists() || await page.access() < 2) return false;
+    const product = await ensureProduct(page);
     if (!product) return false;
     await product.$set({ [field]: vars.value });
     return { value: product.$get(field) };
@@ -31,7 +33,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     const page = await parent.createChild({ module: String(await node.app.settings.shp3.default_product_module) });
     if (!page.id) return false;
     await page.title(String(vars.lang ?? node.app.languages.def), String(vars.add));
-    await ensureProduct(db, page.id);
+    await ensureProduct(page);
     return { id: page.id };
   }
 

@@ -1,7 +1,7 @@
 import { html, type HtmlString, getCtx, sql, type App } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { backend } from "../../module/cms.backend/mod.ts";
-import { mainCurrency, type Order } from "../shp3/mod.ts";
+import { shp3, type Order } from "../shp3/mod.ts";
 import api from "./nodeApi.ts";
 
 export const name = "cms.backend.shp3.orders1";
@@ -26,7 +26,7 @@ async function renderList(node: Node): Promise<HtmlString> {
   const { app } = node;
   const t = app.t;
   const open = getCtx().req.query.shp3_open !== undefined;
-  const currency = await mainCurrency(app.db);
+  const currency = await shp3(app).mainCurrency();
 
   const rows = await app.db.query`SELECT o.*, u.email FROM shp3_order o
     LEFT JOIN usr u ON u.id = o.usr_id

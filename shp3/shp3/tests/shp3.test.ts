@@ -2,7 +2,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
 import { adoptCart } from "../lib/cart.ts";
 import { cms } from "../../../module/cms/mod.ts";
-import { cart, sellsTo, shopCountries, shopCountry, syncFactors, type Currency, type Order, type Product } from "../mod.ts";
+import { cart, shp3, type Currency, type Order, type Product } from "../mod.ts";
 
 const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** digits;
 
@@ -261,15 +261,15 @@ Deno.test("shp3: the countries the shop sells to, and what they cost", async () 
   const db = app.db;
   try {
     // nothing marked yet: the shop sells everywhere and stands nowhere
-    assertEquals((await shopCountries(db)).length, 250);
-    assertEquals(await sellsTo(db, "DE"), true);
-    assertEquals(await shopCountry(db), "");
+    assertEquals((await shp3(app).countries()).length, 250);
+    assertEquals(await shp3(app).sellsTo("DE"), true);
+    assertEquals(await shp3(app).country(), "");
 
     await db.table("country").update({ id: "CH", shp3_enabled: true });
     await db.table("country").update({ id: "DE", shp3_enabled: true });
-    assertEquals(await shopCountries(db), ["CH", "DE"]);
-    assertEquals(await sellsTo(db, "US"), false);
-    assertEquals(await shopCountry(db), "CH"); // no setting: the first one marked
+    assertEquals(await shp3(app).countries(), ["CH", "DE"]);
+    assertEquals(await shp3(app).sellsTo("US"), false);
+    assertEquals(await shp3(app).country(), "CH"); // no setting: the first one marked
 
     // an order without a country is priced where the shop stands
     const order = (await app.db.table("shp3_order").add<Order>({ currency: "CHF" }))!;
@@ -316,7 +316,7 @@ Deno.test("shp3: fresh reference rates become the shop's factors", async () => {
     await db.table("currency").update({ id: "EUR", rate_to_usd: 0.88 });
     await db.table("currency").update({ id: "USD", rate_to_usd: 1 });
 
-    await syncFactors(db);
+    await shp3(app).syncFactors();
     await db.flush();
 
     assertEquals(await db.one`SELECT factor FROM shp3_currency WHERE id = ${"CHF"}`, 1); // the yardstick
