@@ -198,6 +198,7 @@ export async function itemReadDeep(item: any): Promise<unknown> {
 }
 
 /** Apply schema defaults and type coercion on item.js get event. */
+// tobi: Schema-Defaults gelten nur für Items, die es gibt. handlungsbedarf?
 // deno-lint-ignore no-explicit-any
 function itemGetIn(e: any): void {
   const schema = e.target.schema;

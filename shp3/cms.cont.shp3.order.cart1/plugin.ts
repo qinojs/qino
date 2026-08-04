@@ -1,0 +1,63 @@
+import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
+import type { Node } from "../../module/cms/mod.ts";
+import { cart } from "../shp3/mod.ts";
+
+import api from "./nodeApi.ts";
+
+export const name = "cms.cont.shp3.order.cart1";
+export const description = "Shows the visitor's cart, with quantities and totals.";
+export const needs = ["shp3", "cms"];
+
+const settingsSchema = {
+  properties: {
+    editable: { type: "boolean", default: true, description: "Whether quantities can be changed here." },
+  },
+};
+
+async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  const t = node.app.t;
+  const order = await cart(ctx, false);
+  const items = order ? await order.items() : [];
+  if (!items.length) return html.async`<div class="-m-cart">${t`Your cart is empty`}</div>`;
+
+  const editable = (await node.settings.editable()) !== false;
+  const currency = await order!.currencyRow();
+  const money = (v: number) => currency?.format(v) ?? v;
+  const costs = await order!.costs();
+
+  const rows: HtmlString[] = [];
+  for (const item of items) {
+    rows.push(html`<tr itemid=${item.id}>
+      <td class=-title>${item.title}<div class=-options>${await item.calcDescription()}</div>
+      <td class=-quantity>${editable
+        ? html`<input type=number min=0 step=1 value=${item.quantity} class=-q>`
+        : item.quantity}
+      <td class=-price>${money(item.onePrice())}
+      <td class=-total>${money(item.rowPrice())}
+      ${editable ? html`<td class=-rem><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`);
+  }
+
+  const taxes: HtmlString[] = [];
+  for (const [rate, value] of Object.entries(costs.taxes)) {
+    taxes.push(html`<tr class=-tax><th colspan=3>${t`VAT`} ${rate}%<td>${money(value)}`);
+  }
+
+  return html.async`<div class="-m-cart">
+  <table class=u2-table>
+    <thead>
+      <tr>
+        <th>${t`Article`}
+        <th>${t`Quantity`}
+        <th>${t`Price`}
+        <th>${t`Total`}
+        ${editable ? html`<th width=20>` : ""}
+    <tbody>${html.join(rows)}
+    <tfoot>
+      <tr class=-net><th colspan=3>${t`Subtotal`}<td>${money(costs.net)}
+      ${html.join(taxes)}
+      <tr class=-gross><th colspan=3>${t`Total`}<td class=-sum>${money(costs.gross)}
+  </table>
+</div>`;
+}
+
+export const cms = { node: { render, api, js: ["pub/main.js"], settingsSchema } };

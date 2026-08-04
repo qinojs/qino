@@ -1,0 +1,13 @@
+{
+  "properties": {
+    "shp3_product": {
+      "additionalProperties": {
+        "properties": {
+          "stock": { "type": "integer", "default": 0 },
+          "stock_is_fix": { "type": "boolean", "default": false },
+          "stock_trigger": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

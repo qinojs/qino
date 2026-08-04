@@ -2,6 +2,7 @@
 
 import { DbField } from "./DbField.ts";
 import { type DbEntry, getEntryClass } from "./DbEntry.ts";
+import { anonRowClass, DbRow } from "./DbRow.ts";
 import { NUM_TYPES, type Db } from "./Db.ts";
 import { type Sql, sql, isTemplate } from "../../deps.ts";
 
@@ -306,5 +307,72 @@ export class DbTable {
   }
 
   toString(): string { return this.#name; }
+
+
+  // new:
+  /* --- rows ------------------------------------------------------------------------------- */
+
+  // Identity map: one object per row, so two lookups share one set of pending changes. WeakRef,
+  // because lifetime is reachability — a row nobody holds may go, a dirty one is held by the
+  // write queue until it lands.
+  #rows = new Map<string, WeakRef<DbRow>>();
+  #rowFinalizer = new FinalizationRegistry<string>((id) => {
+    if (!this.#rows.get(id)?.deref()) this.#rows.delete(id);
+  });
+
+  // The class lives on the table, never in a module-global registry: several tenants run the same
+  // module code in one runtime, and each needs its own mapping.
+  #rowClass: typeof DbRow | null = null;
+
+  /** The table's Row subclass — data and behaviour in one object. Assign it in a module's init().
+   *  Nobody silently replaces someone else's class: a second module has to extend the first
+   *  (`class X extends table.rowClass {}`), and only until the first row was handed out. */
+  get rowClass(): typeof DbRow { return this.#rowClass ??= anonRowClass(this.#name); }
+  set rowClass(cls: typeof DbRow) {
+    const current = this.#rowClass;
+    if (current && !(cls.prototype instanceof current)) throw new Error(`${this}: rowClass is already ${current.name} — a replacement must extend it`);
+    if (this.#rows.size) throw new Error(`${this}: rows already exist — assign rowClass in init()`);
+    this.#rowClass = cls;
+  }
+
+  /** Row handle, synchronous, without touching the database — it may be unloaded. */
+  row<T extends DbRow = DbRow>(id: any): T {
+    if (id instanceof DbRow) return id as T;
+    const rowId = String(this.entryId(id) ?? id); // an unusable id keeps its raw key — that row simply never exists
+    const hit = this.#rows.get(rowId)?.deref();
+    if (hit) return hit as T;
+    const row = new this.rowClass(this, rowId);
+    this.#rows.set(rowId, new WeakRef(row));
+    this.#rowFinalizer.register(row, rowId);
+    return row as T;
+  }
+
+  /** Loaded row, or undefined if there is none. Re-reads only when unloaded or stale. */
+  async get<T extends DbRow = DbRow>(id: any): Promise<T | undefined> {
+    const row = this.row<T>(id);
+    if (row.$loaded && !row.$stale) return row.$exists ? row : undefined;
+    return await row.$read();
+  }
+
+  /** Loaded rows for a query tail — one SELECT, identity-mapped. */
+  all<T extends DbRow = DbRow>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]>;
+  all<T extends DbRow = DbRow>(tail?: Sql): Promise<T[]>;
+  async all<T extends DbRow = DbRow>(a?: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<T[]> {
+    const tail = a == null ? sql.raw("") : isTemplate(a) ? sql(a, ...rest) : a;
+    const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} ${tail}`;
+    return rows.map((vs) => this.row<T>(vs).$receive(vs));
+  }
+
+  /** Insert and return the loaded row — re-read, so defaults and generated columns are present. */
+  async add<T extends DbRow = DbRow>(values: Record<string, any> = {}): Promise<T | undefined> {
+    const id = await this.insert(values);
+    if (id === undefined) return;
+    return await this.row<T>(id).$read();
+  }
+
+  /** A write went past a row object — tell the one we hold, if any. */
+  invalidate(id: any, deleted = false): void {
+    this.#rows.get(String(this.entryId(id) ?? id))?.deref()?.$invalidate(deleted);
+  }
 
 }

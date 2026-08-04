@@ -62,3 +62,19 @@ Deno.test("SettingItem: leaf write does not touch sibling keys", async () => {
 
   await db.close();
 });
+
+Deno.test("SettingItem: two leaf writes under one branch do not duplicate the branch", async () => {
+  const db = await setup();
+  const root = createSettingItem(db);
+
+  // Autovivifying a branch used to return its null value, which turned the branch into a
+  // primitive and cleared its children — the second write then inserted a second branch row,
+  // and both leaves became unreachable.
+  await root.sub(["shop", "vat", "mode"]).set("excluded");
+  await root.sub(["shop", "vat", "rate"]).set("20");
+
+  assertEquals(await readBack(db, ["shop"]), { vat: { mode: "excluded", rate: "20" } });
+  assertEquals(Number(await db.one`SELECT count(*) FROM qg_setting WHERE "offset" = ${"vat"}`), 1);
+
+  await db.close();
+});

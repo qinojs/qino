@@ -1,0 +1,13 @@
+{
+  "modules": {
+    "shp3": {},
+    "shp3.payment.advance": {},
+    "shp3.payment.invoice": {},
+    "shp3.shipping.pickup": {},
+    "shp3.stock": {},
+    "cms.cont.shp3.order.cart1": {},
+    "cms.cont.shp3.product.default": {},
+    "cms.backend.shp3.orders1": {},
+    "cms.backend.shp3.products": {}
+  }
+}

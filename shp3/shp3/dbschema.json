@@ -1,0 +1,283 @@
+{
+  "properties": {
+    "shp3_product": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "page",
+            "x-qg-on-parent-copy": "cascade",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "price": {
+            "type": "number",
+            "x-index": true
+          },
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "price",
+          "weight"
+        ]
+      }
+    },
+    "shp3_product_vat": {
+      "additionalProperties": {
+        "properties": {
+          "product_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "shp3_product",
+            "x-qg-on-parent-copy": "cascade",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 2,
+            "x-index": "primary"
+          },
+          "rate": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "product_id",
+          "country"
+        ]
+      }
+    },
+    "shp3_currency": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 3,
+            "x-index": "primary"
+          },
+          "factor": {
+            "type": "number",
+            "default": 1
+          },
+          "smallest": {
+            "type": "number",
+            "default": 0.05
+          },
+          "smallest_closing": {
+            "type": "number",
+            "default": 0.05
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "main": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id",
+          "factor",
+          "smallest",
+          "smallest_closing",
+          "active",
+          "main"
+        ]
+      }
+    },
+    "shp3_order": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "time_created": {
+            "type": "integer",
+            "default": 0
+          },
+          "time_ordered": {
+            "type": "integer",
+            "x-index": true,
+            "default": 0
+          },
+          "time_paid": {
+            "type": "integer",
+            "default": 0
+          },
+          "cost": {
+            "type": "number",
+            "default": 0
+          },
+          "cost_real": {
+            "type": "number",
+            "default": 0
+          },
+          "paid": {
+            "type": "number",
+            "default": 0
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3
+          },
+          "shipping": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "payment": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "lang": {
+            "type": "string",
+            "maxLength": 2
+          },
+          "bill_country": {
+            "type": "string",
+            "maxLength": 2
+          },
+          "ship_country": {
+            "type": "string",
+            "maxLength": 2
+          },
+          "ship_unlike_bill": {
+            "type": "boolean",
+            "default": false
+          },
+          "config": {
+            "type": "string",
+            "maxLength": 65535
+          }
+        },
+        "required": [
+          "id",
+          "time_created",
+          "time_ordered",
+          "time_paid",
+          "cost",
+          "cost_real",
+          "paid"
+        ]
+      }
+    },
+    "shp3_order_item": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "order_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "shp3_order",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "product_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "shp3_product"
+          },
+          "quantity": {
+            "type": "integer",
+            "default": 0
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 65535
+          },
+          "price": {
+            "type": "number",
+            "default": 0
+          },
+          "vat_rate": {
+            "type": "number",
+            "default": 0
+          },
+          "config": {
+            "type": "string",
+            "maxLength": 65535
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "quantity",
+          "price",
+          "vat_rate"
+        ]
+      }
+    },
+    "shp3_order_item_generated": {
+      "additionalProperties": {
+        "properties": {
+          "order_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "shp3_order",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "sort": {
+            "type": "integer",
+            "default": 0
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 191
+          },
+          "price": {
+            "type": "number",
+            "default": 0
+          },
+          "vat_rate": {
+            "type": "number",
+            "default": 0
+          }
+        },
+        "required": [
+          "order_id",
+          "name",
+          "sort",
+          "price",
+          "vat_rate"
+        ]
+      }
+    },
+    "usr": {
+      "additionalProperties": {
+        "properties": {
+          "shp3_ship_country": {
+            "type": "string",
+            "maxLength": 2
+          },
+          "shp3_bill_country": {
+            "type": "string",
+            "maxLength": 2
+          }
+        }
+      }
+    }
+  }
+}

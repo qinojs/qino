@@ -4,12 +4,14 @@ import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDia
 import { type DbDialect, type ExecResult, type MigrateOptions, type Row, DbDriver } from "./DbDriver.ts";
 import { Emitter } from "../Emitter.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { DbRow } from "./DbRow.ts";
 
 export const DATE_TYPES = new Set(["datetime", "date", "timestamp"]);
 export const STRING_TYPES = new Set(["char", "varchar", "binary", "varbinary", "blob", "text", "enum", "set"]);
 // INTEGER is SQLite's spelling of INT — without it the same schema coerces on MySQL and lets
-// non-numeric text through on SQLite, where column affinity then stores it verbatim.
-export const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double"]);
+// non-numeric text through on SQLite, where column affinity then stores it verbatim. Same for
+// REAL (SQLite) and NUMERIC (Postgres) beside MySQL's DOUBLE.
+export const NUM_TYPES = new Set(["tinyint", "smallint", "mediumint", "int", "integer", "bigint", "decimal", "float", "double", "real", "numeric"]);
 
 /** Core db events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface DbEvents {
@@ -28,13 +30,55 @@ export class Db extends Emitter<DbEvents> {
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
   #tx = new AsyncLocalStorage<{ hooks: (() => unknown)[] | null }>();
   schema: Record<string, any> = { properties: {} };
+  
+  // new:
+  /** Milliseconds a loaded row stays trusted; 0 disables time-based expiry (writes still invalidate). */
+  rowTtl = 0;
 
   constructor(conn: string) {
     super();
     this.#driver = DbDriver.from(conn);
     // Dialect (quoting + placeholders) for rendering comes from item.js — one source for all backends.
     this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
+    
+    // new:
+    // Any write through a table reaches the row object holding that row, whoever wrote it.
+    this.on("table:update-after", ({ table, id }) => table.invalidate(id));
+    this.on("table:delete-after", ({ table, id }) => table.invalidate(id, true));
   }
+
+  // new:
+  /* --- pending row writes ------------------------------------------------------------------ */
+
+  #dirty = new Set<DbRow>();
+  #flushing: Promise<void> | null = null;
+
+  /** Queue a changed row. The set holds it strongly, so nothing unwritten can be collected. */
+  markDirty(row: DbRow): void {
+    this.#dirty.add(row);
+    this.#flushing ??= Promise.resolve().then(() => this.flush().catch(() => {})); // errors are reported in flush()
+  }
+
+  /** Write every pending row in one transaction. Rows that fail stay dirty and keep their values. */
+  async flush(): Promise<void> {
+    this.#flushing = null;
+    if (!this.#dirty.size) return;
+    const rows = [...this.#dirty];
+    this.#dirty.clear();
+    try {
+      await this.transaction(async () => { for (const row of rows) await row.$save(); });
+    } catch (e) {
+      // Never silent: an unwritten change is data loss, and the caller of an explicit save() rethrows.
+      console.error("db: flushing rows failed:", e);
+      for (const row of rows) if (row.$changed) this.#dirty.add(row);
+      throw e;
+    }
+  }
+
+
+
+
+
 
   get dialect(): DbDialect { return this.#driver.dialect; }
   get emptyInsert(): string { return this.#dialect.emptyInsert; }
@@ -129,10 +173,13 @@ export class Db extends Emitter<DbEvents> {
   /** Introspect the current tables into memory. Run after the schema is migrated. */
   async loadTables(): Promise<void> {
     const tables = await this.#driver.listTables();
+    const known = this.#tables;
     this.#tables = {};
     for (const table of tables) {
-      this.#tables[table] = new DbTable(this, table);
-      await this.#tables[table].init();
+      // Keep the object a table already has: installing a module re-runs this, and a fresh
+      // DbTable would drop its row class and identity map.
+      this.#tables[table] = known[table] ?? new DbTable(this, table);
+      await (known[table] ? this.#tables[table].reloadFields() : this.#tables[table].init());
     }
   }
 

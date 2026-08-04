@@ -4,6 +4,7 @@ import { itemRoot, u2Root } from "../lib/util.ts";
 
 const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
+const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
 const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
 
 async function* files(dir: string): AsyncGenerator<string> {
@@ -196,7 +197,7 @@ const EXTERNAL = new Set([
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {
   const used = new Map<string, Set<string>>();
-  for await (const file of files(moduleDir)) {
+  for await (const file of [...await Array.fromAsync(files(moduleDir)), ...await Array.fromAsync(files(shp3Dir))]) {
     for (const [spec, names] of imports(await Deno.readTextFile(file))) {
       const target = fromFileUrl(new URL(spec, toFileUrl(file)));
       if (!target.startsWith(moduleDir)) continue;
