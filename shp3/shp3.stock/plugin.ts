@@ -37,7 +37,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
       if (!product) continue;
       product.stock -= item.quantity;
       const trigger = product.stock_trigger ?? Number(await app.settings["shp3.stock"].trigger ?? 0);
-      if (product.stock <= trigger) await warn(app, order, product, trigger);
+      if (product.stock <= trigger) await warn(app, order, product, trigger).catch((e) => console.error("shp3.stock: warning not sent:", e));
     }
   }, { signal });
 }

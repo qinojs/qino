@@ -1,0 +1,5 @@
+<svg id="main" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+  <path d="M80-860h140l35 120h625L760-340H320l20 80h420v80H280l-140-600H80v-80Zm198 200 70 240h352l72-240H278Z"/>
+  <circle cx="360" cy="-100" r="60"/>
+  <circle cx="680" cy="-100" r="60"/>
+</svg>

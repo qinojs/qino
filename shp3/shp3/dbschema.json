@@ -297,6 +297,20 @@
           "country"
         ]
       }
+    },
+    "country": {
+      "additionalProperties": {
+        "properties": {
+          "shp3_enabled": {
+            "type": "boolean",
+            "default": false,
+            "x-index": true
+          },
+          "shp3_default_vat_rate": {
+            "type": "number"
+          }
+        }
+      }
     }
   }
 }

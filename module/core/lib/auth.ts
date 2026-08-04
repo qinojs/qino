@@ -51,7 +51,8 @@ export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError
 export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;
-  const oldSession = ctx.sess.data;
+  // The values, not the item: logout() empties it, and the listeners run after that.
+  const oldSession = ctx.sess.data() as Record<string, unknown>;
   await logout(ctx);
   // new session id after logout prevents session fixation
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);

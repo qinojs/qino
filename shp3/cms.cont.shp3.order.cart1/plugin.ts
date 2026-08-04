@@ -2,7 +2,6 @@ import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cart } from "../shp3/mod.ts";
 
-import api from "./nodeApi.ts";
 
 export const name = "cms.cont.shp3.order.cart1";
 export const description = "Shows the visitor's cart, with quantities and totals.";
@@ -42,6 +41,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       ${editable ? html`<td class=-rem><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>` : ""}`);
   }
 
+  // Shipping and friends are lines of their own — they are in the total, so they have to be seen.
+  const generated = (await order!.generatedItems()).map((item) => html`<tr>
+      <td class=-title colspan=2>${item.title || item.name}
+      <td class=-price>
+      <td class=-total>${money(item.price)}
+      ${editable ? html`<td>` : ""}`);
+
   const taxes: HtmlString[] = [];
   for (const [rate, value] of Object.entries(costs.taxes)) {
     taxes.push(html`<tr class=-tax><th colspan=3>${await t`VAT`} ${rate}%<td>${money(value)}`);
@@ -56,7 +62,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         <th>${t`Price`}
         <th>${t`Total`}
         ${editable ? html`<th width=20>` : ""}
-    <tbody>${html.join(rows)}
+    <tbody class=-items>${html.join(rows)}
+    <tbody class=-generated>${html.join(generated)}
     <tfoot>
       <tr class=-net><th colspan=3>${t`Subtotal`}<td>${money(costs.net)}
       ${html.join(taxes)}
@@ -65,4 +72,4 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 </div>`;
 }
 
-export const cms = { node: { render, api, js: ["pub/main.js"], settingsSchema } };
+export const cms = { node: { render, js: ["../shp3/pub/shp3.js", "pub/main.js"], settingsSchema } };

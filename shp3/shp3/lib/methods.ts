@@ -2,7 +2,7 @@
 // admin enables, describes and sorts it. Same tree as the PHP original — shp3.payments.<name>.*
 
 import { $item, type App, itemReadDeep } from "../../../module/core/mod.ts";
-import { appOf, settingsOf } from "./shop.ts";
+import { settingsOf } from "./shop.ts";
 import type { Db } from "../../../module/core/mod.ts";
 
 export type MethodKind = "payments" | "shippings";
@@ -34,6 +34,6 @@ export async function pick(db: Db, kind: MethodKind, chosen: string, all: Record
   const names = Object.keys(all);
   if (names.length === 1) return names[0];
   if (chosen && chosen in all) return chosen;
-  const auto = await appOf(db).settings.shp3[kind === "payments" ? "auto_select_payment" : "auto_select_shipping"];
+  const auto = await settingsOf(db)[kind === "payments" ? "auto_select_payment" : "auto_select_shipping"];
   return auto ? names[0] ?? "" : "";
 }

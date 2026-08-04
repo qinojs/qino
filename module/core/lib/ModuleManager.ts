@@ -158,6 +158,7 @@ export class ModuleManager {
         console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
       });
     }
+    this.#skipMissing();
     // In passes: an install() hook may install further modules (a bundle bringing its set), and
     // those need the same ordering and schema merge as the first round, not a nested link().
     this.#booting = true;
@@ -181,7 +182,10 @@ export class ModuleManager {
       throw new Error(`Cannot install "${mod.name}": needs ${missing.join(", ")}`);
     }
     await this.#app.db.table("module").ensure({ name: mod.name, url: mod.url });
-    if (!this.#booting) await this.link(mod.name); // during boot init() links it in a later pass
+    if (!this.#booting) {
+      await this.link(mod.name); // during boot init() links it in a later pass
+      for (const name of Object.keys(this.#failed)) await this.link(name).then(() => delete this.#failed[name], () => {});
+    }
     return mod;
   }
 
@@ -309,8 +313,23 @@ export class ModuleManager {
     }
   }
 
+  // An installed module may outlive a removed dependency: expose it as broken and keep booting.
+  #skipMissing(): void {
+    while (true) {
+      const mod = Object.values(this.#modules).find((mod) =>
+        !this.#declared.has(mod.name) && !this.#failed[mod.name] &&
+        (mod.plugin.needs ?? []).some((need: string) => !this.#modules[need] || this.#failed[need])
+      );
+      if (!mod) return;
+      const need = mod.plugin.needs!.find((need: string) => !this.#modules[need] || this.#failed[need]);
+      const why = `Module "${mod.name}" needs "${need}", but it is not imported`;
+      this.#failed[mod.name] = why;
+      console.error(`${why}; skipping installed module`);
+    }
+  }
+
   // Dependency-ordered subset (default: all imported). Recurses needs only within the set.
-  #order(names: string[] = Object.keys(this.#modules)): string[] {
+  #order(names: string[] = Object.keys(this.#modules).filter((name) => !this.#failed[name])): string[] {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
     const set = new Set(names);

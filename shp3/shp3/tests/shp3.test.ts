@@ -1,13 +1,15 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
-import type { Currency, Order, Product } from "../mod.ts";
+import { adoptCart } from "../lib/cart.ts";
+import { cms } from "../../../module/cms/mod.ts";
+import { cart, sellsTo, shopCountries, shopCountry, type Currency, type Order, type Product } from "../mod.ts";
 
 const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** digits;
 
 // Prices include VAT (the default), so a 12.00 cup is 11.10 net at 8.1 %.
 async function shop(...modules: string[]) {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of modules) app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);
   await app.init();
@@ -89,13 +91,14 @@ Deno.test("shp3: generated items join the total and are written when placing", a
   }
 });
 
-Deno.test("shp3: a product without a country rate uses the shop default", async () => {
+Deno.test("shp3: a product without its own rate takes the country's", async () => {
   const app = await shop();
   try {
+    await app.db.table("shp3_product_mwst").insert({ product_id: 11, country: "DE", rate: 7 });
     const plate = (await app.db.table("shp3_product").get<Product>(11))!;
-    assertEquals(await plate.vatRateFor("CH"), 0);
-    const cup = (await app.db.table("shp3_product").get<Product>(10))!;
-    assertEquals(await cup.vatRateFor("CH"), 8.1);
+    assertEquals(await plate.vatRateFor("DE"), 7); // its own
+    assertEquals(await plate.vatRateFor("CH"), 8.1); // the country's
+    assertEquals(await plate.vatRateFor("SO"), 0); // a country with no rate at all
   } finally {
     await app.db.close();
   }
@@ -229,6 +232,76 @@ Deno.test("shp3: a rounding step survives the float noise of a legacy FLOAT colu
     assertEquals(chf.show(12), "CHF 12.00");
     assertEquals(chf.round(12.007), 12.01);
     assertEquals(chf.closing(10.33), 10.35);
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: an item takes the page title, falling through an empty translation", async () => {
+  const app = await shop();
+  try {
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+    await requestStorage.run(ctx, async () => {
+      const cup = await cms(app).node(10);
+      await cup.title("en", "Teddy");
+      await cup.title("de", ""); // never translated — an empty string, not a missing row
+
+      const order = (await newOrder(app))!;
+      order.lang = "de";
+      const item = await order.itemAdd(10, 1);
+      assertEquals(item.title, "Teddy");
+    });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: the countries the shop sells to, and what they cost", async () => {
+  const app = await shop();
+  const db = app.db;
+  try {
+    // nothing marked yet: the shop sells everywhere and stands nowhere
+    assertEquals((await shopCountries(db)).length, 250);
+    assertEquals(await sellsTo(db, "DE"), true);
+    assertEquals(await shopCountry(db), "");
+
+    await db.table("country").update({ id: "CH", shp3_enabled: true });
+    await db.table("country").update({ id: "DE", shp3_enabled: true });
+    assertEquals(await shopCountries(db), ["CH", "DE"]);
+    assertEquals(await sellsTo(db, "US"), false);
+    assertEquals(await shopCountry(db), "CH"); // no setting: the first one marked
+
+    // an order without a country is priced where the shop stands
+    const order = (await app.db.table("shp3_order").add<Order>({ currency: "CHF" }))!;
+    assertEquals(order.shipCountry(), "");
+    const plate = (await db.table("shp3_product").get<Product>(11))!;
+    assertEquals(await plate.vatRateFor(order.shipCountry()), 8.1); // CH, from the country row
+    assertEquals(await plate.vatRateFor("DE"), 19);
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: what the guest collected follows them into the login", async () => {
+  const app = await shop();
+  try {
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+    await requestStorage.run(ctx, async () => {
+      const guest = (await cart(ctx))!;
+      await guest.itemAdd(10, 2);
+      await app.db.flush();
+
+      // an older cart of that user must not win over the one in their hands
+      const stale = (await app.db.table("shp3_order").add<Order>({ usr_id: 7 }))!;
+      await app.db.flush();
+
+      // what login() hands over: the session's values, taken before it was emptied
+      await adoptCart(app, { oldSession: ctx.sess.data(), usrId: 7 });
+
+      assertEquals(Number(guest.usr_id), 7);
+      assertEquals((await guest.items()).length, 1);
+      assertEquals(Number(await app.db.one`SELECT usr_id FROM shp3_order WHERE id = ${stale.$id}`), 0); // released
+    });
   } finally {
     await app.db.close();
   }

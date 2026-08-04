@@ -25,8 +25,8 @@ export async function cart(ctx: Ctx, create = true): Promise<Order | undefined> 
 
 /** Logging in must not lose what the guest collected: the anonymous cart becomes the user's,
  *  and their older open ones are released so cart() cannot pick the wrong one. */
-export async function adoptCart(app: App, e: { oldSession: { shp3: { cartId(): string } }; usrId: number }): Promise<void> {
-  const id = e.oldSession.shp3.cartId();
+export async function adoptCart(app: App, e: { oldSession: Record<string, any>; usrId: number }): Promise<void> {
+  const id = e.oldSession.shp3?.cartId;
   if (!id) return;
   const order = await app.db.table("shp3_order").get<Order>(id);
   if (!order || order.time_ordered || order.usr_id) return;

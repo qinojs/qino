@@ -207,12 +207,14 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
   const root = await Deno.makeTempDir();
   try {
     await Deno.mkdir(root + "/missing/", { recursive: true });
+    await Deno.mkdir(root + "/not.imported/", { recursive: true });
     await Deno.mkdir(root + "/a/", { recursive: true });
     await Deno.mkdir(root + "/b/", { recursive: true });
     await Deno.writeTextFile(root + "/missing/plugin.ts", `
       export const name = "missing.dep";
       export const needs = ["not.imported"];
     `);
+    await Deno.writeTextFile(root + "/not.imported/plugin.ts", "");
     await Deno.writeTextFile(root + "/a/plugin.ts", `
       export const name = "cycle.a";
       export const needs = ["cycle.b"];
@@ -235,6 +237,24 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
       Error,
       'Module "missing.dep" needs "not.imported"',
     );
+
+    const installed = new ModuleManager({
+      ...app,
+      db: {
+        ...fakeDb(),
+        query: () => Promise.resolve([{
+          name: "missing.dep",
+          url: toFileUrl(root + "/missing/plugin.ts").href,
+          installed: 1,
+        }]),
+      },
+    } as any);
+    await installed.init();
+    assert(!installed.linked("missing.dep"));
+    assert(installed.failures()["missing.dep"]);
+    await installed.install(toFileUrl(root + "/not.imported/plugin.ts").href);
+    assert(installed.linked("missing.dep"));
+    assertEquals(installed.failures(), {});
 
     const cyclic = new ModuleManager(app as any);
     await cyclic.import(toFileUrl(root + "/a/plugin.ts").href);

@@ -92,7 +92,7 @@ function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlStri
   return html`<tr data-mod="${mod}" data-store="${storeUrl}" data-state=${st}>
     <td title="${why ?? plugin?.description}">${mod}
     <td><small>${storeUrl ? storeLabel(storeUrl) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
-    <td>${why ? html`<strong>${l.broken}</strong>` : l[st]}
+    <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
     <td style="text-align:right">${html.join(acts, " ")}`;
 }
 
@@ -129,7 +129,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
         const from = app.stores.get(store);
         if (!from) throw new Error(`Unknown store: ${store}`);
         await app.modules.install(from.moduleUrl(mod), mod);
-        break;
+        return { ok: true }; // installing a dependency may reactivate other rows
       }
       case "uninstall":
         if (LOCKED.has(mod)) throw new Error(`Cannot uninstall "${mod}"`);

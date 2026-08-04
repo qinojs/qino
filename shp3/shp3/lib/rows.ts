@@ -3,7 +3,8 @@
 // so the calculation beside it is `pricesFor()`, not `price()`.
 
 import { DbRow, type Db, unixTime } from "../../../module/core/mod.ts";
-import { appOf, settingsOf, vatIncluded } from "./shop.ts";
+import { appOf, vatIncluded } from "./shop.ts";
+import { vatRate } from "./country.ts";
 import { methods, pick } from "./methods.ts";
 import { cms } from "../../../module/cms/mod.ts";
 
@@ -40,19 +41,20 @@ export class Product extends DbRow {
 
   #vatRates: Record<string, number> = {};
 
-  /** VAT for a country: the product's own rate, else the shop default. */
+  /** VAT for a country: the product's own rate, else the country's. */
   async vatRateFor(country: string): Promise<number> {
     if (!(country in this.#vatRates)) {
       const rate = await this.$table.db.one`SELECT rate FROM shp3_product_mwst WHERE product_id = ${this.$id} AND country = ${country}`;
-      this.#vatRates[country] = rate == null ? Number(await settingsOf(this.$table.db).vat.rate ?? 0) : Number(rate);
+      this.#vatRates[country] = rate == null ? await vatRate(this.$table.db, country) : Number(rate);
     }
     return this.#vatRates[country];
   }
 
   /** Net and gross unit price. Modules bend the price in four passes, and the order matters:
    *  a discount has to see the surcharges, and the aesthetic rounding has to come last. */
-  async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[] }): Promise<{ net: number; gross: number }> {
-    const e = { product: this, price: this.price, ...opts };
+  async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[]; time?: number }): Promise<{ net: number; gross: number }> {
+    // time lets an offer module ask "what would this cost at that moment" — 0 is before any offer.
+    const e = { product: this, price: this.price, time: unixTime(), ...opts };
     const app = appOf(this.$table.db);
     for (const phase of PRICE_PHASES) await app.fire(`shp3:price-${phase}`, e);
     const factor = (await this.vatRateFor(opts.country ?? "")) / 100 + 1;
@@ -179,9 +181,11 @@ export class Order extends DbRow {
     return (await this.items()).find((i) => i.$id === String(id));
   }
 
+  /** A currency the shop switched off meanwhile is not honoured — the main one steps in. */
   async currencyRow(): Promise<Currency | undefined> {
     const db = this.$table.db;
-    return (this.currency && await db.table("shp3_currency").get<Currency>(this.currency)) || await mainCurrency(db);
+    const own = this.currency ? await db.table("shp3_currency").get<Currency>(this.currency) : undefined;
+    return own?.active ? own : await mainCurrency(db);
   }
 
   /** Switching currency re-prices every line — a stored price is in the order's currency. */
@@ -377,15 +381,18 @@ export interface GeneratedItem {
 
 const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
 
+/** The shop's own currency. Nobody marked one as main? Then the first active one has to do. */
 export async function mainCurrency(db: Db): Promise<Currency | undefined> {
-  return (await db.table("shp3_currency").all<Currency>`WHERE main = ${true} AND active = ${true} LIMIT 1`)[0];
+  return (await db.table("shp3_currency").all<Currency>`WHERE active = ${true} ORDER BY main DESC LIMIT 1`)[0];
 }
 
 /** A product is a page, so its title is the page's — translated, with the page name as fallback. */
 async function productTitle(product: Product, lang?: string) {
   const app = appOf(product.$table.db);
   const node = await cms(app).node(Number(product.$id));
-  const e = { product, title: String(await node.title(lang || app.languages.def) || node.vs.name || "") };
+  // An untranslated language is an empty string, not null — so each step has to be checked.
+  const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def) || node.vs.name;
+  const e = { product, title: String(title || product.$id) };
   await app.fire("shp3:item-title", e);
   return e.title;
 }

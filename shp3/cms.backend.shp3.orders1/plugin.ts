@@ -2,10 +2,11 @@ import { html, type HtmlString, getCtx, sql, type App } from "../../module/core/
 import type { Node } from "../../module/cms/mod.ts";
 import { backend } from "../../module/cms.backend/mod.ts";
 import { mainCurrency, type Order } from "../shp3/mod.ts";
+import api from "./nodeApi.ts";
 
 export const name = "cms.backend.shp3.orders1";
 export const description = "Lists the shop's orders and shows what is in them.";
-export const needs = ["cms.backend", "shp3"];
+export const needs = ["cms.backend.shp3", "shp3"];
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Orders", de: "Bestellungen" });
@@ -39,7 +40,8 @@ async function renderList(node: Node): Promise<HtmlString> {
     <td>${vs.payment ?? ""}
     <td>${vs.shipping ?? ""}
     <td>${currency?.format(Number(vs.cost)) ?? vs.cost} ${vs.currency ?? ""}
-    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}`);
+    <td>${Number(vs.paid) >= Number(vs.cost) && Number(vs.cost) > 0 ? html`<u2-ico icon=check>✓</u2-ico>` : ""}
+    <td class=-delete><button class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`);
 
   return html.async`<div class=u2-card>
   <div class=-head>
@@ -57,6 +59,7 @@ async function renderList(node: Node): Promise<HtmlString> {
           <th> ${t`Shipping`}
           <th> ${t`Total`}
           <th width=20> ${t`Paid`}
+          <th width=20>
       <tbody>${html.join(trs)}
     </table>
   </div>
@@ -95,8 +98,11 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
       <tr><th>${t`Customer`}<td>${email ?? ""}
       <tr><th>${t`Payment`}<td>${order.payment}
       <tr><th>${t`Shipping`}<td>${order.shipping}
-      <tr><th>${t`Paid`}<td>${money(Number(order.paid))}
+      <tr><th>${t`Paid`}<td>
+        ${money(Number(order.paid))}
+        ${Number(order.paid) < Number(order.cost) && order.time_ordered ? html`<button class=-pay>${await t`Mark as paid`}</button>` : ""}
     </table>
+    ${order.time_ordered ? "" : html`<button class=-place>${await t`Place this order`}</button>`}
     <table class=u2-table>
       <thead>
         <tr><th>${t`Article`}<th>${t`Quantity`}<th>${t`Price`}<th>${t`Total`}
@@ -108,4 +114,15 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
 </div>`;
 }
 
-export const cms = { node: { render } };
+export function backendDashboardWidget({ t, db }: App): Promise<HtmlString> {
+  const zero = () => 0;
+  return html.async`<div style="overflow:auto; padding:0">
+<table class=u2-table style="white-space:nowrap">
+  <tr><td>${t`Orders`}:<td>${db.one`SELECT count(*) FROM shp3_order WHERE time_ordered > ${0}`.catch(zero)}
+  <tr><td>${t`Open carts`}:<td>${db.one`SELECT count(*) FROM shp3_order WHERE time_ordered = ${0}`.catch(zero)}
+  <tr><td>${t`Unpaid`}:<td>${db.one`SELECT count(*) FROM shp3_order WHERE time_ordered > ${0} AND paid < cost`.catch(zero)}
+</table>
+</div>`;
+}
+
+export const cms = { node: { render, api, js: ["pub/main.js"] } };

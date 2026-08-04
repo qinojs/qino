@@ -4,10 +4,11 @@ import { bindApp } from "./lib/shop.ts";
 import { registerRows, type Order, type OrderItem, type Product } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
 import { cms } from "../../module/cms/mod.ts";
+export { api } from "./apt.ts";
 
 export const name = "shp3";
 export const description = "Shop: products, cart, orders. Prices, VAT, shipping and payment are events.";
-export const needs = ["core", "cms"];
+export const needs = ["core", "cms", "locale.country", "locale.currency"];
 export { dbSchema };
 
 // A method is one entry under payments/shippings — modules add themselves, the shop configures them.
@@ -26,7 +27,13 @@ export const settingsSchema = {
     vat: {
       properties: {
         mode: { type: "string", enum: ["included", "excluded"], default: "included", description: "Whether product prices already contain VAT." },
-        rate: { type: "number", default: 0, description: "VAT rate in percent for products without a country rate." },
+      },
+    },
+    location: {
+      properties: {
+        country: { type: "string", maxLength: 2, description: "Where the shop stands. Prices are calculated for it until the customer names a country." },
+        city: { type: "string", description: "The shop's own city." },
+        street: { type: "string", description: "The shop's own street." },
       },
     },
     payments: method,
@@ -37,8 +44,21 @@ export const settingsSchema = {
   },
 };
 
-/** A shop needs one currency to price anything, so the main one is seeded. */
+// Starting points only — VAT rates change, the shop maintains them from there.
+const VAT_RATES = "AU 10, AT 20, BE 21, BG 20, HR 25, CY 19, CZ 21, DK 25, EE 22, FI 25.5, FR 20, DE 19, GR 24," +
+  " HU 27, IN 18, IE 23, IT 22, JP 10, LV 21, LT 21, LU 17, MT 18, NL 21, NZ 15, NO 25, PL 23, PT 23, RO 19," +
+  " SK 23, SI 22, ZA 15, KR 10, ES 21, SE 25, CH 8.1, LI 8.1, TW 5, GB 20";
+
+/** A shop needs one currency to price anything, so the main one is seeded — and the countries
+ *  it is most likely to sell to get a rate to start from. */
 export async function install({ app }: { app: App }): Promise<void> {
+  const countries = app.db.table("country");
+  for (const entry of VAT_RATES.split(",")) {
+    const [id, rate] = entry.trim().split(" ");
+    if (await app.db.one`SELECT shp3_default_vat_rate FROM country WHERE id = ${id}` == null) {
+      await countries.update({ id, shp3_default_vat_rate: Number(rate) });
+    }
+  }
   if (await app.db.one`SELECT id FROM shp3_currency LIMIT 1`) return;
   const currencies = app.db.table("shp3_currency");
   await currencies.insert({ id: "CHF", factor: 1, smallest: 0.01, smallest_closing: 0.05, active: true, main: true });

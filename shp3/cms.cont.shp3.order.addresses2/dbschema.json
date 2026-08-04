@@ -1,0 +1,95 @@
+{
+  "properties": {
+    "shp3_order": {
+      "additionalProperties": {
+        "properties": {
+          "bill_company": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_salutation": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_firstname": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_lastname": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_street": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_zip": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_city": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_country": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_phone": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "bill_email": {
+            "type": "string",
+            "maxLength": 100,
+            "x-index": true
+          },
+          "ship_company": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_salutation": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_firstname": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_lastname": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_street": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_zip": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_city": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_country": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_phone": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_email": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "ship_unlike_bill": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    }
+  }
+}

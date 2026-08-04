@@ -83,6 +83,8 @@
     "dev": {},
     "error_report": {},
     "fileEditor": {},
+    "locale.country": {},
+    "locale.currency": {},
     "mail": {},
     "mcp": {},
     "messaging.web_push": {},

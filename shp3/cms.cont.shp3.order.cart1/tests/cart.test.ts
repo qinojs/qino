@@ -1,88 +1,50 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
+import type { Node } from "../../../module/cms/mod.ts";
 import { cart } from "../../shp3/mod.ts";
-import cartApi from "../nodeApi.ts";
-import { name, cms } from "../plugin.ts";
+import { cms as panel } from "../plugin.ts";
 
 async function shop() {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
-  app.modules.add(import.meta.resolve("../plugin.ts"), name);
+  app.modules.add(import.meta.resolve("../../shp3.shipping.pickup/plugin.ts"), "shp3.shipping.pickup");
   await app.init();
   await app.db.table("page").insert({ id: 10, name: "Cup", access: 1 });
   await app.db.table("shp3_product").insert({ id: 10, price: 12, weight: 0.5 });
   return app;
 }
 
-const context = (app: App) =>
-  Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+// The cont only reads its own settings; everything else it needs is the cart.
+const node = (app: App) => ({ app, settings: { editable: () => Promise.resolve(true) } }) as unknown as Node;
 
-Deno.test("cart: the module is wired", () => {
-  assertEquals(name, "cms.cont.shp3.order.cart1");
-  assertEquals(typeof cms.node.api, "function");
-  assertEquals(typeof cms.node.render, "function");
-});
-
-Deno.test("cart: quantity and removal go through the visitor's own order", async () => {
+Deno.test("cart1: what the shop adds itself is a line of its own", async () => {
   const app = await shop();
   try {
-    const ctx = await context(app);
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
     await requestStorage.run(ctx, async () => {
+      // a shipping rule that costs something — it is in the total, so it has to be visible
+      app.on("shp3:shipping-cost", (e: { cost: number }) => { e.cost = 7; });
       const order = (await cart(ctx))!;
-      const item = await order.itemAdd(10, 1);
-      await app.db.flush();
+      await order.itemAdd(10, 1);
 
-      assertEquals(await cartApi({ app } as never, { quantity: String(item), value: "3" }), { gross: "36.00" });
-      assertEquals(item.quantity, 3);
-
-      // an id that is not in this order is refused, not applied
-      assertEquals(await cartApi({ app } as never, { quantity: "999", value: "1" }), false);
-      assertEquals(await cartApi({ app } as never, { remove: "999" }), false);
-
-      assertEquals(await cartApi({ app } as never, { remove: String(item) }), { gross: "0.00" });
-      assertEquals((await order.items()).length, 0);
+      const html = String(await panel.node.render(node(app), { ctx } as never));
+      assertStringIncludes(html, "-generated");
+      assertStringIncludes(html, "7.00"); // the shipping line, not only inside the total
+      assertEquals(html.includes("[object Promise]"), false);
     });
   } finally {
     await app.db.close();
   }
 });
 
-Deno.test("cart: quantity 0 removes the line", async () => {
+Deno.test("cart1: an empty cart says so and shows no table", async () => {
   const app = await shop();
   try {
-    const ctx = await context(app);
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
     await requestStorage.run(ctx, async () => {
-      const order = (await cart(ctx))!;
-      const item = await order.itemAdd(10, 2);
-      await app.db.flush();
-      await cartApi({ app } as never, { quantity: String(item), value: "0" });
-      assertEquals((await order.items()).length, 0);
-    });
-  } finally {
-    await app.db.close();
-  }
-});
-
-Deno.test("cart: a stale price is fixed, a line that stays broken is dropped", async () => {
-  const app = await shop();
-  try {
-    const ctx = await context(app);
-    await requestStorage.run(ctx, async () => {
-      const order = (await cart(ctx))!;
-      const item = await order.itemAdd(10, 1);
-      await app.db.flush();
-
-      await app.db.table("shp3_product").update(10, { price: 20 }); // the shop raised it
-      assertEquals(Object.keys(await item.errors()), ["new prices"]);
-
-      await cartApi({ app } as never, { resolve: item.$id });
-      assertEquals(item.onePrice(), 20);
-      assertEquals(await item.errors(), {});
-
-      await app.db.table("shp3_product").delete(10); // now it is gone for good
-      await cartApi({ app } as never, { resolve: item.$id });
-      assertEquals((await order.items()).length, 0);
+      const html = String(await panel.node.render(node(app), { ctx } as never));
+      assertEquals(html.includes("<table"), false);
     });
   } finally {
     await app.db.close();

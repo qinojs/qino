@@ -1,30 +1,35 @@
 # Qino
 
-**The compact, database-ready application core for Deno.**
+**The Deno framework for building modern digital platforms.**
 
-Qino gives you a clean foundation for building durable web applications: Web-standard HTTP, declarative APIs, sessions, authentication, settings, file handling, and a unified database layer for SQLite, PostgreSQL, and MySQL.
+Qino brings the technical foundation and the product capabilities of a modern platform into one modular system. Start with a focused API, then add identity, permissions, communication, AI, content management, and operational tools as your application grows.
 
-It stays close to the platform. A Qino app is a standard `(Request) => Response` handler, runs directly on `Deno.serve`, and remains easy to embed in an existing stack. Sensible defaults get you started immediately while explicit APIs keep the system predictable as your application grows.
+It stays close to the platform: TypeScript, ESM, Web-standard HTTP, and explicit APIs throughout. A Qino application is still a standard `(Request) => Response` handler—easy to understand, easy to extend, and easy to embed in an existing stack.
 
-A complete CMS built on Qino is already available.
+## A platform foundation, not just a router
+
+- **Identity and access** — sessions, password and passkey login, WebAuthn step-up authentication, OAuth 2.0 and OpenID Connect for social login, plus API keys and bearer tokens.
+- **Users, groups, and permissions** — manage accounts, profiles, memberships, and access rules for anything from a small team to a multi-role platform.
+- **Communication** — create, deliver, store, and track email; send browser push notifications; extend the platform with additional channels. SMS, WhatsApp, and Telegram adapters are planned.
+- **AI and agent integration** — connect configurable AI providers for chat, OCR, and transcription, and expose your application's declared actions through an MCP server.
+- **Content and back office** — build on a complete modular CMS with inline editing, localization, layouts, media handling, administration, and extensible content types.
+- **Files and media** — store files, generate variants, and transform media through a unified API.
+- **Independent frontend delivery** — proxy and cache approved frontend dependencies locally to reduce runtime reliance on third-party CDNs.
+- **Application operations** — settings, scheduled jobs, request lifecycle hooks, error reporting, and other everyday platform concerns fit into the same module system.
+
+Use only what your application needs. Modules work with sensible defaults, declare their dependencies, and remain replaceable as requirements evolve.
 
 ## Why Qino
 
 - **Deno-native** — TypeScript, ESM, and Web APIs from end to end.
-- **Framework-free core** — use Qino directly or mount it in Hono when needed.
-- **Declarative APIs** — define an action tree once and expose it as validated HTTP endpoints.
+- **Modular by design** — application features are ordinary modules rather than framework magic.
+- **Declarative APIs** — define an action tree once and expose it through HTTP, MCP, or other adapters.
 - **Database-ready** — one safe, dialect-aware interface for SQLite, PostgreSQL, and MySQL.
-- **Built for real applications** — sessions, authentication, settings, files, localization, and request lifecycle hooks are part of the foundation.
-- **Easy to operate** — explicit initialization keeps schema work out of the request path.
-- **Multi-tenant safe** — state belongs to each `App` instance, so multiple applications can share one runtime.
+- **Secure foundations** — bound SQL parameters, structured access control, modern authentication, and per-application state.
+- **Multi-tenant safe** — multiple independent `App` instances can share one runtime without sharing tenant state.
+- **Easy to embed** — run Qino directly or mount it below an existing Hono application.
 
-## Install
-
-```ts
-import { App } from "jsr:@qino/qino";
-```
-
-## Quick Start
+## Quick start
 
 ```ts
 import { Access, App } from "jsr:@qino/qino";
@@ -67,9 +72,9 @@ const user = await app.db.row`
 
 The same query API is rendered for the active database dialect.
 
-## Declarative by Design
+## Declarative by design
 
-Qino's action tree keeps routing, validation, access control, and execution together. The result is an API that remains readable and can also be adapted to other interfaces.
+Qino's action tree keeps routing, validation, access control, and execution together. The result stays readable and can be adapted to more than one interface.
 
 ```ts
 import { Access, App, s } from "jsr:@qino/qino";
@@ -93,9 +98,9 @@ app.aptTree = {
 };
 ```
 
-This action is available as `GET /api/users/:id`.
+This action is available as `GET /api/users/:id` and can also become part of the application's tool surface.
 
-## Web-Standard HTTP
+## Web-standard HTTP
 
 `app.fetch` works wherever a standard request handler is accepted:
 
@@ -118,10 +123,17 @@ hono.route("/app", honoAdapter(app));
 Deno.serve(hono.fetch);
 ```
 
+## CMS included
+
+Qino's CMS is built from the same modules as the rest of the framework. It adds inline content editing, layouts, reusable content types, localization, files and images, user administration, and a modular backend without turning the core into a monolith.
+
+The CMS currently lives in this repository under [`module/cms`](module/cms/). A dedicated [Qino CMS repository](https://github.com/qinojs/cms) is being prepared.
+
 ## Documentation
 
-The [core docs](module/core/docs/) walk through the main building blocks — [modules](module/core/docs/module.md),
-[database access](module/core/docs/db.md), and [file transforms](module/core/docs/transform.md).
+The [core documentation](module/core/docs/) covers the main building blocks, including [modules](module/core/docs/module.md), [database access](module/core/docs/db.md), and [file transforms](module/core/docs/transform.md).
+
+Further module guides explain [passkeys and WebAuthn](module/web_auth/USAGE.md), [OAuth and social login](module/oauth/USAGE.md), [MCP integration](module/mcp/USAGE.md), and [web push](module/messaging.web_push/README.md).
 
 ## License
 

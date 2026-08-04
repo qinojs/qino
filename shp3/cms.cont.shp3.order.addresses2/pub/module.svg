@@ -1,0 +1,5 @@
+<svg id="main" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+  <path fill-rule="evenodd" d="M80-800h800v640H80v-640Zm80 80v480h640v-480H160Z"/>
+  <circle cx="340" cy="-550" r="90"/>
+  <path d="M190-300q0-90 150-90t150 90H190Zm380-330h150v70H570v-70Zm0 140h150v70H570v-70Zm0 140h110v70H570v-70Z"/>
+</svg>
