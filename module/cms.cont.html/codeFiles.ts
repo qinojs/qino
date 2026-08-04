@@ -1,7 +1,6 @@
-import { getCtx } from "../core/mod.ts";
+import { getCtx, isFile } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
-const isFile = (path: string) => Deno.stat(path).then((s) => s.isFile).catch(() => false);
 const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});
 
 /** The code of a node, in the app dir: the source outside pub/, css and js inside — where the static route serves them. */
@@ -22,9 +21,9 @@ export function codeFiles(node: Node) {
 
     /** Add the css and js that exist to the current response. */
     async addAssets() {
-      const html = getCtx().res.html;
-      if (await isFile(this.css)) html.styles.add(`${mod.dataUrl}pub/${id}.css`);
-      if (await isFile(this.js)) html.scripts.add(`${mod.dataUrl}pub/${id}.js`);
+      const ctx = getCtx(), html = ctx.res.html;
+      if (await isFile(this.css, ctx.dev)) html.styles.add(`${mod.dataUrl}pub/${id}.css`);
+      if (await isFile(this.js, ctx.dev)) html.scripts.add(`${mod.dataUrl}pub/${id}.js`);
     },
   };
 }

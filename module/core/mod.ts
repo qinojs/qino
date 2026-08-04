@@ -12,7 +12,7 @@ export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
 
 // HTML & general utilities
-export { hee, unixTime, html, Output, Redirect, uid, b64url, unb64url, randB64, sha256, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header } from "./lib/util.ts";
+export { hee, unixTime, html, Output, Redirect, uid, b64url, unb64url, randB64, sha256, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";
 // HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
 export type { HtmlString } from "./lib/util.ts";
 

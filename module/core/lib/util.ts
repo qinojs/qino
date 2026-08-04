@@ -8,6 +8,17 @@ export const itemRoot = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.3/"; /
 
 export function ensureSlash(v: string) { return v.endsWith("/") ? v : v + "/"; }
 
+const fileCache = new Map<string, { is: boolean; t: number }>(); // absolute paths — no tenant mixing
+
+/** Does this file exist? Cached for 5 min, `dev` always looks. */
+export async function isFile(path: string, dev = false): Promise<boolean> {
+  const hit = fileCache.get(path);
+  if (!dev && hit && performance.now() - hit.t < 300_000) return hit.is;
+  const is = await Deno.stat(path).then((s) => s.isFile).catch(() => false);
+  fileCache.set(path, { is, t: performance.now() });
+  return is;
+}
+
 /** Cookie name prefix. `__Host-` requires Path=/, so fall back to `__Secure-` on sub-path mounts. */
 export function cookiePrefix(https: boolean, appUrl: string): string {
   if (!https) return "";

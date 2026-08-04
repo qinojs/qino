@@ -14,12 +14,6 @@ export const settingsSchema = {
 async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
   const module = node.module!;
 
-  // App-specific layout CSS
-  try {
-    await Deno.stat(module.data + "pub/main.css");
-    data.ctx.res.html.styles.add(module.dataUrl + "pub/main.css");
-  } catch {/**/}
-
   // Font CSS from layout settings
   const fontCss = String(await node.app.settings[name]["font-css-file"] ?? "");
   if (fontCss) {

@@ -54,7 +54,7 @@ Deno.test({
     const local = await modules.import(toFileUrl(localModDir + "local.foo/plugin.ts").href);
     assertEquals(local.name, "local.foo");
     assertEquals(local.plugin.value, "local");
-    assert(local.path?.endsWith("/local.foo/plugin.ts"));
+    assert(local.source.endsWith("/local.foo/plugin.ts"));
 
     await assertRejects(
       () => modules.import("./private/private.foo/"),
@@ -80,7 +80,7 @@ Deno.test({
     assertEquals(fileUrlModule.plugin.value, "file-url");
 
     assertEquals(modules.get("private.foo")?.plugin.value, "private");
-    assert(modules.get("private.foo")?.path?.endsWith("/private.foo/plugin.ts"));
+    assert(modules.get("private.foo")?.source.endsWith("/private.foo/plugin.ts"));
     await modules.init();
     assertEquals(app.installed, ["private.foo"]);
 

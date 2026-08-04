@@ -2,7 +2,7 @@ import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
-import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
+import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, isFile, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
 
 /** Node class
@@ -166,10 +166,11 @@ export class Node {
 
         const mod = this.module;
         const nodeExports = mod?.plugin.cms?.node;
-        const modBase = ctx.req.appUrl + "m/" + this.vs.module + "/";
         const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
-        for (const file of nodeExports?.css ?? []) ctx.res.html.styles.add(isAbsolute(file) ? file : modBase + file);
-        for (const file of nodeExports?.js ?? [])  ctx.res.html.scripts.add(isAbsolute(file) ? file : modBase + file);
+        for (const file of nodeExports?.css ?? []) ctx.res.html.styles.add(isAbsolute(file) ? file : mod!.modUrl + file);
+        for (const file of nodeExports?.js ?? [])  ctx.res.html.scripts.add(isAbsolute(file) ? file : mod!.modUrl + file);
+        // App-specific css of this module
+        if (mod && await isFile(mod.data + "pub/main.css", ctx.dev)) ctx.res.html.styles.add(mod.dataUrl + "pub/main.css");
 
         const s = await this.htmlPrepared(vars);
 

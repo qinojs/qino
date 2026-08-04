@@ -1,3 +1,4 @@
+import { fromFileUrl } from "@std/path";
 import { html, type HtmlString, getCtx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -10,17 +11,18 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.module", { en: "Modules", de: "Module" });
 }
 
+// dir ends with a slash (like Module.dir)
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {
   const entries: { filePath: string; name: string; isDir: boolean }[] = [];
   try {
     for await (const entry of Deno.readDir(dir)) {
-      entries.push({ filePath: dir + "/" + entry.name, name: entry.name, isDir: entry.isDirectory });
+      entries.push({ filePath: dir + entry.name, name: entry.name, isDir: entry.isDirectory });
     }
   } catch { return; }
   entries.sort((a, b) => a.filePath.localeCompare(b.filePath));
   for (const e of entries) {
-    if (e.isDir) yield* walkDir(e.filePath, base);
-    else yield { filePath: e.filePath, rel: e.filePath.slice(base.length + 1) };
+    if (e.isDir) yield* walkDir(e.filePath + "/", base);
+    else yield { filePath: e.filePath, rel: e.filePath.slice(base.length) };
   }
 }
 
@@ -51,9 +53,9 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const toggleBtn = canToggle
     ? await html.async`<button data-mod-toggle="${linked ? "disable" : "enable"}" data-mod="${modName}">${linked ? t`Disable` : t`Enable`}</button> <small>${t`runtime only — reset on restart`}</small>`
     : "";
-  const modPath = modObj.path;
-  const modUrl  = modObj.url;
-  const modDir  = modPath?.replace(/\/?[^/]+$/, "") ?? null;
+  const modSource = modObj.source;
+  const modDir = modObj.dir ?? null;
+  const modPath = modDir ? fromFileUrl(modSource) : null;
 
   // --- Exports ---
   const SKIP = new Set(["name", "description", "needs", "cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
@@ -122,12 +124,12 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
         <tbody>${html.join(rows)}
       </table>`
       : await html.async`<em>${t`no files found`}</em>`;
-  } else if (modUrl) {
-    filesHtml = await html.async`<em>${t`Remote module (URL):`} ${modUrl}</em>`;
+  } else if (modSource) {
+    filesHtml = await html.async`<em>${t`Remote module (URL):`} ${modSource}</em>`;
   }
 
   // --- Source info ---
-  const sourceDisplay = modPath ?? modUrl;
+  const sourceDisplay = modPath ?? modSource;
   const sourceHtml = isSuperuser && modPath
     ? html`<a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(modPath)}" target="${encodeURIComponent(modPath)}">${sourceDisplay}</a>`
     : html`<code>${sourceDisplay}</code>`;
@@ -205,8 +207,8 @@ async function renderOverview(node: Node): Promise<HtmlString> {
       mod.dbSchema && "db",
     ].filter(Boolean).join(", ");
 
-    const modDir = modObj.path?.replace(/\/?[^/]+$/, "") ?? null;
-    const hasSvg = modDir ? await Deno.stat(modDir + "/pub/module.svg").then(() => true, () => false) : false;
+    const modDir = modObj.dir;
+    const hasSvg = modDir ? await Deno.stat(modDir + "pub/module.svg").then(() => true, () => false) : false;
     const iconHtml = hasSvg
       ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.moduleUrl}${name}/pub/module.svg#main"/></svg>`
       : "";

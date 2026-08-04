@@ -52,7 +52,7 @@ function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): [stri
   const from = new Map<string, string>();
   for (const { store, names } of cats) {
     // The store a module is installed from wins over the first one that merely lists it.
-    for (const mod of names) if (!from.has(mod) || app.modules.get(mod)?.url === store.moduleUrl(mod)) from.set(mod, store.url);
+    for (const mod of names) if (!from.has(mod) || app.modules.get(mod)?.source === store.moduleUrl(mod)) from.set(mod, store.url);
   }
   for (const mod of [...Object.keys(app.modules.all()), ...Object.keys(app.modules.failures())]) if (!from.has(mod)) from.set(mod, "");
   return [...from].sort(([a], [b]) => a.localeCompare(b));

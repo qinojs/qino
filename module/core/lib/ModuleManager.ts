@@ -46,28 +46,29 @@ export class Module {
   #app: App;
   #name: string;
   #plugin: Plugin;
-  #url: string;
-  #path: string | undefined;
+  #source: string;
   #abort = new AbortController();
 
-  constructor(app: App, name: string, plugin: Plugin, url: string, path?: string) {
+  constructor(app: App, name: string, plugin: Plugin, source: string) {
     this.#app = app;
     this.#name = name;
     this.#plugin = plugin;
-    this.#url = url;
-    this.#path = path;
+    this.#source = source;
   }
   get name(): string { return this.#name; }
   get plugin(): Plugin { return this.#plugin; }
-  get url(): string { return this.#url; }
-  get path(): string | undefined { return this.#path; }
-  get dir(): string | undefined { return this.path?.replace(/\/[^/]+$/, "/"); }
+  /** Where the module was imported from: resolved file:/https: URL of its plugin file. */
+  get source(): string { return this.#source; }
+  /** Directory the module lives in; undefined for remote modules. */
+  get dir(): string | undefined { return this.#source.startsWith("file:") ? fromFileUrl(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
   /** App files of this module — backed up, never deleted. What lies in pub/ is served. */
   get data(): string { return `${this.#app.appPATH}data/${this.name}/`; }
   /** Derived files, reproducible from data/ alone — droppable at any time, no backup. */
   get cache(): string { return `${this.#app.appPATH}cache/${this.name}/`; }
   /** Scratch space for a single operation — droppable when nothing runs, no backup. */
   get tmp(): string { return `${this.#app.appPATH}tmp/${this.name}/`; }
+  /** The module dir as a URL; only pub/ below it is reachable. */
+  get modUrl(): string { return `${getCtx().req.moduleUrl}${this.name}/`; }
   /** data/ as a URL; only pub/ below it is reachable. */
   get dataUrl(): string { return `${getCtx().req.appUrl}d/${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.
@@ -115,27 +116,27 @@ export class ModuleManager {
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
     if (!/\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts, plugin.js, or plugin.mjs file: ${spec}`);
     const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
-    const url = path ? toFileUrl(path).href : spec;
-    const plugin = await import(url);
-    if (plugin.name !== undefined && (typeof plugin.name !== "string" || !plugin.name)) throw new Error(`Plugin has an invalid exported name: ${url}`);
-    const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.exec(url)?.[1];
+    const source = path ? toFileUrl(path).href : spec;
+    const plugin = await import(source);
+    if (plugin.name !== undefined && (typeof plugin.name !== "string" || !plugin.name)) throw new Error(`Plugin has an invalid exported name: ${source}`);
+    const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.exec(source)?.[1];
     const name = expectedName ?? plugin.name ?? (inferredName && decodeURIComponent(inferredName));
-    if (!name) throw new Error(`Plugin name cannot be inferred: ${url}`);
-    if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${url}`);
+    if (!name) throw new Error(`Plugin name cannot be inferred: ${source}`);
+    if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${source}`);
     if (expectedName && plugin.name && expectedName !== plugin.name)
       throw new Error(`Plugin name mismatch: store has "${expectedName}", plugin exports "${plugin.name}"`);
     const existing = this.#modules[name];
     if (existing) {
-      if (existing.url !== url) throw new Error(`Duplicate module name "${name}": ${existing.url} vs ${url}`);
+      if (existing.source !== source) throw new Error(`Duplicate module name "${name}": ${existing.source} vs ${source}`);
       return existing;
     }
 
     if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
 
-    const same = Object.values(this.#modules).find((mod) => mod.url === url);
-    if (same) throw new Error(`Plugin ${url} is already registered as "${same.name}"`);
+    const same = Object.values(this.#modules).find((mod) => mod.source === source);
+    if (same) throw new Error(`Plugin ${source} is already registered as "${same.name}"`);
 
-    const mod = new Module(this.#app, name, plugin, url, path);
+    const mod = new Module(this.#app, name, plugin, source);
     this.#modules[name] = mod;
     return mod;
   }
@@ -181,7 +182,7 @@ export class ModuleManager {
       delete this.#modules[mod.name];
       throw new Error(`Cannot install "${mod.name}": needs ${missing.join(", ")}`);
     }
-    await this.#app.db.table("module").ensure({ name: mod.name, url: mod.url });
+    await this.#app.db.table("module").ensure({ name: mod.name, url: mod.source });
     if (!this.#booting) {
       await this.link(mod.name); // during boot init() links it in a later pass
       for (const name of Object.keys(this.#failed)) await this.link(name).then(() => delete this.#failed[name], () => {});
