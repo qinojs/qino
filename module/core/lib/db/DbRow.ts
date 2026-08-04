@@ -97,6 +97,14 @@ export class DbRow {
     const mine: Record<string, any> = {};
     for (const name of this.#dirty) mine[name] = this.#vs[name];
     this.#vs = { ...vs, ...mine };
+    // Drivers hand DECIMAL back as a string ("0.0100000000"), so a value read would differ in
+    // type from the same value written — the shape a column has must not depend on where it came from.
+    for (const name in this.#vs) {
+      const value = this.#vs[name];
+      if (typeof value !== "string" || !NUM_TYPES.has(this.#table.field(name)?.type ?? "")) continue;
+      const num = Number(value);
+      if (value !== "" && Number.isFinite(num)) this.#vs[name] = num;
+    }
     this.#exists = !!vs;
     this.#loadedAt = Date.now();
     this.#stale = false;

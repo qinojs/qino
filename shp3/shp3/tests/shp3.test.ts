@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
-import type { Order, Product } from "../mod.ts";
+import type { Currency, Order, Product } from "../mod.ts";
 
 const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** digits;
 
@@ -12,11 +12,11 @@ async function shop(...modules: string[]) {
   for (const m of modules) app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);
   await app.init();
   const db = app.db;
-  await db.table("page").insert({ id: 10, name: "Cup" });
-  await db.table("page").insert({ id: 11, name: "Plate" });
+  await db.table("page").insert({ id: 10, name: "Cup", access: 1 });
+  await db.table("page").insert({ id: 11, name: "Plate", access: 1 });
   await db.table("shp3_product").insert({ id: 10, price: 12, weight: 0.5 });
   await db.table("shp3_product").insert({ id: 11, price: 3.33, weight: 0.2 });
-  await db.table("shp3_product_vat").insert({ product_id: 10, country: "CH", rate: 8.1 });
+  await db.table("shp3_product_mwst").insert({ product_id: 10, country: "CH", rate: 8.1 });
   return app;
 }
 
@@ -55,7 +55,7 @@ Deno.test("shp3: a price event bends the price", async () => {
   const app = await shop();
   try {
     // Half price from ten pieces on — the kind of rule a discount module adds.
-    app.on("shp3:price", (e: { quantity?: number; price: number }) => {
+    app.on("shp3:price-discount", (e: { quantity?: number; price: number }) => {
       if ((e.quantity ?? 0) >= 10) e.price = e.price / 2;
     });
     const order = (await newOrder(app))!;
@@ -78,7 +78,7 @@ Deno.test("shp3: generated items join the total and are written when placing", a
     });
     const order = (await newOrder(app))!;
     await order.itemAdd(11, 1);
-    assertEquals(round((await order.costs()).gross), 10.35); // 3.33 + 7.00, rounded to 0.05
+    assertEquals(round((await order.costs()).gross), 10.33); // 3.33 + 7.00
 
     await order.place();
     const rows = await app.db.query`SELECT name, price FROM shp3_order_item_generated WHERE order_id = ${String(order)}`;
@@ -176,6 +176,59 @@ Deno.test("shp3: an order with errors is not placed", async () => {
     assertEquals(order.shipping, "pickup");
     assertEquals(order.payment, "invoice");
     });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: the price passes four phases, in order", async () => {
+  const app = await shop();
+  try {
+    const seen: string[] = [];
+    for (const phase of ["initial", "additions", "discount", "final"]) {
+      app.on(`shp3:price-${phase}`, (e: { price: number }) => {
+        seen.push(`${phase}:${e.price}`);
+        if (phase === "initial") e.price = 100;
+        if (phase === "additions") e.price += 20;
+        if (phase === "discount") e.price *= 0.5;
+        if (phase === "final") e.price = Math.round(e.price);
+      });
+    }
+    const cup = (await app.db.table("shp3_product").get<Product>(10))!;
+    assertEquals((await cup.pricesFor({})).gross, 60);
+    assertEquals(seen, ["initial:12", "additions:100", "discount:120", "final:60"]);
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: a product whose page is not public cannot be sold", async () => {
+  const app = await shop();
+  try {
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+    await requestStorage.run(ctx, async () => {
+      const cup = (await app.db.table("shp3_product").get<Product>(10))!;
+      assertEquals(await cup.errors(), {});
+
+      await app.db.table("page").update(10, { access: 0 });
+      const plate = (await app.db.table("shp3_product").get<Product>(11))!;
+      await app.db.table("page").update(11, { access: 0 });
+      assertEquals(Object.keys(await plate.errors()), ["no access"]);
+    });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: a rounding step survives the float noise of a legacy FLOAT column", async () => {
+  const app = await shop();
+  try {
+    // What the real database hands over for 0.01 and 0.05 once a FLOAT column became DOUBLE.
+    await app.db.table("shp3_currency").update("CHF", { smallest: 0.009999999776482582, smallest_closing: 0.05000000074505806 });
+    const chf = (await app.db.table("shp3_currency").get<Currency>("CHF"))!;
+    assertEquals(chf.show(12), "CHF 12.00");
+    assertEquals(chf.round(12.007), 12.01);
+    assertEquals(chf.closing(10.33), 10.35);
   } finally {
     await app.db.close();
   }

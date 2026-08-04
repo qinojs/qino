@@ -23,7 +23,7 @@ Everything variable is an app event, not a subclass:
 
 | event | payload | for |
 |---|---|---|
-| `shp3:price` | `{ product, price, quantity, country, config, currency }` | discounts, tiered prices, surcharges |
+| `shp3:price-initial` → `-additions` → `-discount` → `-final` | `{ product, price, quantity, country, config, currency, grps }` | four passes, in this order: base price, surcharges, discounts, rounding |
 | `shp3:generated-items` | `{ order, items }` | shipping, fees, vouchers — lines the shop adds itself |
 | `shp3:item-quantity` | `{ item, quantity }` | stock limits |
 | `shp3:item-description` / `shp3:item-title` | `{ item \| product, … }` | translated or configured texts |
@@ -32,7 +32,7 @@ Everything variable is an app event, not a subclass:
 | `shp3:order-try` | `{ order, errors, prevent, redirect }` | last word before an order is placed |
 | `shp3:payments` / `shp3:shippings` | `{ order, payments \| shippings }` | veto a method for this order |
 | `shp3:shipping-cost` | `{ order, shipping, cost }` | what shipping costs |
-| `shp3:ordered`, `shp3:paid` | `{ order }` | payment, mail, accounting |
+| `shp3:ordered`, `shp3:ordered-after`, `shp3:paid` | `{ order }` | payment, mail, accounting — `-after` runs once payment settled |
 
 ## Payment and shipping methods
 
@@ -63,11 +63,20 @@ modules stop it through `shp3:order-try`, and only then calls `place()`. `place(
 unguarded — it freezes prices, VAT, shipping and payment and stamps `time_ordered` last, so
 everything above it still reads the open order.
 
+## Errors the customer can fix
+
+`item.errors()` is checked in the cart. The one a customer can act on is a price that moved while
+the goods sat there: `order.resolveItem(id)` applies the new price, and drops the line if anything
+else is still wrong — the PHP fallback, without the callback machinery.
+
 ## Deviations from the PHP original
 
 - `shp3_product_mwst` is now `shp3_product_vat`; the country default rate comes from the
   `shp3.vat.rate` setting instead of a `country` table, which qino does not have.
 - Times are unix integers, not `datetime`, like the rest of qino.
+- A rounding step read from an old shop carries float noise (`smallest` 0.01 arrives as
+  0.009999999776 — the column was `FLOAT`). PHP never saw it because MySQL hands its driver the
+  formatted string; `Currency` washes it out with six significant digits.
 - Prices are `DOUBLE`, not `DECIMAL(12,4)` — item.js' schema layer emits `DECIMAL` without a
   precision, which MySQL reads as `DECIMAL(10,0)`. Rounding goes through `Currency.round()`.
 - `shp3.stock` keeps the columns `stock`, `stock_is_fix` and `stock_trigger` on `shp3_product`.

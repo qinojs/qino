@@ -5,6 +5,14 @@
 import { DbRow, type Db, unixTime } from "../../../module/core/mod.ts";
 import { appOf, settingsOf, vatIncluded } from "./shop.ts";
 import { methods, pick } from "./methods.ts";
+import { cms } from "../../../module/cms/mod.ts";
+
+// A rounding step carries float noise: the legacy column was FLOAT, so 0.01 comes back as
+// 0.009999999776482582 once widened to DOUBLE. Six significant digits are more than any
+// currency's smallest unit needs, and they wash the noise out.
+const step = (v: number) => Number(Number(v).toPrecision(6));
+const decimals = (s: number) => String(s).split(".")[1]?.length ?? 0;
+const snap = (price: number, s: number) => Number((Math.round(price / s) * s).toFixed(decimals(s)));
 
 export class Currency extends DbRow {
   declare id: string;
@@ -16,13 +24,11 @@ export class Currency extends DbRow {
 
   change(price: number): number { return price * this.factor; }
   unchange(price: number): number { return price / this.factor; }
-  round(price: number): number { return Math.round(price / this.smallest) * this.smallest; }
+  round(price: number): number { return snap(price, step(this.smallest)); }
   /** Rounds what the customer actually pays — some currencies dropped their smallest coin. */
-  closing(price: number): number {
-    const step = this.smallest_closing || this.smallest;
-    return Math.round(price / step) * step;
-  }
-  format(price: number): string { return price.toFixed(String(this.smallest).split(".")[1]?.length ?? 0); }
+  closing(price: number): number { return snap(price, step(this.smallest_closing || this.smallest)); }
+  /** As many decimals as the smallest coin has. */
+  format(price: number): string { return Number(price).toFixed(decimals(step(this.smallest))); }
   show(price: number): string { return `${this.id} ${this.format(price)}`; }
   changeAndRound(price: number): number { return this.round(this.change(price)); }
 }
@@ -37,16 +43,18 @@ export class Product extends DbRow {
   /** VAT for a country: the product's own rate, else the shop default. */
   async vatRateFor(country: string): Promise<number> {
     if (!(country in this.#vatRates)) {
-      const rate = await this.$table.db.one`SELECT rate FROM shp3_product_vat WHERE product_id = ${this.$id} AND country = ${country}`;
+      const rate = await this.$table.db.one`SELECT rate FROM shp3_product_mwst WHERE product_id = ${this.$id} AND country = ${country}`;
       this.#vatRates[country] = rate == null ? Number(await settingsOf(this.$table.db).vat.rate ?? 0) : Number(rate);
     }
     return this.#vatRates[country];
   }
 
-  /** Net and gross unit price. Modules bend the price through the `shp3:price` event. */
+  /** Net and gross unit price. Modules bend the price in four passes, and the order matters:
+   *  a discount has to see the surcharges, and the aesthetic rounding has to come last. */
   async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[] }): Promise<{ net: number; gross: number }> {
     const e = { product: this, price: this.price, ...opts };
-    await appOf(this.$table.db).fire("shp3:price", e);
+    const app = appOf(this.$table.db);
+    for (const phase of PRICE_PHASES) await app.fire(`shp3:price-${phase}`, e);
     const factor = (await this.vatRateFor(opts.country ?? "")) / 100 + 1;
     const price = opts.currency ? opts.currency.change(e.price) : e.price;
     return await vatIncluded(this.$table.db)
@@ -103,6 +111,7 @@ export class OrderItem extends DbRow {
       quantity: this.quantity,
       country: order.shipCountry(),
       config: this.configData(),
+      grps: await order.grps(),
     });
     return prices.net;
   }
@@ -197,6 +206,12 @@ export class Order extends DbRow {
     return total;
   }
 
+  /** The customer's groups — group prices depend on them. */
+  async grps(): Promise<number[]> {
+    if (!this.usr_id) return [];
+    return (await this.$table.db.col<number>`SELECT grp_id FROM usr_grp WHERE usr_id = ${this.usr_id}`).map(Number);
+  }
+
   /** Enabled methods, minus what a module vetoes for this order. */
   async allowedPayments(): Promise<Record<string, string>> {
     const e = { order: this, payments: await methods(this.$table.db, "payments") };
@@ -237,13 +252,22 @@ export class Order extends DbRow {
       item = await db.table("shp3_order_item").add<OrderItem>({
         order_id: this.$id,
         product_id: product.$id,
-        title: await productTitle(product),
+        title: await productTitle(product, this.lang),
         config: configString,
       });
       this.#items = null;
     }
     await item!.setQuantity(item!.quantity + quantity);
     return item!;
+  }
+
+  /** Apply what changed under the customer's feet; a line that stays broken is dropped. */
+  async resolveItem(id: unknown): Promise<OrderItem | undefined> {
+    const item = await this.item(id);
+    if (!item) return;
+    item.price = await item.calcPrice();
+    if (!Object.keys(await item.errors()).length) return item;
+    await this.itemRemove(item);
   }
 
   async itemRemove(id: unknown): Promise<void> {
@@ -264,11 +288,14 @@ export class Order extends DbRow {
     const e = { order: this, items: [] as GeneratedItem[] };
     await appOf(db).fire("shp3:generated-items", e);
     const included = await vatIncluded(db);
-    return this.#generated = e.items.map((item, i) => ({
+    // Keyed by name, like the legacy array: a module replaces another module's line, never doubles it.
+    const byName = new Map<string, GeneratedItem>();
+    e.items.forEach((item, i) => byName.set(item.name, {
       ...item,
       sort: item.sort || i + 1,
       price: included ? item.price / (item.vat_rate / 100 + 1) : item.price,
     }));
+    return this.#generated = [...byName.values()].sort((a, b) => a.sort - b.sort);
   }
 
   /** Net, gross and the tax per rate. */
@@ -284,7 +311,7 @@ export class Order extends DbRow {
     const tax = Object.values(taxes).reduce((a, b) => a + b, 0);
     delete taxes["0"];
     const currency = await this.currencyRow();
-    return { net, taxes, gross: currency ? currency.closing(net + tax) : net + tax };
+    return { net, taxes, gross: currency ? currency.round(net + tax) : net + tax };
   }
 
   /** What blocks this order; empty when it can be placed. */
@@ -327,6 +354,7 @@ export class Order extends DbRow {
     await db.flush();
     await appOf(db).fire("shp3:ordered", { order: this });
     if (!this.cost) await this.pay(0); // nothing to pay
+    await appOf(db).fire("shp3:ordered-after", { order: this }); // everything settled, payment included
     return this;
   }
 
@@ -347,15 +375,18 @@ export interface GeneratedItem {
   vat_rate: number;
 }
 
+const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
+
 export async function mainCurrency(db: Db): Promise<Currency | undefined> {
   return (await db.table("shp3_currency").all<Currency>`WHERE main = ${true} AND active = ${true} LIMIT 1`)[0];
 }
 
-/** A product is a page; its name is the fallback title. Modules override it for translations. */
-async function productTitle(product: Product) {
-  const db = product.$table.db;
-  const e = { product, title: String(await db.one`SELECT name FROM page WHERE id = ${product.$id}` ?? "") };
-  await appOf(db).fire("shp3:item-title", e);
+/** A product is a page, so its title is the page's — translated, with the page name as fallback. */
+async function productTitle(product: Product, lang?: string) {
+  const app = appOf(product.$table.db);
+  const node = await cms(app).node(Number(product.$id));
+  const e = { product, title: String(await node.title(lang || app.languages.def) || node.vs.name || "") };
+  await app.fire("shp3:item-title", e);
   return e.title;
 }
 

@@ -10,7 +10,7 @@ async function shop() {
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../plugin.ts"), name);
   await app.init();
-  await app.db.table("page").insert({ id: 10, name: "Cup" });
+  await app.db.table("page").insert({ id: 10, name: "Cup", access: 1 });
   await app.db.table("shp3_product").insert({ id: 10, price: 12, weight: 0.5 });
   return app;
 }
@@ -57,6 +57,31 @@ Deno.test("cart: quantity 0 removes the line", async () => {
       const item = await order.itemAdd(10, 2);
       await app.db.flush();
       await cartApi({ app } as never, { quantity: String(item), value: "0" });
+      assertEquals((await order.items()).length, 0);
+    });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("cart: a stale price is fixed, a line that stays broken is dropped", async () => {
+  const app = await shop();
+  try {
+    const ctx = await context(app);
+    await requestStorage.run(ctx, async () => {
+      const order = (await cart(ctx))!;
+      const item = await order.itemAdd(10, 1);
+      await app.db.flush();
+
+      await app.db.table("shp3_product").update(10, { price: 20 }); // the shop raised it
+      assertEquals(Object.keys(await item.errors()), ["new prices"]);
+
+      await cartApi({ app } as never, { resolve: item.$id });
+      assertEquals(item.onePrice(), 20);
+      assertEquals(await item.errors(), {});
+
+      await app.db.table("shp3_product").delete(10); // now it is gone for good
+      await cartApi({ app } as never, { resolve: item.$id });
       assertEquals((await order.items()).length, 0);
     });
   } finally {

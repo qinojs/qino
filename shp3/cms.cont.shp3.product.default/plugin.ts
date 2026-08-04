@@ -17,19 +17,19 @@ const settingsSchema = {
 async function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   const product = await ensureProduct(node.app.db, node.id);
-  if (!product) return html.async`<div class="-m-product"></div>`;
+  if (!product) return html.async`<div></div>`;
 
   const currency = await mainCurrency(node.app.db);
   const prices = await product.pricesFor({ currency, quantity: 1 });
   const errors = Object.values(await product.errors());
 
-  return html.async`<div class="-m-product">
+  return html.async`<div>
   <div class=-price>${currency ? currency.show(prices.gross) : prices.gross}</div>
   ${errors.length
     ? html`<div class=-errors>${html.join(errors.map((e) => html`<div>${e}</div>`))}</div>`
     : html`<form class=-add>
     ${await node.settings.quantity() === false ? "" : html`<input type=number name=quantity min=1 step=1 value=1>`}
-    <button>${t`Add to cart`}</button>
+    <button>${await t`Add to cart`}</button>
   </form>`}
 </div>`;
 }

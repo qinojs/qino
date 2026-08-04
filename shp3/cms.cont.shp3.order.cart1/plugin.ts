@@ -18,7 +18,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const t = node.app.t;
   const order = await cart(ctx, false);
   const items = order ? await order.items() : [];
-  if (!items.length) return html.async`<div class="-m-cart">${t`Your cart is empty`}</div>`;
+  if (!items.length) return html.async`<div>${t`Your cart is empty`}</div>`;
 
   const editable = (await node.settings.editable()) !== false;
   const currency = await order!.currencyRow();
@@ -27,8 +27,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const rows: HtmlString[] = [];
   for (const item of items) {
+    const errors = Object.values(await item.errors());
     rows.push(html`<tr itemid=${item.id}>
       <td class=-title>${item.title}<div class=-options>${await item.calcDescription()}</div>
+        ${errors.length
+          ? html`<div class=-errors>${html.join(errors.map((e) => html`<div>${e}</div>`))}
+            <button class=-resolve>${await t`Fix`}</button></div>`
+          : ""}
       <td class=-quantity>${editable
         ? html`<input type=number min=0 step=1 value=${item.quantity} class=-q>`
         : item.quantity}
@@ -39,10 +44,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const taxes: HtmlString[] = [];
   for (const [rate, value] of Object.entries(costs.taxes)) {
-    taxes.push(html`<tr class=-tax><th colspan=3>${t`VAT`} ${rate}%<td>${money(value)}`);
+    taxes.push(html`<tr class=-tax><th colspan=3>${await t`VAT`} ${rate}%<td>${money(value)}`);
   }
 
-  return html.async`<div class="-m-cart">
+  return html.async`<div>
   <table class=u2-table>
     <thead>
       <tr>

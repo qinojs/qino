@@ -12,41 +12,18 @@
           },
           "price": {
             "type": "number",
-            "x-index": true
+            "x-index": true,
+            "default": 0
           },
           "weight": {
-            "type": "number"
+            "type": "number",
+            "default": 0
           }
         },
         "required": [
           "id",
           "price",
           "weight"
-        ]
-      }
-    },
-    "shp3_product_vat": {
-      "additionalProperties": {
-        "properties": {
-          "product_id": {
-            "type": "integer",
-            "x-index": "primary",
-            "x-qg-parent": "shp3_product",
-            "x-qg-on-parent-copy": "cascade",
-            "x-qg-on-parent-delete": "cascade"
-          },
-          "country": {
-            "type": "string",
-            "maxLength": 2,
-            "x-index": "primary"
-          },
-          "rate": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "product_id",
-          "country"
         ]
       }
     },
@@ -96,6 +73,25 @@
             "type": "integer",
             "x-index": "primary",
             "x-autoincrement": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_changed": {
+            "type": "integer",
+            "default": 0,
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
           },
           "usr_id": {
             "type": "integer",
@@ -180,6 +176,18 @@
             "x-index": "primary",
             "x-autoincrement": true
           },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "log_id_ch": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
           "order_id": {
             "type": "integer",
             "x-index": true,
@@ -197,7 +205,7 @@
           },
           "title": {
             "type": "string",
-            "maxLength": 191
+            "maxLength": 255
           },
           "description": {
             "type": "string",
@@ -213,7 +221,7 @@
           },
           "config": {
             "type": "string",
-            "maxLength": 65535
+            "maxLength": 16777215
           }
         },
         "required": [
@@ -245,7 +253,7 @@
           },
           "title": {
             "type": "string",
-            "maxLength": 191
+            "maxLength": 255
           },
           "price": {
             "type": "number",
@@ -265,18 +273,29 @@
         ]
       }
     },
-    "usr": {
+    "shp3_product_mwst": {
       "additionalProperties": {
         "properties": {
-          "shp3_ship_country": {
-            "type": "string",
-            "maxLength": 2
+          "product_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "shp3_product",
+            "x-qg-on-parent-copy": "cascade",
+            "x-qg-on-parent-delete": "cascade"
           },
-          "shp3_bill_country": {
+          "country": {
             "type": "string",
-            "maxLength": 2
+            "maxLength": 2,
+            "x-index": "primary"
+          },
+          "rate": {
+            "type": "number"
           }
-        }
+        },
+        "required": [
+          "product_id",
+          "country"
+        ]
       }
     }
   }

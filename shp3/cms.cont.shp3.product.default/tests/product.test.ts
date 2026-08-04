@@ -10,7 +10,7 @@ async function shop() {
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../plugin.ts"), name);
   await app.init();
-  await app.db.table("page").insert({ id: 10, name: "Cup" });
+  await app.db.table("page").insert({ id: 10, name: "Cup", access: 1 });
   await app.db.table("shp3_product").insert({ id: 10, price: 12, weight: 0.5 });
   return app;
 }

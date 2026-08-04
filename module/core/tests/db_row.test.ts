@@ -280,3 +280,39 @@ Deno.test("DbRow: a second module must extend the class, it cannot replace it", 
     await db.close();
   }
 });
+
+Deno.test("Db: tables stay reachable while loadTables runs", async () => {
+  const db = await testDb();
+  try {
+    // A session timer or a parallel request must not meet a half-introspected database, so the
+    // check runs inside the introspection itself — waiting for a real overlap never interleaves.
+    const columns = db.columns.bind(db);
+    let missed = "";
+    let calls = 0;
+    (db as unknown as { columns: typeof columns }).columns = (table: string) => {
+      calls++;
+      try { db.table("shop_order"); } catch (e) { missed ||= (e as Error).message; }
+      return columns(table);
+    };
+    await db.loadTables();
+    assert(calls > 0);
+    assertEquals(missed, "");
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("DbRow: a numeric column reads back as a number, whatever the driver hands over", async () => {
+  const db = await testDb();
+  try {
+    const t = db.table("shop_order");
+    await t.insert({ id: 1, title: "One" });
+    const row = (await t.get<Order>(1))!;
+    row.$receive({ id: "1", title: "One", time_ordered: "1700000000.0000", note: "7" });
+    assertEquals(row.id, 1);
+    assertEquals(row.time_ordered, 1700000000);
+    assertEquals(row.note, "7"); // a string column stays a string
+  } finally {
+    await db.close();
+  }
+});

@@ -3,6 +3,7 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { bindApp } from "./lib/shop.ts";
 import { registerRows, type Order, type OrderItem, type Product } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
+import { cms } from "../../module/cms/mod.ts";
 
 export const name = "shp3";
 export const description = "Shop: products, cart, orders. Prices, VAT, shipping and payment are events.";
@@ -96,5 +97,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   on("shp3:product-check", async (e: { product: Product; errors: Record<string, string> }) => {
     if (e.product.price < 0) e.errors["not orderable"] = await t`This product cannot be ordered`;
+    // A product whose page went offline or private must not stay in a cart either.
+    const node = await cms(app).node(Number(e.product.$id));
+    if (await node.access() < 1) e.errors["no access"] = await t`You have no access to this product`;
   });
 }

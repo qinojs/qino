@@ -53,27 +53,27 @@ export class DbTable {
     return this.#children;
   }
 
+  /** Read the column metadata. Built aside and swapped in, so nothing ever sees a table
+   *  that has lost its fields while the introspection query is in flight. */
   async reloadFields(): Promise<void> {
-    this.#fields = null;
+    const fields: Record<string, DbField> = {};
+    const primaries: DbField[] = [];
+    let autoIncrement: DbField | undefined;
+    for (const vs of await this.#db.columns(this.#name)) {
+      const field = fields[vs.Field] = new DbField(this, vs.Field, vs);
+      if (field.isPrimary()) primaries.push(field);
+      if (field.isAutoIncrement()) autoIncrement = field;
+    }
+    this.#fields = fields;
+    this.#primaries = primaries;
+    this.#autoIncrement = autoIncrement;
     this.#children = null;
-    await this.init();
   }
 
   field(n: string): DbField | undefined { return this.#fields?.[n]; }
 
   async init(): Promise<Record<string, DbField>> {
-    if (this.#fields === null) {
-      const fields = await this.#db.columns(String(this));
-      this.#fields = {};
-      this.#primaries = [];
-      this.#autoIncrement = undefined;
-      for (const field of fields) {
-        const name = field.Field;
-        this.#fields[name] = new DbField(this, name, field);
-        if (this.#fields[name].isPrimary()) this.#primaries.push(this.#fields[name]);
-        if (this.#fields[name].isAutoIncrement()) this.#autoIncrement = this.#fields[name];
-      }
-    }
+    if (this.#fields === null) await this.reloadFields();
     return this.#fields!;
   }
 

@@ -14,9 +14,14 @@ cms.initNode("cont.shp3.order.cart1", (el) => {
   });
 
   el.addEventListener("click", (e) => {
-    const button = e.target.closest(".-rem button");
+    const button = e.target.closest(".-rem button, .-resolve");
     if (!button) return;
     const tr = button.closest("[itemid]");
-    node.api.post({ remove: itemId(button) }).then((r) => { if (r) tr.remove(); showTotal(r); });
+    const action = button.classList.contains("-resolve") ? "resolve" : "remove";
+    node.api.post({ [action]: itemId(button) }).then((r) => {
+      if (!r) return;
+      action === "remove" ? tr.remove() : location.reload(); // the fix may have changed prices
+      showTotal(r);
+    });
   });
 });

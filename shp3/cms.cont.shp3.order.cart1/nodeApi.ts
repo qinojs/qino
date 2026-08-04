@@ -13,6 +13,9 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
     const quantity = Math.max(0, Math.trunc(Number(vars.value)));
     if (!quantity) await order.itemRemove(item);
     else await item.setQuantity(quantity);
+  } else if ("resolve" in vars) {
+    if (!await order.item(vars.resolve)) return false;
+    await order.resolveItem(vars.resolve);
   } else if ("remove" in vars) {
     if (!await order.item(vars.remove)) return false;
     await order.itemRemove(vars.remove);

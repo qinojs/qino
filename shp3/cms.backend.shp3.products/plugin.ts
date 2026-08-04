@@ -44,7 +44,7 @@ async function render(node: Node): Promise<HtmlString> {
           <th> ${t`Name`}
           <th> ${t`Price`}
           <th> ${t`Weight`}
-          ${hasStock ? html`<th> ${t`Stock`}` : ""}
+          ${hasStock ? html`<th> ${await t`Stock`}` : ""}
       <tbody>${html.join(trs)}
     </table>
   </div>

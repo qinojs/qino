@@ -172,15 +172,15 @@ export class Db extends Emitter<DbEvents> {
 
   /** Introspect the current tables into memory. Run after the schema is migrated. */
   async loadTables(): Promise<void> {
-    const tables = await this.#driver.listTables();
-    const known = this.#tables;
-    this.#tables = {};
-    for (const table of tables) {
+    const tables: Record<string, DbTable> = {};
+    for (const name of await this.#driver.listTables()) {
       // Keep the object a table already has: installing a module re-runs this, and a fresh
       // DbTable would drop its row class and identity map.
-      this.#tables[table] = known[table] ?? new DbTable(this, table);
-      await (known[table] ? this.#tables[table].reloadFields() : this.#tables[table].init());
+      tables[name] = this.#tables[name] ?? new DbTable(this, name);
+      await tables[name].reloadFields();
     }
+    this.#tables = tables; // swapped in one go — introspection takes a while, and a timer or a
+                           // parallel request must never meet a half-filled database
   }
 
   table(name: string): DbTable {
