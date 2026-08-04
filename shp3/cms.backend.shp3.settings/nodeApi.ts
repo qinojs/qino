@@ -34,7 +34,13 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
   if ("currency" in vars) {
     const id = String(vars.currency);
     const field = String(vars.field ?? "");
-    if (!CURRENCY.has(field) || !await db.one`SELECT id FROM shp3_currency WHERE id = ${id}`) return false;
+    if (!CURRENCY.has(field)) return false;
+    if (!await db.one`SELECT id FROM shp3_currency WHERE id = ${id}`) {
+      // The shop takes a currency into its list by activating it; the factor arrives with the rates.
+      if (field !== "active" || !vars.value || !await db.one`SELECT id FROM currency WHERE id = ${id}`) return false;
+      await db.table("shp3_currency").insert({ id, factor: 1, smallest: 0.01, smallest_closing: 0.01, active: true });
+      return 1;
+    }
     // The main currency is the yardstick: every factor is relative to it, so switching it rescales
     // them all, and the new one starts at 1 — the same move the PHP backend made.
     if (field === "main") {
@@ -43,6 +49,8 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
       await db.table("shp3_currency").update({ id, factor: 1, active: true, main: true });
       return 1;
     }
+    // A factor the rate job owns is not the panel's to change.
+    if (field === "factor" && String(await app.settings["locale.currency"].update ?? "never") !== "never") return false;
     const value = field === "active" ? !!vars.value : Number(vars.value);
     return await db.table("shp3_currency").update({ id, [field]: value }) ? 1 : false;
   }

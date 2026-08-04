@@ -31,7 +31,7 @@ async function render(node: Node): Promise<HtmlString> {
   const serverInfoHtml = html.async`
 <div class=u2-card>
   <div class=-head>${t`System info`}</div>
-  <div class=-body style="padding:0">
+  <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
       <tr><td>${t`Deno Version`}:<td>${Deno.version.deno}
       <tr><td>${t`PID`}:<td>${Deno.pid}
@@ -109,7 +109,7 @@ async function render(node: Node): Promise<HtmlString> {
   const localesBox = html.async`
 <div class=u2-card>
   <div class=-head>${t`Time`}</div>
-  <div class=-body style="padding:0">
+  <div style="padding:0">
     <table class=u2-table>
       <tr>
         <td>${t`OS`}

@@ -52,7 +52,7 @@ async function render(node: Node): Promise<HtmlString> {
   const recentBox = html.async`
 <div class=u2-card>
   <div class=-head>${app.t`Recently edited`}</div>
-  <div class=-body style="padding:0">
+  <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead><tr>
         <th>${app.t`Node`}
@@ -72,7 +72,7 @@ async function render(node: Node): Promise<HtmlString> {
   const topBox = html.async`
 <div class=u2-card>
   <div class=-head>${app.t`Nodes with most history`}</div>
-  <div class=-body style="padding:0">
+  <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead><tr><th>${app.t`Node`}<th style="text-align:right">${app.t`Changes`}
       <tbody>${topParts.length ? html.join(topParts) : html.async`<tr><td colspan=2>${app.t`No history yet`}`}

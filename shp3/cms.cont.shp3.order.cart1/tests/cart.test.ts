@@ -6,7 +6,7 @@ import { cms as panel } from "../plugin.ts";
 
 async function shop() {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("locale.country").add("locale.currency");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../../shp3.shipping.pickup/plugin.ts"), "shp3.shipping.pickup");
   await app.init();

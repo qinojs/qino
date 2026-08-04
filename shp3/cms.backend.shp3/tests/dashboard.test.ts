@@ -10,7 +10,7 @@ const BACKEND = ["cms.backend.shp3", "cms.backend.shp3.orders1", "cms.backend.sh
 async function shop() {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json"))
-    .add("cms").add("cms.backend").add("locale.country").add("locale.currency");
+    .add("cms").add("cms.backend").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   for (const m of BACKEND) app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);
   await app.init(); // install() runs on first link

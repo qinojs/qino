@@ -42,7 +42,7 @@ async function render(node: Node): Promise<HtmlString> {
   const storageBox = html.async`
 <div class=u2-card>
   <div class=-head>${t`History storage`}</div>
-  <div class=-body style="padding:0">
+  <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead><tr>
         <th>${t`Table`}
@@ -66,7 +66,7 @@ async function render(node: Node): Promise<HtmlString> {
   const spacesBox = html.async`
 <div class=u2-card style="flex-grow:0">
   <div class=-head>${t`Spaces`}</div>
-  <div class=-body style="padding:0">
+  <div style="padding:0">
     <table class=u2-table>
       <thead><tr>
         <th>${t`Space`}

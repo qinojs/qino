@@ -9,7 +9,7 @@ const call = (path: string[], verb: string, input?: unknown) =>
 
 async function shop() {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("locale.country").add("locale.currency");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../../shp3.shipping.pickup/plugin.ts"), "shp3.shipping.pickup");
   app.modules.add(import.meta.resolve("../../cms.cont.shp3.order.addresses2/plugin.ts"), "cms.cont.shp3.order.addresses2"); // owns the address columns

@@ -2,14 +2,14 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
 import { adoptCart } from "../lib/cart.ts";
 import { cms } from "../../../module/cms/mod.ts";
-import { cart, sellsTo, shopCountries, shopCountry, type Currency, type Order, type Product } from "../mod.ts";
+import { cart, sellsTo, shopCountries, shopCountry, syncFactors, type Currency, type Order, type Product } from "../mod.ts";
 
 const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** digits;
 
 // Prices include VAT (the default), so a 12.00 cup is 11.10 net at 8.1 %.
 async function shop(...modules: string[]) {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("locale.country").add("locale.currency");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of modules) app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);
   await app.init();
@@ -302,6 +302,27 @@ Deno.test("shp3: what the guest collected follows them into the login", async ()
       assertEquals((await guest.items()).length, 1);
       assertEquals(Number(await app.db.one`SELECT usr_id FROM shp3_order WHERE id = ${stale.$id}`), 0); // released
     });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("shp3: fresh reference rates become the shop's factors", async () => {
+  const app = await shop();
+  const db = app.db;
+  try {
+    // CHF is the shop's main currency; the rates say what one USD buys
+    await db.table("currency").update({ id: "CHF", rate_to_usd: 0.8 });
+    await db.table("currency").update({ id: "EUR", rate_to_usd: 0.88 });
+    await db.table("currency").update({ id: "USD", rate_to_usd: 1 });
+
+    await syncFactors(db);
+    await db.flush();
+
+    assertEquals(await db.one`SELECT factor FROM shp3_currency WHERE id = ${"CHF"}`, 1); // the yardstick
+    assertEquals(Number(await db.one`SELECT factor FROM shp3_currency WHERE id = ${"EUR"}`).toFixed(4), "1.1000");
+    assertEquals(Number(await db.one`SELECT factor FROM shp3_currency WHERE id = ${"USD"}`).toFixed(4), "1.2500");
+    assertEquals(await db.one`SELECT factor FROM shp3_currency WHERE id = ${"GBP"}`, 0.78); // no rate, untouched
   } finally {
     await app.db.close();
   }

@@ -182,7 +182,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
   </div>
   <div class=u2-card style="flex:1 1 25rem">
     <div class=-head>${t`Preview`}</div>
-    <div class=-body style="padding:0">${preview}</div>
+    <div style="padding:0">${preview}</div>
   </div>
 </div>`;
 }

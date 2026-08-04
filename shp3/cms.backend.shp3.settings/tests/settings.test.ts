@@ -6,7 +6,7 @@ import { cms as panel } from "../plugin.ts";
 
 async function shop() {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("locale.country").add("locale.currency");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   await app.init();
   return app;
@@ -82,6 +82,48 @@ Deno.test("backend.shp3.settings: the panel renders every box, nothing left unre
       assertStringIncludes(html, "Switzerland"); // named by Intl in the backend language
       assertStringIncludes(html, "class=-search"); // the rest of the world is searchable
     });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("backend.shp3.settings: a factor the rate job owns is not edited here", async () => {
+  const app = await shop();
+  try {
+    assertEquals(await call(app, { currency: "EUR", field: "factor", value: 0.95 }), 1); // no job: the shop's own
+
+    await app.settings["locale.currency"].update("daily");
+    assertEquals(await call(app, { currency: "EUR", field: "factor", value: 2 }), false);
+    assertEquals(await app.db.one`SELECT factor FROM shp3_currency WHERE id = ${"EUR"}`, 0.95);
+    assertEquals(await call(app, { currency: "EUR", field: "smallest", value: 0.05 }), 1); // the rest stays editable
+
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+    await requestStorage.run(ctx, async () => {
+      const html = String(await panel.node.render({ app } as unknown as Node));
+      assertStringIncludes(html, "factors follow the exchange rates");
+    });
+  } finally {
+    await app.db.close();
+  }
+});
+
+Deno.test("backend.shp3.settings: every currency is offered, the shop picks", async () => {
+  const app = await shop();
+  try {
+    await app.db.table("country").update({ id: "JP", shp3_enabled: true }); // pays in JPY
+    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+    await requestStorage.run(ctx, async () => {
+      const html = String(await panel.node.render({ app } as unknown as Node));
+      assertStringIncludes(html, 'itemid=JPY'); // not in shp3_currency, still listed
+      assertStringIncludes(html, "-needed"); // and marked: an active country pays in it
+    });
+
+    // ticking "active" takes it on
+    assertEquals(await call(app, { currency: "JPY", field: "active", value: true }), 1);
+    assertEquals(await app.db.one`SELECT active FROM shp3_currency WHERE id = ${"JPY"}`, 1);
+    assertEquals(await call(app, { currency: "QQQ", field: "active", value: true }), false);
+    // an untouched one stays out of the shop's list
+    assertEquals(await app.db.one`SELECT id FROM shp3_currency WHERE id = ${"NOK"}`, undefined);
   } finally {
     await app.db.close();
   }

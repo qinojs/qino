@@ -52,6 +52,14 @@ While no country is marked the shop sells everywhere — nothing has to be confi
 `shp3.location.country` says where the shop stands: it is the country a price is calculated for
 until the customer names one, and it stands in for `shp3::LiveCountry()` of the PHP version.
 
+## Currencies
+
+`shp3_currency` stays the shop's own: which currencies it offers, the rounding steps, which one is
+main — and `factor`, always relative to the main currency. The world's rates live in
+`locale.currency`. If that module fetches them (`never`/`daily`/`hourly`), every factor follows on
+each run and the shop panel stops offering them for editing; with fetching off they are the shop's
+to set, as in the PHP original.
+
 ## Client side
 
 `shp3/pub/shp3.js` is shared by every shop page. It needs no wiring:

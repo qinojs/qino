@@ -109,7 +109,7 @@ function render(node: Node): Promise<HtmlString> {
     <div>
       <input type=search id=aiSessionSearch placeholder="${app.t`Search bot or message content`}…" style="width:18.75rem;max-width:100%">
     </div>
-    <div class=-body style="padding:0;overflow:auto">
+    <div style="padding:0;overflow:auto">
       <table class=u2-table>
         <thead><tr>
           <th>ID

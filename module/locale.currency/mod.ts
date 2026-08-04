@@ -2,6 +2,7 @@
 // the one thing no standard knows: the exchange rate.
 
 import type { Db } from "../core/mod.ts";
+export { updateRates } from "./lib/rates.ts";
 
 export const currency = {
   /** Every currency Intl knows. */

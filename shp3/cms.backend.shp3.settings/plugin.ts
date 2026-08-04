@@ -62,21 +62,49 @@ async function currencies(node: Node): Promise<HtmlString> {
   const { app } = node;
   const t = app.t;
   const lang = getCtx().lang;
-  const rows = await app.db.query`SELECT * FROM shp3_currency ORDER BY main DESC, active DESC, id`;
+  // Every currency there is; the shop's own row exists for the ones it prices in.
+  const rows = await app.db.query`SELECT c.id, s.factor, s.smallest, s.smallest_closing, s.active, s.main
+    FROM currency c LEFT JOIN shp3_currency s ON s.id = c.id`;
+  // While rates are fetched, the factors come from locale.currency — editing them here would
+  // only survive until the next run.
+  const fromRates = String(await app.settings["locale.currency"].update ?? "never") !== "never";
 
-  const trs = rows.map((vs) => html`<tr itemid=${vs.id}>
-    <td>${vs.id} <small>${currency.name(String(vs.id), lang)}</small>
-    <td><input class=-cur data-field=factor type=number step=any value="${vs.factor}" ${vs.main ? html.raw("disabled") : ""}>
-    <td><input class=-cur data-field=smallest type=number step=any value="${vs.smallest}">
-    <td><input class=-cur data-field=smallest_closing type=number step=any value="${vs.smallest_closing}">
+  // A country the shop delivers to pays in its own currency — worth offering.
+  const wanted = new Map<string, string[]>();
+  for (const c of await app.db.query`SELECT id, currency FROM country WHERE shp3_enabled = ${true} AND currency != ${""}`) {
+    wanted.set(String(c.currency), [...wanted.get(String(c.currency)) ?? [], String(c.id)]);
+  }
+
+  const collator = new Intl.Collator(lang);
+  const named = rows.map((vs) => ({ vs, title: currency.name(String(vs.id), lang) }));
+  named.sort((a, b) =>
+    Number(!!b.vs.active) - Number(!!a.vs.active) ||
+    Number(wanted.has(String(b.vs.id))) - Number(wanted.has(String(a.vs.id))) ||
+    collator.compare(a.title, b.title)
+  );
+
+  const trs = named.map(({ vs, title }) => {
+    const has = vs.factor != null; // no row yet: the shop does not price in it
+    const needed = wanted.get(String(vs.id));
+    return html`<tr itemid=${vs.id} class="${vs.active ? "-on" : ""}">
+    <td>${vs.id} <small>${title}</small>
+      ${needed ? html`<small class=-needed>${needed.join(", ")}</small>` : ""}
+    <td><input class=-cur data-field=factor type=number step=any value="${has ? vs.factor : ""}" ${vs.main || fromRates || !has ? html.raw("disabled") : ""}>
+    <td><input class=-cur data-field=smallest type=number step=any value="${has ? vs.smallest : ""}" ${has ? html.raw("") : html.raw("disabled")}>
+    <td><input class=-cur data-field=smallest_closing type=number step=any value="${has ? vs.smallest_closing : ""}" ${has ? html.raw("") : html.raw("disabled")}>
     <td><input class=-cur data-field=active type=checkbox ${vs.active ? html.raw("checked") : ""} ${vs.main ? html.raw("disabled") : ""}>
-    <td><input class=-cur data-field=main type=radio name=main ${vs.main ? html.raw("checked") : ""}>`);
+    <td><input class=-cur data-field=main type=radio name=main ${vs.main ? html.raw("checked") : ""} ${has ? html.raw("") : html.raw("disabled")}>`;
+  });
 
-  return html.async`<div class=u2-card style="flex:1 1 30rem">
-    <div class=-head>${t`Currencies`}</div>
-    <div style="overflow:auto; padding:0">
+  return html.async`<div class=u2-card style="flex:0 1 auto">
+    <div class=-head>
+      ${t`Currencies`}
+      ${fromRates ? html`<small>${await t`factors follow the exchange rates`}</small>` : ""}
+    </div>
+    <div><input type=search class=-search placeholder="${t`Search`}…"></div>
+    <div style="max-height:31rem; overflow:auto; padding:0">
       <table class=u2-table>
-        <thead>
+        <thead style="position:sticky; top:0">
           <tr>
             <th> ${t`Currency`}
             <th> ${t`Factor`}
@@ -108,11 +136,11 @@ async function countries(node: Node): Promise<HtmlString> {
     </label>
     <td><input class=-country data-field=shp3_default_vat_rate type=number step=any style="width:5rem" value="${vs.shp3_default_vat_rate}">`);
 
-  return html.async`<div class=u2-card style="flex:1 1 25rem">
+  return html.async`<div class=u2-card style="flex:0 1 auto">
     <div class=-head>
       ${t`Countries`}
-      <input type=search class=-search placeholder="${t`Search`}…">
     </div>
+    <div><input type=search class=-search placeholder="${t`Search`}…"></div>
     <div style="max-height:31rem; overflow:auto; padding:0">
       <table class=u2-table>
         <thead style="position:sticky; top:0">

@@ -202,7 +202,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString | str
       <td style="white-space:nowrap"><u2-time datetime="${iso}" type=relative></u2-time>
       <td><a href="${url}" target=_blank>${title}</a>`);
   }
-  return html`<div class=-body style="padding:0">
+  return html`<div style="padding:0">
     <table class=u2-table style="vertical-align:top">${html.join(trs)}</table>
   </div>`;
 }

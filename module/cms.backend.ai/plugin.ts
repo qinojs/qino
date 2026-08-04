@@ -301,7 +301,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
 
   <div class=u2-card style="flex-grow:0">
     <div class=-head>Defaults</div>
-    <div class=-body style="padding:0">${defaultsOverview(allModels, providersById)}</div>
+    <div style="padding:0">${defaultsOverview(allModels, providersById)}</div>
   </div>
 
   <div class=u2-card style="min-width:40rem">

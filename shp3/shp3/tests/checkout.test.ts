@@ -11,7 +11,7 @@ const call = (path: string[], verb: string, input?: unknown) =>
 
 async function shop(...extra: string[]) {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
-  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("locale.country").add("locale.currency");
+  app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of ["shp3.shipping.pickup", "shp3.payment.invoice", "shp3.payment.advance", "cms.cont.shp3.order.addresses2", ...extra]) {
     app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);

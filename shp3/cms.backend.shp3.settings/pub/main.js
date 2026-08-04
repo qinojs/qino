@@ -12,9 +12,10 @@ cms.initNode("backend.shp3.settings", (el) => {
 
     const cur = e.target.closest("input.-cur");
     if (cur) {
-      // Switching the main currency rescales every factor — the numbers on screen are stale then.
+      // Taking a currency on brings its own fields with it, a new main rescales every factor.
+      const reload = cur.dataset.field === "active" || cur.dataset.field === "main";
       node.api.post({ currency: id(cur), field: cur.dataset.field, value: value(cur) })
-        .then(() => { if (cur.dataset.field === "main") cms.reloadNode(nid); });
+        .then(() => { if (reload) cms.reloadNode(nid); });
       return;
     }
 
@@ -25,12 +26,14 @@ cms.initNode("backend.shp3.settings", (el) => {
     }
   });
 
-  // The countries it sells to are on top; the rest is what the search is for.
-  const search = el.querySelector(".-search");
-  search?.addEventListener("input", () => {
+  // What the shop uses is on top; the rest of the list is what the search is for. Delegated, so
+  // it survives a reload of the node.
+  el.addEventListener("input", (e) => {
+    const search = e.target.closest(".-search");
+    if (!search) return;
     const term = search.value.trim().toLowerCase();
     for (const tr of search.closest(".u2-card").querySelectorAll("tbody tr")) {
-      tr.hidden = !!term && !tr.textContent.toLowerCase().includes(term);
+      tr.style.display = !term || tr.textContent.toLowerCase().includes(term) ? "" : "none";
     }
   });
 });
