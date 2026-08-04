@@ -8,12 +8,12 @@ export const needs = ["shp3"];
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   await shp3(app).registerMethod("shippings", "pickup", "Abholung");
 
-  app.on("shp3:shipping-cost", (e: { shipping: string; cost: number }) => {
+  shp3(app).on("shipping-cost", (e: { shipping: string; cost: number }) => {
     if (e.shipping === "pickup") e.cost = 0;
   }, { signal });
 
   // Cash needs someone to hand it to.
-  app.on("shp3:payments", async (e: { order: { activeShipping(): Promise<string> }; payments: Record<string, string> }) => {
+  shp3(app).on("payments", async (e: { order: { activeShipping(): Promise<string> }; payments: Record<string, string> }) => {
     if (await e.order.activeShipping() !== "pickup") delete e.payments.cash;
   }, { signal });
 }

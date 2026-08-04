@@ -1,20 +1,45 @@
 // The shop of one app: everything that needs its settings or events hangs here — like mail(app)
 // and ai(app). What gets by with its arguments stays a free function (ensureProduct, cart).
 
-import { $item, type App, type Db, itemReadDeep } from "../../../module/core/mod.ts";
+import { $item, type App, type Db, Emitter, itemReadDeep } from "../../../module/core/mod.ts";
 import type { ItemProxy } from "../../../module/core/deps.ts";
-import type { Currency } from "./rows.ts";
+import type { Currency, GeneratedItem, Order, OrderItem, Product } from "./rows.ts";
 
 export type MethodKind = "payments" | "shippings";
+
+type Errors = Record<string, string>;
+type PricePhase = "initial" | "additions" | "discount" | "final";
+
+/** What the shop announces. Listen with `shp3(app).on(...)`, not on the app. */
+export type Shp3Events =
+  & { [K in PricePhase as `price-${K}`]: { product: Product; price: number; quantity?: number; country?: string; currency?: Currency; config?: unknown; grps?: number[]; time: number } }
+  & {
+    "product-check": { product: Product; errors: Errors };
+    "item-title": { product: Product; title: string };
+    "item-description": { item: OrderItem; description: string };
+    "item-quantity": { item: OrderItem; quantity: number };
+    "item-weight": { item: OrderItem; weight: number };
+    "item-check": { item: OrderItem; errors: Errors };
+    "payments": { order: Order; payments: Record<string, string> };
+    "shippings": { order: Order; shippings: Record<string, string> };
+    "shipping-cost": { order: Order; shipping: string; cost: number };
+    "generated-items": { order: Order; items: GeneratedItem[] };
+    "order-check": { order: Order; errors: Errors };
+    "order-try": { order: Order; prevent: boolean };
+    "ordered": { order: Order };
+    "ordered-after": { order: Order };
+    "paid": { order: Order; value: number };
+  };
 type Method = { enabled?: boolean; description?: string; sort?: number };
 
 const instances = new WeakMap<App, Shp3>();
 const byDb = new WeakMap<Db, Shp3>(); // Db is per App, so this never mixes tenants
 
-export class Shp3 {
+export class Shp3 extends Emitter<Shp3Events> {
   #app: App;
 
   constructor(app: App) {
+    super();
     this.#app = app;
   }
   get app(): App { return this.#app; }

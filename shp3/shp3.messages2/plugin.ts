@@ -1,6 +1,6 @@
 import { hee, type App } from "../../module/core/mod.ts";
 import { mail } from "../../module/mail/mod.ts";
-import type { Order } from "../shp3/mod.ts";
+import { shp3, type Order } from "../shp3/mod.ts";
 
 export const name = "shp3.messages2";
 export const description = "Sends the order confirmation — to the customer, to the shop, or both.";
@@ -20,7 +20,7 @@ export const settingsSchema = {
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // The order is placed and saved by now. A mail that cannot go out is worth a log line,
   // never a failed checkout for a customer whose order went through.
-  app.on("shp3:ordered", ({ order }: { order: Order }) =>
+  shp3(app).on("ordered", ({ order }: { order: Order }) =>
     confirm(app, order).catch((e) => console.error(`shp3.messages2: order ${order.$id} not confirmed:`, e)), { signal });
 }
 

@@ -1,6 +1,6 @@
 import { hee, type App } from "../../module/core/mod.ts";
 import { mail } from "../../module/mail/mod.ts";
-import { Product, type Order, type OrderItem } from "../shp3/mod.ts";
+import { Product, shp3, type Order, type OrderItem } from "../shp3/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
 export const name = "shp3.stock";
@@ -26,12 +26,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.db.table("shp3_product").rowClass = StockProduct;
 
   // A fixed stock is a hard limit — nobody orders what is not there.
-  app.on("shp3:item-quantity", async (e: { item: OrderItem; quantity: number }) => {
+  shp3(app).on("item-quantity", async (e: { item: OrderItem; quantity: number }) => {
     const product = await e.item.product() as StockProduct | undefined;
     if (product?.stock_is_fix) e.quantity = Math.min(product.stock, e.quantity);
   }, { signal });
 
-  app.on("shp3:ordered", async ({ order }: { order: Order }) => {
+  shp3(app).on("ordered", async ({ order }: { order: Order }) => {
     for (const item of await order.items()) {
       const product = await item.product() as StockProduct | undefined;
       if (!product) continue;

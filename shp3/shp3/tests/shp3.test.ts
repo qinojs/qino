@@ -57,7 +57,7 @@ Deno.test("shp3: a price event bends the price", async () => {
   const app = await shop();
   try {
     // Half price from ten pieces on — the kind of rule a discount module adds.
-    app.on("shp3:price-discount", (e: { quantity?: number; price: number }) => {
+    shp3(app).on("price-discount", (e: { quantity?: number; price: number }) => {
       if ((e.quantity ?? 0) >= 10) e.price = e.price / 2;
     });
     const order = (await newOrder(app))!;
@@ -75,7 +75,7 @@ Deno.test("shp3: a price event bends the price", async () => {
 Deno.test("shp3: generated items join the total and are written when placing", async () => {
   const app = await shop();
   try {
-    app.on("shp3:generated-items", (e: { items: unknown[] }) => {
+    shp3(app).on("generated-items", (e: { items: unknown[] }) => {
       e.items.push({ name: "shipping", title: "Shipping", price: 7, vat_rate: 8.1, sort: 1 });
     });
     const order = (await newOrder(app))!;
@@ -189,7 +189,7 @@ Deno.test("shp3: the price passes four phases, in order", async () => {
   try {
     const seen: string[] = [];
     for (const phase of ["initial", "additions", "discount", "final"]) {
-      app.on(`shp3:price-${phase}`, (e: { price: number }) => {
+      shp3(app).on(`price-${phase}` as never, (e: { price: number }) => {
         seen.push(`${phase}:${e.price}`);
         if (phase === "initial") e.price = 100;
         if (phase === "additions") e.price += 20;

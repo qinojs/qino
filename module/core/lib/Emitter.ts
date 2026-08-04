@@ -6,7 +6,7 @@ export class Emitter<Events extends Record<string, unknown>> {
     #events: { [K in keyof Events]?: Listener<Events[K]>[] } = {};
 
     // `signal`: abort removes the listener again — the handle for runtime module unlink.
-    on<K extends string & keyof Events>(name: K, fn: Listener<Events[K]>, opts?: { signal?: AbortSignal }) {
+    on<K extends string & keyof Events>(name: K, fn: Listener<Events[K]>, opts?: { signal?: AbortSignal }): void {
         const signal = opts?.signal;
         if (signal?.aborted) return;
         const list = (this.#events[name] ??= []);

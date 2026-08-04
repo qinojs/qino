@@ -1,7 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
 import type { Node } from "../../../module/cms/mod.ts";
-import { cart } from "../../shp3/mod.ts";
+import { cart, shp3 } from "../../shp3/mod.ts";
 import { cms as panel } from "../plugin.ts";
 
 async function shop() {
@@ -24,7 +24,7 @@ Deno.test("cart1: what the shop adds itself is a line of its own", async () => {
     const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
     await requestStorage.run(ctx, async () => {
       // a shipping rule that costs something — it is in the total, so it has to be visible
-      app.on("shp3:shipping-cost", (e: { cost: number }) => { e.cost = 7; });
+      shp3(app).on("shipping-cost", (e) => { e.cost = 7; });
       const order = (await cart(ctx))!;
       await order.itemAdd(10, 1);
 

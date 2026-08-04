@@ -54,8 +54,7 @@ export class Product extends DbRow {
   async pricesFor(opts: { currency?: Currency; quantity?: number; country?: string; config?: unknown; grps?: number[]; time?: number }): Promise<{ net: number; gross: number }> {
     // time lets an offer module ask "what would this cost at that moment" — 0 is before any offer.
     const e = { product: this, price: this.price, time: unixTime(), ...opts };
-    const app = shopOf(this.$table.db).app;
-    for (const phase of PRICE_PHASES) await app.fire(`shp3:price-${phase}`, e);
+    for (const phase of PRICE_PHASES) await shopOf(this.$table.db).fire(`price-${phase}`, e);
     const factor = (await this.vatRateFor(opts.country ?? "")) / 100 + 1;
     const price = opts.currency ? opts.currency.change(e.price) : e.price;
     return await shopOf(this.$table.db).vatIncluded()
@@ -66,7 +65,7 @@ export class Product extends DbRow {
   /** What keeps this product out of a cart; empty when it can be sold. */
   async errors(): Promise<Record<string, string>> {
     const e = { product: this, errors: {} as Record<string, string> };
-    await shopOf(this.$table.db).app.fire("shp3:product-check", e);
+    await shopOf(this.$table.db).fire("product-check", e);
     return e.errors;
   }
 }
@@ -98,7 +97,7 @@ export class OrderItem extends DbRow {
     const order = await this.order();
     if (order?.time_ordered) return this.description;
     const e = { item: this, description: "" };
-    await shopOf(this.$table.db).app.fire("shp3:item-description", e);
+    await shopOf(this.$table.db).fire("item-description", e);
     return e.description;
   }
 
@@ -120,7 +119,7 @@ export class OrderItem extends DbRow {
   /** Changing the amount re-prices the row — quantity discounts are a price event. */
   async setQuantity(quantity: number): Promise<this> {
     const e = { item: this, quantity: Math.trunc(quantity) };
-    await shopOf(this.$table.db).app.fire("shp3:item-quantity", e);
+    await shopOf(this.$table.db).fire("item-quantity", e);
     this.quantity = e.quantity;
     this.price = await this.calcPrice();
     return this;
@@ -134,14 +133,14 @@ export class OrderItem extends DbRow {
 
   async weight(): Promise<number> {
     const e = { item: this, weight: (await this.product())?.weight ?? 0 };
-    await shopOf(this.$table.db).app.fire("shp3:item-weight", e);
+    await shopOf(this.$table.db).fire("item-weight", e);
     return e.weight;
   }
 
   /** What is wrong with this line; empty when it is fine. */
   async errors(): Promise<Record<string, string>> {
     const e = { item: this, errors: {} as Record<string, string> };
-    await shopOf(this.$table.db).app.fire("shp3:item-check", e);
+    await shopOf(this.$table.db).fire("item-check", e);
     return e.errors;
   }
 
@@ -184,7 +183,7 @@ export class Order extends DbRow {
   async currencyRow(): Promise<Currency | undefined> {
     const db = this.$table.db;
     const own = this.currency ? await db.table("shp3_currency").get<Currency>(this.currency) : undefined;
-    return own?.active ? own : await shopOf(db).mainCurrency();
+    return own?.active ? own : await shopOf(this.$table.db).mainCurrency();
   }
 
   /** Switching currency re-prices every line — a stored price is in the order's currency. */
@@ -218,12 +217,12 @@ export class Order extends DbRow {
   /** Enabled methods, minus what a module vetoes for this order. */
   async allowedPayments(): Promise<Record<string, string>> {
     const e = { order: this, payments: await shopOf(this.$table.db).methods("payments") };
-    await shopOf(this.$table.db).app.fire("shp3:payments", e);
+    await shopOf(this.$table.db).fire("payments", e);
     return e.payments;
   }
   async allowedShippings(): Promise<Record<string, string>> {
     const e = { order: this, shippings: await shopOf(this.$table.db).methods("shippings") };
-    await shopOf(this.$table.db).app.fire("shp3:shippings", e);
+    await shopOf(this.$table.db).fire("shippings", e);
     return e.shippings;
   }
 
@@ -240,7 +239,7 @@ export class Order extends DbRow {
   /** What shipping costs — every rule is a listener. */
   async shippingCost(shipping?: string): Promise<number> {
     const e = { order: this, shipping: shipping ?? await this.activeShipping(), cost: 0 };
-    await shopOf(this.$table.db).app.fire("shp3:shipping-cost", e);
+    await shopOf(this.$table.db).fire("shipping-cost", e);
     return (await this.currencyRow())?.changeAndRound(e.cost) ?? e.cost;
   }
 
@@ -289,8 +288,8 @@ export class Order extends DbRow {
       return this.#generated = rows.map((r) => ({ ...r, price: Number(r.price), vat_rate: Number(r.vat_rate) }));
     }
     const e = { order: this, items: [] as GeneratedItem[] };
-    await shopOf(db).app.fire("shp3:generated-items", e);
-    const included = await shopOf(db).vatIncluded();
+    await shopOf(this.$table.db).fire("generated-items", e);
+    const included = await shopOf(this.$table.db).vatIncluded();
     // Keyed by name, like the legacy array: a module replaces another module's line, never doubles it.
     const byName = new Map<string, GeneratedItem>();
     e.items.forEach((item, i) => byName.set(item.name, {
@@ -320,7 +319,7 @@ export class Order extends DbRow {
   /** What blocks this order; empty when it can be placed. */
   async errors(): Promise<Record<string, string>> {
     const e = { order: this, errors: {} as Record<string, string> };
-    await shopOf(this.$table.db).app.fire("shp3:order-check", e);
+    await shopOf(this.$table.db).fire("order-check", e);
     return e.errors;
   }
 
@@ -330,7 +329,7 @@ export class Order extends DbRow {
     for (const item of await this.items()) await item.setQuantity(item.quantity); // let stock and friends look again
     const e = { order: this, errors: await this.errors(), redirect: "", prevent: false };
     e.prevent = Object.keys(e.errors).length > 0;
-    if (!e.prevent) await shopOf(this.$table.db).app.fire("shp3:order-try", e);
+    if (!e.prevent) await shopOf(this.$table.db).fire("order-try", e);
     if (!e.prevent) await this.place();
     return { success: !e.prevent, errors: e.errors, redirect: e.redirect };
   }
@@ -355,16 +354,16 @@ export class Order extends DbRow {
     this.ship_country = this.shipCountry();
     this.time_ordered = unixTime(); // last: everything above still reads the open state
     await db.flush();
-    await shopOf(db).app.fire("shp3:ordered", { order: this });
+    await shopOf(this.$table.db).fire("ordered", { order: this });
     if (!this.cost) await this.pay(0); // nothing to pay
-    await shopOf(db).app.fire("shp3:ordered-after", { order: this }); // everything settled, payment included
+    await shopOf(this.$table.db).fire("ordered-after", { order: this }); // everything settled, payment included
     return this;
   }
 
   async pay(value: number): Promise<this> {
     this.time_paid = unixTime();
     this.paid = Number(this.paid) + value;
-    await shopOf(this.$table.db).app.fire("shp3:paid", { order: this, value });
+    await shopOf(this.$table.db).fire("paid", { order: this, value });
     return this;
   }
 }
@@ -394,7 +393,7 @@ async function productTitle(product: Product, lang?: string) {
   // An untranslated language is an empty string, not null — so each step has to be checked.
   const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def) || node.vs.name;
   const e = { product, title: String(title || product.$id) };
-  await app.fire("shp3:item-title", e);
+  await shopOf(product.$table.db).fire("item-title", e);
   return e.title;
 }
 

@@ -9,6 +9,7 @@ export { App, appPathInstances } from "./lib/App.ts";
 export type { AppEvents } from "./lib/App.ts";
 export { honoAdapter } from "./lib/hono.ts";
 export { getCtx, Ctx, requestStorage } from "./lib/ctx/Ctx.ts";
+export { Emitter } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
 
 // HTML & general utilities
