@@ -10,7 +10,7 @@ Deno.test("cms.backend.superuser: metadata is wired", () => {
 Deno.test("cms.backend.superuser: render handles empty child list", async () => {
   const page = { children: () => new Map() };
   const node = { page: () => page };
-  const out = await cms.node.render(node as any);
+  const out = String(await cms.node.render(node as any));
   assertEquals(out.includes("No widgets available"), true);
 });
 
@@ -24,7 +24,7 @@ Deno.test("cms.backend.superuser: render links child modules", async () => {
   };
   const page = { children: () => new Map([[1, child]]) };
   const node = { page: () => page, app: {} };
-  const out = await cms.node.render(node as any);
+  const out = String(await cms.node.render(node as any));
   assertEquals(out.includes(`href="/backend/superuser?q=&quot;&gt;&lt;script&gt;x&lt;/script&gt;"`), true);
   assertEquals(out.includes(`DB&quot;&gt;&lt;script&gt;x&lt;/script&gt;`), true);
   assertEquals(out.includes("<p>DB stats</p>"), true);

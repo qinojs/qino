@@ -63,7 +63,7 @@ async function authorizeMutation(req: Req, opts: AptFetchOptions, data: RequestD
 }
 
 // Match host:port, not scheme — behind a TLS-terminating proxy the app sees http while the browser sends an https Origin.
-function isTrustedOrigin(req: Req): boolean {
+export function isTrustedOrigin(req: Req): boolean {
   const target = req.url.host;
   const origin = hostOf(req.header("origin"));
   if (origin) return origin === target;

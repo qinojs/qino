@@ -2,6 +2,7 @@ import { cmsCtx } from "./CmsContext.ts";
 import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
+import { postedVars } from "./postedVars.ts";
 import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, isFile, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
 
@@ -157,6 +158,9 @@ export class Node {
     async html(vars: Record<string, any> = {}): Promise<HtmlString> {
         if (!(await this.isReadable())) return html.raw("");
         const ctx = getCtx();
+
+        const posted = postedVars(this.id);
+        if (posted) vars = { ...vars, ...posted };
 
         const renderPath = cmsCtx(ctx).renderPath;
         if (renderPath.has(this.id)) {

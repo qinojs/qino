@@ -137,7 +137,7 @@ Deno.test("history widget: latest change per user, newest first, access-filtered
     }),
   } as never);
 
-  const out = await backendDashboardWidget(app);
+  const out = String(await backendDashboardWidget(app));
   assertEquals(out.includes("Al Ice"), true);              // active editor on an editable page
   assertEquals(out.includes("Cara"), true);
   assertEquals(out.includes("bob@x.y"), false);            // only edited a page with no access → hidden

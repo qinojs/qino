@@ -126,6 +126,14 @@ export class CMS {
     return ret;
   }
 
+  /** Hidden fields addressing `node`, for a JS-free `<form method=post>`. */
+  formFields(node: Node | number): HtmlString {
+    return html.raw(
+      `<input type=hidden name=qcms-node value=${Number(node)}>` +
+      `<input type=hidden name=csrfToken value="${hee(getCtx().csrfToken)}">`,
+    );
+  }
+
   async link(node: Node | number): Promise<HtmlString> {
     const ctx = getCtx();
     const page = await this.node(Number(node));

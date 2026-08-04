@@ -24,6 +24,7 @@ export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";
 export { Access } from "./lib/apt/access.ts";
 export { AptError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/apt/errors.ts";
 export { invoke } from "./lib/apt/invoke.ts";
+export { isTrustedOrigin } from "./lib/apt/fetch.ts";
 export { walk, camelName, checkCollisions } from "./lib/apt/route.ts";
 export type { Route } from "./lib/apt/route.ts";
 export { toTools } from "./lib/apt/toTools.ts";
