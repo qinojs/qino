@@ -4,7 +4,7 @@ import { tableStatus } from "../cms.backend.superuser.db/mod.ts";
 import { findOrphans, maintenanceActions, schemaExtras } from "./lib/cleanup.ts";
 import { indexIssues } from "./lib/indexes.ts";
 import { sequenceIssue } from "./lib/sequences.ts";
-import { isEmptyField, isEmptyTable, sqliteFreeBytes } from "./lib/validate.ts";
+import { isEmptyField, isEmptyTable, longestValue, sqliteFreeBytes } from "./lib/validate.ts";
 import { isLarge } from "./nodeApi.ts";
 
 export function backendDashboardWidget(app: App): HtmlString {
@@ -69,7 +69,7 @@ export async function renderRow(
       <td>${empty ? "yes" : "no"}
       <td><button type=button data-action=drop-table data-table="${table}" u2-confirm="Delete table ${table} and all of its data? This cannot be undone.">delete</button>`];
   } else {
-    const fields = extras.filter((issue) => issue.table === table && issue.field);
+    const fields = extras.filter((issue) => issue.table === table && issue.status === "field-missing-schema");
     schemaRows = await Promise.all(fields.map(async (issue) => {
       const field = issue.field!;
       const empty = isLarge(status) ? null : await isEmptyField(db, table, field);
@@ -107,6 +107,21 @@ export async function renderRow(
     <th>Expected / covered by
     <th>Action`, indexRows);
 
+  const oversized = extras.filter((issue) => issue.table === table && issue.status === "field-oversized");
+  const oversizedRows = await Promise.all(oversized.map(async (issue) => {
+    const longest = isLarge(status) ? null : await longestValue(db, table, issue.field!);
+    return html`<tr>
+      <td><code>${issue.field}</code>
+      <td>${issue.current}
+      <td>${issue.required}
+      <td>${longest == null ? "not checked" : longest}`;
+  }));
+  const oversizedBody = issueTable(`Wider than the schema in ${table}`, html`
+    <th>Field
+    <th>Current
+    <th>Required
+    <th>Longest value`, oversizedRows);
+
   const sequenceBody = sequence
     ? issueTable(`Auto-id sequence in ${table}`, html`
       <th>Field
@@ -119,9 +134,10 @@ export async function renderRow(
       <td><button type=button data-action=sync-sequence data-table="${table}" u2-confirm="Move the auto-id sequence for ${table}.${sequence.field} from ${sequence.current} to ${sequence.max}?">synchronize</button>`])
     : html``;
 
-  const issueCount = tableOrphans.length + schemaRows.length + indexes.length + Number(Boolean(sequence));
+  const issueCount = tableOrphans.length + schemaRows.length + oversizedRows.length + indexes.length + Number(Boolean(sequence));
   const issueCell = issueCount ? html`${issueBadge("orphans", "Orphans", orphanCount, orphanBody)}
       ${issueBadge("schema", "Schema", schemaRows.length, schemaBody)}
+      ${issueBadge("oversized", "Oversized", oversizedRows.length, oversizedBody)}
       ${issueBadge("indexes", "Indexes", indexes.length, indexBody)}
       ${issueBadge("sequence", "Sequence", Number(Boolean(sequence)), sequenceBody)}`
     : html`<u2-ico inline icon=check_circle aria-label=ok>✓</u2-ico>`;

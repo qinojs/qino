@@ -39,6 +39,11 @@ export async function validateTable(db: Db, tableName: string) {
   return issues;
 }
 
+/** Longest value in a character column — tells whether narrowing it would truncate data. */
+export async function longestValue(db: Db, table: string, field: string): Promise<number> {
+  return Number(await db.one`SELECT MAX(${lengthSql(db, field)}) FROM ${sql.id(table)}` ?? 0);
+}
+
 /** True only if an extra field contains no non-null value. */
 export async function isEmptyField(db: Db, table: string, field: string): Promise<boolean> {
   return !await db.one`SELECT 1 FROM ${sql.id(table)} WHERE ${sql.id(field)} IS NOT NULL LIMIT 1`;

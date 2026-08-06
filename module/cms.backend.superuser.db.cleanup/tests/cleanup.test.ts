@@ -4,7 +4,7 @@ import { tableStatus } from "../../cms.backend.superuser.db/mod.ts";
 import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, maintenanceActions, schemaExtras } from "../lib/cleanup.ts";
 import { createMissingIndex, dropRedundantIndex, indexIssues } from "../lib/indexes.ts";
 import { sequenceIssue, syncSequence } from "../lib/sequences.ts";
-import { isEmptyField, validateTable } from "../lib/validate.ts";
+import { isEmptyField, longestValue, validateTable } from "../lib/validate.ts";
 import { cms, name, needs } from "../plugin.ts";
 
 async function testDb(): Promise<Db> {
@@ -72,6 +72,23 @@ Deno.test("cms.backend.superuser.db.cleanup: only removes structures outside the
   await dropExtraField(db, "child", "stale");
   await dropExtraTable(db, "extra");
   assertEquals(schemaExtras(db), []);
+  await db.close();
+});
+
+Deno.test("cms.backend.superuser.db.cleanup: reports columns wider than the schema", async () => {
+  const db = new Db("sqlite:");
+  await db.exec`CREATE TABLE t (id INTEGER PRIMARY KEY AUTOINCREMENT, wide VARCHAR(255), fits VARCHAR(50), note TEXT)`;
+  db.schema = { properties: { t: { additionalProperties: { properties: {
+    id:   { type: "integer", "x-index": "primary" },
+    wide: { type: "string", maxLength: 100 },
+    fits: { type: "string", maxLength: 50 },
+    note: { type: "string", maxLength: 20 },   // TEXT carries no declared length — not comparable
+  } } } } };
+  await db.loadTables();
+  await db.table("t").insert({ wide: "abc", fits: "x", note: "y" });
+
+  assertEquals(schemaExtras(db), [{ table: "t", field: "wide", status: "field-oversized", current: 255, required: 100 }]);
+  assertEquals(await longestValue(db, "t", "wide"), 3);   // narrowing would not truncate
   await db.close();
 });
 

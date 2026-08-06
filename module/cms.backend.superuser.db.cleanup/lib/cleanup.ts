@@ -89,14 +89,21 @@ export async function cleanOrphans(db: Db, tableName: string, fieldName: string)
   return { cleaned, remaining, action: r.field.onParentDelete };
 }
 
+/** Where database and schema drifted apart: leftovers, and columns wider than the schema needs. */
 export function schemaExtras(db: Db) {
   const schema = db.schema?.properties ?? {};
-  const issues: { table: string; field?: string; status: "no-schema-table" | "field-missing-schema" }[] = [];
+  const issues: { table: string; field?: string; status: "no-schema-table" | "field-missing-schema" | "field-oversized"; current?: number; required?: number }[] = [];
   for (const [table, dbTable] of Object.entries(db.tables)) {
     if (!(table in schema)) { issues.push({ table, status: "no-schema-table" }); continue; }
     const fields = schema[table].additionalProperties?.properties ?? {};
-    for (const field of Object.keys(dbTable.fields ?? {})) {
-      if (!(field in fields)) issues.push({ table, field, status: "field-missing-schema" });
+    for (const [field, dbField] of Object.entries(dbTable.fields ?? {})) {
+      if (!(field in fields)) { issues.push({ table, field, status: "field-missing-schema" }); continue; }
+      // The migration only ever widens, so a column can outgrow its schema and stay that way.
+      // Only declared character lengths are comparable — an integer width is a different question.
+      const current = Number(dbField.length), required = Number(fields[field].maxLength);
+      if (/char|text|binary|blob/.test(dbField.type) && current > required) {
+        issues.push({ table, field, status: "field-oversized", current, required });
+      }
     }
   }
   return issues;
