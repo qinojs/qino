@@ -1,0 +1,4 @@
+/* Honeypot: bots fill what they cannot see. */
+[qcms-mod="cont.form2"] input[name=your_name] {
+	display: none !important;
+}
