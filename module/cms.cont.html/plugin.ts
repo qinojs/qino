@@ -6,7 +6,7 @@ import options from "./options.ts";
 
 export const name = "cms.cont.html";
 export const description = "Per-node HTML files with CMS syntax and HTML/CSS/JavaScript boilerplate.";
-export const needs = ["cms", "cms.templateParser", "fileEditor"];
+export const needs = ["cms", "cms.templateParser"];
 export const api = nodeApi(name);
 
 // Commented out on purpose: the parser strips comments, so nothing is created before you want it.

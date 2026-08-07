@@ -1,6 +1,7 @@
 import { html, getCtx, sql, sqlSearch, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
 import { backend, u2 } from "../cms.backend/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
+import { editorUrl } from "../fileEditor/mod.ts";
 
 export const name = "cms.backend.superuser.error_report";
 export const description = "Searches, groups, analyzes, and clears collected error reports.";
@@ -11,7 +12,6 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 function makeFileHelper(ctx: Ctx) {
-  const appUrl = ctx.req.appUrl;
   /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
   function localPath(file: string): string | null {
     if (!file.startsWith("file:")) return ctx.urlToLocalPath(file);
@@ -21,11 +21,10 @@ function makeFileHelper(ctx: Ctx) {
       return path;
     } catch { return null; }
   }
-  function editorLink(file: string, line: unknown, col: unknown): string {
-    const path = localPath(file) ?? file;
-    return appUrl + "editor/?file=" + encodeURIComponent(path)
-      + "&line=" + encodeURIComponent(String(line ?? ""))
-      + "&col="  + encodeURIComponent(String(col  ?? ""));
+  /** undefined for files that are not local app files — no link, no editor grant. */
+  function editorLink(file: string, line: unknown, col: unknown): string | undefined {
+    const path = localPath(file);
+    return path ? editorUrl(path, { line, col }) : undefined;
   }
   function fileDisplay(file: string): string {
     const path = localPath(file);
@@ -36,7 +35,7 @@ function makeFileHelper(ctx: Ctx) {
     const mIdx = path.lastIndexOf("/m/");
     return mIdx >= 0 ? path.slice(mIdx + 1) : path;
   }
-  return { editorLink, fileDisplay, localPath };
+  return { editorLink, fileDisplay };
 }
 
 async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } = {}): Promise<HtmlString> {
@@ -183,7 +182,9 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     u.searchParams.set("line", String(row.line));
     u.searchParams.set("col", String(row.col));
     const entriesUrl = u.search;
-    const editorUrl  = editorLink(row.file, row.line, row.col);
+    const eUrl     = editorLink(row.file, row.line, row.col);
+    const msgShort = msg.slice(0, 300) + (msg.length > 300 ? "…" : "");
+    const msgCell  = eUrl ? html`<a target=_blank href="${eUrl}">${msgShort}</a>` : msgShort;
     trs.push(html`
 <tr u2-href>
   <td style="width:3rem; white-space:nowrap">
@@ -204,7 +205,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
       </div> oldies: ${numUns}
     </small>
   <td>
-    <a target=_blank href="${editorUrl}">${msg.slice(0, 300)}${msg.length > 300 ? "…" : ""}</a><br>
+    ${msgCell}<br>
     <small>${u2.time(row.time)}</small>
     <div>${row.usr_email}</div>
   <td>
@@ -245,12 +246,18 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   for (const k of ["show", "source", "file", "line", "col"]) back.searchParams.delete(k);
   for (const row of rows) {
     const eUrl = editorLink(row.file ?? "", row.line, row.col);
+    const sample: HtmlString | string = row.sample ? html`<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${row.sample}</pre>` : "";
+    const fileCell = eUrl
+      ? html`<a href="${eUrl}" target=_blank title="${row.file}" style="color:inherit; text-decoration:none">${sample || "edit File"}</a>`
+      : sample;
 
     const btTrs: HtmlString[] = [];
     const bt = row.backtrace ? JSON.parse(row.backtrace) : [];
     for (const item of bt) {
+      const itemUrl = editorLink(item.file ?? "", item.line, item.col);
+      const name = fileDisplay(item.file ?? "");
       btTrs.push(html`<tr>
-  <td style="padding-right:1rem"><a href="${editorLink(item.file ?? "", item.line, item.col)}" target=_blank>${fileDisplay(item.file ?? "")}</a>
+  <td style="padding-right:1rem">${itemUrl ? html`<a href="${itemUrl}" target=_blank>${name}</a>` : name}
   <td style="padding-right:1rem">${item.function}
   <td>${item.args ? JSON.stringify(item.args) : ""}`);
     }
@@ -268,10 +275,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <small>${row.browser}</small>
     <br>${row.ip}
     <br>${row.email}
-  <td>
-    <a href="${eUrl}" target=_blank title="${row.file}" style="color:inherit; text-decoration:none">
-      ${row.sample ? html`<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${row.sample}</pre>` : "edit File"}
-    </a>
+  <td>${fileCell}
   <td>${bt.length ? html`<table>${html.join(btTrs)}</table>` : ""}`);
   }
 
@@ -289,7 +293,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const { t, db } = node.app;
   const ctx = getCtx();
   const get = ctx.req.query;
-  const { editorLink, fileDisplay, localPath } = makeFileHelper(ctx);
+  const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
   const error = await db.row`SELECT * FROM m_error_report WHERE id = ${id}`;
   if (!error) return html`<div>${await t`Error entry not found`}</div>`;
@@ -301,10 +305,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const btTrs: HtmlString[] = [];
   const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
   for (const item of bt) {
-    const isLocal = localPath(item.file ?? "") !== null;
+    const itemUrl = editorLink(item.file ?? "", item.line, item.col);
     const position = html`<span style="opacity:.6">: ${item.line}${item.col ? " : " + item.col : ""}</span>`;
-    const fileCell = isLocal
-      ? html`<a href="${editorLink(item.file, item.line, item.col)}" target=_blank>${fileDisplay(item.file ?? "")} ${position}</a>`
+    const fileCell = itemUrl
+      ? html`<a href="${itemUrl}" target=_blank>${fileDisplay(item.file ?? "")} ${position}</a>`
       : html`${item.file} ${position}`;
     btTrs.push(html`
 <tr>
@@ -355,10 +359,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 <a href="${histHref("ip")}">IP</a>
 ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("client")}">Client</a>` : ""}`;
 
-  const isLocalFile = localPath(error.file ?? "") !== null;
+  const fileUrl = editorLink(error.file ?? "", error.line, error.col);
   const sample = error.sample ? html`<pre style="box-shadow:0 0 .625rem; padding:.625rem">${error.sample}</pre>` : "";
-  const fileBlock = isLocalFile
-    ? html`<a style="color:inherit; text-decoration:none" target=_blank href="${editorLink(error.file, error.line, error.col)}">
+  const fileBlock = fileUrl
+    ? html`<a style="color:inherit; text-decoration:none" target=_blank href="${fileUrl}">
       <b>${fileDisplay(error.file ?? "")}</b> line: ${error.line} column: ${error.col}
       ${sample}
     </a>`

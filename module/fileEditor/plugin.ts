@@ -32,7 +32,7 @@ export const api: ApiTree = {
 function editorFile(): string | null {
   const ctx = getCtx();
   const file = ctx.req.query.file;
-  return file && ctx.req.appPath.startsWith("editor") ? file : null;
+  return file && ctx.req.appPath === name ? file : null;
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {

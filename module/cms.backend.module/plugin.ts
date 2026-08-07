@@ -2,6 +2,7 @@ import { fromFileUrl } from "@std/path";
 import { html, type HtmlString, getCtx, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
+import { editorUrl } from "../fileEditor/mod.ts";
 
 export const name = "cms.backend.module";
 export const description = "Inspects loaded modules, dependencies, exports, source files, and runtime state.";
@@ -101,14 +102,17 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
 
   // --- Files ---
   let filesHtml: HtmlString | string = "";
+  let hasEditorLinks = false;
   if (modDir) {
     const rows: HtmlString[] = [];
     for await (const { filePath, rel } of walkDir(modDir)) {
       const info = await Deno.stat(filePath).catch(() => null);
       if (!info?.isFile) continue;
       const mtimeIso = info.mtime?.toISOString() ?? "";
-      const nameCell = isSuperuser
-        ? html`<a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${rel}</a>`
+      const url = isSuperuser ? editorUrl(filePath) : undefined;
+      if (url) hasEditorLinks = true;
+      const nameCell = url
+        ? html`<a href="${url}" target="${encodeURIComponent(filePath)}">${rel}</a>`
         : rel;
       rows.push(html`<tr>
         <td>${nameCell}
@@ -130,8 +134,9 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
 
   // --- Source info ---
   const sourceDisplay = modPath ?? modSource;
-  const sourceHtml = isSuperuser && modPath
-    ? html`<a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(modPath)}" target="${encodeURIComponent(modPath)}">${sourceDisplay}</a>`
+  const sourceUrl = isSuperuser && modPath ? editorUrl(modPath) : undefined;
+  const sourceHtml = sourceUrl
+    ? html`<a href="${sourceUrl}" target="${encodeURIComponent(modPath!)}">${sourceDisplay}</a>`
     : html`<code>${sourceDisplay}</code>`;
 
   return html.async`<div class=u2-flex>
@@ -163,7 +168,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   </div>` : ""}
   ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div class=-body><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
   <div class=u2-card>
-    <div class=-head>${t`Files`}${isSuperuser ? html.async` (${t`with editor links`})` : ""}</div>
+    <div class=-head>${t`Files`}${hasEditorLinks ? html.async` (${t`with editor links`})` : ""}</div>
     ${filesHtml}
   </div>
 </div>`;

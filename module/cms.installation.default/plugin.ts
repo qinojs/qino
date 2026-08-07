@@ -17,6 +17,7 @@ export const settingsSchema = {
 // Offered in this order — from here on the module table is the truth: each one can be uninstalled
 // again, and more can be installed from the same store.
 export const recommended = [
+  "fileEditor",
   "cms.frontend.2",
   "cms.text",
   "cms.image2",

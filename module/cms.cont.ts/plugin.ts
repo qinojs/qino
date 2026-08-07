@@ -6,7 +6,7 @@ import options from "./options.ts";
 
 export const name = "cms.cont.ts";
 export const description = "Executable per-node TypeScript with editable assets.";
-export const needs = ["cms", "fileEditor"];
+export const needs = ["cms"];
 
 // The examples are commented out on purpose: nothing is created before you want it.
 // Only the type is imported — it is erased at load, so the file runs against the app's own qino.

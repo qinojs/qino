@@ -1,6 +1,7 @@
 import * as nodePath from "node:path";
 import type { Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx, Output } from "../../../core/mod.ts";
+import { editorUrl } from "../../../fileEditor/mod.ts";
 
 function inRoot(file: string, root: string): boolean {
   const rel = nodePath.relative(nodePath.resolve(root), nodePath.resolve(file));
@@ -47,12 +48,15 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
     try { await Deno.writeTextFile(file, ""); } catch { /* ignore */ }
   }
 
-  const fileRow = (filePath: string, base: number, info: Deno.FileInfo): HtmlString =>
-    html`<tr itemid="${filePath}">
-      <td><a href="${ctx.req.appUrl + "editor?file=" + encodeURIComponent(filePath)}" target="${encodeURIComponent(filePath)}">${filePath.slice(base)}</a>
+  const fileRow = (filePath: string, base: number, info: Deno.FileInfo): HtmlString => {
+    const url = editorUrl(filePath);
+    const name = filePath.slice(base);
+    return html`<tr itemid="${filePath}">
+      <td>${url ? html`<a href="${url}" target="${encodeURIComponent(filePath)}">${name}</a>` : name}
       <td>${new Date(info.mtime ?? 0).toLocaleDateString()}
       <td class=-remove style="cursor:pointer;padding-left:0">
         <img src="${ctx.req.moduleUrl}cms.frontend.2/pub/img/delete.svg" alt=delete>`;
+  };
 
   const customFiles: HtmlString[] = [];
   for await (const { filePath } of walkDir(customPath)) {
