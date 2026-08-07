@@ -72,7 +72,9 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //     const auto = e.table.autoIncrement;
     //     if (auto) {
     //         const value = Number(ids?.[String(auto)]);
-    //         if (value) await ctx.app.db.query`ALTER TABLE ${sql.id(tableName)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;
+    //         if (value) await (ctx.app.db.dialect === "mysql"
+    //             ? ctx.app.db.query`ALTER TABLE ${sql.id(tableName)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`
+    //             : ctx.app.db.syncAutoIncrement(tableName, String(auto), value));
     //     }
     // });
     //
@@ -124,7 +126,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     //     const page = await P.page();
     //     const pids = [pid, page?.id].filter(Boolean);
     //     for (const page_id of pids) {
-    //         const versions = await ctx.app.db.indexCol`SELECT space, UNIX_TIMESTAMP(changed_page) FROM vers_cms_page_changed WHERE page_id = ${page_id}`;
+    //         const versions = await ctx.app.db.indexCol`SELECT space, changed_page FROM vers_cms_page_changed WHERE page_id = ${page_id}`;
     //         if (!versions[0] || (versions[1] as number) > (versions[0] as number)) {
     //             ctx.state.Answer["cms_vers_changed"] ??= {};
     //             ctx.state.Answer["cms_vers_changed"][page_id] = true;
