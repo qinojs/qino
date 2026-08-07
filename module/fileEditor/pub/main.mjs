@@ -2,13 +2,17 @@ import { api } from '../../core/pub/js/qino.js';
 const btn = document.getElementById('saveButton');
 const editorEl = document.getElementById('editor');
 const mime   = editorEl.getAttribute('mime');
-const file   = new URLSearchParams(location.search).get('file');
+const query  = new URLSearchParams(location.search);
+const file   = query.get('file');
+// the capability that opened this page also authorises the save
+const exp    = query.get('exp') ?? undefined;
+const sig    = query.get('sig') ?? undefined;
 let cmLine = editorEl.getAttribute('line')-1;
 const cmCol  = editorEl.getAttribute('col')-1;
 
 function saveFile(content){
   btn.style.backgroundColor = '#fea';
-  api.fileEditor.save.put({ file, content }).then(asw => {
+  api.fileEditor.save.put({ file, content, exp, sig }).then(asw => {
     if (asw) {
       btn.style.backgroundColor = '';
       btn.style.display = 'none';
