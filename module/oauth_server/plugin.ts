@@ -6,7 +6,7 @@ import { verify } from "./lib/tokens.ts";
 export const name = "oauth_server";
 export const description = "Provides an OAuth authorization server with bearer token authentication.";
 export const needs = ["core"];
-export { api } from "./apt.ts";
+export { api } from "./api.ts";
 export { dbSchema };
 
 export const settingsSchema = {

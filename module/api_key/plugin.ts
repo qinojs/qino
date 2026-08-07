@@ -5,7 +5,7 @@ import { verifyToken } from "./lib/keys.ts";
 export const name = "api_key";
 export const description = "Creates and authenticates revocable API keys for users.";
 export const needs = ["core"];
-export { api } from "./apt.ts";
+export { api } from "./api.ts";
 export { dbSchema };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

@@ -103,7 +103,7 @@ sources (CAP row, standard column, override cells).
   `cms.accessRules` caps it by the module axis here.
 - `module:access` `{ module, user, access }` — fired by consumers that need the
   module axis without a node (add-picker `add.ts`, `requireModuleAdmin` in
-  `apt.ts`). Default `access: 3`; without `cms.accessRules` it stays 3, so
+  `api.ts`). Default `access: 3`; without `cms.accessRules` it stays 3, so
   everything is insertable.
 
 

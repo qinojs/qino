@@ -4,7 +4,7 @@ import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
-export { api } from "./apt.ts";
+export { api } from "./api.ts";
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/Db.ts";
 

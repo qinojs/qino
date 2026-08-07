@@ -1,6 +1,6 @@
 import type { Bot, ClientContext } from "../../ai/mod.ts";
 import { toTools } from "../../core/mod.ts";
-import { api as cmsApi } from "../../cms/apt.ts";
+import { api as cmsApi } from "../../cms/api.ts";
 
 const cmsTools = toTools(cmsApi, {
   apis: {

@@ -1,6 +1,6 @@
 import type { Node } from "../../../cms/mod.ts";
 import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { tree } from "../../../cms/apt-exports.ts";
+import { tree } from "../../../cms/api-exports.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;

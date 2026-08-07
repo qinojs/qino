@@ -72,11 +72,11 @@ async function barrels(): Promise<Map<string, string>> {
 const DOORS = /^(?:mod\.ts|tests\/deps\.ts)$/;
 
 // Still open, because in both cases the consumer is the defect and fixing it is a design change:
-// `api` is a manifest field the loader already publishes as app.aptTree["cms"], and apt-exports.ts is
-// the logic behind cms/apt.ts, which exposes tree as an endpoint. See PLAN-modules.md.
+// `api` is a manifest field the loader already publishes as app.aptTree["cms"], and api-exports.ts is
+// the logic behind cms/api.ts, which exposes tree as an endpoint. See PLAN-modules.md.
 const OPEN = new Set([
-  "cms.frontend.ai/bots/cmsHelper.ts -> cms/apt.ts",           // toTools() at module scope, no app yet
-  "cms.frontend.2/view/widgets/tree.ts -> cms/apt-exports.ts", // calls the fn instead of going via apt
+  "cms.frontend.ai/bots/cmsHelper.ts -> cms/api.ts",           // toTools() at module scope, no app yet
+  "cms.frontend.2/view/widgets/tree.ts -> cms/api-exports.ts", // calls the fn instead of going via apt
 ]);
 
 Deno.test("every module manifest has a description", async () => {

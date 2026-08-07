@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
-import { api } from "../apt.ts";
+import { api } from "../api.ts";
 import { cart } from "../mod.ts";
 
 const call = (path: string[], verb: string, input?: unknown) =>

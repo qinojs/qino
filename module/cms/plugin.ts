@@ -6,7 +6,7 @@ import { cmsCtx } from "./lib/CmsContext.ts";
 import { render } from "./lib/render.ts";
 import { header, Output, type App, type DbFile } from "../core/mod.ts";
 
-export { api } from "./apt.ts";
+export { api } from "./api.ts";
 
 export const name = "cms";
 export const description = "Provides the CMS page tree, content rendering, files, and access model.";

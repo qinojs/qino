@@ -174,12 +174,12 @@ async function render(node: Node): Promise<HtmlString> {
       ${html.join(cats.map(({ store, error }) => storeRow(store, error)))}
       <tr><td colspan=3><button data-act=addStore>${l.addStore}</button>
     </table>
-    <div class=-body><small>${t`A catalog is a store.json, e.g. ./qino/module/store.json`}</small></div>
+    <div><small>${t`A catalog is a store.json, e.g. ./qino/module/store.json`}</small></div>
   </div>
 
   <div class=u2-card>
     <div class=-head>${t`Modules`}</div>
-    <div class="-body u2-flex">
+    <div class=u2-flex>
       <select data-filter=store>
         <option value="">${t`all stores`}
         ${html.join(cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(store.url)}`))}
@@ -204,7 +204,7 @@ async function render(node: Node): Promise<HtmlString> {
         <tbody>${html.join(moduleList(app, cats).map(([mod, store]) => moduleRow(app, mod, store, l)))}
       </table>
     </div>
-    <div class=-body><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>
+    <div><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>
   </div>
 </div>`;
 }
@@ -233,7 +233,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   <tbody>${html.join(inactive.map((mod) => html`<tr><td>${mod}`))}
 </table>`;
 
-  return html.async`<div class=-body>
+  return html.async`<div>
   <b>${mods.length - inactive.length}</b> ${t`active`} · <b>${app.stores.all().length}</b> ${t`stores`}
   ${broken ? html.async` · <small class=u2-badge style="background:var(--red)">${broken} ${t`not importable`}</small>` : ""}
 </div>${recent}${sleeping}`;

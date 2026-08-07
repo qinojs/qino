@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@std/assert";
 import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
-import { api } from "../apt.ts";
+import { api } from "../api.ts";
 import { cart } from "../mod.ts";
 import nodeApi from "../../cms.backend.shp3.orders1/nodeApi.ts";
 import { mail } from "../../../module/mail/mod.ts";

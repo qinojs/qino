@@ -22,7 +22,7 @@ cms.initNode("backend.cms.tree.access", (el) => {
     if (td.dataset.gid) {
       // group cell: cycle 0 -> 1 -> 2 -> 3 -> 0
       const access = Number(td.getAttribute("v")) || 0;
-      // TODO: path is node/access/groups because cms/apt.ts nests `groups` (and `users`)
+      // TODO: path is node/access/groups because cms/api.ts nests `groups` (and `users`)
       // under `access` instead of as siblings of it. Should be node/groups/:group.
       await apt.cms.node(pid).access.groups(td.dataset.gid).put({ access: access > 2 ? 0 : access + 1 });
     } else {

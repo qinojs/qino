@@ -89,6 +89,6 @@ keine Regelverletzung.
 - **`bucketWrite` pro App/Db isolieren:** [store.ts](module/cms.backend.security/store.ts#L10) serialisiert über
   einen modulglobalen `Map`-Schlüssel `scope:ident` ohne Db-Bezug — zwei Tenants mit derselben IP warten
   aufeinander. Kein Datenleck, aber Kopplung.
-- **`any`-Dichte:** [cms/apt.ts](module/cms/apt.ts#L1) (40 Stellen) und [cms.text/api.ts](module/cms.text/api.ts#L1)
+- **`any`-Dichte:** [cms/api.ts](module/cms/api.ts#L1) (40 Stellen) und [cms.text/api.ts](module/cms.text/api.ts#L1)
   (17) sind die Ausreisser; 78 Dateien tragen ein pauschales `deno-lint-ignore-file no-explicit-any`.
 

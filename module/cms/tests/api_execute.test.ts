@@ -2,7 +2,7 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "../../core/mod.ts";
 import { cmsInstances } from "../lib/CMS.ts";
-import { api } from "../apt.ts";
+import { api } from "../api.ts";
 
 class TextObj {
   id: number;

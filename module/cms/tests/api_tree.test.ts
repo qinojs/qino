@@ -1,6 +1,6 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import { checkCollisions, toTools, walk } from "../../core/mod.ts";
-import { api } from "../apt.ts";
+import { api } from "../api.ts";
 
 Deno.test("cms apt tree: has no route collisions", () => {
   for (const r of walk(api)) checkCollisions(r);

@@ -40,12 +40,12 @@ Deno.test("schema: array + record", () => {
 
 // ───── walk + invoke tests (mock tree, no Hono) ───────────────────────────
 //
-// We can't import apt.ts directly (pulls in Hono + qg + full server context).
+// We can't import api.ts directly (pulls in Hono + qg + full server context).
 // Instead, we test the walk/invoke logic indirectly via a stub that mimics
-// what apt.ts does. Real integration tests happen when the tree is mounted.
+// what api.ts does. Real integration tests happen when the tree is mounted.
 
 Deno.test("schema: collision source names are surfaced via keys", () => {
-  // This is what checkCollisions() in apt.ts uses to detect overlaps.
+  // This is what checkCollisions() in api.ts uses to detect overlaps.
   const pathNames = new Set(["node", "file"]);
   const inputKeys = Object.keys(s.object({ deep: s.boolean() }).shape!);
   for (const k of inputKeys) {

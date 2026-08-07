@@ -4,7 +4,7 @@ import { bindApp } from "./lib/Shp3.ts";
 import { registerRows } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
 import { cms } from "../../module/cms/mod.ts";
-export { api } from "./apt.ts";
+export { api } from "./api.ts";
 
 export const name = "shp3";
 export const description = "Shop: products, cart, orders. Prices, VAT, shipping and payment are events.";

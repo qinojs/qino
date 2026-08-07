@@ -4,7 +4,7 @@ import { ADMIN } from "./lib/access.ts";
 // deno-lint-ignore-file no-explicit-any
 
 import { $item, s, Access, AccessError, ConflictError, NotFoundError, ValidationError, itemReadDeep, type Ctx } from "../core/mod.ts";
-import * as fns from "./apt-exports.ts";
+import * as fns from "./api-exports.ts";
 import type { Node } from "./lib/Node.ts";
 
 // Static gate PUBLIC (a node read is reachable for anyone); the per-call level is checked against the resolved node in guard.
