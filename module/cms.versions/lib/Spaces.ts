@@ -85,7 +85,9 @@ export function initSpaces(app: App, signal: AbortSignal) {
     const ids = e.table.entryIdValues(e.id) || {};
     const value = Number(ids[String(auto)]);
     if (!value) return;
-    await ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`;
+    await (ctx.app.db.dialect === "mysql"
+      ? ctx.app.db.query`ALTER TABLE ${sql.id(originalTable)} AUTO_INCREMENT=${sql.raw(String(value + 1))}`
+      : ctx.app.db.syncAutoIncrement(originalTable, String(auto), value));
   }, { signal });
 }
 
