@@ -5,8 +5,15 @@
 // Writes without request context (cron/CLI/boot) are not captured — capture
 // is keyed to ctx.logId, so there is no log entry to attach them to.
 
-import { requestStorage, sql, type App, type DbEvents } from "../../core/mod.ts";
+import { requestStorage, sql, type App, type Db, type DbEvents, type Sql } from "../../core/mod.ts";
 import { getVers, versTable } from "./Vers.ts";
+
+function replaceFrom(db: Db, vt: string, cols: Record<string, any>[], source: Sql) {
+  if (db.dialect !== "postgres") return db.exec`REPLACE INTO ${sql.id(vt)} ${source}`;
+  const keys = cols.filter((c) => c.Key === "PRI").map((c) => c.Field);
+  const set = cols.filter((c) => c.Key !== "PRI").map((c) => sql`${sql.id(c.Field)} = excluded.${sql.id(c.Field)}`);
+  return db.exec`INSERT INTO ${sql.id(vt)} ${source} ON CONFLICT (${sql.join(keys.map(sql.id))}) DO UPDATE SET ${sql.join(set)}`;
+}
 
 export function initHistory(app: App, signal: AbortSignal) {
 
@@ -26,7 +33,7 @@ export function initHistory(app: App, signal: AbortSignal) {
   };
 
   // ─── History capture: insert/update ──────────────────────────────────────
-  // Writes a REPLACE INTO _vers_* for every tracked table mutation.
+  // Writes one _vers_* snapshot for every tracked table mutation.
   const catchInsertUpdate = async (e: DbEvents["table:insert-after"]) => {
     const t = await track(e);
     if (!t) return;
@@ -42,7 +49,7 @@ export function initHistory(app: App, signal: AbortSignal) {
     });
     const where = e.table.entryIdToFragment(e.id);
     if (!where) return;
-    await ctx.app.db.exec`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`;
+    await replaceFrom(ctx.app.db, vt, versCols, sql`SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} WHERE ${where}`);
   };
   app.db.on("table:update-after", catchInsertUpdate, { signal });
   app.db.on("table:insert-after", catchInsertUpdate, { signal });
@@ -66,10 +73,9 @@ export function initHistory(app: App, signal: AbortSignal) {
       if (f === "_vers_deleted") return sql.raw("1");
       return sql.id(f);
     });
-    await ctx.app.db.exec`REPLACE INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM (
+    await replaceFrom(ctx.app.db, vt, versCols, sql`SELECT ${sql.join(selects)} FROM (
       SELECT * FROM ${sql.id(vt)} WHERE ${where} AND _vers_space = ${space}
-      ORDER BY _vers_log DESC LIMIT 1
-    ) AS src`;
+      ORDER BY _vers_log DESC LIMIT 1) AS src`);
   }, { signal });
 
   // ─── File protection: don't delete blobs referenced in _vers_file ────────
