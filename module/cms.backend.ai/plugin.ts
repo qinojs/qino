@@ -245,10 +245,10 @@ async function models(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 <table class="u2-table -Sticky">
   <thead><tr>
     <th>${provider.name} ${badge(`${(byProvider.get(provider.id) ?? []).length}`)}
-    <th style="text-align:center">Kind
-    <th>Default
-    <th>Usage in/out
-    <th>
+    <th width=40 style="text-align:center">Kind
+    <th width=20>Default
+    <th width=50 title="Usage">in/out
+    <th width=20>
   <tbody>${body}${addRow}
 </table>`);
   }
