@@ -2,7 +2,7 @@
 
 import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Redirect, u2Root, itemRoot } from "./lib/util.ts";
+import { Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
 export { api } from "./api.ts";
 import type { App } from "./lib/App.ts";
@@ -161,6 +161,11 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
             : (enableRaw && enableRaw !== "0" && enableRaw !== "false" ? "enforce" : "");
 
         if (enable) {
+            // Hashed, not nonced: the hash is derived from the body, so it stays correct in any cache
+            // the response ends up in (CDN, service worker). Only ever hash what the server built itself.
+            for (const js of ctx.res.hasHtml ? ctx.res.html.inlineScripts.keys() : [])
+                ctx.res.csp["script-src"][`'sha256-${await sha256b64(js)}'`] = true;
+
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
             ctx.res.headers.set(headerName, ctx.res.csp.toHeader());
             const endpoints = ctx.res.csp.reportingEndpoints();

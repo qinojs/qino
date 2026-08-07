@@ -19,7 +19,7 @@ Deno.test("ResHtml: render renders escaped metadata and assets in head", () => {
   const out = html.render();
   assertEquals(out.startsWith('<!DOCTYPE HTML>\n<html lang="en">'), true);
   assertEquals(out.includes('<meta charset=utf-8>'), true);
-  assertEquals(out.includes('<script type=importmap>{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
+  assertEquals(out.includes('<script type="importmap">{"imports":{"@qino/test":"/module.mjs","@qino/unsafe":"\\u003c/script>"}}</script>'), true);
   assertEquals(out.includes('<link href="/feed.xml?x=1&amp;y=2" rel="alternate" title="&quot;Feed&quot;">'), true);
   assertEquals(out.includes('<link rel=stylesheet href="/style.css?x=1&amp;y=2">'), true);
   assertEquals(out.includes('<script type=application/json id=qino-data>{"hello":"\\u003cworld>"}</script>'), true);
@@ -28,7 +28,37 @@ Deno.test("ResHtml: render renders escaped metadata and assets in head", () => {
   assertEquals(out.includes('<title>Pre &lt;Title&gt; &amp; Suf</title>'), true);
   assertEquals(out.includes('<script src="/main.js?x=1&amp;y=2"></script>'), true);
   assertEquals(out.includes('<script type=module src="/module.mjs?x=1&amp;y=2"></script>'), true);
-  assertEquals(out.indexOf("<script type=importmap>") < out.indexOf("<script type=module"), true);
+  assertEquals(out.indexOf(`<script type="importmap">`) < out.indexOf("<script type=module src"), true);
+  // CSP hashes the map keys, so each must be byte-identical to what was rendered
+  for (const js of html.inlineScripts.keys()) assertEquals(out.includes(`>${js}</script>`), true);
+  html.render(); // an unchanged map re-uses its key instead of piling up
+  assertEquals(html.inlineScripts.size, 1);
+});
+
+Deno.test("ResHtml: no import map, nothing to allow", () => {
+  const html = new ResHtml();
+  html.render();
+  assertEquals(html.inlineScripts.size, 0);
+});
+
+Deno.test("ResHtml: inline scripts default to module and take attributes", () => {
+  const html = new ResHtml();
+  html.scripts.add("/m.mjs");
+  html.inlineScripts.set(`alert("hi")`);
+  html.inlineScripts.set("legacy()", { type: "text/javascript", id: `x"y` });
+
+  const out = html.render();
+  assertEquals(out.includes(`<script type="module">alert("hi")</script>`), true);
+  assertEquals(out.includes(`<script type="text/javascript" id="x&quot;y">legacy()</script>`), true);
+  assertEquals(out.indexOf("<script type=module src") < out.indexOf(`<script type="module">`), true);
+});
+
+Deno.test("ResHtml: an inline script cannot break out of its tag", () => {
+  const html = new ResHtml();
+  html.inlineScripts.set(`x = "</script><script>evil()"`);
+  // escaped on the way in, so the key CSP hashes is already the body that gets rendered
+  assertEquals([...html.inlineScripts.keys()], [`x = "<\\/script><script>evil()"`]);
+  assertEquals(html.render().includes(`<script type="module">x = "<\\/script><script>evil()"</script>`), true);
 });
 
 Deno.test("ResHtml: render emits lang, classes and content", () => {
