@@ -282,7 +282,7 @@ export class Node {
 
     settings: any = {};
 
-    get modUrl(): string { return getCtx().req.moduleUrl + this.vs.module + "/"; }
+    get modUrl(): string { return this.module?.modUrl ?? getCtx().req.moduleUrl + this.vs.module + "/"; }
 
     /* Tree traversal */
     children(filter?: any): Promise<Map<number, Node>> {

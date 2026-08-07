@@ -67,8 +67,8 @@ export class Module {
   get cache(): string { return `${this.#app.appPATH}cache/${this.name}/`; }
   /** Scratch space for a single operation — droppable when nothing runs, no backup. */
   get tmp(): string { return `${this.#app.appPATH}tmp/${this.name}/`; }
-  /** The module dir as a URL; only pub/ below it is reachable. */
-  get modUrl(): string { return `${getCtx().req.moduleUrl}${this.name}/`; }
+  /** The module dir as a URL; only pub/ below it is reachable. Remote modules serve from their source. */
+  get modUrl(): string { return this.dir ? `${getCtx().req.moduleUrl}${this.name}/` : new URL(".", this.#source).href; }
   /** data/ as a URL; only pub/ below it is reachable. */
   get dataUrl(): string { return `${getCtx().req.appUrl}d/${this.name}/`; }
   // Fresh signal per (re-)link; abort() on unlink tears down what init() registered with it.

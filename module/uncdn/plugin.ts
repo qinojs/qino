@@ -1,6 +1,6 @@
 import * as nodePath from "node:path";
 import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "../core/mod.ts";
-import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit, fetchPolicy } from "./mod.ts";
+import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit } from "./mod.ts";
 import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 
 export const name = "uncdn";
@@ -9,11 +9,6 @@ export const needs = ["core"];
 
 export const settingsSchema = {
   properties: {
-    fetchPolicy: {
-      type: "string",
-      enum: ["superuser", "all", "none"],
-      description: "Who may trigger fetching+caching of new external files via the proxy. 'superuser' = only superusers; 'all' = anyone; 'none' = only already-cached files are served.",
-    },
     maxCacheBytes: {
       type: "integer",
       default: DEFAULT_MAX_CACHE_BYTES,
@@ -92,7 +87,7 @@ const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const cacheDir = app.modules.get(name)!.cache;
-  const allowed = new Set<string>(); // origins any page declared via CSP — fetchable by anyone
+  const allowed = new Set<string>(); // sources pages declared via CSP — the only thing this proxy fetches
   uncdnInstances.set(app, { origins: allowed });
 
   app.on("route", async ({ ctx }) => {
@@ -111,17 +106,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
     const data = await Deno.readFile(filePath).catch(() => null);
     if (data) serveResponse(mediaType, data);
 
-    if (![...allowed].some(o => new URL(o).origin === origin && url.startsWith(o))) { // undeclared URLs still go through fetchPolicy
-      const policy = fetchPolicy(await ctx.app.settings.uncdn.fetchPolicy);
-      const denied =
-        policy === "none" ? "fetchPolicy=none" :
-        policy === "superuser" && !await ctx.user?.get("superuser") ? "fetchPolicy=superuser but no superuser session" :
-        null;
-      if (denied) {
-        console.warn(`[uncdn] ${denied}, not fetching: ${url}`);
-        done(ctx, 404, "Not cached");
-      }
-    }
+    // The CSP declaration is the whole permission — what no page asked for is never fetched.
+    if (![...allowed].some(o => new URL(o).origin === origin && url.startsWith(o))) done(ctx, 404, "Not cached");
 
     await fetchAndCache(url, filePath, cacheDir, mediaType, ctx);
   }, { signal });

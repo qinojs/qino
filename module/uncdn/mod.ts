@@ -10,13 +10,8 @@ export function uncdn(app: App): { origins: Set<string> } {
   return state;
 }
 
-const DEFAULT_FETCH_POLICY = "superuser";
 export const DEFAULT_MAX_CACHE_BYTES = 50 * 1024 * 1024;
 
 export function cacheByteLimit(value: unknown): number {
   return Math.max(Number(value) || DEFAULT_MAX_CACHE_BYTES, MAX_ASSET_BYTES);
-}
-
-export function fetchPolicy(value: unknown): "superuser" | "all" | "none" {
-  return value === "all" || value === "none" ? value : DEFAULT_FETCH_POLICY;
 }

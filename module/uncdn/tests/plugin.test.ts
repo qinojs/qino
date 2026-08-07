@@ -7,7 +7,6 @@ async function routeFor(url: string, source: string) {
   let route: (event: { ctx: any }) => Promise<void> = () => Promise.resolve();
   const ctx = await testContext({ url, app: {
     modules: { get: () => ({ cache: "/tmp/uncdn-origin-test/cache/uncdn/" }) },
-    settings: { uncdn: { fetchPolicy: "none" } },
     on: (name: string, handler: typeof route) => { if (name === "route") route = handler; },
   } });
   init(ctx.app, { signal: new AbortController().signal });
@@ -49,7 +48,7 @@ Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
   assertEquals(csp["style-src"]["https://fonts.googleapis.com/"], true); // kept, still referenced
 });
 
-Deno.test("uncdn: lookalike origin does not bypass fetch policy", async () => {
+Deno.test("uncdn: lookalike origin is not covered by a declared source", async () => {
   const { ctx, route } = await routeFor(
     "https://qino.test/uncdn/cdn.example.attacker.test/a.js",
     "https://cdn.example",
@@ -60,7 +59,7 @@ Deno.test("uncdn: lookalike origin does not bypass fetch policy", async () => {
   assertEquals(ctx.res.body, "Not cached");
 });
 
-Deno.test("uncdn: exact allowed origin still bypasses fetch policy", async () => {
+Deno.test("uncdn: declared source is fetched", async () => {
   const { ctx, route } = await routeFor(
     "https://qino.test/uncdn/127.0.0.1/a.js",
     "https://127.0.0.1",
