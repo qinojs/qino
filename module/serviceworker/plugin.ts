@@ -1,4 +1,4 @@
-import { Output, sha256, type App, type Ctx } from "../core/mod.ts";
+import { Output, sha256b64url, type App, type Ctx } from "../core/mod.ts";
 
 export const name = "serviceworker";
 export const description = "Serves the app's single service worker, assembled from the parts other modules declare.";
@@ -22,7 +22,7 @@ async function serve(ctx: Ctx): Promise<void> {
   const headers = {
     "Content-Type": "text/javascript; charset=utf-8",
     "Cache-Control": "no-cache",
-    ETag: `W/"${await sha256(script)}"`,
+    ETag: `W/"${await sha256b64url(script)}"`,
   };
   if (ctx.req.header("if-none-match") === headers.ETag) throw new Output(undefined, { status: 304, headers });
   throw new Output(script, { headers });

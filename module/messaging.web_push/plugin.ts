@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, getCtx, s, sha256, sql, unixTime, type ApiTree } from "../core/mod.ts";
+import { Access, getCtx, s, sha256b64url, sql, unixTime, type ApiTree } from "../core/mod.ts";
 import { publicKey } from "./mod.ts";
 
 export const name = "messaging.web_push";
@@ -37,7 +37,7 @@ export const api: ApiTree = {
         const rows = await db.query`SELECT c.name FROM web_push_subscription_channel sc
           JOIN web_push_channel c ON c.id = sc.channel_id
           JOIN web_push_subscription s ON s.id = sc.sub_id
-          WHERE s.endpoint_hash = ${await sha256(endpoint)}`;
+          WHERE s.endpoint_hash = ${await sha256b64url(endpoint)}`;
         return { channels: rows.map((r) => r.name) };
       },
     },
@@ -51,7 +51,7 @@ export const api: ApiTree = {
         const db = ctx.app.db;
         const table = db.table("web_push_subscription");
         // endpoints are too long to index; their hash is the subscription's identity
-        const endpoint_hash = await sha256(endpoint);
+        const endpoint_hash = await sha256b64url(endpoint);
         const values = { usr_id: ctx.userId || null, client_id: ctx.clientId, endpoint, endpoint_hash, p256dh, auth };
         // the same browser re-subscribes with the same endpoint — adopt it instead of duplicating
         const known = await db.one`SELECT id FROM web_push_subscription WHERE endpoint_hash = ${endpoint_hash}`;
@@ -76,7 +76,7 @@ export const api: ApiTree = {
       access: Access.PUBLIC,
       input: s.object({ endpoint: s.string() }),
       execute: async ({ endpoint }: any) => {
-        await getCtx().app.db.exec`DELETE FROM web_push_subscription WHERE endpoint_hash = ${await sha256(endpoint)}`;
+        await getCtx().app.db.exec`DELETE FROM web_push_subscription WHERE endpoint_hash = ${await sha256b64url(endpoint)}`;
         return { ok: true };
       },
     },
