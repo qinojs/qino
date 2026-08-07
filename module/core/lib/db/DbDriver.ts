@@ -23,6 +23,9 @@ export abstract class DbDriver {
   /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). */
   abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<void>;
   abstract close(): Promise<void>;
+  /** Engine raises the counter itself when a row with an explicit higher id is inserted. */
+  insertSyncsAutoIncrement = true;
+  /** Move the id generator past `value` (never below). Only needed for ids the engine did not see. */
   syncAutoIncrement(_table: string, _field: string, _value: number): Promise<void> { return Promise.resolve(); }
   ensureDatabase(): Promise<void> { return Promise.resolve(); }
 
@@ -92,6 +95,10 @@ class MysqlDriver extends DbDriver {
   columns(table: string) {
     return this.query(`SHOW FULL COLUMNS FROM ${this.quoteId(table)}`);
   }
+  // ALTER TABLE implicitly commits an open transaction — MySQL offers no other way to move the counter.
+  override async syncAutoIncrement(table: string, _field: string, value: number) {
+    await this.exec(`ALTER TABLE ${this.quoteId(table)} AUTO_INCREMENT=${String(value + 1)}`);
+  }
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbMysql(schema, (sql: string) => this.query(sql), opts);
   }
@@ -140,7 +147,7 @@ class SqliteDriver extends DbDriver {
       return { insertId: Number(r.lastInsertRowid), affectedRows: Number(r.changes) };
     });
   }
-  async transaction<T>(fn: () => Promise<T>): Promise<T> {
+  transaction<T>(fn: () => Promise<T>): Promise<T> {
     if (this.#txAls.getStore()?.open) return fn(); // nested → join the running transaction
     const box = { open: true };
     return this.#serial(() => this.#txAls.run(box, async () => {
@@ -167,6 +174,10 @@ class SqliteDriver extends DbDriver {
       Extra: c.pk && /int/i.test(c.type) ? "auto_increment" : "",
     }));
   }
+  // Only AUTOINCREMENT tables keep a counter; without one (or without the table) there is nothing to move.
+  override async syncAutoIncrement(table: string, _field: string, value: number) {
+    await this.exec("UPDATE sqlite_sequence SET seq = ? WHERE name = ? AND seq < ?", [value, table, value]).catch(() => {});
+  }
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
@@ -175,6 +186,8 @@ class SqliteDriver extends DbDriver {
 
 class PostgresDriver extends DbDriver {
   dialect = "postgres" as const;
+  // An explicit id leaves the sequence untouched, so every insert with one needs a sync.
+  override insertSyncsAutoIncrement = false;
   #pool: any;
   #tx = new AsyncLocalStorage<{ conn: any }>();
   #database: string;
@@ -212,11 +225,11 @@ class PostgresDriver extends DbDriver {
     catch (e) { await client.query("ROLLBACK"); throw e; }
     finally { box.conn = null; client.release(); }
   }
+  // Own connection: setval is not rolled back anyway, and must not fail with the caller's transaction.
   override async syncAutoIncrement(table: string, field: string, value: number) {
-    if (value < 1) return;
-    const column = this.quoteId(field), tbl = this.quoteId(table);
     await this.#pool.query(
-      `SELECT setval(pg_get_serial_sequence($1, $2), GREATEST($3, (SELECT COALESCE(MAX(${column}), 0) FROM ${tbl})), true)`,
+      `SELECT setval(s::regclass, GREATEST($3, COALESCE(pg_sequence_last_value(s::regclass), 0)), true)
+       FROM pg_get_serial_sequence($1, $2) s`,
       [table, field, value],
     );
   }

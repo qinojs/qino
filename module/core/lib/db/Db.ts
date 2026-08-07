@@ -82,6 +82,7 @@ export class Db extends Emitter<DbEvents> {
 
   get dialect(): DbDialect { return this.#driver.dialect; }
   get emptyInsert(): string { return this.#dialect.emptyInsert; }
+  get insertSyncsAutoIncrement(): boolean { return this.#driver.insertSyncsAutoIncrement; }
   get tables(): Record<string, DbTable> { return this.#tables; }
 
   async #run<T>(fn: () => Promise<T>, sql: string): Promise<T> {
@@ -151,7 +152,9 @@ export class Db extends Emitter<DbEvents> {
     else await fn();
   }
 
+  /** Move the id generator past `value`, so it never hands that id out again. */
   syncAutoIncrement(table: string, field: string, value: number): Promise<void> {
+    if (!Number.isInteger(value) || value < 1) return Promise.resolve();
     return this.#driver.syncAutoIncrement(table, field, value);
   }
 

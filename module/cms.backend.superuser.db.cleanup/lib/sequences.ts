@@ -29,7 +29,5 @@ export async function sequenceIssue(db: Db, tableName: string) {
 export async function syncSequence(db: Db, tableName: string): Promise<void> {
   const issue = await sequenceIssue(db, tableName);
   if (!issue) throw new Error("auto-id sequence is no longer behind");
-  if (db.dialect === "mysql") await db.exec`ALTER TABLE ${sql.id(tableName)} AUTO_INCREMENT = ${sql.raw(String(issue.max + 1))}`;
-  else if (db.dialect === "postgres") await db.syncAutoIncrement(tableName, issue.field, issue.max);
-  else await db.exec`UPDATE sqlite_sequence SET seq = ${issue.max} WHERE name = ${tableName}`;
+  await db.syncAutoIncrement(tableName, issue.field, issue.max);
 }
