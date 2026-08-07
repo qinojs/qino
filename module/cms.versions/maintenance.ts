@@ -14,7 +14,7 @@
 // views fall back to the previous surviving entry, and since the newest entry
 // per bucket survives, every live row keeps ≥1 entry (baseline invariant).
 
-import { sql, unixTime, type Db } from "../core/mod.ts";
+import { sql, unixTime, type Db, type Sql } from "../core/mod.ts";
 import { versTable, versedTables } from "./lib/Vers.ts";
 
 const DENSITY = 24;           // ~snapshots kept per age doubling (higher = keep more)
@@ -24,35 +24,37 @@ const UNIT_SEC = 60;          // finest bucket granularity (1 minute)
 /** Thin out old history entries. Returns the affected count; dryRun only counts. */
 export async function thinHistory(db: Db, dryRun = false): Promise<number> {
   const now = unixTime();
+  const widths = Array.from({ length: Math.ceil(Math.log2(now / (DENSITY * UNIT_SEC))) + 1 }, (_, i) => UNIT_SEC * 2 ** i);
   // epoch-anchored bucket; width = UNIT × 2^k chosen so width ≈ age / DENSITY,
   // floored at UNIT → derives from the entry's own age, stable across runs.
-  const bucket = (col: string) => {
-    const age   = `GREATEST(${now} - ${col}, 1)`;
-    const steps = `GREATEST(0, FLOOR(LN(${age} / ${DENSITY * UNIT_SEC}) / LN(2)))`;
-    // width parenthesised: `%` and `*` share precedence, so `col % UNIT * POW(..)`
-    // would wrongly bind as `(col % UNIT) * POW(..)`.
-    const width = `(${UNIT_SEC} * POW(2, ${steps}))`;
-    return `(${col} - (${col} % ${width}))`;
+  const bucket = (col: Sql) => {
+    const age = sql`${now} - ${col}`;
+    const width = db.dialect === "sqlite"
+      ? sql`CASE ${sql.join(widths.slice(1).map((w, i) => sql`WHEN ${age} < ${DENSITY * w} THEN ${widths[i]}`), " ")} ELSE ${widths.at(-1)} END`
+      : sql`(${UNIT_SEC} * POWER(2, GREATEST(0, FLOOR(LN(GREATEST(${age}, 1) * 1.0 / ${DENSITY * UNIT_SEC}) / LN(2)))))`;
+    return sql`(${col} - (${col} % (${width})))`;
   };
 
   let count = 0;
   for (const t of Object.keys(versedTables(db))) {
     const vt = versTable(db, t);
     if (!vt) continue;
-    const pks = (await db.query`SHOW COLUMNS FROM ${sql.id(t)}`).filter((c) => c.Key === "PRI").map((c) => c.Field);
-    const join = pks.map((f: string) => `mm.\`${f}\` = m.\`${f}\``).join(" AND ");
+    const pks = (await db.columns(t)).filter((c) => c.Key === "PRI").map((c) => c.Field);
+    const ids = [...pks, "_vers_space", "_vers_log"];
+    const cols = sql.join(ids.map((f) => sql`m.${sql.id(f)}`));
+    const join = sql.join(pks.map((f) => sql`mm.${sql.id(f)} = m.${sql.id(f)}`), " AND ");
     // m is deletable if a newer entry mm of the same row falls into the same bucket
-    const body =
-      `FROM \`${vt}\` m ` +
-      `JOIN log l ON l.id = m._vers_log ` +
-      `JOIN \`${vt}\` mm ON mm._vers_space = m._vers_space AND ${join} AND mm._vers_log > m._vers_log ` +
-      `JOIN log ll ON ll.id = mm._vers_log ` +
-      `WHERE l.time < ${now - KEEP_RECENT_SEC} AND ${bucket("l.time")} = ${bucket("ll.time")}`;
+    const body = sql`FROM ${sql.id(vt)} m
+      JOIN log l ON l.id = m._vers_log
+      JOIN ${sql.id(vt)} mm ON mm._vers_space = m._vers_space AND ${join} AND mm._vers_log > m._vers_log
+      JOIN log ll ON ll.id = mm._vers_log
+      WHERE l.time < ${now - KEEP_RECENT_SEC} AND ${bucket(sql`l.time`)} = ${bucket(sql`ll.time`)}`;
     if (dryRun) {
-      const distinct = [...pks.map((f: string) => `m.\`${f}\``), "m._vers_space", "m._vers_log"].join(", ");
-      count += Number(await db.one`SELECT COUNT(DISTINCT ${sql.raw(distinct)}) ${sql.raw(body)}`);
+      count += Number(await db.one`SELECT COUNT(*) FROM (SELECT DISTINCT ${cols} ${body}) doomed`);
+    } else if (db.dialect === "mysql") {
+      count += Number((await db.exec`DELETE m ${body}`).affectedRows ?? 0);
     } else {
-      count += Number((await db.exec`DELETE m ${sql.raw(body)}`).affectedRows ?? 0);
+      count += Number((await db.exec`DELETE FROM ${sql.id(vt)} WHERE (${sql.join(ids.map(sql.id))}) IN (SELECT ${cols} ${body})`).affectedRows ?? 0);
     }
   }
   return count;

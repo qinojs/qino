@@ -123,38 +123,30 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
     // Build field list: versioned fields from shadow table, rest from live table.
     const liveFields = await db.columns(tableName);
     const fieldSpec   = versedTables(db)[tableName];
-    const selects: string[] = [];
-    const pkJoins:  string[] = [];
-    const origJoins: string[] = [];
-
-    for (const col of liveFields) {
-        const f = col.Field;
-        selects.push(`${fieldSpec === true || fieldSpec[f] ? "m" : "original"}.\`${f}\``);
-        if (col.Key === "PRI") {
-            pkJoins.push(`mm.\`${f}\` = m.\`${f}\``);
-            origJoins.push(`m.\`${f}\` = original.\`${f}\``);
-        }
-    }
+    const pks         = liveFields.filter((c) => c.Key === "PRI").map((c) => c.Field);
+    const selects     = liveFields.map((c) => fieldSpec === true || fieldSpec[c.Field]
+        ? sql`m.${sql.id(c.Field)}` : sql`original.${sql.id(c.Field)}`);
+    const pkJoins     = pks.map((f) => sql`mm.${sql.id(f)} = m.${sql.id(f)}`);
+    const origJoins   = pks.map((f) => sql`m.${sql.id(f)} = original.${sql.id(f)}`);
+    const spaceSql    = sql.raw(String(space));
+    const lastLogSql  = sql.raw(String(log - 1));
 
     // Add vers_space annotation used by page:construct
-    selects.push(`${space} AS vers_space`);
-
-    const head =
-        `CREATE VIEW \`${name}\` AS SELECT ${selects.join(", ")} FROM ${vt} m ` +
-        `LEFT JOIN \`${tableName}\` original ON ${origJoins.join(" AND ")} WHERE `;
+    selects.push(sql`${spaceSql} AS vers_space`);
     // log: historical view = most recent entry up to (log-1). Completeness (every live row
     // has ≥1 capture) is guaranteed by baselineTable(), so no live fallback is needed —
     // keeping the view UNION-free lets MySQL merge it (index pushdown on queries).
     // else: space head view (log=0 = current draft).
     const where = log
-        ? `m._vers_deleted = 0 AND m._vers_space = ${space} AND m._vers_log BETWEEN 1 AND ${log - 1} ` +
-          `AND NOT EXISTS ( SELECT 1 FROM ${vt} mm WHERE mm._vers_space = ${space} ` +
-          `AND mm._vers_log BETWEEN 1 AND ${log - 1} AND mm._vers_log > m._vers_log ` +
-          `AND ${pkJoins.join(" AND ")} LIMIT 1 )`
-        : `m._vers_space = ${space} AND m._vers_log = 0`;
+        ? sql`m._vers_deleted = 0 AND m._vers_space = ${spaceSql} AND m._vers_log BETWEEN 1 AND ${lastLogSql}
+          AND NOT EXISTS (SELECT 1 FROM ${sql.id(vt)} mm WHERE mm._vers_space = ${spaceSql}
+          AND mm._vers_log BETWEEN 1 AND ${lastLogSql} AND mm._vers_log > m._vers_log
+          AND ${sql.join(pkJoins, " AND ")} LIMIT 1)`
+        : sql`m._vers_space = ${spaceSql} AND m._vers_log = 0`;
 
     await db.query`DROP VIEW IF EXISTS ${sql.id(name)}`;
-    await db.query`${sql.raw(head + where)}`;
+    await db.query`CREATE VIEW ${sql.id(name)} AS SELECT ${sql.join(selects)} FROM ${sql.id(vt)} m
+        LEFT JOIN ${sql.id(tableName)} original ON ${sql.join(origJoins, " AND ")} WHERE ${where}`;
 }
 
 // ─── Baseline ────────────────────────────────────────────────────────────────
@@ -167,14 +159,14 @@ async function createView(db: Db, tableName: string, vt: string, name: string, s
 async function baselineTable(db: Db, tableName: string, vt: string, logId: number): Promise<void> {
     if (dbState(db).baselined.has(vt)) return;
     const pks = (await db.columns(tableName)).filter((c) => c.Key === "PRI").map((c) => c.Field);
-    const join = pks.map((f) => `v.\`${f}\` = t.\`${f}\``).join(" AND ");
+    const join = sql.join(pks.map((f) => sql`v.${sql.id(f)} = t.${sql.id(f)}`), " AND ");
     // Map values onto the shadow's own column order (not positional t.*,…), so it stays
     // correct even when the shadow's column order has diverged from the live table.
     const selects = (await db.columns(vt)).map((c) =>
         c.Field === "_vers_log" ? sql`${logId}` : c.Field.startsWith("_vers_") ? sql.raw("0") : sql`t.${sql.id(c.Field)}`);
     await db.query`
         INSERT INTO ${sql.id(vt)} SELECT ${sql.join(selects)} FROM ${sql.id(tableName)} t
-        WHERE NOT EXISTS (SELECT 1 FROM ${sql.id(vt)} v WHERE v._vers_space = 0 AND ${sql.raw(join)})`;
+        WHERE NOT EXISTS (SELECT 1 FROM ${sql.id(vt)} v WHERE v._vers_space = 0 AND ${join})`;
     dbState(db).baselined.add(vt);
 }
 
