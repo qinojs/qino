@@ -4,7 +4,6 @@ import { cms } from '../../cms/pub/js/cms.mjs';
 const nodeId = globalThis.qino?.cms?.nodeId;
 
 // The CMS panel (cms.frontend.2) lives in the shadow DOM of <qino-cms>.
-// SelectorObserver with {root} sees into it, c1.onElement (document only) does not.
 const panelRoot = customElements.whenDefined('qino-cms').then(() => document.querySelector('qino-cms').shadowRoot);
 
 panelRoot.then(async root => {
