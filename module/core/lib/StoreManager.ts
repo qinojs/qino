@@ -25,9 +25,18 @@ export class Store {
     this.#declared = declared;
   }
 
+  /** URL of the catalog itself. */
   get url(): string { return this.#url; }
+  /** Directory the catalog lives in — every module of the store lies below it. */
+  get base(): string { return new URL(".", this.#url).href; }
+  /** The catalog URL is the base; a module lives beside it under its own name. */
+  moduleUrl(name: string): string { return `${this.base}${name}/plugin.ts`; }
+
   /** True for a store the application declares itself — it outlives any uninstall. */
   get declared(): boolean { return this.#declared; }
+
+  /** Read the catalog. Not cached — a store may gain modules while the app runs. */
+  names(): Promise<string[]> { return readCatalog(this.#url); }
 
   /** Declare one module of this store — its URL is conventional, so no catalog is read. */
   add(name: string): this {
@@ -41,12 +50,6 @@ export class Store {
     for (const name of await this.names()) this.add(name);
     return this;
   }
-
-  /** Read the catalog. Not cached — a store may gain modules while the app runs. */
-  names(): Promise<string[]> { return readCatalog(this.#url); }
-
-  /** The catalog URL is the base; a module lives beside it under its own name. */
-  moduleUrl(name: string): string { return new URL(`${name}/plugin.ts`, new URL(".", this.#url)).href; }
 }
 
 export class StoreManager {

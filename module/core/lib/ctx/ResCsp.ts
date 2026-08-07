@@ -1,5 +1,8 @@
 type Sources = Record<string, true>;
 
+// Only a source ending in "/" is a path prefix in CSP — everything below it is already covered.
+const collapse = (keys: string[]) => keys.filter((k) => !keys.some((o) => o !== k && o.endsWith("/") && k.startsWith(o)));
+
 /** Content-Security-Policy builder. Directives are typed fields; add a field for new ones. */
 export class ResCsp {
   "default-src": Sources = { "'self'": true };
@@ -17,7 +20,7 @@ export class ResCsp {
     let s = "";
     for (const [type, allowed] of Object.entries(this) as [string, Sources][]) {
       if (type === "reportTo") continue;
-      let keys = Object.keys(allowed);
+      let keys = collapse(Object.keys(allowed));
       // 'report-sample' opts violation reports into a sample of the offending code
       if (type === "script-src" || type === "style-src") keys = [...keys, "'report-sample'"];
       // 'none' is meaningless once other sources are present

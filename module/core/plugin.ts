@@ -96,6 +96,12 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
         // core's own qino.js imports item.js — allow the origin, and let uncdn proxy it when installed
         ctx.res.csp["script-src"][itemRoot] = true;
+        // A remote store covers the assets of all its modules, so their own declarations collapse into it
+        for (const store of app.stores.all()) {
+            if (!store.base.startsWith("https://")) continue;
+            ctx.res.csp["script-src"][store.base] = true;
+            ctx.res.csp["style-src"][store.base] = true;
+        }
     }, { signal });
 
     const langsRaw = String(await app.settings.core.langs ?? "");
