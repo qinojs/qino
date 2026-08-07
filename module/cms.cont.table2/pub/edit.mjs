@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 import { TableHandles } from '../../core/pub/js/c1/tableHandles.mjs';
 
 const handles = new TableHandles();
@@ -6,7 +6,7 @@ let active, pid;
 document.addEventListener('input', e => {
   const input = e.composedPath()[0].closest('[data-table2-setting]');
   if (!input) return;
-  apt.cms.node(input.dataset.node).settings[input.dataset.key].put({value:input.value}).then(() => {
+  api.cms.node(input.dataset.node).settings[input.dataset.key].put({value:input.value}).then(() => {
     if (input.hasAttribute('data-reload-options')) cms.cont(cms.cont.active).showWidget('options');
   });
 });
@@ -27,7 +27,7 @@ const actions = {
 for (const [key, data] of Object.entries(actions)) {
   handles[key].addEventListener('click', () => {
     document.activeElement.blur();
-    apt.cms.node(pid).api.post(data()).then(() => cms.reloadNode(pid));
+    api.cms.node(pid).api.post(data()).then(() => cms.reloadNode(pid));
   });
 }
 

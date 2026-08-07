@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
-import { Access, AccessError, NotFoundError, aptClient, invoke, toTools } from "../lib/apt/mod.ts";
+import { Access, AccessError, NotFoundError, apiClient, invoke, toTools } from "../lib/api/mod.ts";
 import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 const fakeCtx = await testContext();
@@ -45,7 +45,7 @@ function withCtx<T>(fn: () => T): T {
   return requestStorage.run(fakeCtx, fn);
 }
 
-Deno.test("apt smoke: invoke resolves, validates defaults and surfaces typed errors", async () => {
+Deno.test("api smoke: invoke resolves, validates defaults and surfaces typed errors", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "GET", "/page/1"), { id: "1", title: "Home" });
     assertEquals(await invoke(api, "POST", "/page/1/copy", {}), { id: "1-copy" });
@@ -56,7 +56,7 @@ Deno.test("apt smoke: invoke resolves, validates defaults and surfaces typed err
   });
 });
 
-Deno.test("apt smoke: toTools exposes executable tool contracts", () => {
+Deno.test("api smoke: toTools exposes executable tool contracts", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), ["get_page", "post_page_copy"]);
   assertEquals(tools[1].parameters, {
@@ -69,9 +69,9 @@ Deno.test("apt smoke: toTools exposes executable tool contracts", () => {
   });
 });
 
-Deno.test("apt smoke: aptClient mirrors route tree", async () => {
+Deno.test("api smoke: apiClient mirrors route tree", async () => {
   await withCtx(async () => {
-    const rpc = aptClient(api);
+    const rpc = apiClient(api);
     assertEquals(await rpc.page("1").get(), { id: "1", title: "Home" });
     assertEquals(await rpc.page("1").copy.post({ deep: true }), { id: "1-copy-deep" });
   });

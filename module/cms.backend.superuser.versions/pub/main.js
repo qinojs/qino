@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.versions", (el) => {
   const nid = cms.el.nid(el);
@@ -11,14 +11,14 @@ cms.initNode("backend.superuser.versions", (el) => {
 
     if (thin) {
       thin.disabled = true;
-      const res = await apt.cms.node(nid).api.post({ thin: 1 });
+      const res = await api.cms.node(nid).api.post({ thin: 1 });
       await alert((res?.deleted ?? 0) + " entries deleted");
       location.reload();
     } else if (delSpace) {
-      await apt.cms.node(nid).api.post({ deleteSpace: delSpace.dataset.space });
+      await api.cms.node(nid).api.post({ deleteSpace: delSpace.dataset.space });
       location.reload();
     } else if (purge) {
-      await apt.cms.node(nid).api.post({ purge: 1 });
+      await api.cms.node(nid).api.post({ purge: 1 });
       location.reload();
     }
   });

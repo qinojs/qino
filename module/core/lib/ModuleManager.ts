@@ -246,7 +246,7 @@ export class ModuleManager {
       if (other !== mod && this.#linked.has(other.name) && (other.plugin.needs ?? []).includes(name))
         throw new Error(`Cannot unlink "${name}": "${other.name}" needs it`);
     mod.abort(); // fires the signal init() registered its listeners/timers with
-    delete this.#app.aptTree[name];
+    delete this.#app.apiTree[name];
     this.#linked.delete(name);
     this.#applySchemas(this.#order([...this.#linked]));
   }
@@ -261,7 +261,7 @@ export class ModuleManager {
       await this.#app.db.table("module").ensure({ name: mod.name, installed: this.#installed[mod.name] });
     }
     await this.#loadLocales(mod);
-    if (plugin.api) this.#app.aptTree[mod.name] = plugin.api;
+    if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
     this.#linked.add(mod.name);
   }
 

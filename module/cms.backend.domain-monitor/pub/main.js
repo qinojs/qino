@@ -1,8 +1,8 @@
-import { apt, ctx } from "../../core/pub/js/qino.js";
+import { api, ctx } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.domain-monitor", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const table = el.querySelector("table.-domains");
   const tbody = el.querySelector("tbody[data-monitor-list]");
   const search = el.querySelector("[data-monitor-search]");

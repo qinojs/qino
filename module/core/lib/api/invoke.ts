@@ -1,7 +1,7 @@
 import { getCtx } from "../ctx/Ctx.ts";
 import type { StandardSchema } from "../StandardSchema.ts";
 import { AccessError, NotFoundError, ValidationError } from "./errors.ts";
-import { BODY_METHODS, RESERVED, VERB_SET, branch, type AptNode, type AptTree, type Branch, type Method, type Params, type Verb } from "./types.ts";
+import { BODY_METHODS, RESERVED, VERB_SET, branch, type ApiNode, type ApiTree, type Branch, type Method, type Params, type Verb } from "./types.ts";
 import { isCatchall, paramName, shapeOf } from "./route.ts";
 
 
@@ -26,12 +26,12 @@ export const asParams = (v: unknown): Params => v && typeof v === "object" ? v a
 /** Out-of-band control channel, kept out of the input/query data namespace. */
 export type InvokeOptions = { checkAccess?: boolean };
 
-export async function invoke(tree: AptTree, method: string, path: string, rawParams: Params = {}, opts: InvokeOptions = {}): Promise<unknown> {
+export async function invoke(tree: ApiTree, method: string, path: string, rawParams: Params = {}, opts: InvokeOptions = {}): Promise<unknown> {
   const m = method.toLowerCase() as Method;
   if (!VERB_SET.has(m)) throw new NotFoundError(`no route: ${method} ${path}`);
 
   const segments: string[] = [];
-  const nodes: AptNode[] = [];
+  const nodes: ApiNode[] = [];
   const pathValues: Record<string, unknown> = Object.create(null);
 
   let cursor: Branch = tree;
@@ -98,7 +98,7 @@ export async function invoke(tree: AptTree, method: string, path: string, rawPar
 
   if (verb.output) {
     const res = verb.output["~standard"].validate(result);
-    if (res.issues) console.warn(`[apt] output validation failed at ${m} ${path}:`, res.issues);
+    if (res.issues) console.warn(`[api] output validation failed at ${m} ${path}:`, res.issues);
   }
 
   return result;

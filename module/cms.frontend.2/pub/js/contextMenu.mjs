@@ -1,6 +1,6 @@
 
 import '../../../core/pub/js/c1/contextMenu.mjs';
-import { apt, ctx, t } from '../../../core/pub/js/qino.js';
+import { api, ctx, t } from '../../../core/pub/js/qino.js';
 import '../../../cms/pub/js/cms.mjs';
 
 const moduleUrl = ctx.moduleUrl;
@@ -40,7 +40,7 @@ menu.addItem(t`Copy`, {
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
   },
   onclick() {
-    apt.cms.node(this.activePid).copy.post().then(({ id }) => {
+    api.cms.node(this.activePid).copy.post().then(({ id }) => {
       cms.cont(id).addPosition();
     });
   }
@@ -54,7 +54,7 @@ menu.addItem(t`Cut`, {
   },
   onclick() {
     const pid = this.activePid;
-    apt.cms.clipboard.put({ value: parseInt(pid) }).then(() => {
+    api.cms.clipboard.put({ value: parseInt(pid) }).then(() => {
       const els = document.querySelectorAll('[qcms-id="'+pid+'"]');
       for (const el of els) el.style.opacity = .3;
     });
@@ -73,7 +73,7 @@ menu.addItem(t`Delete`, {
     if (!await cms.dialogs.confirm(t`Really delete this content?`)) return;
     const pid = cms.el.nid(el);
     el.remove();
-    apt.cms.node(pid).delete();
+    api.cms.node(pid).delete();
   }
 });
 
@@ -118,13 +118,13 @@ treeMenu.addItem(t`Copy`, {
     cms.frontend2.dialog(t`Copy page "${node.data.title}"?`,'',[
       {
         title:t`Copy page`,then(){
-          apt.cms.node(node.data.id).copy.post().then(() => {
+          api.cms.node(node.data.id).copy.post().then(() => {
             cms.Tree.reloadChildren(cms.Tree.parent(node));
           });
         }
       },{
         title:t`including subpages`,then(){
-          apt.cms.node(node.data.id).copy.post({ deep: true }).then(() => {
+          api.cms.node(node.data.id).copy.post({ deep: true }).then(() => {
             cms.Tree.reloadChildren(cms.Tree.parent(node));
           });
         }
@@ -146,7 +146,7 @@ treeMenu.addItem(t`Delete`, {
   async onclick() {
     const n = cms.Tree.getNodeById(this.lastPid);
     if (!await cms.dialogs.confirm(t`Really delete page "${n.data.title}"?`)) return;
-    apt.cms.node(n.data.id).delete().then(ret => {
+    api.cms.node(n.data.id).delete().then(ret => {
       if (ret.parent_id && n.data.id==nodeId) {
         location.href = "?cmspid="+ret.parent_id;
       } else {

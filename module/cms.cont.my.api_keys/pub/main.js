@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 import { t } from "../../core/pub/js/qino.js";
 
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -15,7 +15,7 @@ cms.initNode("cont.my.api_keys", async (el) => {
 
   const load = async () => {
     try {
-      const keys = await apt.api_key.keys.get();
+      const keys = await api.api_key.keys.get();
       list.innerHTML = keys.length
         ? keys.map((k) => `<div data-key>
             <code>${esc(k.prefix)}…</code> <strong>${esc(k.name)}</strong>
@@ -30,14 +30,14 @@ cms.initNode("cont.my.api_keys", async (el) => {
     const btn = e.target.closest("[data-del]");
     if (!btn) return;
     if (!confirm(labels.del)) return;
-    const r = await apt.api_key.key(btn.dataset.del).delete();
+    const r = await api.api_key.key(btn.dataset.del).delete();
     if (r.ok) btn.closest("[data-key]")?.remove();
   });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {
-      const r = await apt.api_key.keys.post({ name: name.value || undefined });
+      const r = await api.api_key.keys.post({ name: name.value || undefined });
       token.hidden = false;
       token.value = `${await t`Copy now — shown only once`}: ${r.token}`;
       name.value = "";

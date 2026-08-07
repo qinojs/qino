@@ -88,7 +88,7 @@ const BINARIES: Binary[] = [
     label: "ImageMagick",
     available: FileTransformer.capabilities.magick,
     install: {
-      debian: "apt install imagemagick",
+      debian: "api install imagemagick",
       alpine: "apk add imagemagick",
       macos:  "brew install imagemagick",
     },
@@ -98,7 +98,7 @@ const BINARIES: Binary[] = [
     label: "FFmpeg",
     available: FileTransformer.capabilities.ffmpeg,
     install: {
-      debian: "apt install ffmpeg",
+      debian: "api install ffmpeg",
       alpine: "apk add ffmpeg",
       macos:  "brew install ffmpeg",
     },
@@ -108,7 +108,7 @@ const BINARIES: Binary[] = [
     label: "pngquant",
     available: FileTransformer.capabilities.pngquant,
     install: {
-      debian: "apt install pngquant",
+      debian: "api install pngquant",
       alpine: "apk add pngquant",
       macos:  "brew install pngquant",
     },
@@ -118,7 +118,7 @@ const BINARIES: Binary[] = [
     label: "Pandoc",
     available: FileTransformer.capabilities.pandoc,
     install: {
-      debian: "apt install pandoc",
+      debian: "api install pandoc",
       alpine: "apk add pandoc",
       macos:  "brew install pandoc",
     },
@@ -128,7 +128,7 @@ const BINARIES: Binary[] = [
     label: "pdftotext (Poppler)",
     available: FileTransformer.capabilities.pdftotext,
     install: {
-      debian: "apt install poppler-utils",
+      debian: "api install poppler-utils",
       alpine: "apk add poppler-utils",
       macos:  "brew install poppler",
     },
@@ -138,7 +138,7 @@ const BINARIES: Binary[] = [
     label: "Tesseract OCR",
     available: FileTransformer.capabilities.tesseract,
     install: {
-      debian: "apt install tesseract-ocr tesseract-ocr-deu",
+      debian: "api install tesseract-ocr tesseract-ocr-deu",
       alpine: "apk add tesseract-ocr tesseract-ocr-data-deu",
       macos:  "brew install tesseract tesseract-lang",
     },
@@ -148,7 +148,7 @@ const BINARIES: Binary[] = [
     label: "AVIF (libheif)",
     available: FileTransformer.capabilities.avif,
     install: {
-      debian: "apt install imagemagick-6.q16 libheif-dev",
+      debian: "api install imagemagick-6.q16 libheif-dev",
       macos:  "brew install imagemagick libheif",
     },
     noAutoInstall: true,
@@ -161,7 +161,7 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
   const cmd = bin.install[platform];
   if (!cmd) return `No install command for platform "${platform}"`;
   const [prog, ...args] = cmd.split(" ");
-  if (prog === "apt") args.unshift("-y");
+  if (prog === "api") args.unshift("-y");
   try {
     const { stdout, stderr, code } = await new Deno.Command(prog, {
       args,

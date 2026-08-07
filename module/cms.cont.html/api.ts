@@ -1,5 +1,5 @@
 import { cms, type Node } from "../cms/mod.ts";
-import { Access, ConflictError, NotFoundError, s, type AptTree, type Ctx } from "../core/mod.ts";
+import { Access, ConflictError, NotFoundError, s, type ApiTree, type Ctx } from "../core/mod.ts";
 import { codeFiles } from "./codeFiles.ts";
 
 const content = s.object({ content: s.string().describe("Complete file content") });
@@ -36,7 +36,7 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
   },
 });
 
-export function nodeApi(module: string): AptTree {
+export function nodeApi(module: string): ApiTree {
   return {
     node: {
       ":node": {

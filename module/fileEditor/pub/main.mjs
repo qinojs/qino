@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 const btn = document.getElementById('saveButton');
 const editorEl = document.getElementById('editor');
 const mime   = editorEl.getAttribute('mime');
@@ -8,7 +8,7 @@ const cmCol  = editorEl.getAttribute('col')-1;
 
 function saveFile(content){
   btn.style.backgroundColor = '#fea';
-  apt.fileEditor.save.put({ file, content }).then(asw => {
+  api.fileEditor.save.put({ file, content }).then(asw => {
     if (asw) {
       btn.style.backgroundColor = '';
       btn.style.display = 'none';

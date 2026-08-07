@@ -1,4 +1,4 @@
-import { apt, t } from "../../core/pub/js/qino.js";
+import { api, t } from "../../core/pub/js/qino.js";
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 
@@ -88,7 +88,7 @@ class AiChat extends HTMLElement {
       const id = Number(sessionStorage.getItem(this.#storeKey));
       if (!id) return;
       try {
-        const { messages } = await apt.ai.sessions(id).get();
+        const { messages } = await api.ai.sessions(id).get();
         this.#sessionId = id;
         for (const { role, content } of messages) {
           const el = this.#addMessage(role, content);
@@ -104,7 +104,7 @@ class AiChat extends HTMLElement {
     if (this.#sessionId) return this.#sessionId;
     await this.#loadHistory(); // don't fork a resumable session
     if (this.#sessionId) return this.#sessionId;
-    const { id } = await apt.ai.sessions.post({ bot: this.#bot, context: this.#context });
+    const { id } = await api.ai.sessions.post({ bot: this.#bot, context: this.#context });
     sessionStorage.setItem(this.#storeKey, id);
     return (this.#sessionId = id);
   }

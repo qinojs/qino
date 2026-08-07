@@ -1,10 +1,10 @@
 import type { StandardSchema } from "../StandardSchema.ts";
-import { RESERVED, VERBS, type AptNode, type AptTree, type Method, type Verb } from "./types.ts";
+import { RESERVED, VERBS, type ApiNode, type ApiTree, type Method, type Verb } from "./types.ts";
 
 export interface Route {
   method: Method;
   segments: string[];
-  nodes: AptNode[];
+  nodes: ApiNode[];
   verb: Verb;
   name: string;
 }
@@ -21,7 +21,7 @@ export function routeParams(r: Route): [string, StandardSchema | undefined, stri
   );
 }
 
-export function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
+export function* walk(tree: ApiTree, segments: string[] = [], nodes: ApiNode[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(tree)) {
     if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
     for (const verbKey of VERBS) {
@@ -30,7 +30,7 @@ export function* walk(tree: AptTree, segments: string[] = [], nodes: AptNode[] =
         yield { method: verbKey, segments: [...segments, key], nodes: [...nodes, value], verb, name: camelName(verbKey, [...segments, key]) };
       }
     }
-    yield* walk(value as AptTree, [...segments, key], [...nodes, value]);
+    yield* walk(value as ApiTree, [...segments, key], [...nodes, value]);
   }
 }
 
@@ -45,7 +45,7 @@ export function checkCollisions(r: Route) {
   const seen = new Map<string, string>();
   const add = (name: string, source: string) => {
     if (seen.has(name)) throw new Error(
-      `apt setup error at ${r.method.toUpperCase()} /${r.segments.join("/")}: ` +
+      `api setup error at ${r.method.toUpperCase()} /${r.segments.join("/")}: ` +
       `param name "${name}" appears in both ${seen.get(name)} and ${source} — rename one`,
     );
     seen.set(name, source);

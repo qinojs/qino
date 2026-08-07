@@ -1,9 +1,9 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { ImageEditor } from './imageEditor.js';
-import { apt, ctx } from '../../core/pub/js/qino.js';
+import { api, ctx } from '../../core/pub/js/qino.js';
 import '../../core/pub/js/qg/fileHelpers.mjs'; // globalThis.qgfileUpload
 
-const meta = id => apt['cms.image_editor'].meta(id);
+const meta = id => api['cms.image_editor'].meta(id);
 const loadingMjs = () => import('../../core/pub/js/c1/loading.mjs');
 
 // accordion + hotspot styles, scoped to the editor's shadow root
@@ -203,14 +203,14 @@ export class DbFileImageEditor extends ImageEditor {
     }
   }
   loadHistory() {
-    apt['cms.image_editor'].history(this.file_id).get().then(res => {
+    api['cms.image_editor'].history(this.file_id).get().then(res => {
       this.el('.-history').innerHTML = `<div style="max-height:25rem; overflow:auto">${res}</div>`;
     });
     this.el('.-history').onclick = e => {
       const log = parseInt(e.target.getAttribute('log'), 10);
       if (!Number.isFinite(log)) return;
       if (!confirm('Möchten Sie das Bild wiederherstellen?')) return;
-      apt['cms.image_editor'].restore(this.file_id).post({ log: log + 1 })
+      api['cms.image_editor'].restore(this.file_id).post({ log: log + 1 })
         .then(() => { location.href = location.href.replace(/#.*$/, ''); })
         .catch(err => alert('Wiederherstellen fehlgeschlagen: ' + err.message));
     };

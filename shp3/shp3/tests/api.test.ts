@@ -121,16 +121,16 @@ Deno.test("shp3 api: money comes formatted, the client does not guess the decima
   }
 });
 
-Deno.test("shp3 api: no endpoint shadows a name apt reserves", () => {
+Deno.test("shp3 api: no endpoint shadows a name api reserves", () => {
   // `resolve` is the param resolver of a `:id` node — an endpoint of that name breaks every
   // call below it, and only at request time.
   const walk = (node: Record<string, any>, path: string) => {
     for (const [key, child] of Object.entries(node)) {
       if (!child || typeof child !== "object") continue;
       const here = `${path}/${key}`;
-      // Below a :param node, "resolve" is apt's own hook — an endpoint of that name replaces it.
+      // Below a :param node, "resolve" is api's own hook — an endpoint of that name replaces it.
       if (key.startsWith(":") && child.resolve !== undefined && typeof child.resolve !== "function") {
-        throw new Error(`${here} defines "resolve" as an endpoint, which apt reserves`);
+        throw new Error(`${here} defines "resolve" as an endpoint, which api reserves`);
       }
       walk(child, here);
     }

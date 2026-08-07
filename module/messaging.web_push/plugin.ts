@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, getCtx, s, sha256, sql, unixTime, type AptTree } from "../core/mod.ts";
+import { Access, getCtx, s, sha256, sql, unixTime, type ApiTree } from "../core/mod.ts";
 import { publicKey } from "./mod.ts";
 
 export const name = "messaging.web_push";
@@ -17,7 +17,7 @@ export const settingsSchema = {
   },
 };
 
-export const api: AptTree = {
+export const api: ApiTree = {
 
   key: {
     get: {

@@ -1,7 +1,7 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.smalltext.export", (el) => {
-  const node = apt.cms.node(cms.el.nid(el));
+  const node = api.cms.node(cms.el.nid(el));
   const result = el.querySelector("[data-result]");
 
   el.querySelector("[data-action=export]")?.addEventListener("click", async (e) => {

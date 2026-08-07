@@ -218,7 +218,7 @@ export async function runChecks(app: App, rows: DomainRow[], signal?: AbortSigna
   if (failed) throw failed.reason;
 }
 
-// The pasted list arrives as `vars` from cms.reloadNode (background apt POST, no full reload).
+// The pasted list arrives as `vars` from cms.reloadNode (background api POST, no full reload).
 // Returns the entries that were no usable domain, so the form can name them.
 export async function addDomains(app: App, list: string): Promise<string[]> {
   const added: DomainRow[] = [];

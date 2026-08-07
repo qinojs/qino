@@ -1,4 +1,4 @@
-import { Access, AccessError, s, type Ctx, type AptTree, type App } from "../core/mod.ts";
+import { Access, AccessError, s, type Ctx, type ApiTree, type App } from "../core/mod.ts";
 import { cms, cmsCtx } from "../cms/mod.ts";
 import { widgetUrl } from "./view/widget.ts";
 
@@ -44,7 +44,7 @@ async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any
   return html;
 }
 
-export const api: AptTree = {
+export const api: ApiTree = {
   widget: {
     ":widget": {
       post: {

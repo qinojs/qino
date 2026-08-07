@@ -17,7 +17,7 @@ function makeApp() {
         insert: (row: Record<string, unknown>) => challenges.push(row),
       }),
     },
-    aptTree: { web_auth: api },
+    apiTree: { web_auth: api },
   };
   return { app, challenges, execs };
 }
@@ -29,7 +29,7 @@ Deno.test("web_auth: module metadata is wired", () => {
   assertEquals(settingsSchema.properties.rpName.type, "string");
 });
 
-Deno.test("web_auth: api exposes expected apt endpoints", () => {
+Deno.test("web_auth: api exposes expected api endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "post_register_challenge",
@@ -73,9 +73,9 @@ Deno.test("web_auth: user-only endpoints reject guests", async () => {
   const { app } = makeApp();
   const c = await testContext({ app });
   await requestStorage.run(c, async () => {
-    await assertRejects(() => invoke((app as any).aptTree.web_auth, "POST", "/register/challenge"), AccessError);
-    await assertRejects(() => invoke((app as any).aptTree.web_auth, "POST", "/confirm/challenge"), AccessError);
-    await assertRejects(() => invoke((app as any).aptTree.web_auth, "GET", "/credentials"), AccessError);
+    await assertRejects(() => invoke((app as any).apiTree.web_auth, "POST", "/register/challenge"), AccessError);
+    await assertRejects(() => invoke((app as any).apiTree.web_auth, "POST", "/confirm/challenge"), AccessError);
+    await assertRejects(() => invoke((app as any).apiTree.web_auth, "GET", "/credentials"), AccessError);
   });
 });
 
@@ -83,7 +83,7 @@ Deno.test("web_auth: public login challenge stores challenge state without extra
   const { app, challenges, execs } = makeApp();
   const c = await testContext({ app });
   const out = await requestStorage.run(c, () =>
-    invoke((app as any).aptTree.web_auth, "POST", "/login/challenge", { email: " nobody@example.test " })
+    invoke((app as any).apiTree.web_auth, "POST", "/login/challenge", { email: " nobody@example.test " })
   ) as any;
 
   assertEquals(typeof out.token, "string");

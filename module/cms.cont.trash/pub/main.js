@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 const el      = document.querySelector('[qcms-mod="cont.trash"]');
 
@@ -18,11 +18,11 @@ el.querySelector('.-list').addEventListener('click', async e => {
   const id = Number(item.dataset.id);
   if (e.target.closest('.-remove')) {
     item.style.opacity = '.4';
-    await apt.cms.node(id).delete();
+    await api.cms.node(id).delete();
     item.remove();
   } else if (e.target.closest('.-restore')) {
     item.style.opacity = '.4';
-    const { url } = await apt.cms.node(id).restore.post();
+    const { url } = await api.cms.node(id).restore.post();
     location.href = url;
   } else {
     iframe.src = item.dataset.url;
@@ -34,7 +34,7 @@ el.querySelector('.-removeAll')?.addEventListener('click', async function () {
   this.disabled = true;
   for (const item of el.querySelectorAll('.-item')) {
     item.style.opacity = '.4';
-    await apt.cms.node(Number(item.dataset.id)).delete();
+    await api.cms.node(Number(item.dataset.id)).delete();
     item.remove();
   }
 });

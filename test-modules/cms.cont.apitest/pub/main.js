@@ -63,7 +63,7 @@ cms.initNode("cont.apitest", (root) => {
       opts.credentials = "omit"; // drop the ambient cookie so anon/bearer are honest
       if (identity.mode === "bearer") headers["Authorization"] = "Bearer " + identity.token;
     }
-    headers["X-Apt-Check"] = "access";
+    headers["X-Api-Check"] = "access";
     try {
       const res = await fetch(appUrl + "api" + path, opts);
       if (res.ok) return "ok";

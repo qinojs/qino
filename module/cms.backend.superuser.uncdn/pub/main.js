@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.uncdn", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -10,6 +10,6 @@ cms.initNode("backend.superuser.uncdn", (el) => {
     if (!btn) return;
     btn.disabled = true;
     const vars = reload ? JSON.parse(reload.dataset.reload) : { delete: del.dataset.delete };
-    el.outerHTML = await apt.cms.node(nid).html.post({ vars });
+    el.outerHTML = await api.cms.node(nid).html.post({ vars });
   });
 });

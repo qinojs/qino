@@ -2,11 +2,11 @@ import { assertEquals } from "../../core/tests/deps.ts";
 import { checkCollisions, toTools, walk } from "../../core/mod.ts";
 import { api } from "../api.ts";
 
-Deno.test("cms apt tree: has no route collisions", () => {
+Deno.test("cms api tree: has no route collisions", () => {
   for (const r of walk(api)) checkCollisions(r);
 });
 
-Deno.test("cms apt tree: exposes expected stable tool names", () => {
+Deno.test("cms api tree: exposes expected stable tool names", () => {
   const names = new Set(toTools(api).map((tool) => tool.name));
   for (const name of [
     "get_tree",

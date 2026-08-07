@@ -15,7 +15,7 @@ function collectVerbs(tree: Record<string, unknown>, out: Array<Record<string, u
   return out;
 }
 
-Deno.test("cms: apt tree exposes expected core tools", () => {
+Deno.test("cms: api tree exposes expected core tools", () => {
   const tools = toTools(api);
   const names = new Set(tools.map((tool) => tool.name));
   for (const name of [
@@ -58,12 +58,12 @@ Deno.test("cms: node API tools include path parameters and required input", () =
   });
 });
 
-Deno.test("cms: apt tool names remain unique", () => {
+Deno.test("cms: api tool names remain unique", () => {
   const names = toTools(api).map((tool) => tool.name);
   assertEquals(new Set(names).size, names.length);
 });
 
-Deno.test("cms: apt verbs declare access and descriptions", () => {
+Deno.test("cms: api verbs declare access and descriptions", () => {
   for (const verb of collectVerbs(api)) {
     assertEquals(typeof verb.execute, "function");
     assertEquals(typeof verb.access, "function");

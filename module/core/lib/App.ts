@@ -12,7 +12,7 @@ import { ModuleManager, type Module } from "./ModuleManager.ts";
 import { StoreManager } from "./StoreManager.ts";
 import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
-import { aptFetch, aptClient, type AptTree, type AptProxy } from "./apt/mod.ts";
+import { apiFetch, apiClient, type ApiTree, type ApiProxy } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
 
 const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
@@ -71,11 +71,12 @@ export class App extends Emitter<AppEvents> {
     stores: StoreManager;
     languages: LangManager;
     t: LangManager["t"];
-    aptTree: AptTree = {};
-    #apt?: AptProxy;
+    /** What the modules declare — the loader mounts each module's `api` export under its name. */
+    apiTree: ApiTree = {};
+    #api?: ApiProxy;
 
-    // the proxy reads aptTree lazily, so modules added at runtime stay visible
-    get apt(): AptProxy { return this.#apt ??= aptClient(this.aptTree); }
+    /** How you call it: `app.api.cms.node(42).get()`. Reads apiTree lazily, so runtime modules stay visible. */
+    get api(): ApiProxy { return this.#api ??= apiClient(this.apiTree); }
 
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
@@ -167,10 +168,10 @@ export class App extends Emitter<AppEvents> {
         if (uri === "dbFile" || uri.startsWith("dbFile/"))
             return this.dbFiles.output(uri.slice("dbFile/".length), ctx.req.raw);
 
-        // apt always signals via thrown Output (success or error) — caught in #run.
+        // api always signals via thrown Output (success or error) — caught in #run.
         // stateless requests carry no ambient cookie, so CSRF checks don't apply
         if (uri === "api" || uri.startsWith("api/"))
-            return aptFetch(ctx.req, this.aptTree, "/" + uri.slice("api/".length), { auth: () => ctx.statelessAuth });
+            return apiFetch(ctx.req, this.apiTree, "/" + uri.slice("api/".length), { auth: () => ctx.statelessAuth });
 
         return this.#renderFallback(ctx);
     }

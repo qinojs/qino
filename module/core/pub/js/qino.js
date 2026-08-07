@@ -3,17 +3,17 @@
 //   import { getCtx } from "./qino.js";
 //   const ctx = getCtx();
 //
-//   await ctx.app.apt.core.user.me.get();   // RPC         (like server-side ctx.app.apt.…)
+//   await ctx.app.api.core.user.me.get();   // RPC         (like server-side ctx.app.api.…)
 //   await ctx.app.t`Hallo ${name}`;         // translation (like server-side app.t`…`)
 //   await ctx.settings.foo.bar;             // user/session settings (like ctx.settings)
 //   await ctx.settings.foo.bar.set("x");
 //   ctx.lang / ctx.csrfToken / ctx.appUrl / ctx.moduleUrl / ctx.dev
 //
 // ctx.settings == server-side ctx.settings (NOT app.settings — those are server-only).
-// Backed by the existing apt endpoint  core/ctx-settings/:path*  (Access.USER).
+// Backed by the existing api endpoint  core/ctx-settings/:path*  (Access.USER).
 
 import { Item } from "@qino/item/item.js";
-import { AptClient } from "./AptClient.js";
+import { ApiClient } from "./ApiClient.js";
 import { t } from "./t.mjs";
 
 function defaultBase() {
@@ -23,12 +23,12 @@ function defaultBase() {
   return new URL("api/", location.origin + (appUrl ?? "/"));
 }
 
-export const apt = new AptClient(defaultBase());
+export const api = new ApiClient(defaultBase());
 
 class CtxSetting extends Item {
 
   reader = async () => {
-    const value = await apt.core["ctx-settings"](this.path).get();
+    const value = await api.core["ctx-settings"](this.path).get();
     if (value && typeof value === "object") {
       // we get the whole subtree → cache the values directly, no re-fetch.
       // { local: true } = don't write back via writer (it just came from the server).
@@ -39,14 +39,14 @@ class CtxSetting extends Item {
   };
 
   writer = async (value) => {
-    await apt.core["ctx-settings"](this.path).put({ value });
+    await api.core["ctx-settings"](this.path).put({ value });
   };
 }
 
 const appUrl = globalThis.qino?.appUrl ?? "/";
 
 export const ctx = {
-  app: { apt, t },         // server-side: ctx.app → app.apt / app.t
+  app: { api, t },         // server-side: ctx.app → app.api / app.t
   lang: document.documentElement.getAttribute("lang"),
   appUrl,
   moduleUrl: appUrl + "m/",   // same as server-side: appUrl + "m/"

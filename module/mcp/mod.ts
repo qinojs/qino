@@ -1,7 +1,7 @@
-import { AptError, Output, toTools, walk, type Params, type Ctx, type Tool } from "../core/mod.ts";
+import { ApiError, Output, toTools, walk, type Params, type Ctx, type Tool } from "../core/mod.ts";
 import denoJson from "../../deno.json" with { type: "json" };
 
-/** MCP server (Streamable HTTP, stateless): exposes the app's apt tree as MCP tools.
+/** MCP server (Streamable HTTP, stateless): exposes the app's api tree as MCP tools.
  *  Requires stateless Bearer auth (e.g. api_key); every call re-runs access/guard via invoke. */
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
@@ -72,9 +72,9 @@ async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
 
 /** Same access filter as cms.webmcp: static `access` gates the list, per-call `guard` runs on invoke. */
 async function listTools(ctx: Ctx) {
-  const meta = new Map(toTools(ctx.app.aptTree).map((t) => [t.name, t]));
+  const meta = new Map(toTools(ctx.app.apiTree).map((t) => [t.name, t]));
   const tools = [];
-  for (const r of walk(ctx.app.aptTree)) {
+  for (const r of walk(ctx.app.apiTree)) {
     const access = r.verb.access;
     if (!access || !(await access(ctx))) continue;
     const t = meta.get(r.name);
@@ -88,7 +88,7 @@ const inputSchema = (t: Tool) => Object.keys(t.parameters).length ? t.parameters
 
 async function callTool(params: Params, ctx: Ctx) {
   const name = String(params.name ?? "");
-  const tool = toTools(ctx.app.aptTree).find((t) => t.name === name);
+  const tool = toTools(ctx.app.apiTree).find((t) => t.name === name);
   if (!tool) throw new RpcErr(-32602, `Unknown tool: ${name}`);
   try {
     const result = await tool.execute(params.arguments ?? {}, ctx);
@@ -98,9 +98,9 @@ async function callTool(params: Params, ctx: Ctx) {
     };
   } catch (e) {
     if (e instanceof Output) return outputContent(e); // endpoints that answer with a raw response signal
-    const detail = e instanceof AptError ? e.message + (e.issues ? " " + JSON.stringify(e.issues) : "")
+    const detail = e instanceof ApiError ? e.message + (e.issues ? " " + JSON.stringify(e.issues) : "")
       : ctx.app.dev && e instanceof Error ? e.message : "";
-    if (!(e instanceof AptError)) console.error("[mcp]", e);
+    if (!(e instanceof ApiError)) console.error("[mcp]", e);
     return { content: [{ type: "text", text: detail || "Internal error" }], isError: true };
   }
 }

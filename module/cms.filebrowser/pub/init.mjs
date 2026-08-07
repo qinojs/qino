@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 import { cms } from '../../cms/pub/js/cms.mjs';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -17,8 +17,8 @@ panelRoot.then(async root => {
       fB.show();
       fB.on('select', async e => {
         const pid = cms.cont.active || nodeId;
-        for (const id of e.dbFiles) await apt.cms.node(pid).files.post({ file: String(id) });
-        for (const url of e.urls) await apt.cms.node(pid).files.post({ file: url });
+        for (const id of e.dbFiles) await api.cms.node(pid).files.post({ file: String(id) });
+        for (const url of e.urls) await api.cms.node(pid).files.post({ file: url });
       });
     });
     el.style.display = 'none';
@@ -35,7 +35,7 @@ panelRoot.then(async root => {
         const pid = cms.cont.active || nodeId;
         const item = e.dbFiles[0] || e.urls[0];
         if (item) {
-          await apt.cms.node(pid).files.post({ file: String(item), replace });
+          await api.cms.node(pid).files.post({ file: String(item), replace });
           cms.reloadNode(pid);
         }
         if (e.files) cms.cont(pid).upload(e.files[0], () => cms.reloadNode(pid), replace);
@@ -155,7 +155,7 @@ cms.fileBrowser = class {
 
     const search = needle => {
       c1.loading.mark(list);
-      apt['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result => {
+      api['cms.filebrowser'].search.get({ s: needle ?? '' }).then(result => {
         c1.loading.done(list);
 
         const has = {};

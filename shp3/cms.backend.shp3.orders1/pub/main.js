@@ -1,8 +1,8 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.shp3.orders1", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");
   const id = () => new URLSearchParams(location.search).get("shp3_orderId");
 

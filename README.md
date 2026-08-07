@@ -36,7 +36,7 @@ import { Access, App } from "jsr:@qino/qino";
 
 const app = new App(); // SQLite by default
 
-app.aptTree = {
+app.apiTree = {
   hello: {
     get: {
       description: "Say hello",
@@ -81,7 +81,7 @@ import { Access, App, s } from "jsr:@qino/qino";
 
 const app = new App();
 
-app.aptTree = {
+app.apiTree = {
   users: {
     ":id": {
       paramSchema: s.number(),

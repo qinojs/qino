@@ -1,6 +1,6 @@
 import type { StandardIssue } from "../StandardSchema.ts";
 
-export class AptError extends Error {
+export class ApiError extends Error {
   #status: number;
   #issues: readonly StandardIssue[] | undefined;
   get status(): number { return this.#status; }
@@ -14,10 +14,10 @@ export class AptError extends Error {
   }
 }
 
-export class AccessError extends AptError { constructor(message = "Access denied") { super(403, message); } }
-export class NotFoundError extends AptError { constructor(message = "Not found") { super(404, message); } }
-export class ConflictError extends AptError { constructor(message = "Conflict") { super(409, message); } }
-export class ValidationError extends AptError {
+export class AccessError extends ApiError { constructor(message = "Access denied") { super(403, message); } }
+export class NotFoundError extends ApiError { constructor(message = "Not found") { super(404, message); } }
+export class ConflictError extends ApiError { constructor(message = "Conflict") { super(409, message); } }
+export class ValidationError extends ApiError {
   constructor(issues: readonly StandardIssue[], where = "input") {
     super(422, `Validation failed (${where})`, issues);
   }

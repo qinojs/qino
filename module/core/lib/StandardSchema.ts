@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 /**
- * Minimal Standard-Schema-compatible validator for apt.
+ * Minimal Standard-Schema-compatible validator for api.
  * Browser-compatible, zero dependencies.
  * Spec: https://standardschema.dev
  */
@@ -23,7 +23,7 @@ declare const OPTIONAL_BRAND: unique symbol;
 type Optional<T> = StandardSchema<T | undefined> & { readonly [OPTIONAL_BRAND]: true };
 
 export class StandardSchema<T = unknown> {
-  readonly "~standard": { readonly version: 1; readonly vendor: "apt"; readonly validate: (value: unknown) => StandardResult<T> };
+  readonly "~standard": { readonly version: 1; readonly vendor: "api"; readonly validate: (value: unknown) => StandardResult<T> };
   readonly kind: Kind;
   readonly shape?: Record<string, StandardSchema<any>>;
   readonly inner?: StandardSchema<any>;
@@ -39,7 +39,7 @@ export class StandardSchema<T = unknown> {
     const def = extras.defaultValue;
     this["~standard"] = {
       version: 1,
-      vendor: "apt",
+      vendor: "api",
       validate: (value) => value === undefined && def ? { value: def() } : validator(value, []),
     };
   }

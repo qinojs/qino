@@ -1,8 +1,8 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.smalltext", (el) => {
   const nid = cms.el.nid(el);
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const post = (vars) => node.html.post({ vars }).then((html) => { el.outerHTML = html; });
 
   let search = el.querySelector("[data-search]")?.value ?? "";

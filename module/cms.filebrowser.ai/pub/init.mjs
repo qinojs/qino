@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);
@@ -29,7 +29,7 @@ customElements.whenDefined('qino-cms').then(async () => {
       if (!prompt) return;
       list.innerHTML = 'Generating…';
       try {
-        const res = await apt.ai['image-generations'].post({ data: { prompt } });
+        const res = await api.ai['image-generations'].post({ data: { prompt } });
         list.innerHTML = '';
         const urls = res?.data?.map(i => i.url) ?? [];
         if (!urls.length) urls.push('https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt));

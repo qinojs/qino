@@ -1,7 +1,7 @@
 # mcp
 
 Generic MCP server (Model Context Protocol, Streamable HTTP, stateless). Exposes the
-app's apt tree as MCP tools, so any MCP-capable client (Claude, ChatGPT-CLIs, IDEs, …)
+app's api tree as MCP tools, so any MCP-capable client (Claude, ChatGPT-CLIs, IDEs, …)
 can operate the CMS. Access filtering and per-call `access`/`guard` checks are the same
 as for the REST API — the client can only do what the authenticated user may do.
 
@@ -38,10 +38,10 @@ User zu Login und Consent.
 
 ## Verhältnis zu cms.webmcp
 
-`cms.webmcp` exponiert dieselben apt-Tools browserseitig (WebMCP, `navigator.modelContext`)
+`cms.webmcp` exponiert dieselben api-Tools browserseitig (WebMCP, `navigator.modelContext`)
 für den eingeloggten Besucher; `mcp` exponiert sie serverseitig für externe Agents.
 
 ## TODO (Eingriffe in andere Module, bewusst noch nicht gemacht)
 
 - [ ] `cms.webmcp`: Access-Filter (`webmcpTools`) und `mcp/listTools` duplizieren dieselbe Logik —
-      gemeinsamen Helper nach `core/lib/apt/` ziehen und beide Module darauf umstellen.
+      gemeinsamen Helper nach `core/lib/api/` ziehen und beide Module darauf umstellen.

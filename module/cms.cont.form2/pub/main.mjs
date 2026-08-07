@@ -1,4 +1,4 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 
 // Submit without leaving the page: the api renders the same node with the entered values as vars,
 // so the result is byte-identical to the JS-free POST. File uploads stay on the native path.
@@ -17,7 +17,7 @@ document.addEventListener('submit', e => {
   }
   e.preventDefault();
 
-  apt.cms.node(node.getAttribute('qcms-id')).html.post({vars}).then(html => {
+  api.cms.node(node.getAttribute('qcms-id')).html.post({vars}).then(html => {
     node.outerHTML = html;
   });
 });

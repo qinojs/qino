@@ -69,11 +69,11 @@ to set, as in the PHP original.
   `action` attribute redirects afterwards.
 - `[shp3-price=gross|net]` inside such a form follows the amount live, debounced.
 
-Nothing announces changes on its own — apt does. Whoever wants to follow the cart listens to the
+Nothing announces changes on its own — api does. Whoever wants to follow the cart listens to the
 call itself, no matter who made it:
 
 ```js
-apt.on("POST|PUT shp3/cart/*", ({ value }) => badge.set(value.cart.quantity));
+api.on("POST|PUT shp3/cart/*", ({ value }) => badge.set(value.cart.quantity));
 ```
 
 The API behind it (`/api/shp3/…`) is page-independent on purpose — every cart operation lives

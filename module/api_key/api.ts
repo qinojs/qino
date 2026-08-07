@@ -1,7 +1,7 @@
-import { Access, AccessError, type AptTree, getCtx, type Params, s, unixTime } from "../core/mod.ts";
+import { Access, AccessError, type ApiTree, getCtx, type Params, s, unixTime } from "../core/mod.ts";
 import { generateToken, hashToken, keyPrefix } from "./lib/keys.ts";
 
-export const api: AptTree = {
+export const api: ApiTree = {
   keys: {
     get: {
       description: "List own API keys (never the token itself)",

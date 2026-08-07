@@ -63,12 +63,12 @@ keine Regelverletzung.
   [util.ts](module/core/lib/util.ts#L17) (`HeaderBuilders`), [fileStream.ts](module/core/lib/fileStream.ts#L8)
   (`UploadedFile`), [transform/types.ts](module/core/lib/transform/types.ts#L5)
   (`TransformOptions`/`Meta`/`Context`/`Result`, `Transcript*`). Verträge bleiben: `AppEvents`, `DbEvents`,
-  `StandardSchema`, `AptNode`/`Verb`/`Route` (apt), `TransformerDef`, `OcrEngine`, `TranscriptEngine`.
+  `StandardSchema`, `ApiNode`/`Verb`/`Route` (api), `TransformerDef`, `OcrEngine`, `TranscriptEngine`.
 
 ## Priorität 3
 
 - **`superuser`-Abfrage entdoppeln:** `!!(await ctx.user?.get("superuser"))` steht 25-mal in 21 Dateien,
-  auch im Core ([Access.SUPERUSER](module/core/lib/apt/access.ts#L7), [Ctx.dev](module/core/lib/ctx/Ctx.ts#L39)).
+  auch im Core ([Access.SUPERUSER](module/core/lib/api/access.ts#L7), [Ctx.dev](module/core/lib/ctx/Ctx.ts#L39)).
   Eine freie Funktion in core (`isSuperuser(ctx)`) ersetzt alle Vorkommen.
 - **`cms.text/api.ts` aufräumen:** durchgehend `any`, snake_case-Parameter (`text_id`, `target_lang`),
   4er-Einrückung, `boolean`-Rückgaben statt `this | undefined`: [cms.text/api.ts](module/cms.text/api.ts#L17).

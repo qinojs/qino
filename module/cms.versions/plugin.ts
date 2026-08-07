@@ -18,7 +18,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { type DbScope, Access, type AptTree, s, sql, type App } from "../core/mod.ts";
+import { type DbScope, Access, type ApiTree, s, sql, type App } from "../core/mod.ts";
 import { cms, cmsCtx } from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
@@ -69,7 +69,7 @@ export const settingsSchema = {
     },
 };
 
-export const api: AptTree = {
+export const api: ApiTree = {
     "publish-node": {
         post: {
             description: "Publish a node (page/content) into a version space.",

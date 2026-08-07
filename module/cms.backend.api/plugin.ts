@@ -1,8 +1,8 @@
-import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type AptNode, type Verb, type App, type HtmlString } from "../core/mod.ts";
+import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type ApiNode, type Verb, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 
 export const name = "cms.backend.api";
-export const description = "Documents and interactively tests the application Apt API.";
+export const description = "Documents and interactively tests the application Api API.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -36,10 +36,10 @@ function accessLevel(action: Verb, ctx: Ctx): Route["accessLevel"] {
   return access(ctx) ? "user" : "none";
 }
 
-function* walk(node: AptNode, ctx: Ctx, segments: string[] = [], nodes: AptNode[] = []): Generator<Route> {
+function* walk(node: ApiNode, ctx: Ctx, segments: string[] = [], nodes: ApiNode[] = []): Generator<Route> {
   for (const [key, value] of Object.entries(node)) {
     if (RESERVED.has(key) || value == null || typeof value !== "object") continue;
-    const child = value as AptNode;
+    const child = value as ApiNode;
     const segs = [...segments, key];
     const childNodes = [...nodes, child];
     for (const verb of VERBS) {
@@ -147,9 +147,9 @@ function render(): HtmlString {
   const ctx = getCtx();
   const appUrl = ctx.req.appUrl ?? "/";
 
-  const aptTree = ctx.app.aptTree;
-  const routes = [...walk(aptTree, ctx)];
-  const tools = toTools(aptTree);
+  const apiTree = ctx.app.apiTree;
+  const routes = [...walk(apiTree, ctx)];
+  const tools = toTools(apiTree);
   const toolJsonByName = new Map(tools.map((t) => [t.name, JSON.stringify({ name: t.name, description: t.description, parameters: t.parameters }, null, 2)]));
 
   const routesJson = JSON.stringify(

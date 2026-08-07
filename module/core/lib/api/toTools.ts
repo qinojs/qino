@@ -2,7 +2,7 @@ import type { Ctx } from "../ctx/Ctx.ts";
 import { toJsonSchema } from "../StandardSchema.ts";
 import { asParams, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";
-import type { AptTree, Method } from "./types.ts";
+import type { ApiTree, Method } from "./types.ts";
 
 export interface Tool {
   name: string;
@@ -11,7 +11,7 @@ export interface Tool {
   execute(args: unknown, ctx: Ctx): Promise<unknown>;
 }
 
-export function toTools(tree: AptTree, opts: { apis?: Record<string, Method[]> } = {}): Tool[] {
+export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> } = {}): Tool[] {
   const tools: Tool[] = [];
   for (const r of walk(tree)) {
     checkCollisions(r);

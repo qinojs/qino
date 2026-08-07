@@ -1,16 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
-import { aptRequest, assertEquals, assertRejects, assertThrows, testContext } from "./deps.ts";
+import { apiRequest, assertEquals, assertRejects, assertThrows, testContext } from "./deps.ts";
 import { s } from "../lib/StandardSchema.ts";
 import {
   Access,
   AccessError,
   NotFoundError,
   ValidationError,
-  aptClient,
+  apiClient,
   invoke,
   camelName,
   toTools,
-} from "../lib/apt/mod.ts";
+} from "../lib/api/mod.ts";
 import { requestStorage } from "../lib/ctx/Ctx.ts";
 
 let csrfToken = "csrf-token";
@@ -76,13 +76,13 @@ function withCtx<T>(fn: () => T): T {
   return requestStorage.run(ctx, fn);
 }
 
-Deno.test("apt: invoke resolves path params and validates output", async () => {
+Deno.test("api: invoke resolves path params and validates output", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "GET", "/thing/1"), { id: 1, title: "One" });
   });
 });
 
-Deno.test("apt: invoke keeps input strict and coerces query fields", async () => {
+Deno.test("api: invoke keeps input strict and coerces query fields", async () => {
   await withCtx(async () => {
     assertEquals(await invoke(api, "POST", "/thing/1/update", {
       input: {
@@ -118,7 +118,7 @@ Deno.test("apt: invoke keeps input strict and coerces query fields", async () =>
   });
 });
 
-Deno.test("apt: access and validation errors are typed", async () => {
+Deno.test("api: access and validation errors are typed", async () => {
   await withCtx(async () => {
     await assertRejects(() => invoke(api, "GET", "/thing/9"), NotFoundError);
     await assertRejects(() => invoke(api, "GET", "/thing/2kb"), ValidationError);
@@ -129,7 +129,7 @@ Deno.test("apt: access and validation errors are typed", async () => {
   });
 });
 
-Deno.test("apt: checkAccess option returns before input validation", async () => {
+Deno.test("api: checkAccess option returns before input validation", async () => {
   await withCtx(async () => {
     // invalid body would normally throw ValidationError; the gate returns first
     assertEquals(await invoke(api, "POST", "/thing/1/update", { title: "Bad", count: "x" }, { checkAccess: true }), { ok: true });
@@ -140,11 +140,11 @@ Deno.test("apt: checkAccess option returns before input validation", async () =>
   });
 });
 
-Deno.test("apt: X-Apt-Check header triggers the access gate over HTTP", async () => {
+Deno.test("api: X-Api-Check header triggers the access gate over HTTP", async () => {
   await withCtx(async () => {
-    const res = await aptRequest(api, "http://qino.test/thing/1/update", {
+    const res = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken, "x-apt-check": "access" },
+      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken, "x-api-check": "access" },
       body: `{}`, // invalid input, but the gate answers before validation
     });
     assertEquals(res.status, 200);
@@ -152,9 +152,9 @@ Deno.test("apt: X-Apt-Check header triggers the access gate over HTTP", async ()
   });
 });
 
-Deno.test("apt: __proto__ body keys do not become inherited input", async () => {
+Deno.test("api: __proto__ body keys do not become inherited input", async () => {
   await withCtx(async () => {
-    const res = await aptRequest(api, "http://qino.test/thing/1/update", {
+    const res = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
       body: `{"__proto__":{"_checkAccess":"1"}}`,
@@ -163,7 +163,7 @@ Deno.test("apt: __proto__ body keys do not become inherited input", async () => 
   });
 });
 
-Deno.test("apt: GET query params are available as input", async () => {
+Deno.test("api: GET query params are available as input", async () => {
   await withCtx(async () => {
     const tree = {
       search: {
@@ -174,31 +174,31 @@ Deno.test("apt: GET query params are available as input", async () => {
         },
       },
     };
-    const res = await aptRequest(tree, "/search?q=abc");
+    const res = await apiRequest(tree, "/search?q=abc");
     assertEquals(res.status, 200);
     assertEquals(await res.json(), { q: "abc" });
   });
 });
 
-Deno.test("apt: mutations require same origin and csrf token", async () => {
+Deno.test("api: mutations require same origin and csrf token", async () => {
   await withCtx(async () => {
     const body = JSON.stringify({ title: "Two", count: 2 });
 
-    const noCsrf = await aptRequest(api, "http://qino.test/thing/1/update", {
+    const noCsrf = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body,
     });
     assertEquals(noCsrf.status, 403);
 
-    const badOrigin = await aptRequest(api, "http://qino.test/thing/1/update", {
+    const badOrigin = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json", "origin": "http://evil.test", "x-csrf-token": csrfToken },
       body,
     });
     assertEquals(badOrigin.status, 403);
 
-    const ok = await aptRequest(api, "http://qino.test/thing/1/update", {
+    const ok = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
       headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
       body,
@@ -208,7 +208,7 @@ Deno.test("apt: mutations require same origin and csrf token", async () => {
   });
 });
 
-Deno.test("apt: catchall params collect remaining path segments", async () => {
+Deno.test("api: catchall params collect remaining path segments", async () => {
   await withCtx(async () => {
     const files = {
       file: {
@@ -232,8 +232,8 @@ Deno.test("apt: catchall params collect remaining path segments", async () => {
     };
     assertEquals(await invoke(files, "GET", "/file"), { path: [] });
     assertEquals(await invoke(files, "GET", "/file/a/b"), { path: ["a", "b"] });
-    assertEquals(await (await aptRequest(files, "/file")).json(), { path: [] });
-    assertEquals(await (await aptRequest(files, "/file/a/b")).json(), { path: ["a", "b"] });
+    assertEquals(await (await apiRequest(files, "/file")).json(), { path: [] });
+    assertEquals(await (await apiRequest(files, "/file/a/b")).json(), { path: ["a", "b"] });
     assertEquals(toTools(files)[0].parameters, {
       type: "object",
       properties: { path: { type: "array", items: { type: "string" } } },
@@ -242,12 +242,12 @@ Deno.test("apt: catchall params collect remaining path segments", async () => {
     assertEquals(await invoke(files, "PUT", "/file/a/b", { input: { value: 1 } }), { path: ["a", "b"], value: 1 });
     assertEquals(await invoke(files, "DELETE", "/file/a/b"), { path: ["a", "b"] });
     assertEquals(await toTools(files)[0].execute({ path: ["a/b", "+<\""] }, ctx), { path: ["a/b", "+<\""] });
-    assertEquals(await aptClient(files).file.get(), { path: [] });
-    assertEquals(await aptClient(files).file(["a/b", "+<\""]).get(), { path: ["a/b", "+<\""] });
+    assertEquals(await apiClient(files).file.get(), { path: [] });
+    assertEquals(await apiClient(files).file(["a/b", "+<\""]).get(), { path: ["a/b", "+<\""] });
   });
 });
 
-Deno.test("apt: toTools exposes path/input/query parameters", () => {
+Deno.test("api: toTools exposes path/input/query parameters", () => {
   const tools = toTools(api);
   const update = tools.find((tool) => tool.name === "post_thing_update");
   assertEquals(update?.description, "Update thing");
@@ -264,9 +264,9 @@ Deno.test("apt: toTools exposes path/input/query parameters", () => {
   });
 });
 
-Deno.test("apt: aptClient mirrors the action tree", async () => {
+Deno.test("api: apiClient mirrors the action tree", async () => {
   await withCtx(async () => {
-    const client = aptClient(api);
+    const client = apiClient(api);
     assertEquals(await client.thing(1).get(), { id: 1, title: "One" });
     assertEquals(await client.thing(1).update.post({ title: "Via RPC", count: 2 }), {
       id: 1,
@@ -279,7 +279,7 @@ Deno.test("apt: aptClient mirrors the action tree", async () => {
   });
 });
 
-Deno.test("apt: tool names stay within the MCP name charset", () => {
+Deno.test("api: tool names stay within the MCP name charset", () => {
   assertEquals(camelName("get", ["cms.frontend.2", "widget"]), "get_cmsFrontend2_widget");
   assertEquals(camelName("post", ["cms.backend.superuser.oauth_server"]), "post_cmsBackendSuperuserOauth_server");
   assertEquals(camelName("delete", ["file-store.9", ":id"]), "delete_fileStore9");

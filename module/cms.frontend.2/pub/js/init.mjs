@@ -1,5 +1,5 @@
 import '../../../core/pub/js/c1.js';
-import { apt, ctx } from '../../../core/pub/js/qino.js';
+import { api, ctx } from '../../../core/pub/js/qino.js';
 
 const editable = globalThis.qino?.cms?.editmode !== undefined; // not available if in backend but no edit-access
 function qgCmsToggleEdit(){
@@ -25,7 +25,7 @@ document.addEventListener('keydown', e => {
       qgCmsToggleEdit();
       break;
     case 'd':
-      apt.core['ctx-settings']('core', 'dev').put({value: !ctx.dev}).then(() => location.reload());
+      api.core['ctx-settings']('core', 'dev').put({value: !ctx.dev}).then(() => location.reload());
       break;
     case 'b':
       if (globalThis.qino.cms?.beUrl) location.href = ctx.appUrl + globalThis.qino.cms.beUrl.replace(/^\/+/, '');

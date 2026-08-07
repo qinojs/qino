@@ -5,7 +5,7 @@ import { ai, AiApi } from "../mod.ts";
 import { aiInstances } from "../lib/AiApi.ts";
 import { init, name, needs } from "../plugin.ts";
 
-Deno.test("ai: module metadata and apt tools are wired", () => {
+Deno.test("ai: module metadata and api tools are wired", () => {
   assertEquals(name, "ai");
   assertEquals(needs, ["core"]);
   assertEquals(toTools(api).map((tool) => tool.name), [
@@ -18,12 +18,12 @@ Deno.test("ai: module metadata and apt tools are wired", () => {
 });
 
 Deno.test("ai: init installs AiApi (no cms coupling)", () => {
-  const app = { aptTree: {}, fileTransformer: { registerOcrEngine: () => {}, registerTranscriptEngine: () => {} } };
+  const app = { apiTree: {}, fileTransformer: { registerOcrEngine: () => {}, registerTranscriptEngine: () => {} } };
   init(app as never);
   assert(ai(app as never) instanceof AiApi);
 });
 
-Deno.test("ai: apt execute delegates to the app's ai instance", async () => {
+Deno.test("ai: api execute delegates to the app's ai instance", async () => {
   const ctx = await testContext({ userId: 1, app: {
     db: { table: () => ({ entry: () => ({ get: () => false }) }) },
   } });

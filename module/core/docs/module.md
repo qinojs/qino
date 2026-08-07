@@ -14,7 +14,7 @@ export const settingsSchema = { … }; // app-wide settings, under settings.<nam
 export const ctxSettingsSchema = { … }; // per-request settings, under ctx.settings.<name>
 export const dbSchema = { … };       // tables this module owns (see below)
 
-export const api = { … };            // apt tree, mounted at aptTree.<name> (→ /api/<name>/…)
+export const api = { … };            // api tree, mounted at apiTree.<name> (→ /api/<name>/…)
 
 export function init(app, { signal }) { … }   // wire up listeners/timers/routes
 export async function install({ app, module }) { … }   // once per app: seed content
@@ -29,7 +29,7 @@ is the manifest the loader reads; keep the public API in `mod.ts` (see the modul
 A name is `[<role prefix>.]<vendor>.<name>`, e.g. `cms.cont.acme.blog` or `acme.shop`. Qino's own
 modules omit the vendor segment — that absence is what marks them as core.
 
-The name is not just a label: it is the apt tree key, the locale namespace, the settings key, the
+The name is not just a label: it is the api tree key, the locale namespace, the settings key, the
 `/m/<name>/pub/` route, and what other modules reference in `needs`. It can therefore never be
 renamed after the fact, which is why the two things it encodes need fixed positions.
 
@@ -133,7 +133,7 @@ isn't fully gone. Each link gets a **fresh** signal, so re-linking rebinds clean
 | Set up by `init()`/hooks | Removed by `unlink` |
 |---|---|
 | `app.on(...)` listeners, timers (via `signal`) | signal aborts → listeners off, timers cleared |
-| `aptTree[name]` (the module's `api`) | deleted |
+| `apiTree[name]` (the module's `api`) | deleted |
 | settings & ctx settings schema | rebuilt from the remaining linked modules |
 
 **Kept on purpose — this is data, not runtime state:**

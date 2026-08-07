@@ -1,7 +1,7 @@
 const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
 const csrfHeaders = () => globalThis.qino?.csrfToken ? { "X-CSRF-Token": globalThis.qino.csrfToken } : {};
 
-export class AptClient extends EventTarget {
+export class ApiClient extends EventTarget {
   #base;
   #handlers = [];
   #unwrap;

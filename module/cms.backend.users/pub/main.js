@@ -1,8 +1,8 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.users", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");
 
   // overview: live search / group filter → reload list part

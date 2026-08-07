@@ -1,11 +1,11 @@
 import './../../../core/pub/js/c1/NodeCleaner.mjs';
-import { apt, ctx } from '../../../core/pub/js/qino.js';
+import { api, ctx } from '../../../core/pub/js/qino.js';
 
 // txt-id to page-id
 const txtIds = {};
 cms.txtIdToPid = async function(tid) {
   if (txtIds[tid]) return txtIds[tid];
-  return txtIds[tid] = await apt.cms['node-id-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
+  return txtIds[tid] = await api.cms['node-id-from-txt-id'].get({ id: parseInt(tid) }).then(r => r.id);
 };
 // clean texts
 cms.txtCleanElement = function(el,tid){

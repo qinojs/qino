@@ -1,11 +1,11 @@
-import { Access, type AptTree, type App, type Ctx, type Params, s } from "../core/mod.ts";
+import { Access, type ApiTree, type App, type Ctx, type Params, s } from "../core/mod.ts";
 import { cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.filebrowser.pexels";
 export const description = "Adds Pexels stock photo search to the CMS file browser.";
 export const needs = ["cms", "cms.filebrowser"];
 
-export const api: AptTree = {
+export const api: ApiTree = {
   search: {
     get: {
       description: "Search free stock photos on Pexels (key stays server-side).",

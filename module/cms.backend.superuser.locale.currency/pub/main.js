@@ -1,8 +1,8 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.locale.currency", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
 
   el.addEventListener("change", (e) => {
     const every = e.target.closest("select.-every");

@@ -3,7 +3,7 @@ export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";
 
-import { aptFetch, type AptTree } from "../lib/apt/mod.ts";
+import { apiFetch, type ApiTree } from "../lib/api/mod.ts";
 import { Req } from "../lib/ctx/Req.ts";
 import { Ctx } from "../lib/ctx/Ctx.ts";
 import { Output } from "../lib/util.ts";
@@ -40,15 +40,15 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
   return ctx;
 }
 
-/** Drive an apt tree over a Web `Request` and build the `Response` from the thrown `Output` signal. */
-export async function aptRequest(tree: AptTree, input: string, init?: RequestInit): Promise<Response> {
+/** Drive an api tree over a Web `Request` and build the `Response` from the thrown `Output` signal. */
+export async function apiRequest(tree: ApiTree, input: string, init?: RequestInit): Promise<Response> {
   const url = new URL(input, "http://qino.test");
   try {
     const req = await Req.create(new Request(url, init), { url });
-    await aptFetch(req, tree, url.pathname);
+    await apiFetch(req, tree, url.pathname);
   } catch (e) {
     if (e instanceof Output) return new Response(e.body as string, { status: e.status, headers: e.headers });
     return new Response(null, { status: 500 });
   }
-  throw new Error("aptFetch did not signal");
+  throw new Error("apiFetch did not signal");
 }

@@ -1,25 +1,25 @@
 import { getCtx, requestStorage } from "../ctx/Ctx.ts";
 import type { Req } from "../ctx/Req.ts";
 import { Output } from "../util.ts";
-import { AptError } from "./errors.ts";
+import { ApiError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
-import { BODY_METHODS, type AptTree, type Method, type Params } from "./types.ts";
+import { BODY_METHODS, type ApiTree, type Method, type Params } from "./types.ts";
 
 type RequestData = { method: Method; path: string; input: Params; query: Params };
 
-export type AptFetchAuth = (req: Req, data: RequestData) => boolean | Promise<boolean>;
-export type AptFetchOptions = {
+export type ApiFetchAuth = (req: Req, data: RequestData) => boolean | Promise<boolean>;
+export type ApiFetchOptions = {
   csrf?: boolean;
-  auth?: AptFetchAuth;
+  auth?: ApiFetchAuth;
 };
 
 const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
 
 /**
- * Run an apt request from a `Req`. Result is thrown as an `Output` signal (on both
+ * Run an api request from a `Req`. Result is thrown as an `Output` signal (on both
  * success and error) so the host builds the `Response`. `path` is within the tree, e.g. `/user/5`.
  */
-export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptFetchOptions = {}): Promise<never> {
+export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiFetchOptions = {}): Promise<never> {
   const input: Params = Object.create(null);
   const query: Params = Object.create(null);
   const method = req.method.toLowerCase() as Method;
@@ -35,14 +35,14 @@ export async function aptFetch(req: Req, tree: AptTree, path: string, opts: AptF
   if (!isBodyMethod) Object.assign(input, query);
   try {
     await authorizeMutation(req, opts, { method, path, input, query });
-    const checkAccess = req.header("x-apt-check") === "access"; // dry-run: run the access/guard gate, skip execute
+    const checkAccess = req.header("x-api-check") === "access"; // dry-run: run the access/guard gate, skip execute
     const result = await invoke(tree, req.method, path, { input, query }, { checkAccess });
     const body = result === undefined ? undefined : JSON.stringify(result);
     throw new Output(body, { status: result === undefined ? 204 : 200, headers: { "Content-Type": "application/json; charset=UTF-8" } });
   } catch (e) {
     if (e instanceof Output) throw e;
-    if (e instanceof AptError) throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
-    console.error("[apt]", e);
+    if (e instanceof ApiError) throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
+    console.error("[api]", e);
     // unknown errors: detail only in dev, generic message otherwise (may contain SQL/paths)
     const detail = requestStorage.getStore()?.app.dev ? (e instanceof Error ? e.message : String(e)) : "";
     throw new Output({ error: detail || "Internal Server Error" }, { status: 500 });
@@ -54,7 +54,7 @@ function isJsonRequest(req: Req): boolean {
   return !type || type === "application/json" || type.endsWith("+json");
 }
 
-async function authorizeMutation(req: Req, opts: AptFetchOptions, data: RequestData): Promise<void> {
+async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestData): Promise<void> {
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;

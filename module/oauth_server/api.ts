@@ -1,8 +1,8 @@
-import { Access, type AptTree, getCtx, type Params, s } from "../core/mod.ts";
+import { Access, type ApiTree, getCtx, type Params, s } from "../core/mod.ts";
 
 /** Self-service only — a user sees and revokes their own grants. Managing clients is an
  *  administrative job and lives in the backend module, not in the public API tree. */
-export const api: AptTree = {
+export const api: ApiTree = {
   grants: {
     get: {
       description: "List the clients that currently hold tokens for the signed-in user",

@@ -1,5 +1,5 @@
 //import '../../cms.frontend.2/pub/js/contextMenu.mjs';
-import { apt, ctx } from '../../core/pub/js/qino.js';
+import { api, ctx } from '../../core/pub/js/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);
@@ -60,7 +60,7 @@ CmsVersViewer.prototype = {
     this.container.style.pointerEvents = 'none';
     setTimeout(()=> { this.container.style.pointerEvents = ''; } ,900)
     body.style.overflow = htmlEl.style.overflow = 'hidden';
-    apt['cms.versions'].node(pid).get().then(rows=>{
+    api['cms.versions'].node(pid).get().then(rows=>{
       let activeRow = null;
       const list = find(this.container, '.-list');
       list.innerHTML = '';
@@ -156,7 +156,7 @@ viewer.on('before-load',function(e){
   top = Math.min(top, innerHeight - 260);
   more.style.transform = `translateY(${top}px)`;
   find(more, '.-txt').innerHTML = 'please wait...';
-  apt['cms.versions'].log(e.vers).get().then(data => {
+  api['cms.versions'].log(e.vers).get().then(data => {
     const date = new Date(data.time * 1000);
     const details = find(more, '.-txt');
     details.innerHTML = data.messages.map(msg =>
@@ -175,7 +175,7 @@ viewer.on('before-load',function(e){
   });
   find(more, '.-reactivate').onclick = () => {
     body.style.opacity = 0.3;
-    apt['cms.versions']['publish-node'].post({ pid: Number(viewer.pid), options: {fromLog:e.vers+1} }).then(() => {
+    api['cms.versions']['publish-node'].post({ pid: Number(viewer.pid), options: {fromLog:e.vers+1} }).then(() => {
       location.href = location.href.replace(/#.*$/,'');
     });
   };

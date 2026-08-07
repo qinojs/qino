@@ -1,6 +1,6 @@
 // add files
 
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 
 // scoped query helper
 const find = (el, sel) => el.querySelector(':scope '+sel);
@@ -28,7 +28,7 @@ customElements.whenDefined('qino-cms').then(async () => {
 
     search.addEventListener('input',c1.debounce(async () => {
       const hasPixabay = el.querySelector('.-pixabay');
-      const items = await apt['cms.filebrowser.pexels'].search.get({ s: search.value });
+      const items = await api['cms.filebrowser.pexels'].search.get({ s: search.value });
       list.innerHTML = '';
       let item;
       for (item of items) {

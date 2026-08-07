@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.cms.tree", (el) => {
   const tree = el.querySelector(".cmsBeTree");
@@ -20,7 +20,7 @@ cms.initNode("backend.cms.tree", (el) => {
     e.preventDefault();
     const cur = btn.dataset.v;
     const next = cur === "" ? 1 : cur === "1" ? 0 : null;
-    await apt.cms.node(btn.dataset.pid).access.put(next == null ? {} : { value: next });
+    await api.cms.node(btn.dataset.pid).access.put(next == null ? {} : { value: next });
     await reloadList(); // re-render: inheritance affects children
   });
 
@@ -28,7 +28,7 @@ cms.initNode("backend.cms.tree", (el) => {
   tree?.addEventListener("change", (e) => {
     const box = e.target.closest("input[type=checkbox][data-toggle]");
     if (!box) return;
-    apt.cms.node(box.dataset.pid)[box.dataset.toggle].put({ value: box.checked });
+    api.cms.node(box.dataset.pid)[box.dataset.toggle].put({ value: box.checked });
   });
 
   // show/hide content elements in the tree

@@ -1,6 +1,6 @@
 import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
 import "./frontend.mjs";
-import { apt, t, ctx } from "../../../core/pub/js/qino.js";
+import { api, t, ctx } from "../../../core/pub/js/qino.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
@@ -33,7 +33,7 @@ function setHtml(el, html) {
 }
 function setSetting(value, path) {
   const p = Array.isArray(path) ? path : String(path || "").split("/").filter(Boolean);
-  return apt.core["ctx-settings"](p).put({ value });
+  return api.core["ctx-settings"](p).put({ value });
 }
 
 const { item } = await itemJs;
@@ -77,7 +77,7 @@ const loadWidget = (widget, params, cb) => {
     loading.mark(widgetEl);
     params ||= {};
     params.pid ||= cms.cont.active || nodeId;
-    apt['cms.frontend.2'].widget(widget).post({ params }).then((res) => {
+    api['cms.frontend.2'].widget(widget).post({ params }).then((res) => {
       loading.done(widgetEl);
       setHtml(widgetEl, res);
       cb?.({ target: widgetEl });
@@ -169,7 +169,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-apt.on("POST cms/node/:id/contents", () => sidebar.set(""));
+api.on("POST cms/node/:id/contents", () => sidebar.set(""));
 
 cms.cont.on("upload", (ev) => {
   cms.cont(ev.pid).showWidget("media");
@@ -190,7 +190,7 @@ cms.cont.on("upload", (ev) => {
   });
 });
 
-apt.on("POST cms/node/:id/files", ({ params: { id } }) => {
+api.on("POST cms/node/:id/files", ({ params: { id } }) => {
   cms.cont(id).showWidget("media", true);
 });
 cms.cont.prototype.showWidget = function (what, reload) {
@@ -220,15 +220,15 @@ for (const switc of switches) {
 }
 
 /* update accordion-heads */
-apt.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time.head"); });
-apt.on("PUT cms/node/:id/access",       () => loadWidget("access.grp.head"));
-apt.on("PUT cms/node/:id/access/groups/*", () => loadWidget("access.grp.head"));
-apt.on("PUT cms/node/:id/access/users/*",  () => loadWidget("access.usr.head"));
-apt.on("DELETE cms/node/:id/files/*",   () => loadWidget("media.head"));
-apt.on("DELETE cms/node/:id/files/doubles", () => loadWidget("media.head"));
-apt.on("DELETE cms/node/:id/files/all", () => loadWidget("media.head"));
-apt.on("POST cms/node/:id/redirects",   () => loadWidget("urls.head"));
-apt.on("DELETE cms/node/:id/redirects", () => loadWidget("urls.head"));
+api.on("PATCH cms/node/:id", ({ input }) => { ("onlineStart" in input || "onlineEnd" in input) && loadWidget("access.time.head"); });
+api.on("PUT cms/node/:id/access",       () => loadWidget("access.grp.head"));
+api.on("PUT cms/node/:id/access/groups/*", () => loadWidget("access.grp.head"));
+api.on("PUT cms/node/:id/access/users/*",  () => loadWidget("access.usr.head"));
+api.on("DELETE cms/node/:id/files/*",   () => loadWidget("media.head"));
+api.on("DELETE cms/node/:id/files/doubles", () => loadWidget("media.head"));
+api.on("DELETE cms/node/:id/files/all", () => loadWidget("media.head"));
+api.on("POST cms/node/:id/redirects",   () => loadWidget("urls.head"));
+api.on("DELETE cms/node/:id/redirects", () => loadWidget("urls.head"));
 
 onEl(".tree-manager", async (el) => {
   await import("./tree.mjs");
@@ -259,7 +259,7 @@ onEl(".tree-manager", async (el) => {
 
 onEl(".file-manager", (el) => {
   const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = api.cms.node(pid);
   import("../../../core/pub/js/c1/form.mjs").then(() => {
     findEl(el, ".-uploadBtn").addEventListener("click", async () => {
       const files = await c1.form.fileDialog();
@@ -370,7 +370,7 @@ onEl(".module-manager", (el) => {
     import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
       loading.mark(box);
       if (box.closest(".add-models")) {
-        apt.cms.node(itemid).copy.post().then(({ id }) => {
+        api.cms.node(itemid).copy.post().then(({ id }) => {
           sidebar.set("");
           cms.cont(id).addPosition();
         });
@@ -383,7 +383,7 @@ onEl(".module-manager", (el) => {
 });
 onEl(".access-groups-manager", (el) => {
   const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = api.cms.node(pid);
   findEl(el, ".-inherit").addEventListener("change", (e) => {
     const value = e.currentTarget.checked ? null : parseInt(e.currentTarget.value); // not inherit ? set it to what it was inherited
     node.access.put({ value });
@@ -409,7 +409,7 @@ onEl(".access-groups-manager", (el) => {
 });
 onEl(".access-users-manager", (el) => {
   const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = api.cms.node(pid);
   const searchInp = findEl(el, ".-search");
   searchInp?.addEventListener(
     "keyup",
@@ -425,7 +425,7 @@ onEl(".access-users-manager", (el) => {
   });
 });
 onEl(".access-time-manager", (el) => {
-  const node = apt.cms.node(el.getAttribute("pid"));
+  const node = api.cms.node(el.getAttribute("pid"));
   const reload = () => widgets.item("access.time").set(1);
 
   for (const [edge, field] of [["start", "onlineStart"], ["end", "onlineEnd"]]) {
@@ -442,7 +442,7 @@ onEl(".access-time-manager", (el) => {
 });
 onEl(".url-manager", (el) => {
   const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = api.cms.node(pid);
   findEl(el, "> .-urls").addEventListener("change", (e) => {
     const tr = e.target.closest("[data-lang]");
     const lang = tr.getAttribute("data-lang");
@@ -474,7 +474,7 @@ onEl(".url-manager", (el) => {
 
   const addInp = findEl(el, ".-add_inp");
   addInp.addEventListener("keyup", c1.debounce((e) => {
-    apt.cms["request-used"].get({ url: e.target.value }).then(({ used }) => {
+    api.cms["request-used"].get({ url: e.target.value }).then(({ used }) => {
       e.target.style.border = used ? "1px solid red" : "1px solid green";
     });
   }, 200),
@@ -490,7 +490,7 @@ onEl(".url-manager", (el) => {
 });
 onEl(".advanced-manager", (el) => {
   const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = api.cms.node(pid);
   findEl(el, ".-visible").addEventListener("change", (e) => {
     node.patch({ visible: e.currentTarget.checked });
   });
@@ -511,7 +511,7 @@ onEl(".advanced-manager", (el) => {
     loadWidget("divers", { pid });
   });
   findEl(el, ".-basis").addEventListener("blur", (e) => {
-    e.currentTarget.value && apt.cms.node(String(e.currentTarget.value))["insert-before"].put({ id: String(pid) });
+    e.currentTarget.value && api.cms.node(String(e.currentTarget.value))["insert-before"].put({ id: String(pid) });
   });
   findEl(el, ".-childXML").addEventListener("change", (e) => {
     node.settings.childXML.put({ value: e.currentTarget.value });
@@ -525,7 +525,7 @@ onEl(".seo-manager", (el) => {
   desc.addEventListener("input", (e) => checkTextarea(e.target));
   checkTextarea(desc);
   findEl(el, ".-seo-prio").addEventListener("change", (e) => {
-    apt.cms.node(e.currentTarget.dataset.pid).settings._seo_priority.put({ value: e.currentTarget.value });
+    api.cms.node(e.currentTarget.dataset.pid).settings._seo_priority.put({ value: e.currentTarget.value });
   });
 });
 onEl(".more-manager", (el) => {
@@ -553,7 +553,7 @@ onEl(".more-manager", (el) => {
     const pw2 = findEl(e.currentTarget, "[name=new2]").value;
     if (pw2 !== pw) await alert(t`Passwords do not match`);
     else {
-      const res = await apt.core.password.put({ oldpw, pw });
+      const res = await api.core.password.put({ oldpw, pw });
       if (res === 1) await alert(t`Password changed successfully.`);
       if (res === -1) await alert(t`The old password is incorrect.`);
       if (res === -2) await alert(t`The password is too short.`);
@@ -577,7 +577,7 @@ onEl(".more-manager", (el) => {
 
 onEl(".content-manager", (el) => {
   const pid = el.getAttribute("pid");
-  const node = apt.cms.node(pid);
+  const node = api.cms.node(pid);
   // change module
   findEl(el, ".-changemodule").addEventListener("change", (e) => {
     const val = e.currentTarget.options[e.currentTarget.selectedIndex].value;

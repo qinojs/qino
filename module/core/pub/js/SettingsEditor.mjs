@@ -1,4 +1,4 @@
-import { apt } from "./qino.js";
+import { api } from "./qino.js";
 import { confirm } from "@qino/u2/js/dialog/dialog.js";
 
 const opened = new Set();
@@ -8,9 +8,9 @@ const itemJsHtmlRenderer = import("@qino/item/tools/schema/render/html.js").then
 const escapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => escapes[c]);
 
-const aptPath = (endpoint) => {
+const apiPath = (endpoint) => {
   const [ns, name, ...path] = endpoint.replace(/^\/api\//, "").split("/").filter(Boolean);
-  return path.length ? apt[ns][name](path) : apt[ns][name];
+  return path.length ? api[ns][name](path) : api[ns][name];
 };
 function apiWrite(method, base, path, value) {
   const api = path.reduce((a, k) => a[k], base);
@@ -95,7 +95,7 @@ class SettingsEditorElement extends HTMLElement {
     const raw = this.getAttribute("source") ?? "";
     if (!raw || raw === this.#loadedSource) return;
     try {
-      this.#source = aptPath(raw);
+      this.#source = apiPath(raw);
       this.#loadedSource = raw;
       this.innerHTML = "<em>Loading settings…</em>";
       const [data, schema] = await Promise.all([this.#source.get(), this.#source.get({ schema: true })]);

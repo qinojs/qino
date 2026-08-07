@@ -1,4 +1,4 @@
-import { apt } from '../../../core/pub/js/qino.js';
+import { api } from '../../../core/pub/js/qino.js';
 import { dataTransferToUrl, readClipboardHtml } from '../../../core/pub/js/util/transfer.mjs';
 
 // an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
@@ -57,11 +57,11 @@ const drop = async e => {
   if (fileUrl.includes(location.host)) {
     const intern = fileUrl.match(/dbFile\/([0-9]+)\//)[1];
     if (intern) {
-      apt.cms.node(pid).files.post({ file: intern });
+      api.cms.node(pid).files.post({ file: intern });
       return;
     }
   }
-  const res = await apt.cms.node(pid).files.post({ file: fileUrl });
+  const res = await api.cms.node(pid).files.post({ file: fileUrl });
   if (!/(jpg|jpeg|gif|png)$/i.test(fileUrl)) return;
   const img = document.createElement('img');
   img.src = res.url+'/'+res.name;
@@ -126,7 +126,7 @@ root.addEventListener('drop', e=>{
   if (!pid) return;
   e.stopPropagation();
   e.preventDefault();
-  function complete() { apt.cms.node(pid).html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; }); }
+  function complete() { api.cms.node(pid).html.get().then(html => { document.querySelector('[qcms-id="'+pid+'"]').outerHTML = html; }); }
   if (e.dataTransfer.files.length) {
     let hasOne = false;
     for (const file of e.dataTransfer.files) {
@@ -141,9 +141,9 @@ root.addEventListener('drop', e=>{
   if (fileUrl.includes(location.host)) {
     const match = fileUrl.match(/dbFile\/([0-9]+)\//);
     if (match) {
-      apt.cms.node(pid).files.post({ file: match[1] }).then(complete);
+      api.cms.node(pid).files.post({ file: match[1] }).then(complete);
       return;
     }
   }
-  apt.cms.node(pid).files.post({ file: fileUrl }).then(complete);
+  api.cms.node(pid).files.post({ file: fileUrl }).then(complete);
 });

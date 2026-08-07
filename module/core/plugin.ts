@@ -9,7 +9,7 @@ import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/Db.ts";
 
 export const name = "core";
-export const description = "Provides the application runtime, database, requests, settings, and Apt API.";
+export const description = "Provides the application runtime, database, requests, settings, and Api API.";
 export { dbSchema };
 
 export const settingsSchema = {

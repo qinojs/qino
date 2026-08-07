@@ -2,7 +2,7 @@ import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { Access, Output, type Ctx, requestStorage, s, type Params } from "../../core/mod.ts";
 import { mcpFetch } from "../mod.ts";
 
-const aptTree = {
+const apiTree = {
   hello: {
     get: { description: "say hello", access: Access.PUBLIC, input: s.object({ name: s.optional(s.string()) }), execute: (p: Params) => ({ msg: "hi " + (p.name ?? "") }) },
   },
@@ -21,7 +21,7 @@ async function makeCtx(body: unknown, { auth = true, method = "POST", oauth = fa
       dev: true,
       db: { table: () => ({ entry: (id: number) => id ? { get: () => Promise.resolve(0) } : null }) },
       modules: { get: (name: string) => oauth && name === "oauth_server" ? {} : undefined },
-      aptTree,
+      apiTree,
     },
   });
   if (auth) ctx.authenticate(1);

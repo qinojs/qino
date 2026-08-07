@@ -4,7 +4,7 @@ import { fakeCms } from "../../cms/tests/deps.ts";
 import { toTools } from "../../core/mod.ts";
 import { api, init, name, needs } from "../plugin.ts";
 
-Deno.test("cms.filebrowser: metadata and apt shape are wired", () => {
+Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
   assertEquals(name, "cms.filebrowser");
   assertEquals(needs, ["cms"]);
   const tools = toTools(api);

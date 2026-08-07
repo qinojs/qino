@@ -1,4 +1,4 @@
-import { apt, ctx } from '../../core/pub/js/qino.js';
+import { api, ctx } from '../../core/pub/js/qino.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -21,7 +21,7 @@ cms.contextMenueContent.addItem('Publish', {
 });
 async function publish(pid, subPages){
   if (!await cms.dialogs.confirm('Really overwrite the current live version?')) return;
-  apt['cms.versions']['publish-node'].post({ pid: Number(pid), options: {toSpace:0, subPages} }).then(() => {
+  api['cms.versions']['publish-node'].post({ pid: Number(pid), options: {toSpace:0, subPages} }).then(() => {
     location.href = location.href.replace(/#.*$/,'');
   });
 }
@@ -85,7 +85,7 @@ el.querySelector('.-versionPublish').addEventListener('click',function(){
 el.querySelector('.-versionUnPublish').addEventListener('click',async function(){
   const subPages = this.parentNode.querySelector('.-subPages').checked;
   if (!await cms.dialogs.confirm("Warning!\nReally overwrite the draft?")) return;
-  apt['cms.versions']['publish-node'].post({ pid: nodeId, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
+  api['cms.versions']['publish-node'].post({ pid: nodeId, options: {toSpace:1, fromSpace:0, subPages} }).then(()=>{
     location.href = location.href.replace(/#.*$/,'');
   });
 });

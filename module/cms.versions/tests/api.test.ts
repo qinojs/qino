@@ -59,7 +59,7 @@ Deno.test("cms.versions: historical views are dropped when setup fails", async (
   assertEquals(queries.length, 3); // create first view (2 queries), then drop it
 });
 
-Deno.test("cms.versions: apt API exposes publish/page/log endpoints", () => {
+Deno.test("cms.versions: api API exposes publish/page/log endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "post_publishNode",

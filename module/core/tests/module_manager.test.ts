@@ -107,7 +107,7 @@ Deno.test({
     const app = {
       appPATH: root + "/",
       db: fakeDb(),
-      aptTree: {} as Record<string, unknown>,
+      apiTree: {} as Record<string, unknown>,
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       on: bus.on.bind(bus),
       fire: bus.fire.bind(bus),
@@ -178,7 +178,7 @@ Deno.test("Store selects modules by directory name", async () => {
       const app: any = {
         appPATH: root + "/",
         loaded: [],
-        aptTree: {},
+        apiTree: {},
         db: fakeDb(),
         settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       };

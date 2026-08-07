@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { Access, Output, type App, type AptTree, type Ctx, s } from "../core/mod.ts";
+import { Access, Output, type App, type ApiTree, type Ctx, s } from "../core/mod.ts";
 import { cmsCtx } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
@@ -24,7 +24,7 @@ export const dbSchema = {
 
 const canWrite = ({ file }: any, ctx: Ctx) => isWritable(ctx, Number(file));
 
-export const api: AptTree = {
+export const api: ApiTree = {
   meta: {
     ":file": {
       get: {

@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 import { remove, resolve, setQuantity } from "../../shp3/pub/shp3.js";
 
 cms.initNode("cont.shp3.order.cart1", (el) => {
@@ -7,7 +7,7 @@ cms.initNode("cont.shp3.order.cart1", (el) => {
   const total = (res) => { if (res?.cart) el.querySelector(".-sum").textContent = res.cart.grossText; };
 
   // Anything that touched the cart elsewhere on the page belongs in this table too.
-  apt.on("POST shp3/cart/items", () => cms.reloadNode(nid));
+  api.on("POST shp3/cart/items", () => cms.reloadNode(nid));
 
   el.addEventListener("change", (e) => {
     const input = e.target.closest("input.-q");

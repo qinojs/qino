@@ -1,8 +1,8 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.shp3.settings", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const id = (target) => target.closest("[itemid]").getAttribute("itemid");
   const value = (input) => input.type === "checkbox" || input.type === "radio" ? input.checked : input.value;
 

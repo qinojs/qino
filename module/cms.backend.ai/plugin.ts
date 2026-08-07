@@ -59,8 +59,8 @@ async function insertModel(app: App, providerId: number, m: { model_id: string; 
 }
 
 // --- Actions -------------------------------------------------------------
-// Called from render() with the JS-posted vars (apt html.post). Access is gated
-// by the backend node itself; no CSRF token needed — apt carries credentials.
+// Called from render() with the JS-posted vars (api html.post). Access is gated
+// by the backend node itself; no CSRF token needed — api carries credentials.
 
 async function handleAction(app: App, vars: Record<string, any>): Promise<Message | null> {
   if (!("action" in vars)) return null;

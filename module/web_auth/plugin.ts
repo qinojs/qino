@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, type AptTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
+import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, type ApiTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 import type { Jobs } from "../cron/mod.ts";
 
@@ -105,7 +105,7 @@ async function verifyAssertion(
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
-export const api: AptTree = {
+export const api: ApiTree = {
 
   register: {
     challenge: {

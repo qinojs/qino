@@ -1,5 +1,5 @@
 import * as nodeFs from "node:fs/promises";
-import { Output, getCtx, type Ctx, Access, type AptTree, s, type App, type Params } from "../core/mod.ts";
+import { Output, getCtx, type Ctx, Access, type ApiTree, s, type App, type Params } from "../core/mod.ts";
 import codemirrorView from "./view/codemirror.ts";
 
 export const name = "fileEditor";
@@ -18,7 +18,7 @@ async function saveFile(ctx: Ctx, file: string, content: string): Promise<number
   return 1;
 }
 
-export const api: AptTree = {
+export const api: ApiTree = {
   save: {
     put: {
       description: "Save file from the file editor.",

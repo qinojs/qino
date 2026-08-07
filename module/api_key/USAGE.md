@@ -1,7 +1,7 @@
 # api_key
 
 Per-user API keys. A logged-in user can mint, list and revoke keys; a key is meant to
-authenticate machine calls to the apt API (`{appUrl}api/…`) as that user.
+authenticate machine calls to the api API (`{appUrl}api/…`) as that user.
 
 Tokens are opaque (`qk_` + 256 random bits). Only their SHA-256 is stored (unique index),
 so a token is shown **once** at creation and can never be read back — only revoked.

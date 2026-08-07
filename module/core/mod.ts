@@ -20,17 +20,17 @@ export type { HtmlString } from "./lib/util.ts";
 // Schema
 export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";
 
-// apt framework: action tree, errors, introspection
-export { Access } from "./lib/apt/access.ts";
-export { AptError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/apt/errors.ts";
-export { invoke } from "./lib/apt/invoke.ts";
-export { isTrustedOrigin } from "./lib/apt/fetch.ts";
-export { walk, camelName, checkCollisions } from "./lib/apt/route.ts";
-export type { Route } from "./lib/apt/route.ts";
-export { toTools } from "./lib/apt/toTools.ts";
-export type { Tool } from "./lib/apt/toTools.ts";
-export { VERBS, RESERVED } from "./lib/apt/types.ts";
-export type { AptNode, AptTree, Method, Params, Verb } from "./lib/apt/types.ts";
+// api framework: action tree, errors, introspection
+export { Access } from "./lib/api/access.ts";
+export { ApiError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/api/errors.ts";
+export { invoke } from "./lib/api/invoke.ts";
+export { isTrustedOrigin } from "./lib/api/fetch.ts";
+export { walk, camelName, checkCollisions } from "./lib/api/route.ts";
+export type { Route } from "./lib/api/route.ts";
+export { toTools } from "./lib/api/toTools.ts";
+export type { Tool } from "./lib/api/toTools.ts";
+export { VERBS, RESERVED } from "./lib/api/types.ts";
+export type { ApiNode, ApiTree, Method, Params, Verb } from "./lib/api/types.ts";
 
 // Database
 export { Db } from "./lib/db/Db.ts";

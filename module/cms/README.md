@@ -37,7 +37,7 @@ return `<div class=u2-flex><style>…</style>…</div>`;
 ## Parts and client wiring
 
 Expose reloadable fragments via `parts` and wrap them in `<div cms-part="name">…</div>`.
-From the client, use the built-in helpers (see `pub/js/cms.mjs`) instead of calling `apt`
+From the client, use the built-in helpers (see `pub/js/cms.mjs`) instead of calling `api`
 directly:
 
 ```js

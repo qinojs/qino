@@ -1,13 +1,13 @@
 import { asParams, invoke } from "./invoke.ts";
 import { isCatchall } from "./route.ts";
-import { VERB_SET, branch, type AptTree, type Branch, type Method, type Params } from "./types.ts";
+import { VERB_SET, branch, type ApiTree, type Branch, type Method, type Params } from "./types.ts";
 
-export type AptProxy ={ [key: string]: AptProxy } & ((...args: unknown[]) => AptProxy) & { [K in Method]: (params?: Params) => Promise<unknown> };
+export type ApiProxy ={ [key: string]: ApiProxy } & ((...args: unknown[]) => ApiProxy) & { [K in Method]: (params?: Params) => Promise<unknown> };
 
 
-export function aptClient(tree: AptTree) {
-  function buildProxy(node: Branch, pathSoFar: string[]): AptProxy {
-    return new Proxy(function () {} as unknown as AptProxy, {
+export function apiClient(tree: ApiTree) {
+  function buildProxy(node: Branch, pathSoFar: string[]): ApiProxy {
+    return new Proxy(function () {} as unknown as ApiProxy, {
       get(_t, prop: string | symbol) {
         if (typeof prop !== "string" || prop === "then") return;
         const catchall = Object.keys(node).find(isCatchall);
@@ -27,7 +27,7 @@ export function aptClient(tree: AptTree) {
       },
       apply(_t, _thisArg, args: unknown[]) {
         const paramKey = Object.keys(node).find((k) => k.startsWith(":"));
-        if (!paramKey) throw new Error(`apt rpc: no :param under /${pathSoFar.join("/")}`);
+        if (!paramKey) throw new Error(`api rpc: no :param under /${pathSoFar.join("/")}`);
         const vals = isCatchall(paramKey) ? args.flatMap((v) => Array.isArray(v) ? v : [v]) : [args[0]];
         return buildProxy(branch(node[paramKey]) ?? {}, [...pathSoFar, ...vals.map((v) => encodeURIComponent(String(v)))]);
       },

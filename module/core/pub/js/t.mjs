@@ -1,4 +1,4 @@
-import { apt } from "./qino.js";
+import { api } from "./qino.js";
 
 const cache = new Map();
 const pending = new Map();
@@ -12,7 +12,7 @@ function flush() {
   scheduled = false;
   const batch = new Map(pending);
   pending.clear();
-  apt.core.t.post({ texts: [...batch.keys()] }).then(result => {
+  api.core.t.post({ texts: [...batch.keys()] }).then(result => {
     for (const [text, { resolve }] of batch) resolve(result[text] ?? text);
   }).catch(err => {
     for (const { reject } of batch.values()) reject(err);

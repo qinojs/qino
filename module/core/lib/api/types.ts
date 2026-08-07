@@ -15,7 +15,7 @@ export interface Verb {
   execute(params: Params, ctx: Ctx): unknown | Promise<unknown>;
 }
 
-export interface AptNode {
+export interface ApiNode {
   resolve?(raw: unknown, ctx: Ctx, parents: Params): unknown | Promise<unknown>;
   paramSchema?: StandardSchema;
   get?: Verb;
@@ -26,7 +26,7 @@ export interface AptNode {
   [child: string]: unknown;
 }
 
-export type AptTree = Record<string, AptNode>;
+export type ApiTree = Record<string, ApiNode>;
 
 /** A tree level while walking: any object is a possible branch. */
 export type Branch = Record<string, unknown>;

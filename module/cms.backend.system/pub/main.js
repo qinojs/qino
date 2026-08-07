@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.system", (el) => {
   const d = new Date();
@@ -30,7 +30,7 @@ cms.initNode("backend.system", (el) => {
     const formData = form ? Object.fromEntries(new FormData(form)) : {};
 
     btn.disabled = true;
-    const result = await apt.cms.node(nid).api.post({ solve_health_item: { type, item, solution, formData } });
+    const result = await api.cms.node(nid).api.post({ solve_health_item: { type, item, solution, formData } });
     btn.disabled = false;
 
     if (result?.done) {

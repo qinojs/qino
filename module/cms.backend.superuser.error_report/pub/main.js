@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.error_report", (el) => {
   const pid = Number(cms.el.nid(el));
@@ -12,7 +12,7 @@ cms.initNode("backend.superuser.error_report", (el) => {
 
   const reload = (vars, btn) => {
     if (btn) btn.disabled = true;
-    apt.cms.node(pid).html.post({ vars }).then((html) => {
+    api.cms.node(pid).html.post({ vars }).then((html) => {
       el.outerHTML = html;
     });
   };

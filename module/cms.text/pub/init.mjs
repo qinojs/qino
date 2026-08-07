@@ -2,7 +2,7 @@ import '../../core/pub/js/c1.js';
 import '../../core/pub/js/c1/fix/contextMenu.mjs';
 import '../../core/pub/js/c1/contextMenu.mjs';
 import '../../core/pub/js/c1/onElement.mjs';
-import { apt, ctx } from '../../core/pub/js/qino.js';
+import { api, ctx } from '../../core/pub/js/qino.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -18,7 +18,7 @@ c1.globalContextMenu.addItem('CMS Text',{
 
 const showEditor = async el => {
   const tid = el.getAttribute('cmstxt');
-  const data = await apt['cms.text'].text(tid).get();
+  const data = await api['cms.text'].text(tid).get();
   const dialog = document.createElement('dialog');
   dialog.className = 'qgCMS';
   let body = '<div style="display:flex">';
@@ -60,7 +60,7 @@ const showEditor = async el => {
     const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
     const unmark = loading.mark(e.target.closest('.-language'));
     try {
-      await apt['cms.text'].text(tid).translate.post({ target_lang, source_lang });
+      await api['cms.text'].text(tid).translate.post({ target_lang, source_lang });
       dialog.close();
       showEditor(el);
     } catch (err) {
@@ -71,7 +71,7 @@ const showEditor = async el => {
   dialog.addEventListener('click',async e=>{
     if (!e.target.classList.contains('-history')) return;
     const lang = e.target.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
-    const history = await apt['cms.text'].text(tid).history.get({ lang });
+    const history = await api['cms.text'].text(tid).history.get({ lang });
     const hDialog = document.createElement('dialog');
 
     hDialog.className = 'qgCMS';
@@ -104,7 +104,7 @@ const showEditor = async el => {
       // Restore the text
       const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
       const unmark = loading.mark(historyItem);
-      const success = await apt.cms.txt(parseInt(tid)).put({ value: textContent, lang });
+      const success = await api.cms.txt(parseInt(tid)).put({ value: textContent, lang });
       unmark();
 
       if (success) {
@@ -142,14 +142,14 @@ setTimeout(() => {
       for (const [lang, entries] of Object.entries(pendingByLang)) {
         delete pendingByLang[lang];
         const ids = entries.map(e => Number(e.id));
-        const result = await apt['cms.text'].text['are-translated'].get({ ids: ids.join('_'), lang });
+        const result = await api['cms.text'].text['are-translated'].get({ ids: ids.join('_'), lang });
         for (const { id, el } of entries) {
           if (!result[id]) el.classList.add('qgCMS-text-untranslated');
         }
       }
     }, 50);
   });
-  apt.on('PUT cms/txt/:id', ({ params: { id }, input }) => {
+  api.on('PUT cms/txt/:id', ({ params: { id }, input }) => {
     const txt = input?.value;
     const setLang = input?.lang || activeLang;
     const els = document.querySelectorAll('[cmstxt="'+id+'"]');
@@ -187,7 +187,7 @@ const addTranslateWidget = el=>{
     const sourceLang = e.submitter.name;
     const done = c1.loading.mark(e.target);
     try {
-      const result = await apt['cms.text'].page(nodeId).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
+      const result = await api['cms.text'].page(nodeId).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
       alert('translated texts: '+result.count);
       if (result.fail) alert('not allowed on '+result.fail+' pages');
       result.count && location.reload();

@@ -1,7 +1,7 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.web_push", (el) => {
-  const node = apt.cms.node(Number(cms.el.nid(el)));
+  const node = api.cms.node(Number(cms.el.nid(el)));
   let busy = false;
 
   const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);

@@ -2,14 +2,14 @@
 /**
  * Core API tree.
  *
- * The apt framework lives in ./lib/apt/mod.ts. This file contains only concrete
+ * The api framework lives in ./lib/api/mod.ts. This file contains only concrete
  * core endpoints.
  */
 
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { createHash } from "node:crypto";
 import { $item } from "./deps.ts";
-import { Access, AccessError, ConflictError, type AptTree } from "./lib/apt/mod.ts";
+import { Access, AccessError, ConflictError, type ApiTree } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { sql } from "./deps.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
@@ -27,7 +27,7 @@ function ctxSettingsRoot(path?: string[]) {
   return getCtx().settings[$item].sub(path ?? []);
 }
 
-export const api: AptTree = {
+export const api: ApiTree = {
 
   t: {
     post: {

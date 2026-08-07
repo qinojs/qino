@@ -2,7 +2,7 @@ import { Access, html, walk, type Ctx, type HtmlString, type Route, type Verb } 
 import type { Node } from "@qino/qino/cms";
 
 export const name = "cms.cont.apitest";
-export const description = "Apt route access matrix for users and API keys.";
+export const description = "Api route access matrix for users and API keys.";
 export const needs = ["cms"];
 
 /** Static access category — the baseline badge; a dynamic guard may still differ per identity. */
@@ -24,7 +24,7 @@ function render(node: Node, { ctx }: { ctx: Ctx }): HtmlString {
   const prefill: Record<string, string> = { id: nid, pid: nid, node: nid, page: nid, lang: ctx.lang, user: uid, usr: uid, uid };
 
   let group = "";
-  const rows = [...walk(ctx.app.aptTree)].map((r) => {
+  const rows = [...walk(ctx.app.apiTree)].map((r) => {
     const path = "/" + r.segments.join("/");
     const g = r.segments[0] ?? "";
     const groupRow = g !== group ? (group = g, html`<tr class=-group data-group="${g}"><td colspan=2><button data-gtoggle>▾</button> ${g}</td></tr>`) : "";

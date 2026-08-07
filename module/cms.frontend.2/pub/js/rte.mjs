@@ -2,7 +2,7 @@
 //import '../../../core/pub/js/Rte/Rte.ui.items.mjs';
 
 import '../../../core/pub/js/Rte/index.mjs';
-import { apt } from '../../../core/pub/js/qino.js';
+import { api } from '../../../core/pub/js/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);
@@ -87,7 +87,7 @@ Rte.ui.setItem('Link', {
         inp.value = txt;
         el.setAttribute('href',txt);
       } else {
-        apt.cms.nodes.get({ q: txt }).then(res => {
+        api.cms.nodes.get({ q: txt }).then(res => {
           if (!res[0]) return;
           inp.value = txt;
           inp.dispatchEvent(new Event('input'));
@@ -129,7 +129,7 @@ const externMediaDialog = async function(txtEl,medias) {
   dialog.addEventListener('close', () => {
     if (dialog.returnValue === 'done') for (const [uri,media] of Object.entries(medias)) {
       if (!media.checked) { media.els.forEach(el=>el.classList.add('externMedia')); continue; }
-      apt.cms.node(pid).files.post({ file: uri }).then(v=>{
+      api.cms.node(pid).files.post({ file: uri }).then(v=>{
         if (!v.url) return;
         for (const el of media.els) el.setAttribute(el.hasAttribute('src')?'src':'href', v.url+'/'+media.basename);
         txtEl.dispatchEvent(new Event('input',{bubbles:true}));

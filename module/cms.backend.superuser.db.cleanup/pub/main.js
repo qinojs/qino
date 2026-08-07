@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.db.cleanup", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -17,7 +17,7 @@ cms.initNode("backend.superuser.db.cleanup", (el) => {
     for (const key of ["table", "field", "index", "maintenance"]) if (button.dataset[key] != null) vars[key] = button.dataset[key];
     let result;
     try {
-      result = await apt.cms.node(nid).api.post(vars);
+      result = await api.cms.node(nid).api.post(vars);
       if (result.remove) rows().find((row) => row.dataset.tableName === result.remove)?.remove();
       for (const [table, rowHtml] of Object.entries(result.rows ?? {})) {
         const row = rows().find((row) => row.dataset.tableName === table);

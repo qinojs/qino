@@ -1,6 +1,6 @@
 // The shop's frontend API. Page-independent on purpose: a [shp3-add] form may sit on a category
 // page, in a teaser or in a sidebar, and the cart is always the visitor's own.
-import { Access, getCtx, s, type AptTree } from "../../module/core/mod.ts";
+import { Access, getCtx, s, type ApiTree } from "../../module/core/mod.ts";
 import { cart } from "./lib/cart.ts";
 import { shp3, type Product } from "./mod.ts";
 
@@ -35,7 +35,7 @@ async function summary() {
   };
 }
 
-export const api: AptTree = {
+export const api: ApiTree = {
 
   cart: {
     get: {

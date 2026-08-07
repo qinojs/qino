@@ -1,7 +1,7 @@
 /* CMS page tree based on u2-tree.
   * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.mjs
   * and server listeners. */
-import { t, apt } from "../../../core/pub/js/qino.js";
+import { t, api } from "../../../core/pub/js/qino.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });
@@ -112,7 +112,7 @@ globalThis.cmsTreeInit = async (json) => {
     else if (e.key === "Delete" && !e.ctrlKey) {
       if (node.data.myaccess < 3) return;
       if (!await cms.dialogs.confirm(t`Really delete page "${node.data.title}"?`)) return;
-      apt.cms.node(node.dataset.id).delete();
+      api.cms.node(node.dataset.id).delete();
     } else if (e.key === "F2") editNode(node);
     else return;
     e.preventDefault();
@@ -121,7 +121,7 @@ globalThis.cmsTreeInit = async (json) => {
   // Lazy load (u2 provides e.load only on aria-live nodes).
   rootNode.addEventListener("u2-tree-expand", (e) => {
     e.load?.((n) =>
-      apt.cms.node(n.dataset.id).tree.get({ level: 1, filter: showContents() ? "*" : "p" })
+      api.cms.node(n.dataset.id).tree.get({ level: 1, filter: showContents() ? "*" : "p" })
         .then((children) => { for (const c of children) n.append(makeNode(c)); }));
   });
 
@@ -136,7 +136,7 @@ globalThis.cmsTreeInit = async (json) => {
     e.preventDefault();
     const target = e.target, { source, parent, next, region } = e.detail;
     const parentId = region === "into" ? target.dataset.id : parent.dataset.id;
-    apt.cms.node(parentId)["insert-before"]
+    api.cms.node(parentId)["insert-before"]
       .put({ id: source.dataset.id, before: next?.dataset.id })
       .then(() => {
         parent.insertBefore(source, next);
@@ -155,7 +155,7 @@ globalThis.cmsTreeInit = async (json) => {
     const finish = (save) => {
       if (done) return; done = true;
       const title = save ? input.value : node.data.title;
-      apt.cms.txt(node.data.title_id).put({ value: title }).then(() => { node.data.title = title; renderNode(node); });
+      api.cms.txt(node.data.title_id).put({ value: title }).then(() => { node.data.title = title; renderNode(node); });
     };
     input.addEventListener("keydown", (ev) => {
       ev.stopPropagation(); // keep it from the tree keydown handler
@@ -179,7 +179,7 @@ globalThis.cmsTreeInit = async (json) => {
   function addPage(name) {
     const parent = activeNode;
     if (!parent) return;
-    apt.cms.node(parent.dataset.id).children.post({ title: name }).then((child) => {
+    api.cms.node(parent.dataset.id).children.post({ title: name }).then((child) => {
       if (!child) return;
       const node = makeNode(child);
       parent.insertBefore(node, parent.querySelector(":scope > u2-tree"));
@@ -192,7 +192,7 @@ globalThis.cmsTreeInit = async (json) => {
 
   function goTo(pid) {
     pid = String(pid);
-    return apt.cms.tree.get({ filter: showContents() ? "*" : "p" }).then((json) => {
+    return api.cms.tree.get({ filter: showContents() ? "*" : "p" }).then((json) => {
       rootNode.replaceChildren();
       for (const n of json) rootNode.append(makeNode(n));
       activate(cms.Tree.getNodeById(pid));
@@ -218,7 +218,7 @@ globalThis.cmsTreeInit = async (json) => {
 };
 
 /* Live updates via the cms.Tree facade */
-const onNode = (route, fn) => apt.on(route, (ctx) => { const n = cms.Tree?.getNodeById(ctx.params.id); n && fn(n, ctx); });
+const onNode = (route, fn) => api.on(route, (ctx) => { const n = cms.Tree?.getNodeById(ctx.params.id); n && fn(n, ctx); });
 const applyNode = (node, data) => {
   const { id, title, numChildren, type, ...rest } = data;
   Object.assign(node.data, rest, { ptype: type, id: String(id), title });
@@ -226,7 +226,7 @@ const applyNode = (node, data) => {
   return numChildren;
 };
 onNode("PUT cms/node/:id/access", (node) => {
-  apt.cms.node(node.dataset.id).get().then((data) => {
+  api.cms.node(node.dataset.id).get().then((data) => {
     if (applyNode(node, data)) cms.Tree.reloadChildren(node, () => cms.Tree.activate(node));
   });
 });
@@ -239,7 +239,7 @@ onNode("DELETE cms/node/:id", (node) => {
   if (cms.Tree.activeNode === node) cms.Tree.activate(cms.Tree.neighbor(node));
   node.remove();
 });
-apt.on("PUT cms/node/:id/insert-before", ({ params: { id }, input }) => {
+api.on("PUT cms/node/:id/insert-before", ({ params: { id }, input }) => {
   // re-attach precisely instead of goTo: reflects own + foreign moves
   const node = cms.Tree?.getNodeById(input?.id);
   const parent = cms.Tree?.getNodeById(id);

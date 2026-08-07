@@ -1,9 +1,9 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.security", (el) => {
   const nid = Number(cms.el.nid(el));
 
-  const post = (vars) => apt.cms.node(nid).html.post({ vars }).then((html) => {
+  const post = (vars) => api.cms.node(nid).html.post({ vars }).then((html) => {
     el.outerHTML = html;
   });
 

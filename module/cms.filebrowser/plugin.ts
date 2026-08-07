@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, requestStorage, sql, type Ctx, s, Access, type AptTree, type App } from "../core/mod.ts";
+import { getCtx, requestStorage, sql, type Ctx, s, Access, type ApiTree, type App } from "../core/mod.ts";
 import { cms, cmsCtx } from "../cms/mod.ts";
 
 export const name = "cms.filebrowser";
@@ -24,7 +24,7 @@ export const dbSchema = {
   },
 };
 
-export const api: AptTree = {
+export const api: ApiTree = {
   search: {
     get: {
       description: "Search files in the CMS file browser.",

@@ -1,6 +1,6 @@
 import '../../../core/pub/js/c1.js';
 import '../../../core/pub/js/c1/onElement.mjs';
-import { apt, ctx } from '../../../core/pub/js/qino.js';
+import { api, ctx } from '../../../core/pub/js/qino.js';
 
 export const cms = {};
 //Object.assign(cms, c1.Eventer);
@@ -67,7 +67,7 @@ class DbFileUrl {
 Object.assign(DbFile.prototype, proto);
 Object.assign(DbFileUrl.prototype, proto);
 
-// apt: special inputs
+// api: special inputs
 function abortableCombobox(input, apiFn) {
   const box = new c1Combobox(input);
   let last;
@@ -83,12 +83,12 @@ document.addEventListener('focus', e => {
   const input = e.composedPath()[0];
   if (input.tagName !== 'INPUT') return;
   let box;
-  if (input.getAttribute('type') === 'qgcms-page') box = abortableCombobox(input, apt.cms.nodes.get.bind(apt.cms.nodes));
-  if (input.getAttribute('type') === 'qgcms-file') box = abortableCombobox(input, apt.cms.files.get.bind(apt.cms.files));
+  if (input.getAttribute('type') === 'qgcms-page') box = abortableCombobox(input, api.cms.nodes.get.bind(api.cms.nodes));
+  if (input.getAttribute('type') === 'qgcms-file') box = abortableCombobox(input, api.cms.files.get.bind(api.cms.files));
   box?.onfocus?.(e);
 }, true);
 
-// apt: save texts
+// api: save texts
 function isFormEl(el) { return el.value !== undefined && el.tagName !== 'BUTTON'; }
 function cleanUpEl(el) {
   if (isFormEl(el)) return;
@@ -101,7 +101,7 @@ function saveTxt(el) {
   if (!el?.hasAttribute?.('cmstxt')) return;
   if (!el.isContentEditable && el.form === undefined) return;
   cleanUpEl(el);
-  apt.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
+  api.cms.txt(parseInt(el.getAttribute('cmstxt'))).put({ value: isFormEl(el) ? el.value : el.innerHTML, lang: el.getAttribute('cmslang') });
 }
 // composedPath()[0] (read sync, before debounce) resolves the target inside the qino-cms shadow root too
 const saveTxtDebounced = c1.debounce(saveTxt, 1600);
@@ -109,12 +109,12 @@ document.body.addEventListener('blur', e => saveTxt(e.composedPath()[0]), true);
 document.body.addEventListener('input', e => saveTxtDebounced(e.composedPath()[0]));
 
 cms.reloadNode = (nid, vars) =>
-  apt.cms.node(nid).html.post({ vars }).then(html =>
+  api.cms.node(nid).html.post({ vars }).then(html =>
     document.querySelectorAll('[qcms-id="' + nid + '"]').forEach(el => el.outerHTML = html)
   );
 
 cms.reloadPart = (nid, part, vars) => {
-  return apt.cms.node(nid).html.part(part).post({ vars }).then(html => {
+  return api.cms.node(nid).html.part(part).post({ vars }).then(html => {
     document.querySelectorAll('[qcms-id="' + nid + '"] [cms-part="' + part + '"]').forEach(el => {
       if (el.closest('[qcms-id]').matches('[qcms-id="' + nid + '"]')) el.innerHTML = html;
     });

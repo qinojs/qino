@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.cms.tree.access", (el) => {
   const table = el.querySelector(".cmsBeTree");
@@ -24,12 +24,12 @@ cms.initNode("backend.cms.tree.access", (el) => {
       const access = Number(td.getAttribute("v")) || 0;
       // TODO: path is node/access/groups because cms/api.ts nests `groups` (and `users`)
       // under `access` instead of as siblings of it. Should be node/groups/:group.
-      await apt.cms.node(pid).access.groups(td.dataset.gid).put({ access: access > 2 ? 0 : access + 1 });
+      await api.cms.node(pid).access.groups(td.dataset.gid).put({ access: access > 2 ? 0 : access + 1 });
     } else {
       // public cell: cycle inherited ("") -> yes (1) -> no (0) -> inherited ...
       const cur = td.getAttribute("v");
       const next = cur === "" ? 1 : cur === "1" ? 0 : null;
-      await apt.cms.node(pid).access.put(next == null ? {} : { value: next });
+      await api.cms.node(pid).access.put(next == null ? {} : { value: next });
     }
 
     // reload the tree so inheritance changes propagate

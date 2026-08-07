@@ -4,9 +4,9 @@
  * import { subscribe, unsubscribe, channels } from "/m/messaging.web_push/pub/web_push.js";
  */
 
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
-const api = apt["messaging.web_push"];
+const push = api["messaging.web_push"];
 
 const current = async () => (await navigator.serviceWorker?.ready)?.pushManager.getSubscription();
 
@@ -18,10 +18,10 @@ export async function subscribe(channels = []) {
   const reg = await navigator.serviceWorker?.ready;
   if (!reg) return false;
   if (await Notification.requestPermission() !== "granted") return false;
-  const { publicKey } = await api.key.get();
+  const { publicKey } = await push.key.get();
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKey });
   const { endpoint, keys } = sub.toJSON();
-  await api.subscription.post({ endpoint, ...keys, channels });
+  await push.subscription.post({ endpoint, ...keys, channels });
   return true;
 }
 
@@ -29,7 +29,7 @@ export async function subscribe(channels = []) {
 export async function unsubscribe() {
   const sub = await current();
   if (!sub) return;
-  await api.subscription.delete({ endpoint: sub.endpoint });
+  await push.subscription.delete({ endpoint: sub.endpoint });
   await sub.unsubscribe();
 }
 
@@ -37,5 +37,5 @@ export async function unsubscribe() {
 export async function channels() {
   const sub = await current();
   if (!sub) return [];
-  return (await api.subscription.get({ endpoint: sub.endpoint })).channels;
+  return (await push.subscription.get({ endpoint: sub.endpoint })).channels;
 }

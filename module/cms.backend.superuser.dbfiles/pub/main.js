@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.dbfiles", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -14,7 +14,7 @@ cms.initNode("backend.superuser.dbfiles", (el) => {
     const del = e.target.closest("[data-delete]");
     if (del) {
       e.stopPropagation();
-      await apt.cms.node(nid).api.post({ delete: del.dataset.delete });
+      await api.cms.node(nid).api.post({ delete: del.dataset.delete });
       del.closest("tr").remove();
       return;
     }
@@ -31,6 +31,6 @@ cms.initNode("backend.superuser.dbfiles", (el) => {
     if (!set) return;
     const val = set.type === "checkbox" ? (set.checked ? 1 : 0) : set.value;
     const id = set.closest("[data-file-id]").dataset.fileId;
-    apt.cms.node(nid).api.post({ id, [set.dataset.set]: val });
+    api.cms.node(nid).api.post({ id, [set.dataset.set]: val });
   });
 });

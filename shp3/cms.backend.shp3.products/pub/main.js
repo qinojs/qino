@@ -1,7 +1,7 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.shp3.products", (el) => {
-  const node = apt.cms.node(Number(cms.el.nid(el)));
+  const node = api.cms.node(Number(cms.el.nid(el)));
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");
   const value = (root, name) => root.querySelector(`[name=${name}]`).value;
 

@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 // deny (0) only exists on the standard column (module off); caps/overrides cycle 1..max
 const nextCap = (v) => (v === "1" ? "2" : v === "2" ? "3" : "1");                    // grp cap: 1→2→3→1
@@ -7,7 +7,7 @@ const nextUpTo = (v, max) => (v === "" ? "1" : Number(v) + 1 > max ? "" : String
 
 cms.initNode("backend.cms.accessRules", (el) => {
   const nid = Number(cms.el.nid(el));
-  const post = (vars) => apt.cms.node(nid).html.post({ vars });
+  const post = (vars) => api.cms.node(nid).html.post({ vars });
   const labels = JSON.parse(el.dataset.labels || "{}");
   const setCell = (cell, v) => { cell.setAttribute("v", v); cell.textContent = labels[v] ?? "–"; };
   const grpCap = (grp) => Number(el.querySelector(`td.-cell[data-kind=cap][data-grp="${grp}"]`)?.getAttribute("v")) || 3;

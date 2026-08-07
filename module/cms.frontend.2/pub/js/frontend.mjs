@@ -11,7 +11,7 @@ import './contextMenu.mjs';
 import './ddConts.mjs';
 import './dropPasteHelper.mjs';
 import './dropPaste.mjs';
-import { t, apt } from '../../../core/pub/js/qino.js';
+import { t, api } from '../../../core/pub/js/qino.js';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
@@ -95,16 +95,16 @@ cms.cont.prototype = {
     cms.cont.trigger('upload', event);
   },
   async addPosition(){
-    const res = await apt.cms.node(this.id).html.get();
+    const res = await api.cms.node(this.id).html.get();
     loadCallback({ html: res });
   }
 };
 cms.cont.all = {};
-cms.cont.add = mod => apt.cms.node(nodeId).contents.post({ module: mod }).then(loadCallback);
+cms.cont.add = mod => api.cms.node(nodeId).contents.post({ module: mod }).then(loadCallback);
 
 function loadCallback(res){
   setTimeout(async ()=>{ // html possibility has content-script that needs header-script to be executed first
-    const html = typeof res.html === 'string' ? res.html : res.id ? await apt.cms.node(res.id).html.get() : '';
+    const html = typeof res.html === 'string' ? res.html : res.id ? await api.cms.node(res.id).html.get() : '';
     const el = c1.dom.fragment(html).firstElementChild;
     if (!el) return console.warn('cms.cont.add: no html', res);
     cms.contPos(el);
@@ -169,10 +169,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     p.moving = null;
     el.classList.remove('-moving');
     if (!cms.el.nid(el.parentNode)) { // trash
-      apt.cms.node(cms.el.nid(el)).delete();
+      api.cms.node(cms.el.nid(el)).delete();
     } else {
       const next = el.nextElementSibling ? cms.el.nid(el.nextElementSibling) : null;
-      apt.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
+      api.cms.node(cms.el.nid(el.parentNode))["insert-before"].put({ id: String(cms.el.nid(el)), before: next ? String(next) : undefined });
     }
     trash.classList.remove('-dropTarget');
     if (trash.matches(':popover-open')) trash.hidePopover();
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   function move(e) {
     if (e.ctrlKey) {
       const pid = cms.el.nid(ddEl);
-      apt.cms.node(pid).copy.post().then(({ id }) => {
+      api.cms.node(pid).copy.post().then(({ id }) => {
         cms.cont(id).addPosition();
       });
     } else {
@@ -251,7 +251,7 @@ cms.console = {
   }
 };
 
-apt.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`API call failed`, 'error'));
+api.addEventListener('error', ({ detail }) => cms.console.show(detail.error?.message || t`API call failed`, 'error'));
 
 cms.frontend2.dialog = (title,body,buttons) =>
   cms.dialogs.modal({
@@ -259,11 +259,11 @@ cms.frontend2.dialog = (title,body,buttons) =>
     buttons: buttons?.map(b => ({ ...b, action: b.then })), // c1 used `then`, u2 uses `action`, todo: use action everywhere and remove this mapping
   });
 
-apt.on('PUT cms/txt/:id', ({ value }) => {
+api.on('PUT cms/txt/:id', ({ value }) => {
   if (value?.changed) cms.console.show(t`Der Text wurde gespeichert.`, 'info');
 });
 
-apt.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {
+api.on('PUT|PATCH|DELETE cms/node/:id/*', ({ params: { id } }) => {
   cms.reloadNode(id);
 });
 

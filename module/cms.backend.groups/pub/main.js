@@ -1,8 +1,8 @@
-import { apt, t } from "../../core/pub/js/qino.js";
+import { api, t } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.groups", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const itemId = (target) => target.closest("[itemid]")?.getAttribute("itemid");
   let alertFn;
   const alert = async (text) => (alertFn ??= (await import("@qino/u2/js/dialog/dialog.js")).alert)(text);

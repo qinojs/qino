@@ -1,8 +1,8 @@
-import { apt, t } from "../../core/pub/js/qino.js";
+import { api, t } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.superuser.stores", (el) => {
   const nid = Number(cms.el.nid(el));
-  const node = apt.cms.node(nid);
+  const node = api.cms.node(nid);
   const dialog = () => import("@qino/u2/js/dialog/dialog.js");
   const filter = (name) => el.querySelector(`[data-filter=${name}]`).value;
 

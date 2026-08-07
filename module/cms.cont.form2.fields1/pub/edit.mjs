@@ -1,9 +1,9 @@
-import { apt } from '../../core/pub/js/qino.js';
+import { api } from '../../core/pub/js/qino.js';
 
 const reloadOptions = () => cms.cont(cms.cont.active).showWidget('options');
-const settings = node => apt.cms.node(node).settings;
+const settings = node => api.cms.node(node).settings;
 
-/** "inputs.4_1.required" → the nested apt path */
+/** "inputs.4_1.required" → the nested api path */
 const at = (node, key) => key.split('.').reduce((ref, part) => ref[part], settings(node));
 
 document.addEventListener('input', async e => {

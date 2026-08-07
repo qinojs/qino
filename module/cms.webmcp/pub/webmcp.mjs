@@ -1,12 +1,12 @@
-// Expose the app's apt action tree to the user's AI agent as WebMCP tools.
+// Expose the app's api action tree to the user's AI agent as WebMCP tools.
 // https://webmachinelearning.github.io/webmcp/
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 const mc = document.modelContext;
 mc && register();
 
 async function register() {
-  const tools = await apt["cms.webmcp"].tools.get();
+  const tools = await api["cms.webmcp"].tools.get();
   for (const tool of tools) {
     mc.registerTool({
       name: tool.name,
@@ -17,11 +17,11 @@ async function register() {
   }
 }
 
-// Resolve the tool's path template against args, then RPC via the apt client.
+// Resolve the tool's path template against args, then RPC via the api client.
 // Path params (":id", ":path*") go into the URL, everything else into body/query.
 function call(tool, args) {
   const pathParams = new Set();
-  let node = apt;
+  let node = api;
   for (const seg of tool.path.split("/")) {
     if (seg.startsWith(":")) {
       const name = seg.slice(1).replace(/\*$/, "");

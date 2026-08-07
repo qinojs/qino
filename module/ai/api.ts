@@ -1,4 +1,4 @@
-import { Access, type AptTree, NotFoundError, Output, type Params, type Ctx, s } from "../core/mod.ts";
+import { Access, type ApiTree, NotFoundError, Output, type Params, type Ctx, s } from "../core/mod.ts";
 import { ai } from "./mod.ts";
 
 const SSE_HEADERS = {
@@ -7,7 +7,7 @@ const SSE_HEADERS = {
   "X-Accel-Buffering": "no", // disable proxy buffering so chunks flush immediately
 };
 
-export const api: AptTree = {
+export const api: ApiTree = {
   "sessions": {
     post: {
       description: "Start a chat session for a bot",

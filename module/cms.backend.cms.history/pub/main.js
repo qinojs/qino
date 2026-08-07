@@ -1,4 +1,4 @@
-import { apt } from "../../core/pub/js/qino.js";
+import { api } from "../../core/pub/js/qino.js";
 
 cms.initNode("backend.cms.history", (el) => {
   const nid = Number(cms.el.nid(el));
@@ -37,7 +37,7 @@ cms.initNode("backend.cms.history", (el) => {
   const refresh = async () => {
     if (document.hidden) return;
     const vars = { filter: { ...filterVars(), sinceId: String(newestId()) } };
-    const htmlStr = await apt.cms.node(nid).html.part("history").post({ vars }).catch(() => null);
+    const htmlStr = await api.cms.node(nid).html.part("history").post({ vars }).catch(() => null);
     if (htmlStr == null) return;
     const tpl = document.createElement("template");
     tpl.innerHTML = htmlStr;
