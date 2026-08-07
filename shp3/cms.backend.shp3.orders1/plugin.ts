@@ -80,37 +80,43 @@ async function renderOrder(node: Node, id: number): Promise<HtmlString> {
   for (const item of await order.items()) {
     lines.push(html`<tr>
       <td>${item.title}
-      <td>${item.quantity}
-      <td>${money(item.onePrice())}
-      <td>${money(item.rowPrice())}`);
+      <td align=right>${item.quantity}
+      <td align=right>${money(item.onePrice())}
+      <td align=right>${money(item.rowPrice())}`);
   }
   for (const g of await order.generatedItems()) {
-    lines.push(html`<tr class=-generated><td>${g.title || g.name}<td><td><td>${money(g.price)}`);
+    lines.push(html`<tr class=-generated>
+      <td>${g.title || g.name}
+      <td>
+      <td>
+      <td align=right>${money(g.price)}`);
   }
 
   const email = await app.db.one`SELECT email FROM usr WHERE id = ${order.usr_id}`;
 
-  return html.async`<div class=u2-card>
+  return html.async`<div class=u2-card style="flex-grow:0;">
   <div class=-head><a href="?">${t`Orders`}</a> — ${t`Order`} ${order.id}</div>
-  <div class=-body>
-    <table class=u2-table>
-      <tr><th>${t`Ordered`}<td>${showTime(order.time_ordered)}
-      <tr><th>${t`Customer`}<td>${email ?? ""}
-      <tr><th>${t`Payment`}<td>${order.payment}
-      <tr><th>${t`Shipping`}<td>${order.shipping}
-      <tr><th>${t`Paid`}<td>
-        ${money(Number(order.paid))}
-        ${Number(order.paid) < Number(order.cost) && order.time_ordered ? html`<button class=-pay>${await t`Mark as paid`}</button>` : ""}
-    </table>
-    ${order.time_ordered ? "" : html`<button class=-place>${await t`Place this order`}</button>`}
-    <table class=u2-table>
-      <thead>
-        <tr><th>${t`Article`}<th>${t`Quantity`}<th>${t`Price`}<th>${t`Total`}
-      <tbody>${html.join(lines)}
-      <tfoot>
-        <tr><th colspan=3>${t`Total`}<td>${money(costs.gross)}
-    </table>
-  </div>
+  <table class=u2-table>
+    <tr><th>${t`Ordered`}<td>${showTime(order.time_ordered)}
+    <tr><th>${t`Customer`}<td>${email ?? ""}
+    <tr><th>${t`Payment`}<td>${order.payment}
+    <tr><th>${t`Shipping`}<td>${order.shipping}
+    <tr><th>${t`Paid`}<td>
+      ${money(Number(order.paid))}
+      ${Number(order.paid) < Number(order.cost) && order.time_ordered ? html`<button class=-pay>${await t`Mark as paid`}</button>` : ""}
+  </table>
+  ${order.time_ordered ? "" : html`<button class=-place>${await t`Place this order`}</button>`}
+  <table class=u2-table>
+    <thead><tr>
+      <th>${t`Article`}
+      <th align=right>${t`Quantity`}
+      <th align=right>${t`Price`}
+      <th align=right>${t`Total`}
+    <tbody>${html.join(lines)}
+    <tfoot><tr>
+      <th colspan=3>${t`Total`}
+      <td><strong>${money(costs.gross)}</strong>
+  </table>
 </div>`;
 }
 
