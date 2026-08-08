@@ -210,8 +210,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
   // Only modules the user may assign (module axis = admin) are swap targets.
   const targets: string[] = [];
   for (const m of contentModules(app)) {
-    if (m === modName) continue;
-    if (await modAccess(app, m) < ADMIN) continue;
+    if (m === modName || await modAccess(app, m) < ADMIN) continue;
     targets.push(m);
   }
 

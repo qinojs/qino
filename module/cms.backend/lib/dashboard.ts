@@ -9,8 +9,7 @@ export async function renderDashboard(node: Node): Promise<HtmlString> {
   const widgets: HtmlString[] = [];
 
   for (const child of children) {
-    if (!child.vs.visible) continue;
-    if (!(await child.access())) continue; // only pages the user may see
+    if (!child.vs.visible || !(await child.access())) continue; // only visible pages the user may see
     const cont = (await child.conts())[0];
     const widget = cont?.module?.plugin.backendDashboardWidget;
     if (typeof widget !== "function") continue;

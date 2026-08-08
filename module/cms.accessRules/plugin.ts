@@ -64,8 +64,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // cap the node access by the module axis; a logged-in user never ends up
   // below the guest baseline of the node (deny standard = 0 for guests too).
   app.on("node:access", async (e) => {
-    if (!e.access) return;
-    if (e.user && await e.user.get("superuser")) return;
+    if (!e.access || (e.user && await e.user.get("superuser"))) return;
     const module = String(e.node.module?.name ?? "");
     if (!module) return;
     const cap = await moduleCap(app, module, e.user);

@@ -34,13 +34,11 @@ function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Reco
   if (f.mine === "no") where.push(sql`l.client_id != ${ctx.clientId}`);
   if (f.sinceId)       where.push(sql`nc.id > ${Number(f.sinceId)}`);
   const s = (f.search ?? "").trim();
-  if (s) {
-    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s) || s.includes(":")) {
-      where.push(sql`l.ip_id = (SELECT id FROM log_ip WHERE ip = ${s})`);
-    } else {
-      const like = "%" + s + "%";
-      where.push(sql`(u.email LIKE ${like} OR u.firstname LIKE ${like} OR u.lastname LIKE ${like})`);
-    }
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(s) || s.includes(":")) {
+    where.push(sql`l.ip_id = (SELECT id FROM log_ip WHERE ip = ${s})`);
+  } else if (s) {
+    const like = "%" + s + "%";
+    where.push(sql`(u.email LIKE ${like} OR u.firstname LIKE ${like} OR u.lastname LIKE ${like})`);
   }
   return db.query`
     SELECT nc.id, nc.log_id, nc.node_id, nc.page_id, nc.data,

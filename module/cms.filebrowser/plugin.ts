@@ -37,8 +37,7 @@ export const api: ApiTree = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend) return;
-    if (!cmsCtx(ctx).editmode) return;
+    if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser/pub/init.mjs");
   }, { signal });
 
@@ -85,8 +84,7 @@ async function search(s_: string, ctx: Ctx): Promise<any[]> {
     const page = vs.pid ? await cms(ctx.app).node(Number(vs.pid)) : null;
     const dbFile = await ctx.app.dbFiles.file(Number(vs.id), vs);
 
-    if (!await dbFile.exists()) continue;
-    if (!await dbFile.access()) continue;
+    if (!await dbFile.exists() || !await dbFile.access()) continue;
 
     const md5 = vs.md5;
     res[md5] ||= {

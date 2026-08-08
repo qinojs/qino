@@ -7,8 +7,7 @@ export const needs = ["cms", "ai", "cms.filebrowser"];
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend) return;
-    if (!cmsCtx(ctx).editmode) return;
+    if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     const csp = ctx.res.csp;
     csp["img-src"]["https://image.pollinations.ai"] = true;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.filebrowser.ai/pub/init.mjs");

@@ -5,17 +5,16 @@ export function dataTransferToUrl(dt) {
   const getData = type => dt.getData(type);
   const fileurl1 = getData('application/x-moz-file-promise-url');
   const html     = getData('text/html') || '';
-  const matches  = html.match(/.*<img src="([^"]*)".*/, '$1');
+  const matches  = html.match(/.*<img src="([^"]*)".*/);
   const fileurl2 = matches && matches[1];
   let   url = null;
   if (getData('text/x-moz-url')) {
     url = getData('text/x-moz-url').split('\n')[0];
   }
-  let fileurl3 = getData('url') || url || '';
-  fileurl3 = fileurl3.trim();
+  const fileurl3 = (getData('url') || url || '').trim();
   const fileurl = fileurl1 || fileurl2 || fileurl3;
   if (fileurl.startsWith('file')) return null;
-  return fileurl1 || fileurl2 || fileurl3;
+  return fileurl;
 }
 
 // Read pasted html (or plain text joined with <br>) and pass it to cb. Returns 1 if something was handled, else 0.

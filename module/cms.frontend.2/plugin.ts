@@ -60,8 +60,7 @@ export const api: ApiTree = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", async ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend) return;
-    if (await app.settings.cms.frontend !== "cms.frontend.2") return;
+    if (ctx.req.query.cms_noFrontend || await app.settings.cms.frontend !== "cms.frontend.2") return;
 
     const settings = ctx.settings;
 

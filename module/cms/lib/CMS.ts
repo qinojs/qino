@@ -100,7 +100,14 @@ export class CMS {
     const ret = new Map<number, Node>();
     for (const [id, c] of pages) {
       const vs = c.vs;
-      if (!tags) {
+      if (tags) {
+        if (tags.includes("navi")) {
+          const titleObj = await c.title();
+          if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || c.edit)) continue;
+        }
+        if (tags.includes("access") && !(await c.access())) continue;
+        if (tags.includes("readable") && !(await c.isReadable())) continue;
+      } else {
         if (filter.type && filter.type !== "*" && vs.type !== filter.type) continue;
         if (filter.visible !== undefined && !!vs.visible !== !!filter.visible) continue;
         if (filter.module) {
@@ -109,12 +116,6 @@ export class CMS {
         }
         if (filter.access !== undefined && (await c.access()) < filter.access) continue;
       }
-      if (tags?.includes("navi")) {
-        const titleObj = await c.title();
-        if (!vs.visible || !(await c.isReadable()) || !(await titleObj.string() || c.edit)) continue;
-      }
-      if (tags?.includes("access") && !(await c.access())) continue;
-      if (tags?.includes("readable") && !(await c.isReadable())) continue;
       ret.set(id, c);
     }
     return ret;

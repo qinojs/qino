@@ -37,8 +37,7 @@ export const settingsSchema = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
-    if (!cmsCtx(ctx).editmode) return;
-    if (ctx.req.query.cms_noFrontend) return;
+    if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.text/pub/init.mjs");
   }, { signal });
 }

@@ -71,8 +71,7 @@ export const api: ApiTree = {
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
-    if (ctx.req.query.cms_noFrontend) return;
-    if (!cmsCtx(ctx).editmode) return;
+    if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.image_editor/pub/init.mjs");
   }, { signal });
 

@@ -38,7 +38,6 @@ export function sessSettingsItem(db: Db, sessId: string | number, schema?: any):
  */
 export async function mergeSessionSettingsToUser(db: Db, userId: number, sessId: string): Promise<void> {
     const sessSettings = await db.one`SELECT settings FROM sess WHERE id = ${sessId}`;
-    if (!sessSettings) return;
-    if (await db.one`SELECT settings FROM usr WHERE id = ${userId}`) return;
+    if (!sessSettings || await db.one`SELECT settings FROM usr WHERE id = ${userId}`) return;
     await db.table("usr").update(userId, { settings: sessSettings });
 }

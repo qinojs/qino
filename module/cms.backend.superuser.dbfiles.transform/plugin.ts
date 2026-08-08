@@ -41,8 +41,7 @@ async function cacheStats(dir: string): Promise<{ count: number; size: number }>
   let count = 0, size = 0;
   try {
     for await (const entry of Deno.readDir(dir)) {
-      if (!entry.name.startsWith("tf_")) continue;
-      if (entry.name.endsWith(".mime")) continue;
+      if (!entry.name.startsWith("tf_") || entry.name.endsWith(".mime")) continue;
       count++;
       size += (await Deno.stat(dir + entry.name).catch(() => null))?.size ?? 0;
     }

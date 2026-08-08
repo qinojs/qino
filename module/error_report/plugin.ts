@@ -146,8 +146,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }), { signal });
 
   app.on("render", async ({ ctx }) => {
-    if (!ctx.res.hasHtml) return;
-    if (!await ctx.app.settings.error_report.browserErrors) return;
+    if (!ctx.res.hasHtml || !await ctx.app.settings.error_report.browserErrors) return;
     ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.appUrl + "js-error", max: 50 };
     ctx.res.csp["script-src"][REPORTER_ROOT] = true;
     ctx.res.html.legacyScripts.add(REPORTER_PATH);

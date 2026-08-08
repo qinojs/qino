@@ -95,8 +95,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
     // with the live table even when we're in a space.
     app.db.on("table:update-before", async (e) => {
         const ctx = requestStorage.getStore();
-        if (!ctx) return;
-        if (!getVers(ctx).space) return;
+        if (!ctx || !getVers(ctx).space) return;
         if (String(e.table) !== "page") return;
         const liveData: Record<string, any> = {};
         for (const key of ["sort", "basis", "access", "title_id"])
@@ -178,8 +177,7 @@ export function initDraftmode(app: App, signal: AbortSignal) {
 
     // ─── cms:page-ready: draftmode frontend ────────────────────────────────────────
     app.on("cms:page-ready", async ({ ctx }) => {
-        if (!cmsCtx(ctx).editmode) return;
-        if (ctx.req.query.cms_noFrontend) return;
+        if (!cmsCtx(ctx).editmode || ctx.req.query.cms_noFrontend) return;
         const draftmode = !!(await ctx.app.settings["cms.versions"].draftmode);
         if (!draftmode) return;
         ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.versions/pub/draftmode.mjs");

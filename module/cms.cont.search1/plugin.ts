@@ -75,8 +75,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
     for (const row of rows) {
       const hit = await node.cms.node(Number(row.id));
       const page = await hit.page();
-      if (!page.vs.searchable) continue;
-      if (!await hit.isReadable()) continue;
+      if (!page.vs.searchable || !await hit.isReadable()) continue;
       if (start && !await hit.in(start)) continue;
 
       const group = found.get(page.id) ?? { page, text: "", score: 0 };

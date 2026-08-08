@@ -11,8 +11,7 @@ export default async function (node: Node): Promise<HtmlString> {
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
     const modEntry = await app.db.table("module").entry(name);
-    if (await moduleAccess(node, name) < ADMIN) continue;
-    if (name === "cms.cont.flexible") continue;
+    if (await moduleAccess(node, name) < ADMIN || name === "cms.cont.flexible") continue;
     const desc = mod.plugin.description ?? "";
     let title = name.replace("cms.cont.", "");
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
@@ -32,8 +31,7 @@ export default async function (node: Node): Promise<HtmlString> {
   for (const id of allIds) {
     if (!id) continue;
     const p = await node.cms.node(Number(id));
-    if (p.vs?.type !== "c") continue;
-    if (await p.access() < 2) continue;
+    if (p.vs?.type !== "c" || await p.access() < 2) continue;
     models.push(p);
   }
 

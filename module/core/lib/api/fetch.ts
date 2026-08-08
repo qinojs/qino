@@ -56,8 +56,7 @@ async function authorizeMutation(req: Req, opts: ApiFetchOptions, data: RequestD
   if (!MUTATION_METHODS.has(data.method)) return;
   if (opts.auth && await opts.auth(req, data)) return;
   if (opts.csrf === false) return;
-  if (!isTrustedOrigin(req)) throw new Output({ error: "Forbidden" }, { status: 403 });
-  if (!hasValidCsrfToken(req)) throw new Output({ error: "Forbidden" }, { status: 403 });
+  if (!isTrustedOrigin(req) || !hasValidCsrfToken(req)) throw new Output({ error: "Forbidden" }, { status: 403 });
 }
 
 // Match host:port, not scheme — behind a TLS-terminating proxy the app sees http while the browser sends an https Origin.

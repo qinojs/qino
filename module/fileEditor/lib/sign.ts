@@ -31,8 +31,7 @@ export type Check = "ok" | "expired" | "forged" | "unsigned";
 export function check(ctx: Ctx, file: string, exp: unknown, sig: unknown): Check {
   const raw = String(exp ?? ""), given = String(sig ?? "");
   if (!raw && !given) return "unsigned";
-  if (!/^\d{1,12}$/.test(raw)) return "forged";
-  if (!equal(mac(ctx, file, Number(raw)), given)) return "forged";
+  if (!/^\d{1,12}$/.test(raw) || !equal(mac(ctx, file, Number(raw)), given)) return "forged";
   return Number(raw) < unixTime() ? "expired" : "ok";
 }
 

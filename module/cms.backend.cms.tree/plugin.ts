@@ -29,7 +29,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
     pathParts.push(html`<a href="${"?rp=" + child.id}">${String(title).trim() || "(no text)"}</a> > `);
   }
 
-  const showContents = !!ctx.settings.cms.admin.showContents();
+  const showContents = ctx.settings.cms.admin.showContents();
 
   const t = node.app.t;
   return html.async`<div class=u2-card style="flex:0 1 75rem">

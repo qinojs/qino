@@ -5,8 +5,7 @@ export function postedVars(nodeId: number): Record<string, any> | undefined {
   const ctx = getCtx();
   if (ctx.req.method !== "POST") return;
   const body = ctx.req.body;
-  if (!body || typeof body !== "object") return;
-  if (Number(body["qcms-node"]) !== nodeId) return;
+  if (!body || typeof body !== "object" || Number(body["qcms-node"]) !== nodeId) return;
   if (!isTrustedOrigin(ctx.req) || !safeEqual(body.csrfToken, ctx.csrfToken)) {
     console.warn(`[cms] form post to node ${nodeId} rejected (origin/csrf)`);
     return;

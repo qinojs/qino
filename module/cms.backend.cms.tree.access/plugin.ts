@@ -39,7 +39,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const listHtml = await list(node, { ctx });
 
-  const showContents = !!admin.showContents();
+  const showContents = admin.showContents();
 
   return html.async`<div class=u2-card style="flex:0 1 75rem">
   <div class=-head>${t`Access`}</div>

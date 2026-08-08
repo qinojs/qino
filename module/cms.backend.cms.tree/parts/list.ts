@@ -19,7 +19,7 @@ export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const openStr: string = admin.openPageNodes() ?? "";
   const openPageNodes = new Set(openStr.split(",").filter(Boolean));
 
-  const showContents = !!admin.showContents();
+  const showContents = admin.showContents();
   const treeType = showContents ? "*" : "p";
 
   const rootId = Number(admin.rootPageNode()) || 1;

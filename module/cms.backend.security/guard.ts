@@ -12,8 +12,7 @@ const utf8 = new TextEncoder();
 function bodySize(body: BodyInit | undefined): number {
   if (body == null) return 0;
   if (typeof body === "string") return utf8.encode(body).length;
-  if (body instanceof ArrayBuffer) return body.byteLength;
-  if (ArrayBuffer.isView(body)) return body.byteLength; // Uint8Array & other typed arrays
+  if (body instanceof ArrayBuffer || ArrayBuffer.isView(body)) return body.byteLength; // ArrayBuffer & typed arrays
   if (body instanceof Blob) return body.size;
   return 0;
 }

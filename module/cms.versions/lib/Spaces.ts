@@ -72,8 +72,7 @@ export function initSpaces(app: App, signal: AbortSignal) {
   // ─── AUTO_INCREMENT sync: vers insert → live table ────────────────────────
   app.db.on("table:insert-after", async (e) => {
     const ctx = requestStorage.getStore();
-    if (!ctx) return;
-    if (getVers(ctx).space) return; // only in live space
+    if (!ctx || getVers(ctx).space) return; // only in live space
     const tableName = String(e.table);
     if (!tableName.startsWith("_vers_")) return;
     const originalTable = tableName.slice(6);

@@ -25,7 +25,6 @@ export async function verifyToken(app: App, token: string): Promise<{ id: number
   const row = await app.db.row`SELECT k.id, k.usr_id, k.expires FROM api_key k
     JOIN usr u ON u.id = k.usr_id AND u.active = ${true}
     WHERE k.hash = ${hashToken(token)}`;
-  if (!row) return null;
-  if (row.expires && Number(row.expires) < unixTime()) return null;
+  if (!row || (row.expires && Number(row.expires) < unixTime())) return null;
   return { id: Number(row.id), usrId: Number(row.usr_id) };
 }

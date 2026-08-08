@@ -149,8 +149,7 @@ export class Node {
                 AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`) || 0;
     }
     async #accessUserLevel(user?: dbEntry_usr | null): Promise<number> {
-        if (!user) return 0;
-        if (!await user.exists()) return 0;
+        if (!user || !await user.exists()) return 0;
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
 
@@ -198,9 +197,8 @@ export class Node {
             attr += ` id="${hee((await this.urlSeo(ctx.lang)).slice(1))}"`;
         }
         if (this.vs.name) attr += ` qcms-name="${hee(this.vs.name)}"`;
-        const ret2 = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
-        if (ret2 !== str) return html.raw(ret2);
-        return html.raw(`<div${attr}>${str}</div>`);
+        const rendered = str.replace(/^<([^\s>]+)([\s]?)/, `<$1${attr}$2`);
+        return html.raw(rendered !== str ? rendered : `<div${attr}>${str}</div>`);
     }
 
     async htmlRaw(vars: Record<string, any> = {}): Promise<string | undefined> {
@@ -218,8 +216,7 @@ export class Node {
     }
 
     async htmlPart(part: string, vars: Record<string, any> = {}): Promise<HtmlString | undefined> {
-        if (!(await this.isReadable())) return;
-        if (/[/\\]/.test(part)) return;
+        if (!(await this.isReadable()) || /[/\\]/.test(part)) return;
         const parts = this.module?.plugin.cms?.node?.parts ?? {};
         const fn = Object.hasOwn(parts, part) && typeof parts[part] === "function" ? parts[part] : undefined;
         if (!fn) return;

@@ -86,8 +86,7 @@ export class Ctx {
 export function urlToLocalPath(url: string | URL, appUrl: string, app: App): string | null {
   try {
     const u = typeof url === "string" ? new URL(url) : url;
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    if (!u.pathname.startsWith(appUrl)) return null;
+    if ((u.protocol !== "http:" && u.protocol !== "https:") || !u.pathname.startsWith(appUrl)) return null;
     const appRequestPath = decodeURIComponent(u.pathname.slice(appUrl.length));
     return appRequestPathToLocalPath(appRequestPath, app);
   } catch { /* not a URL */ }
