@@ -32,21 +32,21 @@ class NodeCleaner {
       if (!el) return;
       this.cleanAttributes(el);
       this.cleanStyle(el);
-      this.conf['removeUnusedStyles'] && removeUnusedStyles(el);
+      this.conf.removeUnusedStyles && removeUnusedStyles(el);
       // this.cleanClass(el); // todo
       removeUnusedAttributes(el);
-      this.conf['removeEmptyInlineSpans'] && removeEmptyInlineSpans(el);
-      this.conf['removeUnusedElements'] && removeUnusedElements(el);
+      this.conf.removeEmptyInlineSpans && removeEmptyInlineSpans(el);
+      this.conf.removeUnusedElements && removeUnusedElements(el);
     } else if (el.nodeType === 3) {
-      if (this.conf['removeNbsp']) el.data = el.data.replace(/\u00a0/g,' ');
-      if (this.conf['replaceCombiningChars']) nodeReplaceCombiningDiaeresis(el);
+      if (this.conf.removeNbsp) el.data = el.data.replace(/\u00a0/g,' ');
+      if (this.conf.replaceCombiningChars) nodeReplaceCombiningDiaeresis(el);
       // if (el.previousSibling && el.previousSibling.nodeType === 3) { // verbinden
       //   el.previousSibling.data += el.data;
       //   el.remove();
       // }
       // if (el.data === '') el.remove();
     } else {
-      this.conf['removeComments'] && el.remove();
+      this.conf.removeComments && el.remove();
     }
   }
   cleanTag(el) {
@@ -55,16 +55,16 @@ class NodeCleaner {
     const cs = getComputedStyle(el);
     const display = cs.getPropertyValue('display');
 
-    if (this.conf['removeEmptyElements']
+    if (this.conf.removeEmptyElements
       && !{IMG:1,BR:1,HR:1}[el.tagName]
       && !el.textContent.trim()
       && !el.querySelector('img')
     ) { el.remove(); return; }
 
-    if (this.conf['removeHiddenElements'] && display === 'none')    { el.remove(); return; }
-    if (this.conf['tagsRemove']?.[el.tagName])                      { el.remove(); return; }
-    if (!this.conf['tags'])       return el;
-    if (this.conf['tags'][el.tagName]) return el;
+    if (this.conf.removeHiddenElements && display === 'none')    { el.remove(); return; }
+    if (this.conf.tagsRemove?.[el.tagName])                      { el.remove(); return; }
+    if (!this.conf.tags)       return el;
+    if (this.conf.tags[el.tagName]) return el;
 
     const before = Object.fromEntries([...cs].map(p => [p, cs.getPropertyValue(p)]));
 
@@ -85,11 +85,11 @@ class NodeCleaner {
     return nEl;
   }
   cleanAttributes(el) {
-    if (!this.conf['attributes']) return;
+    if (!this.conf.attributes) return;
     for (const attr of [...el.attributes]) {
       const name = attr.name;
       const value = attr.value;
-      const allowed = this.conf['attributes'][name];
+      const allowed = this.conf.attributes[name];
       if (!allowed) { el.removeAttribute(name); continue; }
       if (allowed === true || allowed === 1) continue;
       // values allowed
@@ -98,9 +98,9 @@ class NodeCleaner {
     }
   }
   cleanStyle(el) {
-    if (!this.conf['styles']) return;
+    if (!this.conf.styles) return;
     for (let i=0, style; (style = el.style[i++]);) {
-      const allowed = this.conf['styles'][style];
+      const allowed = this.conf.styles[style];
       if (!allowed) {
         el.style.removeProperty(style); continue;
       }

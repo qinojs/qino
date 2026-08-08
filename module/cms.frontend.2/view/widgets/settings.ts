@@ -42,7 +42,7 @@ export default async function (node: Node): Promise<HtmlString> {
   let accordions = "";
 
   const hasOptions = typeof node.module?.plugin?.cms?.node?.options === "function";
-  const hasPageSettings = Boolean(node.settings[$item].keys?.length);
+  const hasPageSettings = !!node.settings[$item].keys?.length;
   if (hasOptions || hasPageSettings) accordions += await accordion("options", node, await app.t`Settings`);
 
   accordions += await accordion("media", node);

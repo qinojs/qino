@@ -54,11 +54,11 @@ export async function render(ctx: Ctx): Promise<void> {
   const pageTitle = await pageObj.title();
   ctx.res.html.title = title || (pageTitle ? String(await pageTitle.string() ?? "").replace(/<[^>]+>/g, "") : "");
   const metaDesc = await pageObj.text("_meta_description");
-  ctx.res.html.meta["description"] = metaDesc ? String(await metaDesc.string()).replace(/<[^>]+>/g, "") : "";
+  ctx.res.html.meta.description = metaDesc ? String(await metaDesc.string()).replace(/<[^>]+>/g, "") : "";
   const metaKw = await pageObj.text("_meta_keywords");
-  ctx.res.html.meta["keywords"]    = metaKw ? String(await metaKw.string()).replace(/<[^>]+>/g, "") : "";
+  ctx.res.html.meta.keywords    = metaKw ? String(await metaKw.string()).replace(/<[^>]+>/g, "") : "";
 
-  if (!pageObj.vs.searchable) ctx.res.html.meta["robots"] = "noindex, nofollow";
+  if (!pageObj.vs.searchable) ctx.res.html.meta.robots = "noindex, nofollow";
 
   const content = await mainNode.html();
   ctx.res.html.content += content;

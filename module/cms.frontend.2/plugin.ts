@@ -33,7 +33,7 @@ export const ctxSettingsSchema = {
 };
 
 async function renderWidget(ctx: Ctx, widget: string, params: Record<string, any> = {}): Promise<string | null> {
-  const page = await cms(ctx.app).node(params["pid"]);
+  const page = await cms(ctx.app).node(params.pid);
   if (await page.access() < 2) throw new AccessError();
   if (widget.includes("/")) return null;
   ctx.state.cmsWidgetCont = page;
