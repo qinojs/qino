@@ -1,4 +1,3 @@
-//import '../../cms.frontend.2/pub/js/contextMenu.mjs';
 import { api, ctx } from '../../core/pub/js/qino.js';
 
 // scoped query helpers
@@ -137,7 +136,7 @@ CmsVersViewer.prototype = {
       li.classList.remove('-loading');
     };
     this.trigger('before-load', {vers});
-  }, {min:300, max:5000}),
+  }, {min:200, max:5000}),
 };
 Object.assign(CmsVersViewer.prototype, c1.Eventer);
 
