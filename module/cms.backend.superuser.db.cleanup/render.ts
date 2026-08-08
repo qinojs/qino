@@ -134,12 +134,12 @@ export async function renderRow(
       <td><button type=button data-action=sync-sequence data-table="${table}" u2-confirm="Move the auto-id sequence for ${table}.${sequence.field} from ${sequence.current} to ${sequence.max}?">synchronize</button>`])
     : html``;
 
-  const issueCount = tableOrphans.length + schemaRows.length + oversizedRows.length + indexes.length + Number(Boolean(sequence));
+  const issueCount = tableOrphans.length + schemaRows.length + oversizedRows.length + indexes.length + Number(!!sequence);
   const issueCell = issueCount ? html`${issueBadge("orphans", "Orphans", orphanCount, orphanBody)}
       ${issueBadge("schema", "Schema", schemaRows.length, schemaBody)}
       ${issueBadge("oversized", "Oversized", oversizedRows.length, oversizedBody)}
       ${issueBadge("indexes", "Indexes", indexes.length, indexBody)}
-      ${issueBadge("sequence", "Sequence", Number(Boolean(sequence)), sequenceBody)}`
+      ${issueBadge("sequence", "Sequence", Number(!!sequence), sequenceBody)}`
     : html`<u2-ico inline icon=check_circle aria-label=ok>✓</u2-ico>`;
 
   const actions = maintenanceActions(db, status).map((maintenance) => {
