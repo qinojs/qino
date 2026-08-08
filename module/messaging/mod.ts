@@ -52,6 +52,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
   const take = limit == null ? sql`` : sql`LIMIT ${limit}`;
   const rows = await app.db.query`
     SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.data, m.time,
+      (SELECT COUNT(*) FROM message_delivery md WHERE md.message_id = m.id) AS recipient_count,
       g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.time AS delivery_time,
       d.error, u.email
     FROM (SELECT m.* FROM message m ${where} ORDER BY m.time DESC, m.id DESC ${take}) m
@@ -71,6 +72,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
       log_id: row.log_id,
       data: row.data,
       time: row.time,
+      recipient_count: row.recipient_count,
       deliveries: [],
     }));
     if (row.delivery_id != null) message.deliveries.push({

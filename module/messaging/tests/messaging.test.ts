@@ -39,6 +39,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     log_id: null,
     data: '{"text":"Hello"}',
     time: 10,
+    recipient_count: 2,
     deliveries: [
       { id: 1, usr_id: 1, email: "one@example.test", time: 11, error: null },
       { id: 2, usr_id: 2, email: "two@example.test", time: 12, error: "rejected" },
@@ -54,6 +55,7 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     log_id: null,
     data: '{"text":"Hello"}',
     time: 10,
+    recipient_count: 2,
     deliveries: [
       { id: 2, usr_id: 2, email: "two@example.test", time: 12, error: "rejected" },
     ],

@@ -1,0 +1,33 @@
+[qcms-mod="backend.superuser.messaging"] {
+
+  & .-scroll {
+    max-height: 70vh;
+    overflow: auto;
+  }
+
+  & .-chat td {
+    vertical-align: top;
+    width: 50%;
+  }
+  & .-platform > td:last-child { text-align: right; }
+  & .-bubble {
+    display: inline-block;
+    max-width: 90%;
+    text-align: left;
+  }
+  & .-text {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  & .-meta { display: block; }
+
+  & .-composer {
+    align-items: end;
+    display: grid;
+  }
+  & .-composer label,
+  & .-composer textarea {
+    resize: vertical;
+    width: 100%;
+  }
+}

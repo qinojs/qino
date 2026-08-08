@@ -34,12 +34,10 @@ export async function render(node: Node): Promise<HtmlString> {
     FROM usr u
     ORDER BY u.lastname, u.firstname, u.email, u.id`;
   const user = users.find((row) => Number(row.id) === usrId);
-  const [journal, emails, chats, labels] = await Promise.all([
+  const [journal, emails, channels, labels] = await Promise.all([
     user ? userMessages(app, usrId) : url.searchParams.has("usr") ? [] : messages(app, OVERVIEW_LIMIT),
     user && app.modules.get("mail") ? emailMessages(app, user) : [],
-    user && app.modules.get("messaging.telegram")
-      ? app.db.query`SELECT id, chat_id, username FROM telegram_chat WHERE usr_id = ${usrId} ORDER BY created`.catch(() => [])
-      : [],
+    user ? userChannels(app, user) : [],
     Promise.all([app.t`recipients`, app.t`errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`]),
   ]);
   const rows = [...journal, ...emails].sort((a, b) => Number(b.time) - Number(a.time));
@@ -59,41 +57,76 @@ export async function render(node: Node): Promise<HtmlString> {
         <button>${app.t`Open`}</button>
       </form>
     </div>
-    ${user ? userDetail(node, user, chats) : url.searchParams.has("usr")
+    ${user
+      ? conversation(node, user, rows, channels, labels)
+      : url.searchParams.has("usr")
       ? html.async`<div class=u2-card><div class=-body>${app.t`User not found.`}</div></div>`
-      : ""}
-    <div class=u2-card cms-part=messages>
-      <div class=-head>${user ? userName(user) : await app.t`Messages`} (${rows.length})</div>
-      ${rows.length
-        ? html.join(rows.map((row) => message(row, labels, url, Boolean(user))))
-        : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
-    </div>
+      : html.async`<div class=u2-card cms-part=messages>
+        <div class=-head>${app.t`Messages`} (${rows.length})</div>
+        ${rows.length
+          ? html.join(rows.map((row) => message(row, labels, url)))
+          : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
+      </div>`}
     ${renderDashboard(node)}
   </div>`;
 }
 
-function userDetail(node: Node, user: Row, chats: Row[]): Promise<HtmlString> {
-  const telegram = chats.length ? html.async`<form class=-body>
-    <input type=hidden name=usr value="${user.id}">
-    <u2-fields>
-      ${node.app.t`Telegram`} <span>${html.join(chats.map((chat) => html`<span class=u2-badge>${chat.username ? "@" + chat.username : chat.chat_id}</span>`), " ")}</span>
-      ${node.app.t`Reply`} <textarea name=text maxlength=4096 rows=3 required></textarea>
-    </u2-fields>
-    <button type=button data-telegram-reply>${node.app.t`Send`}</button>
-  </form>` : html.async`<div class=-body>${node.app.t`No Telegram chat linked.`}</div>`;
-  return html.async`<div class=u2-card>
-    <div class=-head>${node.app.t`Communication with ${userName(user)}`}</div>
-    ${telegram}
+async function conversation(
+  node: Node,
+  user: Row,
+  rows: (Row & { deliveries: Row[] })[],
+  channels: string[],
+  labels: string[],
+): Promise<HtmlString> {
+  const app = node.app;
+  const latest = String(rows[0]?.channel ?? "");
+  const selected = channels.includes(latest) ? latest : channels[0];
+  return html.async`<div class="u2-card -conversation" cms-part=messages>
+    <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
+    <div class=-scroll>
+      ${rows.length
+        ? html`<table class=-chat><tbody>${html.join(rows.toReversed().map((row) => chatMessage(row, labels)))}</tbody></table>`
+        : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
+    </div>
+    <div>
+      ${channels.length ? html.async`<form class="-body -composer">
+        <input type=hidden name=usr value="${user.id}">
+        <label>
+          ${app.t`Channel`}: 
+          <select name=channel>
+            ${html.join(channels.map((channel) => html`<option value="${channel}"${channel === selected ? " selected" : ""}>${channelName(channel)}</option>`))}
+          </select>
+        </label>
+        <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
+        <button type=button data-reply>${app.t`Send`}</button>
+      </form>` : html.async`<div class=-body>${app.t`No reachable channel.`}</div>`}
+    </div>
   </div>`;
 }
 
-function message(row: Row & { deliveries: Row[] }, labels: string[], url: URL, expanded: boolean): HtmlString {
+function chatMessage(row: Row & { deliveries: Row[] }, labels: string[]): HtmlString {
+  const [, errorsLabel, , , , , group] = labels;
+  const errors = row.deliveries.filter((delivery) => delivery.error).length;
+  const target = messageTarget(row, labels[0], group);
+  return html`<tr class="${row.direction === "in" ? "-user" : "-platform"}">
+    <td>${row.direction === "in" ? chatBubble(row, errors, errorsLabel, target) : ""}
+    <td>${row.direction === "out" ? chatBubble(row, errors, errorsLabel, target) : ""}`;
+}
+
+function chatBubble(row: Row, errors: number, errorsLabel: string, target: string): HtmlString {
+  return html`<div class="u2-card -bubble"><div class=-body>
+    <div class=-text>${readableText(row.data) || "–"}</div>
+    <small class=-meta>${u2.time(row.time)} · <span class=u2-badge>${row.channel}</span>${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${errorsLabel}</span>` : ""}</small>
+  </div></div>`;
+}
+
+function message(row: Row & { deliveries: Row[] }, labels: string[], url: URL): HtmlString {
   const [recipients, errorsLabel, user, time, error, anonymous, group, payload] = labels;
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
-  const target = row.grp_id ? `${row.grp_name ?? group} (#${row.grp_id})` : "";
+  const target = row.grp_id ? messageTarget(row, recipients, group) : "";
   const data = readableData(row.data);
   const text = readableText(row.data);
-  return html`<details class=-body${expanded ? " open" : ""}>
+  return html`<details class=-body>
     <summary>
       <b>${row.direction === "out" ? "→" : "←"} ${row.channel}</b>
       · ${u2.time(row.time)}
@@ -121,6 +154,12 @@ function message(row: Row & { deliveries: Row[] }, labels: string[], url: URL, e
   </details>`;
 }
 
+function messageTarget(row: Row, recipients: string, group: string): string {
+  if (row.grp_id) return `[${row.grp_name ?? group} #${row.grp_id}]`;
+  const count = Number(row.recipient_count ?? row.deliveries?.length ?? 0);
+  return count > 1 ? `[${count} ${recipients}]` : "";
+}
+
 function readableData(data: unknown): string {
   try { return JSON.stringify(JSON.parse(String(data)), null, 2); } catch { return String(data ?? ""); }
 }
@@ -137,7 +176,8 @@ function readableText(data: unknown): string {
 
 async function emailMessages(app: App, user: Row): Promise<(Row & { deliveries: Row[] })[]> {
   const rows = await app.db.query`
-    SELECT m.id, m.subject, m.text, m.html, r.email, r.sent, r.opened, r.error, l.time AS created
+    SELECT m.id, m.subject, m.text, m.html, r.email, r.sent, r.opened, r.error, l.time AS created,
+      (SELECT COUNT(*) FROM mail_recipient recipients WHERE recipients.mail_id = m.id) AS recipient_count
     FROM mail_recipient r
     JOIN mail m ON m.id = r.mail_id
     LEFT JOIN log l ON l.id = m.log_id
@@ -155,9 +195,33 @@ async function emailMessages(app: App, user: Row): Promise<(Row & { deliveries: 
       log_id: null,
       data: JSON.stringify({ subject: row.subject, text: row.text, html: row.html, opened: row.opened }),
       time,
+      recipient_count: row.recipient_count,
       deliveries: [{ usr_id: user.id, email: row.email, time, error: row.error || null }],
     };
   });
+}
+
+async function userChannels(app: App, user: Row): Promise<string[]> {
+  const usrId = Number(user.id);
+  const [telegram, sms, webPush] = await Promise.all([
+    app.modules.get("messaging.telegram")
+      ? app.db.one`SELECT id FROM telegram_chat WHERE usr_id = ${usrId} LIMIT 1`.catch(() => undefined)
+      : undefined,
+    app.modules.get("messaging.sms")
+      ? app.db.one`SELECT id FROM usr_phone WHERE usr_id = ${usrId} AND verified IS NOT NULL LIMIT 1`.catch(() => undefined)
+      : undefined,
+    app.modules.get("messaging.web_push")
+      ? app.db.one`SELECT id FROM web_push_subscription WHERE usr_id = ${usrId} LIMIT 1`.catch(() => undefined)
+      : undefined,
+  ]);
+  return [telegram && "telegram", sms && "sms", webPush && "web_push", user.email && app.modules.get("mail") && "email"]
+    .filter((channel): channel is string => Boolean(channel));
+}
+
+function channelName(channel: string): string {
+  if (channel === "web_push") return "Web Push";
+  if (channel === "email") return "Email";
+  return channel === "sms" ? "SMS" : "Telegram";
 }
 
 function userName(user: Row): string {
@@ -185,4 +249,4 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   </div>`;
 }
 
-export const cms = { node: { js: ["pub/main.js"], render, api } };
+export const cms = { node: { css: ["pub/main.css"], js: ["pub/main.js"], render, api } };

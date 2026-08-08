@@ -36,14 +36,14 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     return Promise.resolve(Response.json({ ok: true, result: {} }));
   };
   try {
-    assertEquals(await api({ app } as unknown as Node, { telegramReply: { usr: "1", text: " Hello " } }), {
+    assertEquals(await api({ app } as unknown as Node, { reply: { usr: "1", channel: "telegram", text: " Hello " } }), {
       ok: true,
       message: "Delivered to 1 chats.",
     });
     assertEquals(request, { text: "Hello", chat_id: 555 });
     assertEquals(await db.one`SELECT direction FROM message`, "out");
     assertEquals(await db.one`SELECT usr_id FROM message_delivery`, 1);
-    assertEquals(await api({ app } as unknown as Node, { telegramReply: { usr: "2", text: "Hello" } }), {
+    assertEquals(await api({ app } as unknown as Node, { reply: { usr: "2", channel: "telegram", text: "Hello" } }), {
       ok: false,
       message: "User not found.",
     });
@@ -56,7 +56,11 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     const normal = await render("http://qino.test/de/backend/superuser/nachrichten?usr=1");
     assertStringIncludes(normal, 'action="/de/backend/superuser/nachrichten"');
     assertStringIncludes(normal, '<option value="1" selected>');
-    assertStringIncludes(normal, "data-telegram-reply");
+    assertStringIncludes(normal, "data-reply");
+    assertStringIncludes(normal, "class=-chat");
+    assertStringIncludes(normal, 'class="-platform"');
+    assertStringIncludes(normal, "<u2-time");
+    assertStringIncludes(normal, '<option value="telegram" selected>');
     assertStringIncludes(normal, "Earlier mail");
     assertStringIncludes(normal, "Mail body");
 
