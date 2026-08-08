@@ -96,7 +96,7 @@ function fileGetPreview(f) {
 
 cms.NodeCleanerConf_ForeignContent = {
   tags: {H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,A:1,BR:1,HR:1,P:1,B:1,STRONG:1,IMG:1,DIV:1,TABLE:1,TR:1,TD:1,TH:1,TBODY:1,THEAD:1,SPAN:1,LI:1,UL:1,OL:1},
-  tagsRemove: {'O:P':1,'STYLE':1,'SCRIPT':1,'META':1,'LINK':1,'TITLE':1},
+  tagsRemove: {'O:P':1,STYLE:1,SCRIPT:1,META:1,LINK:1,TITLE:1},
   attributes: {src:1,target:1,href:1,alt:1,colspan:1,rowspan:1},
   //styles: {},
   //classes: {},

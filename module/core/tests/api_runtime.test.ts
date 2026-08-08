@@ -144,7 +144,7 @@ Deno.test("api: X-Api-Check header triggers the access gate over HTTP", async ()
   await withCtx(async () => {
     const res = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken, "x-api-check": "access" },
+      headers: { "content-type": "application/json", origin: "http://qino.test", "x-csrf-token": csrfToken, "x-api-check": "access" },
       body: `{}`, // invalid input, but the gate answers before validation
     });
     assertEquals(res.status, 200);
@@ -156,7 +156,7 @@ Deno.test("api: __proto__ body keys do not become inherited input", async () => 
   await withCtx(async () => {
     const res = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
+      headers: { "content-type": "application/json", origin: "http://qino.test", "x-csrf-token": csrfToken },
       body: `{"__proto__":{"_checkAccess":"1"}}`,
     });
     assertEquals(res.status, 422);
@@ -193,14 +193,14 @@ Deno.test("api: mutations require same origin and csrf token", async () => {
 
     const badOrigin = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://evil.test", "x-csrf-token": csrfToken },
+      headers: { "content-type": "application/json", origin: "http://evil.test", "x-csrf-token": csrfToken },
       body,
     });
     assertEquals(badOrigin.status, 403);
 
     const ok = await apiRequest(api, "http://qino.test/thing/1/update", {
       method: "POST",
-      headers: { "content-type": "application/json", "origin": "http://qino.test", "x-csrf-token": csrfToken },
+      headers: { "content-type": "application/json", origin: "http://qino.test", "x-csrf-token": csrfToken },
       body,
     });
     assertEquals(ok.status, 200);

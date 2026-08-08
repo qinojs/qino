@@ -8,7 +8,7 @@ const SSE_HEADERS = {
 };
 
 export const api: ApiTree = {
-  "sessions": {
+  sessions: {
     post: {
       description: "Start a chat session for a bot",
       input: s.object({ bot: s.string(), context: s.optional(s.record()) }),
@@ -31,7 +31,7 @@ export const api: ApiTree = {
           return { session, messages };
         },
       },
-      "messages": {
+      messages: {
         post: {
           description: "Send a message and get the assistant reply",
           input: s.object({ content: s.string(), context: s.optional(s.record()) }),
@@ -40,7 +40,7 @@ export const api: ApiTree = {
             ai(ctx.app).session(Number(id)).run(String(content), ctx, context as Record<string, unknown> | undefined),
         },
       },
-      "stream": {
+      stream: {
         post: {
           description: "Send a message and stream the reply (SSE)",
           input: s.object({ content: s.string(), context: s.optional(s.record()) }),

@@ -16,9 +16,9 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
       "location.city": s.location.city,
       "location.street": s.location.street,
       "vat.mode": s.vat.mode,
-      "default_product_module": s.default_product_module,
-      "auto_select_payment": s.auto_select_payment,
-      "auto_select_shipping": s.auto_select_shipping,
+      default_product_module: s.default_product_module,
+      auto_select_payment: s.auto_select_payment,
+      auto_select_shipping: s.auto_select_shipping,
     }[path];
     if (!write) return false;
     const value = path === "vat.mode" ? (vars.value ? "included" : "excluded")

@@ -70,7 +70,7 @@ globalThis.Rte.ui = {
         const char = e.key;
         for (const [_name, item] of Object.entries(ui.activeItems)){
           if (item.enabled && item.shortcut === char) {
-            const event = new MouseEvent('mousedown',{'bubbles': true,'cancelable': true});
+            const event = new MouseEvent('mousedown',{bubbles: true,cancelable: true});
             item.el.dispatchEvent(event);
             e.preventDefault();
           }

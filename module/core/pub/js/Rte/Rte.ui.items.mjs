@@ -21,8 +21,8 @@ x.addEventListener('mousedown', function() {
 import './Rte.ui.mjs';
 
 const blocklessElements = {
-  'P':1,'H1':1,'H2':1,'H3':1,'H4':1,'H5':1,'H6':1,
-  'SPAN':1,'BUTTON':1,'B':1,'I':1,'STRONG':1,'LABEL':1,'A':1,
+  P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,
+  SPAN:1,BUTTON:1,B:1,I:1,STRONG:1,LABEL:1,A:1,
 };
 
 Rte.ui.setItem('Bold',           {cmd:'bold',    shortcut:'b', xenable:':not(img)'} );
@@ -240,7 +240,7 @@ Rte.ui.setItem('Strikethrough',     {cmd:'strikethrough', xenable:':not(img)'});
       html.value = code;
       html.onkeyup = html.onblur = () => {
         el.innerHTML = html.value.replace(/\s*\uFEFF\s*/g,'');
-        el.dispatchEvent(new Event('input',{'bubbles':true,'cancelable':true}));
+        el.dispatchEvent(new Event('input',{bubbles:true,cancelable:true}));
       }
       document.body.append(wrapper);
       c1.zTop(wrapper);
@@ -329,7 +329,7 @@ Rte.ui.setItem('LinkTarget', {
     if (e.target.classList.contains('-x') || e.target.classList.contains('-y')) {
       Rte.element.dispatchEvent(new Event('qgResize',{bubbles:true}));
     }
-    Rte.active.dispatchEvent(new Event('input',{'bubbles':true,'cancelable':true})); // used!
+    Rte.active.dispatchEvent(new Event('input',{bubbles:true,cancelable:true})); // used!
     Rte.trigger('input'); // used?
   })
   Rte.ui.setItem('ImageDimension', {

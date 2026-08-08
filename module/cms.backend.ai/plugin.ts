@@ -138,7 +138,7 @@ async function syncProviderModels(app: App, provider: Row): Promise<Message> {
   let response: Response;
   try {
     response = await fetch(provider.endpoint + "/models", {
-      headers: key ? { "authorization": "Bearer " + key } : {},
+      headers: key ? { authorization: "Bearer " + key } : {},
       signal: AbortSignal.timeout(30000),
     });
   } catch (e) {

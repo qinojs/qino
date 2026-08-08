@@ -18,11 +18,11 @@ export default async function (node: Node, vars: { param?: Record<string, string
     if (!manager) throw new Error("CMS feedback requires the mail module");
     const data: Record<string, string> = {
       "Message:": vars.param.msg,
-      "Link":     vars.param.link ?? "",
-      "Browser":  ctx.req.header("user-agent") ?? "",
+      Link:       vars.param.link ?? "",
+      Browser:    ctx.req.header("user-agent") ?? "",
       "E-Mail:":  email,
-      "Firstname": firstname,
-      "Lastname":  lastname,
+      Firstname:   firstname,
+      Lastname:    lastname,
     };
     const mailHtml = `<h1>CMS feedback</h1><dl>${Object.entries(data).map(([key, value]) =>
       `<dt><strong>${hee(key)}</strong></dt><dd>${hee(value).replaceAll("\n", "<br>")}</dd>`
