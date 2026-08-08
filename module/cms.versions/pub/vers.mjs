@@ -84,37 +84,42 @@ CmsVersViewer.prototype = {
     body.style.overflow = htmlEl.style.overflow = '';
     htmlEl.scrollTop = body.scrollTop = this.initialScrolltop;
   },
-  load: c1.debounce(function(vers){
+  // immediate ui feedback, the frame itself follows debounced
+  load: function(vers){
     vers = parseInt(vers);
-    let scrollTop = this.initialScrolltop;
-    if (this.activeIframe) {
-      const doc = this.activeIframe.contentWindow.document;
-      if (doc.body) scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
-      this.activeIframe.style.opacity = 1;
+    for (const li of findAll(this.container, '.-list > li')) {
+      const active = li.getAttribute('v') == vers;
+      li.classList.toggle('-active', active);
+      li.classList.toggle('-loading', active);
     }
-    this.activeIframe = this.activeIframe === this.iframe1 ? this.iframe2 : this.iframe1;
+    this.preview.classList.add('-loading');
+    this.loadFrame(vers);
+  },
+  loadFrame: c1.debounce(function(vers){
+    let scrollTop = this.initialScrolltop;
+    const old = find(this.preview, 'iframe.-shown'); // always load into the hidden frame
+    if (old) {
+      const doc = old.contentWindow.document;
+      if (doc.body) scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop;
+    }
+    const frame = this.activeIframe = old === this.iframe1 ? this.iframe2 : this.iframe1;
 
     const src = new URL(location.href);
     src.hash = '';
     src.searchParams.append('cms_versions_log',vers+1)
     src.searchParams.append('cms_versions_page',this.pid)
     src.searchParams.append('cms_noFrontend','1');
-    this.activeIframe.src = src;
+    frame.src = src;
 
-    this.activeIframe.style.opacity = 0;
-
-    this.preview.classList.add('-loading');
-
-    for (const li of findAll(this.container, '.-list > li')) li.classList.remove('-active');
     const li = find(this.container, `.-list > li[v="${vers}"]`);
-    li.classList.add('-active','-loading');
 
-    this.activeIframe.onload = ()=>{
+    frame.onload = ()=>{
+      if (frame !== this.activeIframe) return; // superseded by a newer hover
       this.preview.classList.remove('-loading');
-      this.iframe1.style.zIndex = this.activeIframe === this.iframe1 ? 1 : 0;
-      this.iframe2.style.zIndex = this.activeIframe === this.iframe2 ? 1 : 0;
-      this.activeIframe.style.opacity = 1;
-      const doc = this.activeIframe.contentWindow.document;
+      old?.classList.remove('-shown');
+      frame.classList.add('-shown');
+      marked = ''; // new document, previous highlight is gone with it
+      const doc = frame.contentWindow.document;
       doc.addEventListener('keydown', this.keydownListener);
       const ready = ()=>{
         if (!doc.body) return;
@@ -132,7 +137,7 @@ CmsVersViewer.prototype = {
       li.classList.remove('-loading');
     };
     this.trigger('before-load', {vers});
-  }, {min:200, max:500}),
+  }, {min:300, max:5000}),
 };
 Object.assign(CmsVersViewer.prototype, c1.Eventer);
 
@@ -159,9 +164,7 @@ viewer.on('before-load',function(e){
   api['cms.versions'].log(e.vers).get().then(data => {
     const date = new Date(data.time * 1000);
     const details = find(more, '.-txt');
-    details.innerHTML = data.messages.map(msg =>
-      `<div style="padding:.3125rem 0 .3125rem .5rem; margin:.5rem 0; border-left:1px solid #fff; background:#555">${msg}</div>`
-    ).join('');
+    details.innerHTML = data.messages.join('');
     const text = (className, value) => {
       const row = document.createElement('div');
       row.className = className;
@@ -190,16 +193,24 @@ viewer.on('before-load',function(e){
     });
   };
 });
-more.addEventListener('mouseover', e => {
-  const mark = e.target.getAttribute('mark');
-  if (!mark) return;
-  const all = viewer.activeIframe.contentWindow.document.querySelectorAll(mark);
-  for (const el of all) {
-    el.style.outline = '10px dotted red';
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    viewer.activeIframe.contentWindow.scrollBy(-100,-100)
-  }
-});
+// highlight marked elements in the preview via one stylesheet, so clearing is just emptying it
+let marked = '';
+function setMark(selector){
+  if (selector === marked) return;
+  marked = selector;
+  const win = find(viewer.preview, 'iframe.-shown')?.contentWindow;
+  const doc = win?.document;
+  if (!doc?.head) return;
+  const style = doc.getElementById('qgCms_vers_mark') ||
+    doc.head.appendChild(Object.assign(doc.createElement('style'), {id:'qgCms_vers_mark'}));
+  style.textContent = selector ? `${selector}{outline:10px dotted red !important}` : ''; // beats the inline outline of the current node
+  const el = selector && doc.querySelector(selector);
+  if (!el) return;
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+  win.scrollBy(-100,-100);
+}
+more.addEventListener('mouseover', e => setMark(e.target.closest?.('[mark]')?.getAttribute('mark') || ''));
+more.addEventListener('mouseleave', () => setMark(''));
 
 /* ui */
 document.addEventListener('keydown',e=>{
@@ -344,10 +355,14 @@ function css(){
       width:100%;
       height:100%;
       border:0;
+      opacity:0;
       transition:opacity .4s linear;
       background-color:#fff;
       will-change:opacity;
     }
+    > iframe.-shown { opacity:1; z-index:1; }
+    /* fade the outgoing version out quickly, so loading is visible */
+    &.-loading > iframe.-shown { opacity:.15; transition-duration:.15s; }
   }
   .-more {
     position:absolute;
@@ -377,6 +392,14 @@ function css(){
     .-txt {
       max-height:170px;
       overflow:auto;
+
+      > [mark] {
+        padding:.3125rem 0 .3125rem .5rem;
+        margin:.5rem 0;
+        border-left:1px solid #fff;
+        background:#555;
+        cursor:default;
+      }
     }
     .-date:before, .-usr:before, .-device:before {
       font-family:qg_cms;
