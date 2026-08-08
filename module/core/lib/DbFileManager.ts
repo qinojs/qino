@@ -99,7 +99,7 @@ export class DbFileManager {
       headers.set(...header.contentDisposition("attachment", f.name));
     }
 
-    if (params["as"] === "text") mime = "text/plain";
+    if (params.as === "text") mime = "text/plain";
 
     // Security
     if (/^(text\/html|application\/xhtml\+xml)/.test(mime)) mime = "text/plain";
@@ -142,26 +142,26 @@ export class DbFile extends File {
     this.id = Number(id);
   }
 
-  override get extension(): string { return String(this.vs?.["name"] ?? "").replace(/.*\./, "").toLowerCase(); }
+  override get extension(): string { return String(this.vs?.name ?? "").replace(/.*\./, "").toLowerCase(); }
 
-  override get mime(): string { return this.vs?.["mime"] ?? ""; }
+  override get mime(): string { return this.vs?.mime ?? ""; }
 
-  get name(): string { return this.vs?.["name"] ?? ""; }
+  get name(): string { return this.vs?.name ?? ""; }
 
   set name(value: string) {
-    if (this.vs) this.vs["name"] = value;
+    if (this.vs) this.vs.name = value;
     this.setVs({ name: value }).catch(console.error);
   }
 
   setLocalVs(vs: Record<string, any>) {
     this.vs = vs;
-    this.path = vs["md5"] ? this.#manager.directory + vs["md5"] : "";
+    this.path = vs.md5 ? this.#manager.directory + vs.md5 : "";
   }
 
   async ensureVs(): Promise<Record<string, any>> {
     if (this.id && !this.vs) {
       this.vs = await this.#manager.db.row`SELECT * FROM ${sql.id(tableRef("file"))} WHERE id = ${this.id}` ?? {};
-      if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
+      if (this.vs.md5) this.path = this.#manager.directory + this.vs.md5;
     }
     return this.vs!;
   }
@@ -174,13 +174,13 @@ export class DbFile extends File {
     await this.#manager.db.table("file").update(this.id, vs);
     if (this.vs) {
       Object.assign(this.vs, vs);
-      if (this.vs["md5"]) this.path = this.#manager.directory + this.vs["md5"];
+      if (this.vs.md5) this.path = this.#manager.directory + this.vs.md5;
     }
   }
 
   async url(params: Record<string, any> = {}): Promise<string> {
     const vs = await this.ensureVs();
-    const u = `u-${String(vs["md5"] ?? "").slice(0, 5)}`;
+    const u = `u-${String(vs.md5 ?? "").slice(0, 5)}`;
     const parts = [u, ...Object.entries(params).map(([k, v]) => v === true || k === "max" ? k : `${k}-${v}`)];
     return getCtx().req.appUrl + "dbFile/" + this.id + "/" + parts.join("/") + "/" + encodeURIComponent(this.name);
   }
@@ -188,7 +188,7 @@ export class DbFile extends File {
   async access(set?: any): Promise<boolean> {
     if (set !== undefined) { await this.setVs({ access: set ? 1 : 0 }); return !!set; }
     const vs = await this.ensureVs();
-    const e = await this.#manager.app.fire("dbFile:access", { file: this, access: vs["access"] == "1" }); // fast path
+    const e = await this.#manager.app.fire("dbFile:access", { file: this, access: vs.access == "1" }); // fast path
     if (!e.access) await this.#manager.app.fire("dbFile:access-fallback", e);  // slow path only when still unresolved
     return e.access;
   }
@@ -256,11 +256,11 @@ export class DbFile extends File {
   async clone(to?: number | null): Promise<DbFile> {
     const data = { ...await this.ensureVs() };
     if (to == null) {
-      delete data["id"];
+      delete data.id;
       const id = Number(await this.#manager.db.table("file").insert(data) ?? "0");
       return this.#manager.file(id);
     }
-    data["id"] = String(to);
+    data.id = String(to);
     await this.#manager.db.table("file").update(to, data);
     return this.#manager.file(to, data);
   }
@@ -278,7 +278,7 @@ export class DbFile extends File {
 }
 
 function parseTransformOptions(param: Record<string, unknown>): TransformOptions {
-  const opt: TransformOptions = { fmt: param['fmt'] as TransformOptions['fmt'] };
+  const opt: TransformOptions = { fmt: param.fmt as TransformOptions['fmt'] };
   const bool = (k: string) => k in param ? param[k] !== 'false' && param[k] !== '0' : undefined;
   const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : undefined; };
   for (const k of ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const) {

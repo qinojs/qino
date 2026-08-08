@@ -15,7 +15,7 @@ export async function nodeToJson(node: Node, type = "*"): Promise<any> {
         numChildren: (await node.children({ type })).size,
         url:         await node.url(),
         myaccess:    access,
-        visible:     Number(node.vs?.["visible"] ?? 0),
+        visible:     Number(node.vs?.visible ?? 0),
         online:      (await node.isOnline()) ? 1 : 0,
         public:      (await node.isPublic()) ? 1 : 0,
         type:        node.vs.type,
@@ -111,7 +111,7 @@ async function nodeRemoveTx(node: any): Promise<{ parent_id: number }> {
         });
         const bough = await node.bough();
         for (const child of bough.values()) {
-            if (child.vs?.["access"] !== null) await child.set("access", 0);
+            if (child.vs?.access !== null) await child.set("access", 0);
             await ctx.app.db.exec`DELETE FROM page_access_usr WHERE page_id = ${child.id} AND access < 2`;
             await ctx.app.db.exec`DELETE FROM page_access_grp WHERE page_id = ${child.id} AND access < 2`;
         }
@@ -181,14 +181,14 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
     if (by === "name" || by === "name_reverse") {
         const rows = await db.query`SELECT pf.name, f.name AS fname FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY f.name`;
         const vs: Record<string, string> = {};
-        for (const row of rows) vs[row["name"]] = row["fname"];
+        for (const row of rows) vs[row.name] = row.fname;
         if (by === "name_reverse") for (const n in vs) vs[n] = String(vs[n] ?? '').split("").reverse().join("");
         sorted = Object.keys(vs).sort((a, b) =>
             vs[a].localeCompare(vs[b], undefined, { numeric: true, sensitivity: "base" }),
         );
     } else {
         const order = by === "date" ? sql`f.log_id` : sql`pf.sort DESC`;
-        sorted = (await db.query`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r: any) => r["name"]);
+        sorted = (await db.query`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r: any) => r.name);
     }
     await node.sortFiles(sorted);
 }
@@ -219,7 +219,7 @@ export async function searchNodes(search: string): Promise<any[]> {
         const gp       = parent ? await parent.parent() : null;
         const gpTitle  = gp ? String(await gp.showTitle()).trim() : "";
         res.push({
-            html:  `<b>${hee(titleStr)}</b> (${page.vs?.["type"] === "c" ? "Content" : "Page"} ${page.id})` +
+            html:  `<b>${hee(titleStr)}</b> (${page.vs?.type === "c" ? "Content" : "Page"} ${page.id})` +
                    (parent ? `<i style="font-size:10px;display:block">${hee(pTitle)}</i>` + (gpTitle ? `<i style="font-size:10px;display:block">${hee(gpTitle)}</i>` : "") : ""),
             text:  titleStr ? `${hee(titleStr)} (${page.id})` : String(page.id),
             value: page.id,
@@ -241,11 +241,11 @@ export async function searchFiles(search: string): Promise<any[]> {
         AND ( f.id = ${s} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )
         ORDER BY f.id = ${s} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
         f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
-        const node = await cms(ctx.app).node(vs["pid"]);
+        const node = await cms(ctx.app).node(vs.pid);
         if ((await node.access()) < 2) continue;
         const dbFile = await ctx.app.dbFiles.file(vs.id, vs);
         if (!await dbFile.exists()) continue;
-        const md5 = vs["md5"];
+        const md5 = vs.md5;
         if (md5 && used[md5]) continue;
         if (i++ > 10) break;
         if (md5) used[md5] = true;
@@ -253,8 +253,8 @@ export async function searchFiles(search: string): Promise<any[]> {
         const imgSrc = isImg ? await dbFile.url({w: 32, h: 32}) : "about:blank";
         res.push({
             html:  `<div style="background:url(${hee(imgSrc)}) no-repeat center; width:2rem; height:2rem; float:left; display:block; margin-right:.1875rem"></div>` +
-                   `<b>${hee(vs["name"])}</b><br><i>${hee(await (await node.page()).showTitle())}</i>`,
-            text:  vs["name"],
+                   `<b>${hee(vs.name)}</b><br><i>${hee(await (await node.page()).showTitle())}</i>`,
+            text:  vs.name,
             value: dbFile.id,
         });
     }

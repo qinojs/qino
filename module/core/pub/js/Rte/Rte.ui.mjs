@@ -20,7 +20,7 @@ globalThis.Rte.ui = {
     ui.div.appendChild(ui.moreContainer);
 
     Rte.on('activate', function() {
-      const config = Rte.ui.config['rteDef']; // todo
+      const config = Rte.ui.config.rteDef; // todo
       ui.activeItems = {};
       let appendTo = ui.mainContainer;
       const addItem = (n) => {

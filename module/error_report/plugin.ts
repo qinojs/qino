@@ -77,7 +77,7 @@ async function handleCspError(ctx: Ctx): Promise<void> {
       file: report["source-file"] ?? "",
       line: report["line-number"] ?? "",
       request: report["document-uri"] ?? "",
-      referer: report["referrer"] ?? "",
+      referer: report.referrer ?? "",
       backtrace: [],
       sample: report["script-sample"] ?? null,
       prio: reportOnly ? "notice" : "warning",

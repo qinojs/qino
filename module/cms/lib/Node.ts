@@ -642,7 +642,7 @@ export class Node {
         if (await ifFn?.(this) === false) return;
 
         const row: Record<string, any> = { ...this.vs };
-        delete row["id"];
+        delete row.id;
         const newId = Number(await this.db.table("page").insert(row) ?? "0");
         if (!newId) return;
         const page = await this.cms.node(newId);
@@ -740,14 +740,14 @@ export class Node {
 
     async cont(name: string, attris: any = {}): Promise<Node> {
         const conts = await this.conts();
-        this.#named["c"] ??= {};
-        if (!this.#named["c"][name]) {
+        this.#named.c ??= {};
+        if (!this.#named.c[name]) {
             if (typeof attris !== "object") attris = { module: attris };
             attris.name = name;
             attris.sort = conts.length + 1;
-            this.#named["c"][name] = await this.createCont(attris);
+            this.#named.c[name] = await this.createCont(attris);
         }
-        return this.#named["c"][name];
+        return this.#named.c[name];
     }
 
     /* Access */

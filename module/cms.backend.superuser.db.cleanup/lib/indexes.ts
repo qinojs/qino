@@ -42,11 +42,11 @@ async function tableIndexes(db: Db, table: string) {
       const index = indexes.get(name) ?? {
         name,
         fields: [],
-        primary: Boolean(row.primary),
-        unique: Boolean(row.unique),
+        primary: !!row.primary,
+        unique: !!row.unique,
         type: String(row.type ?? "").toLowerCase(),
         safe: !row.protected,
-        valid: Boolean(row.valid),
+        valid: !!row.valid,
       };
       if (row.field == null) index.safe = false;
       else index.fields[Number(row.ord) - 1] = String(row.field);
@@ -62,7 +62,7 @@ async function tableIndexes(db: Db, table: string) {
       name,
       fields,
       primary: row.origin === "pk",
-      unique: Boolean(row.unique),
+      unique: !!row.unique,
       type: "btree",
       safe: row.origin === "c" && !row.partial && fields.every((field) => field !== "null"),
       valid: true,

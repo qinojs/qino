@@ -51,7 +51,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     alt: String(text),
     width: await settings.width,
     height: await settings.height,
-    fit: (await settings.contain) ? "contain" : "cover",
+    fit: await settings.contain ? "contain" : "cover",
     if: 1,
     style,
     quality: Number(await settings.quality) || null,
