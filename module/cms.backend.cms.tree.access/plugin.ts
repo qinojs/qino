@@ -35,7 +35,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   }
 
   const groups = await accessGroups(app);
-  const head = html.join(groups.map(g => html`<th style="width:1.875rem"><div>${String(g.name)}</div>`));
+  const head = html.join(groups.map(g => html`<th style="width:1.875rem"><div>${g.name}</div>`));
 
   const listHtml = await list(node, { ctx });
 

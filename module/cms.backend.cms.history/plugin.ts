@@ -117,7 +117,9 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   <td class=-who>${await actorCell(r, t)}
   <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
   <td class=-what>${html.join(labels)}
-  <td class=-client>${r.ip ?? "-"}<br><small>${ua.browser} ${ua.version.split(".")[0]}${ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : html.raw("")}</small>`;
+  <td class=-client>${r.ip ?? "-"}<br><small>${ua.browser} ${ua.version.split(".")[0]}${
+    ua.bot ? html.raw(" <span class=u2-badge>bot</span>") : ""
+  }</small>`;
 }
 
 async function actorCell(r: Record<string, any>, t: TFn): Promise<HtmlString> {

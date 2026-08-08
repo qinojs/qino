@@ -9,9 +9,7 @@ class dbEntry_usr extends DbEntry {
     if (this.#grps === null) {
       this.#grps = [0];
       const rows = await this.table.db.query`SELECT grp_id FROM usr_grp WHERE usr_id = ${String(this)}`;
-      for (const vs of rows) {
-        this.#grps.push(Number(vs.grp_id));
-      }
+      for (const vs of rows) this.#grps.push(Number(vs.grp_id));
     }
     return this.#grps;
   }
@@ -20,16 +18,14 @@ class dbEntry_usr extends DbEntry {
 // === dbEntry_log ===
 class dbEntry_log extends DbEntry {
   async sess(): Promise<dbEntry_sess> {
-    const id = await this.get("sess_id");
-    return this.table.db.table("sess").entry(id) as dbEntry_sess;
+    return this.table.db.table("sess").entry(await this.get("sess_id")) as dbEntry_sess;
   }
 }
 
 // === dbEntry_sess ===
 class dbEntry_sess extends DbEntry {
   async user(): Promise<dbEntry_usr> {
-    const id = await this.get("usr_id")
-    return this.table.db.table("usr").entry(id) as dbEntry_usr;
+    return this.table.db.table("usr").entry(await this.get("usr_id")) as dbEntry_usr;
   }
 }
 
@@ -56,8 +52,7 @@ class dbEntry_client extends DbEntry {
 // === dbEntry_client_usr ===
 class dbEntry_client_usr extends DbEntry {
   async user(): Promise<dbEntry_usr> {
-    const id = await this.get("usr_id");
-    return this.table.db.table("usr").entry(id) as dbEntry_usr;
+    return this.table.db.table("usr").entry(await this.get("usr_id")) as dbEntry_usr;
   }
 }
 
