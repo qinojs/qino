@@ -35,6 +35,11 @@ exists is deleted on the way, so the table stays clean without a cleanup job.
 2. They open `https://t.me/<bot>?start=<token>` and press **Start**.
 3. Telegram posts the update to the webhook; the `chat_id` lands in `telegram_chat`.
 
+[cms.cont.my.telegram](../cms.cont.my.telegram/) is that flow as a page element. It never
+renders the link into the HTML — a cached page would hand out an expired one — and watches
+for the connection while the user is in Telegram, since nothing tells the page that Start
+was pressed.
+
 `/stop` in the chat unlinks it, as does `DELETE messagingTelegram/link` for the signed-in
 user. Linking a chat that is already linked re-points it — one Telegram account belongs to
 one person at a time.
