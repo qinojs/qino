@@ -20,7 +20,7 @@ export class Provider {
     for (let attempt = 0; attempt < 3; attempt++) {
       res = await fetch(this.#row.endpoint.replace(/\/+$/, "") + path, {
         method: "POST",
-        headers: { "content-type": "application/json", "authorization": "Bearer " + this.#key },
+        headers: { "content-type": "application/json", authorization: "Bearer " + this.#key },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(this.#timeout()),
       });
@@ -40,7 +40,7 @@ export class Provider {
   form(path: string, body: FormData): Promise<Record<string, unknown>> {
     return this.#parsed(() => fetch(this.#row.endpoint.replace(/\/+$/, "") + path, {
       method: "POST",
-      headers: { "authorization": "Bearer " + this.#key },
+      headers: { authorization: "Bearer " + this.#key },
       body,
       signal: AbortSignal.timeout(this.#timeout()),
     }));

@@ -183,13 +183,13 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
 
 async function resolveVersion(bin: Binary): Promise<string> {
   const cmds: Record<string, { cmd: string; args: string[]; extract?: (out: string) => string }[]> = {
-    "imagemagick": [{ cmd: "magick", args: ["-version"] }, { cmd: "convert", args: ["-version"] }],
-    "ffmpeg":      [{ cmd: "ffmpeg", args: ["-version"] }],
-    "pngquant":    [{ cmd: "pngquant", args: ["--version"] }],
-    "pandoc":      [{ cmd: "pandoc", args: ["--version"] }],
-    "pdftotext":   [{ cmd: "pdftotext", args: ["-v"] }],
-    "tesseract":   [{ cmd: "tesseract", args: ["--version"] }],
-    "libheif":     [
+    imagemagick: [{ cmd: "magick", args: ["-version"] }, { cmd: "convert", args: ["-version"] }],
+    ffmpeg:      [{ cmd: "ffmpeg", args: ["-version"] }],
+    pngquant:    [{ cmd: "pngquant", args: ["--version"] }],
+    pandoc:      [{ cmd: "pandoc", args: ["--version"] }],
+    pdftotext:   [{ cmd: "pdftotext", args: ["-v"] }],
+    tesseract:   [{ cmd: "tesseract", args: ["--version"] }],
+    libheif:     [
       { cmd: "magick",   args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
       { cmd: "convert",  args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
     ],

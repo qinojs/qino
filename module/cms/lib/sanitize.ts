@@ -20,8 +20,8 @@ const POLICY: sanitize.IOptions = {
     allowedSchemesByTag: { img: ["http", "https", "data"] },
     allowedStyles: {
         img: { // the inline editor sizes images via style (see cms.frontend.2 dropPasteHelper)
-            "width": [DIM],
-            "height": [/^auto$/, DIM],
+            width: [DIM],
+            height: [/^auto$/, DIM],
             "max-width": [DIM],
             "--shape-outside-url": [/^url\(["']?[^"'()\s]+["']?\)$/],
         },
