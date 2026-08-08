@@ -120,6 +120,27 @@ Deno.test("/start links the chat, links again, and /stop unlinks it", async () =
   }
 });
 
+Deno.test("a linked user's incoming Telegram message is journaled for the conversation", async () => {
+  const db = await makeDb();
+  await db.table("telegram_chat").insert({ usr_id: 1, chat_id: 555, created: unixTime() });
+  const bot = fakeTelegram();
+  try {
+    assertEquals(await run(update(db, {
+      message_id: 9,
+      date: 123,
+      chat: { id: 555, type: "private", username: "someone" },
+      text: "Hello back",
+    })), 200);
+    const row = await db.row`
+      SELECT m.channel, m.direction, m.data, d.usr_id
+      FROM message m JOIN message_delivery d ON d.message_id = m.id`;
+    assertEquals([row?.channel, row?.direction, row?.usr_id], ["telegram", "in", 1]);
+    assertEquals(JSON.parse(String(row?.data)).text, "Hello back");
+  } finally {
+    bot.restore();
+  }
+});
+
 Deno.test("send delivers, clears a stale error and drops a chat that blocked the bot", async () => {
   const db = await makeDb();
   const app = makeApp(db);

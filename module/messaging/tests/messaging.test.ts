@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { messages, record } from "../mod.ts";
+import { messages, record, userMessages } from "../mod.ts";
 import { Db, type App } from "../../core/mod.ts";
 
 async function app(): Promise<App> {
@@ -44,4 +44,19 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
       { id: 2, usr_id: 2, email: "two@example.test", time: 12, error: "rejected" },
     ],
   }]);
+
+  assertEquals(await userMessages(testApp, 2), [{
+    id: 1,
+    channel: "sms",
+    direction: "out",
+    grp_id: 1,
+    grp_name: "Editors",
+    log_id: null,
+    data: '{"text":"Hello"}',
+    time: 10,
+    deliveries: [
+      { id: 2, usr_id: 2, email: "two@example.test", time: 12, error: "rejected" },
+    ],
+  }]);
+  assertEquals(await userMessages(testApp, 3), []);
 });

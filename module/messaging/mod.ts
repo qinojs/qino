@@ -1,6 +1,6 @@
 // Public API of messaging. The qino plugin lives in ./plugin.ts.
 
-import { unixTime, type App, type Row } from "../core/mod.ts";
+import { sql, unixTime, type App, type Row } from "../core/mod.ts";
 
 /** Store one logical message and one result per recipient. */
 export async function record(
@@ -34,14 +34,29 @@ export async function record(
 }
 
 /** Recent logical messages including their recipient detail rows. */
-export async function messages(app: App, limit = 100): Promise<(Row & { deliveries: Row[] })[]> {
+export function messages(app: App, limit = 100): Promise<(Row & { deliveries: Row[] })[]> {
+  return read(app, limit);
+}
+
+/** Recent messages sent to or received from one user. */
+export function userMessages(app: App, usrId: number, limit?: number): Promise<(Row & { deliveries: Row[] })[]> {
+  return read(app, limit, usrId);
+}
+
+async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { deliveries: Row[] })[]> {
+  const where = usrId == null ? sql`` : sql`WHERE EXISTS (
+    SELECT 1 FROM message_delivery selected
+    WHERE selected.message_id = m.id AND selected.usr_id = ${usrId}
+  )`;
+  const delivery = usrId == null ? sql`` : sql`AND d.usr_id = ${usrId}`;
+  const take = limit == null ? sql`` : sql`LIMIT ${limit}`;
   const rows = await app.db.query`
     SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.data, m.time,
       g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.time AS delivery_time,
       d.error, u.email
-    FROM (SELECT * FROM message ORDER BY time DESC, id DESC LIMIT ${limit}) m
+    FROM (SELECT m.* FROM message m ${where} ORDER BY m.time DESC, m.id DESC ${take}) m
     LEFT JOIN grp g ON g.id = m.grp_id
-    LEFT JOIN message_delivery d ON d.message_id = m.id
+    LEFT JOIN message_delivery d ON d.message_id = m.id ${delivery}
     LEFT JOIN usr u ON u.id = d.usr_id
     ORDER BY m.time DESC, m.id DESC, d.id`;
   const byId = new Map<number, Row & { deliveries: Row[] }>();
