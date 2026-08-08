@@ -7,7 +7,7 @@ import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 export async function publishNode(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = Number(pid);
     const page = await cms(ctx.app).node(id);
-    if ((await page.access()) < 2) return false;
+    if (await page.access() < 2) return false;
     const cmsVersSpace = getCmsVers(ctx).space;
     options = {
         fromSpace: cmsVersSpace,
@@ -21,7 +21,7 @@ export async function publishNode(ctx: any, pid: any, options: any = {}): Promis
 
 export async function getForNode(ctx: any, pid: any): Promise<any[]> {
     const page = await cms(ctx.app).node(Number(pid));
-    if ((await page.access()) < 2) return [];
+    if (await page.access() < 2) return [];
     const data = await versProtocolForNodeTree(ctx, Number(pid));
     const map: Record<number, any> = {};
     for (const row of data) map[row.vers] = row;

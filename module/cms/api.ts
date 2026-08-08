@@ -67,7 +67,7 @@ const node = {
     const app = ctx.app;
     const n = await cms(app).node(id);
     if (!n.exists()) throw new NotFoundError(`Node ${id} not found`);
-    if ((await n.access()) < 1) throw new AccessError();
+    if (await n.access() < 1) throw new AccessError();
     return n;
   },
 
@@ -216,7 +216,7 @@ const node = {
         const bough = await node.bough({ type: "p" });
         for (const page of bough.values()) {
           has++;
-          if ((await page.access()) < 2) continue;
+          if (await page.access() < 2) continue;
           await page.set("module", module);
           done++;
         }
@@ -251,7 +251,7 @@ const node = {
       output: s.object({ id: s.string() }),
       execute: async ({ node, deep }: any, ctx: Ctx) => {
         const copied = await node.copy(deep, async (cp: any) => {
-          if ((await cp.access()) < 1) return false;
+          if (await cp.access() < 1) return false;
         });
         if (!copied) throw new AccessError();
         await copied.changeUser(ctx.user, 3);
@@ -272,7 +272,7 @@ const node = {
       }),
       execute: async ({ node, id, before }: any) => {
         const child = await node.cms.node(id);
-        if ((await child.access()) < 2) throw new AccessError();
+        if (await child.access() < 2) throw new AccessError();
         if (await node.in(child)) throw new ConflictError("would create a loop");
         await node.insertBefore(child, before);
         return { ok: true };
@@ -344,7 +344,7 @@ const node = {
             const bough = await node.bough({ type: "p" });
             for (const page of bough.values()) {
               has++;
-              if ((await page.access()) < 3) continue;
+              if (await page.access() < 3) continue;
               await page.changeUser(user, access);
               done++;
             }
@@ -610,7 +610,7 @@ export const api = {
       execute: async ({ value }: any, ctx: Ctx) => {
         if (value) {
           const p = await cms(ctx.app).node(value);
-          if ((await p.access()) < 2) throw new AccessError();
+          if (await p.access() < 2) throw new AccessError();
         }
         await ctx.settings.cms.clipboard(Number(value ?? 0));
         return { ok: true };
@@ -657,7 +657,7 @@ export const api = {
           if (row) {
             const n = await cms(ctx.app).node(row.page_id);
             if (!n.exists()) throw new NotFoundError();
-            if ((await n.access()) < 2) throw new AccessError();
+            if (await n.access() < 2) throw new AccessError();
             const changed = await n.text(row.name, lang_, value);
             return { changed: !!changed, kind: "text" };
           }
@@ -665,7 +665,7 @@ export const api = {
           if (pid) {
             const n = await cms(ctx.app).node(Number(pid));
             if (!n.exists()) throw new NotFoundError();
-            if ((await n.access()) < 2) throw new AccessError();
+            if (await n.access() < 2) throw new AccessError();
             const changed = await n.title(lang_, value);
             return { changed: !!changed, kind: "title" };
           }

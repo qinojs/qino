@@ -84,7 +84,7 @@ class CmsTextService {
 
     async translateCont(pid: any, target_lang: string, source_lang = "auto", ifNeeded = true): Promise<number | false> {
         const node = await cms(this.#app).node(pid);
-        if ((await node.access()) < 2) return false;
+        if (await node.access() < 2) return false;
         let count = 0;
         const title = await node.title();
         count += await this.translateText(title.id, target_lang, source_lang, ifNeeded);

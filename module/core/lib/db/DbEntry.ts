@@ -57,7 +57,7 @@ export class DbEntry {
   }
 
   #ensureEid(): void {
-    if (this.#eid === undefined && this.table.fields && Object.keys(this.#vs).length > 0) {
+    if (this.#eid === undefined && this.table.fields && Object.keys(this.#vs).length) {
       this.#eid = this.table.entryId(this.#vs) || undefined;
     }
   }

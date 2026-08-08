@@ -137,7 +137,7 @@ class SettingsEditorElement extends HTMLElement {
     const id = row?.dataset.path;
     if (!id) return;
     if (toggle) {
-      if (opened.has(id)) opened.delete(id); else opened.add(id);
+      opened.has(id) ? opened.delete(id) : opened.add(id);
       await this.#render();
       return;
     }

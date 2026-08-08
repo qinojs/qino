@@ -51,7 +51,7 @@ export async function copyNode(
 
     const generate = async (id: number): Promise<void> => {
         const page = await cms(ctx.app).node(id);
-        if ((await page.access()) <= 1) return;
+        if (await page.access() <= 1) return;
 
         await tableEntriesCopyTo(db, "page",      { id },        fromSpace, fromLog, toSpace);
         const pageFilter = subPages ? { basis: id } : { basis: id, type: "c" };

@@ -146,7 +146,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
                 const generate = async (id: number): Promise<void> => {
                     const node = await cms(ctx.app).node(id);
                     for (const subCont of await node.conts()) await generate(subCont.id);
-                    if ((await node.access()) < 2) return;
+                    if (await node.access() < 2) return;
                     (node.vs as any).online_start = (node.vs as any).online_end = 0; // request-scoped node — safe
                     await nodeLoadRuntimeCache(node);
                 };

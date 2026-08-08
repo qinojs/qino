@@ -386,7 +386,7 @@ export class Node {
         if (lang == null) return texts[name];
         const textLang = await texts[name].lang(lang);
         if (value === undefined) return textLang;
-        if ((await textLang.get()) === value) return;
+        if (await textLang.get() === value) return;
         await textLang.set(value);
         return textLang;
     }
@@ -403,7 +403,7 @@ export class Node {
         if (lang == null) return this.#title;
         const textLang = await this.#title.lang(lang);
         if (value === undefined) return textLang.get();
-        if ((await textLang.get()) === value) return;
+        if (await textLang.get() === value) return;
         await textLang.set(value);
         await this.urlsSeoGen();
         return textLang;
@@ -536,7 +536,7 @@ export class Node {
         const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
         let url = base + part;
         const exists = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${this.id} AND lang = ${lang})`;
-        if ((await Deno.stat(this.app.appPATH + url).catch(() => null)) || exists) url += "-" + lang + this;
+        if (await Deno.stat(this.app.appPATH + url).catch(() => null) || exists) url += "-" + lang + this;
         return url;
     }
 

@@ -37,7 +37,7 @@ export async function treeToJson(opts: {
     const nodes = opts.self ? [opts.node] : (await opts.node.children({ type: opts.type })).values();
     const res: any[] = [];
     for (const n of nodes) {
-        if ((await n.access()) < (opts.access ?? 1)) continue;
+        if (await n.access() < (opts.access ?? 1)) continue;
         const entry = await opts.entry(n);
         if (!opts.expand || await opts.expand(n, level)) {
             const children = await treeToJson({ ...opts, node: n, self: false }, level + 1);
@@ -242,7 +242,7 @@ export async function searchFiles(search: string): Promise<any[]> {
         ORDER BY f.id = ${s} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
         f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
         const node = await cms(ctx.app).node(vs.pid);
-        if ((await node.access()) < 2) continue;
+        if (await node.access() < 2) continue;
         const dbFile = await ctx.app.dbFiles.file(vs.id, vs);
         if (!await dbFile.exists()) continue;
         const md5 = vs.md5;

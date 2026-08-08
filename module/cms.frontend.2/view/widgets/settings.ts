@@ -47,7 +47,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   accordions += await accordion("media", node);
   if (showAccessTime) accordions += await accordion("access.time", node);
-  if ((await node.access()) > 2) {
+  if (await node.access() > 2) {
     accordions += await accordion("access.grp", node);
     accordions += await accordion("access.usr", node);
   }

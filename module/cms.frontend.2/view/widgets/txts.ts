@@ -2,7 +2,7 @@ import { html, type HtmlString } from "../../../core/mod.ts";
 import type { Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node): Promise<HtmlString | string> {
-  if ((await node.access()) < 2) return "";
+  if (await node.access() < 2) return "";
   const texts = await node.texts();
   const rows: HtmlString[] = [];
   for (const [name, T] of Object.entries(texts)) {
