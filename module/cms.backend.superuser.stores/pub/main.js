@@ -1,16 +1,20 @@
 import { api, t } from "../../core/pub/js/qino.js";
 
+// A reload replaces the whole node, the chosen filter should outlive it.
+const kept = {};
+
 cms.initNode("backend.superuser.stores", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
   const dialog = () => import("@qino/u2/js/dialog/dialog.js");
-  const filter = (name) => el.querySelector(`[data-filter=${name}]`).value;
+  const filters = () => el.querySelectorAll("[data-filter]");
 
   // Filter and per-store counts both derive from the rows — recompute after every change.
   const update = () => {
-    const q = filter("search").trim().toLowerCase();
-    const state = filter("state");
-    const store = filter("store"); // "-" stands for everything no store lists
+    for (const f of filters()) kept[f.dataset.filter] = f.value;
+    const q = kept.search.trim().toLowerCase();
+    const state = kept.state;
+    const store = kept.store; // "-" stands for everything no store lists
     const all = [...el.querySelectorAll("tr[data-mod]")];
     for (const { dataset: d, style } of all) {
       // display, not [hidden]: .u2-table sets display:table-row on every row and would win.
@@ -60,5 +64,6 @@ cms.initNode("backend.superuser.stores", (el) => {
   });
 
   el.addEventListener("input", update);
+  for (const f of filters()) if (kept[f.dataset.filter] !== undefined) f.value = kept[f.dataset.filter];
   update();
 });

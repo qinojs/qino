@@ -22,6 +22,7 @@
     "./locale.currency": "./module/locale.currency/mod.ts",
     "./mail": "./module/mail/mod.ts",
     "./mcp": "./module/mcp/mod.ts",
+    "./messaging.sms": "./module/messaging.sms/mod.ts",
     "./messaging.telegram": "./module/messaging.telegram/mod.ts",
     "./messaging.web_push": "./module/messaging.web_push/mod.ts",
     "./oauth": "./module/oauth/mod.ts",

@@ -1,0 +1,84 @@
+import { api, t } from "../../core/pub/js/qino.js";
+
+const sms = api["messaging.sms"];
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
+
+cms.initNode("cont.my.phones", async (el) => {
+  const list = el.querySelector("[data-phones]");
+  const form = el.querySelector("[data-add]");
+  const msg = el.querySelector(".-msg");
+  const labels = {
+    main: await t`Main number`,
+    makeMain: await t`Make main number`,
+    verified: await t`Verified`,
+    pending: await t`Enter the code sent by SMS`,
+    confirm: await t`Confirm`,
+    resend: await t`Send code again`,
+    del: await t`Delete`,
+    delConfirm: await t`Delete this phone number?`,
+    empty: await t`No phone numbers yet.`,
+    sent: await t`Verification code sent.`,
+    error: await t`Error loading.`,
+  };
+
+  const show = (value = "") => void (msg.value = value);
+  const load = async () => {
+    try {
+      const phones = await sms.phones.get();
+      const verified = phones.filter((p) => p.verified);
+      list.innerHTML = phones.length ? phones.map((p) => {
+        const main = p.verified && (p.main || verified.length === 1);
+        return `<div data-phone="${p.id}">
+          <p><strong>${esc(p.number)}</strong>
+            ${main ? `<span class=u2-badge>${esc(labels.main)}</span>` : ""}
+            ${p.verified ? `<small>${esc(labels.verified)} ${esc(fmt(p.verified))}</small>` : ""}</p>
+          ${p.verified ? (main ? "" : `<button type=button data-main>${esc(labels.makeMain)}</button>`) : `
+            <label>${esc(labels.pending)} <input inputmode=numeric pattern="[0-9]{6}" maxlength=6 data-code required></label>
+            <button type=button data-verify>${esc(labels.confirm)}</button>
+            <button type=button data-resend>${esc(labels.resend)}</button>`}
+          <button type=button data-delete>${esc(labels.del)}</button>
+        </div>`;
+      }).join("") : esc(labels.empty);
+    } catch (e) {
+      list.textContent = labels.error;
+      show(e?.message || String(e));
+    }
+  };
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    show();
+    try {
+      await sms.phones.post({ number: form.elements.number.value.trim() });
+      form.reset();
+      show(labels.sent);
+      await load();
+    } catch (e) { show(e?.message || String(e)); }
+  });
+
+  list.addEventListener("click", async (event) => {
+    const row = event.target.closest("[data-phone]");
+    if (!row) return;
+    const phone = sms.phone(row.dataset.phone);
+    show();
+    try {
+      if (event.target.closest("[data-verify]")) {
+        const input = row.querySelector("[data-code]");
+        if (!input.reportValidity()) return;
+        await phone.verify.post({ code: input.value.trim() });
+      } else if (event.target.closest("[data-resend]")) {
+        await sms.phones.post({ number: row.querySelector("strong").textContent });
+        show(labels.sent);
+      } else if (event.target.closest("[data-main]")) {
+        await phone.main.put();
+      } else if (event.target.closest("[data-delete]")) {
+        if (!confirm(labels.delConfirm)) return;
+        await phone.delete();
+      } else return;
+      await load();
+    } catch (e) { show(e?.message || String(e)); }
+  });
+
+  load();
+});

@@ -1,11 +1,27 @@
 import type { Node } from "../cms/mod.ts";
-import { deleteWebhook, removeChat, send, setWebhook } from "../messaging.telegram/mod.ts";
+import { $item } from "../core/mod.ts";
+import { bot, deleteWebhook, removeChat, send, setWebhook } from "../messaging.telegram/mod.ts";
 import { webhookUrl } from "./render.ts";
 
 /** Node access is the permission — whoever may read this backend node may send from here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   const app = node.app;
   try {
+    if (vars.botToken != null) {
+      const token = String(vars.botToken).trim();
+      if (!token) return { ok: false, message: await app.t`A bot token is required.` };
+      const setting = app.settings[$item].sub(["messaging.telegram"]).item("botToken");
+      const previous = await app.settings["messaging.telegram"].botToken;
+      if (previous) return { ok: false, message: await app.t`The bot token is already configured.` };
+      await setting.set(token);
+      try {
+        await bot(app);
+      } catch (e) {
+        previous == null ? await setting.remove() : await setting.set(previous);
+        throw e;
+      }
+      return { ok: true, message: await app.t`Bot token saved.` };
+    }
     if (vars.webhookSet) {
       await setWebhook(app, webhookUrl());
       return { ok: true, message: await app.t`Webhook registered.` };

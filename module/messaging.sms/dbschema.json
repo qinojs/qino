@@ -1,0 +1,61 @@
+{
+  "properties": {
+    "usr_phone": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 16,
+            "x-index": "unique",
+            "description": "Normalized E.164 number"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "verified": {
+            "type": "integer",
+            "x-index": true
+          },
+          "main": {
+            "type": "boolean",
+            "default": false,
+            "description": "Preferred SMS number for this user"
+          },
+          "verify_hash": {
+            "type": "string",
+            "maxLength": 43
+          },
+          "verify_expires": {
+            "type": "integer"
+          },
+          "verify_attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "verify_sent": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Why the last delivery failed — null once one succeeds again"
+          }
+        },
+        "required": ["id", "usr_id", "number", "created", "main", "verify_attempts"]
+      }
+    }
+  }
+}

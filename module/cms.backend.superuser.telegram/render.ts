@@ -20,12 +20,21 @@ export function render(node: Node): Promise<HtmlString> {
 /** Bot identity and webhook state — both are live answers from Telegram. */
 export async function bot(node: Node): Promise<HtmlString> {
   const t = node.app.t;
+  const configured = Boolean(await node.app.settings["messaging.telegram"].botToken);
+  const token = configured ? "" : html.async`<form>
+    <u2-fields>
+      ${t`Bot token`} <input type=password name=botToken autocomplete=off
+        placeholder="123456:…" required>
+    </u2-fields>
+    <button type=button data-token-save>${t`Save token`}</button>
+  </form>`;
   const state = await Promise.all([botInfo(node.app), webhookInfo(node.app)]).catch((e: Error) => e.message);
   if (typeof state === "string") {
     return html.async`<div class=-head>${t`Bot`}</div>
     <div class=-body>
+      ${token}
       <p>${state}</p>
-      <small>${t`Create a bot with @BotFather and put its token into the setting messaging.telegram.botToken.`}</small>
+      ${configured ? "" : html`<small>${await t`Create a bot with @BotFather and enter its token above.`}</small>`}
     </div>`;
   }
 
@@ -36,6 +45,7 @@ export async function bot(node: Node): Promise<HtmlString> {
   const [pending, remove] = await Promise.all([t`pending`, t`Remove`]);
   return html.async`<div class=-head>${t`Bot`}</div>
   <div class=-body>
+    ${token}
     <u2-fields>
       ${t`Bot`} <input value="@${me.username}" readonly>
       ${t`Webhook`} <input value="${url}" readonly>
