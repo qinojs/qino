@@ -49,12 +49,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const options = {
     alt: String(text),
-    width: await settings["width"],
-    height: await settings["height"],
-    fit: (await settings["contain"]) ? "contain" : "cover",
+    width: await settings.width,
+    height: await settings.height,
+    fit: (await settings.contain) ? "contain" : "cover",
     if: 1,
     style,
-    quality: Number(await settings["quality"]) || null,
+    quality: Number(await settings.quality) || null,
     editable: node.edit ? await img.url() : null,
   };
 
