@@ -1,0 +1,42 @@
+{
+  "properties": {
+    "telegram_chat": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "chat_id": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "x-index": "unique",
+            "description": "The chat the bot writes to — its identity, and only obtainable from an update"
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Why the last delivery failed — null once one succeeds again"
+          }
+        },
+        "required": ["id", "usr_id", "chat_id", "created"]
+      }
+    }
+  }
+}
