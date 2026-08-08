@@ -46,7 +46,7 @@ export async function render(node: Node): Promise<HtmlString> {
     .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`));
 
   return html.async`<div class=u2-flex>
-    <div class=u2-card>
+    <div class=u2-card style="flex-grow:0">
       <div class=-head>${app.t`User`}</div>
       <form class=-body method=get action="${url.pathname}">
         ${query}
