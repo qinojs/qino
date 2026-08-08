@@ -1,12 +1,13 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "../../core/tests/deps.ts";
 import { ApiError, Db } from "../../core/mod.ts";
+import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { deliver } from "../lib/provider.ts";
-import { addPhone, approvePhone, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone } from "../mod.ts";
+import { addPhone, approvePhone, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone, type SmsProvider } from "../mod.ts";
 
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
-  await db.migrate(dbSchema);
+  await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
   await db.query`CREATE TABLE usr_grp (usr_id INTEGER NOT NULL, grp_id INTEGER NOT NULL)`;
   await db.loadTables();
@@ -82,7 +83,8 @@ Deno.test("a user can verify multiple phones but cannot claim another user's num
   const db = await makeDb();
   const app = makeApp(db);
   const messages: { to: string; text: string }[] = [];
-  setProvider(app, { send: (to, text) => Promise.resolve(void messages.push({ to, text })) });
+  const provider: SmsProvider = { send: (to, text) => Promise.resolve(void messages.push({ to, text })) };
+  setProvider(app, provider);
 
   const first = await addPhone(app, 1, "+41 79 123 45 67");
   assertEquals(first.number, "+41791234567");

@@ -1,6 +1,7 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 
 import { $item, ApiError, randB64, safeEqual, sha256b64url, sql, unixTime, type App, type Row } from "../core/mod.ts";
+import { record } from "../messaging/mod.ts";
 import { deliver, setProvider, type SmsProvider } from "./lib/provider.ts";
 
 export { setProvider, type SmsProvider };
@@ -21,27 +22,32 @@ export async function send(
     : to.all ? sql``
     : null;
   if (!where) throw new Error("send needs a recipient: { grp }, { usr }, { phone } or { all: true }");
+  const time = unixTime();
 
   const preferred = to.phone != null ? sql`` : sql`AND (p.main = ${true} OR NOT EXISTS (
     SELECT 1 FROM usr_phone other
     WHERE other.usr_id = p.usr_id AND other.verified IS NOT NULL AND other.id <> p.id
   ))`;
   const rows = await app.db.query`
-    SELECT p.id, p.number, p.error FROM usr_phone p
+    SELECT p.id, p.usr_id, p.number, p.error FROM usr_phone p
     WHERE p.verified IS NOT NULL ${where} ${preferred}`;
   const table = app.db.table("usr_phone");
+  const deliveries: { usrId: number; error?: string; time: number }[] = [];
   let sent = 0;
   for (const row of rows) {
     try {
       await deliver(app, String(row.number), text);
       sent++;
+      deliveries.push({ usrId: Number(row.usr_id), time: unixTime() });
       if (row.error) await table.update(row.id, { error: null });
     } catch (e) {
       const message = errorMessage(e);
+      deliveries.push({ usrId: Number(row.usr_id), error: message, time: unixTime() });
       console.warn(`sms: phone ${row.id} rejected —`, message);
       await table.update(row.id, { error: message.slice(0, 255) });
     }
   }
+  await record(app, { channel: "sms", direction: "out", grpId: to.grp, data: { to, text }, time }, deliveries);
   return sent;
 }
 
@@ -77,9 +83,16 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
   try {
     await deliver(app, number, await app.t`Your verification code is ${code}.`);
   } catch (e) {
-    await table.update(id, { error: errorMessage(e).slice(0, 255) });
+    const error = errorMessage(e);
+    await table.update(id, { error: error.slice(0, 255) });
+    await record(app, { channel: "sms", direction: "out", data: { kind: "phone_verification", phone: id }, time: now }, [
+      { usrId, error, time: unixTime() },
+    ]);
     throw e;
   }
+  await record(app, { channel: "sms", direction: "out", data: { kind: "phone_verification", phone: id }, time: now }, [
+    { usrId, time: unixTime() },
+  ]);
   return publicPhone((await db.row`SELECT * FROM usr_phone WHERE id = ${id}`)!);
 }
 

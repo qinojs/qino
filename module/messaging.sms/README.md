@@ -53,5 +53,5 @@ per minute per pending number, and five failed attempts invalidate a code. Only 
 of the code is stored.
 
 [cms.cont.my.phones](../cms.cont.my.phones/) provides this flow to signed-in users.
-[cms.backend.superuser.sms](../cms.backend.superuser.sms/) configures providers, sends messages
+[cms.backend.superuser.messaging.sms](../cms.backend.superuser.messaging.sms/) configures providers, sends messages
 and may approve a pending number without its code.

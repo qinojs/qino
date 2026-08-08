@@ -1,0 +1,81 @@
+{
+  "properties": {
+    "message": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "channel": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": true,
+            "description": "Transport channel such as sms, telegram or web_push"
+          },
+          "direction": {
+            "type": "string",
+            "enum": ["in", "out"],
+            "maxLength": 3,
+            "x-index": true
+          },
+          "grp_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "grp",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Originating user group when the message targeted one"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "data": {
+            "type": "string",
+            "description": "Channel-native JSON payload and routing data"
+          },
+          "time": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["id", "channel", "direction", "data", "time"]
+      }
+    },
+    "message_delivery": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "message_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "message",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "setnull"
+          },
+          "time": {
+            "type": "integer",
+            "x-index": true
+          },
+          "error": {
+            "type": "string",
+            "description": "Delivery error; null means the recipient was reached"
+          }
+        },
+        "required": ["id", "message_id", "time"]
+      }
+    }
+  }
+}

@@ -53,7 +53,7 @@ link within it gets bound to that account, so it is only ever shown to the user 
 `POST <app>/telegram/webhook`, authenticated by the `secret_token` Telegram echoes back in
 `X-Telegram-Bot-Api-Secret-Token` — the only authentication the platform offers. The secret
 is generated on first use and stored in settings. Register it from the backend
-(`cms.backend.superuser.telegram`), which knows the public URL of the running app.
+(`cms.backend.superuser.messaging.telegram`), which knows the public URL of the running app.
 
 The endpoint always answers 200: any other status makes Telegram retry the same update.
 

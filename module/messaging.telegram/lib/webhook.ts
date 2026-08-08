@@ -1,4 +1,5 @@
 import { Output, safeEqual, unixTime, type App, type Ctx } from "../../core/mod.ts";
+import { record } from "../../messaging/mod.ts";
 import { call, webhookSecret } from "./bot.ts";
 import { readLinkToken } from "./link.ts";
 
@@ -11,30 +12,49 @@ export async function webhook(ctx: Ctx): Promise<never> {
   throw new Output(undefined, { status: 200 });
 }
 
-/** Only `/start` and `/stop` in a private chat mean anything; everything else is ignored. */
+/** Journal private messages; `/start` and `/stop` additionally manage the chat link. */
 // deno-lint-ignore no-explicit-any
 async function update(app: App, up: any): Promise<void> {
   const msg = up?.message;
   if (msg?.chat?.type !== "private") return;
   const chatId = Number(msg.chat.id);
   const [, command, payload] = /^\/(start|stop)(?:\s+(\S+))?/.exec(String(msg.text ?? "")) ?? [];
+  const knownUsrId = Number(await app.db.one`SELECT usr_id FROM telegram_chat WHERE chat_id = ${chatId}`) || undefined;
+  const linkedUsrId = command === "start" && payload ? await readLinkToken(app, payload) : undefined;
+  const usrId = linkedUsrId || knownUsrId;
+  await record(app, {
+    channel: "telegram",
+    direction: "in",
+    data: { updateId: up.update_id, messageId: msg.message_id, chatId, text: String(msg.text ?? "") },
+    time: Number(msg.date) || unixTime(),
+  }, [{ usrId, time: unixTime() }]);
   if (!command) return;
 
   if (command === "stop") {
     await app.db.exec`DELETE FROM telegram_chat WHERE chat_id = ${chatId}`;
-    return reply(app, chatId, await app.t`You will not receive messages here any more.`);
+    return reply(app, chatId, await app.t`You will not receive messages here any more.`, usrId);
   }
 
-  const usrId = payload && await readLinkToken(app, payload);
-  if (!usrId) return reply(app, chatId, await app.t`This link has expired. Please open it again from your account.`);
+  if (!linkedUsrId) return reply(app, chatId, await app.t`This link has expired. Please open it again from your account.`, usrId);
 
   const table = app.db.table("telegram_chat");
-  const values = { usr_id: usrId, username: String(msg.chat.username ?? "").slice(0, 64) || null, error: null };
+  const values = { usr_id: linkedUsrId, username: String(msg.chat.username ?? "").slice(0, 64) || null, error: null };
   // linking again re-points the same chat — one Telegram account belongs to one person at a time
   const known = await app.db.one`SELECT id FROM telegram_chat WHERE chat_id = ${chatId}`;
   if (known) await table.update(known, values);
   else await table.insert({ ...values, chat_id: chatId, created: unixTime() });
-  await reply(app, chatId, await app.t`Connected. You will receive messages here.`);
+  await reply(app, chatId, await app.t`Connected. You will receive messages here.`, linkedUsrId);
 }
 
-const reply = async (app: App, chat_id: number, text: string) => void await call(app, "sendMessage", { chat_id, text });
+async function reply(app: App, chatId: number, text: string, usrId?: number): Promise<void> {
+  const time = unixTime();
+  let failed = false;
+  let failure: unknown;
+  try { await call(app, "sendMessage", { chat_id: chatId, text }); } catch (e) { failed = true; failure = e; }
+  await record(app, { channel: "telegram", direction: "out", data: { to: { chat: chatId }, msg: { text } }, time }, [{
+    usrId,
+    error: failure instanceof Error ? failure.message : failure == null ? undefined : String(failure),
+    time: unixTime(),
+  }]);
+  if (failed) throw failure;
+}

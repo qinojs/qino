@@ -1,6 +1,6 @@
 import { api } from "../../core/pub/js/qino.js";
 
-cms.initNode("backend.superuser.sms", (el) => {
+cms.initNode("backend.superuser.messaging.sms", (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
   let busy = false;
 

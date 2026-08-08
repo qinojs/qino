@@ -27,7 +27,7 @@ phone routinely wants different channels on each, which a group cannot express, 
 visitors who never log in have no user to group at all. They answer different questions
 and are meant to be used side by side.
 
-Channels are defined in the backend (`cms.backend.superuser.web_push`); a browser
+Channels are defined in the backend (`cms.backend.superuser.messaging.web_push`); a browser
 subscribing to a name that is not defined is silently ignored.
 
 The name avoids "topic" on purpose — RFC 8030 already uses `Topic` for coalescing at the

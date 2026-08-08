@@ -4,12 +4,13 @@ import { chats as chatList } from "../messaging.telegram/mod.ts";
 import { bot, chats, render, send } from "./render.ts";
 import api from "./nodeApi.ts";
 
-export const name = "cms.backend.superuser.telegram";
+export const name = "cms.backend.superuser.messaging.telegram";
 export const description = "Lists linked Telegram chats and sends messages to them.";
-export const needs = ["cms.backend", "messaging.telegram"];
+export const needs = ["cms.backend.superuser.messaging", "messaging.telegram"];
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Telegram", de: "Telegram" });
+  await app.db.table("module").delete("cms.backend.superuser.telegram");
 }
 
 const RECENT = 7;

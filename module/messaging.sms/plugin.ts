@@ -4,7 +4,7 @@ import { addPhone, removePhone, setMainPhone, userPhones, verifyPhone } from "./
 
 export const name = "messaging.sms";
 export const description = "SMS — verifies user phone numbers and delivers messages through a configurable provider.";
-export const needs = ["core"];
+export const needs = ["messaging"];
 export { dbSchema };
 
 export const settingsSchema = {

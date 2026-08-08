@@ -5,7 +5,7 @@ import { publicKey } from "./mod.ts";
 
 export const name = "messaging.web_push";
 export const description = "Web Push — stores browser subscriptions and delivers notifications to them.";
-export const needs = ["core", "serviceworker"];
+export const needs = ["messaging", "serviceworker"];
 export const serviceWorker = true; // pub/sw.js is imported into the app worker
 export { dbSchema };
 

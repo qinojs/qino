@@ -1,6 +1,7 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 
-import { sql, type App, type Row } from "../core/mod.ts";
+import { sql, unixTime, type App, type Row } from "../core/mod.ts";
+import { record } from "../messaging/mod.ts";
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
 
@@ -22,25 +23,30 @@ export async function send(
     : to.all ? sql``
     : null;
   if (!where) throw new Error("send needs a recipient: { grp }, { usr }, { chat } or { all: true }");
+  const time = unixTime();
 
-  const rows = await app.db.query`SELECT id, chat_id, error FROM telegram_chat ${where}`;
-  if (!rows.length) return 0;
+  const rows = await app.db.query`SELECT id, usr_id, chat_id, error FROM telegram_chat ${where}`;
 
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
+  const outcomes = new Map<number, { sent: boolean; errors: string[] }>();
   let sent = 0;
   const deliver = async (row: Row) => {
+    const outcome = outcomes.getOrInsertComputed(Number(row.usr_id), () => ({ sent: false, errors: [] }));
     try {
       await sendMessage(app, { ...msg, chat_id: Number(row.chat_id) });
       sent++;
+      outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {
       // 403 = blocked or deactivated, 400 "chat not found" = the chat is gone for good
       const status = e instanceof BotError ? e.status : 0;
       const message = (e as Error).message;
+      const error = `${status || "no status"}: ${message}`;
+      outcome.errors.push(error);
       if (status === 403 || (status === 400 && /chat not found/i.test(message))) return void gone.push(Number(row.id));
       console.warn(`telegram: chat ${row.id} rejected —`, message);
-      await table.update(row.id, { error: `${status || "no status"}: ${message}`.slice(0, 255) });
+      await table.update(row.id, { error: error.slice(0, 255) });
     }
   };
   // Telegram takes about 30 messages a second across chats — one batch per second stays under that
@@ -49,6 +55,12 @@ export async function send(
     await Promise.all(rows.slice(i, i + 25).map(deliver));
   }
   if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
+  await record(app, { channel: "telegram", direction: "out", grpId: to.grp, data: { to, msg }, time },
+    [...outcomes].map(([usrId, outcome]) => ({
+      usrId,
+      error: outcome.sent ? undefined : outcome.errors.join("; "),
+      time: unixTime(),
+    })));
   return sent;
 }
 

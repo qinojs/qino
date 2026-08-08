@@ -1,7 +1,8 @@
 // Public API of messaging.web_push. The qino plugin lives in ./plugin.ts.
 
 import { sendNotification } from "web-push-neo";
-import { sql, type App, type Row } from "../core/mod.ts";
+import { sql, unixTime, type App, type Row } from "../core/mod.ts";
+import { record } from "../messaging/mod.ts";
 import { vapid } from "./lib/vapid.ts";
 
 /**
@@ -28,30 +29,42 @@ export async function push(
     : to.all ? sql``
     : null;
   if (!where) throw new Error("push needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
+  const time = unixTime();
 
-  const rows = await app.db.query`SELECT id, endpoint, p256dh, auth, error FROM web_push_subscription ${where}`;
-  if (!rows.length) return 0;
+  const rows = await app.db.query`SELECT id, usr_id, endpoint, p256dh, auth, error FROM web_push_subscription ${where}`;
 
   const table = app.db.table("web_push_subscription");
   const options = { vapidDetails: await vapid(app) };
   const payload = JSON.stringify(msg);
   const gone: number[] = [];
+  const outcomes = new Map<string, { usrId?: number; sent: boolean; errors: string[] }>();
   let sent = 0;
   await Promise.all(rows.map(async (row) => {
+    const usrId = row.usr_id == null ? undefined : Number(row.usr_id);
+    const key = usrId == null ? `sub:${row.id}` : `usr:${usrId}`;
+    const outcome = outcomes.getOrInsertComputed(key, () => ({ usrId, sent: false, errors: [] }));
     try {
       await sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, payload, options);
       sent++;
+      outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {
       // 404/410 = the browser dropped the subscription for good; anything else stays for the admin to judge
       const status = (e as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) return gone.push(Number(row.id));
       const error = `${status ?? "no status"}: ${(e as Error).message}`.slice(0, 255);
+      outcome.errors.push(error);
+      if (status === 404 || status === 410) return gone.push(Number(row.id));
       console.warn(`web_push: subscription ${row.id} rejected —`, error);
       await table.update(row.id, { error });
     }
   }));
   if (gone.length) await app.db.exec`DELETE FROM web_push_subscription WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
+  await record(app, { channel: "web_push", direction: "out", grpId: to.grp, data: { to, msg }, time },
+    [...outcomes.values()].map((outcome) => ({
+      usrId: outcome.usrId,
+      error: outcome.sent ? undefined : outcome.errors.join("; "),
+      time: unixTime(),
+    })));
   return sent;
 }
 

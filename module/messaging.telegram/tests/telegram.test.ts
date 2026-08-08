@@ -1,5 +1,6 @@
 import { assert, assertEquals, testContext } from "../../core/tests/deps.ts";
 import { Db, Output, unixTime, type Ctx } from "../../core/mod.ts";
+import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { linkToken, readLinkToken } from "../lib/link.ts";
 import { webhook } from "../lib/webhook.ts";
@@ -9,7 +10,7 @@ const SECRET = "test-secret";
 
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
-  await db.migrate(dbSchema);
+  await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
   await db.loadTables();
   await db.table("usr").insert({ email: "user@qino.test" });
