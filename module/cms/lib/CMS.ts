@@ -44,10 +44,8 @@ export class CMS {
 
   async nodesByModule(moduleName: string): Promise<Record<string, Node>> {
     const ret: Record<string, Node> = {};
-    const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE module = ${moduleName}`;
-    for (const vs of rows) {
+    for (const vs of await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE module = ${moduleName}`)
       ret[vs.id] = await this.node(vs.id, vs);
-    }
     return ret;
   }
 
@@ -70,13 +68,9 @@ export class CMS {
   async nodeFromRequest(): Promise<Node> {
     const ctx = getCtx();
     const cmspid = ctx.req.query.cmspid;
-    let pid: number;
-    if (cmspid) {
-      pid = Number(cmspid);
-    } else {
-      const id = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${ctx.req.appPath}`;
-      pid = Number(id) || 0;
-    }
+    const pid = cmspid ? Number(cmspid) : Number(
+      await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${ctx.req.appPath}`
+    ) || 0;
     return this.node(pid);
   }
 

@@ -21,9 +21,8 @@ function iterateSchemaFields(modules: Record<string, any>, visit: FieldVisitor):
     if (!tables) continue;
     for (const [table, tableSchema] of Object.entries(tables as Record<string, any>)) {
       const fields = tableSchema?.additionalProperties?.properties ?? {};
-      for (const [field, fieldSchema] of Object.entries(fields as Record<string, any>)) {
+      for (const [field, fieldSchema] of Object.entries(fields as Record<string, any>))
         visit(modName, table, field, fieldSchema);
-      }
     }
   }
 }

@@ -18,11 +18,8 @@ async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: s
   } catch { return; }
   entries.sort((a, b) => a.filePath.localeCompare(b.filePath));
   for (const entry of entries) {
-    if (entry.isDir) {
-      yield* walkDir(entry.filePath + "/");
-    } else {
-      yield { filePath: entry.filePath, name: entry.name };
-    }
+    if (entry.isDir) yield* walkDir(entry.filePath + "/");
+    else yield { filePath: entry.filePath, name: entry.name };
   }
 }
 

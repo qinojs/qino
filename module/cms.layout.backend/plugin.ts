@@ -97,9 +97,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   // Content conts
   const contentHtml: HtmlString[] = [];
-  for (const child of await node.conts()) {
-    contentHtml.push(await child.html());
-  }
+  for (const child of await node.conts()) contentHtml.push(await child.html());
 
   const pathHtml = html.join(await Promise.all([...await page.path()].filter(([id]) => id !== 1).map(([, p]) => node.cms.link(p))));
 

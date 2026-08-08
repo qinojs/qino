@@ -93,7 +93,7 @@ export class StoreManager {
   /** Register the remembered stores, so the backend can list and install from them. */
   async init(): Promise<void> {
     // Same bootstrap read as ModuleManager.init(), before this table's own migration — take it as it is.
-    const rows = await this.#app.db.query`SELECT * FROM store`.catch(() => []);
-    for (const { url } of rows) if (url) this.#ensure(url, false);
+    for (const { url } of await this.#app.db.query`SELECT * FROM store`.catch(() => []))
+      if (url) this.#ensure(url, false);
   }
 }

@@ -95,9 +95,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       const conts = await curPage.conts();
       for (const cont of conts) {
         const bough = await cont.bough(["readable", { type: "c" }]);
-        for (const sub of bough.values()) {
-          if (sub.vs.visible) readableChildren.push(sub);
-        }
+        for (const sub of bough.values()) if (sub.vs.visible) readableChildren.push(sub);
       }
     }
 

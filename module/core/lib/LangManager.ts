@@ -29,9 +29,8 @@ export class LangManager {
     ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.core.lang() ?? "";
 
     const urlLang = ctx.req.query.lang ?? ctx.req.query.changeLanguage; // changeLanguage: frozen PHP-era alias
-    if (urlLang) {
-      ctx.langUsr = urlLang;
-    } else {
+    if (urlLang) ctx.langUsr = urlLang;
+    else {
       const match = ctx.req.appPath?.match(/^([a-z][a-z])(\/|$|\?)/);
       if (match) ctx.langUsr = match[1];
     }

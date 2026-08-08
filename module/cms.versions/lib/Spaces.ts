@@ -56,12 +56,9 @@ export async function tableEntriesCopyTo(
   const oldVers = setVers(ctx, [toSpace, 0]);
   s.tableEntriesCopying = true;
   try {
-    for (const [id, entry] of Object.entries(newEntries)) {
+    for (const [id, entry] of Object.entries(newEntries))
       oldEntries[id] ? await tbl.update(entry) : await tbl.ensure(entry);
-    }
-    for (const [id, entry] of Object.entries(oldEntries)) {
-      if (!newEntries[id]) await tbl.delete(entry);
-    }
+    for (const [id, entry] of Object.entries(oldEntries)) if (!newEntries[id]) await tbl.delete(entry);
   } finally {
     s.tableEntriesCopying = false;
     setVers(ctx, oldVers);

@@ -248,9 +248,7 @@ export class DbTable {
       const pField = field.parentField();
       if (!pField || !row) continue;
       const childRows = await this.#db.query`SELECT * FROM ${sql.id(field.table)} WHERE ${sql.id(field)} = ${row[String(pField)]}`;
-      for (const childRow of childRows) {
-        await field.table.delete(childRow);
-      }
+      for (const childRow of childRows) await field.table.delete(childRow);
     }
     for (const field of setnulls) {
       const pField = field.parentField();

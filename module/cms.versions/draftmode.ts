@@ -99,9 +99,8 @@ export function initDraftmode(app: App, signal: AbortSignal) {
         if (!getVers(ctx).space) return;
         if (String(e.table) !== "page") return;
         const liveData: Record<string, any> = {};
-        for (const key of ["sort", "basis", "access", "title_id"]) {
+        for (const key of ["sort", "basis", "access", "title_id"])
             if (key in e.data) liveData[key] = e.data[key];
-        }
         const idValues = e.table.entryIdValues(e.id);
         if (!idValues) return;
         const idWhere = e.table.valuesToFragment(idValues);

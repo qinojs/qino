@@ -14,10 +14,8 @@ export async function install({ app }: { app: App }): Promise<void> {
 }
 
 export async function init(app: App): Promise<void> {
-  const rows = await app.db.query`SELECT name, html FROM mail_template`;
-  for (const row of rows) {
+  for (const row of await app.db.query`SELECT name, html FROM mail_template`)
     if (row.name && row.html) mail(app).templates[row.name] = row.html;
-  }
 }
 
 async function render(node: Node): Promise<HtmlString | string> {

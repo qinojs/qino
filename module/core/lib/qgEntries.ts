@@ -8,8 +8,8 @@ class dbEntry_usr extends DbEntry {
   async grps(): Promise<number[]> {
     if (this.#grps === null) {
       this.#grps = [0];
-      const rows = await this.table.db.query`SELECT grp_id FROM usr_grp WHERE usr_id = ${String(this)}`;
-      for (const vs of rows) this.#grps.push(Number(vs.grp_id));
+      for (const vs of await this.table.db.query`SELECT grp_id FROM usr_grp WHERE usr_id = ${String(this)}`)
+        this.#grps.push(Number(vs.grp_id));
     }
     return this.#grps;
   }

@@ -29,9 +29,7 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
     const body = req.body; // parsed once in Req.create; invalid JSON already answered with 400
     if (body && typeof body === "object") Object.assign(input, body);
   }
-  for (const [k, v] of Object.entries(req.queryAll)) {
-    query[k] = v.length === 1 ? v[0] : [...v];
-  }
+  for (const [k, v] of Object.entries(req.queryAll)) query[k] = v.length === 1 ? v[0] : [...v];
   if (!isBodyMethod) Object.assign(input, query);
   try {
     await authorizeMutation(req, opts, { method, path, input, query });

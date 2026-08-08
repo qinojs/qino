@@ -325,9 +325,8 @@ export class Node {
 
     async bough(filter?: any): Promise<Map<number, Node>> {
         const bough = new Map<number, Node>([[this.id, this]]);
-        for (const child of (await this.children({ type: "*" })).values()) {
+        for (const child of (await this.children({ type: "*" })).values())
             for (const [k, v] of (await child.bough()).entries()) bough.set(k, v);
-        }
         return filter ? this.cms.filter(bough, filter) : bough;
     }
 
@@ -554,9 +553,7 @@ export class Node {
     urlSeoGen(lang: string): Promise<string> {
         return this.db.transaction(async () => {
             const url = await this.#urlSeoOwn(lang);
-            for (const child of (await this.children({ type: "*" })).values()) {
-                await child.urlSeoGen(lang);
-            }
+            for (const child of (await this.children({ type: "*" })).values()) await child.urlSeoGen(lang);
             return url;
         });
     }
@@ -603,9 +600,7 @@ export class Node {
         // Re-sort children so the new child gets a proper sort position
         this.#clearTreeCache();
         let i = 0;
-        for (const child of (await this.children({ type: vs.type })).values()) {
-            await child.set("sort", ++i);
-        }
+        for (const child of (await this.children({ type: vs.type })).values()) await child.set("sort", ++i);
 
         return page;
     }

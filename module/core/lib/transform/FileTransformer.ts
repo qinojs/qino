@@ -146,9 +146,8 @@ export class FileTransformer {
     };
 
     try {
-      for (const transformer of pipeline) {
+      for (const transformer of pipeline)
         if (await transformer.handles(ctx)) await transformer.transform(ctx);
-      }
 
       if (ctx.currentPath === sourcePath) {
         return { path: sourcePath, mime, transformed: false, key: cacheKey };

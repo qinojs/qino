@@ -24,9 +24,8 @@ export class DbEntry {
     if (Array.isArray(vs) || (vs != null && typeof vs === "object")) {
       this.#eid = table.entryId(vs) || undefined;
       this.#vs  = vs;
-    } else if (vs === undefined) {
-      this.#eid = "";
-    } else {
+    } else if (vs === undefined) this.#eid = "";
+    else {
       console.error("dbEntry as direct id used?", Error().stack);
       this.#eid = String(vs);
     }

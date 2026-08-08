@@ -281,9 +281,8 @@ function parseTransformOptions(param: Record<string, unknown>): TransformOptions
   const opt: TransformOptions = { fmt: param.fmt as TransformOptions['fmt'] };
   const bool = (k: string) => k in param ? param[k] !== 'false' && param[k] !== '0' : undefined;
   const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && n >= 0 ? n : undefined; };
-  for (const k of ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const) {
+  for (const k of ['w', 'h', 'q', 'vpos', 'hpos', 'zoom', 'dpr', 'page', 'frame'] as const)
     opt[k] = k in param ? num(param[k]) : undefined;
-  }
   opt.max = bool('max');
   return opt;
 }

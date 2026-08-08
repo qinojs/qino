@@ -88,10 +88,8 @@ class CmsTextService {
         let count = 0;
         const title = await node.title();
         count += await this.translateText(title.id, target_lang, source_lang, ifNeeded);
-        const texts = await node.texts();
-        for (const text of Object.values(texts)) {
+        for (const text of Object.values(await node.texts()))
             count += await this.translateText((text as any).id, target_lang, source_lang, ifNeeded);
-        }
         return count;
     }
 
@@ -112,9 +110,8 @@ class CmsTextService {
         if (!source_lang) return 0;
 
         let text: string;
-        if (source_lang === "clean") {
-            text = "";
-        } else {
+        if (source_lang === "clean") text = "";
+        else {
             const sourceText = await textEntry.lang(source_lang).get();
             const translated = await this.transl(sourceText, target_lang, source_lang);
             if (!translated) return 0;

@@ -13,8 +13,7 @@ export async function isWritable(ctx: Ctx, fileId: number): Promise<boolean> {
 
 /** First page referencing the file that the user may edit (access > 1), or null. */
 export async function writablePage(ctx: Ctx, fileId: number): Promise<any> {
-    const rows = await ctx.app.db.query`SELECT page_id FROM page_file WHERE file_id = ${fileId}`;
-    for (const row of rows) {
+    for (const row of await ctx.app.db.query`SELECT page_id FROM page_file WHERE file_id = ${fileId}`) {
         const p = await cms(ctx.app).node(Number(row.page_id));
         if (await p.access() > 1) return p;
     }

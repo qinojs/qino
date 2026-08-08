@@ -81,9 +81,8 @@ async function hits(node: Node, ctx: Ctx, search: string) {
 
       const group = found.get(page.id) ?? { page, text: "", score: 0 };
       const text = String(row.text ?? "");
-      if (isTitle) {
-        group.score += 3;
-      } else {
+      if (isTitle) group.score += 3;
+      else {
         const plain = text.replace(/<[^>]*>/g, " ").toLowerCase();
         const count = words.reduce((n, w) => n + plain.split(w).length - 1, 0);
         group.score += 0.2 * Math.min(count, 7);

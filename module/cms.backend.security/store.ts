@@ -60,9 +60,8 @@ export function reqInfo(ctx: Ctx): any {
 }
 
 export async function hitBuckets(ctx: Ctx, info: any, signals: any[], set: Record<string, number>) {
-  for (const hit of bucketHits(info, signals, set)) {
+  for (const hit of bucketHits(info, signals, set))
     await hitBucket(ctx.app.db, hit.scope, hit.ident, hit.score, hit.reason, info.path, set);
-  }
 }
 
 export function bucketHits(info: any, signals: any[], set: Record<string, number>) {

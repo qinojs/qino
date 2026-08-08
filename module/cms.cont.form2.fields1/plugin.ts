@@ -63,9 +63,7 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
     if (required && !value) {
       form.errors++;
       error = html`<div class=-error>${await node.app.t`This field is required`}</div>`;
-    } else if (type !== "flexible" && value) {
-      form.values[label || fieldName] = value;
-    }
+    } else if (type !== "flexible" && value) form.values[label || fieldName] = value;
     if (type === "email-reply-to" && value) {
       form.replyTo ||= value;
       if (input["is-recipient"]()) form.recipients.push(value);
