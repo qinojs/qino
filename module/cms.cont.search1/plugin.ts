@@ -96,7 +96,7 @@ async function hits(node: Node, ctx: Ctx, search: string) {
   return [...found.values()].sort((a, b) => b.score - a.score);
 }
 
-async function item(node: Node, ctx: Ctx, page: Node, text: string, words: string[]): Promise<HtmlString> {
+async function item(node: Node, page: Node, text: string, words: string[]): Promise<HtmlString> {
   const href = await page.url();
   const cms = node.cms;
 
@@ -145,7 +145,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const words = terms(search);
   return html.async`<div>${form}
     ${results.length
-      ? html.join(await Promise.all(results.map((r) => item(node, ctx, r.page, r.text, words))))
+      ? html.join(await Promise.all(results.map((r) => item(node, r.page, r.text, words))))
       : html.async`<div class=-empty>${t`No results found`}</div>`}
   </div>`;
 }
