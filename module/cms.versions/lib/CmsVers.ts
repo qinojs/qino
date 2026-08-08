@@ -1,5 +1,5 @@
 
-import { getCtx, requestStorage, sql, type Ctx, type Db, type DbEvents, type App } from "../../core/mod.ts";
+import { getCtx, requestStorage, sql, tableRef, type Ctx, type Db, type DbEvents, type App } from "../../core/mod.ts";
 import { versedTables, setVers, view } from "./Vers.ts";
 import { tableEntriesCopyTo } from "./Spaces.ts";
 import { cms, type Node } from "../../cms/mod.ts";
@@ -30,6 +30,29 @@ export async function nodeLoadRuntimeCache(node: Node): Promise<void> {
         await node.urlSeo(l);
         for (const text of Object.values(await node.texts())) await text.lang(l).get();
     }
+}
+
+/** Select current or fully loaded historical nodes by current edit access. */
+export function initHistoricalNodes(app: App, signal: AbortSignal): void {
+    app.on("node:construct", async ({ node }) => {
+        const ctx = requestStorage.getStore();
+        if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
+
+        const historical = await app.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${node.id}`;
+        const current = await app.db.row`SELECT * FROM page WHERE id = ${node.id}`;
+        node.vs = current ?? historical ?? {};
+        node.vs = (await node.access() >= 2 ? historical : current) ?? {};
+        if (node.vs !== historical) return;
+        node.vs.online_start = node.vs.online_end = 0;
+        await nodeLoadRuntimeCache(node);
+    }, { signal });
+
+    app.on("node:children", async (e) => {
+        const ctx = requestStorage.getStore();
+        if (!ctx?.state.dbScope?.tables || !getCmsVers(ctx).log) return;
+        const rows = await app.db.query`SELECT * FROM page WHERE basis = ${e.node.id} ORDER BY type DESC, sort, id DESC`;
+        e.rows.push(...rows);
+    }, { signal });
 }
 
 /**

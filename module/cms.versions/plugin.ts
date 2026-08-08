@@ -19,12 +19,12 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { type DbScope, Access, type ApiTree, s, sql, type App } from "../core/mod.ts";
-import { cms, cmsCtx } from "../cms/mod.ts";
+import { cms, cmsCtx, type Node } from "../cms/mod.ts";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
 // import { ensureSpace } from "./lib/Spaces.ts"; // parked with draft/space mode
-import { getCmsVers, nodeLoadRuntimeCache, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
+import { getCmsVers, initHistoricalNodes, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
 // import { applyDraftSpace, initDraftmode } from "./draftmode.ts"; // parked until read/write routing is complete
 export { healthChecks } from "./healthChecks.ts";
@@ -110,6 +110,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     // Log-mode write guard (active only in log-mode requests, see CmsVers.ts)
     preventDbManipulations(app, signal);
+    initHistoricalNodes(app, signal);
 
     // ─── Request init ─────────────────────────────────────────────────────────
     // settings + request params.
@@ -141,16 +142,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
                 for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, vs.space, vs.log);
                 scope = ctx.state.dbScope = { tables, cache: {} };
 
-                // Pre-load the viewed page (incl. conts) from the views into the
-                // request cache; the rest of the request (layout, nav) renders live.
-                const generate = async (id: number): Promise<void> => {
-                    const node = await cms(ctx.app).node(id);
-                    for (const subCont of await node.conts()) await generate(subCont.id);
-                    if (await node.access() < 2) return;
-                    (node.vs as any).online_start = (node.vs as any).online_end = 0; // request-scoped node — safe
-                    await nodeLoadRuntimeCache(node);
+                const load = async (node: Node): Promise<void> => {
+                    for (const cont of await node.conts()) await load(cont);
                 };
-                await generate(pid);
+                await load(await cms(app).node(pid));
             } finally {
                 if (scope) delete scope.tables; // stop routing — the pre-loaded request cache stays
                 for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; // historical views are one-shot

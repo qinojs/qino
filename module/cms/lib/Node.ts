@@ -40,15 +40,13 @@ export class Node {
 
     async init(): Promise<this> {
         if (!this.vs || !Object.keys(this.vs).length) {
-            const row = await this.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${this.id}`;
-            if (!row) {
-                this.vs = { id: this.id, basis: 0, type: "p" };
-                this.#is = false;
-                return this;
-            }
-            this.vs = row;
-        } else {
-            await this.app.fire("node:construct", { node: this });
+            this.vs = await this.db.row`SELECT * FROM ${sql.id(tableRef("page"))} WHERE id = ${this.id}` ?? {};
+        }
+        await this.app.fire("node:construct", { node: this });
+        if (!Object.keys(this.vs).length) {
+            this.vs = { id: this.id, basis: 0, type: "p" };
+            this.#is = false;
+            return this;
         }
 
         this.settings = bildJsonItem(
@@ -286,13 +284,16 @@ export class Node {
         this.#children ??= (async () => {
             const map = new Map<number, Node>();
             const rows = await this.db.query`SELECT * FROM ${sql.id(tableRef("page"))} WHERE basis = ${this.id} ORDER BY type DESC, sort, id DESC`;
-            for (const row of rows) {
+            const e = await this.app.fire("node:children", { node: this, rows });
+            for (const row of e.rows) {
                 const id = Number(row.id);
+                if (map.has(id)) continue;
                 const child = await this.cms.node(id, row);
+                if (!child.exists() || Number(child.vs.basis) !== this.id) continue;
                 map.set(id, child);
-                if (row.name) {
-                    this.#named[row.type] ??= {};
-                    this.#named[row.type][row.name] = child;
+                if (child.vs.name) {
+                    this.#named[String(child.vs.type)] ??= {};
+                    this.#named[String(child.vs.type)][String(child.vs.name)] = child;
                 }
             }
             return map;

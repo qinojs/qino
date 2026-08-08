@@ -66,6 +66,5 @@ export async function render(ctx: Ctx): Promise<void> {
   await app.fire("cms:page-ready", {ctx});
 
   ctx.res.headers.set("content-type", "text/html; charset=utf-8");
-  ctx.res.headers.set("cache-control", "no-cache, no-store");
   ctx.res.headers.set("X-Frame-Options", "SAMEORIGIN");
 }

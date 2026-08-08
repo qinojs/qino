@@ -47,8 +47,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
     const t = ctx.app.t;
     const contOrPage = async (page: any): Promise<string> => {
         const title = (await (await page.title())?.string?.() ?? "").trim();
-        const label = `${page.vs?.type === "p" ? await t`page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${page.id})`;
-        return `<div mark="[qcms-id='${page.id}']">${label}</div>`;
+        return `${page.vs?.type === "p" ? await t`page` : await t`Content`} ${title ? `"${hee(title)}" ` : ""}(${page.id})`;
     };
 
     const changed = await ctx.app.db.query`SELECT node_id, page_id, data FROM node_changed WHERE log_id = ${id} ORDER BY id`;
@@ -59,7 +58,8 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
         access[pageId] ??= await (await cms(ctx.app).node(pageId)).access();
         if (access[pageId] < 2) continue;
         const p = await cms(ctx.app).node(Number(c.node_id));
-        messages.push((await contOrPage(p)) + " " + await describeChange(c.data, t));
+        // the whole message is the hover target for highlighting the node in the preview
+        messages.push(`<div mark="[qcms-id='${p.id}']">${await contOrPage(p)} ${await describeChange(c.data, t)}</div>`);
     }
     if (!messages.length) return null;
 
