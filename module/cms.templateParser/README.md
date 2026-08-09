@@ -1,9 +1,10 @@
 # cms.templateParser
 
 Lets a CMS module render its node from a plain `template.html` instead of a
-`render()` function. If a module directory contains `template.html`, this module
-hooks `cms.node.render`, parses the file (cached by path, reparsed when its
-mtime changes) and renders it per request.
+`render()` function. If a local or remote module contains `template.html` beside
+its `plugin.ts`, this module hooks `cms.node.render`, parses the file and renders
+it per request. Local templates are reparsed when their mtime changes; remote
+templates are cached for the lifetime of the process like their imported plugin.
 
 `renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
 other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.

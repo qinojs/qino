@@ -5,8 +5,10 @@ Put this element on a page and "I forgot my password" works. One page serves bot
 
 The link carries a [ticket](../ticket/) of kind `auth.pwReset`, valid an hour. Opening it only
 looks — the ticket is spent when the form is submitted, so a mail scanner following the link
-cannot burn it. Redeeming sets the password and deletes every session of that user: a reset is
-also how someone takes their account back.
+cannot burn it. Both the mail and the form say when it runs out, the form as a live countdown.
+Redeeming sets the password and deletes every session of that user: a reset is also how
+someone takes their account back.
 
 Requesting always answers the same, whether the address has an account or not — otherwise the
-form is a way to find out who is registered.
+form is a way to find out who is registered. The mail is sent without waiting for it, or the
+answer would take longer for an address that exists and say so anyway.

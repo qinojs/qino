@@ -26,9 +26,15 @@
           },
           "uses": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "default": 1,
-            "description": "Redemptions left"
+            "description": "How often it may be redeemed"
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "How often it has been"
           },
           "created": {
             "type": "integer",
@@ -42,7 +48,7 @@
             "description": "The request that issued it"
           }
         },
-        "required": ["hash", "purpose", "uses", "created"]
+        "required": ["hash", "purpose", "uses", "used", "created"]
       }
     }
   }

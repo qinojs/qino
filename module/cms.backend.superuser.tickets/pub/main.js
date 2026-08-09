@@ -23,8 +23,6 @@ cms.initNode("backend.superuser.tickets", (el) => {
 
   el.addEventListener("click", (event) => {
     const revoke = event.target.closest("[data-revoke]");
-    const purge = event.target.closest("[data-purge]");
     if (revoke) execute(revoke, { revoke: revoke.dataset.revoke });
-    else if (purge) execute(purge, { purge: true });
   });
 });

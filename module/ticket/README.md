@@ -17,13 +17,15 @@ export const tickets: Record<string, TicketKind> = {
 const handle = await issue(app, "auth.resetPw", { usrId: usr.id });
 
 // the page behind the link looks, without spending anything
-if (!await check(app, handle, "auth.resetPw")) return t`This link is no longer valid.`;
+if (!await check(app, handle)) return t`This link is no longer valid.`;
 
 // the form redeems it
-await redeem(app, handle, { purpose: "auth.resetPw", input: { pw } });
+await redeem(app, handle, { pw });
 ```
 
-Three functions, and the caller never says where to look: the handle finds its own row.
+Three functions — `issue`, `check`, `redeem` — and the caller never says where to look: the
+handle finds its own row. Reading the table is not among them: the backend below is the only
+consumer, so it writes its own two queries instead of a reading API nobody else would call.
 
 ## Never redeem from a GET
 
@@ -47,8 +49,13 @@ redeemed. `uses` is there for a handful of redemptions, not for a permission.
 
 `ticket` — `hash` is the identity: the handle is 32 random bytes and is stored keyed-hashed,
 so a leaked database hands out no working capabilities. `data` is the payload written when the
-ticket is issued; `expires` is null only where the kind says so, and those are never swept.
-Expired rows go on the next `issue()`, so there is no cron job.
+ticket is issued; `expires` is null only where the kind says so.
+
+Nothing is deleted when it stops working. `uses` is how often it may be redeemed and `used`
+how often it has been; `used >= uses` or an `expires` in the past means it no longer works,
+and the row stays either way — so the backend can still show what was handed out and what
+became of it. A daily cron takes them a year after they were issued, and only once they are
+dead: an unexpiring link that nobody used is kept.
 
 Consumers: [cms.cont.pwReset](../cms.cont.pwReset/) issues them,
 [cms.backend.superuser.tickets](../cms.backend.superuser.tickets/) watches them.

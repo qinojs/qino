@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { ApiError, Db } from "../../core/mod.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { check, issue, redeem, revoke, tickets, type Ticket, type TicketKind } from "../mod.ts";
+import { check, issue, redeem, type Ticket, type TicketKind } from "../mod.ts";
 
 const passwords: string[] = [];
 
@@ -32,11 +32,11 @@ Deno.test("knowing the handle is the whole proof, and redeeming spends it", asyn
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 7 });
   assertEquals((await check(a, handle))?.purpose, "auth.resetPw");
-  assertEquals(await check(a, handle, "cms.share"), undefined); // right handle, wrong purpose
 
-  await redeem(a, handle, { purpose: "auth.resetPw", input: { pw: "new" } });
+  await redeem(a, handle, { pw: "new" });
   assertEquals(passwords, ["7:new"]);
   assertEquals(await check(a, handle), undefined);
+  assertEquals(await a.db.one`SELECT used FROM ticket WHERE purpose = ${"auth.resetPw"}`, 1);
   await assertRejects(() => redeem(a, handle), ApiError, "Nothing to redeem");
 });
 
@@ -44,7 +44,7 @@ Deno.test("looking does not spend — a mail scanner opening the link costs noth
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 1 });
   for (let i = 0; i < 3; i++) await check(a, handle);
-  assertEquals((await tickets(a, "auth.resetPw")).length, 1);
+  assertEquals(await a.db.one`SELECT COUNT(*) FROM ticket`, 1);
 });
 
 Deno.test("a kind decides how long and how often", async () => {
@@ -59,16 +59,12 @@ Deno.test("a kind decides how long and how often", async () => {
   assertEquals((await check(a, forever))?.expires, undefined);
 });
 
-Deno.test("an expired ticket is gone, and revoking takes one back", async () => {
+Deno.test("expired and spent tickets stop working but stay on record", async () => {
   const a = await app();
   const handle = await issue(a, "auth.resetPw", { usrId: 1 });
   await a.db.exec`UPDATE ticket SET expires = 1`;
   assertEquals(await check(a, handle), undefined);
-  assertEquals((await tickets(a)).length, 0);
-
-  const second = await issue(a, "auth.resetPw", { usrId: 2 });
-  await revoke(a, second);
-  await assertRejects(() => redeem(a, second), ApiError, "Nothing to redeem");
+  assertEquals(await a.db.one`SELECT COUNT(*) FROM ticket`, 1); // kept as a record, the cron sweeps it after a year
 });
 
 Deno.test("the handle is never stored, and an unregistered purpose is a mistake", async () => {

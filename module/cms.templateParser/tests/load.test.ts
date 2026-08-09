@@ -19,3 +19,21 @@ Deno.test("loadTemplate: a saved file is reparsed, an unchanged one comes from t
   assertEquals(text(second) === text(first), false);
   await Deno.remove(path);
 });
+
+Deno.test("loadTemplate: a remote template is fetched once and cached", async () => {
+  const real = globalThis.fetch;
+  const url = `https://qino.test/${crypto.randomUUID()}/template.html`;
+  let requests = 0;
+  globalThis.fetch = (input: string | URL | Request) => {
+    assertEquals(String(input), url);
+    requests++;
+    return Promise.resolve(new Response("<div>remote</div>"));
+  };
+  try {
+    const first = await loadTemplate(url);
+    assertEquals(await loadTemplate(url), first);
+    assertEquals(requests, 1);
+  } finally {
+    globalThis.fetch = real;
+  }
+});

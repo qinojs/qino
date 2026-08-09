@@ -35,7 +35,6 @@ function kindOf(app: App, purpose: string): TicketKind {
 export async function issue(app: App, purpose: string, data?: unknown): Promise<string> {
   const kind = kindOf(app, purpose);
   const now = unixTime();
-  await app.db.exec`DELETE FROM ticket WHERE expires < ${now}`; // no cron needed for this
   const handle = randB64(32);
   await app.db.table("ticket").insert({
     hash: await hash(app, handle),
@@ -43,6 +42,7 @@ export async function issue(app: App, purpose: string, data?: unknown): Promise<
     data: JSON.stringify(data ?? null),
     expires: kind.ttl === null ? null : now + (kind.ttl ?? TTL),
     uses: kind.uses ?? 1,
+    used: 0,
     created: now,
     log_id: await requestStorage.getStore()?.logId ?? null,
   });
@@ -50,38 +50,38 @@ export async function issue(app: App, purpose: string, data?: unknown): Promise<
 }
 
 /** What the handle stands for, or undefined — a look that spends nothing, for the page behind a link. */
-export async function check(app: App, handle: string, purpose?: string): Promise<Ticket | undefined> {
+export async function check(app: App, handle: string): Promise<Ticket | undefined> {
   const row = await find(app, handle);
-  return row && (purpose == null || row.purpose === purpose) ? ticketOf(row) : undefined;
+  return row && ticketOf(row);
 }
 
 /**
  * Spend the ticket and resolve with what its kind's `redeem` returned — the ticket itself when it
- * declares none. Throws when the handle stands for nothing.
+ * declares none. `input` is what the redeemer brings along, next to the payload the ticket was
+ * issued with. Throws when the handle stands for nothing.
+ *
+ * The handle knows its own purpose, so the caller never names one — and could not be fooled by a
+ * foreign handle anyway: what runs is always that handle's own handler.
  *
  * Never from a GET: mail scanners and link checkers open every URL they are sent, and the ticket
  * would be gone before its owner clicks. The link shows a page, the page redeems.
  */
-export async function redeem(app: App, handle: string, o: { purpose?: string; input?: unknown } = {}): Promise<unknown> {
+export async function redeem(app: App, handle: string, input?: unknown): Promise<unknown> {
   const row = await find(app, handle);
-  if (!row || (o.purpose != null && row.purpose !== o.purpose)) throw new ApiError(404, "Nothing to redeem");
-  const left = Number(row.uses) - 1;
-  left > 0
-    ? await app.db.table("ticket").update(row.hash, { uses: left })
-    : await drop(app, row);
+  if (!row) throw new ApiError(404, "Nothing to redeem");
+  // counted up in one statement, so two parallel redemptions cannot both pass; never deleted,
+  // the row stays as a record of what happened until it is old. Counted before the handler runs:
+  // a handler that throws leaves the ticket spent, which is the safe side for a capability.
+  const spent = await app.db.exec`UPDATE ticket SET used = used + 1 WHERE hash = ${row.hash} AND used < uses`;
+  if (!spent?.affectedRows) throw new ApiError(404, "Nothing to redeem");
   const ticket = ticketOf(row);
-  return await kindOf(app, ticket.purpose).redeem?.(app, ticket, o.input) ?? ticket;
+  return await kindOf(app, ticket.purpose).redeem?.(app, ticket, input) ?? ticket;
 }
 
 async function find(app: App, handle: string): Promise<Row | undefined> {
   const row = await app.db.row`SELECT * FROM ticket WHERE hash = ${await hash(app, handle)}`;
-  if (!row) return;
+  if (!row || Number(row.used) >= Number(row.uses)) return;
   if (row.expires == null || Number(row.expires) >= unixTime()) return row;
-  await drop(app, row);
-}
-
-function drop(app: App, row: Row) {
-  return app.db.exec`DELETE FROM ticket WHERE hash = ${row.hash}`;
 }
 
 function ticketOf(row: Row): Ticket {

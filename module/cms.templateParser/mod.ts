@@ -4,11 +4,20 @@ import type { Node } from "../cms/mod.ts";
 import { parseTemplate, type TNode } from "./parse.ts";
 import { renderNodes } from "./render.ts";
 
-// parsed templates keyed by file path — derived from the file only, safe to share across apps
-const cache = new Map<string, { mtime: number; ast: TNode[] }>();
+// Parsed templates keyed by path/URL — derived from the source only, safe to share across apps.
+const cache = new Map<string, { mtime?: number; ast: TNode[] }>();
 
-/** Parsed template of a file, reparsed whenever the file changes; undefined if there is no such file. */
+/** Parsed local or remote template; local files are reparsed whenever they change. */
 export async function loadTemplate(path: string): Promise<TNode[] | undefined> {
+  if (/^https?:\/\//.test(path)) {
+    const cached = cache.get(path);
+    if (cached) return cached.ast;
+    const res = await fetch(path).catch(() => null);
+    if (!res?.ok) return;
+    const ast = parseTemplate(await res.text());
+    cache.set(path, { ast });
+    return ast;
+  }
   const stat = await Deno.stat(path).catch(() => null);
   if (!stat?.isFile) return;
   const mtime = stat.mtime?.getTime() ?? 0;
