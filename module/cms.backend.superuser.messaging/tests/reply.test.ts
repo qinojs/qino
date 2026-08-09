@@ -5,6 +5,8 @@ import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
 import { dbSchema as telegramSchema } from "../../messaging.telegram/tests/deps.ts";
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
+import { messagingChannel as telegram } from "../../messaging.telegram/tests/deps.ts";
+import { messagingChannel as email } from "../../mail/tests/deps.ts";
 
 const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
   Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
@@ -23,10 +25,14 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   await db.exec`INSERT INTO mail (subject, text, html) VALUES (${"Earlier mail"}, ${"Mail body"}, ${""})`;
   await db.exec`INSERT INTO mail_recipient (mail_id, email, usr_id, sent, opened, error)
     VALUES (${1}, ${"user@qino.test"}, ${null}, ${2}, ${0}, ${""})`;
+  const linked = {
+    "messaging.telegram": { name: "messaging.telegram", plugin: { messagingChannel: telegram } },
+    mail: { name: "mail", plugin: { messagingChannel: email } },
+  };
   const app = {
     db,
     t,
-    modules: { get: (name: string) => ["mail", "messaging.telegram"].includes(name) ? {} : undefined },
+    modules: { all: () => linked, linked: () => true, get: (name: string) => linked[name as keyof typeof linked] },
     settings: { "messaging.telegram": { botToken: "123:test", webhookSecret: "secret" } },
   };
   const original = globalThis.fetch;
@@ -38,7 +44,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   try {
     assertEquals(await api({ app } as unknown as Node, { reply: { usr: "1", channel: "telegram", text: " Hello " } }), {
       ok: true,
-      message: "Delivered to 1 chats.",
+      message: "Delivered over Telegram (1).",
     });
     assertEquals(request, { text: "Hello", chat_id: 555 });
     assertEquals(await db.one`SELECT direction FROM message`, "out");

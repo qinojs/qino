@@ -115,6 +115,7 @@ export class MailMessage {
         type,
         mail1_track_id: r.mail1_track_id,
         data: jsonEncode(r.data ?? {}),
+        ...(r.usrId && { usr_id: r.usrId }), // only when known — never unset an existing link
         sent: 0,
         opened: 0,
         error: "",
@@ -132,7 +133,8 @@ export class MailMessage {
       usr?.firstname ?? await usr?.get?.("firstname"),
       usr?.lastname ?? await usr?.get?.("lastname"),
     ].filter(Boolean).map(String).join(" ");
-    return email ? this.addTo(String(email), name) : this;
+    const usrId = Number(usr?.id ?? await usr?.get?.("id")) || undefined;
+    return email ? this.addTo({ email: String(email), usrId }, name) : this;
   }
 
   addFile(file: AttachmentInput, inline = false): string {

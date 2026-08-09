@@ -19,7 +19,13 @@ export function addressOf(input: AddressInput, name = "", data: Dict = {}): Reci
   }
   address = address.trim().toLowerCase();
   if (!EMAIL_RE.test(address)) return null;
-  return { address, name: name || undefined, data, mail1_track_id: typeof input === "object" ? input.mail1_track_id : undefined };
+  return {
+    address,
+    name: name || undefined,
+    data,
+    usrId: typeof input === "object" ? input.usrId : undefined,
+    mail1_track_id: typeof input === "object" ? input.mail1_track_id : undefined,
+  };
 }
 
 export function listOf(input: AddressInput | AddressInput[] | undefined): Recipient[] {

@@ -1,11 +1,21 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, getCtx, s, type ApiTree, type Params } from "../core/mod.ts";
-import { addPhone, removePhone, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
+import { Access, getCtx, s, type ApiTree, type App, type Params } from "../core/mod.ts";
+import type { Channel } from "../messaging/mod.ts";
+import { addPhone, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
 
 export const name = "messaging.sms";
 export const description = "SMS — verifies user phone numbers and delivers messages through a configurable provider.";
 export const needs = ["messaging"];
 export { dbSchema };
+
+export const messagingChannel: Channel = {
+  name: "sms",
+  label: "SMS",
+  color: "--green",
+  reach: async (app: App, usrId: number) =>
+    Number(await app.db.one`SELECT COUNT(*) FROM usr_phone WHERE usr_id = ${usrId} AND verified IS NOT NULL`),
+  send: (app: App, usrId: number, text: string) => send(app, { usr: usrId }, text),
+};
 
 export const settingsSchema = {
   properties: {

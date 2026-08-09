@@ -1,6 +1,6 @@
 import { getCtx, html, sql, tableRef, unixTime, type App, type HtmlString, type Row } from "../core/mod.ts";
 import { backend, renderDashboard, u2 } from "../cms.backend/mod.ts";
-import { messages, userMessages } from "../messaging/mod.ts";
+import { channel, channels, messages, userChannels, userMessages, type Channel } from "../messaging/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
 
@@ -8,12 +8,6 @@ export const name = "cms.backend.superuser.messaging";
 export const description = "Message journal with recipient-level delivery results.";
 export const needs = ["cms.backend", "messaging"];
 const OVERVIEW_LIMIT = 100;
-const CHANNEL_COLORS: Record<string, string> = {
-  email: "--orange",
-  sms: "--green",
-  telegram: "--blue",
-  web_push: "--purple",
-};
 
 const RENAMES = {
   "cms.backend.superuser.sms": "cms.backend.superuser.messaging.sms",
@@ -40,11 +34,11 @@ export async function render(node: Node): Promise<HtmlString> {
     FROM usr u
     ORDER BY u.lastname, u.firstname, u.email, u.id`;
   const user = users.find((row) => Number(row.id) === usrId);
-  const [journal, emails, channels, labels] = await Promise.all([
+  const [journal, emails, reachable, view] = await Promise.all([
     user ? userMessages(app, usrId) : url.searchParams.has("usr") ? [] : messages(app, OVERVIEW_LIMIT),
-    user && app.modules.get("mail") ? emailMessages(app, user) : [],
-    user ? userChannels(app, user) : [],
-    Promise.all([app.t`recipients`, app.t`errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`]),
+    user && channel(app, "email") ? emailMessages(app, user) : [],
+    user ? userChannels(app, usrId) : [],
+    labels(app),
   ]);
   const rows = [...journal, ...emails].sort((a, b) => Number(b.time) - Number(a.time));
   const query = html.join([...url.searchParams]
@@ -64,13 +58,13 @@ export async function render(node: Node): Promise<HtmlString> {
       </form>
     </div>
     ${user
-      ? conversation(node, user, rows, channels, labels)
+      ? conversation(node, user, rows, reachable, view)
       : url.searchParams.has("usr")
       ? html.async`<div class=u2-card><div class=-body>${app.t`User not found.`}</div></div>`
       : html.async`<div class=u2-card cms-part=messages>
         <div class=-head>${app.t`Messages`} (${rows.length})</div>
         ${rows.length
-          ? html.join(rows.map((row) => message(row, labels, url)))
+          ? html.join(rows.map((row) => message(row, view, url)))
           : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
       </div>`}
     ${renderDashboard(node)}
@@ -81,26 +75,26 @@ async function conversation(
   node: Node,
   user: Row,
   rows: (Row & { deliveries: Row[] })[],
-  channels: string[],
-  labels: string[],
+  reachable: Channel[],
+  view: View,
 ): Promise<HtmlString> {
   const app = node.app;
   const latest = String(rows[0]?.channel ?? "");
-  const selected = channels.includes(latest) ? latest : channels[0];
+  const selected = reachable.some((c) => c.name === latest) ? latest : reachable[0]?.name;
   return html.async`<div class="u2-card -conversation" cms-part=messages>
     <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
     <div class=-scroll>
       ${rows.length
-        ? html`<table class=-chat><tbody>${html.join(rows.toReversed().map((row) => chatMessage(row, labels)))}</tbody></table>`
+        ? html`<table class=-chat><tbody>${html.join(rows.toReversed().map((row) => chatMessage(row, view)))}</tbody></table>`
         : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
     </div>
     <div>
-      ${channels.length ? html.async`<form class="-body -composer">
+      ${reachable.length ? html.async`<form class="-body -composer">
         <input type=hidden name=usr value="${user.id}">
         <label>
-          ${app.t`Channel`}: 
+          ${app.t`Channel`}:
           <select name=channel>
-            ${html.join(channels.map((channel) => html`<option value="${channel}"${channel === selected ? " selected" : ""}>${channelName(channel)}</option>`))}
+            ${html.join(reachable.map((c) => html`<option value="${c.name}"${c.name === selected ? " selected" : ""}>${c.label}</option>`))}
           </select>
         </label>
         <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
@@ -110,31 +104,31 @@ async function conversation(
   </div>`;
 }
 
-function chatMessage(row: Row & { deliveries: Row[] }, labels: string[]): HtmlString {
-  const [, errorsLabel, , , , , group] = labels;
-  const errors = row.deliveries.filter((delivery) => delivery.error).length;
-  const target = messageTarget(row, labels[0], group);
+function chatMessage(row: Row & { deliveries: Row[] }, view: View): HtmlString {
+  const bubble = chatBubble(row, view);
   return html`<tr class="${row.direction === "in" ? "-user" : "-platform"}">
-    <td>${row.direction === "in" ? chatBubble(row, errors, errorsLabel, target) : ""}
-    <td>${row.direction === "out" ? chatBubble(row, errors, errorsLabel, target) : ""}`;
+    <td>${row.direction === "in" ? bubble : ""}
+    <td>${row.direction === "out" ? bubble : ""}`;
 }
 
-function chatBubble(row: Row, errors: number, errorsLabel: string, target: string): HtmlString {
+function chatBubble(row: Row & { deliveries: Row[] }, view: View): HtmlString {
+  const errors = row.deliveries.filter((delivery) => delivery.error).length;
+  const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div class=-body>
     <div class=-text>${readableText(row.data) || "–"}</div>
-    <small class=-meta>${u2.time(row.time)} · ${channelBadge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${errorsLabel}</span>` : ""}</small>
+    <small class=-meta>${u2.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
 
-function message(row: Row & { deliveries: Row[] }, labels: string[], url: URL): HtmlString {
-  const [recipients, errorsLabel, user, time, error, anonymous, group, payload] = labels;
+function message(row: Row & { deliveries: Row[] }, view: View, url: URL): HtmlString {
+  const { recipients, errors: errorsLabel, user, time, error, anonymous, payload } = view;
   const errors = row.deliveries.filter((delivery) => delivery.error).length;
-  const target = row.grp_id ? messageTarget(row, recipients, group) : "";
+  const target = row.grp_id ? messageTarget(row, view) : "";
   const data = readableData(row.data);
   const text = readableText(row.data);
   return html`<details class=-body>
     <summary>
-      <b>${row.direction === "out" ? "→" : "←"} ${channelBadge(row.channel)}</b>
+      <b>${row.direction === "out" ? "→" : "←"} ${view.badge(row.channel)}</b>
       · ${u2.time(row.time)}
       ${target ? html` · ${target}` : ""}
       · ${row.deliveries.length} ${recipients}
@@ -160,11 +154,29 @@ function message(row: Row & { deliveries: Row[] }, labels: string[], url: URL): 
   </details>`;
 }
 
-function messageTarget(row: Row, recipients: string, group: string): string {
-  if (row.grp_id) return `[${row.grp_name ?? group} #${row.grp_id}]`;
+function messageTarget(row: Row, view: View): string {
+  if (row.grp_id) return `[${row.grp_name ?? view.group} #${row.grp_id}]`;
   const count = Number(row.recipient_count ?? row.deliveries?.length ?? 0);
-  return count > 1 ? `[${count} ${recipients}]` : "";
+  return count > 1 ? `[${count} ${view.recipients}]` : "";
 }
+
+/** Everything the row renderers need besides the row: translated labels and channel badges. */
+async function labels(app: App) {
+  const [recipients, errors, user, time, error, anonymous, group, payload] = await Promise.all(
+    [app.t`recipients`, app.t`errors`, app.t`User`, app.t`Time`, app.t`Error`, app.t`anonymous`, app.t`group`, app.t`Payload`],
+  );
+  const known = new Map(channels(app).map((c) => [c.name, c]));
+  return {
+    recipients, errors, user, time, error, anonymous, group, payload,
+    /** A channel's own label and colour; an unlinked channel keeps the name the journal stored. */
+    badge(channel: unknown): HtmlString {
+      const name = String(channel ?? "");
+      const c = known.get(name);
+      return html`<span class=u2-badge${c?.color ? html.raw(` style="--color-dark:var(${c.color})"`) : ""}>${c?.label ?? name}</span>`;
+    },
+  };
+}
+type View = Awaited<ReturnType<typeof labels>>;
 
 function readableData(data: unknown): string {
   try { return JSON.stringify(JSON.parse(String(data)), null, 2); } catch { return String(data ?? ""); }
@@ -205,36 +217,6 @@ async function emailMessages(app: App, user: Row): Promise<(Row & { deliveries: 
       deliveries: [{ usr_id: user.id, email: row.email, time, error: row.error || null }],
     };
   });
-}
-
-async function userChannels(app: App, user: Row): Promise<string[]> {
-  const usrId = Number(user.id);
-  const [telegram, sms, webPush] = await Promise.all([
-    app.modules.get("messaging.telegram")
-      ? app.db.one`SELECT id FROM telegram_chat WHERE usr_id = ${usrId} LIMIT 1`.catch(() => undefined)
-      : undefined,
-    app.modules.get("messaging.sms")
-      ? app.db.one`SELECT id FROM usr_phone WHERE usr_id = ${usrId} AND verified IS NOT NULL LIMIT 1`.catch(() => undefined)
-      : undefined,
-    app.modules.get("messaging.web_push")
-      ? app.db.one`SELECT id FROM web_push_subscription WHERE usr_id = ${usrId} LIMIT 1`.catch(() => undefined)
-      : undefined,
-  ]);
-  return [telegram && "telegram", sms && "sms", webPush && "web_push", user.email && app.modules.get("mail") && "email"]
-    .filter((channel): channel is string => Boolean(channel));
-}
-
-function channelName(channel: string): string {
-  if (channel === "web_push") return "Web Push";
-  if (channel === "email") return "Email";
-  if (channel === "sms") return "SMS";
-  return channel === "telegram" ? "Telegram" : channel;
-}
-
-function channelBadge(channel: unknown): HtmlString {
-  const name = String(channel ?? "");
-  const color = CHANNEL_COLORS[name];
-  return html`<span class=u2-badge${color ? html.raw(` style="--color-dark:var(${color})"`) : ""}>${channelName(name)}</span>`;
 }
 
 function userName(user: Row): string {

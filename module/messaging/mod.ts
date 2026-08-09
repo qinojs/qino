@@ -2,6 +2,40 @@
 
 import { sql, unixTime, type App, type Row } from "../core/mod.ts";
 
+/**
+ * A way to reach a person, declared by a module as `export const messagingChannel`.
+ *
+ * `name` is what lands in the journal's `channel` column, so it outlives module renames.
+ * `reach` answers how many destinations one user has, `send` delivers plain text to them
+ * and resolves with how many were reached — whatever the channel needs on top (a push
+ * title, a mail subject) it fills in itself.
+ */
+export type Channel = {
+  name: string;
+  label: string;
+  color?: string;
+  reach(app: App, usrId: number): Promise<number>;
+  send(app: App, usrId: number, text: string): Promise<number>;
+};
+
+/** Every channel a linked module declares. */
+export function channels(app: App): Channel[] {
+  return Object.values(app.modules.all())
+    .filter((mod) => mod.plugin.messagingChannel && app.modules.linked(mod.name))
+    .map((mod) => mod.plugin.messagingChannel as Channel);
+}
+
+export function channel(app: App, name: string): Channel | undefined {
+  return channels(app).find((c) => c.name === name);
+}
+
+/** The channels one user can actually be reached on. */
+export async function userChannels(app: App, usrId: number): Promise<Channel[]> {
+  const all = channels(app);
+  const reach = await Promise.all(all.map((c) => c.reach(app, usrId).catch(() => 0)));
+  return all.filter((_, i) => reach[i] > 0);
+}
+
 /** Store one logical message and one result per recipient. */
 export async function record(
   app: App,
