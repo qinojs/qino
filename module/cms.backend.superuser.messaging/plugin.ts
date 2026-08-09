@@ -8,6 +8,12 @@ export const name = "cms.backend.superuser.messaging";
 export const description = "Message journal with recipient-level delivery results.";
 export const needs = ["cms.backend", "messaging"];
 const OVERVIEW_LIMIT = 100;
+const CHANNEL_COLORS: Record<string, string> = {
+  email: "--orange",
+  sms: "--green",
+  telegram: "--blue",
+  web_push: "--purple",
+};
 
 const RENAMES = {
   "cms.backend.superuser.sms": "cms.backend.superuser.messaging.sms",
@@ -116,7 +122,7 @@ function chatMessage(row: Row & { deliveries: Row[] }, labels: string[]): HtmlSt
 function chatBubble(row: Row, errors: number, errorsLabel: string, target: string): HtmlString {
   return html`<div class="u2-card -bubble"><div class=-body>
     <div class=-text>${readableText(row.data) || "–"}</div>
-    <small class=-meta>${u2.time(row.time)} · <span class=u2-badge>${row.channel}</span>${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${errorsLabel}</span>` : ""}</small>
+    <small class=-meta>${u2.time(row.time)} · ${channelBadge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${errorsLabel}</span>` : ""}</small>
   </div></div>`;
 }
 
@@ -128,7 +134,7 @@ function message(row: Row & { deliveries: Row[] }, labels: string[], url: URL): 
   const text = readableText(row.data);
   return html`<details class=-body>
     <summary>
-      <b>${row.direction === "out" ? "→" : "←"} ${row.channel}</b>
+      <b>${row.direction === "out" ? "→" : "←"} ${channelBadge(row.channel)}</b>
       · ${u2.time(row.time)}
       ${target ? html` · ${target}` : ""}
       · ${row.deliveries.length} ${recipients}
@@ -221,7 +227,14 @@ async function userChannels(app: App, user: Row): Promise<string[]> {
 function channelName(channel: string): string {
   if (channel === "web_push") return "Web Push";
   if (channel === "email") return "Email";
-  return channel === "sms" ? "SMS" : "Telegram";
+  if (channel === "sms") return "SMS";
+  return channel === "telegram" ? "Telegram" : channel;
+}
+
+function channelBadge(channel: unknown): HtmlString {
+  const name = String(channel ?? "");
+  const color = CHANNEL_COLORS[name];
+  return html`<span class=u2-badge${color ? html.raw(` style="--color-dark:var(${color})"`) : ""}>${channelName(name)}</span>`;
 }
 
 function userName(user: Row): string {

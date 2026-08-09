@@ -61,6 +61,8 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
     assertStringIncludes(normal, 'class="-platform"');
     assertStringIncludes(normal, "<u2-time");
     assertStringIncludes(normal, '<option value="telegram" selected>');
+    assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--blue)">Telegram');
+    assertStringIncludes(normal, 'class=u2-badge style="--color-dark:var(--orange)">Email');
     assertStringIncludes(normal, "Earlier mail");
     assertStringIncludes(normal, "Mail body");
 
