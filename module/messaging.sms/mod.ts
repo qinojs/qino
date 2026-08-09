@@ -86,11 +86,12 @@ export async function verifyPhone(app: App, usrId: number, input: string, code: 
 
 /** Take a claim as proven without its code; intended for trusted administration. */
 export async function approvePhone(app: App, address: string): Promise<Row> {
-  const claim = await dropClaim(app, "sms", phoneNumber(address));
-  if (!claim) throw new ApiError(404, "Nothing to verify");
-  return addVerifiedPhone(app, Number(claim.usr_id), String(claim.address));
+  const claimed = await dropClaim(app, "sms", phoneNumber(address));
+  if (!claimed) throw new ApiError(404, "Nothing to verify");
+  return addVerifiedPhone(app, Number(claimed.usr_id), String(claimed.address));
 }
 
+/** The number becomes the user's; the first one is their main. */
 async function addVerifiedPhone(app: App, usrId: number, number: string): Promise<Row> {
   const table = app.db.table("usr_phone");
   await app.db.transaction(async () => {

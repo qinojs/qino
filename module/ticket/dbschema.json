@@ -3,34 +3,17 @@
     "ticket": {
       "additionalProperties": {
         "properties": {
-          "id": {
-            "type": "integer",
-            "x-index": "primary",
-            "x-autoincrement": true
-          },
           "hash": {
             "type": "string",
             "maxLength": 43,
-            "x-index": "unique",
-            "description": "Keyed hash of the secret; the secret itself is never stored"
+            "x-index": "primary",
+            "description": "Keyed hash of the handle; the handle itself exists only in transit"
           },
           "purpose": {
             "type": "string",
             "maxLength": 64,
             "x-index": true,
-            "description": "The registered kind, e.g. contact.sms"
-          },
-          "scope": {
-            "type": "string",
-            "maxLength": 191,
-            "x-index": true,
-            "description": "What the ticket is about — one open ticket per purpose and scope; null allows many"
-          },
-          "usr_id": {
-            "type": "integer",
-            "x-index": true,
-            "x-qg-parent": "usr",
-            "x-qg-on-parent-delete": "cascade"
+            "description": "The registered kind, e.g. auth.resetPw"
           },
           "data": {
             "type": "string",
@@ -38,7 +21,8 @@
           },
           "expires": {
             "type": "integer",
-            "x-index": true
+            "x-index": true,
+            "description": "Null only where the kind says so — an unlimited capability never gets swept"
           },
           "uses": {
             "type": "integer",
@@ -46,22 +30,19 @@
             "default": 1,
             "description": "Redemptions left"
           },
-          "attempts": {
-            "type": "integer",
-            "minimum": 0,
-            "default": 0,
-            "description": "Wrong guesses so far — only short codes can be guessed"
-          },
-          "sent": {
-            "type": "integer",
-            "description": "When the secret last went out — the resend limit reads this"
-          },
           "created": {
             "type": "integer",
             "x-index": true
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The request that issued it"
           }
         },
-        "required": ["id", "hash", "purpose", "expires", "uses", "attempts", "created"]
+        "required": ["hash", "purpose", "uses", "created"]
       }
     }
   }

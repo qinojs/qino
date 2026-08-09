@@ -1,11 +1,15 @@
 import { $item, ApiError, randB64, safeEqual, sha256b64url, unixTime, type App, type Row } from "../../core/mod.ts";
 
-// Proof that a contact belongs to a user, for every channel that has an address a stranger could
-// claim — sms and mail. Telegram and Web Push need none: a chat id comes only from a real update,
-// an endpoint only from the browser itself.
+// Proof that a contact belongs to a user, for the channels whose address a stranger could claim —
+// sms and mail. Telegram and Web Push need none: a chat id comes only from a real update, an
+// endpoint only from the browser itself.
 //
 // Pending claims live here and nowhere else, so `usr_phone` and `usr_email` hold verified contacts
 // only and `WHERE verified IS NOT NULL` stops being a rule one can forget.
+//
+// Not a [ticket](../../ticket/): that one is a capability — whoever knows the handle may act. Six
+// digits are short enough to guess, so they only work together with "who is asking" and "how often
+// have they tried", which is what the columns here are for.
 
 const CODE_TTL = 10 * 60;
 const RESEND_AFTER = 60;
