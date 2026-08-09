@@ -14,14 +14,15 @@ is an incoming update. So a chat is linked, not configured, and `/start` is what
 ```ts
 import { send } from "../messaging.telegram/mod.ts";
 
-await send(app, { usr: 42 }, { text: "Your order shipped." });
+await send(app, { usr: 42 }, "Your order shipped.");
 await send(app, { grp: 3 }, { text: '<b>Deploy done</b> — <a href="https://…">log</a>', parse_mode: "HTML" });
 ```
 
 Recipients: `{ grp }`, `{ usr }`, `{ chat }`, `{ all: true }` — no channel, because a chat
 belongs to a person, not to a device; that question is what groups answer.
 
-Everything in `msg` reaches `sendMessage()` unchanged, so `parse_mode`, `reply_markup`,
+A `title` has no place of its own here and becomes the first line, bold under
+`parse_mode: "HTML"`. Everything else reaches `sendMessage()` unchanged, so `reply_markup`,
 `disable_notification`, `reply_to_message_id` and friends already work. Text is plain by
 default; markup needs `parse_mode` explicitly, which also means `<` in user data is safe
 until you ask for HTML.

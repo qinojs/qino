@@ -1,7 +1,7 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 
-import { sql, unixTime, type App, type Row } from "../core/mod.ts";
-import { record } from "../messaging/mod.ts";
+import { hee, sql, unixTime, type App, type Row } from "../core/mod.ts";
+import { msgOf, record, type Msg } from "../messaging/mod.ts";
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
 
@@ -9,14 +9,16 @@ import { linkToken } from "./lib/link.ts";
  * Deliver a message to a group, a user, one chat, or everyone who linked their account.
  *
  * Resolves with the number of chats reached; chats the bot was blocked in are removed on the
- * way. Everything in `msg` reaches sendMessage() as is, so `parse_mode`, `reply_markup`,
- * `disable_notification` and friends already work — a link needs `parse_mode: "HTML"`.
+ * way. Everything besides `title` reaches sendMessage() as is, so `parse_mode`,
+ * `reply_markup`, `disable_notification` and friends already work — a link needs
+ * `parse_mode: "HTML"`. A `title` becomes the first line, bold when markup is on.
  */
 export async function send(
   app: App,
   to: { grp?: number; usr?: number; chat?: number; all?: true },
-  msg: { text: string } & Record<string, unknown>,
+  message: string | Msg & Record<string, unknown>,
 ): Promise<number> {
+  const msg = msgOf(message);
   const where = to.grp != null ? sql`WHERE usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
     : to.usr != null ? sql`WHERE usr_id = ${to.usr}`
     : to.chat != null ? sql`WHERE id = ${to.chat}`
@@ -27,6 +29,9 @@ export async function send(
 
   const rows = await app.db.query`SELECT id, usr_id, chat_id, error FROM telegram_chat ${where}`;
 
+  // Telegram has no title of its own; it becomes the first line, bold where markup is on
+  const { text, title, ...extra } = msg;
+  const params = { ...extra, text: title ? `${extra.parse_mode === "HTML" ? `<b>${hee(title)}</b>` : title}\n${text}` : text };
   const table = app.db.table("telegram_chat");
   const gone: number[] = [];
   const outcomes = new Map<number, { sent: boolean; errors: string[] }>();
@@ -34,18 +39,18 @@ export async function send(
   const deliver = async (row: Row) => {
     const outcome = outcomes.getOrInsertComputed(Number(row.usr_id), () => ({ sent: false, errors: [] }));
     try {
-      await sendMessage(app, { ...msg, chat_id: Number(row.chat_id) });
+      await sendMessage(app, { ...params, chat_id: Number(row.chat_id) });
       sent++;
       outcome.sent = true;
       if (row.error) await table.update(row.id, { error: null }); // it delivers again
     } catch (e) {
       // 403 = blocked or deactivated, 400 "chat not found" = the chat is gone for good
       const status = e instanceof BotError ? e.status : 0;
-      const message = (e as Error).message;
-      const error = `${status || "no status"}: ${message}`;
+      const reason = (e as Error).message;
+      const error = `${status || "no status"}: ${reason}`;
       outcome.errors.push(error);
-      if (status === 403 || (status === 400 && /chat not found/i.test(message))) return void gone.push(Number(row.id));
-      console.warn(`telegram: chat ${row.id} rejected —`, message);
+      if (status === 403 || (status === 400 && /chat not found/i.test(reason))) return void gone.push(Number(row.id));
+      console.warn(`telegram: chat ${row.id} rejected —`, reason);
       await table.update(row.id, { error: error.slice(0, 255) });
     }
   };

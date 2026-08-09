@@ -63,7 +63,14 @@
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "usr",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-on-parent-delete": "setnull",
+            "description": "Only when the destination is a verified contact of that user"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": true,
+            "description": "Where it went: number, mail address, chat or endpoint hash"
           },
           "time": {
             "type": "integer",
@@ -75,6 +82,52 @@
           }
         },
         "required": ["id", "message_id", "time"]
+      }
+    },
+    "usr_contact_verification": {
+      "additionalProperties": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary",
+            "description": "The contact being claimed — one open claim per address and channel"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "hash": {
+            "type": "string",
+            "maxLength": 43,
+            "description": "Keyed hash of the code; the code itself is never stored"
+          },
+          "expires": {
+            "type": "integer",
+            "x-index": true
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "sent": {
+            "type": "integer",
+            "description": "When the last code went out — the resend limit reads this"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          }
+        },
+        "required": ["channel", "address", "usr_id", "hash", "expires", "attempts", "created"]
       }
     }
   }

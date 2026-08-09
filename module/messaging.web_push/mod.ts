@@ -2,7 +2,7 @@
 
 import { sendNotification } from "web-push-neo";
 import { sql, unixTime, type App, type Row } from "../core/mod.ts";
-import { record } from "../messaging/mod.ts";
+import { msgOf, record, titleOf, type Msg } from "../messaging/mod.ts";
 import { vapid } from "./lib/vapid.ts";
 
 /**
@@ -11,14 +11,17 @@ import { vapid } from "./lib/vapid.ts";
  * questions and can be used side by side.
  *
  * Resolves with the number of browsers reached; subscriptions the push service has
- * dropped are removed on the way. Everything in `msg` but `url` reaches
- * showNotification() as is.
+ * dropped are removed on the way. A notification needs a title, so an absent one is the
+ * first line of the text. Everything besides `text` and `url` reaches showNotification()
+ * as is — `icon`, `image`, `tag`, `actions`, `requireInteraction` and friends.
  */
-export async function push(
+export async function send(
   app: App,
   to: { channel?: string; grp?: number; usr?: number; client?: string | number; sub?: number; all?: true },
-  msg: { title: string; body?: string; url?: string },
+  message: string | Msg & { url?: string } & Record<string, unknown>,
 ): Promise<number> {
+  const given = msgOf(message);
+  const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
   const where = to.channel != null ? sql`WHERE id IN (
       SELECT sc.sub_id FROM web_push_subscription_channel sc
       JOIN web_push_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})`
@@ -28,14 +31,15 @@ export async function push(
     : to.sub != null ? sql`WHERE id = ${to.sub}`
     : to.all ? sql``
     : null;
-  if (!where) throw new Error("push needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
+  if (!where) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
   const time = unixTime();
 
   const rows = await app.db.query`SELECT id, usr_id, endpoint, p256dh, auth, error FROM web_push_subscription ${where}`;
 
   const table = app.db.table("web_push_subscription");
   const options = { vapidDetails: await vapid(app) };
-  const payload = JSON.stringify(msg);
+  const { text, ...notification } = msg; // the service worker calls showNotification(title, rest)
+  const payload = JSON.stringify({ ...notification, body: text });
   const gone: number[] = [];
   const outcomes = new Map<string, { usrId?: number; sent: boolean; errors: string[] }>();
   let sent = 0;

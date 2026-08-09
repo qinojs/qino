@@ -15,7 +15,7 @@ export const messagingChannel: Channel = {
   color: "--blue",
   reach: async (app: App, usrId: number) =>
     Number(await app.db.one`SELECT COUNT(*) FROM telegram_chat WHERE usr_id = ${usrId}`),
-  send: (app: App, usrId: number, text: string) => send(app, { usr: usrId }, { text }),
+  send,
 };
 
 export const settingsSchema = {

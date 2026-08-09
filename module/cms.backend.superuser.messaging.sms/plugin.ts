@@ -1,6 +1,6 @@
 import { html, unixTime, type App, type HtmlString } from "../core/mod.ts";
 import { backend, u2 } from "../cms.backend/mod.ts";
-import { phones as phoneList } from "../messaging.sms/mod.ts";
+import { pendingPhones, phones as phoneList } from "../messaging.sms/mod.ts";
 import { phones, provider, render, send } from "./render.ts";
 import api from "./nodeApi.ts";
 
@@ -17,17 +17,17 @@ const RECENT = 7;
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const week = unixTime() - RECENT * 86400;
-  const [totals, recent, labels] = await Promise.all([
+  const [totals, claims, recent, labels] = await Promise.all([
     app.db.row`SELECT COUNT(*) AS n,
-        SUM(CASE WHEN verified IS NULL THEN 1 ELSE 0 END) AS pending,
         SUM(CASE WHEN created > ${week} THEN 1 ELSE 0 END) AS fresh,
         SUM(CASE WHEN error IS NULL THEN 0 ELSE 1 END) AS failing
       FROM usr_phone`.catch(() => undefined),
+    pendingPhones(app).catch(() => []),
     phoneList(app, RECENT),
     Promise.all([app.t`phone numbers`, app.t`pending`, app.t`new in ${RECENT} days`, app.t`failing`]),
   ]);
   const [phonesLabel, pendingLabel, freshLabel, failingLabel] = labels;
-  const pending = Number(totals?.pending ?? 0);
+  const pending = claims.length;
   const fresh = Number(totals?.fresh ?? 0);
   const failing = Number(totals?.failing ?? 0);
 
@@ -39,7 +39,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     ${recent.length ? html`<table class=u2-table>${html.join(recent.map((p) => html`<tr>
       <td>${p.email ?? "#" + p.usr_id}
       <td>${p.number}
-      <td>${p.verified ? u2.time(p.verified) : pendingLabel}`))}</table>` : ""}
+      <td>${u2.time(p.created)}`))}</table>` : ""}
   </div>`;
 }
 

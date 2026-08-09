@@ -1,7 +1,7 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Access, getCtx, s, type ApiTree, type App, type Params } from "../core/mod.ts";
 import type { Channel } from "../messaging/mod.ts";
-import { addPhone, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
+import { addPhone, pendingPhones, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
 
 export const name = "messaging.sms";
 export const description = "SMS — verifies user phone numbers and delivers messages through a configurable provider.";
@@ -13,8 +13,8 @@ export const messagingChannel: Channel = {
   label: "SMS",
   color: "--green",
   reach: async (app: App, usrId: number) =>
-    Number(await app.db.one`SELECT COUNT(*) FROM usr_phone WHERE usr_id = ${usrId} AND verified IS NOT NULL`),
-  send: (app: App, usrId: number, text: string) => send(app, { usr: usrId }, text),
+    Number(await app.db.one`SELECT COUNT(*) FROM usr_phone WHERE usr_id = ${usrId}`),
+  send,
 };
 
 export const settingsSchema = {
@@ -41,7 +41,6 @@ export const settingsSchema = {
         },
       },
     },
-    _secret: { type: "string", description: "Secret for verification hashes — generated on first use" },
   },
 };
 
@@ -49,20 +48,33 @@ export const api: ApiTree = {
 
   phones: {
     get: {
-      description: "List the signed-in user's phone numbers and verification state",
+      description: "The signed-in user's verified numbers and the ones still being verified",
       access: Access.USER,
-      execute: () => {
+      execute: async () => {
         const ctx = getCtx();
-        return userPhones(ctx.app, ctx.userId);
+        const [phones, pending] = await Promise.all([userPhones(ctx.app, ctx.userId), pendingPhones(ctx.app, ctx.userId)]);
+        return { phones, pending };
       },
     },
     post: {
-      description: "Add an international phone number and send a verification code",
+      description: "Claim an international phone number and send a verification code",
       access: Access.USER,
       input: s.object({ number: s.string() }),
       execute: ({ number }: Params) => {
         const ctx = getCtx();
         return addPhone(ctx.app, ctx.userId, String(number));
+      },
+    },
+    // the number is the identity until it is verified — a pending claim has no phone row to address
+    verify: {
+      post: {
+        description: "Confirm a claimed number with its six-digit SMS code",
+        access: Access.USER,
+        input: s.object({ number: s.string(), code: s.string() }),
+        execute: ({ number, code }: Params) => {
+          const ctx = getCtx();
+          return verifyPhone(ctx.app, ctx.userId, String(number), String(code));
+        },
       },
     },
   },
@@ -79,20 +91,9 @@ export const api: ApiTree = {
           return { ok: true };
         },
       },
-      verify: {
-        post: {
-          description: "Confirm a phone number with its six-digit SMS code",
-          access: Access.USER,
-          input: s.object({ code: s.string() }),
-          execute: ({ id, code }: Params) => {
-            const ctx = getCtx();
-            return verifyPhone(ctx.app, ctx.userId, Number(id), String(code));
-          },
-        },
-      },
       main: {
         put: {
-          description: "Make this verified phone the signed-in user's preferred SMS number",
+          description: "Make this phone the signed-in user's preferred SMS number",
           access: Access.USER,
           execute: ({ id }: Params) => {
             const ctx = getCtx();

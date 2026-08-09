@@ -2,7 +2,7 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Access, getCtx, s, sha256b64url, sql, unixTime, type ApiTree, type App } from "../core/mod.ts";
 import type { Channel } from "../messaging/mod.ts";
-import { publicKey, push } from "./mod.ts";
+import { publicKey, send } from "./mod.ts";
 
 export const name = "messaging.web_push";
 export const description = "Web Push — stores browser subscriptions and delivers notifications to them.";
@@ -16,8 +16,7 @@ export const messagingChannel: Channel = {
   color: "--purple",
   reach: async (app: App, usrId: number) =>
     Number(await app.db.one`SELECT COUNT(*) FROM web_push_subscription WHERE usr_id = ${usrId}`),
-  // a notification needs a title of its own; the text is what the sender wrote
-  send: async (app: App, usrId: number, text: string) => push(app, { usr: usrId }, { title: await app.t`Message`, body: text }),
+  send,
 };
 
 export const settingsSchema = {

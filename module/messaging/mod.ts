@@ -2,20 +2,45 @@
 
 import { sql, unixTime, type App, type Row } from "../core/mod.ts";
 
+export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";
+
+/**
+ * What every channel understands. `text` is the message; a bare string is the short form of
+ * `{ text }`. Channels add their own fields on top — a push title, a mail subject, a Telegram
+ * `parse_mode` — and degrade what they cannot express instead of refusing it.
+ */
+export type Msg = { text: string; title?: string };
+
+/** The normal form of a message; a bare string is its text. */
+export function msgOf<T extends Msg>(msg: string | T): T {
+  return typeof msg === "string" ? { text: msg } as T : msg;
+}
+
+/** A title for the channels that need one — the first line of the text when none was given. */
+export function titleOf(msg: Msg, max = 78): string {
+  if (msg.title) return msg.title;
+  const line = msg.text.trim().split("\n", 1)[0].trim();
+  if (line.length <= max) return line;
+  const cut = line.slice(0, max);
+  return cut.slice(0, cut.lastIndexOf(" ") + 1 || max).trimEnd() + "…";
+}
+
+/** Who a message goes to; every channel understands these and adds its own keys. */
+export type To = { grp?: number; usr?: number; all?: true };
+
 /**
  * A way to reach a person, declared by a module as `export const messagingChannel`.
  *
  * `name` is what lands in the journal's `channel` column, so it outlives module renames.
- * `reach` answers how many destinations one user has, `send` delivers plain text to them
- * and resolves with how many were reached — whatever the channel needs on top (a push
- * title, a mail subject) it fills in itself.
+ * `reach` answers how many destinations one user has; `send` is the module's own send() —
+ * the declaration is the same function, not a wrapper around it.
  */
 export type Channel = {
   name: string;
   label: string;
   color?: string;
   reach(app: App, usrId: number): Promise<number>;
-  send(app: App, usrId: number, text: string): Promise<number>;
+  send(app: App, to: To, msg: string | Msg): Promise<number>;
 };
 
 /** Every channel a linked module declares. */
@@ -40,7 +65,7 @@ export async function userChannels(app: App, usrId: number): Promise<Channel[]> 
 export async function record(
   app: App,
   message: { channel: string; direction: "in" | "out"; data?: unknown; grpId?: number; logId?: number; time?: number },
-  deliveries: { usrId?: number; error?: string; time?: number }[] = [],
+  deliveries: { usrId?: number; address?: string; error?: string; time?: number }[] = [],
 ): Promise<number> {
   if (!message.channel) throw new Error("message channel is required");
   const time = message.time ?? unixTime();
@@ -59,6 +84,7 @@ export async function record(
       await table.insert({
         message_id: id,
         usr_id: delivery.usrId ?? null,
+        address: delivery.address ?? null,
         time: delivery.time ?? unixTime(),
         error: delivery.error ?? null,
       });
@@ -87,7 +113,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
   const rows = await app.db.query`
     SELECT m.id, m.channel, m.direction, m.grp_id, m.log_id, m.data, m.time,
       (SELECT COUNT(*) FROM message_delivery md WHERE md.message_id = m.id) AS recipient_count,
-      g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.time AS delivery_time,
+      g.name AS grp_name, d.id AS delivery_id, d.usr_id, d.address, d.time AS delivery_time,
       d.error, u.email
     FROM (SELECT m.* FROM message m ${where} ORDER BY m.time DESC, m.id DESC ${take}) m
     LEFT JOIN grp g ON g.id = m.grp_id
@@ -112,6 +138,7 @@ async function read(app: App, limit?: number, usrId?: number): Promise<(Row & { 
     if (row.delivery_id != null) message.deliveries.push({
       id: row.delivery_id,
       usr_id: row.usr_id,
+      address: row.address,
       email: row.email,
       time: row.delivery_time,
       error: row.error,

@@ -25,21 +25,26 @@ cms.initNode("cont.my.phones", async (el) => {
   const show = (value = "") => void (msg.value = value);
   const load = async () => {
     try {
-      const phones = await sms.phones.get();
-      const verified = phones.filter((p) => p.verified);
-      list.innerHTML = phones.length ? phones.map((p) => {
-        const main = p.verified && (p.main || verified.length === 1);
+      const { phones, pending } = await sms.phones.get();
+      const verified = (p) => {
+        const main = p.main || phones.length === 1;
         return `<div data-phone="${p.id}">
           <p><strong>${esc(p.number)}</strong>
             ${main ? `<span class=u2-badge>${esc(labels.main)}</span>` : ""}
-            ${p.verified ? `<small>${esc(labels.verified)} ${esc(fmt(p.verified))}</small>` : ""}</p>
-          ${p.verified ? (main ? "" : `<button type=button data-main>${esc(labels.makeMain)}</button>`) : `
-            <label>${esc(labels.pending)} <input inputmode=numeric pattern="[0-9]{6}" maxlength=6 data-code required></label>
-            <button type=button data-verify>${esc(labels.confirm)}</button>
-            <button type=button data-resend>${esc(labels.resend)}</button>`}
+            <small>${esc(labels.verified)} ${esc(fmt(p.created))}</small></p>
+          ${main ? "" : `<button type=button data-main>${esc(labels.makeMain)}</button>`}
           <button type=button data-delete>${esc(labels.del)}</button>
         </div>`;
-      }).join("") : esc(labels.empty);
+      };
+      const claimed = (p) => `<div data-pending="${esc(p.address)}">
+        <p><strong>${esc(p.address)}</strong></p>
+        <label>${esc(labels.pending)} <input inputmode=numeric pattern="[0-9]{6}" maxlength=6 data-code required></label>
+        <button type=button data-verify>${esc(labels.confirm)}</button>
+        <button type=button data-resend>${esc(labels.resend)}</button>
+      </div>`;
+      list.innerHTML = phones.length || pending.length
+        ? phones.map(verified).join("") + pending.map(claimed).join("")
+        : esc(labels.empty);
     } catch (e) {
       list.textContent = labels.error;
       show(e?.message || String(e));
@@ -58,23 +63,23 @@ cms.initNode("cont.my.phones", async (el) => {
   });
 
   list.addEventListener("click", async (event) => {
-    const row = event.target.closest("[data-phone]");
+    const row = event.target.closest("[data-phone], [data-pending]");
     if (!row) return;
-    const phone = sms.phone(row.dataset.phone);
+    const number = row.dataset.pending;
     show();
     try {
       if (event.target.closest("[data-verify]")) {
         const input = row.querySelector("[data-code]");
         if (!input.reportValidity()) return;
-        await phone.verify.post({ code: input.value.trim() });
+        await sms.phones.verify.post({ number, code: input.value.trim() });
       } else if (event.target.closest("[data-resend]")) {
-        await sms.phones.post({ number: row.querySelector("strong").textContent });
+        await sms.phones.post({ number });
         show(labels.sent);
       } else if (event.target.closest("[data-main]")) {
-        await phone.main.put();
+        await sms.phone(row.dataset.phone).main.put();
       } else if (event.target.closest("[data-delete]")) {
         if (!confirm(labels.delConfirm)) return;
-        await phone.delete();
+        await sms.phone(row.dataset.phone).delete();
       } else return;
       await load();
     } catch (e) { show(e?.message || String(e)); }

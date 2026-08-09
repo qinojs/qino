@@ -22,31 +22,13 @@
           },
           "created": {
             "type": "integer",
-            "x-index": true
-          },
-          "verified": {
-            "type": "integer",
-            "x-index": true
+            "x-index": true,
+            "description": "When it was verified — a row exists only once it is"
           },
           "main": {
             "type": "boolean",
             "default": false,
             "description": "Preferred SMS number for this user"
-          },
-          "verify_hash": {
-            "type": "string",
-            "maxLength": 43
-          },
-          "verify_expires": {
-            "type": "integer"
-          },
-          "verify_attempts": {
-            "type": "integer",
-            "minimum": 0,
-            "default": 0
-          },
-          "verify_sent": {
-            "type": "integer"
           },
           "error": {
             "type": "string",
@@ -54,7 +36,7 @@
             "description": "Why the last delivery failed — null once one succeeds again"
           }
         },
-        "required": ["id", "usr_id", "number", "created", "main", "verify_attempts"]
+        "required": ["id", "usr_id", "number", "created", "main"]
       }
     }
   }

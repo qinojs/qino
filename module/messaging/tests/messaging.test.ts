@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { messages, record, userMessages } from "../mod.ts";
+import { messages, msgOf, record, titleOf, userMessages } from "../mod.ts";
 import { Db, type App } from "../../core/mod.ts";
 
 async function app(): Promise<App> {
@@ -41,8 +41,8 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     time: 10,
     recipient_count: 2,
     deliveries: [
-      { id: 1, usr_id: 1, email: "one@example.test", time: 11, error: null },
-      { id: 2, usr_id: 2, email: "two@example.test", time: 12, error: "rejected" },
+      { id: 1, usr_id: 1, address: null, email: "one@example.test", time: 11, error: null },
+      { id: 2, usr_id: 2, address: null, email: "two@example.test", time: 12, error: "rejected" },
     ],
   }]);
 
@@ -57,8 +57,18 @@ Deno.test("messaging stores one logical message with recipient deliveries", asyn
     time: 10,
     recipient_count: 2,
     deliveries: [
-      { id: 2, usr_id: 2, email: "two@example.test", time: 12, error: "rejected" },
+      { id: 2, usr_id: 2, address: null, email: "two@example.test", time: 12, error: "rejected" },
     ],
   }]);
   assertEquals(await userMessages(testApp, 3), []);
+});
+
+Deno.test("a bare string is a message, and a missing title is its first line", () => {
+  assertEquals(msgOf("Hello"), { text: "Hello" });
+  assertEquals(msgOf({ text: "Hello", title: "Hi" }), { text: "Hello", title: "Hi" });
+
+  assertEquals(titleOf({ text: "Hello", title: "Hi" }), "Hi");
+  assertEquals(titleOf({ text: "  Your order shipped.\nIt arrives tomorrow." }), "Your order shipped.");
+  assertEquals(titleOf({ text: "a".repeat(40) + " " + "b".repeat(40) }), "a".repeat(40) + "…");
+  assertEquals(titleOf({ text: "x".repeat(100) }), "x".repeat(78) + "…");
 });

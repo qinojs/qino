@@ -11,7 +11,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true, message: await app.t`Provider saved.` };
     }
     if (vars.approve) {
-      await approvePhone(app, Number(vars.approve));
+      await approvePhone(app, String(vars.approve));
       return { ok: true, message: await app.t`Phone number approved.` };
     }
     if (vars.main) {

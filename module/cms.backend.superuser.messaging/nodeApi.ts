@@ -20,7 +20,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
 
     const to = channel(app, name);
     if (!to) return { ok: false, message: await app.t`Channel is not available.` };
-    const sent = await to.send(app, usrId, text);
+    const sent = await to.send(app, { usr: usrId }, text);
     return sent
       ? { ok: true, message: await app.t`Delivered over ${to.label} (${sent}).` }
       : { ok: false, message: await app.t`${to.label} reached nobody.` };

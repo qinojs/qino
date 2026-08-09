@@ -9,13 +9,15 @@ E.164 numbers per user; one number belongs to only one user.
 import { send } from "../messaging.sms/mod.ts";
 
 await send(app, { usr: 42 }, "Your order shipped.");
-await send(app, { grp: 3 }, "The building closes at 18:00.");
+await send(app, { grp: 3 }, { title: "Notice", text: "The building closes at 18:00." });
 ```
 
+An SMS is text and nothing else, so a `title` becomes its first line.
+
 Recipients are `{ grp }`, `{ usr }`, `{ phone }` or `{ all: true }`. User, group and broadcast
-delivery uses each user's verified main number. A sole verified number is selected automatically;
-`{ phone }` deliberately addresses one verified row directly. The result is the number of
-successful deliveries; a provider error is retained on the phone row and cleared after the next
+delivery reach one number per person: the main one, or the oldest when none was ever chosen.
+`{ phone }` deliberately addresses one row directly. The result is the number of successful
+deliveries; a provider error is retained on the phone row and cleared after the next
 successful delivery.
 
 ## Providers
@@ -43,14 +45,16 @@ setProvider(app, {
 
 The authenticated API flow is:
 
-1. `POST messagingSms/phones` with `{ number }` sends a six-digit code.
-2. `POST messagingSms/phone/<id>/verify` with `{ code }` verifies it.
+1. `POST messagingSms/phones` with `{ number }` claims it and sends a six-digit code.
+2. `POST messagingSms/phones/verify` with `{ number, code }` turns the claim into a number of theirs.
 3. `PUT messagingSms/phone/<id>/main` selects the main number.
-4. `GET messagingSms/phones` lists the user's numbers; `DELETE messagingSms/phone/<id>` removes one.
+4. `GET messagingSms/phones` lists `{ phones, pending }`; `DELETE messagingSms/phone/<id>` removes one.
 
-Numbers are normalized to E.164. Codes expire after ten minutes, sending is limited to once
-per minute per pending number, and five failed attempts invalidate a code. Only a keyed hash
-of the code is stored.
+The number is the identity until it is verified — a claim has no `usr_phone` row to address,
+because **`usr_phone` holds verified numbers only**. Everything about the pending state, the
+code and its limits belongs to [messaging](../messaging/#verifying-a-contact) and is shared
+with the other channels that need it. Numbers are normalized to E.164 first, so the same
+number written two ways is one claim.
 
 [cms.cont.my.phones](../cms.cont.my.phones/) provides this flow to signed-in users.
 [cms.backend.superuser.messaging.sms](../cms.backend.superuser.messaging.sms/) configures providers, sends messages

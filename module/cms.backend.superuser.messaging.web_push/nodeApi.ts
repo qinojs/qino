@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { addChannel, push, removeChannel, removeSubscription } from "../messaging.web_push/mod.ts";
+import { addChannel, removeChannel, removeSubscription, send } from "../messaging.web_push/mod.ts";
 
 /** Node access is the permission — whoever may read this backend node may send from here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -21,7 +21,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       return { ok: true, message: await app.t`Subscription deleted.` };
     }
     if (vars.test) {
-      const sent = await push(app, { sub: Number(vars.test) }, { title: await app.t`Test notification` });
+      const sent = await send(app, { sub: Number(vars.test) }, await app.t`Test notification`);
       return sent
         ? { ok: true, message: await app.t`Sent.` }
         : { ok: false, message: await app.t`Not delivered — the subscription was dropped.` };
@@ -34,7 +34,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
         : kind === "grp" ? { grp: Number(value) }
         : kind === "usr" ? { usr: Number(value) }
         : { all: true } as const;
-      const sent = await push(app, recipient, { title, body, url });
+      const sent = await send(app, recipient, { title, text: body ?? "", url });
       return { ok: true, message: await app.t`Delivered to ${sent} browsers.` };
     }
     return null;

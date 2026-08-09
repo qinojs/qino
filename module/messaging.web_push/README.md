@@ -6,19 +6,20 @@ subscribes, and delivers notifications to it.
 ## Sending
 
 ```ts
-import { push } from "../messaging.web_push/mod.ts";
+import { send } from "../messaging.web_push/mod.ts";
 
-await push(app, { channel: "news" }, { title: "New article", body: "…", url: "/blog" });
-await push(app, { usr: 42 }, { title: "New message" });
+await send(app, { channel: "news" }, { title: "New article", text: "…", url: "/blog" });
+await send(app, { usr: 42 }, "Your order shipped.");
 ```
 
 Recipients: `{ channel }`, `{ grp }`, `{ usr }`, `{ client }`, `{ sub }`, `{ all: true }`.
 Resolves with the number of browsers reached. Subscriptions the push service reports as
 gone (404/410) are deleted on the way, so the table stays clean without a cleanup job.
 
-Everything in the message but `url` reaches `showNotification()` unchanged — so
-`requireInteraction`, `tag`, `renotify`, `silent`, `icon`, `badge` and friends already
-work, even though the type only names the three documented fields.
+A notification needs a title, which the other channels do not have — an absent one is the
+first line of the text, so the channel-neutral short form works here too. `text` becomes
+`body`; everything else reaches `showNotification()` unchanged, so `requireInteraction`,
+`tag`, `renotify`, `silent`, `icon`, `badge`, `actions` and friends already work.
 
 ## Channels vs. groups
 
@@ -70,7 +71,7 @@ Deliberately not built yet — none of it is needed for the current feature set:
   service holds a message for an offline device, default four weeks), `urgency`
   (`very-low`…`high`, whether to deliver while power saving) and `topic` (a new message
   replaces an undelivered one with the same topic). Would be an `opts` argument on
-  `push()` — about three lines.
+  `send()` — about three lines.
 - **Notification actions.** `showNotification` takes up to two buttons; the click
   arrives in `notificationclick` as `event.action`. Needs a few lines in `pub/sw.js`.
 - **`pushsubscriptionchange`.** A browser that rotates its subscription stops receiving
