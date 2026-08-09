@@ -19,9 +19,9 @@
     "jsr:@std/path@1": "1.1.6",
     "jsr:@std/path@^1.1.6": "1.1.6",
     "jsr:@std/streams@^1.1.1": "1.1.1",
-    "jsr:@upyo/core@*": "0.4.0",
-    "jsr:@upyo/core@0.4": "0.4.0",
-    "jsr:@upyo/mock@*": "0.4.0",
+    "jsr:@upyo/core@*": "0.5.1",
+    "jsr:@upyo/core@~0.5.1": "0.5.1",
+    "jsr:@upyo/mock@*": "0.5.1",
     "npm:@simplewebauthn/server@13": "13.3.2",
     "npm:@types/sanitize-html@2": "2.16.1",
     "npm:bcryptjs@3": "3.0.3",
@@ -94,13 +94,13 @@
     "@std/streams@1.1.1": {
       "integrity": "92556d350e537e9dce527a6d08f6f15be3ff65e656079dea69d15252187c7613"
     },
-    "@upyo/core@0.4.0": {
-      "integrity": "ae4c8470d83166b4e360c5a79cdebb3f189b66d1142724f449d1d8acbc380e19"
+    "@upyo/core@0.5.1": {
+      "integrity": "0a87041d091a119a18a3c0caa40c07c7ff12334a0b3d60d9559792d071703890"
     },
-    "@upyo/mock@0.4.0": {
-      "integrity": "f92c68179360448343dea02bb7044edf1cd32dd9d6f6ec7c01572a50504c6aec",
+    "@upyo/mock@0.5.1": {
+      "integrity": "4d3b3302c5a16e24df747a75c9f58e9462b1e8d7a970198b6b3f4d92b4eaa1fc",
       "dependencies": [
-        "jsr:@upyo/core@0.4"
+        "jsr:@upyo/core@~0.5.1"
       ]
     }
   },
@@ -594,25 +594,21 @@
     "https://cdn.jsdelivr.net/npm/marked@18/+esm": "6c022b7cff763280d5a8c2a0008d9a3d2aa2b99ae05cc384500bcaf6b07b0e05"
   },
   "workspace": {
-    "members": {
-      "qino": {
-        "dependencies": [
-          "jsr:@nuxodin/dump@^1.5.2",
-          "jsr:@nuxodin/item@~0.6.3",
-          "jsr:@std/assert@1",
-          "jsr:@std/http@1",
-          "jsr:@std/media-types@1",
-          "jsr:@std/path@1",
-          "npm:@simplewebauthn/server@13",
-          "npm:@types/sanitize-html@2",
-          "npm:bcryptjs@3",
-          "npm:hono@4",
-          "npm:mysql2@3",
-          "npm:pg@8",
-          "npm:sanitize-html@2",
-          "npm:web-push-neo@0.1.2"
-        ]
-      }
-    }
+    "dependencies": [
+      "jsr:@nuxodin/dump@^1.5.2",
+      "jsr:@nuxodin/item@~0.6.3",
+      "jsr:@std/assert@1",
+      "jsr:@std/http@1",
+      "jsr:@std/media-types@1",
+      "jsr:@std/path@1",
+      "npm:@simplewebauthn/server@13",
+      "npm:@types/sanitize-html@2",
+      "npm:bcryptjs@3",
+      "npm:hono@4",
+      "npm:mysql2@3",
+      "npm:pg@8",
+      "npm:sanitize-html@2",
+      "npm:web-push-neo@0.1.2"
+    ]
   }
 }
