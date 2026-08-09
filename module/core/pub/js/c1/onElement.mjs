@@ -4,17 +4,13 @@ const root = document;
 let observer;
 
 c1.onElement = function(selector, options) {
-  if (typeof options === 'function') {
-    options = { parsed:options }
-  }
+  if (typeof options === 'function') options = { parsed:options }
   const listener = {
     selector: selector,
     immediate: options.immediate,
     elements: new WeakSet(),
   };
-  if (options.parsed) {
-    listener.parsed = el => requestAnimationFrame(() => options.parsed(el));
-  }
+  if (options.parsed) listener.parsed = el => requestAnimationFrame(() => options.parsed(el));
   let els;
   try {
     els = root.querySelectorAll(listener.selector);
@@ -41,9 +37,7 @@ c1.onElement = function(selector, options) {
 function checkListener(listener, target) {
   const els = [];
     target?.matches?.(listener.selector) && els.push(target);
-    if (loaded) {
-      els.push(...(target||root).querySelectorAll(listener.selector));
-    }
+    if (loaded) els.push(...(target||root).querySelectorAll(listener.selector));
     for (const el of els) {
       if (listener.elements.has(el)) continue;
       listener.elements.add(el);

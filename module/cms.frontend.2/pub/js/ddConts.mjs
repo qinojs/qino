@@ -110,9 +110,7 @@ function getBeforeElement(e, el) {
       if (min === null || diff < min) {
         min = diff;
         winner = child;
-        if (/*diffX>110||*/ diffY > 0) {
-          winner = winner.nextElementSibling;
-        }
+        if (/*diffX>110||*/ diffY > 0) winner = winner.nextElementSibling;
       }
     }
   }
@@ -135,11 +133,11 @@ function moveToTargetEffect(element) {
   'boxSizing:content-box; ';
   const opacity = element.style.opacity;
   setTimeout(()=>{
-    const duration = 190;
+    const DURATION = 190;
     const pos = element.getBoundingClientRect();
     element.style.opacity = 0;
     clone.style.cssText +=
-    'transition:all '+duration+'ms; '+
+    'transition:all '+DURATION+'ms; '+
     'transition-property:width height top left opacity; '+
     'top:'+pos.top+'px; '+
     'left:'+pos.left+'px; '+
@@ -151,6 +149,6 @@ function moveToTargetEffect(element) {
       'opacity:0; ';
       setTimeout(()=>clone.remove(),100);
       element.style.opacity = opacity;
-    },duration);
+    },DURATION);
   });
 }

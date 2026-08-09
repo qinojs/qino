@@ -232,7 +232,7 @@ async function wwwCounterpart(host: string, signal?: AbortSignal): Promise<boole
   if (alt.split(".").length < 2) return null;
   const [a, aaaa] = await Promise.all([dnsList(alt, "A"), dnsList(alt, "AAAA")]);
   if (!a.length && !aaaa.length) return null; // deliberately not published
-  return await fetch(`https://${alt}/`, { method: "HEAD", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
+  return fetch(`https://${alt}/`, { method: "HEAD", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
     .then((r) => { r.body?.cancel(); return r.status < 500; })
     .catch(() => false);
 }
@@ -250,9 +250,9 @@ async function redirectsToHttps(host: string, signal?: AbortSignal): Promise<boo
 
 // A path nobody published must not answer 200. Sites that serve the homepage for every URL turn
 // every typo and every dead link into a silent success.
-async function missingPage(host: string, signal?: AbortSignal): Promise<boolean | null> {
+function missingPage(host: string, signal?: AbortSignal): Promise<boolean | null> {
   const url = `https://${host}/qino-monitor-probe-${Math.random().toString(36).slice(2, 10)}`;
-  return await fetch(url, { method: "GET", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
+  return fetch(url, { method: "GET", redirect: "manual", signal: timedSignal(signal, 8000), headers: ua })
     .then((r) => { r.body?.cancel(); return r.status >= 400 && r.status < 500; })
     .catch(() => null);
 }

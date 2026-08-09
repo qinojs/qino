@@ -10,7 +10,7 @@ export const needs = ["cms", "cms.templateParser"];
 export const api = nodeApi(name);
 
 // Commented out on purpose: the parser strips comments, so nothing is created before you want it.
-const initialSrc = `<div>
+const INITIAL_SRC = `<div>
 
   <!-- editable text — the tag becomes the wrapper, the inner html is the initial content
   <h2 cms-text=title>Title</h2>
@@ -37,7 +37,7 @@ const initialSrc = `<div>
 
 async function render(node: Node): Promise<string> {
   const code = codeFiles(node);
-  if (node.edit) await code.create(initialSrc);
+  if (node.edit) await code.create(INITIAL_SRC);
   await code.addAssets();
   return await renderTemplateFile(code.src, node) ?? "<div></div>";
 }

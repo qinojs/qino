@@ -9,10 +9,10 @@
 
 import { requestStorage } from "../ctx/Ctx.ts";
 
-export interface DbScope {
+export type DbScope = {
   tables?: Record<string, string>; // table name → replacement
   cache: Record<string, unknown>;  // request-local cache slots, keyed per consumer
-}
+};
 
 export function dbScope(): DbScope | undefined {
   return requestStorage.getStore()?.state.dbScope;

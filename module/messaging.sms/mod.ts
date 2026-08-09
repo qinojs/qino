@@ -64,9 +64,8 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
     known.usr_id = usrId;
   }
   if (known?.verified) return publicPhone(known);
-  if (known?.verify_sent && Number(known.verify_sent) > now - RESEND_AFTER) {
+  if (known?.verify_sent && Number(known.verify_sent) > now - RESEND_AFTER)
     throw new ApiError(429, "Wait before requesting another verification code");
-  }
 
   const code = verificationCode();
   const values = {

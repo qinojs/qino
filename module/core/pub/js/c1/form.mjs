@@ -1,11 +1,8 @@
 c1.form = {
   serializeObject: function(element) {
-    let els;
-    if (element instanceof Element) {
-      els = [...(element.elements || element.querySelectorAll('input, select, textarea')), element];
-    } else {
-      els = Array.from(element);
-    }
+    const els = element instanceof Element
+      ? [...(element.elements || element.querySelectorAll('input, select, textarea')), element]
+      : Array.from(element);
     const object = Object.create(null);
     els.forEach(el => {
       const value = c1.form.elementValue(el);

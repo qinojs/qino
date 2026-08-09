@@ -45,9 +45,8 @@ export class DbField {
     // and stores one as INTEGER, so relying on the column type alone would let `true` fall through
     // to String() and land as the text "true" — which every later read then sees as truthy.
     if (this.#type === "boolean" || this.schema.type === "boolean") return value === true || value === 1 || value === "1" || value === "true";
-    if (typeof value === "number" && DATE_TYPES.has(this.#type)) {
+    if (typeof value === "number" && DATE_TYPES.has(this.#type))
       return new Date(value * 1000).toISOString().replace("T", " ").slice(0,19);
-    }
     if (NUM_TYPES.has(this.#type)) {
       // Number() is strict ("12abc" fails); "" and null become 0 on NOT NULL columns.
       const num = typeof value === "number" ? value : Number(value);

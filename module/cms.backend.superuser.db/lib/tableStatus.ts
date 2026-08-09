@@ -1,6 +1,6 @@
 import { sql, type Db } from "../../core/mod.ts";
 
-export interface TableStatus { rows: number | null; bytes: number | null; overhead: number | null; deadRows: number | null; engine: string; }
+export type TableStatus = { rows: number | null; bytes: number | null; overhead: number | null; deadRows: number | null; engine: string };
 
 /** Per-dialect table stats for the db inspector (rows/size/engine); null where a backend can't report it cheaply. */
 export function tableStatus(db: Db, table: string): Promise<TableStatus> {

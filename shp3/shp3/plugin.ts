@@ -12,7 +12,7 @@ export const needs = ["core", "cms", "locale.country", "locale.currency"];
 export { dbSchema };
 
 // A method is one entry under payments/shippings — modules add themselves, the shop configures them.
-const method = {
+const METHOD_SCHEMA = {
   additionalProperties: {
     properties: {
       enabled: { type: "boolean", default: true, description: "Whether the shop offers this method." },
@@ -36,8 +36,8 @@ export const settingsSchema = {
         street: { type: "string", description: "The shop's own street." },
       },
     },
-    payments: method,
-    shippings: method,
+    payments: METHOD_SCHEMA,
+    shippings: METHOD_SCHEMA,
     default_product_module: { type: "string", default: "cms.cont.shp3.product.default", description: "The page module that marks a page as a product." },
     auto_select_payment: { type: "boolean", default: true, description: "Pick the first allowed payment method when none is chosen." },
     auto_select_shipping: { type: "boolean", default: true, description: "Pick the first allowed shipping method when none is chosen." },
@@ -102,12 +102,10 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   onShop("order-check", async (e) => {
     const items = await e.order.items();
     if (!items.length) e.errors["has items"] = await t`Your shopping cart is empty`;
-    if (Object.keys(await e.order.allowedShippings()).length && !await e.order.activeShipping()) {
+    if (Object.keys(await e.order.allowedShippings()).length && !await e.order.activeShipping())
       e.errors["has shipping"] = await t`No delivery method is selected`;
-    }
-    if (Object.keys(await e.order.allowedPayments()).length && !await e.order.activePayment()) {
+    if (Object.keys(await e.order.allowedPayments()).length && !await e.order.activePayment())
       e.errors["has payment"] = await t`No payment method is selected`;
-    }
     for (const item of items) {
       if (Object.keys(await item.errors()).length) e.errors["item errors"] = `${await t`Please check your shopping cart`}: ${item.title}`;
     }

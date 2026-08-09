@@ -124,9 +124,8 @@ export class Node {
 
         // inherited (or explicit user) access level
         const parent = await this.parent();
-        if (nodeLevel === null && parent) {
+        if (nodeLevel === null && parent)
             return Math.max(await parent.#rawAccess(user), await this.#accessUserLevel(user));
-        }
 
         // user
         if (!user) return Number(nodeLevel); // no user, return node level (or 0 if null)

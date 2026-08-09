@@ -18,13 +18,13 @@ document.documentElement.addEventListener('focus', e => {
   pid = cms.el.nid(active);
 }, true);
 document.addEventListener('blur', () => handles.hide(), true);
-const actions = {
+const ACTIONS = {
   rowRemove: () => ({do:'rowRem',      row: active.parentNode.rowIndex}),
   rowAdd:    () => ({do:'rowAddAfter', row: active.parentNode.rowIndex}),
   colRemove: () => ({do:'colRem',      col: active.cellIndex}),
   colAdd:    () => ({do:'colAddRight', col: active.cellIndex}),
 };
-for (const [key, data] of Object.entries(actions)) {
+for (const [key, data] of Object.entries(ACTIONS)) {
   handles[key].addEventListener('click', () => {
     document.activeElement.blur();
     api.cms.node(pid).api.post(data()).then(() => cms.reloadNode(pid));

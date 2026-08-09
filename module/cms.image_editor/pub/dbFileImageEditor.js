@@ -7,7 +7,7 @@ const meta = id => api['cms.image_editor'].meta(id);
 const loadingMjs = () => import('../../core/pub/js/c1/loading.mjs');
 
 // accordion + hotspot styles, scoped to the editor's shadow root
-const editorCss = `
+const EDITOR_CSS = `
 .-accordion {
     position: relative;
     background-color: var(--cms-light);
@@ -77,7 +77,7 @@ export class DbFileImageEditor extends ImageEditor {
     const unique = uniqueMatch ? uniqueMatch[1] : '';
     this.file_id = eSrc.match(/dbFile\/([0-9]+)\//)[1];
 
-    this.shadow.append(Object.assign(document.createElement('style'), { textContent: editorCss }));
+    this.shadow.append(Object.assign(document.createElement('style'), { textContent: EDITOR_CSS }));
 
     super.show(eSrc + unique + 'img.jpg', {
       onload: this.loading(() => {

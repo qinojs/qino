@@ -4,7 +4,7 @@ import { api, t, ctx } from "../../../core/pub/js/qino.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
-const panelStyles = [
+const PANEL_STYLES = [
   import.meta.resolve("@qino/u2/css/norm/norm.css"),
   import.meta.resolve("@qino/u2/css/base/base.css"),
   "cms/pub/css/ui.css",
@@ -17,7 +17,7 @@ customElements.define("qino-cms", class extends HTMLElement {
   connectedCallback() {
     if (this.shadowRoot) return;
     const root = this.attachShadow({ mode: "open" });
-    for (const href of panelStyles) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : ctx.moduleUrl + href }));
+    for (const href of PANEL_STYLES) root.append(Object.assign(document.createElement("link"), { rel: "stylesheet", href: /^https?:/.test(href) ? href : ctx.moduleUrl + href }));
     while (this.firstChild) root.append(this.firstChild);
     requestAnimationFrame(() => this.hidden = false);
   }
@@ -400,11 +400,9 @@ onEl(".access-groups-manager", (el) => {
   el.addEventListener("change", (e) => {
     const inp = e.target;
     if (!inp.closest('[widget="access.grp.list"]')) return;
-    if (inp.name === "public") {
-      node.access.put({ value: parseInt(inp.value) });
-    } else {
-      node.access.groups(inp.name.replace("g_", "")).put({ access: parseInt(inp.value) });
-    }
+    inp.name === "public"
+      ? node.access.put({ value: parseInt(inp.value) })
+      : node.access.groups(inp.name.replace("g_", "")).put({ access: parseInt(inp.value) });
   });
 });
 onEl(".access-users-manager", (el) => {

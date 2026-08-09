@@ -8,8 +8,8 @@ cms.initNode("backend.groups", (el) => {
   const alert = async (text) => (alertFn ??= (await import("@qino/u2/js/dialog/dialog.js")).alert)(text);
 
   const onMemberResult = async (r, onOk) => {
-    if (r?.error) { await alert(r.error); return; }
-    if (!r) { await alert(await t`Action failed.`); return; }
+    if (r?.error) return alert(r.error);
+    if (!r) return alert(await t`Action failed.`);
     await onOk?.();
   };
 

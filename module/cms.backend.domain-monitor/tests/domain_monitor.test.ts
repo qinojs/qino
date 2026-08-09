@@ -336,7 +336,7 @@ const testNode = (app: App) => ({ app, url: () => "/cms2/?cmspid=1488&lang=en" }
 
 async function inRequest<T>(fn: () => Promise<T>): Promise<T> {
   const ctx = await testContext({ url: "http://qino.test/cms2/api/cms/node/1488/api" });
-  return await requestStorage.run(ctx, fn);
+  return requestStorage.run(ctx, fn);
 }
 
 // Built from the shipped schema instead of a copy of it — the column list keeps growing and a

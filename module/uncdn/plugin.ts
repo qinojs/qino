@@ -19,7 +19,7 @@ export const settingsSchema = {
 };
 
 const PROXY_PREFIX = "uncdn/";
-const mediaTypesByExtension: Record<string, string> = {
+const MEDIA_TYPES_BY_EXTENSION: Record<string, string> = {
   css: "text/css",
   js: "text/javascript",
   mjs: "text/javascript",
@@ -37,7 +37,7 @@ function urlToPath(cacheDir: string, url: string): string | null {
 
 function mediaTypeForPath(filePath: string): string | null {
   const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
-  return mediaTypesByExtension[ext] ?? null;
+  return MEDIA_TYPES_BY_EXTENSION[ext] ?? null;
 }
 
 async function directorySize(path: string): Promise<number> {

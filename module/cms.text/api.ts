@@ -180,7 +180,7 @@ class CmsTextService {
     async history(txt_id: any, lang: string): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
-        const space = 0; // cms_vers::$space — cms.versions not ported yet
+        const SPACE = 0; // cms_vers::$space — cms.versions not ported yet
         const rows = await this.#app.db.query`
             SELECT text.text, log.id as log_id, log.time as log_time, usr.email as email
             FROM
@@ -192,7 +192,7 @@ class CmsTextService {
               text._vers_log
               AND text.id = ${txt_id}
               AND text.lang = ${lang}
-              AND text._vers_space = ${space}
+              AND text._vers_space = ${SPACE}
             ORDER BY text._vers_log DESC
             LIMIT 100`;
         for (const row of rows) if (row.text) row.text = sanitizeHtml(String(row.text)); // dialog renders it via innerHTML

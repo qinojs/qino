@@ -4,11 +4,11 @@ import type { Kind, ProviderModelRow, ProviderRow } from "../types.ts";
 // DB-backed provider/model registry. Loaded fresh per call — two small SELECTs,
 // negligible next to the provider round-trip, and never stale.
 
-interface Registry {
+type Registry = {
   providers: Map<string, ProviderRow>; // by name
   byId: Map<number, ProviderRow>;
   models: ProviderModelRow[];
-}
+};
 
 async function getRegistry(app: Pick<App, "db">): Promise<Registry> {
   const providers = new Map<string, ProviderRow>();

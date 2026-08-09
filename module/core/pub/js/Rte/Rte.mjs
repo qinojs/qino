@@ -300,9 +300,7 @@ document.addEventListener('input', e => {
     const check = node => {
       [...node.children].forEach(check); // for of will skip nodes (if some removed)
       if (isPHX(node.parentNode) && isPHX(node)) {
-        if (node.nextElementSibling) {
-          node.after(document.createElement('br'));
-        }
+        if (node.nextElementSibling) node.after(document.createElement('br'));
         unwrap(node);
       }
     }

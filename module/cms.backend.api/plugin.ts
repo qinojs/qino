@@ -9,10 +9,10 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.api", { en: "API", de: "API" });
 }
 
-interface PathParam {
+type PathParam = {
   name: string;
   schema?: StandardSchema;
-}
+};
 
 interface Route {
   method: Method;

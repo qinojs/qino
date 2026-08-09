@@ -140,9 +140,7 @@ c1.Placer = class {
     let parent = el.offsetParent;
     if (parent === document.body) {
       const position = getComputedStyle(parent).getPropertyValue('position');
-      if (position === 'static') {
-        parent = null;
-      }
+      if (position === 'static') parent = null;
     }
     return parent;
   }

@@ -55,7 +55,7 @@ function candidates(app: App, f: Record<string, string>, ctx: Ctx): Promise<Reco
 }
 
 // One display event = all mutations of a single request on a single node.
-interface Event { key: string; ncMax: number; row: Record<string, any>; datas: unknown[] }
+type Event = { key: string; ncMax: number; row: Record<string, any>; datas: unknown[] };
 
 // ── list (filterable / incrementally reloadable part) ───────────────────────
 async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {

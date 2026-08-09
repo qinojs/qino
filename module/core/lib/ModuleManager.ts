@@ -114,12 +114,12 @@ export class ModuleManager {
   async import(spec: string, expectedName?: string): Promise<Module> {
     if (spec.startsWith("./") || spec.startsWith("../")) throw new Error(`Relative module specifier "${spec}" is not supported by import(). Use app.modules.add("${spec}") before app.init()`);
     if (spec.endsWith("/")) throw new Error(`Plugin import needs a file, not a directory: ${spec}`);
-    if (!/\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts, plugin.js, or plugin.mjs file: ${spec}`);
+    if (!/\/plugin\.(?:ts|js)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
     const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
     const source = path ? toFileUrl(path).href : spec;
     const plugin = await import(source);
     if (plugin.name !== undefined && (typeof plugin.name !== "string" || !plugin.name)) throw new Error(`Plugin has an invalid exported name: ${source}`);
-    const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js|mjs)(?:[?#].*)?$/.exec(source)?.[1];
+    const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js)(?:[?#].*)?$/.exec(source)?.[1];
     const name = expectedName ?? plugin.name ?? (inferredName && decodeURIComponent(inferredName));
     if (!name) throw new Error(`Plugin name cannot be inferred: ${source}`);
     if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${source}`);

@@ -8,7 +8,7 @@ type Rates = Map<string, number>;
 
 /** `<Cube currency='USD' rate='1.16'/>` — the ECB's daily reference rates, EUR-based. */
 function parseEcb(text: string): Rates {
-  const rates: Rates = new Map([["EUR", 1]]);
+  const rates = new Map([["EUR", 1]]);
   for (const [, id, rate] of text.matchAll(/currency=['"](\w{3})['"]\s+rate=['"]([\d.]+)['"]/g)) rates.set(id, Number(rate));
   return rates;
 }
@@ -16,7 +16,7 @@ function parseEcb(text: string): Rates {
 /** `{ "base": "USD", "rates": { "CHF": 0.8, … } }` — what most rate APIs answer. */
 function parseJson(text: string): Rates {
   const data = JSON.parse(text);
-  const rates: Rates = new Map([[String(data.base ?? "USD"), 1]]);
+  const rates = new Map([[String(data.base ?? "USD"), 1]]);
   for (const [id, rate] of Object.entries(data.rates ?? {})) {
     if (/^[A-Z]{3}$/.test(id) && Number(rate) > 0) rates.set(id, Number(rate));
   }

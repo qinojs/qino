@@ -5,13 +5,13 @@ import { BlockList, isIP } from "node:net";
 import { Readable } from "node:stream";
 import { extensionByType, typeByExtension } from "../deps.ts";
 
-export interface UploadedFile {
+export type UploadedFile = {
   name: string;
   type: string;
   size: number;
   tmpPath: string;
   md5: string;
-}
+};
 
 export async function readUploadFile(file: File, opt: { maxSize?: number } = {}): Promise<UploadedFile> {
   const tmp = await saveStream(file.stream(), opt);

@@ -12,7 +12,7 @@ let _identifyArgs: string[] = ['identify'];
 
 export async function available(): Promise<boolean> {
   if (_available !== null) return _available;
-  return await checkMagick().then(() => true).catch(() => false);
+  return checkMagick().then(() => true).catch(() => false);
 }
 
 async function checkMagick(): Promise<void> {

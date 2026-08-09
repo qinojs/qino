@@ -124,7 +124,7 @@ export class DbTable {
     if (!values) return;
     const where = this.valuesToFragment(values);
     if (!where.parts.length) return;
-    return await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
+    return this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${where}`;
   }
   async select(where: Sql = sql`TRUE`): Promise<Record<string, Record<string, any>>> {
     const ret: Record<string, Record<string, any>> = {};
@@ -349,7 +349,7 @@ export class DbTable {
   async get<T extends DbRow = DbRow>(id: any): Promise<T | undefined> {
     const row = this.row<T>(id);
     if (row.$loaded && !row.$stale) return row.$exists ? row : undefined;
-    return await row.$read();
+    return row.$read();
   }
 
   /** Loaded rows for a query tail — one SELECT, identity-mapped. */
@@ -365,7 +365,7 @@ export class DbTable {
   async add<T extends DbRow = DbRow>(values: Record<string, any> = {}): Promise<T | undefined> {
     const id = await this.insert(values);
     if (id === undefined) return;
-    return await this.row<T>(id).$read();
+    return this.row<T>(id).$read();
   }
 
   /** A write went past a row object — tell the one we hold, if any. */

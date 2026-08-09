@@ -2,7 +2,7 @@ import type { FileTransformer } from './FileTransformer.ts';
 
 export type Phase = 'decode' | 'geometry' | 'encode';
 
-export interface TransformOptions {
+export type TransformOptions = {
   w?: number;
   h?: number;
   q?: number;
@@ -15,18 +15,18 @@ export interface TransformOptions {
   frame?: number;
   fmt?: 'avif' | 'jpg' | 'png' | 'md' | 'json' | 'auto';
   [key: string]: unknown;
-}
+};
 
-export interface TransformMeta {
+export type TransformMeta = {
   width?: number;
   height?: number;
   hasAlpha?: boolean;
   animated?: boolean;
   geometryApplied?: boolean;
   [key: string]: unknown;
-}
+};
 
-export interface TransformContext {
+export type TransformContext = {
   /** Owning instance — e.g. for OCR engine lookup */
   readonly transformer: FileTransformer;
   readonly sourcePath: string;
@@ -37,7 +37,7 @@ export interface TransformContext {
   tmpDir: string;
   /** Kills external commands when the pipeline exceeds `transformer.timeout` */
   readonly signal: AbortSignal;
-}
+};
 
 export interface TransformerDef {
   name: string;
@@ -62,14 +62,14 @@ export interface OcrEngine {
   ocr: (imagePath: string, mime: string, ctx: TransformContext) => Promise<string>;
 }
 
-export interface TranscriptWord {
+export type TranscriptWord = {
   word: string;
   start?: number;
   end?: number;
   confidence?: number;
-}
+};
 
-export interface TranscriptSegment {
+export type TranscriptSegment = {
   start?: number;
   end?: number;
   text: string;
@@ -77,15 +77,15 @@ export interface TranscriptSegment {
   confidence?: number;
   notes?: string[];
   words?: TranscriptWord[];
-}
+};
 
-export interface Transcript {
+export type Transcript = {
   kind: 'qino.transcript';
   version: 1;
   text: string;
   language?: string;
   segments: TranscriptSegment[];
-}
+};
 
 export interface TranscriptEngine {
   name: string;
@@ -94,7 +94,7 @@ export interface TranscriptEngine {
   transcribe: (mediaPath: string, mime: string, ctx: TransformContext) => Promise<Transcript>;
 }
 
-export interface TransformResult {
+export type TransformResult = {
   path: string;
   mime: string;
   /** false = original returned (no transform or error) */
@@ -102,4 +102,4 @@ export interface TransformResult {
   /** Cache key = content identity (source + options), stable across mtime touches – usable as ETag */
   key?: string;
   error?: Error;
-}
+};

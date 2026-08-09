@@ -7,7 +7,7 @@ export const name = "cms.backend.superuser.state";
 export const description = "Shows live server runtime and request context state.";
 export const needs = ["cms.backend"];
 
-const dumpJs = "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";
+const DUMP_JS = "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.state", { en: "Server State", de: "Server-Status" });
@@ -28,8 +28,8 @@ function render(node: Node): HtmlString {
 function renderState(node: Node): HtmlString {
   const ctx = getCtx();
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.backend.superuser.state/pub/state.mjs");
-  ctx.res.html.importMap.set(dumpJs, dumpJs); // ugly
-  ctx.res.csp["script-src"][dumpJs] = true;
+  ctx.res.html.importMap.set(DUMP_JS, DUMP_JS); // ugly
+  ctx.res.csp["script-src"][DUMP_JS] = true;
   return html`
     ${dumpBox("Server / app", node.app, 2)}
     ${dumpBox("Context", ctx, 2)}

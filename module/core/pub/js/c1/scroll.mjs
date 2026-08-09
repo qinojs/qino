@@ -22,7 +22,7 @@ c1.scroll = {
       lastX: scrollX,
       lastY: scrollY,
       duration: opt.duration,
-      easing: easing[opt.easing],
+      easing: EASING[opt.easing],
       onFinish: opt.onfinish,
       startTime: Date.now(),
     };
@@ -40,14 +40,10 @@ c1.scroll = {
   }
 };
 function step () {
-  if (globalThis.__c1_scroll_running !== this) {
-    return;
-  }
+  if (globalThis.__c1_scroll_running !== this) return;
   const tDiff = Date.now() - this.startTime;
 
-  if (tDiff > 100 && this.lastY !== scrollY || this.lastX !== scrollX) {
-    return;
-  }
+  if (tDiff > 100 && this.lastY !== scrollY || this.lastX !== scrollX) return;
   const t = Math.min(tDiff / this.duration, 1);
   const x = this.targetX - (1 - this.easing(t)) * this.deltaX;
   const y = this.targetY - (1 - this.easing(t)) * this.deltaY;
@@ -65,7 +61,7 @@ function step () {
     requestAnimationFrame(step.bind(this));
   },12)
 }
-const easing = {
+const EASING = {
   linear:         t => t,
   easeInQuad:     t => t*t,
   easeOutQuad:    t => t*(2-t),

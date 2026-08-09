@@ -9,13 +9,13 @@ import { Scheduler } from "../scheduler.ts";
 const noop = () => {};
 const job = (every: Every, options: Partial<Job> = {}): Job => ({ every, run: noop, ...options } as Job);
 const unix = (iso: string) => Date.parse(iso) / 1000;
-const utc = { timeZone: "UTC" };
+const UTC = { timeZone: "UTC" };
 
 Deno.test("cron schedules intervals, hours, and zoned daily times", () => {
-  assertEquals(nextRun(job(90), 100, utc), 190);
-  assertEquals(nextRun(job(90, { jitter: 30 }), 100, { ...utc, random: () => 0 }), 160);
-  assert(nextRun(job(90, { jitter: 30 }), 100, { ...utc, random: () => 0.999999 }) < 220);
-  assertEquals(nextRun(job("hour"), unix("2026-01-01T12:34:56Z"), utc), unix("2026-01-01T13:00:00Z"));
+  assertEquals(nextRun(job(90), 100, UTC), 190);
+  assertEquals(nextRun(job(90, { jitter: 30 }), 100, { ...UTC, random: () => 0 }), 160);
+  assert(nextRun(job(90, { jitter: 30 }), 100, { ...UTC, random: () => 0.999999 }) < 220);
+  assertEquals(nextRun(job("hour"), unix("2026-01-01T12:34:56Z"), UTC), unix("2026-01-01T13:00:00Z"));
   assertEquals(
     nextRun(job("day", { at: { hour: 3 } }), unix("2026-01-01T20:00:00Z"), { timeZone: "Europe/Zurich" }),
     unix("2026-01-02T02:00:00Z"),
@@ -35,9 +35,9 @@ Deno.test("cron applies and persists jitter around a daily time", () => {
 Deno.test("cron positions jobs within hours and weeks", () => {
   const hourly = job("hour", { at: { minute: 27, second: 30 }, jitter: 5 * 60 + 30 });
   const noon = unix("2026-01-01T12:00:00Z");
-  assertEquals(nextRun(hourly, noon, { ...utc, random: () => 0 }), unix("2026-01-01T12:22:00Z"));
-  assert(nextRun(hourly, noon, { ...utc, random: () => 0.999999 }) < unix("2026-01-01T12:33:00Z"));
-  assertEquals(nextRun(hourly, unix("2026-01-01T12:23:00Z"), { ...utc, nextPeriod: true, random: () => 0 }), unix("2026-01-01T13:22:00Z"));
+  assertEquals(nextRun(hourly, noon, { ...UTC, random: () => 0 }), unix("2026-01-01T12:22:00Z"));
+  assert(nextRun(hourly, noon, { ...UTC, random: () => 0.999999 }) < unix("2026-01-01T12:33:00Z"));
+  assertEquals(nextRun(hourly, unix("2026-01-01T12:23:00Z"), { ...UTC, nextPeriod: true, random: () => 0 }), unix("2026-01-01T13:22:00Z"));
 
   const sunday = job("week", { at: { weekday: "sunday", hour: 12 }, jitter: 12 * 60 * 60 });
   const zurich = { timeZone: "Europe/Zurich" };

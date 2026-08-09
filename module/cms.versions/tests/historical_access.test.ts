@@ -1,8 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, Emitter, testContext } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
-import { cmsInstances } from "../../cms/lib/CMS.ts";
-import { render } from "../../cms/lib/render.ts";
+import { fakeCms, render } from "../../cms/tests/deps.ts";
 import { cacheHeaders, getCmsVers, initHistoricalNodes } from "../lib/CmsVers.ts";
 
 function setup(current: Record<number, any>, access: Record<number, number>, historical: Record<number, any> = {}) {
@@ -108,7 +107,7 @@ Deno.test("cms.versions: historical responses stay privately cacheable", async (
     vs: { searchable: 1 }, exists: () => true, access: () => 1, isReadable: () => true,
     page: () => page, text: () => null, title: () => null, html: () => "",
   };
-  cmsInstances.set(ctx.app, { nodeFromRequest: () => page } as any);
+  fakeCms(ctx.app, { nodeFromRequest: () => page });
   cacheHeaders(ctx);
   await render(ctx);
   assertEquals(ctx.res.headers.get("Cache-Control"), "private, max-age=15552000");

@@ -33,11 +33,7 @@ cms.initNode("backend.system", (el) => {
     const result = await api.cms.node(nid).api.post({ solve_health_item: { type, item, solution, formData } });
     btn.disabled = false;
 
-    if (result?.done) {
-      btn.closest(".healty_item").remove();
-    } else {
-      await alert("failed?");
-    }
+    result?.done ? btn.closest(".healty_item").remove() : await alert("failed?");
     if (result?.response) await alert(result.response);
   });
 });

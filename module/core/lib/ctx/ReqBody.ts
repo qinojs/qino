@@ -64,9 +64,9 @@ export class ReqBody {
     const src = len == null ? await cappedResponse(request, opt.maxSize) : null;
 
     const bad = () => { throw new Output("Bad Request", { status: 400 }); };
-    if (isJson) {
+    if (isJson)
       body.#value = deepFreeze(await (src ?? request.clone()).json().catch(bad));
-    } else {
+    else {
       const entries = groupFormData(await (src ?? request.clone()).formData().catch(bad));
       const post: Record<string, unknown> = Object.create(null);
       for (const [key, val] of Object.entries(entries)) {

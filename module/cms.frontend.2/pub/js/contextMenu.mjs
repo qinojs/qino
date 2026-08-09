@@ -5,15 +5,15 @@ import '../../../cms/pub/js/cms.mjs';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
-const blockSelector = '[qcms-edit], #qgCmsContPosMenu';
+const BLOCK_SELECTOR = '[qcms-edit], #qgCmsContPosMenu';
 
 const menu = cms.contextMenueContent = c1.globalContextMenu.addMenu(t`CMS Block`,{
   icon: moduleUrl+'cms.frontend.2/pub/img/module_default.svg',
-  selector: blockSelector,
+  selector: BLOCK_SELECTOR,
 });
 menu.addItem(t`Settings`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/settings.svg',
-  selector: blockSelector,
+  selector: BLOCK_SELECTOR,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -25,7 +25,7 @@ menu.addItem(t`Settings`, {
 });
 menu.addItem(t`Move`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/move.svg',
-  selector: blockSelector,
+  selector: BLOCK_SELECTOR,
   onshow() {
     this.activeEl = cms.contPos.active.el;
     this.disabled = !cms.contPos.active.isDraggable();
@@ -34,7 +34,7 @@ menu.addItem(t`Move`, {
 });
 menu.addItem(t`Copy`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/copy.svg',
-  selector: blockSelector,
+  selector: BLOCK_SELECTOR,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -47,7 +47,7 @@ menu.addItem(t`Copy`, {
 });
 menu.addItem(t`Cut`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/cut.svg',
-  selector: blockSelector,
+  selector: BLOCK_SELECTOR,
   onshow() {
     this.activePid = cms.contPos.active.pid;
     this.disabled = !cms.contPos.active.el.hasAttribute('qcms-edit');
@@ -62,7 +62,7 @@ menu.addItem(t`Cut`, {
 });
 menu.addItem(t`Delete`, {
   icon: moduleUrl+'cms.frontend.2/pub/img/delete.svg',
-  selector: blockSelector,
+  selector: BLOCK_SELECTOR,
   onshow() {
     this.activeEl = cms.contPos.active.el;
     this.disabled = !cms.contPos.active.isDraggable();
@@ -149,11 +149,11 @@ treeMenu.addItem(t`Delete`, {
     api.cms.node(n.data.id).delete().then(ret => {
       if (ret.parent_id && n.data.id==nodeId) {
         location.href = "?cmspid="+ret.parent_id;
-      } else {
-        const s = cms.Tree.neighbor(n);
-        n.remove();
-        cms.Tree.activate(s);
+        return;
       }
+      const s = cms.Tree.neighbor(n);
+      n.remove();
+      cms.Tree.activate(s);
     });
   }
 });

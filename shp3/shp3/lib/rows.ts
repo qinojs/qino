@@ -234,11 +234,11 @@ export class Order extends ShopRow {
   /** The method in force. Frozen once placed, otherwise the chosen or auto-selected one. */
   async activePayment(): Promise<string> {
     if (this.time_ordered) return this.payment;
-    return await this.$shop.pick("payments", this.payment, await this.allowedPayments());
+    return this.$shop.pick("payments", this.payment, await this.allowedPayments());
   }
   async activeShipping(): Promise<string> {
     if (this.time_ordered) return this.shipping;
-    return await this.$shop.pick("shippings", this.shipping, await this.allowedShippings());
+    return this.$shop.pick("shippings", this.shipping, await this.allowedShippings());
   }
 
   /** What shipping costs — every rule is a listener. */
@@ -374,13 +374,13 @@ export class Order extends ShopRow {
 }
 
 /** A line the shop adds itself — shipping, discounts, fees. A table row only once ordered. */
-export interface GeneratedItem {
+export type GeneratedItem = {
   name: string;
   sort?: number; // the order fills it in when a listener leaves it open
   title: string;
   price: number;
   vat_rate: number;
-}
+};
 
 const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
 

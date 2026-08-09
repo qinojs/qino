@@ -252,10 +252,10 @@ sidebarItem.addEventListener('mousedown', e=>{
 const locale = document.documentElement.lang || navigator.language;
 const relativeFormat = new Intl.RelativeTimeFormat(locale, {numeric:'auto'});
 const exactDate = new Intl.DateTimeFormat(locale, {dateStyle:'medium', timeStyle:'medium'});
-const relativeUnits = [[60, 'second'], [60, 'minute'], [24, 'hour'], [30, 'day'], [12, 'month'], [Infinity, 'year']];
+const RELATIVE_UNITS = [[60, 'second'], [60, 'minute'], [24, 'hour'], [30, 'day'], [12, 'month'], [Infinity, 'year']];
 function relativeDate(timestamp) {
   let value = timestamp - Date.now()/1000;
-  for (const [limit, unit] of relativeUnits) {
+  for (const [limit, unit] of RELATIVE_UNITS) {
     if (Math.abs(value) < limit) return relativeFormat.format(Math.round(value), unit);
     value /= limit;
   }

@@ -46,8 +46,8 @@
     const img  = entry.target;
     const rect = entry.boundingClientRect;
     if (rect.width === 0 || rect.height === 0) return; // if event is fired but no dimensions
-    const margin = 190; // must be smaller then rootMargin
-    const partVisible = (rect.bottom > -margin && rect.top < innerHeight+margin) && (rect.right > -margin && rect.left < innerWidth+margin);
+    const MARGIN = 190; // must be smaller then rootMargin
+    const partVisible = (rect.bottom > -MARGIN && rect.top < innerHeight+MARGIN) && (rect.right > -MARGIN && rect.left < innerWidth+MARGIN);
     if (!partVisible) return;
     observer.unobserve(img);
 

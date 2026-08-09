@@ -9,11 +9,11 @@ import { sql, type Ctx, type App, type Db } from "../../core/mod.ts";
 // ─── Per-Db state ────────────────────────────────────────────────────────────
 // Keyed by Db instance — module globals would leak between App instances (multi-tenant).
 
-interface DbVersState {
+type DbVersState = {
     tables: Record<string, true | Record<string, 1>>;
     baselined: Set<string>;             // baseline checked this process
     views: Map<string, Promise<void>>;  // (space,log)-views created this process
-}
+};
 const dbStates = new WeakMap<Db, DbVersState>();
 function dbState(db: Db): DbVersState {
     return dbStates.getOrInsertComputed(db, () => ({
@@ -30,11 +30,11 @@ export function versedTables(db: Db): DbVersState["tables"] {
 
 // ─── Per-request state ───────────────────────────────────────────────────────
 
-export interface VersState {
+export type VersState = {
     space: number;
     log: number;
     tableEntriesCopying: boolean;
-}
+};
 
 const STATE_KEY = "vers";
 

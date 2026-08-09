@@ -8,9 +8,8 @@ export function dataTransferToUrl(dt) {
   const matches  = html.match(/.*<img src="([^"]*)".*/);
   const fileurl2 = matches && matches[1];
   let   url = null;
-  if (getData('text/x-moz-url')) {
-    url = getData('text/x-moz-url').split('\n')[0];
-  }
+  const mozUrl = getData('text/x-moz-url');
+  if (mozUrl) url = mozUrl.split('\n')[0];
   const fileurl3 = (getData('url') || url || '').trim();
   const fileurl = fileurl1 || fileurl2 || fileurl3;
   if (fileurl.startsWith('file')) return null;

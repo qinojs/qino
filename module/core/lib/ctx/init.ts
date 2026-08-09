@@ -21,15 +21,9 @@ async function initClient(ctx: Ctx): Promise<void> {
     if (ctx.clientId) return;
 
     const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
-    if (!cid) {
-      await registerClient(ctx);
-      return;
-    }
+    if (!cid) return registerClient(ctx);
     const clientId = await db.one`SELECT id FROM client WHERE hash = ${cid}`;
-    if (!clientId) {
-      await registerClient(ctx);
-      return;
-    }
+    if (!clientId) return registerClient(ctx);
     ctx.clientId = String(clientId);
 }
 
@@ -54,10 +48,10 @@ function initLog(ctx: Ctx): void {
     };
 
     // redact secrets by key name, clip long values — a single field (data: URI, base64) must not overflow the row
-    const secret = /pw|pass|token|secret|key|auth/i;
+    const SECRET = /pw|pass|token|secret|key|auth/i;
     const clip = (s: string, max: number) => s.length > max ? `${s.slice(0, max)}…(${s.length})` : s;
     data.post = ctx.req.body != null
-      ? clip(JSON.stringify(ctx.req.body, (k, v) => k && secret.test(k) ? "-----" : typeof v === "string" ? clip(v, 1000) : v), 10000)
+      ? clip(JSON.stringify(ctx.req.body, (k, v) => k && SECRET.test(k) ? "-----" : typeof v === "string" ? clip(v, 1000) : v), 10000)
       : "";
     data.client_id = ctx.clientId;
 

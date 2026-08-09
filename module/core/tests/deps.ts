@@ -11,7 +11,7 @@ import { Output } from "../lib/util.ts";
 // deno-lint-ignore no-explicit-any
 type Fake = Record<string, any>;
 
-export interface TestContextInit extends RequestInit {
+export type TestContextInit = RequestInit & {
   url?: string;
   /** Mount prefix, default "/". */
   appUrl?: string;
@@ -22,7 +22,7 @@ export interface TestContextInit extends RequestInit {
   userId?: number;
   /** Force-assigned ctx fields, shadowing prototype getters (e.g. `post`). */
   set?: Fake;
-}
+};
 
 /** Build a Ctx through the production `Ctx.create()` path. */
 export async function testContext(init: TestContextInit = {}): Promise<Ctx> {

@@ -44,9 +44,9 @@ export default async function (node: Node): Promise<HtmlString> {
       }
     }
     let linkHtml: HtmlString | string;
-    if (!exists) {
+    if (!exists)
       linkHtml = await app.t`Placeholder`;
-    } else {
+    else {
       const url = await F.url();
       linkHtml = html`<a title="${F.name}" href="${url}" target=_blank>${F.name}</a>`;
     }

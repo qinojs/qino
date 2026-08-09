@@ -19,14 +19,14 @@ export interface Bot {
   tools?: Tool[];
 }
 
-export interface ProviderRow {
+export type ProviderRow = {
   id: number;
   name: string;
   endpoint: string;
   timeout_ms: number;
-}
+};
 
-export interface ProviderModelRow {
+export type ProviderModelRow = {
   id: number;
   provider_id: number;
   model_id: string;
@@ -34,4 +34,4 @@ export interface ProviderModelRow {
   is_default: number | boolean;
   used_input_tokens: number;
   used_output_tokens: number;
-}
+};

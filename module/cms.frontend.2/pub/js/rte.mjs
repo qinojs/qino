@@ -9,8 +9,8 @@ const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 const unwrap  = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
-const urlRegexp = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
-const mailRegexp = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
+const URL_RE = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
+const MAIL_RE = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
 const inp = c1.dom.fragment('<input placeholder=url spellcheck=false type=qgcms-page>').firstChild;
 const end = () => {
@@ -31,9 +31,9 @@ const end = () => {
     return;
   } else if (!isNaN(v)) {
     v = 'cmspid://'+v;
-  } else if (mailRegexp.test(v)) {
+  } else if (MAIL_RE.test(v)) {
     v = 'mailto:'+v;
-  } else if (urlRegexp.test(v)) {
+  } else if (URL_RE.test(v)) {
     v = 'http://'+v;
   }
   inp.value = v;
@@ -345,10 +345,10 @@ function wheelIntervalToFaktor(e) {
     e._eventChecked = true;
   }
   // faktor
-  const max = 400;
-  const min = 10;
-  diff = limit(diff, min, max+min);
-  let x = (diff - min) / max; // range from 1 to 0
+  const MAX = 400;
+  const MIN = 10;
+  diff = limit(diff, MIN, MAX+MIN);
+  let x = (diff - MIN) / MAX; // range from 1 to 0
   x = 1-x;
   x **= 3;
   x = 1-x;

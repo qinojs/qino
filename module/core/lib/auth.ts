@@ -77,7 +77,7 @@ export function pwHash(pw: string): Promise<string> {
 
 export async function pwVerify(pw: string, hash: string) {
   if (!pw || !hash) return false;
-  return await bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
+  return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
 }
 
 async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {

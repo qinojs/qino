@@ -17,7 +17,7 @@ const settingsSchema = {
 
 type ImgOptions = Record<string, string | number | boolean | null | Record<string, string>>;
 
-const tests: { id: string; title: string; note: string; options: ImgOptions }[] = [
+const TESTS: { id: string; title: string; note: string; options: ImgOptions }[] = [
   { id: "cover", title: "Cover fixed", note: "crop, fixed target box", options: { fit: "cover" } },
   { id: "contain", title: "Contain fixed", note: "full image, transparent areas visible", options: { fit: "contain" } },
   { id: "width", title: "Width only", note: "height derived from source ratio", options: { height: null, fit: "cover" } },
@@ -33,7 +33,7 @@ async function render(node: Node, { vars }: { vars?: Record<string, unknown> } =
   const exists = await file.exists();
   const base = { width: w, height: h, quality, editable, wait: true, if: 1, alt: "cms-image2 test image" };
 
-  const basic = html.raw((await Promise.all(tests.map((test) => {
+  const basic = html.raw((await Promise.all(TESTS.map((test) => {
     const options = imageOptions(base, test.id, test.options);
     return renderCard(test.id, test.title, test.note, cms_image2(file, options), optionsText(options));
   }))).join(""));
@@ -138,8 +138,8 @@ function imageOptions(base: ImgOptions, id: string, opts: ImgOptions = {}): ImgO
 }
 
 function optionsText(options: ImgOptions): string {
-  const skip = new Set(["alt", "editable", "if", "quality", "wait", "data-test"]);
-  return Object.entries(options).filter(([k, v]) => !skip.has(k) && v != null && v !== false).map(([k, v]) =>
+  const SKIP = new Set(["alt", "editable", "if", "quality", "wait", "data-test"]);
+  return Object.entries(options).filter(([k, v]) => !SKIP.has(k) && v != null && v !== false).map(([k, v]) =>
     k === "css" && v && typeof v === "object" ? "css:" + Object.entries(v).map(([ck, cv]) => `${ck}=${cv}`).join(",") : `${k}=${v}`
   ).join(", ");
 }

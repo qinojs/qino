@@ -55,9 +55,8 @@ export async function audio(input: string, output: string, signal?: AbortSignal)
   }).output();
   if (code !== 0) {
     const msg = new TextDecoder().decode(stderr).trim();
-    if (/Stream map.*matches no streams|Output file does not contain any stream/.test(msg)) {
+    if (/Stream map.*matches no streams|Output file does not contain any stream/.test(msg))
       throw new Error('FFmpeg error (audio): video has no audio stream');
-    }
     throw new Error(`FFmpeg error (audio): ${msg}`);
   }
 }

@@ -1,6 +1,6 @@
 const unwrap = el => el.replaceWith(...el.childNodes); // remove element, keep its children
 
-const defaultConf = {
+const DEFAULT_CONF = {
   tags                   :null,
   tagsRemove             :null,
   styles                 :null,
@@ -17,7 +17,7 @@ const defaultConf = {
 
 class NodeCleaner {
   constructor (conf) {
-    this.conf = { ...defaultConf, ...conf };
+    this.conf = { ...DEFAULT_CONF, ...conf };
   }
   cleanContents(el, andChildren) {
     if (!el) return;
@@ -68,8 +68,8 @@ class NodeCleaner {
 
     const before = Object.fromEntries([...cs].map(p => [p, cs.getPropertyValue(p)]));
 
-    const effectiveDisplay = display || (blockLikeTags[el.tagName] ? 'block' : 'inline');
-    const nEl = document.createElement(notInline[effectiveDisplay] ? 'div' : 'span');
+    const effectiveDisplay = display || (BLOCK_LIKE_TAGS[el.tagName] ? 'block' : 'inline');
+    const nEl = document.createElement(NOT_INLINE[effectiveDisplay] ? 'div' : 'span');
 
     if (el.hasAttribute('class')) nEl.className = el.className;
 
@@ -165,9 +165,7 @@ function removeUnusedAttributes(el) {
 function removeEmptyInlineSpans(el) {
   if (el.attributes.length) return;
   const display = getComputedStyle(el).getPropertyValue('display');
-  if (display === 'inline' && el.tagName === 'SPAN') {
-    unwrap(el);
-  }
+  if (display === 'inline' && el.tagName === 'SPAN') unwrap(el);
 }
 function removeUnusedElements(el) {
   if (el.tagName === 'A' && el.innerHTML.trim().length) {
@@ -182,7 +180,7 @@ function removeUnusedElements(el) {
         if (child.data.trim() === '') continue;
         else { onlyBlocks = false; break; }
       }
-      if (!blockLikeTags[child.tagName]) { onlyBlocks = false; break; }
+      if (!BLOCK_LIKE_TAGS[child.tagName]) { onlyBlocks = false; break; }
     }
     if (onlyBlocks) { unwrap(el); return; };
   }
@@ -210,12 +208,12 @@ function removeUnusedElements(el) {
     }
   }
 }
-const notInline = {block:1,table:1,flex:1,grid:1,'list-item':1,'table-cell':1};
-const blockLikeTags = {DIV:1,P:1,UL:1,OL:1,TABLE:1,HR:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,NAV:1,MAIN:1,SECTION:1,ARTICLE:1,HEADER:1,FOOTER:1}
+const NOT_INLINE = {block:1,table:1,flex:1,grid:1,'list-item':1,'table-cell':1};
+const BLOCK_LIKE_TAGS = {DIV:1,P:1,UL:1,OL:1,TABLE:1,HR:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,NAV:1,MAIN:1,SECTION:1,ARTICLE:1,HEADER:1,FOOTER:1}
 
 // others? http://donsnotes.com/tech/charsets/ascii.html
 // todo: rename to problematic chars
-const combininedChars = [
+const COMBINING_CHARS = [
   ['ü','u\u0308'], // COMBINING DIAERESIS (combined chars)
   ['Ü','U\u0308'],
   ['ä','a\u0308'],
@@ -229,7 +227,7 @@ function nodeReplaceCombiningDiaeresis(textNode){
   //textNode.data = textNode.data.normalize(); todo!
 
   const string = textNode.data
-  for (const [char,regexp] of combininedChars) {
+  for (const [char,regexp] of COMBINING_CHARS) {
     if (string.match(regexp)) { // only replace string if found => otherways cursor position will no be restored
       textNode.data = string.replace(regexp, char);
     }

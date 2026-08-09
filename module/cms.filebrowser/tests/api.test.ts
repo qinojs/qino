@@ -17,9 +17,10 @@ Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
 });
 
 Deno.test("cms.filebrowser: init registers cms:page-ready asset hook", async () => {
-  const handlers: Record<string, Function[]> = {};
+  type Handler = (...args: any[]) => any;
+  const handlers: Record<string, Handler[]> = {};
   const app = {
-    on(name: string, fn: Function) {
+    on(name: string, fn: Handler) {
       (handlers[name] ??= []).push(fn);
     },
     db: { row: () => null, on() {} },

@@ -15,8 +15,8 @@ export async function deliver(app: App, to: string, text: string): Promise<void>
 
   const root = app.settings["messaging.sms"].provider;
   const type = String(await root.type ?? "").toLowerCase();
-  if (type === "twilio") return await twilio(root.twilio, to, text);
-  if (type === "http") return await http(root.http, to, text);
+  if (type === "twilio") return twilio(root.twilio, to, text);
+  if (type === "http") return http(root.http, to, text);
   throw new Error("messaging.sms: configure provider.type or call setProvider()");
 }
 
@@ -29,9 +29,8 @@ async function twilio(settings: Record<string, unknown>, to: string, text: strin
   const messagingServiceSid = String(await settings.messagingServiceSid ?? "");
   const username = apiKeySid || accountSid;
   const password = apiKeySid ? apiKeySecret : authToken;
-  if (!accountSid || !username || !password || (!from && !messagingServiceSid)) {
+  if (!accountSid || !username || !password || (!from && !messagingServiceSid))
     throw new Error("messaging.sms: Twilio needs accountSid, credentials and from or messagingServiceSid");
-  }
 
   const body = new URLSearchParams({ To: to, Body: text });
   from ? body.set("From", from) : body.set("MessagingServiceSid", messagingServiceSid);

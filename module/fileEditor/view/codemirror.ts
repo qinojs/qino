@@ -13,36 +13,36 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
 
-  const url = "https://cdn.jsdelivr.net/npm/codemirror@5.65.5";
-  const min = "min.";
+  const CDN = "https://cdn.jsdelivr.net/npm/codemirror@5.65.5";
+  const MIN = "min.";
 
-  resHtml.styles.add(`${url}/lib/codemirror.${min}css`);
-  resHtml.styles.add(`${url}/theme/eclipse.${min}css`);
+  resHtml.styles.add(`${CDN}/lib/codemirror.${MIN}css`);
+  resHtml.styles.add(`${CDN}/theme/eclipse.${MIN}css`);
 
-  resHtml.legacyScripts.add(`${url}/lib/codemirror.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/lib/codemirror.${MIN}js`);
 
-  resHtml.legacyScripts.add(`${url}/addon/hint/show-hint.${min}js`);
-  resHtml.styles.add(`${url}/addon/hint/show-hint.${min}css`);
-  resHtml.legacyScripts.add(`${url}/addon/hint/javascript-hint.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/hint/show-hint.${MIN}js`);
+  resHtml.styles.add(`${CDN}/addon/hint/show-hint.${MIN}css`);
+  resHtml.legacyScripts.add(`${CDN}/addon/hint/javascript-hint.${MIN}js`);
 
-  resHtml.legacyScripts.add(`${url}/addon/scroll/annotatescrollbar.${min}js`);
-  resHtml.legacyScripts.add(`${url}/addon/search/matchesonscrollbar.${min}js`);
-  resHtml.legacyScripts.add(`${url}/addon/search/searchcursor.${min}js`);
-  resHtml.legacyScripts.add(`${url}/addon/search/match-highlighter.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/scroll/annotatescrollbar.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/search/matchesonscrollbar.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/search/searchcursor.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/search/match-highlighter.${MIN}js`);
 
-  resHtml.legacyScripts.add(`${url}/addon/fold/xml-fold.${min}js`);
-  resHtml.legacyScripts.add(`${url}/addon/edit/matchtags.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/fold/xml-fold.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/edit/matchtags.${MIN}js`);
 
-  resHtml.legacyScripts.add(`${url}/addon/edit/trailingspace.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/addon/edit/trailingspace.${MIN}js`);
 
-  resHtml.legacyScripts.add(`${url}/mode/xml/xml.${min}js`);
-  resHtml.legacyScripts.add(`${url}/mode/javascript/javascript.${min}js`);
-  resHtml.legacyScripts.add(`${url}/mode/css/css.${min}js`);
-  resHtml.legacyScripts.add(`${url}/mode/clike/clike.${min}js`);
-  resHtml.legacyScripts.add(`${url}/mode/php/php.${min}js`);
-  resHtml.legacyScripts.add(`${url}/mode/htmlmixed/htmlmixed.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/mode/xml/xml.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/mode/javascript/javascript.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/mode/css/css.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/mode/clike/clike.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/mode/php/php.${MIN}js`);
+  resHtml.legacyScripts.add(`${CDN}/mode/htmlmixed/htmlmixed.${MIN}js`);
 
-  resHtml.legacyScripts.add(`${url}/keymap/sublime.${min}js`);
+  resHtml.legacyScripts.add(`${CDN}/keymap/sublime.${MIN}js`);
 
   resHtml.scripts.add(ctx.req.moduleUrl + "fileEditor/pub/main.mjs");
   resHtml.styles.add(ctx.req.moduleUrl + "fileEditor/pub/main.css");
@@ -51,11 +51,7 @@ export default async function codemirrorView(file: string): Promise<string> {
 
   const mime = extToCodeMirrorMime(file.replace(/.*\.([^.]+)/, "$1"));
 
-  let isWritable = false;
-  try {
-    await nodeFs.access(file, fsConstants.W_OK);
-    isWritable = true;
-  } catch { /* not writable */ }
+  const isWritable = await nodeFs.access(file, fsConstants.W_OK).then(() => true).catch(() => false);
 
   const content = await Deno.readTextFile(file);
   const line = ctx.req.query.line ?? "";

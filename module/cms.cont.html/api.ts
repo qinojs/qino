@@ -4,7 +4,7 @@ import { codeFiles } from "./codeFiles.ts";
 
 const content = s.object({ content: s.string().describe("Complete file content") });
 const rendered = s.string().describe("Rendered HTML of the node after saving");
-const nodeWrite = {
+const NODE_WRITE = {
   access: Access.USER,
   guard: ({ node }: { node: Node }, ctx: Ctx) => node.access(ctx.user).then((access) => access >= 2),
 };
@@ -12,7 +12,7 @@ const nodeWrite = {
 const codeFile = (key: "src" | "css" | "js", label: string) => ({
   get: {
     description: `Read the ${label} source of a cms.cont.html node`,
-    ...nodeWrite,
+    ...NODE_WRITE,
     output: content,
     execute: async ({ node }: { node: Node }) => {
       const value = await Deno.readTextFile(codeFiles(node)[key]).catch((e) => {
@@ -24,14 +24,14 @@ const codeFile = (key: "src" | "css" | "js", label: string) => ({
   },
   put: {
     description: `Replace or create the ${label} source of a cms.cont.html node and return its rendered HTML`,
-    ...nodeWrite,
+    ...NODE_WRITE,
     input: content,
     output: rendered,
     execute: async ({ node, content }: { node: Node; content: string }) => {
       const files = codeFiles(node);
       await Deno.mkdir(`${node.module!.data}pub/`, { recursive: true });
       await Deno.writeTextFile(files[key], content);
-      return String(await node.html()); // tobi: macht es sinn bei einem css/js file die node.html zu rendern? oder ist das nur token-verbrauch?
+      return String(await node.html()); // tobi: does rendering node.html() for a CSS/JS file make sense, or does it only waste tokens?
     },
   },
 });

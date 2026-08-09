@@ -52,9 +52,7 @@ c1.scrollSync = {
   },
   reevaluate(win){
     for (const el of win.document.querySelectorAll('*')) {
-      if (el.scrollTop || el.scrollLeft) {
-        this._elementConfig(el);
-      }
+      if (el.scrollTop || el.scrollLeft) this._elementConfig(el);
     }
   },
   getConfig(win){

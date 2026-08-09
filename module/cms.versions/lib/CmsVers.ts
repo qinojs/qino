@@ -6,10 +6,10 @@ import { cms, type Node } from "../../cms/mod.ts";
 
 // ─── Per-request state: the cms-selected space/log (draftmode/request params) ─
 
-export interface CmsVersState {
+export type CmsVersState = {
     space: number;
     log: number;
-}
+};
 
 const STATE_KEY = "cms.versions";
 

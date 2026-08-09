@@ -55,7 +55,7 @@ async function tableIndexes(db: Db, table: string) {
     return [...indexes.values()];
   }
   const rows = await db.query`PRAGMA index_list(${sql.id(table)})`;
-  return await Promise.all(rows.map(async (row) => {
+  return Promise.all(rows.map(async (row) => {
     const name = String(row.name);
     const fields = (await db.query`PRAGMA index_info(${sql.id(name)})`).sort((a, b) => Number(a.seqno) - Number(b.seqno)).map((field) => String(field.name));
     return {

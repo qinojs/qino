@@ -1,24 +1,24 @@
-const startTag = /^<([\w\:\-]+)((?:\s+[\w\:\-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
-  endTag = /^<\/([\w\:\-]+)[^>]*>/,
-  attr = /([\w\:\-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
+const START_TAG = /^<([\w\:\-]+)((?:\s+[\w\:\-]+(?:\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))?)*)\s*(\/?)>/,
+  END_TAG = /^<\/([\w\:\-]+)[^>]*>/,
+  ATTR = /([\w\:\-]+)(?:\s*=\s*(?:(?:"((?:\\.|[^"])*)")|(?:'((?:\\.|[^'])*)')|([^>\s]+)))?/g;
 // Empty Elements - HTML 4.01
-const empty = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
+const EMPTY = makeMap("area,base,basefont,br,col,frame,hr,img,input,isindex,link,meta,param,embed");
 
 // Block Elements - HTML 4.01
-const block = makeMap("address,applet,blockquote,button,center,dd,del,dir,div,dl,dt,fieldset,form,frameset,hr,iframe,ins,isindex,li,map,menu,noframes,noscript,object,ol,p,pre,script,table,tbody,td,tfoot,th,thead,tr,ul");
+const BLOCK = makeMap("address,applet,blockquote,button,center,dd,del,dir,div,dl,dt,fieldset,form,frameset,hr,iframe,ins,isindex,li,map,menu,noframes,noscript,object,ol,p,pre,script,table,tbody,td,tfoot,th,thead,tr,ul");
 
 // Inline Elements - HTML 4.01
-const inline = makeMap("a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,object,q,s,samp,script,select,small,span,strike,strong,sub,sup,textarea,tt,u,var");
+const INLINE = makeMap("a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,object,q,s,samp,script,select,small,span,strike,strong,sub,sup,textarea,tt,u,var");
 
 // Elements that you can, intentionally, leave open
 // (and which close themselves)
-const closeSelf = makeMap("colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr");
+const CLOSE_SELF = makeMap("colgroup,dd,dt,li,options,p,td,tfoot,th,thead,tr");
 
 // Attributes that have their values filled in disabled="disabled"
-const fillAttrs = makeMap("checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected");
+const FILL_ATTRS = makeMap("checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected");
 
 // Special Elements (can contain anything)
-const special = makeMap("script,style");
+const SPECIAL = makeMap("script,style");
 
 const HTMLParser  = function(html, handler) {
   let index, chars, match, last = html;
@@ -32,7 +32,7 @@ const HTMLParser  = function(html, handler) {
     chars = true;
 
     // Make sure we're not in a script or style element
-    if (!stack.last() || !special[ stack.last() ]) {
+    if (!stack.last() || !SPECIAL[ stack.last() ]) {
 
       // Comment
       if (html.indexOf("<!--") === 0) {
@@ -48,24 +48,24 @@ const HTMLParser  = function(html, handler) {
       // end tag
       } else if (html.indexOf("</") === 0) {
         //$log("HTMLParser: endtag ");
-        match = html.match( endTag );
+        match = html.match( END_TAG );
 
         if (match) {
           //$log("HTMLParser: endtag match : "+match[0]);
           html = html.substring( match[0].length );
-          match[0].replace( endTag, parseEndTag );
+          match[0].replace( END_TAG, parseEndTag );
           chars = false;
         }
 
       // start tag
       } else if (html.indexOf("<") === 0) {
         //$log("HTMLParser: starttag ");
-        match = html.match( startTag );
+        match = html.match( START_TAG );
 
         if (match) {
           //$log("HTMLParser: starttag match : "+match[0]);
           html = html.substring( match[0].length );
-          match[0].replace( startTag, parseStartTag );
+          match[0].replace( START_TAG, parseStartTag );
           chars = false;
         }
       }
@@ -102,17 +102,15 @@ const HTMLParser  = function(html, handler) {
 
   function parseStartTag(_tag, tagName, rest, unary) {
     tagName = tagName.toLowerCase();
-    if (block[ tagName ]) {
-      while ( stack.last() && inline[ stack.last() ]) {
+    if (BLOCK[ tagName ]) {
+      while ( stack.last() && INLINE[ stack.last() ]) {
         parseEndTag('', stack.last());
       }
     }
 
-    if (closeSelf[ tagName ] && stack.last() == tagName) {
-      parseEndTag('', tagName);
-    }
+    if (CLOSE_SELF[ tagName ] && stack.last() == tagName) parseEndTag('', tagName);
 
-    unary = empty[ tagName ] || !!unary;
+    unary = EMPTY[ tagName ] || !!unary;
 
     if (!unary )
       stack.push( tagName );
@@ -120,8 +118,8 @@ const HTMLParser  = function(html, handler) {
     if (handler.start) {
       const attrs = [];
 
-      rest.replace(attr, function(_match, name) {
-        const value = arguments[2] || arguments[3] || arguments[4] || (fillAttrs[name] ? name : "");
+      rest.replace(ATTR, function(_match, name) {
+        const value = arguments[2] || arguments[3] || arguments[4] || (FILL_ATTRS[name] ? name : "");
 
         attrs.push({
           name: name,
@@ -146,9 +144,7 @@ const HTMLParser  = function(html, handler) {
     // Find the closest opened tag of the same type
       for (pos = stack.length - 1; pos >= 0; pos--) {
         //$log("parseEndTag : "+stack[ pos ] );
-        if (stack[ pos ] == tagName) {
-          break;
-        }
+        if (stack[ pos ] == tagName) break;
       }
     }
     if (pos >= 0) {

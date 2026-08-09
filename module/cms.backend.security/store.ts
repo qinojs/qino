@@ -19,14 +19,13 @@ export async function settings(app: App): Promise<SecuritySettings> {
   const result: Record<string, unknown> = {};
   for (const [key, meta] of Object.entries(settingsSchema.properties)) {
     const raw = await s[key];
-    if (meta.type === "boolean") {
+    if (meta.type === "boolean")
       result[key] = raw != null && raw !== "" ? raw === true || raw === "true" || raw === "1" : meta.default;
-    } else if (meta.type === "integer") {
+    else if (meta.type === "integer") {
       const n = Number(raw);
       result[key] = (raw != null && raw !== "" && !isNaN(n)) ? n : meta.default;
-    } else {
+    } else
       result[key] = (raw != null && raw !== "") ? String(raw) : meta.default;
-    }
   }
   return result as SecuritySettings;
 }

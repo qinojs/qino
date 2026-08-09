@@ -24,19 +24,19 @@ async function makeDb(): Promise<Db> {
 const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
   Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
 
-interface CtxInit {
+type CtxInit = {
   path: string;
   query?: Record<string, string>;
   form?: Record<string, string>;
   json?: unknown;
   userId?: number;
-}
+};
 
-async function makeCtx(db: Db, init: CtxInit): Promise<Ctx> {
+function makeCtx(db: Db, init: CtxInit): Promise<Ctx> {
   const url = new URL("http://qino.test/" + init.path);
   for (const [k, v] of Object.entries(init.query ?? {})) url.searchParams.set(k, v);
   let csrf = "csrf-test";
-  return await testContext({
+  return testContext({
     url: url.href,
     method: init.form || init.json !== undefined ? "POST" : "GET",
     body: init.json !== undefined ? JSON.stringify(init.json) : init.form ? new URLSearchParams(init.form) : undefined,

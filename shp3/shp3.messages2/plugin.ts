@@ -94,7 +94,7 @@ async function addresses(app: App, order: Order) {
     [order.$get(`${side}_country`), order.$get(`${side}_zip`), order.$get(`${side}_city`)].filter(Boolean).join(" "),
     order.$get(`${side}_phone`),
     order.$get(`${side}_email`),
-  ].filter(Boolean).map((line) => hee(String(line))).join("<br>");
+  ].filter(Boolean).map((line) => hee(line)).join("<br>");
 
   const bill = block("bill");
   if (!bill) return "";

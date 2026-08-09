@@ -6,7 +6,7 @@ if (!customElements.get(TAG)) customElements.define(TAG, class extends HTMLEleme
 
 // Shared CMS chrome (buttons, inputs, --cms-* tokens, icon font) loaded into the
 // shadow root, so the editor is styled consistently but isolated from the website.
-const styleHrefs = [
+const STYLE_HREFS = [
   import.meta.resolve('@qino/u2/css/norm/norm.css'),
   import.meta.resolve('@qino/u2/css/base/base.css'),
   'cms/pub/css/ui.css',
@@ -14,7 +14,7 @@ const styleHrefs = [
 
 // Full-screen layout; overrides ui.css's centered-box dialog rule (`:host dialog`),
 // hence the higher-specificity `dialog.qgCMS` selectors.
-const baseCss = `
+const BASE_CSS = `
 dialog.qgCMS {
     position: fixed;
     inset: 0;
@@ -40,11 +40,11 @@ export class FullScreenDialog {
     constructor() {
       this.#host = document.createElement(TAG);
       this.#shadow = this.#host.attachShadow({ mode: 'open' });
-      for (const href of styleHrefs) {
+      for (const href of STYLE_HREFS) {
         const url = /^https?:/.test(href) ? href : ctx.moduleUrl + href;
         this.#shadow.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: url }));
       }
-      this.#shadow.append(Object.assign(document.createElement('style'), { textContent: baseCss }));
+      this.#shadow.append(Object.assign(document.createElement('style'), { textContent: BASE_CSS }));
 
       this.#dialog = document.createElement('dialog');
       this.#dialog.className = 'qgCMS';

@@ -158,7 +158,7 @@ export async function saveClient(app: App, c: { id: string; name?: string; redir
 /** Remove a client together with every token ever issued to it. */
 export async function deleteClient(app: App, id: string): Promise<boolean> {
   await app.db.exec`DELETE FROM oauth_token WHERE client_id = ${id}`;
-  return await app.db.table("oauth_client").delete(id);
+  return app.db.table("oauth_client").delete(id);
 }
 
 /** Loopback may use http; everything else must be https, and no fragment (RFC 8252). */

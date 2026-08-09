@@ -103,14 +103,10 @@ globalThis.qgSelection = {
 // if contenteditable inside a link, test https://jsfiddle.net/k4ozdem1/5/
 document.addEventListener('click', e=>{
   if (e.button !== 0) return;
-  if (e.target.isContentEditable) {
-    e.preventDefault();
-  }
+  if (e.target.isContentEditable) e.preventDefault();
   // keyboard click firefox
   try { // on date-inputs explicitOriginalTarget fails because its internal, ignore it
-    if (e.explicitOriginalTarget?.isContentEditable) {
-      e.preventDefault();
-    }
+    if (e.explicitOriginalTarget?.isContentEditable) e.preventDefault();
   } catch { /* ignore */ }
 });
 // prevent (Firefox) placing cursor incorrectly
@@ -233,12 +229,12 @@ document.addEventListener('mousedown', e=>{
     e.preventDefault();
     e.stopPropagation();
   };
-  const itemCss = ';position:absolute; background-color:#fff; border:1px solid black; height:12px; width:12px; box-sizing:border-box';
+  const ITEM_CSS = ';position:absolute; background-color:#fff; border:1px solid black; height:12px; width:12px; box-sizing:border-box';
   const cont = c1.dom.fragment(
     '<div style="position:absolute; top:0; left:0; width:100%; height:0">'+
-    '<div class=-x  style="cursor:e-resize '+itemCss+'"></div>'+
-    '<div class=-y  style="cursor:s-resize '+itemCss+'"></div>'+
-    '<div class=-xy style="cursor:se-resize'+itemCss+'" title="press ctrl to disable aspect ratio"></div>'+
+    '<div class=-x  style="cursor:e-resize '+ITEM_CSS+'"></div>'+
+    '<div class=-y  style="cursor:s-resize '+ITEM_CSS+'"></div>'+
+    '<div class=-xy style="cursor:se-resize'+ITEM_CSS+'" title="press ctrl to disable aspect ratio"></div>'+
     '<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 .1875rem; font-size:11px; color:#333; padding:.125rem .25rem; border-radius:.125rem"></div>'+
   '</div>').firstChild;
   const x  = find(cont, '>.-x');
@@ -313,7 +309,5 @@ document.addEventListener('input',e=>{
   if (!last || last.tagName !== 'BR') return;
   last.after(' ');
   last.remove();
-  if (e.target.lastChild == e.target.firstChild) {
-    e.target.lastChild.remove();
-  }
+  if (e.target.lastChild == e.target.firstChild) e.target.lastChild.remove();
 });

@@ -214,7 +214,7 @@ export async function itemReadDeep(item: any): Promise<unknown> {
 }
 
 /** Apply schema defaults and type coercion on item.js get event. */
-// tobi: Schema-Defaults gelten nur für Items, die es gibt. handlungsbedarf?
+// tobi: Schema defaults apply only to existing items. Do we need to act on this?
 // deno-lint-ignore no-explicit-any
 function itemGetIn(e: any): void {
   const schema = e.target.schema;
@@ -222,11 +222,10 @@ function itemGetIn(e: any): void {
   if (e.value == null || typeof e.value === 'object' || !schema?.type) return;
 
   const num = Number(e.value);
-  if ((schema.type === 'integer' || schema.type === 'number') && !Number.isNaN(num)) {
+  if ((schema.type === 'integer' || schema.type === 'number') && !Number.isNaN(num))
     e.value = num;
-  } else if (schema.type === 'boolean') {
+  else if (schema.type === 'boolean')
     e.value = typeof e.value === 'string' ? !['false', '0', ''].includes(e.value) : !!e.value;
-  }
 }
 
 /** Enable schema-driven defaults on an item.js Item (attach listener for getIn events). */

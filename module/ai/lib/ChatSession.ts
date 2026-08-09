@@ -177,12 +177,12 @@ export class ChatSession {
   }
 }
 
-interface ToolCall {
+type ToolCall = {
   id?: string;
   index?: number;
   type?: string;
   function?: { name?: string; arguments?: string };
-}
+};
 
 function rowToMessage(row: Record<string, unknown>): Msg {
   const msg: Msg = { role: row.role, content: row.content ?? "" };

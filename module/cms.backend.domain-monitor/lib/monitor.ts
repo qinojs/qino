@@ -236,7 +236,7 @@ export async function addDomains(app: App, list: string): Promise<string[]> {
 
 export async function rowsFor(app: App, domains: string[]): Promise<DomainRow[]> {
   if (!domains.length) return [];
-  return await app.db.query<DomainRow>`SELECT * FROM monitor_domain WHERE domain IN (${sql.join(domains.map((domain) => sql`${domain}`), ",")})`;
+  return app.db.query<DomainRow>`SELECT * FROM monitor_domain WHERE domain IN (${sql.join(domains.map((domain) => sql`${domain}`), ",")})`;
 }
 
 export async function setFrequency(app: App, domains: string[], frequency: string): Promise<void> {

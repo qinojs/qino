@@ -11,7 +11,7 @@ export const comparer = {
     if (div) return;
     const html = `
         <div id=qgCmsVersionComparer class=qgCMS popover=manual>
-            <style>${css}</style>
+            <style>${CSS}</style>
             <div class=-tools>
                 <div style="flex:1 0 12.5rem">
                     <button class=-mode-side>Switch view</button>
@@ -110,7 +110,7 @@ export const comparer = {
   setSecond(space, log) { iframe2.src = frameSrc(space, log); }
 };
 
-const css = `
+const CSS = `
 #qgCmsVersionComparer {
     position:fixed;
     inset:0;

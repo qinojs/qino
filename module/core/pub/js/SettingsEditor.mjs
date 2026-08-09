@@ -5,8 +5,8 @@ const opened = new Set();
 export const itemJs = import("@qino/item/item.js");
 const itemJsHtmlRenderer = import("@qino/item/tools/schema/render/html.js").then((mod) => mod.toInput);
 
-const escapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
-const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => escapes[c]);
+const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
+const escapeHtml = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ESCAPES[c]);
 
 const apiPath = (endpoint) => {
   const [ns, name, ...path] = endpoint.replace(/^\/api\//, "").split("/").filter(Boolean);

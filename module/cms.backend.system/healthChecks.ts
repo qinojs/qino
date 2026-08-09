@@ -108,9 +108,9 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   // ── orphaned settings ────────────────────────────────────────────────────
   const installedModules = app.modules.all();
-  const skipModules = new Set(["app1", "client1", "m", "qg"]);
+  const SKIP_MODULES = new Set(["app1", "client1", "m", "qg"]);
   for (const module of Object.keys(settings)) {
-    if (skipModules.has(module) || installedModules[module]) continue;
+    if (SKIP_MODULES.has(module) || installedModules[module]) continue;
     notice[`settings needed :${module}`] = () => ({
       info: "did you deinstall the module?",
       solutions: { delete: { solve: () => { delete settings[module]; } } },
@@ -119,7 +119,7 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
 
   // ── cache cleanup ────────────────────────────────────────────────────────
   const cacheDir = app.appPATH + "cache/";
-  const twoDays  = 60 * 60 * 24 * 2 * 1000;
+  const TWO_DAYS = 60 * 60 * 24 * 2 * 1000;
 
   async function countCacheFiles(dir: string, maxAge: number): Promise<number> {
     let i = 0;
@@ -153,12 +153,12 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   const kb = (bytes: number) => (bytes / 1000).toFixed(1) + " kb cleaned";
 
   cleanup["delete cache"] = async () => {
-    if (await countCacheFiles(cacheDir, twoDays) < 100) return;
+    if (await countCacheFiles(cacheDir, TWO_DAYS) < 100) return;
     return {
       info: "100+ files",
       solutions: {
-        all:          { solve: async () => kb(await deleteCacheFiles(cacheDir,             twoDays)) },
-        "temp files": { solve: async () => kb(await deleteCacheFiles(app.appPATH + "tmp/", twoDays)) },
+        all:          { solve: async () => kb(await deleteCacheFiles(cacheDir,             TWO_DAYS)) },
+        "temp files": { solve: async () => kb(await deleteCacheFiles(app.appPATH + "tmp/", TWO_DAYS)) },
       },
     };
   };

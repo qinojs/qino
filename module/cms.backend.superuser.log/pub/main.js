@@ -19,9 +19,7 @@ cms.initNode("backend.superuser.log", (el) => {
     if (tool) {
       tool.style.cssText = "opacity:.5; pointer-events:none";
       cms.reloadNode(nid, { do: tool.dataset.tool, data: Object.fromEntries(new FormData(tool)) });
-    } else if (e.target.closest("[data-filter]")) {
-      reloadList();
-    }
+    } else if (e.target.closest("[data-filter]")) reloadList();
   });
 
   // optimize button (no form)

@@ -3,8 +3,8 @@ import { mysql, postgres, type Pool, mysqlDialect, pgDialect, sqliteDialect, sch
 import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export interface ExecResult { insertId: number; affectedRows: number; }
-export interface MigrateOptions { patch?: boolean; force?: boolean; }
+export type ExecResult = { insertId: number; affectedRows: number };
+export type MigrateOptions = { patch?: boolean; force?: boolean };
 export type DbDialect = "mysql" | "postgres" | "sqlite";
 export type Row = Record<string, any>;
 

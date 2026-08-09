@@ -56,9 +56,8 @@ export class DbEntry {
   }
 
   #ensureEid(): void {
-    if (this.#eid === undefined && this.table.fields && Object.keys(this.#vs).length) {
+    if (this.#eid === undefined && this.table.fields && Object.keys(this.#vs).length)
       this.#eid = this.table.entryId(this.#vs) || undefined;
-    }
   }
 
   async values(): Promise<Record<string, any>> {

@@ -85,8 +85,8 @@ async function installTx(app: App): Promise<void> {
   }
   // Superuser
   if (!await db.one`SELECT id FROM usr WHERE superuser = ${true}`) {
-    const pwChars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
-    const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => pwChars[b % pwChars.length]).join("");
+    const PW_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!#$%&";
+    const suPw = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => PW_CHARS[b % PW_CHARS.length]).join("");
     await db.table('usr').insert({ email: 'su', pw: await pwHash(suPw), superuser: true, active: true, firstname: 'Superuser', lastname: 'Superuser' });
     console.log(`\n\x1b[33m[qino] Superuser created — email: su  password: ${suPw}\x1b[0m\n`);
   }

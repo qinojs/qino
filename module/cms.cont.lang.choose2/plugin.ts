@@ -4,7 +4,7 @@ import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 export const name = "cms.cont.lang.choose2";
 export const description = "Language links or selection menu.";
 
-const long: Record<string, string> = {
+const LANG_NAMES: Record<string, string> = {
   de: "Deutsch",
   fr: "Français",
   en: "English",
@@ -53,7 +53,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   if (type === "select") {
     const options = await Promise.all(langs.map(async (l) => {
-      const label = longText ? (long[l] ?? l) : l;
+      const label = longText ? (LANG_NAMES[l] ?? l) : l;
       const selected = l === ctx.lang ? " selected" : "";
       return html`<option${selected} value="${await page.url(l)}" lang="${l}" class="-${l}">${label}`;
     }));
@@ -65,9 +65,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     if (hideActive && l === ctx.lang) return "";
     const isActive = l === ctx.lang;
     const cls = [`-${l}`, isActive ? "-active" : ""].filter(Boolean).join(" ");
-    const ariaLabel = !longText ? html` aria-label="${long[l] ?? l}"` : "";
+    const ariaLabel = !longText ? html` aria-label="${LANG_NAMES[l] ?? l}"` : "";
     const ariaCurrent = isActive ? html.raw(" aria-current=page") : "";
-    const label = longText ? (long[l] ?? l) : l;
+    const label = longText ? (LANG_NAMES[l] ?? l) : l;
     return html`<li><a href="${await page.url(l)}" onclick="event.preventDefault();location.href=this.href+location.hash" class="${cls}" lang="${l}" hreflang="${l}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
   }));
 
