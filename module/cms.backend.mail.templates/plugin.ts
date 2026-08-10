@@ -144,18 +144,11 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
   }
 
   const manager = mail(app);
-  const previewHtml = row.html && await manager.renderTemplate(row.name, {
-    app,
-    mail: manager.build(),
-    main: `<p>${hee(await t`Mail content`)}</p>`,
-    data: {},
-  });
-  const preview = previewHtml
-    ? html`<iframe sandbox srcdoc="${previewHtml}" class=-preview-frame></iframe>`
-    : await html.async`<em>${t`No content yet.`}</em>`;
+  const main = `<p>${hee(await t`Mail content`)}</p>`;
+  const previewHtml = await manager.renderTemplate(row.name, { app, mail: manager.build(), main, data: {} });
 
   return html.async`<div class=u2-flex>
-  <div class=u2-card style="flex:1 1 37.5rem">
+  <div class=u2-card style="flex:0 1 60rem">
     <div class=-head>${row.name}</div>
     <div class=-body>
       ${message}
@@ -171,25 +164,34 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
           <tr>
             <th>${t`Default subject`}
             <td><input name=subject value="${row.subject}" style="width:100%" placeholder="${t`optional`}">
-          <tr>
-            <th>${t`HTML`}
-            <td>
-              <textarea name=html class=-body-editor>${row.html}</textarea>
-              <small>${t`Insert the mail content with {{main}}. Other {{name}} markers use mail data and are HTML-escaped.`}</small>
-          <tr>
-            <td colspan=2>
-              <div class=-actions>
-                <button name=save>${t`Save`}</button>
-                <button name=delete type=submit formnovalidate u2-confirm="${t`Really delete this template?`}">${t`Delete`}</button>
-                <a href="${back.search}">${t`Back`}</a>
-              </div>
         </table>
+        <h4>${t`HTML`}</h4>
+
+        <u2-code style="font-size:11px; box-shadow:var(--shadow); padding:.5rem">
+          <textarea name=html class=-body-editor>${row.html}</textarea>
+        </u2-code>
+
+        <small>${t`Insert the mail content with {{main}}. Other {{name}} markers use mail data and are HTML-escaped.`}</small>
+
+        <div class=-actions>
+          <button name=save>${t`Save`}</button>
+          <button name=delete type=submit formnovalidate u2-confirm="${t`Really delete this template?`}">${t`Delete`}</button>
+          <a href="${back.search}">${t`Back`}</a>
+        </div>
+
       </form>
     </div>
   </div>
   <div class=u2-card style="flex:1 1 25rem">
     <div class=-head>${t`Preview`}</div>
-    <div style="padding:0">${preview}</div>
+    <div>
+      <label>${t`Mail client`} <select class=-client></select></label>
+      <div class=-notes></div>
+    </div>
+    <div class=-preview data-main="${main}">
+      <iframe sandbox srcdoc="${previewHtml}" class=-preview-frame></iframe>
+    </div>
+    <div class=-report></div>
   </div>
 </div>`;
 }
@@ -206,6 +208,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
 export const cms = {
   node: {
     css: ["pub/main.css"],
+    js: ["pub/main.js"],
     render,
   },
 };
