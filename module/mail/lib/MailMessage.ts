@@ -1,7 +1,7 @@
 import { basename, extname } from "node:path";
 import { typeByExtension } from "@std/media-types";
 import { hee, unixTime } from "../../core/mod.ts";
-import { addressOf, attachmentOf, clean, formatAddress, htmlToText, importUpyo, jsonDecode, jsonEncode, listOf, mergeHeaders, renderMarkers, sha1 } from "./helpers.ts";
+import { addressOf, attachmentOf, clean, formatAddress, htmlToText, importUpyo, jsonDecode, jsonEncode, listOf, mergeHeaders, renderMarkers, sha1, textToHtml } from "./helpers.ts";
 import type { MailManager } from "./MailManager.ts";
 import type { AddressInput, AttachmentInput, Dict, MailDefaults, Recipient, RecipientType, SendReceipt, Template, UserInput } from "./types.ts";
 
@@ -181,7 +181,9 @@ export class MailMessage {
 
     for (const recipient of recipients) {
       const data = { ...this.data, ...recipient.data };
-      const html = this.html || this.body ? await this.getHtml(recipient, data) : "";
+      const html = this.html || this.body || (this.text && this.template !== undefined)
+        ? await this.getHtml(recipient, data)
+        : "";
       const text = this.getText(html, data);
       const headers = mergeHeaders(this.headers, { "X-Qino-Mail": "mail" });
       if (debugTo) headers.set("X-Qino-Original-Recipient", recipient.address);
@@ -240,7 +242,7 @@ export class MailMessage {
   }
 
   async getHtml(recipient?: Recipient, data: Dict = {}): Promise<string> {
-    const main = renderMarkers(this.html || this.body, data);
+    const main = renderMarkers(this.html || this.body || textToHtml(this.text), data);
     const html = this.template === undefined
       ? main
       : await this.manager.renderTemplate(this.template, { app: this.manager.app, mail: this, main, data, recipient });

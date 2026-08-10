@@ -22,7 +22,6 @@ async function app() {
   await db.loadTables();
   return {
     db,
-    settings: { ticket: { _secret: "test-secret" } },
     modules: { all: () => ({ test: { name: "test", plugin: { tickets: kinds } } }), linked: () => true },
     // deno-lint-ignore no-explicit-any
   } as any;

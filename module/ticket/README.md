@@ -47,8 +47,9 @@ redeemed. `uses` is there for a handful of redemptions, not for a permission.
 
 ## Storage
 
-`ticket` — `hash` is the identity: the handle is 32 random bytes and is stored keyed-hashed,
-so a leaked database hands out no working capabilities. `data` is the payload written when the
+`ticket` — `hash` is the identity: the handle is 32 random bytes and is stored hashed, so a
+leaked database hands out no working capabilities. Plain SHA-256, no key: at that entropy
+there is nothing to guess. `data` is the payload written when the
 ticket is issued; `expires` is null only where the kind says so.
 
 Nothing is deleted when it stops working. `uses` is how often it may be redeemed and `used`

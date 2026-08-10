@@ -7,13 +7,6 @@ export const description = "One-time secrets: confirmation links and the actions
 export const needs = ["core", "cron"];
 export { dbSchema };
 
-export const settingsSchema = {
-  properties: {
-    // not made at install: reinstalling would replace it and every outstanding ticket would die
-    _secret: { type: "string", description: "Key the ticket hashes are made with — generated on first use" },
-  },
-};
-
 const YEAR = 365 * 24 * 60 * 60;
 
 // Spent and expired tickets stay as a record of what was handed out; only age removes them.

@@ -142,6 +142,6 @@ export class MailManager {
   async renderTemplate(name: string | Template | undefined, data: TemplateData): Promise<string> {
     const tpl = typeof name === "function" ? name : this.templates[name || "default"];
     if (!tpl) return data.main;
-    return typeof tpl === "function" ? await tpl(data) : renderMarkers(tpl, { ...data.data, main: data.main });
+    return typeof tpl === "function" ? await tpl(data) : renderMarkers(tpl, { ...data.data, main: data.main }, ["main"]);
   }
 }

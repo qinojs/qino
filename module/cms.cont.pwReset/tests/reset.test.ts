@@ -20,7 +20,6 @@ async function app() {
   return {
     db,
     t,
-    settings: { ticket: { _secret: "test-secret" } },
     modules: { all: () => ({ pwReset: { name: "pwReset", plugin } }), linked: () => true },
     // deno-lint-ignore no-explicit-any
   } as any;

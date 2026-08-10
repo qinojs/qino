@@ -46,8 +46,17 @@ function valueAt(data: Dict, path: string): unknown {
   return path.trim().split(".").reduce((v: unknown, key) => (v as Record<string, unknown>)?.[key], data);
 }
 
-export function renderMarkers(tpl: string, data: Dict): string {
-  return tpl.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => hee(valueAt(data, key)));
+export function renderMarkers(tpl: string, data: Dict, raw: Iterable<string> = []): string {
+  const rawKeys = new Set(raw);
+  return tpl.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (_, key) => {
+    key = key.trim();
+    const value = valueAt(data, key);
+    return rawKeys.has(key) ? String(value ?? "") : hee(value);
+  });
+}
+
+export function textToHtml(text: string): string {
+  return hee(text).replace(/\r\n?/g, "\n").replace(/\n/g, "<br>\n");
 }
 
 export function htmlToText(html: string): string {

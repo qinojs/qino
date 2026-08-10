@@ -7,7 +7,7 @@
             "type": "string",
             "maxLength": 43,
             "x-index": "primary",
-            "description": "Keyed hash of the handle; the handle itself exists only in transit"
+            "description": "Hash of the handle, which exists only in transit — a leaked database hands out no working capabilities. Unkeyed on purpose: 32 random bytes leave nothing to guess"
           },
           "purpose": {
             "type": "string",

@@ -1,6 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
 import { mail } from "../mail/mod.ts";
-import { getCtx, html, type HtmlString, unixTime, type App } from "../core/mod.ts";
+import { getCtx, hee, html, type HtmlString, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
@@ -143,8 +143,15 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
     }
   }
 
-  const preview = row.html
-    ? html`<iframe sandbox srcdoc="${row.html}" class=-preview-frame></iframe>`
+  const manager = mail(app);
+  const previewHtml = row.html && await manager.renderTemplate(row.name, {
+    app,
+    mail: manager.build(),
+    main: `<p>${hee(await t`Mail content`)}</p>`,
+    data: {},
+  });
+  const preview = previewHtml
+    ? html`<iframe sandbox srcdoc="${previewHtml}" class=-preview-frame></iframe>`
     : await html.async`<em>${t`No content yet.`}</em>`;
 
   return html.async`<div class=u2-flex>
@@ -166,7 +173,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
             <td><input name=subject value="${row.subject}" style="width:100%" placeholder="${t`optional`}">
           <tr>
             <th>${t`HTML`}
-            <td><textarea name=html class=-body-editor>${row.html}</textarea>
+            <td>
+              <textarea name=html class=-body-editor>${row.html}</textarea>
+              <small>${t`Insert the mail content with {{main}}. Other {{name}} markers use mail data and are HTML-escaped.`}</small>
           <tr>
             <td colspan=2>
               <div class=-actions>
