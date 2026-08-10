@@ -40,7 +40,7 @@ export const clients = {
     width: 600,
     mso: 16,
     drop: [...g('fx', 'layout', 'sizing', 'bgImage'), 'letter-spacing', 'text-overflow', 'word-break', 'white-space'],
-    dropIf: [[/^display$/, /flex|grid|inline-block|table-cell/]],
+    dropIf: [[/^display$/, /flex|grid|inline-block|table-cell/], [/^background$/, /url\(|gradient\(/]],
     dropAt: /media|supports|font-face|keyframes|import|container|layer/,
     dropSelector: /[:[>~+]/,
     dropEl: /^(svg|canvas)$/,
@@ -132,40 +132,44 @@ const parseDeclarations = css => {
   return scratch.cssRules[0].style;
 };
 
-const dropMaps = new WeakMap();
-/** Longhand -> dropped entry, because the CSSOM enumerates a shorthand as its longhands. */
-const dropMap = c => {
-  let map = dropMaps.get(c);
-  if (!map) {
-    map = new Map();
-    for (const p of c.drop ?? []) {
-      map.set(p, p);
-      for (const longhand of parseDeclarations(`${p}: initial`)) map.set(longhand, p);
-    }
-    dropMaps.set(c, map);
+const expander = new CSSStyleSheet();
+const longhandCache = new Map();
+/** The longhands a property expands to, the property itself if it is one. */
+const longhands = prop => {
+  let list = longhandCache.get(prop);
+  if (!list) {
+    expander.replaceSync(`x{${prop}: initial}`);
+    longhandCache.set(prop, list = [...expander.cssRules[0].style]);
   }
-  return map;
+  return list;
 };
 
-const dropped = (prop, c) => dropMap(c).get(prop) ?? c.drop?.find(p => prop.startsWith(p + '-'));
+const dropSets = new WeakMap();
+/** The dropped entries plus their longhands, since a client ignores a shorthand part by part. */
+const dropSet = c => {
+  let set = dropSets.get(c);
+  if (!set) dropSets.set(c, set = new Set((c.drop ?? []).flatMap(p => [p, ...longhands(p)])));
+  return set;
+};
+
+const inDrop = (prop, c) => dropSet(c).has(prop) || !!c.drop?.some(p => prop.startsWith(p + '-'));
 
 const reason = (prop, value, c) =>
   c.noVars && (prop.startsWith('--') || value.includes('var(')) ? 'CSS variables are not supported' :
-  dropped(prop, c) ? 'property is ignored' :
+  inDrop(prop, c) ? 'property is ignored' :
   c.dropIf?.some(([p, v]) => p.test(prop) && v.test(value)) ? 'value is not supported' : null;
 
+// cssText keeps shorthands, so this is what the author wrote, not what the CSSOM expands it to
+const written = style => [...style.cssText.matchAll(/(?:^|;)\s*([-\w]+)\s*:\s*([^;]*)/g)].map(m => [m[1].toLowerCase(), m[2].trim()]);
+
 const cleanStyle = (style, c, where, log) => {
-  const seen = new Set();
-  // read first: removing one longhand makes the CSSOM expand the rest of its shorthand
-  for (const [prop, value] of [...style].map(p => [p, style.getPropertyValue(p)])) {
-    if (value === 'initial') continue; // part of a shorthand the author never set
+  for (const [prop, value] of written(style)) {
     const why = reason(prop, value, c);
     if (!why) continue;
-    style.removeProperty(prop);
-    const name = dropped(prop, c) ?? prop; // report the shorthand once, not every longhand
-    if (seen.has(name)) continue;
-    seen.add(name);
-    log('warn', where, `${name}: ${value}`, why);
+    // of a shorthand only the ignored parts go, so `background: url(x) #fff` keeps its colour
+    const parts = longhands(prop).filter(p => inDrop(p, c));
+    for (const part of parts.length ? parts : [prop]) style.removeProperty(part);
+    log('warn', where, `${prop}: ${value}`, why);
   }
   return style.cssText;
 };
