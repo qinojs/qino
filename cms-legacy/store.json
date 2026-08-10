@@ -1,5 +1,12 @@
 {
   "modules": {
-    "cms.layout.custom.6": {}
+    "cms.layout.custom.6": {},
+    "cms.layout.custom.7": {},
+    "cms.cont.nav2": {},
+    "cms.cont.section3": {},
+    "cms.cont.video.section.cd": {},
+    "cms.cont.cd.boxes": {},
+    "cms.cont.cd.services_links": {},
+    "cms.legacy.c1": {}
   }
 }

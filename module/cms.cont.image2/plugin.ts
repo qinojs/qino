@@ -64,7 +64,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (node.edit) {
     editHtml = await html.async`
         <div class="-alt-edit qgCMS">
-            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${text}">
+            <input placeholder="${node.app.t`Alt text (screen reader / SEO)`}" cmstxt=${text.id} value="${String(text)}">
         </div>
         <style>
         [qcms-mod="cont.image2"] img { min-height:4em; }

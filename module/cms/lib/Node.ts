@@ -343,6 +343,7 @@ export class Node {
             lang: textLang.lang,
             id: textLang.text.id,
             toString() { return text; },
+            html: () => html.raw(text),
         };
     }
 

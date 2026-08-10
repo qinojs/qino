@@ -1,8 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { sql, type App } from "../../module/core/mod.ts";
+import { $item, sql, type App } from "../../module/core/mod.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
 import { migrateFiles } from "./moveFiles.ts";
+import { migrateCss } from "./migrateCss.ts";
+import { renamedModules } from "./renamedModules.ts";
 
 export const name = "migrate_from_php";
 export const needs = ["core", "cms"];
@@ -13,9 +15,13 @@ export async function install({ app }: { app: App }): Promise<void> {
   const json = await migrateJsonSettings(app);
   await migrateLegacyPageSettings(app);
   await migrateAccessLevels(app);
-  await migrateFiles(app);
+  await migrateFiles(app); // qg/ → data/ first, the css lives there
+  await migrateCss(app); // reads the still-legacy page.module, so before the rename
+  await migrateRenamedModules(app);
 
-  const langsRaw = String(await app.settings.core.langs ?? "");
+  const langsId = await settingId(app, ["core", "langs"]);
+  const langsRaw = String(langsId ? await app.db.one`SELECT value FROM qg_setting WHERE id = ${langsId}` ?? "" : "");
+  app.settings.core.langs[$item].set(langsRaw, { local: true }); // core cached the pre-migration value
   app.languages.setLangs(langsRaw.split(","));
 
   if (moved || json) console.log(`[migrate_from_php] migrated ${moved} app settings, ${json} json settings`);
@@ -30,10 +36,14 @@ const nullableColumns = [["client", "client1_request_json"], ["client", "client1
  *  opens a legacy database — see MIGRATION.md. The rest is repaired here. */
 async function dropLegacyColumns(app: App): Promise<void> {
   for (const [table, column] of dropColumns) {
-    const field = await legacyField(app, table, column);
-    if (!field) continue;
-    await app.db.query`ALTER TABLE ${sql.id(table)} DROP COLUMN ${sql.id(column)}`;
-    console.log(`[migrate_from_php] dropped ${table}.${column}`);
+    // cms.versions mirrors a table column by column, so a leftover in the mirror breaks its
+    // baseline insert ("Unknown column t._cache") — the column has to go from both.
+    for (const t of [table, "_vers_" + table]) {
+      const field = await legacyField(app, t, column);
+      if (!field) continue;
+      await app.db.query`ALTER TABLE ${sql.id(t)} DROP COLUMN ${sql.id(column)}`;
+      console.log(`[migrate_from_php] dropped ${t}.${column}`);
+    }
   }
   // Columns of PHP-only modules (client1, mail1): keep the content for a later port of the module.
   for (const [table, column] of nullableColumns) {
@@ -45,9 +55,39 @@ async function dropLegacyColumns(app: App): Promise<void> {
 }
 
 async function legacyField(app: App, table: string, column: string) {
-  const t = app.db.table(table);
+  let t;
+  try { t = app.db.table(table); } catch { return; } // not every table has a _vers_ mirror
   await t.reloadFields();
   return t.field(column);
+}
+
+/** Point nodes and the frontend setting at the current module names — otherwise the node renders
+ *  empty and the editing frontend never loads. */
+async function migrateRenamedModules(app: App): Promise<void> {
+  for (const [legacy, current] of Object.entries(renamedModules)) {
+    const r = await app.db.exec`UPDATE page SET module = ${current} WHERE module = ${legacy}`;
+    if (r.affectedRows) console.log(`[migrate_from_php] ${r.affectedRows} nodes: ${legacy} → ${current}`);
+  }
+  await moveNodeCode(app);
+
+  const frontend = String(await app.settings.cms.frontend ?? "");
+  const successor = renamedModules[frontend];
+  if (!successor) return;
+  app.settings.cms.frontend(successor);
+  console.log(`[migrate_from_php] cms.frontend ${frontend} → ${successor}`);
+}
+
+/** `cms.cont.phpfile` kept one PHP file per node in qg/cmsPhpFiles/; `cms.cont.ts` expects a .ts
+ *  beside the same id. Move the sources over so they sit where the port has to happen. */
+async function moveNodeCode(app: App): Promise<void> {
+  const from = app.appPATH + "data/cmsPhpFiles/";
+  const to = app.appPATH + "data/cms.cont.ts/";
+  const files = await Array.fromAsync(Deno.readDir(from)).catch(() => []);
+  if (!files.length) return;
+  await Deno.mkdir(to, { recursive: true });
+  for (const file of files) await Deno.rename(from + file.name, to + file.name).catch(() => {});
+  await Deno.remove(from).catch(() => {});
+  console.log(`[migrate_from_php] ${files.length} cmsPhpFiles → data/cms.cont.ts/ (still PHP, port by hand)`);
 }
 
 /** Legacy on/off access flags → cms_access levels: module 1 → 2 (0 keeps the column default 1), grp 1 → 2. */
