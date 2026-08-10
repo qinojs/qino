@@ -153,7 +153,3 @@ export function phoneNumber(input: string): string {
   if (!/^\+[1-9]\d{7,14}$/.test(number)) throw new ApiError(422, "Use an international phone number such as +41791234567");
   return number;
 }
-
-function errMsg(e: unknown): string {
-  return errMsg(e);
-}
