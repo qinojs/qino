@@ -4,6 +4,7 @@ import { $item, sql, type App } from "../../module/core/mod.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
 import { migrateFiles } from "./moveFiles.ts";
 import { migrateCss } from "./migrateCss.ts";
+import { migrateForm1, prepareForm1Settings } from "./migrateForm1.ts";
 import { renamedModules } from "./renamedModules.ts";
 
 export const name = "migrate_from_php";
@@ -13,10 +14,12 @@ export async function install({ app }: { app: App }): Promise<void> {
   await dropLegacyColumns(app);
   const moved = await migrateAppSettings(app);
   const json = await migrateJsonSettings(app);
+  await prepareForm1Settings(app);
   await migrateLegacyPageSettings(app);
   await migrateAccessLevels(app);
   await migrateFiles(app); // qg/ → data/ first, the css lives there
   await migrateCss(app); // reads the still-legacy page.module, so before the rename
+  await migrateForm1(app);
   await migrateRenamedModules(app);
 
   const langsId = await settingId(app, ["core", "langs"]);

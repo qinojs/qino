@@ -140,7 +140,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     : "";
 
   const cls = LABEL_CLASS[String(node.settings.labelPosition() ?? "")] ?? "";
-  return html.async`<div class="-Fields${cls ? " " + cls : ""}">${warning}${html.join(fields)}</div>`;
+  return html.async`<div class="-Fields${cls ? " " + cls : ""}">${warning}<div>${html.join(fields)}</div></div>`;
 }
 
 export const cms = {

@@ -13,6 +13,7 @@ const settingsSchema = {
     recipients: { type: "string", description: "Recipient addresses for submitted entries, separated by comma or newline." },
     redirect: { type: "integer", minimum: 1, description: "Page ID to redirect to after a successful send; without it the success content is shown." },
     button: { type: "boolean", default: true, description: "Shows the submit button." },
+    reset: { type: "boolean", description: "Shows a reset button." },
   },
 };
 
@@ -126,7 +127,8 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
     <input type=text name=your_name autocomplete=off tabindex=-1 aria-hidden=true>
     ${fields}
     <div class=-btns>
-      ${button && (recipients || edit) ? await cms.text(node, "button_submit", { tag: "button", initial: { en: "Send" } }) : ""}
+      ${node.settings.reset() ? await cms.text(node, "button_reset", { tag: "button", type: "reset", initial: { de: "Zurücksetzen", en: "Reset" } }) : ""}
+      ${button && (recipients || edit) ? await cms.text(node, "button_submit", { tag: "button", initial: { de: "Senden", en: "Send" } }) : ""}
     </div>
   </form>
 </div>`;
