@@ -1,6 +1,6 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 
-import { ApiError, sql, unixTime, type App, type Row } from "../core/mod.ts";
+import { ApiError, errMsg, sql, unixTime, type App, type Row } from "../core/mod.ts";
 import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode, type Msg } from "../messaging/mod.ts";
 import { deliver, setProvider, type SmsProvider } from "./lib/provider.ts";
 
@@ -44,7 +44,7 @@ export async function send(
       deliveries.push({ usrId: Number(row.usr_id), address, time: unixTime() });
       if (row.error) await table.update(row.id, { error: null });
     } catch (e) {
-      const message = errorMessage(e);
+      const message = errMsg(e);
       deliveries.push({ usrId: Number(row.usr_id), address, error: message, time: unixTime() });
       console.warn(`sms: phone ${row.id} rejected —`, message);
       await table.update(row.id, { error: message.slice(0, 255) });
@@ -70,7 +70,7 @@ export async function addPhone(app: App, usrId: number, input: string): Promise<
   try {
     await deliver(app, number, await app.t`Your verification code is ${code}.`);
   } catch (e) {
-    await journal(errorMessage(e));
+    await journal(errMsg(e));
     throw e;
   }
   await journal();
@@ -154,6 +154,6 @@ export function phoneNumber(input: string): string {
   return number;
 }
 
-function errorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
+function errMsg(e: unknown): string {
+  return errMsg(e);
 }

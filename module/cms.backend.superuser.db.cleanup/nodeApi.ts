@@ -4,12 +4,13 @@ import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, ma
 import { createMissingIndex, dropRedundantIndex, reindexInvalid } from "./lib/indexes.ts";
 import { syncSequence } from "./lib/sequences.ts";
 import { validateTable } from "./lib/validate.ts";
+import { errMsg } from "../core/mod.ts";
 
 const LARGE_ROWS = 100_000;
 const LARGE_BYTES = 100_000_000;
 
 export const isLarge = (status: TableStatus): boolean => (status.rows ?? 0) >= LARGE_ROWS || (status.bytes ?? 0) >= LARGE_BYTES;
-const errorText = (e: unknown): string => e instanceof Error ? e.message : String(e);
+const errorText = (e: unknown): string => errMsg(e);
 
 export async function nodeApi(node: Node, vars: Record<string, unknown>) {
   const db = node.app.db;

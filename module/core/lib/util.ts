@@ -59,6 +59,9 @@ export function clientIp(request: Request, peerAddr: string, hops = 0): string {
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
 
+/** The message of whatever was thrown — an Error or anything else. */
+export const errMsg = (e: unknown): string => e instanceof Error ? e.message : String(e);
+
 /** HTML utilities */
 const HEE: Record<string, string> = {"&":"&amp;",'"':"&quot;","'":"&#039;","<":"&lt;",">":"&gt;"};
 export function hee(str: unknown): string {

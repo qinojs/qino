@@ -1,5 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { addChannel, removeChannel, removeSubscription, send } from "../messaging.web_push/mod.ts";
+import { errMsg } from "../core/mod.ts";
 
 /** Node access is the permission — whoever may read this backend node may send from here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -39,6 +40,6 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     return null;
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+    return { ok: false, message: errMsg(e) };
   }
 }

@@ -1,4 +1,5 @@
 import type { ProviderRow } from "../types.ts";
+import { errMsg } from "../../core/mod.ts";
 
 // Thin transport for one OpenAI-compatible provider: auth, timeout, 429-retry.
 // Higher layers (AiApi/ChatSession) own model resolution and usage accounting.
@@ -54,7 +55,7 @@ export class Provider {
       if (error instanceof DOMException && error.name === "TimeoutError") {
         return { error: `Provider "${this.#row.name}" timed out after ${Math.round(this.#timeout() / 1000)}s.` };
       }
-      return { error: error instanceof Error ? error.message : String(error) };
+      return { error: errMsg(error) };
     }
     const text = await res.text().catch(() => "");
     try { return JSON.parse(text); }

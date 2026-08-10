@@ -1,4 +1,4 @@
-import { unixTime, type App } from "../../core/mod.ts";
+import { errMsg, unixTime, type App } from "../../core/mod.ts";
 import type { Bot, Kind, ProviderRow } from "../types.ts";
 import { Provider } from "./Provider.ts";
 import { ChatSession } from "./ChatSession.ts";
@@ -115,7 +115,7 @@ export class AiApi {
       if (trackUsage && !result.error && resolved.model) await addUsage(this.app, resolved.model, result.usage);
       return result;
     } catch (e) {
-      return { error: e instanceof Error ? e.message : String(e) };
+      return { error: errMsg(e) };
     }
   }
 
@@ -126,7 +126,7 @@ export class AiApi {
       if (trackUsage && !result.error && resolved.model) await addUsage(this.app, resolved.model, result.usage);
       return result;
     } catch (e) {
-      return { error: e instanceof Error ? e.message : String(e) };
+      return { error: errMsg(e) };
     }
   }
 }

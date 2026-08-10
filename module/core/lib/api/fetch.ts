@@ -4,6 +4,7 @@ import { Output } from "../util.ts";
 import { ApiError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
 import { BODY_METHODS, type ApiTree, type Method, type Params } from "./types.ts";
+import { errMsg } from "../util.ts";
 
 type RequestData = { method: Method; path: string; input: Params; query: Params };
 
@@ -42,7 +43,7 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
     if (e instanceof ApiError) throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
     console.error("[api]", e);
     // unknown errors: detail only in dev, generic message otherwise (may contain SQL/paths)
-    const detail = requestStorage.getStore()?.app.dev ? (e instanceof Error ? e.message : String(e)) : "";
+    const detail = requestStorage.getStore()?.app.dev ? (errMsg(e)) : "";
     throw new Output({ error: detail || "Internal Server Error" }, { status: 500 });
   }
 }

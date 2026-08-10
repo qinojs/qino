@@ -1,4 +1,4 @@
-import { html, type HtmlString, FileTransformer, type App } from "../core/mod.ts";
+import { errMsg, FileTransformer, html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -176,7 +176,7 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
     FileTransformer.resetCapabilityCache();
     return (out || err).split("\n").findLast(Boolean) ?? "Done.";
   } catch (e) {
-    return `Failed to run "${cmd}": ${e instanceof Error ? e.message : String(e)}`;
+    return `Failed to run "${cmd}": ${errMsg(e)}`;
   }
 }
 

@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { html, type App, type HtmlString, type Store } from "../core/mod.ts";
+import { errMsg, html, type App, type HtmlString, type Store } from "../core/mod.ts";
 import { backend, u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -152,7 +152,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
         throw new Error(`Unknown action: ${act}`);
     }
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+    return { ok: false, message: errMsg(e) };
   }
   // A module no store lists and no one knows any more has nothing left to show.
   const gone = !store && !app.modules.get(mod) && !app.modules.failures()[mod];

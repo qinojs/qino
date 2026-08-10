@@ -1,4 +1,4 @@
-import { unixTime, type App, type Ctx } from "../../core/mod.ts";
+import { errMsg, unixTime, type App, type Ctx } from "../../core/mod.ts";
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
 import { readSse, sse } from "./sse.ts";
@@ -48,7 +48,7 @@ export class ChatSession {
             throw e;
           }
         } catch (e) {
-          controller.enqueue(sse({ error: e instanceof Error ? e.message : String(e) }));
+          controller.enqueue(sse({ error: errMsg(e) }));
         } finally {
           controller.close();
         }
@@ -168,7 +168,7 @@ export class ChatSession {
   }
 
   async #persistError(e: unknown): Promise<void> {
-    await this.#insert({ role: "error", content: e instanceof Error ? e.message : String(e) });
+    await this.#insert({ role: "error", content: errMsg(e) });
     await this.#touch();
   }
 

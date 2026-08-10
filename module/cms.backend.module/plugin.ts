@@ -1,5 +1,5 @@
 import { fromFileUrl } from "@std/path";
-import { html, type HtmlString, getCtx, type App } from "../core/mod.ts";
+import { errMsg, getCtx, html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
@@ -266,7 +266,7 @@ async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<
     if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.unlink(n); }
     else if (vars.enable) await node.app.link(String(vars.enable));
   } catch (e) {
-    ctx.state.moduleError = e instanceof Error ? e.message : String(e); // shown in the detail view
+    ctx.state.moduleError = errMsg(e); // shown in the detail view
   }
 }
 

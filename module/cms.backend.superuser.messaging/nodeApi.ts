@@ -1,5 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { channel } from "../messaging/mod.ts";
+import { errMsg } from "../core/mod.ts";
 
 /** Node access is the permission — replies are limited to an existing user. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
@@ -25,6 +26,6 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       ? { ok: true, message: await app.t`Delivered over ${to.label} (${sent}).` }
       : { ok: false, message: await app.t`${to.label} reached nobody.` };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+    return { ok: false, message: errMsg(e) };
   }
 }

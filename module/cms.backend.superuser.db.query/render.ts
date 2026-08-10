@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, html, type HtmlString, sql, type App } from "../core/mod.ts";
+import { errMsg, getCtx, html, sql, type App, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { ai } from "../ai/mod.ts";
 import { askDbAi } from "./lib/ai.ts";
@@ -77,7 +77,7 @@ async function runQuery(app: App, text: string): Promise<HtmlString> {
     const insert = res.insertId ? ` · insertId ${res.insertId}` : "";
     return await html.async`<u2-alert open variant=success class=-result>${res.affectedRows} ${app.t`rows affected`}${insert} · ${ms} ms</u2-alert>`;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = errMsg(e);
     return await html.async`<u2-alert open variant=danger class=-result>${msg}</u2-alert>`;
   }
 }

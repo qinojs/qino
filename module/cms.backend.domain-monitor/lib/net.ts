@@ -1,3 +1,4 @@
+import { errMsg } from "../../core/mod.ts";
 // The handful of things every probe here needs. Separate from check.ts so the mail and registry
 // probes can use them without importing the orchestrator back.
 
@@ -15,7 +16,7 @@ const stableTime = (msg: string): string =>
 
 // fetch reports TLS problems as a bare "fetch failed" — the reason sits in the cause chain.
 export function errText(e: unknown): string {
-  let msg = e instanceof Error ? e.message : String(e);
+  let msg = errMsg(e);
   for (let c = (e as Error)?.cause; c instanceof Error; c = c.cause) msg += ": " + c.message;
   msg = stableTime(msg);
   return msg.length > 300 ? msg.slice(0, 300) + "…" : msg;

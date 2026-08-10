@@ -3,6 +3,7 @@ import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import type { App } from "./App.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults, unixTime } from "./util.ts";
+import { errMsg } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 
@@ -155,7 +156,7 @@ export class ModuleManager {
       // A deleted folder or an unreachable host must not keep the app from booting: shout, skip,
       // and let the module page offer the uninstall that clears the row.
       await this.import(url, name).catch((e) => {
-        this.#failed[name] = e instanceof Error ? e.message : String(e);
+        this.#failed[name] = errMsg(e);
         console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
       });
     }

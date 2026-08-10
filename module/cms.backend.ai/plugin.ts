@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
+import { errMsg, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { KINDS, providerCatalog } from "../ai/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -142,7 +142,7 @@ async function syncProviderModels(app: App, provider: Row): Promise<Message> {
       signal: AbortSignal.timeout(30000),
     });
   } catch (e) {
-    return { type: "error", text: `Sync failed: ${e instanceof Error ? e.message : String(e)}` };
+    return { type: "error", text: `Sync failed: ${errMsg(e)}` };
   }
   if (!response.ok) return { type: "error", text: `Sync failed: HTTP ${response.status}` };
 

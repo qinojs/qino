@@ -1,5 +1,5 @@
 import type { Node } from "../cms/mod.ts";
-import { $item } from "../core/mod.ts";
+import { $item, errMsg } from "../core/mod.ts";
 import { bot, deleteWebhook, removeChat, send, setWebhook } from "../messaging.telegram/mod.ts";
 import { webhookUrl } from "./render.ts";
 
@@ -52,6 +52,6 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     }
     return null;
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : String(e) };
+    return { ok: false, message: errMsg(e) };
   }
 }
