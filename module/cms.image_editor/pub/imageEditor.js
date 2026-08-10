@@ -114,7 +114,7 @@ export class ImageEditor extends FullScreenDialog {
     }
 
     async uploadDialog() {
-      await import('../../core/pub/js/c1/form.mjs');
+      await import('@qino/pub/c1/form.mjs');
       const [file] = await c1.form.fileDialog({ multiple: false, accept: 'image/*' });
       if (!file?.type.match('image.*')) return;
       this.el('.-img').src = URL.createObjectURL(file);

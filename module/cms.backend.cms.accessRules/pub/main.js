@@ -1,4 +1,4 @@
-import { api } from "../../core/pub/js/qino.js";
+import { api } from "@qino/pub/qino.js";
 
 // deny (0) only exists on the standard column (module off); caps/overrides cycle 1..max
 const nextCap = (v) => (v === "1" ? "2" : v === "2" ? "3" : "1");                    // grp cap: 1→2→3→1

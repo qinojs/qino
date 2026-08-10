@@ -1,8 +1,8 @@
-import '../../core/pub/js/c1.js';
-import '../../core/pub/js/c1/fix/contextMenu.mjs';
-import '../../core/pub/js/c1/contextMenu.mjs';
-import '../../core/pub/js/c1/onElement.mjs';
-import { api, ctx } from '../../core/pub/js/qino.js';
+import '@qino/pub/c1.js';
+import '@qino/pub/c1/fix/contextMenu.mjs';
+import '@qino/pub/c1/contextMenu.mjs';
+import '@qino/pub/c1/onElement.mjs';
+import { api, ctx } from '@qino/pub/qino.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -57,7 +57,7 @@ const showEditor = async el => {
     const btn = e.target;
     const target_lang = btn.closest('.-language').querySelector(':scope >[cmstxt]').getAttribute('cmslang');
     const source_lang = btn.getAttribute('source_lang');
-    const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
+    const loading = await import('@qino/pub/c1/loading.mjs').then(m => m.default);
     const unmark = loading.mark(e.target.closest('.-language'));
     try {
       await api['cms.text'].text(tid).translate.post({ target_lang, source_lang });
@@ -102,7 +102,7 @@ const showEditor = async el => {
       const textContent = textEl.tagName === 'INPUT' ? textEl.value : textEl.innerHTML;
 
       // Restore the text
-      const loading = await import('../../core/pub/js/c1/loading.mjs').then(m => m.default);
+      const loading = await import('@qino/pub/c1/loading.mjs').then(m => m.default);
       const unmark = loading.mark(historyItem);
       const success = await api.cms.txt(parseInt(tid)).put({ value: textContent, lang });
       unmark();
@@ -183,7 +183,7 @@ const addTranslateWidget = el=>{
     `);
   fragment.querySelector('form').addEventListener('submit',async e=>{
     e.preventDefault();
-    await import('../../core/pub/js/c1/loading.mjs');
+    await import('@qino/pub/c1/loading.mjs');
     const sourceLang = e.submitter.name;
     const done = c1.loading.mark(e.target);
     try {

@@ -50,7 +50,7 @@ async function renderScope(app: App, tbl: string, { id, half }: Scope, now: numb
     <code>${tbl}</code>
     · ${app.t`half-life`} ${duration(half)}
     · <b>${Number(stats?.total ?? 0)}</b> ${app.t`rows`}
-    ${faded ? html` · <span class=u2-badge>${faded} ${app.t`faded`}</span>` : ""}
+    ${faded ? html.async` · <span class=u2-badge>${faded} ${app.t`faded`}</span>` : ""}
     · ${app.t`last access`} ${time(Number(stats?.last ?? 0))}
   </div>
   ${top.length ? renderTop(app, tbl, top, now) : html.async`<div class=-body>${app.t`No accesses recorded yet.`}</div>`}`;

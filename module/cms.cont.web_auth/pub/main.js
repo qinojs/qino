@@ -1,5 +1,5 @@
 import { WebAuth } from "../../web_auth/pub/web_auth.js";
-import { hee, t } from "../../core/pub/js/qino.js";
+import { hee, t } from "@qino/pub/qino.js";
 
 cms.initNode("cont.web_auth", (el) => {
   const isLogin  = el.classList.contains("web-auth-login");

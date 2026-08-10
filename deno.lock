@@ -2,15 +2,14 @@
   "version": "5",
   "specifiers": {
     "jsr:@nuxodin/dump@^1.5.2": "1.5.2",
-    "jsr:@nuxodin/item@0.6.2": "0.6.2",
-    "jsr:@nuxodin/item@~0.6.3": "0.6.3",
+    "jsr:@nuxodin/item@~0.6.3": "0.6.7",
     "jsr:@std/assert@1": "1.0.19",
-    "jsr:@std/cli@^1.0.31": "1.0.32",
+    "jsr:@std/cli@^1.0.32": "1.0.32",
     "jsr:@std/encoding@^1.0.11": "1.0.11",
     "jsr:@std/fmt@^1.0.10": "1.0.10",
     "jsr:@std/fs@^1.0.24": "1.0.24",
     "jsr:@std/html@^1.0.7": "1.0.7",
-    "jsr:@std/http@1": "1.1.2",
+    "jsr:@std/http@1": "1.1.3",
     "jsr:@std/internal@^1.0.12": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/media-types@1": "1.1.0",
@@ -18,10 +17,7 @@
     "jsr:@std/net@^1.0.6": "1.0.6",
     "jsr:@std/path@1": "1.1.6",
     "jsr:@std/path@^1.1.6": "1.1.6",
-    "jsr:@std/streams@^1.1.1": "1.1.1",
-    "jsr:@upyo/core@*": "0.5.1",
-    "jsr:@upyo/core@~0.5.1": "0.5.1",
-    "jsr:@upyo/mock@*": "0.5.1",
+    "jsr:@std/streams@^1.1.2": "1.1.2",
     "npm:@simplewebauthn/server@13": "13.3.2",
     "npm:@types/sanitize-html@2": "2.16.1",
     "npm:bcryptjs@3": "3.0.3",
@@ -35,11 +31,8 @@
     "@nuxodin/dump@1.5.2": {
       "integrity": "0e5af5667b22edecb40555e17331c9597096c2f3485a18c12bed86c30673de32"
     },
-    "@nuxodin/item@0.6.2": {
-      "integrity": "9a6fa85d97e05e0f2453c0a04f4b307051c02915770b87a7a912a8ec72a97da4"
-    },
-    "@nuxodin/item@0.6.3": {
-      "integrity": "81e0dbbb1f4d8c260bab1d218569cbbbea1fcdb5ad32b8342ca25c1a3e999295"
+    "@nuxodin/item@0.6.7": {
+      "integrity": "8b11a971eeca5e622c9e0810629a485cd24ff44fa7475fd291bf043b75328408"
     },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
@@ -62,8 +55,8 @@
     "@std/html@1.0.7": {
       "integrity": "175c818905a6e75743c69c251395e273d82698e58cfe7dd76268d70e28b8d8fe"
     },
-    "@std/http@1.1.2": {
-      "integrity": "1c0473590d5e5b75b30b2be4833c08047dd799aeea35624fd34ec58d67fc9240",
+    "@std/http@1.1.3": {
+      "integrity": "73a98e05ff58aa18bea562d286172e6c815b1eddd4fcab194beda19e3683b88c",
       "dependencies": [
         "jsr:@std/cli",
         "jsr:@std/encoding",
@@ -91,17 +84,8 @@
         "jsr:@std/internal@^1.0.14"
       ]
     },
-    "@std/streams@1.1.1": {
-      "integrity": "92556d350e537e9dce527a6d08f6f15be3ff65e656079dea69d15252187c7613"
-    },
-    "@upyo/core@0.5.1": {
-      "integrity": "0a87041d091a119a18a3c0caa40c07c7ff12334a0b3d60d9559792d071703890"
-    },
-    "@upyo/mock@0.5.1": {
-      "integrity": "4d3b3302c5a16e24df747a75c9f58e9462b1e8d7a970198b6b3f4d92b4eaa1fc",
-      "dependencies": [
-        "jsr:@upyo/core@~0.5.1"
-      ]
+    "@std/streams@1.1.2": {
+      "integrity": "0249bf9b78a999f57032ca4d8e7ccaa57579090242640b35ddc948fbb745d3af"
     }
   },
   "npm": {
@@ -562,36 +546,6 @@
     "xtend@4.0.2": {
       "integrity": "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="
     }
-  },
-  "remote": {
-    "https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js": "086b990606b844f86b2a2a0aa0db6c093b276df9fb4f62bc14a2d5b63175929f",
-    "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js": "6abaa70db9639befc5a50241204b1c951ca65bd1fd3f3a9b50ad5342f4943fc5",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/draghandle/draghandle.js": "a4764f7390c23cfc5b5c9dc65fd11d4b320b7fc9e13983547eb9ab2ee43aede8",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/dropzone/dropzone.js": "5136d9d76e014d9d2c6c600ac4766f9530f7cad6f1c6c2bfe7f55d400ff49c56",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/attr/focusgroup/focusgroup.js": "4438cce292b76991c9ca6ef5bf7c5c779dad3493ce9971215834bbe395ca5d1a",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/el/tree/ext/dnd.js": "1e4086f1d09a0aff3650ed6edf42be868e2f37f8b439d2a71ce972a0f963118d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/el/tree/ext/item.js": "df5840e51901d07c3bd2394a260985d82a11a310fe99cce053b878130a852cef",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/el/tree/tree.js": "ab25ca7b2555694738633879563826b90c55ddc0c3e2e6d586285c3d4af20f5d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/Placer/Placer.js": "0ae8cd8a2d956341506801876209987cd2b6c8ed2f0409a8dc802c9e2b1e5128",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/SelectorObserver/SelectorObserver.js": "754759d165cbac7b3d8ad30a1fd6bddd80b812f0d5c749ee2655f139ea31ce78",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/Tour/Tour.js": "3649adf138f23fcd8a6116538a644bc96d4408cfa1fb31453575ca9e3d12be5d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/dialog/dialog.js": "d1cb68a0919ad2cf811a62d392d29b89fe16a78ce4e9006ff0847f6669add12d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/drag/drag.js": "71905b618f834ac88dc8edb1924c022de40c5b7162ffcbbd49d8bf23cf0248e9",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.0/js/drag/indicateDrop.js": "c8a5bef524293773f44bccf75ffc4b29d15eaf3b3cd4f0ee40fa776e95817167",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/attr/draghandle/draghandle.js": "a4764f7390c23cfc5b5c9dc65fd11d4b320b7fc9e13983547eb9ab2ee43aede8",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/attr/dropzone/dropzone.js": "5136d9d76e014d9d2c6c600ac4766f9530f7cad6f1c6c2bfe7f55d400ff49c56",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/attr/focusgroup/focusgroup.js": "4438cce292b76991c9ca6ef5bf7c5c779dad3493ce9971215834bbe395ca5d1a",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/el/tree/ext/dnd.js": "1e4086f1d09a0aff3650ed6edf42be868e2f37f8b439d2a71ce972a0f963118d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/el/tree/ext/item.js": "df5840e51901d07c3bd2394a260985d82a11a310fe99cce053b878130a852cef",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/el/tree/tree.js": "ab25ca7b2555694738633879563826b90c55ddc0c3e2e6d586285c3d4af20f5d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/js/Placer/Placer.js": "0ae8cd8a2d956341506801876209987cd2b6c8ed2f0409a8dc802c9e2b1e5128",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/js/SelectorObserver/SelectorObserver.js": "754759d165cbac7b3d8ad30a1fd6bddd80b812f0d5c749ee2655f139ea31ce78",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/js/Tour/Tour.js": "3649adf138f23fcd8a6116538a644bc96d4408cfa1fb31453575ca9e3d12be5d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/js/dialog/dialog.js": "d1cb68a0919ad2cf811a62d392d29b89fe16a78ce4e9006ff0847f6669add12d",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/js/drag/drag.js": "71905b618f834ac88dc8edb1924c022de40c5b7162ffcbbd49d8bf23cf0248e9",
-    "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/js/drag/indicateDrop.js": "c8a5bef524293773f44bccf75ffc4b29d15eaf3b3cd4f0ee40fa776e95817167",
-    "https://cdn.jsdelivr.net/npm/dompurify@3/+esm": "045f152d3ec562412bfff4fdd428ec8e8333616fc7b3d4e4e54781eb7196c3f0",
-    "https://cdn.jsdelivr.net/npm/marked@18/+esm": "6c022b7cff763280d5a8c2a0008d9a3d2aa2b99ae05cc384500bcaf6b07b0e05"
   },
   "workspace": {
     "dependencies": [

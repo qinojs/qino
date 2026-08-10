@@ -1,4 +1,4 @@
-import { api, t } from "../../core/pub/js/qino.js";
+import { api, t } from "@qino/pub/qino.js";
 
 cms.initNode("backend.groups", (el) => {
   const nid = Number(cms.el.nid(el));

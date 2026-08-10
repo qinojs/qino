@@ -94,6 +94,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("html-ready", ({ ctx }) => {
         ctx.res.html.importMap.set("@qino/item/", itemRoot);
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
+        // browser-only: core's pub/js, reachable from any module wherever it lies on disk or is served from
+        ctx.res.html.importMap.set("@qino/pub/", ctx.req.moduleUrl + "core/pub/js/");
         // core's own qino.js imports item.js — allow the origin, and let uncdn proxy it when installed
         ctx.res.csp["script-src"][itemRoot] = true;
         // A remote store covers the assets of all its modules, so their own declarations collapse into it

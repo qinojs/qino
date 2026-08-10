@@ -1,4 +1,4 @@
-import { api, t } from "../../core/pub/js/qino.js";
+import { api, t } from "@qino/pub/qino.js";
 
 // A reload replaces the whole node, the chosen filter should outlive it.
 const kept = {};

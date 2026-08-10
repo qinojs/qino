@@ -5,7 +5,7 @@
 // to the call, no matter who made it:
 //
 //   api.on("POST|PUT shp3/cart/*", ({ value }) => badge.set(value.cart.quantity));
-import { api } from "../../core/pub/js/qino.js";
+import { api } from "@qino/pub/qino.js";
 
 /** The cart in numbers — items, quantity, net, gross, currency. */
 export const cart = () => api.shp3.cart.get();

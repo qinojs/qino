@@ -1,5 +1,5 @@
-import './../../../core/pub/js/c1/NodeCleaner.mjs';
-import { api, ctx } from '../../../core/pub/js/qino.js';
+import '@qino/pub/c1/NodeCleaner.mjs';
+import { api, ctx } from '@qino/pub/qino.js';
 
 // txt-id to page-id
 const txtIds = {};

@@ -1,5 +1,5 @@
-import { api } from '../../../core/pub/js/qino.js';
-import { dataTransferToUrl, readClipboardHtml } from '../../../core/pub/js/util/transfer.mjs';
+import { api } from '@qino/pub/qino.js';
+import { dataTransferToUrl, readClipboardHtml } from '@qino/pub/util/transfer.mjs';
 
 // an in-page drag in progress (set on dragstart, cleared on dragend) and the element being dragged
 let internalDrag = false;

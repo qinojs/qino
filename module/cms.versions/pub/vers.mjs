@@ -1,4 +1,4 @@
-import { api, ctx } from '../../core/pub/js/qino.js';
+import { api, ctx } from '@qino/pub/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);

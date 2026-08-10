@@ -1,4 +1,4 @@
-import { api, ctx } from "../../core/pub/js/qino.js";
+import { api, ctx } from "@qino/pub/qino.js";
 
 cms.initNode("backend.domain-monitor", (el) => {
   const nid = Number(cms.el.nid(el));

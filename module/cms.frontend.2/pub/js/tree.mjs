@@ -1,7 +1,7 @@
 /* CMS page tree based on u2-tree.
   * Entry: window.cmsTreeInit(json); cms.Tree is the facade for panel, contextMenu.mjs
   * and server listeners. */
-import { t, api } from "../../../core/pub/js/qino.js";
+import { t, api } from "@qino/pub/qino.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 const showContents = () => cms.panel.state.has("tree_show_c")?.get({ silent: true });

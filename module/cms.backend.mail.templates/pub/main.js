@@ -1,4 +1,4 @@
-import { t } from "../../core/pub/js/qino.js";
+import { t } from "@qino/pub/qino.js";
 import { EmailClientSimulator, clients } from "../../cms.backend.mail/pub/emailClientSimulator.js";
 
 const rank = { error: 0, warn: 1, info: 2 };

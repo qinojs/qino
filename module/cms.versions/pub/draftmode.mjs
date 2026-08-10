@@ -1,4 +1,4 @@
-import { api, ctx } from '../../core/pub/js/qino.js';
+import { api, ctx } from '@qino/pub/qino.js';
 
 const moduleUrl = ctx.moduleUrl;
 const nodeId = globalThis.qino?.cms?.nodeId;

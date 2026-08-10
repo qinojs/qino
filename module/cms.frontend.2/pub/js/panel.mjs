@@ -1,6 +1,6 @@
-import { itemJs } from "../../../core/pub/js/SettingsEditor.mjs";
+import { itemJs } from "@qino/pub/SettingsEditor.mjs";
 import "./frontend.mjs";
-import { api, t, ctx } from "../../../core/pub/js/qino.js";
+import { api, t, ctx } from "@qino/pub/qino.js";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 
@@ -73,7 +73,7 @@ function onEl(selector, fn) {
 const loadWidget = (widget, params, cb) => {
   const widgetEl = findEl(el, '[widget="' + widget + '"]');
   if (!widgetEl) return;
-  import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
+  import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
     loading.mark(widgetEl);
     params ||= {};
     params.pid ||= cms.cont.active || nodeId;
@@ -260,7 +260,7 @@ onEl(".tree-manager", async (el) => {
 onEl(".file-manager", (el) => {
   const pid = el.getAttribute("pid");
   const node = api.cms.node(pid);
-  import("../../../core/pub/js/c1/form.mjs").then(() => {
+  import("@qino/pub/c1/form.mjs").then(() => {
     findEl(el, ".-uploadBtn").addEventListener("click", async () => {
       const files = await c1.form.fileDialog();
       upload(files);
@@ -348,7 +348,7 @@ onEl(".file-manager", (el) => {
   }
 });
 onEl(".module-manager", (el) => {
-  import("../../../core/pub/js/c1/loading.mjs"); // preload
+  import("@qino/pub/c1/loading.mjs"); // preload
 
   const searchInp = findEl(el, "input");
   searchInp.focus();
@@ -367,7 +367,7 @@ onEl(".module-manager", (el) => {
     const box = e.target.closest(".-module-boxes > [itemid]");
     if (!box) return;
     const itemid = box.getAttribute("itemid");
-    import("../../../core/pub/js/c1/loading.mjs").then(({ default: loading }) => {
+    import("@qino/pub/c1/loading.mjs").then(({ default: loading }) => {
       loading.mark(box);
       if (box.closest(".add-models")) {
         api.cms.node(itemid).copy.post().then(({ id }) => {

@@ -1,4 +1,4 @@
-import { api } from '../../core/pub/js/qino.js';
+import { api } from '@qino/pub/qino.js';
 import { cms } from '../../cms/pub/js/cms.mjs';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -50,8 +50,8 @@ cms.fileBrowser = class {
   }
   async show(){
     await Promise.all([
-      import('../../core/pub/js/c1/loading.mjs'),
-      import('../../core/pub/js/c1/form.mjs'),
+      import('@qino/pub/c1/loading.mjs'),
+      import('@qino/pub/c1/form.mjs'),
     ]);
     const root = await panelRoot;
     const dialog = document.createElement('dialog');

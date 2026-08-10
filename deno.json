@@ -1,6 +1,6 @@
 {
   "name": "@qino/qino",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",
@@ -34,6 +34,7 @@
   },
   "imports": {
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.3/",
+    "@qino/pub/": "./module/core/pub/js/",
     "@qino/u2/": "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/",
     "@nuxodin/dump": "jsr:@nuxodin/dump@^1.5.2",
     "@simplewebauthn/server": "npm:@simplewebauthn/server@13",

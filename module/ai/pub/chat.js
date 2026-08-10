@@ -1,4 +1,4 @@
-import { api, t } from "../../core/pub/js/qino.js";
+import { api, t } from "@qino/pub/qino.js";
 import { marked } from 'https://cdn.jsdelivr.net/npm/marked@18/+esm';
 import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3/+esm';
 

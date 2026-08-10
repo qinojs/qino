@@ -1,10 +1,10 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
 import { ImageEditor } from './imageEditor.js';
-import { api, ctx } from '../../core/pub/js/qino.js';
-import '../../core/pub/js/qg/fileHelpers.mjs'; // globalThis.qgfileUpload
+import { api, ctx } from '@qino/pub/qino.js';
+import '@qino/pub/qg/fileHelpers.mjs'; // globalThis.qgfileUpload
 
 const meta = id => api['cms.image_editor'].meta(id);
-const loadingMjs = () => import('../../core/pub/js/c1/loading.mjs');
+const loadingMjs = () => import('@qino/pub/c1/loading.mjs');
 
 // accordion + hotspot styles, scoped to the editor's shadow root
 const EDITOR_CSS = `

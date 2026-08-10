@@ -1,5 +1,5 @@
-import { api } from '../../core/pub/js/qino.js';
-import { TableHandles } from '../../core/pub/js/c1/tableHandles.mjs';
+import { api } from '@qino/pub/qino.js';
+import { TableHandles } from '@qino/pub/c1/tableHandles.mjs';
 
 const handles = new TableHandles();
 let active, pid;

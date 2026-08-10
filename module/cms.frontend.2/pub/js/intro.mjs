@@ -1,4 +1,4 @@
-import { ctx, t } from "../../../core/pub/js/qino.js";
+import { ctx, t } from "@qino/pub/qino.js";
 
 const root = cms.panelRoot;
 const find = selector => root.querySelector(selector);

@@ -1,5 +1,5 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { ctx } from '../../core/pub/js/qino.js';
+import { ctx } from '@qino/pub/qino.js';
 
 const TAG = 'qino-image-editor';
 if (!customElements.get(TAG)) customElements.define(TAG, class extends HTMLElement {});

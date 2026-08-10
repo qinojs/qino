@@ -1,4 +1,4 @@
-import { api, hee, t } from "../../core/pub/js/qino.js";
+import { api, hee, t } from "@qino/pub/qino.js";
 
 const sms = api["messaging.sms"];
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";

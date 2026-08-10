@@ -1,4 +1,4 @@
-import { api } from '../../core/pub/js/qino.js';
+import { api } from '@qino/pub/qino.js';
 
 const reloadOptions = () => cms.cont(cms.cont.active).showWidget('options');
 const settings = node => api.cms.node(node).settings;

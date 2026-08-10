@@ -1,4 +1,4 @@
-import { api } from "../../core/pub/js/qino.js";
+import { api } from "@qino/pub/qino.js";
 
 cms.initNode("backend.superuser.dbfiles.transform", (el) => {
   const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);

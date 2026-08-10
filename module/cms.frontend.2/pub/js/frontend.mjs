@@ -1,17 +1,17 @@
 
-import '../../../core/pub/js/c1/Placer.mjs';
-import '../../../core/pub/js/qg/c1Combobox.mjs';
-import '../../../core/pub/js/qg/fileHelpers.mjs';
-import '../../../core/pub/js/Rte/index.mjs';
-import '../../../core/pub/js/c1/fix/contextMenu.mjs';
-import '../../../core/pub/js/c1/contextMenu.mjs';
+import '@qino/pub/c1/Placer.mjs';
+import '@qino/pub/qg/c1Combobox.mjs';
+import '@qino/pub/qg/fileHelpers.mjs';
+import '@qino/pub/Rte/index.mjs';
+import '@qino/pub/c1/fix/contextMenu.mjs';
+import '@qino/pub/c1/contextMenu.mjs';
 
 import './rte.mjs';
 import './contextMenu.mjs';
 import './ddConts.mjs';
 import './dropPasteHelper.mjs';
 import './dropPaste.mjs';
-import { t, api } from '../../../core/pub/js/qino.js';
+import { t, api } from '@qino/pub/qino.js';
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 

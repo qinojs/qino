@@ -1,6 +1,6 @@
 
-import '../../../core/pub/js/c1/contextMenu.mjs';
-import { api, ctx, t } from '../../../core/pub/js/qino.js';
+import '@qino/pub/c1/contextMenu.mjs';
+import { api, ctx, t } from '@qino/pub/qino.js';
 import '../../../cms/pub/js/cms.mjs';
 
 const moduleUrl = ctx.moduleUrl;

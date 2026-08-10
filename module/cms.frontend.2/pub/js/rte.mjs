@@ -1,8 +1,8 @@
 // todo? // externe Seiten http://github.com/codepo8/GooHooBi/blob/master/multisearch.html
-//import '../../../core/pub/js/Rte/Rte.ui.items.mjs';
+//import '@qino/pub/Rte/Rte.ui.items.mjs';
 
-import '../../../core/pub/js/Rte/index.mjs';
-import { api } from '../../../core/pub/js/qino.js';
+import '@qino/pub/Rte/index.mjs';
+import { api } from '@qino/pub/qino.js';
 
 // scoped query helpers
 const find    = (el, sel) => el.querySelector(':scope '+sel);

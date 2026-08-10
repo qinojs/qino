@@ -1,4 +1,4 @@
-import { ctx } from '../../core/pub/js/qino.js';
+import { ctx } from '@qino/pub/qino.js';
 
 const { appUrl } = ctx;
 const nodeId = globalThis.qino?.cms?.nodeId;
@@ -52,7 +52,7 @@ export const comparer = {
       const doc1 = win.document;
 
       // scrollSync
-      import('../../core/pub/js/c1/scrollSync.mjs').then(() => {
+      import('@qino/pub/c1/scrollSync.mjs').then(() => {
         // sync scroll
         c1.scrollSync.syncWindows(win, other.contentWindow);
         // sync clicks

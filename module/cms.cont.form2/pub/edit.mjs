@@ -1,4 +1,4 @@
-import { api } from '../../core/pub/js/qino.js';
+import { api } from '@qino/pub/qino.js';
 
 document.addEventListener('input', e => {
   const input = e.composedPath()[0].closest?.('[data-form2-setting]');

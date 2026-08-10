@@ -1,4 +1,4 @@
-import { api } from '../../../../core/pub/js/qino.js';
+import { api } from '@qino/pub/qino.js';
 
 cms.frontend2.clipboard = pid => {
   const els = () => document.querySelectorAll('[qcms-id="'+pid+'"]');

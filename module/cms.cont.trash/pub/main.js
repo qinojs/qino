@@ -1,4 +1,4 @@
-import { api } from "../../core/pub/js/qino.js";
+import { api } from "@qino/pub/qino.js";
 
 const el      = document.querySelector('[qcms-mod="cont.trash"]');
 

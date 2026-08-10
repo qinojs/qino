@@ -1,4 +1,4 @@
-import { ctx } from "../../core/pub/js/qino.js";
+import { ctx } from "@qino/pub/qino.js";
 
 cms.initNode("backend.cms.module", (el) => {
   const nid = Number(cms.el.nid(el));
