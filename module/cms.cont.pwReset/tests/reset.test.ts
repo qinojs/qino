@@ -5,9 +5,7 @@ import type { Node } from "../../cms/mod.ts";
 import { issue } from "../../ticket/mod.ts";
 import * as plugin from "../plugin.ts";
 import api, { PURPOSE } from "../nodeApi.ts";
-
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
+import { fakeT } from "../../core/tests/deps.ts";
 
 async function app() {
   const db = new Db("sqlite::memory:");
@@ -19,7 +17,7 @@ async function app() {
   await db.table("sess").insert({ usr_id: 1 });
   return {
     db,
-    t,
+    t: fakeT,
     modules: { all: () => ({ pwReset: { name: "pwReset", plugin } }), linked: () => true },
     // deno-lint-ignore no-explicit-any
   } as any;

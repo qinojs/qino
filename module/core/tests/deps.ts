@@ -2,6 +2,7 @@ export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";
+export { fakeT } from "./appFake.ts";
 
 import { apiFetch, type ApiTree } from "../lib/api/mod.ts";
 import { Req } from "../lib/ctx/Req.ts";

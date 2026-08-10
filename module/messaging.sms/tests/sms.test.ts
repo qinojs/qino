@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects, assertThrows } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertRejects, assertThrows, fakeT } from "../../core/tests/deps.ts";
 import { ApiError, Db } from "../../core/mod.ts";
 import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
@@ -16,12 +16,9 @@ async function makeDb(): Promise<Db> {
   return db;
 }
 
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
-
 const makeApp = (db: Db) => ({
   db,
-  t,
+  t: fakeT,
   settings: { messaging: { _secret: "test-secret" }, "messaging.sms": { provider: {} } },
   // deno-lint-ignore no-explicit-any
 }) as any;

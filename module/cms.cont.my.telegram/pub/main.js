@@ -1,7 +1,6 @@
-import { api, t } from "../../core/pub/js/qino.js";
+import { api, hee, t } from "../../core/pub/js/qino.js";
 
 const telegram = api["messaging.telegram"];
-const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "";
 
 cms.initNode("cont.my.telegram", async (el) => {
@@ -19,10 +18,10 @@ cms.initNode("cont.my.telegram", async (el) => {
 
   const draw = (url, chats) => {
     state.innerHTML = chats.length
-      ? chats.map((c) => `<p>${esc(labels.connected)} ${esc(fmt(c.created))}${c.username ? ` · @${esc(c.username)}` : ""}
-          <button type=button data-disconnect>${esc(labels.disconnect)}</button></p>`).join("")
-      : `<p><a href="${esc(url)}" target=_blank rel=noopener data-connect>${esc(labels.connect)}</a>
-          <small>${esc(labels.hint)}</small></p>`;
+      ? chats.map((c) => `<p>${hee(labels.connected)} ${hee(fmt(c.created))}${c.username ? ` · @${hee(c.username)}` : ""}
+          <button type=button data-disconnect>${hee(labels.disconnect)}</button></p>`).join("")
+      : `<p><a href="${hee(url)}" target=_blank rel=noopener data-connect>${hee(labels.connect)}</a>
+          <small>${hee(labels.hint)}</small></p>`;
   };
 
   /** Redraw from the server — also renews the deep link, since every answer carries a fresh one. */

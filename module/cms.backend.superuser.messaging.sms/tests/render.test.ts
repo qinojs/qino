@@ -1,16 +1,13 @@
-import { assert, assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertStringIncludes, fakeT } from "../../core/tests/deps.ts";
 import { name, needs } from "../plugin.ts";
 import { provider } from "../render.ts";
-
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
 
 Deno.test("cms.backend.superuser.messaging.sms wires metadata and keeps provider secrets out of HTML", async () => {
   assertEquals(name, "cms.backend.superuser.messaging.sms");
   assertEquals(needs, ["cms.backend.superuser.messaging", "messaging.sms"]);
   const node = {
     app: {
-      t,
+      t: fakeT,
       settings: {
         "messaging.sms": {
           provider: {

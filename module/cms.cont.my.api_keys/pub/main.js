@@ -1,7 +1,6 @@
-import { api } from "../../core/pub/js/qino.js";
+import { api, hee } from "../../core/pub/js/qino.js";
 import { t } from "../../core/pub/js/qino.js";
 
-const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const fmt = (ts) => ts ? new Date(ts * 1000).toLocaleDateString() : "–";
 
 cms.initNode("cont.my.api_keys", async (el) => {
@@ -18,11 +17,11 @@ cms.initNode("cont.my.api_keys", async (el) => {
       const keys = await api.api_key.keys.get();
       list.innerHTML = keys.length
         ? keys.map((k) => `<div data-key>
-            <code>${esc(k.prefix)}…</code> <strong>${esc(k.name)}</strong>
+            <code>${hee(k.prefix)}…</code> <strong>${hee(k.name)}</strong>
             <small>${fmt(k.created)}${k.expires ? ` · ${labels.expires} ${fmt(k.expires)}` : ""}</small>
             <button data-del="${k.id}"><u2-ico icon=delete>✕</u2-ico></button>
           </div>`).join("")
-        : esc(labels.empty);
+        : hee(labels.empty);
     } catch { list.textContent = await t`Error loading.`; }
   };
 

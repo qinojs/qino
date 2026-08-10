@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { assert, assertEquals, assertStringIncludes, testContext } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "../../core/tests/deps.ts";
 import { b64url, Db, Output, unixTime, type Ctx } from "../../core/mod.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { authorize, metadata, register, resourceMetadata, token } from "../mod.ts";
@@ -20,10 +20,6 @@ async function makeDb(): Promise<Db> {
   return db;
 }
 
-/** Minimal `app.t`: substitutes the interpolated values, no lookup. */
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
-
 type CtxInit = {
   path: string;
   query?: Record<string, string>;
@@ -42,7 +38,7 @@ function makeCtx(db: Db, init: CtxInit): Promise<Ctx> {
     body: init.json !== undefined ? JSON.stringify(init.json) : init.form ? new URLSearchParams(init.form) : undefined,
     headers: init.json !== undefined ? { "content-type": "application/json" } : undefined,
     sess: { data: { core: { userId: () => init.userId ?? 0, csrfToken: (v?: string) => (v !== undefined && (csrf = v), csrf) } } },
-    app: { db, t, settings: { oauth_server: {} } },
+    app: { db, t: fakeT, settings: { oauth_server: {} } },
   });
 }
 

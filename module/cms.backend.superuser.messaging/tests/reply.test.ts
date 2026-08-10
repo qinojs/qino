@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes, testContext } from "../../core/tests/deps.ts";
+import { assertEquals, assertStringIncludes, fakeT, testContext } from "../../core/tests/deps.ts";
 import { Db, requestStorage } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
@@ -7,9 +7,6 @@ import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
 import { messagingChannel as telegram } from "../../messaging.telegram/tests/deps.ts";
 import { messagingChannel as email } from "../../mail/tests/deps.ts";
-
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
 
 Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {
   const db = new Db("sqlite::memory:");
@@ -31,7 +28,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   };
   const app = {
     db,
-    t,
+    t: fakeT,
     modules: { all: () => linked, linked: () => true, get: (name: string) => linked[name as keyof typeof linked] },
     settings: { "messaging.telegram": { botToken: "123:test", webhookSecret: "secret" } },
   };

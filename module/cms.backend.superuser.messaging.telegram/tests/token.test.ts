@@ -1,10 +1,7 @@
-import { assert, assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertStringIncludes, fakeT } from "../../core/tests/deps.ts";
 import { $item } from "../../core/mod.ts";
 import api from "../nodeApi.ts";
 import { bot as renderBot } from "../render.ts";
-
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
 
 Deno.test("Telegram bot token is validated once and cannot be replaced here", async () => {
   let token: unknown;
@@ -21,7 +18,7 @@ Deno.test("Telegram bot token is validated once and cannot be replaced here", as
       }),
     },
   };
-  const node = { app: { settings, t } } as never;
+  const node = { app: { settings, t: fakeT } } as never;
   const original = globalThis.fetch;
   globalThis.fetch = (input: string | URL | Request) => {
     const valid = String(input).includes("good-token");
@@ -43,10 +40,10 @@ Deno.test("Telegram bot token is validated once and cannot be replaced here", as
 });
 
 Deno.test("Telegram token form is only rendered before configuration", async () => {
-  const empty = { app: { settings: { "messaging.telegram": {} }, t } } as never;
+  const empty = { app: { settings: { "messaging.telegram": {} }, t: fakeT } } as never;
   assertStringIncludes(String(await renderBot(empty)), "name=botToken");
 
-  const configured = { app: { settings: { "messaging.telegram": { botToken: "configured" } }, t } } as never;
+  const configured = { app: { settings: { "messaging.telegram": { botToken: "configured" } }, t: fakeT } } as never;
   const original = globalThis.fetch;
   globalThis.fetch = () => Promise.resolve(Response.json({ ok: false, error_code: 401, description: "Unauthorized" }, { status: 401 }));
   try {

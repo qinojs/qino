@@ -1,5 +1,5 @@
 import { WebAuth } from "../../web_auth/pub/web_auth.js";
-import { t } from "../../core/pub/js/qino.js";
+import { hee, t } from "../../core/pub/js/qino.js";
 
 cms.initNode("cont.web_auth", (el) => {
   const isLogin  = el.classList.contains("web-auth-login");
@@ -48,11 +48,10 @@ cms.initNode("cont.web_auth", (el) => {
       if (!list) return;
       try {
         const creds = await wa.listCredentials();
-        const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const fmt = ts => new Date(ts * 1000).toLocaleDateString();
         list.innerHTML = creds.length
           ? creds.map(c => `<div data-credential>
-              <strong>${esc(c.name)}</strong>
+              <strong>${hee(c.name)}</strong>
               <small>${fmt(c.created)} · ${fmt(c.lastUsed)}</small>
               <button data-action="delete" data-cred-id="${c.id}">🗑</button>
             </div>`).join("")

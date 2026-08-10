@@ -1,4 +1,4 @@
-import { assert, assertEquals, testContext } from "../../core/tests/deps.ts";
+import { assert, assertEquals, fakeT, testContext } from "../../core/tests/deps.ts";
 import { Db, Output, unixTime, type Ctx } from "../../core/mod.ts";
 import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
@@ -17,13 +17,9 @@ async function makeDb(): Promise<Db> {
   return db;
 }
 
-/** Minimal `app.t`: substitutes the interpolated values, no lookup. */
-const t = (strings: TemplateStringsArray, ...values: unknown[]) =>
-  Promise.all(values).then((v) => strings.reduce((a, s, i) => a + s + (i < v.length ? String(v[i] ?? "") : ""), ""));
-
 const makeApp = (db?: Db) => ({
   db,
-  t,
+  t: fakeT,
   settings: { "messaging.telegram": { botToken: "123456:test-token", webhookSecret: SECRET } },
   // deno-lint-ignore no-explicit-any
 }) as any;
