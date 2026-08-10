@@ -10,7 +10,6 @@ const LARGE_ROWS = 100_000;
 const LARGE_BYTES = 100_000_000;
 
 export const isLarge = (status: TableStatus): boolean => (status.rows ?? 0) >= LARGE_ROWS || (status.bytes ?? 0) >= LARGE_BYTES;
-const errorText = (e: unknown): string => errMsg(e);
 
 export async function nodeApi(node: Node, vars: Record<string, unknown>) {
   const db = node.app.db;
@@ -94,13 +93,13 @@ export async function nodeApi(node: Node, vars: Record<string, unknown>) {
         try {
           await maintain(db, "optimize", table, status);
           done.push(table);
-        } catch (e) { failed.push(`${table}: ${errorText(e)}`); }
+        } catch (e) { failed.push(`${table}: ${errMsg(e)}`); }
       }
       return {
         message: `${done.length} tables optimized${skipped.length ? `; ${skipped.length} large tables skipped: ${skipped.join(", ")}` : ""}${failed.length ? `; failed: ${failed.join(", ")}` : ""}`,
         tables: done,
       };
     }
-  } catch (e) { return { error: errorText(e) }; }
+  } catch (e) { return { error: errMsg(e) }; }
   return { error: "unknown action" };
 }
