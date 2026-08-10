@@ -153,5 +153,5 @@ asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
   a local `Module.dir`. A useful remote store needs a strategy: proxy, cache, or install locally.
 - **Remote locales.** Discovery is `Deno.readDir(<module>/locale/)`; HTTP has no portable directory
   listing, so remote modules need an explicit locale export or catalog metadata.
-- **PostgreSQL demo.** `demo-postgres/server.ts` scans the module directory and excludes what is not
-  PostgreSQL-compatible. A general selection API for one compatibility demo is not worth it yet.
+- **PostgreSQL demo.** The `pg` app in `demo/server.ts` installs the default set, which happens to
+  avoid what PostgreSQL cannot do yet. A general compatibility-selection API is not worth it yet.

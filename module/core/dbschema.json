@@ -312,7 +312,7 @@
             "default": ""
           }
         },
-        "required": ["id", "basis", "offset", "type", "w"]
+        "required": ["id", "basis", "offset", "type"]
       }
     },
     "sess": {
