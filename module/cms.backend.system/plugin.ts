@@ -29,7 +29,7 @@ async function render(node: Node): Promise<HtmlString> {
   const osStartIso  = new Date(Date.now() - osUptimeSec  * 1000).toISOString();
 
   const serverInfoHtml = html.async`
-<div class=u2-card>
+<div class=u2-card style="flex-basis: auto">
   <div class=-head>${t`System info`}</div>
   <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
