@@ -21,23 +21,45 @@ export async function install({ app }: { app: App }): Promise<void> {
   if (moved || json) console.log(`[migrate_from_php] migrated ${moved} app settings, ${json} json settings`);
 }
 
-/** Columns the PHP CMS required and qino never writes. NOT NULL without a default makes every
- *  insert fail, so they have to go before anything else touches the table. */
+// A legacy column that is NOT NULL without a default blocks every insert into its table, because
+// qino never writes it. Dead ones go, ones still holding data only lose the constraint.
+const dropColumns = [["qg_setting", "w"], ["module", "title_id"], ["page", "_cache"]];
+const nullableColumns = [["client", "client1_request_json"], ["client", "client1_response_json"], ["mail", "mail1_template"]];
+
+/** `qg_setting.w` is read before any module installs, so it has to be gone before qino first
+ *  opens a legacy database — see MIGRATION.md. The rest is repaired here. */
 async function dropLegacyColumns(app: App): Promise<void> {
-  for (const [table, column] of [["qg_setting", "w"]]) {
-    try { await app.db.one`SELECT ${sql.id(column)} FROM ${sql.id(table)} LIMIT 1`; } catch { continue; }
+  for (const [table, column] of dropColumns) {
+    const field = await legacyField(app, table, column);
+    if (!field) continue;
     await app.db.query`ALTER TABLE ${sql.id(table)} DROP COLUMN ${sql.id(column)}`;
     console.log(`[migrate_from_php] dropped ${table}.${column}`);
   }
+  // Columns of PHP-only modules (client1, mail1): keep the content for a later port of the module.
+  for (const [table, column] of nullableColumns) {
+    const field = await legacyField(app, table, column);
+    if (!field || field.vs.Null === "YES") continue;
+    await app.db.query`ALTER TABLE ${sql.id(table)} MODIFY COLUMN ${sql.id(column)} ${sql.raw(field.vs.Type)} NULL`;
+    console.log(`[migrate_from_php] ${table}.${column} is nullable now`);
+  }
+}
+
+async function legacyField(app: App, table: string, column: string) {
+  const t = app.db.table(table);
+  await t.reloadFields();
+  return t.field(column);
 }
 
 /** Legacy on/off access flags → cms_access levels: module 1 → 2 (0 keeps the column default 1), grp 1 → 2. */
 async function migrateAccessLevels(app: App): Promise<void> {
-  // module.access stays as deprecated column; zeroed after migration so this never reruns.
-  try {
+  // module.access is NOT NULL without a default, so a leftover column blocks every new module row.
+  const mod = app.db.table("module");
+  await mod.reloadFields();
+  if (mod.field("access")) {
     const modules = await app.db.exec`UPDATE module SET cms_access = 2, access = 0 WHERE access > 0`;
-    if (modules.affectedRows) console.log(`[migrate_from_php] module.access → cms_access: ${modules.affectedRows} rows`);
-  } catch { /* legacy column already gone */ }
+    await app.db.query`ALTER TABLE module DROP COLUMN access`;
+    console.log(`[migrate_from_php] module.access → cms_access: ${modules.affectedRows} rows`);
+  }
 
   // grp.page_access is gone from the schema; migrate then drop the legacy column.
   try { await app.db.one`SELECT page_access FROM grp LIMIT 1`; } catch { return; }
