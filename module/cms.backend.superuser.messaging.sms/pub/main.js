@@ -1,34 +1,15 @@
-import { api } from "../../core/pub/js/qino.js";
+import { nodePanel } from "../../cms.backend/pub/js/node.mjs";
 
 cms.initNode("backend.superuser.messaging.sms", (el) => {
-  const node = api.cms.node(Number(cms.el.nid(el)));
-  let busy = false;
-
-  const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
+  const panel = nodePanel(el, ["provider", "send", "phones"]);
+  // re-rendered parts lose the shown/hidden state of the provider fields
   const providerFields = () => {
     const type = el.querySelector("[data-provider-type]")?.value;
     for (const fields of el.querySelectorAll("[data-provider-fields]")) fields.hidden = fields.dataset.providerFields !== type;
   };
-  const refresh = async () => {
-    await Promise.all(["provider", "send", "phones"].map(async (name) => {
-      el.querySelector(`[cms-part=${name}]`).innerHTML = await node.html.part(name).get();
-    }));
-    providerFields();
-  };
   const execute = async (button, data) => {
-    if (busy) return;
-    busy = true;
-    button.disabled = true;
-    try {
-      const response = await node.api.post(data);
-      await refresh();
-      await show(response?.message || "");
-    } catch (e) {
-      await show(e?.message || String(e));
-    } finally {
-      busy = false;
-      button.disabled = false;
-    }
+    await panel.execute(button, data);
+    providerFields();
   };
   const fields = (button) => {
     const form = button.closest("form");

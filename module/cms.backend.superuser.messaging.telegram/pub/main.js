@@ -1,28 +1,7 @@
-import { api } from "../../core/pub/js/qino.js";
+import { nodePanel } from "../../cms.backend/pub/js/node.mjs";
 
 cms.initNode("backend.superuser.messaging.telegram", (el) => {
-  const node = api.cms.node(Number(cms.el.nid(el)));
-  let busy = false;
-
-  const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
-  const refresh = () => Promise.all(["bot", "send", "chats"].map(async (name) => {
-    el.querySelector(`[cms-part=${name}]`).innerHTML = await node.html.part(name).get();
-  }));
-  const execute = async (button, data) => {
-    if (busy) return;
-    busy = true;
-    button.disabled = true;
-    try {
-      const response = await node.api.post(data);
-      await refresh();
-      await show(response?.message || "");
-    } catch (e) {
-      await show(e?.message || String(e));
-    } finally {
-      busy = false;
-      button.disabled = false;
-    }
-  };
+  const { execute } = nodePanel(el, ["bot", "send", "chats"]);
   // the button's own form, validated — null when invalid
   const form = (button) => {
     const el = button.closest("form");

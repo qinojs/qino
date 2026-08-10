@@ -1,29 +1,7 @@
-import { api } from "../../core/pub/js/qino.js";
+import { nodePanel } from "../../cms.backend/pub/js/node.mjs";
 
 cms.initNode("backend.superuser.cron", (el) => {
-  const node = api.cms.node(Number(cms.el.nid(el)));
-  const list = el.querySelector("[cms-part=list]");
-  let busy = false;
-
-  const show = async (message) => (await import("@qino/u2/js/dialog/dialog.js")).alert(message);
-  const refresh = async () => {
-    list.innerHTML = await node.html.part("list").get();
-  };
-  const execute = async (button, data) => {
-    if (busy) return;
-    busy = true;
-    button.disabled = true;
-    try {
-      const response = await node.api.post(data);
-      await refresh();
-      await show(response?.message || "");
-    } catch (e) {
-      await show(e?.message || String(e));
-    } finally {
-      busy = false;
-      button.disabled = false;
-    }
-  };
+  const { execute, refresh, alert: show } = nodePanel(el, ["list"]);
 
   el.addEventListener("click", (event) => {
     const job = event.target.closest("[data-run-job]");
