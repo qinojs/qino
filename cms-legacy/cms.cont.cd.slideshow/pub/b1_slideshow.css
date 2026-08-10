@@ -1,0 +1,22 @@
+/* slideshow */
+.b1_slideshow {
+	display:flex;
+}
+.b1_slideshow > .-slides {
+	display:flex;
+	overflow:auto;
+	zzz_scroll-snap-type: proximity;
+	width:100%;
+ 	/* if its a list */
+	list-style:none;
+	margin:0;
+	padding:0;
+}
+.b1_slideshow > .-slides > * {
+	max-width:100%;
+	min-width:200px;
+	width:100%;
+	flex-shrink:0;
+	margin:0 !important;
+	box-sizing:border-box;
+}

@@ -14,12 +14,31 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.video.section.cd` | — | ported |
 | `cms.cont.cd.boxes` | — | ported site module |
 | `cms.cont.cd.services_links` | — | ported site module |
+| `cms.cont.cd.link_box` | — | ported site module |
+| `cms.cont.cd.fullscreen` | — | ported section with two headings |
+| `cms.cont.cd.text` | — | ported text section |
+| `cms.cont.cd.2_bilder` | — | ported pair of linked images |
+| `cms.cont.cd.image_height` | — | ported single-image section |
+| `cms.cont.cd.slideshow` | — | ported slideshow with per-slide texts |
+| `cms.cont.icons1` | — | ported icon row |
+| `cms.cont.stretchedItems1` | — | ported column layout |
 | `cms.cont.slideshow.schwups2` | — | ported slideshow shell and behavior |
 | `cms.cont.gallery.photoswipe1` | — | ported gallery shell with PhotoSwipe assets |
+| `cms.cont.images.cd` | — | ported linked image row |
+| `cms.cont.product_overview.cd` | — | ported product overview shell |
+| `cms.cont.quote.cd` | — | site-template wrapper for quotes |
+| `cms.cont.shp3.currency_chooser` | — | ported currency chooser behavior |
+| `cms.cont.text_and_slider.cd` | — | ported text and image slider |
 | `cms.legacy.c1` | — | browser helpers shared by legacy site modules |
 
 A module belongs here when the old name has to survive. Where a rename is all that differs,
 rewriting `page.module` during the migration is the cheaper answer.
 
+A ported module brings the CSS of its PHP original along, rewritten to the `[qcms-mod="…"]` anchor —
+`migrateCss` only rewrites the site's own files under `data/`, never the ones shipped here.
+
 `lib/bg.ts` replaces PHP's `cms_image2_bg()`: qino's `cms.image2` only ports the foreground
 `<cms-image2>`, so a background image is plain CSS here — same picture, no lazy upgrade.
+`sectionAttr()` adds what every legacy section shared: the `background-color` setting and white text
+once that colour is dark. `lib/text.ts` is PHP's `cms_text()`, `lib/siteTemplate.ts` loads the
+site's own `data/<module>/index.ts`.

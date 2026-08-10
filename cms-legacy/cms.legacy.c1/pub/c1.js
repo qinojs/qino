@@ -136,7 +136,8 @@ w.c1Use = function (prop_or_opts, cb) {
                 });
             }
         };
-		loadScript(src+'.js?c1Use_'+moduleAge, onload, onload);
+		// moduleAge came from PHPs json/c1 block; without it the query stays empty
+		loadScript(src+'.js?c1Use_'+(w.moduleAge||''), onload, onload);
 	}
 };
 /* multiple and path

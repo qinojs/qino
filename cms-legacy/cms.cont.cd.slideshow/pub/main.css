@@ -1,0 +1,48 @@
+[qcms-mod="cont.cd.slideshow"] {
+    position: relative;
+}
+[qcms-mod="cont.cd.slideshow"] > .c1-aspectRatio > .b1_slideshow > .-slides > * {
+    background-position:50%;
+    background-repeat:no-repeat;
+	background-size:cover;
+}
+
+/* prev / next */
+[qcms-mod="cont.cd.slideshow"] > .-arrow {
+    position: absolute;
+    padding:20px;
+    top: 0;
+	bottom: 0;
+	display:flex;
+	align-items: center; /* ie */
+    cursor: pointer;
+	border:none;
+	background:none;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+[qcms-mod="cont.cd.slideshow"] > .-arrow > .-img {
+    display:flex;
+	align-items: center;
+	background-position:50%;
+	background-repeat:no-repeat;
+	width:44px;
+	height:44px;
+}
+[qcms-mod="cont.cd.slideshow"] > .-prev { left: 0; }
+[qcms-mod="cont.cd.slideshow"] > .-next { right: 0; }
+
+[qcms-mod="cont.cd.slideshow"] > .-arrow svg {
+	width:100%;
+    height: 100%;
+	display:block;
+    stroke:#000;
+    fill:#fff;
+    stroke-width:0;
+}
+[qcms-mod="cont.cd.slideshow"] > .-prev > .-img {
+    transform:rotate(180deg);
+}

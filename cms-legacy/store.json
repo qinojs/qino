@@ -7,8 +7,21 @@
     "cms.cont.video.section.cd": {},
     "cms.cont.cd.boxes": {},
     "cms.cont.cd.services_links": {},
+    "cms.cont.cd.link_box": {},
+    "cms.cont.cd.fullscreen": {},
+    "cms.cont.cd.text": {},
+    "cms.cont.cd.2_bilder": {},
+    "cms.cont.cd.image_height": {},
+    "cms.cont.cd.slideshow": {},
+    "cms.cont.icons1": {},
+    "cms.cont.stretchedItems1": {},
     "cms.cont.slideshow.schwups2": {},
     "cms.cont.gallery.photoswipe1": {},
+    "cms.cont.images.cd": {},
+    "cms.cont.product_overview.cd": {},
+    "cms.cont.quote.cd": {},
+    "cms.cont.shp3.currency_chooser": {},
+    "cms.cont.text_and_slider.cd": {},
     "cms.legacy.c1": {}
   }
 }
