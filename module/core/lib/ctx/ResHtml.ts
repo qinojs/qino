@@ -31,8 +31,10 @@ export class ResHtml {
 
     ret += `<title>${hee(this.titlePrefix + this.title + this.titleSuffix)}</title>\n`;
 
-    // an import map cannot be an external file, so it joins the inline scripts and is hashed like them
-    if (this.importMap.size) this.inlineScripts.set(jsonScript({ imports: Object.fromEntries(this.importMap) }), { type: "importmap" });
+    // an import map cannot be an external file, so it joins the inline scripts and is hashed like them.
+    // Only worth emitting when something can resolve against it — a classic script's dynamic import() counts.
+    if (this.importMap.size && (this.scripts.size || this.legacyScripts.size || this.inlineScripts.size))
+      this.inlineScripts.set(jsonScript({ imports: Object.fromEntries(this.importMap) }), { type: "importmap" });
 
     let importmaps = "", inlinescripts = "";
     for (const [js, attr] of this.inlineScripts) {

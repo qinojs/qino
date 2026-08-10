@@ -51,6 +51,11 @@
     "sanitize-html": "npm:sanitize-html@^2",
     "web-push-neo": "npm:web-push-neo@0.1.2"
   },
+  "lint": {
+    "rules": {
+      "exclude": ["require-await", "no-control-regex", "no-import-prefix", "no-slow-types"]
+    }
+  },
   "tasks": {
     "test": "deno test --allow-read --allow-write=/tmp --allow-run=git --allow-env=CI,FORCE_COLOR,TERM,NO_COLOR,COLORTERM"
   }

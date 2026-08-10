@@ -15,6 +15,10 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+
+      - run: deno check --all
+      - run: deno task test
 
       - name: Version lesen
         id: version
@@ -25,7 +29,5 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
-
-      - uses: denoland/setup-deno@v2
 
       - run: deno publish --allow-slow-types

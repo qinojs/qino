@@ -41,6 +41,16 @@ Deno.test("ResHtml: no import map, nothing to allow", () => {
   assertEquals(html.inlineScripts.size, 0);
 });
 
+Deno.test("ResHtml: a script-free page carries no import map", () => {
+  const html = new ResHtml();
+  html.importMap.set("@qino/pub/", "/m/core/pub/js/");
+  assertEquals(html.render().includes("importmap"), false);
+
+  // any kind of script can resolve against it — a classic one via dynamic import()
+  html.legacyScripts.add("/c1.js");
+  assertEquals(html.render().includes('<script type="importmap">'), true);
+});
+
 Deno.test("ResHtml: inline scripts default to module and take attributes", () => {
   const html = new ResHtml();
   html.scripts.add("/m.mjs");
