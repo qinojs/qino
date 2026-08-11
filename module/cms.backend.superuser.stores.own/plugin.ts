@@ -39,24 +39,10 @@ async function copyModule(from: string, to: string, oldName: string, newName: st
   }
 }
 
-/** The smallest module that renders something editable — enough to start from. */
+/** The smallest thing that is a module — a shape to start from comes from a template, not from here. */
 async function blankModule(dir: string, modName: string): Promise<void> {
-  await Deno.mkdir(dir + "pub/", { recursive: true });
-  await Deno.writeTextFile(dir + "plugin.ts", `import { html, type HtmlString } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
-
-export const name = "${modName}";
-export const needs = ["cms"];
-
-function render(node: Node): Promise<HtmlString> {
-  return html.async\`<div>\${node.cms.text(node, "main", { initial: { en: "Text here…" } })}</div>\`;
-}
-
-export const cms = {
-  node: { css: ["pub/main.css"], render },
-};
-`);
-  await Deno.writeTextFile(dir + "pub/main.css", `[qcms-mod="${modName.replace(/^cms\./, "")}"] {\n}\n`);
+  await Deno.mkdir(dir, { recursive: true });
+  await Deno.writeTextFile(dir + "plugin.ts", `export const name = "${modName}";\n\nexport function init() {}\n`);
 }
 
 async function create(app: App, modName: string, template: string): Promise<void> {
@@ -67,9 +53,11 @@ async function create(app: App, modName: string, template: string): Promise<void
 
   if (!template) await blankModule(dir, modName);
   else {
-    const from = app.modules.get(template)?.dir;
-    if (!from) throw new Error(`Template "${template}" is not a local module`);
-    await copyModule(from, dir, template, modName);
+    // Copying takes the sources, so the module must be on disk — a remote one keeps its code
+    // over the wire and would leave a folder without a plugin.ts behind.
+    const mod = app.modules.get(template);
+    if (!mod?.source.startsWith("file:")) throw new Error(`Template "${template}" is not a local module`);
+    await copyModule(mod.dir!, dir, template, modName);
   }
   // Leave nothing half-created behind: an unlinkable module would block the name on the next try.
   await app.modules.install(toFileUrl(dir + "plugin.ts").href, modName)
@@ -97,8 +85,7 @@ async function render(node: Node): Promise<HtmlString> {
   const t = app.t;
   const store = app.stores.get(storeUrl(app));
   const mine = await (store?.names() ?? Promise.resolve([])).catch(() => []);
-  // Only a module on disk can be copied — a remote one has no plugin.ts here.
-  const templates = Object.values(app.modules.all()).filter((mod) => mod.dir).map((mod) => mod.name).sort();
+  const templates = Object.values(app.modules.all()).filter((mod) => mod.source.startsWith("file:")).map((mod) => mod.name).sort();
 
   return html.async`<div class=u2-flex>
   <div class=u2-card>

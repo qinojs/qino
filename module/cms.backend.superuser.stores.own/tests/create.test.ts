@@ -36,6 +36,13 @@ Deno.test({
     assertEquals(await Deno.readTextFile(made + "pub/main.css"), `[qcms-mod="cont.cd.demo"] {\n}\n`, "qcms-mod form replaced");
     assertEquals(await Deno.stat(made + "tests").then(() => true, () => false), false, "the template's tests stay behind");
 
+    // Blank knows no module shape: what a module must have, and nothing a CMS would expect.
+    assertEquals(await cms.node.api(node, { name: "t.blank", template: "" }), { ok: true });
+    assertEquals(
+      await Deno.readTextFile(dir + "module/t.blank/plugin.ts"),
+      `export const name = "t.blank";\n\nexport function init() {}\n`,
+    );
+
     const taken = await cms.node.api(node, { name: "cms.cont.cd.demo", template: "" });
     assertEquals(taken.ok, false, "the name is taken");
     const invalid = await cms.node.api(node, { name: "../escape", template: "" });
