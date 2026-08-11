@@ -53,7 +53,7 @@ export { $item, bildJsonItem, schemaDiff, schemaFromDb, toInput } from "./deps.t
 export type { ItemProxy } from "./deps.ts";
 
 // Modules
-export { Module } from "./lib/ModuleManager.ts";
+export { isModuleName, Module } from "./lib/ModuleManager.ts";
 export { Store } from "./lib/StoreManager.ts";
 
 // Auth

@@ -2,12 +2,9 @@
 import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { cms } from "../plugin.ts";
 
-Deno.test("cms.layout.backend: reads the backend id from a setting branch", async () => {
+Deno.test("cms.layout.backend: loads the backend id asynchronously", async () => {
   let id = 0;
-  const backend = () => "83";
-  Object.defineProperty(backend, Symbol.toPrimitive, {
-    value: () => { throw new TypeError("setting branch cannot be converted"); },
-  });
+  const backend = Promise.resolve("83");
   const root = {
     children: () => new Map(),
     url: () => "/de/backend",

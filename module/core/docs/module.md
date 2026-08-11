@@ -49,17 +49,25 @@ manifest — today `cms.cont.*` and `cms.layout.*` are structurally identical th
 A module gets three directories below `app.appPATH`, each named after the module. They differ in
 one thing only — what an operator may throw away:
 
-| Accessor | Directory | Backup | May be deleted |
-|---|---|---|---|
-| `mod.data` | `data/<module>/` | **yes** | never |
-| `mod.cache` | `cache/<module>/` | no | any time |
-| `mod.tmp` | `tmp/<module>/` | no | when nothing runs |
+| Accessor | Directory | May be deleted |
+|---|---|---|
+| `mod.data` | `data/<module>/` | never |
+| `mod.cache` | `cache/<module>/` | any time |
+| `mod.tmp` | `tmp/<module>/` | when nothing runs |
 
-That split is what makes the operator's three jobs one path each: back up `data/`, clear `tmp/` on
-boot, drop `tmp/` + `cache/` to reclaim space. Below the module name the layout is yours.
+That split is what makes the operator's jobs one path each: clear `tmp/` on boot, drop `tmp/` +
+`cache/` to reclaim space. Below the module name the layout is yours.
+
+**Backing up follows from it, and is stated the other way round: save all of `appPATH` except
+`cache/` and `tmp/`, the database dumped rather than copied.** Excluding is the safe direction —
+whatever nobody classified is in the backup instead of missing from it, and it is missing that you
+notice at restore time. A whitelist would also have to name everything that is neither a module
+directory nor derived: the app's own `server.ts`, a store folder, and with SQLite the database file,
+which sits directly in `appPATH`. Copying that file while the app runs gives a torn copy, hence the
+dump — `VACUUM INTO` for SQLite, `mysqldump` / `pg_dump` otherwise.
 
 **The invariant that carries it:** everything in `cache/` must be reproducible from `data/` alone.
-Otherwise "no backup" is not safe — so originals belong in `data/`, only derivatives in `cache/`.
+Otherwise "deletable" is not safe — so originals belong in `data/`, only derivatives in `cache/`.
 `tmp/` is separate from `cache/` because of *when* it may go: `cache/` can be cleared mid-request
 without breaking anything, `tmp/` cannot — a running upload or zip build dies with it.
 

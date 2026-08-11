@@ -13,6 +13,7 @@ export const needs = ["core", "cms"];
 
 export async function install({ app }: { app: App }): Promise<void> {
   await dropLegacyColumns(app);
+  await removeObsoleteSettings(app);
   const moved = await migrateAppSettings(app);
   const json = await migrateJsonSettings(app);
   await prepareForm1Settings(app);
@@ -30,6 +31,15 @@ export async function install({ app }: { app: App }): Promise<void> {
   app.languages.setLangs(langsRaw.split(","));
 
   if (moved || json) console.log(`[migrate_from_php] migrated ${moved} app settings, ${json} json settings`);
+}
+
+/** Remove settings whose legacy value-plus-children shape has no qino equivalent. */
+export async function removeObsoleteSettings(app: App): Promise<boolean> {
+  const id = await settingId(app, ["cms", "backend", "lastpage"]);
+  if (!id) return false;
+  await removeSetting(app, id);
+  console.log("[migrate_from_php] removed obsolete cms.backend.lastpage setting");
+  return true;
 }
 
 // A legacy column that is NOT NULL without a default blocks every insert into its table, because

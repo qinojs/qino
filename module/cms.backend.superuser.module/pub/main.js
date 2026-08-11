@@ -1,4 +1,4 @@
-cms.initNode("backend.module", (el) => {
+cms.initNode("backend.superuser.module", (el) => {
   const nid = Number(cms.el.nid(el));
 
   // client-side filter — all modules are already rendered, no round-trip needed

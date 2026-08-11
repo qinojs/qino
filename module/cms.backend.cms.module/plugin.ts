@@ -21,7 +21,7 @@ const modAccess = (app: App, module: string) =>
 const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;
 const contentModules = (app: App) => Object.keys(app.modules.all()).sort().filter((n) => isContent(app, n));
 
-/** Detail link of a module list page (this one or cms.backend.module). */
+/** Detail link of a module list page (this one or cms.backend.superuser.module). */
 const modUrl = (base: string, module: string) => base + (base.includes("?") ? "&" : "?") + "mod=" + module;
 
 const word = (list: string[]) => (v: unknown) => v == null ? "–" : list[Number(v)] ?? "?";
@@ -216,7 +216,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
 
   const canReplace = access >= ADMIN && editable > 0 && targets.length > 0;
   // the code/plugin view of the same module, if that backend page is installed and readable
-  const codePage = await (await node.cms.nodeByModule("cms.backend.module"))?.page();
+  const codePage = await (await node.cms.nodeByModule("cms.backend.superuser.module"))?.page();
   const codeUrl = codePage && await codePage.access() ? await codePage.url() : "";
   const history = await historyRows(node, visible, titles);
 
@@ -228,7 +228,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
       <tr><th>${t`Used`}<td>${usedTotal}
       <tr><th>${t`Module access`}<td>${accessWord(access)}
       <tr><th>${t`Standard`}<td>${stdWord(standard)}
-      ${codeUrl ? html.async`<tr><th>${t`Code`}<td><a href="${modUrl(codeUrl, modName)}">cms.backend.module</a>` : ""}
+      ${codeUrl ? html.async`<tr><th>${t`Code`}<td><a href="${modUrl(codeUrl, modName)}">cms.backend.superuser.module</a>` : ""}
     </table>
     ${message ? html`<div class=-body><strong>${message}</strong></div>` : ""}
   </div>

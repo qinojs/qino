@@ -38,7 +38,7 @@ export const recommended = [
   "cms.backend.cms.tree",
   "cms.backend.settings",
   "cms.backend.users",
-  "cms.backend.module",
+  "cms.backend.superuser.module",
   "cms.backend.system",
   "cms.backend.superuser",
   "cms.backend.superuser.stores", // installing further modules starts here

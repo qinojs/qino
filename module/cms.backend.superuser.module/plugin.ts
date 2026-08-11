@@ -4,12 +4,12 @@ import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
 
-export const name = "cms.backend.module";
+export const name = "cms.backend.superuser.module";
 export const description = "Inspects loaded modules, dependencies, exports, source files, and runtime state.";
 export const needs = ["cms.backend"];
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, "cms.backend.module", { en: "Modules", de: "Module" });
+  await backend.install(app, name, { en: "Modules", de: "Module" });
 }
 
 // dir ends with a slash (like Module.dir)

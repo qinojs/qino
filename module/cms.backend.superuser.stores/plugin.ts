@@ -31,10 +31,15 @@ function state(app: App, mod: string): "active" | "inactive" | "available" | "br
   return app.modules.linked(mod) ? "active" : "inactive";
 }
 
-/** Short store name: the host of a remote catalog, the folder of a local one. */
-function storeLabel(url: string): string {
+/** Short store name: the host of a remote catalog, the path of a local one. Two stores may well
+ *  sit in a folder of the same name, so a local path keeps its parent, and the app's own is
+ *  relative — that is what tells `./module/` from the built-in `qino/module`. */
+function storeLabel(app: App, url: string): string {
   const u = new URL(url);
-  return u.host || decodeURIComponent(u.pathname).split("/").filter(Boolean).at(url.endsWith("/") ? -1 : -2) || url;
+  if (u.host) return u.host;
+  const dir = decodeURIComponent(new URL(".", url).pathname);
+  const own = toFileUrl(app.appPATH).pathname;
+  return dir.startsWith(own) ? "./" + dir.slice(own.length) : dir.split("/").filter(Boolean).slice(-2).join("/") || url;
 }
 
 /** Read every catalog in parallel; an unreachable store keeps its error instead of names. */
@@ -91,14 +96,14 @@ function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlStri
     ];
   return html`<tr data-mod="${mod}" data-store="${storeUrl}" data-state=${st}>
     <td title="${why ?? plugin?.description}">${mod}
-    <td><small>${storeUrl ? storeLabel(storeUrl) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
+    <td><small>${storeUrl ? storeLabel(app, storeUrl) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
     <td style="text-align:right">${html.join(acts, " ")}`;
 }
 
-function storeRow(store: Store, error: string): HtmlString {
+function storeRow(app: App, store: Store, error: string): HtmlString {
   return html`<tr>
-    <td><button class=u2-unstyle data-pick="${store.url}" title="${store.url}"><code>${storeLabel(store.url)}</code></button>
+    <td><button class=u2-unstyle data-pick="${store.url}"><code>${storeLabel(app, store.url)}</code><br><small>${store.url}</small></button>
     <td>${error ? html`<strong>${error}</strong>` : html`<small data-count="${store.url}"></small>`}
     <td style="text-align:right">${
     store.declared
@@ -171,7 +176,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
-      ${html.join(cats.map(({ store, error }) => storeRow(store, error)))}
+      ${html.join(cats.map(({ store, error }) => storeRow(app, store, error)))}
       <tr><td colspan=3><button data-act=addStore>${l.addStore}</button>
     </table>
     <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>
@@ -182,7 +187,7 @@ async function render(node: Node): Promise<HtmlString> {
     <div class=u2-flex>
       <select data-filter=store>
         <option value="">${t`all stores`}
-        ${html.join(cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(store.url)}`))}
+        ${html.join(cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(app, store.url)}`))}
         <option value="-">${t`no store`}
       </select>
       <select data-filter=state>
