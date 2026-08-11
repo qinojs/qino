@@ -1,6 +1,6 @@
 {
   "name": "@qino/qino",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "exports": {
     ".": "./module/core/mod.ts",
     "./ai": "./module/ai/mod.ts",
