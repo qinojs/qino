@@ -52,7 +52,28 @@ async function author(): Promise<string[]> {
   return ["-c", `user.name=${parts || email}`, "-c", `user.email=${email}`];
 }
 
+/** A supervisor is what makes ending the process a restart rather than an outage — systemd sets
+ *  INVOCATION_ID for the services it starts, and QINO_SUPERVISED says so for every other one. */
+function supervised(): boolean {
+  try {
+    return !!(Deno.env.get("INVOCATION_ID") ?? Deno.env.get("QINO_SUPERVISED"));
+  } catch {
+    return false; // no --allow-env, so nothing to go on: assume nobody is watching
+  }
+}
+
+/** Pulled code reaches a running process nowhere: Deno keeps the module graph it started with.
+ *  So the restart is an exit, and the supervisor brings the new graph up.
+ *  Non-zero, or the `Restart=on-failure` an install may be running would leave it down. */
+function restart(): string {
+  if (!supervised()) throw new Error("No service manager found — the process would stay down. Set QINO_SUPERVISED=1 if one is watching.");
+  // In-flight requests end with the process; a delay long enough for this answer is what it gets.
+  setTimeout(() => Deno.exit(75), 500);
+  return "Restarting — the page reloads once the server answers again.";
+}
+
 async function act(app: App, action: string, root: string, message: string): Promise<string> {
+  if (action === "restart") return restart(); // the process, not a repository — no root to check
   // Never a path from the client: only a repository this app actually sits in may be touched.
   const known = await repos(app);
   const repo = known.find((r) => r.root === root);
@@ -115,11 +136,23 @@ function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
 </div>`;
 }
 
+/** The process, once, next to the repositories: what a pull changes on disk is what a restart loads. */
+function serverCard(t: App["t"]): Promise<HtmlString> {
+  const can = supervised();
+  return html.async`<div class=u2-card>
+  <div class=-head>${t`Server`}</div>
+  <div class=-body>
+    <small>${can ? t`Pulled code is loaded on the next start.` : t`No service manager: nothing would start the process again.`}</small>
+    <button data-act=restart data-confirm="${t`Restart the server now? The site is unreachable for a moment.`}"${can ? "" : html` disabled`}>${t`Restart`}</button>
+  </div>
+</div>`;
+}
+
 async function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
   const found = await repos(node.app);
-  if (!found.length) return html.async`<div class=u2-card><div class=-body>${t`No git repository found.`}</div></div>`;
-  return html.async`<div class="u2-flex git-repos">${found.map((repo) => repoCard(repo, t))}</div>`;
+  const cards = found.length ? found.map((repo) => repoCard(repo, t)) : [html.async`<div class=u2-card><div class=-body>${t`No git repository found.`}</div></div>`];
+  return html.async`<div class="u2-flex git-repos">${cards}${serverCard(t)}</div>`;
 }
 
 // --- node API -------------------------------------------------------------
