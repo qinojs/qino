@@ -1,0 +1,22 @@
+.-m-cms-cont-parallax2 > .-viewport {
+	margin:0;
+	overflow: hidden;
+	xposition: relative;
+	z-index:1; /* bringt das performance? */
+	transform: translate3d(0, 0, 0); /* besser als position:relative? */
+}
+.-m-cms-cont-parallax2 > .-viewport > .-content {
+	z-index:1; /* bringt das performance? */
+	position:absolute;
+	left:0;
+	right:0;
+	top:-360px;
+	bottom:-360px;
+	will-change:transform;
+	background-size:cover;
+}
+.-m-cms-cont-parallax2 > .-viewport > .-over {
+	transform: translate3d(0, 0, 0); /* bringt das was? */
+	z-index:1;
+	position:relative;
+}

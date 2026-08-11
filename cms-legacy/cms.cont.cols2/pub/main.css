@@ -1,0 +1,14 @@
+.-m-cms-cont-cols2 {
+	display:table;
+	width:100%;
+	table-layout:fixed;
+	box-sizing: border-box;
+}
+.-m-cms-cont-cols2 > * {
+	display:table-cell;
+	vertical-align:top;
+    box-sizing:border-box;
+}
+.-m-cms-cont-cols2 > i {
+    display:none;
+}

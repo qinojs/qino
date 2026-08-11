@@ -29,6 +29,19 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.quote.cd` | — | site-template wrapper for quotes |
 | `cms.cont.shp3.currency_chooser` | — | ported currency chooser behavior |
 | `cms.cont.text_and_slider.cd` | — | ported text and image slider |
+| `cms.cont.cols2` | — | ported responsive column layout |
+| `cms.cont.spacer` | — | ported spacing element |
+| `cms.cont.parallax2` | — | ported parallax section shell |
+| `cms.cont.video.nativ1` | — | ported native video player |
+| `cms.cont.video.youtube2` | — | ported privacy-aware YouTube embed |
+| `cms.cont.overview.cd` | — | ported linked page overview |
+| `cms.cont.privacy_policy1` | — | ported generated privacy policy |
+| `cms.cont.impressum2` | — | ported generated imprint |
+| `cms.cont.cd.fullcalendar` | — | ported accessible event list |
+| `cms.cont.event2.category3` | — | ported event-category read view |
+| `cms.cont.event2.default` | — | ported event-detail read view; registration intentionally disabled |
+| `cms.cont.event2.fullcalendar4` | — | ported accessible calendar read view |
+| `cms.cont.event2.overview1` | — | ported upcoming/past event overview |
 | `cms.legacy.c1` | — | browser helpers shared by legacy site modules |
 
 A module belongs here when the old name has to survive. Where a rename is all that differs,

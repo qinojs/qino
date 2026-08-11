@@ -12,7 +12,16 @@ export async function migrateFiles(app: App): Promise<void> {
     kept += k;
   }
   await Deno.remove(legacy).catch(() => {}); // only when nothing was left behind
+  await moveCustom1Css(app);
   if (moved || kept) console.log(`[migrate_from_php] qg/ → data/: ${moved} moved` + (kept ? `, ${kept} kept (target existed)` : ""));
+}
+
+async function moveCustom1Css(app: App): Promise<void> {
+  const dir = app.appPATH + "data/cms.layout.custom.1/";
+  const source = dir + "custom.css", target = dir + "pub/main.css";
+  if (!await Deno.stat(source).catch(() => null) || await Deno.stat(target).catch(() => null)) return;
+  await Deno.mkdir(dir + "pub", { recursive: true });
+  await Deno.rename(source, target);
 }
 
 /** Directory names directly below dir; empty when it does not exist. */
