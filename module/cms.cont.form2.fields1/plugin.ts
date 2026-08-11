@@ -132,7 +132,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   if (!Object.keys(node.settings.inputs).length) node.settings.inputs["1"]({});
 
   const form = await formOf(node);
-  const fields: HtmlString[] = [];
+  const fields = [];
   for (const id of sortedIds(node)) fields.push(await field(node, id, form));
 
   const warning = node.edit && !form

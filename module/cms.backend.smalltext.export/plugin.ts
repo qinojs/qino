@@ -37,9 +37,9 @@ async function api(node: Node, vars: any): Promise<any> {
   if (!preview && !("export" in vars)) return false;
 
   const app = node.app;
-  const written: string[] = [];
-  const skipped: string[] = [];
-  const changes: Change[] = [];
+  const written = [];
+  const skipped = [];
+  const changes = [];
   for (const [ns, byLang] of Object.entries(await app.languages.export())) {
     const name = ns || "core";
     const dir = app.modules.get(name)?.dir;

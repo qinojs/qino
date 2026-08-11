@@ -69,7 +69,7 @@ async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<
   const counts = await app.db.indexCol`SELECT session_id, COUNT(*) FROM ai_message GROUP BY session_id`;
   const base = node ? await sessionLinkBase(node) : "?s=";
 
-  const rows: HtmlString[] = [];
+  const rows = [];
   for (const s of sessions) {
     const time = iso(s.updated_at);
     rows.push(html`<tr>

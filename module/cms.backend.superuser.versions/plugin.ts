@@ -22,7 +22,7 @@ async function render(node: Node): Promise<HtmlString> {
   const sizeOf = new Map(status.map((r) => [String(r.Name), Number(r.Data_length ?? 0) + Number(r.Index_length ?? 0)]));
 
   // ── per-table history storage ────────────────────────────────────────────
-  const rows: HtmlString[] = [];
+  const rows = [];
   for (const tbl of Object.keys(versedTables(db))) {
     const vt = await versTable(db, tbl);
     if (!vt) continue;

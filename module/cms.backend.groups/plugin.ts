@@ -40,7 +40,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     SELECT grp.*, (SELECT count(*) FROM usr_grp WHERE usr_grp.grp_id = grp.id) AS members
     FROM grp ORDER BY grp.type, grp.name`;
 
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const vs of rows) {
     trs.push(html`<tr itemid=${vs.id}>
       <td>${vs.id}
@@ -104,7 +104,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     FROM usr JOIN usr_grp ON usr.id = usr_grp.usr_id
     WHERE usr_grp.grp_id = ${id} ORDER BY usr.lastname, usr.firstname`;
 
-  const memberRows: HtmlString[] = [];
+  const memberRows = [];
   for (const m of members) {
     const label = [m.firstname, m.lastname].filter(Boolean).join(" ") || m.email || m.id;
     memberRows.push(html`<tr>

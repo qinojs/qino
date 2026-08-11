@@ -82,7 +82,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     if (!curPage.exists()) return "";
 
     // Collect children
-    const readableChildren: Node[] = [];
+    const readableChildren = [];
     const allChildren = await curPage.children("readable");
     for (const child of allChildren.values()) {
       if (filterVisible === "visible" && !child.vs.visible) continue;
@@ -100,7 +100,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
     }
 
     // Filter: skip entries without a title
-    const filtered: Node[] = [];
+    const filtered = [];
     for (const child of readableChildren) {
       const titleObj = await child.title();
       if (titleObj && (await titleObj.string()).trim()) filtered.push(child);

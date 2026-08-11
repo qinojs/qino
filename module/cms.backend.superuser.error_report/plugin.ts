@@ -116,7 +116,7 @@ function filterWhere(db: App["db"], vars: Record<string, unknown>): Sql {
   const fSource = String(vars.source ?? "");
   const fPrio   = String(vars.prio ?? "");
   const fRange  = Number(vars.range) || 0; // days; bounds the group scan via the time index
-  const conds: Sql[] = [];
+  const conds = [];
   if (fSource) conds.push(sql`source = ${fSource}`);
   if (fPrio)   conds.push(sql`prio = ${fPrio}`);
   if (fRange)  conds.push(sql`time >= ${daysAgo(fRange)}`);
@@ -169,7 +169,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const { editorLink } = makeFileHelper(ctx);
   const u = ctx.req.url.toURL();
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const row of rows) {
     const color   = ({ error: "var(--red)", warning: "var(--orange)", notice: "var(--blue)" })[String(row.prio)] ?? "var(--gray)";
     const num     = Number(row.num)     || 0;
@@ -240,7 +240,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
       LEFT JOIN usr  ON sess.usr_id = usr.id
     WHERE ${where} ORDER BY e.time DESC LIMIT 200`;
 
-  const trs: HtmlString[] = [];
+  const trs = [];
   const u = ctx.req.url.toURL();
   const back = ctx.req.url.toURL();
   for (const k of ["show", "source", "file", "line", "col"]) back.searchParams.delete(k);
@@ -251,7 +251,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
       ? html`<a href="${eUrl}" target=_blank title="${row.file}" style="color:inherit; text-decoration:none">${sample || "edit File"}</a>`
       : sample;
 
-    const btTrs: HtmlString[] = [];
+    const btTrs = [];
     const bt = row.backtrace ? JSON.parse(row.backtrace) : [];
     for (const item of bt) {
       const itemUrl = editorLink(item.file ?? "", item.line, item.col);
@@ -302,7 +302,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const sess = log?.sess_id  ? await db.row`SELECT * FROM sess WHERE id = ${log.sess_id}` : null;
   const usr  = sess?.usr_id  ? await db.row`SELECT * FROM usr  WHERE id = ${sess.usr_id}` : null;
 
-  const btTrs: HtmlString[] = [];
+  const btTrs = [];
   const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
   for (const item of bt) {
     const itemUrl = editorLink(item.file ?? "", item.line, item.col);
@@ -323,7 +323,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   else if (historyOf === "sess"   && log?.sess_id)   historyWhere = sql`log.sess_id = ${log.sess_id}`;
   else if (historyOf === "client" && log?.client_id) historyWhere = sql`log.client_id = ${log.client_id}`;
 
-  const historyTrs: HtmlString[] = [];
+  const historyTrs = [];
   if (historyWhere) {
     const logs = await db.query`
       SELECT log.*, url.url, referer.url AS referer
@@ -336,7 +336,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     const eu = ctx.req.url.toURL(); eu.searchParams.delete("history_of");
     for (const item of logs) {
       const errorItems = await db.query`SELECT * FROM m_error_report WHERE log_id = ${item.id} ORDER BY id DESC`.catch(() => []);
-      const errorLinks: HtmlString[] = [];
+      const errorLinks = [];
       for (const eItem of errorItems) {
         const active = eItem.id === error.id ? html.raw("&#x25B6;&#xFE0E;") : "";
         eu.searchParams.set("id", String(eItem.id));
@@ -447,7 +447,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const baseUrl = errNode ? await errNode.url() : null;
 
   const color: Record<string, string> = { error: "var(--red)", warning: "var(--orange)", notice: "var(--gray)" };
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const row of rows) {
     const c = color[row.prio] ?? "#333";
     const qs = "?show=entries&source=" + encodeURIComponent(row.source) + "&file=" + encodeURIComponent(row.file) + "&line=" + encodeURIComponent(row.line) + "&col=" + encodeURIComponent(row.col);

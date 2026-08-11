@@ -14,7 +14,7 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 // dir ends with a slash (like Module.dir)
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {
-  const entries: { filePath: string; name: string; isDir: boolean }[] = [];
+  const entries = [];
   try {
     for await (const entry of Deno.readDir(dir)) {
       entries.push({ filePath: dir + entry.name, name: entry.name, isDir: entry.isDirectory });
@@ -104,7 +104,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   let filesHtml: HtmlString | string = "";
   let hasEditorLinks = false;
   if (modDir) {
-    const rows: HtmlString[] = [];
+    const rows = [];
     for await (const { filePath, rel } of walkDir(modDir)) {
       const info = await Deno.stat(filePath).catch(() => null);
       if (!info?.isFile) continue;
@@ -191,7 +191,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const ctx = getCtx();
-  const rows: HtmlString[] = [];
+  const rows = [];
   const allMods = app.modules.all();
   const modules = Object.keys(allMods).sort();
 

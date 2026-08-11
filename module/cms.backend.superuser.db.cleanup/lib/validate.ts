@@ -17,12 +17,12 @@ export async function validateTable(db: Db, tableName: string) {
   if (!table || !(tableName in (db.schema?.properties ?? {}))) throw new Error("table is not covered by the schema");
   const rowSchema = table.schema.additionalProperties ?? {};
   const required = new Set<string>(rowSchema.required ?? []);
-  const issues: { field: string; rule: string; count: number }[] = [];
+  const issues = [];
   for (const [field, schema] of Object.entries(rowSchema.properties ?? {})) {
     if (!table.field(field)) continue;
     const props = schema as Record<string, unknown>;
     const ref = sql.id(field);
-    const rules: [string, ReturnType<typeof sql>][] = [];
+    const rules = [];
     if (required.has(field) && !nullable(props.type)) rules.push(["required", sql`${ref} IS NULL`]);
     if (Array.isArray(props.enum) && props.enum.length) {
       rules.push(["enum", sql`${ref} IS NOT NULL AND ${ref} NOT IN (${sql.join(props.enum.map((value) => sql`${value}`))})`]);

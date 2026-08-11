@@ -34,7 +34,7 @@ const usable = (rates: Rates) => rates.size > 2 && !!rates.get("USD");
 
 /** Fetch from the first source that answers, and store what it says. */
 export async function updateRates(app: App, sources = SOURCES): Promise<{ source: string; written: number }> {
-  const failed: string[] = [];
+  const failed = [];
   for (const source of sources) {
     const rates = await read(source).catch((e: Error) => e);
     if (rates instanceof Error || !usable(rates)) {

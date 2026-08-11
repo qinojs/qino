@@ -10,7 +10,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const deleteSrc = ctx.req.moduleUrl + "cms.frontend.2/pub/img/delete.svg";
 
   const urlRows = await db.query`SELECT * FROM page_url WHERE page_id = ${node.id}`;
-  const urlTrs: Promise<HtmlString>[] = [];
+  const urlTrs = [];
   for (const row of urlRows) {
     urlTrs.push(html.async`<tr data-lang="${row.lang}">
       <td>${row.lang}
@@ -32,10 +32,10 @@ export default async function (node: Node): Promise<HtmlString> {
   }
 
   return html.async`<div class=url-manager pid=${node.id}>
-  <table class="-urls -styled -noborder" style="width:100%"><tbody>${await Promise.all(urlTrs)}</table>
+  <table class="-urls -styled -noborder" style="width:100%"><tbody>${urlTrs}</table>
   <br>
   <b>${app.t`Direct links`}</b>
-  <table class="-directlinks -styled -noborder" style="width:100%"><tbody>${await Promise.all(redirectTrs)}</table>
+  <table class="-directlinks -styled -noborder" style="width:100%"><tbody>${redirectTrs}</table>
 </div>
 <style>
 .url-manager .-custom { display:none; }

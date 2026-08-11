@@ -11,7 +11,7 @@ export async function ocrPdf(ctx: TransformContext, engine?: OcrEngine): Promise
   await magick.run(ctx.currentPath, ['-background', 'white', '-alpha', 'remove'], pattern, { preArgs: ['-density', '300'], signal: ctx.signal });
   const pages = (await Array.fromAsync(Deno.readDir(ctx.tmpDir)))
     .map((e) => e.name).filter((n) => n.startsWith('ocr-page-')).sort();
-  const texts: string[] = [];
+  const texts = [];
   for (const page of pages) texts.push(await engine.ocr(nodePath.join(ctx.tmpDir, page), 'image/png', ctx));
   return texts.join('\n\n');
 }

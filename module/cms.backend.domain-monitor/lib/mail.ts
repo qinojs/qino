@@ -22,7 +22,7 @@ const txtOf = (name: string): Promise<string[]> =>
  */
 async function spfCount(record: string, seen: Set<string>): Promise<number> {
   let count = 0;
-  const nested: string[] = [];
+  const nested = [];
   for (const term of record.split(/\s+/)) {
     if (!SPF_COST.test(term)) continue;
     count++;

@@ -80,7 +80,7 @@ const OPEN = new Set([
 ]);
 
 Deno.test("every module manifest has a description", async () => {
-  const missing: string[] = [];
+  const missing = [];
   for (const dir of [moduleDir, testModuleDir]) {
     for await (const file of files(dir)) {
       if (!file.endsWith("/plugin.ts")) continue;
@@ -93,7 +93,7 @@ Deno.test("every module manifest has a description", async () => {
 
 async function assertStore(dir: string): Promise<void> {
   const store = JSON.parse(await Deno.readTextFile(dir + "store.json"));
-  const plugins: string[] = [];
+  const plugins = [];
   for await (const entry of Deno.readDir(dir)) {
     const hasPlugin = entry.isDirectory && await Deno.stat(`${dir}${entry.name}/plugin.ts`).then((stat) => stat.isFile, () => false);
     if (hasPlugin) plugins.push(entry.name);
@@ -131,7 +131,7 @@ Deno.test({
 });
 
 Deno.test("test-store modules only consume public package APIs", async () => {
-  const errors: string[] = [];
+  const errors = [];
   for await (const file of files(testModuleDir)) {
     if (file.includes("/tests/")) continue;
     const moduleRoot = testModuleDir + file.slice(testModuleDir.length).split("/")[0] + "/";
@@ -149,7 +149,7 @@ Deno.test("test-store plugins are importable", async () => {
 });
 
 Deno.test("modules only consume public APIs of other modules", async () => {
-  const errors: string[] = [];
+  const errors = [];
   for await (const file of files(moduleDir)) {
     const fileRel = file.slice(moduleDir.length);
     for (const spec of imports(await Deno.readTextFile(file)).keys()) {
@@ -173,7 +173,7 @@ Deno.test("modules only consume public APIs of other modules", async () => {
 const isCms = (mod: string) => mod === "cms" || mod.startsWith("cms.");
 
 Deno.test("the qino layer never imports from the cms layer", async () => {
-  const errors: string[] = [];
+  const errors = [];
   for await (const file of files(moduleDir)) {
     const fileRel = file.slice(moduleDir.length);
     if (isCms(fileRel.split("/")[0])) continue;
@@ -206,7 +206,7 @@ Deno.test("no mod.ts exports anything nobody imports", async () => {
       for (const name of names) set.add(name);
     }
   }
-  const errors: string[] = [];
+  const errors = [];
   for (const [name, path] of await barrels()) {
     const names = exports(await Deno.readTextFile(path));
     const hits = used.get(path);

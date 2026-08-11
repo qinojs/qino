@@ -92,7 +92,7 @@ export async function cleanOrphans(db: Db, tableName: string, fieldName: string)
 /** Where database and schema drifted apart: leftovers, and columns wider than the schema needs. */
 export function schemaExtras(db: Db) {
   const schema = db.schema?.properties ?? {};
-  const issues: { table: string; field?: string; status: "no-schema-table" | "field-missing-schema" | "field-oversized"; current?: number; required?: number }[] = [];
+  const issues = [];
   for (const [table, dbTable] of Object.entries(db.tables)) {
     if (!(table in schema)) { issues.push({ table, status: "no-schema-table" }); continue; }
     const fields = schema[table].additionalProperties?.properties ?? {};

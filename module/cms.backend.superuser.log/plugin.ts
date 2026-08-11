@@ -31,7 +31,7 @@ const dumpData = (raw: unknown): HtmlString => {
 
 // tables holding a reference to a log row (stamped by core on every write)
 function logRefColumns(db: App["db"]): { table: string; col: string }[] {
-  const out: { table: string; col: string }[] = [];
+  const out = [];
   const tables = (db.schema?.properties ?? {}) as Record<string, { additionalProperties?: { properties?: Record<string, unknown> } }>;
   for (const [table, def] of Object.entries(tables)) {
     const cols = def?.additionalProperties?.properties ?? {};
@@ -84,7 +84,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const u = ctx.req.url.toURL();
   const ownHost = ctx.req.url.host;
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const row of rows) {
     u.searchParams.set("id", String(row.id));
     const own = String(row.client_id) === String(ctx.clientId);
@@ -267,7 +267,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const info = backend.uaInfo(log.user_agent ?? "");
 
   // relations: rows in other tables referencing this log entry
-  const relationTrs: HtmlString[] = [];
+  const relationTrs = [];
   for (const { table, col } of logRefColumns(db)) {
     const refRows = await db.query`SELECT * FROM ${sql.id(table)} WHERE ${sql.id(col)} = ${id}`.catch(() => []);
     if (refRows.length) {
@@ -285,7 +285,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   else if (historyOf === "ip" && log.ip_id) hWhere = sql`log.ip_id = ${log.ip_id}`;
   else if (log.sess_id) hWhere = sql`log.sess_id = ${log.sess_id}`;
 
-  const historyTrs: HtmlString[] = [];
+  const historyTrs = [];
   if (hWhere) {
     const logs = await db.query`
       SELECT log.id, log.time, log.post, url.url AS url, referer.url AS referer

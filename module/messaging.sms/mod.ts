@@ -34,7 +34,7 @@ export async function send(
     SELECT p.id, p.usr_id, p.number, p.error FROM usr_phone p
     WHERE ${target} ${preferred}`;
   const table = app.db.table("usr_phone");
-  const deliveries: { usrId: number; address: string; error?: string; time: number }[] = [];
+  const deliveries = [];
   let sent = 0;
   for (const row of rows) {
     const address = String(row.number);

@@ -87,7 +87,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
     <div class=-head> ${t`Search users`} </div>
     <div class=-body>
       <input type=search placeholder="${t`search`}..." id=usrSearch style="width:18.75rem; max-width:100%">
-      <select id=usrGrp>${await Promise.all(grpOpts)}</select>
+      <select id=usrGrp>${grpOpts}</select>
     </div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>

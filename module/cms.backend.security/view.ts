@@ -139,7 +139,7 @@ function bucketCell(r: Row) {
 }
 
 function actionCell(r: Row) {
-  const parts: unknown[] = [];
+  const parts = [];
   if (Number(r.blocked)) parts.push("Block");
   if (Number(r.delay_ms)) parts.push(html`${r.delay_ms}ms Delay`);
   if (Number(r.status)) parts.push(html`http ${r.status}`);
@@ -187,7 +187,7 @@ function eventFilter(app: App, get: Record<string, string>) {
 }
 
 function eventWhere(get: Record<string, string>): Sql {
-  const parts: Sql[] = [];
+  const parts = [];
   if (get.prio) parts.push(sql`prio = ${get.prio}`);
   if (get.kind) parts.push(sql`kind = ${get.kind}`);
   if (get.scope) parts.push(sql`scope = ${get.scope}`);

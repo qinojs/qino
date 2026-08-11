@@ -94,7 +94,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const relHeaders = children.map((dbFile: DbField) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
 
-  const trs: Promise<HtmlString>[] = [];
+  const trs = [];
   const u = ctx.req.url.toURL();
   for (const row of rows) {
     const f = await fm.file(row.id, row);
@@ -127,7 +127,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <th>${app.t`Used`}
   <th>${app.t`Pub`}
   <th>
-<tbody>${await Promise.all(trs)}`;
+<tbody>${trs}`;
 }
 
 async function runAction(node: Node, doName: string): Promise<HtmlString | string> {

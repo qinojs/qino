@@ -60,7 +60,7 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
         ORDER BY file._vers_log DESC
         LIMIT 40`;
 
-    const trs: HtmlString[] = [];
+    const trs = [];
     for (const row of rows) {
         const thumb = await versionThumb(app, fileId, row);
         if (!thumb) continue;

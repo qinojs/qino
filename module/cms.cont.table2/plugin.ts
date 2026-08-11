@@ -45,10 +45,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
       String(d.getMonth() + 1).padStart(2, "0")
     }.${String(d.getFullYear()).slice(-2)}`;
 
-    const lines: string[] = [];
+    const lines = [];
     for (let i = 0; i < rows; i++) {
       const r = bottomUp ? rows - 1 - i : i;
-      const row: string[] = [];
+      const row = [];
       for (let j = 0; j < cols; j++) {
         const text = String(await node.showText(`${r}_${j}`)).replace(/<[^>]*>/g, "");
         row.push(text);

@@ -86,7 +86,7 @@ export const s = {
     return new StandardSchema<InferObject<Shape>>("object", (v, p) => {
       if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
       const out: Record<string, unknown> = {};
-      const issues: StandardIssue[] = [];
+      const issues = [];
       for (const key of keys) {
         const res = shape[key]["~standard"].validate((v as Record<string, unknown>)[key]);
         if (res.issues) issues.push(...res.issues.map((iss) => ({ message: iss.message, path: [key, ...(iss.path ?? [])] })));
@@ -99,8 +99,8 @@ export const s = {
   array: <T>(item: StandardSchema<T>): StandardSchema<T[]> =>
     new StandardSchema<T[]>("array", (v, p) => {
       if (!Array.isArray(v)) return { issues: err(p, "expected array") };
-      const out: T[] = [];
-      const issues: StandardIssue[] = [];
+      const out = [];
+      const issues = [];
       for (let i = 0; i < v.length; i++) {
         const res = item["~standard"].validate(v[i]);
         if (res.issues) issues.push(...res.issues.map((iss) => ({ message: iss.message, path: [i, ...(iss.path ?? [])] })));
@@ -124,7 +124,7 @@ export const s = {
       if (v == null || typeof v !== "object" || Array.isArray(v)) return { issues: err(p, "expected object") };
       if (!value) return { value: v as Record<string, T> };
       const out: Record<string, T> = {};
-      const issues: StandardIssue[] = [];
+      const issues = [];
       for (const [k, val] of Object.entries(v)) {
         const res = value["~standard"].validate(val);
         if (res.issues) issues.push(...res.issues.map((iss) => ({ message: iss.message, path: [k, ...(iss.path ?? [])] })));
@@ -155,7 +155,7 @@ export function toJsonSchema(schema: StandardSchema): Record<string, unknown> {
     case "optional": return schema.inner ? { ...toJsonSchema(schema.inner), ...desc } : { ...desc };
     case "object": {
       const properties: Record<string, unknown> = {};
-      const required: string[] = [];
+      const required = [];
       for (const [k, f] of Object.entries(schema.shape ?? {})) {
         properties[k] = toJsonSchema(f);
         if (f.kind !== "optional" && !f.defaultValue) required.push(k);

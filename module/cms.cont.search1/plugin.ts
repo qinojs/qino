@@ -106,7 +106,7 @@ async function item(node: Node, page: Node, text: string, words: string[]): Prom
 
   let path: HtmlString | string = "";
   if (await node.settings.breadcrumb) {
-    const links: HtmlString[] = [];
+    const links = [];
     for (const p of (await page.path()).values()) {
       if (p.id === 1 || !String(await p.showTitle()).trim()) continue;
       links.push(await cms.link(p));

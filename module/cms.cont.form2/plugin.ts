@@ -94,7 +94,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   const fields = await (await node.cont("main")).html();
 
   const recipients = String(node.settings.recipients() ?? "").trim();
-  const warnings: HtmlString[] = [];
+  const warnings = [];
   if (edit) {
     const success = await node.cont("success", "cms.cont.text");
     if (!recipients) warnings.push(await html.async`<u2-alert open variant=warning>${t`No recipients defined!`}</u2-alert>`);

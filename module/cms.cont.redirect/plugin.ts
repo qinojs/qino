@@ -19,7 +19,7 @@ const relatives: Record<string, (page: Node) => Promise<Node | undefined>> = {
 };
 
 async function readablePages(page: Node): Promise<Node[]> {
-  const pages: Node[] = [];
+  const pages = [];
   for (const child of (await page.children({ type: "p" })).values()) if (await child.isReadable()) pages.push(child);
   return pages;
 }

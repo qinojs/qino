@@ -84,7 +84,7 @@ export class ReqBody {
 
 /** Buffer a cloned body with a hard size cap — for chunked bodies that declare no content-length. */
 async function cappedResponse(request: Request, maxSize: number): Promise<Response> {
-  const chunks: BlobPart[] = [];
+  const chunks = [];
   let size = 0;
   const reader = request.clone().body!.getReader();
   while (true) {

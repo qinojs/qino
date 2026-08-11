@@ -25,7 +25,7 @@ export async function list(node: Node): Promise<HtmlString> {
   const now = unixTime();
   const known = scopes(db);
   const total = Number(await db.one`SELECT COUNT(*) FROM score`);
-  const cards: HtmlString[] = [];
+  const cards = [];
   for (const [tbl, scope] of known) cards.push(await renderScope(app, tbl, scope, now));
 
   return html.async`<div class=-body>
@@ -82,7 +82,7 @@ async function renderStale(app: App, known: Map<string, Scope>): Promise<HtmlStr
   const stale = all.filter((s) => !known.has(s.tbl));
   if (!stale.length) return html``;
   const label = await app.t`rows`;
-  const rows: HtmlString[] = [];
+  const rows = [];
   for (const { id, tbl } of stale) {
     const count = Number(await app.db.one`SELECT COUNT(*) FROM score WHERE scope_id = ${id}`);
     rows.push(html`<li><code>${tbl}</code> · ${count} ${label}`);
@@ -105,7 +105,7 @@ function time(value: number): HtmlString {
 }
 
 function duration(seconds: number): string {
-  const parts: string[] = [];
+  const parts = [];
   for (const [unit, size] of [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]] as const) {
     const value = Math.floor(seconds / size);
     if (value) parts.push(`${value}${unit}`);

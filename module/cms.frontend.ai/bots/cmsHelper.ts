@@ -58,7 +58,7 @@ export const cmsHelper: Bot = {
     }
     if (clientContext.page) {
       const page = clientContext.page as Record<string, unknown>;
-      const parts: string[] = [];
+      const parts = [];
       if (page.id) parts.push(`page-id (node-id): ${page.id}`);
       if (page.title) parts.push(`title: "${page.title}"`);
       if (page.module) parts.push(`module: ${page.module}`);

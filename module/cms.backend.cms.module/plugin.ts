@@ -60,7 +60,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
 
   const selType = ctx.settings[name].filter.type() ?? "";
   const types = new Set<string>();
-  const trs: HtmlString[] = [];
+  const trs = [];
   let total = 0;
   for (const modName of contentModules(app)) {
     const row = mods.get(modName);
@@ -153,7 +153,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
   }
 
   const guest = await t`guest`;
-  const out: HtmlString[] = [];
+  const out = [];
   for (const { row: r, labels } of events.values()) {
     const who = r.email ? (`${r.firstname ?? ""} ${r.lastname ?? ""}`.trim() || r.email) : guest;
     out.push(html`<tr>
@@ -189,8 +189,8 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
 
   const [lCont, lPage] = await Promise.all([t`content`, t`page`]); // plain html`` does not await
   const titles = new Map<number, string>(); // ancestors are shared across breadcrumbs → cache
-  const trs: HtmlString[] = [];
-  const visible: number[] = [];
+  const trs = [];
+  const visible = [];
   let editable = 0;
   for (const row of rows) {
     const n = (await node.cms.node(Number(row.id))).exists();
@@ -208,7 +208,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
   }
 
   // Only modules the user may assign (module axis = admin) are swap targets.
-  const targets: string[] = [];
+  const targets = [];
   for (const m of contentModules(app)) {
     if (m === modName || await modAccess(app, m) < ADMIN) continue;
     targets.push(m);

@@ -4,7 +4,7 @@ import { html, type HtmlString, FileTransformer } from "../../../core/mod.ts";
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const files = await node.filesAndPlaceholders();
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const [name, F] of Object.entries(files)) {
     const ext = F.extension;
     const exists = await F.exists();

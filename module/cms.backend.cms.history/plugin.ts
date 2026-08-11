@@ -65,7 +65,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   const typeTables = TYPE_TABLES[f.type ?? ""];
   const events = new Map<string, Event>();
-  const order: string[] = [];
+  const order = [];
   const MAX = 150;
 
   for (const r of rows) {
@@ -101,7 +101,7 @@ async function renderRow(node: Node, ev: Event, titles: Map<number, string>): Pr
   const ua = backend.uaInfo(r.ua ?? "");
 
   const seen = new Set<string>();
-  const labels: HtmlString[] = [];
+  const labels = [];
   for (const d of ev.datas) {
     const label = await describeChange(d, t); // already HTML-escaped
     if (seen.has(label)) continue;
@@ -190,7 +190,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString | str
   if (!latest.size) return "";
 
   const items = [...latest.values()].sort((a, b) => b.time - a.time);
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const it of items) {
     const page = await cmsOf(app).node(it.pageId);
     const title = (await (await page.title()).string()).trim() || "#" + it.pageId;

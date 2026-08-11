@@ -25,7 +25,7 @@ class CmsTextService {
     async get(txt_id: any): Promise<any> {
         txt_id = Number(txt_id);
         if (!await this.textAccess(txt_id)) return false;
-        const results: any[] = [];
+        const results = [];
         for (const lang of this.#app.languages.all) {
             const text = await this.#app.db.one`SELECT text FROM text WHERE id = ${txt_id} AND lang = ${lang}`;
             results.push({

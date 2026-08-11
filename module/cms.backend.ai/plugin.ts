@@ -224,7 +224,7 @@ async function models(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   const byProvider = new Map<number, Row[]>();
   for (const m of allModels) (byProvider.get(m.provider_id) ?? byProvider.set(m.provider_id, []).get(m.provider_id)!).push(m);
 
-  const tables: HtmlString[] = [];
+  const tables = [];
   for (const provider of providers) {
     if (fprovider && String(provider.id) !== fprovider) continue;
     const rows = (byProvider.get(provider.id) ?? []).filter((m) =>
@@ -282,7 +282,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
   // Keep a provider expanded after acting on it: open name (add) or the acted provider_id.
   const openName = String(vars.open ?? ctx.req.query.open ?? "");
   const openId = Number(vars.provider_id);
-  const providerBoxes: HtmlString[] = [];
+  const providerBoxes = [];
   for (const provider of providers) {
     const key = String(await app.settings.ai.provider[provider.name].key ?? "");
     const isOpen = openName ? provider.name === openName : openId ? provider.id === openId : providers.length === 1;
@@ -345,7 +345,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
       <td>${`${m.provider} · ${m.model_id}`}`);
   const defaults = defaultRows.length ? html.join(defaultRows) : html`<tr><td colspan=2 style="color:#999">No default configured.`;
 
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const m of models) {
     const input = Number(m.used_input_tokens), output = Number(m.used_output_tokens);
     if (!input && !output) continue;

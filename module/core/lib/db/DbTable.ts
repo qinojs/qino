@@ -57,7 +57,7 @@ export class DbTable {
    *  that has lost its fields while the introspection query is in flight. */
   async reloadFields(): Promise<void> {
     const fields: Record<string, DbField> = {};
-    const primaries: DbField[] = [];
+    const primaries = [];
     let autoIncrement: DbField | undefined;
     for (const vs of await this.#db.columns(this.#name)) {
       const field = fields[vs.Field] = new DbField(this, vs.Field, vs);
@@ -82,7 +82,7 @@ export class DbTable {
     const values = (vs != null && typeof vs === "object" ? vs : this.entryIdValues(vs)) ?? {};
     const primaries = this.#primaries;
     const composite = primaries.length > 1; // encoding only disambiguates the ":" separator, so single-primary ids stay raw
-    const parts: string[] = [];
+    const parts = [];
     for (const field of primaries) {
       const value = idValue(field, values[field.name]);
       if (value === undefined) { console.warn(`db-table-entryId: missing or invalid id for ${this}.${field}:`, vs); return; }
@@ -137,7 +137,7 @@ export class DbTable {
   }
 
   valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): Sql {
-    const frags: Sql[] = [];
+    const frags = [];
     for (const [name, field] of Object.entries(this.#fields!)) {
       if (!(name in values)) continue;
       const value = field.valueTransform(values[name]);

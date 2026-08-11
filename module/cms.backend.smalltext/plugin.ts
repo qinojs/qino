@@ -42,7 +42,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const langTh = langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`);
   const codeLogTh = isSuperuser ? html.raw("<th>code_logs") : "";
 
-  const rowsHtml: HtmlString[] = [];
+  const rowsHtml = [];
   for (const row of rows) {
     const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`);
     let codeLogTd: HtmlString | string = "";

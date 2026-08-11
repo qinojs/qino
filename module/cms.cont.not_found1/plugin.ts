@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   // Always include the home page (id=2)
   possiblePages.add("2");
 
-  const listItems: HtmlString[] = [];
+  const listItems = [];
   for (const pid of possiblePages) {
     listItems.push(html`<li>${await node.cms.link(await node.cms.node(Number(pid)))}`);
   }

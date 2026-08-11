@@ -16,7 +16,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   const module = db.table("module").entry(node.vs.module);
   const modules = node.vs.type === "p" ? cms.getLayouts() : cms.getModules();
-  const options: HtmlString[] = [];
+  const options = [];
   for (const name of Object.keys(modules)) {
     const current = name === node.vs.module;
     if (!current && await moduleAccess(node, name) < ADMIN) continue; // the write path rejects them anyway; the current one stays visible

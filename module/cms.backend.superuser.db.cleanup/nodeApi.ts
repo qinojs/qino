@@ -62,8 +62,8 @@ export async function nodeApi(node: Node, vars: Record<string, unknown>) {
       return { message: `${cleaned} orphan references cleaned${remaining ? `, ${remaining} remaining` : ""}`, tables: [...new Set(issues.map((issue) => issue.table))] };
     }
     if (action === "validate-all") {
-      const failed: string[] = [];
-      const skipped: string[] = [];
+      const failed = [];
+      const skipped = [];
       for (const table of Object.keys(db.tables).sort()) {
         if (!(table in (db.schema?.properties ?? {}))) continue;
         const status = await tableStatus(db, table);
@@ -83,9 +83,9 @@ export async function nodeApi(node: Node, vars: Record<string, unknown>) {
       return { message: await maintain(db, String(vars.maintenance ?? ""), table, status), tables: [table] };
     }
     if (action === "optimize-all") {
-      const done: string[] = [];
-      const skipped: string[] = [];
-      const failed: string[] = [];
+      const done = [];
+      const skipped = [];
+      const failed = [];
       for (const table of Object.keys(db.tables).sort()) {
         const status = await tableStatus(db, table);
         if (!maintenanceActions(db, status).includes("optimize")) continue;

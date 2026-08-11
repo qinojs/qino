@@ -13,7 +13,7 @@ export default async function (node: Node, vars: { hasMany?: boolean; param?: Re
     FROM usr
     LEFT JOIN page_access_usr a ON usr.id = a.usr_id AND a.page_id = ${node.id}
     WHERE true ${tail}, usr.firstname LIMIT 100`;
-  const trs: HtmlString[] = [];
+  const trs = [];
   for (const vs of rows) {
     trs.push(html`<tr>
       <td>${vs.email}

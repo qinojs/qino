@@ -108,7 +108,7 @@ export async function breadcrumb(host: Node, nodeId: number, titles: Map<number,
   // the containing page is the deepest type='p' node; contents hang below it → show it in bold
   let pageIdx = -1;
   for (let i = 0; i < nodes.length; i++) if (nodes[i].vs?.type === "p") pageIdx = i;
-  const crumbs: HtmlString[] = [];
+  const crumbs = [];
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
     const title = (await nodeTitle(n, titles)) || String(n.vs?.module ?? "").replace(/^cms\.\w+\./, "") || `#${n.id}`;

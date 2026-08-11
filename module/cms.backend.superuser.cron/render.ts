@@ -104,7 +104,7 @@ function time(value?: number): HtmlString {
 
 function duration(seconds: number): string {
   if (!seconds) return "0s";
-  const parts: string[] = [];
+  const parts = [];
   for (const [unit, size] of [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]] as const) {
     const value = Math.floor(seconds / size);
     if (value) parts.push(`${value}${unit}`);

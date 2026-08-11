@@ -76,7 +76,7 @@ export default async function (node: Node, _vars: unknown): Promise<HtmlString> 
   const t = node.app.t;
   const position = String(node.settings.labelPosition() ?? "left");
 
-  const rows: HtmlString[] = [];
+  const rows = [];
   for (const id of sortedIds(node)) rows.push(await fieldRow(node, id));
 
   return html.async`

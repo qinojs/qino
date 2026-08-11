@@ -216,7 +216,7 @@ export const api: ApiTree = {
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
           let usrId = 0;
-          const allowCredentials: unknown[] = [];
+          const allowCredentials = [];
 
           if (email) {
             const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = ${true}`;

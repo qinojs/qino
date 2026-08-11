@@ -13,7 +13,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const trashNode = await node.cms.node(trash);
   const items     = [...(await trashNode.children({ type: "*", access: 2 })).values()];
 
-  const cards: HtmlString[] = [];
+  const cards = [];
   for (const page of items) {
     if (await node.in(page)) continue;
     const title       = await (await page.title()).string() || "(no title)";

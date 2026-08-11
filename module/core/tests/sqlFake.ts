@@ -8,7 +8,7 @@ export function fakeRender(a: any, rest: any[]): [string, unknown[]] {
   else if (a instanceof Sql) frag = a;
   else return [a, (rest[0] as unknown[]) ?? []];
   let text = "";
-  const params: unknown[] = [];
+  const params = [];
   for (const p of frag.parts) {
     if ("text" in p) text += p.text;
     else if ("id" in p) text += "`" + p.id + "`";

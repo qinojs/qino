@@ -52,7 +52,7 @@ export async function logDetails(ctx: any, id: any): Promise<any> {
 
     const changed = await ctx.app.db.query`SELECT node_id, page_id, data FROM node_changed WHERE log_id = ${id} ORDER BY id`;
     const access: Record<number, number> = {};
-    const messages: string[] = [];
+    const messages = [];
     for (const c of changed) {
         const pageId = Number(c.page_id);
         access[pageId] ??= await (await cms(ctx.app).node(pageId)).access();

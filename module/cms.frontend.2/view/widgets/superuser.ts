@@ -10,7 +10,7 @@ function inRoot(file: string, root: string): boolean {
 
 // dir ends with a slash, as do the roots it is called with
 async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: string }> {
-  const entries: { filePath: string; name: string; isDir: boolean }[] = [];
+  const entries = [];
   try {
     for await (const entry of Deno.readDir(dir)) {
       entries.push({ filePath: dir + entry.name, name: entry.name, isDir: entry.isDirectory });
@@ -55,14 +55,14 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
         <img src="${ctx.req.moduleUrl}cms.frontend.2/pub/img/delete.svg" alt=delete>`;
   };
 
-  const customFiles: HtmlString[] = [];
+  const customFiles = [];
   for await (const { filePath } of walkDir(customPath)) {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;
     customFiles.push(fileRow(filePath, customPath.length, info));
   }
 
-  const appFiles: HtmlString[] = [];
+  const appFiles = [];
   for await (const { filePath } of walkDir(modPath ?? "")) {
     const info = await Deno.stat(filePath).catch(() => null);
     if (!info?.isFile) continue;

@@ -13,7 +13,7 @@ export function healthChecks(app: App): HealthTypes {
   return {
     error: {
       "backend reachable without group": async () => {
-        const open: string[] = [];
+        const open = [];
         for (const page of Object.values(await backendPages(app))) {
           // effective access for a logged-in user that is in no group:
           // only the page's own access value (resolved through inheritance),

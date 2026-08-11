@@ -13,7 +13,7 @@ export default function (node: Node, _vars: unknown): Promise<HtmlString> {
   u.searchParams.set("export_table", String(node.id));
   const exportUrl = u.pathname + u.search;
 
-  const colWidths: HtmlString[] = [];
+  const colWidths = [];
   for (let i = 1; i <= cols; i++) {
     const val = node.settings[`row_${i}`]();
     colWidths.push(html`

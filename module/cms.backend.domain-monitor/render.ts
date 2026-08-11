@@ -205,7 +205,7 @@ function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
     return html`<div>${dot(level, title)} <small title="${name}">${shorten(name)}</small></div>`;
   };
   // Whole-delegation faults belong to no single server, so they get a line of their own.
-  const faults: [string, string][] = [];
+  const faults = [];
   if (ns.answering.length > 1 && ns.subnets < 2) faults.push(["one /24", "all nameservers sit in the same /24 and fall over together"]);
   if (no(ns.parent)) faults.push(["parent differs", "the delegation at the parent differs from the NS set in the zone"]);
   return html`${names.map(line)}${faults.map(([short, title]) => html`<div>${dot("orange", title)} <small>${short}</small></div>`)}`;

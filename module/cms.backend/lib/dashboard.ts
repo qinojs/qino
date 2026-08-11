@@ -6,7 +6,7 @@ import type { Node } from "../../cms/mod.ts";
 export async function renderDashboard(node: Node): Promise<HtmlString> {
   const page = await node.page();
   const children = [...(await page.children()).values()];
-  const widgets: HtmlString[] = [];
+  const widgets = [];
 
   for (const child of children) {
     if (!child.vs.visible || !(await child.access())) continue; // only visible pages the user may see

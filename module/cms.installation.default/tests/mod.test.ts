@@ -15,7 +15,7 @@ Deno.test("cms.installation.default: every recommendation exists and its needs c
 
   // A recommendation whose needs are missing would abort the boot in #order() — keep the set closed.
   const present = new Set(["core", ...needs, ...recommended]);
-  const missing: string[] = [];
+  const missing = [];
   for (const mod of recommended) {
     const plugin = await import(new URL(`../../${mod}/plugin.ts`, import.meta.url).href);
     for (const need of plugin.needs ?? []) if (!present.has(need)) missing.push(`${mod} needs ${need}`);

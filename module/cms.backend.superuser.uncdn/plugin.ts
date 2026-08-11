@@ -16,10 +16,10 @@ export async function install({ app }: { app: App }) {
 type TreeResult = { html: HtmlString; size: number };
 
 async function buildTree(path: string, baseLen: number): Promise<TreeResult> {
-  const parts: HtmlString[] = [];
+  const parts = [];
   let size = 0;
   try {
-    const entries: Deno.DirEntry[] = [];
+    const entries = [];
     for await (const e of Deno.readDir(path)) entries.push(e);
     entries.sort((a, b) => {
       if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;

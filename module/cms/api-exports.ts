@@ -35,7 +35,7 @@ export async function treeToJson(opts: {
     emptyChildren?: boolean;
 }, level = 1): Promise<any[]> {
     const nodes = opts.self ? [opts.node] : (await opts.node.children({ type: opts.type })).values();
-    const res: any[] = [];
+    const res = [];
     for (const n of nodes) {
         if (await n.access() < (opts.access ?? 1)) continue;
         const entry = await opts.entry(n);
@@ -69,7 +69,7 @@ export async function tree(start: any, opt: any = {}): Promise<any[]> {
 export async function modules(schema = false): Promise<any[]> {
     const ctx = getCtx();
     const c = cms(ctx.app);
-    const res: any[] = [];
+    const res = [];
     for (const [kind, mods] of Object.entries({ cont: c.getModules(), layout: c.getLayouts() })) {
         for (const [name, mod] of Object.entries(mods)) {
             const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
@@ -203,7 +203,7 @@ export async function requestUsed(v: string): Promise<boolean> {
 export async function searchNodes(search: string): Promise<any[]> {
     const ctx = getCtx();
     search = search.replace(/^cmspid:\/\//, "");
-    const res: any[] = [];
+    const res = [];
     for (const vs of await ctx.app.db.query`
         SELECT p.id AS id FROM page p, text t WHERE true
         AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id
@@ -232,7 +232,7 @@ export async function searchFiles(search: string): Promise<any[]> {
     const ctx = getCtx();
     const db  = ctx.app.db;
     const s   = search;
-    const res: any[] = [];
+    const res = [];
     let i = 0;
     const used: Record<string, boolean> = {};
     for (const vs of await db.query`

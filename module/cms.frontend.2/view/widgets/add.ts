@@ -7,7 +7,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const ctx = getCtx();
 
   const modules = node.cms.getModules();
-  const moduleBoxes: HtmlString[] = [];
+  const moduleBoxes = [];
   for (const [name, mod] of Object.entries(modules)) {
     const modDir = mod.dir;
     const modEntry = await app.db.table("module").entry(name);
@@ -37,7 +37,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   let modelsSection: HtmlString | string = "";
   if (models.length) {
-    const modelItems: HtmlString[] = [];
+    const modelItems = [];
     for (const page of models) {
       if (await moduleAccess(node, String(page.vs.module)) < ADMIN) continue;
       const mName = String(page.vs.module);

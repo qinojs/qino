@@ -40,7 +40,7 @@ async function render(node: Node): Promise<HtmlString> {
       LEFT JOIN sess s ON l.sess_id = s.id
       LEFT JOIN usr u ON s.usr_id = u.id
     ) x WHERE x.rn = 1 ORDER BY x.time DESC LIMIT 20`.catch(() => []);
-  const recentParts: HtmlString[] = [];
+  const recentParts = [];
   for (const r of recent) {
     const anchor = await nodeAnchor(node, Number(r.page_id));
     const iso = new Date(Number(r.last) * 1000).toISOString();
@@ -65,7 +65,7 @@ async function render(node: Node): Promise<HtmlString> {
 
   // ── nodes with most change churn ───────────────────────────────────────────
   const top = await db.query`SELECT page_id, COUNT(*) AS n FROM node_changed GROUP BY page_id ORDER BY n DESC LIMIT 20`.catch(() => []);
-  const topParts: HtmlString[] = [];
+  const topParts = [];
   for (const r of top) {
     topParts.push(html`<tr><td>${await nodeAnchor(node, Number(r.page_id))}<td style="text-align:right">${r.n}`);
   }

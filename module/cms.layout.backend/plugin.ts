@@ -66,7 +66,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   /** Nav levels 1-3; only the active branch expands, only level 1 shows the module icon. */
   async function nav(nodes: Node[], level: number): Promise<HtmlString> {
-    const out: HtmlString[] = [];
+    const out = [];
     for (const child of nodes) {
       const active = await page.in(child);
       const subs = level < 3 ? [...(await child.children({ access: 1 })).values()] : [];
@@ -85,7 +85,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   let langHtml: HtmlString | string = "";
   if (allLangs.length > 1) {
     const currentLang = ctx.lang;
-    const links: HtmlString[] = [];
+    const links = [];
     const u = ctx.req.url.toURL();
     for (const l of allLangs) {
       if (l === currentLang) continue;
@@ -96,7 +96,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   }
 
   // Content conts
-  const contentHtml: HtmlString[] = [];
+  const contentHtml = [];
   for (const child of await node.conts()) contentHtml.push(await child.html());
 
   const pathHtml = html.join(await Promise.all([...await page.path()].filter(([id]) => id !== 1).map(([, p]) => node.cms.link(p))));
