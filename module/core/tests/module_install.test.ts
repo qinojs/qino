@@ -206,3 +206,32 @@ Deno.test({
     await Deno.remove(dir, { recursive: true });
   },
 });
+
+Deno.test({
+  name: "a folder store lists its module folders and resolves them like a catalog does",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const dir = await fixture();
+    const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+    const folder = app.stores.add(toFileUrl(dir).href);
+    const catalog = app.stores.add(toFileUrl(dir + "store.json").href);
+
+    assertEquals(await folder.names(), await catalog.names(), "same modules, other discovery");
+    assertEquals(folder.moduleUrl("t.one"), catalog.moduleUrl("t.one"), "the module URL is convention, not catalog");
+    assertEquals(folder.base, catalog.base);
+
+    await Deno.writeTextFile(dir + "not-a-module.txt", ""); // a file is no module
+    await Deno.mkdir(dir + "t.empty"); // …and neither is a folder without a plugin
+    assertEquals(await folder.names(), ["t.bundle", "t.one", "t.two"]);
+
+    await assertRejects(
+      () => app.stores.add("https://mods.example.com/store/").names(),
+      Error,
+      "a remote store needs a store.json",
+    );
+
+    await app.db.close();
+    await Deno.remove(dir, { recursive: true });
+  },
+});

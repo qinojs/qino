@@ -34,7 +34,7 @@ function state(app: App, mod: string): "active" | "inactive" | "available" | "br
 /** Short store name: the host of a remote catalog, the folder of a local one. */
 function storeLabel(url: string): string {
   const u = new URL(url);
-  return u.host || decodeURIComponent(u.pathname).split("/").filter(Boolean).at(-2) || url;
+  return u.host || decodeURIComponent(u.pathname).split("/").filter(Boolean).at(url.endsWith("/") ? -1 : -2) || url;
 }
 
 /** Read every catalog in parallel; an unreachable store keeps its error instead of names. */
@@ -174,7 +174,7 @@ async function render(node: Node): Promise<HtmlString> {
       ${html.join(cats.map(({ store, error }) => storeRow(store, error)))}
       <tr><td colspan=3><button data-act=addStore>${l.addStore}</button>
     </table>
-    <div><small>${t`A catalog is a store.json, e.g. ./qino/module/store.json`}</small></div>
+    <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>
   </div>
 
   <div class=u2-card>

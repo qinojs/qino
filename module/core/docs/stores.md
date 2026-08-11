@@ -1,6 +1,6 @@
 # Module stores
 
-A store is a catalog above ordinary modules — nothing more:
+A store is a listing above ordinary modules — nothing more:
 
 - a module is loadable on its own, from its `plugin.ts`;
 - a store gives module names conventional URLs and lets you pick one or all of them;
@@ -8,7 +8,7 @@ A store is a catalog above ordinary modules — nothing more:
 
 That is the whole point. Qino, third parties and projects should each be able to publish modules
 from their own location, and an application may combine several stores. Keeping the store a thin
-catalog is what stops it from becoming a mandatory central service.
+listing is what stops it from becoming a mandatory central service.
 
 ## API
 
@@ -18,6 +18,7 @@ app.modules.add(url("./local/hello.world/plugin.ts"));      // one module, by UR
 const store = app.stores.add(url("./vendor/store.json"));
 store.add("hello.analytics");                               // one module, by name
 await app.stores.add(url("./other/store.json")).addAll();   // the whole catalog
+await app.stores.add(url("./module/")).addAll();            // a plain folder is a store too
 
 await app.init();
 ```
@@ -28,9 +29,23 @@ call that needs the catalog, and it is just `names()` + `add()`. The same two pi
 everyone else: `store.names()` reads the catalog, `store.moduleUrl(name)` builds the URL. The
 backend store page is written with them.
 
+## Folder or catalog
+
+A store is really just a folder of module folders, and a local one is read as exactly that: a URL
+ending in `/` lists its subfolders, everything else is a `store.json` listing them by name. Only
+discovery differs — `moduleUrl(name)` stays `<base><name>/plugin.ts` for both, so a folder can grow
+a catalog later without any module changing its address.
+
+The catalog exists because HTTP has no portable directory listing. Some servers do serve an index,
+but parsing one is guesswork, so a folder store is `file:` only and a remote one must bring its
+`store.json`. That file is also where per-module metadata would go if a store ever needs more than
+names — a redirect to another URL, say. Note what such a field would cost: today the module URL is
+convention alone, which is why `store.add(name)` reads nothing; an entry that may point elsewhere
+makes resolution catalog-dependent and has to move into `init()`.
+
 `core` needs no declaration — it is the root of the `needs` graph, so `App` adds it itself.
 
-A store's own catalog is never cached: it may gain modules while the app runs.
+A store's own listing is never cached: it may gain modules while the app runs.
 
 ## Installing at runtime
 

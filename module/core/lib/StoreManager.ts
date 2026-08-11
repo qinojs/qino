@@ -1,5 +1,17 @@
 import type { App } from "./App.ts";
+import { fromFileUrl } from "../deps.ts";
 import { isModuleName, resolveSpecifier } from "./ModuleManager.ts";
+
+/** A folder store lists itself: the subfolders holding the plugin file its URL would point at. */
+async function readFolder(url: string): Promise<string[]> {
+  // Some HTTP servers do serve an index, but parsing one is guesswork — remote stays catalog-only.
+  if (!url.startsWith("file:")) throw new Error(`Store ${url}: a folder store is local only, a remote store needs a store.json`);
+  const dir = fromFileUrl(url);
+  const names = [];
+  for await (const e of Deno.readDir(dir))
+    if (e.isDirectory && isModuleName(e.name) && await Deno.stat(`${dir}${e.name}/plugin.ts`).then((s) => s.isFile, () => false)) names.push(e.name);
+  return names.sort();
+}
 
 /** The catalog's module names, sorted — this is where the store format is validated. */
 async function readCatalog(url: string): Promise<string[]> {
@@ -7,7 +19,7 @@ async function readCatalog(url: string): Promise<string[]> {
   if (!res.ok) throw new Error(`Store ${url}: ${res.status} ${res.statusText}`);
   const modules = (await res.json())?.modules;
   if (!modules || typeof modules !== "object" || Array.isArray(modules)) throw new Error(`Store ${url}: modules must be an object`);
-  for (const [name, meta] of Object.entries(modules as Record<string, unknown>)) {
+  for (const [name, meta] of Object.entries(modules)) {
     if (!isModuleName(name)) throw new Error(`Store ${url}: invalid module name "${name}"`);
     if (!meta || typeof meta !== "object" || Array.isArray(meta)) throw new Error(`Store ${url}: module "${name}" metadata must be an object`);
   }
@@ -25,18 +37,19 @@ export class Store {
     this.#declared = declared;
   }
 
-  /** URL of the catalog itself. */
+  /** URL of the store: its catalog file, or the folder itself. */
   get url(): string { return this.#url; }
-  /** Directory the catalog lives in — every module of the store lies below it. */
+  /** Directory the store lives in — every module of the store lies below it. */
   get base(): string { return new URL(".", this.#url).href; }
-  /** The catalog URL is the base; a module lives beside it under its own name. */
+  /** The base is convention for both forms; a module lives below it under its own name. */
   moduleUrl(name: string): string { return `${this.base}${name}/plugin.ts`; }
 
   /** True for a store the application declares itself — it outlives any uninstall. */
   get declared(): boolean { return this.#declared; }
 
-  /** Read the catalog. Not cached — a store may gain modules while the app runs. */
-  names(): Promise<string[]> { return readCatalog(this.#url); }
+  /** Read the module names — a trailing slash is a folder, anything else a catalog. Not cached:
+   *  a store may gain modules while the app runs. */
+  names(): Promise<string[]> { return (this.#url.endsWith("/") ? readFolder : readCatalog)(this.#url); }
 
   /** Declare one module of this store — its URL is conventional, so no catalog is read. */
   add(name: string): this {
@@ -64,7 +77,7 @@ export class StoreManager {
 
   get(url: string): Store | undefined { return this.#stores.get(url); }
 
-  #ensure(url: string, declared: boolean): Store {
+  #ensure(url: string, declared: boolean) {
     return this.#stores.getOrInsertComputed(url, () => new Store(this.#app, url, declared));
   }
 
@@ -75,10 +88,10 @@ export class StoreManager {
   /** Remember a store across restarts — the persistent counterpart of add(). */
   async install(spec: string | URL): Promise<Store> {
     const url = resolveSpecifier(this.#app, spec);
-    const known = this.#stores.get(url);
-    if (known) return known;
-    await readCatalog(url); // no catalog, no store
-    await this.#app.db.table("store").insert({ url });
+    if (!this.#stores.has(url)) {
+      await new Store(this.#app, url, false).names(); // unreadable, no store
+      await this.#app.db.table("store").insert({ url });
+    }
     return this.#ensure(url, false);
   }
 
