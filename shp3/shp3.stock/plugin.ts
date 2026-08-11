@@ -2,8 +2,6 @@ import { hee, type App } from "../../module/core/mod.ts";
 import { mail } from "../../module/mail/mod.ts";
 import { shp3, type Order, type Product } from "../shp3/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export { dbSchema };
 

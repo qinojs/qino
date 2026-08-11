@@ -1,7 +1,5 @@
 import { html, sql, sqlSearch, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 // Shared by every search content on a page — one term per request is what a visitor expects.
 const QUERY = "cms_search";

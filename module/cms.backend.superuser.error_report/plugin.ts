@@ -2,8 +2,6 @@ import { html, getCtx, sql, sqlSearch, type Sql, type Ctx, type App, type HtmlSt
 import { backend, u2 } from "../cms.backend/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.error_report", { en: "Errors", de: "Fehler" });

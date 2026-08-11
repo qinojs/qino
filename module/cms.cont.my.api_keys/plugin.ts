@@ -1,7 +1,5 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export const cms = { node: { js: ["pub/main.js"], render } };
 

@@ -1,7 +1,6 @@
 import { assert, assertEquals, assertThrows, Emitter } from "../../core/tests/deps.ts";
 import { Db, type App } from "../../core/mod.ts";
-import type { Every, Job } from "../mod.ts";
-import { run, status, trigger } from "../mod.ts";
+import { type Every, type Job, run, status, trigger } from "../mod.ts";
 import { init } from "../plugin.ts";
 import { nextRun, scheduleKey, validateJob } from "../calendar.ts";
 import { Scheduler } from "../scheduler.ts";

@@ -1,8 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export const cms         = { node: { render } };
 

@@ -1,8 +1,6 @@
 import { html, type HtmlString } from "@qino/qino";
 import { channels } from "@qino/qino/messaging.web_push";
 import type { Node } from "@qino/qino/cms";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export const cms = {
   node: {

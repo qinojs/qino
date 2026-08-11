@@ -1,8 +1,6 @@
 import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { ensureProduct, shp3, type Product } from "../shp3/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const settingsSchema = {
   properties: {

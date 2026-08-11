@@ -4,8 +4,7 @@
 
 import { DbRow, type Db, unixTime } from "../../../module/core/mod.ts";
 import { shp3, type Shp3 } from "./Shp3.ts";
-import { cms } from "../../../module/cms/mod.ts";
-import type { Node } from "../../../module/cms/mod.ts";
+import { cms, type Node } from "../../../module/cms/mod.ts";
 
 /** The shop a row belongs to — every table here lives in one. */
 class ShopRow extends DbRow {

@@ -19,7 +19,7 @@ Deno.test("cms.installation.default: every recommendation exists and its depende
   const present = new Set(["core", ...dependencies, ...recommended]);
   const missing = [];
   for (const mod of recommended) {
-    const plugin = await import(new URL(`../../${mod}/plugin.ts`, import.meta.url).href);
+    await import(new URL(`../../${mod}/plugin.ts`, import.meta.url).href);
     for (const need of dependencies ?? []) if (!present.has(need)) missing.push(`${mod} needs ${need}`);
   }
   assertEquals(missing, []);

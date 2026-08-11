@@ -5,8 +5,6 @@ import statistic, { dbTableStats, details as statisticDetails } from "./parts/st
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 import type { Node } from "../cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });

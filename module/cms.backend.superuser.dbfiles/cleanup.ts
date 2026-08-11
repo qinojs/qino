@@ -1,4 +1,4 @@
-import { sql, unixTime, type App, type DbField } from "../core/mod.ts";
+import { sql, unixTime, type App } from "../core/mod.ts";
 
 /** Remove file rows no child table links to, older than a week. */
 export async function deleteUnlinkedDb(app: App): Promise<{ deleted: number }> {

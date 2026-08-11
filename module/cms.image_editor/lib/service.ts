@@ -1,7 +1,7 @@
 import { cms } from "../../cms/mod.ts";
 // deno-lint-ignore-file no-explicit-any
 
-import { html, type App, type Ctx, type HtmlString } from "../../core/mod.ts";
+import { html, type App, type Ctx } from "../../core/mod.ts";
 import { getCmsVers, tableEntriesCopyTo } from "../../cms.versions/mod.ts";
 
 const ALLOWED_META = new Set(["name", "vpos", "hpos"]);

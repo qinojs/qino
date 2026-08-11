@@ -2,8 +2,7 @@
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import type { App } from "./App.ts";
 import { getCtx } from "./ctx/Ctx.ts";
-import { enableItemSchemaDefaults, unixTime } from "./util.ts";
-import { errMsg } from "./util.ts";
+import { enableItemSchemaDefaults, errMsg, unixTime } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 

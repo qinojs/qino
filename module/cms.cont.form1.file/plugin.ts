@@ -2,8 +2,6 @@ import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { formOf } from "../cms.cont.form2/mod.ts";
 import options from "./options.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const settingsSchema = {
   properties: {

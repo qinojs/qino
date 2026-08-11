@@ -3,8 +3,6 @@ import { mail } from "../mail/mod.ts";
 import { hee, html, sql, tableRef, unixTime, type Ctx, type HtmlString } from "../core/mod.ts";
 import { type Form, openForm } from "./mod.ts";
 import options from "./options.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const settingsSchema = {
   properties: {

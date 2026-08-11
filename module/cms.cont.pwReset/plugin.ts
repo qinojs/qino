@@ -2,8 +2,6 @@ import type { Node } from "../cms/mod.ts";
 import { html, pwHash, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { check, type Ticket, type TicketKind } from "../ticket/mod.ts";
 import api, { PURPOSE, TICKET_PARAM, TTL } from "./nodeApi.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export const tickets: Record<string, TicketKind> = {
   [PURPOSE]: {

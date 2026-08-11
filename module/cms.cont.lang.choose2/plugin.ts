@@ -1,7 +1,5 @@
 import { cmsCtx, type Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const LANG_NAMES: Record<string, string> = {
   de: "Deutsch",

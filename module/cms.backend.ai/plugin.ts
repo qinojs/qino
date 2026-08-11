@@ -4,8 +4,6 @@ import { errMsg, html, type App, type Ctx, type HtmlString } from "../core/mod.t
 import { KINDS, providerCatalog } from "../ai/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.ai", { en: "AI", de: "KI" });

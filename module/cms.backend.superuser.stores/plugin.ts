@@ -143,7 +143,7 @@ function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, l
     <td style="text-align:right">${html.join(acts, " ")}`;
 }
 
-function storeRow(app: App, store: Store, error: string, l: Labels, label: (url: string) => string): HtmlString {
+function storeRow(store: Store, error: string, l: Labels, label: (url: string) => string): HtmlString {
   const local = store.base.startsWith("file:");
   return html`<tr>
     <td><button class=u2-unstyle data-pick="${store.url}"><code>${label(store.url)}</code><br><small>${store.url}</small></button>
@@ -276,7 +276,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
-      ${cats.map(({ store, error }) => storeRow(app, store, error, l, label))}
+      ${cats.map(({ store, error }) => storeRow(store, error, l, label))}
       <tr><td colspan=4><button data-act=addStore>${l.addStore}</button>
     </table>
     <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>

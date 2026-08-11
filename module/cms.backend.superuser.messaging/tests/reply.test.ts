@@ -2,10 +2,9 @@ import { assertEquals, assertStringIncludes, fakeT, testContext } from "../../co
 import { Db, requestStorage } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
-import { dbSchema as telegramSchema } from "../../messaging.telegram/tests/deps.ts";
+import { dbSchema as telegramSchema, messagingChannel as telegram } from "../../messaging.telegram/tests/deps.ts";
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
-import { messagingChannel as telegram } from "../../messaging.telegram/tests/deps.ts";
 import { messagingChannel as email } from "../../mail/tests/deps.ts";
 
 Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {

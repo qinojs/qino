@@ -3,8 +3,6 @@ import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { type Form, formOf } from "../cms.cont.form2/mod.ts";
 import { sortedIds } from "./sortedIds.ts";
 import options from "./options.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const settingsSchema = {
   properties: {

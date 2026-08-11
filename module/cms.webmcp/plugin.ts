@@ -1,8 +1,6 @@
 import { Access, type App, type ApiTree, type Params, type Ctx } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 import { webmcpTools } from "./mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 export const api: ApiTree = {
   tools: {
