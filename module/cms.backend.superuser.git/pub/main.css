@@ -1,0 +1,17 @@
+[qcms-mod="backend.superuser.git"] {
+  & .-ahead  { color: var(--green); }
+  & .-behind { color: var(--orange); }
+
+  & .-changes {
+    display: block;
+    max-height: 15rem;
+    overflow: auto;
+    /* the path is what one reads here, so it gets the room and never wraps */
+    & td:last-child { width: 100%; white-space: nowrap; }
+  }
+  /* what happened to the file, in the letters VS Code uses */
+  & .-code { text-align: center; font-weight: bold; }
+  & .-A, & .-U { color: var(--green);  }
+  & .-M, & .-R { color: var(--orange); }
+  & .-D, & .-C { color: var(--red);    }
+}

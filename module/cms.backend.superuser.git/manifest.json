@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.git",
+  "description": "Shows the git repositories the app is made of and commits, pushes and pulls them.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "lib/git.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js"
+  ]
+}

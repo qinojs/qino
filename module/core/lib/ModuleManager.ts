@@ -305,15 +305,10 @@ export class ModuleManager {
   // Merge the given modules' dbSchema (static, then function-form) and migrate additively.
   async #applyDbSchema(order: string[]): Promise<void> {
     const dbSchema = { properties: {} };
-    for (const name of order) {
-      const { plugin } = this.#modules[name];
-      if (typeof plugin.dbSchema !== "function") mergeSchema(dbSchema, plugin.dbSchema);
-    }
+    const schemas = order.map((name) => this.#modules[name].plugin.dbSchema);
+    for (const schema of schemas) if (typeof schema !== "function") mergeSchema(dbSchema, schema);
     // Function-form dbSchema runs after the static merge — for tables derived from other modules.
-    for (const name of order) {
-      const { plugin } = this.#modules[name];
-      if (typeof plugin.dbSchema === "function") mergeSchema(dbSchema, plugin.dbSchema(dbSchema));
-    }
+    for (const schema of schemas) if (typeof schema === "function") mergeSchema(dbSchema, schema(dbSchema));
     if (Object.keys(dbSchema.properties).length) {
       await this.#app.db.migrate(dbSchema, { patch: true });
       this.#app.db.schema = dbSchema;
@@ -338,16 +333,19 @@ export class ModuleManager {
 
   // An installed module may outlive a removed dependency: expose it as broken and keep booting.
   #skipMissing(): void {
-    while (true) {
-      const mod = Object.values(this.#modules).find((mod) =>
-        !this.#declared.has(mod.name) && !this.#failed[mod.name] &&
-        mod.dependencies.some((need) => !this.#modules[need] || this.#failed[need])
-      );
-      if (!mod) return;
-      const need = mod.dependencies.find((need) => !this.#modules[need] || this.#failed[need]);
-      const why = `Module "${mod.name}" needs "${need}", but it is not imported`;
-      this.#failed[mod.name] = why;
-      console.error(`${why}; skipping installed module`);
+    const gone = (need: string) => !this.#modules[need] || this.#failed[need];
+    // Marking one module broken can break its dependents, so sweep until a pass changes nothing.
+    for (let again = true; again;) {
+      again = false;
+      for (const mod of Object.values(this.#modules)) {
+        if (this.#declared.has(mod.name) || this.#failed[mod.name]) continue;
+        const need = mod.dependencies.find(gone);
+        if (!need) continue;
+        const why = `Module "${mod.name}" needs "${need}", but it is not imported`;
+        this.#failed[mod.name] = why;
+        console.error(`${why}; skipping installed module`);
+        again = true;
+      }
     }
   }
 

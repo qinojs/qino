@@ -33,6 +33,7 @@
     "cms.backend.superuser.dbfiles": {},
     "cms.backend.superuser.dbfiles.transform": {},
     "cms.backend.superuser.error_report": {},
+    "cms.backend.superuser.git": {},
     "cms.backend.superuser.locale": {},
     "cms.backend.superuser.locale.currency": {},
     "cms.backend.superuser.log": {},

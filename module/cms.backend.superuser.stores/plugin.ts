@@ -38,12 +38,11 @@ type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
  *  a store, so the same module can be installed in one row and merely on offer in the next —
  *  `Module.source` says which store it actually came from, and only that row acts on it. */
 function state(app: App, mod: string, store?: Store): RowState {
-  const known = app.modules.get(mod);
-  const mine = store ? known?.source === store.moduleUrl(mod) : !!known && !offered(app, known);
-  if (!known) return app.modules.failures()[mod] ? "broken" : "available";
-  if (!mine) return "elsewhere";
   if (app.modules.failures()[mod]) return "broken";
-  return app.modules.linked(mod) ? "active" : "inactive";
+  const known = app.modules.get(mod);
+  if (!known) return "available";
+  const mine = store ? known.source === store.moduleUrl(mod) : !offered(app, known);
+  return !mine ? "elsewhere" : app.modules.linked(mod) ? "active" : "inactive";
 }
 
 /** True when some registered store is where this module came from — then it needs no storeless row. */
@@ -76,10 +75,8 @@ function catalogs(app: App) {
 function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): { mod: string; store?: Store }[] {
   const rows: { mod: string; store?: Store }[] = [];
   for (const { store, names } of cats) for (const mod of names) rows.push({ mod, store });
-  for (const mod of [...Object.values(app.modules.all()), ...Object.keys(app.modules.failures())]) {
-    const modName = typeof mod === "string" ? mod : mod.name;
-    if (typeof mod === "string" ? !rows.some((r) => r.mod === modName) : !offered(app, mod)) rows.push({ mod: modName });
-  }
+  for (const mod of Object.values(app.modules.all())) if (!offered(app, mod)) rows.push({ mod: mod.name });
+  for (const mod of Object.keys(app.modules.failures())) if (!rows.some((row) => row.mod === mod)) rows.push({ mod });
   return rows.sort((a, b) => a.mod.localeCompare(b.mod) || (a.store?.url ?? "").localeCompare(b.store?.url ?? ""));
 }
 
@@ -154,7 +151,7 @@ function storeRow(app: App, store: Store, error: string, l: Labels, label: (url:
     <td>${local ? html`<button data-act=writeIndex data-store="${store.url}">${l.writeIndex}</button>` : ""}
     <td style="text-align:right">${
     store.declared
-      ? html``
+      ? ""
       : html`<button data-act=removeStore data-store="${store.url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`
   }`;
 }
@@ -199,9 +196,9 @@ export async function writeIndex(store: Store): Promise<string> {
   const catalog = fromFileUrl(new URL("store.json", store.base).href);
   const before = await Deno.readTextFile(catalog).catch(() => "");
   const known = before ? JSON.parse(before).modules ?? {} : {};
-  const modules = Object.fromEntries(names.map((mod) => [mod, known[mod] ?? {}]));
-  const wroteCatalog = JSON.stringify({ modules }, null, 2) + "\n" !== before;
-  if (wroteCatalog) await writeJson(catalog, { modules });
+  const next = JSON.stringify({ modules: Object.fromEntries(names.map((mod) => [mod, known[mod] ?? {}])) }, null, 2) + "\n";
+  const wroteCatalog = next !== before;
+  if (wroteCatalog) await Deno.writeTextFile(catalog, next);
 
   if (!changed.length && !wroteCatalog) return "Nothing to write — everything is up to date.";
   return [
@@ -220,25 +217,24 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
   const act = String(vars.act ?? "");
   const mod = String(vars.mod ?? "");
   const store = String(vars.store ?? "");
+  const target = (): Store => { // both store actions need it, and neither may guess when it is gone
+    const found = app.stores.get(store);
+    if (!found) throw new Error(`Unknown store: ${store}`);
+    return found;
+  };
   try {
     switch (act) {
       case "addStore":
         await app.stores.install(resolve(app, store));
         return { ok: true };
-      case "writeIndex": {
-        const target = app.stores.get(store);
-        if (!target) throw new Error(`Unknown store: ${store}`);
-        return { ok: true, message: await writeIndex(target) };
-      }
+      case "writeIndex":
+        return { ok: true, message: await writeIndex(target()) };
       case "removeStore":
         await app.stores.uninstall(store);
         return { ok: true };
-      case "install": {
-        const from = app.stores.get(store);
-        if (!from) throw new Error(`Unknown store: ${store}`);
-        await app.modules.install(from.moduleUrl(mod), mod);
+      case "install":
+        await app.modules.install(target().moduleUrl(mod), mod);
         return { ok: true }; // installing a dependency may reactivate other rows
-      }
       case "uninstall":
         if (LOCKED.has(mod)) throw new Error(`Cannot uninstall "${mod}"`);
         await app.modules.uninstall(mod);
@@ -299,6 +295,7 @@ async function render(node: Node): Promise<HtmlString> {
         <option value=active>${l.active}
         <option value=inactive>${l.inactive}
         <option value=available>${l.available}
+        <option value=elsewhere>${l.elsewhere}
         <option value=broken>${l.broken}
       </select>
       <input type=search autofocus data-filter=search placeholder="${t`Search`}">
