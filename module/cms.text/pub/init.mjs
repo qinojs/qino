@@ -10,7 +10,7 @@ const activeLang = document.documentElement.lang;
 
 // contextmenu
 c1.globalContextMenu.addItem('CMS Text',{
-  icon: moduleUrl+'cms.text/pub/text.png',
+  icon: moduleUrl+'cms.text/pub/module.svg',
   selector: '[cmstxt]',
   onshow(e) { this.qgCurrentTarget = e.currentTarget; },
   onclick() { showEditor(this.qgCurrentTarget); }
