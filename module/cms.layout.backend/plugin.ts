@@ -60,7 +60,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   if (!conts.length) await node.cont("main");
 
   // Nav: get backend root page and its children
-  const backendId = Number(await app.settings.cms.backend ?? "0");
+  const backendId = Number(app.settings.cms.backend()) || 0;
   const backendRoot = backendId ? await node.cms.node(backendId) : null;
   const navItems = backendRoot ? [...(await backendRoot.children({ access: 1 })).values()] : [];
 

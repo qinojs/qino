@@ -7,6 +7,7 @@ They are not part of a normal installation — a new site uses the current modul
 
 | legacy | current | how |
 | --- | --- | --- |
+| `cms.layout.custom.3` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.layout.custom.6` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.layout.custom.7` | `cms.layout.custom.9` | own shell, layout markup stays site data |
 | `cms.cont.nav2` | `cms.cont.nav3` | re-exports nav3 — same settings, same output |
@@ -42,13 +43,17 @@ They are not part of a normal installation — a new site uses the current modul
 | `cms.cont.event2.default` | — | ported event-detail read view; registration intentionally disabled |
 | `cms.cont.event2.fullcalendar4` | — | ported accessible calendar read view |
 | `cms.cont.event2.overview1` | — | ported upcoming/past event overview |
+| `cms.cont.navigation.horizontal` | — | ported active-branch navigation |
+| `cms.cont.freePosition1` | — | ported positioned content container |
+| `cms.cont.slider.nivoSlider` | — | ported dependency-free image slider |
 | `cms.legacy.c1` | — | browser helpers shared by legacy site modules |
 
 A module belongs here when the old name has to survive. Where a rename is all that differs,
 rewriting `page.module` during the migration is the cheaper answer.
 
-A ported module brings the CSS of its PHP original along, rewritten to the `[qcms-mod="…"]` anchor —
-`migrateCss` only rewrites the site's own files under `data/`, never the ones shipped here.
+A ported module brings the CSS of its PHP original along. `migrateCss` rewrites the site's own
+files under `data/`: module and node classes become `[qcms-mod="…"]` and `[qcms-id="…"]`, while
+absolute `/qg/<module>/` asset paths become relative to the CSS file. Store files stay untouched.
 
 `lib/bg.ts` replaces PHP's `cms_image2_bg()`: qino's `cms.image2` only ports the foreground
 `<cms-image2>`, so a background image is plain CSS here — same picture, no lazy upgrade.

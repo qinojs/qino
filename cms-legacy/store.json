@@ -1,5 +1,6 @@
 {
   "modules": {
+    "cms.layout.custom.3": {},
     "cms.layout.custom.6": {},
     "cms.layout.custom.7": {},
     "cms.cont.nav2": {},
@@ -36,7 +37,9 @@
     "cms.cont.event2.fullcalendar4": {},
     "cms.cont.event2.overview1": {},
     "cms.cont.navigation": {},
-    "cms.cont.redirect": {},
+    "cms.cont.navigation.horizontal": {},
+    "cms.cont.freePosition1": {},
+    "cms.cont.slider.nivoSlider": {},
     "cms.cont.text.freeposition": {},
     "cms.cont.mailform2": {},
     "cms.layout.custom.1": {},

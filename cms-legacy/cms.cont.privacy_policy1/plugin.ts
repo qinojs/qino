@@ -26,7 +26,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     }
     const name = "content_" + key;
     if (!texts["title_" + key]) continue;
-    let owner = "";
+    let owner: HtmlString | string = "";
     if (key === "accountable_body") {
       const fields = ["company", "name", "address"];
       const lines = [];
