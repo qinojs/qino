@@ -46,7 +46,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <div class=-body style="display:flex; justify-content:space-between; align-items:center">
     <div>
       <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
-      <div>${html.join(pathParts)}</div>
+      <div>${pathParts}</div>
     </div>
     <div style="display:flex; align-items:center; gap:.25rem">
       <span class=-access-1-box></span> ${t`View`}
@@ -137,7 +137,7 @@ async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string,
   <td style="padding-left:${level * 15}px; white-space:nowrap">
     <div style="display:flex; align-items:center">${toggleBtn}${titleCell}</div>
   ${publicCell}
-  ${html.join(grpCells)}`);
+  ${grpCells}`);
 
       if (open) await renderChildren(subPage, level + 1);
     }

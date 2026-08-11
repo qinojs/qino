@@ -92,7 +92,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     WHERE ${true}${cond}
     ORDER BY ${orderBy} LIMIT 1000`;
 
-  const relHeaders = html.join(children.map((dbFile: DbField) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`));
+  const relHeaders = children.map((dbFile: DbField) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
 
   const trs: Promise<HtmlString>[] = [];
   const u = ctx.req.url.toURL();
@@ -100,7 +100,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const f = await fm.file(row.id, row);
     const exists = await f.exists();
     u.searchParams.set("id", String(row.id));
-    const cells = html.join(children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻")));
+    const cells = children.map((_: DbField, i: number) => row[`r${i}`] ? html`<td title="${row[`r${i}`]}x">◼` : html.raw("<td>◻"));
     trs.push(html.async`<tr u2-href>
   <td class=-thumb>${mediaPreview(f, !!exists)}
   <td>${row.id}
@@ -127,7 +127,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   <th>${app.t`Used`}
   <th>${app.t`Pub`}
   <th>
-<tbody>${html.join(await Promise.all(trs))}`;
+<tbody>${await Promise.all(trs)}`;
 }
 
 async function runAction(node: Node, doName: string): Promise<HtmlString | string> {
@@ -163,7 +163,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
   if (get.id) return renderDetail(node, Number(get.id));
 
   const message = vars.do ? await runAction(node, String(vars.do)) : "";
-  const orderOpts = html.join(ORDERS.map(o => html`<option>${o}`));
+  const orderOpts = ORDERS.map(o => html`<option>${o}`);
 
   return html.async`
 <div class=u2-flex>
@@ -204,9 +204,9 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
   const linkParts = await Promise.all(fileChildren(node).map(async (field: DbField) => {
     const rows = await db.query`SELECT * FROM ${sql.id(field.table.name)} WHERE ${sql.id(field.name)}=${id}`;
-    return html.join(rows.map((lr) => html`<div>${field.table.name+"."+field.name}: ${JSON.stringify(lr)}</div>`));
+    return rows.map((lr) => html`<div>${field.table.name+"."+field.name}: ${JSON.stringify(lr)}</div>`);
   }));
-  const linkInner = html.join(linkParts);
+  const linkInner = linkParts;
   const linksHtml = String(linkInner) ? linkInner : html`<div class=-body>none</div>`;
 
   const dupes = await db.query`SELECT id,name FROM file WHERE id!=${id} AND md5=${row.md5}`;
@@ -244,10 +244,10 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       ${dupes.length
           ? html.async`<table class=u2-table>
             <tr><th>${app.t`ID`}<th>${app.t`Name`}
-            ${html.join(dupes.map((d) => {
+            ${dupes.map((d) => {
               dupeU.searchParams.set("id", String(d.id));
               return html`<tr><td><a href="${dupeU.search}">${d.id}</a><td>${d.name}`;
-            }))}
+            })}
           </table>`
           : html.async`<div class=-body>${app.t`none`}</div>`}
     </div>

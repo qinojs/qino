@@ -11,9 +11,9 @@ export function renderConflicts(app: App, modules: Record<string, any>): Promise
   }
 
   const rows = conflicts.map(({ table, field, prop, values }) => {
-    const valCells = html.join(values.map(({ module: m, value }) =>
+    const valCells = values.map(({ module: m, value }) =>
       html`<div><b>${m}</b>: <code>${JSON.stringify(value)}</code></div>`
-    ));
+    );
     return html`<tr>
       <td>${table}
       <td>${field}
@@ -30,7 +30,7 @@ export function renderConflicts(app: App, modules: Record<string, any>): Promise
           <th>${t`Field`}
           <th>${t`Property`}
           <th>${t`Values per module`}
-      <tbody>${html.join(rows)}
+      <tbody>${rows}
     </table>
   </div>`;
 }

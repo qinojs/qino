@@ -32,11 +32,11 @@ export async function channels(node: Node): Promise<HtmlString> {
   const rows = await channelList(node.app);
   const del = await t`Delete this channel and all its subscriptions?`;
   const body = rows.length
-    ? html.join(rows.map((c) => html`<tr>
+    ? rows.map((c) => html`<tr>
       <td>${c.name}
       <td>${c.subs}
       <td><button type=button class=u2-unstyle data-channel-delete="${c.id}"
-        u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`))
+        u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`)
     : html`<tr><td colspan=3>${await t`No channels yet.`}`;
 
   return html.async`<div class=-head>${t`Channels`} (${rows.length})</div>
@@ -76,9 +76,9 @@ export async function send(node: Node): Promise<HtmlString> {
       GROUP BY s.usr_id, u.email
       ORDER BY u.email`,
   ]);
-  const channelOptions = html.join(channelRows.map((c) => html`<option value="channel:${c.name}">${c.name} (${c.subs})</option>`));
-  const groupOptions = html.join(groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.subs})</option>`));
-  const userOptions = html.join(userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id} (${u.subs})</option>`));
+  const channelOptions = channelRows.map((c) => html`<option value="channel:${c.name}">${c.name} (${c.subs})</option>`);
+  const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.subs})</option>`);
+  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id} (${u.subs})</option>`);
 
   return html.async`<div class=-head>${t`Send notification`}</div>
   <form class=-body>
@@ -103,7 +103,7 @@ export async function subscriptions(node: Node): Promise<HtmlString> {
   // translated once, not per row — parallel t() of the same new string collides in smalltext
   const labels = { anonymous: await t`anonymous`, test: await t`Send a test notification`, del: await t`Delete this subscription?` };
   const body = rows.length
-    ? html.join(rows.map((r) => subscription(r, labels)))
+    ? rows.map((r) => subscription(r, labels))
     : html`<tr><td colspan=7>${await t`Nobody has subscribed yet.`}`;
 
   return html.async`<div class=-head>${t`Subscriptions`} (${rows.length})</div>

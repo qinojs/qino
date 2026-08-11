@@ -69,8 +69,8 @@ export async function send(node: Node): Promise<HtmlString> {
         ORDER BY other.main DESC, other.created, other.id LIMIT 1)
       GROUP BY p.usr_id, u.email ORDER BY u.email`,
   ]);
-  const groupOptions = html.join(groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.phones})</option>`));
-  const userOptions = html.join(userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id}</option>`));
+  const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.phones})</option>`);
+  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id}</option>`);
 
   return html.async`<div class=-head>${t`Send message`}</div>
   <form class=-body>
@@ -97,7 +97,7 @@ export async function phones(node: Node): Promise<HtmlString> {
     pending: await t`pending`,
   };
   const body = rows.length || claims.length
-    ? html.join([...rows.map((p) => phone(p, labels)), ...claims.map((c) => claim(c, labels))])
+    ? [...rows.map((p) => phone(p, labels)), ...claims.map((c) => claim(c, labels))]
     : html`<tr><td colspan=6>${await t`No phone numbers yet.`}`;
 
   return html.async`<div class=-head>${t`Phone numbers`} (${rows.length})</div>

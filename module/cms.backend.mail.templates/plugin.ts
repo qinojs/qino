@@ -52,7 +52,7 @@ async function render(node: Node): Promise<HtmlString | string> {
 
   const u = ctx.req.url.toURL();
   const trs = rows.length
-    ? html.join(rows.map((r) => {
+    ? rows.map((r) => {
         const d = new Date(typeof r.updated === "number" ? r.updated * 1000 : String(r.updated));
         const iso = Number.isNaN(d.getTime()) ? "" : d.toISOString();
         const time = iso ? html`<u2-time datetime="${iso}" type=relative minute>${iso.slice(0, 16).replace("T", " ")}</u2-time>` : "-";
@@ -61,7 +61,7 @@ async function render(node: Node): Promise<HtmlString | string> {
         <td><a href="${u.search}">${r.name}</a>
         <td>${r.description}
         <td>${time}`;
-      }))
+      })
     : await html.async`<tr><td colspan=3><em>${t`No templates yet.`}</em>`;
 
   return html.async`<div class=u2-flex>

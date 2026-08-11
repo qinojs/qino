@@ -71,7 +71,7 @@ export async function getHistory(ctx: Ctx, fileId: number): Promise<string> {
         <td style="padding:.1875rem 0 .1875rem 0;">${niceDate(Number(row.log_time))}${usr ? html`<br>${usr}` : ""}`);
     }
     app.dbFiles.clearCache(fileId);
-    return html`<table style="width:100%">${html.join(trs)}</table>`.toString(); // api endpoint: plain string output
+    return html`<table style="width:100%">${trs}</table>`.toString(); // api endpoint: plain string output
 }
 
 // 60×40 thumbnail (same size as the media preview) of a specific version row, as data URL.

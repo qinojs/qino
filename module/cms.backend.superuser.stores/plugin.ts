@@ -176,7 +176,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
-      ${html.join(cats.map(({ store, error }) => storeRow(app, store, error)))}
+      ${cats.map(({ store, error }) => storeRow(app, store, error))}
       <tr><td colspan=3><button data-act=addStore>${l.addStore}</button>
     </table>
     <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>
@@ -187,7 +187,7 @@ async function render(node: Node): Promise<HtmlString> {
     <div class=u2-flex>
       <select data-filter=store>
         <option value="">${t`all stores`}
-        ${html.join(cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(app, store.url)}`))}
+        ${cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(app, store.url)}`)}
         <option value="-">${t`no store`}
       </select>
       <select data-filter=state>
@@ -206,7 +206,7 @@ async function render(node: Node): Promise<HtmlString> {
           <th>${t`Store`}
           <th>${t`State`}
           <th>
-        <tbody>${html.join(moduleList(app, cats).map(([mod, store]) => moduleRow(app, mod, store, l)))}
+        <tbody>${moduleList(app, cats).map(([mod, store]) => moduleRow(app, mod, store, l))}
       </table>
     </div>
     <div><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>
@@ -227,15 +227,15 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     <th>${t`Recently installed`}
     <th>
   <tbody>${
-    html.join(latest.map((row) => html`<tr>
+    latest.map((row) => html`<tr>
     <td>${row.name}
-    <td style="text-align:right">${u2.time(row.installed, { narrow: true })}`))
+    <td style="text-align:right">${u2.time(row.installed, { narrow: true })}`)
   }
 </table>`;
 
   const sleeping = !inactive.length ? "" : html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${inactive.length} ${t`inactive`}
-  <tbody>${html.join(inactive.map((mod) => html`<tr><td>${mod}`))}
+  <tbody>${inactive.map((mod) => html`<tr><td>${mod}`)}
 </table>`;
 
   return html.async`<div>

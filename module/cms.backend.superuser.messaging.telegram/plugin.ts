@@ -33,10 +33,10 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     <b>${Number(totals?.n ?? 0)}</b> ${chatsLabel}
     ${fresh ? html` · <span class=u2-badge>+${fresh} ${freshLabel}</span>` : ""}
     ${failing ? html` · <span class=u2-badge>${failing} ${failingLabel}</span>` : ""}
-    ${recent.length ? html`<table class=u2-table>${html.join(recent.map((c) => html`<tr>
+    ${recent.length ? html`<table class=u2-table>${recent.map((c) => html`<tr>
       <td>${c.email ?? "#" + c.usr_id}
       <td>${c.username ? "@" + c.username : ""}
-      <td>${u2.time(c.created)}`))}</table>` : ""}
+      <td>${u2.time(c.created)}`)}</table>` : ""}
   </div>`;
 }
 

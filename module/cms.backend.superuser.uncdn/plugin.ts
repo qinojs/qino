@@ -104,7 +104,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     </div>
     <div class=-head>${tAllowList}</div>
     <div class=-body>
-      ${origins.length ? html`<table class=u2-table>${html.join(origins.map(o => html`<tr><td><small><code>${o}</code></small>`))}</table>` : html`<em>${tNoOrigins}</em>`}
+      ${origins.length ? html`<table class=u2-table>${origins.map(o => html`<tr><td><small><code>${o}</code></small>`)}</table>` : html`<em>${tNoOrigins}</em>`}
     </div>
     <div class=-head>${tActions}</div>
     <div class=-body>

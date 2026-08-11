@@ -77,7 +77,7 @@ export default async function (node: Node, vars: { param?: Record<string, string
         <td>${app.t`Language`}
         <td><select class=-changelang name='["core","lang_ns","cms"]'>
           <option value="" ${langVal === "" ? "selected" : ""}>auto (${app.t`like website`})
-          ${html.join(app.languages.all.map(l => html`<option${langVal === l ? " selected" : ""}>${l}`))}
+          ${app.languages.all.map(l => html`<option${langVal === l ? " selected" : ""}>${l}`)}
         </select>
       <tr>
         <td>${app.t`Show content in structure?`}

@@ -84,7 +84,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
       <div class=-content>
         <table class=-styled style="width:100%">
           <th colspan=3><input class=-create placeholder=create style="width:100%">
-          ${html.join(customFiles)}
+          ${customFiles}
         </table>
       </div>
     </div>
@@ -93,7 +93,7 @@ export default async function (node: Node, vars: any = {}): Promise<HtmlString> 
       <div class=-content>
         <table class=-styled style="width:100%">
           <tr><th colspan=3><input class=-create placeholder=create style="width:100%">
-          ${html.join(appFiles)}
+          ${appFiles}
         </table>
       </div>
     </div>

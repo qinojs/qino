@@ -37,10 +37,10 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     <b>${Number(totals?.channels ?? 0)}</b> ${channelsLabel}
     ${fresh ? html` · <span class=u2-badge>+${fresh} ${freshLabel}</span>` : ""}
     ${failing ? html` · <span class=u2-badge>${failing} ${failingLabel}</span>` : ""}
-    ${recent.length ? html`<table class=u2-table>${html.join(recent.map((s) => html`<tr>
+    ${recent.length ? html`<table class=u2-table>${recent.map((s) => html`<tr>
       <td>${s.email ?? (s.usr_id ? "#" + s.usr_id : anonLabel)}
       <td>${(s.channels as string[]).join(", ")}
-      <td>${u2.time(s.created)}`))}</table>` : ""}
+      <td>${u2.time(s.created)}`)}</table>` : ""}
   </div>`;
 }
 

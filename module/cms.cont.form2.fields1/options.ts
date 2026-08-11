@@ -49,7 +49,7 @@ async function fieldRow(node: Node, id: string): Promise<HtmlString> {
   return html.async`
 <div class=-field data-id="${id}" tabindex=-1>
   <div class=-head>
-    <select${set(`inputs.${id}.type`)} data-reload-options>${html.join(typeOptions)}</select>
+    <select${set(`inputs.${id}.type`)} data-reload-options>${typeOptions}</select>
     <input value="${await title.string()}" cmstxt="${title.id}">
     <button type=button class=-handle title="${await t`Reorder`}">↕</button>
     <button type=button class=-remove data-node="${node.id}" data-id="${id}">✕</button>
@@ -83,14 +83,14 @@ export default async function (node: Node, _vars: unknown): Promise<HtmlString> 
 <label>
   ${t`Label position:`}
   <select data-node="${node.id}" data-key=labelPosition data-fields1-setting>
-    ${html.join(Object.entries(POSITIONS).map(([v, label]) => html`<option value="${v}"${v === position ? html.raw(" selected") : ""}>${label}</option>`))}
+    ${Object.entries(POSITIONS).map(([v, label]) => html`<option value="${v}"${v === position ? html.raw(" selected") : ""}>${label}</option>`)}
   </select>
 </label>
 
-<div class=-fields data-node="${node.id}">${html.join(rows)}</div>
+<div class=-fields data-node="${node.id}">${rows}</div>
 
 <datalist id=fields1-autocomplete>
-  ${html.join(AUTOCOMPLETES.map((a) => html`<option value="${a}"></option>`))}
+  ${AUTOCOMPLETES.map((a) => html`<option value="${a}"></option>`)}
 </datalist>
 
 <button type=button class=-add data-node="${node.id}">${t`Add field`}</button>`;

@@ -58,7 +58,7 @@ async function render(node: Node): Promise<HtmlString> {
         <th>${app.t`Node`}
         <th>${app.t`Edited`}
         <th>${app.t`By`}
-      <tbody>${recentParts.length ? html.join(recentParts) : html.async`<tr><td colspan=3>${app.t`No history yet`}`}
+      <tbody>${recentParts.length ? recentParts : html.async`<tr><td colspan=3>${app.t`No history yet`}`}
     </table>
   </div>
 </div>`;
@@ -75,7 +75,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div style="padding:0">
     <table class=u2-table style="white-space:nowrap">
       <thead><tr><th>${app.t`Node`}<th style="text-align:right">${app.t`Changes`}
-      <tbody>${topParts.length ? html.join(topParts) : html.async`<tr><td colspan=2>${app.t`No history yet`}`}
+      <tbody>${topParts.length ? topParts : html.async`<tr><td colspan=2>${app.t`No history yet`}`}
     </table>
   </div>
 </div>`;

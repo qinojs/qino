@@ -47,7 +47,7 @@ export async function renderJobs(app: App, jobs: JobStatus[]): Promise<HtmlStrin
       <th>${app.t`Duration`}
       <th>${app.t`Failures`}
       <th>
-    <tbody>${html.join(rows)}
+    <tbody>${rows}
   </table>`;
 }
 

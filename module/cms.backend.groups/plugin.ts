@@ -80,7 +80,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
             <th> ${t`Members`}
             <th width=20>
         <tbody>
-          ${html.join(trs)}
+          ${trs}
       </table>
     </div>
   </div>
@@ -131,7 +131,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   <div class="u2-card -members" style="flex:0 1 auto">
     <div class=-head>${t`Members`} (${members.length})</div>
     <table class=u2-table style="width:auto">
-      ${html.join(memberRows)}
+      ${memberRows}
     </table>
     ${canManage
       ? html.async`<form class=-body data-add-member>

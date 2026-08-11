@@ -69,7 +69,7 @@ async function render(node: Node): Promise<HtmlString> {
           formFields.push(html`<tr><td>${cap(fname)}:<td><input name="${fname}" type="${inputType}">`);
         }
         solutionsHtml = html`<form>
-  ${formFields.length ? html`<table><tbody style="vertical-align:baseline">${html.join(formFields)}</table>` : ""}
+  ${formFields.length ? html`<table><tbody style="vertical-align:baseline">${formFields}</table>` : ""}
   <button data-type="${type}" data-item="${name}" data-solution="${solution}">${cap(solution)}</button>
 </form>`;
       } else if (solutions.length > 1) {
@@ -78,7 +78,7 @@ async function render(node: Node): Promise<HtmlString> {
         );
         solutionsHtml = html`<form><u2-menubutton>
   <button type=button>solve ▾</button>
-  <menu>${html.join(menuItems)}</menu>
+  <menu>${menuItems}</menu>
 </u2-menubutton></form>`;
       }
 
@@ -93,7 +93,7 @@ async function render(node: Node): Promise<HtmlString> {
     healthCards.push(html`<div class=u2-card>
   <div class=-head>${cap(type)}</div>
   <div class=-body style="max-height:43.75rem;overflow:auto">
-    <div class=healty_container>${html.join(items)}</div>
+    <div class=healty_container>${items}</div>
   </div>
 </div>`);
   }
@@ -154,7 +154,7 @@ async function render(node: Node): Promise<HtmlString> {
     }
   </style>
   ${serverInfoHtml}
-  ${html.join(healthCards)}
+  ${healthCards}
   ${dbBox}
   ${localesBox}
   ${statsBox}
@@ -238,7 +238,7 @@ function dbUtcNowSql(dialect: string): string {
 }
 
 const kvTable = (rows: [string, string][]) =>
-  html`<table class=u2-table><tbody>${html.join(rows.map(([k, v]) => html`<tr><td>${k}<td>${v}`))}</table>`;
+  html`<table class=u2-table><tbody>${rows.map(([k, v]) => html`<tr><td>${k}<td>${v}`)}</table>`;
 
 // Summary card with a "Details" button that lazy-loads the dialect-specific `db-details` part.
 function dbCard(title: string, summaryRows: HtmlString): HtmlString {

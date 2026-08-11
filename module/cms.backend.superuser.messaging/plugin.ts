@@ -41,9 +41,9 @@ export async function render(node: Node): Promise<HtmlString> {
     labels(app),
   ]);
   const rows = [...journal, ...emails].sort((a, b) => Number(b.time) - Number(a.time));
-  const query = html.join([...url.searchParams]
+  const query = [...url.searchParams]
     .filter(([key]) => key !== "usr")
-    .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`));
+    .map(([key, value]) => html`<input type=hidden name="${key}" value="${value}">`);
 
   return html.async`<div class=u2-flex>
     <div class=u2-card style="flex-grow:0">
@@ -52,7 +52,7 @@ export async function render(node: Node): Promise<HtmlString> {
         ${query}
         <select name=usr>
           <option value="">${app.t`All messages`}</option>
-          ${html.join(users.map((row) => html`<option value="${row.id}"${Number(row.id) === usrId ? " selected" : ""}>${userName(row)}</option>`))}
+          ${users.map((row) => html`<option value="${row.id}"${Number(row.id) === usrId ? " selected" : ""}>${userName(row)}</option>`)}
         </select>
         <button>${app.t`Open`}</button>
       </form>
@@ -64,7 +64,7 @@ export async function render(node: Node): Promise<HtmlString> {
       : html.async`<div class=u2-card cms-part=messages>
         <div class=-head>${app.t`Messages`} (${rows.length})</div>
         ${rows.length
-          ? html.join(rows.map((row) => message(row, view, url)))
+          ? rows.map((row) => message(row, view, url))
           : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
       </div>`}
     ${renderDashboard(node)}
@@ -85,7 +85,7 @@ async function conversation(
     <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
     <div class=-scroll>
       ${rows.length
-        ? html`<table class=-chat><tbody>${html.join(rows.toReversed().map((row) => chatMessage(row, view)))}</tbody></table>`
+        ? html`<table class=-chat><tbody>${rows.toReversed().map((row) => chatMessage(row, view))}</tbody></table>`
         : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
     </div>
     <div>
@@ -94,7 +94,7 @@ async function conversation(
         <label>
           ${app.t`Channel`}:
           <select name=channel>
-            ${html.join(reachable.map((c) => html`<option value="${c.name}"${c.name === selected ? " selected" : ""}>${c.label}</option>`))}
+            ${reachable.map((c) => html`<option value="${c.name}"${c.name === selected ? " selected" : ""}>${c.label}</option>`)}
           </select>
         </label>
         <textarea name=text maxlength=4096 rows=3 required placeholder="${app.t`Message`}"></textarea>
@@ -144,12 +144,12 @@ function message(row: Row & { deliveries: Row[] }, view: View, url: URL): HtmlSt
         <th>${user}
         <th>${time}
         <th>${error}
-      <tbody>${html.join(row.deliveries.map((delivery) => html`<tr>
+      <tbody>${row.deliveries.map((delivery) => html`<tr>
         <td>${delivery.usr_id
           ? html`<a href="${userUrl(url, Number(delivery.usr_id))}">${delivery.email ?? "#" + delivery.usr_id}</a>`
           : anonymous}
         <td>${u2.time(delivery.time)}
-        <td>${delivery.error ?? ""}`))}
+        <td>${delivery.error ?? ""}`)}
     </table>` : ""}
   </details>`;
 }

@@ -22,7 +22,7 @@ function issueTable(title: string, head: HtmlString, rows: HtmlString[]): HtmlSt
   return html`<h3>${title}</h3>
     <table class=u2-table>
       <thead><tr>${head}
-      <tbody>${html.join(rows)}
+      <tbody>${rows}
     </table>`;
 }
 
@@ -156,7 +156,7 @@ export async function renderRow(
       <button>Tools ▾</button>
       <menu>
         <li><button data-action=validate data-table="${table}" u2-confirm="Validate portable schema rules for ${table}? This reads the table and may take a while.">validate</button>
-        ${html.join(actions)}
+        ${actions}
       </menu>
     </u2-menubutton>`;
 }

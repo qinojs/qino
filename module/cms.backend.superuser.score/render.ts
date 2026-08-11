@@ -31,7 +31,7 @@ export async function list(node: Node): Promise<HtmlString> {
   return html.async`<div class=-body>
     <b>${known.size}</b> ${app.t`scopes`} · ${total} ${app.t`scored rows`}
   </div>
-  ${html.join(cards)}
+  ${cards}
   ${renderStale(app, known)}`;
 }
 
@@ -72,7 +72,7 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
       <th><code>score</code> <small>${app.t`db`}</small>
       <th>${app.t`Strength`} <small>${app.t`computed`}</small>
       <th><code>time</code> <small>${app.t`db`}</small>
-    <tbody>${html.join(rows)}
+    <tbody>${rows}
   </table>`;
 }
 
@@ -90,7 +90,7 @@ async function renderStale(app: App, known: Map<string, Scope>): Promise<HtmlStr
   return html.async`<div class=-body>
     <b>${app.t`Not registered`}</b> —
     ${app.t`no module scores these tables anymore; prune skips them, delete them by hand.`}
-    <ul>${html.join(rows)}</ul>
+    <ul>${rows}</ul>
   </div>`;
 }
 

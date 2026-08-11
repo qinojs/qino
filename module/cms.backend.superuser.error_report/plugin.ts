@@ -59,7 +59,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 
   const sources = await db.col<string>`SELECT DISTINCT source FROM m_error_report ORDER BY source`;
   const prios   = await db.col<string>`SELECT DISTINCT prio FROM m_error_report ORDER BY prio`;
-  const opts    = (vals: string[], cur: string) => html.join(vals.map(v => html`<option ${v === cur ? "selected" : ""}>${v}</option>`));
+  const opts    = (vals: string[], cur: string) => vals.map(v => html`<option ${v === cur ? "selected" : ""}>${v}</option>`);
   const ranges: [string, string][] = [["", await t`all time`], ["1", await t`last 24h`], ["7", await t`last 7 days`], ["30", await t`last 30 days`]];
   const range  = get.range ?? "30"; // default window keeps the group scan off the full table
 
@@ -74,7 +74,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
       <option value="">${t`All priorities`}</option>${opts(prios, get.prio ?? "")}
     </select>
     <select name=range>
-      ${html.join(ranges.map(([v, l]) => html`<option value="${v}" ${v === range ? "selected" : ""}>${l}</option>`))}
+      ${ranges.map(([v, l]) => html`<option value="${v}" ${v === range ? "selected" : ""}>${l}</option>`)}
     </select>
     <select name=order>
       <option value=max_id>${t`sort by date`}</option>
@@ -221,7 +221,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
   return html`
 <table class=u2-table>
   <tbody style="vertical-align:baseline">
-    ${html.join(trs)}
+    ${trs}
 </table>`;
 }
 
@@ -276,7 +276,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     <br>${row.ip}
     <br>${row.email}
   <td>${fileCell}
-  <td>${bt.length ? html`<table>${html.join(btTrs)}</table>` : ""}`);
+  <td>${bt.length ? html`<table>${btTrs}</table>` : ""}`);
   }
 
   return html.async`
@@ -284,7 +284,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   <div class=-head><a href="${back.search || "?"}">← ${node.app.t`Errors`}</a> &nbsp; ${get.file} : ${get.line} : ${get.col}</div>
   <table class=u2-table>
     <tbody style="vertical-align:baseline">
-      ${html.join(trs)}
+      ${trs}
   </table>
 </div>`;
 }
@@ -348,7 +348,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   <td>
     <a href="${item.url}" target=_blank>${item.url}</a><br>
     <div style="font-size:.9em; color:#aaa">${item.referer}</div>
-    ${html.join(errorLinks)}
+    ${errorLinks}
   <td><div style="max-width:37.5rem; overflow:auto">${item.post}</div>`);
     }
   }
@@ -402,7 +402,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
         <th>${t`File`}
         <th>${t`Function`}
         <th>${t`Arguments`}
-      <tbody>${html.join(btTrs)}
+      <tbody>${btTrs}
     </table>
   </div>
 
@@ -421,7 +421,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
         <th>${t`Time / Session`}
         <th>${t`URL / Referer`}
         <th>${t`POST`}
-      <tbody>${html.join(historyTrs)}
+      <tbody>${historyTrs}
     </table>
   </div>
 </div>`;
@@ -467,7 +467,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     <th>Source
     <th>Message
     <th>Count
-  <tbody>${html.join(trs)}
+  <tbody>${trs}
 </table></div>`;
 }
 

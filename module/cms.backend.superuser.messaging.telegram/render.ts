@@ -81,8 +81,8 @@ export async function send(node: Node): Promise<HtmlString> {
       GROUP BY c.usr_id, u.email
       ORDER BY u.email`,
   ]);
-  const groupOptions = html.join(groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.chats})</option>`));
-  const userOptions = html.join(userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id} (${u.chats})</option>`));
+  const groupOptions = groupRows.map((g) => html`<option value="grp:${g.id}">${g.name} (${g.chats})</option>`);
+  const userOptions = userRows.map((u) => html`<option value="usr:${u.usr_id}">${u.email ?? "#" + u.usr_id} (${u.chats})</option>`);
 
   return html.async`<div class=-head>${t`Send message`}</div>
   <form class=-body>
@@ -105,7 +105,7 @@ export async function chats(node: Node): Promise<HtmlString> {
   // translated once, not per row — parallel t() of the same new string collides in smalltext
   const labels = { test: await t`Send a test message`, del: await t`Disconnect this chat?` };
   const body = rows.length
-    ? html.join(rows.map((r) => chat(r, labels)))
+    ? rows.map((r) => chat(r, labels))
     : html`<tr><td colspan=6>${await t`Nobody has connected yet.`}`;
 
   return html.async`<div class=-head>${t`Chats`} (${rows.length})</div>

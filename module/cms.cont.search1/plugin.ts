@@ -132,7 +132,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const keep = Object.entries(ctx.req.query)
       .filter(([k, v]) => k !== QUERY && typeof v === "string")
       .map(([k, v]) => html`<input type=hidden name="${k}" value="${v}">`);
-    form = html.async`<form>${html.join(keep)}
+    form = html.async`<form>${keep}
       <input type=search name="${QUERY}" value="${search}" placeholder="${t`Search`}" autofocus>
       <button>${t`Search`}</button>
     </form>`;

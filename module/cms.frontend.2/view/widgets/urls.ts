@@ -32,10 +32,10 @@ export default async function (node: Node): Promise<HtmlString> {
   }
 
   return html.async`<div class=url-manager pid=${node.id}>
-  <table class="-urls -styled -noborder" style="width:100%"><tbody>${html.join(await Promise.all(urlTrs))}</table>
+  <table class="-urls -styled -noborder" style="width:100%"><tbody>${await Promise.all(urlTrs)}</table>
   <br>
   <b>${app.t`Direct links`}</b>
-  <table class="-directlinks -styled -noborder" style="width:100%"><tbody>${html.join(await Promise.all(redirectTrs))}</table>
+  <table class="-directlinks -styled -noborder" style="width:100%"><tbody>${await Promise.all(redirectTrs)}</table>
 </div>
 <style>
 .url-manager .-custom { display:none; }

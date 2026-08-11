@@ -22,7 +22,7 @@ export default async function (node: Node): Promise<HtmlString> {
     if (!current && await moduleAccess(node, name) < ADMIN) continue; // the write path rejects them anyway; the current one stays visible
     options.push(html`<option value="${name}" ${current ? "selected" : ""}>${name}`);
   }
-  const moduleOptions = html.join(options);
+  const moduleOptions = options;
 
   const parent = await node.parent();
   let parentHtml: HtmlString | string = "";

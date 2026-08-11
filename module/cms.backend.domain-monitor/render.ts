@@ -58,13 +58,13 @@ const LONG_VALUE = 60; // beyond this the two values only compare when they line
 function changeCell(current: unknown, previous: unknown): HtmlString {
   const changes = diffResults(previous, current);
   if (!changes.length) return html`–`;
-  return html`<div class=-changes>${html.join(changes.map((change) => {
+  return html`<div class=-changes>${changes.map((change) => {
     const before = changeValue(change.before);
     const after = changeValue(change.after);
     return Math.max(before.length, after.length) > LONG_VALUE
       ? html`<div><b>${change.key}</b>:<div><del>${before}</del></div><div><ins>${after}</ins></div></div>`
       : html`<div><b>${change.key}</b>: <del>${before}</del> → <ins>${after}</ins></div>`;
-  }))}</div>`;
+  })}</div>`;
 }
 
 function changeValue(value: unknown): string {
@@ -77,7 +77,7 @@ const fact = (label: string, value: HtmlString | string | number): HtmlString =>
 
 const factGroup = (title: string, rows: HtmlString[]): HtmlString => html`<tbody>
   <tr><th colspan=2 class=-group>${title}
-  ${html.join(rows)}`;
+  ${rows}`;
 
 // Dot plus word — a bare dot is readable in the overview table, but too cryptic on its own.
 const state = (value: unknown, title: string): HtmlString =>
@@ -208,7 +208,7 @@ function nsCell(row: DomainRow, ns: ReturnType<typeof nsState>): HtmlString {
   const faults: [string, string][] = [];
   if (ns.answering.length > 1 && ns.subnets < 2) faults.push(["one /24", "all nameservers sit in the same /24 and fall over together"]);
   if (no(ns.parent)) faults.push(["parent differs", "the delegation at the parent differs from the NS set in the zone"]);
-  return html`${html.join(names.map(line))}${html.join(faults.map(([short, title]) => html`<div>${dot("orange", title)} <small>${short}</small></div>`))}`;
+  return html`${names.map(line)}${faults.map(([short, title]) => html`<div>${dot("orange", title)} <small>${short}</small></div>`)}`;
 }
 
 // A short TTL is a moving-house setting: right for the day of a migration, a liability every other
@@ -559,14 +559,14 @@ export async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: 
     <span data-bulk hidden><b data-bulk-count>0</b> selected ·
       <select data-bulk-frequency title="Set automatic checks for the selected domains">
         <option value="">set interval…</option>
-        ${html.join(FREQUENCIES.map((value) => html`<option value="${value}">${value === "disabled" ? "off" : value}`))}
+        ${FREQUENCIES.map((value) => html`<option value="${value}">${value === "disabled" ? "off" : value}`)}
       </select>
       <button data-action=checkSelected>Check</button>
       <button data-action=deleteSelected data-bulk-delete>Delete</button>
     </span>
-    <span class=-cols>${html.join(GROUPS.map((group) =>
+    <span class=-cols>${GROUPS.map((group) =>
       html`<label><input type=checkbox data-col="${group}" ${hidden.includes(group) ? "" : "checked"}> ${GROUP_LABELS[group]}</label>`
-    ))}</span>
+    )}</span>
   </div>
   <u2-table>
     <table class="u2-table -Sticky -domains ${hidden.map((group) => "-no-" + group).join(" ")}">

@@ -50,7 +50,7 @@ export async function renderModules(app: App, modules: Record<string, any>): Pro
       <td style="font-family:monospace">${chip("table", table, tableMods[table] ?? [], definedByLabel)}
       <td style="text-align:right">${fields.length}
       <td style="font-family:monospace;font-size:.9em">${
-        html.join([...fields].sort().map(field => chip("field", field, origins[table]?.[field] ?? [], definedByLabel)))
+        [...fields].sort().map(field => chip("field", field, origins[table]?.[field] ?? [], definedByLabel))
       }`);
   });
 
@@ -70,7 +70,7 @@ export async function renderModules(app: App, modules: Record<string, any>): Pro
           <th>${t`Table`}
           <th style="text-align:right">${t`Fields`}
           <th>${t`Field names`}
-      <tbody>${html.join(moduleRows)}
+      <tbody>${moduleRows}
     </table>
   </div>`;
 }

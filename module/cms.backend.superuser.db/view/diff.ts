@@ -40,10 +40,10 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
             <th>${t`Table`}
             <th>${t`Field`}
             <th>${t`Status`}
-        <tbody>${html.join(rows.map(({ table, field, status }) => html`<tr>
+        <tbody>${rows.map(({ table, field, status }) => html`<tr>
           <td>${table}
           <td>${field ? field : ""}
-          <td>${badges[status]}`))}
+          <td>${badges[status]}`)}
       </table>`
     : html`<div class=-body>Schema and DB match.</div>`;
 
@@ -87,7 +87,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
           <th>${t`current`}
           <th>${t`from DB`}
           <th>
-      <tbody>${html.join(schemaRows)}
+      <tbody>${schemaRows}
     </table>
   </div>` : ""}`;
 }

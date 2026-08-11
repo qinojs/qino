@@ -39,7 +39,7 @@ export async function render(node: Node): Promise<HtmlString> {
         <th>${t`Expires`}
         <th>
       <tbody>${rows.length
-        ? html.join(rows.map((row) => html`<tr>
+        ? rows.map((row) => html`<tr>
           <td>${row.purpose}
           <td><span class=u2-badge>${states[state(row)]}</span>
           <td><small>${String(row.data ?? "").slice(0, 120)}</small>
@@ -47,7 +47,7 @@ export async function render(node: Node): Promise<HtmlString> {
           <td>${row.expires == null ? never : u2.time(row.expires)}
           <td>${state(row) ? ""
             : html`<button type=button class=u2-unstyle data-revoke="${row.hash}"
-              u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`}`))
+              u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`}`)
         : html`<tr><td colspan=6>${await t`No tickets yet.`}`}
     </table>
     <div class=-body>
@@ -59,7 +59,7 @@ export async function render(node: Node): Promise<HtmlString> {
     <div class=-head>${t`Open by kind`}</div>
     <div class=-body>
       ${byPurpose.size
-        ? html.join([...byPurpose].map(([purpose, n]) => html`<div>${purpose}: <b>${n}</b></div>`))
+        ? [...byPurpose].map(([purpose, n]) => html`<div>${purpose}: <b>${n}</b></div>`)
         : html`<div>${await t`None`}</div>`}
     </div>
   </div>

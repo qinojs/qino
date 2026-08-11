@@ -109,7 +109,7 @@ async function render(node: Node): Promise<HtmlString> {
         <label>${t`Template`}
           <select name=template>
             <option value="">${t`blank`}
-            ${html.join(templates.map((mod) => html`<option>${mod}`))}
+            ${templates.map((mod) => html`<option>${mod}`)}
           </select>
         </label>
         <button>${t`Create`}</button>

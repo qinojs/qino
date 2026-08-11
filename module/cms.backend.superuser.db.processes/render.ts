@@ -41,7 +41,7 @@ export async function list(node: Node): Promise<HtmlString> {
       <th>${t`State`}
       <th>${t`Query`}
       <th width=10>
-    <tbody>${html.join(rows.map((p) => row(p, lKill)))}
+    <tbody>${rows.map((p) => row(p, lKill))}
     <tfoot><tr><td colspan=9>${rows.length} ${lProcesses}
   </table>`;
 }

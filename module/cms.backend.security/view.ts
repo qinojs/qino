@@ -10,11 +10,11 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div class=-body>
     <b>${row.events}</b> ${app.t`Events`}, <b>${row.fresh ?? 0}</b> ${app.t`new`}, <b>${row.blocked ?? 0}</b> ${app.t`blocked`}<br>
     <small>${app.t`Last alarm:`} ${u2.time(row.last)}</small>
-    ${buckets.length ? html`<table class=u2-table>${html.join(buckets.map((r) => html`<tr>
+    ${buckets.length ? html`<table class=u2-table>${buckets.map((r) => html`<tr>
       <td>${r.score}
       <td>${r.scope}
       <td><code>${r.ident}</code>
-      <td>${r.reason}`))}</table>` : ""}
+      <td>${r.reason}`)}</table>` : ""}
   </div>`;
 }
 
@@ -63,7 +63,7 @@ function statusBox(app: App, stats: Record<string, unknown>) {
 function tabs(ctx: Ctx, active: string) {
   const u = ctx.req.url.toURL();
   const href = (tab: string) => { u.searchParams.set("tab", tab); return u.search; };
-  return html`<u2-buttongroup style="margin-bottom:1rem">${html.join(["live","buckets","analyse","settings"].map(v => html`<a href="${href(v)}" class="btn ${v===active?"-active":""}">${v}</a>`))}</u2-buttongroup>`;
+  return html`<u2-buttongroup style="margin-bottom:1rem">${["live","buckets","analyse","settings"].map(v => html`<a href="${href(v)}" class="btn ${v===active?"-active":""}">${v}</a>`)}</u2-buttongroup>`;
 }
 
 function settingsEditor(ctx: Ctx) {
@@ -84,14 +84,14 @@ async function bucketTable(app: App, rows: Record<string, unknown>[]) {
       <th>${tLast}
       <th>${tReason}
       <th>
-    <tbody>${html.join(rows.map(r => html`<tr class="${r.blocked?"-blocked":""}">
+    <tbody>${rows.map(r => html`<tr class="${r.blocked?"-blocked":""}">
       <td>${r.score}
       <td>${r.scope}
       <td><code>${r.ident}</code>
       <td>${r.count}
       <td>${u2.time(r.last_seen)}
       <td>${r.reason}
-      <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`))}
+      <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`)}
   </table></div>`;
 }
 
@@ -112,7 +112,7 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
         <th>${tRequest}
         <th>${tStatus}
         <th>
-    <tbody>${html.join(rows.map(r => html`<tr class="-${r.prio}">
+    <tbody>${rows.map(r => html`<tr class="-${r.prio}">
       <td>${u2.time(r.time)}
       <td>${eventCell(r)}
       <td>${scoreCell(r)}
@@ -121,7 +121,7 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
       <td>${r.reason}
       <td>${requestCell(r)}
       <td>${stateCell(r)}
-      <td>${eventActions(r)}`))}
+      <td>${eventActions(r)}`)}
   </table></div>`;
 }
 
@@ -165,10 +165,10 @@ function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key:
   const u = ctx.req.url.toURL();
   const href = (q: unknown) => { u.searchParams.set("tab", "live"); u.searchParams.set("q", String(q ?? "")); return u.search; };
   return html`<div class="u2-card -table -toplist"><div class=-head>${title}</div><table class=u2-table>
-    ${html.join(rows.map(r => html`<tr>
+    ${rows.map(r => html`<tr>
       <td>${r.num}
       <td><a href="${href(r[key])}"><code>${r[key]}</code></a>
-      <td>${u2.time(r.last)}`))}
+      <td>${u2.time(r.last)}`)}
   </table></div>`;
 }
 
@@ -205,7 +205,7 @@ const SCOPE_LABELS: Record<string, string> = { ip: "IP", range: "IP range", clie
 const STATE_LABELS: Record<string, string> = { new: "new", seen: "seen", ignore: "ignored" };
 const ACTION_LABELS: Record<string, string> = { blocked: "blocked", delayed: "delayed" };
 
-const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => html.join(vs.map(v => html`<option value="${v}"${v===active?" selected":""}>${labels[v] ?? v}`));
+const opts = (vs: string[], active = "", labels: Record<string, string> = {}) => vs.map(v => html`<option value="${v}"${v===active?" selected":""}>${labels[v] ?? v}`);
 const tag = (v: unknown) => html`<span class=u2-badge>${v}</span>`;
 const bytes = (n: unknown, name: string) => Number(n) ? name + " " + humanBytes(Number(n)) : "";
 

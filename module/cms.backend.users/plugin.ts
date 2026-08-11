@@ -87,7 +87,7 @@ async function renderOverview(node: Node): Promise<HtmlString | string> {
     <div class=-head> ${t`Search users`} </div>
     <div class=-body>
       <input type=search placeholder="${t`search`}..." id=usrSearch style="width:18.75rem; max-width:100%">
-      <select id=usrGrp>${html.join(await Promise.all(grpOpts))}</select>
+      <select id=usrGrp>${await Promise.all(grpOpts)}</select>
     </div>
     <div style="overflow:auto; padding:0">
       <table class=u2-table>
@@ -124,7 +124,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
     logins.length
       ? html.async`<table class=u2-table style="white-space:nowrap;margin-top:1px">
   <thead><tr><th>${t`Recent logins`}<th>
-  <tbody>${html.join(logins.map((row) => html`<tr><td>${row.email ?? "–"}<td><u2-time datetime="${new Date(Number(row.access) * 1000).toISOString()}" type=relative></u2-time>`))}
+  <tbody>${logins.map((row) => html`<tr><td>${row.email ?? "–"}<td><u2-time datetime="${new Date(Number(row.access) * 1000).toISOString()}" type=relative></u2-time>`)}
 </table>`
       : html.raw(""));
 
@@ -167,11 +167,11 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
   const grpRows = await db.query`SELECT grp.*, usr_grp.usr_id as has FROM grp LEFT JOIN usr_grp ON grp.id = usr_grp.grp_id AND usr_grp.usr_id = ${id} ORDER BY grp.name`;
 
-  const grpHtml = html.join(grpRows.map((g) => html`
+  const grpHtml = grpRows.map((g) => html`
       <tr>
         <td>${g.name}
         <td>
-          <input type=checkbox value=${g.id} ${g.has ? "checked" : ""}>`));
+          <input type=checkbox value=${g.id} ${g.has ? "checked" : ""}>`);
 
   return html.async`<div class=u2-flex itemid="${id}">
   <div class=u2-card style="flex:0 1 21.25rem">

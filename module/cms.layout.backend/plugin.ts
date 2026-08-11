@@ -92,7 +92,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       u.searchParams.set("lang", l);
       links.push(html`<a href="${u.pathname + u.search}">${l}</a> `);
     }
-    langHtml = html`<li><span class=-item style="padding:.375rem 1rem; text-align:right">${html.join(links)}</span>`;
+    langHtml = html`<li><span class=-item style="padding:.375rem 1rem; text-align:right">${links}</span>`;
   }
 
   // Content conts
@@ -122,7 +122,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       </div>
     </div>
     <div id=content>
-      ${html.join(contentHtml)}
+      ${contentHtml}
     </div>
   </div>`;
 }

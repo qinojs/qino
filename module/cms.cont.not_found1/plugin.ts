@@ -34,7 +34,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   return html.async`<div>
   <div thm1-width class=u1-width>
     ${node.cms.text(node, "main")}
-    <ul>${html.join(listItems)}</ul>
+    <ul>${listItems}</ul>
     ${renderEditBox(node, ctx)}
   </div>
 </div>`;

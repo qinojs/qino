@@ -84,11 +84,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const groups = await db.query`SELECT id, name FROM grp ORDER BY name`;
 
   const userOptions = users.length
-    ? html.join(users.map((u) => html`<option value="${u.id}">${[u.firstname, u.lastname].filter(Boolean).join(" ") || u.email} &lt;${u.email}&gt;`))
+    ? users.map((u) => html`<option value="${u.id}">${[u.firstname, u.lastname].filter(Boolean).join(" ") || u.email} &lt;${u.email}&gt;`)
     : await html.async`<option disabled>${t`No users found`}`;
 
   const groupOptions = groups.length
-    ? html.join(groups.map((g) => html`<option value="${g.id}">${g.name}`))
+    ? groups.map((g) => html`<option value="${g.id}">${g.name}`)
     : await html.async`<option disabled>${t`No groups found`}`;
 
   return html.async`<div class=u2-card>

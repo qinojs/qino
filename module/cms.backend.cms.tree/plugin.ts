@@ -36,7 +36,7 @@ async function render(node: Node, {ctx}: {ctx: Ctx}): Promise<HtmlString> {
   <div class=-head>${t`Structure`}</div>
   <div class=-body>
     <label><input type=checkbox data-toggle-contents${showContents ? " checked" : ""}> ${t`Show contents`}</label>
-    <div>${html.join(pathParts)}</div>
+    <div>${pathParts}</div>
   </div>
   <table class="u2-table cmsBeTree">
     <thead>

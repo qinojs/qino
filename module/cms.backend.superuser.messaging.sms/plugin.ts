@@ -36,10 +36,10 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     ${pending ? html` · <span class=u2-badge>${pending} ${pendingLabel}</span>` : ""}
     ${fresh ? html` · <span class=u2-badge>+${fresh} ${freshLabel}</span>` : ""}
     ${failing ? html` · <span class=u2-badge>${failing} ${failingLabel}</span>` : ""}
-    ${recent.length ? html`<table class=u2-table>${html.join(recent.map((p) => html`<tr>
+    ${recent.length ? html`<table class=u2-table>${recent.map((p) => html`<tr>
       <td>${p.email ?? "#" + p.usr_id}
       <td>${p.number}
-      <td>${u2.time(p.created)}`))}</table>` : ""}
+      <td>${u2.time(p.created)}`)}</table>` : ""}
   </div>`;
 }
 

@@ -121,7 +121,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     <th>${t`IP`}
     <th>${t`POST`}
     <th>ID
-<tbody style="vertical-align:top">${trs.length ? html.join(trs) : html`<tr><td colspan=7>${await t`No entries`}`}`;
+<tbody style="vertical-align:top">${trs.length ? trs : html`<tr><td colspan=7>${await t`No entries`}`}`;
 }
 
 // ── stats + maintenance ─────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     ["", await t`all`],
   ] as const;
   const ageOptions = (sel: number) =>
-    html.join(ages.map((a, i) => html`<option value="${a[0]}"${i === sel ? " selected" : ""}>${a[1]}`));
+    ages.map((a, i) => html`<option value="${a[0]}"${i === sel ? " selected" : ""}>${a[1]}`);
 
   // ?search= prefills the box (used by the detail page's client/session/ip links)
   const initSearch = String(ctx.req.query.search ?? "");
@@ -340,14 +340,14 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
 
     <div class=u2-card style="flex:0 0 auto; overflow:auto">
         <div class=-head>${t`Relations`}</div>
-        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? html.join(relationTrs) : html`<tr><td>${await t`No entries`}`}</table>
+        <table class=u2-table><tbody style="vertical-align:top">${relationTrs.length ? relationTrs : html`<tr><td>${await t`No entries`}`}</table>
     </div>
 
     <div class=u2-card style="flex:1 1 40rem; max-height:88vh; overflow:auto">
         <div class=-head>${t`History`}</div>
         <div class=-body style="flex-grow:0">${t`History of:`}
             ${histLink("sess", await t`Session`)} | ${histLink("client", await t`Client`)} | ${histLink("ip", "IP")}</div>
-        <table class=u2-table><tbody style="vertical-align:top">${html.join(historyTrs)}</table>
+        <table class=u2-table><tbody style="vertical-align:top">${historyTrs}</table>
     </div>
 </div>`;
 }

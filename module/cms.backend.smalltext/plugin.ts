@@ -39,12 +39,12 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const nextDir = (col: string) => col === order && dir === "DESC" ? "asc" : "desc";
   const sortMark = (col: string) => col === order ? (dir === "ASC" ? " ↑" : " ↓") : "";
 
-  const langTh = html.join(langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`));
+  const langTh = langs.map(l => html`<th data-sort="${l}" data-dir="${nextDir(l)}">${l}${sortMark(l)}`);
   const codeLogTh = isSuperuser ? html.raw("<th>code_logs") : "";
 
   const rowsHtml: HtmlString[] = [];
   for (const row of rows) {
-    const langTds = html.join(langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`));
+    const langTds = langs.map(l => html`<td><textarea data-lang="${l}">${row[l]}</textarea>`);
     let codeLogTd: HtmlString | string = "";
     if (isSuperuser) {
       const logs = await db.query`SELECT * FROM smalltext_code_log WHERE hash = ${row.hash} AND namespace = ${row.namespace}`;
@@ -73,7 +73,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
       ${codeLogTh}
       <th width=10>
       <th width=10>
-    <tbody>${html.join(rowsHtml)}
+    <tbody>${rowsHtml}
   </table>
   <div class=-count>${rows.length} / ${total} entries</div>`;
 }

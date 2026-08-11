@@ -88,7 +88,7 @@ function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString> {
   const cols = Object.keys(rows[0]);
   const shown = rows.slice(0, MAX_ROWS);
   const head = html.join(cols.map(c => html`<th>${c}`));
-  const body = html.join(shown.map(r => html`<tr>${html.join(cols.map(c => html`<td>${cell(r[c])}`))}`));
+  const body = html.join(shown.map(r => html`<tr>${cols.map(c => html`<td>${cell(r[c])}`)}`));
   const more = rows.length > MAX_ROWS ? html.async` · ${app.t`showing first`} ${MAX_ROWS}` : "";
 
   return html.async`<div class="u2-card -full -result">

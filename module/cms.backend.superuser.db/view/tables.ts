@@ -67,7 +67,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
             <th data-sort-handler>${t`Fields`}
             <th data-sort-handler>${t`Primary`}
             <th data-sort-handler>${t`Status`}
-        <tbody>${html.join(rows)}
+        <tbody>${rows}
       </table>
     </u2-table>
   </div>`;
@@ -120,7 +120,7 @@ async function tableDetail(app: App, db: any, modules: Record<string, any>, tabl
           <th>${t`Default`}
           <th>${t`Schema`}
           <th>${t`Module`}
-      <tbody>${html.join(rows)}
+      <tbody>${rows}
     </table>
   </div>`;
 }

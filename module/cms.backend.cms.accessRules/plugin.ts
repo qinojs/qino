@@ -71,9 +71,9 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     [t`Group`, t`Name`, t`new group`, t`Cap`, t`read`, t`edit`, t`insertable`, t`add`, t`Search`, t`Set checked`, t`— none —`, t`deny`, t`save`, t`standard`]);
   const word: Record<string, string> = { "": "–", "0": lDeny, "1": lRead, "2": lEdit, "3": lInsertable };
 
-  const head = html.join(groupRows.map((g) => html`<th data-sort-handler title="${g.name}"><div>${g.name}</div>`));
-  const capCells = html.join(groupRows.map((g) =>
-    html`<td class=-cell data-kind=cap data-grp="${g.id}" v="${g.cms_access}">${word[String(g.cms_access)]}`));
+  const head = groupRows.map((g) => html`<th data-sort-handler title="${g.name}"><div>${g.name}</div>`);
+  const capCells = groupRows.map((g) =>
+    html`<td class=-cell data-kind=cap data-grp="${g.id}" v="${g.cms_access}">${word[String(g.cms_access)]}`);
 
   const trParts: HtmlString[] = [];
   let total = 0;
@@ -83,12 +83,12 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     if (!row) continue;
     total++;
     const std = row.cms_access == null ? "" : String(row.cms_access);
-    const cells = html.join(groupRows.map((g) => {
+    const cells = groupRows.map((g) => {
       const raw = overrides.has(`${module}:${g.id}`) ? String(overrides.get(`${module}:${g.id}`)) : "";
       // show the effective value — an override above the group's CAP is clamped by it
       const v = raw === "" ? "" : String(Math.min(Number(raw), Number(g.cms_access) || 3));
       return html`<td class=-cell data-kind=override data-module="${module}" data-grp="${g.id}" data-raw="${raw}" v="${v}">${word[v]}`;
-    }));
+    });
     trParts.push(html`<tr data-name="${module}">
       <td><input type=checkbox data-check>
       <td>${module}
@@ -99,7 +99,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   const canCreate = node.settings.canCreateGroups() ?? true;
   const other = await app.db.query`SELECT id, name FROM grp WHERE cms_access IS NULL OR cms_access = 0 ORDER BY name`;
-  const bulkCols = html.join(groupRows.map((g) => html`<option value="${g.id}">${g.name}`));
+  const bulkCols = groupRows.map((g) => html`<option value="${g.id}">${g.name}`);
 
   return html.async`<div class="u2-flex cmsAccessRules" data-labels="${JSON.stringify(word)}">
   <div class="u2-card -matrix" style="flex:1 1 43.75rem; max-height:90vh; overflow:auto">
@@ -132,7 +132,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
             <td>–
             <td>–
             ${capCells}
-        <tbody>${html.join(trParts)}
+        <tbody>${trParts}
         <tfoot><tr><td colspan="${4 + groupRows.length}">${t`Total`}: ${total}
       </table>
     </u2-table>
@@ -143,7 +143,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
     <form class=-add-group>
       <label>${lGroup}<br><select name=grp>
         ${canCreate ? html`<option value="">— ${lNew} —` : ""}
-        ${html.join(other.map((g) => html`<option value="${g.id}">${g.name}`))}
+        ${other.map((g) => html`<option value="${g.id}">${g.name}`)}
       </select></label>
       ${canCreate ? html`<label>${lName}<br><input name=new_group></label>` : ""}
       <label>${lCap}<br><select name=cap>

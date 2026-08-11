@@ -85,9 +85,9 @@ async function editBox(node: Node, ctx: Ctx, state: { value: string; url?: strin
     "__first-child__": await t`First subpage`,
     "__last-child__": await t`Last subpage`,
   };
-  const options = html.join(Object.entries(labels).map(([key, label]) =>
+  const options = Object.entries(labels).map(([key, label]) =>
     html`<option value="${key}"${key === mode ? html.raw(" selected") : ""}>${label}`
-  ));
+  );
 
   const title = target ? String(await target.showTitle()).replace(/<[^>]*>/g, "").trim() : "";
   const status = !value

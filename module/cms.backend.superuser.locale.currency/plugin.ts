@@ -60,7 +60,7 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=-body>
     <label>
       ${t`Fetch the rates`}
-      <select class=-every>${html.join(options)}</select>
+      <select class=-every>${options}</select>
     </label>
     <p>
       <button class=-now>${t`Update now`}</button>
@@ -78,7 +78,7 @@ async function render(node: Node): Promise<HtmlString> {
           <th> ${await t`Currency`}
           <th> ${await t`Symbol`}
           <th> ${await t`Per 1 USD`}
-      <tbody>${html.join(trs)}
+      <tbody>${trs}
     </table>
   </div>
 </div>`;

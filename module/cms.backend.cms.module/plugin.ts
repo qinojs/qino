@@ -88,7 +88,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     <label>${t`Type`}
       <select data-type-filter>
         <option value="">${t`all`}
-        ${html.join([...types].sort().map((ty) => html`<option value="${ty}" ${ty === selType ? html.raw("selected") : ""}>${ty || "–"}`))}
+        ${[...types].sort().map((ty) => html`<option value="${ty}" ${ty === selType ? html.raw("selected") : ""}>${ty || "–"}`)}
       </select>
     </label>
   </div>
@@ -101,7 +101,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
         <th data-sort-handler>${t`Used`}
         <th data-sort-handler title="${t`Default access for everyone`}">${t`Standard`}
         <th data-sort-handler>${t`Last change`}
-      <tbody>${html.join(trs)}
+      <tbody>${trs}
       <tfoot><tr>
         <td colspan=6>${t`Total`}: ${total}
     </table>
@@ -160,7 +160,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
       <td data-value="${r.time}">${time(r.time)}
       <td>${who}
       <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
-      <td>${html.join([...labels].map((l) => html`<div>${html.raw(l)}</div>`))}`);
+      <td>${[...labels].map((l) => html`<div>${html.raw(l)}</div>`)}`);
   }
   return out;
 }
@@ -237,7 +237,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
     <div class=-head>${t`Used by`}</div>
     ${canReplace ? html.async`<form onsubmit="return false">
       <label>${t`Replace with`}
-        <select name=target data-target><option value="">–${html.join(targets.map((m) => html`<option value="${m}">${m}`))}</select>
+        <select name=target data-target><option value="">–${targets.map((m) => html`<option value="${m}">${m}`)}</select>
       </label>
       <button type=button data-replace u2-disableif="!target" u2-confirm="${t`Move the checked nodes to the other module?`}">${t`Replace`}</button>
       <small>${t`only checked, editable nodes`}</small>
@@ -250,7 +250,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
           <th data-sort-handler>${t`Type`}
           <th data-sort-handler>${t`Where`}
           <th data-sort-handler>${t`Node access`}
-        <tbody>${html.join(trs)}
+        <tbody>${trs}
       </table>
     </u2-table>
     ${usedTotal > rows.length ? html.async`<div class=-body><small>${t`showing the first`} ${rows.length}</small></div>` : ""}
@@ -265,7 +265,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
           <th data-sort-handler>${t`Who`}
           <th data-sort-handler>${t`Where`}
           <th>${t`What`}
-        <tbody>${html.join(history)}
+        <tbody>${history}
       </table>
     </u2-table>
   </div>` : ""}
@@ -293,9 +293,9 @@ export async function backendDashboardWidget(app: App, page?: Node): Promise<Htm
   return html.async`<div class=-body>
     <b>${rows.length}</b> ${t`modules`}
     <br><br><small>${t`Most used`}</small>
-    ${html.join(top.map((r) => link(r, html`<small>${r.used}</small>`)))}
+    ${top.map((r) => link(r, html`<small>${r.used}</small>`))}
     <br><small>${t`Recently changed`}</small>
-    ${html.join(recent.map((r) => link(r, html`<small>${time(r.changed)}</small>`)))}
+    ${recent.map((r) => link(r, html`<small>${time(r.changed)}</small>`))}
   </div>`;
 }
 

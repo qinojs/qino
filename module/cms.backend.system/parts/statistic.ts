@@ -126,8 +126,8 @@ export async function details(node: Node): Promise<HtmlString> {
 
   return html`
 <h2>Ordner</h2>
-<table class=u2-table style="width:auto"><tbody>${html.join(folderRows)}</table>
+<table class=u2-table style="width:auto"><tbody>${folderRows}</table>
 
 <h2>DB-Tabellen</h2>
-<table class=u2-table style="width:auto"><tbody>${html.join(tableRows)}</table>`;
+<table class=u2-table style="width:auto"><tbody>${tableRows}</table>`;
 }

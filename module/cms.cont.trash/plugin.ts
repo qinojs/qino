@@ -51,7 +51,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <div class=-toolbar>
     <button class=-removeAll>Papierkorb leeren</button>
   </div>
-  <div class="-list u2-grid">${html.join(cards)}</div>
+  <div class="-list u2-grid">${cards}</div>
   <dialog class=-preview><iframe></iframe></dialog>
 </div>
 <script type=module src="${ctx.req.moduleUrl}cms.cont.trash/pub/main.js"></script>`;

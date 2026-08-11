@@ -83,10 +83,10 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     const props = (mod[key] as { properties?: unknown })?.properties;
     return props && typeof props === "object" ? Object.keys(props) : [];
   };
-  const exportBadges = html.join(presentExports.map(({ key, label }) => {
+  const exportBadges = presentExports.map(({ key, label }) => {
     const list = members(key);
     return html`${label}${list.length ? html` <small>(${list.join(", ")})</small>` : ""} `;
-  }));
+  });
 
   // --- Dependencies (needs) ---
   const needs = mod.needs ?? [];
@@ -125,7 +125,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
           <th>${t`File`}
           <th style="text-align:right">${t`Size`}
           <th>${t`Modified`}
-        <tbody>${html.join(rows)}
+        <tbody>${rows}
       </table>`
       : await html.async`<em>${t`no files found`}</em>`;
   } else if (modSource) {
@@ -159,11 +159,11 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
         <th>${t`Key`}
         <th>${t`Type`}
         <th>${t`Title`}
-      <tbody>${html.join(Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
+      <tbody>${Object.entries((mod.settingsSchema.properties ?? {}) as Record<string, Record<string, unknown>>).map(([k, v]) =>
         html`<tr>
           <td><code>${k}</code>
           <td><code>${v?.type}</code>
-          <td>${v?.title}`))}
+          <td>${v?.title}`)}
     </table>
   </div>` : ""}
   ${mod.api ? html.async`<div class=u2-card><div class=-head>${t`API routes`}</div><div class=-body><pre>${JSON.stringify(flattenApiRoutes(mod.api), null, 2)}</pre></div></div>` : ""}
@@ -245,7 +245,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
           <th data-sort-handler>${t`Description`}
           <th data-sort-handler>${t`Exports`}
       <tbody>
-        ${html.join(rows)}
+        ${rows}
     </table>
   </u2-table>
 </div>`;

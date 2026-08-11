@@ -33,7 +33,7 @@ ${t`Columns (max: 15)`}<br>
 <br>
 <br>
 <p id="${errorID}" style="color:#FF0000; display:none;">${t`Note: the sum of all column widths must equal 100%.`}</p>
-<div style="display:flex">${html.join(colWidths)}</div>
+<div style="display:flex">${colWidths}</div>
 
 <p>&nbsp;</p>
 <a href="${exportUrl}">${t`Export table as Excel`}</a>`;

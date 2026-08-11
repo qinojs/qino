@@ -106,7 +106,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   if (form.sent && !form.errors) {
     const sent = await send(node, form);
     if (!sent) {
-      return html.async`<div>${html.join(warnings)}
+      return html.async`<div>${warnings}
   <u2-alert open variant=error>${t`Sorry, the form could not be sent. Please contact us directly.`}</u2-alert>
 </div>`;
     }
@@ -120,7 +120,7 @@ async function render(node: Node, { ctx, vars }: { ctx: Ctx; vars: Record<string
   }
 
   const button = node.settings.button() ?? true;
-  return html.async`<div>${html.join(warnings)}
+  return html.async`<div>${warnings}
   ${error ? html`<u2-alert open variant=error>${error}</u2-alert>` : ""}
   <form method=post enctype="multipart/form-data"${redirectId ? html.raw(" data-native") : ""}>
     ${cms.formFields(node)}

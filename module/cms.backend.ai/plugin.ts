@@ -265,7 +265,7 @@ function defaultsOverview(allModels: Row[], providersById: Map<number, Row>): Ht
       <th>${kind}
       <td>${label}`;
   });
-  return html`<table class=u2-table>${html.join(rows)}</table>`;
+  return html`<table class=u2-table>${rows}</table>`;
 }
 
 
@@ -308,10 +308,10 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
     <div class=-head>AI Provider</div>
     <div class="-body u2-flex -Col">
       ${emptyHint}
-      ${html.join(providerBoxes)}
+      ${providerBoxes}
       <form class="ai-add-provider u2-flex">
         <input required name=endpoint list=ai-provider-catalog placeholder="endpoint (OpenAI-compatible, e.g. https://api…/v1)">
-        <datalist id=ai-provider-catalog>${html.join(providerCatalog.map((c) => html`<option value="${c.endpoint}">${c.name}`))}</datalist>
+        <datalist id=ai-provider-catalog>${providerCatalog.map((c) => html`<option value="${c.endpoint}">${c.name}`)}</datalist>
         <button>+ Add provider</button>
       </form>
     </div>
@@ -323,7 +323,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
       <div class="u2-flex ai-model-filters">
         <select id=ai-filter-provider>
           <option value=""${fprovider ? "" : " selected"}>all providers
-          ${html.join(providers.map((p) => html`<option value="${p.id}"${String(p.id) === fprovider ? " selected" : ""}>${p.name}`))}
+          ${providers.map((p) => html`<option value="${p.id}"${String(p.id) === fprovider ? " selected" : ""}>${p.name}`)}
         </select>
         <select id=ai-filter-kind>${filterKindOptions(fkind)}</select>
         <input id=ai-filter-search type=search placeholder="search models" value="${fsearch}">
@@ -362,7 +362,7 @@ ${trs.length ? html`<table class=u2-table style="white-space:nowrap;margin-top:1
     <th>Model
     <th style="text-align:right">Input
     <th style="text-align:right">Output
-  <tbody>${html.join(trs)}
+  <tbody>${trs}
 </table>` : ""}
 </div>`;
 }

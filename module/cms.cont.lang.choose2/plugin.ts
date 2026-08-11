@@ -57,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       const selected = l === ctx.lang ? " selected" : "";
       return html`<option${selected} value="${await page.url(l)}" lang="${l}" class="-${l}">${label}`;
     }));
-    return html`<select onchange="location.href=this.value+location.hash">${html.join(options)}</select>`;
+    return html`<select onchange="location.href=this.value+location.hash">${options}</select>`;
   }
 
   // links (default)
@@ -74,7 +74,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const filteredItems = items.filter(Boolean);
   if (!filteredItems.length) return html`<span></span>`;
 
-  return html`<nav aria-label=Languages><ul>${html.join(filteredItems)}</ul></nav>`;
+  return html`<nav aria-label=Languages><ul>${filteredItems}</ul></nav>`;
 }
 
 export const cms = {

@@ -49,7 +49,7 @@ export default async function (node: Node): Promise<HtmlString> {
       </div>`);
     }
     modelsSection = html`<div class=-standalone><br><br><div class=-h1><span>Templates</span></div></div>
-    <div class="add-models -module-boxes">${html.join(modelItems)}</div>`;
+    <div class="add-models -module-boxes">${modelItems}</div>`;
   }
 
   return html.async`<div class="-standalone module-manager">
@@ -57,7 +57,7 @@ export default async function (node: Node): Promise<HtmlString> {
     <span>${app.t`Modules`}</span>
     <input placeholder="${app.t`Search`}..." style="width:50%">
   </div>
-  <div class="add-modules -module-boxes">${html.join(moduleBoxes)}</div>
+  <div class="add-modules -module-boxes">${moduleBoxes}</div>
   ${modelsSection}
 </div>`;
 }

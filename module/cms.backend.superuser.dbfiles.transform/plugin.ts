@@ -318,7 +318,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
             <th>${t`Binary`}
             <th>${t`Platform`}
             <th>${t`Install command`}
-        <tbody>${html.join(rows)}
+        <tbody>${rows}
       </table>
     </div>
 

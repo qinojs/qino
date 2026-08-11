@@ -98,19 +98,19 @@ async function field(node: Node, id: string, form: Form | undefined): Promise<Ht
       const boxes = choices.map((choice, i) =>
         html`<label><input type=radio${attrs({ ...common, id: undefined, required: required && i === 0, value: choice, checked: value === choice })}> ${choice}</label>`
       );
-      control = html`<span class=-radioBoxes>${html.join(boxes)}</span>`;
+      control = html`<span class=-radioBoxes>${boxes}</span>`;
       break;
     }
     case "select": {
       const opts = choices.map((choice) => html`<option${attrs({ value: choice, selected: value === choice })}>${choice}</option>`);
       const empty = labelPosition === "placeholder" ? html`<option value="" disabled selected>${placeholder}</option>` : "";
-      control = html`<select${attrs(common)}>${empty}${html.join(opts)}</select>`;
+      control = html`<select${attrs(common)}>${empty}${opts}</select>`;
       break;
     }
     default: {
       const listId = choices.length ? `${node.id}_${id}_list` : "";
       const list = listId
-        ? html`<datalist id="${listId}">${html.join(choices.map((c) => html`<option value="${c}"></option>`))}</datalist>`
+        ? html`<datalist id="${listId}">${choices.map((c) => html`<option value="${c}"></option>`)}</datalist>`
         : "";
       control = html`${list}<input${attrs({ ...common, type, value, list: listId })}>`;
     }
@@ -140,7 +140,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     : "";
 
   const cls = LABEL_CLASS[String(node.settings.labelPosition() ?? "")] ?? "";
-  return html.async`<div class="-Fields${cls ? " " + cls : ""}">${warning}<div>${html.join(fields)}</div></div>`;
+  return html.async`<div class="-Fields${cls ? " " + cls : ""}">${warning}<div>${fields}</div></div>`;
 }
 
 export const cms = {

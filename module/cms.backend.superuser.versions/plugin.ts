@@ -50,19 +50,19 @@ async function render(node: Node): Promise<HtmlString> {
         <th style="text-align:right">${t`Log entries`}
         <th style="text-align:right">${t`Spaces`}
         <th style="text-align:right">${t`Size`}
-      <tbody>${html.join(rows)}
+      <tbody>${rows}
     </table>
   </div>
 </div>`;
 
   // ── spaces (vers_space holds non-live spaces; 0 = live, deletable) ──────────
-  const spaceRows = html.join(await Promise.all(
+  const spaceRows = await Promise.all(
     (await db.query`SELECT space, time_created FROM vers_space ORDER BY space`.catch(() => []))
       .map((s) => html.async`<tr>
         <td>${s.space}
         <td>${s.time_created}
         <td><button class=-del-space data-space="${s.space}" u2-confirm="${t`Delete space ${String(s.space)} (draft + its history)?`}">✕</button>`)
-  ));
+  );
   const spacesBox = html.async`
 <div class=u2-card style="flex-grow:0">
   <div class=-head>${t`Spaces`}</div>
