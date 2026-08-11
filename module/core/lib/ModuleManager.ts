@@ -235,8 +235,8 @@ export class ModuleManager {
   async uninstall(name: string): Promise<void> {
     if (this.#declared.has(name)) throw new Error(`Cannot uninstall "${name}": the application declares it`);
     const mod = this.#modules[name];
-    if (!mod && !this.#failed[name]) throw new Error(`Cannot uninstall "${name}": not imported`);
-    if (mod) { // a failed one has no hooks to reverse and no plugin to ask — only the row goes
+    if (!mod && !await this.#app.db.table("module").get(name)) throw new Error(`Cannot uninstall "${name}": unknown`);
+    if (mod) { // a leftover row has no hooks to reverse and no plugin to ask — only the row goes
       this.unlink(name);
       await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
     }

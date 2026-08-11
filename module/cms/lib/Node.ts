@@ -608,7 +608,7 @@ export class Node {
         return this.createChild(vs);
     }
 
-    /** childXML attributes that map directly to a node column */
+    /** childXML attributes accepted as node fields */
     static #xmlAttrs = new Set(["module", "online_end", "online_start", "visible", "public", "name"]);
     /** Build descendant nodes from a "subpage definition" (childXML template). */
     async fromXml(xml: string): Promise<void> {
@@ -620,7 +620,7 @@ export class Node {
         for (const [name, value] of Object.entries(node.attrs)) {
             if (langs.includes(name)) { await this.title(name, value); continue; }
             if (!Node.#xmlAttrs.has(name)) continue;
-            await this.set(name, value);
+            await this.set(name === "public" ? "access" : name, name === "public" ? Number(value) : value);
         }
         for (const child of [...node.children].reverse()) {
             const created = child.tag === "cont" ? await this.createCont() : child.tag === "page" ? await this.createChild() : null;

@@ -19,7 +19,7 @@ export class CMS {
   app: App;
   db: Db;
 
-  #nodes = new Map<number, Node>();
+  #nodes = new Map<number, Promise<Node>>();
   #layouts: Record<string, string> | null = null;
 
   constructor(app: App) {
@@ -29,12 +29,15 @@ export class CMS {
 
   async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
     id = Number(id);
-    const nodes = scopeCache(this.#nodes, "cms.nodes", () => new Map<number, Node>());
-    const existing = nodes.get(id);
-    if (existing) return existing;
-    const node = new Node(this, id, vs);
-    nodes.set(id, node);
-    await node.init();
+    const nodes = scopeCache(this.#nodes, "cms.nodes", () => new Map<number, Promise<Node>>());
+    let node = nodes.get(id);
+    if (!node) {
+      node = new Node(this, id, vs).init().catch((e) => {
+        if (nodes.get(id) === node) nodes.delete(id);
+        throw e;
+      });
+      nodes.set(id, node);
+    }
     return node;
   }
 

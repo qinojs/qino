@@ -32,7 +32,7 @@ const TONE: Record<string, string> = {
 // Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
 const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared(mod);
 
-type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
+type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere" | "orphan";
 
 /** The one thing a row is about: everything it offers follows from this. A row is a module *and*
  *  a store, so the same module can be installed in one row and merely on offer in the next —
@@ -40,7 +40,8 @@ type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
 function state(app: App, mod: string, store?: Store): RowState {
   if (app.modules.failures()[mod]) return "broken";
   const known = app.modules.get(mod);
-  if (!known) return "available";
+  // Storeless and unimported leaves only one origin: a row in the module table nothing can load.
+  if (!known) return store ? "available" : "orphan";
   const mine = store ? known.source === store.moduleUrl(mod) : !offered(app, known);
   return !mine ? "elsewhere" : app.modules.linked(mod) ? "active" : "inactive";
 }
@@ -72,11 +73,16 @@ function catalogs(app: App) {
 /** One row per module *and* store: a module two stores offer is listed twice, once under each, so
  *  the row that says "active" is the store it was installed from. A module no store lists — added
  *  in server.ts, or installed straight from a URL — gets a single row without one. */
-function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): { mod: string; store?: Store }[] {
+async function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): Promise<{ mod: string; store?: Store }[]> {
   const rows: { mod: string; store?: Store }[] = [];
   for (const { store, names } of cats) for (const mod of names) rows.push({ mod, store });
   for (const mod of Object.values(app.modules.all())) if (!offered(app, mod)) rows.push({ mod: mod.name });
   for (const mod of Object.keys(app.modules.failures())) if (!rows.some((row) => row.mod === mod)) rows.push({ mod });
+  // A name the table still holds that neither a catalog nor an import accounted for: the leftover of
+  // a module since renamed or dropped. Boot cannot spot it — it does not know the catalogs — and no
+  // other page lists it, so this is the only place it can be removed.
+  for (const { name } of await app.db.query`SELECT name FROM module`.catch(() => []))
+    if (!rows.some((row) => row.mod === name)) rows.push({ mod: name });
   return rows.sort((a, b) => a.mod.localeCompare(b.mod) || (a.store?.url ?? "").localeCompare(b.store?.url ?? ""));
 }
 
@@ -105,11 +111,11 @@ function labeller(app: App): (url: string) => string {
 // Keyed by action and by state, so a row picks its texts by what it is.
 async function labels(app: App) {
   const t = app.t;
-  const [install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken, elsewhere] = await Promise.all([
+  const [install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken, elsewhere, orphan] = await Promise.all([
     t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`Repair`, t`Reset`, t`Add store`, t`Write index`,
-    t`active`, t`inactive`, t`available`, t`not importable`, t`installed from another store`,
+    t`active`, t`inactive`, t`available`, t`not importable`, t`installed from another store`, t`leftover entry, no store offers it`,
   ]);
-  return { install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken, elsewhere };
+  return { install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken, elsewhere, orphan };
 }
 type Labels = Awaited<ReturnType<typeof labels>>;
 type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
@@ -128,7 +134,7 @@ function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, l
   // not come from offers nothing: installing it again would collide with the name already taken.
   const acts = st === "available"
     ? [btn("install")]
-    : st === "broken"
+    : st === "broken" || st === "orphan"
     ? [btn("uninstall")]
     : st === "elsewhere"
     ? []
@@ -271,6 +277,7 @@ async function render(node: Node): Promise<HtmlString> {
   const l = await labels(app);
   const label = labeller(app);
   const cats = await catalogs(app);
+  const mods = await moduleList(app, cats);
 
   return html.async`<div class="u2-flex">
   <div class=u2-card>
@@ -297,6 +304,7 @@ async function render(node: Node): Promise<HtmlString> {
         <option value=available>${l.available}
         <option value=elsewhere>${l.elsewhere}
         <option value=broken>${l.broken}
+        <option value=orphan>${l.orphan}
       </select>
       <input type=search autofocus data-filter=search placeholder="${t`Search`}">
     </div>
@@ -307,7 +315,7 @@ async function render(node: Node): Promise<HtmlString> {
           <th>${t`Store`}
           <th>${t`State`}
           <th>
-        <tbody>${moduleList(app, cats).map(({ mod, store }) => moduleRow(app, mod, store, l, label))}
+        <tbody>${mods.map(({ mod, store }) => moduleRow(app, mod, store, l, label))}
       </table>
     </div>
     <div><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>

@@ -120,7 +120,8 @@ export class DbEntry {
     this.#ensureEid();
     if (this.#eid === undefined) throw new Error("dbEntry.save(): eid is unknown, cannot update");
     this.#changed = false; // before the await, so a concurrent save() can't double-update
-    await this.table.update(this.#eid, this.#vs);
+    try { await this.table.update(this.#eid, this.#vs); }
+    catch (e) { this.#changed = true; throw e; }
   }
 
   toString(): string {

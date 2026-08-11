@@ -169,6 +169,38 @@ Deno.test({
 });
 
 Deno.test({
+  name: "a row without a url is no failure, but uninstall still reaches it",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const dir = await fixture();
+    const boot = async () => {
+      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      app.modules.add(corePlugin);
+      await app.init();
+      return app;
+    };
+
+    const app1 = await boot();
+    // What an installation older than the url column leaves behind: a name, and nothing saying where
+    // it came from. Boot cannot judge it — a store may well still offer that name.
+    await app1.db.table("module").ensure({ name: "t.leftover", installed: 1 });
+    await app1.db.close();
+
+    const app2 = await boot();
+    assertEquals(app2.modules.failures(), {}, "not broken: the name may still be on offer somewhere");
+    assertEquals(app2.modules.get("t.leftover"), undefined);
+
+    await assertRejects(() => app2.modules.uninstall("t.never"), Error, "unknown");
+    await app2.modules.uninstall("t.leftover"); // the row is reason enough, no plugin needed
+    assertEquals(await app2.db.query`SELECT name FROM module WHERE name = 't.leftover'`, []);
+    await app2.db.close();
+
+    await Deno.remove(dir, { recursive: true });
+  },
+});
+
+Deno.test({
   name: "stores are removable exactly when the application does not declare them",
   sanitizeOps: false,
   sanitizeResources: false,
