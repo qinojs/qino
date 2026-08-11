@@ -7,6 +7,8 @@ cms.initNode("backend.superuser.git", (el) => {
   el.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
+    const { alert, confirm } = await import("@qino/u2/js/dialog/dialog.js");
+    if (btn.dataset.confirm && !await confirm(btn.dataset.confirm)) return;
     const card = btn.closest("[data-repo]");
     btn.disabled = true;
     const r = await node.api.post({
@@ -16,7 +18,7 @@ cms.initNode("backend.superuser.git", (el) => {
     }).catch((e) => ({ message: e?.message || String(e) }));
     btn.disabled = false;
     // git says something worth reading either way — the output is the whole feedback.
-    await (await import("@qino/u2/js/dialog/dialog.js")).alert(r?.message || await t`Done.`);
+    await alert(r?.message || await t`Done.`);
     if (r?.ok) cms.reloadNode(nid);
   });
 });

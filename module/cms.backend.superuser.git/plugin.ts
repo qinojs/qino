@@ -58,8 +58,17 @@ async function act(app: App, action: string, root: string, message: string): Pro
   const repo = known.find((r) => r.root === root);
   if (!repo) throw new Error(`Not a repository of this app: ${root}`);
 
+  // Without a fetch "behind" stays at whatever the last one left behind: status reads the
+  // remote-tracking ref, not the remote.
+  if (action === "fetch") return run(await git(repo.root, ["fetch"], 120_000));
   if (action === "push") return run(await git(repo.root, ["push"], 120_000));
   if (action === "pull") return run(await git(repo.root, ["pull", "--ff-only"], 120_000));
+  // Tracked edits go, untracked files stay: module data/cache/tmp live inside these directories.
+  if (action === "reset") {
+    const fetched = await git(repo.root, ["fetch"], 120_000);
+    if (!fetched.ok) throw new Error(fetched.out);
+    return run(await git(repo.root, ["reset", "--hard", "@{upstream}"]));
+  }
   if (action !== "commit") throw new Error(`Unknown action: ${action}`);
 
   if (!message.trim()) throw new Error("A commit needs a message");
@@ -98,8 +107,10 @@ function repoCard(repo: Repo<Holds>, t: App["t"]): Promise<HtmlString> {
         <button data-act=commit>${t`Commit`}</button>`
       : html.async`<small>${t`nothing changed`}</small>`
   }
+    <button data-act=fetch>${t`Fetch`}</button>
     <button data-act=push${repo.ahead ? "" : html` disabled`}>${t`Push`}</button>
     <button data-act=pull${repo.behind ? "" : html` disabled`}>${t`Pull`}</button>
+    <button data-act=reset data-confirm="${t`Discard all local changes and reset to the remote?`}">${t`Reset to remote`}</button>
   </div>
 </div>`;
 }
