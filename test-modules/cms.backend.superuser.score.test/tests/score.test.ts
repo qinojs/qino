@@ -5,9 +5,9 @@ import { cmsCtx } from "@qino/qino/cms";
 import { scored } from "@qino/qino/score";
 import api from "../nodeApi.ts";
 import { fileHit, pageHit, TABLES } from "../hooks.ts";
-import { cms, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-const { name } = manifest;
+const { name, dependencies } = manifest;
 import { list } from "../render.ts";
 
 const BOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
@@ -39,7 +39,7 @@ const scoredIds = (db: Db, tbl: string) =>
 
 Deno.test("cms.backend.superuser.score.test: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.score.test");
-  assertEquals(needs, ["cms.backend", "cms", "score"]);
+  assertEquals(dependencies, ["cms.backend", "cms", "score"]);
   assertEquals(typeof cms.node.render, "function");
   assertEquals(Object.keys(TABLES), ["page", "file"]);
 });
