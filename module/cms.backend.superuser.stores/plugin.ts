@@ -60,15 +60,43 @@ function catalogs(app: App) {
   ));
 }
 
-/** Every module the app knows of → the store it comes from ("" = none), sorted by name. */
-function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): [string, string][] {
-  const from = new Map<string, string>();
+/** Every module the app knows of → every store offering it, sorted by name. Two stores may well
+ *  carry the same module — two versions of one catalog do by definition — so this is a list, and
+ *  the store a module is actually installed from leads it: that is the one an action works on. */
+function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): [string, string[]][] {
+  const from = new Map<string, string[]>();
   for (const { store, names } of cats) {
-    // The store a module is installed from wins over the first one that merely lists it.
-    for (const mod of names) if (!from.has(mod) || app.modules.get(mod)?.source === store.moduleUrl(mod)) from.set(mod, store.url);
+    for (const mod of names) {
+      const offers = from.get(mod) ?? [];
+      if (app.modules.get(mod)?.source === store.moduleUrl(mod)) offers.unshift(store.url);
+      else offers.push(store.url);
+      from.set(mod, offers);
+    }
   }
-  for (const mod of [...Object.keys(app.modules.all()), ...Object.keys(app.modules.failures())]) if (!from.has(mod)) from.set(mod, "");
+  for (const mod of [...Object.keys(app.modules.all()), ...Object.keys(app.modules.failures())]) if (!from.has(mod)) from.set(mod, []);
   return [...from].sort(([a], [b]) => a.localeCompare(b));
+}
+
+const segments = (url: string) => decodeURIComponent(new URL(url).pathname).split("/").filter(Boolean);
+
+/** Store labels for one render, unique among the listed stores: two tags of the same catalog share
+ *  a host, and `gcdn.li` twice tells nobody which is which. A collision is resolved with the least
+ *  that separates them — the path segments the colliding stores do *not* have in common, so two
+ *  release tags read as `gcdn.li/qino@v0.6.1` rather than as two full URLs. */
+function labeller(app: App): (url: string) => string {
+  const groups = new Map<string, string[]>();
+  for (const store of app.stores.all()) {
+    const short = storeLabel(app, store.url);
+    groups.set(short, [...(groups.get(short) ?? []), store.url]);
+  }
+  return (url) => {
+    const short = storeLabel(app, url);
+    const group = groups.get(short) ?? [];
+    if (group.length < 2) return short;
+    const others = group.map(segments);
+    const own = segments(url).filter((seg, i) => !others.every((other) => other[i] === seg));
+    return own.length ? `${short}/${own.join("/")}` : url.replace(/^https?:\/\//, "");
+  };
 }
 
 // Keyed by action and by state, so a row picks its texts by what it is.
@@ -86,7 +114,7 @@ type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
 // --- rows -----------------------------------------------------------------
 // The row carries mod, store and state: the client reads them for its filter and its API calls.
 
-function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlString {
+function moduleRow(app: App, mod: string, offers: string[], l: Labels, label: (url: string) => string): HtmlString {
   const st = state(app, mod);
   const why = app.modules.failures()[mod];
   const known = app.modules.get(mod);
@@ -102,17 +130,24 @@ function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlStri
       ...(st === "active" ? [btn("repair"), ...(known?.plugin.uninstall ? [btn("reset")] : [])] : []),
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
-  return html`<tr data-mod="${mod}" data-store="${storeUrl}" data-state=${st}>
+  // Where it comes from — a choice only while there is one to make: several stores offer it and
+  // none of them has provided it yet. Once installed, the store it came from is a fact, not an option.
+  const pick = st === "available" && offers.length > 1;
+  return html`<tr data-mod="${mod}" data-stores="${offers.join(" ")}" data-state=${st}>
     <td title="${why ?? known?.description}">${mod}
-    <td><small>${storeUrl ? storeLabel(app, storeUrl) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
+    <td title="${offers.join("\n")}">${
+    pick
+      ? html`<select data-store-pick>${offers.map((url) => html`<option value="${url}">${label(url)}`)}</select>`
+      : html`<small>${offers.length ? offers.map(label).join(", ") : app.modules.declared(mod) ? "server.ts" : "—"}</small>`
+  }
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
     <td style="text-align:right">${html.join(acts, " ")}`;
 }
 
-function storeRow(app: App, store: Store, error: string, l: Labels): HtmlString {
+function storeRow(app: App, store: Store, error: string, l: Labels, label: (url: string) => string): HtmlString {
   const local = store.base.startsWith("file:");
   return html`<tr>
-    <td><button class=u2-unstyle data-pick="${store.url}"><code>${storeLabel(app, store.url)}</code><br><small>${store.url}</small></button>
+    <td><button class=u2-unstyle data-pick="${store.url}"><code>${label(store.url)}</code><br><small>${store.url}</small></button>
     <td>${error ? html`<strong>${error}</strong>` : html`<small data-count="${store.url}"></small>`}
     <td>${local ? html`<button data-act=writeIndex data-store="${store.url}">${l.writeIndex}</button>` : ""}
     <td style="text-align:right">${
@@ -227,7 +262,9 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
   }
   // A module no store lists and no one knows any more has nothing left to show.
   const gone = !store && !app.modules.get(mod) && !app.modules.failures()[mod];
-  return { ok: true, row: gone ? null : String(moduleRow(app, mod, store, await labels(app))) };
+  if (gone) return { ok: true, row: null };
+  const offers = moduleList(app, await catalogs(app)).find(([m]) => m === mod)?.[1] ?? [];
+  return { ok: true, row: String(moduleRow(app, mod, offers, await labels(app), labeller(app))) };
 }
 
 // --- view -----------------------------------------------------------------
@@ -236,13 +273,14 @@ async function render(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
   const l = await labels(app);
+  const label = labeller(app);
   const cats = await catalogs(app);
 
   return html.async`<div class="u2-flex">
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
-      ${cats.map(({ store, error }) => storeRow(app, store, error, l))}
+      ${cats.map(({ store, error }) => storeRow(app, store, error, l, label))}
       <tr><td colspan=4><button data-act=addStore>${l.addStore}</button>
     </table>
     <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>
@@ -253,7 +291,7 @@ async function render(node: Node): Promise<HtmlString> {
     <div class=u2-flex>
       <select data-filter=store>
         <option value="">${t`all stores`}
-        ${cats.map(({ store }) => html`<option value="${store.url}">${storeLabel(app, store.url)}`)}
+        ${cats.map(({ store }) => html`<option value="${store.url}">${label(store.url)}`)}
         <option value="-">${t`no store`}
       </select>
       <select data-filter=state>
@@ -272,7 +310,7 @@ async function render(node: Node): Promise<HtmlString> {
           <th>${t`Store`}
           <th>${t`State`}
           <th>
-        <tbody>${moduleList(app, cats).map(([mod, store]) => moduleRow(app, mod, store, l))}
+        <tbody>${moduleList(app, cats).map(([mod, offers]) => moduleRow(app, mod, offers, l, label))}
       </table>
     </div>
     <div><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>

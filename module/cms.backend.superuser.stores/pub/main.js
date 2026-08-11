@@ -12,20 +12,20 @@ cms.initNode("backend.superuser.stores", (el) => {
   // Filter and per-store counts both derive from the rows — recompute after every change.
   const update = () => {
     for (const f of filters()) kept[f.dataset.filter] = f.value;
-    const q = kept.search.trim().toLowerCase();
+    const q = (kept.search ?? "").trim().toLowerCase();
     const state = kept.state;
     const store = kept.store; // "-" stands for everything no store lists
     const all = [...el.querySelectorAll("tr[data-mod]")];
     for (const { dataset: d, style } of all) {
       // display, not [hidden]: .u2-table sets display:table-row on every row and would win.
       style.display = (!state || d.state === state) &&
-          (!store || (store === "-" ? !d.store : d.store === store)) &&
+          (!store || (store === "-" ? !d.stores : d.stores.split(" ").includes(store))) &&
           (!q || d.mod.toLowerCase().includes(q))
         ? ""
         : "none";
     }
     for (const out of el.querySelectorAll("[data-count]")) {
-      const mine = all.filter((tr) => tr.dataset.store === out.dataset.count);
+      const mine = all.filter((tr) => tr.dataset.stores.split(" ").includes(out.dataset.count));
       out.textContent = `${mine.filter((tr) => tr.dataset.state !== "available").length}/${mine.length}`;
     }
   };
@@ -59,9 +59,12 @@ cms.initNode("backend.superuser.stores", (el) => {
       if (url) call(btn, { act, store: url });
       return;
     }
-    // mod and store live on the row; only the remove button of a store row carries its own.
-    const { mod = "", store = "" } = { ...btn.closest("tr")?.dataset, ...btn.dataset };
-    call(btn, { act, mod, store });
+    // A store row's own buttons carry their store; a module row states which stores offer it, and
+    // where several do, the picker beside the name says which one this click means.
+    const tr = btn.closest("tr");
+    const d = tr?.dataset ?? {};
+    const store = btn.dataset.store ?? tr?.querySelector("[data-store-pick]")?.value ?? (d.stores ?? "").split(" ")[0];
+    call(btn, { act, mod: d.mod ?? "", store });
   });
 
   el.addEventListener("input", update);
