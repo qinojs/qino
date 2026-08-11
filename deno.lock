@@ -547,6 +547,9 @@
       "integrity": "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="
     }
   },
+  "remote": {
+    "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/mod.js": "6abaa70db9639befc5a50241204b1c951ca65bd1fd3f3a9b50ad5342f4943fc5"
+  },
   "workspace": {
     "dependencies": [
       "jsr:@nuxodin/dump@^1.5.2",
