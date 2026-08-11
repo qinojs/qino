@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.superuser.versions.cms",
+  "description": "Summarizes CMS history by page, activity, and editor.",
+  "dependencies": [
+    "cms.backend.superuser.versions",
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

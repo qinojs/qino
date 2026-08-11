@@ -133,7 +133,7 @@
   "Move": "移动",
   "Name": "名称",
   "Name for this authenticator": "此验证器的名称",
-  "needs": "需要",
+  "dependencies": "需要",
   "new": "新建",
   "no": "否",
   "No cached files yet.": "暂无缓存文件。",

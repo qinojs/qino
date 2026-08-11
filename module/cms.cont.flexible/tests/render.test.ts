@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name } = manifest;
 
 // App settings stub: app.settings["cms.cont.flexible"]["init-child-module"]
 const appWith = (initModule: string) => ({ settings: { [name]: { "init-child-module": initModule } } });

@@ -1,0 +1,14 @@
+{
+  "name": "serviceworker",
+  "description": "Serves the app's single service worker, assembled from the parts other modules declare.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/register.js"
+  ]
+}

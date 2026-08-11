@@ -1,8 +1,7 @@
 import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.layout.custom.9";
-export const description = "Loads an application-specific layout with a minimal fallback.";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 // One font per site, not per page: app settings, not node settings.
 export const settingsSchema = {

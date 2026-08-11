@@ -1,10 +1,8 @@
 import { hee, html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
-
-export const name = "cms.layout.custom.7";
-export const description = "Legacy custom layout of the PHP CMS; the successor is cms.layout.custom.9.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export const settingsSchema = {
   properties: {

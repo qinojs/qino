@@ -4,10 +4,6 @@ import { getCtx, html, type HtmlString, sql, type Sql, sqlSearch, type App, type
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
-export const name = "cms.backend.ai.sessions";
-export const description = "Browses AI chat sessions and their message transcripts.";
-export const needs = ["cms.backend", "ai"];
-
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.ai.sessions", { en: "AI Sessions", de: "KI-Sitzungen" });
 }

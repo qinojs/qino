@@ -1,0 +1,18 @@
+{
+  "name": "cms.backend",
+  "description": "Provides the base CMS backend dashboard and page installer.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "healthChecks.ts",
+    "lib/backend.ts",
+    "lib/dashboard.ts",
+    "lib/u2.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/js/node.mjs",
+    "pub/module.svg"
+  ]
+}

@@ -5,10 +5,8 @@ import statistic, { dbTableStats, details as statisticDetails } from "./parts/st
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.system";
-export const description = "Shows runtime, database, cache, and health information.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });
@@ -97,7 +95,6 @@ async function render(node: Node): Promise<HtmlString> {
   </div>
 </div>`);
   }
-
 
   // ── db config (per dialect) ──────────────────────────────────────────────
   const dbBox = await renderDbBox(node);

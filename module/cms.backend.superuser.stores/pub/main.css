@@ -1,4 +1,7 @@
 [qcms-mod="backend.superuser.stores"] {
-  /* uninstall and reset delete what a module keeps — they look like it */
-  & .-delete { background: var(--red); }
+  /* what a button costs you, at a glance — see TONE in plugin.ts */
+  & .-delete  { background: var(--red);    } /* deletes what the module keeps */
+  & .-repair  { background: var(--orange); } /* writes into it */
+  & .-install { background: var(--green);  } /* the one action an untouched row offers */
+  & .-link    { background: var(--blue);   } /* stands out: this module is not running */
 }

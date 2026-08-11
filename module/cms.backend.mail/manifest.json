@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.mail",
+  "description": "Browses mail, recipients, attachments, delivery, and tracking details.",
+  "dependencies": [
+    "cms.backend",
+    "mail"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/emailClientSimulator.js",
+    "pub/module.svg"
+  ]
+}

@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertStringIncludes, fakeT, testContext } from "../../core/tests/deps.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 import { requestStorage } from "../../core/mod.ts";
 
 function page(id: number, url: string, title = "Target") {
@@ -44,7 +46,7 @@ const run = (node: any, ctx: any, vars: any = {}) => {
 
 Deno.test("cms.cont.redirect: metadata is wired", () => {
   assertEquals(name, "cms.cont.redirect");
-  assertEquals(needs, ["cms"]);
+  assertEquals(dependencies, ["cms"]);
   assertEquals(cms.node.settingsSchema.properties.permanent.type, "boolean");
 });
 

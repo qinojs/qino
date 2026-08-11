@@ -2,10 +2,6 @@ import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.cd.boxes";
-export const description = "Legacy row of five linked teaser boxes with image and text.";
-export const needs = ["cms", "cms.image2", "cms.text"];
-
 const boxes = [1, 2, 3, 4, 5]; // fixed count, as in the PHP module
 
 const settingsSchema = {

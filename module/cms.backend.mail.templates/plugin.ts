@@ -3,10 +3,9 @@ import { mail } from "../mail/mod.ts";
 import { getCtx, hee, html, type HtmlString, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.backend.mail.templates";
-export const description = "Manages reusable mail subjects and HTML templates.";
-export const needs = ["cms.backend.mail"];
 export { dbSchema };
 
 export async function install({ app }: { app: App }): Promise<void> {
@@ -195,7 +194,6 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString | string
   </div>
 </div>`;
 }
-
 
 export function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div style="overflow:auto; padding:0">

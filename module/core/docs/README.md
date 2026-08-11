@@ -5,7 +5,7 @@ the database, and serves files. These guides cover the building blocks you'll to
 start here, then dive into a topic.
 
 - **[Modules](module.md)** — the unit everything ships in. A module is a folder with a
-  `plugin.ts` manifest; the `ModuleManager` imports it, runs its hooks in dependency order, and
+  `manifest.json` and `plugin.ts`; the `ModuleManager` reads the one and imports the other, runs its hooks in dependency order, and
   can link/unlink it at runtime without a restart. Read this first if you're adding features.
 
 - **[Module stores](stores.md)** — why stores are an optional catalog layer, the chosen `add` API

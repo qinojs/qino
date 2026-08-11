@@ -2,10 +2,6 @@ import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
 
-export const name = "cms.cont.quote.cd";
-export const description = "Legacy quote section whose markup stays site data.";
-export const needs = ["cms"];
-
 const settingsSchema = {
   properties: {
     "background-color": { type: "string", description: "Section background color." },

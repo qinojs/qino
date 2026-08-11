@@ -12,7 +12,7 @@ export default async function (node: Node): Promise<HtmlString> {
     const modDir = mod.dir;
     const modEntry = await app.db.table("module").entry(name);
     if (await moduleAccess(node, name) < ADMIN || name === "cms.cont.flexible") continue;
-    const desc = mod.plugin.description ?? "";
+    const desc = mod.description;
     let title = name.replace("cms.cont.", "");
     title = title.charAt(0).toUpperCase() + title.slice(1).replace(/\./g, " ");
     const svgHtml = await moduleIcon(name, modDir);

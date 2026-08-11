@@ -2,10 +2,8 @@ import { html, type HtmlString, unixTime, type Ctx, type App } from "../core/mod
 import { list } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.cms.tree";
-export const description = "Displays the CMS page tree and page statistics.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Pages", de: "Seiten" });

@@ -1,0 +1,11 @@
+{
+  "name": "shp3.payment.advance",
+  "description": "Payment method: pay in advance, ship after the money arrived.",
+  "dependencies": [
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

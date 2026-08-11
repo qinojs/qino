@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.cd.image_height",
+  "description": "Legacy section holding a single wide image.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

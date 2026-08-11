@@ -1,0 +1,16 @@
+{
+  "name": "cron",
+  "description": "Schedules persistent recurring jobs declared by modules.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "calendar.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "scheduler.ts"
+  ]
+}

@@ -1,9 +1,11 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
+import { backendDashboardWidget, cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.struct: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.cms.tree");
-  assertEquals(needs, ["cms.backend"]);
+  assertEquals(dependencies, ["cms.backend"]);
   assertEquals(cms.node.css, ["pub/main.css"]);
   assertEquals(typeof cms.node.parts.list, "function");
 });

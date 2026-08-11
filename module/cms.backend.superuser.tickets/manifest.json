@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.superuser.tickets",
+  "description": "Lists outstanding tickets — one-time links and the actions behind them.",
+  "dependencies": [
+    "cms.backend",
+    "ticket"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

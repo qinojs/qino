@@ -2,10 +2,8 @@ import { backend } from "../cms.backend/mod.ts";
 import { render } from "./render.ts";
 import { collectConflicts } from "./lib/analyze.ts";
 import { html, type App, type HtmlString } from "../core/mod.ts";
-
-export const name = "cms.backend.superuser.db";
-export const description = "Inspects database schemas, tables, and module schema conflicts.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "DB Manager", de: "DB Manager" });

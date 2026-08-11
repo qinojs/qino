@@ -1,10 +1,8 @@
 import { html, type HtmlString, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-
-export const name = "cms.backend.superuser.versions.cms";
-export const description = "Summarizes CMS history by page, activity, and editor.";
-export const needs = ["cms.backend.superuser.versions", "cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "CMS history", de: "CMS-Verlauf" });

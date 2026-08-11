@@ -1,11 +1,13 @@
 import { assertEquals, testContext } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
 import nodeApi from "../nodeApi.ts";
-import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
+import { backendDashboardWidget, cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.users: metadata and cms export are wired", () => {
   assertEquals(name, "cms.backend.users");
-  assertEquals(needs, ["cms.backend"]);
+  assertEquals(dependencies, ["cms.backend"]);
   assertEquals(typeof cms.node.api, "function");
   assertEquals(typeof cms.node.parts.list, "function");
 });

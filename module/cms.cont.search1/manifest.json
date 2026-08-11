@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.search1",
+  "description": "Searches page titles and texts and lists the matching pages.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

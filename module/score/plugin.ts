@@ -2,10 +2,6 @@ import { sql, type App, type Db } from "../core/mod.ts";
 import type { Jobs } from "../cron/mod.ts";
 import { forget, prune } from "./mod.ts";
 
-export const name = "score";
-export const description = "Tracks decaying scores for arbitrary database records.";
-export const needs = ["core", "cron"];
-
 export const dbSchema = {
   properties: {
     // One row per scored table — the name is stored here, never in `score`.

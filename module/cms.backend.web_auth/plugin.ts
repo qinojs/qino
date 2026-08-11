@@ -1,10 +1,9 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name        = "cms.backend.web_auth";
-export const description = "Lists and manages users' passkey credentials.";
-export const needs       = ["cms.backend", "web_auth"];
 export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {

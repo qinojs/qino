@@ -3,10 +3,9 @@ import type { Node } from "../../module/cms/mod.ts";
 import { cart, shp3, type Order } from "../shp3/mod.ts";
 import { country } from "../../module/locale.country/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.cont.shp3.order.addresses2";
-export const description = "Billing and delivery address of the order.";
-export const needs = ["shp3", "cms"];
 export { dbSchema };
 
 const REQUIRED = new Set(["firstname", "lastname", "street", "zip", "city", "country", "email"]);

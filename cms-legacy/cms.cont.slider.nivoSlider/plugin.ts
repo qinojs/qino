@@ -2,10 +2,6 @@ import { html, type HtmlString } from "../../module/core/mod.ts";
 import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.slider.nivoSlider";
-export const description = "Legacy Nivo-style image slider.";
-export const needs = ["cms", "cms.image2"];
-
 const settingsSchema = {
   properties: {
     width: { type: "integer", minimum: 1, default: 500 },

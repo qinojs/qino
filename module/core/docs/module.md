@@ -1,15 +1,25 @@
 # Modules
 
-A module is a folder with a `plugin.ts` (or `.js`/`.mjs`) that exports a manifest. The
+A module is a folder with a `manifest.json` and a `plugin.ts` (or `.js`/`.mjs`). The
 `ModuleManager` (`lib/ModuleManager.ts`) imports plugins, runs their hooks in dependency
 order, and can **link/unlink** them at runtime without a restart.
 
-## The plugin manifest
+## Manifest and plugin
+
+A module is two files. `manifest.json` says what it *is* — everything a store, an installer or a
+mirror has to know **before** any of its code runs:
+
+```json
+{
+  "name": "shop",
+  "description": "Sells things.",
+  "dependencies": ["core"]
+}
+```
+
+`plugin.ts` says what it *does*:
 
 ```ts
-export const name = "shop";          // optional; inferred from shop/plugin.ts or its store
-export const needs = ["core"];       // module names that must be linked first
-
 export const settingsSchema = { … }; // app-wide settings, under settings.<name>
 export const ctxSettingsSchema = { … }; // per-request settings, under ctx.settings.<name>
 export const dbSchema = { … };       // tables this module owns (see below)
@@ -21,8 +31,24 @@ export async function install({ app, module }) { … }   // once per app: seed c
 export async function uninstall({ app, module }) { … } // …and remove it again
 ```
 
-Everything is optional — a module may consist only of `export function init(app) {}`. `plugin.ts`
-is the manifest the loader reads; keep the public API in `mod.ts` (see the module convention).
+"Known before the code runs" is the whole rule, and it is what keeps the manifest from growing into
+Chrome's, where it became the API surface: a schema is data too, but nobody needs it before the
+module is linked.
+
+Everything is optional, both files included — a module may consist only of
+`export function init(app) {}`. `name` is a cross-check rather than the identity: the folder or the
+store supplies it, and a mismatch fails the boot instead of silently renaming the module. A module
+that needs its own name reads it back from the same one truth:
+
+```ts
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
+```
+
+The loader **reads** the manifest and **imports** the plugin, and it does so in that order — which
+is why a store can list a module, and an allow-list refuse one, without executing anything. At
+runtime both sit on the `Module`: `mod.manifest`, plus `mod.name`, `mod.description` and
+`mod.dependencies` for the fields worth reaching for. Keep the public API in `mod.ts`.
 
 ## Module names
 
@@ -30,7 +56,7 @@ A name is `[<role prefix>.]<vendor>.<name>`, e.g. `cms.cont.acme.blog` or `acme.
 modules omit the vendor segment — that absence is what marks them as core.
 
 The name is not just a label: it is the api tree key, the locale namespace, the settings key, the
-`/m/<name>/pub/` route, and what other modules reference in `needs`. It can therefore never be
+`/m/<name>/pub/` route, and what other modules reference in `dependencies`. It can therefore never be
 renamed after the fact, which is why the two things it encodes need fixed positions.
 
 - **Role prefixes** say where a module plugs in and are looked up by prefix — `CMS.getModules()`
@@ -96,14 +122,14 @@ Three separate phases — runtime mirrors boot, one module at a time:
 | tear down | — | `app.unlink(name)` |
 
 - **`modules.add(spec)`** declares a local or remote module. `init()` imports it later. `core` is the
-  root of the `needs` graph, so `App` declares it itself — no application has to.
+  root of the dependency graph, so `App` declares it itself — no application has to.
 - **`store.add(name)`** declares a module whose conventional `<name>/plugin.ts` location comes
   from a store catalog. `await store.addAll()` declares every module in that catalog.
 - **`import(spec)`** immediately loads and registers a module for runtime linking. It does
   **not** run any hooks.
 - **`init()`** is the boot step: migrate the merged DB schema, apply all settings schemas, then
   run every module's hooks in dependency order.
-- **`link(name)`** runs one already-imported module's hooks. Idempotent; its `needs` must be
+- **`link(name)`** runs one already-imported module's hooks. Idempotent; its `dependencies` must be
   linked already. **`unlink(name)`** reverses them.
 
 ```ts
@@ -154,8 +180,8 @@ isn't fully gone. Each link gets a **fresh** signal, so re-linking rebinds clean
 
 ## Dependencies & ordering
 
-`needs` defines a partial order; the manager topologically sorts it and refuses cycles. A module
-is linked only after its `needs`, and cannot be unlinked while another linked module needs it.
+`dependencies` defines a partial order; the manager topologically sorts it and refuses cycles. A module
+is linked only after its `dependencies`, and cannot be unlinked while another linked module needs it.
 Settings schemas are applied *before* any hook runs, so `init()`/`install()` already see every
 linked module's defaults.
 

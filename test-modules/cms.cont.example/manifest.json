@@ -1,0 +1,15 @@
+{
+  "name": "cms.cont.example",
+  "description": "CMS module example with text, images, settings, assets, and parts.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

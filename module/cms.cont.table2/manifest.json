@@ -1,0 +1,15 @@
+{
+  "name": "cms.cont.table2",
+  "description": "Editable text table with configurable columns and export.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "options.ts",
+    "plugin.ts",
+    "pub/edit.mjs",
+    "pub/module.svg"
+  ]
+}

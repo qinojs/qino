@@ -11,7 +11,6 @@ async function fixture(): Promise<string> {
   for (const name of ["t.one", "t.two"]) {
     await Deno.mkdir(dir + name, { recursive: true });
     await Deno.writeTextFile(`${dir + name}/plugin.ts`, `
-      export const needs = ["core"];
       export async function install({ app }) {
         await Deno.writeTextFile(app.appPATH + "installs.log", "${name}\\n", { append: true });
       }
@@ -19,13 +18,12 @@ async function fixture(): Promise<string> {
         await Deno.writeTextFile(app.appPATH + "uninstalls.log", "${name}\\n", { append: true });
       }
     `);
+    await Deno.writeTextFile(`${dir + name}/manifest.json`, `{ "dependencies": ["core"] }`);
   }
   // A bundle: brings the other two along, the way cms.installation.default does — from init(),
   // guarded by its own list, so an uninstalled one stays gone and a later addition still arrives.
   await Deno.mkdir(dir + "t.bundle", { recursive: true });
   await Deno.writeTextFile(`${dir}t.bundle/plugin.ts`, `
-    export const name = "t.bundle";
-    export const needs = ["core"];
     export const settingsSchema = { properties: { seeded: { type: "string" } } };
     export async function init(app) {
       const setting = app.settings["t.bundle"].seeded;
@@ -42,6 +40,7 @@ async function fixture(): Promise<string> {
       await Deno.writeTextFile(app.appPATH + "installs.log", "t.bundle\\n", { append: true });
     }
   `);
+    await Deno.writeTextFile(`${dir}t.bundle/manifest.json`, `{ "name": "t.bundle", "dependencies": ["core"] }`);
   await Deno.writeTextFile(dir + "store.json", JSON.stringify({ modules: { "t.one": {}, "t.two": {}, "t.bundle": {} } }));
   return dir;
 }

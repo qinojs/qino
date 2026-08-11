@@ -2,10 +2,8 @@ import { html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { invalidateStandards } from "../cms.accessRules/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.cms.accessRules";
-export const description = "Manages per-group access rules for CMS modules.";
-export const needs = ["cms.backend", "cms.accessRules"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Access rules", de: "Zugriffsregeln" });

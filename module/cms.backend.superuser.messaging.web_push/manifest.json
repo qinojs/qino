@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.messaging.web_push",
+  "description": "Lists Web Push subscriptions and sends notifications to them.",
+  "dependencies": [
+    "cms.backend.superuser.messaging",
+    "messaging.web_push"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

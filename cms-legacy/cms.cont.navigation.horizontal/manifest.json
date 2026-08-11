@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.navigation.horizontal",
+  "description": "Legacy horizontal navigation following the active page branch.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

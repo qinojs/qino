@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.event2.category3",
+  "description": "Legacy event category with an accessible chronological list.",
+  "dependencies": [
+    "cms",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

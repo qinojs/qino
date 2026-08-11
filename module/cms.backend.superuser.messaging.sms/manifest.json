@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.messaging.sms",
+  "description": "Configures SMS delivery, manages phone verification and sends messages.",
+  "dependencies": [
+    "cms.backend.superuser.messaging",
+    "messaging.sms"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

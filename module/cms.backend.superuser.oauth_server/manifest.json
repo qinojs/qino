@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.oauth_server",
+  "description": "Manages OAuth clients, grants, and active authorizations.",
+  "dependencies": [
+    "cms.backend",
+    "oauth_server"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

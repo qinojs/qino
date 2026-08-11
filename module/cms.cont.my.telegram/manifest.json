@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.telegram",
+  "description": "Connects the signed-in user's Telegram to the bot, and shows what is connected.",
+  "dependencies": [
+    "cms",
+    "messaging.telegram"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

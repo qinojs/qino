@@ -1,10 +1,6 @@
 import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.video.nativ1";
-export const description = "Legacy native MP4 video.";
-export const needs = ["cms"];
-
 const flags = ["autoplay", "muted", "loop", "controls"] as const;
 
 async function render(node: Node): Promise<HtmlString> {

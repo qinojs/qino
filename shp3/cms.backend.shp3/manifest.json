@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.shp3",
+  "description": "The shop's backend overview — every shop page shows its numbers here.",
+  "dependencies": [
+    "cms.backend",
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

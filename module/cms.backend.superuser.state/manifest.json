@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.superuser.state",
+  "description": "Shows live server runtime and request context state.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/state.mjs"
+  ]
+}

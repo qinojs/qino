@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.api_keys",
+  "description": "Personal API key creation and revocation.",
+  "dependencies": [
+    "cms",
+    "api_key"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

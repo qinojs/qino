@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { hee, html, magick, type HtmlString, getCtx, type DbFile } from "../core/mod.ts";
-import { name } from "./plugin.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {
   const ctx = getCtx();

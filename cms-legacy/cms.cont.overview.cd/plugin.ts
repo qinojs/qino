@@ -2,10 +2,6 @@ import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { backgroundAttr } from "../lib/bg.ts";
 
-export const name = "cms.cont.overview.cd";
-export const description = "Legacy linked page overview with preview backgrounds.";
-export const needs = ["cms"];
-
 async function render(node: Node): Promise<HtmlString> {
   const page = await node.page();
   const startId = Number(await node.settings["start page"]);

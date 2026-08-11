@@ -1,10 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.superuser: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser");
-  assertEquals(needs, ["cms.backend"]);
+  assertEquals(dependencies, ["cms.backend"]);
 });
 
 Deno.test("cms.backend.superuser: render handles empty child list", async () => {

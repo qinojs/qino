@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shp3.category1",
+  "description": "Lists the products below this page, each with its own add-to-cart form.",
+  "dependencies": [
+    "shp3",
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

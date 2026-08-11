@@ -2,10 +2,8 @@ import { html, unixTime, type App, type HtmlString, type Row } from "../core/mod
 import { backend, u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.superuser.tickets";
-export const description = "Lists outstanding tickets — one-time links and the actions behind them.";
-export const needs = ["cms.backend", "ticket"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Tickets", de: "Tickets" });

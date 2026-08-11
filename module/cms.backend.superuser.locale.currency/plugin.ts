@@ -3,10 +3,8 @@ import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { currency } from "../locale.currency/mod.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.superuser.locale.currency";
-export const description = "The exchange rates, and whether the daily job keeps them current.";
-export const needs = ["cms.backend.superuser.locale", "locale.currency"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Currencies", de: "Währungen" });

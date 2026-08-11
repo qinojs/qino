@@ -2,11 +2,6 @@ import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cart } from "../shp3/mod.ts";
 
-
-export const name = "cms.cont.shp3.order.cart1";
-export const description = "Shows the visitor's cart, with quantities and totals.";
-export const needs = ["shp3", "cms"];
-
 const settingsSchema = {
   properties: {
     editable: { type: "boolean", default: true, description: "Whether quantities can be changed here." },

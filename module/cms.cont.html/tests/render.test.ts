@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
 import { requestStorage } from "../../core/mod.ts";
-import { cms, name } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const fakeCtx = () => ({ req: { appUrl: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
 

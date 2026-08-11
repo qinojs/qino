@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.images.cd",
+  "description": "Legacy responsive image collection.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

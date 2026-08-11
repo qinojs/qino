@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.cd.text",
+  "description": "Legacy text section with a small heading, a large heading and a paragraph.",
+  "dependencies": [
+    "cms",
+    "cms.image2",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "shp3.stock",
+  "description": "Keeps stock per product, caps what can be ordered, and warns when it runs low.",
+  "dependencies": [
+    "shp3",
+    "mail"
+  ],
+  "files": [
+    "dbschema.json",
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

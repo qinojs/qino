@@ -1,0 +1,16 @@
+{
+  "name": "web_auth",
+  "description": "Provides passkey registration, login, and step-up authentication.",
+  "dependencies": [
+    "core",
+    "cron"
+  ],
+  "files": [
+    "USAGE.md",
+    "dbschema.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/web_auth.js"
+  ]
+}

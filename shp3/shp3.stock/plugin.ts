@@ -2,10 +2,9 @@ import { hee, type App } from "../../module/core/mod.ts";
 import { mail } from "../../module/mail/mod.ts";
 import { shp3, type Order, type Product } from "../shp3/mod.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "shp3.stock";
-export const description = "Keeps stock per product, caps what can be ordered, and warns when it runs low.";
-export const needs = ["shp3", "mail"];
 export { dbSchema };
 
 export const settingsSchema = {

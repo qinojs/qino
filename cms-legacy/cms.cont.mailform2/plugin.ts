@@ -1,9 +1,7 @@
 import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-
-export const name = "cms.cont.mailform2";
-export const description = "Legacy configurable mail-form read view; delivery and custom-table writes remain disabled.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 async function render(node: Node): Promise<HtmlString> {
   const raw = await node.settings.elements();

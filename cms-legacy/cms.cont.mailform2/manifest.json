@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.mailform2",
+  "description": "Legacy configurable mail-form read view; delivery and custom-table writes remain disabled.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

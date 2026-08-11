@@ -2,10 +2,6 @@ import { hee, type App } from "../../module/core/mod.ts";
 import { mail } from "../../module/mail/mod.ts";
 import { shp3, type Order } from "../shp3/mod.ts";
 
-export const name = "shp3.messages2";
-export const description = "Sends the order confirmation — to the customer, to the shop, or both.";
-export const needs = ["shp3", "mail"];
-
 export const settingsSchema = {
   properties: {
     on_order: {

@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.video.nativ1",
+  "description": "Legacy native MP4 video.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

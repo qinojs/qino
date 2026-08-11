@@ -186,7 +186,7 @@
   "Move": "Move",
   "Name": "Name",
   "Name for this authenticator": "Name for this authenticator",
-  "needs": "needs",
+  "dependencies": "dependencies",
   "new": "new",
   "New template": "New template",
   "no": "no",

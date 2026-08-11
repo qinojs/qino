@@ -133,7 +133,7 @@
   "Move": "Przenieś",
   "Name": "Nazwa",
   "Name for this authenticator": "Nazwa tego uwierzytelniacza",
-  "needs": "wymaga",
+  "dependencies": "wymaga",
   "new": "nowy",
   "no": "nie",
   "No cached files yet.": "Brak plików w pamięci podręcznej.",

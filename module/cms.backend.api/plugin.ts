@@ -1,9 +1,7 @@
 import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type ApiNode, type Verb, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-
-export const name = "cms.backend.api";
-export const description = "Documents and interactively tests the application Api API.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.api", { en: "API", de: "API" });
@@ -61,7 +59,6 @@ function* walk(node: ApiNode, ctx: Ctx, segments: string[] = [], nodes: ApiNode[
     yield* walk(child, ctx, segs, childNodes);
   }
 }
-
 
 function schemaToFormFields(s: StandardSchema | undefined): HtmlString | "" {
   if (!s || s.kind !== "object" || !s.shape) return "";

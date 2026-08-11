@@ -1,0 +1,12 @@
+{
+  "name": "cms.installation.default",
+  "description": "Installs a ready-to-use default CMS site and administrator accounts.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

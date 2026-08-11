@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.ai",
+  "description": "Configures AI providers, models, defaults, and token usage.",
+  "dependencies": [
+    "cms.backend",
+    "ai"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

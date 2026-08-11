@@ -4,10 +4,8 @@ import { backend } from "../../module/cms.backend/mod.ts";
 import { country } from "../../module/locale.country/mod.ts";
 import { currency } from "../../module/locale.currency/mod.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.shp3.settings";
-export const description = "The shop's own address, its currencies, VAT and the countries it delivers to.";
-export const needs = ["cms.backend.shp3", "shp3"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Settings", de: "Einstellungen" });

@@ -1,10 +1,6 @@
 import { Access, html, walk, type Ctx, type HtmlString, type Route, type Verb } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export const name = "cms.cont.apitest";
-export const description = "Api route access matrix for users and API keys.";
-export const needs = ["cms"];
-
 /** Static access category — the baseline badge; a dynamic guard may still differ per identity. */
 function accessLabel(verb: Verb): string {
   if (!verb.access) return "none";

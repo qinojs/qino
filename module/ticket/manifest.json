@@ -1,0 +1,15 @@
+{
+  "name": "ticket",
+  "description": "One-time secrets: confirmation links and the actions behind them.",
+  "dependencies": [
+    "core",
+    "cron"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

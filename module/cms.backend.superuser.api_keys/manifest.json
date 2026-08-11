@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.superuser.api_keys",
+  "description": "Manages API keys across all users.",
+  "dependencies": [
+    "cms.backend",
+    "api_key"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

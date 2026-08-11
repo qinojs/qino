@@ -1,0 +1,18 @@
+{
+  "name": "messaging.telegram",
+  "description": "Telegram — links accounts to a bot chat and delivers messages to them.",
+  "dependencies": [
+    "messaging"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/bot.ts",
+    "lib/link.ts",
+    "lib/webhook.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "cms.backend.superuser.db.processes",
+  "description": "Inspects and terminates active database processes.",
+  "dependencies": [
+    "cms.backend.superuser.db"
+  ],
+  "files": [
+    "lib/processlist.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "cms.layout.custom.3",
+  "description": "Legacy custom layout of the PHP CMS; the layout markup stays site data.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/default.css"
+  ]
+}

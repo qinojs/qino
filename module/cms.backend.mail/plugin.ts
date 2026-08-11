@@ -4,10 +4,8 @@ import { typeByExtension } from "@std/media-types";
 import { backend, u2 } from "../cms.backend/mod.ts";
 import { getCtx, html, type HtmlString, sqlSearch, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.mail";
-export const description = "Browses mail, recipients, attachments, delivery, and tracking details.";
-export const needs = ["cms.backend", "mail"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Mail", de: "Mail" });

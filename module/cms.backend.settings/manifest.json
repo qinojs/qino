@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.settings",
+  "description": "Edits application settings through their merged schemas.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

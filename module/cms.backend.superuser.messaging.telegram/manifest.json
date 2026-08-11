@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.messaging.telegram",
+  "description": "Lists linked Telegram chats and sends messages to them.",
+  "dependencies": [
+    "cms.backend.superuser.messaging",
+    "messaging.telegram"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

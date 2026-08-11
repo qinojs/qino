@@ -1,9 +1,7 @@
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { postedVars, type Node } from "../cms/mod.ts";
-
-export const name = "cms.cont.redirect";
-export const description = "Forwards the page to another page or URL.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

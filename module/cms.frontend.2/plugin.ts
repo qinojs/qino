@@ -2,10 +2,6 @@ import { Access, AccessError, s, type Ctx, type ApiTree, type App } from "../cor
 import { cms, cmsCtx } from "../cms/mod.ts";
 import { widgetUrl } from "./view/widget.ts";
 
-export const name = "cms.frontend.2";
-export const description = "Provides the in-page CMS editing interface and its widgets.";
-export const needs = ["cms"];
-
 export const settingsSchema = {
   properties: {
     "show urls": {

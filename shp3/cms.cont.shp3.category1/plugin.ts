@@ -1,10 +1,8 @@
 import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { ensureProduct, shp3, type Product } from "../shp3/mod.ts";
-
-export const name = "cms.cont.shp3.category1";
-export const description = "Lists the products below this page, each with its own add-to-cart form.";
-export const needs = ["shp3", "cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

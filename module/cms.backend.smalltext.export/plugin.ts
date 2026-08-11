@@ -2,10 +2,8 @@
 import { ConflictError, html, type HtmlString, type App } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.smalltext.export";
-export const description = "Previews and exports translations into module locale files.";
-export const needs = ["cms.backend.smalltext"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.smalltext.export", { en: "Export", de: "Export" });

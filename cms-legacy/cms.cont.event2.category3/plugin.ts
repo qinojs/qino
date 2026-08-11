@@ -3,10 +3,6 @@ import type { Node } from "../../module/cms/mod.ts";
 import { eventDate, eventDates, startsTodayOrLater } from "../lib/event2.ts";
 import { cmsText } from "../lib/text.ts";
 
-export const name = "cms.cont.event2.category3";
-export const description = "Legacy event category with an accessible chronological list.";
-export const needs = ["cms", "cms.text"];
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const selectedId = Number(ctx.req.query.cmscid);
   if (selectedId) {

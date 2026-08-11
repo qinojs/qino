@@ -2,10 +2,6 @@ import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cssLength } from "../lib/css.ts";
 
-export const name = "cms.cont.cols2";
-export const description = "Legacy responsive table-style columns.";
-export const needs = ["cms"];
-
 const settingsSchema = {
   properties: {
     cols: { type: "integer", minimum: 2, default: 2 },

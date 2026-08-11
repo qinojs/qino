@@ -1,0 +1,17 @@
+{
+  "name": "cms.cont.html",
+  "description": "Per-node HTML files with CMS syntax and HTML/CSS/JavaScript boilerplate.",
+  "dependencies": [
+    "cms",
+    "cms.templateParser"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "codeFiles.ts",
+    "manifest.json",
+    "options.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.overview.cd",
+  "description": "Legacy linked page overview with preview backgrounds.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.shp3.currency_chooser",
+  "description": "Legacy selector for the active shop currency.",
+  "dependencies": [
+    "cms",
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.slider.nivoSlider",
+  "description": "Legacy Nivo-style image slider.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js"
+  ]
+}

@@ -2,9 +2,8 @@ import * as nodeFs from "node:fs/promises";
 import { Output, getCtx, type Ctx, Access, type ApiTree, s, type App, type Params } from "../core/mod.ts";
 import codemirrorView from "./view/codemirror.ts";
 import { check } from "./lib/sign.ts";
-
-export const name = "fileEditor";
-export const description = "Provides an access-controlled browser editor for application files.";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 // A stale link is an everyday event; a mac that never matched this session's key is
 // someone trying, so it gets reported. Superusers pass without a signature at all.

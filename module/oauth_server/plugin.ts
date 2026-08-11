@@ -3,9 +3,6 @@ import { Output, type App } from "../core/mod.ts";
 import { authorize, metadata, register, resourceMetadata, token } from "./mod.ts";
 import { verify } from "./lib/tokens.ts";
 
-export const name = "oauth_server";
-export const description = "Provides an OAuth authorization server with bearer token authentication.";
-export const needs = ["core"];
 export { api } from "./api.ts";
 export { dbSchema };
 

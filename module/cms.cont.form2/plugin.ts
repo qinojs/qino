@@ -3,10 +3,8 @@ import { mail } from "../mail/mod.ts";
 import { hee, html, sql, tableRef, unixTime, type Ctx, type HtmlString } from "../core/mod.ts";
 import { type Form, openForm } from "./mod.ts";
 import options from "./options.ts";
-
-export const name = "cms.cont.form2";
-export const description = "Mail form: renders its fields, validates them and sends the entries by e-mail.";
-export const needs = ["cms", "mail", "cms.cont.form2.fields1", "cms.cont.text"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

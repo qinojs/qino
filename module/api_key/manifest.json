@@ -1,0 +1,16 @@
+{
+  "name": "api_key",
+  "description": "Creates and authenticates revocable API keys for users.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "USAGE.md",
+    "api.ts",
+    "dbschema.json",
+    "lib/keys.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

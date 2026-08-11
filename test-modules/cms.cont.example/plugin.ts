@@ -2,10 +2,6 @@ import { html, type HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import { cms_image2 } from "@qino/qino/cms.image2";
 
-export const name = "cms.cont.example";
-export const description = "CMS module example with text, images, settings, assets, and parts.";
-export const needs = ["cms", "cms.image2"];
-
 const settingsSchema = {
   properties: {
     color: { title: "Color", description: "Background color of the example box." },

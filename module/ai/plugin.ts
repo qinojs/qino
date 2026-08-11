@@ -4,9 +4,6 @@ import type { App } from "../core/mod.ts";
 import { registerAiOcr } from "./lib/ocr.ts";
 import { registerAiTranscript } from "./lib/transcript.ts";
 
-export const name = "ai";
-export const description = "Provides configurable AI providers, chat sessions, OCR, and transcription.";
-export const needs = ["core"];
 export { api } from "./api.ts";
 export { dbSchema };
 

@@ -6,9 +6,6 @@ import { adoptCart } from "./lib/cart.ts";
 import { cms } from "../../module/cms/mod.ts";
 export { api } from "./api.ts";
 
-export const name = "shp3";
-export const description = "Shop: products, cart, orders. Prices, VAT, shipping and payment are events.";
-export const needs = ["core", "cms", "locale.country", "locale.currency"];
 export { dbSchema };
 
 // A method is one entry under payments/shippings — modules add themselves, the shop configures them.

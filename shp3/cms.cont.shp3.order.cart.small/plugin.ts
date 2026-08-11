@@ -2,10 +2,6 @@ import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cart } from "../shp3/mod.ts";
 
-export const name = "cms.cont.shp3.order.cart.small";
-export const description = "The cart in the corner: a count, a sum, or the lines themselves.";
-export const needs = ["shp3", "cms"];
-
 const settingsSchema = {
   properties: {
     mode: { type: "string", enum: ["short", "count", "lines"], default: "short", description: "How much of the cart to show." },

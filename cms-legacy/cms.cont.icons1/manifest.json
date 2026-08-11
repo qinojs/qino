@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.icons1",
+  "description": "Legacy row of uploaded icons, each with its own link.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

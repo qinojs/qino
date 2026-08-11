@@ -29,10 +29,6 @@ import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
 // import { applyDraftSpace, initDraftmode } from "./draftmode.ts"; // parked until read/write routing is complete
 export { healthChecks } from "./healthChecks.ts";
 
-export const name = "cms.versions";
-export const description = "Tracks CMS content history, snapshots, and restoration.";
-export const needs = ["cms"];
-
 // Which cms tables are versioned (qg_setting and page_class intentionally excluded).
 // true = version all fields; record = only these fields come from the version table
 // (rest come from the live table).

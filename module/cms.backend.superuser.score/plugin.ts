@@ -3,10 +3,8 @@ import { backend } from "../cms.backend/mod.ts";
 import { scopes } from "../score/mod.ts";
 import { list, render } from "./render.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.superuser.score";
-export const description = "Inspects and manages scored database records by scope.";
-export const needs = ["cms.backend", "score"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Scores", de: "Scores" });

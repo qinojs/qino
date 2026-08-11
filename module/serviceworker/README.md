@@ -4,7 +4,7 @@ A browser allows one service worker per scope. This module owns that one worker 
 app; every module may contribute one part to it, by declaring it in its manifest:
 
 ```ts
-export const needs = ["core", "serviceworker"];
+export const dependencies = ["core", "serviceworker"];
 export const serviceWorker = true;   // this module has a pub/sw.js
 ```
 

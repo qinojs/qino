@@ -1,0 +1,15 @@
+{
+  "name": "cms.cont.cms-image2-test",
+  "description": "CMS image options and critical responsive-layout tests.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

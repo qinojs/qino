@@ -1,10 +1,8 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cart, shp3, type Currency } from "../../shp3/shp3/mod.ts";
-
-export const name = "cms.cont.shp3.currency_chooser";
-export const description = "Legacy selector for the active shop currency.";
-export const needs = ["cms", "shp3"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

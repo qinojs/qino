@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.freePosition1",
+  "description": "Legacy absolutely positioned content container.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

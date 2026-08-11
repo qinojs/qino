@@ -2,10 +2,8 @@ import { backend } from "../cms.backend/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { mail, addressOf } from "../mail/mod.ts";
-
-export const name = "cms.backend.mail.create";
-export const description = "Composes and sends mail to users, groups, or custom addresses.";
-export const needs = ["cms.backend.mail"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Create Mail", de: "Mail erstellen" });

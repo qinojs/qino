@@ -1,0 +1,14 @@
+{
+  "name": "cms.accessRules",
+  "description": "Applies group-based access limits to CMS modules.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "lib/standards.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

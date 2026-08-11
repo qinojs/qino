@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.navigation",
+  "description": "First-generation legacy page-tree navigation.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

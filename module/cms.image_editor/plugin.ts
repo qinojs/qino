@@ -3,10 +3,8 @@
 import { Access, Output, type App, type ApiTree, type Ctx, s } from "../core/mod.ts";
 import { cmsCtx } from "../cms/mod.ts";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
-
-export const name = "cms.image_editor";
-export const description = "Edits image metadata, focal points, files, and version history.";
-export const needs = ["cms", "cms.versions"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 // hpos/vpos focus point of an image, in percent (0–100). Versioned via the `file` table.
 export const dbSchema = {

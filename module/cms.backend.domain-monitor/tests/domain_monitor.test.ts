@@ -6,14 +6,16 @@ import { diffResults, pruneHistory } from "../lib/changes.ts";
 import { dmarc, spf } from "../lib/mail.ts";
 import { FREQUENCIES, normalizeDomain, parseResult, rowsFor, setFrequency } from "../lib/monitor.ts";
 import api from "../nodeApi.ts";
-import { cron, ctxSettingsSchema, dbSchema, name, needs } from "../plugin.ts";
+import { cron, ctxSettingsSchema, dbSchema } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 import { backendDashboardWidget, render, rowHtml } from "../render.ts";
 
 Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   const domain = dbSchema.properties.monitor_domain.additionalProperties.properties;
   const check = dbSchema.properties.monitor_domain_check.additionalProperties.properties;
   assertEquals(name, "cms.backend.domain-monitor");
-  assertEquals(needs, ["cms.backend", "cron"]);
+  assertEquals(dependencies, ["cms.backend", "cron"]);
   assertEquals(domain.check_frequency.enum, [...FREQUENCIES]);
   assertEquals(domain.check_frequency.default, "disabled");
   assertEquals(check.domain["x-qg-parent"], "monitor_domain");

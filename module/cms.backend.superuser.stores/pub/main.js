@@ -35,8 +35,9 @@ cms.initNode("backend.superuser.stores", (el) => {
     btn.disabled = true;
     const r = await node.api.post(vars).catch((e) => ({ message: e?.message || String(e) }));
     btn.disabled = false;
-    // The fresh row is the feedback; only a failure has something to say.
+    // The fresh row is the feedback; a message means there is more to it than the row shows.
     if (!r?.ok) return (await dialog()).alert(r?.message || await t`Action failed.`);
+    if (r.message) await (await dialog()).alert(r.message);
     if (r.row === undefined) return cms.reloadNode(nid);
     if (r.row === null) tr.remove();
     else tr.outerHTML = r.row;

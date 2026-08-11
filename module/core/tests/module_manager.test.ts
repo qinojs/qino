@@ -12,7 +12,7 @@ const fakeDb = () => ({
 });
 
 Deno.test({
-  name: "ModuleManager imports modules and initializes by needs",
+  name: "ModuleManager imports modules and initializes by dependencies",
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async () => {
@@ -28,21 +28,20 @@ Deno.test({
     export const value = "local";
   `);
     await Deno.writeTextFile(appPATH + "private/private.foo/plugin.ts", `
-    export const name = "private.foo";
-    export const needs = ["local.foo"];
     export const value = "private";
     export async function install({ app }) {
-      app.installed.push(name);
+      app.installed.push("private.foo");
     }
   `);
+    await Deno.writeTextFile(appPATH + "private/private.foo/manifest.json", `{ "name": "private.foo", "dependencies": ["local.foo"] }`);
     await Deno.writeTextFile(appPATH + "remote-ish/plugin.ts", `
-    export const name = "remote-ish";
     export const value = "file-url";
   `);
+    await Deno.writeTextFile(appPATH + "remote-ish/manifest.json", `{ "name": "remote-ish" }`);
     await Deno.writeTextFile(appPATH + "private/private.js/plugin.js", `
-    export const name = "private.js";
     export const value = "js";
   `);
+    await Deno.writeTextFile(appPATH + "private/private.js/manifest.json", `{ "name": "private.js" }`);
 
     const app = {
       appPATH,
@@ -132,19 +131,21 @@ Deno.test("ModuleManager rejects invalid plugins", async () => {
   const root = await Deno.makeTempDir();
   try {
     await Deno.mkdir(root + "/bad/", { recursive: true });
-    await Deno.writeTextFile(root + "/plugin.ts", `export const name = 1;`);
-    await Deno.writeTextFile(root + "/bad/plugin.ts", `export const name = "bad.needs"; export const needs = "core";`);
+    await Deno.writeTextFile(root + "/plugin.ts", `export function init() {}`);
+    await Deno.writeTextFile(root + "/manifest.json", `{ "name": 1 }`);
+    await Deno.writeTextFile(root + "/bad/plugin.ts", `export function init() {}`);
+    await Deno.writeTextFile(root + "/bad/manifest.json", `{ "name": "bad.dependencies", "dependencies": "core" }`);
 
     const modules = new ModuleManager({} as any);
     await assertRejects(
       () => modules.import(toFileUrl(root + "/plugin.ts").href),
       Error,
-      "Plugin has an invalid exported name",
+      "has an invalid name",
     );
     await assertRejects(
       () => modules.import(toFileUrl(root + "/bad/plugin.ts").href),
       Error,
-      "exported needs must be an array",
+      "dependencies must be an array",
     );
     await assertRejects(
       () => modules.import(toFileUrl(root + "/").href),
@@ -211,18 +212,15 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     await Deno.mkdir(root + "/a/", { recursive: true });
     await Deno.mkdir(root + "/b/", { recursive: true });
     await Deno.writeTextFile(root + "/missing/plugin.ts", `
-      export const name = "missing.dep";
-      export const needs = ["not.imported"];
     `);
+    await Deno.writeTextFile(root + "/missing/manifest.json", `{ "name": "missing.dep", "dependencies": ["not.imported"] }`);
     await Deno.writeTextFile(root + "/not.imported/plugin.ts", "");
     await Deno.writeTextFile(root + "/a/plugin.ts", `
-      export const name = "cycle.a";
-      export const needs = ["cycle.b"];
     `);
+    await Deno.writeTextFile(root + "/a/manifest.json", `{ "name": "cycle.a", "dependencies": ["cycle.b"] }`);
     await Deno.writeTextFile(root + "/b/plugin.ts", `
-      export const name = "cycle.b";
-      export const needs = ["cycle.a"];
     `);
+    await Deno.writeTextFile(root + "/b/manifest.json", `{ "name": "cycle.b", "dependencies": ["cycle.a"] }`);
 
     const app = {
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },

@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.event2.default",
+  "description": "Legacy event detail read view. Registration stays disabled until its write workflow is ported.",
+  "dependencies": [
+    "cms",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

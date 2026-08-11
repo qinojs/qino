@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.cms.history",
+  "description": "Shows recent CMS changes with affected nodes and editors.",
+  "dependencies": [
+    "cms.backend",
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

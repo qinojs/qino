@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.dbfiles.transform",
+  "description": "Manages file-transformation binaries and their cache.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

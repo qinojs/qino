@@ -1,0 +1,22 @@
+{
+  "name": "cms.backend.superuser.db",
+  "description": "Inspects database schemas, tables, and module schema conflicts.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "lib/analyze.ts",
+    "lib/tableStatus.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts",
+    "view/conflicts.ts",
+    "view/diff.ts",
+    "view/modules.ts",
+    "view/tables.ts"
+  ]
+}

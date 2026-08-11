@@ -1,0 +1,16 @@
+{
+  "name": "cms.cont.ts",
+  "description": "Executable per-node TypeScript with editable assets.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "README.md",
+    "codeFiles.ts",
+    "manifest.json",
+    "mod.ts",
+    "options.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -5,7 +5,9 @@ import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, ma
 import { createMissingIndex, dropRedundantIndex, indexIssues } from "../lib/indexes.ts";
 import { sequenceIssue, syncSequence } from "../lib/sequences.ts";
 import { isEmptyField, longestValue, validateTable } from "../lib/validate.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 async function testDb(): Promise<Db> {
   const db = new Db("sqlite:");
@@ -41,7 +43,7 @@ async function testDb(): Promise<Db> {
 
 Deno.test("cms.backend.superuser.db.cleanup: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.db.cleanup");
-  assertEquals(needs, ["cms.backend.superuser.db"]);
+  assertEquals(dependencies, ["cms.backend.superuser.db"]);
   assertEquals(typeof cms.node.api, "function");
 });
 

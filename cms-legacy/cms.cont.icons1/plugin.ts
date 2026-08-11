@@ -1,9 +1,7 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-
-export const name = "cms.cont.icons1";
-export const description = "Legacy row of uploaded icons, each with its own link.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

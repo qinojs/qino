@@ -3,7 +3,9 @@ import { Db, type App } from "../../core/mod.ts";
 import { hit, scored } from "../../score/mod.ts";
 import { dbSchema } from "../../score/tests/deps.ts";
 import api from "../nodeApi.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 import { list } from "../render.ts";
 
 const DAY = 86400;
@@ -19,7 +21,7 @@ async function testNode() {
 
 Deno.test("cms.backend.superuser.score: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.score");
-  assertEquals(needs, ["cms.backend", "score"]);
+  assertEquals(dependencies, ["cms.backend", "score"]);
   assertEquals(typeof cms.node.render, "function");
   assertEquals(typeof cms.node.api, "function");
   assertEquals(typeof cms.node.parts.list, "function");

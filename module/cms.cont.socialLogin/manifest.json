@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.socialLogin",
+  "description": "Login links for configured OAuth providers.",
+  "dependencies": [
+    "cms",
+    "oauth"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

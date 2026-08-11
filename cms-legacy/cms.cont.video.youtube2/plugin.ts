@@ -2,10 +2,6 @@ import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cssLength } from "../lib/css.ts";
 
-export const name = "cms.cont.video.youtube2";
-export const description = "Legacy responsive YouTube embed.";
-export const needs = ["cms"];
-
 function videoId(value: string): string {
   const url = URL.parse(value);
   const id = url?.hostname === "youtu.be" ? url.pathname.slice(1) : url?.searchParams.get("v") ?? url?.pathname.match(/\/embed\/([^/]+)/)?.[1];

@@ -1,10 +1,6 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.layout.shwups.info";
-export const description = "Legacy compact information/login layout.";
-export const needs = ["cms"];
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ctx.res.csp["style-src"]["https://fonts.googleapis.com"] = true;
   ctx.res.csp["font-src"]["https://fonts.gstatic.com"] = true;

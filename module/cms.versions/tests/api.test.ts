@@ -1,12 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { toTools } from "../../core/mod.ts";
-import { api, init, name, needs, settingsSchema } from "../plugin.ts";
+import { api, init, settingsSchema } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 import { getCmsVers } from "../mod.ts";
 
 Deno.test("cms.versions: module metadata is wired", () => {
   assertEquals(name, "cms.versions");
-  assertEquals(needs, ["cms"]);
+  assertEquals(dependencies, ["cms"]);
   assertEquals(settingsSchema.properties, {});
 });
 

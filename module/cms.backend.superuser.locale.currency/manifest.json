@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.locale.currency",
+  "description": "The exchange rates, and whether the daily job keeps them current.",
+  "dependencies": [
+    "cms.backend.superuser.locale",
+    "locale.currency"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

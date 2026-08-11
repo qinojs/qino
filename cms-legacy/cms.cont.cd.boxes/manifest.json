@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.cd.boxes",
+  "description": "Legacy row of five linked teaser boxes with image and text.",
+  "dependencies": [
+    "cms",
+    "cms.image2",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

@@ -3,10 +3,6 @@ import type { Jobs } from "../cron/mod.ts";
 import { currency } from "./mod.ts";
 import { updateRates } from "./lib/rates.ts";
 
-export const name = "locale.currency";
-export const description = "The world's currencies. Names and symbols come from Intl, stored is only the exchange rate.";
-export const needs = ["core", "cron"];
-
 export const settingsSchema = {
   properties: {
     update: { type: "string", enum: ["never", "daily", "hourly"], default: "never", description: "How often the job fetches the exchange rates." },

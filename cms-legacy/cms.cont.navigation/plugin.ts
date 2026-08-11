@@ -1,10 +1,6 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import { cmsCtx, type Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.navigation";
-export const description = "First-generation legacy page-tree navigation.";
-export const needs = ["cms"];
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const active = cmsCtx(ctx).mainNode;
   const startId = Number(await node.settings.startPage);

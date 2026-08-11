@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.score",
+  "description": "Inspects and manages scored database records by scope.",
+  "dependencies": [
+    "cms.backend",
+    "score"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

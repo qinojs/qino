@@ -1,0 +1,38 @@
+{
+  "name": "cms",
+  "description": "Provides the CMS page tree, content rendering, files, and access model.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "ACCESS.md",
+    "README.md",
+    "api-exports.ts",
+    "api.ts",
+    "dbschema.json",
+    "healthChecks.ts",
+    "lib/CMS.ts",
+    "lib/CmsContext.ts",
+    "lib/Node.ts",
+    "lib/access.ts",
+    "lib/nodeChanged.ts",
+    "lib/parseXml.ts",
+    "lib/postedVars.ts",
+    "lib/render.ts",
+    "lib/resolveText.ts",
+    "lib/sanitize.ts",
+    "locale/de.json",
+    "locale/en.json",
+    "locale/fr.json",
+    "locale/it.json",
+    "locale/pl.json",
+    "locale/zh.json",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/css/ui.css",
+    "pub/font/cms.woff",
+    "pub/js/cms.mjs",
+    "pub/module.svg"
+  ]
+}

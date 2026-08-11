@@ -1,9 +1,11 @@
 import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
+import { backendDashboardWidget, cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.settings: metadata is wired", () => {
   assertEquals(name, "cms.backend.settings");
-  assertEquals(needs, ["cms.backend"]);
+  assertEquals(dependencies, ["cms.backend"]);
 });
 
 Deno.test("cms.backend.settings: render adds settings editor and app source", async () => {

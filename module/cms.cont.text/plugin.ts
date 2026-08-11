@@ -1,9 +1,5 @@
 import type { Node } from "../cms/mod.ts";
 
-export const name = "cms.cont.text";
-export const description = "Single directly editable rich-text field.";
-export const needs = ["cms"];
-
 async function render(node: Node) {
   const text = await node.showText("main");
   return `<div${node.edit ? ` contenteditable cmstxt=${text.id}` : ""}>${text}</div>`;

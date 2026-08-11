@@ -1,0 +1,15 @@
+{
+  "name": "messaging",
+  "description": "Shared journal, channel registry and contact verification for the messaging channels.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/verify.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

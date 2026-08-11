@@ -1,10 +1,6 @@
 import { getCtx, html, type HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export const name = "cms.cont.my.debug";
-export const description = "Current session, settings, client, user, and group details.";
-export const needs = ["cms"];
-
 function vsTable(vs: Record<string, unknown>, exclude: string[] = []): HtmlString {
   const rows = Object.entries(vs)
     .filter(([k]) => !exclude.includes(k))

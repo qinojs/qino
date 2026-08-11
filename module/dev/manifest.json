@@ -1,0 +1,12 @@
+{
+  "name": "dev",
+  "description": "Logs request durations and exposes them through Server-Timing headers.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

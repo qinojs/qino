@@ -1,0 +1,15 @@
+{
+  "name": "cms.cont.form1.file",
+  "description": "File upload field; the chosen files are attached to the form mail.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "options.ts",
+    "plugin.ts",
+    "pub/edit.mjs",
+    "pub/main.mjs",
+    "pub/module.svg"
+  ]
+}

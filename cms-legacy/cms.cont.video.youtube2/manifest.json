@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.video.youtube2",
+  "description": "Legacy responsive YouTube embed.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

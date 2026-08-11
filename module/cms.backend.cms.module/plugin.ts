@@ -1,10 +1,8 @@
 import { html, getCtx, sql, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { ADMIN, WRITE, describeChange, type Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.cms.module";
-export const description = "Manages CMS node modules, usage, assignments, access, and history.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "Modules", de: "Module" });

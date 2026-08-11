@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.text_and_slider.cd",
+  "description": "Legacy synchronized image slider and text panels.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

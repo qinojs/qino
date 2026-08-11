@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.impressum2",
+  "description": "Legacy imprint using persisted contact settings and legal texts.",
+  "dependencies": [
+    "cms",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

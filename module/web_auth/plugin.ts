@@ -3,10 +3,9 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, type ApiTree, s, type App, type Db, type Ctx } from "../core/mod.ts";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 import type { Jobs } from "../cron/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "web_auth";
-export const description = "Provides passkey registration, login, and step-up authentication.";
-export const needs = ["core", "cron"];
 export { dbSchema };
 
 export const settingsSchema = {

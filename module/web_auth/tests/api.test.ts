@@ -1,6 +1,8 @@
 import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
 import { AccessError, invoke, toTools, requestStorage } from "../../core/mod.ts";
-import { name, api, cron, settingsSchema } from "../plugin.ts";
+import { api, cron, settingsSchema } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name } = manifest;
 
 function makeApp() {
   const challenges: Record<string, unknown>[] = [];

@@ -3,10 +3,6 @@ import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cmsText } from "../lib/text.ts";
 
-export const name = "cms.cont.cd.2_bilder";
-export const description = "Legacy pair of images with text, each optionally linked.";
-export const needs = ["cms", "cms.image2", "cms.text"];
-
 const settingsSchema = {
   properties: {
     "url links": { type: "string", description: "Target of the left image." },

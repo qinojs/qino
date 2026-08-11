@@ -5,13 +5,12 @@ import { cms } from "./lib/CMS.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
 import { render } from "./lib/render.ts";
 import { header, Output, type App, type DbFile } from "../core/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export { api } from "./api.ts";
 
-export const name = "cms";
-export const description = "Provides the CMS page tree, content rendering, files, and access model.";
 export { healthChecks } from "./healthChecks.ts";
-export const needs = ["core"];
 export { dbSchema };
 
 export const settingsSchema = {

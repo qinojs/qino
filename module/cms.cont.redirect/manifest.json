@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.redirect",
+  "description": "Forwards the page to another page or URL.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -2,10 +2,8 @@
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.cms.tree.access";
-export const description = "Edits public and group access across the CMS page tree.";
-export const needs = ["cms.backend", "cms.backend.cms.tree"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Access", de: "Zugriff" });

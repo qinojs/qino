@@ -1,10 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { login, Output, Redirect, unixTime, unb64url, randB64, sha256b64url, type App, type Ctx } from "../core/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "oauth";
-export const description = "Authenticates users through configured OAuth 2.0 and OpenID providers.";
-export const needs = ["core"];
 export { dbSchema };
 
 /** Decode a JWT payload without verifying the signature — safe here: the token comes

@@ -1,9 +1,11 @@
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.cont.text: metadata is wired", () => {
   assertEquals(name, "cms.cont.text");
-  assertEquals(needs, ["cms"]);
+  assertEquals(dependencies, ["cms"]);
 });
 
 Deno.test("cms.cont.text: render outputs main text", async () => {

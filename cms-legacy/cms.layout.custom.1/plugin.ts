@@ -1,9 +1,7 @@
 import { hee, html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-
-export const name = "cms.layout.custom.1";
-export const description = "First-generation three-column custom layout.";
-export const needs = ["cms", "cms.cont.navigation", "cms.cont.text"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const lpage = await node.cms.layoutPage(name);

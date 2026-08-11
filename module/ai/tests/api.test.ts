@@ -3,11 +3,13 @@ import { invoke, Output, requestStorage, toTools } from "../../core/mod.ts";
 import { api } from "../api.ts";
 import { ai, AiApi } from "../mod.ts";
 import { aiInstances } from "../lib/AiApi.ts";
-import { init, name, needs } from "../plugin.ts";
+import { init } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("ai: module metadata and api tools are wired", () => {
   assertEquals(name, "ai");
-  assertEquals(needs, ["core"]);
+  assertEquals(dependencies, ["core"]);
   assertEquals(toTools(api).map((tool) => tool.name), [
     "post_sessions",
     "get_sessions",

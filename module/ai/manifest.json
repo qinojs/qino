@@ -1,0 +1,26 @@
+{
+  "name": "ai",
+  "description": "Provides configurable AI providers, chat sessions, OCR, and transcription.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "api.ts",
+    "catalog.ts",
+    "dbschema.json",
+    "lib/AiApi.ts",
+    "lib/ChatSession.ts",
+    "lib/Provider.ts",
+    "lib/ocr.ts",
+    "lib/registry.ts",
+    "lib/sse.ts",
+    "lib/transcript.ts",
+    "lib/usage.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/chat.js",
+    "pub/module.svg",
+    "types.ts"
+  ]
+}

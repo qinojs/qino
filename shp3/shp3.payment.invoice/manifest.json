@@ -1,0 +1,11 @@
+{
+  "name": "shp3.payment.invoice",
+  "description": "Payment method: pay by invoice after delivery.",
+  "dependencies": [
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.cms.module",
+  "description": "Manages CMS node modules, usage, assignments, access, and history.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

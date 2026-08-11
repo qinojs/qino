@@ -186,7 +186,7 @@
   "Move": "Déplacer",
   "Name": "Nom",
   "Name for this authenticator": "Nom de cet authentificateur",
-  "needs": "requiert",
+  "dependencies": "requiert",
   "new": "nouveau",
   "New template": "Nouveau modèle",
   "no": "non",

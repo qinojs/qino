@@ -2,10 +2,6 @@ import { hee, html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { backgroundAttr } from "../lib/bg.ts";
 
-export const name = "cms.cont.video.section.cd";
-export const description = "Legacy full-width section with a looping background video.";
-export const needs = ["cms"];
-
 const settingsSchema = {
   properties: {
     darken: { type: "boolean", description: "Renders the page header in white over a dark video." },

@@ -3,10 +3,7 @@
 import { getCtx, requestStorage, sql, type Ctx, s, Access, type ApiTree, type App } from "../core/mod.ts";
 import { cms, cmsCtx } from "../cms/mod.ts";
 
-export const name = "cms.filebrowser";
-export const description = "Searches accessible CMS files and provides file selection tools.";
 export { healthChecks } from "./healthChecks.ts";
-export const needs = ["cms"];
 
 // Per-user file access grants (legacy `usr_file` table).
 export const dbSchema = {

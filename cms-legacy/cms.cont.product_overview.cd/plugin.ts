@@ -2,10 +2,6 @@ import { html, type HtmlString } from "../../module/core/mod.ts";
 import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.product_overview.cd";
-export const description = "Legacy paired product-image and product-title overview.";
-export const needs = ["cms", "cms.image2"];
-
 async function render(node: Node): Promise<HtmlString> {
   const root = await node.cms.node(1);
   const products = await root.bough({ module: "cms.cont.shp3.product.cd", type: "c" });

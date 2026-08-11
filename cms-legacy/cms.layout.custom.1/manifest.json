@@ -1,0 +1,15 @@
+{
+  "name": "cms.layout.custom.1",
+  "description": "First-generation three-column custom layout.",
+  "dependencies": [
+    "cms",
+    "cms.cont.navigation",
+    "cms.cont.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/default.css",
+    "pub/h5bp.css"
+  ]
+}

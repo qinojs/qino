@@ -3,10 +3,8 @@ import type { Node } from "../cms/mod.ts";
 import { list, allowLoginAs } from "./parts/list.ts";
 import { backend } from "../cms.backend/mod.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.users";
-export const description = "Manages users, profiles, passwords, status, and group memberships.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.users", { en: "Users", de: "Benutzer" });

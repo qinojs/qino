@@ -1,0 +1,9 @@
+{
+  "name": "cms.cont.login4",
+  "description": "Configurable login, recent-user, and logout forms.",
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -3,10 +3,9 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { Access, getCtx, s, sha256b64url, sql, unixTime, type ApiTree, type App } from "../core/mod.ts";
 import type { Channel } from "../messaging/mod.ts";
 import { publicKey, send } from "./mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "messaging.web_push";
-export const description = "Web Push — stores browser subscriptions and delivers notifications to them.";
-export const needs = ["messaging", "serviceworker"];
 export const serviceWorker = true; // pub/sw.js is imported into the app worker
 export { dbSchema };
 

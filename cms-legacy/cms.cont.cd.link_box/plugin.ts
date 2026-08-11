@@ -4,10 +4,6 @@ import type { Node } from "../../module/cms/mod.ts";
 import { backgroundStyle } from "../lib/bg.ts";
 import { cmsText } from "../lib/text.ts";
 
-export const name = "cms.cont.cd.link_box";
-export const description = "Legacy teaser box: background image, texts and one outgoing link.";
-export const needs = ["cms", "cms.image2", "cms.text"];
-
 const settingsSchema = {
   properties: {
     link: { type: "string", description: "Target of the box." },

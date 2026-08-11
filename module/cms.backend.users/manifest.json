@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.users",
+  "description": "Manages users, profiles, passwords, status, and group memberships.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "parts/list.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

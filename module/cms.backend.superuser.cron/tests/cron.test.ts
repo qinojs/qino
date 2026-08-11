@@ -1,7 +1,9 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import type { App } from "../../core/mod.ts";
 import api from "../nodeApi.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 import { counts, renderJobs } from "../render.ts";
 
 const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));
@@ -16,7 +18,7 @@ const jobStatus = (o: Partial<JobStatus>): JobStatus => ({
 
 Deno.test("cms.backend.superuser.cron: metadata is wired", () => {
   assertEquals(name, "cms.backend.superuser.cron");
-  assertEquals(needs, ["cms.backend", "cron"]);
+  assertEquals(dependencies, ["cms.backend", "cron"]);
   assertEquals(typeof cms.node.render, "function");
   assertEquals(typeof cms.node.api, "function");
   assertEquals(typeof cms.node.parts.list, "function");

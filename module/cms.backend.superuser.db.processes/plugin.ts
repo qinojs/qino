@@ -2,10 +2,8 @@ import { backend } from "../cms.backend/mod.ts";
 import { render, list } from "./render.ts";
 import api from "./nodeApi.ts";
 import type { App } from "../core/mod.ts";
-
-export const name = "cms.backend.superuser.db.processes";
-export const description = "Inspects and terminates active database processes.";
-export const needs = ["cms.backend.superuser.db"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Processes", de: "Prozesse" });

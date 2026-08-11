@@ -1,9 +1,8 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.cont.my.phones";
-export const description = "Lets signed-in users register, verify and choose their SMS phone numbers.";
-export const needs = ["cms", "messaging.sms"];
 export const cms = { node: { js: ["pub/main.js"], render } };
 
 function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

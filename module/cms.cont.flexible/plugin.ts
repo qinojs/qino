@@ -1,8 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.cont.flexible";
-export const description = "Open-ended sequence of child content blocks.";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export const settingsSchema = {
   properties: {

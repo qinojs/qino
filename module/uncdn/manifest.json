@@ -1,0 +1,14 @@
+{
+  "name": "uncdn",
+  "description": "Proxies and caches approved external frontend assets locally.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "internal.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -2,10 +2,8 @@ import { dump } from "@nuxodin/dump";
 import { html, getCtx, sql, unixTime, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
 import { backend, u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.superuser.log";
-export const description = "Inspects request logs, sessions, clients, users, and related records.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Requests", de: "Anfragen" });
@@ -18,8 +16,6 @@ const uniqueColor = (v: unknown): string => {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return `hsl(${h % 360} 55% 45%)`;
 };
-
-
 
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first
 const dumpData = (raw: unknown): HtmlString => {

@@ -79,16 +79,50 @@ const OPEN = new Set([
   "cms.frontend.2/view/widgets/tree.ts -> cms/api-exports.ts", // calls the fn instead of going via api
 ]);
 
+/** The module folders below a store directory, as `<store dir><module>/`. */
+async function* moduleDirs(dir: string): AsyncGenerator<string> {
+  for await (const entry of Deno.readDir(dir)) {
+    if (entry.isDirectory && await Deno.stat(`${dir}${entry.name}/manifest.json`).then(() => true, () => false)) {
+      yield `${dir}${entry.name}/`;
+    }
+  }
+}
+
+/** Every file a module consists of, relative to its folder. `tests/` stays behind: a consumer runs
+ *  the module, not its suite — the same cut the module copier makes. */
+async function modulePaths(dir: string, base = dir): Promise<string[]> {
+  const found: string[] = [];
+  for await (const entry of Deno.readDir(dir)) {
+    if (entry.isDirectory) {
+      if (dir === base && entry.name === "tests") continue;
+      found.push(...await modulePaths(`${dir}${entry.name}/`, base));
+    } else if (entry.isFile) found.push((dir + entry.name).slice(base.length));
+  }
+  return found.sort();
+}
+
 Deno.test("every module manifest has a description", async () => {
   const missing = [];
-  for (const dir of [moduleDir, testModuleDir]) {
-    for await (const file of files(dir)) {
-      if (!file.endsWith("/plugin.ts")) continue;
-      const source = await Deno.readTextFile(file);
-      if (!/^export const description = "[^"]+";$/m.test(source)) missing.push(file.slice(dir.length));
+  for (const store of [moduleDir, testModuleDir]) {
+    for await (const dir of moduleDirs(store)) {
+      const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+      if (!manifest.description?.trim()) missing.push(dir.slice(store.length));
     }
   }
   assertEquals(missing, []);
+});
+
+// A remote consumer cannot list a directory, so a published module has to enumerate itself. Nothing
+// keeps that list correct but this test: add an asset, forget the manifest, and it says so — with
+// the array to paste. Modules that are not published carry no `files` and are not checked.
+Deno.test("a manifest that lists its files lists all of them", async () => {
+  for (const store of [moduleDir, testModuleDir]) {
+    for await (const dir of moduleDirs(store)) {
+      const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+      if (!manifest.files) continue;
+      assertEquals(manifest.files.slice().sort(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
+    }
+  }
 });
 
 async function assertStore(dir: string): Promise<void> {

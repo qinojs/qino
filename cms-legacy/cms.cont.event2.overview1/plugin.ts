@@ -3,10 +3,6 @@ import type { Node } from "../../module/cms/mod.ts";
 import { backgroundAttr } from "../lib/bg.ts";
 import { eventDate, startsTodayOrLater } from "../lib/event2.ts";
 
-export const name = "cms.cont.event2.overview1";
-export const description = "Legacy upcoming or past event overview.";
-export const needs = ["cms"];
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   let rows: Record<string, unknown>[] = [];
   try { rows = await node.db.query`SELECT * FROM ${sql.id("event2_dates")} ORDER BY start_date`; } catch {/**/}

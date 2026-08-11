@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.web_auth",
+  "description": "Lists and manages users' passkey credentials.",
+  "dependencies": [
+    "cms.backend",
+    "web_auth"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

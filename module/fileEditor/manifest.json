@@ -1,0 +1,14 @@
+{
+  "name": "fileEditor",
+  "description": "Provides an access-controlled browser editor for application files.",
+  "files": [
+    "lib/sign.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.mjs",
+    "pub/module.svg",
+    "view/codemirror.ts"
+  ]
+}

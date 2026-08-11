@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.cd.2_bilder",
+  "description": "Legacy pair of images with text, each optionally linked.",
+  "dependencies": [
+    "cms",
+    "cms.image2",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

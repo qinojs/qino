@@ -1,0 +1,17 @@
+{
+  "name": "cms.templateParser",
+  "description": "Renders declarative HTML templates with editable CMS fields and content.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "mod.ts",
+    "parse.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

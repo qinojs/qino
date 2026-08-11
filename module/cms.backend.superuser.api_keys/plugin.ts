@@ -1,10 +1,9 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name        = "cms.backend.superuser.api_keys";
-export const description = "Manages API keys across all users.";
-export const needs       = ["cms.backend", "api_key"];
 export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {

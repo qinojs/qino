@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.cd.services_links",
+  "description": "Legacy link list; the links themselves are site data.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

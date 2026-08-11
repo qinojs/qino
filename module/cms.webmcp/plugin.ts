@@ -1,10 +1,8 @@
 import { Access, type App, type ApiTree, type Params, type Ctx } from "../core/mod.ts";
 import type {} from "../cms/mod.ts";
 import { webmcpTools } from "./mod.ts";
-
-export const name = "cms.webmcp";
-export const description = "Exposes accessible application tools to browsers through WebMCP.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export const api: ApiTree = {
   tools: {

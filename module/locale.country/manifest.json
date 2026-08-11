@@ -1,0 +1,14 @@
+{
+  "name": "locale.country",
+  "description": "The world's countries with their currency, calling code and domain. Names come from Intl.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "README.md",
+    "lib/data.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

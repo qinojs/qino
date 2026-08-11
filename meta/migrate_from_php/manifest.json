@@ -1,0 +1,7 @@
+{
+  "name": "migrate_from_php",
+  "dependencies": [
+    "core",
+    "cms"
+  ]
+}

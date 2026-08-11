@@ -1,10 +1,8 @@
 import { html, type HtmlString } from "@qino/qino";
 import { channels } from "@qino/qino/messaging.web_push";
 import type { Node } from "@qino/qino/cms";
-
-export const name = "cms.cont.web_push.test";
-export const description = "Lets a visitor subscribe this browser to push channels.";
-export const needs = ["messaging.web_push"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export const cms = {
   node: {

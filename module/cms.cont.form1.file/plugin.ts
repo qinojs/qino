@@ -2,10 +2,8 @@ import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { formOf } from "../cms.cont.form2/mod.ts";
 import options from "./options.ts";
-
-export const name = "cms.cont.form1.file";
-export const description = "File upload field; the chosen files are attached to the form mail.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

@@ -3,10 +3,8 @@ import { backend, u2 } from "../cms.backend/mod.ts";
 import { pendingPhones, phones as phoneList } from "../messaging.sms/mod.ts";
 import { phones, provider, render, send } from "./render.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.superuser.messaging.sms";
-export const description = "Configures SMS delivery, manages phone verification and sends messages.";
-export const needs = ["cms.backend.superuser.messaging", "messaging.sms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "SMS", de: "SMS" });

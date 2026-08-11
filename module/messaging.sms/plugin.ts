@@ -3,9 +3,6 @@ import { Access, getCtx, s, type ApiTree, type App, type Params } from "../core/
 import type { Channel } from "../messaging/mod.ts";
 import { addPhone, pendingPhones, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
 
-export const name = "messaging.sms";
-export const description = "SMS — verifies user phone numbers and delivers messages through a configurable provider.";
-export const needs = ["messaging"];
 export { dbSchema };
 
 export const messagingChannel: Channel = {

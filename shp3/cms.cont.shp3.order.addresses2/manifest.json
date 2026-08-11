@@ -1,0 +1,15 @@
+{
+  "name": "cms.cont.shp3.order.addresses2",
+  "description": "Billing and delivery address of the order.",
+  "dependencies": [
+    "shp3",
+    "cms"
+  ],
+  "files": [
+    "dbschema.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.shp3.settings",
+  "description": "The shop's own address, its currencies, VAT and the countries it delivers to.",
+  "dependencies": [
+    "cms.backend.shp3",
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "locale.currency",
+  "description": "The world's currencies. Names and symbols come from Intl, stored is only the exchange rate.",
+  "dependencies": [
+    "core",
+    "cron"
+  ],
+  "files": [
+    "README.md",
+    "lib/rates.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts"
+  ]
+}

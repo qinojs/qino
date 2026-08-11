@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.cms",
+  "description": "Provides the main CMS administration dashboard.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

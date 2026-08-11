@@ -1,10 +1,6 @@
 import { backend } from "../cms.backend/mod.ts";
 import { html, type Ctx, type App, type HtmlString } from "../core/mod.ts";
 
-export const name = "cms.backend.settings";
-export const description = "Edits application settings through their merged schemas.";
-export const needs = ["cms.backend"];
-
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });
 }

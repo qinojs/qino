@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.uncdn",
+  "description": "Inspects configuration and cached assets of the uncdn proxy.",
+  "dependencies": [
+    "cms.backend",
+    "uncdn"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

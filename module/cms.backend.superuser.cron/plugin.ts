@@ -3,10 +3,8 @@ import { status } from "../cron/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { counts, render, list } from "./render.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.superuser.cron";
-export const description = "Monitors scheduled jobs and runs them on demand.";
-export const needs = ["cms.backend", "cron"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Cron jobs", de: "Cron-Jobs" });

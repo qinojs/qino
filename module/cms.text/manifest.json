@@ -1,0 +1,16 @@
+{
+  "name": "cms.text",
+  "description": "Automatic text translation and revision history.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "api.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/init.mjs",
+    "pub/module.svg",
+    "pub/text.png"
+  ]
+}

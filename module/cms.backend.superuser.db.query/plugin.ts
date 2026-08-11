@@ -1,10 +1,8 @@
 import { backend } from "../cms.backend/mod.ts";
 import { render } from "./render.ts";
 import type { App } from "../core/mod.ts";
-
-export const name = "cms.backend.superuser.db.query";
-export const description = "Runs and analyzes SQL statements in an administrative console.";
-export const needs = ["cms.backend.superuser.db"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "SQL Console", de: "SQL-Konsole" });

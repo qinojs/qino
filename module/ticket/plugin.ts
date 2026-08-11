@@ -2,9 +2,6 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { unixTime } from "../core/mod.ts";
 import type { Jobs } from "../cron/mod.ts";
 
-export const name = "ticket";
-export const description = "One-time secrets: confirmation links and the actions behind them.";
-export const needs = ["core", "cron"];
 export { dbSchema };
 
 const YEAR = 365 * 24 * 60 * 60;

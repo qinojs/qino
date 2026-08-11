@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.shp3.order.payment",
+  "description": "Lets the customer pick the payment method.",
+  "dependencies": [
+    "shp3",
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

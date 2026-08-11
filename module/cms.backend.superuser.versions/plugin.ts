@@ -3,10 +3,8 @@ import type { Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { versedTables, versTable, thinHistory } from "../cms.versions/mod.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.superuser.versions";
-export const description = "Manages version storage, draft spaces, and history cleanup.";
-export const needs = ["cms.backend", "cms.versions"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Versions", de: "Versionen" });

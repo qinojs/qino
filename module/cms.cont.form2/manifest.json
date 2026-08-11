@@ -1,0 +1,20 @@
+{
+  "name": "cms.cont.form2",
+  "description": "Mail form: renders its fields, validates them and sends the entries by e-mail.",
+  "dependencies": [
+    "cms",
+    "mail",
+    "cms.cont.form2.fields1",
+    "cms.cont.text"
+  ],
+  "files": [
+    "manifest.json",
+    "mod.ts",
+    "options.ts",
+    "plugin.ts",
+    "pub/edit.mjs",
+    "pub/main.css",
+    "pub/main.mjs",
+    "pub/module.svg"
+  ]
+}

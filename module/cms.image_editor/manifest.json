@@ -1,0 +1,20 @@
+{
+  "name": "cms.image_editor",
+  "description": "Edits image metadata, focal points, files, and version history.",
+  "dependencies": [
+    "cms",
+    "cms.versions"
+  ],
+  "files": [
+    "lib/service.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/dbFileImageEditor.js",
+    "pub/fullScreenDialog.js",
+    "pub/imageCanvas.js",
+    "pub/imageCropper.js",
+    "pub/imageEditor.js",
+    "pub/init.mjs",
+    "pub/module.svg"
+  ]
+}

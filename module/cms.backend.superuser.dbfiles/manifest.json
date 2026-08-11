@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.dbfiles",
+  "description": "Inspects, edits, deduplicates, and cleans stored database files.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "cleanup.ts",
+    "healthChecks.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

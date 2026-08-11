@@ -1,0 +1,12 @@
+{
+  "name": "cms.legacy.sensory",
+  "description": "Shared renderer and browser behavior for the legacy KSBT sensory exercises.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

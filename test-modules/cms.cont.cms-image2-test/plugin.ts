@@ -2,10 +2,6 @@ import { html, type HtmlString, type DbFile } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import { cms_image2 } from "@qino/qino/cms.image2";
 
-export const name = "cms.cont.cms-image2-test";
-export const description = "CMS image options and critical responsive-layout tests.";
-export const needs = ["cms", "cms.image2"];
-
 const settingsSchema = {
   properties: {
     width: { type: "integer", minimum: 1, description: "Base test width." },

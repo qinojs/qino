@@ -2,10 +2,8 @@ import type { Node } from "../cms/mod.ts";
 import { html, pwHash, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { check, type Ticket, type TicketKind } from "../ticket/mod.ts";
 import api, { PURPOSE, TICKET_PARAM, TTL } from "./nodeApi.ts";
-
-export const name = "cms.cont.pwReset";
-export const description = "Lets users who forgot their password set a new one through a link sent by mail.";
-export const needs = ["cms", "mail", "ticket"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export const tickets: Record<string, TicketKind> = {
   [PURPOSE]: {

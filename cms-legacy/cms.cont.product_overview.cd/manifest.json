@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.product_overview.cd",
+  "description": "Legacy paired product-image and product-title overview.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

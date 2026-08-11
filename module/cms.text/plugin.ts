@@ -1,10 +1,6 @@
 import type { App } from "../core/mod.ts";
 import { cmsCtx } from "../cms/mod.ts";
 
-export const name = "cms.text";
-export const description = "Automatic text translation and revision history.";
-export const needs = ["cms"];
-
 export const settingsSchema = {
   properties: {
     "translation service": {

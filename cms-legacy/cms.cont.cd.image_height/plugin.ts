@@ -2,10 +2,6 @@ import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.cd.image_height";
-export const description = "Legacy section holding a single wide image.";
-export const needs = ["cms", "cms.image2"];
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ctx.res.html.styles.add(node.module!.dataUrl + "pub/main.css");
 

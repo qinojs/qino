@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.stretchedItems1",
+  "description": "Legacy row of equally stretched child contents.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

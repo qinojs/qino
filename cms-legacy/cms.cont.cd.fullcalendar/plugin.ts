@@ -2,10 +2,6 @@ import { html, sql, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cmsText } from "../lib/text.ts";
 
-export const name = "cms.cont.cd.fullcalendar";
-export const description = "Legacy event calendar rendered as an accessible chronological list.";
-export const needs = ["cms", "cms.text"];
-
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   let rows: Record<string, unknown>[] = [];
   try {

@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.groups",
+  "description": "Manages user groups and their memberships.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

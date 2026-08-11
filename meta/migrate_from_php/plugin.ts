@@ -8,9 +8,6 @@ import { migrateForm1, prepareForm1Settings } from "./migrateForm1.ts";
 import { migrateTable1 } from "./migrateTable1.ts";
 import { renamedModules } from "./renamedModules.ts";
 
-export const name = "migrate_from_php";
-export const needs = ["core", "cms"];
-
 export async function install({ app }: { app: App }): Promise<void> {
   await dropLegacyColumns(app);
   await removeObsoleteSettings(app);

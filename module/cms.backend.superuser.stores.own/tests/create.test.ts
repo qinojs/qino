@@ -10,7 +10,8 @@ async function fixture() {
   const tpl = dir + "tpl/cms.cont.demo/";
   await Deno.mkdir(tpl + "pub/", { recursive: true });
   await Deno.mkdir(tpl + "tests/", { recursive: true });
-  await Deno.writeTextFile(`${tpl}plugin.ts`, `export const name = "cms.cont.demo";\nexport const needs = ["core"];\n`);
+  await Deno.writeTextFile(`${tpl}plugin.ts`, ``);
+    await Deno.writeTextFile(`${tpl}manifest.json`, `{ "name": "cms.cont.demo" }`);
   await Deno.writeTextFile(`${tpl}pub/main.css`, `[qcms-mod="cont.demo"] {\n}\n`);
   await Deno.writeTextFile(`${tpl}tests/demo.test.ts`, `// belongs to the template alone\n`);
 
@@ -32,16 +33,14 @@ Deno.test({
     assert(app.modules.linked("cms.cont.cd.demo"), "installed and linked right away");
 
     const made = dir + "module/cms.cont.cd.demo/";
-    assert((await Deno.readTextFile(made + "plugin.ts")).includes(`name = "cms.cont.cd.demo"`), "full name replaced");
+    assert((await Deno.readTextFile(made + "manifest.json")).includes(`"name": "cms.cont.cd.demo"`), "the manifest is renamed with the rest");
     assertEquals(await Deno.readTextFile(made + "pub/main.css"), `[qcms-mod="cont.cd.demo"] {\n}\n`, "qcms-mod form replaced");
     assertEquals(await Deno.stat(made + "tests").then(() => true, () => false), false, "the template's tests stay behind");
 
     // Blank knows no module shape: what a module must have, and nothing a CMS would expect.
     assertEquals(await cms.node.api(node, { name: "t.blank", template: "" }), { ok: true });
-    assertEquals(
-      await Deno.readTextFile(dir + "module/t.blank/plugin.ts"),
-      `export const name = "t.blank";\n\nexport function init() {}\n`,
-    );
+    assertEquals(await Deno.readTextFile(dir + "module/t.blank/plugin.ts"), "export function init() {}\n");
+    assertEquals(JSON.parse(await Deno.readTextFile(dir + "module/t.blank/manifest.json")), { name: "t.blank" });
 
     const taken = await cms.node.api(node, { name: "cms.cont.cd.demo", template: "" });
     assertEquals(taken.ok, false, "the name is taken");

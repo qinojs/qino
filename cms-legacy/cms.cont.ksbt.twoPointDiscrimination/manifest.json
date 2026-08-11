@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.ksbt.twoPointDiscrimination",
+  "description": "Legacy KSBT two-point discrimination exercise.",
+  "dependencies": [
+    "cms",
+    "cms.legacy.sensory"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

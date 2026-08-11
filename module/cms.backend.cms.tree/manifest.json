@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.cms.tree",
+  "description": "Displays the CMS page tree and page statistics.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "parts/list.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.spacer",
+  "description": "Legacy configurable vertical spacer.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

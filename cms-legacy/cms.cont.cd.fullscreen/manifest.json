@@ -1,0 +1,13 @@
+{
+  "name": "cms.cont.cd.fullscreen",
+  "description": "Legacy full-screen section with a small and a large heading.",
+  "dependencies": [
+    "cms",
+    "cms.image2",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

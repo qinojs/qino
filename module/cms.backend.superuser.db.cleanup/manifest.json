@@ -1,0 +1,19 @@
+{
+  "name": "cms.backend.superuser.db.cleanup",
+  "description": "Finds and repairs orphaned data and schema inconsistencies.",
+  "dependencies": [
+    "cms.backend.superuser.db"
+  ],
+  "files": [
+    "lib/cleanup.ts",
+    "lib/indexes.ts",
+    "lib/sequences.ts",
+    "lib/validate.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

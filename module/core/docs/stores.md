@@ -43,7 +43,7 @@ names — a redirect to another URL, say. Note what such a field would cost: tod
 convention alone, which is why `store.add(name)` reads nothing; an entry that may point elsewhere
 makes resolution catalog-dependent and has to move into `init()`.
 
-`core` needs no declaration — it is the root of the `needs` graph, so `App` adds it itself.
+`core` needs no declaration — it is the root of the dependency graph, so `App` adds it itself.
 
 A store's own listing is never cached: it may gain modules while the app runs.
 
@@ -66,8 +66,8 @@ A module may install other modules from its own `install()` hook — that is how
 [cms.installation.default](../../cms.installation.default/plugin.ts) brings a usable CMS without
 declaring anything. During boot such an install only registers: `init()` links in passes, so the new
 modules get the same ordering and schema merge as the first round instead of a nested `link()` whose
-`needs` are not linked yet. Modules that arrive this way are ordinary installed rows — each one can
-be uninstalled again, which a `needs` entry could never allow.
+dependencies are not linked yet. Modules that arrive this way are ordinary installed rows — each one can
+be uninstalled again, which a dependency entry could never allow.
 
 Both tables are core's, because both are needed before any module can decide anything:
 
@@ -105,8 +105,8 @@ including `name`:
 
 - a store supplies the catalog name;
 - a directly added `<name>/plugin.ts` infers its name from the parent directory;
-- an exported `name` still wins, and a mismatch with the store's name fails the boot rather than
-  silently changing identity.
+- a `name` in the manifest still wins, and a mismatch with the store's name fails the boot rather
+  than silently changing identity.
 
 Duplicate names, duplicate URLs under different names, missing dependencies and cycles all fail
 explicitly. Stores do not overwrite each other, and there is no precedence rule — failing loudly
@@ -164,9 +164,27 @@ asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
   re-import the way `deno.lock` does. Until then, anyone who reaches the store UI can import
   arbitrary code; local `file:` stores are unaffected. A second factor in front of install/uninstall
   would cover the other half — `web_auth` has the ceremony, see `PLAN-confirm.md`.
-- **Remote public assets.** Plugin imports work over HTTP, but `/m/<module>/pub/…` still serves from
-  a local `Module.dir`. A useful remote store needs a strategy: proxy, cache, or install locally.
-- **Remote locales.** Discovery is `Deno.readDir(<module>/locale/)`; HTTP has no portable directory
-  listing, so remote modules need an explicit locale export or catalog metadata.
+- **Everything a remote module is besides its code.** The manifest is there and is read before the
+  import, but nothing lists a module's *files* yet: `/m/<module>/pub/…` still serves from a local
+  `Module.dir`, and locales are discovered with `Deno.readDir(<module>/locale/)`. Both fail for the
+  same reason — HTTP cannot list a directory — and both are answered by one more manifest field:
+
+  ```json
+  { "files": ["plugin.ts", "pub/main.css", "pub/module.svg", "locale/de.json"] }
+  ```
+
+  With it, one operation covers three features: fetch a module's files and write them somewhere.
+  Into `appPATH/remote/<name>/` it is the **mirror** that makes `Module.dir` always defined; into
+  the own store under a new name it is the **fork** (copying a remote module, which
+  [cms.backend.superuser.stores.own](../../cms.backend.superuser.stores.own/plugin.ts) refuses
+  today); generated from the folder on the way out it is **publishing**. A publishing app writes no
+  file at all — it has the directory. Only a static host (CDN, pages) has to keep one.
+
+- **Module versions and going back.** Every comparable format has a version, and the store page
+  cannot offer updates without one. But a version alone is a label: rolling *back* needs whoever
+  serves the module to keep old states, and `<base><name>/plugin.ts` has no version segment. The
+  cheaper unit is the store — its URL is the version (`…/v2/`), which suits a set of modules
+  developed together and needs no resolver, which qino could not have anyway: the module name is a
+  global key, so two versions of one module can never coexist.
 - **PostgreSQL demo.** The `pg` app in `demo/server.ts` installs the default set, which happens to
   avoid what PostgreSQL cannot do yet. A general compatibility-selection API is not worth it yet.

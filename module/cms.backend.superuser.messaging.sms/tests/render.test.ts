@@ -1,10 +1,11 @@
 import { assert, assertEquals, assertStringIncludes, fakeT } from "../../core/tests/deps.ts";
-import { name, needs } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 import { provider } from "../render.ts";
 
 Deno.test("cms.backend.superuser.messaging.sms wires metadata and keeps provider secrets out of HTML", async () => {
   assertEquals(name, "cms.backend.superuser.messaging.sms");
-  assertEquals(needs, ["cms.backend.superuser.messaging", "messaging.sms"]);
+  assertEquals(dependencies, ["cms.backend.superuser.messaging", "messaging.sms"]);
   const node = {
     app: {
       t: fakeT,

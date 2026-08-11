@@ -1,22 +1,22 @@
 {
   "modules": {
-    "shp3": {},
-    "shp3.payment.advance": {},
-    "shp3.payment.invoice": {},
-    "shp3.shipping.pickup": {},
-    "shp3.stock": {},
-    "cms.cont.shp3.product.default": {},
-    "cms.cont.shp3.order.cart1": {},
-    "cms.cont.shp3.order.addresses2": {},
-    "cms.cont.shp3.order.shipping": {},
-    "cms.cont.shp3.order.payment": {},
-    "cms.cont.shp3.order.buy1": {},
     "cms.backend.shp3": {},
     "cms.backend.shp3.orders1": {},
     "cms.backend.shp3.products": {},
     "cms.backend.shp3.settings": {},
     "cms.cont.shp3.category1": {},
+    "cms.cont.shp3.order.addresses2": {},
+    "cms.cont.shp3.order.buy1": {},
     "cms.cont.shp3.order.cart.small": {},
-    "shp3.messages2": {}
+    "cms.cont.shp3.order.cart1": {},
+    "cms.cont.shp3.order.payment": {},
+    "cms.cont.shp3.order.shipping": {},
+    "cms.cont.shp3.product.default": {},
+    "shp3": {},
+    "shp3.messages2": {},
+    "shp3.payment.advance": {},
+    "shp3.payment.invoice": {},
+    "shp3.shipping.pickup": {},
+    "shp3.stock": {}
   }
 }

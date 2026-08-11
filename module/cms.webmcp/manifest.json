@@ -1,0 +1,14 @@
+{
+  "name": "cms.webmcp",
+  "description": "Exposes accessible application tools to browsers through WebMCP.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/webmcp.mjs"
+  ]
+}

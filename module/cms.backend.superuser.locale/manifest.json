@@ -1,0 +1,11 @@
+{
+  "name": "cms.backend.superuser.locale",
+  "description": "Groups the reference data panels — countries, currencies, rates.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

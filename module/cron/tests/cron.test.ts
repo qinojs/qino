@@ -175,14 +175,15 @@ async function createTestApp(cron: Record<string, Job>) {
     failures INTEGER NOT NULL, last_error TEXT NOT NULL
   )`;
   await db.loadTables();
-  const plugin = { name: "test.jobs", needs: ["cron"], cron };
+  const plugin = { cron };
+  const mod = { name: "test.jobs", dependencies: ["cron"], plugin };
   const events = new Emitter<Record<string, Record<string, unknown>>>();
   const app = {
     db,
     settings: { cron: { pollSeconds: 60, timezone: "UTC" } },
     modules: {
-      all: () => ({ [plugin.name]: { name: plugin.name, plugin } }),
-      linked: (name: string) => name === plugin.name,
+      all: () => ({ [mod.name]: mod }),
+      linked: (name: string) => name === mod.name,
     },
     on: events.on.bind(events),
   } as unknown as App;

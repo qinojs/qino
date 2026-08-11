@@ -1,9 +1,5 @@
 import { Output, sha256b64url, type App, type Ctx } from "../core/mod.ts";
 
-export const name = "serviceworker";
-export const description = "Serves the app's single service worker, assembled from the parts other modules declare.";
-export const needs = ["core"];
-
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => ctx.req.appPath === "sw.js" ? serve(ctx) : undefined, { signal });
   app.on("html-ready", ({ ctx }) => register(ctx), { signal });

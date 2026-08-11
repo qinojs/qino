@@ -3,10 +3,6 @@ import type { Node } from "../cms/mod.ts";
 import { loadTemplate } from "./mod.ts";
 import { renderNodes } from "./render.ts";
 
-export const name = "cms.templateParser";
-export const description = "Renders declarative HTML templates with editable CMS fields and content.";
-export const needs = ["cms", "cms.image2"];
-
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("node:render", async (e) => {
     const mod = e.node.module;

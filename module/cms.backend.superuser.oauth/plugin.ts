@@ -2,10 +2,9 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.backend.superuser.oauth";
-export const description = "Configures OAuth and OpenID login providers.";
-export const needs = ["cms.backend", "oauth"];
 export const cms = { node: { render } };
 
 type Preset = { issuer?: string; scopes: string; authorize_url?: string; token_url?: string; userinfo_url?: string; email_url?: string };

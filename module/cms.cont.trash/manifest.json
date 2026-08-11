@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.trash",
+  "description": "Deleted CMS nodes with restore and permanent-delete actions.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

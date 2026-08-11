@@ -3,10 +3,6 @@ import type { Node } from "../../module/cms/mod.ts";
 import { sectionSettings } from "../lib/section.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
 
-export const name = "cms.cont.section3";
-export const description = "Legacy content section of the PHP CMS; the section markup itself is site data.";
-export const needs = ["cms"];
-
 const settingsSchema = {
   properties: {
     ...sectionSettings.properties,

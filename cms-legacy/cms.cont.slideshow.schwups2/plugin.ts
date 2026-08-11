@@ -1,10 +1,8 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-
-export const name = "cms.cont.slideshow.schwups2";
-export const description = "Legacy image slideshow.";
-export const needs = ["cms", "cms.image2"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

@@ -1,10 +1,12 @@
 import { assertEquals } from "../../core/tests/deps.ts";
 import type { ApiNode } from "../../core/mod.ts";
-import { api, dbSchema, name, needs } from "../plugin.ts";
+import { api, dbSchema } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.image_editor: module metadata is wired", () => {
   assertEquals(name, "cms.image_editor");
-  assertEquals(needs, ["cms", "cms.versions"]);
+  assertEquals(dependencies, ["cms", "cms.versions"]);
   // hpos/vpos focus point is merged onto the (versioned) `file` table as floats.
   const file = dbSchema.properties.file.additionalProperties.properties;
   assertEquals(file.hpos.type, "number");

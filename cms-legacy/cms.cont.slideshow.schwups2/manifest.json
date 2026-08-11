@@ -1,0 +1,16 @@
+{
+  "name": "cms.cont.slideshow.schwups2",
+  "description": "Legacy image slideshow.",
+  "dependencies": [
+    "cms",
+    "cms.image2"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/arrow.svg",
+    "pub/b1_slideshow.css",
+    "pub/main.css",
+    "pub/main.js"
+  ]
+}

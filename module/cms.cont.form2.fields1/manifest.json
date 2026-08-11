@@ -1,0 +1,16 @@
+{
+  "name": "cms.cont.form2.fields1",
+  "description": "Configurable input fields for a cms.cont.form2 mail form.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "options.ts",
+    "plugin.ts",
+    "pub/edit.mjs",
+    "pub/main.css",
+    "pub/module.svg",
+    "sortedIds.ts"
+  ]
+}

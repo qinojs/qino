@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.superuser",
+  "description": "Provides the superuser administration dashboard.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

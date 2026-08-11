@@ -2,11 +2,13 @@
 import { assertEquals, fakeRender } from "../../core/tests/deps.ts";
 import { fakeCms } from "../../cms/tests/deps.ts";
 import { toTools } from "../../core/mod.ts";
-import { api, init, name, needs } from "../plugin.ts";
+import { api, init } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.filebrowser: metadata and api shape are wired", () => {
   assertEquals(name, "cms.filebrowser");
-  assertEquals(needs, ["cms"]);
+  assertEquals(dependencies, ["cms"]);
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), ["get_search"]);
   assertEquals(tools[0].parameters, {

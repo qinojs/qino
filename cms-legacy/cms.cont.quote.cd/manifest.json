@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.quote.cd",
+  "description": "Legacy quote section whose markup stays site data.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

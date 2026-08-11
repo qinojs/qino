@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.shp3.products",
+  "description": "Lists the shop's products, creates and removes them, holds their VAT rates.",
+  "dependencies": [
+    "cms.backend.shp3",
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

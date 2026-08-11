@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.video.section.cd",
+  "description": "Legacy full-width section with a looping background video.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

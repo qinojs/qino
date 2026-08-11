@@ -1,0 +1,23 @@
+{
+  "name": "cms.cont.gallery.photoswipe1",
+  "description": "Legacy PhotoSwipe image gallery.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/photoswipe/LICENSE",
+    "pub/photoswipe/dist/default-skin/default-skin.css",
+    "pub/photoswipe/dist/default-skin/default-skin.png",
+    "pub/photoswipe/dist/default-skin/default-skin.svg",
+    "pub/photoswipe/dist/default-skin/preloader.gif",
+    "pub/photoswipe/dist/photoswipe-ui-default.js",
+    "pub/photoswipe/dist/photoswipe-ui-default.min.js",
+    "pub/photoswipe/dist/photoswipe.css",
+    "pub/photoswipe/dist/photoswipe.js",
+    "pub/photoswipe/dist/photoswipe.min.js"
+  ]
+}

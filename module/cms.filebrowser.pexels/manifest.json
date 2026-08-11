@@ -1,0 +1,14 @@
+{
+  "name": "cms.filebrowser.pexels",
+  "description": "Adds Pexels stock photo search to the CMS file browser.",
+  "dependencies": [
+    "cms",
+    "cms.filebrowser"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/init.mjs",
+    "pub/module.svg"
+  ]
+}

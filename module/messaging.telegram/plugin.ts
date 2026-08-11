@@ -4,9 +4,6 @@ import type { Channel } from "../messaging/mod.ts";
 import { webhook } from "./lib/webhook.ts";
 import { linkUrl, send, userChats } from "./mod.ts";
 
-export const name = "messaging.telegram";
-export const description = "Telegram — links accounts to a bot chat and delivers messages to them.";
-export const needs = ["messaging"];
 export { dbSchema };
 
 export const messagingChannel: Channel = {

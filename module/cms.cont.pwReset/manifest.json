@@ -1,0 +1,17 @@
+{
+  "name": "cms.cont.pwReset",
+  "description": "Lets users who forgot their password set a new one through a link sent by mail.",
+  "dependencies": [
+    "cms",
+    "mail",
+    "ticket"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

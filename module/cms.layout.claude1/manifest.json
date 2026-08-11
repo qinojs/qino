@@ -1,0 +1,10 @@
+{
+  "name": "cms.layout.claude1",
+  "description": "Renders a responsive branded frontend layout with navigation and footer.",
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg"
+  ]
+}

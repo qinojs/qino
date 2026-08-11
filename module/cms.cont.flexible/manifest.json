@@ -1,0 +1,9 @@
+{
+  "name": "cms.cont.flexible",
+  "description": "Open-ended sequence of child content blocks.",
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "shp3.messages2",
+  "description": "Sends the order confirmation — to the customer, to the shop, or both.",
+  "dependencies": [
+    "shp3",
+    "mail"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

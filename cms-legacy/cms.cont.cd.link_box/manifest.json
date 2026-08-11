@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.cd.link_box",
+  "description": "Legacy teaser box: background image, texts and one outgoing link.",
+  "dependencies": [
+    "cms",
+    "cms.image2",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

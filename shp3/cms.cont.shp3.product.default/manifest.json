@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.shp3.product.default",
+  "description": "Product page: price and the button that puts it into the cart.",
+  "dependencies": [
+    "shp3",
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

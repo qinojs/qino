@@ -3,10 +3,8 @@ import type { Node } from "../../module/cms/mod.ts";
 import { backend } from "../../module/cms.backend/mod.ts";
 import { shp3, type Order } from "../shp3/mod.ts";
 import api from "./nodeApi.ts";
-
-export const name = "cms.backend.shp3.orders1";
-export const description = "Lists the shop's orders and shows what is in them.";
-export const needs = ["cms.backend.shp3", "shp3"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Orders", de: "Bestellungen" });

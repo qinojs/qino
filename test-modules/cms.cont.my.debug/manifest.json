@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.my.debug",
+  "description": "Current session, settings, client, user, and group details.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

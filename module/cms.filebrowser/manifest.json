@@ -1,0 +1,14 @@
+{
+  "name": "cms.filebrowser",
+  "description": "Searches accessible CMS files and provides file selection tools.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "healthChecks.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/init.mjs",
+    "pub/module.svg"
+  ]
+}

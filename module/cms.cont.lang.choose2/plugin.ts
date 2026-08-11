@@ -1,8 +1,7 @@
 import { cmsCtx, type Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
-
-export const name = "cms.cont.lang.choose2";
-export const description = "Language links or selection menu.";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const LANG_NAMES: Record<string, string> = {
   de: "Deutsch",

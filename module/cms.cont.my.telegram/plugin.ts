@@ -1,9 +1,6 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
-export const name = "cms.cont.my.telegram";
-export const description = "Connects the signed-in user's Telegram to the bot, and shows what is connected.";
-export const needs = ["cms", "messaging.telegram"];
 export const cms = { node: { js: ["pub/main.js"], render } };
 
 // The deep link lives 15 minutes, so it never reaches the rendered HTML — a cached page would

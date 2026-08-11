@@ -1,7 +1,9 @@
 import { assert, assertEquals, assertThrows } from "../../core/tests/deps.ts";
 import { Db, unixTime, type App } from "../../core/mod.ts";
 import { forget, hit, prune, scored, sqlScore, strength } from "../mod.ts";
-import { cron, dbSchema, init, install, name, needs } from "../plugin.ts";
+import { cron, dbSchema, init, install } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 const DAY = 86400;
 
@@ -18,7 +20,7 @@ async function testDb(): Promise<Db> {
 
 Deno.test("score: metadata is wired", () => {
   assertEquals(name, "score");
-  assertEquals(needs, ["core", "cron"]);
+  assertEquals(dependencies, ["core", "cron"]);
   assertEquals(cron.prune.every, "day");
 });
 

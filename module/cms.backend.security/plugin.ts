@@ -5,10 +5,9 @@ import { backendDashboardWidget, render } from "./view.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Jobs } from "../cron/mod.ts";
 import type { App } from "../core/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.backend.security";
-export const description = "Detects, scores, analyzes, and blocks suspicious requests.";
-export const needs = ["cms.backend", "cron"];
 export { dbSchema, settingsSchema };
 
 export const cron = {

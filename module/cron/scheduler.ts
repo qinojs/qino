@@ -205,7 +205,7 @@ function collect(app: App, timeZone: string): RegisteredJob[] {
     const declared = mod.plugin.cron as Jobs | undefined;
     if (declared == null) continue;
     if (typeof declared !== "object" || Array.isArray(declared)) throw new Error(`Module "${mod.name}": cron must be an object`);
-    if (!(mod.plugin.needs ?? []).includes("cron")) throw new Error(`Module "${mod.name}": needs must include "cron" when declaring cron jobs`);
+    if (!mod.dependencies.includes("cron")) throw new Error(`Module "${mod.name}": dependencies must include "cron" when declaring cron jobs`);
     for (const name of Object.keys(declared).sort()) {
       if (!/^[a-zA-Z0-9._-]+$/.test(name)) throw new Error(`Module "${mod.name}": invalid cron job name "${name}"`);
       const job = declared[name];

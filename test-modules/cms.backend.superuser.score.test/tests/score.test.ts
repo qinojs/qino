@@ -5,7 +5,9 @@ import { cmsCtx } from "@qino/qino/cms";
 import { scored } from "@qino/qino/score";
 import api from "../nodeApi.ts";
 import { fileHit, pageHit, TABLES } from "../hooks.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms, needs } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name } = manifest;
 import { list } from "../render.ts";
 
 const BOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";

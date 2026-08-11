@@ -1,0 +1,16 @@
+{
+  "name": "messaging.sms",
+  "description": "SMS — verifies user phone numbers and delivers messages through a configurable provider.",
+  "dependencies": [
+    "messaging"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/provider.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "cms.cont.cd.slideshow",
+  "description": "Legacy slideshow: one image plus its own texts per slide.",
+  "dependencies": [
+    "cms",
+    "cms.image2",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/arrow.svg",
+    "pub/b1_slideshow.css",
+    "pub/main.css",
+    "pub/main.js"
+  ]
+}

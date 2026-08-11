@@ -1,10 +1,6 @@
 import type { App } from "../core/mod.ts";
 import { Scheduler } from "./scheduler.ts";
 
-export const name = "cron";
-export const description = "Schedules persistent recurring jobs declared by modules.";
-export const needs = ["core"];
-
 export const settingsSchema = {
   properties: {
     timezone: { type: "string", default: "UTC", description: "IANA timezone used by calendar schedules." },

@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.privacy_policy1",
+  "description": "Legacy generated privacy policy using its persisted texts.",
+  "dependencies": [
+    "cms",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

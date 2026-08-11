@@ -1,9 +1,7 @@
 import { html, sql, type Ctx, type HtmlString } from "../core/mod.ts";
 import { cmsCtx, type Node } from "../cms/mod.ts";
-
-export const name = "cms.cont.not_found1";
-export const description = "Not-found page with suggestions and redirect editing.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 

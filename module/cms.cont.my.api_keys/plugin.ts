@@ -1,9 +1,8 @@
 import type { Node } from "../cms/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.cont.my.api_keys";
-export const description = "Personal API key creation and revocation.";
-export const needs = ["cms", "api_key"];
 export const cms = { node: { js: ["pub/main.js"], render } };
 
 function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

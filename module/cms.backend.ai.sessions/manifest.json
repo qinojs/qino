@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.ai.sessions",
+  "description": "Browses AI chat sessions and their message transcripts.",
+  "dependencies": [
+    "cms.backend",
+    "ai"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

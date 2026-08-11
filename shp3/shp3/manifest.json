@@ -1,0 +1,22 @@
+{
+  "name": "shp3",
+  "description": "Shop: products, cart, orders. Prices, VAT, shipping and payment are events.",
+  "dependencies": [
+    "core",
+    "cms",
+    "locale.country",
+    "locale.currency"
+  ],
+  "files": [
+    "README.md",
+    "api.ts",
+    "dbschema.json",
+    "lib/Shp3.ts",
+    "lib/cart.ts",
+    "lib/rows.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/shp3.js"
+  ]
+}

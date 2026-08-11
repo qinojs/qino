@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.section3",
+  "description": "Legacy content section of the PHP CMS; the section markup itself is site data.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

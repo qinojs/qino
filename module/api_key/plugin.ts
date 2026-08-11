@@ -2,9 +2,6 @@ import dbSchema from "./dbschema.json" with { type: "json" };
 import { Output, type App } from "../core/mod.ts";
 import { verifyToken } from "./lib/keys.ts";
 
-export const name = "api_key";
-export const description = "Creates and authenticates revocable API keys for users.";
-export const needs = ["core"];
 export { api } from "./api.ts";
 export { dbSchema };
 

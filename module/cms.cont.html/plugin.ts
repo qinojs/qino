@@ -3,10 +3,9 @@ import { renderTemplateFile } from "../cms.templateParser/mod.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { nodeApi } from "./api.ts";
 import options from "./options.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.cont.html";
-export const description = "Per-node HTML files with CMS syntax and HTML/CSS/JavaScript boilerplate.";
-export const needs = ["cms", "cms.templateParser"];
 export const api = nodeApi(name);
 
 // Commented out on purpose: the parser strips comments, so nothing is created before you want it.

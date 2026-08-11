@@ -1,8 +1,7 @@
 import { html, type HtmlString, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.layout.claude1";
-export const description = "Renders a responsive branded frontend layout with navigation and footer.";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 // Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
 const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/";

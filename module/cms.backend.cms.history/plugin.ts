@@ -2,10 +2,8 @@
 import { html, sql, type App, type Ctx, type HtmlString, type Sql } from "../core/mod.ts";
 import { cms as cmsOf, describeChange, WRITE, type Node } from "../cms/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
-
-export const name = "cms.backend.cms.history";
-export const description = "Shows recent CMS changes with affected nodes and editors.";
-export const needs = ["cms.backend", "cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "History", de: "Verlauf" });
@@ -20,8 +18,6 @@ const TYPE_TABLES: Record<string, string[]> = {
   file:   ["page_file", "file"],
   access: ["page_access_grp", "page_access_usr"],
 };
-
-
 
 // Candidate node_changed rows (newest first). Search/date/own-client narrow the
 // window in SQL; type and — crucially — per-node edit rights are applied in JS,

@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.superuser.messaging",
+  "description": "Message journal with recipient-level delivery results.",
+  "dependencies": [
+    "cms.backend",
+    "messaging"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

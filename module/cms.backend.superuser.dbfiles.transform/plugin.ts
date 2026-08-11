@@ -1,10 +1,8 @@
 import { errMsg, FileTransformer, html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.superuser.dbfiles.transform";
-export const description = "Manages file-transformation binaries and their cache.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "Transform", de: "Transform" });
@@ -154,7 +152,6 @@ const BINARIES: Binary[] = [
     notes: "Requires ImageMagick compiled with libheif support.",
   },
 ];
-
 
 async function runInstall(platform: Platform, bin: Binary): Promise<string> {
   const cmd = bin.install[platform];

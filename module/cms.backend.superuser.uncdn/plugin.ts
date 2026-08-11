@@ -4,10 +4,8 @@ import { html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { cacheByteLimit, uncdn } from "../uncdn/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.superuser.uncdn";
-export const description = "Inspects configuration and cached assets of the uncdn proxy.";
-export const needs = ["cms.backend", "uncdn"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }) {
   await backend.install(app, name, { en: "UnCDN Cache", de: "UnCDN Cache" });

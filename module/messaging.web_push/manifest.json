@@ -1,0 +1,19 @@
+{
+  "name": "messaging.web_push",
+  "description": "Web Push — stores browser subscriptions and delivers notifications to them.",
+  "dependencies": [
+    "messaging",
+    "serviceworker"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/vapid.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/sw.js",
+    "pub/web_push.js"
+  ]
+}

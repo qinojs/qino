@@ -1,10 +1,6 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-export const name = "cms.cont.stretchedItems1";
-export const description = "Legacy row of equally stretched child contents.";
-export const needs = ["cms"];
-
 const settingsSchema = {
   properties: {
     cols: { type: "integer", minimum: 1, description: "Number of children." },

@@ -2,10 +2,6 @@ import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cart } from "../shp3/mod.ts";
 
-export const name = "cms.cont.shp3.order.buy1";
-export const description = "The button that places the order, and what still stands in the way.";
-export const needs = ["shp3", "cms"];
-
 const settingsSchema = {
   properties: {
     success_page: { type: "integer", minimum: 1, description: "Page the customer lands on after ordering. Default: the first child of this page." },

@@ -1,0 +1,14 @@
+{
+  "name": "error_report",
+  "description": "Collects backend, browser, CSS, and CSP errors for diagnosis.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "dbschema.json",
+    "healthChecks.ts",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

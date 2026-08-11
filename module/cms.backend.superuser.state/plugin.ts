@@ -3,10 +3,6 @@ import { dump } from "@nuxodin/dump";
 import { $item, getCtx, html, type HtmlString, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
-export const name = "cms.backend.superuser.state";
-export const description = "Shows live server runtime and request context state.";
-export const needs = ["cms.backend"];
-
 const DUMP_JS = "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";
 
 export async function install({ app }: { app: App }): Promise<void> {

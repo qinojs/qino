@@ -2,10 +2,8 @@ import * as nodePath from "node:path";
 import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "../core/mod.ts";
 import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit } from "./mod.ts";
 import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
-
-export const name = "uncdn";
-export const description = "Proxies and caches approved external frontend assets locally.";
-export const needs = ["core"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export const settingsSchema = {
   properties: {

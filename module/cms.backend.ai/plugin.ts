@@ -4,10 +4,8 @@ import { errMsg, html, type App, type Ctx, type HtmlString } from "../core/mod.t
 import { KINDS, providerCatalog } from "../ai/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.ai";
-export const description = "Configures AI providers, models, defaults, and token usage.";
-export const needs = ["cms.backend", "ai"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.ai", { en: "AI", de: "KI" });
@@ -267,7 +265,6 @@ function defaultsOverview(allModels: Row[], providersById: Map<number, Row>): Ht
   });
   return html`<table class=u2-table>${rows}</table>`;
 }
-
 
 async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<string, any> }): Promise<HtmlString> {
   const app = node.app;

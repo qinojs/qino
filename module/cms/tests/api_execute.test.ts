@@ -101,8 +101,8 @@ async function setup(access = 3) {
   } });
   cmsInstances.set(ctx.app, {
     node: (id: number) => nodes.get(Number(id)) ?? { exists: () => undefined },
-    getModules: () => ({ "cms.cont.text": { dir: undefined, plugin: { description: "Rich text", cms: { node: { settingsSchema: { properties: { cols: {} } } } } } } }),
-    getLayouts: () => ({ "cms.layout.login": { dir: undefined, plugin: {} } }),
+    getModules: () => ({ "cms.cont.text": { dir: undefined, description: "Rich text", plugin: { cms: { node: { settingsSchema: { properties: { cols: {} } } } } } } }),
+    getLayouts: () => ({ "cms.layout.login": { dir: undefined, description: "", plugin: {} } }),
   } as never);
   ctx.lang = "de";
   return { ctx, nodes };
@@ -249,7 +249,7 @@ Deno.test("cms api: modules lists content and layout modules, schema on demand",
   await requestStorage.run(ctx, async () => {
     assertEquals(await invoke(api, "GET", "/modules"), [
       { name: "cms.cont.text", kind: "cont", description: "Rich text" },
-      { name: "cms.layout.login", kind: "layout", description: undefined },
+      { name: "cms.layout.login", kind: "layout", description: "" },
     ]);
     const withSchema = await invoke(api, "GET", "/modules", { schema: true }) as Array<Record<string, unknown>>;
     assertEquals(withSchema[0].settings, { properties: { cols: {} } });

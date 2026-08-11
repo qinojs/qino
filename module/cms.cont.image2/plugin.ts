@@ -2,9 +2,6 @@ import type { Node } from "../cms/mod.ts";
 import { cms_image2 } from "../cms.image2/mod.ts";
 import { html, type Ctx, type HtmlString } from "../core/mod.ts";
 
-export const name = "cms.cont.image2";
-export const description = "Editable localized image with sizing, cropping, and linking.";
-
 const settingsSchema = {
   additionalProperties: { type: "string" },
   properties: {

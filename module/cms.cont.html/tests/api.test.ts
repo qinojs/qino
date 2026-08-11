@@ -2,7 +2,9 @@
 import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
 import { AccessError, ConflictError, invoke, requestStorage, toTools } from "../../core/mod.ts";
 import { fakeCms } from "../../cms/tests/deps.ts";
-import { api, name } from "../plugin.ts";
+import { api } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const fakeNode = (dir: string, module = name, access = 2) => ({
   id: 7,

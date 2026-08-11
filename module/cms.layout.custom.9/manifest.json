@@ -1,0 +1,9 @@
+{
+  "name": "cms.layout.custom.9",
+  "description": "Loads an application-specific layout with a minimal fallback.",
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

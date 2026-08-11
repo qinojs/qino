@@ -1,0 +1,12 @@
+{
+  "name": "cms.layout.shwups.info",
+  "description": "Legacy compact information/login layout.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

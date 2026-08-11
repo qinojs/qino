@@ -1,0 +1,18 @@
+{
+  "name": "cms.backend.superuser.score.test",
+  "description": "Exercises score tracking with CMS page and file access events.",
+  "dependencies": [
+    "cms.backend",
+    "cms",
+    "score"
+  ],
+  "files": [
+    "hooks.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

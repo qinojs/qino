@@ -1,0 +1,25 @@
+{
+  "name": "cms.backend.domain-monitor",
+  "description": "Monitors domain, DNS, TLS, HTTP, and mail health.",
+  "dependencies": [
+    "cms.backend",
+    "cron"
+  ],
+  "files": [
+    "dbschema.json",
+    "lib/changes.ts",
+    "lib/check.ts",
+    "lib/dns.ts",
+    "lib/mail.ts",
+    "lib/monitor.ts",
+    "lib/net.ts",
+    "lib/rdap.ts",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

@@ -1,10 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
-import { cms, name, needs } from "../plugin.ts";
+import { cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 Deno.test("cms.backend: metadata is wired", () => {
   assertEquals(name, "cms.backend");
-  assertEquals(needs, ["cms"]);
+  assertEquals(dependencies, ["cms"]);
 });
 
 Deno.test("cms.backend: render shows fallback when no dashboard widgets exist", async () => {

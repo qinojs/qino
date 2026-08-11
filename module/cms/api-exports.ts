@@ -74,7 +74,7 @@ export async function modules(schema = false): Promise<any[]> {
         for (const [name, mod] of Object.entries(mods)) {
             const e = await ctx.app.fire("module:access", { module: name, user: ctx.user, access: ADMIN });
             if (Number(e.access) < ADMIN) continue;
-            const description = mod.plugin.description?.trim();
+            const description = mod.description.trim();
             res.push({
                 name,
                 kind,

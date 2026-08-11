@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.event2.fullcalendar4",
+  "description": "Legacy full calendar rendered as an accessible chronological list.",
+  "dependencies": [
+    "cms",
+    "cms.text"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

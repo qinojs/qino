@@ -6,12 +6,11 @@ import { pruneHistory } from "./lib/changes.ts";
 import { runScheduled } from "./lib/monitor.ts";
 import api from "./nodeApi.ts";
 import { render } from "./render.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export { backendDashboardWidget } from "./render.ts";
 
-export const name = "cms.backend.domain-monitor";
-export const description = "Monitors domain, DNS, TLS, HTTP, and mail health.";
-export const needs = ["cms.backend", "cron"];
 export { dbSchema };
 
 export const ctxSettingsSchema = {

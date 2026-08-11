@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.text",
+  "description": "Single directly editable rich-text field.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "cms.backend.superuser.versions",
+  "description": "Manages version storage, draft spaces, and history cleanup.",
+  "dependencies": [
+    "cms.backend",
+    "cms.versions"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

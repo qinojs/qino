@@ -17,10 +17,25 @@ export function resolveSpecifier(app: App, spec: string | URL): string {
   return import.meta.resolve(spec);
 }
 
-export type Plugin = Record<string, any> & {
+/** manifest.json — what has to be known before the module's code runs. Everything else is an export. */
+export type Manifest = {
   name?: string;
   description?: string;
-  needs?: string[];
+  dependencies?: string[];
+  files?: string[];
+};
+
+/** Read a module's manifest. Absent is legal: a module may be nothing but a plugin.ts. */
+async function readManifest(source: string): Promise<Manifest> {
+  const res = await fetch(new URL("manifest.json", source)).catch(() => null); // reads file: and http(s): alike
+  if (!res?.ok) return {};
+  const manifest = await res.json();
+  if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) throw new Error(`Manifest of ${source} must be an object`);
+  if (!Array.isArray(manifest.dependencies ?? [])) throw new Error(`Manifest of ${source}: dependencies must be an array`);
+  return manifest;
+}
+
+export type Plugin = Record<string, any> & {
   // Object = static schema. Function = computed from the merged schema (runs after all
   // static ones), e.g. for tables derived from other modules' tables.
   dbSchema?: DbSchema | ((merged: DbSchema) => DbSchema);
@@ -47,17 +62,23 @@ export class Module {
   #app: App;
   #name: string;
   #plugin: Plugin;
+  #manifest: Manifest;
   #source: string;
   #abort = new AbortController();
 
-  constructor(app: App, name: string, plugin: Plugin, source: string) {
+  constructor(app: App, name: string, plugin: Plugin, manifest: Manifest, source: string) {
     this.#app = app;
     this.#name = name;
     this.#plugin = plugin;
+    this.#manifest = manifest;
     this.#source = source;
   }
   get name(): string { return this.#name; }
   get plugin(): Plugin { return this.#plugin; }
+  /** What the module says about itself before its code runs. */
+  get manifest(): Manifest { return this.#manifest; }
+  get description(): string { return this.#manifest.description ?? ""; }
+  get dependencies(): string[] { return this.#manifest.dependencies ?? []; }
   /** Where the module was imported from: resolved file:/https: URL of its plugin file. */
   get source(): string { return this.#source; }
   /** Directory the module lives in; undefined for remote modules. */
@@ -118,26 +139,26 @@ export class ModuleManager {
     if (!/\/plugin\.(?:ts|js)(?:[?#].*)?$/.test(spec)) throw new Error(`Plugin import needs a plugin.ts or plugin.js file: ${spec}`);
     const path = spec.startsWith("file:") ? fromFileUrl(spec) : isAbsolute(spec) ? spec : undefined;
     const source = path ? toFileUrl(path).href : spec;
-    const plugin = await import(source);
-    if (plugin.name !== undefined && (typeof plugin.name !== "string" || !plugin.name)) throw new Error(`Plugin has an invalid exported name: ${source}`);
+    // The manifest is read, not imported: what a store needs to know must not require running code.
+    const manifest = await readManifest(source);
+    if (manifest.name !== undefined && (typeof manifest.name !== "string" || !manifest.name)) throw new Error(`Manifest of ${source} has an invalid name`);
     const inferredName = /\/([^/?#]+)\/plugin\.(?:ts|js)(?:[?#].*)?$/.exec(source)?.[1];
-    const name = expectedName ?? plugin.name ?? (inferredName && decodeURIComponent(inferredName));
-    if (!name) throw new Error(`Plugin name cannot be inferred: ${source}`);
+    const name = expectedName ?? manifest.name ?? (inferredName && decodeURIComponent(inferredName));
+    if (!name) throw new Error(`Module name cannot be inferred: ${source}`);
     if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${source}`);
-    if (expectedName && plugin.name && expectedName !== plugin.name)
-      throw new Error(`Plugin name mismatch: store has "${expectedName}", plugin exports "${plugin.name}"`);
+    if (expectedName && manifest.name && expectedName !== manifest.name)
+      throw new Error(`Module name mismatch: store has "${expectedName}", manifest says "${manifest.name}"`);
     const existing = this.#modules[name];
     if (existing) {
       if (existing.source !== source) throw new Error(`Duplicate module name "${name}": ${existing.source} vs ${source}`);
       return existing;
     }
 
-    if (!Array.isArray(plugin.needs ?? [])) throw new Error(`Plugin ${name}: exported needs must be an array`);
-
     const same = Object.values(this.#modules).find((mod) => mod.source === source);
     if (same) throw new Error(`Plugin ${source} is already registered as "${same.name}"`);
 
-    const mod = new Module(this.#app, name, plugin, source);
+    const plugin = await import(source);
+    const mod = new Module(this.#app, name, plugin, manifest, source);
     this.#modules[name] = mod;
     return mod;
   }
@@ -178,7 +199,7 @@ export class ModuleManager {
   async install(spec: string, name?: string): Promise<Module> {
     const mod = await this.import(spec, name);
     // An unorderable module would break the next boot, so it must not reach the table at all.
-    const missing = (mod.plugin.needs ?? []).filter((need) => !this.#modules[need]);
+    const missing = mod.dependencies.filter((need) => !this.#modules[need]);
     if (missing.length) {
       delete this.#modules[mod.name];
       throw new Error(`Cannot install "${mod.name}": needs ${missing.join(", ")}`);
@@ -226,12 +247,12 @@ export class ModuleManager {
     delete this.#modules[name];
   }
 
-  // Run a registered module's hooks at runtime. Idempotent; its needs must already be linked.
+  // Run a registered module's hooks at runtime. Idempotent; its dependencies must already be linked.
   async link(name: string): Promise<void> {
     const mod = this.#modules[name];
     if (!mod) throw new Error(`Cannot link "${name}": not imported`);
     if (this.#linked.has(name)) return;
-    for (const need of mod.plugin.needs ?? [])
+    for (const need of mod.dependencies)
       if (!this.#linked.has(need)) throw new Error(`Cannot link "${name}": needs "${need}", which is not linked`);
     const order = this.#order([...this.#linked, name]);
     await this.#applyDbSchema(order);
@@ -244,7 +265,7 @@ export class ModuleManager {
     const mod = this.#modules[name];
     if (!mod || !this.#linked.has(name)) return;
     for (const other of Object.values(this.#modules))
-      if (other !== mod && this.#linked.has(other.name) && (other.plugin.needs ?? []).includes(name))
+      if (other !== mod && this.#linked.has(other.name) && other.dependencies.includes(name))
         throw new Error(`Cannot unlink "${name}": "${other.name}" needs it`);
     mod.abort(); // fires the signal init() registered its listeners/timers with
     delete this.#app.apiTree[name];
@@ -320,17 +341,17 @@ export class ModuleManager {
     while (true) {
       const mod = Object.values(this.#modules).find((mod) =>
         !this.#declared.has(mod.name) && !this.#failed[mod.name] &&
-        (mod.plugin.needs ?? []).some((need) => !this.#modules[need] || this.#failed[need])
+        mod.dependencies.some((need) => !this.#modules[need] || this.#failed[need])
       );
       if (!mod) return;
-      const need = mod.plugin.needs!.find((need) => !this.#modules[need] || this.#failed[need]);
+      const need = mod.dependencies.find((need) => !this.#modules[need] || this.#failed[need]);
       const why = `Module "${mod.name}" needs "${need}", but it is not imported`;
       this.#failed[mod.name] = why;
       console.error(`${why}; skipping installed module`);
     }
   }
 
-  // Dependency-ordered subset (default: all imported). Recurses needs only within the set.
+  // Dependency-ordered subset (default: all imported). Recurses dependencies only within the set.
   #order(names: string[] = Object.keys(this.#modules).filter((name) => !this.#failed[name])): string[] {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
@@ -341,7 +362,7 @@ export class ModuleManager {
       const mod = this.#modules[name];
       if (!mod) throw new Error(`Module "${name}" is not imported`);
       seen[name] = "visiting";
-      for (const need of mod.plugin.needs ?? []) {
+      for (const need of mod.dependencies) {
         if (!this.#modules[need]) throw new Error(`Module "${name}" needs "${need}", but it is not imported`);
         if (set.has(need)) visit(need);
       }

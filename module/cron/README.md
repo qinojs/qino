@@ -12,7 +12,7 @@ import type { App } from "../core/mod.ts";
 import type { Jobs } from "../cron/mod.ts";
 
 export const name = "shop";
-export const needs = ["core", "cron"];
+export const dependencies = ["core", "cron"];
 
 export const cron = {
   cleanup: {

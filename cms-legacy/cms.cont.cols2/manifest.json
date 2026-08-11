@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.cols2",
+  "description": "Legacy responsive table-style columns.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css"
+  ]
+}

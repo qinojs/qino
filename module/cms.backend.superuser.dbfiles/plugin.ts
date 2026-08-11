@@ -2,10 +2,9 @@ import { getCtx, html, type HtmlString, sql, FileTransformer, type App, type DbF
 import { backend, u2 } from "../cms.backend/mod.ts";
 import { deleteUnlinkedDb } from "./cleanup.ts";
 import type { Node } from "../cms/mod.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.backend.superuser.dbfiles";
-export const description = "Inspects, edits, deduplicates, and cleans stored database files.";
-export const needs = ["cms.backend"];
 export { healthChecks } from "./healthChecks.ts";
 
 export async function install({ app }: { app: App }) {

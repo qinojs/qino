@@ -1,12 +1,10 @@
-import { fromFileUrl } from "@std/path";
+import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
 import { errMsg, getCtx, html, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
-
-export const name = "cms.backend.superuser.module";
-export const description = "Inspects loaded modules, dependencies, exports, source files, and runtime state.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Modules", de: "Module" });
@@ -59,10 +57,9 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   const modPath = modDir ? fromFileUrl(modSource) : null;
 
   // --- Exports ---
-  const SKIP = new Set(["name", "description", "needs", "cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
+  const SKIP = new Set(["cms", "install", "uninstall", "init", "dbSchema", "settingsSchema", "ctxSettingsSchema", "api"]);
   const extraExports = Object.keys(mod).filter(k => !SKIP.has(k));
   const knownKeys: { key: string; label: string }[] = [
-    { key: "needs",             label: "needs" },
     { key: "settingsSchema",    label: "settingsSchema" },
     { key: "ctxSettingsSchema", label: "ctxSettingsSchema" },
     { key: "dbSchema",          label: "dbSchema" },
@@ -77,7 +74,6 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
 
   // the members an export contributes, shown next to its badge
   const members = (key: string): string[] => {
-    if (key === "needs") return mod.needs!;
     if (key === "api" || key === "cms") return Object.keys(mod[key] ?? {});
     if (key !== "settingsSchema" && key !== "ctxSettingsSchema") return [];
     const props = (mod[key] as { properties?: unknown })?.properties;
@@ -88,16 +84,16 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     return html`${label}${list.length ? html` <small>(${list.join(", ")})</small>` : ""} `;
   });
 
-  // --- Dependencies (needs) ---
-  const needs = mod.needs ?? [];
+  // --- Dependencies ---
+  const deps = modObj.dependencies;
   const neededBy = Object.entries(allMods)
-    .filter(([, m]) => (m.plugin.needs ?? []).includes(modName))
+    .filter(([, m]) => m.dependencies.includes(modName))
     .map(([n]) => n)
     .sort();
 
   const u = ctx.req.url.toURL();
   const modLink = (d: string) => { u.searchParams.set("mod", d); return html`<a href="${u.search}">${d}</a>`; };
-  const depsHtml = needs.length ? html.join(needs.map(modLink), " ") : html.raw("<em>none</em>");
+  const depsHtml = deps.length ? html.join(deps.map(modLink), " ") : html.raw("<em>none</em>");
   const neededByHtml = neededBy.length ? html.join(neededBy.map(modLink), " ") : html.raw("<em>none</em>");
 
   // --- Files ---
@@ -144,10 +140,10 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
     <div class=-head><a href="${backHref}">← Module</a> ${modName} <small>${linked ? t`active` : t`disabled`}</small></div>
     <div class=-body>${toggleBtn}${error ? html` <strong>${error}</strong>` : ""}</div>
     <table class=u2-table>
-      <tr><th>${t`Description`}<td>${mod.description}
+      <tr><th>${t`Description`}<td>${modObj.description}
       <tr><th>${t`Source`}<td>${sourceHtml}
       <tr><th>${t`Exports`}<td>${exportBadges}
-      <tr><th>${t`needs`}<td>${depsHtml}
+      <tr><th>${t`dependencies`}<td>${depsHtml}
       <tr><th>${t`used by`}<td>${neededByHtml}
     </table>
   </div>
@@ -170,6 +166,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Files`}${hasEditorLinks ? html.async` (${t`with editor links`})` : ""}</div>
     ${filesHtml}
+    ${modDir && isSuperuser ? html.async`<div class=-body><button data-new-file="${modName}">${t`New file`}</button></div>` : ""}
   </div>
 </div>`;
 }
@@ -200,9 +197,9 @@ async function renderOverview(node: Node): Promise<HtmlString> {
   for (const name of modules) {
     const modObj = allMods[name];
     const mod = modObj.plugin;
-    const description = String(mod.description ?? "");
-    const needs = mod.needs ?? [];
-    const neededBy = Object.values(allMods).filter((m) => (m.plugin.needs ?? []).includes(name)).length;
+    const description = modObj.description;
+    const deps = modObj.dependencies;
+    const neededBy = Object.values(allMods).filter((m) => m.dependencies.includes(name)).length;
     const exports = [
       mod.init && "init",
       mod.install && "install",
@@ -223,7 +220,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     rows.push(html`<tr>
       <td style="padding-right:0">${iconHtml}
       <td data-value="${name}"><a href="${u.search}">${name}</a>${disabled ? html` <small>(${disabledLabel})</small>` : ""}
-      <td data-value="${needs.length}" style="text-align:center">${needs.length}
+      <td data-value="${deps.length}" style="text-align:center">${deps.length}
       <td data-value="${neededBy}" style="text-align:center">${neededBy}
       <td title="${description}" style="max-width:30rem; overflow:hidden; text-overflow:ellipsis">${description}
       <td>${exports}`);
@@ -240,7 +237,7 @@ async function renderOverview(node: Node): Promise<HtmlString> {
         <tr>
           <th width=10>
           <th width=20 data-sort-handler>${t`Name`}
-          <th width=20 data-sort-handler title="${t`Number of dependencies`}">${t`needs`}
+          <th width=20 data-sort-handler title="${t`Number of dependencies`}">${t`dependencies`}
           <th width=20 data-sort-handler title="${t`Required by`}">${t`used by`}
           <th data-sort-handler>${t`Description`}
           <th data-sort-handler>${t`Exports`}
@@ -270,9 +267,27 @@ async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<
   }
 }
 
+/** Create an empty file inside the module, so the editor has something to open. Superuser only. */
+async function createFile(node: Node, modName: string, rel: string): Promise<void> {
+  const ctx = getCtx();
+  if (!(await ctx.user?.get("superuser"))) return;
+  try {
+    const dir = node.app.modules.get(modName)?.dir;
+    if (!dir) throw new Error(`Module "${modName}" has no files here`);
+    const file = resolvePath(dir, rel);
+    if (!file.startsWith(resolvePath(dir) + SEPARATOR)) throw new Error(`"${rel}" is outside the module`);
+    if (await Deno.stat(file).then(() => true, () => false)) throw new Error(`"${rel}" exists already`);
+    await Deno.mkdir(dirname(file), { recursive: true });
+    await Deno.writeTextFile(file, "");
+  } catch (e) {
+    ctx.state.moduleError = errMsg(e);
+  }
+}
+
 async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown> } = {}): Promise<HtmlString> {
   const ctx = getCtx();
   if (vars.disable || vars.enable) await toggleModule(node, vars);
+  if (vars.newFile) await createFile(node, String(vars.mod ?? ""), String(vars.newFile));
   // JS reloads post vars without the ?mod= query, so keep the toggled module in view.
   const modName = String(vars.mod ?? vars.disable ?? vars.enable ?? ctx.req.query.mod ?? "");
   if (modName) return renderDetail(node, modName);

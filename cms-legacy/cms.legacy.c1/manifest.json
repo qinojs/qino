@@ -1,0 +1,16 @@
+{
+  "name": "cms.legacy.c1",
+  "description": "Serves the PHP-era c1 browser helpers for a migrated site's own scripts.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/c1.js",
+    "pub/c1/dom.js",
+    "pub/c1/onElement.js",
+    "pub/c1/scroll.js",
+    "pub/c1/stretchedItems.js"
+  ]
+}

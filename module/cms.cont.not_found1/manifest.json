@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.not_found1",
+  "description": "Not-found page with suggestions and redirect editing.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

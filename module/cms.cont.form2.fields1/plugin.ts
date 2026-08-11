@@ -3,10 +3,8 @@ import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
 import { type Form, formOf } from "../cms.cont.form2/mod.ts";
 import { sortedIds } from "./sortedIds.ts";
 import options from "./options.ts";
-
-export const name = "cms.cont.form2.fields1";
-export const description = "Configurable input fields for a cms.cont.form2 mail form.";
-export const needs = ["cms"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 const settingsSchema = {
   properties: {

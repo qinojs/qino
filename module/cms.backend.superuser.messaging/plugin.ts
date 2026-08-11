@@ -3,10 +3,9 @@ import { backend, renderDashboard, u2 } from "../cms.backend/mod.ts";
 import { channel, channels, messages, userChannels, userMessages, type Channel } from "../messaging/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
-export const name = "cms.backend.superuser.messaging";
-export const description = "Message journal with recipient-level delivery results.";
-export const needs = ["cms.backend", "messaging"];
 const OVERVIEW_LIMIT = 100;
 
 const RENAMES = {

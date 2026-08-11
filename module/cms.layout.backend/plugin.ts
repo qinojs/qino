@@ -1,9 +1,6 @@
 import { html, u2Root, type Ctx, type HtmlString } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
-export const name = "cms.layout.backend";
-export const description = "Renders the CMS administration layout and navigation.";
-
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   const app = node.app;

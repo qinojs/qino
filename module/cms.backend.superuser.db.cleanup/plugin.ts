@@ -4,10 +4,8 @@ import type { Node } from "../cms/mod.ts";
 import { findOrphans, schemaExtras } from "./lib/cleanup.ts";
 import { nodeApi } from "./nodeApi.ts";
 import { backendDashboardWidget, render, renderRow } from "./render.ts";
-
-export const name = "cms.backend.superuser.db.cleanup";
-export const description = "Finds and repairs orphaned data and schema inconsistencies.";
-export const needs = ["cms.backend.superuser.db"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Cleanup", de: "Aufräumen" });

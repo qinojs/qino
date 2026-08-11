@@ -1,10 +1,6 @@
 import type { App } from "../core/mod.ts";
 import { cmsCtx } from "../cms/mod.ts";
 
-export const name = "cms.filebrowser.ai";
-export const description = "Adds AI image generation to the CMS file browser.";
-export const needs = ["cms", "ai", "cms.filebrowser"];
-
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;

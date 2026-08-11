@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.event2.overview1",
+  "description": "Legacy upcoming or past event overview.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

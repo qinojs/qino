@@ -6,7 +6,7 @@ a fading memory: every access adds 1, the total decays exponentially with a half
 ```ts
 import { scored, hit, forget, sqlScore } from "../score/mod.ts";
 
-export const needs = ["core", "score"];
+export const dependencies = ["core", "score"];
 
 export async function init(app) {
   await scored(app.db, "file", 30 * 86400);   // half-life 30 days

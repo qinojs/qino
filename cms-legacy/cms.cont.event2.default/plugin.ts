@@ -3,10 +3,6 @@ import type { Node } from "../../module/cms/mod.ts";
 import { eventDate, eventDates, eventInfo, eventPerformers } from "../lib/event2.ts";
 import { cmsText } from "../lib/text.ts";
 
-export const name = "cms.cont.event2.default";
-export const description = "Legacy event detail read view. Registration stays disabled until its write workflow is ported.";
-export const needs = ["cms", "cms.text"];
-
 const words = (lang: string) => lang === "de"
   ? { dates: "Datum", location: "Ort", price: "Preis", performers: "Leitung" }
   : { dates: "Date", location: "Location", price: "Price", performers: "Teachers" };

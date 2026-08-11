@@ -1,10 +1,6 @@
 import type { App } from "../../module/core/mod.ts";
 import { shp3 } from "../shp3/mod.ts";
 
-export const name = "shp3.shipping.pickup";
-export const description = "Shipping method: the customer collects the goods. Free, and it unlocks paying cash.";
-export const needs = ["shp3"];
-
 export async function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
   await shp3(app).registerMethod("shippings", "pickup", "Abholung");
 

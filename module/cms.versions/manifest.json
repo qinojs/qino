@@ -1,0 +1,25 @@
+{
+  "name": "cms.versions",
+  "description": "Tracks CMS content history, snapshots, and restoration.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "draftmode.ts",
+    "healthChecks.ts",
+    "lib/CmsVers.ts",
+    "lib/History.ts",
+    "lib/Spaces.ts",
+    "lib/Vers.ts",
+    "maintenance.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/check.png",
+    "pub/comparer.mjs",
+    "pub/draftmode.mjs",
+    "pub/module.svg",
+    "pub/vers.mjs",
+    "serverInterface.ts"
+  ]
+}

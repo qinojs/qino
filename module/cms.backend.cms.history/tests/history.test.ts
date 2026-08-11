@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "../../core/tests/deps.ts";
 import { fakeCms } from "../../cms/tests/deps.ts";
-import { backendDashboardWidget, cms, name, needs } from "../plugin.ts";
+import { backendDashboardWidget, cms } from "../plugin.ts";
+import manifest from "../manifest.json" with { type: "json" };
+const { name, dependencies } = manifest;
 
 // Fake tree node: fixed access level + a tiny breadcrumb path (root is filtered out).
 function mkNode(id: number, access: number, title: string, parents: any[] = [], type = "p"): any {
@@ -54,7 +56,7 @@ const listPart = (node: any, filter: any = {}) => cms.node.parts.history(node, {
 
 Deno.test("history: metadata is wired", () => {
   assertEquals(name, "cms.backend.cms.history");
-  assertEquals(needs, ["cms.backend", "cms"]);
+  assertEquals(dependencies, ["cms.backend", "cms"]);
 });
 
 Deno.test("history: only pages the caller may edit are listed; one event per request × node", async () => {

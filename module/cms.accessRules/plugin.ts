@@ -1,10 +1,6 @@
 import { sql, type App, type dbEntry_usr } from "../core/mod.ts";
 import { standards } from "./lib/standards.ts";
 
-export const name = "cms.accessRules";
-export const description = "Applies group-based access limits to CMS modules.";
-export const needs = ["cms"];
-
 export const dbSchema = {
   properties: {
     cms_module_access_grp: {

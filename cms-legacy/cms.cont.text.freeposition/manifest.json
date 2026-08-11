@@ -1,0 +1,11 @@
+{
+  "name": "cms.cont.text.freeposition",
+  "description": "Legacy absolutely positioned editable text.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}

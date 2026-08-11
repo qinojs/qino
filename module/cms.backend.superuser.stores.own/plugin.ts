@@ -2,10 +2,8 @@ import { toFileUrl } from "@std/path";
 import { errMsg, html, isModuleName, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.superuser.stores.own";
-export const description = "Manages the app's own module store: creates modules blank or from a template.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 /** The app's own modules: a folder store beside data/, so it is deployed and backed up with the app. */
 const storeDir = (app: App) => app.appPATH + "module/";
@@ -42,7 +40,8 @@ async function copyModule(from: string, to: string, oldName: string, newName: st
 /** The smallest thing that is a module — a shape to start from comes from a template, not from here. */
 async function blankModule(dir: string, modName: string): Promise<void> {
   await Deno.mkdir(dir, { recursive: true });
-  await Deno.writeTextFile(dir + "plugin.ts", `export const name = "${modName}";\n\nexport function init() {}\n`);
+  await Deno.writeTextFile(dir + "manifest.json", JSON.stringify({ name: modName }, null, 2) + "\n");
+  await Deno.writeTextFile(dir + "plugin.ts", "export function init() {}\n");
 }
 
 async function create(app: App, modName: string, template: string): Promise<void> {

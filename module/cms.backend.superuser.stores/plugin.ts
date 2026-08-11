@@ -1,11 +1,9 @@
-import { toFileUrl } from "@std/path";
+import { fromFileUrl, toFileUrl } from "@std/path";
 import { errMsg, html, type App, type HtmlString, type Store } from "../core/mod.ts";
 import { backend, u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
-
-export const name = "cms.backend.superuser.stores";
-export const description = "Registers module stores and installs modules from their catalogs.";
-export const needs = ["cms.backend"];
+import manifest from "./manifest.json" with { type: "json" };
+const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Module stores", de: "Modul-Stores" });
@@ -14,12 +12,22 @@ export async function install({ app }: { app: App }): Promise<void> {
 // A typed URL wins, everything else is a path below the app.
 const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.appPATH)).href;
 
-// core is the root of the needs graph, and this module renders the page you are looking at.
+// core is the root of the dependency graph, and this module renders the page you are looking at.
 const LOCKED = new Set(["core", name]);
 
-// What is worth asking about, and what deletes what a module keeps.
-const CONFIRM = new Set(["repair", "reset", "uninstall"]);
-const DESTRUCTIVE = new Set(["reset", "uninstall"]);
+// What is worth asking about before it happens.
+const CONFIRM = new Set(["repair", "reset", "uninstall", "unlink"]);
+
+// One colour language, four things it can say: red deletes what a module keeps, orange writes into
+// one, green is the single action an untouched row exists for, blue marks a module that is not
+// running. Everything reversible and unremarkable stays plain — that is what keeps red readable.
+const TONE: Record<string, string> = {
+  uninstall: "-delete",
+  reset: "-delete",
+  repair: "-repair",
+  install: "-install",
+  link: "-link",
+};
 
 // Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
 const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared(mod);
@@ -66,11 +74,11 @@ function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): [stri
 // Keyed by action and by state, so a row picks its texts by what it is.
 async function labels(app: App) {
   const t = app.t;
-  const [install, uninstall, link, unlink, repair, reset, addStore, active, inactive, available, broken] = await Promise.all([
-    t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`Repair`, t`Reset`, t`Add store`,
+  const [install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken] = await Promise.all([
+    t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`Repair`, t`Reset`, t`Add store`, t`Write index`,
     t`active`, t`inactive`, t`available`, t`not importable`,
   ]);
-  return { install, uninstall, link, unlink, repair, reset, addStore, active, inactive, available, broken };
+  return { install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken };
 }
 type Labels = Awaited<ReturnType<typeof labels>>;
 type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
@@ -81,9 +89,9 @@ type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
 function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlString {
   const st = state(app, mod);
   const why = app.modules.failures()[mod];
-  const plugin = app.modules.get(mod)?.plugin;
+  const known = app.modules.get(mod);
   const btn = (act: ModAct) =>
-    html`<button data-act=${act}${DESTRUCTIVE.has(act) ? html` class=-delete` : ""}${CONFIRM.has(act) ? html` u2-confirm` : ""}>${l[act]}</button>`;
+    html`<button data-act=${act}${TONE[act] ? html` class=${TONE[act]}` : ""}${CONFIRM.has(act) ? html` u2-confirm` : ""}>${l[act]}</button>`;
   // Seeding again works for anything linked, declared modules included — that is how an older
   // installation gets the default set it was never installed with.
   const acts = st === "available"
@@ -91,25 +99,78 @@ function moduleRow(app: App, mod: string, storeUrl: string, l: Labels): HtmlStri
     : st === "broken"
     ? [btn("uninstall")]
     : [
-      ...(st === "active" ? [btn("repair"), ...(plugin?.uninstall ? [btn("reset")] : [])] : []),
+      ...(st === "active" ? [btn("repair"), ...(known?.plugin.uninstall ? [btn("reset")] : [])] : []),
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
   return html`<tr data-mod="${mod}" data-store="${storeUrl}" data-state=${st}>
-    <td title="${why ?? plugin?.description}">${mod}
+    <td title="${why ?? known?.description}">${mod}
     <td><small>${storeUrl ? storeLabel(app, storeUrl) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
     <td style="text-align:right">${html.join(acts, " ")}`;
 }
 
-function storeRow(app: App, store: Store, error: string): HtmlString {
+function storeRow(app: App, store: Store, error: string, l: Labels): HtmlString {
+  const local = store.base.startsWith("file:");
   return html`<tr>
     <td><button class=u2-unstyle data-pick="${store.url}"><code>${storeLabel(app, store.url)}</code><br><small>${store.url}</small></button>
     <td>${error ? html`<strong>${error}</strong>` : html`<small data-count="${store.url}"></small>`}
+    <td>${local ? html`<button data-act=writeIndex data-store="${store.url}">${l.writeIndex}</button>` : ""}
     <td style="text-align:right">${
     store.declared
-      ? html`<small>server.ts</small>`
+      ? html``
       : html`<button data-act=removeStore data-store="${store.url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`
   }`;
+}
+
+// --- writing the index ----------------------------------------------------
+// A store published as plain files (git → CDN) has to carry what a directory listing would
+// otherwise answer: its catalog, and every module's file list. Nothing computes that at request
+// time, so it is written here and kept honest by the test in core/tests/module_boundaries.test.ts —
+// that test is the rule, this is only the repair.
+
+/** Every file of a module, relative to its folder; `tests/` stays behind, a consumer runs the module. */
+async function moduleFiles(dir: string, base = dir): Promise<string[]> {
+  const found: string[] = [];
+  for await (const e of Deno.readDir(dir)) {
+    if (e.isDirectory) {
+      if (dir === base && e.name === "tests") continue;
+      found.push(...await moduleFiles(`${dir}${e.name}/`, base));
+    } else if (e.isFile) found.push((dir + e.name).slice(base.length));
+  }
+  return found.sort();
+}
+
+const writeJson = (file: string, value: unknown) => Deno.writeTextFile(file, JSON.stringify(value, null, 2) + "\n");
+
+/** Refresh `files` in every manifest and the catalog beside them. Reports what changed, so a click
+ *  that was not needed says so instead of looking like work. */
+export async function writeIndex(store: Store): Promise<string> {
+  if (!store.base.startsWith("file:")) throw new Error("Only a local store can be written");
+  const names = await store.names();
+  const changed: string[] = [];
+  for (const mod of names) {
+    const dir = fromFileUrl(new URL(".", store.moduleUrl(mod)).href);
+    const file = dir + "manifest.json";
+    const manifest = await Deno.readTextFile(file).then(JSON.parse).catch(() => ({ name: mod }));
+    const files = await moduleFiles(dir);
+    if (JSON.stringify(manifest.files) === JSON.stringify(files)) continue;
+    manifest.files = files; // in place: any other field keeps its position
+    await writeJson(file, manifest);
+    changed.push(mod);
+  }
+  // The catalog is what a remote store cannot do without; per-module metadata in it survives.
+  const catalog = fromFileUrl(new URL("store.json", store.base).href);
+  const before = await Deno.readTextFile(catalog).catch(() => "");
+  const known = before ? JSON.parse(before).modules ?? {} : {};
+  const modules = Object.fromEntries(names.map((mod) => [mod, known[mod] ?? {}]));
+  const wroteCatalog = JSON.stringify({ modules }, null, 2) + "\n" !== before;
+  if (wroteCatalog) await writeJson(catalog, { modules });
+
+  if (!changed.length && !wroteCatalog) return "Nothing to write — everything is up to date.";
+  return [
+    changed.length ? `${changed.length} manifest(s) updated: ${changed.join(", ")}` : "",
+    wroteCatalog ? `store.json written (${names.length} modules)` : "",
+  ].filter(Boolean).join(" · ");
 }
 
 // --- node API -------------------------------------------------------------
@@ -127,6 +188,11 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
       case "addStore":
         await app.stores.install(resolve(app, store));
         return { ok: true };
+      case "writeIndex": {
+        const target = app.stores.get(store);
+        if (!target) throw new Error(`Unknown store: ${store}`);
+        return { ok: true, message: await writeIndex(target) };
+      }
       case "removeStore":
         await app.stores.uninstall(store);
         return { ok: true };
@@ -176,8 +242,8 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
-      ${cats.map(({ store, error }) => storeRow(app, store, error))}
-      <tr><td colspan=3><button data-act=addStore>${l.addStore}</button>
+      ${cats.map(({ store, error }) => storeRow(app, store, error, l))}
+      <tr><td colspan=4><button data-act=addStore>${l.addStore}</button>
     </table>
     <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>
   </div>

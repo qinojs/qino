@@ -1,0 +1,11 @@
+{
+  "name": "shp3.shipping.pickup",
+  "description": "Shipping method: the customer collects the goods. Free, and it unlocks paying cash.",
+  "dependencies": [
+    "shp3"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts"
+  ]
+}
