@@ -99,8 +99,6 @@ async function render(node: Node): Promise<HtmlString> {
   const mine = await (store?.names() ?? Promise.resolve([])).catch(() => []);
   // Only a module on disk can be copied — a remote one has no plugin.ts here.
   const templates = Object.values(app.modules.all()).filter((mod) => mod.dir).map((mod) => mod.name).sort();
-  // Once, not per row: a plain html`` fragment renders a promise as [object Promise].
-  const [active, inactive] = await Promise.all([t`active`, t`inactive`]);
 
   return html.async`<div class=u2-flex>
   <div class=u2-card>
@@ -123,9 +121,9 @@ async function render(node: Node): Promise<HtmlString> {
   <div class=u2-card>
     <div class=-head>${t`Modules of this app`} <small>${mine.length}</small></div>
     <table class=u2-table>
-      ${html.join(mine.map((mod) => html`<tr>
+      ${mine.map((mod) => html.async`<tr>
         <td>${mod}
-        <td><small>${app.modules.linked(mod) ? active : inactive}</small>`))}
+        <td><small>${app.modules.linked(mod) ? t`active` : t`inactive`}</small>`)}
     </table>
   </div>
 </div>`;

@@ -76,8 +76,11 @@ export class HtmlString {
   toString(): string { return this.#html; }
 }
 
+// An array renders as its concatenated elements, so a row list needs no wrapper:
+// `<table>${rows.map((r) => html`<tr>…`)}</table>`. html.join() is for a separator.
 function htmlValue(v: unknown): string {
   if (v instanceof HtmlString) return v.html;
+  if (Array.isArray(v)) return v.map(htmlValue).join("");
   return hee(v);
 }
 
@@ -86,6 +89,7 @@ function htmlValue(v: unknown): string {
 // embed conts directly: html.async`<div>${node.cont("main")}</div>`.
 async function htmlValueAsync(v: unknown): Promise<string> {
   v = await v;
+  if (Array.isArray(v)) return (await Promise.all(v.map(htmlValueAsync))).join("");
   const r = v as { html?: unknown };
   if (typeof r?.html === "function") return htmlValueAsync((r.html as () => unknown)());
   return htmlValue(v);
