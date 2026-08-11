@@ -144,7 +144,7 @@ export class LangManager {
 
   // Import translations for one namespace from { original: txt }; only fills empty entries, never overwrites
   async import(lang: string, ns: string, json: string | Record<string, string>): Promise<void> {
-    const txts: Record<string, string> = typeof json === "string" ? JSON.parse(json) : json;
+    const txts = typeof json === "string" ? JSON.parse(json) : json;
     const db = this.#app.db;
     await db.transaction(async () => {
       for (const [original, txt] of Object.entries(txts)) {

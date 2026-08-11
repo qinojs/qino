@@ -4,7 +4,7 @@ import { sql, unixTime, type App, type DbField } from "../core/mod.ts";
 export async function deleteUnlinkedDb(app: App): Promise<{ deleted: number }> {
   const { db, dbFiles: fm } = app;
   const ago = unixTime() - 60 * 60 * 24 * 7;
-  const notLinked = db.table("file").children.map((dbFile: DbField) =>
+  const notLinked = db.table("file").children.map((dbFile) =>
     sql`NOT EXISTS (SELECT 1 FROM ${sql.id(dbFile.table.name)} c WHERE c.${sql.id(dbFile.name)}=file.id)`);
   const rows = await db.query`SELECT file.id FROM file
     LEFT JOIN log log_i ON file.log_id=log_i.id LEFT JOIN log log_e ON file.log_id_ch=log_e.id

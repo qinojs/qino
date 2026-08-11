@@ -178,7 +178,7 @@ export class ModuleManager {
   async install(spec: string, name?: string): Promise<Module> {
     const mod = await this.import(spec, name);
     // An unorderable module would break the next boot, so it must not reach the table at all.
-    const missing = (mod.plugin.needs ?? []).filter((need: string) => !this.#modules[need]);
+    const missing = (mod.plugin.needs ?? []).filter((need) => !this.#modules[need]);
     if (missing.length) {
       delete this.#modules[mod.name];
       throw new Error(`Cannot install "${mod.name}": needs ${missing.join(", ")}`);
@@ -320,10 +320,10 @@ export class ModuleManager {
     while (true) {
       const mod = Object.values(this.#modules).find((mod) =>
         !this.#declared.has(mod.name) && !this.#failed[mod.name] &&
-        (mod.plugin.needs ?? []).some((need: string) => !this.#modules[need] || this.#failed[need])
+        (mod.plugin.needs ?? []).some((need) => !this.#modules[need] || this.#failed[need])
       );
       if (!mod) return;
-      const need = mod.plugin.needs!.find((need: string) => !this.#modules[need] || this.#failed[need]);
+      const need = mod.plugin.needs!.find((need) => !this.#modules[need] || this.#failed[need]);
       const why = `Module "${mod.name}" needs "${need}", but it is not imported`;
       this.#failed[mod.name] = why;
       console.error(`${why}; skipping installed module`);

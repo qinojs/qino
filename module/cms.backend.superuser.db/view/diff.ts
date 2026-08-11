@@ -17,7 +17,7 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
     const tableSchema = mergedSchema[tableName];
     const table = tables[tableName];
     if (!table) continue;
-    const schemaFields: Record<string, unknown> = tableSchema.additionalProperties?.properties ?? {};
+    const schemaFields = tableSchema.additionalProperties?.properties ?? {};
     const dbFields = table.fields ?? {};
     for (const f of Object.keys(schemaFields)) {
       if (!(f in dbFields)) rows.push({ table: tableName, field: f, status: "field-missing-db" });

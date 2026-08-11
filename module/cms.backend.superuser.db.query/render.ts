@@ -146,7 +146,7 @@ async function schemaText(app: App): Promise<string> {
 async function rowCounts(app: App): Promise<Record<string, number>> {
   if (app.db.dialect !== "mysql") return {};
   const rows = await app.db.query`SELECT table_name AS t, table_rows AS n FROM information_schema.tables WHERE table_schema = DATABASE()`;
-  return Object.fromEntries(rows.map((r: any) => [r.t, Number(r.n)]));
+  return Object.fromEntries(rows.map((r) => [r.t, Number(r.n)]));
 }
 
 // Reference list, clickable to insert into the editor.

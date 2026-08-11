@@ -92,7 +92,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     WHERE ${true}${cond}
     ORDER BY ${orderBy} LIMIT 1000`;
 
-  const relHeaders = children.map((dbFile: DbField) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
+  const relHeaders = children.map((dbFile) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
 
   const trs = [];
   const u = ctx.req.url.toURL();

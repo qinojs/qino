@@ -145,7 +145,7 @@ class CmsTextService {
             method: "POST",
             body: params,
         }).then((r) => r.json());
-        const translation: string | false = resp?.translations?.[0]?.text ?? false;
+        const translation = resp?.translations?.[0]?.text ?? false;
         if (translation) {
             const prev = Number(await st["translate char count"] ?? "0");
             st["translate char count"](prev + text.length);
@@ -169,7 +169,7 @@ class CmsTextService {
         const resp = await fetch("https://translation.googleapis.com/language/translate/v2?" + params);
         if (!resp.ok) { console.error("[googleTranslate]", resp.status, await resp.text()); throw new ApiError(502, "Translation service request failed"); }
         const result = await resp.json();
-        const translation: string | false = result?.data?.translations?.[0]?.translatedText ?? false;
+        const translation = result?.data?.translations?.[0]?.translatedText ?? false;
         if (translation) {
             const prev = Number(await st["translate char count"] ?? "0");
             st["translate char count"](prev + text.length);

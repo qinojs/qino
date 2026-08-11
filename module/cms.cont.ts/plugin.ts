@@ -14,7 +14,7 @@ const initialSrc = (id: number) =>
   `import type { NodeRender } from "jsr:@qino/qino/cms.cont.ts";
 
 /** Renders this content node. Returns an HtmlString or a string. */
-const render: NodeRender = async (node, { html }) => {
+const render = async (node, { html }) => {
   // const title = node.cms.text(node, "title", { tag: "h2" });   // editable text
   // const image = await node.file("image1");                     // file of this node
   // const body  = await node.cont("body", "cms.cont.text");      // embedded content node

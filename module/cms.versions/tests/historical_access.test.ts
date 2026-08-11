@@ -14,7 +14,7 @@ function setup(current: Record<number, any>, access: Record<number, number>, his
     },
     query: (...args: any[]) => {
       const basis = Number(args.find((v) => typeof v === "number"));
-      return Promise.resolve(Object.values(current).filter((row: any) => row.basis === basis));
+      return Promise.resolve(Object.values(current).filter((row) => row.basis === basis));
     },
   };
   const app = {

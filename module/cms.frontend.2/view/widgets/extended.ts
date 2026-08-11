@@ -7,7 +7,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   const sName = JSON.stringify(["cms", "models"]);
   const allStr = String(await app.settings.cms.models ?? '');
-  const allArr = allStr.split(",").map((v: string) => v.trim()).filter(Boolean);
+  const allArr = allStr.split(",").map((v) => v.trim()).filter(Boolean);
   const has = allArr.includes(String(node.id));
   const newArr = [...allArr];
   if (has) { const i = newArr.indexOf(String(node.id)); newArr.splice(i, 1); } else { newArr.push(String(node.id)); }

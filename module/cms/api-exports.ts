@@ -188,7 +188,7 @@ export async function filesSetOrder(node: any, by: string): Promise<void> {
         );
     } else {
         const order = by === "date" ? sql`f.log_id` : sql`pf.sort DESC`;
-        sorted = (await db.query`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r: any) => r.name);
+        sorted = (await db.query`SELECT pf.name FROM file f, page_file pf WHERE f.id = pf.file_id AND pf.page_id = ${nid} ORDER BY ${order}`).map((r) => r.name);
     }
     await node.sortFiles(sorted);
 }

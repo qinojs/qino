@@ -246,7 +246,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   for (const k of ["show", "source", "file", "line", "col"]) back.searchParams.delete(k);
   for (const row of rows) {
     const eUrl = editorLink(row.file ?? "", row.line, row.col);
-    const sample: HtmlString | string = row.sample ? html`<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${row.sample}</pre>` : "";
+    const sample = row.sample ? html`<pre style="font-size:10px; box-shadow:0 0 .3125rem; padding:.25rem">${row.sample}</pre>` : "";
     const fileCell = eUrl
       ? html`<a href="${eUrl}" target=_blank title="${row.file}" style="color:inherit; text-decoration:none">${sample || "edit File"}</a>`
       : sample;

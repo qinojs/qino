@@ -61,7 +61,7 @@ function identity(c: any): { email: string; verified: unknown; firstname: string
 /** Map a distilled identity to a usr id (0 = deny). Links by e-mail, optionally auto-creates. */
 async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
   if (!id.email || id.verified === false) return 0; // never link/create on an unverified e-mail
-  const domains = String(p.allowed_domains ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+  const domains = String(p.allowed_domains ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (domains.length && !domains.includes(id.email.split("@")[1])) return 0;
   const existing = await ctx.app.db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = ${id.email}`;
   if (existing) return Number(existing);
@@ -134,7 +134,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
     claims = await fetch(e.userinfo, { headers: bearer }).then((r) => r.json()).catch(() => ({}));
     if (!claims.email && p.email_url) { // e.g. GitHub returns the primary e-mail from a separate endpoint
       const list = await fetch(p.email_url, { headers: bearer }).then((r) => r.json()).catch(() => []);
-      const primary = Array.isArray(list) ? list.find((m: any) => m.primary && m.verified) : null;
+      const primary = Array.isArray(list) ? list.find((m) => m.primary && m.verified) : null;
       if (primary) { claims.email = primary.email; claims.email_verified = true; }
     }
   } else {

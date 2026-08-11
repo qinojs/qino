@@ -24,7 +24,7 @@ const uniqueColor = (v: unknown): string => {
 // render any value via dump.js; parse JSON strings (e.g. stored POST bodies) first
 const dumpData = (raw: unknown): HtmlString => {
   if (raw == null || raw === "") return html`-`;
-  let val: unknown = raw;
+  let val = raw;
   if (typeof raw === "string") { try { val = JSON.parse(raw); } catch { return html`<pre>${raw}</pre>`; } }
   return html.raw(dump(val));
 };

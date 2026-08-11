@@ -21,8 +21,8 @@ const MUTATION_METHODS = new Set(["post", "put", "patch", "delete"]);
  * success and error) so the host builds the `Response`. `path` is within the tree, e.g. `/user/5`.
  */
 export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiFetchOptions = {}): Promise<never> {
-  const input: Params = Object.create(null);
-  const query: Params = Object.create(null);
+  const input = Object.create(null);
+  const query = Object.create(null);
   const method = req.method.toLowerCase() as Method;
   const isBodyMethod = BODY_METHODS.has(method);
   if (isBodyMethod) {

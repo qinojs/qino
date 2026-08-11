@@ -61,7 +61,7 @@ Deno.test("213: logDetails exposes details + only editable-node messages", async
     ],
   );
   await requestStorage.run(ctx, async () => {
-    const res: any = await logDetails(ctx, 42);
+    const res = await logDetails(ctx, 42);
     assertEquals(res.usr, "a@b.c");
     assertEquals(res.ip, "1.2.3.4");
     assertEquals(res.messages.length, 1); // only the editable page 6 row

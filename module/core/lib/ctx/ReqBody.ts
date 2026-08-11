@@ -68,7 +68,7 @@ export class ReqBody {
       body.#value = deepFreeze(await (src ?? request.clone()).json().catch(bad));
     else {
       const entries = groupFormData(await (src ?? request.clone()).formData().catch(bad));
-      const post: Record<string, unknown> = Object.create(null);
+      const post = Object.create(null);
       for (const [key, val] of Object.entries(entries)) {
         const vals = Array.isArray(val) ? val : [val];
         const files = vals.filter((v) => v instanceof File);
@@ -110,7 +110,7 @@ function deepFreeze(v: any): any {
 
 /** FormData as a flat record; repeated keys become arrays. */
 function groupFormData(form: FormData): Record<string, unknown> {
-  const out: Record<string, unknown> = Object.create(null);
+  const out = Object.create(null);
   for (const [k, v] of form) {
     const cur = out[k];
     if (cur === undefined) out[k] = v;

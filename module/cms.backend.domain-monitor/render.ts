@@ -268,7 +268,7 @@ function spfCell(row: DomainRow): HtmlString {
   const lookups = row.spf_lookups ?? 0;
   const policy = row.spf_policy ?? "";
   // Past ten lookups a receiver stops evaluating and the whole record turns into a permerror.
-  const level: Level = row.spf_error || lookups > 10 ? "red" : policy === "-all" || policy === "~all" ? "green" : "orange";
+  const level = row.spf_error || lookups > 10 ? "red" : policy === "-all" || policy === "~all" ? "green" : "orange";
   const title = [row.spf_error, `${policy || "no all mechanism"}, ${lookups}/10 lookups`].filter(Boolean).join(" · ");
   return html`${dot(level, title)} <small>${policy || "?"}</small>`;
 }
@@ -279,7 +279,7 @@ function dmarcCell(row: DomainRow): HtmlString {
   const pct = row.dmarc_pct ?? 100;
   const title = `p=${policy}${row.dmarc_sub ? `, sp=${row.dmarc_sub}` : ""}, pct=${pct}${row.dmarc_rua ? ", reports on" : ", no reports"}`;
   // p=none only watches, and a pct below 100 exempts the rest of the mail from whatever it says.
-  const level: Level = policy === "none" ? "orange" : pct < 100 ? "orange" : "green";
+  const level = policy === "none" ? "orange" : pct < 100 ? "orange" : "green";
   return html`${dot(level, title)} <small>${policy}</small>`;
 }
 
@@ -287,7 +287,7 @@ function smtpCell(row: DomainRow): HtmlString {
   if (row.mail_null_mx) return html`${dot("gray", "null MX — this domain receives no mail on purpose")} <small>none</small>`;
   if (!lines(row.mail_hosts).length) return html`${dot("gray", "no MX record")}`;
   const dane = lines(row.mail_dane).length > 0;
-  const level: Level = no(row.mail_hosts_ok) || no(row.mail_tls_valid) ? "red"
+  const level = no(row.mail_hosts_ok) || no(row.mail_tls_valid) ? "red"
     : no(row.mail_starttls) ? "orange"
     : row.mail_starttls == null ? "gray"
     : "green";

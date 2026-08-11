@@ -38,11 +38,11 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         if (table === "text") {
             const links = await db.query`SELECT page_id FROM page_text WHERE text_id = ${vs.id}
                 UNION SELECT id FROM page WHERE title_id = ${vs.id}`;
-            return links.map((r: any) => Number(r.page_id));
+            return links.map((r) => Number(r.page_id));
         }
         if (table === "file") {
             const links = await db.query`SELECT page_id FROM page_file WHERE file_id = ${vs.id}`;
-            return links.map((r: any) => Number(r.page_id));
+            return links.map((r) => Number(r.page_id));
         }
         return [];
     };
@@ -87,7 +87,7 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
 export async function describeChange(dataStr: unknown, t: TFn): Promise<string> {
     let d: any = {};
     try { d = JSON.parse(String(dataStr ?? "{}")); } catch { /* keep {} */ }
-    const cols: string[] = Array.isArray(d.cols) ? d.cols : [];
+    const cols = Array.isArray(d.cols) ? d.cols : [];
     const lang = d.lang ? ` (${hee(d.lang)})` : "";
     switch (d.table) {
         case "page":
