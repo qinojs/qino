@@ -3,10 +3,11 @@ import { api } from "@qino/pub/qino.js";
 cms.initNode("backend.system", (el) => {
   const d = new Date();
   const off = -d.getTimezoneOffset() / 60;
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
   const tr = el.querySelector(".-browser-time")?.closest("tr");
   if (tr) {
-    tr.querySelector(".-browser-time").textContent = d.toISOString().slice(0, 19).replace("T", " ");
-    tr.querySelector(".-browser-tz").textContent = "UTC+" + off;
+    tr.querySelector(".-browser-time").textContent = local.toISOString().slice(0, 19).replace("T", " ");
+    tr.querySelector(".-browser-tz").textContent = `UTC${off < 0 ? "" : "+"}${off}`;
   }
 
   const alert = async (text) => (await import("@qino/u2/js/dialog/dialog.js")).alert(text);

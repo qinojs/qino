@@ -1,4 +1,4 @@
-import { Output, unixTime, type Ctx } from "../../core/mod.ts";
+import { Output, Redirect, unixTime, type Ctx } from "../../core/mod.ts";
 import { trackCert } from "./helpers.ts";
 import { mail } from "../mod.ts";
 
@@ -29,13 +29,9 @@ export async function handleTrack(ctx: Ctx): Promise<void> {
   }
 
   if (ctx.req.appPath === "blank.gif") {
-    ctx.res.headers.set("Content-Type", "image/gif");
-    ctx.res.body = BLANK_GIF;
-    throw new Output();
+    throw new Output(BLANK_GIF, { headers: { "Content-Type": "image/gif" } });
   }
   if (ctx.req.appPath === "mail-track" && /^https?:\/\//.test(url)) {
-    ctx.res.status = 302;
-    ctx.res.headers.set("Location", url);
-    throw new Output();
+    throw new Redirect(url);
   }
 }

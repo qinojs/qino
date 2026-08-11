@@ -1,4 +1,4 @@
-import { api } from '@qino/pub/qino.js';
+import { api, hee } from '@qino/pub/qino.js';
 
 cms.frontend2.clipboard = pid => {
   const els = () => document.querySelectorAll('[qcms-id="'+pid+'"]');
@@ -11,9 +11,9 @@ cms.frontend2.clipboard = pid => {
     cms.frontend2.dialog(
       'Paste from clipboard',
       '<table>'+
-                '<tr><th> Title: &nbsp;<td> '+res.title+
-                '<tr><th> Module: &nbsp;<td> '+res.module+
-                '<tr><th> Id: &nbsp;<td> '+pid+
+                '<tr><th> Title: &nbsp;<td> '+hee(res.title)+
+                '<tr><th> Module: &nbsp;<td> '+hee(res.module)+
+                '<tr><th> Id: &nbsp;<td> '+hee(pid)+
             '</table>',
       [{
         title: 'Paste on this page', then() {

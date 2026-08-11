@@ -16,7 +16,7 @@ export async function cart(ctx: Ctx, create = true): Promise<Order | undefined> 
   if (order?.time_ordered) order = undefined; // placed meanwhile — that cart is spent
   if (!order) {
     if (!create) return;
-    order = await table.add<Order>({ usr_id: ctx.userId ?? 0, time_created: unixTime() });
+    order = await table.add<Order>({ usr_id: ctx.userId, time_created: unixTime() });
   }
   if (order!.$id !== String(stored)) ctx.sess.data.shp3.cartId(order!.$id);
   order!.lang = ctx.lang;
