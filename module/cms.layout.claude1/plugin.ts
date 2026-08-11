@@ -4,7 +4,7 @@ import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 
 // Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
-const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/";
+const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.6/";
 
 const U2_CSS = [
   "css/norm/norm.css",

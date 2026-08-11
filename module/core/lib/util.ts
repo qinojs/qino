@@ -1,7 +1,7 @@
 import { sql, type Sql } from "../deps.ts";
 
 /** Single source of truth for CDN roots (version pin). */
-export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.1/";
+export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.6/";
 // jsr.io serves packages to Deno, not to browsers (no CORS, text/html) — the git tag behind the
 // same pin does. Keeps the browser working without uncdn proxying it.
 export const itemRoot = "https://cdn.jsdelivr.net/gh/nuxodin/item.js@v0.6.3/"; // pin lives in deno.json; a test keeps this in step
