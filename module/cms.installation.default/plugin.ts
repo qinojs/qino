@@ -16,6 +16,7 @@ export const settingsSchema = {
 // again, and more can be installed from the same store.
 export const recommended = [
   "fileEditor",
+  "identity",
   "cms.frontend.2",
   "cms.text",
   "cms.image2",
@@ -35,6 +36,8 @@ export const recommended = [
   "cms.backend.cms",
   "cms.backend.cms.tree",
   "cms.backend.settings",
+  "cms.backend.config",
+  "cms.backend.config.identity",
   "cms.backend.users",
   "cms.backend.superuser.module",
   "cms.backend.system",

@@ -1,8 +1,6 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cmsText } from "../lib/text.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const workers = ["Kontaktadresse", "Technische Umsetzung", "Konzept", "Design", "Fotografie"];
 const fields = ["company", "name", "address", "city", "phone", "email", "website"];

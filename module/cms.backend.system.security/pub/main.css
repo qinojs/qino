@@ -1,0 +1,10 @@
+[qcms-mod="backend.system.security"] {
+  & .-kpi { flex: 0 0 14rem; }
+  & .-table { flex: 1 1 42rem; overflow: auto; max-height: 75vh; }
+  & .-toplist { flex-basis: 24rem; max-height: 20rem; }
+  & tr.-blocked td,
+    & tr.-error td { background: color-mix(in srgb, var(--red, #c33) 14%, transparent); }
+  & tr.-warning td { background: color-mix(in srgb, var(--orange, #f80) 12%, transparent); }
+  & td small { opacity: .72; }
+  & code { white-space: nowrap; }
+}

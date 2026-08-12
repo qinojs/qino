@@ -205,7 +205,7 @@ Konsequenzen für Consumer (Scripts/Styles):
   sie nur für Hover-Outlines (`[qcms-edit]:not([qcms-mod^="layout."])`).
 - Client-Helper `cms.el` (in `cms/pub/js/cms.mjs`) liest jetzt Attribute:
   `nid(el)=closest('[qcms-id]').getAttribute('qcms-id')` (Node-Id, früher `pid`),
-  `module(el)=getAttribute('qcms-mod')` (nackter Name, z.B. `backend.api`).
+  `module(el)=getAttribute('qcms-mod')` (nackter Name, z.B. `backend.system.api`).
 - Module rendern weder Modul-Marker (`-m-`-Klasse) noch eigene Node-Id
   (`data-pid="${node.id}"` o.ä.) mehr selbst aufs Root-Element — der Wrapper
   liefert `qcms-mod` + `qcms-id`. Modul-CSS zielt auf `[qcms-mod="<name>"]`,

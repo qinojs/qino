@@ -116,3 +116,14 @@ return html.async`
   `node.url()`; value syntax shared with `node=`.
 - `<a cms-file=flyer>` — download links, editable in edit mode like images.
 - `cms-if` / `cms-each` — only once a real module needs them.
+
+## `moduleTemplate(module)`
+
+A layout module ships its `template.html` as a *starting point*: on the first
+render in edit mode the site gets its own copy in `data/<module>/`, which wins
+from then on — deleted files fall back to the shipped one.
+[moduleTemplate.ts](moduleTemplate.ts) holds the paths, that one-time copy and
+the options panel (`layoutOptions`) with the fileEditor links.
+[cms.layout.standard.1](../cms.layout.standard.1/README.md) and
+[cms.layout.deck.1](../cms.layout.deck.1/README.md) are built on it and are
+little more than a template plus a css file.

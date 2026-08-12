@@ -1,0 +1,23 @@
+{
+  "name": "cms.backend.system.security",
+  "description": "Detects, scores, analyzes, and blocks suspicious requests.",
+  "dependencies": [
+    "cms.backend.system",
+    "cron"
+  ],
+  "files": [
+    "guard.ts",
+    "manifest.json",
+    "pathlist.ts",
+    "patterns.ts",
+    "plugin.ts",
+    "policy.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg",
+    "rules.ts",
+    "schema.ts",
+    "store.ts",
+    "view.ts"
+  ]
+}

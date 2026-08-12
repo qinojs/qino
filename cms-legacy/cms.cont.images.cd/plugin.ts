@@ -1,9 +1,8 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
+import { html, type HtmlString } from "../../module/core/mod.ts";
 import { cms_image2 } from "../../module/cms.image2/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  ctx.res.html.styles.add(node.module!.dataUrl + "pub/main.css");
+async function render(node: Node): Promise<HtmlString> {
   const images: HtmlString[] = [];
   for (const file of Object.values(await node.files())) {
     if (!file.mime.startsWith("image/")) continue;

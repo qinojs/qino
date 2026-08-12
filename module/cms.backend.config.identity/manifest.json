@@ -1,0 +1,16 @@
+{
+  "name": "cms.backend.config.identity",
+  "description": "Edits the public identity, organization, contact details, and brand of this Qino instance.",
+  "dependencies": [
+    "identity",
+    "cms.backend.config"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

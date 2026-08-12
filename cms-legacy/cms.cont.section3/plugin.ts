@@ -1,5 +1,6 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
+import { sectionStyle, styleAttr } from "../lib/bg.ts";
 import { sectionSettings } from "../lib/section.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
 
@@ -8,15 +9,22 @@ const settingsSchema = {
     ...sectionSettings.properties,
     "background white": { type: "boolean", description: "Renders the section on a white background." },
     "font white": { type: "boolean", description: "Renders the section text in white." },
-    breit: { type: "boolean", description: "Widens the section beyond the default content width." },
-    fixed: { type: "boolean", description: "Uses the site's fixed section variant." },
+    breit: { type: "boolean", description: "Widens the section beyond the default content width; needs the site's own markup." },
+    fixed: { type: "boolean", description: "Marks the section as the site's fixed variant (class -Fix)." },
   },
 };
 
 async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
-  data.ctx.res.html.styles.add(node.module!.dataUrl + "pub/main.css");
+  const site = await siteTemplate(node, data);
+  if (site) return site;
 
-  return await siteTemplate(node, data) ?? html.async`<section>${node.cont("main")}</section>`;
+  // No markup of its own: the shell renders what the settings can say without it.
+  let style = await sectionStyle(node);
+  if (await node.settings["background white"]) style += "background-color:#fff;";
+  if (await node.settings["font white"]) style += "color:#fff;";
+  const cls = await node.settings.fixed ? " class=-Fix" : "";
+
+  return html.async`<section${html.raw(cls)}${html.raw(styleAttr(style))}>${node.cont("main")}</section>`;
 }
 
 export const cms = {

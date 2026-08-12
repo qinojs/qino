@@ -1,0 +1,12 @@
+{
+  "name": "cms.backend.config",
+  "description": "Provides the shared configuration dashboard for regular backend users.",
+  "dependencies": [
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

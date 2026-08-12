@@ -1,8 +1,6 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
 import { cart, shp3, type Currency } from "../../shp3/shp3/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const settingsSchema = {
   properties: {
@@ -12,7 +10,6 @@ const settingsSchema = {
 };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  ctx.res.html.styles.add(node.module!.dataUrl + "pub/main.css");
   const order = await cart(ctx, false);
   const active = await order?.currencyRow() ?? await shp3(node.app).mainCurrency();
   const currencies = await node.app.db.table("shp3_currency").all<Currency>`WHERE active = ${true} ORDER BY main DESC, id`;

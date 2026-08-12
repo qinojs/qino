@@ -1,7 +1,5 @@
 import { html, sql, unixTime, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const ids = String(await node.settings.ids ?? "").split(",").map(Number).filter((id) => id > 0);

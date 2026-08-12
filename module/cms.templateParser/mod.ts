@@ -35,3 +35,6 @@ export async function renderTemplateFile(path: string, node: Node): Promise<stri
   const ast = await loadTemplate(path);
   return ast && renderNodes(ast, node);
 }
+
+// Layout-style modules ship a template the site takes over — kept separate, see moduleTemplate.ts.
+export { layoutOptions, moduleTemplate } from "./moduleTemplate.ts";

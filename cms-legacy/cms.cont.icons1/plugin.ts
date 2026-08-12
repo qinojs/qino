@@ -1,7 +1,5 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
+import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const settingsSchema = {
   properties: {
@@ -15,9 +13,7 @@ const settingsSchema = {
   },
 };
 
-async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  ctx.res.html.styles.add(node.module!.dataUrl + "pub/main.css");
-
+async function render(node: Node): Promise<HtmlString> {
   const width = String(await node.settings.width ?? "");
   const height = String(await node.settings.height ?? "");
   const items: HtmlString[] = [];

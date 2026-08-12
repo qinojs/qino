@@ -1,17 +1,29 @@
 import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
+import { sectionAttr } from "../lib/bg.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
 
 const settingsSchema = {
   properties: {
-    "background-color": { type: "string", description: "Section background color." },
-    heading: { type: "integer", minimum: 0, maximum: 3, default: 2, description: "Heading level; zero hides it." },
+    "background-color": { type: "string", description: "Section background color; a dark one switches the text to white." },
+    heading: { type: "integer", minimum: 0, maximum: 3, default: 2, description: "Heading level of the title; zero hides it." },
   },
 };
 
 async function render(node: Node, data: { ctx: Ctx }): Promise<string | HtmlString> {
-  data.ctx.res.html.styles.add(node.module!.dataUrl + "pub/main.css");
-  return await siteTemplate(node, data) ?? html.async`<section>${node.cont("main")}</section>`;
+  const site = await siteTemplate(node, data);
+  if (site) return site;
+
+  const level = Number(await node.settings.heading) || 0;
+  const tag = html.raw(`h${Math.min(Math.max(level, 1), 6)}`);
+  const title = level ? html.async`<${tag}>${node.showText("title")}</${tag}>` : "";
+
+  return html.async`<section${html.raw(await sectionAttr(node))}>${title}${node.cont("main")}</section>`;
 }
 
-export const cms = { node: { render, settingsSchema } };
+export const cms = {
+  node: {
+    render,
+    settingsSchema,
+  },
+};

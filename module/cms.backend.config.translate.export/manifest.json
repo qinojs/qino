@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.config.translate.export",
+  "description": "Previews and exports translations into module locale files.",
+  "dependencies": [
+    "cms.backend.config.translate"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

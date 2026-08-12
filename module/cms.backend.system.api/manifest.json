@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.system.api",
+  "description": "Documents and interactively tests the application Api API.",
+  "dependencies": [
+    "cms.backend.system"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

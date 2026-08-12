@@ -1,0 +1,17 @@
+{
+  "name": "cms.backend.config.translate",
+  "description": "Edits, translates, searches, and cleans interface translations.",
+  "dependencies": [
+    "cms.backend.config",
+    "cms.text"
+  ],
+  "files": [
+    "dbschema.json",
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

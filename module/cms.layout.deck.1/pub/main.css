@@ -1,0 +1,75 @@
+/* Deck layout: every block of the page is a screen of its own, and they stack while you scroll. */
+
+html { scroll-behavior: smooth; }
+
+#container {
+  --head: 4rem; /* the header floats above the deck, the cards keep this much clear */
+
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-1);
+
+  #head {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    padding-block: .8rem;
+    background: color-mix(in srgb, var(--color-bg), transparent 25%);
+    backdrop-filter: blur(.5rem);
+
+    .u2-flex {
+      --u2-Gap: var(--gap);
+      align-items: center;
+    }
+    nav {
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      > ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--gap);
+
+        ul { display: none; } /* one line in the header: the deck is the navigation */
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      :is(a:hover, .cmsInside > a) { color: var(--color); }
+      .cmsActive > a { font-weight: bold; }
+    }
+  }
+
+  /* Every content block below main is one card. Sticky at the same top, so the next slides over the last. */
+  #content > [qcms-id] > [qcms-id] {
+    position: sticky;
+    top: 0;
+    min-height: 100dvh;
+    padding-block: var(--head);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--color-bg); /* a card must cover the one below it */
+
+    &:nth-child(even) { background: var(--color-area); }
+
+    > * {
+      width: 100%;
+      max-width: var(--width);
+      margin-inline: auto;
+      padding-inline: 1rem;
+    }
+  }
+
+  /* the card is the frame, so the heading may be as large as the screen allows */
+  h1 {
+    font-size: clamp(2.5rem, 9vw, 7rem);
+    font-weight: 300;
+    line-height: .95;
+  }
+}

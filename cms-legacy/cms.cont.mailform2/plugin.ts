@@ -1,7 +1,5 @@
 import { html, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 async function render(node: Node): Promise<HtmlString> {
   const raw = await node.settings.elements();

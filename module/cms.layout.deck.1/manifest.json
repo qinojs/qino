@@ -1,0 +1,16 @@
+{
+  "name": "cms.layout.deck.1",
+  "description": "One-page layout: every content block is a full screen, stacking as you scroll.",
+  "dependencies": [
+    "cms",
+    "cms.templateParser"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg",
+    "template.html"
+  ]
+}

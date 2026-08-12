@@ -9,6 +9,7 @@
     "README.md",
     "manifest.json",
     "mod.ts",
+    "moduleTemplate.ts",
     "parse.ts",
     "plugin.ts",
     "pub/module.svg",

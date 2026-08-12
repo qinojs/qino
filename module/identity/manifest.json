@@ -1,0 +1,13 @@
+{
+  "name": "identity",
+  "description": "Stores the public identity, organization, contact details, and brand of this Qino instance.",
+  "dependencies": [
+    "core"
+  ],
+  "files": [
+    "dbschema.json",
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

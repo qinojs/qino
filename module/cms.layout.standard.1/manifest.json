@@ -1,0 +1,16 @@
+{
+  "name": "cms.layout.standard.1",
+  "description": "Standard frontend layout from a template the site can take over and edit.",
+  "dependencies": [
+    "cms",
+    "cms.templateParser"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.css",
+    "pub/module.svg",
+    "template.html"
+  ]
+}

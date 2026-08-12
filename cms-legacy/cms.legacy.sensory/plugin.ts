@@ -1,7 +1,5 @@
 import { html, sql, unixTime, type Ctx, type HtmlString } from "../../module/core/mod.ts";
 import type { Node } from "../../module/cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
 
 const labels = {
   alphabet: { title: "Sensorik-Training Alphabet", total: 40 },

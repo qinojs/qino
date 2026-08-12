@@ -1,0 +1,22 @@
+{
+  "properties": {
+    "identity_file": {
+      "additionalProperties": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": "primary"
+          },
+          "file_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "file",
+            "x-qg-on-parent-delete": "cascade"
+          }
+        },
+        "required": ["name", "file_id"]
+      }
+    }
+  }
+}

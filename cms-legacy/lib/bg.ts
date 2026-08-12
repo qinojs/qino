@@ -15,9 +15,11 @@ export async function backgroundStyle(node: Node, fileName: string, params: Reco
   return style;
 }
 
+/** A collected style string as an attribute, empty when there is nothing to set. */
+export const styleAttr = (style: string): string => style ? ` style="${hee(style)}"` : "";
+
 export async function backgroundAttr(node: Node, fileName: string, style = ""): Promise<string> {
-  style = await backgroundStyle(node, fileName) + style;
-  return style ? ` style="${hee(style)}"` : "";
+  return styleAttr(await backgroundStyle(node, fileName) + style);
 }
 
 /** #rgb, #rrggbb or rgb(); undefined when the value is none of them. */
@@ -33,7 +35,7 @@ function rgb(color: string): [number, number, number] | undefined {
 
 /** The section modules of the PHP CMS all shared this style block: background image, an optional
  *  `background-color` setting, and white text once that colour is dark. */
-export async function sectionAttr(node: Node, fileName = "Background"): Promise<string> {
+export async function sectionStyle(node: Node, fileName = "Background"): Promise<string> {
   let style = await backgroundStyle(node, fileName);
   const color = String(await node.settings["background-color"] ?? "");
   if (color) {
@@ -41,5 +43,7 @@ export async function sectionAttr(node: Node, fileName = "Background"): Promise<
     const parts = rgb(color);
     if (parts && 0.2126 * parts[0] + 0.7152 * parts[1] + 0.0722 * parts[2] < 180) style += "color:#fff;";
   }
-  return style ? ` style="${hee(style)}"` : "";
+  return style;
 }
+
+export const sectionAttr = async (node: Node, fileName = "Background"): Promise<string> => styleAttr(await sectionStyle(node, fileName));

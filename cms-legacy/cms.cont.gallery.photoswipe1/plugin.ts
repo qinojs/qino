@@ -14,9 +14,8 @@ const settingsSchema = {
 };
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  // PhotoSwipe is a classic script, so it stays imperative — cms.node.js would load it as a module.
   const base = ctx.req.moduleUrl + name + "/pub/photoswipe/dist/";
-  ctx.res.html.styles.add(base + "photoswipe.css");
-  ctx.res.html.styles.add(base + "default-skin/default-skin.css");
   ctx.res.html.legacyScripts.add(base + "photoswipe.min.js");
   ctx.res.html.legacyScripts.add(base + "photoswipe-ui-default.min.js");
 
@@ -66,7 +65,11 @@ export const cms = {
   node: {
     render,
     settingsSchema,
-    css: ["pub/main.css"],
+    css: [
+      "pub/main.css",
+      "pub/photoswipe/dist/photoswipe.css",
+      "pub/photoswipe/dist/default-skin/default-skin.css",
+    ],
     js: ["pub/main.js"],
   },
 };
