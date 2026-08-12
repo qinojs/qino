@@ -27,6 +27,7 @@ export class ResHtml {
   get jsData(): Record<string, any> { return this.#jsData ??= {}; }
 
   #renderHead(): string {
+    const hasScripts = this.scripts.size || this.legacyScripts.size || this.inlineScripts.size;
     let ret = '<meta charset=utf-8>\n';
 
     for (const [name, value] of Object.entries(this.meta)) if (value) ret += `<meta name="${hee(name)}" content="${hee(value)}">\n`;
@@ -35,7 +36,7 @@ export class ResHtml {
 
     // an import map cannot be an external file, so it joins the inline scripts and is hashed like them.
     // Only worth emitting when something can resolve against it — a classic script's dynamic import() counts.
-    if (this.importMap.size && (this.scripts.size || this.legacyScripts.size || this.inlineScripts.size))
+    if (this.importMap.size && hasScripts)
       this.inlineScripts.set(jsonScript({ imports: Object.fromEntries(this.importMap) }), { type: "importmap" });
 
     let importmaps = "", inlinescripts = "";
@@ -54,7 +55,8 @@ export class ResHtml {
 
     for (const url of this.styles) ret += `<link rel=stylesheet href="${hee(url)}">\n`;
 
-    if (this.#jsData) ret += `<script type=application/json id=qino-data>${jsonScript(this.#jsData)}</script>\n`;
+    // nothing reads it without a script — and it carries the csrf token
+    if (this.#jsData && hasScripts) ret += `<script type=application/json id=qino-data>${jsonScript(this.#jsData)}</script>\n`;
 
     for (const url of this.legacyScripts) ret += `<script src="${hee(url)}"></script>\n`;
 

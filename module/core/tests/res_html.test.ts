@@ -41,10 +41,12 @@ Deno.test("ResHtml: no import map, nothing to allow", () => {
   assertEquals(html.inlineScripts.size, 0);
 });
 
-Deno.test("ResHtml: a script-free page carries no import map", () => {
+Deno.test("ResHtml: a script-free page carries no import map and no data block", () => {
   const html = new ResHtml();
   html.importMap.set("@qino/pub/", "/m/core/pub/js/");
+  Object.assign(html.jsData, { csrfToken: "secret" });
   assertEquals(html.render().includes("importmap"), false);
+  assertEquals(html.render().includes("qino-data"), false);
 
   // any kind of script can resolve against it — a classic one via dynamic import()
   html.legacyScripts.add("/c1.js");
