@@ -1,6 +1,6 @@
 {
   "name": "cms.backend.superuser.tickets",
-  "description": "Lists outstanding tickets — one-time links and the actions behind them.",
+  "description": "Lists outstanding tickets \u2014 one-time links and the actions behind them.",
   "dependencies": [
     "cms.backend",
     "ticket"

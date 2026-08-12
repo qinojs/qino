@@ -2,8 +2,9 @@ export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";
-export { fakeT } from "./appFake.ts";
+export { fakeSettings, fakeT } from "./appFake.ts";
 
+import { fakeSettings } from "./appFake.ts";
 import { apiFetch, type ApiTree } from "../lib/api/mod.ts";
 import { Req } from "../lib/ctx/Req.ts";
 import { Ctx } from "../lib/ctx/Ctx.ts";
@@ -32,8 +33,10 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
   const appFake = {
     sessions: { loadFromRequest: () => session },
     trustedProxyHops: 0,
+    db: { one: () => null },              // an app with an empty database
+    dbFiles: { file: () => undefined },
     ...app,
-    settings: { core: {}, ...app.settings },
+    settings: fakeSettings({ core: {}, ...app.settings }),
   };
   const ctx = await Ctx.create(appFake as never, new Request(url, reqInit), { appUrl });
   for (const [k, v] of Object.entries(set ?? {}))

@@ -1,5 +1,6 @@
 import { getCtx, html, sql, tableRef, unixTime, type App, type HtmlString, type Row } from "../core/mod.ts";
-import { backend, renderDashboard, u2 } from "../cms.backend/mod.ts";
+import { backend, renderDashboard } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import { channel, channels, messages, userChannels, userMessages, type Channel } from "../messaging/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
@@ -115,7 +116,7 @@ function chatBubble(row: Row & { deliveries: Row[] }, view: View): HtmlString {
   const target = messageTarget(row, view);
   return html`<div class="u2-card -bubble"><div class=-body>
     <div class=-text>${readableText(row.data) || "–"}</div>
-    <small class=-meta>${u2.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
+    <small class=-meta>${u2.el.time(row.time)} · ${view.badge(row.channel)}${target ? html` · ${target}` : ""}${errors ? html` · <span class=u2-badge>${errors} ${view.errors}</span>` : ""}</small>
   </div></div>`;
 }
 
@@ -128,7 +129,7 @@ function message(row: Row & { deliveries: Row[] }, view: View, url: URL): HtmlSt
   return html`<details class=-body>
     <summary>
       <b>${row.direction === "out" ? "→" : "←"} ${view.badge(row.channel)}</b>
-      · ${u2.time(row.time)}
+      · ${u2.el.time(row.time)}
       ${target ? html` · ${target}` : ""}
       · ${row.deliveries.length} ${recipients}
       ${errors ? html` · <span class=u2-badge>${errors} ${errorsLabel}</span>` : ""}
@@ -147,7 +148,7 @@ function message(row: Row & { deliveries: Row[] }, view: View, url: URL): HtmlSt
         <td>${delivery.usr_id
           ? html`<a href="${userUrl(url, Number(delivery.usr_id))}">${delivery.email ?? "#" + delivery.usr_id}</a>`
           : anonymous}
-        <td>${u2.time(delivery.time)}
+        <td>${u2.el.time(delivery.time)}
         <td>${delivery.error ?? ""}`)}
     </table>` : ""}
   </details>`;

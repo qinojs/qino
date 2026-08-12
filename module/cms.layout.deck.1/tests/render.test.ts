@@ -8,11 +8,11 @@ const { name } = manifest;
 
 const moduleDir = fromFileUrl(new URL("../", import.meta.url));
 
-function fakeNode(dir: string, edit = false) {
+function fakeNode(dir: string, app: any, edit = false) {
   const node: any = {
     id: 3,
     edit,
-    app: { dev: false },
+    app,
     module: { name, dir: moduleDir, source: "", data: `${dir}data/${name}/` },
     page: () => node,
     file: () => undefined, // no logo yet
@@ -24,7 +24,7 @@ function fakeNode(dir: string, edit = false) {
 
 const render = async (dir: string, edit = false) => {
   const ctx = await testContext();
-  const out = await cms.node.render(fakeNode(dir, edit), { ctx } as any);
+  const out = await cms.node.render(fakeNode(dir, ctx.app, edit), { ctx } as any);
   return { out, ctx };
 };
 
@@ -39,7 +39,7 @@ Deno.test("cms.layout.deck.1: header floats above the cards, main holds the deck
 
 Deno.test("cms.layout.deck.1: the site starts from the shipped template", async () => {
   const dir = await Deno.makeTempDir() + "/";
-  const template = moduleTemplate(fakeNode(dir).module);
+  const template = moduleTemplate(fakeNode(dir, {}).module);
   await render(dir, true);
   assertEquals(await Deno.readTextFile(template.file), await Deno.readTextFile(template.shipped));
   assertStringIncludes(await Deno.readTextFile(template.css), "--color");

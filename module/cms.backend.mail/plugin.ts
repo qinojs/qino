@@ -1,7 +1,8 @@
 import { basename, extname } from "node:path";
 import { mail } from "../mail/mod.ts";
 import { typeByExtension } from "@std/media-types";
-import { backend, u2 } from "../cms.backend/mod.ts";
+import { backend } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import { getCtx, html, type HtmlString, sqlSearch, unixTime, type App } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -103,13 +104,13 @@ async function listRows(node: Node, search: string): Promise<HtmlString> {
     const more = Number(row.num) > 1 ? html` <small>${Number(row.num) - 1} ${tMoreLabel}</small>` : "";
     u.searchParams.set("id", String(row.id));
     return html`<tr u2-href>
-      <td>${u2.time(row.time)}
+      <td>${u2.el.time(row.time)}
       <td><a href="${u.search}">${row.subject || `-- ${tNoSubject} --`}</a>
       <td>${row.sender}
       <td>${row.recipient}${more}
       <td>${row.sent || "-"}
       <td>${row.opened || "-"}
-      <td><small>${u2.time(row.opened_min)}</small>`;
+      <td><small>${u2.el.time(row.opened_min)}</small>`;
   }));
 }
 
@@ -139,7 +140,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   <div class=u2-card style="flex-basis:50rem">
     <div class=-head>${t`Mail details`}</div>
     <table class=u2-table>
-      <tr><td style="width:6.25rem">${t`Date`}<td>${u2.time(row.time)} <small>${row.log_id}</small>
+      <tr><td style="width:6.25rem">${t`Date`}<td>${u2.el.time(row.time)} <small>${row.log_id}</small>
       <tr><td>${t`Subject`}<td>${row.subject}
       <tr><td>${t`Sender`}<td>${row.sender}
       <tr><td>${t`Reply to`}<td>${row.reply_to}
@@ -200,8 +201,8 @@ async function renderRecipients(node: Node, id: number): Promise<HtmlString> {
     return html`<tr>
       <td>${r.email}
       <td>${r.type || "to"}
-      <td>${u2.time(r.sent)}
-      <td>${u2.time(r.opened)}
+      <td>${u2.el.time(r.sent)}
+      <td>${u2.el.time(r.opened)}
       <td>${r.error}
       <td><div style="overflow:auto; max-height:3.75rem; font-size:10px">${dataHtml}</div>`;
   }));
@@ -235,7 +236,7 @@ async function renderTracking(node: Node, id: number): Promise<HtmlString | stri
   const trs = html.join(rows.map(r => html`<tr>
     <td><a href="${r.url}" target=_blank>${r.url || "(open)"}</a>
     <td>${r.num}
-    <td>${u2.time(r.last_time)}
+    <td>${u2.el.time(r.last_time)}
   `));
   return html.async`<div class=u2-card style="flex:1 1 31.25rem">
     <div class=-head>${t`Tracking`}</div>

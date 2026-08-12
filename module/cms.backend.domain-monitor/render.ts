@@ -1,5 +1,5 @@
+import * as u2 from "../u2/mod.ts";
 import { getCtx, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
-import { u2 } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { wwwAlt } from "./lib/check.ts";
 import { diffResults } from "./lib/changes.ts";
@@ -87,7 +87,7 @@ const state = (value: unknown, title: string): HtmlString =>
 const records = (value?: string | null): HtmlString =>
   value ? html.join(value.split("\n").filter(Boolean).map((v) => html`<div>${v}</div>`)) : html`–`;
 
-const time = (value?: number | null, fallback = "–"): HtmlString => value ? u2.time(value) : html`${fallback}`;
+const time = (value?: number | null, fallback = "–"): HtmlString => value ? u2.el.time(value) : html`${fallback}`;
 
 const lines = (value?: string | null): string[] => (value ?? "").split("\n").filter(Boolean);
 
@@ -242,7 +242,7 @@ function changedCell(row: DomainRow): HtmlString {
   const fields = lines(row.changes);
   const title = fields.length ? `changed: ${fields.join(", ")}` : "changed";
   const mark = age < DAY ? dot("red", title) : age < 7 * DAY ? dot("orange", title) : html``;
-  return html`${mark} <small title="${title}">${u2.time(row.changed, { narrow: true })}</small>`;
+  return html`${mark} <small title="${title}">${u2.el.time(row.changed, { narrow: true })}</small>`;
 }
 
 function headersCell(row: DomainRow): HtmlString {
@@ -363,7 +363,7 @@ export function rowHtml(row: DomainRow, pageUrl: URL): HtmlString {
       <td data-g=mail data-value="${rank(dkim.length ? true : null)}">${flag(dkim.length ? true : null, dkim.length ? `DKIM selectors: ${dkim.join(", ")}` : "no DKIM key found under the known selectors")}
       <td data-g=mail data-value="${row.mta_sts_mode ?? ""}">${row.mta_sts_mode ? html`${dot(row.mta_sts_mode === "enforce" ? "green" : "orange", `MTA-STS ${row.mta_sts_mode}`)} <small>${row.mta_sts_mode}</small>` : html`${dot("gray", row.mta_sts ? "MTA-STS record, but no policy fetched" : "no MTA-STS")}`}
       <td data-g=mail data-value="${rank(row.mail_starttls)}">${smtpCell(row)}
-      <td data-value="${row.checked ?? 0}">${u2.time(row.checked, { narrow: true })}
+      <td data-value="${row.checked ?? 0}">${u2.el.time(row.checked, { narrow: true })}
       <td>${frequencySelect(row)}
       <td style="white-space:nowrap"
         ><button class=u2-unstyle data-action=check data-domain="${domain}" title="Check now"><u2-ico icon=refresh>↻</u2-ico></button
@@ -388,11 +388,11 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
   const results = checks.map((check) => parseResult(check.result));
   const history = checks.map((check, index) => {
     const result = results[index];
-    if (!result) return html`<tr><td>${u2.time(check.checked_at)}<td colspan=8>Invalid result data`;
+    if (!result) return html`<tr><td>${u2.el.time(check.checked_at)}<td colspan=8>Invalid result data`;
     const state = checkedStatus(result.online, result.status_code, result.error, result.final_url);
     const cert = result.cert_valid == null ? "–" : result.cert_valid ? `${result.cert_days ?? "?"} d` : "invalid";
     return html`<tr>
-      <td>${u2.time(check.checked_at)}
+      <td>${u2.el.time(check.checked_at)}
       <td>${dot(state.level, state.title)} ${state.title}
       <td>${changeCell(result, results[index + 1])}
       <td>${result.status_code ?? "–"}

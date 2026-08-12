@@ -1,11 +1,12 @@
 import { html, type HtmlString, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import * as identity from "../identity/mod.ts";
+import * as u2 from "../u2/mod.ts";
 
-// Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
-const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.6/";
+// Pinned on purpose: this layout's css is written against it, so a newer u2 elsewhere cannot change its look.
+const U2_VERSION = "1.4.6";
 
-const LOGO_HEIGHT = 32;
+const LOGO_HEIGHT = 48; // display height, must match #logo img in main.css
 
 const U2_CSS = [
   "css/norm/norm.css",
@@ -17,19 +18,14 @@ const U2_CSS = [
   "class/flex/flex.css",
   "class/unstyle/unstyle.css",
   "el/ico/ico.css",
+  "u2/auto.js", // fetches what the markup needs — droppable once the design is settled
 ];
 
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  await identity.css(ctx);
-
-  ctx.res.csp["style-src"][U2_ROOT] = true;
-  ctx.res.csp["script-src"][U2_ROOT] = true;
-  ctx.res.csp["connect-src"][U2_ROOT] = true;
-
-  for (const f of U2_CSS) ctx.res.html.styles.add(U2_ROOT + f);
-  ctx.res.html.scripts.add(U2_ROOT + "u2/auto.js");
+  await u2.assets(ctx, U2_CSS, U2_VERSION);
+  ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
   ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 

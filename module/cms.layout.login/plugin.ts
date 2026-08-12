@@ -1,12 +1,11 @@
 import type { Node } from "../cms/mod.ts";
-import { html, u2Root, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import * as u2 from "../u2/mod.ts";
 
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   const resHtml = ctx.res.html;
-  resHtml.styles.add(u2Root + "css/norm/norm.css");
-  resHtml.styles.add(u2Root + "css/base/base.css");
-  resHtml.scripts.add(u2Root + "u2/auto.js");
+  await u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
   resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");

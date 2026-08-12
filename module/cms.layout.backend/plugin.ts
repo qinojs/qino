@@ -1,4 +1,5 @@
-import { html, u2Root, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
@@ -10,43 +11,41 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
   resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
-  ctx.res.csp["style-src"][u2Root] = true;
-  ctx.res.csp["script-src"][u2Root] = true;
-  ctx.res.csp["connect-src"][u2Root] = true;
-
-  resHtml.styles.add(u2Root + "css/norm/norm.css");
-  resHtml.styles.add(u2Root + "css/base/base.css");
-  resHtml.styles.add(u2Root + "css/classless/variables.css");
-  resHtml.styles.add(u2Root + "css/classless/classless.css");
-  resHtml.styles.add(u2Root + "css/classless/more.css");
-  resHtml.styles.add(u2Root + "class/flex/flex.css");
-  resHtml.styles.add(u2Root + "class/grid/grid.css");
-  resHtml.styles.add(u2Root + "class/unstyle/unstyle.css");
-  resHtml.styles.add(u2Root + "class/card/card.css");
-  resHtml.styles.add(u2Root + "class/table/table.css");
-  resHtml.styles.add(u2Root + "class/badge/badge.css");
-  resHtml.styles.add(u2Root + "el/breadcrumb/breadcrumb.css");
-  resHtml.styles.add(u2Root + "el/bytes/bytes.css");
-  resHtml.styles.add(u2Root + "el/buttongroup/buttongroup.css");
-  resHtml.styles.add(u2Root + "el/accordion/accordion.css");
-  resHtml.styles.add(u2Root + "el/ico/ico.css");
-  resHtml.styles.add(u2Root + "el/tabs/tabs.css");
-  resHtml.styles.add(u2Root + "el/code/code.css");
-  resHtml.styles.add(u2Root + "el/menubutton/menubutton.css");
-  resHtml.styles.add(u2Root + "el/tree/tree.css");
-  // html.scripts.add(u2Root + "el/ico/ico.js");
-  // html.scripts.add(u2Root + "el/breadcrumb/breadcrumb.js");
-  // html.scripts.add(u2Root + "attr/href/href.js");
-  // html.scripts.add(u2Root + "el/time/time.js");
-  // html.scripts.add(u2Root + "attr/confirm/confirm.js");
-  // html.scripts.add(u2Root + "el/buttongroup/buttongroup.js");
-  // html.scripts.add(u2Root + "el/accordion/accordion.js");
-  // html.scripts.add(u2Root + "el/tabs/tabs.js");
-  // html.scripts.add(u2Root + "el/code/code.js");
-  // html.scripts.add(u2Root + "el/bytes/bytes.js");
-  // html.scripts.add(u2Root + "attr/movable/movable.js");
-  // html.scripts.add(u2Root + "el/menubutton/menubutton.js");
-  resHtml.scripts.add(u2Root + "u2/auto.js");
+  await u2.assets(ctx, [
+    "css/norm/norm.css",
+    "css/base/base.css",
+    "css/classless/variables.css",
+    "css/classless/classless.css",
+    "css/classless/more.css",
+    "class/flex/flex.css",
+    "class/grid/grid.css",
+    "class/unstyle/unstyle.css",
+    "class/card/card.css",
+    "class/table/table.css",
+    "class/badge/badge.css",
+    "el/breadcrumb/breadcrumb.css",
+    "el/bytes/bytes.css",
+    "el/buttongroup/buttongroup.css",
+    "el/accordion/accordion.css",
+    "el/ico/ico.css",
+    "el/tabs/tabs.css",
+    "el/code/code.css",
+    "el/menubutton/menubutton.css",
+    "el/tree/tree.css",
+    // "el/ico/ico.js",
+    // "el/breadcrumb/breadcrumb.js",
+    // "attr/href/href.js",
+    // "el/time/time.js",
+    // "attr/confirm/confirm.js",
+    // "el/buttongroup/buttongroup.js",
+    // "el/accordion/accordion.js",
+    // "el/tabs/tabs.js",
+    // "el/code/code.js",
+    // "el/bytes/bytes.js",
+    // "attr/movable/movable.js",
+    // "el/menubutton/menubutton.js",
+    "u2/auto.js", // fetches what the markup needs, instead of the list above
+  ]);
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
 

@@ -1,6 +1,7 @@
 import { dump } from "@nuxodin/dump";
 import { html, getCtx, sql, unixTime, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
-import { backend, u2 } from "../cms.backend/mod.ts";
+import { backend } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
@@ -91,7 +92,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     const post = row.post ? (row.post.length >= 2000 ? "(too big)" : row.post) : "";
     trs.push(html`
 <tr u2-href>
-    <td style="white-space:nowrap"><a href="${u.search}">${u2.time(row.time)}</a>
+    <td style="white-space:nowrap"><a href="${u.search}">${u2.el.time(row.time)}</a>
     <td>
         <div class=-url>${row.url}</div>
         <small class=-url${foreignRef ? html.raw(' style="color:var(--red)"') : ""}>${row.referer}</small>
@@ -293,7 +294,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
     for (const item of logs) {
       u.searchParams.set("id", String(item.id));
       historyTrs.push(html`<tr u2-href${item.id === id ? " aria-current=true" : ""}>
-        <td style="white-space:nowrap"><a href="${u.search}">${u2.time(item.time)}</a><br><small>${item.id}</small>
+        <td style="white-space:nowrap"><a href="${u.search}">${u2.el.time(item.time)}</a><br><small>${item.id}</small>
         <td><a href="${item.url}" target=_blank>${item.url}</a><br><small>${item.referer}</small>
         <td>${item.post ? html`<pre style="max-width:30rem; max-height:8rem; overflow:auto">${item.post}</pre>` : "-"}`);
     }
@@ -318,7 +319,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
               <th>${t`Browser`}
               <td>${info.browser} ${info.version} ${info.bot ? html`<small class=u2-badge>bot</small>` : ""}
                   <br><small>${log.user_agent}</small>
-            <tr><th>${t`Time`}<td>${u2.time(log.time)}
+            <tr><th>${t`Time`}<td>${u2.el.time(log.time)}
             <tr>
               <th style="color:${uniqueColor(log.ip)}">${t`IP`}
               <td>${log.ip ? html`<a href="${searchLink(log.ip)}">${log.ip}</a>` : "-"}

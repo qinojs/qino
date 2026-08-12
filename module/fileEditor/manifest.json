@@ -10,5 +10,8 @@
     "pub/main.mjs",
     "pub/module.svg",
     "view/codemirror.ts"
+  ],
+  "dependencies": [
+    "u2"
   ]
 }

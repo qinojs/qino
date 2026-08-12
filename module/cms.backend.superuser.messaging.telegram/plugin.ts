@@ -1,5 +1,6 @@
 import { html, unixTime, type App, type HtmlString } from "../core/mod.ts";
-import { backend, u2 } from "../cms.backend/mod.ts";
+import { backend } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import { chats as chatList } from "../messaging.telegram/mod.ts";
 import { bot, chats, render, send } from "./render.ts";
 import api from "./nodeApi.ts";
@@ -34,7 +35,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
     ${recent.length ? html`<table class=u2-table>${recent.map((c) => html`<tr>
       <td>${c.email ?? "#" + c.usr_id}
       <td>${c.username ? "@" + c.username : ""}
-      <td>${u2.time(c.created)}`)}</table>` : ""}
+      <td>${u2.el.time(c.created)}`)}</table>` : ""}
   </div>`;
 }
 

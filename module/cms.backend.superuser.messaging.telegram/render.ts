@@ -1,6 +1,6 @@
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { getCtx, html, type HtmlString, type Row } from "../core/mod.ts";
-import { u2 } from "../cms.backend/mod.ts";
 import { bot as botInfo, chats as chatList, webhookInfo } from "../messaging.telegram/mod.ts";
 
 /** Where Telegram has to deliver its updates for this app. */
@@ -126,7 +126,7 @@ function chat(c: Row, labels: Record<string, string>): HtmlString {
     <td>${c.email ?? "#" + c.usr_id}
     <td>${c.username ? "@" + c.username : "-"}
     <td>${c.chat_id}
-    <td>${u2.time(c.created)}
+    <td>${u2.el.time(c.created)}
     <td>${c.error ? html`<span class=u2-badge title="${c.error}">${String(c.error).slice(0, 24)}</span>` : ""}
     <td>
       <button type=button class=u2-unstyle data-test="${c.id}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>

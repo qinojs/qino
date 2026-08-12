@@ -3,7 +3,8 @@
   "description": "Renders a responsive branded frontend layout with navigation and footer.",
   "dependencies": [
     "cms",
-    "identity"
+    "identity",
+    "u2"
   ],
   "files": [
     "manifest.json",

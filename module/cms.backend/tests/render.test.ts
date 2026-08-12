@@ -6,7 +6,7 @@ const { name, dependencies } = manifest;
 
 Deno.test("cms.backend: metadata is wired", () => {
   assertEquals(name, "cms.backend");
-  assertEquals(dependencies, ["cms"]);
+  assertEquals(dependencies, ["cms", "u2"]);
 });
 
 Deno.test("cms.backend: render shows fallback when no dashboard widgets exist", async () => {

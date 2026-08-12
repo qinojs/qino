@@ -1,6 +1,6 @@
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { html, type HtmlString, type Row } from "../core/mod.ts";
-import { u2 } from "../cms.backend/mod.ts";
 import { channels as channelList, publicKey, subscriptions as subscriptionList } from "../messaging.web_push/mod.ts";
 
 /** Configuration plus the three live regions the client script re-renders. */
@@ -127,7 +127,7 @@ function subscription(s: Row, labels: Record<string, string>): HtmlString {
     <td>${s.client_id ?? "-"}
     <td>${s.channels.join(", ") || "-"}
     <td title="${s.endpoint}">${host}
-    <td>${u2.time(s.created)}
+    <td>${u2.el.time(s.created)}
     <td>${s.error ? html`<span class=u2-badge title="${s.error}">${String(s.error).slice(0, 24)}</span>` : ""}
     <td>
       <button type=button class=u2-unstyle data-test="${s.id}" title="${labels.test}"><u2-ico icon=send>➤</u2-ico></button>

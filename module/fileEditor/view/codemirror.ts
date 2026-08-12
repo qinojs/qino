@@ -2,14 +2,14 @@ import * as nodePath from "node:path";
 import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
 import { typeByExtension } from "@std/media-types";
-import { html, getCtx, u2Root } from "../../core/mod.ts";
+import { html, getCtx } from "../../core/mod.ts";
+import * as u2 from "../../u2/mod.ts";
 
 export default async function codemirrorView(file: string): Promise<string> {
   const ctx = getCtx();
   const resHtml = ctx.res.html;
 
-  resHtml.styles.add(u2Root + "css/norm/norm.css");
-  resHtml.styles.add(u2Root + "css/base/base.css");
+  await u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css"]);
 
   resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
 

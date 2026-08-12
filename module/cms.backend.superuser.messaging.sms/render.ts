@@ -1,6 +1,6 @@
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { html, type HtmlString, type Row } from "../core/mod.ts";
-import { u2 } from "../cms.backend/mod.ts";
 import { pendingPhones, phones as phoneList } from "../messaging.sms/mod.ts";
 
 export function render(node: Node): Promise<HtmlString> {
@@ -118,7 +118,7 @@ function phone(p: Row, labels: Record<string, string>): HtmlString {
     <td>${p.email ?? "#" + p.usr_id}
     <td>${p.number}
     <td>${p.main ? "✓" : ""}
-    <td>${u2.time(p.created)}
+    <td>${u2.el.time(p.created)}
     <td>${p.error ? html`<span class=u2-badge title="${p.error}">${String(p.error).slice(0, 24)}</span>` : ""}
     <td>
       ${p.main ? "" : html`<button type=button class=u2-unstyle data-main="${p.id}" title="${labels.main}">★</button>`}

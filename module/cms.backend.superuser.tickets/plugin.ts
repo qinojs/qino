@@ -1,5 +1,6 @@
 import { html, unixTime, type App, type HtmlString, type Row } from "../core/mod.ts";
-import { backend, u2 } from "../cms.backend/mod.ts";
+import { backend } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -41,8 +42,8 @@ export async function render(node: Node): Promise<HtmlString> {
           <td>${row.purpose}
           <td><span class=u2-badge>${states[state(row)]}</span>
           <td><small>${String(row.data ?? "").slice(0, 120)}</small>
-          <td>${u2.time(row.created)}
-          <td>${row.expires == null ? never : u2.time(row.expires)}
+          <td>${u2.el.time(row.created)}
+          <td>${row.expires == null ? never : u2.el.time(row.expires)}
           <td>${state(row) ? ""
             : html`<button type=button class=u2-unstyle data-revoke="${row.hash}"
               u2-confirm="${del}"><u2-ico icon=delete>✕</u2-ico></button>`}`)

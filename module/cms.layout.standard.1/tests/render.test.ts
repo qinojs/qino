@@ -8,11 +8,11 @@ const { name } = manifest;
 
 const moduleDir = fromFileUrl(new URL("../", import.meta.url));
 
-function fakeNode(dir: string, edit = false) {
+function fakeNode(dir: string, app: any, edit = false) {
   const node: any = {
     id: 3,
     edit,
-    app: { dev: false },
+    app,
     module: { name, dir: moduleDir, source: "", data: `${dir}data/${name}/` },
     page: () => node,
     file: () => undefined, // no logo yet
@@ -23,8 +23,8 @@ function fakeNode(dir: string, edit = false) {
 }
 
 const render = async (dir: string, edit = false) => {
-  const ctx = await testContext({ app: { db: { one: () => null }, settings: { identity: { brand: {} } } } }); // no brand set
-  const out = await cms.node.render(fakeNode(dir, edit), { ctx } as any);
+  const ctx = await testContext(); // no brand set anywhere
+  const out = await cms.node.render(fakeNode(dir, ctx.app, edit), { ctx } as any);
   return { out, ctx };
 };
 
@@ -42,7 +42,7 @@ Deno.test("cms.layout.standard.1: renders the shipped template and adds the u2 a
 
 Deno.test("cms.layout.standard.1: the first render in edit mode gives the site its own copy", async () => {
   const dir = await Deno.makeTempDir() + "/";
-  const code = moduleTemplate(fakeNode(dir).module);
+  const code = moduleTemplate(fakeNode(dir, {}).module);
   await render(dir, true);
   assertEquals(await Deno.readTextFile(code.file), await Deno.readTextFile(code.shipped));
   assertStringIncludes(await Deno.readTextFile(code.css), "#container");
@@ -51,7 +51,7 @@ Deno.test("cms.layout.standard.1: the first render in edit mode gives the site i
 
 Deno.test("cms.layout.standard.1: the site's copy wins, and is kept as it is", async () => {
   const dir = await Deno.makeTempDir() + "/";
-  const code = moduleTemplate(fakeNode(dir).module);
+  const code = moduleTemplate(fakeNode(dir, {}).module);
   await Deno.mkdir(`${dir}data/${name}/`, { recursive: true });
   await Deno.writeTextFile(code.file, "<div id=own><cms-cont name=main /></div>");
 

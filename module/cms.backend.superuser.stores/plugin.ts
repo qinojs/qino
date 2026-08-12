@@ -1,6 +1,7 @@
 import { fromFileUrl, toFileUrl } from "@std/path";
 import { errMsg, html, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
-import { backend, u2 } from "../cms.backend/mod.ts";
+import { backend } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
@@ -338,7 +339,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   <tbody>${
     latest.map((row) => html`<tr>
     <td>${row.name}
-    <td style="text-align:right">${u2.time(row.installed, { narrow: true })}`)
+    <td style="text-align:right">${u2.el.time(row.installed, { narrow: true })}`)
   }
 </table>`;
 

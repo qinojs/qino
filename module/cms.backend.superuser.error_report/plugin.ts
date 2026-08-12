@@ -1,5 +1,6 @@
 import { html, getCtx, sql, sqlSearch, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
-import { backend, u2 } from "../cms.backend/mod.ts";
+import { backend } from "../cms.backend/mod.ts";
+import * as u2 from "../u2/mod.ts";
 import { cms as cmsOf, type Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
 
@@ -202,7 +203,7 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     </small>
   <td>
     ${msgCell}<br>
-    <small>${u2.time(row.time)}</small>
+    <small>${u2.el.time(row.time)}</small>
     <div>${row.usr_email}</div>
   <td>
     <button class=u2-unstyle type=button
@@ -262,7 +263,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
     trs.push(html`
 <tr style="white-space:nowrap">
   <td>
-    <a href="${u.search}">${u2.time(row.time)} <br> ${row.log_id}</a>
+    <a href="${u.search}">${u2.el.time(row.time)} <br> ${row.log_id}</a>
     <br><button onclick="cmsApi(${node.id},{delete:{id:'${row.id}'}}); this.disabled=true">delete</button>
   <td>
     <b>${row.message}</b><br>
@@ -340,7 +341,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
       }
       historyTrs.push(html`
 <tr>
-  <td>${u2.time(item.time)} <br> Session: ${item.sess_id} <br> Log-ID: ${item.id}
+  <td>${u2.el.time(item.time)} <br> Session: ${item.sess_id} <br> Log-ID: ${item.id}
   <td>
     <a href="${item.url}" target=_blank>${item.url}</a><br>
     <div style="font-size:.9em; color:#aaa">${item.referer}</div>
@@ -382,7 +383,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
         <a href="${error.request}">${error.request}</a><br>
         <small>${t`Referer`} <a href="${error.referer}">${error.referer}</a></small>
       <tr><th>${t`Browser`}<td><small>${error.browser}</small>
-      <tr><th>${t`Time`}<td>${u2.time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
+      <tr><th>${t`Time`}<td>${u2.el.time(error.time)} <small>(Log-ID ${error.log_id ?? ""})</small>
       <tr><th>${t`IP`}<td>${error.ip}
     </table>
     <div class=-body>

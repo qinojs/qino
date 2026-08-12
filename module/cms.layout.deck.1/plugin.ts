@@ -1,9 +1,10 @@
 import type { Node } from "../cms/mod.ts";
 import type { Ctx } from "../core/mod.ts";
 import { layoutOptions, moduleTemplate } from "../cms.templateParser/mod.ts";
+import * as u2 from "../u2/mod.ts";
 
-// Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
-const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.6/";
+// Pinned on purpose: this layout's css is written against it, so a newer u2 elsewhere cannot change its look.
+const U2_VERSION = "1.4.6";
 
 const U2_CSS = [
   "css/norm/norm.css",
@@ -13,6 +14,7 @@ const U2_CSS = [
   "css/classless/more.css",
   "class/width/width.css",
   "class/flex/flex.css",
+  "u2/auto.js", // fetches what the markup needs — droppable once the design is settled
 ];
 
 // The knobs of the deck — a card gets its own look through its id, which cms puts on every content block.
@@ -34,11 +36,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string> {
   const template = moduleTemplate(node.module!);
   if (node.edit) await template.create(INITIAL_CSS);
 
-  ctx.res.csp["style-src"][U2_ROOT] = true;
-  ctx.res.csp["script-src"][U2_ROOT] = true;
-  ctx.res.csp["connect-src"][U2_ROOT] = true;
-  for (const f of U2_CSS) ctx.res.html.styles.add(U2_ROOT + f);
-  ctx.res.html.scripts.add(U2_ROOT + "u2/auto.js");
+  await u2.assets(ctx, U2_CSS, U2_VERSION);
+  ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
 
   return template.render(node);
 }

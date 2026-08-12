@@ -1,5 +1,5 @@
+import * as u2 from "../u2/mod.ts";
 import { getCtx, html, sql, type App, type Ctx, type HtmlString, type Row, type Sql } from "../core/mod.ts";
-import { u2 } from "../cms.backend/mod.ts";
 import { settings } from "./store.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -9,7 +9,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const buckets = await app.db.query`SELECT scope,ident,score,reason FROM m_security_bucket ORDER BY score DESC LIMIT 5`;
   return html.async`<div class=-body>
     <b>${row.events}</b> ${app.t`Events`}, <b>${row.fresh ?? 0}</b> ${app.t`new`}, <b>${row.blocked ?? 0}</b> ${app.t`blocked`}<br>
-    <small>${app.t`Last alarm:`} ${u2.time(row.last)}</small>
+    <small>${app.t`Last alarm:`} ${u2.el.time(row.last)}</small>
     ${buckets.length ? html`<table class=u2-table>${buckets.map((r) => html`<tr>
       <td>${r.score}
       <td>${r.scope}
@@ -89,7 +89,7 @@ async function bucketTable(app: App, rows: Record<string, unknown>[]) {
       <td>${r.scope}
       <td><code>${r.ident}</code>
       <td>${r.count}
-      <td>${u2.time(r.last_seen)}
+      <td>${u2.el.time(r.last_seen)}
       <td>${r.reason}
       <td><button data-release="${r.id}">${tRelease}</button> <button data-block="${r.id}">${tBlock}</button>`)}
   </table></div>`;
@@ -113,7 +113,7 @@ async function eventTable(app: App, rows: Row[], get: Record<string, string>) {
         <th>${tStatus}
         <th>
     <tbody>${rows.map(r => html`<tr class="-${r.prio}">
-      <td>${u2.time(r.time)}
+      <td>${u2.el.time(r.time)}
       <td>${eventCell(r)}
       <td>${scoreCell(r)}
       <td>${bucketCell(r)}
@@ -168,7 +168,7 @@ function topTable(ctx: Ctx, title: string, rows: Record<string, unknown>[], key:
     ${rows.map(r => html`<tr>
       <td>${r.num}
       <td><a href="${href(r[key])}"><code>${r[key]}</code></a>
-      <td>${u2.time(r.last)}`)}
+      <td>${u2.el.time(r.last)}`)}
   </table></div>`;
 }
 

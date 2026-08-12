@@ -3,7 +3,9 @@
   "description": "One-page layout: every content block is a full screen, stacking as you scroll.",
   "dependencies": [
     "cms",
-    "cms.templateParser"
+    "cms.templateParser",
+    "identity",
+    "u2"
   ],
   "files": [
     "README.md",

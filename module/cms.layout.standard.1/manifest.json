@@ -4,7 +4,8 @@
   "dependencies": [
     "cms",
     "cms.templateParser",
-    "identity"
+    "identity",
+    "u2"
   ],
   "files": [
     "README.md",
