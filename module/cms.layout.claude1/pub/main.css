@@ -1,9 +1,6 @@
-/* claude1 frontend layout. Brand color lives in --color; u2 derives the rest. */
+/* claude1 frontend layout. --color comes from the identity module; u2 derives the rest. */
 
 #container {
-  /* Change this one value to re-theme the whole site. */
-  --color: #2f6f9e;
-
   min-height: 100dvh;
   display: flex;
   flex-direction: column;

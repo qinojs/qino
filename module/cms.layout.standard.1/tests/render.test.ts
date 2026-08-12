@@ -23,7 +23,7 @@ function fakeNode(dir: string, edit = false) {
 }
 
 const render = async (dir: string, edit = false) => {
-  const ctx = await testContext();
+  const ctx = await testContext({ app: { db: { one: () => null }, settings: { identity: { brand: {} } } } }); // no brand set
   const out = await cms.node.render(fakeNode(dir, edit), { ctx } as any);
   return { out, ctx };
 };

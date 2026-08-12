@@ -1,6 +1,10 @@
 {
   "name": "cms.layout.claude1",
   "description": "Renders a responsive branded frontend layout with navigation and footer.",
+  "dependencies": [
+    "cms",
+    "identity"
+  ],
   "files": [
     "manifest.json",
     "plugin.ts",

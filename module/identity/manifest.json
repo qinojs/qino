@@ -7,6 +7,7 @@
   "files": [
     "dbschema.json",
     "manifest.json",
+    "mod.ts",
     "plugin.ts",
     "pub/module.svg"
   ]

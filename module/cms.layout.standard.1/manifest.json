@@ -3,7 +3,8 @@
   "description": "Standard frontend layout from a template the site can take over and edit.",
   "dependencies": [
     "cms",
-    "cms.templateParser"
+    "cms.templateParser",
+    "identity"
   ],
   "files": [
     "README.md",

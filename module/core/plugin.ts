@@ -163,8 +163,17 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         if (enable) {
             // Hashed, not nonced: the hash is derived from the body, so it stays correct in any cache
             // the response ends up in (CDN, service worker). Only ever hash what the server built itself.
-            for (const js of ctx.res.hasHtml ? ctx.res.html.inlineScripts.keys() : [])
-                ctx.res.csp["script-src"][`'sha256-${await sha256b64(js)}'`] = true;
+            // A hash makes the browser drop 'unsafe-inline', and with it style="" attributes and onclick
+            // handlers — so a directive that allows inline gets no hashes at all.
+            const hash = async (directive: "script-src" | "style-src", bodies: Iterable<string>) => {
+                const src = ctx.res.csp[directive];
+                if (src["'unsafe-inline'"]) return;
+                for (const body of bodies) src[`'sha256-${await sha256b64(body)}'`] = true;
+            };
+            if (ctx.res.hasHtml) {
+                await hash("script-src", ctx.res.html.inlineScripts.keys());
+                await hash("style-src", ctx.res.html.inlineStyles);
+            }
 
             const headerName = "Content-Security-Policy" + (enable === "report only" ? "-Report-Only" : "");
             ctx.res.headers.set(headerName, ctx.res.csp.toHeader());

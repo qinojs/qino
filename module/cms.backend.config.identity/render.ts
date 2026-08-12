@@ -1,4 +1,5 @@
 import { $item, html, toInput, type App, type HtmlString } from "../core/mod.ts";
+import * as identity from "../identity/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 async function field(app: App, path: string, label: string, required = false): Promise<HtmlString> {
@@ -61,13 +62,15 @@ export async function render(node: Node): Promise<HtmlString> {
 }
 
 async function asset(node: Node, name: string, label: string, accept: string): Promise<HtmlString> {
-  const id = Number(await node.app.db.one`SELECT file_id FROM identity_file WHERE name = ${name}`);
-  const file = id ? await node.app.dbFiles.file(id) : undefined;
-  const existing = file && await file.exists();
+  const existing = await (await identity.file(node.app, name))?.exists();
+  // An image shows itself, anything else (the font) its file name.
+  const shown = existing && (existing.mime.startsWith("image/")
+    ? html`<img src="${await existing.url({ h: 96 })}" alt="${existing.name}" height=48>`
+    : existing.name);
   return html.async`<tr data-asset=${name}>
   <th>${label}
   <td>
-    ${existing ? html`<a href="${await file.url()}" target=_blank>${file.name}</a> ` : ""}
+    ${existing ? html`<a href="${await existing.url()}" target=_blank>${shown}</a> ` : ""}
     <input type=file accept="${accept}">
     ${existing ? html`<button type=button data-remove u2-confirm="${await node.app.t`Remove this file?`}">×</button>` : ""}`;
 }

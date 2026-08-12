@@ -71,6 +71,20 @@ Deno.test("ResHtml: an inline script cannot break out of its tag", () => {
   assertEquals(html.render().includes(`<script type="module">x = "<\\/script><script>evil()"</script>`), true);
 });
 
+Deno.test("ResHtml: inline styles come before the stylesheets and cannot break out of their tag", () => {
+  const html = new ResHtml();
+  html.styles.add("/site.css");
+  html.inlineStyles.add("html{--color:red}");
+  html.inlineStyles.add(`a::after{content:"</style><script>evil()"}`);
+
+  const out = html.render();
+  assertEquals(out.includes("<style>html{--color:red}</style>"), true);
+  assertEquals(out.indexOf("<style>") < out.indexOf("<link rel=stylesheet"), true);
+  // escaped on the way in, so the entry CSP hashes is already the body that gets rendered
+  assertEquals(out.includes(`content:"<\\/style><script>evil()"`), true);
+  for (const css of html.inlineStyles) assertEquals(out.includes(`<style>${css}</style>`), true);
+});
+
 Deno.test("ResHtml: render emits lang, classes and content", () => {
   const html = new ResHtml();
   html.lang = "de";

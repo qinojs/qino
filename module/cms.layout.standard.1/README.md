@@ -23,8 +23,11 @@ content of each page.
 
 [pub/main.css](pub/main.css) is built entirely from the
 [u2](https://github.com/u2ui/u2) variables, so the site's css needs to change
-little to look different — `--color` alone repaints everything. The variables
-worth touching are already in the created file.
+little to look different — `--color` alone repaints everything. Color and font
+come from the [identity](../identity/mod.ts) module, written into the head ahead
+of every stylesheet: a default the site's css overrides by declaring the same
+variable. The ones worth touching are already in the created file, commented
+out.
 
 Paths, the site's copy and the options panel come from
 [cms.templateParser/moduleTemplate.ts](../cms.templateParser/moduleTemplate.ts),

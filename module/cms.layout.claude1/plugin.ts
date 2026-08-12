@@ -1,10 +1,11 @@
 import { html, type HtmlString, type Ctx } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
-import manifest from "./manifest.json" with { type: "json" };
-const { name } = manifest;
+import * as identity from "../identity/mod.ts";
 
 // Pinned here on purpose: this layout's look must stay stable even if core bumps u2.
 const U2_ROOT = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.6/";
+
+const LOGO_HEIGHT = 32;
 
 const U2_CSS = [
   "css/norm/norm.css",
@@ -18,19 +19,11 @@ const U2_CSS = [
   "el/ico/ico.css",
 ];
 
-// One skin per site, not per page: app settings, not node settings.
-export const settingsSchema = {
-  properties: {
-    color: { type: "string", format: "color", description: "Brand color. u2 derives the whole palette from it." },
-    accent: { type: "string", format: "color", description: "Accent color for highlights (logo, active nav). Defaults to the brand color." },
-    logo: { type: "string", format: "uri", description: "Logo image URL. Falls back to the text below if empty." },
-    logoText: { type: "string", description: "Logo text, shown when no logo image is set. Defaults to the host name." },
-  },
-};
-
 // Frontend layout built on the u2 framework: header (logo + nav), main, footer.
 // Global conts (nav, foot) live on a shared layout page; only `main` is per-page.
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
+  await identity.css(ctx);
+
   ctx.res.csp["style-src"][U2_ROOT] = true;
   ctx.res.csp["script-src"][U2_ROOT] = true;
   ctx.res.csp["connect-src"][U2_ROOT] = true;
@@ -41,20 +34,14 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   const layoutPage = await node.cms.layoutPage(String(node.vs.module));
-  const settings = node.app.settings[name];
 
-  // Colors from settings override the CSS defaults; u2 derives the palettes.
-  const color = await settings.color;
-  const accent = await settings.accent;
-  const decls = [color && `--color:${color}`, accent && `--accent:${accent}`].filter(Boolean);
-  const skin = decls.length ? html` style="${decls.join(";")}"` : "";
+  // Logo: the identity image if uploaded, otherwise the portal name (or the host).
+  // Delivered at twice the display height — the transform scales it down, svg passes through untouched.
+  const brand = String(await node.app.settings.identity.name ?? "") || (ctx.req.header("host") ?? "");
+  const logo = await identity.file(node.app, "logo");
+  const logoInner = logo ? html`<img src="${await logo.url({ h: LOGO_HEIGHT * 2 })}" alt="${brand}" height=${LOGO_HEIGHT}>` : brand;
 
-  // Logo: image if set, otherwise text (custom or host name).
-  const logo = String(await settings.logo ?? "");
-  const brand = String(await settings.logoText ?? "") || (ctx.req.header("host") ?? "");
-  const logoInner = logo ? html`<img src="${logo}" alt="${brand}" height=32>` : brand;
-
-  return html.async`<div id=container u2-skin${skin}>
+  return html.async`<div id=container>
   <header id=head role=banner>
     <div class=u2-width>
       <div class="u2-flex -Between">

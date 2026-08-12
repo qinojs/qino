@@ -1,4 +1,5 @@
 import { $item } from "../core/mod.ts";
+import * as identity from "../identity/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 const FIELDS = new Set([
@@ -19,11 +20,6 @@ function assetName(value: unknown): string {
   return name;
 }
 
-async function file(node: Node, name: string) {
-  const id = Number(await node.app.db.one`SELECT file_id FROM identity_file WHERE name = ${name}`);
-  return id ? await node.app.dbFiles.file(id) : undefined;
-}
-
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (vars.save && typeof vars.save === "object") {
     const set = node.app.settings[$item].sub(["identity"]);
@@ -41,7 +37,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
     const name = assetName(asset.name);
     const source = String(asset.dataUrl ?? "");
     if (!source.startsWith("data:")) throw new Error("Missing identity file");
-    const old = await file(node, name);
+    const old = await identity.file(node.app, name);
     const fresh = await node.app.dbFiles.add(source);
     try {
       const valid = name === "font" ? FONT_EXTENSIONS.has(fresh.extension) : fresh.mime.startsWith("image/");
@@ -57,7 +53,7 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
   }
   if (vars.removeAsset) {
     const name = assetName(vars.removeAsset);
-    const old = await file(node, name);
+    const old = await identity.file(node.app, name);
     await node.app.db.table("identity_file").delete(name);
     if (old && !await old.used()) await old.remove();
     return { done: true };

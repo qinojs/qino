@@ -12,6 +12,8 @@ export class ResHtml {
   link: Record<string, Record<string, string>> = {};
   scripts: Set<string> = new Set();
   styles: Set<string> = new Set();
+  /** Inline css, emitted ahead of the stylesheets: defaults any sheet overrides. Hashed for CSP like the inline scripts. */
+  inlineStyles: InlineStyles = new InlineStyles();
   legacyScripts: Set<string> = new Set();
   importMap: Map<string, string> = new Map();
   /** Inline script bodies with their attributes; `type` defaults to module. Each gets a CSP hash, which
@@ -48,6 +50,8 @@ export class ResHtml {
 
     ret += this.head;
 
+    for (const css of this.inlineStyles) ret += `<style>${css}</style>\n`;
+
     for (const url of this.styles) ret += `<link rel=stylesheet href="${hee(url)}">\n`;
 
     if (this.#jsData) ret += `<script type=application/json id=qino-data>${jsonScript(this.#jsData)}</script>\n`;
@@ -64,6 +68,13 @@ export class ResHtml {
   }
 }
 
+
+/** Inline css blocks. `</style` is escaped on the way in — css reads it the same but it cannot end the element. */
+class InlineStyles extends Set<string> {
+  override add(css: string): this {
+    return super.add(css.replace(/<\/style/gi, "<\\/style"));
+  }
+}
 
 /** Inline scripts keyed by their body. `</script` is escaped on the way in — it reads the same to JS but cannot end the element. */
 class InlineScripts extends Map<string, Record<string, string>> {
