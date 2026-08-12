@@ -12,7 +12,7 @@ export const pdfDecode: TransformerDef = {
   props: ['page'],
   handles: (ctx) => ctx.mime === 'application/pdf' && ctx.options.fmt !== 'md' && (ctx.options.w !== undefined || ctx.options.h !== undefined || ctx.options.page !== undefined || ctx.options.fmt !== undefined || ctx.options.q !== undefined),
   transform: async (ctx) => {
-    const page = (ctx.options.page ?? 1) - 1; // ImageMagick is 0-based
+    const page = Math.max(0, Math.trunc(Number(ctx.options.page) || 1) - 1); // ImageMagick is 0-based
     const out = nodePath.join(ctx.tmpDir, 'pdf-page.png');
     await magick.run(
       `${ctx.currentPath}[${page}]`,

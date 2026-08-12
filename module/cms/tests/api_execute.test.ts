@@ -73,7 +73,7 @@ class FakeNode {
       .map((node) => [node.id, node]));
   }
   conts() { return []; }
-  createChild() { return 3; }
+  createChild() { return new FakeNode(3, this.accessLevel); }
   createCont({ module }: { module: string }) {
     return new FakeNode(4, 3, { type: "c", module });
   }
@@ -126,7 +126,7 @@ Deno.test("cms api: node title/text/flags write through resolved node", async ()
   assertEquals(node.writes.searchable, 0);
   assertEquals(node.writes.name, "n1");
   assertEquals(node.writes.online_start, 1704067200);
-  assertEquals(node.writes.online_end, undefined);
+  assertEquals(node.writes.online_end, null);
 });
 
 Deno.test("cms api: text fields are listed and read back without being created", async () => {

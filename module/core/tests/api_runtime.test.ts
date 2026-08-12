@@ -247,7 +247,7 @@ Deno.test("api: catchall params collect remaining path segments", async () => {
   });
 });
 
-Deno.test("api: toTools exposes path/input/query parameters", () => {
+Deno.test("api: toTools exposes and separates path/input/query parameters", async () => {
   const tools = toTools(api);
   const update = tools.find((tool) => tool.name === "post_thing_update");
   assertEquals(update?.description, "Update thing");
@@ -262,6 +262,13 @@ Deno.test("api: toTools exposes path/input/query parameters", () => {
     },
     required: ["thing", "title", "count"],
   });
+  assertEquals(await withCtx(() => update!.execute({ thing: 1, title: "Tool", count: 3, preview: true }, ctx)), {
+    id: 1, title: "Tool", count: 3, enabled: false, preview: true,
+  });
+  await assertRejects(
+    () => withCtx(() => update!.execute({ thing: 1, title: "Tool", count: 3, unexpected: true }, ctx)),
+    ValidationError,
+  );
 });
 
 Deno.test("api: apiClient mirrors the action tree", async () => {

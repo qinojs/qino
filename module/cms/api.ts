@@ -54,7 +54,7 @@ const shape = async (node: Node) => ({
 });
 
 /** online_start / online_end: ISO string or Unix timestamp; "" removes the limit (inherit). */
-const onlineTime = (v: string) => v === "" ? undefined : v.includes("T") ? Math.floor(new Date(v).getTime() / 1000) : v;
+const onlineTime = (v: string) => v === "" ? null : v.includes("T") ? Math.floor(new Date(v).getTime() / 1000) : v;
 const onlineDesc = (sample: string) => `ISO string ("${sample}"), Unix timestamp, "0" for always, "" to inherit.`;
 
 
@@ -231,9 +231,7 @@ const node = {
       ...nodeWrite,
       input: s.object({ title: s.string() }),
       execute: async ({ node, title }: any, ctx: Ctx) => {
-        const id = await node.createChild();
-        if (!id) throw new Error("createChild failed");
-        const c = await node.cms.node(id);
+        const c = await node.createChild();
         await c.title(ctx.lang, title);
         await c.changeUser(ctx.user!, 3);
         await asMainNode(c, ctx);
@@ -429,7 +427,7 @@ const node = {
       post: {
         description: "Sort files by criterion",
         ...nodeWrite,
-        input: s.object({ by: s.string().describe("Sort criterion: \"name\", \"name_reverse\", \"date\", \"sort\"") }),
+        input: s.object({ by: s.string().describe("Sort criterion: \"name\", \"name_reverse\", \"date\", \"reverse\"") }),
         execute: async ({ node, by }: any) => {
           await fns.filesSetOrder(node, by);
           return { ok: true };

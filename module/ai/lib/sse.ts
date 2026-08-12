@@ -14,7 +14,7 @@ export async function readSse(res: Response, onData: (data: Record<string, unkno
   let buf = "";
   for (;;) {
     const { done, value } = await reader.read();
-    buf += decoder.decode(value, { stream: !done });
+    buf += decoder.decode(value, { stream: !done }).replaceAll("\r", ""); // CR is only ever a line terminator here
     if (done) buf += "\n\n"; // flush a trailing event that lacks the final blank line
     let nl: number;
     while ((nl = buf.indexOf("\n\n")) >= 0) {

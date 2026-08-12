@@ -59,7 +59,6 @@ function initLog(ctx: Ctx): void {
     ctx.logId = (async () => {
       try {
         const logId = await db.table("log").insert(data);
-        data.log_id = logId;
         return logId ? String(logId) : null;
       } catch (e) { console.error("initLog insert error:", e); return null; }
     })();

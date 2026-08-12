@@ -203,12 +203,13 @@ export async function requestUsed(v: string): Promise<boolean> {
 export async function searchNodes(search: string): Promise<any[]> {
     const ctx = getCtx();
     search = search.replace(/^cmspid:\/\//, "");
+    const id = /^\d+$/.test(search) ? Number(search) : 0;
     const res = [];
     for (const vs of await ctx.app.db.query`
         SELECT p.id AS id FROM page p, text t WHERE true
         AND ( p.type = 'p' OR p.visible ) AND p.title_id = t.id
-        AND ( p.id = ${search} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
-        p.id = ${search} DESC, t.lang = ${ctx.lang} DESC,
+        AND ( p.id = ${id} OR t.text LIKE ${"%" + search + "%"} ) GROUP BY p.id ORDER BY
+        p.id = ${id} DESC, t.lang = ${ctx.lang} DESC,
         t.text = ${search} DESC, t.text LIKE ${search + "%"} DESC, t.text LIKE ${"% " + search + "%"} DESC, t.text ASC LIMIT 20`) {
         const page = await cms(ctx.app).node(vs.id);
         if (!await page.access()) continue;
@@ -232,14 +233,15 @@ export async function searchFiles(search: string): Promise<any[]> {
     const ctx = getCtx();
     const db  = ctx.app.db;
     const s   = search;
+    const id  = /^\d+$/.test(s) ? Number(s) : 0;
     const res = [];
     let i = 0;
     const used: Record<string, boolean> = {};
     for (const vs of await db.query`
         SELECT pf.page_id AS pid, f.*
         FROM page_file pf, file f WHERE true AND pf.file_id = f.id
-        AND ( f.id = ${s} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )
-        ORDER BY f.id = ${s} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
+        AND ( f.id = ${id} OR f.name LIKE ${"%" + s + "%"} OR f.text LIKE ${s + "%"} )
+        ORDER BY f.id = ${id} DESC, f.name = ${s} DESC, f.name LIKE ${s + "%"} DESC,
         f.name LIKE ${"% " + s + "%"} DESC, f.text = ${s} DESC, f.text LIKE ${s + "%"} DESC, f.name ASC`) {
         const node = await cms(ctx.app).node(vs.pid);
         if (await node.access() < 2) continue;

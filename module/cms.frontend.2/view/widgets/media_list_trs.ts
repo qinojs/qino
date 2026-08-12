@@ -13,15 +13,14 @@ export default async function (node: Node): Promise<HtmlString> {
       case "jpg": case "jpeg": case "gif": case "png": case "svg": case "webp":
       case "pdf": {
         if (await FileTransformer.capabilities.magick) {
-          const url = await F.url({w: 70, h: 40, dpt: 0, max: true, page:1});
+          const url = await F.url({w: 70, h: 40, max: true, page: 1});
           preview = html`<img src="${url}" ${ext === "svg" ? html.raw("height=40") : ""} alt="" draggable=true>`;
         }
         break;
       }
       case "mp4": case "webm": case "mov": case "avi": case "mkv": {
         if (await FileTransformer.capabilities.ffmpeg) {
-          const url = await F.url();
-          preview = html`<img src="${url}/w-70/h-40/fmt-jpeg/frame-1/${F.name}" alt="" draggable=true>`;
+          preview = html`<img src="${await F.url({w: 70, h: 40, fmt: "jpg", frame: 1})}" alt="" draggable=true>`;
         }
         break;
       }
@@ -29,7 +28,7 @@ export default async function (node: Node): Promise<HtmlString> {
         const url = await F.url();
         if (await FileTransformer.capabilities.ffmpeg) {
           preview = html`<img src="${await F.url({w: 70, h: 40, max: true})}" alt="" draggable=true
-            onerror="this.replaceWith(Object.assign(document.createElement('audio'),{src:'${url}',controls:true,draggable:true,style:'min-width:4.4rem;width:100%'}))">`;
+            onerror="this.replaceWith(Object.assign(document.createElement('audio'),{src:${JSON.stringify(url)},controls:true,draggable:true,style:'min-width:4.4rem;width:100%'}))">`;
         } else {
           preview = html`<audio src="${url}" controls style="min-width:4.375rem;width:100%" draggable=true>`;
         }

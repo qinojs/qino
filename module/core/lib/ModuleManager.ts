@@ -184,14 +184,15 @@ export class ModuleManager {
     // In passes: an install() hook may install further modules (a bundle bringing its set), and
     // those need the same ordering and schema merge as the first round, not a nested link().
     this.#booting = true;
-    for (let count = 0; count !== Object.keys(this.#modules).length;) {
-      count = Object.keys(this.#modules).length;
-      const order = this.#order();
-      await this.#applyDbSchema(order);
-      this.#applySchemas(order);
-      for (const name of order) if (!this.#linked.has(name)) await this.#linkOne(this.#modules[name]);
-    }
-    this.#booting = false;
+    try {
+      for (let count = 0; count !== Object.keys(this.#modules).length;) {
+        count = Object.keys(this.#modules).length;
+        const order = this.#order();
+        await this.#applyDbSchema(order);
+        this.#applySchemas(order);
+        for (const name of order) if (!this.#linked.has(name)) await this.#linkOne(this.#modules[name]);
+      }
+    } finally { this.#booting = false; }
   }
 
   /** Import, remember and link a module — the persistent counterpart of add(). */
@@ -275,15 +276,18 @@ export class ModuleManager {
   // Per-module hooks: registers everything init() sets up for one module.
   async #linkOne(mod: Module): Promise<void> {
     const { plugin } = mod;
-    await plugin.init?.(this.#app, { signal: mod.newSignal() });
-    if (!this.#installed[mod.name]) {
-      await plugin.install?.({ app: this.#app, module: plugin });
-      this.#installed[mod.name] = unixTime();
-      await this.#app.db.table("module").ensure({ name: mod.name, installed: this.#installed[mod.name] });
-    }
-    await this.#loadLocales(mod);
-    if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
-    this.#linked.add(mod.name);
+    try {
+      await plugin.init?.(this.#app, { signal: mod.newSignal() });
+      if (!this.#installed[mod.name]) {
+        await plugin.install?.({ app: this.#app, module: plugin });
+        const installed = unixTime();
+        await this.#app.db.table("module").ensure({ name: mod.name, installed }); // db row first: the memo must not outlive a failed write
+        this.#installed[mod.name] = installed;
+      }
+      await this.#loadLocales(mod);
+      if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
+      this.#linked.add(mod.name);
+    } catch (e) { mod.abort(); throw e; } // roll back what init() registered with the signal
   }
 
   // Rebuild app/ctx settings schema from the given (dependency-ordered) modules and re-apply defaults.

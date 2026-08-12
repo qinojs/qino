@@ -2,7 +2,7 @@ import type { Ctx } from "../ctx/Ctx.ts";
 import { toJsonSchema } from "../StandardSchema.ts";
 import { asParams, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";
-import type { ApiTree, Method } from "./types.ts";
+import type { ApiTree, Method, Params } from "./types.ts";
 
 export interface Tool {
   name: string;
@@ -42,9 +42,14 @@ export function toTools(tree: ApiTree, opts: { apis?: Record<string, Method[]> }
         const concretePath = r.segments
           .flatMap((seg) => seg.startsWith(":") ? pathValue(raw[paramName(seg)], isCatchall(seg)) : seg)
           .join("/");
-        const body = { ...raw }; // path params travel in the URL, not the field bag (strict rejects unknowns)
-        for (const [name] of routeParams(r)) delete body[name];
-        return invoke(tree, r.method, "/" + concretePath, { input: body, query: body });
+        // path params travel in the URL; unknown fields stay in the strict part so invoke() rejects them
+        const pathNames = new Set(routeParams(r).map(([name]) => name));
+        const qShape = shapeOf(r.verb.query);
+        const input: Params = {}, query: Params = {};
+        for (const [k, v] of Object.entries(raw)) {
+          if (!pathNames.has(k)) (k in qShape || !r.verb.input ? query : input)[k] = v;
+        }
+        return invoke(tree, r.method, "/" + concretePath, { input, query });
       },
     });
   }

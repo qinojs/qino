@@ -162,8 +162,6 @@ export class Node {
         if (renderPath.has(this.id)) {
             return html.raw(this.edit ? `<div qcms-id=${this.id}>Recursion, Content ${this.id} again!</div>` : "");
         }
-        renderPath.add(this.id);
-
         const mod = this.module;
         const nodeExports = mod?.plugin.cms?.node;
         const isAbsolute = (f: string) => f.startsWith("http://") || f.startsWith("https://") || f.startsWith("/");
@@ -172,10 +170,9 @@ export class Node {
         // App-specific css of this module
         if (mod && await isFile(mod.data + "pub/main.css", ctx.dev)) ctx.res.html.styles.add(mod.dataUrl + "pub/main.css");
 
-        const s = await this.htmlPrepared(vars);
-
-        renderPath.delete(this.id);
-        return s;
+        renderPath.add(this.id);
+        try { return await this.htmlPrepared(vars); }
+        finally { renderPath.delete(this.id); }
     }
 
     async htmlPrepared(vars: Record<string, any> = {}): Promise<HtmlString> {
@@ -333,9 +330,9 @@ export class Node {
 
     /* Texts */
 
-    async #showTextLang(textOrLang: any, lang?: string | null): Promise<any> {
+    async #showTextLang(dbText: DbText, lang?: string | null): Promise<any> {
         const ctx = getCtx();
-        const textLang = lang == null ? await textOrLang.orFallback(ctx.lang) : textOrLang;
+        const textLang = lang == null ? await dbText.orFallback(ctx.lang) : dbText.lang(lang);
         let text = await textLang.get();
         if (!this.edit) text = await resolveText(this.app, text); // edit mode keeps cmspid:// etc. unresolved
         text = sanitizeHtml(text); // last step: nothing may touch the string after sanitizing
@@ -348,12 +345,11 @@ export class Node {
     }
 
     async showText(name = "main", lang?: string | null): Promise<any> {
-        return this.#showTextLang(await this.text(name, lang ?? null), lang);
+        return this.#showTextLang(await this.text(name), lang);
     }
 
     async showTitle(lang?: string | null): Promise<any> {
-        const obj = await this.title(lang);
-        return this.#showTextLang(obj, lang);
+        return this.#showTextLang(await this.title(), lang);
     }
 
     async texts(): Promise<Record<string, any>> {
@@ -666,11 +662,12 @@ export class Node {
             for (const dbText of Object.values(newTexts)) {
                 for (const l of this.app.languages.all) {
                     const tl = dbText.lang(l);
-                    let text = await tl.get();
+                    const old = await tl.get();
+                    let text = old;
                     for (const [oldId, newFileId] of Object.entries(old2new)) {
                         text = text.replaceAll(`/dbFile/${oldId}/`, `/dbFile/${newFileId}/`);
                     }
-                    await tl.set(text);
+                    if (text !== old) await tl.set(text);
                 }
             }
         }

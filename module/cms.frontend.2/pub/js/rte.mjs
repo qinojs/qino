@@ -83,7 +83,7 @@ Rte.ui.setItem('Link', {
       // set initial value
       inp.value = '';
       const txt = el.textContent.trim();
-      if (/^http[^\s]+$/.test(txt) || urlRegexp.test(txt) || mailRegexp.test(txt)) {
+      if (/^http[^\s]+$/.test(txt) || URL_RE.test(txt) || MAIL_RE.test(txt)) {
         inp.value = txt;
         el.setAttribute('href',txt);
       } else {

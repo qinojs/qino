@@ -63,7 +63,7 @@ export class CMS {
     let lPage = children.values().next().value;
     if (!lPage) {
       lPage = await sysPage.createChild({ module, name: module, access: 1 });
-      await lPage.title(undefined, module);
+      await lPage.title(this.app.languages.def, module);
     }
     return lPage;
   }
