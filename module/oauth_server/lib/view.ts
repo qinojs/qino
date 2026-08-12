@@ -1,12 +1,11 @@
-import { html, ResHtml, Output, type Ctx, type HtmlString } from "../../core/mod.ts";
+import { html, Output, type Ctx, type HtmlString } from "../../core/mod.ts";
 
 /** Standalone document — the authorization endpoint is a root route, not a CMS page. */
 function page(ctx: Ctx, title: string, body: HtmlString, status = 200): never {
-  const doc = new ResHtml();
-  doc.lang = ctx.lang;
-  doc.title = title;
-  doc.content = body.html;
-  throw new Output(doc.render(), { status, headers: { "Content-Type": "text/html; charset=UTF-8" } });
+  ctx.res.html.title = title;
+  ctx.res.html.content = body.html;
+  ctx.res.status = status;
+  throw new Output(); // stop the route here — the document on ctx.res is the response
 }
 
 /** Sign-in form. The fields are the core's (`core_login`), so `authListen` logs the user in on

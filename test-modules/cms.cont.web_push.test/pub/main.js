@@ -1,5 +1,4 @@
-// @ts-expect-error Browser imports resolve in the flattened /m/<module>/ namespace.
-import { subscribe, unsubscribe, channels } from "../../messaging.web_push/pub/web_push.js";
+import { subscribe, unsubscribe, channels } from "@qino/m/messaging.web_push/pub/web_push.js";
 import { t } from "@qino/pub/qino.js";
 
 cms.initNode("cont.web_push.test", async (el) => {

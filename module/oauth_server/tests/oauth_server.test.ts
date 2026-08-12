@@ -42,13 +42,16 @@ function makeCtx(db: Db, init: CtxInit): Promise<Ctx> {
   });
 }
 
-/** Every endpoint signals via a thrown `Output`; capture it. */
-async function run(handler: (ctx: Ctx) => Promise<never>, ctx: Ctx | Promise<Ctx>) {
+/** Every endpoint signals via a thrown `Output`; capture it the way the app does — a bare signal
+ *  carries no answer, that one sits on ctx.res (a document the app renders). */
+async function run(handler: (ctx: Ctx) => Promise<never>, init: Ctx | Promise<Ctx>) {
+  const ctx = await init;
   try {
-    await handler(await ctx);
+    await handler(ctx);
   } catch (e) {
-    if (e instanceof Output) return { status: e.status, text: String(e.body ?? ""), headers: e.buildHeaders() };
-    throw e;
+    if (!(e instanceof Output)) throw e;
+    const body = e.body ?? (ctx.res.hasHtml ? ctx.res.html.render() : ctx.res.body);
+    return { status: e.status === 200 ? ctx.res.status : e.status, text: String(body ?? ""), headers: e.buildHeaders() };
   }
   throw new Error("expected an Output signal");
 }

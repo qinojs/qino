@@ -1,4 +1,4 @@
-import { nodePanel } from "../../cms.backend/pub/js/node.mjs";
+import { nodePanel } from "@qino/m/cms.backend/pub/js/node.mjs";
 
 cms.initNode("backend.superuser.messaging.sms", (el) => {
   const panel = nodePanel(el, ["provider", "send", "phones"]);

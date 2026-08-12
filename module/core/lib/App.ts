@@ -26,6 +26,15 @@ const DEFAULT_CONFIG = {
     db: "", // mysql://user:pass@host/db, postgresql://user:pass@host/db, sqlite:/path/db.sqlite
 };
 
+/** Statuses a response must not carry a body with. */
+const NULL_BODY = new Set([204, 205, 304]);
+
+/** Set on every response unless it already carries them. */
+const RESPONSE_HEADERS: Record<string, string> = {
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+};
+
 /** Core events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface AppEvents {
     "request-start": { request: Request; peerAddr: string; time: number };
@@ -34,7 +43,7 @@ export interface AppEvents {
     "render": { ctx: Ctx };
     "html-ready": { ctx: Ctx };
     "respond": { ctx: Ctx };
-    "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // ctx is missing for static files
+    "response-ready": { request: Request; res: Response; peerAddr: string; time: number; ctx?: Ctx }; // no ctx for static files and early errors
     "suspicious": { ctx: Ctx; weight?: number; reason?: string }; // a module noticed something abusive; consumers score the client. weight defaults to 1
     "auth:login": { oldSession: Record<string, any>; usrId: number }; // the session's values before it was emptied
     "dbFile:access": { file: DbFile; access: boolean };          // fast path
@@ -123,24 +132,19 @@ export class App extends Emitter<AppEvents> {
     /** The single entry point: `Request` in, `Response` out. `appUrl` = the prefix this request is served under. */
     async handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {
         const time = performance.now();
+        const meta = { request, peerAddr, time };
         const base = ensureSlash(appUrl || "/");
         let ctx: Ctx;
         try {
-            await this.fire("request-start", { request, peerAddr, time }); // cheap pre-filter, before any DB/session work
+            await this.fire("request-start", meta); // cheap pre-filter, before any DB/session work
             const url = new URL(request.url);
             const localPath = urlToLocalPath(url, base, this);
-            if (localPath) return await this.#static(request, peerAddr, time, localPath);
+            if (localPath) return this.#finish(await serveFile(request, localPath), meta);
             ctx = await Ctx.create(this, request, { appUrl: base, peerAddr, time, url });
-        } catch (e: unknown) {
-            return earlyError(e);
+        } catch (e) {
+            return this.#finish(earlyError(e), meta);
         }
         return requestStorage.run(ctx, () => this.#run(ctx).finally(() => ctx.req.cleanup()));
-    }
-
-    async #static(request: Request, peerAddr: string, time: number, localPath: string): Promise<Response> {
-        const res = await serveFile(request, localPath);
-        await this.fire("response-ready", { request, res, peerAddr, time });
-        return res;
     }
 
     async #run(ctx: Ctx): Promise<Response> {
@@ -150,20 +154,16 @@ export class App extends Emitter<AppEvents> {
             if (!ctx.statelessAuth) this.sessions.setCookieIfNew(ctx);
             await this.fire("route", { ctx });
             res = await this.#route(ctx);
-        } catch (e: unknown) {
-            handleError(ctx, e);
+        } catch (e) {
+            applyThrown(ctx, e);
             res = await this.#buildResponse(ctx);
         }
-        // last hook, sees every response (static, dbFile, api, pages)
-        await this.fire("response-ready", { request: ctx.req.raw, res, peerAddr: ctx.req.peerAddr, time: ctx.req.time, ctx });
-        return res;
+        return this.#finish(res, { request: ctx.req.raw, peerAddr: ctx.req.peerAddr, time: ctx.req.time, ctx });
     }
 
     /** Explicit, ordered dispatch over the request path — the one routing model. */
-    #route(ctx: Ctx): Response | Promise<Response> {
+    #route(ctx: Ctx): Promise<Response> {
         const uri = ctx.req.appPath;
-
-        if (uri === "favicon.ico") return new Response(null, { status: 204 });
 
         if (uri === "dbFile" || uri.startsWith("dbFile/"))
             return this.dbFiles.output(uri.slice("dbFile/".length), ctx.req.raw);
@@ -173,32 +173,43 @@ export class App extends Emitter<AppEvents> {
         if (uri === "api" || uri.startsWith("api/"))
             return apiFetch(ctx.req, this.apiTree, "/" + uri.slice("api/".length), { auth: () => ctx.statelessAuth });
 
-        return this.#renderFallback(ctx);
+        return this.#render(ctx);
     }
 
-    /** Fallback for paths that aren't static/dbFile/api: fire the render hooks and build the response. */
-    async #renderFallback(ctx: Ctx): Promise<Response> {
+    /** The normal path: whatever isn't dbFile or api, the modules render. */
+    async #render(ctx: Ctx): Promise<Response> {
         await this.fire("render", { ctx });
-        if (ctx.res.hasHtml) {
-            await this.fire("html-ready", { ctx });
-            const html = ctx.res.html;
-            html.lang = ctx.lang;
-            const qino = html.jsData.qino ??= {};
-            qino.csrfToken = ctx.csrfToken;
-            qino.appUrl = ctx.req.appUrl;
-            ctx.res.body = html.render();
-        }
+        // nobody serves a favicon: say so, instead of letting the browser ask again
+        if (ctx.req.appPath === "favicon.ico" && !ctx.res.hasHtml && !ctx.res.body) ctx.res.status = 204;
         return this.#buildResponse(ctx);
     }
 
     async #buildResponse(ctx: Ctx): Promise<Response> {
+        const res = ctx.res;
+        // A document is the answer unless something set a body or a Location — so any route can end with
+        // `throw new Output()` and the page it built gets sent.
+        if (res.hasHtml && !res.body && !res.headers.has("Location")) {
+            await this.fire("html-ready", { ctx });
+            res.html.lang = ctx.lang;
+            const qino = res.html.jsData.qino ??= {};
+            qino.csrfToken = ctx.csrfToken;
+            qino.appUrl = ctx.req.appUrl;
+            res.body = res.html.render();
+            if (!res.headers.has("Content-Type")) res.headers.set("Content-Type", "text/html; charset=utf-8");
+        }
         await this.fire("respond", { ctx });
-        const headers = new Headers(ctx.res.headers);
-        if (headers.has("Location")) return new Response(null, { status: ctx.res.status, headers });
+        const { status, headers } = res;
+        if (headers.has("Location")) return new Response(null, { status, headers });
         if (!headers.has("Cache-Control")) headers.set("Cache-Control", "no-cache, no-store");
-        headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-        headers.set("X-Content-Type-Options", "nosniff");
-        return new Response(ctx.res.body, { status: ctx.res.status, headers });
+        return new Response(NULL_BODY.has(status) ? null : res.body, { status, headers });
+    }
+
+    /** The one exit — every response passes here, whatever built it. Headers are defaults: whoever set one keeps it. */
+    async #finish(res: Response, meta: Omit<AppEvents["response-ready"], "res">): Promise<Response> {
+        for (const [name, value] of Object.entries(RESPONSE_HEADERS))
+            if (!res.headers.has(name)) res.headers.set(name, value);
+        await this.fire("response-ready", { ...meta, res });
+        return res;
     }
 
     assertAllowedPath(file: string): void {
@@ -211,22 +222,26 @@ export class App extends Emitter<AppEvents> {
     }
 }
 
-/** Map a control-flow signal onto the request context's pending response. */
-function handleError(ctx: Ctx, e: unknown): void {
+/** Map whatever ended the route — a control-flow signal or a real error — onto the pending response. */
+function applyThrown(ctx: Ctx, e: unknown): void {
     if (e instanceof Output) {
         for (const [k, v] of e.buildHeaders()) ctx.res.headers.set(k, v);
-        ctx.res.body = e.body;
-        ctx.res.status = e.status;
+        // A signal overrides only what it carries (200 = no opinion), so a bare `throw new Output()`
+        // ends the route without wiping what it put on ctx.res.
+        if (e.body !== undefined) ctx.res.body = e.body;
+        if (e.status !== 200) ctx.res.status = e.status;
     } else {
         console.error("Error:", e);
         ctx.res.status = 500;
-        ctx.res.body = "<h1>500 Internal Server Error</h1>";
+        ctx.res.body = ERROR_500;
     }
 }
+
+const ERROR_500 = "<h1>500 Internal Server Error</h1>";
 
 /** Errors raised before a request context exists (init, pre-filter, 413). */
 function earlyError(e: unknown): Response {
     if (e instanceof Output) return e.toResponse();
     console.error("Error:", e);
-    return new Response("<h1>500 Internal Server Error</h1>", { status: 500 });
+    return new Response(ERROR_500, { status: 500 });
 }

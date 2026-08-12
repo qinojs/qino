@@ -1,4 +1,4 @@
-import { WebAuth } from "../../web_auth/pub/web_auth.js";
+import { WebAuth } from "@qino/m/web_auth/pub/web_auth.js";
 import { hee, t } from "@qino/pub/qino.js";
 
 cms.initNode("cont.web_auth", (el) => {
