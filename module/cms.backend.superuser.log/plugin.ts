@@ -126,9 +126,9 @@ async function tableStats(node: Node): Promise<{ rows: number; mb: number | null
   const db = node.app.db;
   if (db.dialect === "mysql") {
     const r = await db.row`
-      SELECT TABLE_ROWS AS rows, round((data_length + index_length) / 1024 / 1024, 2) AS mb
+      SELECT TABLE_ROWS AS row_count, round((data_length + index_length) / 1024 / 1024, 2) AS mb
        FROM information_schema.TABLES WHERE table_schema = DATABASE() AND TABLE_NAME = 'log'`.catch(() => undefined);
-    if (r) return { rows: Number(r.rows) || 0, mb: r.mb == null ? null : Number(r.mb) };
+    if (r) return { rows: Number(r.row_count) || 0, mb: r.mb == null ? null : Number(r.mb) };
   }
   const rows = Number(await db.one`SELECT count(*) FROM log`.catch(() => 0)) || 0;
   return { rows, mb: null };
