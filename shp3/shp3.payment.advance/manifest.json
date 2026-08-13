@@ -6,6 +6,7 @@
   ],
   "files": [
     "manifest.json",
-    "plugin.ts"
+    "plugin.ts",
+    "pub/module.svg"
   ]
 }

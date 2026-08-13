@@ -10,6 +10,7 @@
     "lib/rates.ts",
     "manifest.json",
     "mod.ts",
-    "plugin.ts"
+    "plugin.ts",
+    "pub/module.svg"
   ]
 }

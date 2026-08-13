@@ -9,6 +9,7 @@
     "manifest.json",
     "nodeApi.ts",
     "plugin.ts",
-    "pub/main.js"
+    "pub/main.js",
+    "pub/module.svg"
   ]
 }

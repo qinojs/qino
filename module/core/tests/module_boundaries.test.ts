@@ -1,4 +1,4 @@
-import { assertEquals } from "./deps.ts";
+import { assertEquals, assertStringIncludes } from "./deps.ts";
 import { fromFileUrl, toFileUrl } from "../deps.ts";
 import { itemRoot, u2Root } from "../lib/util.ts";
 
@@ -6,6 +6,7 @@ const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
 const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
 const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
+const stores = [moduleDir, shp3Dir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -122,7 +123,7 @@ async function modulePaths(dir: string, base = dir): Promise<string[]> {
 
 Deno.test("every module manifest has a description", async () => {
   const missing = [];
-  for (const store of [moduleDir, testModuleDir]) {
+  for (const store of stores) {
     for await (const dir of moduleDirs(store)) {
       const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
       if (!manifest.description?.trim()) missing.push(dir.slice(store.length));
@@ -135,11 +136,21 @@ Deno.test("every module manifest has a description", async () => {
 // keeps that list correct but this test: add an asset, forget the manifest, and it says so — with
 // the array to paste. Modules that are not published carry no `files` and are not checked.
 Deno.test("a manifest that lists its files lists all of them", async () => {
-  for (const store of [moduleDir, testModuleDir]) {
+  for (const store of stores) {
     for await (const dir of moduleDirs(store)) {
       const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
       if (!manifest.files) continue;
       assertEquals(manifest.files.slice().sort(), await modulePaths(dir), `files of ${dir.slice(store.length)}`);
+    }
+  }
+});
+
+Deno.test("module icons expose the fragment rendered by moduleIcon", async () => {
+  for (const store of stores) {
+    for await (const dir of moduleDirs(store)) {
+      const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+      if (!manifest.files?.includes("pub/module.svg")) continue;
+      assertStringIncludes(await Deno.readTextFile(dir + "pub/module.svg"), 'id="main"', dir.slice(store.length));
     }
   }
 });

@@ -1,5 +1,5 @@
 import { fromFileUrl, toFileUrl } from "@std/path";
-import { errMsg, getCtx, html, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
+import { errMsg, getCtx, html, moduleIcon, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -128,10 +128,17 @@ type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
 // --- rows -----------------------------------------------------------------
 // The row carries mod, store and state: the client reads them for its filter and its API calls.
 
-function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string): HtmlString {
+async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string): Promise<HtmlString> {
   const st = state(app, mod, store);
   const why = app.modules.failures()[mod];
   const known = app.modules.get(mod);
+  const iconMod = !store || known?.source === store.moduleUrl(mod)
+    ? known
+    : await store.manifest(mod).then(
+      (manifest) => ({ manifest, modUrl: new URL(".", store.moduleUrl(mod)).href }),
+      () => undefined,
+    );
+  const icon = moduleIcon(iconMod);
   const btn = (act: ModAct) =>
     html`<button data-act=${act}${TONE[act] ? html` class=${TONE[act]}` : ""}${CONFIRM.has(act) ? html` u2-confirm` : ""}>${l[act]}</button>`;
   // Seeding again works for anything linked, declared modules included — that is how an older
@@ -148,6 +155,7 @@ function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, l
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
     ];
   return html`<tr data-mod="${mod}" data-store="${store?.url ?? ""}" data-state=${st}>
+    <td style="padding-right:0">${icon ? html`<svg style="display:block" width=20 height=20 aria-hidden=true>${icon}</svg>` : ""}
     <td title="${why ?? known?.description}">${mod}
     <td title="${store?.url}"><small>${store ? label(store.url) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
@@ -295,7 +303,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
   }
   // Installing or removing a module changes the rows of every *other* store offering it too, so
   // those two reload the page; the rest only ever touch their own row.
-  return { ok: true, row: String(moduleRow(app, mod, app.stores.get(store), await labels(app), labeller(app))) };
+  return { ok: true, row: String(await moduleRow(app, mod, app.stores.get(store), await labels(app), labeller(app))) };
 }
 
 // --- view -----------------------------------------------------------------
@@ -342,6 +350,7 @@ async function render(node: Node): Promise<HtmlString> {
     <div style="overflow:auto; max-height:70vh; padding:0">
       <table class="u2-table -Sticky" style="white-space:nowrap">
         <thead><tr>
+          <th>
           <th>${t`Module`}
           <th>${t`Store`}
           <th>${t`State`}

@@ -1,5 +1,5 @@
 import { sql, type Sql } from "../deps.ts";
-import type { Module } from "./ModuleManager.ts";
+import type { Manifest } from "./ModuleManager.ts";
 
 /** Single source of truth for CDN roots (version pin). */
 export const u2Root = "https://cdn.jsdelivr.net/gh/u2ui/u2@1.4.6/";
@@ -115,7 +115,7 @@ html.join = (parts: Iterable<unknown>, separator = ""): HtmlString =>
   new HtmlString(Array.from(parts, htmlValue).join(separator));
 
 /** An SVG `<use>` for a module-declared icon. */
-export function moduleIcon(mod: Module | undefined, fallback?: string): HtmlString | undefined {
+export function moduleIcon(mod: { manifest: Manifest; modUrl: string } | undefined, fallback?: string): HtmlString | undefined {
   const file = "pub/module.svg";
   const url = mod?.manifest.files?.includes(file) ? mod.modUrl + file : fallback;
   if (url) return html`<use href="${url}#main" />`;
