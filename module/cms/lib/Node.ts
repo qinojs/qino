@@ -146,7 +146,7 @@ export class Node {
                 AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`) || 0;
     }
     async #accessUserLevel(user?: Usr | null): Promise<number> {
-        if (!user) return 0; // todo? test if user really exists?
+        if (!user?.$exists) return 0;
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
 
