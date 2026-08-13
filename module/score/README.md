@@ -4,7 +4,7 @@
 a fading memory: every access adds 1, the total decays exponentially with a half-life.
 
 ```ts
-import { scored, hit, forget, sqlScore } from "../score/mod.ts";
+import { scored, hit, forget, sqlScore } from "@qino/qino/score";
 
 export const dependencies = ["core", "score"];
 

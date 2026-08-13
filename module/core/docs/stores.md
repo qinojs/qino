@@ -160,14 +160,20 @@ app.modules.add(new URL("../modules/example/plugin.ts", import.meta.url));
 ## Local source and JSR
 
 Modules import Qino through canonical specifiers (`@qino/qino`, `@qino/qino/cms`). The repository
-root is a Deno workspace with `qino/` and the demos as members, so the same specifier resolves to
-the local tree inside it and to the published package outside — demos, `test-modules/` and
-`privat-module/` alike. Third-party versions are pinned once in
-[`qino/deno.json`](../../../deno.json) `imports`.
+root is a Deno workspace with `qino/` and the demos as members, so the specifier resolves to the
+local package for demos, `test-modules/` and `privat-module/` alike. A standalone application maps
+it once to the published package, which also makes copied source modules portable:
 
-An entry point outside the workspace that imports a local checkout must select its config:
-`deno run --config=qino/deno.json --frozen …`. To work against a local item.js checkout, uncomment
-`patch` in the workspace root `deno.json`.
+```json
+{
+  "imports": { "@qino/qino": "jsr:@qino/qino@^0.6" }
+}
+```
+
+An application file can instead use a fully qualified `jsr:` import without a config. That does not
+cover raw module files containing bare specifiers; those still need the application-level mapping.
+To work against a local checkout, make `qino/` a workspace member instead. To work against a local
+item.js checkout, uncomment `patch` in the workspace root `deno.json`.
 
 `import.meta.resolve("jsr:…")` returns an opaque specifier. It loads fine but is not a hierarchical
 asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.

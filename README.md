@@ -52,6 +52,24 @@ Deno.serve(app.fetch);
 
 Your endpoint is now available at `GET /api/hello`.
 
+Direct `jsr:` imports, including package subpaths, work without a `deno.json`:
+
+```ts
+import { App } from "jsr:@qino/qino@^0.6";
+import type { Node } from "jsr:@qino/qino@^0.6/cms";
+```
+
+In a project, add Qino once with `deno add jsr:@qino/qino@^0.6` and use its shorter public
+entrypoints:
+
+```ts
+import { App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+```
+
+Qino's modules use the same bare entrypoints. The package resolves those self-references locally;
+JSR rewrites them to fully qualified specifiers when publishing.
+
 ## SQLite, PostgreSQL, or MySQL
 
 Qino uses SQLite by default, with no configuration required. Move to PostgreSQL or MySQL by changing only the connection string:

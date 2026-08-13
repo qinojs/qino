@@ -6,7 +6,7 @@ subscribes, and delivers notifications to it.
 ## Sending
 
 ```ts
-import { send } from "../messaging.web_push/mod.ts";
+import { send } from "@qino/qino/messaging.web_push";
 
 await send(app, { channel: "news" }, { title: "New article", text: "…", url: "/blog" });
 await send(app, { usr: 42 }, "Your order shipped.");

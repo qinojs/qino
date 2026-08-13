@@ -46,7 +46,7 @@ Clients mit fester Client-ID werden vorher angelegt — im Backend unter
 `cms.backend.superuser.oauth_server`, oder headless direkt:
 
 ```ts
-import { saveClient } from "../qino/module/oauth_server/mod.ts";
+import { saveClient } from "@qino/qino/oauth_server";
 await saveClient(app, { id: "meine-app", name: "Meine App", redirectUris: ["https://example.com/callback"] });
 ```
 

@@ -50,6 +50,22 @@ is why a store can list a module, and an installer refuse one, without executing
 runtime both sit on the `Module`: `mod.manifest`, plus `mod.name`, `mod.description` and
 `mod.dependencies` for the fields worth reaching for. Keep the public API in `mod.ts`.
 
+## Public imports
+
+Paths within one module stay relative. Across module boundaries, import the public package
+entrypoint instead of another module's files:
+
+```ts
+import { html, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { send } from "@qino/qino/messaging";
+```
+
+The package `name` and `exports` in `deno.json` resolve these as self-references during Qino
+development. JSR rewrites them to fully qualified specifiers on publish, so a consumer may import
+Qino directly with `jsr:@qino/qino@<version>` without inheriting Qino's import map. A separately
+copied source module still needs its application to map `@qino/qino` to the desired version.
+
 ## Module names
 
 A name is `[<role prefix>.]<vendor>.<name>`, e.g. `cms.cont.acme.blog` or `acme.shop`. Qino's own

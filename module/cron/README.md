@@ -8,8 +8,8 @@ the primary trigger; incoming requests provide a throttled fallback.
 Add `cron` as a dependency and export a job map from the module manifest:
 
 ```ts
-import type { App } from "../core/mod.ts";
-import type { Jobs } from "../cron/mod.ts";
+import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 
 export const name = "shop";
 export const dependencies = ["core", "cron"];

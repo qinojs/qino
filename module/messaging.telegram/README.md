@@ -12,7 +12,7 @@ is an incoming update. So a chat is linked, not configured, and `/start` is what
 ## Sending
 
 ```ts
-import { send } from "../messaging.telegram/mod.ts";
+import { send } from "@qino/qino/messaging.telegram";
 
 await send(app, { usr: 42 }, "Your order shipped.");
 await send(app, { grp: 3 }, { text: '<b>Deploy done</b> — <a href="https://…">log</a>', parse_mode: "HTML" });

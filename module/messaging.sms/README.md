@@ -6,7 +6,7 @@ E.164 numbers per user; one number belongs to only one user.
 ## Sending
 
 ```ts
-import { send } from "../messaging.sms/mod.ts";
+import { send } from "@qino/qino/messaging.sms";
 
 await send(app, { usr: 42 }, "Your order shipped.");
 await send(app, { grp: 3 }, { title: "Notice", text: "The building closes at 18:00." });
@@ -34,7 +34,7 @@ When `token` is set it is sent as a Bearer token. An application can support any
 without changing this module by injecting a provider per app:
 
 ```ts
-import { setProvider } from "../messaging.sms/mod.ts";
+import { setProvider } from "@qino/qino/messaging.sms";
 
 setProvider(app, {
   send: (to, text) => vendor.messages.create({ to, text }),
