@@ -15,10 +15,11 @@ function fakeNode(dir: string, app: any, edit = false) {
     app,
     module: { name, dir: moduleDir, source: "", data: `${dir}data/${name}/` },
     page: () => node,
+    parent: () => node,
     file: () => undefined, // no logo yet
     cont: (part: string) => ({ html: () => `<div>${part}</div>` }),
   };
-  node.cms = { layoutPage: () => node };
+  node.cms = { layoutPage: () => node, linkAttributes: () => ({ href: "/", class: "cmsLink3" }) };
   return node;
 }
 
@@ -34,6 +35,7 @@ Deno.test("cms.layout.standard.1: renders the shipped template and adds the u2 a
   assertStringIncludes(out, `<div id="container">`);
   assertStringIncludes(out, "<div>main</div>"); // the page content
   assertStringIncludes(out, "<div>nav</div>"); // from the layout page
+  assertStringIncludes(out, `<a href="/" class="cmsLink3"></a>`); // logo link remains while the image is empty
   const u2 = [...ctx.res.html.styles].find((s) => s.endsWith("css/norm/norm.css"))!;
   assertStringIncludes(u2, "u2@"); // pinned in the layout, not taken from core
   assertEquals(ctx.res.csp["script-src"][u2.replace("css/norm/norm.css", "")], true);

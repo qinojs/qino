@@ -2,8 +2,8 @@
 
 A content node whose markup lives in its own file, rendered through
 [cms.templateParser](../cms.templateParser/README.md) — plain HTML plus the
-`cms-text` / `<cms-image>` / `<cms-cont>` constructs. Without those it is just
-HTML, so the module covers both.
+`cms-text` / `cms-link` / `<cms-image>` / `<cms-cont>` constructs. Without
+those it is just HTML, so the module covers both.
 
 Files of node `12`, below the app directory:
 

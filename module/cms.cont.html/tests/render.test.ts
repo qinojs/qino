@@ -38,7 +38,9 @@ Deno.test("cms.cont.html: the first render in edit mode creates the files, the e
   const out = await render(fakeNode(dir, true), ctx);
   assertStringIncludes(out, "<div>");
   assertEquals(out.includes("cms-text"), false); // examples are comments, nothing is created
-  assertStringIncludes(await Deno.readTextFile(`${dir}data/${name}/7.html`), "<!-- editable text");
+  const source = await Deno.readTextFile(`${dir}data/${name}/7.html`);
+  assertStringIncludes(source, "<!-- editable text");
+  assertStringIncludes(source, "cms-link=page");
   assertEquals([...ctx.res.html.styles], [`/app/d/${name}/pub/7.css`]);
   assertEquals([...ctx.res.html.scripts], [`/app/d/${name}/pub/7.js`]);
   await Deno.remove(dir, { recursive: true });

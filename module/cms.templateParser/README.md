@@ -107,7 +107,8 @@ All constructs work on the current node by default. `node=` redirects them:
 |-----------------------|------------------------------------------------------|
 | `page`                | the enclosing page — `node.page()`                   |
 | `layout`              | the global layout page — `cms.layoutPage(module)`    |
-| `parent`, `parent(2)` | ancestor — `node.parent(2)`                          |
+| `parent`              | direct parent — `node.parent()`                       |
+| `parent(2)`           | ancestor at absolute tree level 2 — `node.parent(2)`  |
 | a number              | that node id — `cms.node(5)`                         |
 
 ```html

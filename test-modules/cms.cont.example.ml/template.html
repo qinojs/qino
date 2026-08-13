@@ -7,8 +7,11 @@
   <!-- if: solange leer, für besucher ausgeblendet -->
   <p cms-text=note if></p>
 
-  <!-- node=: anderes ziel — page, layout, parent(2) oder eine id -->
+  <!-- node=: another target — page, layout, direct parent, parent at absolute level 2 or an id -->
   <h3 cms-text=title node=page></h3>
+
+  <!-- cms-link: stable internal link; an empty wrapper uses the page title -->
+  <a cms-link=page></a>
 
   <!-- cms-image: ein bild für alle sprachen -->
   <cms-image name=image1 width=110 height=110 fit=contain />

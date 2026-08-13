@@ -26,9 +26,14 @@ const INITIAL_SRC = `<div>
   <cms-cont name=body module=cms.cont.text />
   -->
 
-  <!-- node= targets another node: page, layout, parent, parent(2) or an id
+  <!-- node= targets another node: page, layout, direct parent, parent at absolute level 2 or an id
   <h1 cms-text=title node=page></h1>
   <cms-cont name=nav node=layout />
+  -->
+
+  <!-- stable internal link; an empty wrapper uses the target page title
+  <a cms-link=page></a>
+  <a cms-link=page cms-text=linkLabel>Read more</a>
   -->
 
 </div>
