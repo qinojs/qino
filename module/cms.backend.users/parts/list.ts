@@ -20,7 +20,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
 
   const rows = await db.query`SELECT usr.*,
     (SELECT count(*) FROM sess WHERE usr_id = usr.id) AS num_sess,
-    (SELECT max(time) FROM log WHERE sess_id = (SELECT max(id) FROM sess WHERE usr_id = usr.id)) AS last_online
+    (SELECT max(access) FROM sess WHERE usr_id = usr.id) AS last_online
     FROM usr WHERE ${sh.where}${grpFilter}${superFilter} ORDER BY ${sh.order}, id LIMIT 200`;
 
   const pageUrl = node ? await (await node.page()).url() : "";
