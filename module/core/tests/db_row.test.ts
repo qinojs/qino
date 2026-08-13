@@ -141,6 +141,26 @@ Deno.test("DbRow: a write past the object invalidates it, the next get() re-read
   }
 });
 
+Deno.test("DbRow: row TTL is configured per table and disabled by default", async () => {
+  const db = await testDb();
+  try {
+    const orders = db.table("shop_order");
+    const items = db.table("shop_item");
+    await orders.insert({ id: 1, title: "Order" });
+    await items.insert({ id: 1, title: "Item" });
+    const order = (await orders.get<Order>(1))!;
+    const item = (await items.get<ShopItem>(1))!;
+
+    orders.rowTtl = 1;
+    await new Promise((r) => setTimeout(r, 5));
+    assert(order.$stale);
+    assertEquals(item.$stale, false);
+    assertEquals(items.rowTtl, 0);
+  } finally {
+    await db.close();
+  }
+});
+
 Deno.test("DbRow: a delete past the object marks it as gone", async () => {
   const db = await testDb();
   try {

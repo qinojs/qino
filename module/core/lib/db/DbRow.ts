@@ -65,7 +65,7 @@ export class DbRow {
   /** Milliseconds since the values came from the database. */
   get $age(): number { return this.#loadedAt ? Date.now() - this.#loadedAt : Infinity; }
   /** Someone wrote this row through the table — the values may no longer match. */
-  get $stale(): boolean { return this.#stale || (this.#table.db.rowTtl > 0 && this.$age > this.#table.db.rowTtl); }
+  get $stale(): boolean { return this.#stale || (this.#table.rowTtl > 0 && this.$age > this.#table.rowTtl); }
   /** Whether the row is in the database; null while unknown. */
   get $exists(): boolean | null { return this.#exists; }
 

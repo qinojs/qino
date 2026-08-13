@@ -30,10 +30,6 @@ export class Db extends Emitter<DbEvents> {
   #dialect: { quoteId(id: string): string; placeholder(n: number): string; emptyInsert: string };
   #tx = new AsyncLocalStorage<{ hooks: (() => unknown)[] | null }>();
   schema: Record<string, any> = { properties: {} };
-  
-  // new:
-  /** Milliseconds a loaded row stays trusted; 0 disables time-based expiry (writes still invalidate). */
-  rowTtl = 0;
 
   constructor(conn: string) {
     super();
@@ -41,7 +37,6 @@ export class Db extends Emitter<DbEvents> {
     // Dialect (quoting + placeholders) for rendering comes from item.js — one source for all backends.
     this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
     
-    // new:
     // Any write through a table reaches the row object holding that row, whoever wrote it.
     this.on("table:update-after", ({ table, id }) => table.invalidate(id));
     this.on("table:delete-after", ({ table, id }) => table.invalidate(id, true));

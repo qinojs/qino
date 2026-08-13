@@ -265,6 +265,9 @@ export class DbTable {
 
   /* --- rows ------------------------------------------------------------------------------- */
 
+  /** Milliseconds a loaded row stays trusted; 0 disables time-based expiry. */
+  rowTtl: number = 0;
+
   // Identity map: one object per row, so two lookups share one set of pending changes. WeakRef,
   // because lifetime is reachability — a row nobody holds may go, a dirty one is held by the
   // write queue until it lands.
