@@ -3,21 +3,21 @@ import { WRITE, type Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
 import { renderTemplateFile } from "./mod.ts";
 
-const read = (path: string) => /^https?:\/\//.test(path) ? fetch(path).then((r) => r.text()) : Deno.readTextFile(path);
+const read = (source: URL) => source.protocol === "file:" ? Deno.readTextFile(source) : fetch(source).then((r) => r.text());
 const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});
 
 /** A module's template as a starting point: the site's own copy in the app dir beats the shipped one. */
 export function moduleTemplate(mod: Module): {
   file: string;
   css: string;
-  shipped: string;
+  shipped: URL;
   create(css: string): Promise<void>;
   render(node: Node): Promise<string>;
 } {
   return {
     file: `${mod.data}template.html`,
     css: `${mod.data}pub/main.css`, // cms links it while it exists
-    shipped: mod.dir ? `${mod.dir}template.html` : new URL("template.html", mod.source).href,
+    shipped: new URL("template.html", mod.source),
 
     /** Give the site its own files, once — a file deleted later stays deleted and falls back. */
     async create(css: string) {

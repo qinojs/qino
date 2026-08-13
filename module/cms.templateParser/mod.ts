@@ -8,31 +8,33 @@ import { renderNodes } from "./render.ts";
 const cache = new Map<string, { mtime?: number; ast: TNode[] }>();
 
 /** Parsed local or remote template; local files are reparsed whenever they change. */
-export async function loadTemplate(path: string): Promise<TNode[] | undefined> {
-  if (/^https?:\/\//.test(path)) {
-    const cached = cache.get(path);
+export async function loadTemplate(source: string | URL): Promise<TNode[] | undefined> {
+  const key = String(source);
+  const input = key.startsWith("file:") ? new URL(key) : source;
+  if (/^https?:\/\//.test(key)) {
+    const cached = cache.get(key);
     if (cached) return cached.ast;
-    const res = await fetch(path).catch(() => null);
+    const res = await fetch(input).catch(() => null);
     if (!res?.ok) return;
     const ast = parseTemplate(await res.text());
-    cache.set(path, { ast });
+    cache.set(key, { ast });
     return ast;
   }
-  const stat = await Deno.stat(path).catch(() => null);
+  const stat = await Deno.stat(input).catch(() => null);
   if (!stat?.isFile) return;
   const mtime = stat.mtime?.getTime() ?? 0;
-  const cached = cache.get(path);
+  const cached = cache.get(key);
   if (cached?.mtime === mtime) return cached.ast;
-  const source = await Deno.readTextFile(path).catch(() => undefined);
-  if (source === undefined) return;
-  const ast = parseTemplate(source);
-  cache.set(path, { mtime, ast });
+  const html = await Deno.readTextFile(input).catch(() => undefined);
+  if (html === undefined) return;
+  const ast = parseTemplate(html);
+  cache.set(key, { mtime, ast });
   return ast;
 }
 
 /** Render a template file for a node; undefined if there is no such file. */
-export async function renderTemplateFile(path: string, node: Node): Promise<string | undefined> {
-  const ast = await loadTemplate(path);
+export async function renderTemplateFile(source: string | URL, node: Node): Promise<string | undefined> {
+  const ast = await loadTemplate(source);
   return ast && renderNodes(ast, node);
 }
 

@@ -7,7 +7,7 @@ const name = "cms.layout.test";
 
 const fakeNode = (access: number) => ({
   app: { t: fakeT },
-  module: { name, dir: `/app/module/${name}/`, data: `/app/data/${name}/` },
+  module: { name, source: `file:///app/module/${name}/plugin.ts`, data: `/app/data/${name}/` },
   cms: { layoutPage: () => ({ access: () => Promise.resolve(access) }) },
 });
 
@@ -23,7 +23,7 @@ Deno.test("moduleTemplate: the site's copy lies in the app dir, the shipped one 
   const template = moduleTemplate(fakeNode(2).module as any);
   assertEquals(template.file, `/app/data/${name}/template.html`);
   assertEquals(template.css, `/app/data/${name}/pub/main.css`);
-  assertEquals(template.shipped, `/app/module/${name}/template.html`);
+  assertEquals(template.shipped.href, `file:///app/module/${name}/template.html`);
 });
 
 Deno.test("layoutOptions: the layout page decides, editing is enough", async () => {

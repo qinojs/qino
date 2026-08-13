@@ -1,19 +1,16 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertStringIncludes, testContext } from "../../core/tests/deps.ts";
-import { fromFileUrl } from "@std/path";
 import { cms } from "../plugin.ts";
 import { moduleTemplate } from "../../cms.templateParser/mod.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name } = manifest;
-
-const moduleDir = fromFileUrl(new URL("../", import.meta.url));
 
 function fakeNode(dir: string, app: any, edit = false) {
   const node: any = {
     id: 3,
     edit,
     app,
-    module: { name, dir: moduleDir, source: "", data: `${dir}data/${name}/` },
+    module: { name, source: new URL("../plugin.ts", import.meta.url).href, data: `${dir}data/${name}/` },
     page: () => node,
     parent: () => node,
     file: () => undefined, // no logo yet

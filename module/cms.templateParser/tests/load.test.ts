@@ -20,6 +20,15 @@ Deno.test("loadTemplate: a saved file is reparsed, an unchanged one comes from t
   await Deno.remove(path);
 });
 
+Deno.test("loadTemplate: a local file URL is read like its path", async () => {
+  const path = await Deno.makeTempFile({ suffix: " space.html" });
+  await Deno.writeTextFile(path, "<div>local URL</div>");
+  const url = new URL(`file://${path}`);
+  assertEquals(text(await loadTemplate(url)), text(await loadTemplate(path)));
+  assertEquals(text(await loadTemplate(url.href)), text(await loadTemplate(path)));
+  await Deno.remove(path);
+});
+
 Deno.test("loadTemplate: a remote template is fetched once and cached", async () => {
   const real = globalThis.fetch;
   const url = `https://qino.test/${crypto.randomUUID()}/template.html`;
