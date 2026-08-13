@@ -1,0 +1,8 @@
+/* Placeholder mode: the label stays for screen readers but must not take space. */
+[qcms-mod="cont.form2.fields1"].-labelPlaceholder .-label {
+	position: absolute;
+	clip-path: inset(50%);
+	overflow: hidden;
+	width: 1px;
+	height: 1px;
+}
