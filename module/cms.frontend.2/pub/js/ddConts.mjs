@@ -42,8 +42,8 @@ cms.contDrag = function() {
     this.trigger('start',{target:el, originalEvent:e});
     active = el;
     oldCss = active.style.cssText;
-    active.style.position  = 'fixed';
-    c1.zTop(active);
+    active.style.position = 'fixed';
+    active.style.zIndex   = 1000; // above the drop ghost
     document.body.append(active);
     e && move(e);
   };

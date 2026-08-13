@@ -9,7 +9,7 @@ const panelRoot = customElements.whenDefined('qino-cms').then(() => document.que
 panelRoot.then(async root => {
   const { SelectorObserver } = await import('@qino/u2/js/SelectorObserver/SelectorObserver.js');
   new SelectorObserver({ on: el => {
-    const button = c1.dom.fragment('<button>select').firstChild;
+    const button = c1.dom.el('<button>select');
     el.after(button);
     button.addEventListener('click', () => {
       const fB = new cms.fileBrowser({ multiple:true });
@@ -165,13 +165,13 @@ cms.fileBrowser = class {
 
         for (const item of result) {
           if (has[item.id]) continue;
-          const el = c1.dom.fragment(
+          const el = c1.dom.el(
             `<label data-type=dbFile>
               <div class=-ext style="position:absolute; inset:0; display:flex; justify-content:center; align-items:center; font-size:3.6em; color:#fff"></div>
               <input type=checkbox style="position:absolute; top:.8em; left:.8em">
               <div class=-title></div>
             </label>`
-          ).firstChild;
+          );
           el.setAttribute('itemid', item.id);
           el.querySelector('.-title').textContent = item.name;
           if (item.mime.includes('image/')) el.style.backgroundImage = 'url("'+item.url+'")';

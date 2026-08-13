@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => qgExecCommand('enableObjectR
 
 // fake Selection
 {
-  const el = c1.dom.fragment(`<style>.qgRte_fakeSelection {}</style>`).firstChild;
+  const el = c1.dom.el(`<style>.qgRte_fakeSelection {}</style>`);
   document.head.append(el);
   const style = el.sheet.cssRules[0].style;
   style.background = 'rgba(150,150,150,.9)';

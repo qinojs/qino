@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   if (document.body.contextMenu !== undefined) return;
 
-  const el    = html => c1.dom.fragment(html).firstChild;
+  const el    = html => c1.dom.el(html);
   const stop  = e => e.stopPropagation();
   const show  = node => node.matches(':popover-open') || node.showPopover();
   const close = (active = null) => {

@@ -13,7 +13,7 @@ customElements.whenDefined('qino-cms').then(async () => {
 
     const search = find(el, '[type=search]');
     const mainList = find(el, '.-list.-main');
-    const container = c1.dom.fragment(
+    const container = c1.dom.el(
       `<div class=-pexels style="padding-top:2em;" hidden>
             <h3>
                 Free images from:
@@ -21,7 +21,7 @@ customElements.whenDefined('qino-cms').then(async () => {
             </h3>
             <div class=-list></div>
         </div>`
-    ).firstChild;
+    );
     mainList.after(container);
 
     const list = find(container, '.-list');
@@ -33,12 +33,12 @@ customElements.whenDefined('qino-cms').then(async () => {
       let item;
       for (item of items) {
         if (hasPixabay && item.photographer === 'Pixabay') continue;
-        const el = c1.dom.fragment(
+        const el = c1.dom.el(
           '<label data-type=url>'+
                     '<input type=checkbox style="position:absolute; top:.5rem; left:.5rem">'+
                     '<div class=-title></div>'+
                 '</label>'
-        ).firstChild;
+        );
         el.setAttribute('itemid', item.original);
         find(el, '.-title').textContent = item.width+'x'+item.height+' by:'+item.photographer;
         el.style.backgroundImage = 'url("'+item.medium+'")';

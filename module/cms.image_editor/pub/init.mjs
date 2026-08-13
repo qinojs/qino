@@ -14,7 +14,7 @@ const showEditor = async el => {
 // ─── hover icon over editable page images (light DOM) ───────────────────────
 {
   const icon = document.createElement('div');
-  icon.style.cssText = 'transition:opacity .3s; border-radius:.125rem; overflow:hidden; position:absolute; background:#fff; cursor:pointer';
+  icon.style.cssText = 'transition:opacity .3s; border-radius:.125rem; overflow:hidden; position:absolute; z-index:1998; background:#fff; cursor:pointer';
   icon.innerHTML = EDIT_SVG;
   icon.title = 'Edit image';
 
@@ -31,7 +31,6 @@ const showEditor = async el => {
       const pos = el.getBoundingClientRect();
       icon.style.top  = pos.top  + scrollY + 2 + 'px';
       icon.style.left = pos.left + scrollX + 2 + 'px';
-      c1.zTop(icon);
     } else {
       hideTimeout = setTimeout(() => {
         icon.remove();

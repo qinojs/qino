@@ -38,7 +38,6 @@ globalThis.Rte.ui = {
         ui.div.style.pointerEvents = 'none';
         Rte.ui.mouseover = 0;
         setTimeout(()=>{
-          c1.zTop(ui.div);
           ui.div.style.opacity = '1';
           ui.div.style.pointerEvents = '';
         },100);
@@ -117,7 +116,7 @@ globalThis.Rte.ui = {
   },
   setSelect(name, opt) {
     let timeout = null;
-    const el = c1.dom.fragment('<div class="-item -select"><div class=-state></div><div class=-options></div></div>').firstChild;
+    const el = c1.dom.el('<div class="-item -select"><div class=-state></div><div class=-options></div></div>');
     el.addEventListener('mousedown', e=> { opts.style.display = 'block'; e.preventDefault(); });
     el.addEventListener('mouseover', ()=> clearTimeout(timeout) );
     el.addEventListener('mouseout',  ()=> timeout = setTimeout(()=> opts.style.display = 'none' ,300) );

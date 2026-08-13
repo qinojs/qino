@@ -37,7 +37,7 @@ const css =
 '  display:block; '+
 '} '+
 '';
-const el = c1.dom.fragment('<div class=-item itemid=publish>'+
+const el = c1.dom.el('<div class=-item itemid=publish>'+
   '<div class=-content>'+
     '<div class=-standalone>'+
       '<div class=-h1>Draft</div>'+
@@ -67,7 +67,7 @@ const el = c1.dom.fragment('<div class=-item itemid=publish>'+
     '<div class=-text>Draft</div>'+
   '</div>'+
   '<style>'+css+'</style>'+
-  '</div>').firstChild;
+  '</div>');
 panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.append(el);
 
 el.querySelector('.-versionCompare').addEventListener('click', async ()=>{

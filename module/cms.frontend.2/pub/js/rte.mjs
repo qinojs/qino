@@ -12,7 +12,7 @@ const unwrap  = el => el.replaceWith(...el.childNodes); // remove element, keep 
 const URL_RE = /^[a-zA-Z0-9-]{2,999}\.[a-z0-9]{2,10}/;
 const MAIL_RE = /^([a-zA-Z0-9_.-])+@(([a-zA-Z0-9-])+.)+([a-zA-Z0-9]{2,10})+$/;
 
-const inp = c1.dom.fragment('<input placeholder=url spellcheck=false type=qgcms-page>').firstChild;
+const inp = c1.dom.el('<input placeholder=url spellcheck=false type=qgcms-page>');
 const end = () => {
   const el = Rte.element.closest('a');
   if (!el) return;
@@ -119,7 +119,7 @@ const externMediaDialog = async function(txtEl,medias) {
     '<style>.cmsExtMediaHighlight {outline: 6px solid #fa0}</style>';
   const list = find(dialog, '.-files');
   for (const media of Object.values(medias)) {
-    const label = c1.dom.fragment('<label><input type=checkbox checked> '+media.basename+'</label>').firstChild;
+    const label = c1.dom.el('<label><input type=checkbox checked> '+media.basename+'</label>');
     label.addEventListener('mouseover', ()=> media.els.forEach(el=>el.classList.add('cmsExtMediaHighlight')) );
     label.addEventListener('mouseleave',()=> media.els.forEach(el=>el.classList.remove('cmsExtMediaHighlight')) );
     find(label, 'input').addEventListener('change', e => media.checked = e.currentTarget.checked);

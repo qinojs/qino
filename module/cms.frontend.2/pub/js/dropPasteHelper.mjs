@@ -83,10 +83,10 @@ cms.imgToDbFile = function(img, pid, cb) {
 function fileGetPreview(f) {
   let ph = null;
   if (f.c1IsImage()) {
-    ph = c1.dom.fragment('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">').firstChild;
+    ph = c1.dom.el('<img style="max-width:101%; opacity:.6; filter:grayscale(1)">');
     f.c1ToImage(ph);
   } else {
-    ph = c1.dom.fragment('<span><a href="#" target=_blank> '+f.name+' </a></span>').firstChild;
+    ph = c1.dom.el('<span><a href="#" target=_blank> '+f.name+' </a></span>');
   }
   const range = getSelection().getRangeAt(0);
   range.insertNode(ph);

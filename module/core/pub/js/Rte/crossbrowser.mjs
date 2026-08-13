@@ -174,7 +174,6 @@ document.addEventListener('mousedown', e=>{
     };
     document.addEventListener('mousedown',hide);
     document.body.append(cont);
-    c1.zTop(cont);
     positionize();
     function check() {
       cont.parentNode && img.offsetHeight ? positionize() : (hide(), clearInterval(checkIntr));
@@ -215,7 +214,6 @@ document.addEventListener('mousedown', e=>{
         img.style.height = h + 'px';
         info.innerHTML = w+' x '+h+' ('+(dw>0?'+'+dw:dw)+','+(dh>0?'+'+dh:dh)+')';
         info.style.display = 'block';
-        c1.zTop(info);
       })
       positionize();
     };
@@ -230,13 +228,13 @@ document.addEventListener('mousedown', e=>{
     e.stopPropagation();
   };
   const ITEM_CSS = ';position:absolute; background-color:#fff; border:1px solid black; height:12px; width:12px; box-sizing:border-box';
-  const cont = c1.dom.fragment(
-    '<div style="position:absolute; top:0; left:0; width:100%; height:0">'+
+  const cont = c1.dom.el(
+    '<div style="position:absolute; z-index:1998; top:0; left:0; width:100%; height:0">'+
     '<div class=-x  style="cursor:e-resize '+ITEM_CSS+'"></div>'+
     '<div class=-y  style="cursor:s-resize '+ITEM_CSS+'"></div>'+
     '<div class=-xy style="cursor:se-resize'+ITEM_CSS+'" title="press ctrl to disable aspect ratio"></div>'+
-    '<div class=-info style="position:absolute; background: #fafafa; box-shadow:0 0 .1875rem; font-size:11px; color:#333; padding:.125rem .25rem; border-radius:.125rem"></div>'+
-  '</div>').firstChild;
+    '<div class=-info style="position:absolute; z-index:1; background: #fafafa; box-shadow:0 0 .1875rem; font-size:11px; color:#333; padding:.125rem .25rem; border-radius:.125rem"></div>'+
+  '</div>');
   const x  = find(cont, '>.-x');
   const y  = find(cont, '>.-y');
   const xy = find(cont, '>.-xy');

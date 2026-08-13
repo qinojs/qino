@@ -6,7 +6,7 @@ customElements.whenDefined("qino-cms").then(async () => {
   const root = document.querySelector("qino-cms").shadowRoot;
   new SelectorObserver({ on: () => {
     if (root.querySelector(".cmsChatWrapper")) return;
-    const wrap = c1.dom.fragment(`
+    const wrap = c1.dom.el(`
       <div xonmousedown="event.stopPropagation();">
         <style>
           .cmsChatWrapper {
@@ -35,6 +35,6 @@ customElements.whenDefined("qino-cms").then(async () => {
           <ai-chat bot=cms-helper></ai-chat>
         </div>
       </div>`);
-    root.append(wrap.firstElementChild);
+    root.append(wrap);
   } }).observe("#panel", { root });
 });

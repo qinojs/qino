@@ -125,7 +125,7 @@ const showEditor = async el => {
 
 // mark untranslated / void texts
 setTimeout(() => {
-  document.head.append(c1.dom.fragment(
+  document.head.append(c1.dom.el(
     '<style>'+
     '  @keyframes qgCMS-text-untranslated { 0% { background-color: rgba(255,240,0,.4) } 50% {  } 100% {  } }'+
     '  .qgCMS-text-untranslated { animation:qgCMS-text-untranslated .8s infinite alternate; }'+
@@ -170,7 +170,7 @@ function hee(string){
 /* translate hole page */
 const addTranslateWidget = el=>{
   const lang = document.documentElement.getAttribute('lang');
-  const fragment = c1.dom.fragment(`
+  el.insertAdjacentHTML('beforeend', `
         <div class="-widgetHead -open" tabindex=0><span class=-title>Translate</span></div>
         <div>
             <form class=-content>
@@ -181,7 +181,7 @@ const addTranslateWidget = el=>{
             </form>
         </div>
     `);
-  fragment.querySelector('form').addEventListener('submit',async e=>{
+  el.lastElementChild.querySelector('form').addEventListener('submit',async e=>{
     e.preventDefault();
     await import('@qino/pub/c1/loading.mjs');
     const sourceLang = e.submitter.name;
@@ -196,7 +196,6 @@ const addTranslateWidget = el=>{
     }
     done();
   });
-  el.append(fragment);
 };
 c1.onElement('.qgCmsFront1MoreManager', addTranslateWidget);
 customElements.whenDefined('qino-cms').then(async () => {

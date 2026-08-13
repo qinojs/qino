@@ -32,7 +32,7 @@ export const comparer = {
                 <div class=-v1><iframe class=-i1></iframe></div>
             </div>
         </div>`;
-    div = c1.dom.fragment(html).firstElementChild;
+    div = c1.dom.el(html);
     iframe1 = div.querySelector('.-i1');
     iframe2 = div.querySelector('.-i2');
     view1   = div.querySelector('.-v1');

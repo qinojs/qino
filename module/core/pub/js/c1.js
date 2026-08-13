@@ -61,28 +61,13 @@
   };
 
 
-  /* dom: fragment builder + helpers */
+  /* dom: single element from html; skips leading whitespace text nodes */
   c1.dom ||= {};
-  c1.dom.fragment = function(html){
+  c1.dom.el = html => {
     const tmpl = d.createElement('template');
     tmpl.innerHTML = html;
-    return tmpl.content;
+    return tmpl.content.firstElementChild;
   };
-  /* raise element's z-index above its siblings */
-  c1.zTop = function(el) {
-    if (!el.parentNode) return;
-    const children = el.parentNode.children;
-    let i = children.length, maxZ = 0, child, myZ = 0;
-    while ((child = children[--i])) {
-      let childZ = getComputedStyle(child).getPropertyValue('z-index') || 0;
-      if (child.style.zIndex > childZ) childZ = child.style.zIndex;
-      if (childZ === 'auto') childZ = 0;
-      if (child === el) myZ = childZ;
-      else maxZ = Math.max(maxZ, childZ);
-    }
-    if (myZ <= maxZ) el.style.zIndex = maxZ+1;
-  };
-
   // text nodes lack native closest; warn to find out if this polyfill is still used anywhere
   Text.prototype.closest = function(sel){
     console.warn('Text.closest polyfill used', sel, this);

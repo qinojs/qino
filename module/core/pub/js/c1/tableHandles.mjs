@@ -5,7 +5,7 @@ export class TableHandles {
   constructor() {
     const remImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#ee3c3c" stroke-width="14"><line x1="4" y1="4" x2="60" y2="60"/><line x1="4" y1="60" x2="60" y2="4"/></svg>')+'\'';
     const addImgData = '\'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" stroke="#444" stroke-width="14"><line x1="0" y1="32" x2="64" y2="32"/><line x1="32" y1="0" x2="32" y2="64"/></svg>')+'\'';
-    this.root = c1.dom.fragment(
+    this.root = c1.dom.el(
       `<div class=c1TableHandles>
       <a class=-rowRemove></a>
       <a class=-rowAdd></a>
@@ -14,6 +14,7 @@ export class TableHandles {
       <style>
       .c1TableHandles > a {
         position: absolute;
+        z-index:1998; /* content chrome, just below #qgRteToolbar */
         border:1px solid #555;
         border-radius: 50%;
         width: 22px;
@@ -25,7 +26,7 @@ export class TableHandles {
         background-image: url(${addImgData});
       }
       </style>
-    </div>`).firstChild;
+    </div>`);
 
     this.rowRemove = find(this.root, '.-rowRemove');
     this.rowAdd    = find(this.root, '.-rowAdd');
@@ -36,7 +37,6 @@ export class TableHandles {
   showTd(td) {
     this.active = td;
     document.body.append(this.root);
-    c1.zTop(this.root);
     this.positionize(td);
     clearInterval(this.checkIntr);
     this.checkIntr = setInterval(this.handleEvent.bind(this), 100);

@@ -37,7 +37,7 @@ cms.initNode('cont.table2', function(el) {
     let html = e.clipboardData.getData('text/html');
     html = html.replace(/([\s\S]*)<body>/, '').replace(/<\/body>([\s\S]*)/, '');
     html = html.replace('<!--StartFragment-->', '').replace('<!--EndFragment-->', '');
-    const table = c1.dom.fragment(html).firstElementChild;
+    const table = c1.dom.el(html);
     if (table && table.tagName !== 'TABLE') return;
     e.preventDefault(); // not working!
     setTimeout(() => {

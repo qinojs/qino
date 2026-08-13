@@ -9,7 +9,7 @@ customElements.whenDefined('qino-cms').then(async () => {
   const root = document.querySelector('qino-cms').shadowRoot;
   new SelectorObserver({ on: el => {
     const mainList = find(el, '.-list.-main');
-    const container = c1.dom.fragment(
+    const container = c1.dom.el(
       `<div class=-ai style="padding-top:2em;">
             <h3>AI Image Generation</h3>
             <form>
@@ -18,7 +18,7 @@ customElements.whenDefined('qino-cms').then(async () => {
             </form>
             <div class=-list></div>
         </div>`
-    ).firstChild;
+    );
     mainList.after(container);
 
     const list = find(container, '.-list');

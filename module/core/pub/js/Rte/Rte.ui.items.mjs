@@ -90,7 +90,7 @@ Rte.ui.setItem('Strikethrough',     {cmd:'strikethrough', xenable:':not(img)'});
       for (const sty of Object.keys(classes)) {
         if (!useClass(sty)) return;
         const has = el?.classList?.contains(sty);
-        const d = c1.dom.fragment('<div class="'+sty+'">'+sty+'</div>').firstChild;
+        const d = c1.dom.el('<div class="'+sty+'">'+sty+'</div>');
         sopts.append(d);
         has && d.classList.add('-selected');
         d.onmousedown = () => {
@@ -173,17 +173,17 @@ Rte.ui.setItem('Strikethrough',     {cmd:'strikethrough', xenable:':not(img)'});
   });
 }
 { /* code */
-  const wrapper = c1.dom.fragment(
+  const wrapper = c1.dom.el(
     '<div id=qgRteHtml>'+
       '<textarea spellcheck=false class=c1Rst></textarea>'+
       '<style>'+
-      '  #qgRteHtml { opacity:1; transform:opacity .5s; position:fixed; border:2px solid black; top:40%; left:1%; bottom:1%; right:1%; background:#fff; color:#000; margin:auto; box-shadow:0 0 20px} '+
+      '  #qgRteHtml { opacity:1; transform:opacity .5s; position:fixed; z-index:2000; border:2px solid black; top:40%; left:1%; bottom:1%; right:1%; background:#fff; color:#000; margin:auto; box-shadow:0 0 20px} '+
       '  #qgRteHtml > textarea { position:absolute; inset:0; width:100%; height:100%; font:11px monospace; } '+
       '  #qgRteHtml.-Invisible { opacity:.1; } '+
       '  #qgRteHtml:hover { opacity:1; } '+
       '</style>'+
     '</div>'
-  ).firstChild;
+  );
 
 
   let tO = null;
@@ -243,7 +243,6 @@ Rte.ui.setItem('Strikethrough',     {cmd:'strikethrough', xenable:':not(img)'});
         el.dispatchEvent(new Event('input',{bubbles:true,cancelable:true}));
       }
       document.body.append(wrapper);
-      c1.zTop(wrapper);
 
       function hide(e) {
         if (e.key==='Escape' || e.target !== html) {
@@ -265,7 +264,7 @@ Rte.ui.setItem('Strikethrough',     {cmd:'strikethrough', xenable:':not(img)'});
 /* insert table */
 Rte.ui.setItem('Table', {
   click() {
-    const table = c1.dom.fragment('<table><tr><td>&nbsp;<td>&nbsp;<tr><td>&nbsp;<td>&nbsp;</table>').firstChild;
+    const table = c1.dom.el('<table><tr><td>&nbsp;<td>&nbsp;<tr><td>&nbsp;<td>&nbsp;</table>');
     const r = getSelection().getRangeAt(0);
     r.deleteContents();
     r.insertNode(table);
@@ -278,7 +277,7 @@ Rte.ui.setItem('Table', {
 /* delete Element */
 Rte.ui.setItem('Del',{
   click() { unwrap(Rte.element); },
-  el: c1.dom.fragment('<a style="color:red">Delete element</a>').firstChild
+  el: c1.dom.el('<a style="color:red">Delete element</a>')
 });
 /* Target */
 Rte.ui.setItem('LinkTarget', {
@@ -296,11 +295,11 @@ Rte.ui.setItem('LinkTarget', {
     Rte.active.focus();
     Rte.trigger('elementchange');
   },
-  el: c1.dom.fragment('<div class="-item -button">Link in neuem Fenster</div>').firstChild
+  el: c1.dom.el('<div class="-item -button">Link in neuem Fenster</div>')
 });
 /* Titletag *
 {
-  let el = c1.dom.fragment('<table style="clear:both"><tr><td style="width:5.25rem">Titel<td><input>').firstChild;
+  let el = c1.dom.el('<table style="clear:both"><tr><td style="width:5.25rem">Titel<td><input>');
   let inp = find(el, 'input');
   inp.addEventListener('keyup', function() {
     Rte.element.setAttribute('title',inp.value);
@@ -315,12 +314,12 @@ Rte.ui.setItem('LinkTarget', {
   });
 }
 /* Image Attributes */ {
-  const inp = c1.dom.fragment(
+  const inp = c1.dom.el(
     '<table>'+
       '<tr><td style="width:5.25rem">Width:<td><input class=-x>'+
       '<tr><td>Height:<td><input class=-y>'+
       '<tr><td title="Alternativer Text">Alt-Text:<td><input class=-alt>'+
-    '</table>').firstChild;
+    '</table>');
   inp.addEventListener('keyup',e=>{
     const img = Rte.element;
     img.style.width  = find(inp, '.-x').value+'px';
@@ -380,7 +379,7 @@ Rte.ui.setItem('ImgOriginal', {
       Rte.trigger('elementchange');
     }
   },
-  el: c1.dom.fragment('<span class="-item -button" title="Original size">Original image</span>').firstChild
+  el: c1.dom.el('<span class="-item -button" title="Original size">Original image</span>')
 });
 
 /* table handles */
@@ -416,7 +415,7 @@ import {TableHandles} from '../c1/tableHandles.mjs';
     if (e.target.classList.contains('-colAdd')) {
       const trs = findAll(table, '> * > tr');
       for (const tr of trs) {
-        const td = c1.dom.fragment('<td><br>'); // firefox needs <br> to be able to navigate to the cell
+        const td = c1.dom.el('<td><br>'); // firefox needs <br> to be able to navigate to the cell
         tr.children[index].after(td);
       }
     }
@@ -448,10 +447,10 @@ Rte.ui.config = {
       Rte.range.insertNode(document.createTextNode('\u00AD'));
       console.warn('needed? shoud it be deprecated?');
     },
-    el: c1.dom.fragment('<div class="-item -button">Insert soft hyphen</div>').firstChild
+    el: c1.dom.el('<div class="-item -button">Insert soft hyphen</div>')
   });
   document.head.append(
-    c1.dom.fragment(
+    c1.dom.el(
       '<style>'+
     '.qgRte-mark-char.-Shy::after  { content:"-"; display:inline-block; color:red; opacity:.3; } '+
     //'.qgRte-mark-char.-Nbsp::after { content:"•"; display:inline-block; color:red; opacity:.3; } '+
@@ -517,7 +516,7 @@ Rte.ui.config = {
 /* *
 { // show line-breaks
   document.head.append(
-    c1.dom.fragment(
+    c1.dom.el(
     '<style>'+
     '.qgRte-mark-char.-Br::before { '+
     '  content:"↵";'+

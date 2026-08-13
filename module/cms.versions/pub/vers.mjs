@@ -16,7 +16,7 @@ function panelEl(selector) {
 }
 
 const CmsVersViewer = function(){
-  this.container = c1.dom.fragment(`
+  this.container = c1.dom.el(`
     <div id=qgCms_vers tabindex=-1 class=qgCMS popover=manual>
       <div class=-preview></div>
       <div class=-control>
@@ -25,7 +25,7 @@ const CmsVersViewer = function(){
       </div>
       <style id=x>${css()}</style>
     </div>`
-  ).firstElementChild;
+  );
   this.preview = find(this.container, '.-preview');
   this.iframe1 = document.createElement('iframe');
   this.iframe2 = document.createElement('iframe');
@@ -64,9 +64,9 @@ CmsVersViewer.prototype = {
       const list = find(this.container, '.-list');
       list.innerHTML = '';
       rows.forEach(row=>{
-        const li = c1.dom.fragment(
+        const li = c1.dom.el(
           `<li v=${row.vers}><div class=-date>${relativeDate(row.time)}</div><div class=-usr>${row.usr}</div>`
-        ).firstElementChild;
+        );
         find(li, '.-date').title = exactDate.format(row.time*1000);
         li.addEventListener('mouseover',()=>{
           if (activeRow === row.vers) return;
@@ -144,13 +144,13 @@ Object.assign(CmsVersViewer.prototype, c1.Eventer);
 const viewer = new CmsVersViewer();
 
 /* more */
-const more = c1.dom.fragment(`
+const more = c1.dom.el(`
   <div class=-more>
     <button class=-compareActive>Compare with current</button>
     <button class=-reactivate>Restore this version</button>
     <div class=-txt></div>
-  </div>`).firstElementChild;
-const pointer = c1.dom.fragment('<i class=-pointer></i>').firstChild;
+  </div>`);
+const pointer = c1.dom.el('<i class=-pointer></i>');
 find(viewer.container, '.-control').append(more, pointer);
 viewer.on('before-load',function(e){
   const li = find(this.container, `.-list > li[v="${e.vers}"]`);
@@ -236,12 +236,12 @@ cms.contextMenueContent.addItem('Verlauf', {
 });
 
 // frontend integration
-const sidebarItem = c1.dom.fragment(`
+const sidebarItem = c1.dom.el(`
   <div class=-item itemid=history>
     <div class=-title>
       <div class=-text>Verlauf</div>
     </div>
-  </div>`).firstElementChild;
+  </div>`);
 panelEl('#qgCmsFrontend1 > .-sidebar > [itemid="more"], #panel > .-sidebar > [itemid="more"]')?.after(sidebarItem)
 sidebarItem.addEventListener('mousedown', e=>{
   e.stopPropagation();

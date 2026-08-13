@@ -105,7 +105,7 @@ cms.cont.add = mod => api.cms.node(nodeId).contents.post({ module: mod }).then(l
 function loadCallback(res){
   setTimeout(async ()=>{ // html possibility has content-script that needs header-script to be executed first
     const html = typeof res.html === 'string' ? res.html : res.id ? await api.cms.node(res.id).html.get() : '';
-    const el = c1.dom.fragment(html).firstElementChild;
+    const el = c1.dom.el(html);
     if (!el) return console.warn('cms.cont.add: no html', res);
     cms.contPos(el);
     cms.contPos.dd.start(el); // todo. what todo?
@@ -118,7 +118,7 @@ function loadCallback(res){
 document.addEventListener('DOMContentLoaded',()=>{
 
   const p = cms.contPos;
-  const menu = c1.dom.fragment(
+  const menu = c1.dom.el(
     '<div id=qgCmsContPosMenu popover=manual>'+
     '  <div class=-opts title=Settings>'+
     '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94c0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6s3.6 1.62 3.6 3.6s-1.62 3.6-3.6 3.6z"></path></svg>'+
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     '    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2s.9-2 2-2s2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2s-2 .9-2 2s.9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2s2-.9 2-2s-.9-2-2-2z"></path></svg>'+
     '  </div>'+
     '  <div class=-mod  title=Module></div>'+
-    '</div>').firstChild;
+    '</div>');
   document.body.append(menu);
   menu.drag = menu.querySelector('.-drag');
   menu.mod  = menu.querySelector('.-mod');
@@ -141,13 +141,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   menu.addEventListener('click',     e => e.stopPropagation() );
   menu.addEventListener('mousedown', e => e.stopPropagation() );
 
-  const trash = c1.dom.fragment(
+  const trash = c1.dom.el(
     '<div id=qgCmsContTrash popover=manual>'+
     '  <svg width="50" height="60" viewBox="0 -5 26 30">'+
     '    <path class="-lis" d="M18.902 1.194h-1.21C17.368.494 16.66 0 15.843 0H9.727c-.818 0-1.525.493-1.85 1.194h-1.21c-2.242 0-4.076 1.835-4.076 4.078H22.98c0-2.242-1.833-4.078-4.076-4.078z"/>'+
     '    <path d="M3.83 21.988c0 1.97 1.612 3.582 3.583 3.582H18.16c1.97 0 3.58-1.612 3.58-3.582V6.466H3.83v15.522zm12.537-11.94c0-.66.535-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.193 1.193s-1.193-.534-1.193-1.192v-11.94zm-4.775 0c0-.66.534-1.194 1.194-1.194s1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193s-1.194-.534-1.194-1.192v-11.94zm-4.777 0c0-.66.534-1.194 1.193-1.194.66 0 1.194.535 1.194 1.194v11.94c0 .66-.534 1.193-1.194 1.193-.66 0-1.193-.534-1.193-1.192v-11.94z"/>'+
     '  </svg>'+
-    '</div>', 'text/html').firstChild;
+    '</div>', 'text/html');
   document.body.append(trash);
 
   /* drag drop */
@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     menu.style.cursor = (isDraggable?'move':'default');
 
     if (obj.el.hasAttribute('qcms-offline')) {
-      menu.mod.append(c1.dom.fragment('<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>'))
+      menu.mod.insertAdjacentHTML('beforeend', '<span style="animation:qgcms_fadeInOut .4s linear alternate infinite; font-family:qg_cms; font-size:1.2em; line-height:.2; display:inline-block; margin-left:.5em"> &#xe901;</span>')
     }
     menu.style.backgroundColor = getComputedStyle(obj.el)['outline-color'];
   });
