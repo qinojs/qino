@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "../../core/tests/deps.ts";
 import { toFileUrl } from "@std/path";
-import { App } from "../../core/mod.ts";
+import { App, type Module } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 import { cms } from "../plugin.ts";
 
@@ -11,7 +11,7 @@ async function fixture() {
   await Deno.mkdir(tpl + "pub/", { recursive: true });
   await Deno.mkdir(tpl + "tests/", { recursive: true });
   await Deno.writeTextFile(`${tpl}plugin.ts`, ``);
-    await Deno.writeTextFile(`${tpl}manifest.json`, `{ "name": "cms.cont.demo" }`);
+  await Deno.writeTextFile(`${tpl}manifest.json`, `{ "name": "cms.cont.demo", "files": ["manifest.json", "plugin.ts", "pub/main.css"] }`);
   await Deno.writeTextFile(`${tpl}pub/main.css`, `[qcms-mod="cont.demo"] {\n}\n`);
   await Deno.writeTextFile(`${tpl}tests/demo.test.ts`, `// belongs to the template alone\n`);
 
@@ -49,9 +49,44 @@ Deno.test({
     assertEquals(invalid.ok, false, "no path may be smuggled in as a name");
     assertEquals(await cms.node.api(node, { name: "t.x", template: "t.unknown" }), {
       ok: false,
-      message: `Template "t.unknown" is not a local module`,
+      message: `Template "t.unknown" is not available`,
     });
     assertEquals(await Deno.stat(dir + "module/t.x").then(() => true, () => false), false, "a failed create leaves nothing");
+
+    const remote = {
+      name: "cms.cont.remote",
+      source: "https://modules.example/cms.cont.remote/plugin.ts",
+      manifest: { files: ["manifest.json", "plugin.ts", "pub/main.css", "pub/pixel.bin"] },
+    } as unknown as Module;
+    const assets = new Map<string, BodyInit>([
+      ["manifest.json", JSON.stringify({ name: remote.name, files: remote.manifest.files })],
+      ["plugin.ts", "export function init() {}\n"],
+      ["pub/main.css", `[qcms-mod="cont.remote"] {\n}\n`],
+      ["pub/pixel.bin", new Uint8Array([0xff, 0x00, 0xfe])],
+    ]);
+    const get = app.modules.get.bind(app.modules);
+    const fetch = globalThis.fetch;
+    app.modules.get = (name) => name === remote.name ? remote : get(name);
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof Request ? input.url : String(input);
+      const source = new URL(url);
+      if (source.hostname !== "modules.example") return fetch(input, init);
+      const body = assets.get(source.pathname.replace("/cms.cont.remote/", ""));
+      return Promise.resolve(body === undefined ? new Response(null, { status: 404 }) : new Response(body));
+    }) as typeof globalThis.fetch;
+    try {
+      assertEquals(await cms.node.api(node, { name: "cms.cont.remote.copy", template: remote.name }), { ok: true });
+      assets.delete("plugin.ts");
+      assertEquals((await cms.node.api(node, { name: "cms.cont.remote.failed", template: remote.name })).ok, false);
+    } finally {
+      globalThis.fetch = fetch;
+      app.modules.get = get;
+    }
+    const copied = dir + "module/cms.cont.remote.copy/";
+    assert((await Deno.readTextFile(copied + "manifest.json")).includes(`"name":"cms.cont.remote.copy"`), "remote manifest is renamed");
+    assertEquals(await Deno.readTextFile(copied + "pub/main.css"), `[qcms-mod="cont.remote.copy"] {\n}\n`);
+    assertEquals(await Deno.readFile(copied + "pub/pixel.bin"), new Uint8Array([0xff, 0x00, 0xfe]));
+    assertEquals(await Deno.stat(dir + "module/cms.cont.remote.failed").then(() => true, () => false), false, "a failed download leaves nothing");
 
     await app.db.close();
     await Deno.remove(dir, { recursive: true });

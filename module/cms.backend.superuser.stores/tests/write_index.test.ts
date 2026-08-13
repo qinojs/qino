@@ -30,11 +30,18 @@ Deno.test({
     assertEquals(manifest.description, "One.", "other fields are untouched");
     assertEquals(JSON.parse(await Deno.readTextFile(dir + "store/store.json")), { modules: { "t.one": {} } });
 
-    assertStringIncludes(await writeIndex(store), "Nothing to write");
+    // A local catalog may still name a removed folder. Rewriting follows the folders and keeps
+    // metadata of modules that remain instead of trying to enter the stale one.
+    await Deno.writeTextFile(dir + "store/store.json", JSON.stringify({ modules: { "t.one": { channel: "dev" }, gone: {} } }));
+    const catalogStore = app.stores.add(toFileUrl(dir + "store/store.json").href);
+    assertStringIncludes(await writeIndex(catalogStore), "store.json written (1 modules)");
+    assertEquals(JSON.parse(await Deno.readTextFile(dir + "store/store.json")), { modules: { "t.one": { channel: "dev" } } });
+
+    assertStringIncludes(await writeIndex(catalogStore), "Nothing to write");
 
     // A new asset is exactly what the manifest cannot notice by itself.
     await Deno.writeTextFile(dir + "store/t.one/pub/extra.js", "");
-    assertStringIncludes(await writeIndex(store), "1 manifest(s) updated");
+    assertStringIncludes(await writeIndex(catalogStore), "1 manifest(s) updated");
     assertEquals(
       JSON.parse(await Deno.readTextFile(dir + "store/t.one/manifest.json")).files,
       ["manifest.json", "plugin.ts", "pub/extra.js", "pub/main.css"],

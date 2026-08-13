@@ -1,5 +1,5 @@
 import { fromFileUrl, toFileUrl } from "@std/path";
-import { errMsg, getCtx, html, moduleIcon, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
+import { errMsg, getCtx, html, isModuleName, moduleIcon, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -193,13 +193,21 @@ async function moduleFiles(dir: string, base = dir): Promise<string[]> {
   return found.sort();
 }
 
+/** Module folders physically present in a local store; its possibly stale catalog is not consulted. */
+async function moduleNames(dir: string): Promise<string[]> {
+  const names: string[] = [];
+  for await (const e of Deno.readDir(dir))
+    if (e.isDirectory && isModuleName(e.name) && await Deno.stat(`${dir}${e.name}/plugin.ts`).then((s) => s.isFile, () => false)) names.push(e.name);
+  return names.sort();
+}
+
 const writeJson = (file: string, value: unknown) => Deno.writeTextFile(file, JSON.stringify(value, null, 2) + "\n");
 
 /** Refresh `files` in every manifest and the catalog beside them. Reports what changed, so a click
  *  that was not needed says so instead of looking like work. */
 export async function writeIndex(store: Store): Promise<string> {
   if (!store.base.startsWith("file:")) throw new Error("Only a local store can be written");
-  const names = await store.names();
+  const names = await moduleNames(fromFileUrl(store.base));
   const changed: string[] = [];
   for (const mod of names) {
     const dir = fromFileUrl(new URL(".", store.moduleUrl(mod)).href);

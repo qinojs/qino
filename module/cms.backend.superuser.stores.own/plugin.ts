@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, html, isModuleName, type App, type HtmlString, type Store } from "../core/mod.ts";
+import { errMsg, html, isModuleName, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -24,22 +24,31 @@ export async function install({ app }: { app: App }): Promise<void> {
 // A module name appears twice in its own sources: in full, and without the "cms." prefix as the
 // qcms-mod attribute the CMS renders. Longest first, so the short form only sees what is left.
 const rename = (text: string, from: string, to: string) =>
-  text.replaceAll(from, to).replaceAll(from.replace(/^cms\./, ""), to.replace(/^cms\./, ""));
+  text.split(from).map((part) => part.replaceAll(from.replace(/^cms\./, ""), to.replace(/^cms\./, ""))).join(to);
 
 const utf8 = (bytes: Uint8Array) => {
   try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { return; } // binary
 };
 
-/** Copy a module folder, renaming it inside every text file it holds. */
-async function copyModule(from: string, to: string, oldName: string, newName: string): Promise<void> {
-  await Deno.mkdir(to, { recursive: true });
-  for await (const e of Deno.readDir(from)) {
-    if (e.name === "tests") continue; // a copied suite would only ever test the template
-    if (e.isDirectory) { await copyModule(from + e.name + "/", to + e.name + "/", oldName, newName); continue; }
-    const bytes = await Deno.readFile(from + e.name);
+const isModuleFile = (file: unknown): file is string =>
+  typeof file === "string" && !file.includes("\\") && file.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+
+/** Download every published file of a module, renaming it inside text files. The same URL path
+ *  works for local and remote modules; the manifest is the portable directory listing. */
+async function copyModule(mod: Module, to: string, oldName: string, newName: string): Promise<void> {
+  const files = mod.manifest.files;
+  if (!files?.length) throw new Error(`Template "${oldName}" does not list its files`);
+  const base = new URL(".", mod.source);
+  for (const file of files) {
+    if (!isModuleFile(file)) throw new Error(`Template "${oldName}" lists an invalid file: ${String(file)}`);
+    const res = await fetch(new URL(file, base));
+    if (!res.ok) throw new Error(`Cannot copy "${file}" from template "${oldName}": ${res.status} ${res.statusText}`);
+    const target = to + file;
+    await Deno.mkdir(target.slice(0, target.lastIndexOf("/") + 1), { recursive: true });
+    const bytes = new Uint8Array(await res.arrayBuffer());
     const text = utf8(bytes);
-    if (text === undefined) await Deno.writeFile(to + e.name, bytes);
-    else await Deno.writeTextFile(to + e.name, rename(text, oldName, newName));
+    if (text === undefined) await Deno.writeFile(target, bytes);
+    else await Deno.writeTextFile(target, rename(text, oldName, newName));
   }
 }
 
@@ -56,20 +65,19 @@ async function create(app: App, modName: string, template: string): Promise<void
   const dir = storeDir(app) + modName + "/";
   if (await Deno.stat(dir).then(() => true, () => false)) throw new Error(`Folder "${modName}" exists already`);
 
-  if (!template) await blankModule(dir, modName);
-  else {
-    // Copying takes the sources, so the module must be on disk — a remote one keeps its code
-    // over the wire and would leave a folder without a plugin.ts behind.
-    const mod = app.modules.get(template);
-    if (!mod?.source.startsWith("file:")) throw new Error(`Template "${template}" is not a local module`);
-    await copyModule(mod.dir!, dir, template, modName);
+  try {
+    if (!template) await blankModule(dir, modName);
+    else {
+      const mod = app.modules.get(template);
+      if (!mod) throw new Error(`Template "${template}" is not available`);
+      await copyModule(mod, dir, template, modName);
+    }
+    await ownStore(app).install(modName);
+  } catch (e) {
+    // A failed download or an unlinkable module must not block the name on the next try.
+    await Deno.remove(dir, { recursive: true }).catch(() => {});
+    throw e;
   }
-  // Leave nothing half-created behind: an unlinkable module would block the name on the next try.
-  await ownStore(app).install(modName)
-    .catch(async (e) => {
-      await Deno.remove(dir, { recursive: true }).catch(() => {});
-      throw e;
-    });
 }
 
 // --- node API -------------------------------------------------------------
@@ -90,7 +98,7 @@ async function render(node: Node): Promise<HtmlString> {
   const t = app.t;
   const store = app.stores.get(storeUrl(app));
   const mine = await (store?.names() ?? Promise.resolve([])).catch(() => []);
-  const templates = Object.values(app.modules.all()).filter((mod) => mod.source.startsWith("file:")).map((mod) => mod.name).sort();
+  const templates = Object.values(app.modules.all()).filter((mod) => mod.manifest.files?.length).map((mod) => mod.name).sort();
 
   return html.async`<div class=u2-flex>
   <div class=u2-card>
