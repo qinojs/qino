@@ -9,7 +9,7 @@ templates are cached for the lifetime of the process like their imported plugin.
 `renderTemplateFile(path, node)` from [mod.ts](mod.ts) does the same for any
 other file — [cms.cont.html](../cms.cont.html/) renders one file per node with it.
 
-Deliberately minimal: static HTML plus three constructs — no expressions, no
+Deliberately minimal: static HTML plus four constructs — no expressions, no
 logic. Simple and safe, but built to be extended (`cms-if`, `cms-each`,
 `{expr}` may come later).
 
@@ -74,6 +74,31 @@ its own module. Default: `cms.cont.flexible`.
 return html.async`${node.cont("body", "cms.cont.text")}`;
 ```
 
+## `cms-link=...`
+
+Stable internal link. The target uses the same syntax as `node=` below; its
+CMS link attributes (`href`, state classes, `aria-current`, edit marker and
+configured `target`) are added to the wrapper. A template class is prepended,
+an explicit template `target` wins over the configured one, and `href` always
+comes from the CMS. An empty wrapper uses the target page's title.
+
+```html
+<a cms-link=32 class=card>About us</a>
+<a cms-link=page></a>
+```
+
+```ts
+const target = await cms.node(32);
+const page = await node.page();
+await cms.linkAttributes(target);
+// { href: "/en/about-us", class: "cmsLink32 ...", target: "...", ... }
+return html.async`${cms.link(page)}`;
+```
+
+`CMS.linkAttributes()` returns structured attributes; the template renderer
+merges them with its wrapper. `cms-link` can also share that wrapper with
+`cms-text` when the link label should be independently editable.
+
 ## `node=` — target another node
 
 All constructs work on the current node by default. `node=` redirects them:
@@ -112,8 +137,6 @@ return html.async`
 
 - `{setting.color}` / `{lang}` / `{url}` — plain dot-path lookups in text and
   attributes; no JS expressions, just escaped property access.
-- `<a cms-link=32>` — stable internal links, `href` from the target's
-  `node.url()`; value syntax shared with `node=`.
 - `<a cms-file=flyer>` — download links, editable in edit mode like images.
 - `cms-if` / `cms-each` — only once a real module needs them.
 

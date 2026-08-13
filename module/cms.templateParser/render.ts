@@ -15,11 +15,13 @@ async function renderElement(el: El, node: Node): Promise<string> {
   if (el.tag === "cms-image") return renderCmsImage(el, node);
   if (el.tag === "cms-cont")  return renderCmsCont(el, node);
   if (el.tag.startsWith("cms-")) warn(node, `unknown element <${el.tag}>`);
+  const linkTarget = attrValue(el, "cms-link");
+  if (linkTarget) return renderCmsLink(el, linkTarget, node);
   const textName = attrValue(el, "cms-text");
   if (textName) return renderCmsText(el, textName, node);
   for (const a of el.attrs) {
     if (!a.name.startsWith("cms-")) continue;
-    warn(node, a.name === "cms-text" ? `cms-text without value on <${el.tag}>` : `unknown attribute ${a.name} on <${el.tag}>`);
+    warn(node, a.name === "cms-text" || a.name === "cms-link" ? `${a.name} without value on <${el.tag}>` : `unknown attribute ${a.name} on <${el.tag}>`);
   }
   return tagHtml(el, el.self ? "" : await renderNodes(el.children, node));
 }
@@ -39,7 +41,7 @@ async function targetNode(el: El, node: Node): Promise<Node | undefined> {
 }
 
 async function resolveNodeSpec(spec: string, node: Node): Promise<Node | undefined> {
-  if (/^\d+$/.test(spec)) return node.cms.node(Number(spec));
+  if (/^\d+$/.test(spec)) return (await node.cms.node(Number(spec))).exists();
   if (spec === "page")    return node.page();
   if (spec === "layout") {
     const module = (await node.page()).module?.name;
@@ -47,6 +49,28 @@ async function resolveNodeSpec(spec: string, node: Node): Promise<Node | undefin
   }
   const m = spec.match(/^parent(?:\((\d+)\))?$/);
   if (m) return node.parent(m[1] ? Number(m[1]) : undefined);
+}
+
+// ---------------------------------------------------------------------------
+// cms-link — stable internal href resolved from a node
+// ---------------------------------------------------------------------------
+
+async function renderCmsLink(el: El, spec: string, node: Node): Promise<string> {
+  const target = await resolveNodeSpec(spec, node);
+  if (!target) {
+    warn(node, `unresolvable cms-link="${spec}" on <${el.tag}>`);
+    return renderElement({ ...el, attrs: el.attrs.filter(a => a.name !== "cms-link") }, node);
+  }
+  const linkAttrs = await target.cms.linkAttributes(target);
+  const attrs = el.attrs.filter(a => !["cms-link", "href", "class"].includes(a.name));
+  const templateTarget = attrValue(el, "target");
+  if (templateTarget !== undefined) delete linkAttrs.target;
+  const className = attrValue(el, "class");
+  if (className) linkAttrs.class = `${className} ${linkAttrs.class}`;
+  for (const [name, value] of Object.entries(linkAttrs)) attrs.push({ name, value });
+  const empty = !hasAttr(el, "cms-text") && el.children.every(n => n.type === "text" && !n.value.trim());
+  const children = empty ? [{ type: "text" as const, value: String(await target.showTitle()) }] : el.children;
+  return renderElement({ ...el, attrs, children }, node);
 }
 
 // ---------------------------------------------------------------------------

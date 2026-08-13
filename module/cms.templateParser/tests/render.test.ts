@@ -13,6 +13,9 @@ function fakeNode(over: Record<string, any> = {}): any {
     ...over,
   };
   node.cms ??= {};
+  node.exists ??= () => node;
+  node.showTitle ??= () => "Target title";
+  node.cms.linkAttributes ??= async (target: any) => ({ href: await target.url(), class: "cmsLink7" });
   node.cms.text ??= (target: any, name: string, options: any) => {
     node.calls.push({ target, name, options });
     return `[text:${name}]`;
@@ -123,4 +126,49 @@ Deno.test("node=: unresolvable renders nothing", async () => {
   const node = fakeNode({ parent: () => undefined });
   assertEquals(await render(`<div cms-text=main node=xyz></div>`, node), "");
   assertEquals(await render(`<div cms-text=main node=parent></div>`, node), "");
+});
+
+Deno.test("cms-link: resolves a node href and keeps the wrapper", async () => {
+  const target = fakeNode({ url: () => `/target?x=1&y=2` });
+  const node = fakeNode({ cms: { node: (id: number) => (assertEquals(id, 7), target) } });
+  assertEquals(
+    await render(`<a class=card href=/old cms-link=7><b>Target</b></a>`, node),
+    `<a href="/target?x=1&amp;y=2" class="card cmsLink7"><b>Target</b></a>`,
+  );
+});
+
+Deno.test("cms-link: composes with cms-text", async () => {
+  const page = fakeNode({ url: () => "/page" });
+  page.cms.text = (target: any, name: string, options: any) => {
+    page.calls.push({ target, name, options });
+    return `<a href="${options.href}" class="${options.class}">[text:${name}]</a>`;
+  };
+  const node = fakeNode({ page: () => page, cms: page.cms });
+  const out = await render(`<a cms-link=page cms-text=label class=more>More</a>`, node);
+  assertEquals(out, `<a href="/page" class="more cmsLink7">[text:label]</a>`);
+  assertEquals(page.calls[0].target, node);
+  assertEquals(page.calls[0].options, { tag: "a", href: "/page", class: "more cmsLink7", initial: "More" });
+});
+
+Deno.test("cms-link: invalid targets keep the content without a broken href", async () => {
+  assertEquals(await render(`<a cms-link=missing>Still here</a>`, fakeNode()), `<a>Still here</a>`);
+});
+
+Deno.test("cms-link: an empty wrapper uses the target title", async () => {
+  const target = fakeNode({ url: () => "/target", showTitle: () => "Target <b>title</b>" });
+  const node = fakeNode({ cms: { ...target.cms, node: () => target } });
+  assertEquals(
+    await render(`<a cms-link=7></a>`, node),
+    `<a href="/target" class="cmsLink7">Target <b>title</b></a>`,
+  );
+});
+
+Deno.test("cms-link: an explicit target overrides the page target", async () => {
+  const target = fakeNode({ url: () => "/target" });
+  target.cms.linkAttributes = async () => ({ href: "/target", class: "cmsLink7", target: "_blank" });
+  const node = fakeNode({ cms: { ...target.cms, node: () => target } });
+  assertEquals(
+    await render(`<a cms-link=7 class=card target=mytarget>Target</a>`, node),
+    `<a target="mytarget" href="/target" class="card cmsLink7">Target</a>`,
+  );
 });

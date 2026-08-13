@@ -132,29 +132,27 @@ export class CMS {
   }
 
   async link(node: Node | number): Promise<HtmlString> {
-    const ctx = getCtx();
     const page = await this.node(Number(node));
-    await page.urlSeo(ctx.lang);
-    const urls = await page.urls();
-    const t = urls[ctx.lang]?.target;
-    const target = t ? html` target="${t}"` : "";
-    return html.async`<a${this.linkAttributes(page)}${target}>${html.raw(await page.showTitle())}</a>`;
+    return html.raw(`<a${attrsHtml(await this.linkAttributes(page))}>${await page.showTitle()}</a>`);
   }
 
-  async linkAttributes(node: Node | number): Promise<HtmlString> {
+  async linkAttributes(node: Node | number): Promise<Record<string, string>> {
     const ctx = getCtx();
     const page = await this.node(Number(node));
-    await page.urlSeo(ctx.lang);
+    const href = await page.url();
+    const target = (await page.urls())[ctx.lang]?.target;
     const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
-    const href = ` href="${hee(await page.url())}"`;
     const access = await page.access();
     const inside = await mainNode.in?.(page);
     const online = await page.isOnline();
-    const cls = ` class="cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}"`;
     const titleObj = await page.title();
-    const cmstxt = page.edit ? ` cmstxt=${titleObj?.id ?? ""}` : "";
-    const ariaCurrent = mainNode === page ? " aria-current=page" : "";
-    return html.raw(href + cls + cmstxt + ariaCurrent);
+    return {
+      href,
+      class: `cmsLink${page}${access?"":" noAccess"}${inside?" cmsInside":""}${!online?" cmsOffline":""}`,
+      ...(page.edit ? { cmstxt: String(titleObj?.id ?? "") } : {}),
+      ...(mainNode === page ? { "aria-current": "page" } : {}),
+      ...(target ? { target } : {}),
+    };
   }
 
   // deno-lint-ignore no-explicit-any
@@ -250,4 +248,8 @@ export class CMS {
     }
   }
 
+}
+
+function attrsHtml(attrs: Record<string, string>): string {
+  return Object.entries(attrs).map(([name, value]) => ` ${name}="${hee(value)}"`).join("");
 }
