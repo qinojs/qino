@@ -40,7 +40,7 @@ export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: 
       : "";
 
     parts.push(html`
-<tr itemid=${vs.id} data-c1-href="${detailUrl}">
+<tr itemid=${vs.id} u2-href>
   <td> ${vs.id}
   <td>
     <a href="${detailUrl}">${(vs.firstname ?? "") + " " + (vs.lastname ?? "")}</a>

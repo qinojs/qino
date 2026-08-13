@@ -8,7 +8,6 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   const resHtml = ctx.res.html;
   
   resHtml.class.add("qgCMS");
-  resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
   resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   await u2.assets(ctx, [

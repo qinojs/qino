@@ -8,7 +8,6 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
   await u2.assets(ctx, ["css/norm/norm.css", "css/base/base.css", "u2/auto.js"]);
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
-  resHtml.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
   resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   const title = await (await node.title()).string();

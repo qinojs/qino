@@ -26,7 +26,6 @@ const U2_CSS = [
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   await u2.assets(ctx, U2_CSS, U2_VERSION);
   ctx.res.html.inlineStyles.add(await u2.identityCss(node.app));
-  ctx.res.html.legacyScripts.add(ctx.req.moduleUrl + "core/pub/js/c1.js");
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
 
   const layoutPage = await node.cms.layoutPage(String(node.vs.module));
