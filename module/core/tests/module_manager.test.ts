@@ -1,9 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { assert, assertEquals, assertRejects } from "./deps.ts";
 import { toFileUrl, $item } from "../deps.ts";
-import { Module, ModuleManager, moduleIcon } from "../lib/ModuleManager.ts";
+import { Module, ModuleManager } from "../lib/ModuleManager.ts";
 import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";
+import { moduleIcon } from "../lib/util.ts";
 
 // The managers read their `module` and `store` rows on init; these tests have no database.
 const fakeDb = () => ({
