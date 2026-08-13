@@ -218,20 +218,20 @@ export async function writeIndex(store: Store): Promise<string> {
   ].filter(Boolean).join(" · ");
 }
 
-/** What installing `mod` would bring along: its missing dependencies, theirs, and so on. Read from
- *  the manifests, so it costs no import — the answer is a question to the user, not a decision. */
-async function alsoNeeded(app: App, mod: string): Promise<string[]> {
+/** What installing `mod` from `from` would bring along: its missing dependencies, theirs, and so on.
+ *  Read from the manifests, so it costs no import — this answers a question, it decides nothing.
+ *  Same walk as install(): the row's store for the module itself, whoever offers it for the rest. */
+async function alsoNeeded(app: App, from: Store, mod: string): Promise<string[]> {
   const offers = await app.stores.offers();
   const found: string[] = [];
-  for (const queue = [mod]; queue.length;) {
-    const name = queue.shift()!;
-    const store = offers.get(name);
-    if (!store) continue; // unresolvable; install() is where that becomes an error
+  for (const queue = [[mod, from] as const]; queue.length;) {
+    const [name, store] = queue.shift()!;
     const manifest = await store.manifest(name).catch(() => undefined);
     for (const need of manifest?.dependencies ?? []) {
       if (app.modules.get(need) || found.includes(need)) continue;
       found.push(need);
-      queue.push(need);
+      const offered = offers.get(need);
+      if (offered) queue.push([need, offered]); // unresolvable; install() is where that becomes an error
     }
   }
   return found;
@@ -265,7 +265,7 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
         await app.stores.uninstall(store);
         return { ok: true };
       case "installPlan": // what the button is about to do, so the user can say no
-        return { ok: true, needs: await alsoNeeded(app, mod) };
+        return { ok: true, needs: await alsoNeeded(app, target(), mod) };
       case "install":
         // Through the store, so the request names a store and a module — never a URL to import.
         await target().install(mod);

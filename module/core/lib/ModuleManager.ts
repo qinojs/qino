@@ -110,7 +110,7 @@ export class ModuleManager {
 
   /** Where to find a module that nobody declared. Set by whoever knows a catalog — the StoreManager
    *  does it — so this manager keeps knowing only that a module is a URL, and needs no store. */
-  locate: (name: string) => Promise<string | undefined> = () => Promise.resolve(undefined);
+  locate: (name: string) => Promise<string | undefined> = async () => undefined;
 
   constructor(app: App) {
     this.#app = app;
@@ -204,20 +204,18 @@ export class ModuleManager {
   async install(spec: string, name?: string): Promise<Module> {
     const mod = await this.import(spec, name);
     // A locatable dependency is installed along, deepest first — asking someone to install five
-    // modules in the right order by hand is a worse answer than doing it. Only what cannot be found
-    // is an error: an unorderable module would break the next boot, so it must not reach the table.
-    const missing = mod.dependencies.filter((need) => !this.#modules[need]);
-    if (missing.length) {
-      const urls = new Map(await Promise.all(missing.map(async (need) => [need, await this.locate(need)] as const)));
-      const unresolvable = missing.filter((need) => !urls.get(need));
-      if (unresolvable.length) {
-        delete this.#modules[mod.name];
-        throw new Error(`Cannot install "${mod.name}": needs ${unresolvable.join(", ")}`);
+    // modules in the right order by hand is a worse answer than doing it. What cannot be found is
+    // an error: an unorderable module would break the next boot, so it must not reach the table.
+    try {
+      for (const need of mod.dependencies) {
+        if (this.#modules[need]) continue;
+        const url = await this.locate(need);
+        if (!url) throw new Error(`Cannot install "${mod.name}": needs ${need}`);
+        await this.install(url, need);
       }
-      // Nothing half-registered: a dependency that will not install takes its dependent with it.
-      for (const need of missing) {
-        await this.install(urls.get(need)!, need).catch((e) => { delete this.#modules[mod.name]; throw e; });
-      }
+    } catch (e) {
+      delete this.#modules[mod.name]; // nothing half-registered
+      throw e;
     }
     await this.#app.db.table("module").ensure({ name: mod.name, url: mod.source });
     if (!this.#booting) {

@@ -18,13 +18,15 @@ async function* files(dir: string): AsyncGenerator<string> {
   }
 }
 
+// The clause must not contain a quote, or the optional group hunts for a `from` across statements
+// and swallows side-effect-only imports (`import "./x.ts";`) whole. matchAll clones the regex, so
+// both readers below can share this one.
+const IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?<type>type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
+
 /** Relative specifiers a file imports, each with the names taken from it ("*" = namespace or star). */
 function imports(source: string): Map<string, Set<string>> {
   const found = new Map<string, Set<string>>();
-  // The clause must not contain a quote, or the optional group hunts for a `from` across statements
-  // and swallows side-effect-only imports (`import "./x.ts";`) whole.
-  const re = /(?:^|\n)\s*(?:import|export)\s+(?:type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
-  for (const { groups } of source.matchAll(re)) {
+  for (const { groups } of source.matchAll(IMPORT)) {
     if (!groups!.spec.startsWith(".")) continue;
     const names = found.get(groups!.spec) ?? new Set<string>();
     found.set(groups!.spec, names);
@@ -44,8 +46,7 @@ function imports(source: string): Map<string, Set<string>> {
  *  linked module, which is what keeps the duck-typed extension points free of dependencies. */
 function valueImports(source: string): Set<string> {
   const found = new Set<string>();
-  const re = /(?:^|\n)\s*(?:import|export)\s+(?<type>type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
-  for (const { groups } of source.matchAll(re)) {
+  for (const { groups } of source.matchAll(IMPORT)) {
     const { type, spec } = groups!;
     if (!spec.startsWith(".") || type) continue;
     const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").trim();

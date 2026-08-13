@@ -96,9 +96,10 @@ export class StoreManager {
   /** Which store offers which module — one catalog read per store, first registration wins. An
    *  unreadable store contributes nothing instead of failing the lookup for all the others. */
   async offers(): Promise<Map<string, Store>> {
+    const stores = this.all();
+    const lists = await Promise.all(stores.map((store) => store.names().catch(() => []))); // one round trip, not one per store
     const found = new Map<string, Store>();
-    for (const store of this.all())
-      for (const name of await store.names().catch(() => [])) if (!found.has(name)) found.set(name, store);
+    for (const [i, names] of lists.entries()) for (const name of names) if (!found.has(name)) found.set(name, stores[i]);
     return found;
   }
 
