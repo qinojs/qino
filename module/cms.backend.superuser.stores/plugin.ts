@@ -308,11 +308,11 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
         await app.modules.reset(mod);
         break;
       case "link":
-        await app.link(mod);
+        await app.modules.link(mod);
         break;
       case "unlink":
         if (LOCKED.has(mod)) throw new Error(`Cannot deactivate "${mod}"`);
-        app.unlink(mod);
+        app.modules.unlink(mod);
         break;
       default:
         throw new Error(`Unknown action: ${act}`);

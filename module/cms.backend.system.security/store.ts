@@ -5,13 +5,14 @@ import { unixTime, type App, type Db, type Ctx } from "../core/mod.ts";
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();
+const bucketWrites = new WeakMap<Db, Map<string, Promise<unknown>>>();
 
 // Serialize read-modify-write per bucket so concurrent hits don't lose updates or insert duplicate rows.
-const bucketWrite = new Map<string, Promise<unknown>>();
-function serialize<T>(key: string, fn: () => Promise<T>): Promise<T> {
-  const run = (bucketWrite.get(key) ?? Promise.resolve()).then(fn, fn);
-  bucketWrite.set(key, run);
-  return run.finally(() => { if (bucketWrite.get(key) === run) bucketWrite.delete(key); });
+function serialize<T>(db: Db, key: string, fn: () => Promise<T>): Promise<T> {
+  const writes = bucketWrites.getOrInsertComputed(db, () => new Map());
+  const run = (writes.get(key) ?? Promise.resolve()).then(fn, fn);
+  writes.set(key, run);
+  return run.finally(() => { if (writes.get(key) === run) writes.delete(key); });
 }
 
 export async function settings(app: App): Promise<SecuritySettings> {
@@ -76,7 +77,7 @@ export function bucketHits(info: any, signals: any[], set: Record<string, number
 }
 
 function hitBucket(db: Db, scope: string, ident: string, add: number, reason: string, path: string, set: Record<string, number>) {
-  return serialize(bucketKey(scope, ident), async () => {
+  return serialize(db, bucketKey(scope, ident), async () => {
     const t = unixTime();
     const row = await getBucket(db, scope, ident, set);
     const score = Math.max(0, Number(row?.score ?? 0) - Math.round(((t - Number(row?.last_seen ?? t)) / 60) * set.decayPerMin)) + add;

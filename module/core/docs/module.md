@@ -117,9 +117,9 @@ Three separate phases — runtime mirrors boot, one module at a time:
 
 | | Boot (all modules) | Runtime (one module) |
 |---|---|---|
-| register | `app.modules.add(spec)` / `store.add(name)` | `await app.import(spec)` |
-| run hooks | `await app.init()` | `await app.link(name)` |
-| tear down | — | `app.unlink(name)` |
+| register | `app.modules.add(spec)` / `store.add(name)` | `await app.modules.import(spec)` |
+| run hooks | `await app.init()` | `await app.modules.link(name)` |
+| tear down | — | `app.modules.unlink(name)` |
 
 - **`modules.add(spec)`** declares a local or remote module. `init()` imports it later. `core` is the
   root of the dependency graph, so `App` declares it itself — no application has to.
@@ -134,11 +134,11 @@ Three separate phases — runtime mirrors boot, one module at a time:
 
 ```ts
 // add a module while the app is running
-await app.import("file:///…/shop/plugin.ts");
-await app.link("shop");
+await app.modules.import("file:///…/shop/plugin.ts");
+await app.modules.link("shop");
 // …later
-app.unlink("shop");
-await app.link("shop"); // re-link is fine — the module stays registered
+app.modules.unlink("shop");
+await app.modules.link("shop"); // re-link is fine — the module stays registered
 ```
 
 `add()` and `import()` last for one boot. `modules.install(spec)` is the persistent version —

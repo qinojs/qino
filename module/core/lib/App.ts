@@ -8,7 +8,7 @@ import { DbFileManager, type DbFile } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
 import { FileTransformer } from "./transform/mod.ts";
-import { ModuleManager, type Module } from "./ModuleManager.ts";
+import { ModuleManager } from "./ModuleManager.ts";
 import { StoreManager } from "./StoreManager.ts";
 import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
@@ -124,10 +124,6 @@ export class App extends Emitter<AppEvents> {
     get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
         return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
     }
-
-    import(spec: string): Promise<Module> { return this.modules.import(spec); }
-    link(name: string): Promise<void> { return this.modules.link(name); }
-    unlink(name: string): void { this.modules.unlink(name); }
 
     /** The single entry point: `Request` in, `Response` out. `appUrl` = the prefix this request is served under. */
     async handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {

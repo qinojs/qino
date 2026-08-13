@@ -257,8 +257,8 @@ async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<
   const ctx = getCtx();
   if (!(ctx.user?.superuser)) return;
   try {
-    if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.unlink(n); }
-    else if (vars.enable) await node.app.link(String(vars.enable));
+    if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.modules.unlink(n); }
+    else if (vars.enable) await node.app.modules.link(String(vars.enable));
   } catch (e) {
     ctx.state.moduleError = errMsg(e); // shown in the detail view
   }
