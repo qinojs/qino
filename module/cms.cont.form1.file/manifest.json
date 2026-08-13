@@ -2,7 +2,8 @@
   "name": "cms.cont.form1.file",
   "description": "File upload field; the chosen files are attached to the form mail.",
   "dependencies": [
-    "cms"
+    "cms",
+    "cms.cont.form2"
   ],
   "files": [
     "manifest.json",

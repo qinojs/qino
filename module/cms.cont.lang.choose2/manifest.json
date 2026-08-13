@@ -1,6 +1,9 @@
 {
   "name": "cms.cont.lang.choose2",
   "description": "Language links or selection menu.",
+  "dependencies": [
+    "cms"
+  ],
   "files": [
     "manifest.json",
     "plugin.ts",

@@ -1,6 +1,9 @@
 {
   "name": "cms.cont.image2",
   "description": "Editable localized image with sizing, cropping, and linking.",
+  "dependencies": [
+    "cms.image2"
+  ],
   "files": [
     "manifest.json",
     "plugin.ts",

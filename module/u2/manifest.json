@@ -2,7 +2,8 @@
   "name": "u2",
   "description": "The u2 frontend framework: which release the site uses, its assets, element helpers and the brand as u2 variables.",
   "dependencies": [
-    "core"
+    "core",
+    "identity"
   ],
   "files": [
     "lib/el.ts",

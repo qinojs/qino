@@ -40,6 +40,24 @@ function imports(source: string): Map<string, Set<string>> {
   return found;
 }
 
+/** Relative specifiers a file imports *values* from. `import type` and inline `type` names need no
+ *  linked module, which is what keeps the duck-typed extension points free of dependencies. */
+function valueImports(source: string): Set<string> {
+  const found = new Set<string>();
+  const re = /(?:^|\n)\s*(?:import|export)\s+(?<type>type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
+  for (const { groups } of source.matchAll(re)) {
+    const { type, spec } = groups!;
+    if (!spec.startsWith(".") || type) continue;
+    const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").trim();
+    const braces = clause.match(/\{([\s\S]*?)\}/);
+    // No clause is a side-effect import, and anything before the braces is a default or namespace —
+    // both run the module. Otherwise it takes a value only if some name is not `type`-prefixed.
+    if (!clause || clause.slice(0, braces?.index ?? clause.length).replace(/,$/, "").trim()) found.add(spec);
+    else if (braces?.[1].split(",").some((name) => name.trim() && !/^type\s/.test(name.trim()))) found.add(spec);
+  }
+  return found;
+}
+
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
 function exports(source: string): Set<string> | undefined {
   if (/^export\s+\*\s+from/m.test(source)) return undefined;
@@ -196,6 +214,60 @@ Deno.test("modules only consume public APIs of other modules", async () => {
       const door = path.join("/");
       if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
       else if (door.startsWith("tests/") && !fileRel.includes("/tests/")) errors.push(`${fileRel} imports test-only ${targetRel}`);
+    }
+  }
+  assertEquals(errors, []);
+});
+
+// Optional integrations: a value import of a module that need not be linked, so the installation
+// without it crashes on first use. Declaring the dependency is the wrong repair — it would drag the
+// whole module in for a link, a widget or a prompt. They want an extension point, and until that
+// vocabulary exists (see PLAN-modules.md) they stay named here rather than invisible.
+const OPTIONAL = new Set([
+  "cms.backend.superuser.db.query/lib/ai.ts -> ai", // "explain this query" is a bonus, not the console
+  "cms.backend.superuser.db.query/render.ts -> ai",
+  "cms.frontend.2/view/widgets/more.ts -> mail", // a dashboard widget per module is the pattern itself
+  "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
+  "cms.backend.superuser.module/plugin.ts -> fileEditor",
+  "cms.cont.html/options.ts -> fileEditor",
+  "cms.cont.ts/options.ts -> fileEditor",
+  "cms.frontend.2/view/widgets/superuser.ts -> fileEditor",
+  "cms.templateParser/moduleTemplate.ts -> fileEditor",
+]);
+
+/** What a module may import values from. `dependencies` is transitive — declaring one module brings
+ *  its own declarations along — and `core` is there for everyone, since `App` declares it itself. */
+function linked(manifests: Map<string, string[]>, mod: string): Set<string> {
+  const seen = new Set(["core", mod]);
+  const walk = (name: string) => {
+    for (const dep of manifests.get(name) ?? []) if (!seen.has(dep)) { seen.add(dep); walk(dep); }
+  };
+  walk(mod);
+  return seen;
+}
+
+// A type import only has to compile, a value import has to *be there* at runtime. So this is the
+// rule that keeps a module from crashing in an installation that never asked for its neighbour.
+Deno.test("modules only take values from modules they depend on", async () => {
+  const manifests = new Map<string, string[]>();
+  for await (const dir of moduleDirs(moduleDir)) {
+    const manifest = JSON.parse(await Deno.readTextFile(dir + "manifest.json"));
+    manifests.set(dir.slice(moduleDir.length, -1), manifest.dependencies ?? []);
+  }
+
+  const errors = [];
+  for await (const file of files(moduleDir)) {
+    const fileRel = file.slice(moduleDir.length);
+    if (fileRel.includes("/tests/")) continue; // a suite runs against the whole app, not one module
+    const mod = fileRel.split("/")[0];
+    if (!manifests.has(mod)) continue;
+    const allowed = linked(manifests, mod);
+    for (const spec of valueImports(await Deno.readTextFile(file))) {
+      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      if (!target.startsWith(moduleDir)) continue;
+      const targetModule = target.slice(moduleDir.length).split("/")[0];
+      if (allowed.has(targetModule) || OPTIONAL.has(`${fileRel} -> ${targetModule}`)) continue;
+      errors.push(`${fileRel} takes values from "${targetModule}", which ${mod} does not depend on`);
     }
   }
   assertEquals(errors, []);

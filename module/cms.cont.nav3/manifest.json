@@ -1,6 +1,9 @@
 {
   "name": "cms.cont.nav3",
   "description": "Configurable nested navigation from the CMS page tree.",
+  "dependencies": [
+    "cms"
+  ],
   "files": [
     "manifest.json",
     "plugin.ts",
