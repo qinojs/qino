@@ -1,4 +1,4 @@
-import { html, getCtx, sql, type App, type HtmlString } from "../core/mod.ts";
+import { html, getCtx, moduleIcon, sql, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import { ADMIN, WRITE, describeChange, type Node } from "../cms/mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -67,10 +67,9 @@ async function renderOverview(node: Node): Promise<HtmlString> {
     const type = modType(modName);
     types.add(type);
     u.searchParams.set("mod", modName);
-    const dir = app.modules.get(modName)?.dir;
-    const icon = dir && await Deno.stat(dir + "pub/module.svg").then(() => true, () => false);
+    const icon = moduleIcon(app.modules.get(modName));
     trs.push(html`<tr data-type="${type}" u2-href>
-      <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.moduleUrl + modName}/pub/module.svg#main"/></svg>` : ""}
+      <td style="padding-right:0">${icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : ""}
       <td><a href="${u.search}">${modName}</a>
       <td>${type}
       <td style="text-align:right" data-value="${row.used}">${Number(row.used) || ""}

@@ -1,5 +1,5 @@
 import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
-import { errMsg, getCtx, html, type App, type HtmlString } from "../core/mod.ts";
+import { errMsg, getCtx, html, moduleIcon, type App, type HtmlString } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import { editorUrl } from "../fileEditor/mod.ts";
@@ -209,11 +209,8 @@ async function renderOverview(node: Node): Promise<HtmlString> {
       mod.dbSchema && "db",
     ].filter(Boolean).join(", ");
 
-    const modDir = modObj.dir;
-    const hasSvg = modDir ? await Deno.stat(modDir + "pub/module.svg").then(() => true, () => false) : false;
-    const iconHtml = hasSvg
-      ? html`<svg style="display:block" width=16 height=16><use href="${ctx.req.moduleUrl}${name}/pub/module.svg#main"/></svg>`
-      : "";
+    const icon = moduleIcon(modObj);
+    const iconHtml = icon ? html`<svg style="display:block" width=16 height=16>${icon}</svg>` : "";
 
     const disabled = !app.modules.linked(name);
     u.searchParams.set("mod", name);

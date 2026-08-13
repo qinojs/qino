@@ -2,7 +2,7 @@
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
 import type { App } from "./App.ts";
 import { getCtx } from "./ctx/Ctx.ts";
-import { enableItemSchemaDefaults, errMsg, unixTime } from "./util.ts";
+import { enableItemSchemaDefaults, errMsg, html, type HtmlString, unixTime } from "./util.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 
@@ -96,6 +96,13 @@ export class Module {
   newSignal(): AbortSignal { return (this.#abort = new AbortController()).signal; }
   abort(): void { this.#abort.abort(); }
   toString(): string { return this.name; }
+}
+
+/** An SVG `<use>` for a module-declared icon. */
+export function moduleIcon(mod: Module | undefined, fallback?: string): HtmlString | undefined {
+  const file = "pub/module.svg";
+  const url = mod?.manifest.files?.includes(file) ? mod.modUrl + file : fallback;
+  if (url) return html`<use href="${url}#main" />`;
 }
 
 export class ModuleManager {

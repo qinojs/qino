@@ -1,5 +1,5 @@
-import { $item, html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { accordion, moduleAccess, moduleIcon } from "../widget.ts";
+import { $item, html, type HtmlString, getCtx, moduleIcon } from "../../../core/mod.ts";
+import { accordion, moduleAccess } from "../widget.ts";
 import { ADMIN, type Node } from "../../../cms/mod.ts";
 
 export default async function (node: Node): Promise<HtmlString> {
@@ -12,7 +12,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const titleVal = await title.string();
   const titleEdit = node.edit ? html` cmstxt=${title.id}` : "";
 
-  const svgIcon = await moduleIcon(node.vs.module, node.module?.dir);
+  const svgIcon = moduleIcon(node.module, ctx.req.moduleUrl + "cms.frontend.2/pub/img/module_default.svg");
 
   const module = await db.table("module").get(node.vs.module);
   const modules = node.vs.type === "p" ? cms.getLayouts() : cms.getModules();

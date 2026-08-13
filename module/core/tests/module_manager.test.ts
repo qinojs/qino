@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assert, assertEquals, assertRejects } from "./deps.ts";
 import { toFileUrl, $item } from "../deps.ts";
-import { ModuleManager } from "../lib/ModuleManager.ts";
+import { Module, ModuleManager, moduleIcon } from "../lib/ModuleManager.ts";
 import { StoreManager } from "../lib/StoreManager.ts";
 import { Emitter } from "../lib/Emitter.ts";
 
@@ -9,6 +9,16 @@ import { Emitter } from "../lib/Emitter.ts";
 const fakeDb = () => ({
   query: () => Promise.resolve([]),
   table: () => ({ ensure: () => Promise.resolve(), delete: () => Promise.resolve() }),
+});
+
+Deno.test("moduleIcon trusts the manifest and resolves remote module URLs", () => {
+  const source = "https://cdn.example/modules/remote.icon/plugin.ts";
+  const remote = new Module({} as any, "remote.icon", {}, { files: ["pub/module.svg"] }, source);
+  const plain = new Module({} as any, "plain", {}, {}, source);
+
+  assertEquals(String(moduleIcon(remote)), `<use href="https://cdn.example/modules/remote.icon/pub/module.svg#main" />`);
+  assertEquals(moduleIcon(plain), undefined);
+  assertEquals(String(moduleIcon(plain, "/fallback.svg")), `<use href="/fallback.svg#main" />`);
 });
 
 Deno.test({

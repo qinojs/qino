@@ -1,4 +1,4 @@
-import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import { html, moduleIcon, type Ctx, type HtmlString } from "../core/mod.ts";
 import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
@@ -66,8 +66,9 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       const active = await page.in(child);
       const subs = level < 3 ? [...(await child.children({ access: 1 })).values()] : [];
       const sub = active && subs.length ? await nav(subs, level + 1) : "";
-      const mod = level === 1 ? String((await child.conts())[0]?.vs?.module ?? "") : "";
-      const icon = mod ? html`<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%"><use href="${ctx.req.moduleUrl + mod}/pub/module.svg#main"/></svg> ` : "";
+      const mod = level === 1 ? app.modules.get(String((await child.conts())[0]?.vs?.module ?? "")) : undefined;
+      const use = moduleIcon(mod);
+      const icon = use ? html`<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%">${use}</svg> ` : "";
       const item = html`<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${await child.url()}">${icon}${await (await child.title()).string()}</a>${sub}`;
       out.push(level === 1 ? item : html`<ul>${item}</ul>`);
     }
