@@ -1,4 +1,4 @@
-import type { App } from "../core/mod.ts";
+import type { App } from "@qino/qino";
 import { Scheduler } from "./scheduler.ts";
 
 export const settingsSchema = {

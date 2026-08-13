@@ -1,7 +1,7 @@
-import { html, type App, type HtmlString, getCtx } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import { currency } from "../locale.currency/mod.ts";
+import { html, type App, type HtmlString, getCtx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
+import { currency } from "@qino/qino/locale.currency";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

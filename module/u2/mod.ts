@@ -1,8 +1,8 @@
 // Public API of the u2 module. The qino-module manifest is in ./plugin.ts.
 // Helpers mirror u2's own layout: elements under `el`, the framework itself flat.
 
-import { u2Root, type App, type Ctx } from "../core/mod.ts";
-import * as identity from "../identity/mod.ts";
+import { u2Root, type App, type Ctx } from "@qino/qino";
+import * as identity from "@qino/qino/identity";
 
 export * as el from "./lib/el.ts";
 

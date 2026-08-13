@@ -1,4 +1,4 @@
-import { errMsg } from "../../core/mod.ts";
+import { errMsg } from "@qino/qino";
 // The handful of things every probe here needs. Separate from check.ts so the mail and registry
 // probes can use them without importing the orchestrator back.
 

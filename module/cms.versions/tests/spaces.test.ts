@@ -1,6 +1,5 @@
-import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { requestStorage, sql } from "../../core/mod.ts";
-import { fakeCms } from "../../cms/tests/deps.ts";
+import { assertEquals, assertRejects, fakeCms } from "@qino/qino/tests";
+import { requestStorage, sql } from "@qino/qino";
 import { tableEntriesCopyTo } from "../lib/Spaces.ts";
 import { copyNode } from "../lib/CmsVers.ts";
 import { getVers, setVers, versedTables } from "../lib/Vers.ts";

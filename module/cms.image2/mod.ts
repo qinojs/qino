@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { hee, html, magick, type HtmlString, getCtx, type DbFile } from "../core/mod.ts";
+import { hee, html, magick, type HtmlString, getCtx, type DbFile } from "@qino/qino";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

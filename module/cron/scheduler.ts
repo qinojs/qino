@@ -1,4 +1,4 @@
-import { sql, uid, unixTime, type App, type Row } from "../core/mod.ts";
+import { sql, uid, unixTime, type App, type Row } from "@qino/qino";
 import type { Job, Jobs } from "./mod.ts";
 import { nextRun, scheduleKey, validateJob } from "./calendar.ts";
 

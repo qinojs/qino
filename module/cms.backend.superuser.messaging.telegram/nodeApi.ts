@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { $item, errMsg } from "../core/mod.ts";
-import { bot, deleteWebhook, removeChat, send, setWebhook } from "../messaging.telegram/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { $item, errMsg } from "@qino/qino";
+import { bot, deleteWebhook, removeChat, send, setWebhook } from "@qino/qino/messaging.telegram";
 import { webhookUrl } from "./render.ts";
 
 /** Node access is the permission — whoever may read this backend node may send from here. */

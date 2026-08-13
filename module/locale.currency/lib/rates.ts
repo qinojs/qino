@@ -2,7 +2,7 @@
 // plausible — no key, no account. Every parser hands back "units per one <base>" including the
 // base itself at 1; the column is USD-based, like the PHP original's source was.
 
-import { unixTime, type App } from "../../core/mod.ts";
+import { unixTime, type App } from "@qino/qino";
 
 type Rates = Map<string, number>;
 

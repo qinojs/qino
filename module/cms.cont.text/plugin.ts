@@ -1,4 +1,4 @@
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node) {
   const text = await node.showText("main");

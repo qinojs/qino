@@ -1,7 +1,7 @@
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { getCtx, html, type HtmlString, type Row } from "../core/mod.ts";
-import { bot as botInfo, chats as chatList, webhookInfo } from "../messaging.telegram/mod.ts";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
+import { getCtx, html, type HtmlString, type Row } from "@qino/qino";
+import { bot as botInfo, chats as chatList, webhookInfo } from "@qino/qino/messaging.telegram";
 
 /** Where Telegram has to deliver its updates for this app. */
 export const webhookUrl = (): string => {

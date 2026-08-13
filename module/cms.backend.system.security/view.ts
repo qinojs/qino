@@ -1,7 +1,7 @@
-import * as u2 from "../u2/mod.ts";
-import { getCtx, html, sql, type App, type Ctx, type HtmlString, type Row, type Sql } from "../core/mod.ts";
+import * as u2 from "@qino/qino/u2";
+import { getCtx, html, sql, type App, type Ctx, type HtmlString, type Row, type Sql } from "@qino/qino";
 import { settings } from "./store.ts";
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const row = await app.db.row`SELECT COUNT(*) events, SUM(CASE WHEN blocked THEN 1 ELSE 0 END) blocked, SUM(CASE WHEN state='new' THEN 1 ELSE 0 END) fresh, MAX(time) last FROM m_security_event`.catch(() => null);

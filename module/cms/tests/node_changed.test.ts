@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, fakeRender } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals, fakeRender } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { initNodeChanged } from "../lib/nodeChanged.ts";
 
 // Minimal db fake: captures node_changed inserts, answers tree/link lookups.

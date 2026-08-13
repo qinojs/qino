@@ -1,9 +1,9 @@
-import type { App } from "../../module/core/mod.ts";
+import type { App } from "@qino/qino";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { bindApp } from "./lib/Shp3.ts";
 import { registerRows } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
-import { cms } from "../../module/cms/mod.ts";
+import { cms } from "@qino/qino/cms";
 export { api } from "./api.ts";
 
 export { dbSchema };

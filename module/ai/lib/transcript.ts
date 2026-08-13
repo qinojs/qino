@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import type { App, Transcript, TranscriptSegment, TranscriptWord } from "../../core/mod.ts";
+import type { App, Transcript, TranscriptSegment, TranscriptWord } from "@qino/qino";
 import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
 

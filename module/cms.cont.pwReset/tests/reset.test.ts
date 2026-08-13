@@ -1,11 +1,10 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { Db, pwVerify } from "../../core/mod.ts";
-import { dbSchema as ticketSchema } from "../../ticket/tests/deps.ts";
-import type { Node } from "../../cms/mod.ts";
-import { issue } from "../../ticket/mod.ts";
+import { Db, pwVerify } from "@qino/qino";
+import { fakeT, ticketDbSchema as ticketSchema } from "@qino/qino/tests";
+import type { Node } from "@qino/qino/cms";
+import { issue } from "@qino/qino/ticket";
 import * as plugin from "../plugin.ts";
 import api, { PURPOSE } from "../nodeApi.ts";
-import { fakeT } from "../../core/tests/deps.ts";
 
 async function app() {
   const db = new Db("sqlite::memory:");

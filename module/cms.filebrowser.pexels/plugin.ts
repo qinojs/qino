@@ -1,5 +1,5 @@
-import { Access, type ApiTree, type App, type Ctx, type Params, s } from "../core/mod.ts";
-import { cmsCtx } from "../cms/mod.ts";
+import { Access, type ApiTree, type App, type Ctx, type Params, s } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
 
 export const api: ApiTree = {
   search: {

@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { getCtx, html, type HtmlString } from "../core/mod.ts";
-import { editorUrl } from "../fileEditor/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { getCtx, html, type HtmlString } from "@qino/qino";
+import { editorUrl } from "@qino/qino/fileEditor";
 import { codeFiles } from "./codeFiles.ts";
 
 export default async function (node: Node): Promise<HtmlString | false> {

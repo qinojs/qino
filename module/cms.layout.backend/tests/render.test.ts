@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
 import { cms } from "../plugin.ts";
 
 Deno.test("cms.layout.backend: loads the backend id asynchronously", async () => {

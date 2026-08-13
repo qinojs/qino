@@ -1,4 +1,4 @@
-import type { Ctx } from "../../core/mod.ts";
+import type { Ctx } from "@qino/qino";
 import { cms } from "./CMS.ts";
 import { cmsCtx } from "./CmsContext.ts";
 

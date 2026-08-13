@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "../../core/tests/deps.ts";
-import { b64url, Db, Output, unixTime, type Ctx } from "../../core/mod.ts";
+import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
+import { b64url, Db, Output, unixTime, type Ctx } from "@qino/qino";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { authorize, metadata, register, resourceMetadata, token } from "../mod.ts";
 import { mint, verify } from "../lib/tokens.ts";

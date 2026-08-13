@@ -1,5 +1,5 @@
-import { cms, type Node } from "../cms/mod.ts";
-import { Access, ConflictError, NotFoundError, s, type ApiTree, type Ctx } from "../core/mod.ts";
+import { cms, type Node } from "@qino/qino/cms";
+import { Access, ConflictError, NotFoundError, s, type ApiTree, type Ctx } from "@qino/qino";
 import { codeFiles } from "./codeFiles.ts";
 
 const content = s.object({ content: s.string().describe("Complete file content") });

@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { toTools } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import { toTools } from "@qino/qino";
 import { api } from "../api.ts";
 
 const verbs = new Set(["get", "post", "put", "delete", "patch"]);

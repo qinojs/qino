@@ -1,8 +1,8 @@
-import { getCtx, html, sql, tableRef, unixTime, type App, type HtmlString, type Row } from "../core/mod.ts";
-import { backend, renderDashboard } from "../cms.backend/mod.ts";
-import * as u2 from "../u2/mod.ts";
-import { channel, channels, messages, userChannels, userMessages, type Channel } from "../messaging/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx, html, sql, tableRef, unixTime, type App, type HtmlString, type Row } from "@qino/qino";
+import { backend, renderDashboard } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
+import { channel, channels, messages, userChannels, userMessages, type Channel } from "@qino/qino/messaging";
+import type { Node } from "@qino/qino/cms";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

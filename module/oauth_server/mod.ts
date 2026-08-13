@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Output, Redirect, b64url, randB64, safeEqual, unixTime, type App, type Ctx } from "../core/mod.ts";
+import { Output, Redirect, b64url, randB64, safeEqual, unixTime, type App, type Ctx } from "@qino/qino";
 import { consume, mint } from "./lib/tokens.ts";
 import { consentPage, errorPage, loginPage } from "./lib/view.ts";
 

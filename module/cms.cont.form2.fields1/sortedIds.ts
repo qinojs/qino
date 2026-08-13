@@ -1,6 +1,6 @@
 // Field order — shared by the render and the options UI.
 
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 /** Field ids in display order: those listed in `sort` first, then the rest. */
 export function sortedIds(node: Node): string[] {

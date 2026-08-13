@@ -1,6 +1,6 @@
-import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
-import { cart } from "../shp3/mod.ts";
+import { html, type HtmlString, type Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { cart } from "@qino/qino/shp3";
 
 const settingsSchema = {
   properties: {

@@ -1,6 +1,6 @@
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { html, type App, type Ctx, type HtmlString, type Row } from "../core/mod.ts";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
+import { html, type App, type Ctx, type HtmlString, type Row } from "@qino/qino";
 
 /** Discovery hint plus the two live regions the client script re-renders. */
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

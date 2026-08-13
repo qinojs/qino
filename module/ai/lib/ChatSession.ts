@@ -1,4 +1,4 @@
-import { errMsg, unixTime, type App, type Ctx } from "../../core/mod.ts";
+import { errMsg, unixTime, type App, type Ctx } from "@qino/qino";
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
 import { readSse, sse } from "./sse.ts";

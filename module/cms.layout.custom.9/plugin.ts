@@ -1,5 +1,5 @@
-import { hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { hee, html, type Ctx, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

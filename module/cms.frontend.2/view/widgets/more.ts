@@ -1,6 +1,6 @@
-import type { Node } from "../../../cms/mod.ts";
-import { hee, html, type HtmlString, getCtx } from "../../../core/mod.ts";
-import { mail } from "../../../mail/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { hee, html, type HtmlString, getCtx } from "@qino/qino";
+import { mail } from "@qino/qino/mail";
 
 export default async function (node: Node, vars: { param?: Record<string, string> } = {}): Promise<HtmlString> {
   const ctx = getCtx();

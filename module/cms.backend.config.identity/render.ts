@@ -1,6 +1,6 @@
-import { $item, html, toInput, type App, type HtmlString } from "../core/mod.ts";
-import * as identity from "../identity/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { $item, html, toInput, type App, type HtmlString } from "@qino/qino";
+import * as identity from "@qino/qino/identity";
+import type { Node } from "@qino/qino/cms";
 
 async function field(app: App, path: string, label: string, required = false): Promise<HtmlString> {
   const item = app.settings[$item].sub(["identity", ...path.split(".")]);

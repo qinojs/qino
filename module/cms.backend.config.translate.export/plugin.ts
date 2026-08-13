@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { ConflictError, html, type HtmlString, type App } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { ConflictError, html, type HtmlString, type App } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.config.translate.export", { en: "Export", de: "Export" });

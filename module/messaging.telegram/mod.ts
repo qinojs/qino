@@ -1,7 +1,7 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
 
-import { hee, sql, unixTime, type App, type Row } from "../core/mod.ts";
-import { msgOf, record, type Msg } from "../messaging/mod.ts";
+import { hee, sql, unixTime, type App, type Row } from "@qino/qino";
+import { msgOf, record, type Msg } from "@qino/qino/messaging";
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
 

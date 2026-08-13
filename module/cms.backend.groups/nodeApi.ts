@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** Members can only be managed by superusers or members of the group itself. */
 export async function canManageMembers(grpId: number): Promise<boolean> {

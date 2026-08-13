@@ -1,7 +1,7 @@
 // Spaces (cms-agnostic): parallel working copies of the versioned tables
 // (space 0 = live). Space lifecycle + copying entries between spaces.
 
-import { getCtx, requestStorage, sql, type App, type Db, type Row } from "../../core/mod.ts";
+import { getCtx, requestStorage, sql, type App, type Db, type Row } from "@qino/qino";
 import { getVers, setVers, versedTables, versTable, view } from "./Vers.ts";
 
 // ─── ensureSpace ────────────────────────────────────────────────────────────

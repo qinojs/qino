@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, sql } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { service as cmsTextService } from "../cms.text/mod.ts";
+import { getCtx, sql } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { service as cmsTextService } from "@qino/qino/cms.text";
 
 function matchCase(translated: string, original: string): string {
   if (!translated || !original) return translated;

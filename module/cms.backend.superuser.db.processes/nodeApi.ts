@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 import { killProcess } from "./lib/processlist.ts";
 
 export default async function api(node: Node, vars: any): Promise<any> {

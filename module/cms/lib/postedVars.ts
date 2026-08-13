@@ -1,4 +1,4 @@
-import { getCtx, isTrustedOrigin, safeEqual } from "../../core/mod.ts";
+import { getCtx, isTrustedOrigin, safeEqual } from "@qino/qino";
 
 /** POST body as render vars, if this node is the one the form addressed. Counterpart of `cms.formFields()`. */
 export function postedVars(nodeId: number): Record<string, any> | undefined {

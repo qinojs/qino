@@ -1,4 +1,4 @@
-import { toTools, walk, type ApiTree, type Ctx, type Method } from "../core/mod.ts";
+import { toTools, walk, type ApiTree, type Ctx, type Method } from "@qino/qino";
 
 /** WebMCP tool descriptors: the MCP tool shape (from toTools) plus the method+path a client needs to call the route.
  *  Filtered by the static `access` gate; a per-call `guard` stays in and is enforced when the tool is called. */

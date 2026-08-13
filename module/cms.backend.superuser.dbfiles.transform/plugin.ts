@@ -1,6 +1,6 @@
-import { errMsg, FileTransformer, html, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { errMsg, FileTransformer, html, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

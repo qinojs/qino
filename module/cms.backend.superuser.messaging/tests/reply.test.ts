@@ -1,11 +1,8 @@
-import { assertEquals, assertStringIncludes, fakeT, testContext } from "../../core/tests/deps.ts";
-import { Db, requestStorage } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
-import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
-import { dbSchema as telegramSchema, messagingChannel as telegram } from "../../messaging.telegram/tests/deps.ts";
+import { assertEquals, assertStringIncludes, fakeT, mailMessagingChannel as email, messagingDbSchema as messageSchema, telegramDbSchema as telegramSchema, telegramMessagingChannel as telegram, testContext } from "@qino/qino/tests";
+import { Db, requestStorage } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
-import { messagingChannel as email } from "../../mail/tests/deps.ts";
 
 Deno.test("messaging detail replies to the selected user's Telegram chat", async () => {
   const db = new Db("sqlite::memory:");

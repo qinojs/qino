@@ -1,6 +1,6 @@
-import { getCtx } from "../../core/mod.ts";
+import { getCtx } from "@qino/qino";
 import { sidebar } from "./widget.ts";
-import type { Node } from "../../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node): Promise<string> {
   const ctx = getCtx();

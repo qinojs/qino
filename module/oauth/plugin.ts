@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { login, Output, Redirect, unixTime, unb64url, randB64, sha256b64url, type App, type Ctx } from "../core/mod.ts";
+import { login, Output, Redirect, unixTime, unb64url, randB64, sha256b64url, type App, type Ctx } from "@qino/qino";
 
 export { dbSchema };
 

@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { addChannel, removeChannel, removeSubscription, send } from "../messaging.web_push/mod.ts";
-import { errMsg } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { addChannel, removeChannel, removeSubscription, send } from "@qino/qino/messaging.web_push";
+import { errMsg } from "@qino/qino";
 
 /** Node access is the permission — whoever may read this backend node may send from here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {

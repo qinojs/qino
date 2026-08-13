@@ -1,5 +1,5 @@
-import type { HealthTypes } from "../cms.backend.system/mod.ts";
-import type { App } from "../core/mod.ts";
+import type { HealthTypes } from "@qino/qino/cms.backend.system";
+import type { App } from "@qino/qino";
 import { cms } from "./lib/CMS.ts";
 
 export function healthChecks(app: App): HealthTypes {

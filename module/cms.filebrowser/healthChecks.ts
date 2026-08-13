@@ -1,5 +1,5 @@
-import type { HealthTypes } from "../cms.backend.system/mod.ts";
-import type { App } from "../core/mod.ts";
+import type { HealthTypes } from "@qino/qino/cms.backend.system";
+import type { App } from "@qino/qino";
 
 export function healthChecks(app: App): HealthTypes {
   const db = app.db;

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@std/assert";
-import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
+import { App, Ctx, requestStorage } from "@qino/qino";
 import { api } from "../api.ts";
 import { cart } from "../mod.ts";
 

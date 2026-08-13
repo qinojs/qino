@@ -1,4 +1,4 @@
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
 import { loadTemplate } from "../mod.ts";
 
 const text = (ast: unknown) => JSON.stringify(ast);

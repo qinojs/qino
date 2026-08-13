@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 
 export type SmsProvider = { send(to: string, text: string): Promise<unknown> };
 

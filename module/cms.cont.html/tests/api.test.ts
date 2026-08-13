@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { AccessError, ConflictError, invoke, requestStorage, toTools } from "../../core/mod.ts";
-import { fakeCms } from "../../cms/tests/deps.ts";
+import { assertEquals, assertRejects, fakeCms } from "@qino/qino/tests";
+import { AccessError, ConflictError, invoke, requestStorage, toTools } from "@qino/qino";
 import { api } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name } = manifest;

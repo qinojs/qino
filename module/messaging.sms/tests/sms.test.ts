@@ -1,6 +1,5 @@
-import { assert, assertEquals, assertRejects, assertThrows, fakeT } from "../../core/tests/deps.ts";
-import { ApiError, Db } from "../../core/mod.ts";
-import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
+import { assert, assertEquals, assertRejects, assertThrows, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+import { ApiError, Db } from "@qino/qino";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { deliver } from "../lib/provider.ts";
 import { addPhone, approvePhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone, type SmsProvider } from "../mod.ts";

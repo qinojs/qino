@@ -1,4 +1,4 @@
-import { sql, unixTime, type App } from "../../core/mod.ts";
+import { sql, unixTime, type App } from "@qino/qino";
 import { parseResult, type DomainRow } from "./monitor.ts";
 
 // Fields that move on their own and would report a change on every single check: timings and

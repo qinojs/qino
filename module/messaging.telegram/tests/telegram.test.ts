@@ -1,6 +1,5 @@
-import { assert, assertEquals, fakeT, testContext } from "../../core/tests/deps.ts";
-import { Db, Output, unixTime, type Ctx } from "../../core/mod.ts";
-import { dbSchema as messageSchema } from "../../messaging/tests/deps.ts";
+import { assert, assertEquals, fakeT, messagingDbSchema as messageSchema, testContext } from "@qino/qino/tests";
+import { Db, Output, unixTime, type Ctx } from "@qino/qino";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { linkToken, readLinkToken } from "../lib/link.ts";
 import { webhook } from "../lib/webhook.ts";

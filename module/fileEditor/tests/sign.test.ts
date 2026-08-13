@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { unixTime, type Ctx } from "../../core/mod.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
+import { unixTime, type Ctx } from "@qino/qino";
 import { sign, check } from "../lib/sign.ts";
 
 // deno-lint-ignore no-explicit-any

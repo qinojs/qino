@@ -1,6 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, getCtx, s, type ApiTree, type App, type Params } from "../core/mod.ts";
-import type { Channel } from "../messaging/mod.ts";
+import { Access, getCtx, s, type ApiTree, type App, type Params } from "@qino/qino";
+import type { Channel } from "@qino/qino/messaging";
 import { addPhone, pendingPhones, removePhone, send, setMainPhone, userPhones, verifyPhone } from "./mod.ts";
 
 export { dbSchema };

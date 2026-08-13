@@ -1,6 +1,6 @@
-import { html, getCtx, moduleIcon, sql, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import { ADMIN, WRITE, describeChange, type Node } from "../cms/mod.ts";
+import { html, getCtx, moduleIcon, sql, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import { ADMIN, WRITE, describeChange, type Node } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

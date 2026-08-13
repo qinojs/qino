@@ -1,4 +1,4 @@
-import { ApiError, Output, toTools, walk, type Params, type Ctx, type Tool } from "../core/mod.ts";
+import { ApiError, Output, toTools, walk, type Params, type Ctx, type Tool } from "@qino/qino";
 import denoJson from "../../deno.json" with { type: "json" };
 
 /** MCP server (Streamable HTTP, stateless): exposes the app's api tree as MCP tools.

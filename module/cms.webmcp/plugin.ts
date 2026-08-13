@@ -1,5 +1,5 @@
-import { Access, type App, type ApiTree, type Params, type Ctx } from "../core/mod.ts";
-import type {} from "../cms/mod.ts";
+import { Access, type App, type ApiTree, type Params, type Ctx } from "@qino/qino";
+import type {} from "@qino/qino/cms";
 import { webmcpTools } from "./mod.ts";
 
 export const api: ApiTree = {

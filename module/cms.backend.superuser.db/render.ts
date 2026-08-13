@@ -1,5 +1,5 @@
-import { getCtx, html, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx, html, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { renderTables } from "./view/tables.ts";
 import { renderDiff } from "./view/diff.ts";
 import { renderModules } from "./view/modules.ts";

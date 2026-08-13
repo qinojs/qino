@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
-import { cms } from "../../../module/cms/mod.ts";
+import { App, Ctx, requestStorage } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 import { backendDashboardWidget as ordersWidget } from "../../cms.backend.shp3.orders1/plugin.ts";
 import { backendDashboardWidget as productsWidget } from "../../cms.backend.shp3.products/plugin.ts";
 import { backendDashboardWidget as settingsWidget } from "../../cms.backend.shp3.settings/plugin.ts";

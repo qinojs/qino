@@ -1,5 +1,5 @@
-import type { App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import type { App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { loadTemplate } from "./mod.ts";
 import { renderNodes } from "./render.ts";
 

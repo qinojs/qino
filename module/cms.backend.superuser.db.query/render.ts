@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { errMsg, getCtx, html, sql, type App, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { ai } from "../ai/mod.ts";
+import { errMsg, getCtx, html, sql, type App, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { ai } from "@qino/qino/ai";
 import { askDbAi } from "./lib/ai.ts";
 
 const MAX_ROWS = 1000; // cap rendered rows; the query itself is not limited

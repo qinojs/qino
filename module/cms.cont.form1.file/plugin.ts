@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { html, type Ctx, type HtmlString } from "../core/mod.ts";
-import { formOf } from "../cms.cont.form2/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { html, type Ctx, type HtmlString } from "@qino/qino";
+import { formOf } from "@qino/qino/cms.cont.form2";
 import options from "./options.ts";
 
 const settingsSchema = {

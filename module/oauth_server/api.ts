@@ -1,4 +1,4 @@
-import { Access, type ApiTree, getCtx, type Params, s } from "../core/mod.ts";
+import { Access, type ApiTree, getCtx, type Params, s } from "@qino/qino";
 
 /** Self-service only — a user sees and revokes their own grants. Managing clients is an
  *  administrative job and lives in the backend module, not in the public API tree. */

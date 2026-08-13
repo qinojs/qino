@@ -1,4 +1,4 @@
-import { sql, type App } from "../core/mod.ts";
+import { sql, type App } from "@qino/qino";
 import { DATA } from "./lib/data.ts";
 
 // Column names and lengths are the ones the PHP original used, so a migrated database fits.

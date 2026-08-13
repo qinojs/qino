@@ -1,5 +1,5 @@
-import { assert, assertEquals, assertThrows, Emitter } from "../../core/tests/deps.ts";
-import { Db, type App } from "../../core/mod.ts";
+import { assert, assertEquals, assertThrows, Emitter } from "@qino/qino/tests";
+import { Db, type App } from "@qino/qino";
 import { type Every, type Job, run, status, trigger } from "../mod.ts";
 import { init } from "../plugin.ts";
 import { nextRun, scheduleKey, validateJob } from "../calendar.ts";

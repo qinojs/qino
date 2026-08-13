@@ -1,7 +1,6 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { Db, type App } from "../../core/mod.ts";
-import { hit, scored } from "../../score/mod.ts";
-import { dbSchema } from "../../score/tests/deps.ts";
+import { assertEquals, scoreDbSchema as dbSchema } from "@qino/qino/tests";
+import { Db, type App } from "@qino/qino";
+import { hit, scored } from "@qino/qino/score";
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };

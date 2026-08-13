@@ -1,7 +1,7 @@
-import { html, unixTime, type App, type HtmlString, type Row } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { html, unixTime, type App, type HtmlString, type Row } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

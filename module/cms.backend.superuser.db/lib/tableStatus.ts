@@ -1,4 +1,4 @@
-import { sql, type Db } from "../../core/mod.ts";
+import { sql, type Db } from "@qino/qino";
 
 export type TableStatus = { rows: number | null; bytes: number | null; overhead: number | null; deadRows: number | null; engine: string };
 

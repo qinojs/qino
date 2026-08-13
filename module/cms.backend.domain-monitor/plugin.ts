@@ -1,7 +1,7 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import type { App } from "../core/mod.ts";
-import type { Jobs } from "../cron/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
+import { backend } from "@qino/qino/cms.backend";
 import { pruneHistory } from "./lib/changes.ts";
 import { runScheduled } from "./lib/monitor.ts";
 import api from "./nodeApi.ts";

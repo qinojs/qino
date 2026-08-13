@@ -1,4 +1,4 @@
-import { Output, sha256b64url, type App, type Ctx } from "../core/mod.ts";
+import { Output, sha256b64url, type App, type Ctx } from "@qino/qino";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("route", ({ ctx }) => ctx.req.appPath === "sw.js" ? serve(ctx) : undefined, { signal });

@@ -1,6 +1,6 @@
-import { html, sql, unixTime, type App, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { fadeLimit, scopes, strength, type Scope } from "../score/mod.ts";
+import { html, sql, unixTime, type App, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { fadeLimit, scopes, strength, type Scope } from "@qino/qino/score";
 
 const TOP = sql.raw("10");
 

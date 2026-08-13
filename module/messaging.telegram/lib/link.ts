@@ -1,4 +1,4 @@
-import { b64url, safeEqual, unixTime, type App } from "../../core/mod.ts";
+import { b64url, safeEqual, unixTime, type App } from "@qino/qino";
 import { botToken } from "./bot.ts";
 
 // A deep-link payload is `<usr>-<exp>-<sig>`, signed with the bot token: stateless on purpose —

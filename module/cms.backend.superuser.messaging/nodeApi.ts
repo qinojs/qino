@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { channel } from "../messaging/mod.ts";
-import { errMsg } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { channel } from "@qino/qino/messaging";
+import { errMsg } from "@qino/qino";
 
 /** Node access is the permission — replies are limited to an existing user. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {

@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, html, type HtmlString, sql, type Sql, sqlSearch, type App, type Ctx } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx, html, type HtmlString, sql, type Sql, sqlSearch, type App, type Ctx } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.ai.sessions", { en: "AI Sessions", de: "KI-Sitzungen" });

@@ -1,5 +1,5 @@
-import { html, type HtmlString, unixTime, type Ctx } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { html, type HtmlString, unixTime, type Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const t = node.app.t;

@@ -1,8 +1,8 @@
-import { cms } from "../../cms/mod.ts";
+import { cms } from "@qino/qino/cms";
 // deno-lint-ignore-file no-explicit-any
 
-import { html, type App, type Ctx } from "../../core/mod.ts";
-import { getCmsVers, tableEntriesCopyTo } from "../../cms.versions/mod.ts";
+import { html, type App, type Ctx } from "@qino/qino";
+import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
 
 const ALLOWED_META = new Set(["name", "vpos", "hpos"]);
 

@@ -1,7 +1,7 @@
 // The shop of one app: everything that needs its settings or events hangs here — like mail(app)
 // and ai(app). What gets by with its arguments stays a free function (ensureProduct, cart).
 
-import { $item, type App, Db, Emitter, itemReadDeep, type ItemProxy } from "../../../module/core/mod.ts";
+import { $item, type App, Db, Emitter, itemReadDeep, type ItemProxy } from "@qino/qino";
 import type { Currency, GeneratedItem, Order, OrderItem, Product } from "./rows.ts";
 
 export type MethodKind = "payments" | "shippings";

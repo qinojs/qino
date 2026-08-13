@@ -1,4 +1,4 @@
-import { html, type App, type HtmlString, sql, type Sql, sqlSearch } from "../../core/mod.ts";
+import { html, type App, type HtmlString, sql, type Sql, sqlSearch } from "@qino/qino";
 
 /** Badges "n × view / edit / administer" for the access widget heads. */
 export async function accessCounts(app: App, table: string, pageId: number | string): Promise<string> {

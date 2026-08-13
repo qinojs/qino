@@ -2,9 +2,9 @@
 // Naming rule of the row layer — columns are data, methods are verbs. `price` is a column,
 // so the calculation beside it is `pricesFor()`, not `price()`.
 
-import { DbRow, type Db, unixTime } from "../../../module/core/mod.ts";
+import { DbRow, type Db, unixTime } from "@qino/qino";
 import { shp3, type Shp3 } from "./Shp3.ts";
-import { cms, type Node } from "../../../module/cms/mod.ts";
+import { cms, type Node } from "@qino/qino/cms";
 
 /** The shop a row belongs to — every table here lives in one. */
 class ShopRow extends DbRow {

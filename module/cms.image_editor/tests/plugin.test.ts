@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import type { ApiNode } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import type { ApiNode } from "@qino/qino";
 import { api, dbSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name, dependencies } = manifest;

@@ -1,7 +1,7 @@
-import { html, type HtmlString, sql, type App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import { versedTables, versTable, thinHistory } from "../cms.versions/mod.ts";
+import { html, type HtmlString, sql, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
+import { versedTables, versTable, thinHistory } from "@qino/qino/cms.versions";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

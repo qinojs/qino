@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { html, type HtmlString, uid, getCtx } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { html, type HtmlString, uid, getCtx } from "@qino/qino";
 
 export default function (node: Node, _vars: unknown): Promise<HtmlString> {
   const t = node.app.t;

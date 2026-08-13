@@ -1,5 +1,5 @@
-import type { Node } from "../../../cms/mod.ts";
-import { getCtx, html, type HtmlString } from "../../../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { getCtx, html, type HtmlString } from "@qino/qino";
 
 export default function (node: Node, _vars: unknown = {}): HtmlString {
   const ctx = getCtx()

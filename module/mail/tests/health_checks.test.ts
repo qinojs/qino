@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { healthChecks } from "../healthChecks.ts";
 
 function setting(initial: string, writes: any[]) {

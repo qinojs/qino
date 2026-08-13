@@ -1,5 +1,5 @@
-import { assert, assertEquals, assertStringIncludes, fakeT } from "../../core/tests/deps.ts";
-import { $item } from "../../core/mod.ts";
+import { assert, assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
+import { $item } from "@qino/qino";
 import api from "../nodeApi.ts";
 import { bot as renderBot } from "../render.ts";
 

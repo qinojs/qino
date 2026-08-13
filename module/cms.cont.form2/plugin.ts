@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { mail } from "../mail/mod.ts";
-import { hee, html, sql, tableRef, unixTime, type Ctx, type HtmlString } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { mail } from "@qino/qino/mail";
+import { hee, html, sql, tableRef, unixTime, type Ctx, type HtmlString } from "@qino/qino";
 import { type Form, openForm } from "./mod.ts";
 import options from "./options.ts";
 

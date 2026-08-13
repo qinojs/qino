@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name } = manifest;
-import { requestStorage } from "../../core/mod.ts";
+import { requestStorage } from "@qino/qino";
 
 function settings(values: Record<string, unknown> = {}) {
   return new Proxy({}, {

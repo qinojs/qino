@@ -1,5 +1,5 @@
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { CMS } from "../lib/CMS.ts";
 import { sanitizeHtml } from "../lib/sanitize.ts";
 

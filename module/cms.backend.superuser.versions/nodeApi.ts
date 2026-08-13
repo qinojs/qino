@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { sql } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { thinHistory, versedTables, versTable } from "../cms.versions/mod.ts";
+import { sql } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { thinHistory, versedTables, versTable } from "@qino/qino/cms.versions";
 
 export default async function (node: Node, vars: any): Promise<any> {
   if (await node.access() < 2) return false;

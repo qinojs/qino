@@ -1,5 +1,5 @@
-import { html, type HtmlString } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // Renders the backendDashboardWidget of every visible child page as a card.
 // Shared by the backend dashboard and the grouping pages (e.g. superuser).

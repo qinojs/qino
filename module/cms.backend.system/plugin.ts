@@ -1,10 +1,10 @@
-import { html, sql, type App, type HtmlString } from "../core/mod.ts";
+import { html, sql, type App, type HtmlString } from "@qino/qino";
 import { getHealthTypes, type CheckResult } from "./lib/healthRegistry.ts";
 export { healthChecks } from "./healthChecks.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
 import api from "./nodeApi.ts";
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });

@@ -1,6 +1,6 @@
 // Public API of cms.templateParser. The qino plugin lives in ./plugin.ts.
 
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 import { parseTemplate, type TNode } from "./parse.ts";
 import { renderNodes } from "./render.ts";
 

@@ -1,5 +1,5 @@
-import { ADMIN, type Node } from "../../../cms/mod.ts";
-import { html, type HtmlString, getCtx, moduleIcon } from "../../../core/mod.ts";
+import { ADMIN, type Node } from "@qino/qino/cms";
+import { html, type HtmlString, getCtx, moduleIcon } from "@qino/qino";
 import { moduleAccess } from "../widget.ts";
 
 export default async function (node: Node): Promise<HtmlString> {

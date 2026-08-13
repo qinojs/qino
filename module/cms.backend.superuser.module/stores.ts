@@ -1,7 +1,7 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, getCtx, html, moduleIcon, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { errMsg, getCtx, html, moduleIcon, type App, type HtmlString, type Module, type Store } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
 import { writeIndex } from "./storeIndex.ts";
 
 const name = "cms.backend.superuser.module";

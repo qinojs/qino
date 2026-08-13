@@ -1,4 +1,4 @@
-import type { Ctx } from "../../core/mod.ts";
+import type { Ctx } from "@qino/qino";
 import type { Node } from "./Node.ts";
 
 /** Per-request cms state, lazily created on the generic `ctx.state` — core stays cms-agnostic. */

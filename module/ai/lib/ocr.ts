@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
 

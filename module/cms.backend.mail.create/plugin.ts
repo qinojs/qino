@@ -1,7 +1,7 @@
-import { backend } from "../cms.backend/mod.ts";
-import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { mail, addressOf } from "../mail/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
+import { html, type App, type Ctx, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { mail, addressOf } from "@qino/qino/mail";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

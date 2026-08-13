@@ -1,5 +1,5 @@
-import { assertRejects } from "../../core/tests/deps.ts";
-import { Redirect } from "../../core/mod.ts";
+import { assertRejects } from "@qino/qino/tests";
+import { Redirect } from "@qino/qino";
 import { cms } from "../plugin.ts";
 
 Deno.test("the former own-store page redirects to own modules", async () => {

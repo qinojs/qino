@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 import { cms } from "./CMS.ts";
 
 export async function resolveText(app: App, value: string): Promise<string> {

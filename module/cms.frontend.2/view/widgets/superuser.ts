@@ -1,7 +1,7 @@
 import * as nodePath from "node:path";
-import type { Node } from "../../../cms/mod.ts";
-import { html, type HtmlString, getCtx, Output } from "../../../core/mod.ts";
-import { editorUrl } from "../../../fileEditor/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { html, type HtmlString, getCtx, Output } from "@qino/qino";
+import { editorUrl } from "@qino/qino/fileEditor";
 
 function inRoot(file: string, root: string): boolean {
   const rel = nodePath.relative(nodePath.resolve(root), nodePath.resolve(file));

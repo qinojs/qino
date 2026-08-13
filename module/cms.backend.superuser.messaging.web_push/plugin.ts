@@ -1,7 +1,7 @@
-import { html, unixTime, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import * as u2 from "../u2/mod.ts";
-import { subscriptions as subscriptionList } from "../messaging.web_push/mod.ts";
+import { html, unixTime, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
+import { subscriptions as subscriptionList } from "@qino/qino/messaging.web_push";
 import { channels, render, send, subscriptions } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };

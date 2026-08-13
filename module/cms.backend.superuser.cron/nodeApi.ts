@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { run, trigger } from "../cron/mod.ts";
-import { errMsg } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { run, trigger } from "@qino/qino/cron";
+import { errMsg } from "@qino/qino";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   try {

@@ -1,5 +1,5 @@
 import type { ProviderRow } from "../types.ts";
-import { errMsg } from "../../core/mod.ts";
+import { errMsg } from "@qino/qino";
 
 // Thin transport for one OpenAI-compatible provider: auth, timeout, 429-retry.
 // Higher layers (AiApi/ChatSession) own model resolution and usage accounting.

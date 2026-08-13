@@ -1,6 +1,6 @@
-import { $item } from "../core/mod.ts";
-import * as identity from "../identity/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { $item } from "@qino/qino";
+import * as identity from "@qino/qino/identity";
+import type { Node } from "@qino/qino/cms";
 
 const FIELDS = new Set([
   "name", "alternateName", "description", "url",

@@ -1,5 +1,5 @@
-import { sql, type Db, type DbField } from "../../core/mod.ts";
-import type { TableStatus } from "../../cms.backend.superuser.db/mod.ts";
+import { sql, type Db, type DbField } from "@qino/qino";
+import type { TableStatus } from "@qino/qino/cms.backend.superuser.db";
 
 const DELETE_BATCH = 1000;
 const REPAIR_ENGINES = new Set(["archive", "aria", "csv", "myisam"]);

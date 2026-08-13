@@ -1,5 +1,5 @@
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { Access, Output, type Ctx, requestStorage, s, type Params } from "../../core/mod.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
+import { Access, Output, type Ctx, requestStorage, s, type Params } from "@qino/qino";
 import { mcpFetch } from "../mod.ts";
 
 const apiTree = {

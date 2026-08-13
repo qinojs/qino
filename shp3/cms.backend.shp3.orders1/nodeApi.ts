@@ -1,5 +1,5 @@
-import type { Node } from "../../module/cms/mod.ts";
-import type { Order } from "../shp3/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import type { Order } from "@qino/qino/shp3";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (await node.access() < 2) return false;

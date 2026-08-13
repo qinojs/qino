@@ -1,6 +1,6 @@
-import { getCtx, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 import { renderDetail } from "./detail.ts";
 import { api, backendDashboardWidget, renderOverview } from "./stores.ts";
 import manifest from "./manifest.json" with { type: "json" };

@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { $item, errMsg } from "../core/mod.ts";
-import { approvePhone, removePhone, send, setMainPhone } from "../messaging.sms/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { $item, errMsg } from "@qino/qino";
+import { approvePhone, removePhone, send, setMainPhone } from "@qino/qino/messaging.sms";
 
 /** Node access is the permission — whoever may read this backend node may manage SMS. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {

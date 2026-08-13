@@ -1,4 +1,4 @@
-import type { Node } from "../../module/cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 const CURRENCY = new Set(["factor", "smallest", "smallest_closing", "active", "main"]);
 

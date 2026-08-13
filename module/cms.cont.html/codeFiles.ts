@@ -1,5 +1,5 @@
-import { getCtx, isFile } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx, isFile } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});
 

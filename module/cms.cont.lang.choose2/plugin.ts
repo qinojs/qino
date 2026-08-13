@@ -1,5 +1,5 @@
-import { cmsCtx, type Node } from "../cms/mod.ts";
-import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import { cmsCtx, type Node } from "@qino/qino/cms";
+import { html, type Ctx, type HtmlString } from "@qino/qino";
 
 const LANG_NAMES: Record<string, string> = {
   de: "Deutsch",

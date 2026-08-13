@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { html, type Ctx, type HtmlString } from "../core/mod.ts";
-import * as u2 from "../u2/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { html, type Ctx, type HtmlString } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 

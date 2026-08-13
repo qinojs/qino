@@ -1,7 +1,7 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { html, type HtmlString, getCtx, sql, type App } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { html, type HtmlString, getCtx, sql, type App } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 import api from "./nodeApi.ts";
 
 export { dbSchema };

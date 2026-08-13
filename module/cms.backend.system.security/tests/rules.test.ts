@@ -1,4 +1,4 @@
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
 import { actionSignals, rankSignal, responseSignal } from "../rules.ts";
 
 Deno.test("security rules detect common probes", () => {

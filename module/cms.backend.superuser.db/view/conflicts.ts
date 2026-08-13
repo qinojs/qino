@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { html, type App, type HtmlString } from "../../core/mod.ts";
+import { html, type App, type HtmlString } from "@qino/qino";
 import { collectConflicts } from "../lib/analyze.ts";
 
 export function renderConflicts(app: App, modules: Record<string, any>): Promise<HtmlString> {

@@ -1,7 +1,7 @@
 // The world's countries. What a standard already knows stays out of the table: the name comes
 // from Intl in whatever language is asked for, only codes that no library carries are stored.
 
-import type { Db } from "../core/mod.ts";
+import type { Db } from "@qino/qino";
 
 export const country = {
   /** "Switzerland", "Schweiz" — the code itself if the language has no name for it. */

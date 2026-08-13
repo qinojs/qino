@@ -18,8 +18,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { type DbScope, Access, type ApiTree, s, sql, type App } from "../core/mod.ts";
-import { cms, cmsCtx, type Node } from "../cms/mod.ts";
+import { type DbScope, Access, type ApiTree, s, sql, type App } from "@qino/qino";
+import { cms, cmsCtx, type Node } from "@qino/qino/cms";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { initSpaces, versSpaceSchema } from "./lib/Spaces.ts";

@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { renderTemplateFile } from "../cms.templateParser/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { renderTemplateFile } from "@qino/qino/cms.templateParser";
 import { codeFiles } from "./codeFiles.ts";
 import { nodeApi } from "./api.ts";
 import options from "./options.ts";

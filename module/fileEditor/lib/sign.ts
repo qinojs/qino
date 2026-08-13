@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { uid, unixTime, type Ctx } from "../../core/mod.ts";
+import { uid, unixTime, type Ctx } from "@qino/qino";
 
 // The capability lives in the URL, not in a list of granted paths: a rendered
 // file list would otherwise write hundreds of paths into the session forever.

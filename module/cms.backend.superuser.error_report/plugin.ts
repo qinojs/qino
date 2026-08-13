@@ -1,8 +1,8 @@
-import { html, getCtx, sql, sqlSearch, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import * as u2 from "../u2/mod.ts";
-import { cms as cmsOf, type Node } from "../cms/mod.ts";
-import { editorUrl } from "../fileEditor/mod.ts";
+import { html, getCtx, sql, sqlSearch, type Sql, type Ctx, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
+import { cms as cmsOf, type Node } from "@qino/qino/cms";
+import { editorUrl } from "@qino/qino/fileEditor";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.error_report", { en: "Errors", de: "Fehler" });

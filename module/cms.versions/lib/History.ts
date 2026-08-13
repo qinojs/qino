@@ -5,7 +5,7 @@
 // Writes without request context (cron/CLI/boot) are not captured — capture
 // is keyed to ctx.logId, so there is no log entry to attach them to.
 
-import { requestStorage, sql, type App, type Db, type DbEvents, type Sql } from "../../core/mod.ts";
+import { requestStorage, sql, type App, type Db, type DbEvents, type Sql } from "@qino/qino";
 import { getVers, versTable } from "./Vers.ts";
 
 function replaceFrom(db: Db, vt: string, cols: Record<string, any>[], source: Sql) {

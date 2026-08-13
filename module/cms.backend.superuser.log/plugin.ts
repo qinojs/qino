@@ -1,8 +1,8 @@
 import { dump } from "@nuxodin/dump";
-import { html, getCtx, sql, unixTime, type Sql, type Ctx, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { html, getCtx, sql, unixTime, type Sql, type Ctx, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

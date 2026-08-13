@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { cms_image2 } from "../cms.image2/mod.ts";
-import { html, type Ctx, type HtmlString } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { cms_image2 } from "@qino/qino/cms.image2";
+import { html, type Ctx, type HtmlString } from "@qino/qino";
 
 const settingsSchema = {
   additionalProperties: { type: "string" },

@@ -1,6 +1,6 @@
-import { html, type HtmlString } from "../../../core/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
 import { accessRadios, accessTable, accessTail } from "../accessList.ts";
-import type { Node } from "../../../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<HtmlString> {
   const app = node.app;

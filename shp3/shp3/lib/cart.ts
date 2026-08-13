@@ -1,4 +1,4 @@
-import { type App, type Ctx, unixTime } from "../../../module/core/mod.ts";
+import { type App, type Ctx, unixTime } from "@qino/qino";
 import type { Order } from "./rows.ts";
 
 /** The visitor's open order. Kept in the session — ctx.settings is writable by the visitor,

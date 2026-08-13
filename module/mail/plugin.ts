@@ -1,5 +1,5 @@
-import type { App } from "../core/mod.ts";
-import { msgOf, titleOf, type Channel, type Msg, type To } from "../messaging/mod.ts";
+import type { App } from "@qino/qino";
+import { msgOf, titleOf, type Channel, type Msg, type To } from "@qino/qino/messaging";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { mail } from "./mod.ts";
 import { MailManager, mailInstances } from "./lib/MailManager.ts";

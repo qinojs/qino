@@ -1,6 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, getCtx, type ApiTree, type App } from "../core/mod.ts";
-import type { Channel } from "../messaging/mod.ts";
+import { Access, getCtx, type ApiTree, type App } from "@qino/qino";
+import type { Channel } from "@qino/qino/messaging";
 import { webhook } from "./lib/webhook.ts";
 import { linkUrl, send, userChats } from "./mod.ts";
 

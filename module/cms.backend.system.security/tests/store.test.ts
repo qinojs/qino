@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "../../core/tests/deps.ts";
+import { assert, assertEquals } from "@qino/qino/tests";
 import { bucketHits, hitBuckets, penaltyState } from "../store.ts";
 
 Deno.test("security buckets apply scope weights", () => {

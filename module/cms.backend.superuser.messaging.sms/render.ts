@@ -1,7 +1,7 @@
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { html, type HtmlString, type Row } from "../core/mod.ts";
-import { pendingPhones, phones as phoneList } from "../messaging.sms/mod.ts";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
+import { html, type HtmlString, type Row } from "@qino/qino";
+import { pendingPhones, phones as phoneList } from "@qino/qino/messaging.sms";
 
 export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>

@@ -1,5 +1,5 @@
-import type { Node } from "../../../cms/mod.ts";
-import { html, type HtmlString, getCtx } from "../../../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { html, type HtmlString, getCtx } from "@qino/qino";
 import { tree } from "../../../cms/api-exports.ts";
 
 export default async function (node: Node): Promise<HtmlString> {

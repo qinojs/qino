@@ -1,4 +1,4 @@
-import { Output, Redirect, unixTime, type Ctx } from "../../core/mod.ts";
+import { Output, Redirect, unixTime, type Ctx } from "@qino/qino";
 import { trackCert } from "./helpers.ts";
 import { mail } from "../mod.ts";
 

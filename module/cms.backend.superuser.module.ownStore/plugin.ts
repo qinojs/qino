@@ -1,7 +1,7 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, html, isModuleName, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { errMsg, html, isModuleName, type App, type HtmlString, type Module, type Store } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

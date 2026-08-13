@@ -3,7 +3,7 @@ import { CMS, cms, cmsInstances } from "./lib/CMS.ts";
 import { initNodeChanged } from "./lib/nodeChanged.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
 import { render } from "./lib/render.ts";
-import { header, Output, type App, type DbFile } from "../core/mod.ts";
+import { header, Output, type App, type DbFile } from "@qino/qino";
 
 export { api } from "./api.ts";
 

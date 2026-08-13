@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name } = manifest;

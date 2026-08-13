@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 import type { ProviderModelRow } from "../types.ts";
 
 // Per-model token accounting. Prices are model-specific, so usage lives on ai_provider_model.

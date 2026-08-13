@@ -1,9 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { errMsg, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
-import { KINDS, providerCatalog } from "../ai/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { errMsg, html, type App, type Ctx, type HtmlString } from "@qino/qino";
+import { KINDS, providerCatalog } from "@qino/qino/ai";
+import { backend } from "@qino/qino/cms.backend";
+import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.ai", { en: "AI", de: "KI" });

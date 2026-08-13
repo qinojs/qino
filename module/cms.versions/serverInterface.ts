@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { cms, describeChange } from "../cms/mod.ts";
-import { sql, hee, type Sql } from "../core/mod.ts";
+import { cms, describeChange } from "@qino/qino/cms";
+import { sql, hee, type Sql } from "@qino/qino";
 import { versedTables, view } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
 

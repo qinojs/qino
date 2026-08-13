@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { unixTime, randB64, type App } from "../../core/mod.ts";
+import { unixTime, randB64, type App } from "@qino/qino";
 
 const PREFIX = "qk_";
 

@@ -1,5 +1,5 @@
-import type { App } from "../core/mod.ts";
-import { cmsCtx } from "../cms/mod.ts";
+import type { App } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {

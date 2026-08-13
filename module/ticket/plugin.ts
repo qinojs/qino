@@ -1,6 +1,6 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { unixTime } from "../core/mod.ts";
-import type { Jobs } from "../cron/mod.ts";
+import { unixTime } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 
 export { dbSchema };
 

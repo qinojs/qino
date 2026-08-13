@@ -1,7 +1,7 @@
-import { backend } from "../cms.backend/mod.ts";
-import { mail } from "../mail/mod.ts";
-import { getCtx, hee, html, type HtmlString, unixTime, type App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
+import { mail } from "@qino/qino/mail";
+import { getCtx, hee, html, type HtmlString, unixTime, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

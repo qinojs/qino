@@ -1,4 +1,4 @@
-import type { App } from "../core/mod.ts";
+import type { App } from "@qino/qino";
 import { mcpFetch } from "./mod.ts";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {

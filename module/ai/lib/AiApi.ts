@@ -1,4 +1,4 @@
-import { errMsg, unixTime, type App } from "../../core/mod.ts";
+import { errMsg, unixTime, type App } from "@qino/qino";
 import type { Bot, Kind, ProviderRow } from "../types.ts";
 import { Provider } from "./Provider.ts";
 import { ChatSession } from "./ChatSession.ts";

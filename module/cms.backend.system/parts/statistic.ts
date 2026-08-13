@@ -1,5 +1,5 @@
-import { html, sql, type Db, type HtmlString } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { html, sql, type Db, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 type DbTableStat = { name: string; bytes: number };
 

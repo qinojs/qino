@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any -- db rows are dynamically shaped (as in the sibling cms modules)
-import { html, sql, type App, type Ctx, type HtmlString, type Sql } from "../core/mod.ts";
-import { cms as cmsOf, describeChange, WRITE, type Node } from "../cms/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { html, sql, type App, type Ctx, type HtmlString, type Sql } from "@qino/qino";
+import { cms as cmsOf, describeChange, WRITE, type Node } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

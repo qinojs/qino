@@ -1,6 +1,6 @@
 // deno-lint-ignore-file require-await
-import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
-import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "../../core/mod.ts";
+import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { AccessError, NotFoundError, ValidationError, invoke, html, requestStorage } from "@qino/qino";
 import { cmsInstances } from "../lib/CMS.ts";
 import { api } from "../api.ts";
 

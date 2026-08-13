@@ -1,5 +1,5 @@
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { Form, formOf, openForm } from "../mod.ts";
 
 /** Minimal stand-in: only `id` and `path()` matter for the form lookup. */

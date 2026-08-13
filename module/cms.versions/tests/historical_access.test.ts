@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, Emitter, testContext } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
-import { fakeCms, render } from "../../cms/tests/deps.ts";
+import { assertEquals, cmsRender as render, Emitter, fakeCms, testContext } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { cacheHeaders, getCmsVers, initHistoricalNodes } from "../lib/CmsVers.ts";
 
 function setup(current: Record<number, any>, access: Record<number, number>, historical: Record<number, any> = {}) {

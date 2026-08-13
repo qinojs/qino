@@ -1,5 +1,5 @@
-import { pwHash, type App } from "../core/mod.ts";
-import { cms } from "../cms/mod.ts";
+import { pwHash, type App } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

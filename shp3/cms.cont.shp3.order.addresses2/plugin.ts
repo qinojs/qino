@@ -1,7 +1,7 @@
-import { html, type HtmlString, type Ctx } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
-import { cart, shp3, type Order } from "../shp3/mod.ts";
-import { country } from "../../module/locale.country/mod.ts";
+import { html, type HtmlString, type Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { cart, shp3, type Order } from "@qino/qino/shp3";
+import { country } from "@qino/qino/locale.country";
 import dbSchema from "./dbschema.json" with { type: "json" };
 
 export { dbSchema };

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { matchPath, parsePathList } from "./pathlist.ts";
 import { settingsSchema, type SecuritySettings } from "./schema.ts";
-import { unixTime, type App, type Db, type Ctx } from "../core/mod.ts";
+import { unixTime, type App, type Db, type Ctx } from "@qino/qino";
 
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const bucketCache = new WeakMap<object, Map<string, { until: number; row: Record<string, unknown> }>>();

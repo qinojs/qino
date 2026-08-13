@@ -1,6 +1,6 @@
-import { hee, type App } from "../../module/core/mod.ts";
-import { mail } from "../../module/mail/mod.ts";
-import { shp3, type Order } from "../shp3/mod.ts";
+import { hee, type App } from "@qino/qino";
+import { mail } from "@qino/qino/mail";
+import { shp3, type Order } from "@qino/qino/shp3";
 
 export const settingsSchema = {
   properties: {

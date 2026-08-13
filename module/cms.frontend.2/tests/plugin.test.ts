@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import type { App } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import type { App } from "@qino/qino";
 import { init } from "../plugin.ts";
 
 Deno.test("cms.frontend.2: stores request URI without base path", async () => {

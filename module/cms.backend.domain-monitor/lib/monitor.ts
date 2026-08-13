@@ -1,4 +1,4 @@
-import { sql, unixTime, type App } from "../../core/mod.ts";
+import { sql, unixTime, type App } from "@qino/qino";
 import { checkDomain } from "./check.ts";
 import { diffResults, lastResult } from "./changes.ts";
 

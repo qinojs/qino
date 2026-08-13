@@ -1,5 +1,5 @@
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import nodeApi from "../nodeApi.ts";
 import { backendDashboardWidget, cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };

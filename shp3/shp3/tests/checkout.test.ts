@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@std/assert";
-import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
+import { App, Ctx, requestStorage } from "@qino/qino";
 import { api } from "../api.ts";
 import { cart } from "../mod.ts";
 import nodeApi from "../../cms.backend.shp3.orders1/nodeApi.ts";
-import { mail } from "../../../module/mail/mod.ts";
+import { mail } from "@qino/qino/mail";
 
 const call = (path: string[], verb: string, input?: unknown) =>
   (path.reduce((n: any, k) => n[k], api as any))[verb].execute(input);

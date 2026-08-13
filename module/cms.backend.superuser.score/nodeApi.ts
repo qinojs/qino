@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { prune } from "../score/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { prune } from "@qino/qino/score";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars.prune) return false;

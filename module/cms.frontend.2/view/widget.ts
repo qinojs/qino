@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, hee, html, type HtmlString } from "../../core/mod.ts";
-import { ADMIN, type Node } from "../../cms/mod.ts";
+import { getCtx, hee, html, type HtmlString } from "@qino/qino";
+import { ADMIN, type Node } from "@qino/qino/cms";
 
 export function widgetUrl(widget: string): string {
   return new URL("./widgets/" + widget + ".ts", import.meta.url).href;

@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { deleteClient, saveClient } from "../oauth_server/mod.ts";
-import { errMsg } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { deleteClient, saveClient } from "@qino/qino/oauth_server";
+import { errMsg } from "@qino/qino";
 
 /** Node access is the permission — whoever may read this backend node may manage clients here. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {

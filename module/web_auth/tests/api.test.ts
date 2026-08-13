@@ -1,5 +1,5 @@
-import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
-import { AccessError, invoke, toTools, requestStorage } from "../../core/mod.ts";
+import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { AccessError, invoke, toTools, requestStorage } from "@qino/qino";
 import { api, cron, settingsSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name } = manifest;

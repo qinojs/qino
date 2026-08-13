@@ -1,7 +1,7 @@
 import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
-import { errMsg, getCtx, html, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { editorUrl } from "../fileEditor/mod.ts";
+import { errMsg, getCtx, html, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { editorUrl } from "@qino/qino/fileEditor";
 
 // dir ends with a slash (like Module.dir)
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {

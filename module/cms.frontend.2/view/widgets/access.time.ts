@@ -1,5 +1,5 @@
-import { html, type HtmlString } from "../../../core/mod.ts";
-import type { Node } from "../../../cms/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 function toDatetimeLocal(ts: string | number | null): string {
   if (!ts) return "";

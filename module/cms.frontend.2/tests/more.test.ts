@@ -1,6 +1,5 @@
-import { assert, assertEquals, assertRejects } from "../../core/tests/deps.ts";
-import { requestStorage, type Ctx } from "../../core/mod.ts";
-import { fakeMail } from "../../mail/tests/deps.ts";
+import { assert, assertEquals, assertRejects, fakeMail } from "@qino/qino/tests";
+import { requestStorage, type Ctx } from "@qino/qino";
 import more from "../view/widgets/more.ts";
 
 Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () => {

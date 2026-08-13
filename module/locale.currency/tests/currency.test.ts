@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { App } from "../../core/mod.ts";
+import { App } from "@qino/qino";
 import { currency, updateRates } from "../mod.ts";
 import { cron } from "../plugin.ts";
 

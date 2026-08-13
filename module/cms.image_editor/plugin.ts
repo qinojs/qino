@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { Access, Output, type App, type ApiTree, type Ctx, s } from "../core/mod.ts";
-import { cmsCtx } from "../cms/mod.ts";
+import { Access, Output, type App, type ApiTree, type Ctx, s } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
 
 // hpos/vpos focus point of an image, in percent (0–100). Versioned via the `file` table.

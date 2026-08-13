@@ -1,7 +1,7 @@
-import { html, type HtmlString, getCtx, pwHash, type App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { html, type HtmlString, getCtx, pwHash, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { list, allowLoginAs } from "./parts/list.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
 import api from "./nodeApi.ts";
 
 export async function install({ app }: { app: App }): Promise<void> {

@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { html } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import { html } from "@qino/qino";
 import * as el from "../lib/el.ts";
 
 Deno.test("u2: el.time returns safe HTML", () => {

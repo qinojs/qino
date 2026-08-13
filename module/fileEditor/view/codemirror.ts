@@ -2,8 +2,8 @@ import * as nodePath from "node:path";
 import { constants as fsConstants } from "node:fs";
 import * as nodeFs from "node:fs/promises";
 import { typeByExtension } from "@std/media-types";
-import { html, getCtx } from "../../core/mod.ts";
-import * as u2 from "../../u2/mod.ts";
+import { html, getCtx } from "@qino/qino";
+import * as u2 from "@qino/qino/u2";
 
 export default async function codemirrorView(file: string): Promise<string> {
   const ctx = getCtx();

@@ -14,7 +14,7 @@
 // views fall back to the previous surviving entry, and since the newest entry
 // per bucket survives, every live row keeps ≥1 entry (baseline invariant).
 
-import { sql, unixTime, type Db, type Sql } from "../core/mod.ts";
+import { sql, unixTime, type Db, type Sql } from "@qino/qino";
 import { versTable, versedTables } from "./lib/Vers.ts";
 
 const DENSITY = 24;           // ~snapshots kept per age doubling (higher = keep more)

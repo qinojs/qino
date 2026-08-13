@@ -1,5 +1,5 @@
-import type { HealthTypes } from "../cms.backend.system/mod.ts";
-import { sql, type App } from "../core/mod.ts";
+import type { HealthTypes } from "@qino/qino/cms.backend.system";
+import { sql, type App } from "@qino/qino";
 import { deleteUnlinkedDb } from "./cleanup.ts";
 
 export function healthChecks(app: App): HealthTypes {

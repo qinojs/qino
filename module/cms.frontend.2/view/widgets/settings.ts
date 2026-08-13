@@ -1,6 +1,6 @@
-import { $item, html, type HtmlString, getCtx, moduleIcon } from "../../../core/mod.ts";
+import { $item, html, type HtmlString, getCtx, moduleIcon } from "@qino/qino";
 import { accordion, moduleAccess } from "../widget.ts";
-import { ADMIN, type Node } from "../../../cms/mod.ts";
+import { ADMIN, type Node } from "@qino/qino/cms";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;

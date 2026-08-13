@@ -4,7 +4,7 @@
 // _vers_* shadow tables and (space,log)-views.
 // History capture lives in History.ts, space handling in Spaces.ts.
 
-import { sql, type Ctx, type App, type Db } from "../../core/mod.ts";
+import { sql, type Ctx, type App, type Db } from "@qino/qino";
 
 // ─── Per-Db state ────────────────────────────────────────────────────────────
 // Keyed by Db instance — module globals would leak between App instances (multi-tenant).

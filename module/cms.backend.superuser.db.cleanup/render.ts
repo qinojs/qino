@@ -1,6 +1,6 @@
-import { html, type HtmlString, type App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { tableStatus } from "../cms.backend.superuser.db/mod.ts";
+import { html, type HtmlString, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 import { findOrphans, maintenanceActions, schemaExtras } from "./lib/cleanup.ts";
 import { indexIssues } from "./lib/indexes.ts";
 import { sequenceIssue } from "./lib/sequences.ts";

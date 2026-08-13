@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { App, Ctx, requestStorage } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import nodeApi from "../nodeApi.ts";
 import { cms as panel } from "../plugin.ts";
 

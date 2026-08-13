@@ -1,6 +1,6 @@
-import { backend } from "../cms.backend/mod.ts";
-import type { App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
+import type { App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { findOrphans, schemaExtras } from "./lib/cleanup.ts";
 import { nodeApi } from "./nodeApi.ts";
 import { backendDashboardWidget, render, renderRow } from "./render.ts";

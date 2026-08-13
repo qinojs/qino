@@ -1,8 +1,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { App, Ctx, requestStorage } from "../../../module/core/mod.ts";
-import type { Node } from "../../../module/cms/mod.ts";
+import { App, Ctx, requestStorage } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import nodeApi from "../nodeApi.ts";
-import { shp3 } from "../../shp3/mod.ts";
+import { shp3 } from "@qino/qino/shp3";
 import { cms as panel } from "../plugin.ts";
 
 async function shop() {

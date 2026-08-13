@@ -1,5 +1,5 @@
-import { html, Redirect, type App, type HtmlString } from "../core/mod.ts";
-import { cms as cmsOf, type Node } from "../cms/mod.ts";
+import { html, Redirect, type App, type HtmlString } from "@qino/qino";
+import { cms as cmsOf, type Node } from "@qino/qino/cms";
 
 const current = "cms.backend.superuser.module.ownStore";
 const legacy = "cms.backend.superuser.stores.own";

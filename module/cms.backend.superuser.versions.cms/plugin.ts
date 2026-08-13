@@ -1,6 +1,6 @@
-import { html, type HtmlString, type App } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { html, type HtmlString, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;
 

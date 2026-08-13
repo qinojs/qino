@@ -24,11 +24,11 @@ async function* files(dir: string): AsyncGenerator<string> {
 // both readers below can share this one.
 const IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?<type>type\s+)?(?<clause>[^;'"]*?\s+from\s+)?["'](?<spec>[^"']+)["']/g;
 
-/** Relative specifiers a file imports, each with the names taken from it ("*" = namespace or star). */
+/** Qino specifiers a file imports, each with the names taken from it ("*" = namespace or star). */
 function imports(source: string): Map<string, Set<string>> {
   const found = new Map<string, Set<string>>();
   for (const { groups } of source.matchAll(IMPORT)) {
-    if (!groups!.spec.startsWith(".")) continue;
+    if (!groups!.spec.startsWith(".") && !groups!.spec.startsWith("@qino/qino")) continue;
     const names = found.get(groups!.spec) ?? new Set<string>();
     found.set(groups!.spec, names);
     const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").replace(/^type\s+/, "").trim();
@@ -43,13 +43,13 @@ function imports(source: string): Map<string, Set<string>> {
   return found;
 }
 
-/** Relative specifiers a file imports *values* from. `import type` and inline `type` names need no
+/** Qino specifiers a file imports *values* from. `import type` and inline `type` names need no
  *  linked module, which is what keeps the duck-typed extension points free of dependencies. */
 function valueImports(source: string): Set<string> {
   const found = new Set<string>();
   for (const { groups } of source.matchAll(IMPORT)) {
     const { type, spec } = groups!;
-    if (!spec.startsWith(".") || type) continue;
+    if ((!spec.startsWith(".") && !spec.startsWith("@qino/qino")) || type) continue;
     const clause = (groups!.clause ?? "").replace(/\s+from\s+$/, "").trim();
     const braces = clause.match(/\{([\s\S]*?)\}/);
     // No clause is a side-effect import, and anything before the braces is a default or namespace —
@@ -58,6 +58,12 @@ function valueImports(source: string): Set<string> {
     else if (braces?.[1].split(",").some((name) => name.trim() && !/^type\s/.test(name.trim()))) found.add(spec);
   }
   return found;
+}
+
+/** Local target of a relative or @qino/qino package import. */
+function targetPath(spec: string, file: string): string | undefined {
+  const url = spec.startsWith(".") ? new URL(spec, toFileUrl(file)).href : import.meta.resolve(spec);
+  return url.startsWith("file:") ? fromFileUrl(url) : undefined;
 }
 
 /** Names a module exposes, or undefined when `export * from` makes them unenumerable. */
@@ -200,7 +206,8 @@ Deno.test("test-store modules only consume public package APIs", async () => {
     if (file.includes("/tests/")) continue;
     const moduleRoot = testModuleDir + file.slice(testModuleDir.length).split("/")[0] + "/";
     for (const spec of imports(await Deno.readTextFile(file)).keys()) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      if (!spec.startsWith(".")) continue;
+      const target = targetPath(spec, file)!;
       if (!target.startsWith(moduleRoot)) errors.push(`${file.slice(testModuleDir.length)} imports ${target}`);
     }
   }
@@ -217,14 +224,16 @@ Deno.test("modules only consume public APIs of other modules", async () => {
   for await (const file of files(moduleDir)) {
     const fileRel = file.slice(moduleDir.length);
     for (const spec of imports(await Deno.readTextFile(file)).keys()) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      const target = targetPath(spec, file);
+      if (!target) continue;
       if (!target.startsWith(moduleDir)) continue;
       const targetRel = target.slice(moduleDir.length);
       const [targetModule, ...path] = targetRel.split("/");
       if (fileRel.split("/")[0] === targetModule) continue; // a module owns its own files
       if (OPEN.has(`${fileRel} -> ${targetRel}`)) continue;
       const door = path.join("/");
-      if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
+      if (spec.startsWith(".")) errors.push(`${fileRel} imports ${targetRel} relatively — use its package export`);
+      else if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
       else if (door.startsWith("tests/") && !fileRel.includes("/tests/")) errors.push(`${fileRel} imports test-only ${targetRel}`);
     }
   }
@@ -275,7 +284,8 @@ Deno.test("modules only take values from modules they depend on", async () => {
     if (!manifests.has(mod)) continue;
     const allowed = linked(manifests, mod);
     for (const spec of valueImports(await Deno.readTextFile(file))) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      const target = targetPath(spec, file);
+      if (!target) continue;
       if (!target.startsWith(moduleDir)) continue;
       const targetModule = target.slice(moduleDir.length).split("/")[0];
       if (allowed.has(targetModule) || OPTIONAL.has(`${fileRel} -> ${targetModule}`)) continue;
@@ -296,7 +306,8 @@ Deno.test("the qino layer never imports from the cms layer", async () => {
     const fileRel = file.slice(moduleDir.length);
     if (isCms(fileRel.split("/")[0])) continue;
     for (const spec of imports(await Deno.readTextFile(file)).keys()) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      const target = targetPath(spec, file);
+      if (!target) continue;
       if (!target.startsWith(moduleDir)) continue;
       const targetRel = target.slice(moduleDir.length);
       if (isCms(targetRel.split("/")[0])) errors.push(`${fileRel} imports ${targetRel}`);
@@ -317,7 +328,8 @@ Deno.test("no mod.ts exports anything nobody imports", async () => {
   const used = new Map<string, Set<string>>();
   for await (const file of [...await Array.fromAsync(files(moduleDir)), ...await Array.fromAsync(files(shp3Dir))]) {
     for (const [spec, names] of imports(await Deno.readTextFile(file))) {
-      const target = fromFileUrl(new URL(spec, toFileUrl(file)));
+      const target = targetPath(spec, file);
+      if (!target) continue;
       if (!target.startsWith(moduleDir)) continue;
       const set = used.get(target) ?? new Set<string>();
       used.set(target, set);

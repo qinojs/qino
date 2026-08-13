@@ -1,5 +1,5 @@
-import { html, type App, type HtmlString } from "../../core/mod.ts";
-import { cms, type Node } from "../../cms/mod.ts";
+import { html, type App, type HtmlString } from "@qino/qino";
+import { cms, type Node } from "@qino/qino/cms";
 
 // Filter dates arrive as unix seconds (converted in the browser, where the TZ is
 // known); fall back to parsing a raw datetime string for direct API calls.

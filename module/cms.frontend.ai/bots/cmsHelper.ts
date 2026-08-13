@@ -1,5 +1,5 @@
-import type { Bot, ClientContext } from "../../ai/mod.ts";
-import { toTools, type Usr } from "../../core/mod.ts";
+import type { Bot, ClientContext } from "@qino/qino/ai";
+import { toTools, type Usr } from "@qino/qino";
 import { api as cmsApi } from "../../cms/api.ts";
 
 const cmsTools = toTools(cmsApi, {

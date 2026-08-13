@@ -1,5 +1,5 @@
-import { assert, assertEquals, assertThrows } from "../../core/tests/deps.ts";
-import { Db, unixTime, type App } from "../../core/mod.ts";
+import { assert, assertEquals, assertThrows } from "@qino/qino/tests";
+import { Db, unixTime, type App } from "@qino/qino";
 import { forget, hit, prune, scored, sqlScore, strength } from "../mod.ts";
 import { cron, dbSchema, init, install } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };

@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 import { toFileUrl } from "@std/path";
-import { html, type Ctx } from "../core/mod.ts";
+import { html, type Ctx } from "@qino/qino";
 import { codeFiles } from "./codeFiles.ts";
 import options from "./options.ts";
 

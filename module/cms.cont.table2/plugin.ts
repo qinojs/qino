@@ -1,7 +1,7 @@
-import { Output, header, type Ctx } from "../core/mod.ts";
+import { Output, header, type Ctx } from "@qino/qino";
 import options from "./options.ts";
 import api from "./nodeApi.ts";
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   additionalProperties: {

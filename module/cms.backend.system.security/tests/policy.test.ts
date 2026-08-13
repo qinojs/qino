@@ -1,4 +1,4 @@
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
 import { decide } from "../policy.ts";
 
 Deno.test("security policy blocks high confidence attacks", () => {

@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import type { App } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import type { App } from "@qino/qino";
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };

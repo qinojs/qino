@@ -1,5 +1,5 @@
 import { generateVAPIDKeys } from "web-push-neo";
-import { $item, type App } from "../../core/mod.ts";
+import { $item, type App } from "@qino/qino";
 
 // Module-internal: these details carry the private key. mod.ts exposes only the public half.
 

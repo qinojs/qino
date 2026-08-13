@@ -1,5 +1,5 @@
 import * as nodePath from "node:path";
-import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "../core/mod.ts";
+import { Output, safeFetch, type App, type Ctx, type ResHtml, type ResCsp } from "@qino/qino";
 import { DEFAULT_MAX_CACHE_BYTES, cacheByteLimit } from "./mod.ts";
 import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 import manifest from "./manifest.json" with { type: "json" };

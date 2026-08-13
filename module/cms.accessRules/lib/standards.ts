@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 
 // module → cms_access rules per app, cached (hot path: every node render checks it)
 const stdCache = new WeakMap<object, Promise<Map<string, number>>>();

@@ -1,4 +1,4 @@
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
 import { backendDashboardWidget, cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name, dependencies } = manifest;

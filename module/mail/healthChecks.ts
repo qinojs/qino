@@ -1,4 +1,4 @@
-import { hee, requestStorage, type App } from "../core/mod.ts";
+import { hee, requestStorage, type App } from "@qino/qino";
 
 export function healthChecks(app: App) {
   const settings = app.settings;

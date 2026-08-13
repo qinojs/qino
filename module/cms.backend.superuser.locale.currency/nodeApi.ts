@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { updateRates } from "../locale.currency/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { updateRates } from "@qino/qino/locale.currency";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (await node.access() < 2) return false;

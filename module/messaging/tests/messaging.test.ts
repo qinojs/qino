@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { messages, msgOf, record, titleOf, userMessages } from "../mod.ts";
-import { Db, type App } from "../../core/mod.ts";
+import { Db, type App } from "@qino/qino";
 
 async function app(): Promise<App> {
   const db = new Db("sqlite::memory:");

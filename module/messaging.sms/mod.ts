@@ -1,7 +1,7 @@
 // Public API of messaging.sms. The qino plugin lives in ./plugin.ts.
 
-import { ApiError, errMsg, sql, unixTime, type App, type Row } from "../core/mod.ts";
-import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode, type Msg } from "../messaging/mod.ts";
+import { ApiError, errMsg, sql, unixTime, type App, type Row } from "@qino/qino";
+import { dropClaim, msgOf, pendingContacts, record, redeemCode, requestCode, type Msg } from "@qino/qino/messaging";
 import { deliver, setProvider, type SmsProvider } from "./lib/provider.ts";
 
 export { setProvider, type SmsProvider };

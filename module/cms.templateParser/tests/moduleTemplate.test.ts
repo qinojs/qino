@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertStringIncludes, fakeT, testContext } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { layoutOptions, moduleTemplate } from "../mod.ts";
 
 const name = "cms.layout.test";

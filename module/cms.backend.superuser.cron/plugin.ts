@@ -1,6 +1,6 @@
-import { html, type App, type HtmlString } from "../core/mod.ts";
-import { status } from "../cron/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { html, type App, type HtmlString } from "@qino/qino";
+import { status } from "@qino/qino/cron";
+import { backend } from "@qino/qino/cms.backend";
 import { counts, render, list } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };

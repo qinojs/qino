@@ -3,7 +3,7 @@ import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
 import { postedVars } from "./postedVars.ts";
-import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, isFile, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type Usr, type DbRow, type Module } from "../../core/mod.ts";
+import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, isFile, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type Usr, type DbRow, type Module } from "@qino/qino";
 import type { CMS } from "./CMS.ts";
 
 /** Node class

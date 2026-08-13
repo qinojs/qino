@@ -1,4 +1,4 @@
-import type { App } from "../core/mod.ts";
+import type { App } from "@qino/qino";
 
 export type Every = "hour" | "day" | "week" | number;
 export type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";

@@ -1,6 +1,6 @@
-import { html, type App, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { status } from "../cron/mod.ts";
+import { html, type App, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { status } from "@qino/qino/cron";
 
 type JobStatus = Awaited<ReturnType<typeof status>>[number];
 

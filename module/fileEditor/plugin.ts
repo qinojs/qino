@@ -1,5 +1,5 @@
 import * as nodeFs from "node:fs/promises";
-import { Output, getCtx, type Ctx, Access, type ApiTree, s, type App, type Params } from "../core/mod.ts";
+import { Output, getCtx, type Ctx, Access, type ApiTree, s, type App, type Params } from "@qino/qino";
 import codemirrorView from "./view/codemirror.ts";
 import { check } from "./lib/sign.ts";
 import manifest from "./manifest.json" with { type: "json" };

@@ -1,8 +1,8 @@
-import { $item, html, type HtmlString, getCtx, itemReadDeep, type App } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
-import { backend } from "../../module/cms.backend/mod.ts";
-import { country } from "../../module/locale.country/mod.ts";
-import { currency } from "../../module/locale.currency/mod.ts";
+import { $item, html, type HtmlString, getCtx, itemReadDeep, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
+import { country } from "@qino/qino/locale.country";
+import { currency } from "@qino/qino/locale.currency";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

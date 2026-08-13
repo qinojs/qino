@@ -9,6 +9,7 @@
     "./cms.backend": "./module/cms.backend/mod.ts",
     "./cms.backend.superuser.db": "./module/cms.backend.superuser.db/mod.ts",
     "./cms.backend.system": "./module/cms.backend.system/mod.ts",
+    "./cms.cont.form2": "./module/cms.cont.form2/mod.ts",
     "./cms.cont.ts": "./module/cms.cont.ts/mod.ts",
     "./cms.image2": "./module/cms.image2/mod.ts",
     "./cms.templateParser": "./module/cms.templateParser/mod.ts",
@@ -18,6 +19,7 @@
     "./core": "./module/core/mod.ts",
     "./cron": "./module/cron/mod.ts",
     "./fileEditor": "./module/fileEditor/mod.ts",
+    "./identity": "./module/identity/mod.ts",
     "./locale.country": "./module/locale.country/mod.ts",
     "./locale.currency": "./module/locale.currency/mod.ts",
     "./mail": "./module/mail/mod.ts",
@@ -30,7 +32,10 @@
     "./oauth_server": "./module/oauth_server/mod.ts",
     "./score": "./module/score/mod.ts",
     "./shp3": "./shp3/shp3/mod.ts",
-    "./uncdn": "./module/uncdn/mod.ts"
+    "./ticket": "./module/ticket/mod.ts",
+    "./u2": "./module/u2/mod.ts",
+    "./uncdn": "./module/uncdn/mod.ts",
+    "./tests": "./tests/mod.ts"
   },
   "imports": {
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.10/",

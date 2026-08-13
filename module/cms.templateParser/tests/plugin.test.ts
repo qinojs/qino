@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
 import { init } from "../plugin.ts";
 
 Deno.test("cms.templateParser: a remote module resolves template.html beside plugin.ts", async () => {

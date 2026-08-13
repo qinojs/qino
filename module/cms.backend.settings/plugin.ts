@@ -1,5 +1,5 @@
-import { backend } from "../cms.backend/mod.ts";
-import { html, type Ctx, type App, type HtmlString } from "../core/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
+import { html, type Ctx, type App, type HtmlString } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });

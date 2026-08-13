@@ -1,5 +1,5 @@
-import { html, type HtmlString, sqlSearch, sql, type Ctx } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { html, type HtmlString, sqlSearch, sql, type Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
   return !!ctx.user?.superuser || !!(node?.settings.allow_login_as());

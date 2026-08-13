@@ -1,4 +1,4 @@
-import type { App } from "../core/mod.ts";
+import type { App } from "@qino/qino";
 
 /** Providers to offer users — only fully configured ones (client_id set). */
 export const providers = (app: App): Promise<{ name: string }[]> =>

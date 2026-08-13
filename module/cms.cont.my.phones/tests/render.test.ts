@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes, fakeT } from "../../core/tests/deps.ts";
+import { assertEquals, assertStringIncludes, fakeT } from "@qino/qino/tests";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
 const { name, dependencies } = manifest;

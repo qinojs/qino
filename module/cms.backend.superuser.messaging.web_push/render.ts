@@ -1,7 +1,7 @@
-import * as u2 from "../u2/mod.ts";
-import type { Node } from "../cms/mod.ts";
-import { html, type HtmlString, type Row } from "../core/mod.ts";
-import { channels as channelList, publicKey, subscriptions as subscriptionList } from "../messaging.web_push/mod.ts";
+import * as u2 from "@qino/qino/u2";
+import type { Node } from "@qino/qino/cms";
+import { html, type HtmlString, type Row } from "@qino/qino";
+import { channels as channelList, publicKey, subscriptions as subscriptionList } from "@qino/qino/messaging.web_push";
 
 /** Configuration plus the three live regions the client script re-renders. */
 export async function render(node: Node): Promise<HtmlString> {

@@ -1,5 +1,5 @@
-import { html, sql, sqlSearch, type Ctx, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { html, sql, sqlSearch, type Ctx, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // Shared by every search content on a page — one term per request is what a visitor expects.
 const QUERY = "cms_search";

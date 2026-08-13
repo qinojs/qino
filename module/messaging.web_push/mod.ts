@@ -1,8 +1,8 @@
 // Public API of messaging.web_push. The qino plugin lives in ./plugin.ts.
 
 import { sendNotification } from "web-push-neo";
-import { sql, unixTime, type App, type Row } from "../core/mod.ts";
-import { msgOf, record, titleOf, type Msg } from "../messaging/mod.ts";
+import { sql, unixTime, type App, type Row } from "@qino/qino";
+import { msgOf, record, titleOf, type Msg } from "@qino/qino/messaging";
 import { vapid } from "./lib/vapid.ts";
 
 /**

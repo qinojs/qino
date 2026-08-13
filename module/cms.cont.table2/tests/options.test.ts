@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, testContext } from "../../core/tests/deps.ts";
+import { assertEquals, testContext } from "@qino/qino/tests";
 import options from "../options.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { requestStorage } from "@qino/qino";
 
 function callable(value: unknown) {
   return () => value;

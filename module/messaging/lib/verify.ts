@@ -1,4 +1,4 @@
-import { $item, ApiError, randB64, safeEqual, sha256b64url, unixTime, type App, type Row } from "../../core/mod.ts";
+import { $item, ApiError, randB64, safeEqual, sha256b64url, unixTime, type App, type Row } from "@qino/qino";
 
 // Proof that a contact belongs to a user, for the channels whose address a stranger could claim —
 // sms and mail. Telegram and Web Push need none: a chat id comes only from a real update, an

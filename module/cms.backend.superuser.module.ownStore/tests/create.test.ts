@@ -1,7 +1,7 @@
-import { assert, assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertStringIncludes } from "@qino/qino/tests";
 import { toFileUrl } from "@std/path";
-import { App, Module } from "../../core/mod.ts";
-import type { Node } from "../../cms/mod.ts";
+import { App, Module } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { cms } from "../plugin.ts";
 
 /** An app with one local module to copy from, outside the app's own module folder. */

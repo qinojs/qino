@@ -1,4 +1,4 @@
-import { sql, type App, type Usr } from "../core/mod.ts";
+import { sql, type App, type Usr } from "@qino/qino";
 import { standards } from "./lib/standards.ts";
 
 export const dbSchema = {

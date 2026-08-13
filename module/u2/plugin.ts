@@ -1,4 +1,4 @@
-import { u2Root, type App } from "../core/mod.ts";
+import { u2Root, type App } from "@qino/qino";
 import { root } from "./mod.ts";
 
 export const settingsSchema = {

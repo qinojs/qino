@@ -1,6 +1,6 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { Db } from "../../core/mod.ts";
-import { tableStatus } from "../../cms.backend.superuser.db/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import { Db } from "@qino/qino";
+import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
 import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, maintenanceActions, schemaExtras } from "../lib/cleanup.ts";
 import { createMissingIndex, dropRedundantIndex, indexIssues } from "../lib/indexes.ts";
 import { sequenceIssue, syncSequence } from "../lib/sequences.ts";

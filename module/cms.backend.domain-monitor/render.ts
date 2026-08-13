@@ -1,6 +1,6 @@
-import * as u2 from "../u2/mod.ts";
-import { getCtx, html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import * as u2 from "@qino/qino/u2";
+import { getCtx, html, type App, type Ctx, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { wwwAlt } from "./lib/check.ts";
 import { diffResults } from "./lib/changes.ts";
 import { addDomains, domainKey, FREQUENCIES, type DomainRow, parseResult } from "./lib/monitor.ts";

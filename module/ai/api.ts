@@ -1,4 +1,4 @@
-import { Access, type ApiTree, NotFoundError, Output, type Params, type Ctx, s } from "../core/mod.ts";
+import { Access, type ApiTree, NotFoundError, Output, type Params, type Ctx, s } from "@qino/qino";
 import { ai } from "./mod.ts";
 
 const SSE_HEADERS = {

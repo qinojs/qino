@@ -1,6 +1,6 @@
-import type { HealthTypes } from "../cms.backend.system/mod.ts";
-import type { App } from "../core/mod.ts";
-import { cms, type Node } from "../cms/mod.ts";
+import type { HealthTypes } from "@qino/qino/cms.backend.system";
+import type { App } from "@qino/qino";
+import { cms, type Node } from "@qino/qino/cms";
 
 /**
  * Backend pages are protected purely via node access (groups/users), not via

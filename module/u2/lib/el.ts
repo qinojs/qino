@@ -1,4 +1,4 @@
-import { html, type HtmlString } from "../../core/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
 
 /** Render a timestamp (unix seconds, numeric string, Date or date string) as a relative <u2-time>; epoch/invalid → "-".
  *  `narrow` shortens the wording for dense tables: "8d ago" instead of "8 days ago". */

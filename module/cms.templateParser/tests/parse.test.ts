@@ -1,4 +1,4 @@
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
 import { parseTemplate, type TNode } from "../parse.ts";
 
 type El = Extract<TNode, { type: "element" }>;

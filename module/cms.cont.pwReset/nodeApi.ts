@@ -1,7 +1,7 @@
-import type { Node } from "../cms/mod.ts";
-import { ApiError, unixTime } from "../core/mod.ts";
-import { mail } from "../mail/mod.ts";
-import { issue, redeem } from "../ticket/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { ApiError, unixTime } from "@qino/qino";
+import { mail } from "@qino/qino/mail";
+import { issue, redeem } from "@qino/qino/ticket";
 
 export const PURPOSE = "auth.pwReset";
 export const TICKET_PARAM = "cmsContPwReset_t";

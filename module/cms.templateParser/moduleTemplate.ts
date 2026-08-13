@@ -1,6 +1,6 @@
-import { html, type HtmlString, type Module } from "../core/mod.ts";
-import { WRITE, type Node } from "../cms/mod.ts";
-import { editorUrl } from "../fileEditor/mod.ts";
+import { html, type HtmlString, type Module } from "@qino/qino";
+import { WRITE, type Node } from "@qino/qino/cms";
+import { editorUrl } from "@qino/qino/fileEditor";
 import { renderTemplateFile } from "./mod.ts";
 
 const read = (source: URL) => source.protocol === "file:" ? Deno.readTextFile(source) : fetch(source).then((r) => r.text());

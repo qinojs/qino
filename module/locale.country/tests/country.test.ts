@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { App } from "../../core/mod.ts";
+import { App } from "@qino/qino";
 import { country } from "../mod.ts";
 import { install } from "../plugin.ts";
 

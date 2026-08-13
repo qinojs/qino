@@ -1,4 +1,4 @@
-import { assertEquals } from "../../core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
 import { matchPath, normalizePathList, parsePathList } from "../pathlist.ts";
 import { suspiciousPath } from "../store.ts";
 

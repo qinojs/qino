@@ -1,5 +1,5 @@
-import { assertEquals } from "../../core/tests/deps.ts";
-import { checkCollisions, toTools, walk } from "../../core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+import { checkCollisions, toTools, walk } from "@qino/qino";
 import { api } from "../api.ts";
 
 Deno.test("cms api tree: has no route collisions", () => {

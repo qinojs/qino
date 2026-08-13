@@ -1,4 +1,4 @@
-import { sql, type Db } from "../../core/mod.ts";
+import { sql, type Db } from "@qino/qino";
 
 const hasOwn = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);
 

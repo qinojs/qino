@@ -6,7 +6,7 @@
 // Consumers aggregate (EXISTS / GROUP BY node_id); duplicates are fine.
 // Writes without request context (cron/CLI/boot) are not captured.
 
-import { hee, requestStorage, type App } from "../../core/mod.ts";
+import { hee, requestStorage, type App } from "@qino/qino";
 
 type TFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<string>;
 

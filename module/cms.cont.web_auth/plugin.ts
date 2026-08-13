@@ -1,5 +1,5 @@
-import type { Node } from "../cms/mod.ts";
-import { html, type App, type Ctx, type HtmlString } from "../core/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { html, type App, type Ctx, type HtmlString } from "@qino/qino";
 
 const settingsSchema = {
   properties: {

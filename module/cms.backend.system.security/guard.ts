@@ -1,4 +1,4 @@
-import { Output, clientIp, type App, type Ctx } from "../core/mod.ts";
+import { Output, clientIp, type App, type Ctx } from "@qino/qino";
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";

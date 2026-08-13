@@ -1,5 +1,5 @@
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Output, type App } from "../core/mod.ts";
+import { Output, type App } from "@qino/qino";
 import { authorize, metadata, register, resourceMetadata, token } from "./mod.ts";
 import { verify } from "./lib/tokens.ts";
 

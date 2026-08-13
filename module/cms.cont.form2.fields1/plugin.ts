@@ -1,6 +1,6 @@
-import type { Node } from "../cms/mod.ts";
-import { getCtx, hee, html, type Ctx, type HtmlString } from "../core/mod.ts";
-import type { Form } from "../cms.cont.form2/mod.ts";
+import type { Node } from "@qino/qino/cms";
+import { getCtx, hee, html, type Ctx, type HtmlString } from "@qino/qino";
+import type { Form } from "@qino/qino/cms.cont.form2";
 import { sortedIds } from "./sortedIds.ts";
 import options from "./options.ts";
 

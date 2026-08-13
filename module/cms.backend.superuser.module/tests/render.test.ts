@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertStringIncludes } from "../../core/tests/deps.ts";
-import { requestStorage } from "../../core/mod.ts";
+import { assertStringIncludes } from "@qino/qino/tests";
+import { requestStorage } from "@qino/qino";
 import { cms } from "../plugin.ts";
 
 const t = (strings: TemplateStringsArray, ...values: unknown[]) =>

@@ -1,5 +1,5 @@
-import { Output, safeEqual, unixTime, type App, type Ctx } from "../../core/mod.ts";
-import { record } from "../../messaging/mod.ts";
+import { Output, safeEqual, unixTime, type App, type Ctx } from "@qino/qino";
+import { record } from "@qino/qino/messaging";
 import { call, webhookSecret } from "./bot.ts";
 import { readLinkToken } from "./link.ts";
 

@@ -1,7 +1,7 @@
-import { html, type HtmlString, getCtx, sql, type App } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
-import { backend } from "../../module/cms.backend/mod.ts";
-import { shp3, type Order } from "../shp3/mod.ts";
+import { html, type HtmlString, getCtx, sql, type App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { backend } from "@qino/qino/cms.backend";
+import { shp3, type Order } from "@qino/qino/shp3";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
 const { name } = manifest;

@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
-import type { App } from "../../core/mod.ts";
-import { ai } from "../../ai/mod.ts";
+import type { App } from "@qino/qino";
+import { ai } from "@qino/qino/ai";
 
 // Natural-language → SQL via the ai module. Returns the generated SQL (never auto-run).
 // `current` is the query already in the editor, passed so the model can refine it.

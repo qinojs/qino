@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { ApiError, Db } from "../../core/mod.ts";
+import { ApiError, Db } from "@qino/qino";
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { dropClaim, pendingContacts, redeemCode, requestCode } from "../mod.ts";
 

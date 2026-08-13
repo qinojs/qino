@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 
 /** One offered fix for a failed check; `form` describes optional inputs passed to `solve`. */
 export type Solution = {

@@ -1,5 +1,5 @@
-import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type ApiNode, type Verb, type App, type HtmlString } from "../core/mod.ts";
-import { backend } from "../cms.backend/mod.ts";
+import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type ApiNode, type Verb, type App, type HtmlString } from "@qino/qino";
+import { backend } from "@qino/qino/cms.backend";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system.api", { en: "API", de: "API" });

@@ -1,5 +1,5 @@
-import { backend } from "../cms.backend/mod.ts";
-import { html, type App, type HtmlString } from "../core/mod.ts";
+import { backend } from "@qino/qino/cms.backend";
+import { html, type App, type HtmlString } from "@qino/qino";
 import api from "./nodeApi.ts";
 import { render } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };

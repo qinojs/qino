@@ -1,5 +1,5 @@
-import { assert, assertEquals, testContext } from "../../core/tests/deps.ts";
-import { invoke, Output, requestStorage, toTools } from "../../core/mod.ts";
+import { assert, assertEquals, testContext } from "@qino/qino/tests";
+import { invoke, Output, requestStorage, toTools } from "@qino/qino";
 import { api } from "../api.ts";
 import { ai, AiApi } from "../mod.ts";
 import { aiInstances } from "../lib/AiApi.ts";

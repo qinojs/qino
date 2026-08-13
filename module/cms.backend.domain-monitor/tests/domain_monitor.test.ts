@@ -1,5 +1,5 @@
-import { assertEquals, assertRejects, testContext } from "../../core/tests/deps.ts";
-import { Db, requestStorage, type App } from "../../core/mod.ts";
+import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+import { Db, requestStorage, type App } from "@qino/qino";
 import { apex, covers, wwwAlt } from "../lib/check.ts";
 import { errText } from "../lib/net.ts";
 import { diffResults, pruneHistory } from "../lib/changes.ts";

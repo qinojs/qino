@@ -1,4 +1,4 @@
-import { getCtx, hee, uid, type App } from "../../core/mod.ts";
+import { getCtx, hee, uid, type App } from "@qino/qino";
 import { clean, importUpyo, renderMarkers, toBool, toInt, trackCert, trackURL } from "./helpers.ts";
 import { MailMessage } from "./MailMessage.ts";
 import { transports } from "./transport.ts";

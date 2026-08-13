@@ -1,4 +1,4 @@
-import type { Node } from "../cms/mod.ts";
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<void> {
   if (await node.access() < 2) return;

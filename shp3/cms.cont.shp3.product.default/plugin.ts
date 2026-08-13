@@ -1,6 +1,6 @@
-import { html, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
-import { ensureProduct, shp3 } from "../shp3/mod.ts";
+import { html, type HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import { ensureProduct, shp3 } from "@qino/qino/shp3";
 
 const settingsSchema = {
   properties: {

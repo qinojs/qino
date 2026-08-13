@@ -1,5 +1,5 @@
-import { getCtx } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 import { rowsFor, runChecks, setFrequency, type DomainRow } from "./lib/monitor.ts";
 import { nodeUrl, rowHtml } from "./render.ts";
 

@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { cmsCtx } from "../cms/mod.ts";
+import { cmsCtx } from "@qino/qino/cms";
 /**
  * cms.versions/draftmode.ts
  *
@@ -18,7 +18,7 @@ import { cmsCtx } from "../cms/mod.ts";
  *   - node:sql SQL-rewrite hook (complex regex approach)
  */
 
-import { requestStorage, type Ctx, type App } from "../core/mod.ts";
+import { requestStorage, type Ctx, type App } from "@qino/qino";
 import { getVers } from "./lib/Vers.ts";
 import { getCmsVers } from "./lib/CmsVers.ts";
 

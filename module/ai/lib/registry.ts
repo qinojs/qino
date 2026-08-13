@@ -1,4 +1,4 @@
-import type { App } from "../../core/mod.ts";
+import type { App } from "@qino/qino";
 import type { Kind, ProviderModelRow, ProviderRow } from "../types.ts";
 
 // DB-backed provider/model registry. Loaded fresh per call — two small SELECTs,

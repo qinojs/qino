@@ -1,7 +1,7 @@
 // Public API of cms.cont.form2 — the field modules render below a form and report into it.
 
-import { getCtx } from "../core/mod.ts";
-import type { Node } from "../cms/mod.ts";
+import { getCtx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** What the fields of one form report back while they render. */
 export class Form {
