@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, html, isModuleName, type App, type HtmlString } from "../core/mod.ts";
+import { errMsg, html, isModuleName, type App, type HtmlString, type Store } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import type { Node } from "../cms/mod.ts";
 import manifest from "./manifest.json" with { type: "json" };
@@ -8,6 +8,12 @@ const { name } = manifest;
 /** The app's own modules: a folder store beside data/, so it is deployed and backed up with the app. */
 const storeDir = (app: App) => app.appPATH + "module/";
 const storeUrl = (app: App) => toFileUrl(storeDir(app)).href;
+/** Registered by install() below — the store is how a created module gets installed. */
+const ownStore = (app: App): Store => {
+  const store = app.stores.get(storeUrl(app));
+  if (!store) throw new Error("The own-modules store is not registered");
+  return store;
+};
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Own modules", de: "Eigene Module" });
@@ -59,7 +65,7 @@ async function create(app: App, modName: string, template: string): Promise<void
     await copyModule(mod.dir!, dir, template, modName);
   }
   // Leave nothing half-created behind: an unlinkable module would block the name on the next try.
-  await app.modules.install(toFileUrl(dir + "plugin.ts").href, modName)
+  await ownStore(app).install(modName)
     .catch(async (e) => {
       await Deno.remove(dir, { recursive: true }).catch(() => {});
       throw e;

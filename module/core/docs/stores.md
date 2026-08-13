@@ -25,9 +25,10 @@ await app.init();
 
 `add()` declares for one boot and stays synchronous; `app.init()` imports, orders and links. Because
 the module URL is pure convention, `store.add(name)` reads nothing at all — `addAll()` is the one
-call that needs the catalog, and it is just `names()` + `add()`. The same two pieces are public for
-everyone else: `store.names()` reads the catalog, `store.moduleUrl(name)` builds the URL. The
-backend store page is written with them.
+call that needs the catalog, and it is just `names()` + `add()`. The same pieces are public for
+everyone else: `store.names()` reads the catalog, `store.moduleUrl(name)` builds the URL, and
+`store.install(name)` is the runtime counterpart of `add()`. The backend store page is written with
+them.
 
 ## Folder or catalog
 
@@ -53,7 +54,8 @@ A store's own listing is never cached: it may gain modules while the app runs.
 
 ```ts
 await app.stores.install(catalogUrl);          // remembered in the `store` table
-await app.modules.install(pluginUrl, name);    // remembered in the `module` table, then linked
+await store.install(name);                     // remembered in the `module` table, then linked
+await app.modules.install(pluginUrl, name);    // the same, for a module that has no store
 await app.modules.uninstall(name);             // unlink, plugin.uninstall(), row gone
 await app.stores.uninstall(catalogUrl);
 ```
@@ -61,6 +63,13 @@ await app.stores.uninstall(catalogUrl);
 Four verbs, two lifecycles, and they nest: **install** creates what a module owns and **uninstall**
 removes it again, while **link** and **unlink** only hook the module into the running app. Linking
 therefore requires an install, and unlinking keeps the data.
+
+`store.install(name)` derives the URL the way `store.add(name)` does, and that is the form to use
+wherever request input is involved: **a caller that takes a name and a store never holds an import
+URL.** A module is server code, so importing one is RCE by design — which is why registering a store
+is the superuser act, and installing from a registered one inherits that decision. Nothing in core
+enforces this; `modules.install(url)` stays open, because a module must not depend on a store to
+exist.
 
 A module may install other modules from its own `install()` hook — that is how
 [cms.installation.default](../../cms.installation.default/plugin.ts) brings a usable CMS without
@@ -156,14 +165,13 @@ asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
 
 ## Not there yet
 
-- **Host allow-list and integrity pinning.** Installing a module from a URL is remote code execution
-  with full database rights — the deal WordPress and Drupal make, and without it there is no
-  ecosystem. Two guards are missing and neither can be added quietly later: a `moduleHosts`
-  allow-list in the app config, checked *before* the `import()` (Deno's `--allow-import` cannot do
-  it — a process flag would apply to every tenant), and a hash in the `module` row, checked on
-  re-import the way `deno.lock` does. Until then, anyone who reaches the store UI can import
-  arbitrary code; local `file:` stores are unaffected. A second factor in front of install/uninstall
-  would cover the other half — `web_auth` has the ceremony, see `PLAN-confirm.md`.
+- **Integrity pinning.** Installing a module from a URL is remote code execution with full database
+  rights — the deal WordPress and Drupal make, and without it there is no ecosystem. Registering the
+  store is the superuser decision, and installing by name from a registered one inherits it, but a
+  store only says *what is on offer*: nothing binds what was installed to what was reviewed. That is
+  a hash in the `module` row, checked on re-import the way `deno.lock` does. Deno's `--allow-import`
+  is no substitute — a process flag applies to every tenant of the runtime. A second factor in front
+  of install/uninstall would cover the rest — `web_auth` has the ceremony, see `PLAN-confirm.md`.
 - **Everything a remote module is besides its code.** The manifest is there and is read before the
   import, but nothing lists a module's *files* yet: `/m/<module>/pub/…` still serves from a local
   `Module.dir`, and locales are discovered with `Deno.readDir(<module>/locale/)`. Both fail for the

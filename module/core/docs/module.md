@@ -46,7 +46,7 @@ const { name } = manifest;
 ```
 
 The loader **reads** the manifest and **imports** the plugin, and it does so in that order — which
-is why a store can list a module, and an allow-list refuse one, without executing anything. At
+is why a store can list a module, and an installer refuse one, without executing anything. At
 runtime both sit on the `Module`: `mod.manifest`, plus `mod.name`, `mod.description` and
 `mod.dependencies` for the fields worth reaching for. Keep the public API in `mod.ts`.
 
@@ -143,8 +143,10 @@ await app.link("shop"); // re-link is fine — the module stays registered
 
 `add()` and `import()` last for one boot. `modules.install(spec)` is the persistent version —
 it remembers the module in the `module` table and links it, `modules.uninstall(name)` reverses
-that including the `uninstall()` hook. See [stores.md](stores.md#installing-at-runtime); the two
-lifecycles nest, so linking presumes an install and unlinking keeps the data.
+that including the `uninstall()` hook. `store.install(name)` is the same for a module of a store,
+and the form to use when request input is involved. See
+[stores.md](stores.md#installing-at-runtime); the two lifecycles nest, so linking presumes an
+install and unlinking keeps the data.
 
 ## Writing a hot-plug-safe module
 

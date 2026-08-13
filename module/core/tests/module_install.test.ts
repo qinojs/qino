@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "./deps.ts";
+import { assert, assertEquals, assertRejects, assertThrows } from "./deps.ts";
 import { toFileUrl } from "../deps.ts";
 import { App } from "../lib/App.ts";
 
@@ -251,6 +251,12 @@ Deno.test({
     assertEquals(await folder.names(), await catalog.names(), "same modules, other discovery");
     assertEquals(folder.moduleUrl("t.one"), catalog.moduleUrl("t.one"), "the module URL is convention, not catalog");
     assertEquals(folder.base, catalog.base);
+
+    // A store takes a name, never a URL — that is what a caller holding request input can be given.
+    app.modules.add(corePlugin);
+    await app.init();
+    assertEquals((await folder.install("t.one")).source, folder.moduleUrl("t.one"));
+    assertThrows(() => folder.install("../elsewhere"), Error, "Invalid module name");
 
     await Deno.writeTextFile(dir + "not-a-module.txt", ""); // a file is no module
     await Deno.mkdir(dir + "t.empty"); // …and neither is a folder without a plugin

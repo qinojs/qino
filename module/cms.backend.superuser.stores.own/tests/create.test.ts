@@ -18,6 +18,7 @@ async function fixture() {
   const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
   app.modules.add(new URL("../../core/plugin.ts", import.meta.url));
   app.modules.add(toFileUrl(`${tpl}plugin.ts`).href);
+  app.stores.add(new URL(toFileUrl(dir + "module/").href)); // what the module's install() hook does
   await app.init();
   return { dir, app, node: { app } as unknown as Node };
 }

@@ -1,6 +1,6 @@
 import type { App } from "./App.ts";
 import { fromFileUrl } from "../deps.ts";
-import { isModuleName, resolveSpecifier } from "./ModuleManager.ts";
+import { isModuleName, type Module, resolveSpecifier } from "./ModuleManager.ts";
 
 /** A folder store lists itself: the subfolders holding the plugin file its URL would point at. */
 async function readFolder(url: string): Promise<string[]> {
@@ -56,6 +56,13 @@ export class Store {
     if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
     this.#app.modules.add(this.moduleUrl(name), name);
     return this;
+  }
+
+  /** Install one module of this store — the persistent counterpart of add(). Deriving the URL from
+   *  the store is what keeps a caller that takes a module *name* from ever taking a URL. */
+  install(name: string): Promise<Module> {
+    if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
+    return this.#app.modules.install(this.moduleUrl(name), name);
   }
 
   /** Declare every module in the catalog — nothing but names() + add(). */

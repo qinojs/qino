@@ -1,5 +1,5 @@
 import { fromFileUrl, toFileUrl } from "@std/path";
-import { errMsg, html, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
+import { errMsg, getCtx, html, type App, type HtmlString, type Module, type Store } from "../core/mod.ts";
 import { backend } from "../cms.backend/mod.ts";
 import * as u2 from "../u2/mod.ts";
 import type { Node } from "../cms/mod.ts";
@@ -12,6 +12,10 @@ export async function install({ app }: { app: App }): Promise<void> {
 
 // A typed URL wins, everything else is a path below the app.
 const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.appPATH)).href;
+
+// Which stores are registered decides where server code may be installed from — the modules below
+// inherit that decision, which is why only this pair asks. Access to the page is not enough.
+const isSuperuser = async () => !!(await getCtx().user?.get("superuser"));
 
 // core is the root of the dependency graph, and this module renders the page you are looking at.
 const LOCKED = new Set(["core", name]);
@@ -150,14 +154,14 @@ function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, l
     <td style="text-align:right">${html.join(acts, " ")}`;
 }
 
-function storeRow(store: Store, error: string, l: Labels, label: (url: string) => string): HtmlString {
+function storeRow(store: Store, error: string, l: Labels, label: (url: string) => string, su: boolean): HtmlString {
   const local = store.base.startsWith("file:");
   return html`<tr>
     <td><button class=u2-unstyle data-pick="${store.url}"><code>${label(store.url)}</code><br><small>${store.url}</small></button>
     <td>${error ? html`<strong>${error}</strong>` : html`<small data-count="${store.url}"></small>`}
     <td>${local ? html`<button data-act=writeIndex data-store="${store.url}">${l.writeIndex}</button>` : ""}
     <td style="text-align:right">${
-    store.declared
+    store.declared || !su
       ? ""
       : html`<button data-act=removeStore data-store="${store.url}" class=u2-unstyle u2-confirm><u2-ico icon=delete>✕</u2-ico></button>`
   }`;
@@ -232,15 +236,18 @@ async function api(node: Node, vars: Record<string, unknown>): Promise<{ ok: boo
   try {
     switch (act) {
       case "addStore":
+        if (!await isSuperuser()) throw new Error("Only a superuser can add a store");
         await app.stores.install(resolve(app, store));
         return { ok: true };
       case "writeIndex":
         return { ok: true, message: await writeIndex(target()) };
       case "removeStore":
+        if (!await isSuperuser()) throw new Error("Only a superuser can remove a store");
         await app.stores.uninstall(store);
         return { ok: true };
       case "install":
-        await app.modules.install(target().moduleUrl(mod), mod);
+        // Through the store, so the request names a store and a module — never a URL to import.
+        await target().install(mod);
         return { ok: true }; // installing a dependency may reactivate other rows
       case "uninstall":
         if (LOCKED.has(mod)) throw new Error(`Cannot uninstall "${mod}"`);
@@ -279,15 +286,17 @@ async function render(node: Node): Promise<HtmlString> {
   const label = labeller(app);
   const cats = await catalogs(app);
   const mods = await moduleList(app, cats);
+  const su = await isSuperuser();
 
   return html.async`<div class="u2-flex">
   <div class=u2-card>
     <div class=-head>${t`Module stores`}</div>
     <table class=u2-table>
-      ${cats.map(({ store, error }) => storeRow(store, error, l, label))}
-      <tr><td colspan=4><button data-act=addStore>${l.addStore}</button>
+      ${cats.map(({ store, error }) => storeRow(store, error, l, label, su))}
+      ${su ? html`<tr><td colspan=4><button data-act=addStore>${l.addStore}</button>` : ""}
     </table>
     <div><small>${t`A store is a local folder of modules, e.g. ./module/, or a store.json listing them`}</small></div>
+    ${su ? "" : html.async`<div><small>${t`Only a superuser can add or remove stores — a module can be installed from the ones listed here.`}</small></div>`}
   </div>
 
   <div class=u2-card>

@@ -26,5 +26,9 @@ a store reloads the page — its modules come and go with it.
 Catalogs are read on every render, never cached — a store is always shown as it is right now. Fine
 for a local file, one HTTP round trip per store and page view for a remote one.
 
-Note that anyone who reaches this page can import code from any URL — see the deferred host
-allow-list in the core document before exposing a remote store.
+Registering a store is a superuser act, and this page hides those buttons for everyone else: a
+module is server code, so which catalogs may supply it is not a decision that comes with page
+access. Installing a module needs no extra check — it goes through `store.install(name)`, so a
+request names a store and a module, never a URL to import. Nothing yet binds an installed module to
+the code that was reviewed; see integrity pinning in the core document before exposing a remote
+store.
