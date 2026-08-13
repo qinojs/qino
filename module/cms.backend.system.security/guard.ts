@@ -50,7 +50,7 @@ export function initSecurity(app: App, signal: AbortSignal) {
     for (const s of signals) await addEvent(ctx, { ...info, ...s });
 
     const penalty = await penaltyState(ctx.app.db, info, set, signals);
-    const policy = decide(penalty, signals, set, await ctx.user?.get("superuser"));
+    const policy = decide(penalty, signals, set, ctx.user?.superuser);
     if (policy.warn) await addEvent(ctx, { ...info, prio: policy.prio, kind: "throttle", scope: policy.scope, ident: policy.ident, reason: policy.reason, confidence: policy.confidence, severity: policy.severity, score: policy.score, delay_ms: policy.delay, blocked: policy.blocked });
     if (policy.blocked) {
       ctx.res.status = 429;

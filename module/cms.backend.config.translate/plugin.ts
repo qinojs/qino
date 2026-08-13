@@ -14,7 +14,7 @@ async function table(node: Node, { vars }: { vars?: Record<string, unknown> } = 
   const ctx = getCtx();
   const db = node.app.db;
   const langs = node.app.languages.all;
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
+  const isSuperuser = !!ctx.user?.superuser;
 
   const v = vars ?? ctx.req.query;
   const search = String(v.search ?? "").trim();

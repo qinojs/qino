@@ -26,7 +26,7 @@ export class LangManager {
   async initCtx(ctx: Ctx): Promise<void> {
     const usr = ctx.user;
 
-    ctx.langUsr = usr ? (await usr.get("lang") ?? "") : ctx.sess.data.core.lang() ?? "";
+    ctx.langUsr = usr ? (usr.lang ?? "") : ctx.sess.data.core.lang() ?? "";
 
     const urlLang = ctx.req.query.lang ?? ctx.req.query.changeLanguage; // changeLanguage: frozen PHP-era alias
     if (urlLang) ctx.langUsr = urlLang;
@@ -38,7 +38,7 @@ export class LangManager {
     if (!this.#langs.includes(ctx.langUsr)) ctx.langUsr = "";
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
-    usr ? usr.set("lang", ctx.langUsr) : ctx.sess.data.core.lang(ctx.langUsr);
+    usr ? usr.$set({ lang: ctx.langUsr }) : ctx.sess.data.core.lang(ctx.langUsr); // background write, the request does not wait for it
 
     ctx.lang = ctx.langUsr;
     ctx.langNs ??= "";

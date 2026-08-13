@@ -1,4 +1,5 @@
 import type { Db } from "../db/Db.ts";
+import type { Usr } from "../rows.ts";
 import { bildJsonItem } from "../../deps.ts";
 import { enableItemSchemaDefaults } from "../util.ts";
 
@@ -15,10 +16,10 @@ async function buildRoot(
     return root;
 }
 
-export function userSettingsItem(user: any, schema?: any): Promise<any> {
+export function userSettingsItem(user: Usr, schema?: any): Promise<any> {
     return buildRoot(
-        () => user.get("settings"),
-        (json) => user.set("settings", json),
+        async () => user.settings,
+        async (json) => { await user.$set({ settings: json }); },
         schema,
     );
 }

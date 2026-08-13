@@ -6,7 +6,7 @@ import * as nodePath from "node:path";
 import { userSettingsItem, sessSettingsItem } from "./contextSettings.ts";
 import { Req } from "./Req.ts";
 import type { App } from "../App.ts";
-import type { dbEntry_client, dbEntry_usr } from "../qgEntries.ts";
+import type { Client, Usr } from "../rows.ts";
 import type { Session } from "../SessionManager.ts";
 import type { LoginError } from "../auth.ts";
 
@@ -36,7 +36,7 @@ export class Ctx {
     this.#settingsRoot = this.user
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
       : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
-    this.dev = this.app.dev || (!!(await this.user?.get("superuser")) && !!this.settings.core.dev());
+    this.dev = this.app.dev || (!!this.user?.superuser && !!this.settings.core.dev());
   }
 
   #authUserId = 0;
@@ -50,12 +50,13 @@ export class Ctx {
   get userId(): number {
     return this.#authUserId || Number(this.sess.data.core.userId() || 0);
   }
-  get user(): dbEntry_usr | null {
-    return this.userId ? this.app.db.table('usr').entry(this.userId) as dbEntry_usr : null;
+  /** The signed-in user, loaded during initRequest — columns read synchronously. */
+  get user(): Usr | null {
+    return this.userId ? this.app.db.table('usr').row<Usr>(this.userId) : null;
   }
-  get client(): dbEntry_client {
+  get client(): Client {
     if (!this.clientId) throw new Error("No client id");
-    return this.app.db.table('client').entry(this.clientId) as dbEntry_client;
+    return this.app.db.table('client').row<Client>(this.clientId);
   }
   /** CSRF/form token, not the session cookie token (`ctx.sess.token`). */
   get csrfToken(): string {

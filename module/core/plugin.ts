@@ -1,9 +1,9 @@
 // qino-module manifest for core. The public library API lives in ./mod.ts.
 
-import "./lib/qgEntries.ts";
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
+import { registerRows } from "./lib/rows.ts";
 export { api } from "./api.ts";
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/Db.ts";
@@ -88,6 +88,8 @@ export const ctxSettingsSchema = {
 };
 
 export async function init(app: App, { signal }: { signal: AbortSignal }) {
+
+    registerRows(app.db);
 
     app.on("html-ready", ({ ctx }) => {
         ctx.res.html.importMap.set("@qino/item/", itemRoot);

@@ -20,14 +20,13 @@ export class CMS {
   db: Db;
 
   #nodes = new Map<number, Promise<Node>>();
-  #layouts: Record<string, string> | null = null;
 
   constructor(app: App) {
     this.app = app;
     this.db = app.db;
   }
 
-  async node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
+  node(id = 0, vs?: Record<string, string | number>): Promise<Node> {
     id = Number(id);
     const nodes = scopeCache(this.#nodes, "cms.nodes", () => new Map<number, Promise<Node>>());
     let node = nodes.get(id);

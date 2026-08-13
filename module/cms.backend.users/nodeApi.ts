@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import { getCtx, login, pwHash } from "../core/mod.ts";
+import { getCtx, login, pwHash, type Usr } from "../core/mod.ts";
 import type { Node } from "../cms/mod.ts";
 
 export default async function (node: Node, vars:any): Promise<any> {
@@ -8,9 +8,12 @@ export default async function (node: Node, vars:any): Promise<any> {
   if (await node.access() < 2) return false;
 
   const db = node.app.db;
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
-  const usrOk = async (usr: any) =>
-    !!(await usr.exists()) && (!(await usr.get("superuser")) || isSuperuser);
+  const isSuperuser = !!ctx.user?.superuser;
+  // The target has to exist, and only a superuser may touch another superuser.
+  const target = async (id: any) => {
+    const usr = await db.table("usr").get<Usr>(id);
+    return usr && (!usr.superuser || isSuperuser) ? usr : undefined;
+  };
 
   if ("email_used" in vars) {
     return db.one`SELECT id FROM usr WHERE email = ${vars.email_used}`;
@@ -19,22 +22,20 @@ export default async function (node: Node, vars:any): Promise<any> {
   if ("login_as" in vars) {
     const allowLoginAs = !!(node.settings.allow_login_as()) || isSuperuser;
     if (!allowLoginAs) return false;
-    const targetUsr = db.table("usr").entry(vars.login_as);
-    if (!(await usrOk(targetUsr))) return false;
+    if (!await target(vars.login_as)) return false;
     await login(ctx, vars.login_as);
     return 1;
   }
 
   if ("delete" in vars) {
-    const targetUsr = db.table("usr").entry(vars.delete);
-    if (!(await usrOk(targetUsr))) return false;
+    if (!await target(vars.delete)) return false;
     await db.table("usr").delete(vars.delete);
     return 1;
   }
 
   if ("save" in vars) {
-    const targetUsr = db.table("usr").entry(vars.save);
-    if (!(await usrOk(targetUsr))) return false;
+    const targetUsr = await target(vars.save);
+    if (!targetUsr) return false;
     const allowed: Record<string, boolean> = {
       active: true, email: true, firstname: true, lastname: true,
       company: true, superuser: true, pw: true,
@@ -43,14 +44,12 @@ export default async function (node: Node, vars:any): Promise<any> {
     if (!allowed[name] || (name === "superuser" && !isSuperuser)) return false;
     if (name === "pw" && !String(vars.value ?? "")) return false;
     const value = name === "pw" ? await pwHash(String(vars.value)) : vars.value;
-    await targetUsr.set(name, value);
-    await targetUsr.save();
+    await targetUsr.$set({ [name]: value });
     return 1;
   }
 
   if ("set_grp" in vars) {
-    const targetUsr = db.table("usr").entry(vars.set_grp);
-    if (!(await usrOk(targetUsr))) return false;
+    if (!await target(vars.set_grp)) return false;
     const grpId = Number(vars.grp_id);
     const usrId = Number(vars.set_grp);
     if (!grpId || !usrId) return false;

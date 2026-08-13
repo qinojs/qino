@@ -33,7 +33,7 @@ export async function consentPage(ctx: Ctx, client: string, redirectUri: string)
   const title = await t`Authorize ${client}`;
   page(ctx, title, await html.async`<main>
   <h1>${title}</h1>
-  <p>${t`Signed in as ${ctx.user?.get("email")}.`}</p>
+  <p>${t`Signed in as ${ctx.user?.email}.`}</p>
   <p>${t`${client} will be able to act on your behalf, with all your permissions.`}</p>
   <dl>
     <dt>${t`Redirect target`}</dt>

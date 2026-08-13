@@ -32,7 +32,7 @@ function makeDb(opts: { emailUserId?: number }) {
 function makeUser(opts: { grps?: number[]; superuser?: boolean } = {}) {
   return {
     grps: () => opts.grps ?? [0],
-    get: (k: string) => k === "superuser" ? !!opts.superuser : false,
+    superuser: !!opts.superuser,
   };
 }
 

@@ -1,4 +1,4 @@
-import { sql, type App, type dbEntry_usr } from "../core/mod.ts";
+import { sql, type App, type Usr } from "../core/mod.ts";
 import { standards } from "./lib/standards.ts";
 
 export const dbSchema = {
@@ -36,7 +36,7 @@ export const dbSchema = {
  *  module.cms_access is the default for everyone (0 = module off, null = no rule);
  *  a group override replaces that default — but never exceeds the group's cms_access
  *  cap. The most permissive group wins. */
-async function moduleCap(app: App, module: string, user?: dbEntry_usr | null): Promise<number | undefined> {
+async function moduleCap(app: App, module: string, user?: Usr | null): Promise<number | undefined> {
   const std = (await standards(app)).get(module); // undefined = no rule
   const base = std ?? 3;
   const grps = user ? (await user.grps?.() ?? []).map(Number).filter(Boolean) : [];
@@ -60,7 +60,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   // cap the node access by the module axis; a logged-in user never ends up
   // below the guest baseline of the node (deny standard = 0 for guests too).
   app.on("node:access", async (e) => {
-    if (!e.access || (e.user && await e.user.get("superuser"))) return;
+    if (!e.access || e.user?.superuser) return;
     const module = String(e.node.module?.name ?? "");
     if (!module) return;
     const cap = await moduleCap(app, module, e.user);
@@ -72,7 +72,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   // module picker/add: lower e.access to what the user may do with this module
   app.on("module:access", async (e) => {
-    if (e.user && await e.user.get("superuser")) return;
+    if (e.user?.superuser) return;
     const cap = await moduleCap(app, String(e.module), e.user);
     if (cap != null) e.access = Math.min(e.access, cap);
   }, { signal });

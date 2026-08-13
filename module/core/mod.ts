@@ -39,13 +39,12 @@ export type { Row } from "./lib/db/DbDriver.ts";
 export { Sql, sql } from "./deps.ts";
 export { tableRef, scopeCache } from "./lib/db/dbScope.ts";
 export type { DbScope } from "./lib/db/dbScope.ts";
-export { DbEntry } from "./lib/db/DbEntry.ts";
 export { DbRow } from "./lib/db/DbRow.ts";
 export { DbField } from "./lib/db/DbField.ts";
 
 export { DbFile } from "./lib/DbFileManager.ts";
 export { DbText, DbTextLang } from "./lib/DbTextManager.ts";
-export type { dbEntry_usr } from "./lib/qgEntries.ts";
+export { Usr } from "./lib/rows.ts";
 
 // item.js is core's dependency; other modules take it from here so there is only ever one copy of
 // it — `$item` is a module-local Symbol that a second copy would silently stop matching.

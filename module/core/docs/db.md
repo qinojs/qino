@@ -126,6 +126,25 @@ await db.table("usr").delete(id);                       // id may be scalar or a
 - `ensure()` is read-then-write and **not** atomic (no upsert yet) — fine for boot/seeding, risky
   under heavy concurrency without a unique index.
 
+## Rows — data and behaviour in one object
+
+`db.table(name)` also hands out row objects: one object per row (identity map), columns as plain
+properties, everything of the row layer itself `$`-prefixed.
+
+```ts
+const usr = await db.table("usr").get<Usr>(5);            // loaded row, or undefined
+const active = await db.table("usr").all<Usr>`WHERE active = ${true}`;
+const fresh = await db.table("usr").add<Usr>({ email });  // INSERT, then the loaded row
+db.table("usr").row(5).email                              // handle without a query; a column reads sync
+await usr.$set({ lang: "de" });                           // assign and write in one UPDATE
+```
+
+- Behaviour goes into a subclass, assigned in the module's `init()`: `db.table("usr").rowClass = Usr`.
+  Columns are data, methods are verbs — `grps()`, `pricesFor()`, never `price()` beside a `price` column.
+- A member that collides with a column throws when the class is registered.
+- A write through the table invalidates the row object; an assigned but unsaved change is flushed at
+  the end of the microtask, so nothing is lost when nobody awaits `$save()`.
+
 ## Transactions
 
 `db.transaction(fn)` runs `fn` atomically; nested calls **join** the outer transaction rather than

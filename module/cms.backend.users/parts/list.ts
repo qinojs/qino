@@ -2,13 +2,13 @@ import { html, type HtmlString, sqlSearch, sql, type Ctx } from "../../core/mod.
 import type { Node } from "../../cms/mod.ts";
 
 export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {
-  return !!(await ctx.user?.get("superuser")) || !!(node?.settings.allow_login_as());
+  return !!ctx.user?.superuser || !!(node?.settings.allow_login_as());
 }
 
 export async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {
   const db = ctx.app.db;
 
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
+  const isSuperuser = !!ctx.user?.superuser;
   const canLoginAs = await allowLoginAs(node, ctx);
 
   const search = String(vars?.search ?? "");

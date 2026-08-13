@@ -1,4 +1,5 @@
 import type { Ctx } from "./ctx/Ctx.ts";
+import type { Usr } from "./rows.ts";
 import { bcrypt } from "../deps.ts";
 import { timingSafeEqual } from "node:crypto";
 
@@ -21,8 +22,7 @@ export async function authListen(ctx: Ctx): Promise<void> {
     await logout(ctx);
   }
   if (!ctx.userId && ctx.clientId) {
-    const uidVal = await ctx.client.get("usr_id");
-    const uid = uidVal ? Number(uidVal) : 0;
+    const uid = Number(ctx.client.usr_id) || 0;
     if (uid) {
       const row = await ctx.app.db.row`SELECT email FROM usr WHERE id = ${uid}`;
       if (row?.email) await auth(ctx, row.email);
@@ -33,18 +33,14 @@ export async function authListen(ctx: Ctx): Promise<void> {
 export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
-  const usrEntry = ctx.app.db.table("usr").entry(user.id);
-  const rehash = pwNeedsRehash(await usrEntry.get("pw"));
+  const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
+  const rehash = pwNeedsRehash(usr.pw);
   if (!rehash) {
     const clientUsrs = await ctx.client.users();
-    const usrId = String(await usrEntry.get("id") ?? "");
-    if (clientUsrs[usrId] && Number(await clientUsrs[usrId].get("save_login")) === 1) return await login(ctx, user.id) ? "" : "username";
+    if (clientUsrs[String(usr.id)]?.save_login) return await login(ctx, user.id) ? "" : "username";
   }
-  if (!await pwVerify(pw, await usrEntry.get("pw") ?? "")) return "password";
-  if (rehash) {
-    await usrEntry.set("pw", await pwHash(pw));
-    await usrEntry.save();
-  }
+  if (!await pwVerify(pw, usr.pw ?? "")) return "password";
+  if (rehash) await usr.$set({ pw: await pwHash(pw) });
   return await login(ctx, user.id) ? "" : "username";
 }
 
@@ -60,14 +56,14 @@ export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   ctx.sess.data.core.userId(id);
   ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
   await ctx.client.addUsr(id);
-  await ctx.client.set("usr_id", id);
+  await ctx.client.$set({ usr_id: id });
   await ctx.app.fire("auth:login", { oldSession, usrId: id });
   return true;
 }
 
 export async function logout(ctx: Ctx): Promise<void> {
   await rememberLogin(ctx, false);
-  await ctx.client.set("usr_id", 0);
+  await ctx.client.$set({ usr_id: 0 });
   ctx.sess.data({});
 }
 
@@ -81,10 +77,10 @@ export async function pwVerify(pw: string, hash: string) {
 }
 
 async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
-  const usr = ctx.user;
-  if (!(await usr?.exists())) return;
-  const entry = ctx.app.db.table("client_usr").entry({ usr_id: String(usr), client_id: String(ctx.client) });
-  await entry.set("save_login", doSave ? 1 : 0);
+  const usr = ctx.userId ? await ctx.app.db.table("usr").get(ctx.userId) : undefined;
+  if (!usr) return;
+  const link = ctx.app.db.table("client_usr").row({ usr_id: String(usr), client_id: String(ctx.client) });
+  await link.$set({ save_login: doSave });
 }
 
 function pwNeedsRehash(hash: string) {

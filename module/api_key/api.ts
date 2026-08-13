@@ -41,7 +41,7 @@ export const api: ApiTree = {
           const ctx = getCtx();
           const row = await ctx.app.db.row`SELECT usr_id FROM api_key WHERE id = ${id}`;
           if (!row) return { ok: false };
-          if (Number(row.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
+          if (Number(row.usr_id) !== ctx.userId && !(ctx.user?.superuser)) throw new AccessError();
           await ctx.app.db.table("api_key").delete(id);
           return { ok: true };
         },

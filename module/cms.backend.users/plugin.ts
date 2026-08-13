@@ -153,7 +153,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const vs = await db.row`SELECT * FROM usr WHERE id = ${id}`;
   if (!vs) return html.async`<div class=u2-card><div class=-body>${t`User not found.`}</div></div>`;
 
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
+  const isSuperuser = !!ctx.user?.superuser;
   const superuserRow = isSuperuser ? html`
         <tr>
           <th> Superuser:

@@ -113,7 +113,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       <u2-breadcrumb>${pathHtml}</u2-breadcrumb>
       <!--input type=search id=search placeholder="Search..." style="width:100%; max-width:20rem; background:var(--color-light); border:0; border-radius: var(--radius);"-->
       <div style="margin-left:auto" shape=circle size=32>
-        ${ctx.user ? await ctx.user.get("email") : "Guest"}
+        ${ctx.user ? ctx.user.email : "Guest"}
       </div>
     </div>
     <div id=content>

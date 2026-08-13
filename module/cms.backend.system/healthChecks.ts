@@ -55,14 +55,14 @@ export async function healthChecks(app: App): Promise<HealthTypes> {
   warning["smalltexts-counter is enabled"] = async () => {
     if (!await settings.core.smalltext.counter) return;
     const ctx = getCtx();
-    if (!await ctx.user?.get("superuser")) return;
+    if (!ctx.user?.superuser) return;
     return { solutions: { disable: { solve: async () => { await settings.core.smalltext.counter(0); } } } };
   };
 
   warning["smalltext code-logger is enabled"] = async () => {
     if (!await settings.core.smalltext.code_logger) return;
     const ctx = getCtx();
-    if (!await ctx.user?.get("superuser")) return;
+    if (!ctx.user?.superuser) return;
     return { solutions: { disable: { solve: async () => { await settings.core.smalltext.code_logger(0); } } } };
   };
 

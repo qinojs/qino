@@ -39,6 +39,10 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
     settings: fakeSettings({ core: {}, ...app.settings }),
   };
   const ctx = await Ctx.create(appFake as never, new Request(url, reqInit), { appUrl });
+  // initRequest loads the user row, which is what makes ctx.user read synchronously — a fake app
+  // with a real database has to arrive in the same state.
+  const uid = userId || Number(session.data?.core?.userId?.() ?? 0);
+  if (uid) await (appFake.db as Fake).table?.("usr")?.get?.(uid);
   for (const [k, v] of Object.entries(set ?? {}))
     Object.defineProperty(ctx, k, { value: v, configurable: true, writable: true });
   return ctx;

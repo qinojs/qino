@@ -1,7 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
 import { DbField } from "./DbField.ts";
-import { type DbEntry, getEntryClass } from "./DbEntry.ts";
 import { anonRowClass, DbRow } from "./DbRow.ts";
 import { NUM_TYPES, type Db } from "./Db.ts";
 import { type Sql, sql, isTemplate } from "../../deps.ts";
@@ -21,11 +20,6 @@ export class DbTable {
   #db: Db;
   #name: string;
   #children: DbField[] | null = null;
-  // Per-table identity map; WeakRef lets the GC reclaim unreferenced entries, finalizer drops the dead key.
-  #entries = new Map<string, WeakRef<DbEntry>>();
-  #entryFinalizer = new FinalizationRegistry<string>((eid) => {
-    if (!this.#entries.get(eid)?.deref()) this.#entries.delete(eid);
-  });
 
   constructor(db: Db, name: string) {
     this.#db = db;
@@ -267,47 +261,8 @@ export class DbTable {
     for (const row of Object.values(rows)) await this.delete(row);
   }
 
-  entry(id?: any): DbEntry {
-    const table = String(this);
-    const cls = getEntryClass(table);
-
-    if (id instanceof cls) return id;
-    if (id === undefined) {
-      throw new Error("not working sync without id (generate)");
-      // const Entry = new Cl(this);
-      // this.#entries.set(String(Entry), new WeakRef(Entry));
-      // return Entry;
-    }
-
-    const values = id != null && typeof id === "object" ? id : this.entryIdValues(id); // a row keeps its columns, they prefill the entry
-    const eid = String(this.entryId(id) ?? id); // an unusable id keeps its raw key — that entry simply never exists
-
-    const hit = this.#entries.get(eid)?.deref();
-    if (hit) return hit;
-
-    const entry = new cls(this, values);
-    this.#entries.set(eid, new WeakRef(entry));
-    this.#entryFinalizer.register(entry, eid);
-    return entry;
-  }
-
-  selectEntries(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, DbEntry>>;
-  selectEntries(tail?: Sql): Promise<Record<string, DbEntry>>;
-  async selectEntries(a?: TemplateStringsArray | Sql, ...rest: unknown[]): Promise<Record<string, DbEntry>> {
-    const tail = a == null ? sql.raw("") : isTemplate(a) ? sql(a, ...rest) : a;
-    const out: Record<string, any> = {};
-    const rows = await this.#db.query`SELECT * FROM ${sql.id(this)} ${tail}`;
-    for (const row of rows) {
-      const entry = this.entry(row);
-      out[String(entry)] = entry;
-    }
-    return out;
-  }
-
   toString(): string { return this.#name; }
 
-
-  // new:
   /* --- rows ------------------------------------------------------------------------------- */
 
   // Identity map: one object per row, so two lookups share one set of pending changes. WeakRef,

@@ -16,9 +16,9 @@ import { itemReadDeep } from "./lib/util.ts";
 
 const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"]");
 
-async function appSettingsRoot(path?: string[]) {
+function appSettingsRoot(path?: string[]) {
   const ctx = getCtx();
-  if (!(await ctx.user?.get("superuser"))) throw new AccessError();
+  if (!ctx.user?.superuser) throw new AccessError();
   return ctx.app.settings[$item].sub(path ?? []);
 }
 
@@ -73,11 +73,9 @@ export const api: ApiTree = {
         const ctx = getCtx();
         const usr = ctx.user;
         if (!usr) return 0;
-        const currentHash = String(await usr.get("pw") ?? "");
-        if (!await pwVerify(oldpw, currentHash)) return -1;
+        if (!await pwVerify(oldpw, String(usr.pw ?? ""))) return -1;
         if (String(pw ?? "").length < 8) return -2;
-        await usr.set("pw", await pwHash(pw));
-        await usr.save();
+        await usr.$set({ pw: await pwHash(pw) });
         return 1;
       },
     },
@@ -97,13 +95,13 @@ export const api: ApiTree = {
   settings: {
     ":path*": {
       paramSchema: pathParam,
-      get: { description: "Read app settings at path", access: Access.SUPERUSER, query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }), execute: async ({ path, schema }: any) => schema ? (await appSettingsRoot(path)).schema ?? {} : itemReadDeep(await appSettingsRoot(path)) },
+      get: { description: "Read app settings at path", access: Access.SUPERUSER, query: s.object({ schema: s.optional(s.boolean()).describe("If true, return the JSON schema instead of the value") }), execute: ({ path, schema }: any) => schema ? appSettingsRoot(path).schema ?? {} : itemReadDeep(appSettingsRoot(path)) },
       put: {
         description: "Set app settings at path",
         access: Access.SUPERUSER,
         input: s.object({ value: s.any().describe("Value to set (any JSON type)") }),
         execute: async ({ path, value }: any) => {
-          await (await appSettingsRoot(path)).set(value);
+          await appSettingsRoot(path).set(value);
           return { ok: true };
         },
       },
@@ -112,7 +110,7 @@ export const api: ApiTree = {
         access: Access.SUPERUSER,
         execute: async ({ path }: any) => {
           if (!path?.length) throw new ConflictError("Cannot delete app settings root");
-          await (await appSettingsRoot(path)).remove();
+          await appSettingsRoot(path).remove();
           return { ok: true };
         },
       },

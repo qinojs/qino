@@ -29,22 +29,15 @@ Deno.test("cms.backend.users: dashboard widget renders counts and recent logins"
 });
 
 Deno.test("cms.backend.users: empty password save is ignored", async () => {
-  let saved = false;
-  let setName = "";
-  const entry = {
-    exists: function () { return this; },
-    get: () => false,
-    set: (name: string) => {
-      setName = name;
-    },
-    save: () => {
-      saved = true;
-    },
+  let saved: Record<string, unknown> | undefined;
+  const usr = {
+    superuser: false,
+    $set: (values: Record<string, unknown>) => { saved = values; },
   };
   const ctx = await testContext();
   const node = {
     access: () => 2,
-    app: { db: { table: () => ({ entry: () => entry }) } },
+    app: { db: { table: () => ({ get: () => usr, row: () => usr }) } },
   };
 
   const res = await requestStorage.run(ctx, () =>
@@ -52,6 +45,5 @@ Deno.test("cms.backend.users: empty password save is ignored", async () => {
   );
 
   assertEquals(res, false);
-  assertEquals(setName, "");
-  assertEquals(saved, false);
+  assertEquals(saved, undefined);
 });

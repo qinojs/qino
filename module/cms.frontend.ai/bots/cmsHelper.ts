@@ -1,5 +1,5 @@
 import type { Bot, ClientContext } from "../../ai/mod.ts";
-import { toTools } from "../../core/mod.ts";
+import { toTools, type Usr } from "../../core/mod.ts";
 import { api as cmsApi } from "../../cms/api.ts";
 
 const cmsTools = toTools(cmsApi, {
@@ -50,10 +50,10 @@ Use the user's language. Be concise, practical, and use tools for CMS changes.
 export const cmsHelper: Bot = {
   id: "cms-helper",
   systemPrompt: async (ctx: unknown, clientContext: ClientContext): Promise<string> => {
-    const { user } = ctx as { user?: { get(k: string): Promise<string> } };
+    const { user } = ctx as { user?: Usr };
     const lines = [CMS_CONTEXT];
     if (user) {
-      const name = await user.get("firstname");
+      const name = user.firstname;
       if (name) lines.push(`\nCurrent user: ${name}`);
     }
     if (clientContext.page) {

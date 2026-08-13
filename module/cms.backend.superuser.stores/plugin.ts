@@ -15,7 +15,7 @@ const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.appPATH)
 
 // Which stores are registered decides where server code may be installed from — the modules below
 // inherit that decision, which is why only this pair asks. Access to the page is not enough.
-const isSuperuser = async () => !!(await getCtx().user?.get("superuser"));
+const isSuperuser = () => !!getCtx().user?.superuser;
 
 // core is the root of the dependency graph, and this module renders the page you are looking at.
 const LOCKED = new Set(["core", name]);

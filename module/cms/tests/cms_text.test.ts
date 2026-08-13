@@ -43,7 +43,7 @@ class FakeNode {
 
 async function ctxWith(app: any) {
   app.db ??= {};
-  app.db.table ??= () => ({ entry: () => ({ id: 1 }) });
+  app.db.table ??= () => ({ row: () => ({ id: 1 }) });
   const { cms, ...rest } = app;
   const ctx = await testContext({ userId: 1, app: rest });
   if (cms) cmsInstances.set(ctx.app, cms);

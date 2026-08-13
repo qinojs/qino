@@ -15,7 +15,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const childXML = (node.settings.childXML()) ?? '';
 
   let extras = "";
-  if (await ctx.user?.get("superuser")) {
+  if (ctx.user?.superuser) {
     extras += await accordion("txts", node, "Texts");
     extras += await accordion("sets", node, "Settings");
   }

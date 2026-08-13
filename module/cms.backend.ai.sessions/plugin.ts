@@ -37,7 +37,7 @@ function messageHtml(m: Row): HtmlString {
 
 /** Non-superusers only see their own sessions. */
 async function ownWhere(ctx: Ctx): Promise<Sql> {
-  return await ctx.user?.get("superuser") ? sql`${true}` : sql`user_id = ${ctx.userId}`;
+  return ctx.user?.superuser ? sql`${true}` : sql`user_id = ${ctx.userId}`;
 }
 
 async function sessionDetail(ctx: Ctx, id: number): Promise<HtmlString> {

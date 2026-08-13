@@ -14,7 +14,7 @@ export default async function (node: Node): Promise<HtmlString> {
 
   const svgIcon = await moduleIcon(node.vs.module, node.module?.dir);
 
-  const module = db.table("module").entry(node.vs.module);
+  const module = await db.table("module").get(node.vs.module);
   const modules = node.vs.type === "p" ? cms.getLayouts() : cms.getModules();
   const options = [];
   for (const name of Object.keys(modules)) {
@@ -54,7 +54,7 @@ export default async function (node: Node): Promise<HtmlString> {
   if (node.vs.type === "p") accordions += await accordion("seo", node);
   if (showUrls)    accordions += await accordion("urls", node);
   accordions += await accordion("extended", node, await app.t`Advanced`);
-  if (await ctx.user?.get("superuser")) accordions += await accordion("superuser", node, "Superuser");
+  if (ctx.user?.superuser) accordions += await accordion("superuser", node, "Superuser");
 
   return html.async`<div class="-standalone content-manager" pid="${node.id}" page-type="${node.vs.type}"
     style="font-size:1.2em;margin-bottom:1em">
@@ -69,7 +69,7 @@ export default async function (node: Node): Promise<HtmlString> {
       </div>
     </div>
     <div style="display:flex;margin-bottom:.25rem;">
-      <span title="${await module.get("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
+      <span title="${module?.$get("name")}">${node.vs.type === "p" ? "Layout" : "Module"}: </span>
       <select class=-changemodule style="border:none;font-size:inherit;font-weight:bold;flex:1;padding:0;margin-top:-.25rem;margin-bottom:-.1875rem;background:transparent">
         ${moduleOptions}
       </select>

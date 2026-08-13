@@ -26,7 +26,7 @@ async function* walkDir(dir: string): AsyncGenerator<{ filePath: string; name: s
 // deno-lint-ignore no-explicit-any
 export default async function (node: Node, vars: any = {}): Promise<HtmlString> {
   const ctx = getCtx();
-  if (!await ctx.user?.get("superuser")) throw new Output("Access denied", { status: 403 });
+  if (!ctx.user?.superuser) throw new Output("Access denied", { status: 403 });
 
   const customPath = node.module?.data ?? "";
   const modPath = node.module?.dir ?? "";

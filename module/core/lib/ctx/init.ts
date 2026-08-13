@@ -11,6 +11,7 @@ export async function initRequest(ctx: Ctx): Promise<void> {
         await authListen(ctx);
         touchSession(ctx);
     }
+    if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user reads synchronously
     await ctx.initSettings();
     await ctx.app.languages.initCtx(ctx);
     initLog(ctx);
@@ -22,16 +23,16 @@ async function initClient(ctx: Ctx): Promise<void> {
 
     const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
     if (!cid) return registerClient(ctx);
-    const clientId = await db.one`SELECT id FROM client WHERE hash = ${cid}`;
-    if (!clientId) return registerClient(ctx);
-    ctx.clientId = String(clientId);
+    const [client] = await db.table("client").all`WHERE hash = ${cid}`; // SELECT *, so ctx.client is loaded
+    if (!client) return registerClient(ctx);
+    ctx.clientId = String(client);
 }
 
 async function registerClient(ctx: Ctx): Promise<void> {
     const hash = uid();
     ctx.res.headers.append(...header.setCookie("cid", hash, ctx.req.appUrl, ctx.app.https, 5 * 365 * 24 * 60 * 60));
-    const clientId = await ctx.app.db.table("client").insert({ hash });
-    ctx.clientId = String(clientId);
+    const client = await ctx.app.db.table("client").add({ hash });
+    ctx.clientId = String(client);
 }
 
 function touchSession(ctx: Ctx): void {

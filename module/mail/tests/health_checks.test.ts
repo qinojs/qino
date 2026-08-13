@@ -24,7 +24,7 @@ Deno.test("mail health solutions await settings writes", async () => {
   } } };
   const ctx = {
     req: { url: new URL("https://www.example.test/") },
-    user: { get: (key: string) => key === "superuser" ? true : "admin@example.test" },
+    user: { superuser: true, email: "admin@example.test" },
   };
   const types = healthChecks(app as never);
 

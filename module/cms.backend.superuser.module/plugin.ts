@@ -43,7 +43,7 @@ async function renderDetail(node: Node, modName: string): Promise<HtmlString> {
   }
 
   const mod = modObj.plugin;
-  const isSuperuser = !!(await ctx.user?.get("superuser"));
+  const isSuperuser = !!ctx.user?.superuser;
   const linked = app.modules.linked(modName);
   const error = ctx.state.moduleError as string | undefined;
 
@@ -258,7 +258,7 @@ const undisablable = (node: Node) => new Set([...PROTECTED, node.vs.module]); //
 // re-links every imported module. Superuser only.
 async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<void> {
   const ctx = getCtx();
-  if (!(await ctx.user?.get("superuser"))) return;
+  if (!(ctx.user?.superuser)) return;
   try {
     if (vars.disable) { const n = String(vars.disable); if (!undisablable(node).has(n)) node.app.unlink(n); }
     else if (vars.enable) await node.app.link(String(vars.enable));
@@ -270,7 +270,7 @@ async function toggleModule(node: Node, vars: Record<string, unknown>): Promise<
 /** Create an empty file inside the module, so the editor has something to open. Superuser only. */
 async function createFile(node: Node, modName: string, rel: string): Promise<void> {
   const ctx = getCtx();
-  if (!(await ctx.user?.get("superuser"))) return;
+  if (!(ctx.user?.superuser)) return;
   try {
     const dir = node.app.modules.get(modName)?.dir;
     if (!dir) throw new Error(`Module "${modName}" has no files here`);

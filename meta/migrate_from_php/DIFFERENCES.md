@@ -50,13 +50,13 @@
 | `__get()` Magic              | explizite `field()`-Methode        |
 | statisches Entry-Cache-Array | Context-basiert (`ctx.entryCache`) |
 
-## dbEntry
+## dbEntry → DbRow
 
-| PHP                   | Deno                        |
-| --------------------- | --------------------------- |
-| synchrone Methoden    | alle async                  |
-| `__get()` / `__set()` | explizite `get()` / `set()` |
-| `$E->property`        | `await E.get('property')`   |
+| PHP                   | Deno                                       |
+| --------------------- | ------------------------------------------ |
+| synchrone Methoden    | nur `$read`/`$save`/`$remove` sind async    |
+| `__get()` / `__set()` | Accessoren pro Spalte auf der Klasse        |
+| `$E->property`        | `row.property` (nach `table.get()` geladen) |
 
 ## HTML / Assets
 

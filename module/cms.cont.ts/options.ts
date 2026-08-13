@@ -4,7 +4,7 @@ import { editorUrl } from "../fileEditor/mod.ts";
 import { codeFiles } from "./codeFiles.ts";
 
 export default async function (node: Node): Promise<HtmlString | false> {
-  if (!await getCtx().user?.get("superuser")) return false;
+  if (!getCtx().user?.superuser) return false;
   const code = codeFiles(node);
   const src = editorUrl(code.src);
   if (!src) return false; // no editor module, nothing to offer

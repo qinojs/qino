@@ -19,7 +19,7 @@ async function makeCtx(body: unknown, { auth = true, method = "POST", oauth = fa
     headers: body === undefined ? undefined : { "content-type": "application/json" },
     app: {
       dev: true,
-      db: { table: () => ({ entry: (id: number) => id ? { get: () => Promise.resolve(0) } : null }) },
+      db: { table: () => ({ row: (id: number) => id ? { superuser: 0 } : null }) },
       modules: { get: (name: string) => oauth && name === "oauth_server" ? {} : undefined },
       apiTree,
     },

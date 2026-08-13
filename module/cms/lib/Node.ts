@@ -3,7 +3,7 @@ import { resolveText } from "./resolveText.ts";
 import { sanitizeHtml } from "./sanitize.ts";
 import { parseXml, type XmlNode } from "./parseXml.ts";
 import { postedVars } from "./postedVars.ts";
-import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, isFile, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type dbEntry_usr, type DbEntry, type Module } from "../../core/mod.ts";
+import { $item, bildJsonItem, hee, html, getCtx, type HtmlString, urlize, unixTime, isFile, sql, tableRef, DbFile, type AppEvents, type DbText, type DbTextLang, type Usr, type DbRow, type Module } from "../../core/mod.ts";
 import type { CMS } from "./CMS.ts";
 
 /** Node class
@@ -94,7 +94,7 @@ export class Node {
     }
 
     // Access control
-    async access(user?: dbEntry_usr | null): Promise<number> {
+    async access(user?: Usr | null): Promise<number> {
         const ctx = getCtx();
         user ??= ctx.user;
         const usrId = Number(user);
@@ -109,16 +109,16 @@ export class Node {
 
     /** Node-level access before node:access adjustments (module axis). Inheritance builds on
      *  this — a parent's module rules only apply to the parent, never to its children. */
-    async #rawAccess(user?: dbEntry_usr | null): Promise<number> {
+    async #rawAccess(user?: Usr | null): Promise<number> {
         const cache = cmsCtx(getCtx()).accessCache;
         const key = `${this.id}:${Number(user)}:raw`;
         cache[key] ??= await this.#calcUsrAccess(user);
         return cache[key];
     }
 
-    async #calcUsrAccess(user?: dbEntry_usr | null): Promise<number> {
+    async #calcUsrAccess(user?: Usr | null): Promise<number> {
 
-        if (await user?.get("superuser")) return 3;
+        if (user?.superuser) return 3;
 
         const nodeLevel = this.vs.access === null ? null : Number(this.vs.access ?? "0");
 
@@ -133,7 +133,7 @@ export class Node {
         if (access === 3) return 3; // already ADMIN, no need to check groups
 
         // group
-        const grpAccess = await this.#accessGroupLevel(await user.grps?.());
+        const grpAccess = await this.#accessGroupLevel(await user.grps());
         
         // return the higher of the two
         return Math.max(access, grpAccess);
@@ -145,8 +145,8 @@ export class Node {
             WHERE page_id = ${this.id}
                 AND grp_id IN (${sql.join(grps.map((g) => sql`${g}`))})`) || 0;
     }
-    async #accessUserLevel(user?: dbEntry_usr | null): Promise<number> {
-        if (!user || !await user.exists()) return 0;
+    async #accessUserLevel(user?: Usr | null): Promise<number> {
+        if (!user) return 0; // todo? test if user really exists?
         return Number(await this.db.one`SELECT access FROM page_access_usr WHERE page_id = ${this.id} AND usr_id = ${String(user)}` ?? "0") || 0;
     }
 
@@ -741,13 +741,13 @@ export class Node {
     }
 
     /* Access */
-    async changeUser(user: dbEntry_usr | number, access: number): Promise<this> {
+    async changeUser(user: Usr | number, access: number): Promise<this> {
         const vs = { page_id: String(this), usr_id: String(user), access };
         if (!access) await this.db.table("page_access_usr").delete(vs);
         else await this.db.table("page_access_usr").ensure(vs);
         return this;
     }
-    async changeGroup(grp: DbEntry | number, access: number): Promise<this> {
+    async changeGroup(grp: DbRow | number, access: number): Promise<this> {
         const vs = { page_id: String(this), grp_id: String(grp), access };
         if (!access) await this.db.table("page_access_grp").delete(vs);
         else await this.db.table("page_access_grp").ensure(vs);

@@ -340,7 +340,7 @@ export const api: ApiTree = {
           const ctx  = getCtx();
           const cred = await ctx.app.db.row`SELECT usr_id FROM web_auth_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
-          if (Number(cred.usr_id) !== ctx.userId && !(await ctx.user?.get("superuser"))) throw new AccessError();
+          if (Number(cred.usr_id) !== ctx.userId && !(ctx.user?.superuser)) throw new AccessError();
           await ctx.app.db.table("web_auth_credential").delete(credId);
           return { ok: true };
         },

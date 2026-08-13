@@ -6,7 +6,7 @@ import type { Node } from "../cms/mod.ts";
 /** Members can only be managed by superusers or members of the group itself. */
 export async function canManageMembers(grpId: number): Promise<boolean> {
   const ctx = getCtx();
-  if (await ctx.user?.get("superuser")) return true;
+  if (ctx.user?.superuser) return true;
   return !!(await ctx.user?.grps())?.includes(grpId);
 }
 
@@ -28,10 +28,9 @@ export default async function (node: Node, vars: any): Promise<any> {
     const allowed: Record<string, boolean> = { name: true, type: true };
     const name = String(vars.name ?? "");
     if (!allowed[name]) return false;
-    const grp = db.table("grp").entry(vars.save);
-    if (!(await grp.exists())) return false;
-    await grp.set(name, vars.value);
-    await grp.save();
+    const grp = await db.table("grp").get(vars.save);
+    if (!grp) return false;
+    await grp.$set({ [name]: vars.value });
     return 1;
   }
 

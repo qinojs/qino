@@ -24,8 +24,8 @@ export function healthChecks(app: App) {
     "no mail recipient on debug mode": async () => {
       if (await settings.mail.debug_to) return;
       const usr = requestStorage.getStore()?.user;
-      if (!usr || !await usr.get("superuser")) return;
-      const email = String(await usr.get("email") ?? "");
+      if (!usr?.superuser) return;
+      const email = String(usr.email ?? "");
       return { solutions: { [`set it to: ${hee(email)}`]: { solve: async () => { await settings.mail.debug_to(email); } } } };
     },
 

@@ -15,13 +15,13 @@ async function render(_node: Node): Promise<HtmlString> {
   const usr = ctx.user;
   const client = ctx.client;
 
-  const clientVs = client ? await client.values() : {};
+  const clientVs = client ? client.$values() : {};
   const sessionData = await ctx.sess.data();
   const settingsData = await ctx.settings();
 
   let usrHtml = html`<em>not logged in</em>\n`;
   if (usr) {
-    const vs = await usr.values();
+    const vs = usr.$values();
     const grps = (await usr.grps()).join(", ") || "–";
     usrHtml = html`<h3>User #${usr}</h3>${vsTable(vs, ["pw"])}<h3>Groups: ${grps}</h3>\n`;
   }

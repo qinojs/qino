@@ -26,7 +26,7 @@ async function makeCtx(loggedIn = false) {
     app: {
       db: {
         table: (name: string) => ({
-          entry: () => name === "usr" ? { get: (key: string) => key === "superuser" ? false : "user@example.test" } : null,
+          row: () => name === "usr" ? { superuser: false, email: "user@example.test" } : null,
         }),
       },
     },

@@ -8,7 +8,7 @@ const { name } = manifest;
 // A stale link is an everyday event; a mac that never matched this session's key is
 // someone trying, so it gets reported. Superusers pass without a signature at all.
 async function allowed(ctx: Ctx, file: string, exp: unknown, sig: unknown): Promise<boolean> {
-  if (await ctx.user?.get("superuser")) return true;
+  if (ctx.user?.superuser) return true;
   const state = check(ctx, file, exp, sig);
   if (state !== "ok" && state !== "expired") {
     ctx.app.fire("suspicious", { ctx, weight: state === "forged" ? 3 : 1, reason: `fileEditor ${state} request` }).catch(() => {});
