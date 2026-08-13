@@ -1,5 +1,6 @@
-import type { Node } from "@qino/qino/cms";
 import { prune } from "@qino/qino/score";
+
+import type { Node } from "@qino/qino/cms";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars.prune) return false;

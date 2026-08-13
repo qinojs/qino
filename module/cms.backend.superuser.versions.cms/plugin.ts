@@ -1,7 +1,11 @@
-import { html, type HtmlString, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { HtmlString, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

@@ -1,7 +1,8 @@
 // Public API of ai. The qino plugin lives in ./plugin.ts.
+import { aiInstances } from "./lib/AiApi.ts";
 
 import type { App } from "@qino/qino";
-import { aiInstances, type AiApi } from "./lib/AiApi.ts";
+import type { AiApi } from "./lib/AiApi.ts";
 
 /** The app's ai instance. Throws when ai is not loaded. */
 export function ai(app: App): AiApi {

@@ -1,10 +1,14 @@
 // The shop domain: one class per table, data and behaviour in the same object.
 // Naming rule of the row layer — columns are data, methods are verbs. `price` is a column,
 // so the calculation beside it is `pricesFor()`, not `price()`.
+import { DbRow, unixTime } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 
-import { DbRow, type Db, unixTime } from "@qino/qino";
-import { shp3, type Shp3 } from "./Shp3.ts";
-import { cms, type Node } from "@qino/qino/cms";
+import { shp3 } from "./Shp3.ts";
+
+import type { Db } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Shp3 } from "./Shp3.ts";
 
 /** The shop a row belongs to — every table here lives in one. */
 class ShopRow extends DbRow {

@@ -1,7 +1,10 @@
+import { Output } from "@qino/qino";
+
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Output, type App } from "@qino/qino";
 import { authorize, metadata, register, resourceMetadata, token } from "./mod.ts";
 import { verify } from "./lib/tokens.ts";
+
+import type { App } from "@qino/qino";
 
 export { api } from "./api.ts";
 export { dbSchema };

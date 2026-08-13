@@ -1,6 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { html, type HtmlString, type App } from "@qino/qino";
+import { html } from "@qino/qino";
+
 import { buildModuleTableIndex } from "../lib/analyze.ts";
+
+import type { HtmlString, App } from "@qino/qino";
 
 type FieldOrigins = Record<string, Record<string, string[]>>;
 type TableOrigins = Record<string, string[]>;

@@ -13,9 +13,11 @@
 // Entries are self-contained snapshots, so deleting intermediate ones is safe —
 // views fall back to the previous surviving entry, and since the newest entry
 // per bucket survives, every live row keeps ≥1 entry (baseline invariant).
+import { sql, unixTime } from "@qino/qino";
 
-import { sql, unixTime, type Db, type Sql } from "@qino/qino";
 import { versTable, versedTables } from "./lib/Vers.ts";
+
+import type { Db, Sql } from "@qino/qino";
 
 const DENSITY = 24;           // ~snapshots kept per age doubling (higher = keep more)
 const KEEP_RECENT_SEC = 3600; // <1h untouched (still in the active editing window)

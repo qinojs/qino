@@ -1,5 +1,8 @@
-import { Access, AccessError, type ApiTree, getCtx, type Params, s, unixTime } from "@qino/qino";
+import { Access, AccessError, getCtx, s, unixTime } from "@qino/qino";
+
 import { generateToken, hashToken, keyPrefix } from "./lib/keys.ts";
+
+import type { ApiTree, Params } from "@qino/qino";
 
 export const api: ApiTree = {
   keys: {

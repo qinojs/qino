@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import type { DbTable } from "./DbTable.ts";
 import { NUM_TYPES } from "./Db.ts";
+
+import type { DbTable } from "./DbTable.ts";
 
 // One namespace rule: everything `$`-prefixed belongs to the row layer, everything else is a
 // column or a method of your subclass. That keeps the reserved set stable — a new `$…` member

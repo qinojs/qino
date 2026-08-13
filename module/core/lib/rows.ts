@@ -1,9 +1,9 @@
 // Core's own tables as row classes — data and behaviour in one object.
 // Naming rule of the row layer: columns are data, methods are verbs.
-
 import { DbRow } from "./db/DbRow.ts";
-import type { Db } from "./db/Db.ts";
 import { unixTime } from "./util.ts";
+
+import type { Db } from "./db/Db.ts";
 
 export class Usr extends DbRow {
   declare id: number;

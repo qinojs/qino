@@ -1,5 +1,6 @@
-import type { App } from "../../module/core/mod.ts";
 import { currentModule } from "./renamedModules.ts";
+
+import type { App } from "@qino/qino";
 
 /** PHP put classes for the module and node id on every content element. qino uses attributes:
  *

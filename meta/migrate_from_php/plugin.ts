@@ -1,12 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
+import { $item, sql } from "@qino/qino";
 
-import { $item, sql, type App } from "../../module/core/mod.ts";
 import { migrateLegacyPageSettings } from "./migrateLegacyPageSettings.ts";
 import { migrateFiles } from "./moveFiles.ts";
 import { migrateCss } from "./migrateCss.ts";
 import { migrateForm1, prepareForm1Settings } from "./migrateForm1.ts";
 import { migrateTable1 } from "./migrateTable1.ts";
 import { renamedModules } from "./renamedModules.ts";
+
+import type { App } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await dropLegacyColumns(app);

@@ -1,6 +1,6 @@
 // Public API of fileEditor. The qino plugin lives in ./plugin.ts.
-
 import { getCtx } from "@qino/qino";
+
 import { sign } from "./lib/sign.ts";
 
 /** Editor URL for a file, allowing the current session to open and save it.

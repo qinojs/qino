@@ -1,5 +1,8 @@
-import { Access, type ApiTree, NotFoundError, Output, type Params, type Ctx, s } from "@qino/qino";
+import { Access, NotFoundError, Output, s } from "@qino/qino";
+
 import { ai } from "./mod.ts";
+
+import type { ApiTree, Params, Ctx } from "@qino/qino";
 
 const SSE_HEADERS = {
   "Content-Type": "text/event-stream; charset=utf-8",

@@ -1,4 +1,6 @@
-import { sql, type Db } from "@qino/qino";
+import { sql } from "@qino/qino";
+
+import type { Db } from "@qino/qino";
 
 /** Auto-id sequence that would generate an id already present in the table. */
 export async function sequenceIssue(db: Db, tableName: string) {

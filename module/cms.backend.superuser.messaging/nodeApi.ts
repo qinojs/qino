@@ -1,6 +1,7 @@
-import type { Node } from "@qino/qino/cms";
-import { channel } from "@qino/qino/messaging";
 import { errMsg } from "@qino/qino";
+import { channel } from "@qino/qino/messaging";
+
+import type { Node } from "@qino/qino/cms";
 
 /** Node access is the permission — replies are limited to an existing user. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {

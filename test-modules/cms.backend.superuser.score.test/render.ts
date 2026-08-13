@@ -1,7 +1,11 @@
-import { html, unixTime, type App, type HtmlString } from "@qino/qino";
-import { cms, type Node } from "@qino/qino/cms";
+import { html, unixTime } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
 import { scopes, strength } from "@qino/qino/score";
+
 import { TABLES } from "./hooks.ts";
+
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;

@@ -1,5 +1,7 @@
+import { html } from "@qino/qino";
+
+import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { html, type Ctx, type HtmlString } from "@qino/qino";
 
 export const cms = { node: { js: ["pub/main.js"], render } };
 

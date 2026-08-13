@@ -1,6 +1,8 @@
+import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
+
+import type { App, Ctx, HtmlString, Row } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { html, type App, type Ctx, type HtmlString, type Row } from "@qino/qino";
 
 /** Discovery hint plus the two live regions the client script re-renders. */
 export function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

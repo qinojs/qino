@@ -1,4 +1,6 @@
-import { html, Output, type Ctx, type HtmlString } from "@qino/qino";
+import { html, Output } from "@qino/qino";
+
+import type { Ctx, HtmlString } from "@qino/qino";
 
 /** Standalone document — the authorization endpoint is a root route, not a CMS page. */
 function page(ctx: Ctx, title: string, body: HtmlString, status = 200): never {

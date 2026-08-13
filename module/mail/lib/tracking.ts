@@ -1,6 +1,9 @@
-import { Output, Redirect, unixTime, type Ctx } from "@qino/qino";
+import { Output, Redirect, unixTime } from "@qino/qino";
+
 import { trackCert } from "./helpers.ts";
 import { mail } from "../mod.ts";
+
+import type { Ctx } from "@qino/qino";
 
 const BLANK_GIF = Uint8Array.from(atob("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="), c => c.charCodeAt(0));
 

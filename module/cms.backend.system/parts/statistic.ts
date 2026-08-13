@@ -1,4 +1,6 @@
-import { html, sql, type Db, type HtmlString } from "@qino/qino";
+import { html, sql } from "@qino/qino";
+
+import type { Db, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 type DbTableStat = { name: string; bytes: number };

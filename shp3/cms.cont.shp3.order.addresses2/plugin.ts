@@ -1,8 +1,12 @@
-import { html, type HtmlString, type Ctx } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
-import { cart, shp3, type Order } from "@qino/qino/shp3";
+import { html } from "@qino/qino";
+import { cart, shp3 } from "@qino/qino/shp3";
 import { country } from "@qino/qino/locale.country";
+
 import dbSchema from "./dbschema.json" with { type: "json" };
+
+import type { HtmlString, Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Order } from "@qino/qino/shp3";
 
 export { dbSchema };
 

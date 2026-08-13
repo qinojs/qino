@@ -1,4 +1,6 @@
-import { sql, type Db } from "@qino/qino";
+import { sql } from "@qino/qino";
+
+import type { Db } from "@qino/qino";
 
 async function tableIndexes(db: Db, table: string) {
   if (db.dialect === "mysql") {

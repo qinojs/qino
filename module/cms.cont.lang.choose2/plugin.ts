@@ -1,5 +1,8 @@
-import { cmsCtx, type Node } from "@qino/qino/cms";
-import { html, type Ctx, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const LANG_NAMES: Record<string, string> = {
   de: "Deutsch",

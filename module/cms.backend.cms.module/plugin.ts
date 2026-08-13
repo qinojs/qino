@@ -1,7 +1,12 @@
-import { html, getCtx, moduleIcon, sql, type App, type HtmlString } from "@qino/qino";
+import { html, getCtx, moduleIcon, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { ADMIN, WRITE, describeChange, type Node } from "@qino/qino/cms";
+import { ADMIN, WRITE, describeChange } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }) {

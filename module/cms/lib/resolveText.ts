@@ -1,5 +1,6 @@
-import type { App } from "@qino/qino";
 import { cms } from "./CMS.ts";
+
+import type { App } from "@qino/qino";
 
 export async function resolveText(app: App, value: string): Promise<string> {
   value = await replaceAsync(value, /cmspid:\/\/([0-9]+)/g, (_, pid) => replaceLinks(app, pid));

@@ -1,5 +1,6 @@
-import { hee } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { hee } from "@qino/qino";
+
+import type { Node } from "@qino/qino/cms";
 
 /** PHP's `cms_image2_bg()` emitted `data-cms-image2-bg` plus a blurred preview, and its JS swapped
  *  in a fitting size. qino's cms.image2 only ports the foreground `<cms-image2>`, so this is a plain

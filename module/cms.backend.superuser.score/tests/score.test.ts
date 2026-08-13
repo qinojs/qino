@@ -1,11 +1,15 @@
+import { Db } from "@qino/qino";
 import { assertEquals, scoreDbSchema as dbSchema } from "@qino/qino/tests";
-import { Db, type App } from "@qino/qino";
 import { hit, scored } from "@qino/qino/score";
+
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-const { name, dependencies } = manifest;
 import { list } from "../render.ts";
+
+import type { App } from "@qino/qino";
+
+const { name, dependencies } = manifest;
 
 const DAY = 86400;
 const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));

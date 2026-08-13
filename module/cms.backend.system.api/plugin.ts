@@ -1,5 +1,7 @@
-import { html, getCtx, type Ctx, toInput, toJsonSchema, type StandardSchema, VERBS, RESERVED, camelName, toTools, Access, type Method, type ApiNode, type Verb, type App, type HtmlString } from "@qino/qino";
+import { html, getCtx, toInput, toJsonSchema, VERBS, RESERVED, camelName, toTools, Access } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+
+import type { Ctx, StandardSchema, Method, ApiNode, Verb, App, HtmlString } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system.api", { en: "API", de: "API" });

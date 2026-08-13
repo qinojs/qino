@@ -1,4 +1,6 @@
-import "../../ai/pub/chat.js"; // registers <ai-chat>
+import "../../ai/pub/chat.js";
+
+// registers <ai-chat>
 
 // The CMS panel lives in the shadow DOM of <qino-cms>; mount the chat there so it stays isolated from the page.
 customElements.whenDefined("qino-cms").then(async () => {

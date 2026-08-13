@@ -1,4 +1,5 @@
 import { api } from '@qino/pub/qino.js';
+
 const btn = document.getElementById('saveButton');
 const editorEl = document.getElementById('editor');
 const mime   = editorEl.getAttribute('mime');

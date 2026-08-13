@@ -1,8 +1,12 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, html, isModuleName, type App, type HtmlString, type Module, type Store } from "@qino/qino";
+import { errMsg, html, isModuleName } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import type { Node } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString, Module, Store } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 /** The app's own modules: a folder store beside data/, deployed and backed up with the app. */

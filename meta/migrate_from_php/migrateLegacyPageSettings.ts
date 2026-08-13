@@ -1,4 +1,6 @@
-import { $item, sql, type App } from "../../module/core/mod.ts";
+import { $item, sql } from "@qino/qino";
+
+import type { App } from "@qino/qino";
 
 /** The settings below `basis` as a plain object. A row with children is a branch, otherwise its
  *  value counts — reading the item instead would only yield the (empty) value of the branch row. */

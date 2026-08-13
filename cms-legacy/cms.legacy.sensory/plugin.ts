@@ -1,5 +1,7 @@
-import { html, sql, unixTime, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html, sql, unixTime } from "@qino/qino";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const labels = {
   alphabet: { title: "Sensorik-Training Alphabet", total: 40 },

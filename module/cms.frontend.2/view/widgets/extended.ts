@@ -1,6 +1,10 @@
-import type { Node } from "@qino/qino/cms";
+import { html, getCtx } from "@qino/qino";
+
 import { accordion } from "../widget.ts";
-import { html, type HtmlString, getCtx } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 export default async function (node: Node): Promise<HtmlString> {
   const ctx = getCtx();
   const app = node.app;

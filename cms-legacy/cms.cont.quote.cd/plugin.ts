@@ -1,7 +1,10 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
 import { sectionAttr } from "../lib/bg.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   properties: {

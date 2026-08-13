@@ -1,10 +1,12 @@
+import * as nodePath from 'node:path';
+
 import * as pandoc from '../pandoc.ts';
 import * as pdftotext from '../pdftotext.ts';
 import { ocrPdf } from '../ocr.ts';
 import * as magick from '../magick.ts';
-import * as nodePath from 'node:path';
-import type { Transcript, TransformContext, TransformerDef } from '../types.ts';
 import { TRANSCRIPT_MIME } from './transcript.ts';
+
+import type { Transcript, TransformContext, TransformerDef } from '../types.ts';
 
 /** Pandoc input format per source MIME type */
 const PANDOC_FORMATS: Record<string, string> = {

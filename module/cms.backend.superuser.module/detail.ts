@@ -1,7 +1,9 @@
 import { fromFileUrl, resolve as resolvePath, dirname, SEPARATOR } from "@std/path";
-import { errMsg, getCtx, html, type HtmlString } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { errMsg, getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // dir ends with a slash (like Module.dir)
 async function* walkDir(dir: string, base = dir): AsyncGenerator<{ filePath: string; rel: string }> {

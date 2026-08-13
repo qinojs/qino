@@ -1,7 +1,9 @@
+import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import type { Node } from "@qino/qino/cms";
-import { html, type HtmlString, type Row } from "@qino/qino";
 import { pendingPhones, phones as phoneList } from "@qino/qino/messaging.sms";
+
+import type { HtmlString, Row } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export function render(node: Node): Promise<HtmlString> {
   return html.async`<div class=u2-flex>

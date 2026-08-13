@@ -1,4 +1,5 @@
 import { assert, assertEquals } from "@qino/qino/tests";
+
 import { Provider } from "../lib/Provider.ts";
 
 const row = { id: 1, name: "test", endpoint: "https://x", timeout_ms: 1000 };

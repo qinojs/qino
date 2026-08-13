@@ -1,8 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
+import { sql, hee } from "@qino/qino";
 import { cms, describeChange } from "@qino/qino/cms";
-import { sql, hee, type Sql } from "@qino/qino";
+
 import { versedTables, view } from "./lib/Vers.ts";
 import { getCmsVers, copyNode } from "./lib/CmsVers.ts";
+
+import type { Sql } from "@qino/qino";
 
 export async function publishNode(ctx: any, pid: any, options: any = {}): Promise<any> {
     const id = Number(pid);

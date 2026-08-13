@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
-import { randB64, unixTime, type App } from "@qino/qino";
+import { randB64, unixTime } from "@qino/qino";
+
+import type { App } from "@qino/qino";
 
 type Kind = "code" | "access" | "refresh";
 

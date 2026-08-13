@@ -1,5 +1,6 @@
-import type { App } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
+
+import type { App } from "@qino/qino";
 
 export const settingsSchema = {
   properties: {

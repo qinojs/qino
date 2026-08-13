@@ -1,8 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, fakeCms, fakeRender } from "@qino/qino/tests";
 import { toTools } from "@qino/qino";
+import { assertEquals, fakeCms, fakeRender } from "@qino/qino/tests";
+
 import { api, init } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
 
 Deno.test("cms.filebrowser: metadata and api shape are wired", () => {

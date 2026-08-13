@@ -1,6 +1,8 @@
-import * as ffmpeg from '../ffmpeg.ts';
-import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
+
+import * as ffmpeg from '../ffmpeg.ts';
+
+import type { TransformerDef } from '../types.ts';
 
 export const VIDEO_MIMES = new Set([
   'video/mp4',

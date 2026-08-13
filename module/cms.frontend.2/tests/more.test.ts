@@ -1,6 +1,9 @@
+import { requestStorage } from "@qino/qino";
 import { assert, assertEquals, assertRejects, fakeMail } from "@qino/qino/tests";
-import { requestStorage, type Ctx } from "@qino/qino";
+
 import more from "../view/widgets/more.ts";
+
+import type { Ctx } from "@qino/qino";
 
 Deno.test("cms.frontend.2 more: sends escaped feedback via app.mail", async () => {
   let draft = "draft";

@@ -1,4 +1,6 @@
-import { html, type HtmlString, sqlSearch, sql, type Ctx } from "@qino/qino";
+import { html, sqlSearch, sql } from "@qino/qino";
+
+import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function allowLoginAs(node: Node | null, ctx: Ctx): Promise<boolean> {

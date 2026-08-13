@@ -1,5 +1,7 @@
-import { html, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** PHP's `cms_text($Cont, $name, ['tag' => …])`: the text in its own tag, editable in edit mode.
  *  `title` is the node title there, not a text of that name. */

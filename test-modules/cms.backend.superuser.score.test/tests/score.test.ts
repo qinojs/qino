@@ -1,14 +1,18 @@
 // imported by package name: a test store must not depend on the host application's import map
 import { assertEquals } from "@std/assert";
-import { Db, requestStorage, type App, type Ctx } from "@qino/qino";
+import { Db, requestStorage } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 import { scored } from "@qino/qino/score";
+
 import api from "../nodeApi.ts";
 import { fileHit, pageHit, TABLES } from "../hooks.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-const { name, dependencies } = manifest;
 import { list } from "../render.ts";
+
+import type { App, Ctx } from "@qino/qino";
+
+const { name, dependencies } = manifest;
 
 const BOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));

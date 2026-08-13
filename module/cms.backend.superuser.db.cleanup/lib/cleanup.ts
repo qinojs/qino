@@ -1,4 +1,6 @@
-import { sql, type Db, type DbField } from "@qino/qino";
+import { sql } from "@qino/qino";
+
+import type { Db, DbField } from "@qino/qino";
 import type { TableStatus } from "@qino/qino/cms.backend.superuser.db";
 
 const DELETE_BATCH = 1000;

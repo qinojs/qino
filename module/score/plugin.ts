@@ -1,6 +1,9 @@
-import { sql, type App, type Db } from "@qino/qino";
-import type { Jobs } from "@qino/qino/cron";
+import { sql } from "@qino/qino";
+
 import { forget, prune } from "./mod.ts";
+
+import type { App, Db } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 
 export const dbSchema = {
   properties: {

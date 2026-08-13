@@ -1,9 +1,11 @@
 import { getCtx, requestStorage } from "../ctx/Ctx.ts";
-import type { Req } from "../ctx/Req.ts";
 import { errMsg, Output } from "../util.ts";
 import { ApiError } from "./errors.ts";
 import { invoke } from "./invoke.ts";
-import { BODY_METHODS, type ApiTree, type Method, type Params } from "./types.ts";
+import { BODY_METHODS } from "./types.ts";
+
+import type { Req } from "../ctx/Req.ts";
+import type { ApiTree, Method, Params } from "./types.ts";
 
 type RequestData = { method: Method; path: string; input: Params; query: Params };
 

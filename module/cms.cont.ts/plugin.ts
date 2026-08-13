@@ -1,8 +1,11 @@
-import type { Node } from "@qino/qino/cms";
 import { toFileUrl } from "@std/path";
-import { html, type Ctx } from "@qino/qino";
+import { html } from "@qino/qino";
+
 import { codeFiles } from "./codeFiles.ts";
 import options from "./options.ts";
+
+import type { Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // The examples are commented out on purpose: nothing is created before you want it.
 // Only the type is imported — it is erased at load, so the file runs against the app's own qino.

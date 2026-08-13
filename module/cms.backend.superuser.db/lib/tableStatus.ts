@@ -1,4 +1,6 @@
-import { sql, type Db } from "@qino/qino";
+import { sql } from "@qino/qino";
+
+import type { Db } from "@qino/qino";
 
 export type TableStatus = { rows: number | null; bytes: number | null; overhead: number | null; deadRows: number | null; engine: string };
 

@@ -1,7 +1,9 @@
 import * as nodePath from "node:path";
-import type { App, Transcript, TranscriptSegment, TranscriptWord } from "@qino/qino";
+
 import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
+
+import type { App, Transcript, TranscriptSegment, TranscriptWord } from "@qino/qino";
 
 async function hasSttModel(app: App): Promise<boolean> {
   try {

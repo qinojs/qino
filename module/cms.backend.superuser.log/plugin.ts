@@ -1,9 +1,13 @@
 import { dump } from "@nuxodin/dump";
-import { html, getCtx, sql, unixTime, type Sql, type Ctx, type App, type HtmlString } from "@qino/qino";
+import { html, getCtx, sql, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import type { Node } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Sql, Ctx, App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

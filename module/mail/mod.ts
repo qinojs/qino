@@ -1,7 +1,8 @@
 // Public API of mail. The qino plugin lives in ./plugin.ts.
+import { mailInstances } from "./lib/MailManager.ts";
 
 import type { App } from "@qino/qino";
-import { type MailManager, mailInstances } from "./lib/MailManager.ts";
+import type { MailManager } from "./lib/MailManager.ts";
 
 /** The app's mail manager. Throws when mail is not loaded. */
 export function mail(app: App): MailManager {

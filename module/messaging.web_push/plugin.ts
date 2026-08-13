@@ -1,8 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
+import { Access, getCtx, s, sha256b64url, sql, unixTime } from "@qino/qino";
+
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { Access, getCtx, s, sha256b64url, sql, unixTime, type ApiTree, type App } from "@qino/qino";
-import type { Channel } from "@qino/qino/messaging";
 import { publicKey, send } from "./mod.ts";
+
+import type { ApiTree, App } from "@qino/qino";
+import type { Channel } from "@qino/qino/messaging";
 
 export const serviceWorker = true; // pub/sw.js is imported into the app worker
 export { dbSchema };

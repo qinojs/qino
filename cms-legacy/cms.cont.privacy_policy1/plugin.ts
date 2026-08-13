@@ -1,6 +1,9 @@
-import { html, sql, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html, sql } from "@qino/qino";
+
 import { cmsText } from "../lib/text.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const heading = [1, 2, 3, 4].includes(Number(await node.settings.Heading)) ? Number(await node.settings.Heading) : 2;

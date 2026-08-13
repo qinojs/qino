@@ -1,7 +1,9 @@
+import { timingSafeEqual } from "node:crypto";
+
+import { bcrypt } from "../deps.ts";
+
 import type { Ctx } from "./ctx/Ctx.ts";
 import type { Usr } from "./rows.ts";
-import { bcrypt } from "../deps.ts";
-import { timingSafeEqual } from "node:crypto";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
 // response timing can't reveal whether an e-mail is registered (user enumeration).

@@ -1,2 +1,1 @@
-export { cms } from "../cms.cont.cd.fullcalendar/plugin.ts";
-
+export { cms } from "@qino/qino/cms.cont.cd.fullcalendar";

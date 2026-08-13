@@ -1,5 +1,7 @@
-import * as magick from '../magick.ts';
 import * as nodePath from 'node:path';
+
+import * as magick from '../magick.ts';
+
 import type { TransformerDef } from '../types.ts';
 
 /** Formats every OCR engine (incl. AI vision providers) can read directly */

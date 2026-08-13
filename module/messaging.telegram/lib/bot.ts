@@ -1,4 +1,6 @@
-import { $item, randB64, type App } from "@qino/qino";
+import { $item, randB64 } from "@qino/qino";
+
+import type { App } from "@qino/qino";
 
 // Module-internal: everything here carries the bot token. mod.ts exposes only what is safe to show.
 

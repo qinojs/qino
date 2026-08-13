@@ -1,10 +1,12 @@
-import { assert, assertEquals, testContext } from "@qino/qino/tests";
 import { invoke, Output, requestStorage, toTools } from "@qino/qino";
+import { assert, assertEquals, testContext } from "@qino/qino/tests";
+
 import { api } from "../api.ts";
 import { ai, AiApi } from "../mod.ts";
 import { aiInstances } from "../lib/AiApi.ts";
 import { init } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
 
 Deno.test("ai: module metadata and api tools are wired", () => {

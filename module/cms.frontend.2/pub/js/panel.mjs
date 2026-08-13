@@ -1,6 +1,7 @@
 import { itemJs } from "@qino/pub/SettingsEditor.mjs";
-import "./frontend.mjs";
 import { api, t, ctx } from "@qino/pub/qino.js";
+
+import "./frontend.mjs";
 
 const nodeId = globalThis.qino?.cms?.nodeId;
 

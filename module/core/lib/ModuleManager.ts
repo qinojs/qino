@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { fromFileUrl, isAbsolute, toFileUrl, $item } from "../deps.ts";
-import type { App } from "./App.ts";
 import { getCtx } from "./ctx/Ctx.ts";
 import { enableItemSchemaDefaults, errMsg, unixTime } from "./util.ts";
+
+import type { App } from "./App.ts";
 
 type DbSchema = { properties: Record<string, unknown> };
 

@@ -1,6 +1,10 @@
-import { html, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
+
+import { listProcesses, supportsProcesses } from "./lib/processlist.ts";
+
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { listProcesses, supportsProcesses, type Process } from "./lib/processlist.ts";
+import type { Process } from "./lib/processlist.ts";
 
 const REFRESH_MS = 500;
 

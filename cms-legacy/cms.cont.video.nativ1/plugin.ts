@@ -1,5 +1,7 @@
-import { html, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const flags = ["autoplay", "muted", "loop", "controls"] as const;
 

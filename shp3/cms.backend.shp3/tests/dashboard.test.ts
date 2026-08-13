@@ -1,9 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { App, Ctx, requestStorage } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-import { backendDashboardWidget as ordersWidget } from "../../cms.backend.shp3.orders1/plugin.ts";
-import { backendDashboardWidget as productsWidget } from "../../cms.backend.shp3.products/plugin.ts";
-import { backendDashboardWidget as settingsWidget } from "../../cms.backend.shp3.settings/plugin.ts";
 
 const BACKEND = ["cms.backend.shp3", "cms.backend.shp3.orders1", "cms.backend.shp3.products", "cms.backend.shp3.settings"];
 
@@ -49,13 +46,14 @@ Deno.test("backend.shp3: every shop page reports its numbers to the overview", a
 
     const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
     await requestStorage.run(ctx, async () => {
-      const orders = String(await ordersWidget(app));
+      const widget = (name: string) => app.modules.get(name)!.plugin.backendDashboardWidget(app);
+      const orders = String(await widget("cms.backend.shp3.orders1"));
       assertStringIncludes(orders, "<td>1"); // one placed, one open, one unpaid
       assertStringIncludes(orders, "shp3_orderId="); // and the newest ones, each linked
       assertEquals(orders.includes("[object Promise]"), false);
-      const products = String(await productsWidget(app));
+      const products = String(await widget("cms.backend.shp3.products"));
       assertStringIncludes(products, "<td>2");
-      const settings = String(await settingsWidget(app));
+      const settings = String(await widget("cms.backend.shp3.settings"));
       assertStringIncludes(settings, "Switzerland"); // the shop's country, named by Intl
       assertStringIncludes(settings, "<td>1 ");
     });

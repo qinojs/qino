@@ -1,5 +1,4 @@
 // add files
-
 import { api } from '@qino/pub/qino.js';
 
 // scoped query helper

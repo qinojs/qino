@@ -1,7 +1,10 @@
 import { createHmac } from "node:crypto";
+import { unixTime } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
-import { unixTime, type Ctx } from "@qino/qino";
+
 import { sign, check } from "../lib/sign.ts";
+
+import type { Ctx } from "@qino/qino";
 
 // deno-lint-ignore no-explicit-any
 type Fake = Record<string, any>;

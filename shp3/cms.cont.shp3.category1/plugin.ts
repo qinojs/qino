@@ -1,6 +1,9 @@
-import { html, type HtmlString, type Ctx } from "@qino/qino";
+import { html } from "@qino/qino";
+import { ensureProduct, shp3 } from "@qino/qino/shp3";
+
+import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { ensureProduct, shp3, type Product } from "@qino/qino/shp3";
+import type { Product } from "@qino/qino/shp3";
 
 const settingsSchema = {
   properties: {

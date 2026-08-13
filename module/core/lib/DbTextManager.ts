@@ -2,6 +2,7 @@
 import { getCtx } from "./ctx/Ctx.ts";
 import { tableRef, scopeCache } from "./db/dbScope.ts";
 import { sql } from "../deps.ts";
+
 import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
 

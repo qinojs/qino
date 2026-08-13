@@ -1,7 +1,10 @@
-import { getCtx, hee, uid, type App } from "@qino/qino";
+import { getCtx, hee, uid } from "@qino/qino";
+
 import { clean, importUpyo, renderMarkers, toBool, toInt, trackCert, trackURL } from "./helpers.ts";
 import { MailMessage } from "./MailMessage.ts";
 import { transports } from "./transport.ts";
+
+import type { App } from "@qino/qino";
 import type { Dict, MailDefaults, Recipient, Template, TemplateData, Transport, TransportCtor } from "./types.ts";
 
 const defaultTemplate: Template = ({ main }) => `<!DOCTYPE html>

@@ -1,9 +1,13 @@
-import { html, type App, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
 import { status } from "@qino/qino/cron";
 import { backend } from "@qino/qino/cms.backend";
+
 import { counts, render, list } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString } from "@qino/qino";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

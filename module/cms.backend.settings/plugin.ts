@@ -1,5 +1,7 @@
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { html, type Ctx, type App, type HtmlString } from "@qino/qino";
+
+import type { Ctx, App, HtmlString } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.settings", { en: "Settings", de: "Einstellungen" });

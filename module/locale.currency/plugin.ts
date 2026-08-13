@@ -1,7 +1,10 @@
-import { sql, unixTime, type App } from "@qino/qino";
-import type { Jobs } from "@qino/qino/cron";
+import { sql, unixTime } from "@qino/qino";
+
 import { currency } from "./mod.ts";
 import { updateRates } from "./lib/rates.ts";
+
+import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
 
 export const settingsSchema = {
   properties: {

@@ -1,5 +1,7 @@
-import { readUploadFile, type UploadedFile } from "../fileStream.ts";
+import { readUploadFile } from "../fileStream.ts";
 import { Output } from "../util.ts";
+
+import type { UploadedFile } from "../fileStream.ts";
 
 /**
  * Parsed request body: fields eager, per-file disk spooling lazy.

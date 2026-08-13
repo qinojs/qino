@@ -1,6 +1,9 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
 import { cssLength } from "../lib/css.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 function videoId(value: string): string {
   const url = URL.parse(value);

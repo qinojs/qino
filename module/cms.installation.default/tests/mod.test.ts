@@ -1,6 +1,8 @@
 import { assertEquals } from "@qino/qino/tests";
+
 import { recommended } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
 
 Deno.test("cms.installation.default: dependencies are the hard minimum, everything else is a recommendation", () => {

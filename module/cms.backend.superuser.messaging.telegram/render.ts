@@ -1,7 +1,9 @@
+import { getCtx, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import type { Node } from "@qino/qino/cms";
-import { getCtx, html, type HtmlString, type Row } from "@qino/qino";
 import { bot as botInfo, chats as chatList, webhookInfo } from "@qino/qino/messaging.telegram";
+
+import type { HtmlString, Row } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** Where Telegram has to deliver its updates for this app. */
 export const webhookUrl = (): string => {

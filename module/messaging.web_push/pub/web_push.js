@@ -3,7 +3,6 @@
  *
  * import { subscribe, unsubscribe, channels } from "/m/messaging.web_push/pub/web_push.js";
  */
-
 import { api } from "@qino/pub/qino.js";
 
 const push = api["messaging.web_push"];

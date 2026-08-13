@@ -1,7 +1,10 @@
-import { Output, clientIp, type App, type Ctx } from "@qino/qino";
+import { Output, clientIp } from "@qino/qino";
+
 import { decide } from "./policy.ts";
 import { actionSignals, rankSignal, rankSignals, responseSignal } from "./rules.ts";
 import { addEvent, addEventDb, fastInfo, hitBuckets, penaltyState, reqInfo, settings, sleep, suspiciousPath } from "./store.ts";
+
+import type { App, Ctx } from "@qino/qino";
 
 // Per app, not module-global: apps in the same runtime must not share blocks.
 const pathBlocks = new WeakMap<App, Map<string, number>>();

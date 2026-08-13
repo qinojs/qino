@@ -1,6 +1,9 @@
-import type { Bot, ClientContext } from "@qino/qino/ai";
-import { toTools, type Usr } from "@qino/qino";
+import { toTools } from "@qino/qino";
+
 import { api as cmsApi } from "../../cms/api.ts";
+
+import type { Usr } from "@qino/qino";
+import type { Bot, ClientContext } from "@qino/qino/ai";
 
 const cmsTools = toTools(cmsApi, {
   apis: {

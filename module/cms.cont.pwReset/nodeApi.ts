@@ -1,7 +1,8 @@
-import type { Node } from "@qino/qino/cms";
 import { ApiError, unixTime } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
 import { issue, redeem } from "@qino/qino/ticket";
+
+import type { Node } from "@qino/qino/cms";
 
 export const PURPOSE = "auth.pwReset";
 export const TICKET_PARAM = "cmsContPwReset_t";

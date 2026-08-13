@@ -1,6 +1,8 @@
-import type { Node } from "@qino/qino/cms";
-import { html, type Ctx, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
 import { providers } from "@qino/qino/oauth";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** Renders one "Log in with …" link per configured login provider. */
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

@@ -1,6 +1,8 @@
-import type { App } from "./App.ts";
 import { fromFileUrl } from "../deps.ts";
-import { isModuleName, type Manifest, type Module, readManifest, resolveSpecifier } from "./ModuleManager.ts";
+import { isModuleName, readManifest, resolveSpecifier } from "./ModuleManager.ts";
+
+import type { App } from "./App.ts";
+import type { Manifest, Module } from "./ModuleManager.ts";
 
 /** A folder store lists itself: the subfolders holding the plugin file its URL would point at. */
 async function readFolder(url: string): Promise<string[]> {

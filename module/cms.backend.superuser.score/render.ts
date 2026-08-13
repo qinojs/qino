@@ -1,6 +1,9 @@
-import { html, sql, unixTime, type App, type HtmlString } from "@qino/qino";
+import { html, sql, unixTime } from "@qino/qino";
+import { fadeLimit, scopes, strength } from "@qino/qino/score";
+
+import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { fadeLimit, scopes, strength, type Scope } from "@qino/qino/score";
+import type { Scope } from "@qino/qino/score";
 
 const TOP = sql.raw("10");
 

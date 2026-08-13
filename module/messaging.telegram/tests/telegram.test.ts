@@ -1,9 +1,12 @@
+import { Db, Output, unixTime } from "@qino/qino";
 import { assert, assertEquals, fakeT, messagingDbSchema as messageSchema, testContext } from "@qino/qino/tests";
-import { Db, Output, unixTime, type Ctx } from "@qino/qino";
+
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { linkToken, readLinkToken } from "../lib/link.ts";
 import { webhook } from "../lib/webhook.ts";
 import { send } from "../mod.ts";
+
+import type { Ctx } from "@qino/qino";
 
 const SECRET = "test-secret";
 

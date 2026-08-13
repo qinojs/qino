@@ -1,6 +1,7 @@
-import type { Ctx } from "@qino/qino";
 import { cms } from "./CMS.ts";
 import { cmsCtx } from "./CmsContext.ts";
+
+import type { Ctx } from "@qino/qino";
 
 export async function render(ctx: Ctx): Promise<void> {
   const app = ctx.app;

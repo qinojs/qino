@@ -1,5 +1,6 @@
-import type { App } from "@qino/qino";
 import { Scheduler } from "./scheduler.ts";
+
+import type { App } from "@qino/qino";
 
 export const settingsSchema = {
   properties: {

@@ -1,8 +1,11 @@
-import type { Node } from "@qino/qino/cms";
-import { getCtx, hee, html, type Ctx, type HtmlString } from "@qino/qino";
-import type { Form } from "@qino/qino/cms.cont.form2";
+import { getCtx, hee, html } from "@qino/qino";
+
 import { sortedIds } from "./sortedIds.ts";
 import options from "./options.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Form } from "@qino/qino/cms.cont.form2";
 
 const settingsSchema = {
   properties: {

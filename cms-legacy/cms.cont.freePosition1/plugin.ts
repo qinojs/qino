@@ -1,5 +1,7 @@
-import { html, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node): Promise<HtmlString> {
   const top = Math.max(-10000, Math.min(10000, Number(await node.settings.top) || 30));

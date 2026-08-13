@@ -1,7 +1,10 @@
 /* Copyright (c) 2016 Tobias Buschor https://goo.gl/gl0mbf | MIT License https://goo.gl/HgajeK */
-import { ImageEditor } from './imageEditor.js';
 import { api, ctx } from '@qino/pub/qino.js';
-import '@qino/pub/qg/fileHelpers.mjs'; // globalThis.qgfileUpload
+import '@qino/pub/qg/fileHelpers.mjs';
+
+import { ImageEditor } from './imageEditor.js';
+
+// globalThis.qgfileUpload
 
 const meta = id => api['cms.image_editor'].meta(id);
 const loadingMjs = () => import('@qino/pub/c1/loading.mjs');

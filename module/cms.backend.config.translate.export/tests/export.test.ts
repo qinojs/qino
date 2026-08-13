@@ -1,5 +1,6 @@
-import { assertEquals, assertRejects } from "@qino/qino/tests";
 import { ConflictError } from "@qino/qino";
+import { assertEquals, assertRejects } from "@qino/qino/tests";
+
 import { cms } from "../plugin.ts";
 
 Deno.test("smalltext export rejects invalid locale files", async () => {

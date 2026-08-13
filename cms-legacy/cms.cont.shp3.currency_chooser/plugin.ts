@@ -1,6 +1,9 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
-import { cart, shp3, type Currency } from "../../shp3/shp3/mod.ts";
+import { html } from "@qino/qino";
+import { cart, shp3 } from "@qino/qino/shp3";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Currency } from "@qino/qino/shp3";
 
 const settingsSchema = {
   properties: {

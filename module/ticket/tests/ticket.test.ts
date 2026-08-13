@@ -1,7 +1,10 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { ApiError, Db } from "@qino/qino";
+
 import dbSchema from "../dbschema.json" with { type: "json" };
-import { check, issue, redeem, type Ticket, type TicketKind } from "../mod.ts";
+import { check, issue, redeem } from "../mod.ts";
+
+import type { Ticket, TicketKind } from "../mod.ts";
 
 const passwords: string[] = [];
 

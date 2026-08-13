@@ -1,5 +1,7 @@
+import { html, getCtx } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { html, type HtmlString, getCtx } from "@qino/qino";
 
 export default async function (node: Node): Promise<HtmlString> {
   const ctx = getCtx();

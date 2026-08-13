@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { sql } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
 import { thinHistory, versedTables, versTable } from "@qino/qino/cms.versions";
+
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: any): Promise<any> {
   if (await node.access() < 2) return false;

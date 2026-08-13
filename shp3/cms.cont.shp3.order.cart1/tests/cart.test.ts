@@ -1,8 +1,10 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { App, Ctx, requestStorage } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
 import { cart, shp3 } from "@qino/qino/shp3";
+
 import { cms as panel } from "../plugin.ts";
+
+import type { Node } from "@qino/qino/cms";
 
 async function shop() {
   const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });

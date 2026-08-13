@@ -2,11 +2,12 @@
 // redirect, IPv6 reachability, DNS records, mail policy and nameserver agreement.
 // Always probes https://<domain>/ — the scheme is not part of what a domain is.
 // Pure and dependency-free, except for an optional `openssl` call for the certificate details.
-
-import { resolve, serverIps, systemServer, type Type } from "./dns.ts";
+import { resolve, serverIps, systemServer } from "./dns.ts";
 import * as mail from "./mail.ts";
 import * as rdap from "./rdap.ts";
 import { agent, errText, isCertError, timedSignal, ua } from "./net.ts";
+
+import type { Type } from "./dns.ts";
 
 export type Dns = { ns: string[]; a: string[]; aaaa: string[]; mx: string[]; txt: string[]; caa: string[]; dmarc: string[] };
 

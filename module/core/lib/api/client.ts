@@ -1,6 +1,8 @@
 import { asParams, invoke } from "./invoke.ts";
 import { isCatchall } from "./route.ts";
-import { VERB_SET, branch, type ApiTree, type Branch, type Method, type Params } from "./types.ts";
+import { VERB_SET, branch } from "./types.ts";
+
+import type { ApiTree, Branch, Method, Params } from "./types.ts";
 
 export type ApiProxy ={ [key: string]: ApiProxy } & ((...args: unknown[]) => ApiProxy) & { [K in Method]: (params?: Params) => Promise<unknown> };
 

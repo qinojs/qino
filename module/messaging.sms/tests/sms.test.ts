@@ -1,8 +1,11 @@
-import { assert, assertEquals, assertRejects, assertThrows, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 import { ApiError, Db } from "@qino/qino";
+import { assert, assertEquals, assertRejects, assertThrows, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { deliver } from "../lib/provider.ts";
-import { addPhone, approvePhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone, type SmsProvider } from "../mod.ts";
+import { addPhone, approvePhone, pendingPhones, phoneNumber, removePhone, send, setMainPhone, setProvider, userPhones, verifyPhone } from "../mod.ts";
+
+import type { SmsProvider } from "../mod.ts";
 
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");

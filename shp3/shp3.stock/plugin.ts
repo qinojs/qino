@@ -1,7 +1,11 @@
-import { hee, type App } from "@qino/qino";
+import { hee } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
-import { shp3, type Order, type Product } from "@qino/qino/shp3";
+import { shp3 } from "@qino/qino/shp3";
+
 import dbSchema from "./dbschema.json" with { type: "json" };
+
+import type { App } from "@qino/qino";
+import type { Order, Product } from "@qino/qino/shp3";
 
 export { dbSchema };
 
@@ -14,7 +18,7 @@ export const settingsSchema = {
 
 // The columns this module adds belong to the product itself — there is no second kind of product.
 // The accessors come from the table, this only tells the compiler about them.
-declare module "../shp3/mod.ts" {
+declare module "@qino/qino/shp3" {
   interface Product {
     stock: number;
     stock_is_fix: boolean;

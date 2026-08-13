@@ -1,4 +1,6 @@
-import { getCtx, html, type HtmlString } from "@qino/qino";
+import { getCtx, html } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 function vsTable(vs: Record<string, unknown>, exclude: string[] = []): HtmlString {

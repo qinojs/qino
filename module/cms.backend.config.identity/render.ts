@@ -1,5 +1,7 @@
-import { $item, html, toInput, type App, type HtmlString } from "@qino/qino";
+import { $item, html, toInput } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
+
+import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 async function field(app: App, path: string, label: string, required = false): Promise<HtmlString> {

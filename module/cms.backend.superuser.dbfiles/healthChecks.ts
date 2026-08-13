@@ -1,6 +1,9 @@
-import type { HealthTypes } from "@qino/qino/cms.backend.system";
-import { sql, type App } from "@qino/qino";
+import { sql } from "@qino/qino";
+
 import { deleteUnlinkedDb } from "./cleanup.ts";
+
+import type { App } from "@qino/qino";
+import type { HealthTypes } from "@qino/qino/cms.backend.system";
 
 export function healthChecks(app: App): HealthTypes {
   const db = app.db;

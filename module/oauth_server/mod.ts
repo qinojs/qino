@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
-import { Output, Redirect, b64url, randB64, safeEqual, unixTime, type App, type Ctx } from "@qino/qino";
+import { Output, Redirect, b64url, randB64, safeEqual, unixTime } from "@qino/qino";
+
 import { consume, mint } from "./lib/tokens.ts";
 import { consentPage, errorPage, loginPage } from "./lib/view.ts";
+
+import type { App, Ctx } from "@qino/qino";
 
 /** OAuth 2.1 authorization server: authorization code + PKCE, public clients, opaque bearer
  *  tokens that authenticate as the qino user who consented. Sign-in reuses the core login

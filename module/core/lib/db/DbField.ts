@@ -1,4 +1,6 @@
-import { DATE_TYPES, STRING_TYPES, NUM_TYPES, type Db } from "./Db.ts";
+import { DATE_TYPES, STRING_TYPES, NUM_TYPES } from "./Db.ts";
+
+import type { Db } from "./Db.ts";
 import type { DbTable } from "./DbTable.ts";
 
 export class DbField {

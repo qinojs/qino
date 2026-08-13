@@ -1,6 +1,9 @@
-import { Output, header, type Ctx } from "@qino/qino";
+import { Output, header } from "@qino/qino";
+
 import options from "./options.ts";
 import api from "./nodeApi.ts";
+
+import type { Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {

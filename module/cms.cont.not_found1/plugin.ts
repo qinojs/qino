@@ -1,5 +1,8 @@
-import { html, sql, type Ctx, type HtmlString } from "@qino/qino";
-import { cmsCtx, type Node } from "@qino/qino/cms";
+import { html, sql } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 

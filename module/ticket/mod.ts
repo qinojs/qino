@@ -1,6 +1,7 @@
 // Public API of ticket. The qino plugin lives in ./plugin.ts.
+import { ApiError, randB64, requestStorage, sha256b64url, unixTime } from "@qino/qino";
 
-import { ApiError, randB64, requestStorage, sha256b64url, unixTime, type App } from "@qino/qino";
+import type { App } from "@qino/qino";
 
 /** A kind of ticket, declared by a module as `export const tickets` keyed by purpose. */
 export type TicketKind = {

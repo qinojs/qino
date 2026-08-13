@@ -1,6 +1,9 @@
-import { Access, AccessError, s, type Ctx, type ApiTree, type App } from "@qino/qino";
+import { Access, AccessError, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
+
 import { widgetUrl } from "./view/widget.ts";
+
+import type { Ctx, ApiTree, App } from "@qino/qino";
 
 export const settingsSchema = {
   properties: {

@@ -1,9 +1,12 @@
 import { createHash } from "node:crypto";
+import { b64url, Db, Output, unixTime } from "@qino/qino";
 import { assert, assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
-import { b64url, Db, Output, unixTime, type Ctx } from "@qino/qino";
+
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { authorize, metadata, register, resourceMetadata, token } from "../mod.ts";
 import { mint, verify } from "../lib/tokens.ts";
+
+import type { Ctx } from "@qino/qino";
 
 const REDIRECT = "https://client.test/callback";
 const VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";

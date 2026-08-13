@@ -1,6 +1,8 @@
-import type { Node } from "@qino/qino/cms";
-import { hee, html, type HtmlString, getCtx } from "@qino/qino";
+import { hee, html, getCtx } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: { param?: Record<string, string> } = {}): Promise<HtmlString> {
   const ctx = getCtx();

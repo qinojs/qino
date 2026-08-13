@@ -1,7 +1,10 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
 import { eventDate, eventDates, startsTodayOrLater } from "../lib/event2.ts";
 import { cmsText } from "../lib/text.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const selectedId = Number(ctx.req.query.cmscid);

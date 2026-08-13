@@ -1,5 +1,6 @@
-import { api } from "./qino.js";
 import { confirm } from "@qino/u2/js/dialog/dialog.js";
+
+import { api } from "./qino.js";
 
 const opened = new Set();
 export const itemJs = import("@qino/item/item.js");

@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-
-import { getCtx, requestStorage, sql, type Ctx, s, Access, type ApiTree, type App } from "@qino/qino";
+import { getCtx, requestStorage, sql, s, Access } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
+
+import type { Ctx, ApiTree, App } from "@qino/qino";
 
 export { healthChecks } from "./healthChecks.ts";
 

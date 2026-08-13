@@ -1,9 +1,13 @@
-import { errMsg, unixTime, type App, type Ctx } from "@qino/qino";
+import { errMsg, unixTime } from "@qino/qino";
+
 import { resolve } from "./registry.ts";
 import { addUsage } from "./usage.ts";
 import { readSse, sse } from "./sse.ts";
-import { type AiApi, CHAT_DEFAULTS } from "./AiApi.ts";
+import { CHAT_DEFAULTS } from "./AiApi.ts";
+
+import type { App, Ctx } from "@qino/qino";
 import type { Bot, ProviderModelRow, Tool } from "../types.ts";
+import type { AiApi } from "./AiApi.ts";
 import type { Provider } from "./Provider.ts";
 
 type Msg = Record<string, unknown>;

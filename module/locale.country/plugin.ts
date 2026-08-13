@@ -1,5 +1,8 @@
-import { sql, type App } from "@qino/qino";
+import { sql } from "@qino/qino";
+
 import { DATA } from "./lib/data.ts";
+
+import type { App } from "@qino/qino";
 
 // Column names and lengths are the ones the PHP original used, so a migrated database fits.
 export const dbSchema = {

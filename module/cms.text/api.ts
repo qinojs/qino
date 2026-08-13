@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-
-import { s, Access, ApiError, sql, type ApiTree, type Ctx } from "@qino/qino";
+import { s, Access, ApiError, sql } from "@qino/qino";
 import { cms, sanitizeHtml } from "@qino/qino/cms";
+
+import type { ApiTree, Ctx } from "@qino/qino";
 
 class CmsTextService {
 

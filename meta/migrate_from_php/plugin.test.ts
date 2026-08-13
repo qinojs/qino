@@ -1,7 +1,9 @@
-import { assertEquals } from "../../module/core/tests/deps.ts";
-import { sql, type App } from "../../module/core/mod.ts";
-import { Db } from "../../module/core/lib/db/Db.ts";
+import { Db, sql } from "@qino/qino";
+import { assertEquals } from "@qino/qino/tests";
+
 import { removeObsoleteSettings } from "./plugin.ts";
+
+import type { App } from "@qino/qino";
 
 Deno.test("migrate_from_php: cms.backend stays a scalar leaf", async () => {
   const db = new Db("sqlite::memory:");

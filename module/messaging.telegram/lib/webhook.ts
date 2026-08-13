@@ -1,7 +1,10 @@
-import { Output, safeEqual, unixTime, type App, type Ctx } from "@qino/qino";
+import { Output, safeEqual, unixTime } from "@qino/qino";
 import { record } from "@qino/qino/messaging";
+
 import { call, webhookSecret } from "./bot.ts";
 import { readLinkToken } from "./link.ts";
+
+import type { App, Ctx } from "@qino/qino";
 
 /** Telegram's update endpoint. Always answers 200 — any other status only makes Telegram retry. */
 export async function webhook(ctx: Ctx): Promise<never> {

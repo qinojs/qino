@@ -6,7 +6,6 @@
 // at all — .ch, .de and .at are not even in the IANA bootstrap — so "no data" is a normal outcome
 // and every field simply stays null. WHOIS is no fallback for them: those same registries withhold
 // the expiry date there too, only the gTLD registries publish it.
-
 import { timedSignal, ua } from "./net.ts";
 
 const registrar = (entities: unknown): string | null => {

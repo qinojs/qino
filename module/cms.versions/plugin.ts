@@ -17,15 +17,20 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
+import { Access, s, sql } from "@qino/qino";
+import { cms, cmsCtx } from "@qino/qino/cms";
 
-import { type DbScope, Access, type ApiTree, s, sql, type App } from "@qino/qino";
-import { cms, cmsCtx, type Node } from "@qino/qino/cms";
 import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
-// import { ensureSpace } from "./lib/Spaces.ts"; // parked with draft/space mode
 import { getCmsVers, initHistoricalNodes, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
+
+import type { DbScope, ApiTree, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
+// import { ensureSpace } from "./lib/Spaces.ts"; // parked with draft/space mode
+
 // import { applyDraftSpace, initDraftmode } from "./draftmode.ts"; // parked until read/write routing is complete
 export { healthChecks } from "./healthChecks.ts";
 

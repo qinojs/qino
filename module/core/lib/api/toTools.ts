@@ -1,7 +1,8 @@
-import type { Ctx } from "../ctx/Ctx.ts";
 import { toJsonSchema } from "../StandardSchema.ts";
 import { asParams, invoke } from "./invoke.ts";
 import { checkCollisions, isCatchall, paramName, routeParams, shapeOf, walk } from "./route.ts";
+
+import type { Ctx } from "../ctx/Ctx.ts";
 import type { ApiTree, Method, Params } from "./types.ts";
 
 export interface Tool {

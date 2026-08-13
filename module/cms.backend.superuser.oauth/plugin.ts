@@ -1,8 +1,12 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Node } from "@qino/qino/cms";
-import { html, type App, type Ctx, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export const cms = { node: { render } };

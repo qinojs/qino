@@ -1,9 +1,13 @@
 // deno-lint-ignore-file no-explicit-any
-import { DbTable } from "./DbTable.ts";
-import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect, type Sql } from "../../deps.ts";
-import { type DbDialect, type ExecResult, type MigrateOptions, type Row, DbDriver } from "./DbDriver.ts";
-import { Emitter } from "../Emitter.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
+
+import { DbTable } from "./DbTable.ts";
+import { sql, isTemplate, render, resolveSql, mysqlDialect, sqliteDialect, pgDialect } from "../../deps.ts";
+import { DbDriver } from "./DbDriver.ts";
+import { Emitter } from "../Emitter.ts";
+
+import type { Sql } from "../../deps.ts";
+import type { DbDialect, ExecResult, MigrateOptions, Row } from "./DbDriver.ts";
 import type { DbRow } from "./DbRow.ts";
 
 export const DATE_TYPES = new Set(["datetime", "date", "timestamp"]);

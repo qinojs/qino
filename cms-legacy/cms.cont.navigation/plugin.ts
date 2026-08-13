@@ -1,5 +1,8 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import { cmsCtx, type Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+import { cmsCtx } from "@qino/qino/cms";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const active = cmsCtx(ctx).mainNode;

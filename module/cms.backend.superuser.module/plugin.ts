@@ -1,9 +1,12 @@
-import { getCtx, type App, type HtmlString } from "@qino/qino";
+import { getCtx } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import type { Node } from "@qino/qino/cms";
+
 import { renderDetail } from "./detail.ts";
 import { api, backendDashboardWidget, renderOverview } from "./stores.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 

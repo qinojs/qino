@@ -1,5 +1,4 @@
 /** Thin wrapper around Tesseract OCR */
-
 import { probe } from "./tryCommand.ts";
 
 let _langs: Promise<string> | null = null;

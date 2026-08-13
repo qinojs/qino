@@ -1,9 +1,13 @@
+import { getCtx, html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { getCtx, html, type App, type Ctx, type HtmlString } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+
 import { wwwAlt } from "./lib/check.ts";
 import { diffResults } from "./lib/changes.ts";
-import { addDomains, domainKey, FREQUENCIES, type DomainRow, parseResult } from "./lib/monitor.ts";
+import { addDomains, domainKey, FREQUENCIES, parseResult } from "./lib/monitor.ts";
+
+import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { DomainRow } from "./lib/monitor.ts";
 
 const HISTORY_LIMIT = 500;
 const DAY = 24 * 60 * 60;

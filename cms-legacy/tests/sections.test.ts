@@ -1,8 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, assertStringIncludes } from "../../module/core/tests/deps.ts";
-import { html } from "../../module/core/mod.ts";
-import { cms as section3 } from "../cms.cont.section3/plugin.ts";
-import { cms as quote } from "../cms.cont.quote.cd/plugin.ts";
+import { html } from "@qino/qino";
+import { cms as quote } from "@qino/qino/cms.cont.quote.cd";
+import { cms as section3 } from "@qino/qino/cms.cont.section3";
+import { assertEquals, assertStringIncludes } from "@qino/qino/tests";
 
 // A site without its own data/<module>/index.ts falls back to the module's own shell.
 const fakeNode = (settings: Record<string, unknown>) => ({

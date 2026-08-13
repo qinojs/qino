@@ -1,6 +1,10 @@
-import { pwHash, type App } from "@qino/qino";
+import { pwHash } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App } from "@qino/qino";
+
 const { name } = manifest;
 
 export const settingsSchema = {

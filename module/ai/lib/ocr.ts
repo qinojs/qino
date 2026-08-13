@@ -1,6 +1,7 @@
-import type { App } from "@qino/qino";
 import { ai } from "../mod.ts";
 import { resolve } from "./registry.ts";
+
+import type { App } from "@qino/qino";
 
 // AI-vision OCR engine: transcribes document images to Markdown via a configured
 // "vision" model. Registered per app on its FileTransformer.

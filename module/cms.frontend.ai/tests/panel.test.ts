@@ -1,5 +1,7 @@
 import { assertEquals, fakeAi } from "@qino/qino/tests";
+
 import { init } from "../plugin.ts";
+
 import type { Bot } from "@qino/qino/ai";
 
 Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in editmode", () => {

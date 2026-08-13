@@ -1,10 +1,13 @@
 import { assertEquals } from "@qino/qino/tests";
-import type { App } from "@qino/qino";
+
 import api from "../nodeApi.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-const { name, dependencies } = manifest;
 import { counts, renderJobs } from "../render.ts";
+
+import type { App } from "@qino/qino";
+
+const { name, dependencies } = manifest;
 
 const t = (strings: TemplateStringsArray) => Promise.resolve(strings.join(""));
 const app = { t } as unknown as App;

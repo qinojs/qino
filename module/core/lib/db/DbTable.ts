@@ -1,9 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
-
 import { DbField } from "./DbField.ts";
 import { anonRowClass, DbRow } from "./DbRow.ts";
-import { NUM_TYPES, type Db } from "./Db.ts";
-import { type Sql, sql, isTemplate } from "../../deps.ts";
+import { NUM_TYPES } from "./Db.ts";
+import { sql, isTemplate } from "../../deps.ts";
+
+import type { Sql } from "../../deps.ts";
+import type { Db } from "./Db.ts";
 
 // One primary value as its canonical id part; undefined if it cannot identify a row.
 const idValue = (field: DbField, value: any): string | undefined => {

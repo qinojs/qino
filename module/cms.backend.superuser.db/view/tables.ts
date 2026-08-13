@@ -1,7 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { html, type HtmlString, getCtx, type App } from "@qino/qino";
+import { html, getCtx } from "@qino/qino";
+
 import { fieldOriginsByTable } from "../lib/analyze.ts";
 import { tableStatus } from "../lib/tableStatus.ts";
+
+import type { HtmlString, App } from "@qino/qino";
 
 function keyBadge(key: string): HtmlString {
   if (key === "PRI") return html.raw(' <small class=u2-badge style="background:var(--yellow)">PRI</small>');

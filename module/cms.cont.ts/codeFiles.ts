@@ -1,4 +1,5 @@
 import { getCtx, isFile } from "@qino/qino";
+
 import type { Node } from "@qino/qino/cms";
 
 const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});

@@ -1,6 +1,9 @@
+import { hee, html, getCtx, sql, tableRef, scopeCache } from "@qino/qino";
+
 import { Node } from "./Node.ts";
 import { cmsCtx } from "./CmsContext.ts";
-import { hee, html, getCtx, type HtmlString, sql, tableRef, scopeCache, type App, type Module, type Db, type DbFile, type DbText } from "@qino/qino";
+
+import type { HtmlString, App, Module, Db, DbFile, DbText } from "@qino/qino";
 
 // Per-app instances; the plugin's init binds, cms()/cms.get() read. Internal — mod.ts does not export it.
 export const cmsInstances = new WeakMap<object, CMS>();

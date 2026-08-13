@@ -1,8 +1,12 @@
-import type { Node } from "@qino/qino/cms";
+import { hee, html, sql, tableRef, unixTime } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
-import { hee, html, sql, tableRef, unixTime, type Ctx, type HtmlString } from "@qino/qino";
-import { type Form, openForm } from "./mod.ts";
+
+import { openForm } from "./mod.ts";
 import options from "./options.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Form } from "./mod.ts";
 
 const settingsSchema = {
   properties: {

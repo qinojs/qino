@@ -1,9 +1,13 @@
+import { Db } from "@qino/qino";
 import { assert, assertEquals, assertThrows, Emitter } from "@qino/qino/tests";
-import { Db, type App } from "@qino/qino";
-import { type Every, type Job, run, status, trigger } from "../mod.ts";
+
+import { run, status, trigger } from "../mod.ts";
 import { init } from "../plugin.ts";
 import { nextRun, scheduleKey, validateJob } from "../calendar.ts";
 import { Scheduler } from "../scheduler.ts";
+
+import type { App } from "@qino/qino";
+import type { Every, Job } from "../mod.ts";
 
 const noop = () => {};
 const job = (every: Every, options: Partial<Job> = {}): Job => ({ every, run: noop, ...options } as Job);

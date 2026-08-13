@@ -1,8 +1,10 @@
+import { html } from "@qino/qino";
 import { cms } from "@qino/qino/cms";
-// deno-lint-ignore-file no-explicit-any
-
-import { html, type App, type Ctx } from "@qino/qino";
 import { getCmsVers, tableEntriesCopyTo } from "@qino/qino/cms.versions";
+
+import type { App, Ctx } from "@qino/qino";
+
+// deno-lint-ignore-file no-explicit-any
 
 const ALLOWED_META = new Set(["name", "vpos", "hpos"]);
 

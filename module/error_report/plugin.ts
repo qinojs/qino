@@ -3,9 +3,11 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
+import { getCtx, Output } from "@qino/qino";
 
 import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, type Ctx, Output, type App } from "@qino/qino";
+
+import type { Ctx, App } from "@qino/qino";
 
 const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
 const REPORTER_PATH = REPORTER_ROOT + "mod.js";

@@ -1,9 +1,13 @@
-import { html, type HtmlString, sql, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { versedTables, versTable, thinHistory } from "@qino/qino/cms.versions";
+
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { HtmlString, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

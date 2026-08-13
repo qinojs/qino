@@ -1,10 +1,13 @@
-import type { Node } from "@qino/qino/cms";
-import { tableStatus, type TableStatus } from "@qino/qino/cms.backend.superuser.db";
+import { errMsg } from "@qino/qino";
+import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
+
 import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, maintenanceActions } from "./lib/cleanup.ts";
 import { createMissingIndex, dropRedundantIndex, reindexInvalid } from "./lib/indexes.ts";
 import { syncSequence } from "./lib/sequences.ts";
 import { validateTable } from "./lib/validate.ts";
-import { errMsg } from "@qino/qino";
+
+import type { Node } from "@qino/qino/cms";
+import type { TableStatus } from "@qino/qino/cms.backend.superuser.db";
 
 const LARGE_ROWS = 100_000;
 const LARGE_BYTES = 100_000_000;

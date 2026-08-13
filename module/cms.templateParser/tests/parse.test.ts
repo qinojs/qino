@@ -1,5 +1,8 @@
 import { assertEquals } from "@qino/qino/tests";
-import { parseTemplate, type TNode } from "../parse.ts";
+
+import { parseTemplate } from "../parse.ts";
+
+import type { TNode } from "../parse.ts";
 
 type El = Extract<TNode, { type: "element" }>;
 const el = (n: TNode): El => n as El;

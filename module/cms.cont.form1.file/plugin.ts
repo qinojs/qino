@@ -1,7 +1,10 @@
-import type { Node } from "@qino/qino/cms";
-import { html, type Ctx, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
 import { formOf } from "@qino/qino/cms.cont.form2";
+
 import options from "./options.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   properties: {

@@ -1,5 +1,8 @@
-import { html, type Ctx, type HtmlString } from "@qino/qino";
-import { postedVars, type Node } from "@qino/qino/cms";
+import { html } from "@qino/qino";
+import { postedVars } from "@qino/qino/cms";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   properties: {

@@ -1,4 +1,5 @@
-import { assertEquals } from "../../module/core/tests/deps.ts";
+import { assertEquals } from "@qino/qino/tests";
+
 import { dirNames, moveMerge } from "./moveFiles.ts";
 
 const read = (path: string) => Deno.readTextFile(path).catch(() => null);

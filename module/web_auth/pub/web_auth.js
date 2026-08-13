@@ -3,7 +3,6 @@
  *
  * import { WebAuth } from "/m/web_auth/pub/web_auth.js";
  */
-
 import { t } from "@qino/pub/qino.js";
 
 const csrfHeaders = (method) =>

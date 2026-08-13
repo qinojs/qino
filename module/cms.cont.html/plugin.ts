@@ -1,9 +1,12 @@
-import type { Node } from "@qino/qino/cms";
 import { renderTemplateFile } from "@qino/qino/cms.templateParser";
+
 import { codeFiles } from "./codeFiles.ts";
 import { nodeApi } from "./api.ts";
 import options from "./options.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export const api = nodeApi(name);

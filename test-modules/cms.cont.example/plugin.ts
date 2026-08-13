@@ -1,6 +1,8 @@
-import { html, type HtmlString } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { html } from "@qino/qino";
 import { cms_image2 } from "@qino/qino/cms.image2";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   properties: {

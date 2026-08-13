@@ -1,7 +1,9 @@
 import * as nodePath from 'node:path';
-import type { OcrEngine, TransformContext } from './types.ts';
+
 import * as magick from './magick.ts';
 import * as tesseract from './tesseract.ts';
+
+import type { OcrEngine, TransformContext } from './types.ts';
 
 /** Rasterizes all PDF pages and OCRs them. Returns undefined if no engine or no ImageMagick. */
 export async function ocrPdf(ctx: TransformContext, engine?: OcrEngine): Promise<string | undefined> {

@@ -1,6 +1,9 @@
+import { getCtx, html, sql } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import { getCtx, html, sql, type App, type Ctx, type HtmlString, type Row, type Sql } from "@qino/qino";
+
 import { settings } from "./store.ts";
+
+import type { App, Ctx, HtmlString, Row, Sql } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {

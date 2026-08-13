@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@qino/qino/tests";
 import { toFileUrl } from "@std/path";
 import { App } from "@qino/qino";
+
 import { writeIndex } from "../storeIndex.ts";
 
 /** A folder store with one module, an asset and a suite that must not travel. */

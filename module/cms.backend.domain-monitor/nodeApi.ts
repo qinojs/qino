@@ -1,7 +1,10 @@
 import { getCtx } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
-import { rowsFor, runChecks, setFrequency, type DomainRow } from "./lib/monitor.ts";
+
+import { rowsFor, runChecks, setFrequency } from "./lib/monitor.ts";
 import { nodeUrl, rowHtml } from "./render.ts";
+
+import type { Node } from "@qino/qino/cms";
+import type { DomainRow } from "./lib/monitor.ts";
 
 const rowResponse = async (node: Node, rows: DomainRow[]) => {
   const pageUrl = await nodeUrl(node, getCtx());

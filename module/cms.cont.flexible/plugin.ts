@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Node } from "@qino/qino/cms";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export const settingsSchema = {

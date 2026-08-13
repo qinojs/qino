@@ -1,7 +1,11 @@
-import type { Node } from "@qino/qino/cms";
-import { html, pwHash, type App, type Ctx, type HtmlString } from "@qino/qino";
-import { check, type Ticket, type TicketKind } from "@qino/qino/ticket";
+import { html, pwHash } from "@qino/qino";
+import { check } from "@qino/qino/ticket";
+
 import api, { PURPOSE, TICKET_PARAM, TTL } from "./nodeApi.ts";
+
+import type { App, Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Ticket, TicketKind } from "@qino/qino/ticket";
 
 export const tickets: Record<string, TicketKind> = {
   [PURPOSE]: {

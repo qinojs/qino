@@ -1,5 +1,6 @@
-import type { Node } from "@qino/qino/cms";
 import { getHealthTypes } from "./lib/healthRegistry.ts";
+
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars?.solve_health_item) return;

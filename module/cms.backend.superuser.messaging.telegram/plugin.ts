@@ -1,10 +1,14 @@
-import { html, unixTime, type App, type HtmlString } from "@qino/qino";
+import { html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 import { chats as chatList } from "@qino/qino/messaging.telegram";
+
 import { bot, chats, render, send } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString } from "@qino/qino";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

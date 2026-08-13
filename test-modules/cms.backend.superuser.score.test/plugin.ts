@@ -1,10 +1,13 @@
-import type { App, Ctx } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { scored } from "@qino/qino/score";
+
 import { fileHit, pageHit, TABLES } from "./hooks.ts";
 import { list, render } from "./render.ts";
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, Ctx } from "@qino/qino";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

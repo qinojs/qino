@@ -1,6 +1,8 @@
-import * as magick from '../magick.ts';
-import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
+
+import * as magick from '../magick.ts';
+
+import type { TransformerDef } from '../types.ts';
 
 /**
  * Decode phase: converts a PDF page to PNG.

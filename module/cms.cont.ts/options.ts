@@ -1,7 +1,10 @@
-import type { Node } from "@qino/qino/cms";
-import { getCtx, html, type HtmlString } from "@qino/qino";
+import { getCtx, html } from "@qino/qino";
 import { editorUrl } from "@qino/qino/fileEditor";
+
 import { codeFiles } from "./codeFiles.ts";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node): Promise<HtmlString | false> {
   if (!getCtx().user?.superuser) return false;

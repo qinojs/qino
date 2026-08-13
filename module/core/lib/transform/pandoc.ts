@@ -1,5 +1,4 @@
 /** Thin wrapper around Pandoc (document → markdown conversion) */
-
 import { probe } from "./tryCommand.ts";
 
 export const available = probe('pandoc', ['--version']);

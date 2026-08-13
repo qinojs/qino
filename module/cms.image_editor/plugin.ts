@@ -1,8 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-
-import { Access, Output, type App, type ApiTree, type Ctx, s } from "@qino/qino";
+import { Access, Output, s } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
+
 import { getHistory, getMeta, isWritable, restore, setMeta, writablePage } from "./lib/service.ts";
+
+import type { App, ApiTree, Ctx } from "@qino/qino";
 
 // hpos/vpos focus point of an image, in percent (0–100). Versioned via the `file` table.
 export const dbSchema = {

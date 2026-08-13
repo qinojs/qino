@@ -1,7 +1,11 @@
-import { html, type HtmlString, type Module } from "@qino/qino";
-import { WRITE, type Node } from "@qino/qino/cms";
+import { html } from "@qino/qino";
+import { WRITE } from "@qino/qino/cms";
 import { editorUrl } from "@qino/qino/fileEditor";
+
 import { renderTemplateFile } from "./mod.ts";
+
+import type { HtmlString, Module } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const read = (source: URL) => source.protocol === "file:" ? Deno.readTextFile(source) : fetch(source).then((r) => r.text());
 const write = (path: string, content: string) => Deno.writeTextFile(path, content, { createNew: true }).catch(() => {});

@@ -1,6 +1,9 @@
-import { sql, unixTime, type App } from "@qino/qino";
+import { sql, unixTime } from "@qino/qino";
+
 import { checkDomain } from "./check.ts";
 import { diffResults, lastResult } from "./changes.ts";
+
+import type { App } from "@qino/qino";
 
 export const FREQUENCIES = ["disabled", "hourly", "daily", "weekly"] as const;
 export type CheckFrequency = typeof FREQUENCIES[number];

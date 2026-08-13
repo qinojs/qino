@@ -1,4 +1,6 @@
-import { Access, html, walk, type Ctx, type HtmlString, type Route, type Verb } from "@qino/qino";
+import { Access, html, walk } from "@qino/qino";
+
+import type { Ctx, HtmlString, Route, Verb } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 /** Static access category — the baseline badge; a dynamic guard may still differ per identity. */

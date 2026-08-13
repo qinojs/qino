@@ -1,6 +1,7 @@
-import type { Node } from "@qino/qino/cms";
-import { run, trigger } from "@qino/qino/cron";
 import { errMsg } from "@qino/qino";
+import { run, trigger } from "@qino/qino/cron";
+
+import type { Node } from "@qino/qino/cms";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   try {

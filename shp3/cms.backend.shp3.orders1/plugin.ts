@@ -1,9 +1,14 @@
-import { html, type HtmlString, getCtx, sql, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { html, getCtx, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import { shp3, type Order } from "@qino/qino/shp3";
+import { shp3 } from "@qino/qino/shp3";
+
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { HtmlString, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+import type { Order } from "@qino/qino/shp3";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

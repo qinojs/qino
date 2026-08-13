@@ -1,7 +1,10 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+
 import { eventDate, eventDates, eventInfo, eventPerformers } from "../lib/event2.ts";
 import { cmsText } from "../lib/text.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const words = (lang: string) => lang === "de"
   ? { dates: "Datum", location: "Ort", price: "Preis", performers: "Leitung" }

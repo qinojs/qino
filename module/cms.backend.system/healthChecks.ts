@@ -1,4 +1,6 @@
-import { hee, getCtx, sql, unixTime, pwVerify, appPathInstances, type App } from "@qino/qino";
+import { hee, getCtx, sql, unixTime, pwVerify, appPathInstances } from "@qino/qino";
+
+import type { App } from "@qino/qino";
 import type { HealthTypes, Solution } from "./lib/healthRegistry.ts";
 
 export async function healthChecks(app: App): Promise<HealthTypes> {

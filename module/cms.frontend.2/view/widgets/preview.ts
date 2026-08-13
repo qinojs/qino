@@ -1,5 +1,7 @@
+import { getCtx, html } from "@qino/qino";
+
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import { getCtx, html, type HtmlString } from "@qino/qino";
 
 export default function (node: Node, _vars: unknown = {}): HtmlString {
   const ctx = getCtx()

@@ -1,5 +1,6 @@
-import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 import { Output, ResCsp, ResHtml } from "@qino/qino";
+import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
+
 import { uncdnInstances } from "../internal.ts";
 import { init, rewriteHtml } from "../plugin.ts";
 

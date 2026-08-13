@@ -1,6 +1,10 @@
-import { ADMIN, type Node } from "@qino/qino/cms";
-import { html, type HtmlString, getCtx, moduleIcon } from "@qino/qino";
+import { html, getCtx, moduleIcon } from "@qino/qino";
+import { ADMIN } from "@qino/qino/cms";
+
 import { moduleAccess } from "../widget.ts";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;

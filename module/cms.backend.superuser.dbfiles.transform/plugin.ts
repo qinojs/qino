@@ -1,7 +1,11 @@
-import { errMsg, FileTransformer, html, type App, type HtmlString } from "@qino/qino";
+import { errMsg, FileTransformer, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
-import type { Node } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }) {

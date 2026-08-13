@@ -1,6 +1,9 @@
+import { Access, Output, requestStorage, s } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
-import { Access, Output, type Ctx, requestStorage, s, type Params } from "@qino/qino";
+
 import { mcpFetch } from "../mod.ts";
+
+import type { Ctx, Params } from "@qino/qino";
 
 const apiTree = {
   hello: {

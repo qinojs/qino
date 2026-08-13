@@ -1,5 +1,5 @@
-import type { HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** Several PHP modules were only a shell and included the site's own markup from
  *  `qg/<module>/index.php`. In qino that file is `data/<module>/index.ts`, exporting a default

@@ -1,7 +1,7 @@
 // Public API of uncdn. The qino plugin lives in ./plugin.ts.
+import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 
 import type { App } from "@qino/qino";
-import { MAX_ASSET_BYTES, uncdnInstances } from "./internal.ts";
 
 /** The app's uncdn state; `origins` = CSP-declared, proxyable by anyone. Throws when uncdn is not loaded. */
 export function uncdn(app: App): { origins: Set<string> } {

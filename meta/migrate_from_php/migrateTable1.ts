@@ -1,4 +1,4 @@
-import type { App } from "../../module/core/mod.ts";
+import type { App } from "@qino/qino";
 
 /** table1 read a bare column width as percent, table2 reads it as px. Nodes that never set `units`
  *  relied on that default, so it gets written out before the rename. */

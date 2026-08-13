@@ -1,8 +1,9 @@
 // Where the rates come from. Free sources, tried in order until one answers with something
 // plausible — no key, no account. Every parser hands back "units per one <base>" including the
 // base itself at 1; the column is USD-based, like the PHP original's source was.
+import { unixTime } from "@qino/qino";
 
-import { unixTime, type App } from "@qino/qino";
+import type { App } from "@qino/qino";
 
 type Rates = Map<string, number>;
 

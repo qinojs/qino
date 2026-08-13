@@ -1,4 +1,6 @@
-import { sql, unixTime, type App } from "@qino/qino";
+import { sql, unixTime } from "@qino/qino";
+
+import type { App } from "@qino/qino";
 
 /** Remove file rows no child table links to, older than a week. */
 export async function deleteUnlinkedDb(app: App): Promise<{ deleted: number }> {

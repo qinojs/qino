@@ -1,4 +1,6 @@
-import { html, type HtmlString, unixTime, type Ctx } from "@qino/qino";
+import { html, unixTime } from "@qino/qino";
+
+import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function list(node: Node, { ctx, vars }: { ctx: Ctx; vars?: Record<string, unknown> }): Promise<HtmlString> {

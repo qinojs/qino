@@ -1,6 +1,9 @@
-import type { Node } from "@qino/qino/cms";
-import { html, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
+
 import { sortedIds } from "./sortedIds.ts";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const TYPES: Record<string, string> = {
   text: "Text field",

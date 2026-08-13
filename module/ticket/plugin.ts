@@ -1,5 +1,7 @@
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { unixTime } from "@qino/qino";
+
+import dbSchema from "./dbschema.json" with { type: "json" };
+
 import type { Jobs } from "@qino/qino/cron";
 
 export { dbSchema };

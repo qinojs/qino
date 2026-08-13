@@ -1,6 +1,7 @@
 import { assertEquals, assert, testContext } from "./deps.ts";
-import type { Ctx } from "../lib/ctx/Ctx.ts";
 import { Output } from "../lib/util.ts";
+
+import type { Ctx } from "../lib/ctx/Ctx.ts";
 
 function makeCtx(reqInit: RequestInit = {}): Promise<Ctx> {
   return testContext({ url: "http://localhost/", ...reqInit });

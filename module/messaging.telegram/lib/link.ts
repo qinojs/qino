@@ -1,5 +1,8 @@
-import { b64url, safeEqual, unixTime, type App } from "@qino/qino";
+import { b64url, safeEqual, unixTime } from "@qino/qino";
+
 import { botToken } from "./bot.ts";
+
+import type { App } from "@qino/qino";
 
 // A deep-link payload is `<usr>-<exp>-<sig>`, signed with the bot token: stateless on purpose —
 // no table, no cleanup job. The short lifetime is what limits a link that leaks, since a valid

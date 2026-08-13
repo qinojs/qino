@@ -1,10 +1,11 @@
 import * as nodePath from "node:path";
-import { fromFileUrl, serveFile, type ItemProxy } from "../deps.ts";
+
+import { fromFileUrl, serveFile } from "../deps.ts";
 import { Ctx, requestStorage, urlToLocalPath } from "./ctx/Ctx.ts";
 import { SessionManager } from "./SessionManager.ts";
 import { ensureSlash, Output } from "./util.ts";
 import { Db } from "./db/Db.ts";
-import { DbFileManager, type DbFile } from "./DbFileManager.ts";
+import { DbFileManager } from "./DbFileManager.ts";
 import { createSettingItem } from "./SettingItem.ts";
 import { DbTextManager } from "./DbTextManager.ts";
 import { FileTransformer } from "./transform/mod.ts";
@@ -12,8 +13,12 @@ import { ModuleManager } from "./ModuleManager.ts";
 import { StoreManager } from "./StoreManager.ts";
 import { Emitter } from "./Emitter.ts";
 import { LangManager } from "./LangManager.ts";
-import { apiFetch, apiClient, type ApiTree, type ApiProxy } from "./api/mod.ts";
+import { apiFetch, apiClient } from "./api/mod.ts";
 import { initRequest } from "./ctx/init.ts";
+
+import type { ItemProxy } from "../deps.ts";
+import type { ApiTree, ApiProxy } from "./api/mod.ts";
+import type { DbFile } from "./DbFileManager.ts";
 
 const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 

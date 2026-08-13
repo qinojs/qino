@@ -1,12 +1,15 @@
-import dbSchema from "./dbschema.json" with { type: "json" };
-import type { App } from "@qino/qino";
-import type { Jobs } from "@qino/qino/cron";
 import { backend } from "@qino/qino/cms.backend";
+
+import dbSchema from "./dbschema.json" with { type: "json" };
 import { pruneHistory } from "./lib/changes.ts";
 import { runScheduled } from "./lib/monitor.ts";
 import api from "./nodeApi.ts";
 import { render } from "./render.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
+
 const { name } = manifest;
 
 export { backendDashboardWidget } from "./render.ts";

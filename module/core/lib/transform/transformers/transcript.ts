@@ -1,8 +1,10 @@
 import * as nodePath from 'node:path';
+
 import * as ffmpeg from '../ffmpeg.ts';
-import type { TransformerDef } from '../types.ts';
 import { AUDIO_MIMES } from './audioDecode.ts';
 import { VIDEO_MIMES } from './videoDecode.ts';
+
+import type { TransformerDef } from '../types.ts';
 
 export const TRANSCRIPT_MIME = 'application/vnd.qino.transcript+json';
 

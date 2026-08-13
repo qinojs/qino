@@ -1,8 +1,12 @@
 import * as nodeFs from "node:fs/promises";
-import { Output, getCtx, type Ctx, Access, type ApiTree, s, type App, type Params } from "@qino/qino";
+import { Output, getCtx, Access, s } from "@qino/qino";
+
 import codemirrorView from "./view/codemirror.ts";
 import { check } from "./lib/sign.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Ctx, ApiTree, App, Params } from "@qino/qino";
+
 const { name } = manifest;
 
 // A stale link is an everyday event; a mac that never matched this session's key is

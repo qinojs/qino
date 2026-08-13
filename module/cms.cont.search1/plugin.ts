@@ -1,4 +1,6 @@
-import { html, sql, sqlSearch, type Ctx, type HtmlString } from "@qino/qino";
+import { html, sql, sqlSearch } from "@qino/qino";
+
+import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // Shared by every search content on a page — one term per request is what a visitor expects.

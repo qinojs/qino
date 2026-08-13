@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { basename, extname } from "node:path";
 import { typeByExtension } from "@std/media-types";
 import { hee } from "@qino/qino";
+
 import type { AddressInput, AttachmentInput, Dict, Recipient } from "./types.ts";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

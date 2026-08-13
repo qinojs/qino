@@ -1,6 +1,8 @@
-import type { Node } from "@qino/qino/cms";
 import { scopes } from "@qino/qino/score";
+
 import { TABLES } from "./hooks.ts";
+
+import type { Node } from "@qino/qino/cms";
 
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
   if (!vars.clear) return false;

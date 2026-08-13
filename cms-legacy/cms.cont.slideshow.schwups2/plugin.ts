@@ -1,7 +1,11 @@
-import { html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import { cms_image2 } from "../../module/cms.image2/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { html } from "@qino/qino";
+import { cms_image2 } from "@qino/qino/cms.image2";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 const settingsSchema = {

@@ -1,6 +1,9 @@
-import { hee, type App } from "@qino/qino";
+import { hee } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
-import { shp3, type Order } from "@qino/qino/shp3";
+import { shp3 } from "@qino/qino/shp3";
+
+import type { App } from "@qino/qino";
+import type { Order } from "@qino/qino/shp3";
 
 export const settingsSchema = {
   properties: {

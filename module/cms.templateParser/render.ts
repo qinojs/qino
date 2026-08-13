@@ -1,7 +1,10 @@
-import type { Node } from "@qino/qino/cms";
 import { hee } from "@qino/qino";
 import { cms_image2 } from "@qino/qino/cms.image2";
-import { VOID, type TNode, type TAttr } from "./parse.ts";
+
+import { VOID } from "./parse.ts";
+
+import type { Node } from "@qino/qino/cms";
+import type { TNode, TAttr } from "./parse.ts";
 
 type El = Extract<TNode, { type: "element" }>;
 

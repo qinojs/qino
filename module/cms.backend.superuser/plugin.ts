@@ -1,4 +1,5 @@
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
+
 import type { App } from "@qino/qino";
 
 export async function install({ app }: { app: App }): Promise<void> {

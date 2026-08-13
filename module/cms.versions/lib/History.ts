@@ -4,9 +4,11 @@
 // into its _vers_* shadow table, keyed by the request's log entry.
 // Writes without request context (cron/CLI/boot) are not captured — capture
 // is keyed to ctx.logId, so there is no log entry to attach them to.
+import { requestStorage, sql } from "@qino/qino";
 
-import { requestStorage, sql, type App, type Db, type DbEvents, type Sql } from "@qino/qino";
 import { getVers, versTable } from "./Vers.ts";
+
+import type { App, Db, DbEvents, Sql } from "@qino/qino";
 
 function replaceFrom(db: Db, vt: string, cols: Record<string, any>[], source: Sql) {
   if (db.dialect !== "postgres") return db.exec`REPLACE INTO ${sql.id(vt)} ${source}`;

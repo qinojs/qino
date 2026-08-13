@@ -1,5 +1,4 @@
 /** Thin wrapper around pdftotext (Poppler) */
-
 import { probe } from "./tryCommand.ts";
 
 export const available = probe('pdftotext', ['-v']);

@@ -1,10 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 import * as nodePath from "node:path";
-import { html, type App, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { cacheByteLimit, uncdn } from "@qino/qino/uncdn";
-import type { Node } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }) {

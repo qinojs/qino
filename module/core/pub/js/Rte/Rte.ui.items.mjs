@@ -1,4 +1,7 @@
 // scoped query helpers
+import './Rte.ui.mjs';
+import {TableHandles} from '../c1/tableHandles.mjs';
+
 const find    = (el, sel) => el.querySelector(':scope '+sel);
 const findAll = (el, sel) => el.querySelectorAll(':scope '+sel);
 const unwrap  = el => el.replaceWith(...el.childNodes); // remove element, keep its children
@@ -18,7 +21,6 @@ x.addEventListener('mousedown', function() {
   });
 });
 */
-import './Rte.ui.mjs';
 
 const BLOCKLESS_ELEMENTS = {
   P:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,
@@ -383,7 +385,6 @@ Rte.ui.setItem('ImgOriginal', {
 });
 
 /* table handles */
-import {TableHandles} from '../c1/tableHandles.mjs';
 {
   let td, tr, table, index;
   const handles = new TableHandles();

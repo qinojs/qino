@@ -1,6 +1,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import type { App } from "@qino/qino";
+
 import { MailManager } from "../lib/MailManager.ts";
+
+import type { App } from "@qino/qino";
 
 Deno.test("string mail template inserts main as HTML and escapes data markers", async () => {
   const app = {} as App;

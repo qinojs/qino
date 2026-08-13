@@ -1,6 +1,8 @@
-import { assertEquals } from "../../module/core/tests/deps.ts";
-import type { App } from "../../module/core/mod.ts";
+import { assertEquals } from "@qino/qino/tests";
+
 import { migrateCss } from "./migrateCss.ts";
+
+import type { App } from "@qino/qino";
 
 Deno.test("migrateCss: module and node classes become qcms attributes", async () => {
   const appPATH = await Deno.makeTempDir() + "/";

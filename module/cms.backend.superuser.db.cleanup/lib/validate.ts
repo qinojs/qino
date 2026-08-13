@@ -1,4 +1,6 @@
-import { sql, type Db } from "@qino/qino";
+import { sql } from "@qino/qino";
+
+import type { Db } from "@qino/qino";
 
 const hasOwn = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);
 

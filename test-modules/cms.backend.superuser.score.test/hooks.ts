@@ -1,7 +1,9 @@
-import { requestStorage, type App, type Ctx } from "@qino/qino";
+import { requestStorage } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 import { backend } from "@qino/qino/cms.backend";
 import { hit } from "@qino/qino/score";
+
+import type { App, Ctx } from "@qino/qino";
 
 /** What this module scores, and with which half-life in seconds. */
 export const TABLES: Record<string, number> = { page: 30 * 86400, file: 30 * 86400 };

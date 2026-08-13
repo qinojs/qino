@@ -1,5 +1,8 @@
-import { html, type App, type HtmlString } from "@qino/qino";
-import { cms, type Node } from "@qino/qino/cms";
+import { html } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
+
+import type { App, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // Filter dates arrive as unix seconds (converted in the browser, where the TZ is
 // known); fall back to parsing a raw datetime string for direct API calls.

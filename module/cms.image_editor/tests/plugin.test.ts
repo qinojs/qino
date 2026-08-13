@@ -1,7 +1,10 @@
 import { assertEquals } from "@qino/qino/tests";
-import type { ApiNode } from "@qino/qino";
+
 import { api, dbSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
+import type { ApiNode } from "@qino/qino";
+
 const { name, dependencies } = manifest;
 
 Deno.test("cms.image_editor: module metadata is wired", () => {

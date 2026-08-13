@@ -1,8 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals, testContext, fakeRender } from "@qino/qino/tests";
-import { cmsInstances } from "../lib/CMS.ts";
 import { invoke, requestStorage } from "@qino/qino";
+import { assertEquals, testContext, fakeRender } from "@qino/qino/tests";
 import { api } from "@qino/qino/cms.text";
+
+import { cmsInstances } from "../lib/CMS.ts";
 
 class FakeText {
   id: number;

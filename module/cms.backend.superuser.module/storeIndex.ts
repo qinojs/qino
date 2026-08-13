@@ -1,5 +1,7 @@
 import { fromFileUrl } from "@std/path";
-import { isModuleName, type Store } from "@qino/qino";
+import { isModuleName } from "@qino/qino";
+
+import type { Store } from "@qino/qino";
 
 /** Every file of a module, relative to its folder; `tests/` stays behind, a consumer runs the module. */
 async function moduleFiles(dir: string, base = dir): Promise<string[]> {

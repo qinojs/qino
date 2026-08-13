@@ -1,10 +1,14 @@
-import { $item, html, type HtmlString, getCtx, itemReadDeep, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { $item, html, getCtx, itemReadDeep } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { country } from "@qino/qino/locale.country";
 import { currency } from "@qino/qino/locale.currency";
+
 import api from "./nodeApi.ts";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { HtmlString, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

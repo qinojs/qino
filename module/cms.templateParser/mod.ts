@@ -1,8 +1,9 @@
 // Public API of cms.templateParser. The qino plugin lives in ./plugin.ts.
+import { parseTemplate } from "./parse.ts";
+import { renderNodes } from "./render.ts";
 
 import type { Node } from "@qino/qino/cms";
-import { parseTemplate, type TNode } from "./parse.ts";
-import { renderNodes } from "./render.ts";
+import type { TNode } from "./parse.ts";
 
 // Parsed templates keyed by path/URL — derived from the source only, safe to share across apps.
 const cache = new Map<string, { mtime?: number; ast: TNode[] }>();

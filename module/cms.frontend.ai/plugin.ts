@@ -1,7 +1,9 @@
-import type { App } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 import { ai } from "@qino/qino/ai";
+
 import { cmsHelper } from "./bots/cmsHelper.ts";
+
+import type { App } from "@qino/qino";
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
   ai(app).registerBot(cmsHelper);

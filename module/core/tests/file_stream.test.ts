@@ -1,8 +1,10 @@
-import type { IncomingMessage, RequestOptions } from "node:http";
 import https from "node:https";
 import { Readable, Writable } from "node:stream";
+
 import { assertEquals, assertRejects } from "./deps.ts";
 import { readDataUrl, readUploadFile, safeFetch } from "../lib/fileStream.ts";
+
+import type { IncomingMessage, RequestOptions } from "node:http";
 
 Deno.test("fileStream: readUploadFile stores upload metadata and md5", async () => {
   const file = new File([new Uint8Array([1, 2, 3]), "abc"], "upload.txt", { type: "text/plain" });

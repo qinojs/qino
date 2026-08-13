@@ -9,8 +9,9 @@
 //
 // The table a score belongs to is a small number: `scored()` maps the name to a scope_id
 // once, so neither the primary key nor the score index carries a string.
+import { sql, unixTime } from "@qino/qino";
 
-import { sql, unixTime, type Db, type Sql } from "@qino/qino";
+import type { Db, Sql } from "@qino/qino";
 
 /** Rows weaker than this many accesses are dropped by the prune job. */
 const FORGET = 0.02;

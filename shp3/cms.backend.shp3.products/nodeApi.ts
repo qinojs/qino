@@ -1,5 +1,6 @@
-import type { Node } from "@qino/qino/cms";
 import { ensureProduct } from "@qino/qino/shp3";
+
+import type { Node } from "@qino/qino/cms";
 
 const EDITABLE = new Set(["price", "weight", "stock", "stock_is_fix", "stock_trigger"]);
 

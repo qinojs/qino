@@ -1,4 +1,5 @@
 import { assert, assertEquals } from "@qino/qino/tests";
+
 import { git, reposOf, status } from "../lib/git.ts";
 
 /** A real repository: the parsing is only worth testing against git's actual output. */

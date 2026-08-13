@@ -1,7 +1,9 @@
+import { html } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
-import type { Node } from "@qino/qino/cms";
-import { html, type HtmlString, type Row } from "@qino/qino";
 import { channels as channelList, publicKey, subscriptions as subscriptionList } from "@qino/qino/messaging.web_push";
+
+import type { HtmlString, Row } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 /** Configuration plus the three live regions the client script re-renders. */
 export async function render(node: Node): Promise<HtmlString> {

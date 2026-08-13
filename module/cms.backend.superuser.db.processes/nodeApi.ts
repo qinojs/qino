@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import type { Node } from "@qino/qino/cms";
 import { killProcess } from "./lib/processlist.ts";
+
+import type { Node } from "@qino/qino/cms";
 
 export default async function api(node: Node, vars: any): Promise<any> {
   if (await node.access() < 2) return false; // killing needs edit access

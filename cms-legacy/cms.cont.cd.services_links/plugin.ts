@@ -1,6 +1,7 @@
-import type { Ctx, HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
 import { siteTemplate } from "../lib/siteTemplate.ts";
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // The PHP module carried the markup with hardcoded page ids and labels — that is one site's
 // content, so it lives in data/<module>/index.ts here.

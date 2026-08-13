@@ -5,8 +5,9 @@
 // path through the table API is recorded — no per-method instrumentation needed.
 // Consumers aggregate (EXISTS / GROUP BY node_id); duplicates are fine.
 // Writes without request context (cron/CLI/boot) are not captured.
+import { hee, requestStorage } from "@qino/qino";
 
-import { hee, requestStorage, type App } from "@qino/qino";
+import type { App } from "@qino/qino";
 
 type TFn = (strings: TemplateStringsArray, ...values: unknown[]) => Promise<string>;
 

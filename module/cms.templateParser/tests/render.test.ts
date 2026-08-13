@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@qino/qino/tests";
+
 import { parseTemplate } from "../parse.ts";
 import { renderNodes } from "../render.ts";
 

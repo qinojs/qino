@@ -1,5 +1,6 @@
+import { Db, requestStorage } from "@qino/qino";
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
-import { Db, requestStorage, type App } from "@qino/qino";
+
 import { apex, covers, wwwAlt } from "../lib/check.ts";
 import { errText } from "../lib/net.ts";
 import { diffResults, pruneHistory } from "../lib/changes.ts";
@@ -8,8 +9,11 @@ import { FREQUENCIES, normalizeDomain, parseResult, rowsFor, setFrequency } from
 import api from "../nodeApi.ts";
 import { cron, ctxSettingsSchema, dbSchema } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
-const { name, dependencies } = manifest;
 import { backendDashboardWidget, render, rowHtml } from "../render.ts";
+
+import type { App } from "@qino/qino";
+
+const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.domain-monitor: schema and cron jobs are wired", () => {
   const domain = dbSchema.properties.monitor_domain.additionalProperties.properties;

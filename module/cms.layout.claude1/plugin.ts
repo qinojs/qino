@@ -1,7 +1,9 @@
-import { html, type HtmlString, type Ctx } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { html } from "@qino/qino";
 import * as identity from "@qino/qino/identity";
 import * as u2 from "@qino/qino/u2";
+
+import type { HtmlString, Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 // Pinned on purpose: this layout's css is written against it, so a newer u2 elsewhere cannot change its look.
 const U2_VERSION = "1.4.6";

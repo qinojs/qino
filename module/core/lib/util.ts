@@ -1,4 +1,6 @@
-import { sql, type Sql } from "../deps.ts";
+import { sql } from "../deps.ts";
+
+import type { Sql } from "../deps.ts";
 import type { Manifest } from "./ModuleManager.ts";
 
 /** Single source of truth for CDN roots (version pin). */

@@ -1,5 +1,8 @@
-import { html, type HtmlString, schemaDiff, schemaFromDb, sql, type Db, type App } from "@qino/qino";
+import { html, schemaDiff, schemaFromDb, sql } from "@qino/qino";
+
 import { sortTableNames } from "../lib/analyze.ts";
+
+import type { HtmlString, Db, App } from "@qino/qino";
 
 export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
   const t = app.t;

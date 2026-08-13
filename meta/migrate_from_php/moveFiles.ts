@@ -1,4 +1,4 @@
-import type { App } from "../../module/core/mod.ts";
+import type { App } from "@qino/qino";
 
 /** The PHP CMS kept app files under qg/, uploads in qg/file/. They now live in
  *  data/<module>/, uploads owned by core. Names stay, so rows referencing a file keep working. */

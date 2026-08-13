@@ -1,9 +1,12 @@
-import type { App } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
+
 import dbSchema from "./dbschema.json" with { type: "json" };
 import { bindApp } from "./lib/Shp3.ts";
 import { registerRows } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
-import { cms } from "@qino/qino/cms";
+
+import type { App } from "@qino/qino";
+
 export { api } from "./api.ts";
 
 export { dbSchema };

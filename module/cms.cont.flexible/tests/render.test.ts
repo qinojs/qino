@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@qino/qino/tests";
+
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name } = manifest;
 
 // App settings stub: app.settings["cms.cont.flexible"]["init-child-module"]

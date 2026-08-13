@@ -1,12 +1,14 @@
-import { assertEquals } from "@qino/qino/tests";
 import { Db } from "@qino/qino";
+import { assertEquals } from "@qino/qino/tests";
 import { tableStatus } from "@qino/qino/cms.backend.superuser.db";
+
 import { cleanOrphans, dropExtraField, dropExtraTable, findOrphans, maintain, maintenanceActions, schemaExtras } from "../lib/cleanup.ts";
 import { createMissingIndex, dropRedundantIndex, indexIssues } from "../lib/indexes.ts";
 import { sequenceIssue, syncSequence } from "../lib/sequences.ts";
 import { isEmptyField, longestValue, validateTable } from "../lib/validate.ts";
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
 
 async function testDb(): Promise<Db> {

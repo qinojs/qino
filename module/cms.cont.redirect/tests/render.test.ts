@@ -1,9 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
+import { requestStorage } from "@qino/qino";
 import { assertEquals, assertStringIncludes, fakeT, testContext } from "@qino/qino/tests";
+
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
-import { requestStorage } from "@qino/qino";
 
 function page(id: number, url: string, title = "Target") {
   return { id, exists: () => true, url: () => url, showTitle: () => title, isReadable: () => true };

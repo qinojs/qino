@@ -1,5 +1,7 @@
-import { cmsCtx, type Node } from "@qino/qino/cms";
+import { cmsCtx } from "@qino/qino/cms";
+
 import type { Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   properties: {

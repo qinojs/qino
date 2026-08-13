@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-
-import { getCtx, html, type HtmlString, sql, type Sql, sqlSearch, type App, type Ctx } from "@qino/qino";
+import { getCtx, html, sql, sqlSearch } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+
+import type { HtmlString, Sql, App, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {

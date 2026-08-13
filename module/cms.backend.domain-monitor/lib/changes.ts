@@ -1,5 +1,9 @@
-import { sql, unixTime, type App } from "@qino/qino";
-import { parseResult, type DomainRow } from "./monitor.ts";
+import { sql, unixTime } from "@qino/qino";
+
+import { parseResult } from "./monitor.ts";
+
+import type { App } from "@qino/qino";
+import type { DomainRow } from "./monitor.ts";
 
 // Fields that move on their own and would report a change on every single check: timings and
 // countdowns, the log ids the update hook adds, the mail greeting (most servers put their clock in

@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, fakeCms } from "@qino/qino/tests";
+
 import { backendDashboardWidget, cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
 
 // Fake tree node: fixed access level + a tiny breadcrumb path (root is filtered out).

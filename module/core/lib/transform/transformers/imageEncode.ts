@@ -1,7 +1,9 @@
-import * as magick from '../magick.ts';
-import type { TransformerDef } from '../types.ts';
-import { typeByExtension } from '../../../deps.ts';
 import * as nodePath from 'node:path';
+
+import * as magick from '../magick.ts';
+import { typeByExtension } from '../../../deps.ts';
+
+import type { TransformerDef } from '../types.ts';
 
 /** File size in bytes; a missing file is `Infinity` so it loses the smaller-output comparison. */
 const fileSize = async (path: string): Promise<number> => (await Deno.stat(path).catch(() => null))?.size ?? Infinity;

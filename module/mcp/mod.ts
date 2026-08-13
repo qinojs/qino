@@ -1,5 +1,8 @@
-import { ApiError, Output, toTools, walk, type Params, type Ctx, type Tool } from "@qino/qino";
+import { ApiError, Output, toTools, walk } from "@qino/qino";
+
 import denoJson from "../../deno.json" with { type: "json" };
+
+import type { Params, Ctx, Tool } from "@qino/qino";
 
 /** MCP server (Streamable HTTP, stateless): exposes the app's api tree as MCP tools.
  *  Requires stateless Bearer auth (e.g. api_key); every call re-runs access/guard via invoke. */

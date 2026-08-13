@@ -1,5 +1,8 @@
-import { html, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
+
 import { accessCounts } from "../accessList.ts";
+
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node): Promise<HtmlString | string> {

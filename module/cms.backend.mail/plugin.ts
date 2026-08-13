@@ -1,11 +1,15 @@
 import { basename, extname } from "node:path";
 import { mail } from "@qino/qino/mail";
 import { typeByExtension } from "@std/media-types";
+import { getCtx, html, sqlSearch, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
-import { getCtx, html, type HtmlString, sqlSearch, unixTime, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { HtmlString, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {

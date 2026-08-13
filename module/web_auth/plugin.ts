@@ -1,7 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import dbSchema from "./dbschema.json" with { type: "json" };
-import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, type ApiTree, s, type App, type Db, type Ctx } from "@qino/qino";
+import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
+
+import dbSchema from "./dbschema.json" with { type: "json" };
+
+import type { ApiTree, App, Db, Ctx } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
 export { dbSchema };

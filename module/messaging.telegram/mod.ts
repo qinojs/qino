@@ -1,9 +1,12 @@
 // Public API of messaging.telegram. The qino plugin lives in ./plugin.ts.
+import { hee, sql, unixTime } from "@qino/qino";
+import { msgOf, record } from "@qino/qino/messaging";
 
-import { hee, sql, unixTime, type App, type Row } from "@qino/qino";
-import { msgOf, record, type Msg } from "@qino/qino/messaging";
 import { BotError, call, getMe, webhookSecret } from "./lib/bot.ts";
 import { linkToken } from "./lib/link.ts";
+
+import type { App, Row } from "@qino/qino";
+import type { Msg } from "@qino/qino/messaging";
 
 /**
  * Deliver a message to a group, a user, one chat, or everyone who linked their account.

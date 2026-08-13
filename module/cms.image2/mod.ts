@@ -1,7 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
+import { hee, html, magick, getCtx } from "@qino/qino";
 
-import { hee, html, magick, type HtmlString, getCtx, type DbFile } from "@qino/qino";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { HtmlString, DbFile } from "@qino/qino";
+
 const { name } = manifest;
 
 export async function cms_image2(dbFile: DbFile, options: Record<string, any>): Promise<HtmlString> {

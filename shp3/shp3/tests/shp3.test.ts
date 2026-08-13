@@ -1,8 +1,11 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { App, Ctx, requestStorage } from "@qino/qino";
-import { adoptCart } from "../lib/cart.ts";
 import { cms } from "@qino/qino/cms";
-import { cart, shp3, type Currency, type Order, type Product } from "../mod.ts";
+
+import { adoptCart } from "../lib/cart.ts";
+import { cart, shp3 } from "../mod.ts";
+
+import type { Currency, Order, Product } from "../mod.ts";
 
 const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** digits;
 

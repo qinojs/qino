@@ -1,6 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
-import { ConflictError, html, type HtmlString, type App } from "@qino/qino";
+import { ConflictError, html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+
+import type { HtmlString, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {

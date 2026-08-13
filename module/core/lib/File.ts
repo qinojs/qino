@@ -1,4 +1,5 @@
 import * as nodeCrypto from "node:crypto";
+
 import { typeByExtension } from "../deps.ts";
 
 export class File {

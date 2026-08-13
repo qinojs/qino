@@ -1,4 +1,5 @@
 import { assertEquals, assertRejects } from "@qino/qino/tests";
+
 import { resolve } from "../lib/registry.ts";
 
 // Minimal db stub: routes the two registry queries by their SQL text.

@@ -1,8 +1,10 @@
-import { assertEquals, testContext } from "@qino/qino/tests";
 import { requestStorage } from "@qino/qino";
+import { assertEquals, testContext } from "@qino/qino/tests";
+
 import nodeApi from "../nodeApi.ts";
 import { backendDashboardWidget, cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name, dependencies } = manifest;
 
 Deno.test("cms.backend.users: metadata and cms export are wired", () => {

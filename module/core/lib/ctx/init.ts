@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
-import type { Ctx } from "./Ctx.ts";
+
 import { header, cookiePrefix, uid, unixTime } from "../util.ts";
 import { authListen } from "../auth.ts";
+
+import type { Ctx } from "./Ctx.ts";
 
 /** Per-request boot: client cookie, auth, session, settings, language, access log. */
 export async function initRequest(ctx: Ctx): Promise<void> {

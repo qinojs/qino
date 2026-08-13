@@ -1,5 +1,7 @@
-import { sql, type App } from "../../module/core/mod.ts";
-import { cms } from "../../module/cms/mod.ts";
+import { sql } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
+
+import type { App } from "@qino/qino";
 
 async function settingId(app: App, path: string[]): Promise<number | null> {
   let basis = 0;

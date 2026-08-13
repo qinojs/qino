@@ -1,6 +1,5 @@
 // todo? // externe Seiten http://github.com/codepo8/GooHooBi/blob/master/multisearch.html
 //import '@qino/pub/Rte/Rte.ui.items.mjs';
-
 import '@qino/pub/Rte/index.mjs';
 import { api } from '@qino/pub/qino.js';
 

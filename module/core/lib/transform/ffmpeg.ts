@@ -1,5 +1,4 @@
 /** Thin wrapper around FFmpeg */
-
 import { probe } from "./tryCommand.ts";
 
 export const available = probe('ffmpeg', ['-version']);

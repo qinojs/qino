@@ -1,6 +1,8 @@
-import * as magick from '../magick.ts';
-import type { TransformerDef } from '../types.ts';
 import * as nodePath from 'node:path';
+
+import * as magick from '../magick.ts';
+
+import type { TransformerDef } from '../types.ts';
 
 /**
  * Geometry phase: resize + crop with focus point (hpos/vpos).

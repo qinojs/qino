@@ -1,4 +1,6 @@
-import { hee, requestStorage, type App } from "@qino/qino";
+import { hee, requestStorage } from "@qino/qino";
+
+import type { App } from "@qino/qino";
 
 export function healthChecks(app: App) {
   const settings = app.settings;

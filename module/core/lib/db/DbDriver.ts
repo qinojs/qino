@@ -1,7 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
-import { mysql, postgres, type Pool, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
 import { DatabaseSync } from "node:sqlite";
 import { AsyncLocalStorage } from "node:async_hooks";
+
+import { mysql, postgres, mysqlDialect, pgDialect, sqliteDialect, schemaToDbMysql, schemaToDbPg, schemaToDbSqlite } from "../../deps.ts";
+
+import type { Pool } from "../../deps.ts";
 
 export type ExecResult = { insertId: number; affectedRows: number };
 export type MigrateOptions = { patch?: boolean; force?: boolean };

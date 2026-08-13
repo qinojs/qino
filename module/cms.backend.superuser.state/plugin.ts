@@ -1,6 +1,8 @@
 import { backend } from "@qino/qino/cms.backend";
 import { dump } from "@nuxodin/dump";
-import { $item, getCtx, html, type HtmlString, type App } from "@qino/qino";
+import { $item, getCtx, html } from "@qino/qino";
+
+import type { HtmlString, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 const DUMP_JS = "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";

@@ -1,5 +1,8 @@
-import { html, type HtmlString } from "@qino/qino";
+import { html } from "@qino/qino";
+
 import { accessRadios, accessTable, accessTail } from "../accessList.ts";
+
+import type { HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 export default async function (node: Node, vars: { hasMany?: boolean; param?: Record<string, string> } = {}): Promise<HtmlString> {

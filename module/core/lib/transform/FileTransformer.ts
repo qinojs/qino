@@ -1,7 +1,7 @@
 import * as nodePath from 'node:path';
 import * as nodeFs from 'node:fs/promises';
+
 import { typeByExtension } from '../../deps.ts';
-import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult, TranscriptEngine } from './types.ts';
 import { resetProbes } from './tryCommand.ts';
 import * as magick from './magick.ts';
 import * as ffmpeg from './ffmpeg.ts';
@@ -20,6 +20,8 @@ import { ocr } from './transformers/ocr.ts';
 import { imageResize } from './transformers/imageResize.ts';
 import { imageEncode } from './transformers/imageEncode.ts';
 import { pngquant } from './transformers/pngquant.ts';
+
+import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult, TranscriptEngine } from './types.ts';
 
 const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'encode'];
 

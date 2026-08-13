@@ -3,10 +3,13 @@ import { fromFileUrl, toFileUrl } from "../deps.ts";
 import { itemRoot, u2Root } from "../lib/util.ts";
 
 const moduleDir = fromFileUrl(new URL("../../", import.meta.url));
+const cmsLegacyDir = fromFileUrl(new URL("../../../cms-legacy/", import.meta.url));
+const metaDir = fromFileUrl(new URL("../../../meta/", import.meta.url));
 const testModuleDir = fromFileUrl(new URL("../../../test-modules/", import.meta.url));
 const shp3Dir = fromFileUrl(new URL("../../../shp3/", import.meta.url));
 const qinoDir = fromFileUrl(new URL("../../../", import.meta.url));
 const stores = [moduleDir, shp3Dir, testModuleDir];
+const sourceDirs = [moduleDir, cmsLegacyDir, metaDir, shp3Dir, testModuleDir];
 
 async function* files(dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
@@ -200,20 +203,6 @@ Deno.test({
   },
 });
 
-Deno.test("test-store modules only consume public package APIs", async () => {
-  const errors = [];
-  for await (const file of files(testModuleDir)) {
-    if (file.includes("/tests/")) continue;
-    const moduleRoot = testModuleDir + file.slice(testModuleDir.length).split("/")[0] + "/";
-    for (const spec of imports(await Deno.readTextFile(file)).keys()) {
-      if (!spec.startsWith(".")) continue;
-      const target = targetPath(spec, file)!;
-      if (!target.startsWith(moduleRoot)) errors.push(`${file.slice(testModuleDir.length)} imports ${target}`);
-    }
-  }
-  assertEquals(errors, []);
-});
-
 Deno.test("test-store plugins are importable", async () => {
   const store = JSON.parse(await Deno.readTextFile(testModuleDir + "store.json"));
   for (const name of Object.keys(store.modules)) await import(toFileUrl(`${testModuleDir}${name}/plugin.ts`).href);
@@ -221,20 +210,25 @@ Deno.test("test-store plugins are importable", async () => {
 
 Deno.test("modules only consume public APIs of other modules", async () => {
   const errors = [];
-  for await (const file of files(moduleDir)) {
-    const fileRel = file.slice(moduleDir.length);
-    for (const spec of imports(await Deno.readTextFile(file)).keys()) {
-      const target = targetPath(spec, file);
-      if (!target) continue;
-      if (!target.startsWith(moduleDir)) continue;
-      const targetRel = target.slice(moduleDir.length);
-      const [targetModule, ...path] = targetRel.split("/");
-      if (fileRel.split("/")[0] === targetModule) continue; // a module owns its own files
-      if (OPEN.has(`${fileRel} -> ${targetRel}`)) continue;
-      const door = path.join("/");
-      if (spec.startsWith(".")) errors.push(`${fileRel} imports ${targetRel} relatively — use its package export`);
-      else if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
-      else if (door.startsWith("tests/") && !fileRel.includes("/tests/")) errors.push(`${fileRel} imports test-only ${targetRel}`);
+  const roots: string[] = [];
+  for (const store of sourceDirs) for await (const root of moduleDirs(store)) roots.push(root);
+  const owner = (path: string) => roots.find((root) => path.startsWith(root));
+  for (const sourceDir of sourceDirs) {
+    for await (const file of files(sourceDir)) {
+      const sourceRoot = owner(file);
+      for (const spec of imports(await Deno.readTextFile(file)).keys()) {
+        const target = targetPath(spec, file);
+        if (!target) continue;
+        const targetRoot = owner(target);
+        if (!targetRoot || targetRoot === sourceRoot) continue;
+        const fileRel = file.slice(qinoDir.length), targetRel = target.slice(qinoDir.length);
+        if (file.startsWith(moduleDir) && target.startsWith(moduleDir) &&
+          OPEN.has(`${file.slice(moduleDir.length)} -> ${target.slice(moduleDir.length)}`)) continue;
+        const door = target.slice(targetRoot.length);
+        if (spec.startsWith(".")) errors.push(`${fileRel} imports ${targetRel} relatively — use its package export`);
+        else if (!DOORS.test(door)) errors.push(`${fileRel} imports ${targetRel} — not a door (mod.ts, tests/deps.ts)`);
+        else if (door.startsWith("tests/") && !fileRel.includes("/tests/")) errors.push(`${fileRel} imports test-only ${targetRel}`);
+      }
     }
   }
   assertEquals(errors, []);
@@ -326,14 +320,15 @@ const EXTERNAL = new Set([
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {
   const used = new Map<string, Set<string>>();
-  for await (const file of [...await Array.fromAsync(files(moduleDir)), ...await Array.fromAsync(files(shp3Dir))]) {
-    for (const [spec, names] of imports(await Deno.readTextFile(file))) {
-      const target = targetPath(spec, file);
-      if (!target) continue;
-      if (!target.startsWith(moduleDir)) continue;
-      const set = used.get(target) ?? new Set<string>();
-      used.set(target, set);
-      for (const name of names) set.add(name);
+  for (const sourceDir of sourceDirs) {
+    for await (const file of files(sourceDir)) {
+      for (const [spec, names] of imports(await Deno.readTextFile(file))) {
+        const target = targetPath(spec, file);
+        if (!target?.startsWith(moduleDir)) continue;
+        const set = used.get(target) ?? new Set<string>();
+        used.set(target, set);
+        for (const name of names) set.add(name);
+      }
     }
   }
   const errors = [];

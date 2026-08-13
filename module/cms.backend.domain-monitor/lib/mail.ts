@@ -1,9 +1,10 @@
 // Mail posture of a domain: does it say who may send for it, does it say what to do with forgeries,
 // and does its own mail server speak TLS. Presence of an SPF or DMARC record proves very little —
 // `v=spf1 +all` and `p=none` are records that permit everything, so the values are what count.
-
-import { resolve, type Type } from "./dns.ts";
+import { resolve } from "./dns.ts";
 import { agent, isCertError, errText, timedSignal, ua } from "./net.ts";
+
+import type { Type } from "./dns.ts";
 
 // Selectors worth guessing when a domain publishes DKIM but does not tell us where.
 // There is no way to enumerate them — the name is only known to the sender and the verifier.

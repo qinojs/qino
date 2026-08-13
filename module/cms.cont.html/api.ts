@@ -1,6 +1,10 @@
-import { cms, type Node } from "@qino/qino/cms";
-import { Access, ConflictError, NotFoundError, s, type ApiTree, type Ctx } from "@qino/qino";
+import { Access, ConflictError, NotFoundError, s } from "@qino/qino";
+import { cms } from "@qino/qino/cms";
+
 import { codeFiles } from "./codeFiles.ts";
+
+import type { ApiTree, Ctx } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const content = s.object({ content: s.string().describe("Complete file content") });
 const rendered = s.string().describe("Rendered HTML of the node after saving");

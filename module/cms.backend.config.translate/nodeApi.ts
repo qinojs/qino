@@ -1,7 +1,8 @@
 // deno-lint-ignore-file no-explicit-any
 import { getCtx, sql } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
 import { service as cmsTextService } from "@qino/qino/cms.text";
+
+import type { Node } from "@qino/qino/cms";
 
 function matchCase(translated: string, original: string): string {
   if (!translated || !original) return translated;

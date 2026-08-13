@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals } from "@std/assert";
 import { App, Ctx, requestStorage } from "@qino/qino";
+import { mail } from "@qino/qino/mail";
+
 import { api } from "../api.ts";
 import { cart } from "../mod.ts";
-import nodeApi from "../../cms.backend.shp3.orders1/nodeApi.ts";
-import { mail } from "@qino/qino/mail";
 
 const call = (path: string[], verb: string, input?: unknown) =>
   (path.reduce((n: any, k) => n[k], api as any))[verb].execute(input);
@@ -66,7 +66,7 @@ Deno.test("shp3: a whole order, from the empty cart to the placed one", async ()
 });
 
 Deno.test("shp3 backend: an order is paid off, an open cart can still be placed", async () => {
-  const app = await shop();
+  const app = await shop("cms.backend.shp3", "cms.backend.shp3.orders1");
   try {
     const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
     await requestStorage.run(ctx, async () => {
@@ -79,6 +79,7 @@ Deno.test("shp3 backend: an order is paid off, an open cart can still be placed"
       assertEquals(order.cost, 24);
       assertEquals(Number(order.paid), 0);
 
+      const nodeApi = app.modules.get("cms.backend.shp3.orders1")!.plugin.cms.node.api;
       assertEquals(await nodeApi(node, { pay: id }), { paid: 24 });
       // a second click must not double the payment
       assertEquals(await nodeApi(node, { pay: id }), { paid: 24 });

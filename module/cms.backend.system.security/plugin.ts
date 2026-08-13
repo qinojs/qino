@@ -1,12 +1,15 @@
+import { backend } from "@qino/qino/cms.backend";
+import { cms as cmsApp } from "@qino/qino/cms";
+
 import { dbSchema, settingsSchema } from "./schema.ts";
 import { initSecurity } from "./guard.ts";
 import { cleanup, settings } from "./store.ts";
 import { backendDashboardWidget, render } from "./view.ts";
-import { backend } from "@qino/qino/cms.backend";
-import { cms as cmsApp } from "@qino/qino/cms";
-import type { Jobs } from "@qino/qino/cron";
-import type { App } from "@qino/qino";
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { App } from "@qino/qino";
+import type { Jobs } from "@qino/qino/cron";
+
 const { name } = manifest;
 const oldName = "cms.backend.security";
 

@@ -1,5 +1,7 @@
+import { RESERVED, VERBS } from "./types.ts";
+
 import type { StandardSchema } from "../StandardSchema.ts";
-import { RESERVED, VERBS, type ApiNode, type ApiTree, type Method, type Verb } from "./types.ts";
+import type { ApiNode, ApiTree, Method, Verb } from "./types.ts";
 
 export interface Route {
   method: Method;

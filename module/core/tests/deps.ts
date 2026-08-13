@@ -1,14 +1,17 @@
+import { fakeSettings } from "./appFake.ts";
+import { apiFetch } from "../lib/api/mod.ts";
+import { Req } from "../lib/ctx/Req.ts";
+import { Ctx } from "../lib/ctx/Ctx.ts";
+import { Output } from "../lib/util.ts";
+
+import type { ApiTree } from "../lib/api/mod.ts";
+
 export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";
 export { fakeSettings, fakeT } from "./appFake.ts";
 
-import { fakeSettings } from "./appFake.ts";
-import { apiFetch, type ApiTree } from "../lib/api/mod.ts";
-import { Req } from "../lib/ctx/Req.ts";
-import { Ctx } from "../lib/ctx/Ctx.ts";
-import { Output } from "../lib/util.ts";
 
 // deno-lint-ignore no-explicit-any
 type Fake = Record<string, any>;

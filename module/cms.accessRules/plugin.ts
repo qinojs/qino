@@ -1,5 +1,8 @@
-import { sql, type App, type Usr } from "@qino/qino";
+import { sql } from "@qino/qino";
+
 import { standards } from "./lib/standards.ts";
+
+import type { App, Usr } from "@qino/qino";
 
 export const dbSchema = {
   properties: {

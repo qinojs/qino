@@ -1,6 +1,10 @@
-import { hee, html, type Ctx, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { hee, html } from "@qino/qino";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

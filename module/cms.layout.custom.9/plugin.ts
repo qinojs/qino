@@ -1,6 +1,10 @@
-import { hee, html, type Ctx, type HtmlString } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
+import { hee, html } from "@qino/qino";
+
 import manifest from "./manifest.json" with { type: "json" };
+
+import type { Ctx, HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
+
 const { name } = manifest;
 
 // One font per site, not per page: app settings, not node settings.

@@ -1,5 +1,6 @@
 import { assertEquals } from "@qino/qino/tests";
 import { sanitizeHtml } from "@qino/qino/cms";
+
 import renderTexts from "../view/widgets/txts.ts";
 
 Deno.test("cms.frontend.2 texts: sanitizes stored HTML", async () => {

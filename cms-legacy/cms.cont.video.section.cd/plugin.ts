@@ -1,6 +1,9 @@
-import { hee, html, type HtmlString } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { hee, html } from "@qino/qino";
+
 import { backgroundAttr } from "../lib/bg.ts";
+
+import type { HtmlString } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 const settingsSchema = {
   properties: {

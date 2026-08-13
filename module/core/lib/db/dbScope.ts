@@ -6,7 +6,6 @@
 //  - shared app-level caches accessed via scopeCache() are replaced by a
 //    request-local cache, so scoped data never pollutes them.
 // Delete scope.tables to stop the routing while keeping the request cache.
-
 import { requestStorage } from "../ctx/Ctx.ts";
 
 export type DbScope = {

@@ -1,9 +1,11 @@
 // deno-lint-ignore-file no-explicit-any
+import { html, u2Root } from "@qino/qino";
 import { assertEquals, testContext } from "@qino/qino/tests";
+
 import { cms } from "../plugin.ts";
 import manifest from "../manifest.json" with { type: "json" };
+
 const { name } = manifest;
-import { html, u2Root } from "@qino/qino";
 
 Deno.test("cms.layout.login: metadata is wired", () => {
   assertEquals(name, "cms.layout.login");

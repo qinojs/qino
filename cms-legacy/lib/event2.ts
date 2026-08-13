@@ -1,5 +1,6 @@
-import { sql } from "../../module/core/mod.ts";
-import type { Node } from "../../module/cms/mod.ts";
+import { sql } from "@qino/qino";
+
+import type { Node } from "@qino/qino/cms";
 
 export async function eventDates(node: Node): Promise<Record<string, unknown>[]> {
   try {

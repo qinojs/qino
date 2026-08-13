@@ -1,8 +1,11 @@
-import { html, type HtmlString, getCtx, pwHash, type App } from "@qino/qino";
-import type { Node } from "@qino/qino/cms";
-import { list, allowLoginAs } from "./parts/list.ts";
+import { html, getCtx, pwHash } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
+
+import { list, allowLoginAs } from "./parts/list.ts";
 import api from "./nodeApi.ts";
+
+import type { HtmlString, App } from "@qino/qino";
+import type { Node } from "@qino/qino/cms";
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.users", { en: "Users", de: "Benutzer" });

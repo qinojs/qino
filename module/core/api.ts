@@ -5,14 +5,16 @@
  * The api framework lives in ./lib/api/mod.ts. This file contains only concrete
  * core endpoints.
  */
+import { createHash } from "node:crypto";
 
 import { getCtx } from "./lib/ctx/Ctx.ts";
-import { createHash } from "node:crypto";
 import { $item, sql } from "./deps.ts";
-import { Access, AccessError, ConflictError, type ApiTree } from "./lib/api/mod.ts";
+import { Access, AccessError, ConflictError } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
 import { itemReadDeep } from "./lib/util.ts";
+
+import type { ApiTree } from "./lib/api/mod.ts";
 
 const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"]");
 
