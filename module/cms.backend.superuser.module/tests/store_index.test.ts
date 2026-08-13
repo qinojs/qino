@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "../../core/tests/deps.ts";
 import { toFileUrl } from "@std/path";
 import { App } from "../../core/mod.ts";
-import { writeIndex } from "../plugin.ts";
+import { writeIndex } from "../storeIndex.ts";
 
 /** A folder store with one module, an asset and a suite that must not travel. */
 async function fixture() {

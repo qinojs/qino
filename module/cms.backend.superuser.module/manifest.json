@@ -5,9 +5,14 @@
     "cms.backend"
   ],
   "files": [
+    "README.md",
+    "detail.ts",
     "manifest.json",
     "plugin.ts",
+    "pub/main.css",
     "pub/main.js",
-    "pub/module.svg"
+    "pub/module.svg",
+    "storeIndex.ts",
+    "stores.ts"
   ]
 }

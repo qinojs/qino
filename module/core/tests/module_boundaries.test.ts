@@ -240,7 +240,7 @@ const OPTIONAL = new Set([
   "cms.backend.superuser.db.query/render.ts -> ai",
   "cms.frontend.2/view/widgets/more.ts -> mail", // a dashboard widget per module is the pattern itself
   "cms.backend.superuser.error_report/plugin.ts -> fileEditor", // editorUrl: "open the file that threw"
-  "cms.backend.superuser.module/plugin.ts -> fileEditor",
+  "cms.backend.superuser.module/detail.ts -> fileEditor",
   "cms.cont.html/options.ts -> fileEditor",
   "cms.cont.ts/options.ts -> fileEditor",
   "cms.frontend.2/view/widgets/superuser.ts -> fileEditor",

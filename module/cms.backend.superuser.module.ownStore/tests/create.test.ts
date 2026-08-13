@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "../../core/tests/deps.ts";
+import { assert, assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
 import { toFileUrl } from "@std/path";
 import { App, Module } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
@@ -22,6 +22,21 @@ async function fixture() {
   await app.init();
   return { dir, app, node: { app } as unknown as Node };
 }
+
+Deno.test("own modules link to module administration details", async () => {
+  const app = {
+    appPATH: "/app/",
+    t: (strings: TemplateStringsArray) => strings.join(""),
+    stores: { get: () => ({ names: () => Promise.resolve(["cms.cont.own"]) }) },
+    modules: { all: () => ({}), linked: () => true },
+  };
+  const node = {
+    app,
+    cms: { nodeByModule: () => ({ page: () => ({ access: () => 1, url: () => "/backend/superuser/module" }) }) },
+  };
+  const out = String(await cms.node.render(node as unknown as Node));
+  assertStringIncludes(out, `href="/backend/superuser/module?mod=cms.cont.own"`);
+});
 
 Deno.test({
   name: "a module is copied from a template, renamed in both forms and installed",

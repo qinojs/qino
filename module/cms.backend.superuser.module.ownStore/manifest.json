@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.superuser.module.ownStore",
+  "description": "Manages the app's own module store: creates modules blank or from a template.",
+  "dependencies": [
+    "cms.backend.superuser.module"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

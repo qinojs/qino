@@ -1,13 +1,11 @@
 {
   "name": "cms.backend.superuser.stores.own",
-  "description": "Manages the app's own module store: creates modules blank or from a template.",
+  "description": "Redirects existing own-module pages to the consolidated module administration.",
   "dependencies": [
-    "cms.backend"
+    "cms.backend.superuser.module.ownStore"
   ],
   "files": [
     "manifest.json",
-    "plugin.ts",
-    "pub/main.js",
-    "pub/module.svg"
+    "plugin.ts"
   ]
 }

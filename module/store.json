@@ -42,6 +42,7 @@
     "cms.backend.superuser.messaging.telegram": {},
     "cms.backend.superuser.messaging.web_push": {},
     "cms.backend.superuser.module": {},
+    "cms.backend.superuser.module.ownStore": {},
     "cms.backend.superuser.oauth": {},
     "cms.backend.superuser.oauth_server": {},
     "cms.backend.superuser.score": {},

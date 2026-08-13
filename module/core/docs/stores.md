@@ -114,7 +114,7 @@ importable* and offers the uninstall that clears the row.
 Both managers read their table in `init()` before the schema is migrated, hence the `listTables()`
 check: a fresh database has nothing to read yet.
 
-[cms.backend.superuser.stores](../../cms.backend.superuser.stores/) is the UI for all of this.
+[cms.backend.superuser.module](../../cms.backend.superuser.module/) is the UI for all of this.
 
 ## Minimal module contract
 
@@ -193,7 +193,7 @@ asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
   With it, one operation covers three features: fetch a module's files and write them somewhere.
   Into `appPATH/remote/<name>/` it is the **mirror** that makes `Module.dir` always defined; into
   the own store under a new name it is the **fork** (copying a remote module, which
-  [cms.backend.superuser.stores.own](../../cms.backend.superuser.stores.own/plugin.ts) refuses
+  [cms.backend.superuser.module.ownStore](../../cms.backend.superuser.module.ownStore/plugin.ts) refuses
   today); generated from the folder on the way out it is **publishing**. A publishing app writes no
   file at all — it has the directory. Only a static host (CDN, pages) has to keep one.
 

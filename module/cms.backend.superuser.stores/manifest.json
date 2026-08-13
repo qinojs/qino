@@ -1,15 +1,12 @@
 {
   "name": "cms.backend.superuser.stores",
-  "description": "Registers module stores and installs modules from their catalogs.",
+  "description": "Redirects existing module-store pages to the consolidated module administration.",
   "dependencies": [
-    "cms.backend"
+    "cms.backend.superuser.module"
   ],
   "files": [
-    "README.md",
     "manifest.json",
     "plugin.ts",
-    "pub/main.css",
-    "pub/main.js",
     "pub/module.svg"
   ]
 }

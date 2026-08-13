@@ -1,14 +1,16 @@
-# cms.backend.superuser.stores
+# cms.backend.superuser.module
 
-Registers module stores and installs modules from their catalogs.
+The module administration: registers stores, installs and controls modules, and inspects their
+runtime metadata and source files.
 
 A store is a `store.json` catalog; a module named `x.y` lives beside it under `x.y/plugin.ts`
 (see [core/docs/stores.md](../core/docs/stores.md)). Any `file:`, `http:` or `https:` URL works.
 
-Two boxes: the stores, and every module the application knows of — from a catalog, declared in
+The overview combines the stores and every module the application knows of — from a catalog, declared in
 `server.ts`, or installed and no longer importable. Filter by store and state, search by name, or
 click a store to filter by it; that happens in the browser, so the list never reloads while you
-narrow it down.
+narrow it down. A module name opens its detail page with exports, schemas, API routes, dependencies
+and source files.
 
 Both lists come from core and so does their persistence: a store or module the application declares
 in `server.ts` has no row of its own and therefore no remove button — the difference in origin *is*

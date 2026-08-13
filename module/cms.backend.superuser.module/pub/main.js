@@ -1,28 +1,98 @@
-import { t } from "@qino/pub/qino.js";
+import { api, t } from "@qino/pub/qino.js";
+
+// A reload replaces the whole node, the chosen filter should outlive it.
+const kept = {};
 
 cms.initNode("backend.superuser.module", (el) => {
   const nid = Number(cms.el.nid(el));
+  const node = api.cms.node(nid);
+  const dialog = () => import("@qino/u2/js/dialog/dialog.js");
+  const filters = () => el.querySelectorAll("[data-filter]");
 
-  // client-side filter — all modules are already rendered, no round-trip needed
-  const search = el.querySelector("[data-module-search]");
-  search?.addEventListener("input", () => {
-    const q = search.value.toLowerCase();
-    // inline display beats u2-table's `display:table-row`, which would override [hidden]
-    for (const tr of el.querySelectorAll("tbody tr")) tr.style.display = tr.textContent.toLowerCase().includes(q) ? "" : "none";
-  });
+  // Filter and per-store counts both derive from the rows — recompute after every change.
+  const update = () => {
+    for (const f of filters()) kept[f.dataset.filter] = f.value;
+    const q = (kept.search ?? "").trim().toLowerCase();
+    const state = kept.state;
+    const store = kept.store; // "-" stands for everything no store lists
+    const all = [...el.querySelectorAll("tr[data-mod]")];
+    for (const { dataset: d, style } of all) {
+      // display, not [hidden]: .u2-table sets display:table-row on every row and would win.
+      style.display = (!state || d.state === state) &&
+          (!store || (store === "-" ? !d.store : d.store === store)) &&
+          (!q || d.mod.toLowerCase().includes(q))
+        ? ""
+        : "none";
+    }
+    for (const out of el.querySelectorAll("[data-count]")) {
+      // "installed from this store / offered by it" — a module another store provided does not count.
+      const mine = all.filter((tr) => tr.dataset.store === out.dataset.count);
+      const taken = mine.filter((tr) => tr.dataset.state !== "available" && tr.dataset.state !== "elsewhere");
+      out.textContent = `${taken.length}/${mine.length}`;
+    }
+  };
+
+  const call = async (btn, vars) => {
+    const tr = btn.closest("tr");
+    btn.disabled = true;
+    const r = await node.api.post(vars).catch((e) => ({ message: e?.message || String(e) }));
+    btn.disabled = false;
+    // The fresh row is the feedback; a message means there is more to it than the row shows.
+    if (!r?.ok) return (await dialog()).alert(r?.message || await t`Action failed.`);
+    if (r.message) await (await dialog()).alert(r.message);
+    if (r.row === undefined) return cms.reloadNode(nid);
+    if (r.row === null) tr.remove();
+    else tr.outerHTML = r.row;
+    update();
+  };
 
   el.addEventListener("click", async (e) => {
-    // an empty file, so the editor link beside it has something to open
+    // Detail view: create an empty file so the editor link beside it has something to open.
     const add = e.target.closest("[data-new-file]");
     if (add) {
-      const rel = await (await import("@qino/u2/js/dialog/dialog.js")).prompt(await t`Path inside the module`, "");
+      const rel = await (await dialog()).prompt(await t`Path inside the module`, "");
       if (rel) cms.reloadNode(nid, { newFile: rel, mod: add.dataset.newFile });
       return;
     }
-    // runtime enable/disable → reload the node so the fresh linked-state renders
-    const btn = e.target.closest("[data-mod-toggle]");
+    // Detail view: runtime enable/disable → reload so the fresh linked state renders.
+    const toggle = e.target.closest("[data-mod-toggle]");
+    if (toggle) {
+      toggle.disabled = true;
+      cms.reloadNode(nid, { [toggle.dataset.modToggle]: toggle.dataset.mod, mod: toggle.dataset.mod });
+      return;
+    }
+    // A store in the overview is the filter for its modules.
+    const pick = e.target.closest("[data-pick]");
+    if (pick) {
+      el.querySelector("[data-filter=store]").value = pick.dataset.pick;
+      return update();
+    }
+    const btn = e.target.closest("[data-act]");
     if (!btn) return;
-    btn.disabled = true;
-    cms.reloadNode(nid, { [btn.dataset.modToggle]: btn.dataset.mod, mod: btn.dataset.mod });
+    const { act } = btn.dataset;
+    if (act === "addStore") {
+      const url = await (await dialog()).prompt(await t`Catalog URL of the store (store.json)`, "");
+      if (url) call(btn, { act, store: url });
+      return;
+    }
+    // A row is one module in one store, so both are simply on it; a store row's own buttons
+    // carry their store instead.
+    const { mod = "", store = "" } = { ...btn.closest("tr")?.dataset, ...btn.dataset };
+    // Installing brings dependencies along. Naming them beats a silent five-module install, and
+    // asking when the list is empty would be a dialog that says nothing.
+    if (act === "install") {
+      btn.disabled = true;
+      const plan = await node.api.post({ act: "installPlan", mod, store }).catch(() => null);
+      btn.disabled = false;
+      if (plan?.needs?.length) {
+        const ok = await (await dialog()).confirm(`${await t`These modules are installed as well:`}\n${plan.needs.join(", ")}`);
+        if (!ok) return;
+      }
+    }
+    call(btn, { act, mod, store });
   });
+
+  el.addEventListener("input", update);
+  for (const f of filters()) if (kept[f.dataset.filter] !== undefined) f.value = kept[f.dataset.filter];
+  update();
 });

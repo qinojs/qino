@@ -1,4 +1,4 @@
-[qcms-mod="backend.superuser.stores"] {
+[qcms-mod="backend.superuser.module"] {
   /* what a button costs you, at a glance — see TONE in plugin.ts */
   & .-delete  { background: var(--red);    } /* deletes what the module keeps */
   & .-repair  { background: var(--orange); } /* writes into it */

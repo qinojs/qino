@@ -42,7 +42,6 @@ export const recommended = [
   "cms.backend.superuser.module",
   "cms.backend.system",
   "cms.backend.superuser",
-  "cms.backend.superuser.stores", // installing further modules starts here
   "error_report",
   "cms.backend.superuser.error_report",
 ];
