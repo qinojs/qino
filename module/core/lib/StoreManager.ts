@@ -1,6 +1,6 @@
 import type { App } from "./App.ts";
 import { fromFileUrl } from "../deps.ts";
-import { isModuleName, type Module, resolveSpecifier } from "./ModuleManager.ts";
+import { isModuleName, type Manifest, type Module, readManifest, resolveSpecifier } from "./ModuleManager.ts";
 
 /** A folder store lists itself: the subfolders holding the plugin file its URL would point at. */
 async function readFolder(url: string): Promise<string[]> {
@@ -51,6 +51,12 @@ export class Store {
    *  a store may gain modules while the app runs. */
   names(): Promise<string[]> { return (this.#url.endsWith("/") ? readFolder : readCatalog)(this.#url); }
 
+  /** What a module of this store says about itself, without importing it — its dependencies above all. */
+  manifest(name: string): Promise<Manifest> {
+    if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
+    return readManifest(this.moduleUrl(name));
+  }
+
   /** Declare one module of this store — its URL is conventional, so no catalog is read. */
   add(name: string): this {
     if (!isModuleName(name)) throw new Error(`Invalid module name: ${name}`);
@@ -78,11 +84,23 @@ export class StoreManager {
 
   constructor(app: App) {
     this.#app = app;
+    // Stores know where modules live, the module manager does not — so it is told, not asked. That
+    // keeps the one dependency between the two pointing this way, as everywhere else here.
+    app.modules.locate = async (name) => (await this.offers()).get(name)?.moduleUrl(name);
   }
 
   all(): Store[] { return [...this.#stores.values()]; }
 
   get(url: string): Store | undefined { return this.#stores.get(url); }
+
+  /** Which store offers which module — one catalog read per store, first registration wins. An
+   *  unreadable store contributes nothing instead of failing the lookup for all the others. */
+  async offers(): Promise<Map<string, Store>> {
+    const found = new Map<string, Store>();
+    for (const store of this.all())
+      for (const name of await store.names().catch(() => [])) if (!found.has(name)) found.set(name, store);
+    return found;
+  }
 
   #ensure(url: string, declared: boolean) {
     return this.#stores.getOrInsertComputed(url, () => new Store(this.#app, url, declared));

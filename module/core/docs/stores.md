@@ -46,6 +46,15 @@ makes resolution catalog-dependent and has to move into `init()`.
 
 `core` needs no declaration — it is the root of the dependency graph, so `App` adds it itself.
 
+**An application declares what it wants, not the closure of what that needs.** `init()` looks at the
+manifests, and anything still missing it asks `modules.locate()` for — a hook the `StoreManager`
+fills in, so declaring `mail` brings `messaging` along from whatever store offers it. Installing
+does the same and remembers each one, so they can be uninstalled individually later. What no store
+offers stays missing and is reported as before; the dependency, not the store, is what drives this.
+
+The hook is why `ModuleManager` still knows nothing about stores: stores know where modules live, so
+they tell it. Both directions between the two managers would otherwise be a cycle.
+
 A store's own listing is never cached: it may gain modules while the app runs.
 
 ## Installing at runtime

@@ -64,6 +64,17 @@ cms.initNode("backend.superuser.stores", (el) => {
     // A row is one module in one store, so both are simply on it; a store row's own buttons
     // carry their store instead.
     const { mod = "", store = "" } = { ...btn.closest("tr")?.dataset, ...btn.dataset };
+    // Installing brings dependencies along. Naming them beats a silent five-module install, and
+    // asking when the list is empty would be a dialog that says nothing.
+    if (act === "install") {
+      btn.disabled = true;
+      const plan = await node.api.post({ act: "installPlan", mod, store }).catch(() => null);
+      btn.disabled = false;
+      if (plan?.needs?.length) {
+        const ok = await (await dialog()).confirm(`${await t`These modules are installed as well:`}\n${plan.needs.join(", ")}`);
+        if (!ok) return;
+      }
+    }
     call(btn, { act, mod, store });
   });
 

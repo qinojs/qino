@@ -92,6 +92,51 @@ Deno.test({
   },
 });
 
+/** Two modules of one store, one needing the other. */
+async function chain(): Promise<string> {
+  const dir = await Deno.makeTempDir() + "/";
+  for (const [name, deps] of [["d.leaf", []], ["d.top", ["d.leaf"]]] as [string, string[]][]) {
+    await Deno.mkdir(dir + name, { recursive: true });
+    await Deno.writeTextFile(`${dir + name}/plugin.ts`, "export function init() {}\n");
+    await Deno.writeTextFile(`${dir + name}/manifest.json`, JSON.stringify({ name, dependencies: ["core", ...deps] }));
+  }
+  await Deno.writeTextFile(dir + "store.json", JSON.stringify({ modules: { "d.leaf": {}, "d.top": {} } }));
+  return dir;
+}
+
+// An application says what it wants, not the closure of what that needs: the manifest names the
+// dependencies and the store knows where they live, so writing them out by hand is busywork.
+Deno.test({
+  name: "a store fills in the dependencies of what was asked for",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const dir = await chain();
+
+    const declaring = new App({ appPATH: dir, db: `sqlite:${dir}a.sqlite` });
+    declaring.modules.add(corePlugin);
+    declaring.stores.add(new URL(toFileUrl(dir + "store.json").href)).add("d.top");
+    await declaring.init();
+    assert(declaring.modules.linked("d.leaf"), "declared d.top, got d.leaf along");
+    await declaring.db.close();
+
+    // The same at runtime, where it also has to be remembered — both are installed, both removable.
+    const installing = new App({ appPATH: dir, db: `sqlite:${dir}b.sqlite` });
+    installing.modules.add(corePlugin);
+    const store = installing.stores.add(new URL(toFileUrl(dir + "store.json").href));
+    await installing.init();
+    await store.install("d.top");
+    assert(installing.modules.linked("d.leaf"));
+    assertEquals(
+      (await installing.db.query`SELECT name FROM module WHERE url > '' ORDER BY name`).map((r) => r.name),
+      ["d.leaf", "d.top"],
+    );
+    await installing.db.close();
+
+    await Deno.remove(dir, { recursive: true });
+  },
+});
+
 Deno.test({
   name: "a bundle installs its own set; repair and reset re-run the seed",
   sanitizeOps: false,

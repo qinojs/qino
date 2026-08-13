@@ -222,6 +222,7 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     `);
     await Deno.writeTextFile(root + "/b/manifest.json", `{ "name": "cycle.b", "dependencies": ["cycle.a"] }`);
 
+    // Nothing locates the missing dependency, so init() has to report it.
     const app = {
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
       fire() {},

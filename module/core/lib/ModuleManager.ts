@@ -25,7 +25,7 @@ export type Manifest = {
 };
 
 /** Read a module's manifest. Absent is legal: a module may be nothing but a plugin.ts. */
-async function readManifest(source: string): Promise<Manifest> {
+export async function readManifest(source: string): Promise<Manifest> {
   const res = await fetch(new URL("manifest.json", source)).catch(() => null); // reads file: and http(s): alike
   if (!res?.ok) return {};
   const manifest = await res.json();
@@ -108,6 +108,10 @@ export class ModuleManager {
   #failed: Record<string, string> = {}; // installed but not importable this boot → name: why
   #booting = false; // inside init(): install() only registers, the link pass follows
 
+  /** Where to find a module that nobody declared. Set by whoever knows a catalog — the StoreManager
+   *  does it — so this manager keeps knowing only that a module is a URL, and needs no store. */
+  locate: (name: string) => Promise<string | undefined> = () => Promise.resolve(undefined);
+
   constructor(app: App) {
     this.#app = app;
   }
@@ -180,6 +184,7 @@ export class ModuleManager {
         console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
       });
     }
+    await this.#importDependencies();
     this.#skipMissing();
     // In passes: an install() hook may install further modules (a bundle bringing its set), and
     // those need the same ordering and schema merge as the first round, not a nested link().
@@ -198,11 +203,21 @@ export class ModuleManager {
   /** Import, remember and link a module — the persistent counterpart of add(). */
   async install(spec: string, name?: string): Promise<Module> {
     const mod = await this.import(spec, name);
-    // An unorderable module would break the next boot, so it must not reach the table at all.
+    // A locatable dependency is installed along, deepest first — asking someone to install five
+    // modules in the right order by hand is a worse answer than doing it. Only what cannot be found
+    // is an error: an unorderable module would break the next boot, so it must not reach the table.
     const missing = mod.dependencies.filter((need) => !this.#modules[need]);
     if (missing.length) {
-      delete this.#modules[mod.name];
-      throw new Error(`Cannot install "${mod.name}": needs ${missing.join(", ")}`);
+      const urls = new Map(await Promise.all(missing.map(async (need) => [need, await this.locate(need)] as const)));
+      const unresolvable = missing.filter((need) => !urls.get(need));
+      if (unresolvable.length) {
+        delete this.#modules[mod.name];
+        throw new Error(`Cannot install "${mod.name}": needs ${unresolvable.join(", ")}`);
+      }
+      // Nothing half-registered: a dependency that will not install takes its dependent with it.
+      for (const need of missing) {
+        await this.install(urls.get(need)!, need).catch((e) => { delete this.#modules[mod.name]; throw e; });
+      }
     }
     await this.#app.db.table("module").ensure({ name: mod.name, url: mod.source });
     if (!this.#booting) {
@@ -335,6 +350,25 @@ export class ModuleManager {
   }
 
   // An installed module may outlive a removed dependency: expose it as broken and keep booting.
+  /** Import what the declared modules need. An application says what it wants; the manifest names
+   *  the rest and locate() knows where it lives, so nobody has to write out the closure by hand.
+   *  What cannot be located stays missing — #skipMissing() and #order() report it as before. */
+  async #importDependencies(): Promise<void> {
+    const tried = new Set<string>();
+    // One at a time: a module brings its own dependencies, which the next round picks up.
+    const next = () => Object.values(this.#modules).flatMap((mod) => mod.dependencies)
+      .find((need) => !this.#modules[need] && !tried.has(need));
+    for (let need = next(); need; need = next()) {
+      tried.add(need);
+      const url = await this.locate(need);
+      if (!url) continue; // unresolvable: leave the reporting to #skipMissing()
+      await this.import(url, need).catch((e) => {
+        this.#failed[need] = errMsg(e);
+        console.error(`Module "${need}" is needed but could not be imported from ${url}:`, e);
+      });
+    }
+  }
+
   #skipMissing(): void {
     const gone = (need: string) => !this.#modules[need] || this.#failed[need];
     // Marking one module broken can break its dependents, so sweep until a pass changes nothing.
