@@ -33,29 +33,30 @@ const utf8 = (bytes: Uint8Array) => {
 const isModuleFile = (file: unknown): file is string =>
   typeof file === "string" && !file.includes("\\") && file.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 
-/** Download every published file of a module, renaming it inside text files. The same URL path
+/** Copy every published file of a module, renaming it inside text files. The same URL path
  *  works for local and remote modules; the manifest is the portable directory listing. */
-async function copyModule(mod: Module, to: string, oldName: string, newName: string): Promise<void> {
-  const files = mod.manifest.files;
-  if (!files?.length) throw new Error(`Template "${oldName}" does not list its files`);
-  const base = new URL(".", mod.source);
+async function copyTemplate(template: Module, dir: string, name: string): Promise<void> {
+  const files = template.manifest.files;
+  if (!files?.length) throw new Error(`Template "${template.name}" does not list its files`);
+  const base = new URL(".", template.source);
   for (const file of files) {
-    if (!isModuleFile(file)) throw new Error(`Template "${oldName}" lists an invalid file: ${String(file)}`);
-    const res = await fetch(new URL(file, base));
-    if (!res.ok) throw new Error(`Cannot copy "${file}" from template "${oldName}": ${res.status} ${res.statusText}`);
-    const target = to + file;
+    if (!isModuleFile(file)) throw new Error(`Template "${template.name}" lists an invalid file: ${String(file)}`);
+    const url = new URL(file.split("/").map(encodeURIComponent).join("/"), base);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Cannot copy "${file}" from template "${template.name}": ${res.status} ${res.statusText}`);
+    const target = dir + file;
     await Deno.mkdir(target.slice(0, target.lastIndexOf("/") + 1), { recursive: true });
     const bytes = new Uint8Array(await res.arrayBuffer());
     const text = utf8(bytes);
     if (text === undefined) await Deno.writeFile(target, bytes);
-    else await Deno.writeTextFile(target, rename(text, oldName, newName));
+    else await Deno.writeTextFile(target, rename(text, template.name, name));
   }
 }
 
 /** The smallest thing that is a module — a shape to start from comes from a template, not from here. */
 async function blankModule(dir: string, modName: string): Promise<void> {
   await Deno.mkdir(dir, { recursive: true });
-  await Deno.writeTextFile(dir + "manifest.json", JSON.stringify({ name: modName }, null, 2) + "\n");
+  await Deno.writeTextFile(dir + "manifest.json", JSON.stringify({ name: modName, files: ["manifest.json", "plugin.ts"] }, null, 2) + "\n");
   await Deno.writeTextFile(dir + "plugin.ts", "export function init() {}\n");
 }
 
@@ -70,11 +71,12 @@ async function create(app: App, modName: string, template: string): Promise<void
     else {
       const mod = app.modules.get(template);
       if (!mod) throw new Error(`Template "${template}" is not available`);
-      await copyModule(mod, dir, template, modName);
+      await copyTemplate(mod, dir, modName);
     }
     await ownStore(app).install(modName);
   } catch (e) {
     // A failed download or an unlinkable module must not block the name on the next try.
+    await app.modules.uninstall(modName).catch(() => {});
     await Deno.remove(dir, { recursive: true }).catch(() => {});
     throw e;
   }

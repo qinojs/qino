@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "../../core/tests/deps.ts";
 import { toFileUrl } from "@std/path";
-import { App, type Module } from "../../core/mod.ts";
+import { App, Module } from "../../core/mod.ts";
 import type { Node } from "../../cms/mod.ts";
 import { cms } from "../plugin.ts";
 
@@ -41,7 +41,10 @@ Deno.test({
     // Blank knows no module shape: what a module must have, and nothing a CMS would expect.
     assertEquals(await cms.node.api(node, { name: "t.blank", template: "" }), { ok: true });
     assertEquals(await Deno.readTextFile(dir + "module/t.blank/plugin.ts"), "export function init() {}\n");
-    assertEquals(JSON.parse(await Deno.readTextFile(dir + "module/t.blank/manifest.json")), { name: "t.blank" });
+    assertEquals(JSON.parse(await Deno.readTextFile(dir + "module/t.blank/manifest.json")), {
+      name: "t.blank",
+      files: ["manifest.json", "plugin.ts"],
+    });
 
     const taken = await cms.node.api(node, { name: "cms.cont.cd.demo", template: "" });
     assertEquals(taken.ok, false, "the name is taken");
@@ -53,40 +56,45 @@ Deno.test({
     });
     assertEquals(await Deno.stat(dir + "module/t.x").then(() => true, () => false), false, "a failed create leaves nothing");
 
-    const remote = {
-      name: "cms.cont.remote",
-      source: "https://modules.example/cms.cont.remote/plugin.ts",
-      manifest: { files: ["manifest.json", "plugin.ts", "pub/main.css", "pub/pixel.bin"] },
-    } as unknown as Module;
+    const remote = new Module(
+      app,
+      "cms.cont.remote",
+      {},
+      { files: ["manifest.json", "plugin.ts", "pub/main.css", "pub/pixel.bin", "pub/name#part.txt"] },
+      "https://modules.example/cms.cont.remote/plugin.ts",
+    );
+    app.modules.all()[remote.name] = remote;
     const assets = new Map<string, BodyInit>([
       ["manifest.json", JSON.stringify({ name: remote.name, files: remote.manifest.files })],
       ["plugin.ts", "export function init() {}\n"],
       ["pub/main.css", `[qcms-mod="cont.remote"] {\n}\n`],
       ["pub/pixel.bin", new Uint8Array([0xff, 0x00, 0xfe])],
+      ["pub/name#part.txt", remote.name],
     ]);
-    const get = app.modules.get.bind(app.modules);
-    const fetch = globalThis.fetch;
-    app.modules.get = (name) => name === remote.name ? remote : get(name);
-    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (input: string | URL | Request, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : String(input);
       const source = new URL(url);
-      if (source.hostname !== "modules.example") return fetch(input, init);
-      const body = assets.get(source.pathname.replace("/cms.cont.remote/", ""));
+      if (source.hostname !== "modules.example") return originalFetch(input, init);
+      const body = assets.get(decodeURIComponent(source.pathname).replace("/cms.cont.remote/", ""));
       return Promise.resolve(body === undefined ? new Response(null, { status: 404 }) : new Response(body));
-    }) as typeof globalThis.fetch;
+    };
     try {
       assertEquals(await cms.node.api(node, { name: "cms.cont.remote.copy", template: remote.name }), { ok: true });
       assets.delete("plugin.ts");
       assertEquals((await cms.node.api(node, { name: "cms.cont.remote.failed", template: remote.name })).ok, false);
+      assets.set("plugin.ts", `export function init() { throw new Error("broken template") }`);
+      assertEquals((await cms.node.api(node, { name: "cms.cont.remote.broken", template: remote.name })).ok, false);
     } finally {
-      globalThis.fetch = fetch;
-      app.modules.get = get;
+      globalThis.fetch = originalFetch;
     }
     const copied = dir + "module/cms.cont.remote.copy/";
     assert((await Deno.readTextFile(copied + "manifest.json")).includes(`"name":"cms.cont.remote.copy"`), "remote manifest is renamed");
     assertEquals(await Deno.readTextFile(copied + "pub/main.css"), `[qcms-mod="cont.remote.copy"] {\n}\n`);
     assertEquals(await Deno.readFile(copied + "pub/pixel.bin"), new Uint8Array([0xff, 0x00, 0xfe]));
+    assertEquals(await Deno.readTextFile(copied + "pub/name#part.txt"), "cms.cont.remote.copy");
     assertEquals(await Deno.stat(dir + "module/cms.cont.remote.failed").then(() => true, () => false), false, "a failed download leaves nothing");
+    assertEquals(app.modules.get("cms.cont.remote.broken"), undefined, "a module that cannot link is forgotten");
 
     await app.db.close();
     await Deno.remove(dir, { recursive: true });

@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "../../core/tests/deps.ts";
+import { assertEquals, assertRejects, assertStringIncludes } from "../../core/tests/deps.ts";
 import { toFileUrl } from "@std/path";
 import { App } from "../../core/mod.ts";
 import { writeIndex } from "../plugin.ts";
@@ -46,6 +46,10 @@ Deno.test({
       JSON.parse(await Deno.readTextFile(dir + "store/t.one/manifest.json")).files,
       ["manifest.json", "plugin.ts", "pub/extra.js", "pub/main.css"],
     );
+
+    await Deno.writeTextFile(dir + "store/t.one/manifest.json", "{");
+    await assertRejects(() => writeIndex(catalogStore), SyntaxError);
+    assertEquals(await Deno.readTextFile(dir + "store/t.one/manifest.json"), "{", "a broken manifest is not overwritten");
 
     await app.db.close();
     await Deno.remove(dir, { recursive: true });
