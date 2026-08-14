@@ -317,3 +317,41 @@ Deno.test({
     await Deno.remove(dir, { recursive: true });
   },
 });
+
+// Two stores offering the same name: the module can be moved from one to the other without
+// reinstalling it — the row and everything it owns stay, only the code comes from elsewhere.
+Deno.test({
+  name: "a module can be relocated to another store",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const dir = await Deno.makeTempDir() + "/";
+    for (const store of ["a", "b"]) {
+      await Deno.mkdir(`${dir + store}/r.mod`, { recursive: true });
+      await Deno.writeTextFile(`${dir + store}/r.mod/plugin.ts`, `
+        export const from = "${store}";
+        export async function install({ app }) {
+          await Deno.writeTextFile(app.appPATH + "installs.log", "${store}\\n", { append: true });
+        }
+      `);
+      await Deno.writeTextFile(`${dir + store}/r.mod/manifest.json`, `{ "dependencies": ["core"] }`);
+    }
+    const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+    app.modules.add(corePlugin);
+    const [a, b] = [app.stores.add(toFileUrl(dir + "a/").href), app.stores.add(toFileUrl(dir + "b/").href)];
+    await app.init();
+
+    await a.install("r.mod");
+    assertEquals(app.modules.get("r.mod")?.plugin.from, "a");
+
+    await app.modules.relocate("r.mod", b.moduleUrl("r.mod"));
+    assertEquals(app.modules.get("r.mod")?.plugin.from, "b", "the code now comes from the other store");
+    assert(app.modules.linked("r.mod"), "and it is linked again");
+    assertEquals((await app.db.query`SELECT url FROM module WHERE name = 'r.mod'`)[0].url, b.moduleUrl("r.mod"));
+    assertEquals(await lines(dir + "installs.log"), ["a"], "install() belongs to the row, not to the source");
+
+    await assertRejects(() => app.modules.relocate("core", corePlugin), Error, "the application declares it");
+    await app.db.close();
+    await Deno.remove(dir, { recursive: true });
+  },
+});

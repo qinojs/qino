@@ -20,7 +20,7 @@ const isSuperuser = () => !!getCtx().user?.superuser;
 const LOCKED = new Set(["core", name]);
 
 // What is worth asking about before it happens.
-const CONFIRM = new Set(["repair", "reset", "uninstall", "unlink"]);
+const CONFIRM = new Set(["repair", "reset", "uninstall", "unlink", "useSource"]);
 
 // One colour language, four things it can say: red deletes what a module keeps, orange writes into
 // one, green is the single action an untouched row exists for, blue marks a module that is not
@@ -36,7 +36,7 @@ const TONE: Record<string, string> = {
 // Declared modules outlive any uninstall, so the page offers neither uninstall nor deactivate.
 const fixed = (app: App, mod: string) => LOCKED.has(mod) || app.modules.declared(mod);
 
-type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere" | "orphan";
+type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
 
 /** The one thing a row is about: everything it offers follows from this. A row is a module *and*
  *  a store, so the same module can be installed in one row and merely on offer in the next —
@@ -45,7 +45,8 @@ function state(app: App, mod: string, store?: Store): RowState {
   if (app.modules.failures()[mod]) return "broken";
   const known = app.modules.get(mod);
   // Storeless and unimported leaves only one origin: a row in the module table nothing can load.
-  if (!known) return store ? "available" : "orphan";
+  // Same state as a failed import — a row with nothing behind it; only the reason differs.
+  if (!known) return store ? "available" : "broken";
   const mine = store ? known.source === store.moduleUrl(mod) : !offered(app, known);
   return !mine ? "elsewhere" : app.modules.linked(mod) ? "active" : "inactive";
 }
@@ -115,14 +116,14 @@ function labeller(app: App): (url: string) => string {
 // Keyed by action and by state, so a row picks its texts by what it is.
 async function labels(app: App) {
   const t = app.t;
-  const [install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken, elsewhere, orphan] = await Promise.all([
-    t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`Repair`, t`Reset`, t`Add store`, t`Write index`,
-    t`active`, t`inactive`, t`available`, t`not importable`, t`installed from another store`, t`leftover entry, no store offers it`,
+  const [install, uninstall, link, unlink, repair, reset, useSource, addStore, writeIndex, active, inactive, available, broken, elsewhere, noStore] = await Promise.all([
+    t`Install`, t`Uninstall`, t`Activate`, t`Deactivate`, t`Repair`, t`Reset`, t`Use this source`, t`Add store`, t`Write index`,
+    t`active`, t`inactive`, t`available`, t`broken`, t`installed from another store`, t`leftover entry, no store offers it`,
   ]);
-  return { install, uninstall, link, unlink, repair, reset, addStore, writeIndex, active, inactive, available, broken, elsewhere, orphan };
+  return { install, uninstall, link, unlink, repair, reset, useSource, addStore, writeIndex, active, inactive, available, broken, elsewhere, noStore };
 }
 type Labels = Awaited<ReturnType<typeof labels>>;
-type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
+type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset" | "useSource";
 
 // --- rows -----------------------------------------------------------------
 // The row carries mod, store and state: the client reads them for its filter and its API calls.
@@ -135,7 +136,8 @@ function ranks(app: App): Map<string, number> {
 
 async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string, rank: Map<string, number>): Promise<HtmlString> {
   const st = state(app, mod, store);
-  const why = app.modules.failures()[mod];
+  // Every broken row says why: the import error, or that nothing offers the name any more.
+  const why = st !== "broken" ? undefined : app.modules.failures()[mod] ?? l.noStore;
   const known = app.modules.get(mod);
   const all = app.modules.all();
   const iconMod = !store || known?.source === store.moduleUrl(mod)
@@ -155,13 +157,13 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
     html`<button data-act=${act}${TONE[act] ? html` class=${TONE[act]}` : ""}${CONFIRM.has(act) ? html` u2-confirm` : ""}>${l[act]}</button>`;
   // Seeding again works for anything linked, declared modules included — that is how an older
   // installation gets the default set it was never installed with. A row for a store the module did
-  // not come from offers nothing: installing it again would collide with the name already taken.
+  // not come from cannot install it — the name is taken — but it can take the name over.
   const acts = st === "available"
     ? [btn("install")]
-    : st === "broken" || st === "orphan"
+    : st === "broken"
     ? [btn("uninstall")]
     : st === "elsewhere"
-    ? []
+    ? fixed(app, mod) ? [] : [btn("useSource")]
     : [
       ...(st === "active" ? [btn("repair"), ...(known?.plugin.uninstall ? [btn("reset")] : [])] : []),
       ...(fixed(app, mod) ? [] : [btn(st === "active" ? "unlink" : "link"), btn("uninstall")]),
@@ -243,6 +245,10 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<{ 
         // Through the store, so the request names a store and a module — never a URL to import.
         await target().install(mod);
         return { ok: true }; // installing a dependency may reactivate other rows
+      case "useSource":
+        if (LOCKED.has(mod)) throw new Error(`Cannot relocate "${mod}"`);
+        await app.modules.relocate(mod, target().moduleUrl(mod));
+        return { ok: true }; // the row of the store it came from changes with it
       case "uninstall":
         if (LOCKED.has(mod)) throw new Error(`Cannot uninstall "${mod}"`);
         await app.modules.uninstall(mod);
@@ -309,7 +315,6 @@ export async function renderOverview(node: Node): Promise<HtmlString> {
         <option value=available>${l.available}
         <option value=elsewhere>${l.elsewhere}
         <option value=broken>${l.broken}
-        <option value=orphan>${l.orphan}
       </select>
       <input type=search autofocus data-filter=search placeholder="${t`Search`}">
     </div>
@@ -359,6 +364,6 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
 
   return html.async`<div>
   <b>${mods.length - inactive.length}</b> ${t`active`} · <b>${app.stores.all().length}</b> ${t`stores`}
-  ${broken ? html.async` · <small class=u2-badge style="background:var(--red)">${broken} ${t`not importable`}</small>` : ""}
+  ${broken ? html.async` · <small class=u2-badge style="background:var(--red)">${broken} ${t`broken`}</small>` : ""}
 </div>${recent}${sleeping}`;
 }

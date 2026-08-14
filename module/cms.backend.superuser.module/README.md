@@ -7,7 +7,7 @@ A store is a `store.json` catalog; a module named `x.y` lives beside it under `x
 (see [core/docs/stores.md](../core/docs/stores.md)). Any `file:`, `http:` or `https:` URL works.
 
 The overview combines the stores and every module the application knows of — from a catalog, declared in
-`server.ts`, or installed and no longer importable. Filter by store and state, search by name, or
+`server.ts`, or installed and no longer loadable. Filter by store and state, search by name, or
 click a store to filter by it; that happens in the browser, so the list never reloads while you
 narrow it down. A module name opens its detail page with exports, schemas, API routes, dependencies
 and source files.
@@ -17,9 +17,14 @@ in `server.ts` has no row of its own and therefore no remove button — the diff
 the difference in removability.
 
 Per module the page offers what the state allows: install, then activate/deactivate (runtime only,
-a restart re-links) and uninstall, which lets the module clean up and forgets it. *not importable*
-means the row survived its code — a deleted folder, an unreachable host. Those are skipped at boot
-instead of stopping it, and uninstall is the way to drop the row.
+a restart re-links) and uninstall, which lets the module clean up and forgets it. *broken* means the
+row survived its code — a deleted folder, an unreachable host, or a name nothing offers any
+more; the row says which. Those are skipped at boot instead of stopping it, and uninstall is the way
+to drop the row.
+
+A module two stores offer is listed under both; the row of the store it did *not* come from offers
+*Use this source*, which relinks it from there and rewrites its row — the module keeps everything it
+owns, and while something depends on it, only a restart can move it.
 
 An action goes through the node API and answers with its own row, which replaces the old one in
 place: the new buttons are the confirmation, and only a failure raises an alert. Adding or removing

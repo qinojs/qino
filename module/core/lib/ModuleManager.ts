@@ -264,6 +264,20 @@ export class ModuleManager {
     delete this.#modules[name];
   }
 
+  /** Same module, other source: where its code comes from changes, what it owns stays. Throws like
+   *  unlink() while something linked depends on it. The row is written last, so a failed import
+   *  leaves it pointing at the source that worked and the next boot is back where it started. */
+  async relocate(name: string, url: string): Promise<void> {
+    if (this.#declared.has(name)) throw new Error(`Cannot relocate "${name}": the application declares it`);
+    if (!this.#modules[name]) throw new Error(`Cannot relocate "${name}": not imported`); // never an install in disguise
+    const linked = this.#linked.has(name); // unlink() forgets it, and a deactivated module stays deactivated
+    this.unlink(name);
+    delete this.#modules[name]; // import() refuses a name it already holds
+    await this.import(url, name);
+    if (linked) await this.link(name);
+    await this.#app.db.table("module").ensure({ name, url });
+  }
+
   // Run a registered module's hooks at runtime. Idempotent; its dependencies must already be linked.
   async link(name: string): Promise<void> {
     const mod = this.#modules[name];
