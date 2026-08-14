@@ -68,7 +68,7 @@ class MysqlDriver extends DbDriver {
     this.#pool = mysql.createPool({
       ...this.#connParams, database: this.#database,
       charset: "utf8mb4", multipleStatements: false,
-      waitForConnections: true, connectionLimit: 4, timezone: "Z",
+      waitForConnections: true, connectionLimit: 8, timezone: "Z",
     });
     this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [SQL_MODE]));
   }

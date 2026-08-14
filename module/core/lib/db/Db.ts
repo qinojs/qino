@@ -85,7 +85,7 @@ export class Db extends Emitter<DbEvents> {
   get tables(): Record<string, DbTable> { return this.#tables; }
 
   async #run<T>(fn: () => Promise<T>, sql: string): Promise<T> {
-    try {
+    try { //console.log(sql);
       return await fn();
     } catch (e) {
       console.error("db: " + (e instanceof Error ? e.message : e) + "\n" + sql.replace(/\s+/g, " "), e);
