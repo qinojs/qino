@@ -4,23 +4,35 @@ import { alert } from "@qino/u2/js/dialog/dialog.js";
 cms.initNode("backend.config.identity", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
+  const timers = new WeakMap();
 
-  el.addEventListener("submit", async (event) => {
-    const form = event.target.closest("[data-identity]");
-    if (!form) return;
-    event.preventDefault();
+  const save = async (input) => {
+    if (!input.name || !input.checkValidity()) return;
+    const status = input.closest(".u2-card").querySelector("[data-status]");
+    status.textContent = "…";
     try {
-      await node.api.post({ save: Object.fromEntries(new FormData(form)) });
-      const status = form.querySelector("[data-status]");
+      await node.api.post({ save: { [input.name]: input.value } });
       status.textContent = await t`Saved`;
-      setTimeout(() => status.textContent = "", 2000);
     } catch (e) {
+      status.textContent = "";
       await alert(e.message);
     }
+  };
+
+  el.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!input.name || input.type === "file") return;
+    clearTimeout(timers.get(input));
+    timers.set(input, setTimeout(() => save(input), 500));
   });
 
   el.addEventListener("change", async (event) => {
     const input = event.target.closest("[data-asset] input[type=file]");
+    if (!input) {
+      clearTimeout(timers.get(event.target));
+      await save(event.target);
+      return;
+    }
     const file = input?.files?.[0];
     if (!file) return;
     try {

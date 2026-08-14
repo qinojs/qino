@@ -11,30 +11,28 @@ async function field(app: App, path: string, label: string, required = false): P
   <td>${html.raw(toInput(item.schema ?? {}, { name: path, value: String(await item.proxy ?? "").trim(), required }))}`;
 }
 
-const card = (title: string, save: string, fields: Array<HtmlString | Promise<HtmlString>>) => html.async`<form class=u2-card data-identity style="flex:1 1 24rem">
-  <div class=-head>${title}</div>
+const card = (title: string, fields: Array<HtmlString | Promise<HtmlString>>) => html.async`<div class=u2-card style="flex-grow:auto">
+  <div class=-head>${title} <small data-status aria-live=polite></small></div>
   <table class=u2-table>${fields}</table>
-  <div class=-body><button type=submit>${save}</button> <span data-status></span></div>
-</form>`;
+</div>`;
 
 export async function render(node: Node): Promise<HtmlString> {
   const app = node.app;
   const t = app.t;
-  const save = await t`Save`;
   return html.async`<div class=u2-flex>
-  ${card(await t`Portal`, save, [
+  ${card(await t`Portal`, [
     field(app, "name", await t`Name`, true),
     field(app, "alternateName", await t`Short name`),
     field(app, "description", await t`Description`),
     field(app, "url", await t`Website`),
   ])}
-  ${card(await t`Organization`, save, [
+  ${card(await t`Organization`, [
     field(app, "organization.name", await t`Name`),
     field(app, "organization.legalName", await t`Legal name`),
     field(app, "organization.taxID", await t`Tax ID`),
     field(app, "organization.vatID", await t`VAT ID`),
   ])}
-  ${card(await t`Address`, save, [
+  ${card(await t`Address`, [
     field(app, "organization.address.streetAddress", await t`Street address`),
     field(app, "organization.address.extendedAddress", await t`Address addition`),
     field(app, "organization.address.postalCode", await t`Postal code`),
@@ -42,13 +40,13 @@ export async function render(node: Node): Promise<HtmlString> {
     field(app, "organization.address.addressRegion", await t`Region`),
     field(app, "organization.address.addressCountry", await t`Country code`),
   ])}
-  ${card(await t`Contact`, save, [
+  ${card(await t`Contact`, [
     field(app, "contact.name", await t`Name`),
     field(app, "contact.email", await t`Email`),
     field(app, "contact.telephone", await t`Telephone`),
   ])}
-  <form class=u2-card data-identity data-brand style="flex:1 1 auto">
-    <div class=-head>${t`Brand`}</div>
+  <div class=u2-card data-brand style="flex:1 1 auto">
+    <div class=-head>${t`Brand`} <small data-status aria-live=polite></small></div>
     <table class=u2-table>
       ${field(app, "brand.fontFamily", await t`Font family`)}
       ${field(app, "brand.primaryColor", await t`Primary color`)}
@@ -58,8 +56,7 @@ export async function render(node: Node): Promise<HtmlString> {
       ${asset(node, "icon", await t`Icon`, "image/*")}
       ${asset(node, "font", await t`Font file`, ".woff2,.woff,.ttf,.otf")}
     </table>
-    <div class=-body><button type=submit>${save}</button> <span data-status></span></div>
-  </form>
+  </div>
 </div>`;
 }
 
