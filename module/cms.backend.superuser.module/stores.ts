@@ -127,7 +127,13 @@ type ModAct = "install" | "uninstall" | "link" | "unlink" | "repair" | "reset";
 // --- rows -----------------------------------------------------------------
 // The row carries mod, store and state: the client reads them for its filter and its API calls.
 
-async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string): Promise<HtmlString> {
+/** Link order as name → position. Only imported, unbroken modules have one — and an inactive module
+ *  whose dependency was uninstalled leaves the graph unorderable, which may cost the column, not the page. */
+function ranks(app: App): Map<string, number> {
+  try { return new Map(app.modules.order().map((name, i) => [name, i + 1])); } catch { return new Map(); }
+}
+
+async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string, rank: Map<string, number>): Promise<HtmlString> {
   const st = state(app, mod, store);
   const why = app.modules.failures()[mod];
   const known = app.modules.get(mod);
@@ -165,6 +171,7 @@ async function moduleRow(app: App, mod: string, store: Store | undefined, l: Lab
     <td data-value="${mod}" title="${why ?? description}">${known ? html`<a href="${detail.search}">${mod}</a>` : mod}
     <td title="${store?.url}"><small>${store ? label(store.url) : app.modules.declared(mod) ? "server.ts" : "—"}</small>
     <td>${why ? html`<strong>${l.broken}</strong><br><small>${why}</small>` : l[st]}
+    <td data-value="${rank.get(mod) ?? ""}" style="text-align:center"><small>${rank.get(mod) ?? ""}</small>
     <td data-value="${dependencies}" style="text-align:center">${dependencies}
     <td data-value="${neededBy}" style="text-align:center">${neededBy}
     <td title="${description}" style="max-width:30rem;overflow:hidden;text-overflow:ellipsis">${description}
@@ -261,7 +268,7 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<{ 
   }
   // Installing or removing a module changes the rows of every *other* store offering it too, so
   // those two reload the page; the rest only ever touch their own row.
-  return { ok: true, row: String(await moduleRow(app, mod, app.stores.get(store), await labels(app), labeller(app))) };
+  return { ok: true, row: String(await moduleRow(app, mod, app.stores.get(store), await labels(app), labeller(app), ranks(app))) };
 }
 
 // --- view -----------------------------------------------------------------
@@ -273,6 +280,7 @@ export async function renderOverview(node: Node): Promise<HtmlString> {
   const label = labeller(app);
   const cats = await catalogs(app);
   const mods = await moduleList(app, cats);
+  const rank = ranks(app);
   const su = isSuperuser();
 
   return html.async`<div class="u2-flex">
@@ -305,20 +313,21 @@ export async function renderOverview(node: Node): Promise<HtmlString> {
       </select>
       <input type=search autofocus data-filter=search placeholder="${t`Search`}">
     </div>
-    <div style="overflow:auto; max-height:70vh; padding:0">
+    <u2-table style="overflow:auto; max-height:70vh; padding:0">
       <table class="u2-table -Sticky" style="white-space:nowrap">
         <thead><tr>
           <th>
-          <th>${t`Module`}
-          <th>${t`Store`}
-          <th>${t`State`}
+          <th data-sort-handler>${t`Module`}
+          <th data-sort-handler>${t`Store`}
+          <th data-sort-handler>${t`State`}
+          <th data-sort-handler title="${t`Load order: every module comes after the ones it needs`}">${t`order`}
           <th data-sort-handler title="${t`Number of dependencies`}">${t`dependencies`}
           <th data-sort-handler title="${t`Required by`}">${t`used by`}
           <th data-sort-handler>${t`Description`}
           <th>
-        <tbody>${mods.map(({ mod, store }) => moduleRow(app, mod, store, l, label))}
+        <tbody>${mods.map(({ mod, store }) => moduleRow(app, mod, store, l, label, rank))}
       </table>
-    </div>
+    </u2-table>
     <div><small>${t`Uninstalling deletes what the module keeps; deactivating only unhooks it. Repair recreates what was deleted, resetting removes it first.`}</small></div>
   </div>
 </div>`;

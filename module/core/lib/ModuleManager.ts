@@ -130,6 +130,9 @@ export class ModuleManager {
   // Installed modules that could not be imported this boot, and why; uninstall() is the way out.
   failures(): Record<string, string> { return this.#failed; }
 
+  /** The order everything runs in: dependencies before dependents. A module's index is its position. */
+  order(): string[] { return this.#order(); }
+
   /** Declare a module for import during app.init(). A relative string resolves against appPATH —
    *  pass `new URL("./x/plugin.ts", import.meta.url)` for "relative to this source file". */
   add(spec: string | URL, name?: string): this {
