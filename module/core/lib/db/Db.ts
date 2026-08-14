@@ -42,6 +42,7 @@ export class Db extends Emitter<DbEvents> {
     this.#dialect = { mysql: mysqlDialect, sqlite: sqliteDialect, postgres: pgDialect }[this.#driver.dialect];
     
     // Any write through a table reaches the row object holding that row, whoever wrote it.
+    this.on("table:insert-after", ({ table, id }) => table.invalidate(id)); // a handle may hold "does not exist"
     this.on("table:update-after", ({ table, id }) => table.invalidate(id));
     this.on("table:delete-after", ({ table, id }) => table.invalidate(id, true));
   }
@@ -85,7 +86,7 @@ export class Db extends Emitter<DbEvents> {
   get tables(): Record<string, DbTable> { return this.#tables; }
 
   async #run<T>(fn: () => Promise<T>, sql: string): Promise<T> {
-    try { //console.log(sql);
+    try { console.log(sql);
       return await fn();
     } catch (e) {
       console.error("db: " + (e instanceof Error ? e.message : e) + "\n" + sql.replace(/\s+/g, " "), e);
