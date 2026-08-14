@@ -278,6 +278,13 @@ export class DbTable {
     if (!this.#rows.get(id)?.deref()) this.#rows.delete(id);
   });
 
+  // Second way in, for the tables looked up by something other than their key (client.hash,
+  // log_ip.ip). Same rows, same WeakRef lifetime — only the key differs.
+  #rowsBy = new Map<string, WeakRef<DbRow>>();
+  #rowsByFinalizer = new FinalizationRegistry<string>((key) => {
+    if (!this.#rowsBy.get(key)?.deref()) this.#rowsBy.delete(key);
+  });
+
   // The class lives on the table, never in a module-global registry: several tenants run the same
   // module code in one runtime, and each needs its own mapping.
   #rowClass: typeof DbRow | null = null;
@@ -305,24 +312,17 @@ export class DbTable {
     return row as T;
   }
 
-  // Second way into the identity map, for the tables that are looked up by something other than
-  // their key (client.hash, log_ip.ip, page_url.url). Same WeakRef lifetime as #rows.
-  #byValue = new Map<string, WeakRef<DbRow>>();
-  #byFinalizer = new FinalizationRegistry<string>((key) => {
-    if (!this.#byValue.get(key)?.deref()) this.#byValue.delete(key);
-  });
-
-  /** Loaded row found by a non-key column, or undefined. Repeated lookups of the same value are free.
-   *  A value with no row is not remembered — the caller inserts it, and the next lookup indexes it. */
+  /** Loaded row found by a unique column, or undefined — repeated lookups of the same value are free.
+   *  A value with no row is not remembered: whoever missed inserts it, and the next lookup indexes it. */
   async rowBy<T extends DbRow = DbRow>(field: string, value: any): Promise<T | undefined> {
-    const key = `${field} ${value}`;
-    const hit = this.#byValue.get(key)?.deref();
+    const key = `${field}\0${value}`;
+    const hit = this.#rowsBy.get(key)?.deref();
     if (hit && !hit.$stale) return hit as T;
     const vs = await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${sql.id(field)} = ${value} LIMIT 1`;
-    if (!vs) { this.#byValue.delete(key); return; }
+    if (!vs) { this.#rowsBy.delete(key); return; }
     const row = this.row<T>(vs).$receive(vs);
-    this.#byValue.set(key, new WeakRef(row));
-    this.#byFinalizer.register(row, key);
+    this.#rowsBy.set(key, new WeakRef(row));
+    this.#rowsByFinalizer.register(row, key);
     return row;
   }
 
