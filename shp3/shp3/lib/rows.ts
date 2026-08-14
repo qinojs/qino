@@ -76,6 +76,9 @@ export class Product extends ShopRow {
     await this.$shop.fire("product-check", e);
     return e.errors;
   }
+
+  async node(): Promise<Node | undefined> { return cms(this.$shop.app).node(Number(this.$id)); }
+
 }
 
 export class OrderItem extends ShopRow {
@@ -395,11 +398,11 @@ export async function ensureProduct(node: Node): Promise<Product | undefined> {
 }
 
 /** A product is a page, so its title is the page's — translated, with the page name as fallback. */
-async function productTitle(product: Product, lang?: string) {
+async function productTitle(product: Product, lang?: string) { // tobi: wieso ist das nicht ein member von Product?
   const app = product.$shop.app;
   const node = await cms(app).node(Number(product.$id));
   // An untranslated language is an empty string, not null — so each step has to be checked.
-  const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def) || node.vs.name;
+  const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def);
   const e = { product, title: String(title || product.$id) };
   await product.$shop.fire("item-title", e);
   return e.title;
