@@ -5,8 +5,6 @@
  */
 import { getCtx, Output } from "@qino/qino";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
-
 import type { Ctx, App } from "@qino/qino";
 
 const REPORTER_ROOT = "https://cdn.jsdelivr.net/gh/nuxodin/reporter.js@1.2.0/";
@@ -18,7 +16,7 @@ await import(REPORTER_PATH);
 type Report = Record<string, unknown>;
 
 export { healthChecks } from "./healthChecks.ts";
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
   properties: {

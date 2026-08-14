@@ -2,12 +2,10 @@ import { hee } from "@qino/qino";
 import { mail } from "@qino/qino/mail";
 import { shp3 } from "@qino/qino/shp3";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
-
 import type { App } from "@qino/qino";
 import type { Order, Product } from "@qino/qino/shp3";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
   properties: {

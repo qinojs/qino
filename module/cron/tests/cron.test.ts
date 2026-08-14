@@ -7,10 +7,10 @@ import { nextRun, scheduleKey, validateJob } from "../calendar.ts";
 import { Scheduler } from "../scheduler.ts";
 
 import type { App } from "@qino/qino";
-import type { Every, Job } from "../mod.ts";
+import type { Job } from "../mod.ts";
 
 const noop = () => {};
-const job = (every: Every, options: Partial<Job> = {}): Job => ({ every, run: noop, ...options } as Job);
+const job = (every: Job["every"], options: Partial<Job> = {}): Job => ({ every, run: noop, ...options } as Job);
 const unix = (iso: string) => Date.parse(iso) / 1000;
 const UTC = { timeZone: "UTC" };
 

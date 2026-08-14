@@ -15,11 +15,11 @@ export type CheckResult = {
 export type CheckFn = { (): Promise<CheckResult> | CheckResult; mod?: string };
 
 /** Checks grouped by severity: error, warning, notice, cleanup, repair. */
-export type HealthTypes = Record<string, Record<string, CheckFn>>;
+export type HealthChecks = Record<string, Record<string, CheckFn>>;
 
 /** Collects the healthChecks hook of every linked module, tagging each check with its module name. */
-export async function getHealthTypes(app: App): Promise<HealthTypes> {
-  const types: HealthTypes = {
+export async function getHealthChecks(app: App): Promise<HealthChecks> {
+  const types: HealthChecks = {
     error:   {},
     warning: {},
     notice:  {},
@@ -30,7 +30,7 @@ export async function getHealthTypes(app: App): Promise<HealthTypes> {
   for (const mod of Object.values(app.modules.all())) {
     const hc = mod.plugin.healthChecks;
     if (!hc) continue;
-    const checks: HealthTypes = await hc(app);
+    const checks: HealthChecks = await hc(app);
     for (const [type, items] of Object.entries(checks)) {
       for (const [key, item] of Object.entries(items)) {
         (types[type] ??= {})[key] = item;

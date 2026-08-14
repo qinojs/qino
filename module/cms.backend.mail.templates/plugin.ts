@@ -2,7 +2,6 @@ import { getCtx, hee, html, unixTime } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 import { mail } from "@qino/qino/mail";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import manifest from "./manifest.json" with { type: "json" };
 
 import type { HtmlString, App } from "@qino/qino";
@@ -10,7 +9,7 @@ import type { Node } from "@qino/qino/cms";
 
 const { name } = manifest;
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Mail Templates", de: "Mail-Vorlagen" });

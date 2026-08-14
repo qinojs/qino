@@ -1,6 +1,5 @@
 import { header, Output } from "@qino/qino";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { CMS, cms, cmsInstances } from "./lib/CMS.ts";
 import { initNodeChanged } from "./lib/nodeChanged.ts";
 import { cmsCtx } from "./lib/CmsContext.ts";
@@ -11,7 +10,7 @@ import type { App, DbFile } from "@qino/qino";
 export { api } from "./api.ts";
 
 export { healthChecks } from "./healthChecks.ts";
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
     properties: {

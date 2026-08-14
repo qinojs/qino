@@ -21,14 +21,14 @@ const rate = (halfLife: number) => Math.LN2 / halfLife;
 /** ln(exp(a) + exp(b)), without overflowing. */
 const logAdd = (a: number, b: number) => Math.max(a, b) + Math.log1p(Math.exp(-Math.abs(a - b)));
 
-export type Scope = { id: number; half: number };
+export type ScoreScope = { id: number; half: number };
 
-const registry = new WeakMap<Db, Map<string, Scope>>();
+const registry = new WeakMap<Db, Map<string, ScoreScope>>();
 
 /** The registered scopes, table name → scope id and half-life. Treat it as read-only. */
-export const scopes = (db: Db): Map<string, Scope> => registry.getOrInsertComputed(db, () => new Map<string, Scope>());
+export const scopes = (db: Db): Map<string, ScoreScope> => registry.getOrInsertComputed(db, () => new Map<string, ScoreScope>());
 
-function scope(db: Db, tbl: string): Scope {
+function scope(db: Db, tbl: string): ScoreScope {
   const found = scopes(db).get(tbl);
   if (!found) throw new Error(`score: table "${tbl}" is not scored — register it via scored(db, "${tbl}", halfLife)`);
   return found;

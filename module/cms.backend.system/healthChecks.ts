@@ -1,13 +1,13 @@
 import { hee, getCtx, sql, unixTime, pwVerify, appPathInstances } from "@qino/qino";
 
 import type { App } from "@qino/qino";
-import type { HealthTypes, Solution } from "./lib/healthRegistry.ts";
+import type { HealthChecks, Solution } from "./lib/healthRegistry.ts";
 
-export async function healthChecks(app: App): Promise<HealthTypes> {
+export async function healthChecks(app: App): Promise<HealthChecks> {
   const db       = app.db;
   const settings = app.settings;
 
-  const types: HealthTypes = { error: {}, warning: {}, notice: {}, cleanup: {}, repair: {} };
+  const types: HealthChecks = { error: {}, warning: {}, notice: {}, cleanup: {}, repair: {} };
   const { error, warning, notice, cleanup } = types;
 
   // ── duplicate settings ──────────────────────────────────────────────────

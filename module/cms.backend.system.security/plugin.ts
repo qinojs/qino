@@ -1,7 +1,7 @@
 import { backend } from "@qino/qino/cms.backend";
 import { cms as cmsApp } from "@qino/qino/cms";
 
-import { dbSchema, settingsSchema } from "./schema.ts";
+import { settingsSchema } from "./schema.ts";
 import { initSecurity } from "./guard.ts";
 import { cleanup, settings } from "./store.ts";
 import { backendDashboardWidget, render } from "./view.ts";
@@ -13,7 +13,8 @@ import type { Jobs } from "@qino/qino/cron";
 const { name } = manifest;
 const oldName = "cms.backend.security";
 
-export { dbSchema, settingsSchema };
+export { dbSchema } from "./schema.ts";
+export { settingsSchema };
 
 export const cron = {
   cleanup: {

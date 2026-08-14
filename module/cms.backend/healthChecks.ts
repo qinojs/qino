@@ -2,7 +2,7 @@ import { cms } from "@qino/qino/cms";
 
 import type { App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { HealthTypes } from "@qino/qino/cms.backend.system";
+import type { HealthChecks } from "@qino/qino/cms.backend.system";
 
 /**
  * Backend pages are protected purely via node access (groups/users), not via
@@ -10,7 +10,7 @@ import type { HealthTypes } from "@qino/qino/cms.backend.system";
  * user who is in no group at all — i.e. the page's effective access is > 0
  * without requiring a specific group.
  */
-export function healthChecks(app: App): HealthTypes {
+export function healthChecks(app: App): HealthChecks {
   const db = app.db;
   return {
     error: {

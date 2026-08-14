@@ -5,8 +5,7 @@ import { $item, Db, Emitter, itemReadDeep } from "@qino/qino";
 import type { App, ItemProxy } from "@qino/qino";
 import type { Currency, GeneratedItem, Order, OrderItem, Product } from "./rows.ts";
 
-export type MethodKind = "payments" | "shippings";
-
+type MethodKind = "payments" | "shippings";
 type Errors = Record<string, string>;
 type PricePhase = "initial" | "additions" | "discount" | "final";
 

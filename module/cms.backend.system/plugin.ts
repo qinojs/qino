@@ -1,7 +1,7 @@
 import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import { getHealthTypes } from "./lib/healthRegistry.ts";
+import { getHealthChecks } from "./lib/healthRegistry.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
 import api from "./nodeApi.ts";
 
@@ -48,7 +48,7 @@ async function render(node: Node): Promise<HtmlString> {
 </div>`;
 
   // ── health checks ──────────────────────────────────────────────────────
-  const types = await getHealthTypes(app);
+  const types = await getHealthChecks(app);
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -163,7 +163,7 @@ async function render(node: Node): Promise<HtmlString> {
 
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
-  const types = await getHealthTypes(app);
+  const types = await getHealthChecks(app);
 
   let errors = 0, warnings = 0;
   for (const [type, checks] of Object.entries(types)) {

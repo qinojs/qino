@@ -1,4 +1,4 @@
-import { getHealthTypes } from "./lib/healthRegistry.ts";
+import { getHealthChecks } from "./lib/healthRegistry.ts";
 
 import type { Node } from "@qino/qino/cms";
 
@@ -6,7 +6,7 @@ export default async function (node: Node, vars: Record<string, unknown>): Promi
   if (!vars?.solve_health_item) return;
 
   const app = node.app;
-  const types = await getHealthTypes(app);
+  const types = await getHealthChecks(app);
 
   const itemData = vars.solve_health_item;
   if (!itemData || typeof itemData !== "object") return;

@@ -1,15 +1,14 @@
 import { msgOf, titleOf } from "@qino/qino/messaging";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { mail } from "./mod.ts";
 import { MailManager, mailInstances } from "./lib/MailManager.ts";
 import { handleTrack } from "./lib/tracking.ts";
-import { settingsSchema } from "./lib/transport.ts";
 
 import type { App } from "@qino/qino";
 import type { Channel, Msg, To } from "@qino/qino/messaging";
 
-export { dbSchema, settingsSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+export { settingsSchema } from "./lib/transport.ts";
 export { healthChecks } from "./healthChecks.ts";
 
 // Reachable as a messaging channel; the declaration is inert until messaging looks for it.

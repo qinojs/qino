@@ -2,12 +2,10 @@
 import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
-
 import type { ApiTree, App, Db, Ctx } from "@qino/qino";
 import type { Jobs } from "@qino/qino/cron";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
   properties: {

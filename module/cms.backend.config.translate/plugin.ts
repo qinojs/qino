@@ -1,13 +1,12 @@
 import { html, getCtx, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import api from "./nodeApi.ts";
 
 import type { HtmlString, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.config.translate", { en: "Translate", de: "Übersetzen" });

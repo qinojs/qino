@@ -1,5 +1,4 @@
 // qino-module manifest for core. The public library API lives in ./mod.ts.
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { registerRows } from "./lib/rows.ts";
@@ -9,7 +8,7 @@ import type { DbEvents } from "./lib/db/Db.ts";
 
 export { api } from "./api.ts";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
     properties: {

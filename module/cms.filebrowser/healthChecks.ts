@@ -1,7 +1,7 @@
 import type { App } from "@qino/qino";
-import type { HealthTypes } from "@qino/qino/cms.backend.system";
+import type { HealthChecks } from "@qino/qino/cms.backend.system";
 
-export function healthChecks(app: App): HealthTypes {
+export function healthChecks(app: App): HealthChecks {
   const db = app.db;
   return {
     cleanup: {

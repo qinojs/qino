@@ -1,11 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 import { login, Output, Redirect, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
-
 import type { App, Ctx } from "@qino/qino";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 /** Decode a JWT payload without verifying the signature — safe here: the token comes
  *  straight from the token endpoint over TLS (OIDC allows skipping the signature check). */

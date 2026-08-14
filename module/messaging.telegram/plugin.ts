@@ -1,13 +1,12 @@
 import { Access, getCtx } from "@qino/qino";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { webhook } from "./lib/webhook.ts";
 import { linkUrl, send, userChats } from "./mod.ts";
 
 import type { ApiTree, App } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const messagingChannel: Channel = {
   name: "telegram",

@@ -1,10 +1,8 @@
 import { unixTime } from "@qino/qino";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
-
 import type { Jobs } from "@qino/qino/cron";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 const YEAR = 365 * 24 * 60 * 60;
 

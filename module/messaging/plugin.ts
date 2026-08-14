@@ -1,6 +1,4 @@
-import dbSchema from "./dbschema.json" with { type: "json" };
-
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
   properties: {

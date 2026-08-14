@@ -2,13 +2,11 @@ import { html } from "@qino/qino";
 import { cart, shp3 } from "@qino/qino/shp3";
 import { country } from "@qino/qino/locale.country";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
-
 import type { HtmlString, Ctx } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 import type { Order } from "@qino/qino/shp3";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 const REQUIRED = new Set(["firstname", "lastname", "street", "zip", "city", "country", "email"]);
 

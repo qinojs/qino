@@ -1,6 +1,5 @@
 import { cms } from "@qino/qino/cms";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { bindApp } from "./lib/Shp3.ts";
 import { registerRows } from "./lib/rows.ts";
 import { adoptCart } from "./lib/cart.ts";
@@ -9,7 +8,7 @@ import type { App } from "@qino/qino";
 
 export { api } from "./api.ts";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 // A method is one entry under payments/shippings — modules add themselves, the shop configures them.
 const METHOD_SCHEMA = {

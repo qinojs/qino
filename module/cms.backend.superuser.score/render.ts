@@ -3,7 +3,7 @@ import { fadeLimit, scopes, strength } from "@qino/qino/score";
 
 import type { App, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
-import type { Scope } from "@qino/qino/score";
+import type { ScoreScope } from "@qino/qino/score";
 
 const TOP = sql.raw("10");
 
@@ -39,7 +39,7 @@ export async function list(node: Node): Promise<HtmlString> {
 }
 
 /** One scope: its numbers, then the strongest rows. */
-async function renderScope(app: App, tbl: string, { id, half }: Scope, now: number): Promise<HtmlString> {
+async function renderScope(app: App, tbl: string, { id, half }: ScoreScope, now: number): Promise<HtmlString> {
   const db = app.db;
   const limit = fadeLimit(db, tbl, now);
   const stats = await db.row<Stats>`
@@ -80,7 +80,7 @@ function renderTop(app: App, tbl: string, top: ScoreRow[], now: number): Promise
 }
 
 /** Scopes still in the table whose module no longer registers them — their rows are never pruned. */
-async function renderStale(app: App, known: Map<string, Scope>): Promise<HtmlString> {
+async function renderStale(app: App, known: Map<string, ScoreScope>): Promise<HtmlString> {
   const all = await app.db.query<{ id: number; tbl: string }>`SELECT id, tbl FROM score_scope ORDER BY tbl`;
   const stale = all.filter((s) => !known.has(s.tbl));
   if (!stale.length) return html``;

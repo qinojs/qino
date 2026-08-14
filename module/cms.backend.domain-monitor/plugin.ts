@@ -1,6 +1,5 @@
 import { backend } from "@qino/qino/cms.backend";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { pruneHistory } from "./lib/changes.ts";
 import { runScheduled } from "./lib/monitor.ts";
 import api from "./nodeApi.ts";
@@ -14,7 +13,7 @@ const { name } = manifest;
 
 export { backendDashboardWidget } from "./render.ts";
 
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const ctxSettingsSchema = {
   properties: {

@@ -1,12 +1,11 @@
 import { Output } from "@qino/qino";
 
-import dbSchema from "./dbschema.json" with { type: "json" };
 import { verifyToken } from "./lib/keys.ts";
 
 import type { App } from "@qino/qino";
 
 export { api } from "./api.ts";
-export { dbSchema };
+export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   app.on("authenticate", async ({ ctx }) => {
