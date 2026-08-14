@@ -25,7 +25,7 @@ async function initClient(ctx: Ctx): Promise<void> {
 
     const cid = ctx.req.cookies[cookiePrefix(ctx.app.https, ctx.req.appUrl) + "cid"];
     if (!cid) return registerClient(ctx);
-    const [client] = await db.table("client").all`WHERE hash = ${cid}`; // SELECT *, so ctx.client is loaded
+    const client = await db.table("client").rowBy("hash", cid); // SELECT *, so ctx.client is loaded
     if (!client) return registerClient(ctx);
     ctx.clientId = String(client);
 }
@@ -40,6 +40,10 @@ async function registerClient(ctx: Ctx): Promise<void> {
 function touchSession(ctx: Ctx): void {
     if (ctx.sess) ctx.sess.touch(ctx.userId);
 }
+
+
+const md5 = (s: string) => createHash("md5").update(s).digest("hex");
+const EMPTY_URL = md5(""); // the referer most requests do not have
 
 function initLog(ctx: Ctx): void {
 
@@ -58,11 +62,14 @@ function initLog(ctx: Ctx): void {
       : "";
     data.client_id = ctx.clientId;
 
-    const urlIdOf = async (url: string) => {
-      const hash = createHash("md5").update(url).digest("hex");
-      return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
-          || await db.table("log_url").insert({ url, hash });
+    // id of the dictionary row for that value, inserting it the first time it is ever seen.
+    // rowBy keeps the row, so every repeat — same ip, same browser, same page — costs nothing.
+    const dictId = async (table: string, field: string, values: Record<string, unknown>) => {
+      const row = await db.table(table).rowBy(field, values[field]);
+      return row ? String(row) : await db.table(table).insert(values);
     };
+
+    const urlIdOf = (url: string) => dictId("log_url", "hash", { hash: url ? md5(url) : EMPTY_URL, url });
 
     // runs in the background; consumers await ctx.logId only when they actually need the id
     ctx.logId = (async () => {
@@ -76,8 +83,8 @@ function initLog(ctx: Ctx): void {
         const [url_id, referer_id, ip_id, user_agent_id] = await Promise.all([
           urlId,
           referer === url ? urlId : urlIdOf(referer), // reuse to avoid racing a duplicate log_url row
-          db.one`SELECT id FROM log_ip WHERE ip = ${ip}`.then(id => id || db.table("log_ip").insert({ ip })),
-          db.one`SELECT id FROM log_user_agent WHERE user_agent = ${ua}`.then(id => id || db.table("log_user_agent").insert({ user_agent: ua })),
+          dictId("log_ip", "ip", { ip }),
+          dictId("log_user_agent", "user_agent", { user_agent: ua }),
         ]);
 
         const logId = await db.table("log").insert({ ...data, url_id, referer_id, ip_id, user_agent_id });

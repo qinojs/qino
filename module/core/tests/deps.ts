@@ -36,7 +36,7 @@ export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
   const appFake = {
     sessions: { loadFromRequest: () => session },
     trustedProxyHops: 0,
-    db: { one: () => null },              // an app with an empty database
+    db: { one: () => null, table: () => ({ get: () => undefined }) }, // an app with an empty database
     dbFiles: { file: () => undefined },
     ...app,
     settings: fakeSettings({ core: {}, ...app.settings }),

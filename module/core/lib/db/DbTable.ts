@@ -305,6 +305,27 @@ export class DbTable {
     return row as T;
   }
 
+  // Second way into the identity map, for the tables that are looked up by something other than
+  // their key (client.hash, log_ip.ip, page_url.url). Same WeakRef lifetime as #rows.
+  #byValue = new Map<string, WeakRef<DbRow>>();
+  #byFinalizer = new FinalizationRegistry<string>((key) => {
+    if (!this.#byValue.get(key)?.deref()) this.#byValue.delete(key);
+  });
+
+  /** Loaded row found by a non-key column, or undefined. Repeated lookups of the same value are free.
+   *  A value with no row is not remembered — the caller inserts it, and the next lookup indexes it. */
+  async rowBy<T extends DbRow = DbRow>(field: string, value: any): Promise<T | undefined> {
+    const key = `${field} ${value}`;
+    const hit = this.#byValue.get(key)?.deref();
+    if (hit && !hit.$stale) return hit as T;
+    const vs = await this.#db.row`SELECT * FROM ${sql.id(this)} WHERE ${sql.id(field)} = ${value} LIMIT 1`;
+    if (!vs) { this.#byValue.delete(key); return; }
+    const row = this.row<T>(vs).$receive(vs);
+    this.#byValue.set(key, new WeakRef(row));
+    this.#byFinalizer.register(row, key);
+    return row;
+  }
+
   /** Loaded row, or undefined if there is none. Re-reads only when unloaded or stale. */
   async get<T extends DbRow = DbRow>(id: any): Promise<T | undefined> {
     const row = this.row<T>(id);

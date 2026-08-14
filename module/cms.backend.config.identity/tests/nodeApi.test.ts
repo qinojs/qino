@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { $item, App } from "@qino/qino";
+import { file } from "@qino/qino/identity";
 
 import api from "../nodeApi.ts";
 
@@ -33,6 +34,23 @@ Deno.test("cms.backend.config.identity saves settings and owns its DbFiles", asy
     await api(node, { removeAsset: "logo" });
     assertEquals(await app.db.one`SELECT file_id FROM identity_file WHERE name = ${"logo"}`, undefined);
     assertEquals(await app.db.one`SELECT id FROM file WHERE id = ${second}`, undefined);
+  } finally {
+    await app.db.close();
+  }
+});
+
+// identity.file() holds the whole table; a write anywhere has to drop that cache.
+Deno.test("cms.backend.config.identity: an uploaded asset shows up right away", async () => {
+  const app = await testApp();
+  const node = { app } as never;
+  try {
+    assertEquals(await file(app, "logo"), undefined); // warms the cache while the table is empty
+
+    await api(node, { asset: { name: "logo", dataUrl: "data:image/png;name=logo.png;base64,aGVsbG8=" } });
+    assertEquals((await file(app, "logo"))?.name, "logo.png");
+
+    await api(node, { removeAsset: "logo" });
+    assertEquals(await file(app, "logo"), undefined);
   } finally {
     await app.db.close();
   }

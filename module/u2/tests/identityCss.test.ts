@@ -4,7 +4,7 @@ import { identityCss } from "../mod.ts";
 
 // deno-lint-ignore no-explicit-any
 const appFake = (brand: Record<string, string>, font?: { name: string; url: () => string }): any => ({
-  db: { one: () => font ? 7 : null },
+  db: { table: () => ({ get: () => font && { $get: () => 7 } }) },
   dbFiles: { file: () => font },
   settings: { identity: { brand } },
 });

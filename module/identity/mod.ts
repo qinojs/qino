@@ -4,6 +4,6 @@ import type { App, DbFile } from "@qino/qino";
 
 /** An uploaded brand asset — "logo", "icon" or "font"; undefined while none is set. */
 export async function file(app: App, name: string): Promise<DbFile | undefined> {
-  const id = Number(await app.db.one`SELECT file_id FROM identity_file WHERE name = ${name}`);
-  return id ? await app.dbFiles.file(id) : undefined;
+  const row = await app.db.table("identity_file").get(name);
+  return row ? await app.dbFiles.file(row.$get("file_id")) : undefined;
 }

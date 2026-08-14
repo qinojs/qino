@@ -336,3 +336,37 @@ Deno.test("DbRow: a numeric column reads back as a number, whatever the driver h
     await db.close();
   }
 });
+
+Deno.test("DbTable.rowBy: a lookup by a non-key column lands in the identity map", async () => {
+  const db = await testDb();
+  try {
+    const t = db.table("shop_order");
+    await t.insert({ id: 1, title: "One" });
+
+    const found = await t.rowBy<Order>("title", "One");
+    assertEquals(String(found), "1");
+    assert(found === t.row<Order>(1)); // the object the map already holds, not a second one
+
+    // written past the table layer, so nothing invalidates — the repeat lookup must not have asked
+    await db.exec`UPDATE shop_order SET title = ${"Changed"} WHERE id = ${1}`;
+    assertEquals((await t.rowBy<Order>("title", "One"))?.title, "One");
+
+    await t.update(1, { title: "Renamed" }); // a write through the table does reach the handle
+    assertEquals(await t.rowBy<Order>("title", "One"), undefined);
+    assertEquals(String(await t.rowBy<Order>("title", "Renamed")), "1");
+  } finally {
+    await db.close();
+  }
+});
+
+Deno.test("DbTable.rowBy: a value with no row is not remembered", async () => {
+  const db = await testDb();
+  try {
+    const t = db.table("shop_order");
+    assertEquals(await t.rowBy("title", "Later"), undefined);
+    await t.insert({ id: 1, title: "Later" }); // whoever missed inserts it — the next lookup has to see it
+    assertEquals(String(await t.rowBy("title", "Later")), "1");
+  } finally {
+    await db.close();
+  }
+});
