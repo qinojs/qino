@@ -31,7 +31,6 @@ export const settingsSchema = {
 
     requestWarnMs:         { type: "integer", default: 1500,            description: "Request warn time (ms)" },
     requestMaxMs:          { type: "integer", default: 10000,           description: "Request max time (ms)" },
-    slowMs:                { type: "integer", default: 1500,            description: "Legacy slow time (ms)" },
     largeBody:             { type: "integer", default: 2 * 1024 * 1024, description: "Large body from (bytes)" },
 
     bucketCacheSeconds:    { type: "integer", default: 2,               description: "Bucket cache TTL (s)" },

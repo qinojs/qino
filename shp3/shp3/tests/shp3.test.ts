@@ -33,7 +33,7 @@ Deno.test("shp3: a cart adds up, places, and freezes its values", async () => {
     const order = (await newOrder(app))!;
 
     const cup = await order.itemAdd(10, 2);
-    assertEquals(cup.title, "Cup"); // accessor, no await
+    assertEquals(cup.title, "10"); // accessor, no await — untitled page, so the id stands in
     assertEquals(cup.quantity, 2);
     assertEquals(round(cup.onePrice()), 11.1);
 

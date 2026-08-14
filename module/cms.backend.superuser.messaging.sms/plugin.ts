@@ -13,7 +13,6 @@ const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "SMS", de: "SMS" });
-  await app.db.table("module").delete("cms.backend.superuser.sms");
 }
 
 const RECENT = 7;

@@ -1,4 +1,4 @@
-import { getCtx, html, sql, tableRef, unixTime } from "@qino/qino";
+import { getCtx, html, unixTime } from "@qino/qino";
 import { backend, renderDashboard } from "@qino/qino/cms.backend";
 import * as u2 from "@qino/qino/u2";
 import { channel, channels, messages, userChannels, userMessages } from "@qino/qino/messaging";
@@ -14,19 +14,8 @@ const { name } = manifest;
 
 const OVERVIEW_LIMIT = 100;
 
-const RENAMES = {
-  "cms.backend.superuser.sms": "cms.backend.superuser.messaging.sms",
-  "cms.backend.superuser.telegram": "cms.backend.superuser.messaging.telegram",
-  "cms.backend.superuser.web_push": "cms.backend.superuser.messaging.web_push",
-};
-
 export async function install({ app }: { app: App }): Promise<void> {
-  const parent = await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
-  if (!parent) return;
-  const page = sql.id(tableRef("page"));
-  for (const [oldName, newName] of Object.entries(RENAMES)) {
-    await app.db.exec`UPDATE ${page} SET module = ${newName}, basis = ${parent.id} WHERE module = ${oldName}`;
-  }
+  await backend.install(app, name, { en: "Messaging", de: "Nachrichten" });
 }
 
 export async function render(node: Node): Promise<HtmlString> {

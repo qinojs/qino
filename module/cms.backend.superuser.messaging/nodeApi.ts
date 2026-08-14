@@ -5,13 +5,12 @@ import type { Node } from "@qino/qino/cms";
 
 /** Node access is the permission — replies are limited to an existing user. */
 export default async function api(node: Node, vars: Record<string, unknown>): Promise<unknown> {
-  if (!vars.reply && !vars.telegramReply) return null;
+  if (!vars.reply) return null;
   const app = node.app;
   try {
-    const legacy = vars.telegramReply;
-    const { usr, channel: inputChannel, text: input } = (vars.reply ?? legacy) as Record<string, unknown>;
+    const { usr, channel: inputChannel, text: input } = vars.reply as Record<string, unknown>;
     const usrId = Number(usr);
-    const name = legacy ? "telegram" : String(inputChannel ?? "");
+    const name = String(inputChannel ?? "");
     const text = String(input ?? "").trim();
     const user = Number.isSafeInteger(usrId) && usrId > 0
       ? await app.db.row`SELECT id FROM usr WHERE id = ${usrId}`

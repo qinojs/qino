@@ -13,7 +13,6 @@ const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Telegram", de: "Telegram" });
-  await app.db.table("module").delete("cms.backend.superuser.telegram");
 }
 
 const RECENT = 7;

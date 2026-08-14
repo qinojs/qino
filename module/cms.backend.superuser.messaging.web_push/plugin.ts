@@ -13,7 +13,6 @@ const { name } = manifest;
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, name, { en: "Web Push", de: "Web Push" });
-  await app.db.table("module").delete("cms.backend.superuser.web_push");
 }
 
 const RECENT = 7;

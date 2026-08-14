@@ -77,8 +77,19 @@ export class Product extends ShopRow {
     return e.errors;
   }
 
-  async node(): Promise<Node | undefined> { return cms(this.$shop.app).node(Number(this.$id)); }
+  node(): Promise<Node> { return cms(this.$shop.app).node(Number(this.$id)); }
 
+  /** A product is a page, so its title is the page's — translated, with its id as last resort:
+   *  an order line must read as something, and `page.name` is a structural name, not prose. */
+  async title(lang?: string): Promise<string> {
+    const langs = this.$shop.app.languages;
+    const node = await this.node();
+    // An untranslated language is an empty string, not null — so each step has to be checked.
+    const title = await node.title(lang || langs.def) || await node.title(langs.def);
+    const e = { product: this, title: String(title || this.$id) };
+    await this.$shop.fire("item-title", e);
+    return e.title;
+  }
 }
 
 export class OrderItem extends ShopRow {
@@ -265,7 +276,7 @@ export class Order extends ShopRow {
       item = await db.table("shp3_order_item").add<OrderItem>({
         order_id: this.$id,
         product_id: product.$id,
-        title: await productTitle(product, this.lang),
+        title: await product.title(this.lang),
         config: configString,
       });
       this.#items = null;
@@ -395,17 +406,6 @@ const PRICE_PHASES = ["initial", "additions", "discount", "final"] as const;
 export async function ensureProduct(node: Node): Promise<Product | undefined> {
   const table = node.app.db.table("shp3_product");
   return await table.get<Product>(node.id) ?? await table.add<Product>({ id: node.id });
-}
-
-/** A product is a page, so its title is the page's — translated, with the page name as fallback. */
-async function productTitle(product: Product, lang?: string) { // tobi: wieso ist das nicht ein member von Product?
-  const app = product.$shop.app;
-  const node = await cms(app).node(Number(product.$id));
-  // An untranslated language is an empty string, not null — so each step has to be checked.
-  const title = await node.title(lang || app.languages.def) || await node.title(app.languages.def);
-  const e = { product, title: String(title || product.$id) };
-  await product.$shop.fire("item-title", e);
-  return e.title;
 }
 
 export function registerRows(db: Db): void {

@@ -30,7 +30,7 @@ export function responseSignal(info: any, set: Record<string, number>): Signal |
   let reason = info.status >= 400 ? "http " + info.status : "request";
   let prio = info.status >= 500 ? "error" : "notice";
   let kind = "request";
-  const warnMs = set.requestWarnMs || set.slowMs || 1500;
+  const warnMs = set.requestWarnMs || 1500;
   const maxMs = Math.max(warnMs + 1, set.requestMaxMs || warnMs * 6);
   // Soft timeout: a real abort needs a core wrapper around the request flow.
   if (info.duration_ms > maxMs) { score += Math.min(90, Math.round(info.duration_ms / maxMs) * 30); reason = "request max time"; prio = "error"; kind = "load"; }
