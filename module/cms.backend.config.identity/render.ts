@@ -67,7 +67,7 @@ async function asset(node: Node, name: string, label: string, accept: string): P
   const existing = await (await identity.file(node.app, name))?.exists();
   // An image shows itself, anything else (the font) its file name.
   const shown = existing && (existing.mime.startsWith("image/")
-    ? html`<img src="${await existing.url({ h: 96 })}" alt="${existing.name}" height=48>`
+    ? html`<img src="${await existing.url({ h: 96 })}" alt="${existing.name}" style="max-height:9rem"><br>`
     : existing.name);
   return html.async`<tr data-asset=${name}>
   <th>${label}
