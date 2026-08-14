@@ -88,7 +88,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
     for (const l of allLangs) {
       if (l === currentLang) continue;
       u.searchParams.set("lang", l);
-      links.push(html`<a href="${u.pathname + u.search}">${l}</a> `);
+      links.push(html`<a style="color:inherit" href="${u.pathname + u.search}">${l}</a> `);
     }
     langHtml = html`<li><span class=-item style="padding:.375rem 1rem; text-align:right">${links}</span>`;
   }
@@ -109,14 +109,20 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
     <nav id=nav>
       <ul>
         ${navHtml}
-        ${langHtml}
       </ul>
     </nav>
     <div id=toolbar class=u2-flex>
       <u2-breadcrumb>${pathHtml}</u2-breadcrumb>
       <!--input type=search id=search placeholder="Search..." style="width:100%; max-width:20rem; background:var(--color-light); border:0; border-radius: var(--radius);"-->
-      <div style="margin-left:auto" shape=circle size=32>
-        ${ctx.user ? ctx.user.email : "Guest"}
+      <div style="margin-left:auto; display:flex; gap:.5rem">
+        <nav>
+          <ul>
+            ${langHtml}
+          </ul>
+        </nav>
+        <div shape=circle size=32>
+          ${ctx.user ? ctx.user.email : "Guest"}
+        </div>
       </div>
     </div>
     <div id=content>
