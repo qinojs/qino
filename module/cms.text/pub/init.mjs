@@ -162,8 +162,9 @@ setTimeout(() => {
 },100);
 
 
-function hee(string){
-  return string.replace(/[\u00A0-\u9999<>\&]/gim, i => '&#'+i.charCodeAt(0)+';');
+function hee(str){
+  const HEE = { '&': '&amp;', '"': '&quot;', "'": '&#039;', '<': '&lt;', '>': '&gt;' };
+  return String(str ?? '').replace(/[&"'<>]/g, c => HEE[c]);
 }
 
 
