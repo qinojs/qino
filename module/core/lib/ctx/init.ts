@@ -58,21 +58,15 @@ function initLog(ctx: Ctx): void {
       : "";
     data.client_id = ctx.clientId;
 
-    // insert runs in the background; consumers await ctx.logId only when they actually need the id
+    const urlIdOf = async (url: string) => {
+      const hash = createHash("md5").update(url).digest("hex");
+      return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
+          || await db.table("log_url").insert({ url, hash });
+    };
+
+    // runs in the background; consumers await ctx.logId only when they actually need the id
     ctx.logId = (async () => {
       try {
-        const logId = await db.table("log").insert(data);
-        return logId ? String(logId) : null;
-      } catch (e) { console.error("initLog insert error:", e); return null; }
-    })();
-
-    ctx.logId.then(async () => { // background, after the main insert so data.id exists for the update below
-      try {
-        const urlIdOf = async (url: string) => {
-          const hash = createHash("md5").update(url).digest("hex");
-          return await db.one`SELECT id FROM log_url WHERE hash = ${hash}`
-              || await db.table("log_url").insert({ url, hash });
-        };
         const url = ctx.req.url.href;
         const referer = ctx.req.header("referer") ?? "";
         const ip = ctx.req.clientIp ?? "";
@@ -86,9 +80,9 @@ function initLog(ctx: Ctx): void {
           db.one`SELECT id FROM log_user_agent WHERE user_agent = ${ua}`.then(id => id || db.table("log_user_agent").insert({ user_agent: ua })),
         ]);
 
-        await db.table("log").update(data.id, { url_id, referer_id, ip_id, user_agent_id });
-
-      } catch (e) { console.error("liveLog background error:", e); }
-    });
+        const logId = await db.table("log").insert({ ...data, url_id, referer_id, ip_id, user_agent_id });
+        return logId ? String(logId) : null;
+      } catch (e) { console.error("initLog insert error:", e); return null; }
+    })();
 
 }
