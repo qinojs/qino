@@ -117,7 +117,7 @@ Neue Konvention: Modulname mit `_` statt `.` + camelCase-Name (siehe `qino/modul
 | `qgCms_page_files_as_zip`    | `cms_nodeFilesZip`                         |
 | `qgCmsNoFrontend`            | `cms_noFrontend`                           |
 | `qgCmsVersSpace/Log/Page`    | `cms_versions_space` / `_log` / `_page`    |
-| `changeLanguage`             | `lang` (alter Name bleibt als Read-Fallback) |
+| `changeLanguage`             | `lang`                                     |
 | `cmspid`                     | `cmspid` (unverändert, eingefrorene Ausnahme) |
 
 ## Node / Page / Cont (gleiche Klasse)

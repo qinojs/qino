@@ -58,16 +58,6 @@ Deno.test("LangManager: lang query overrides stored session language", async () 
   assertEquals(lang(), "de");
 });
 
-Deno.test("LangManager: legacy changeLanguage alias still works", async () => {
-  const lm = new LangManager({} as never);
-  lm.setLangs(["en", "de"]);
-
-  const ctx = await testContext({ url: "http://qino.test/page?changeLanguage=de", sess: langSess(sessionLang("en")) });
-  await lm.initCtx(ctx);
-
-  assertEquals(ctx.langUsr, "de");
-});
-
 Deno.test("LangManager: namespace start/stop changes active language", async () => {
   const lm = new LangManager({} as never);
   lm.setLangs(["de", "en"]);

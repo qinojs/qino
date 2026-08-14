@@ -96,7 +96,8 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
     WHERE ${true}${cond}
     ORDER BY ${orderBy} LIMIT 1000`;
 
-  const relHeaders = children.map((dbFile) => html`<th title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
+  const relHeaders = children.map((dbFile) => 
+    html`<th style="writing-mode:sideways-lr" title="${dbFile.table.name+"."+dbFile.name}">${dbFile.table.name}`);
 
   const trs = [];
   const u = ctx.req.url.toURL();
@@ -121,15 +122,16 @@ async function list(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<st
 
   return html.async`
 <caption>${app.t`Total`}: ${rows.length}</caption>
-<thead><tr>
+<thead><tr style="vertical-align:bottom">
   <th>${app.t`File`}
   <th>${app.t`ID`}
   <th>${app.t`Name`}
-  <th>${app.t`Size`}${relHeaders}
+  <th>${app.t`Size`}
+  ${relHeaders}
   <th>${app.t`Created`}
   <th>${app.t`Changed`}
-  <th>${app.t`Used`}
-  <th>${app.t`Pub`}
+  <th style="writing-mode:sideways-lr">${app.t`Used`}
+  <th style="writing-mode:sideways-lr">${app.t`Public`}
   <th>
 <tbody>${trs}`;
 }

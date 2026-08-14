@@ -67,7 +67,6 @@ Parameters read only by your own backend node stay short and unprefixed
 
 Exceptions (do not extend):
 - `cmspid`, `lang` — core-owned, well-known short names.
-- `changeLanguage` — frozen PHP-era alias for `lang`, kept as read-fallback.
 
 ## Change tracking (`node_changed`)
 
