@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, "cms.backend.webauthn", { en: "WebAuthn", de: "WebAuthn" });
+  await backend.install(app, "cms.backend.superuser.webauthn", { en: "WebAuthn", de: "WebAuthn" });
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

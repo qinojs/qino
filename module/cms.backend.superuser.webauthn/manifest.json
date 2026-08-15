@@ -1,5 +1,5 @@
 {
-  "name": "cms.backend.webauthn",
+  "name": "cms.backend.superuser.webauthn",
   "description": "Lists and manages users' passkey credentials.",
   "dependencies": [
     "cms.backend",

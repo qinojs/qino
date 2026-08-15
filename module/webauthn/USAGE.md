@@ -9,7 +9,7 @@ app.modules.add(import.meta.resolve("../qino/module/webauthn/plugin.ts"));
 
 // Optional:
 app.modules.add(import.meta.resolve("../qino/module/cms.cont.webauthn/plugin.ts"));
-app.modules.add(import.meta.resolve("../qino/module/cms.backend.webauthn/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.webauthn/plugin.ts"));
 ```
 
 ## Settings
@@ -81,4 +81,4 @@ app.on("webauthn:login", ({ usr_id }) => { /* nach erfolgreichem WebAuthn-Login 
 | `showPasswordFallback`| Zeigt zusätzlich Passwort-Formular                  |
 | `redirectAfterLogin`  | Page-ID für Weiterleitung nach Login                |
 
-**`cms.backend.webauthn`** — Backend-Seite, listet alle Credentials (Superuser).
+**`cms.backend.superuser.webauthn`** — Backend-Seite, listet alle Credentials (Superuser).
