@@ -29,7 +29,10 @@ export default async function api(node: Node, vars: Record<string, unknown>): Pr
       const normalized = path === "organization.address.addressCountry"
         ? String(value ?? "").trim().toUpperCase()
         : String(value ?? "").trim();
-      await set.sub(path.split(".")).set(normalized);
+      const item = set.sub(path.split("."));
+      const maxLength = Number(item.schema?.maxLength ?? Infinity);
+      if (normalized.length > maxLength) throw new Error(`${path} must not exceed ${maxLength} characters`);
+      await item.set(normalized);
     }
     return { done: true };
   }

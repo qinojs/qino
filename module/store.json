@@ -15,6 +15,7 @@
     "cms.backend.cms.tree.access": {},
     "cms.backend.config": {},
     "cms.backend.config.identity": {},
+    "cms.backend.config.webapp": {},
     "cms.backend.config.translate": {},
     "cms.backend.config.translate.export": {},
     "cms.backend.domain-monitor": {},
@@ -119,6 +120,7 @@
     "ticket": {},
     "u2": {},
     "uncdn": {},
-    "web_auth": {}
+    "web_auth": {},
+    "webapp": {}
   }
 }

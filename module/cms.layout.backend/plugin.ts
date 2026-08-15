@@ -70,7 +70,7 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
       const sub = active && subs.length ? await nav(subs, level + 1) : "";
       const mod = level === 1 ? app.modules.get(String((await child.conts())[0]?.vs?.module ?? "")) : undefined;
       const use = moduleIcon(mod);
-      const icon = use ? html`<svg width=24 height=24 style="flex-shrink:0; height:1.3em; vertical-align:-23.8%">${use}</svg> ` : "";
+      const icon = use ? html`<svg width=24 height=24 style="flex-shrink:0; height:1.5em; vertical-align:-23.8%">${use}</svg> ` : "";
       const item = html`<li><a class="-item ${active ? "-active" : ""} ${subs.length ? "-hasSub" : ""}" href="${await child.url()}">${icon}${await (await child.title()).string()}</a>${sub}`;
       out.push(level === 1 ? item : html`<ul>${item}</ul>`);
     }

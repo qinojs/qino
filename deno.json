@@ -44,6 +44,7 @@
     "./ticket": "./module/ticket/mod.ts",
     "./u2": "./module/u2/mod.ts",
     "./uncdn": "./module/uncdn/mod.ts",
+    "./webapp": "./module/webapp/mod.ts",
     "./tests": "./tests/mod.ts"
   },
   "imports": {
@@ -85,6 +86,7 @@
     "@qino/qino/ticket": "./module/ticket/mod.ts",
     "@qino/qino/u2": "./module/u2/mod.ts",
     "@qino/qino/uncdn": "./module/uncdn/mod.ts",
+    "@qino/qino/webapp": "./module/webapp/mod.ts",
     "@qino/qino/tests": "./tests/mod.ts",
     "@qino/item/": "jsr:/@nuxodin/item@^0.6.10/",
     "@qino/m/": "./module/",

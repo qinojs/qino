@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { $item, App } from "@qino/qino";
 import { file } from "@qino/qino/identity";
 
@@ -18,6 +18,7 @@ Deno.test("cms.backend.config.identity saves settings and owns its DbFiles", asy
     await api(node, { save: { name: " Portal ", "organization.address.addressCountry": " ch " } });
     assertEquals(await app.settings[$item].sub(["identity", "name"]).proxy, "Portal");
     assertEquals(await app.settings.identity.organization.address.addressCountry, "CH");
+    await assertRejects(() => api(node, { save: { alternateName: "x".repeat(65) } }));
 
     await api(node, { asset: { name: "logo", dataUrl: "data:image/png;name=logo.png;base64,aGVsbG8=" } });
     const first = Number(await app.db.one`SELECT file_id FROM identity_file WHERE name = ${"logo"}`);

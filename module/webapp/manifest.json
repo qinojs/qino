@@ -1,0 +1,14 @@
+{
+  "name": "webapp",
+  "description": "Publishes browser and installable-web-app metadata from this Qino instance.",
+  "dependencies": [
+    "identity"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "cms.backend.config.webapp",
+  "description": "Edits installable-web-app launch and browser metadata.",
+  "dependencies": [
+    "webapp",
+    "cms.backend.config",
+    "cms.backend.config.identity"
+  ],
+  "files": [
+    "manifest.json",
+    "nodeApi.ts",
+    "plugin.ts",
+    "preview.ts",
+    "pub/main.js",
+    "pub/module.svg",
+    "render.ts"
+  ]
+}

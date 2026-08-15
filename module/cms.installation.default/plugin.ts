@@ -21,6 +21,7 @@ export const settingsSchema = {
 export const recommended = [
   "fileEditor",
   "identity",
+  "webapp",
   "cms.frontend.2",
   "cms.text",
   "cms.image2",
@@ -42,6 +43,7 @@ export const recommended = [
   "cms.backend.settings",
   "cms.backend.config",
   "cms.backend.config.identity",
+  "cms.backend.config.webapp",
   "cms.backend.users",
   "cms.backend.superuser.module",
   "cms.backend.system",
