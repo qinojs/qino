@@ -58,7 +58,7 @@
     "cms.backend.system.api": {},
     "cms.backend.system.security": {},
     "cms.backend.users": {},
-    "cms.backend.web_auth": {},
+    "cms.backend.webauthn": {},
     "cms.cont.flexible": {},
     "cms.cont.form1.file": {},
     "cms.cont.form2": {},
@@ -80,7 +80,7 @@
     "cms.cont.text": {},
     "cms.cont.trash": {},
     "cms.cont.ts": {},
-    "cms.cont.web_auth": {},
+    "cms.cont.webauthn": {},
     "cms.filebrowser": {},
     "cms.filebrowser.ai": {},
     "cms.filebrowser.pexels": {},
@@ -120,7 +120,7 @@
     "ticket": {},
     "u2": {},
     "uncdn": {},
-    "web_auth": {},
+    "webauthn": {},
     "webapp": {}
   }
 }

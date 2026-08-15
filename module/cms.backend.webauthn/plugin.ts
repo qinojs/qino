@@ -7,7 +7,7 @@ import type { Node } from "@qino/qino/cms";
 export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, "cms.backend.web_auth", { en: "WebAuthn", de: "WebAuthn" });
+  await backend.install(app, "cms.backend.webauthn", { en: "WebAuthn", de: "WebAuthn" });
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
@@ -15,13 +15,13 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   if (ctx.req.body?.csrfToken === ctx.csrfToken && "delete_cred" in ctx.req.body) {
     const id = Number(ctx.req.body.delete_cred);
-    if (id) await db.table("web_auth_credential").delete(id);
+    if (id) await db.table("webauthn_credential").delete(id);
   }
 
   const rows = await db.query`
     SELECT wac.id, wac.name, wac.aaguid, wac.sign_count, wac.created, wac.last_used, wac.credential_id,
            u.id AS usr_id, u.email, u.firstname, u.lastname
-    FROM web_auth_credential wac
+    FROM webauthn_credential wac
     LEFT JOIN usr u ON u.id = wac.usr_id
     ORDER BY wac.last_used DESC LIMIT 500`;
 
@@ -48,8 +48,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     ? html`<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.`
     : "";
 
-  const rpId   = String(await node.app.settings.web_auth.rpId   ?? "") || "(not configured)";
-  const rpName = String(await node.app.settings.web_auth.rpName ?? "") || "(not configured)";
+  const rpId   = String(await node.app.settings.webauthn.rpId   ?? "") || "(not configured)";
+  const rpName = String(await node.app.settings.webauthn.rpName ?? "") || "(not configured)";
 
   return html.async`<div class=u2-flex>
 <div class=u2-card style="flex:0 1 24rem">
@@ -59,7 +59,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <tr><th>RP Name<td>${rpName}
   </table>
   <div class=-body>
-    <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → web_auth</code>.</p>
+    <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → webauthn</code>.</p>
   </div>
 </div>
 <div class=u2-card style="flex:1">

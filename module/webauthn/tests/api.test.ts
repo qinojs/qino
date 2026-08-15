@@ -10,7 +10,7 @@ function makeApp() {
   const challenges: Record<string, unknown>[] = [];
   const execs: Array<[string, unknown[]]> = [];
   const app = {
-    settings: { web_auth: { rpId: "localhost", rpName: "Qino" } },
+    settings: { webauthn: { rpId: "localhost", rpName: "Qino" } },
     fire: () => Promise.resolve(),
     db: {
       row: () => null,
@@ -21,19 +21,19 @@ function makeApp() {
         insert: (row: Record<string, unknown>) => challenges.push(row),
       }),
     },
-    apiTree: { web_auth: api },
+    apiTree: { webauthn: api },
   };
   return { app, challenges, execs };
 }
 
 
-Deno.test("web_auth: module metadata is wired", () => {
-  assertEquals(name, "web_auth");
+Deno.test("webauthn: module metadata is wired", () => {
+  assertEquals(name, "webauthn");
   assertEquals(settingsSchema.properties.rpId.type, "string");
   assertEquals(settingsSchema.properties.rpName.type, "string");
 });
 
-Deno.test("web_auth: api exposes expected api endpoints", () => {
+Deno.test("webauthn: api exposes expected api endpoints", () => {
   const tools = toTools(api);
   assertEquals(tools.map((tool) => tool.name), [
     "post_register_challenge",
@@ -73,21 +73,21 @@ Deno.test("web_auth: api exposes expected api endpoints", () => {
   });
 });
 
-Deno.test("web_auth: user-only endpoints reject guests", async () => {
+Deno.test("webauthn: user-only endpoints reject guests", async () => {
   const { app } = makeApp();
   const c = await testContext({ app });
   await requestStorage.run(c, async () => {
-    await assertRejects(() => invoke((app as any).apiTree.web_auth, "POST", "/register/challenge"), AccessError);
-    await assertRejects(() => invoke((app as any).apiTree.web_auth, "POST", "/confirm/challenge"), AccessError);
-    await assertRejects(() => invoke((app as any).apiTree.web_auth, "GET", "/credentials"), AccessError);
+    await assertRejects(() => invoke((app as any).apiTree.webauthn, "POST", "/register/challenge"), AccessError);
+    await assertRejects(() => invoke((app as any).apiTree.webauthn, "POST", "/confirm/challenge"), AccessError);
+    await assertRejects(() => invoke((app as any).apiTree.webauthn, "GET", "/credentials"), AccessError);
   });
 });
 
-Deno.test("web_auth: public login challenge stores challenge state without extra queries", async () => {
+Deno.test("webauthn: public login challenge stores challenge state without extra queries", async () => {
   const { app, challenges, execs } = makeApp();
   const c = await testContext({ app });
   const out = await requestStorage.run(c, () =>
-    invoke((app as any).apiTree.web_auth, "POST", "/login/challenge", { email: " nobody@example.test " })
+    invoke((app as any).apiTree.webauthn, "POST", "/login/challenge", { email: " nobody@example.test " })
   ) as any;
 
   assertEquals(typeof out.token, "string");
@@ -100,7 +100,7 @@ Deno.test("web_auth: public login challenge stores challenge state without extra
   assertEquals(execs.length, 0);
 });
 
-Deno.test("web_auth: cron purges expired challenges", async () => {
+Deno.test("webauthn: cron purges expired challenges", async () => {
   const { app, execs } = makeApp();
   await cron.challenges.run(app as any);
   assertEquals(execs.length, 1);

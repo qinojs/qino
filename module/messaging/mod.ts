@@ -1,6 +1,5 @@
 // Public API of messaging. The qino plugin lives in ./plugin.ts.
 import { sql, unixTime } from "@qino/qino";
-
 import type { App, Row } from "@qino/qino";
 
 export { dropClaim, pendingContacts, redeemCode, requestCode } from "./lib/verify.ts";

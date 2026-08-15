@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 const settingsSchema = {
   properties: {
     mode:                { type: "string", enum: ["auto", "login", "manage"], description: "auto = login when logged out, manage when logged in." },
-    apiBase:             { type: "string", description: "Base URL of the web_auth API. Default: derived from app path." },
+    apiBase:             { type: "string", description: "Base URL of the WebAuthn API. Default: derived from app path." },
     showPasswordFallback:{ type: "boolean", description: "Also shows a classic password form." },
     redirectAfterLogin:  { type: "integer", minimum: 1, description: "Page ID to redirect to after login." },
   },
@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlS
   const showManage = mode === "manage" || (mode === "auto" && !!ctx.user);
   const showLogin  = mode === "login"  || (mode === "auto" && !ctx.user);
 
-  const apiBase   = String(settings.apiBase() ?? "") || ctx.req.appUrl + "api/web_auth";
+  const apiBase   = String(settings.apiBase() ?? "") || ctx.req.appUrl + "api/webauthn";
 
   if (showManage && ctx.user) return renderManage(node.app, apiBase);
   if (showLogin) {
@@ -43,7 +43,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlS
 }
 
 function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: string, csrfToken: string): Promise<HtmlString> {
-  return html.async`<div class=web-auth-login data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">
+  return html.async`<div class=webauthn-login data-api-base="${apiBase}" data-redirect-url="${redirectUrl}">
   <input type=email placeholder="${app.t`E-Mail (optional)`}" data-email autocomplete="username webauthn">
   <button data-action=login>${app.t`Sign in with passkey`}</button>
   ${showPw ? html.async`<details>
@@ -62,7 +62,7 @@ function renderLogin(app: App, apiBase: string, showPw: boolean, redirectUrl: st
 }
 
 function renderManage(app: App, apiBase: string): Promise<HtmlString> {
-  return html.async`<div class=web-auth-manage data-api-base="${apiBase}">
+  return html.async`<div class=webauthn-manage data-api-base="${apiBase}">
   <div data-list>${app.t`Loading…`}</div>
   <input type=text data-name placeholder="${app.t`Name for this authenticator`}">
   <button data-action=register>${app.t`Add passkey`}</button>

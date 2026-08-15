@@ -1,5 +1,5 @@
 {
-  "name": "web_auth",
+  "name": "webauthn",
   "description": "Provides passkey registration, login, and step-up authentication.",
   "dependencies": [
     "core",
@@ -11,6 +11,6 @@
     "manifest.json",
     "plugin.ts",
     "pub/module.svg",
-    "pub/web_auth.js"
+    "pub/webauthn.js"
   ]
 }

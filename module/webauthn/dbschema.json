@@ -1,6 +1,6 @@
 {
   "properties": {
-    "web_auth_credential": {
+    "webauthn_credential": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -46,7 +46,7 @@
         "required": ["id", "usr_id", "credential_id", "public_key", "sign_count", "aaguid", "name", "created", "last_used"]
       }
     },
-    "web_auth_challenge": {
+    "webauthn_challenge": {
       "additionalProperties": {
         "properties": {
           "token": {

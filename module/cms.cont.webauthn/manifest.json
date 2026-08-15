@@ -1,8 +1,8 @@
 {
-  "name": "cms.cont.web_auth",
+  "name": "cms.cont.webauthn",
   "description": "Passkey login and credential management.",
   "dependencies": [
-    "web_auth"
+    "webauthn"
   ],
   "files": [
     "manifest.json",

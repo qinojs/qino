@@ -151,7 +151,7 @@ The CMS currently lives in this repository under [`module/cms`](module/cms/). A 
 
 The [core documentation](module/core/docs/) covers the main building blocks, including [modules](module/core/docs/module.md), [database access](module/core/docs/db.md), and [file transforms](module/core/docs/transform.md).
 
-Further module guides explain [passkeys and WebAuthn](module/web_auth/USAGE.md), [OAuth and social login](module/oauth/USAGE.md), [MCP integration](module/mcp/USAGE.md), [web push](module/messaging.web_push/README.md), and [Telegram](module/messaging.telegram/README.md).
+Further module guides explain [passkeys and WebAuthn](module/webauthn/USAGE.md), [OAuth and social login](module/oauth/USAGE.md), [MCP integration](module/mcp/USAGE.md), [web push](module/messaging.web_push/README.md), and [Telegram](module/messaging.telegram/README.md).
 
 ## License
 

@@ -1,13 +1,13 @@
-import { WebAuth } from "@qino/m/web_auth/pub/web_auth.js";
+import { WebAuthn } from "@qino/m/webauthn/pub/webauthn.js";
 import { hee, t } from "@qino/pub/qino.js";
 
-cms.initNode("cont.web_auth", (el) => {
-  const isLogin  = el.classList.contains("web-auth-login");
-  const isManage = el.classList.contains("web-auth-manage");
+cms.initNode("cont.webauthn", (el) => {
+  const isLogin  = el.classList.contains("webauthn-login");
+  const isManage = el.classList.contains("webauthn-manage");
   if (!isLogin && !isManage) return;
 
   const { apiBase, redirectUrl } = el.dataset;
-  const wa = new WebAuth({ apiBase });
+  const wa = new WebAuthn({ apiBase });
 
   // ── Login ──────────────────────────────────────────────────────────────────
 

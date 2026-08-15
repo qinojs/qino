@@ -19,7 +19,7 @@ export const cron = {
   challenges: {
     every: "hour",
     jitter: 15 * 60,
-    run: (app) => app.db.exec`DELETE FROM web_auth_challenge WHERE expires < ${unixTime()}`,
+    run: (app) => app.db.exec`DELETE FROM webauthn_challenge WHERE expires < ${unixTime()}`,
   },
 } satisfies Jobs;
 
@@ -28,14 +28,14 @@ export const cron = {
 const CHALLENGE_TTL = 5 * 60;
 
 async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
-  const rpId   = String(await app.settings.web_auth.rpId   ?? "") || "localhost";
-  const rpName = String(await app.settings.web_auth.rpName ?? "") || "Qino";
+  const rpId   = String(await app.settings.webauthn.rpId   ?? "") || "localhost";
+  const rpName = String(await app.settings.webauthn.rpName ?? "") || "Qino";
   return { rpId, rpName };
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
 async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
-  const setting = String(await ctx.app.settings.web_auth.origin ?? "");
+  const setting = String(await ctx.app.settings.webauthn.origin ?? "");
   if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
   const url = ctx.req.url;
   if (url.hostname === rpId || url.hostname.endsWith("." + rpId)) return [url.origin];
@@ -44,15 +44,15 @@ async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
 
 async function storeChallenge(db: Db, challenge: string, usrId: number, type: "register" | "login" | "confirm"): Promise<string> {
   const token = randB64(24);
-  await db.table("web_auth_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
+  await db.table("webauthn_challenge").insert({ token, challenge, usr_id: usrId, type, expires: unixTime() + CHALLENGE_TTL });
   return token;
 }
 
 async function consumeChallenge(db: Db, token: string, type: string): Promise<{ challenge: string; usr_id: number } | null> {
-  const row = await db.row`SELECT challenge, usr_id FROM web_auth_challenge WHERE token = ${token} AND type = ${type} AND expires > ${unixTime()}`;
+  const row = await db.row`SELECT challenge, usr_id FROM webauthn_challenge WHERE token = ${token} AND type = ${type} AND expires > ${unixTime()}`;
   if (!row) return null;
   // the delete decides the race: of parallel verifies only one gets a successful delete
-  if (!await db.table("web_auth_challenge").delete(token)) return null;
+  if (!await db.table("webauthn_challenge").delete(token)) return null;
   return { challenge: row.challenge, usr_id: Number(row.usr_id) };
 }
 
@@ -71,7 +71,7 @@ async function verifyAssertion(
   expectedChallenge: string,
   requireUserVerification: boolean,
 ): Promise<{ ok: false; error: string } | { ok: true; cred: any; newCounter: number }> {
-  const cred = await ctx.app.db.row`SELECT * FROM web_auth_credential WHERE credential_id = ${credentialId}`;
+  const cred = await ctx.app.db.row`SELECT * FROM webauthn_credential WHERE credential_id = ${credentialId}`;
   if (!cred) return { ok: false, error: "credential_not_found" };
 
   const { rpId } = await getRp(ctx.app);
@@ -182,12 +182,12 @@ export const api: ApiTree = {
           const { credential, aaguid } = verification.registrationInfo;
           const credId = credential.id;
 
-          if (await db.one`SELECT id FROM web_auth_credential WHERE credential_id = ${credId}`) {
+          if (await db.one`SELECT id FROM webauthn_credential WHERE credential_id = ${credId}`) {
             return { ok: false, error: "already_registered" };
           }
 
           const t = unixTime();
-          await db.table("web_auth_credential").insert({
+          await db.table("webauthn_credential").insert({
             usr_id: ctx.userId,
             credential_id: credId,
             public_key: b64url(credential.publicKey),
@@ -220,7 +220,7 @@ export const api: ApiTree = {
             const usr = await db.row`SELECT id FROM usr WHERE LOWER(TRIM(email)) = LOWER(${String(email).trim()}) AND active = ${true}`;
             if (usr) {
               usrId = Number(usr.id);
-              const creds = await db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${usrId}`;
+              const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;
               for (const c of creds) allowCredentials.push({ id: c.credential_id, type: "public-key" });
             } else {
               ctx.app.fire("suspicious", { ctx, reason: "webauthn login challenge for unknown email" }).catch(() => {});
@@ -261,7 +261,7 @@ export const api: ApiTree = {
           if (stored.usr_id && Number(r.cred.usr_id) !== stored.usr_id) return { ok: false, error: "user_mismatch" };
 
           const usrId = Number(r.cred.usr_id);
-          await db.table("web_auth_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
+          await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
 
           if (!await login(ctx, usrId)) return { ok: false, error: "user_inactive" };
           return { ok: true };
@@ -280,7 +280,7 @@ export const api: ApiTree = {
           const db  = ctx.app.db;
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const creds = await db.query`SELECT credential_id FROM web_auth_credential WHERE usr_id = ${ctx.userId}`;
+          const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${ctx.userId}`;
           const token = await storeChallenge(db, challenge, ctx.userId, "confirm");
           return {
             token,
@@ -297,7 +297,7 @@ export const api: ApiTree = {
 
     verify: {
       post: {
-        description: "Verify step-up confirmation — sets session flag 'web_auth_confirmed'",
+        description: "Verify step-up confirmation — sets session flag 'webauthn_confirmed'",
         access: Access.USER,
         input: assertionInput,
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
@@ -311,8 +311,8 @@ export const api: ApiTree = {
           if (!r.ok) return r;
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
-          await db.table("web_auth_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
-          ctx.sess.data.web_auth_confirmed(unixTime());
+          await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
+          ctx.sess.data.webauthn_confirmed(unixTime());
           return { ok: true };
         },
       },
@@ -325,7 +325,7 @@ export const api: ApiTree = {
       access: Access.USER,
       execute: async () => {
         const ctx  = getCtx();
-        const rows = await ctx.app.db.query`SELECT id, credential_id, name, aaguid, created, last_used FROM web_auth_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
+        const rows = await ctx.app.db.query`SELECT id, credential_id, name, aaguid, created, last_used FROM webauthn_credential WHERE usr_id = ${ctx.userId} ORDER BY created DESC`;
         return rows.map((r) => ({ id: r.id, credentialId: r.credential_id, name: r.name, aaguid: r.aaguid, created: r.created, lastUsed: r.last_used }));
       },
     },
@@ -339,10 +339,10 @@ export const api: ApiTree = {
         access: Access.USER,
         execute: async ({ credId }: any) => {
           const ctx  = getCtx();
-          const cred = await ctx.app.db.row`SELECT usr_id FROM web_auth_credential WHERE id = ${credId}`;
+          const cred = await ctx.app.db.row`SELECT usr_id FROM webauthn_credential WHERE id = ${credId}`;
           if (!cred) return { ok: false, error: "not_found" };
           if (Number(cred.usr_id) !== ctx.userId && !(ctx.user?.superuser)) throw new AccessError();
-          await ctx.app.db.table("web_auth_credential").delete(credId);
+          await ctx.app.db.table("webauthn_credential").delete(credId);
           return { ok: true };
         },
       },

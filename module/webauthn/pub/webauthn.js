@@ -1,16 +1,16 @@
 /**
- * web_auth.js — WebAuthn Client
+ * webauthn.js — WebAuthn Client
  *
- * import { WebAuth } from "/m/web_auth/pub/web_auth.js";
+ * import { WebAuthn } from "/m/webauthn/pub/webauthn.js";
  */
 import { t } from "@qino/pub/qino.js";
 
 const csrfHeaders = (method) =>
   method === "GET" || !globalThis.qino?.csrfToken ? {} : { "X-CSRF-Token": globalThis.qino.csrfToken };
 
-export class WebAuth {
+export class WebAuthn {
   constructor(opts = {}) {
-    this.apiBase = opts.apiBase ?? "/api/web_auth";
+    this.apiBase = opts.apiBase ?? "/api/webauthn";
   }
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -49,8 +49,8 @@ export class WebAuth {
       credential = await navigator.credentials.create({
         publicKey: {
           ...publicKey,
-          challenge: WebAuth.#dec(publicKey.challenge),
-          user: { ...publicKey.user, id: WebAuth.#dec(publicKey.user.id) },
+          challenge: WebAuthn.#dec(publicKey.challenge),
+          user: { ...publicKey.user, id: WebAuthn.#dec(publicKey.user.id) },
         },
       });
     } catch (e) {
@@ -60,9 +60,9 @@ export class WebAuth {
 
     return this.#post("/register/verify", {
       token,
-      credentialId:      WebAuth.#enc(credential.rawId),
-      clientDataJSON:    WebAuth.#enc(credential.response.clientDataJSON),
-      attestationObject: WebAuth.#enc(credential.response.attestationObject),
+      credentialId:      WebAuthn.#enc(credential.rawId),
+      clientDataJSON:    WebAuthn.#enc(credential.response.clientDataJSON),
+      attestationObject: WebAuthn.#enc(credential.response.attestationObject),
       name: opts.name ?? await this.guessName(),
     });
   }
@@ -81,7 +81,7 @@ export class WebAuth {
   #conditionalAbort = null;
 
   async loginConditional() {
-    if (!await WebAuth.isConditionalMediationAvailable()) return null;
+    if (!await WebAuthn.isConditionalMediationAvailable()) return null;
 
     this.#conditionalAbort?.abort();
     this.#conditionalAbort = new AbortController();
@@ -123,16 +123,16 @@ export class WebAuth {
   static isSupported() { return !!globalThis.PublicKeyCredential; }
 
   static isPlatformAuthenticatorAvailable() {
-    return WebAuth.isSupported() && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    return WebAuthn.isSupported() && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   }
 
   static async isConditionalMediationAvailable() {
-    return WebAuth.isSupported() && (await PublicKeyCredential.isConditionalMediationAvailable?.() ?? false);
+    return WebAuthn.isSupported() && (await PublicKeyCredential.isConditionalMediationAvailable?.() ?? false);
   }
 
   async guessName() {
     try {
-      if (!await WebAuth.isPlatformAuthenticatorAvailable()) return await t`Hardware key`;
+      if (!await WebAuthn.isPlatformAuthenticatorAvailable()) return await t`Hardware key`;
       const ua = navigator.userAgent;
       if (/iPhone|iPad/i.test(ua)) return "Face ID / Touch ID";
       if (/Android/i.test(ua))     return await t`Android biometrics`;
@@ -147,8 +147,8 @@ export class WebAuth {
   #decodePublicKey(pk) {
     return {
       ...pk,
-      challenge: WebAuth.#dec(pk.challenge),
-      allowCredentials: pk.allowCredentials?.map((c) => ({ ...c, id: WebAuth.#dec(c.id) })),
+      challenge: WebAuthn.#dec(pk.challenge),
+      allowCredentials: pk.allowCredentials?.map((c) => ({ ...c, id: WebAuthn.#dec(c.id) })),
     };
   }
 
@@ -167,10 +167,10 @@ export class WebAuth {
   #verify(path, token, a) {
     return this.#post(path, {
       token,
-      credentialId:      WebAuth.#enc(a.rawId),
-      clientDataJSON:    WebAuth.#enc(a.response.clientDataJSON),
-      authenticatorData: WebAuth.#enc(a.response.authenticatorData),
-      signature:         WebAuth.#enc(a.response.signature),
+      credentialId:      WebAuthn.#enc(a.rawId),
+      clientDataJSON:    WebAuthn.#enc(a.response.clientDataJSON),
+      authenticatorData: WebAuthn.#enc(a.response.authenticatorData),
+      signature:         WebAuthn.#enc(a.response.signature),
     });
   }
 }

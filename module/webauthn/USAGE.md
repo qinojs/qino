@@ -1,15 +1,15 @@
-# web_auth
+# webauthn
 
 WebAuthn-Modul (Passkeys, Fingerabdruck, Face ID, Hardware-Key). Unabhängig vom CMS.
 
 ## Einbindung in server.ts
 
 ```ts
-app.modules.add(import.meta.resolve("../qino/module/web_auth/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/webauthn/plugin.ts"));
 
 // Optional:
-app.modules.add(import.meta.resolve("../qino/module/cms.cont.web_auth/plugin.ts"));
-app.modules.add(import.meta.resolve("../qino/module/cms.backend.web_auth/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.cont.webauthn/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/cms.backend.webauthn/plugin.ts"));
 ```
 
 ## Settings
@@ -22,7 +22,7 @@ app.modules.add(import.meta.resolve("../qino/module/cms.backend.web_auth/plugin.
 
 ## API
 
-Basis: `{appUrl}api/web_auth/`
+Basis: `{appUrl}api/webauthn/`
 
 | Methode | Pfad                    | Auth    | Beschreibung                          |
 |---------|-------------------------|---------|---------------------------------------|
@@ -38,15 +38,15 @@ Basis: `{appUrl}api/web_auth/`
 ## Client
 
 ```js
-import { WebAuth } from "/m/web_auth/pub/web_auth.js";
+import { WebAuthn } from "/m/webauthn/pub/webauthn.js";
 
-const wa = new WebAuth({ apiBase: "/cms1/api/web_auth" });
+const wa = new WebAuthn({ apiBase: "/cms1/api/webauthn" });
 await wa.register({ name: "Mein MacBook" });
 await wa.login({ email: "user@example.com" });
 await wa.loginConditional(); // Autofill-Passkey (Conditional UI), null wenn nicht verfügbar
 ```
 
-Fertige Login-/Verwaltungs-UI liefert das Content-Modul `cms.cont.web_auth` (siehe unten).
+Fertige Login-/Verwaltungs-UI liefert das Content-Modul `cms.cont.webauthn` (siehe unten).
 
 ## Step-up Authentication
 
@@ -57,7 +57,7 @@ if (r.ok) { /* geschützte Aktion */ }
 
 Server-seitig prüfen (z.B. max. 60 Sekunden gültig):
 ```ts
-const confirmed = Number(await ctx.sess.data.web_auth_confirmed() ?? "0");
+const confirmed = Number(await ctx.sess.data.webauthn_confirmed() ?? "0");
 if (now() - confirmed > 60) return { ok: false, error: "confirmation_required" };
 ```
 
@@ -67,12 +67,12 @@ könnte, steht im Workspace in `PLAN-confirm.md`.
 ## Hook
 
 ```ts
-app.on("web_auth:login", ({ usr_id }) => { /* nach erfolgreichem WebAuthn-Login */ });
+app.on("webauthn:login", ({ usr_id }) => { /* nach erfolgreichem WebAuthn-Login */ });
 ```
 
 ## CMS-Module
 
-**`cms.cont.web_auth`** — Content-Node, Settings:
+**`cms.cont.webauthn`** — Content-Node, Settings:
 
 | Setting               | Beschreibung                                        |
 |-----------------------|-----------------------------------------------------|
@@ -81,4 +81,4 @@ app.on("web_auth:login", ({ usr_id }) => { /* nach erfolgreichem WebAuthn-Login 
 | `showPasswordFallback`| Zeigt zusätzlich Passwort-Formular                  |
 | `redirectAfterLogin`  | Page-ID für Weiterleitung nach Login                |
 
-**`cms.backend.web_auth`** — Backend-Seite, listet alle Credentials (Superuser).
+**`cms.backend.webauthn`** — Backend-Seite, listet alle Credentials (Superuser).
