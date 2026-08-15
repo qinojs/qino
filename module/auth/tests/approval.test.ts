@@ -1,8 +1,8 @@
-import { assertEquals } from "@std/assert";
-import { Db } from "@qino/qino";
+import { assertEquals, assertRejects } from "@std/assert";
+import { ApiError, Db } from "@qino/qino";
 import { requireApproval } from "@qino/qino/auth";
 
-import { approval, consumeApproval, decideApproval, requestApproval } from "../approval.ts";
+import { approval, decideApproval } from "../approval.ts";
 import dbSchema from "../dbschema.json" with { type: "json" };
 
 import type { App, Ctx } from "@qino/qino";
@@ -35,31 +35,38 @@ Deno.test("an action approval is user-bound, intent-bound and consumed once", as
     req: { appUrl: "/", url: new URL("https://example.test/api/store/add") },
   } as unknown as Ctx;
   const need = { action: "store.add", summary: "Add example store", details: { url: "https://store.test" }, requester: "MCP chatbot" };
+  const request = async () => {
+    let error: unknown;
+    try { await requireApproval(ctx, undefined, need); } catch (e) { error = e; }
+    assertEquals((error as { status?: number })?.status, 428);
+    const id = /\[([A-Za-z0-9_-]{32})\]/.exec((error as Error).message)?.[1];
+    if (!id) throw error;
+    return id;
+  };
 
   try {
-    const created = await requestApproval(ctx, need);
-    assertEquals(created.status, "pending");
-    assertEquals(created.channel, "web_push");
+    const id = await request();
+    assertEquals((await approval(app, 7, id))?.status, "pending");
+    assertEquals((await approval(app, 7, id))?.channel, "web_push");
     assertEquals(sent.length, 1);
 
-    await decideApproval(app, 8, created.id, "approved");
-    assertEquals((await approval(app, 7, created.id))?.status, "pending");
-    await decideApproval(app, 7, created.id, "approved");
+    await decideApproval(app, 8, id, "approved");
+    assertEquals((await approval(app, 7, id))?.status, "pending");
+    await decideApproval(app, 7, id, "approved");
 
-    assertEquals(await consumeApproval(app, 7, created.id, need.action, { url: "https://other.test" }), false);
-    assertEquals(await consumeApproval(app, 7, created.id, need.action, need.details), true);
-    assertEquals(await consumeApproval(app, 7, created.id, need.action, need.details), false);
-    assertEquals((await approval(app, 7, created.id))?.status, "consumed");
-
-    const expired = await requestApproval(ctx, need);
-    await decideApproval(app, 7, expired.id, "approved");
-    await db.table("auth_approval").update(expired.id, { expires: 1 });
-    assertEquals((await approval(app, 7, expired.id))?.status, "expired");
-
-    await requireApproval(ctx, undefined, need).then(
-      () => { throw new Error("approval unexpectedly passed"); },
-      (error) => assertEquals((error as { status: number }).status, 428),
+    await assertRejects(
+      () => requireApproval(ctx, id, { ...need, details: { url: "https://other.test" } }),
+      ApiError,
+      "does not match",
     );
+    await requireApproval(ctx, id, need);
+    assertEquals((await approval(app, 7, id))?.status, "consumed");
+    await assertRejects(() => requireApproval(ctx, id, need), ApiError, "consumed");
+
+    const expired = await request();
+    await decideApproval(app, 7, expired, "approved");
+    await db.table("auth_approval").update(expired, { expires: 1 });
+    assertEquals((await approval(app, 7, expired))?.status, "expired");
   } finally {
     await db.close();
   }

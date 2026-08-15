@@ -8,7 +8,6 @@ type ApprovalNeed = {
   summary: string;
   details?: unknown;
   requester?: string;
-  channel?: string;
 };
 
 type Approval = {
@@ -37,26 +36,26 @@ function approvalIntent(action: string, details?: unknown): Promise<string> {
 }
 
 /** Create and notify one approval owned by the request's user. */
-export async function requestApproval(ctx: Ctx, need: ApprovalNeed): Promise<Approval & { url: string }> {
-  if (!ctx.userId) throw new ApiError(401, "Authentication required");
-  const app = ctx.app;
+async function requestApproval(ctx: Ctx, need: ApprovalNeed): Promise<Approval & { url: string }> {
+  const { app, userId } = ctx;
+  if (!userId) throw new ApiError(401, "Authentication required");
+  const db = app.db;
   const settings = await approvalSettings(app);
   const action = field(need.action, "action", 127);
   const summary = field(need.summary, "summary", 255);
   const requester = field(need.requester ?? "api", "requester", 127);
   const details = stableJson(need.details ?? null);
   if (details.length > MAX_DETAILS) throw new ApiError(422, "Approval details are too large");
-  if (need.channel && !settings.channels.includes(need.channel)) throw new ApiError(422, "Approval channel is not allowed");
 
   await sweep(app);
-  const pending = Number(await app.db.one`SELECT COUNT(*) FROM auth_approval WHERE usr_id = ${ctx.userId} AND status = ${"pending"}`);
+  const pending = Number(await db.one`SELECT COUNT(*) FROM auth_approval WHERE usr_id = ${userId} AND status = ${"pending"}`);
   if (pending >= settings.pendingLimit) throw new ApiError(429, "Too many pending approvals");
 
   const now = unixTime();
   const id = randB64(24);
-  await app.db.table("auth_approval").insert({
+  await db.table("auth_approval").insert({
     id,
-    usr_id: ctx.userId,
+    usr_id: userId,
     action,
     intent: await approvalIntent(action, need.details),
     summary,
@@ -72,9 +71,9 @@ export async function requestApproval(ctx: Ctx, need: ApprovalNeed): Promise<App
   });
 
   const url = approvalUrl(ctx, id);
-  const channel = await notify(ctx, { action, summary, requester, url }, need.channel, settings.channels);
-  if (channel) await app.db.table("auth_approval").update(id, { channel });
-  return { ...(await approval(app, ctx.userId, id))!, url };
+  const channel = await notify(ctx, { action, summary, requester, url }, settings.channels);
+  if (channel) await db.table("auth_approval").update(id, { channel });
+  return { ...(await approval(app, userId, id))!, url };
 }
 
 /** Read one approval without spending it. */
@@ -108,7 +107,7 @@ export async function decideApproval(app: App, usrId: number, id: string, decisi
 }
 
 /** Atomically consume an approved request once, bound to user, action and exact details. */
-export async function consumeApproval(app: App, usrId: number, id: string, action: string, details?: unknown): Promise<boolean> {
+async function consumeApproval(app: App, usrId: number, id: string, action: string, details?: unknown): Promise<boolean> {
   const now = unixTime();
   const used = await app.db.exec`UPDATE auth_approval SET status = ${"consumed"}, consumed = ${now}
     WHERE id = ${id} AND usr_id = ${usrId} AND action = ${action}
@@ -145,23 +144,22 @@ function approvalUrl(ctx: Ctx, id: string): string {
 async function notify(
   ctx: Ctx,
   approval: { action: string; summary: string; requester: string; url: string },
-  requested: string | undefined,
   configured: string[],
 ): Promise<string> {
-  const available = new Map(messagingChannels(ctx.app).map((channel) => [channel.name, channel]));
-  const names = requested ? [requested] : configured;
+  const { app, userId } = ctx;
+  const available = new Map(messagingChannels(app).map((channel) => [channel.name, channel]));
   const message = {
-    title: await ctx.app.t`Action requires approval`,
+    title: await app.t`Action requires approval`,
     text: `${approval.summary}\n${approval.requester}: ${approval.action}\n${approval.url}`,
     url: approval.url,
     tag: "auth-approval",
     requireInteraction: true,
   };
-  for (const name of names) {
+  for (const name of configured) {
     const channel = available.get(name);
-    if (!channel || !await channel.reach(ctx.app, ctx.userId).catch(() => 0)) continue;
+    if (!channel || !await channel.reach(app, userId).catch(() => 0)) continue;
     try {
-      if (await channel.send(ctx.app, { usr: ctx.userId }, message)) return name;
+      if (await channel.send(app, { usr: userId }, message)) return name;
     } catch (e) {
       console.warn(`auth: approval notification via ${name} failed`, e);
     }
@@ -195,7 +193,7 @@ function approvalOf(row: Row): Approval {
     usrId: Number(row.usr_id),
     action: String(row.action),
     summary: String(row.summary),
-    details: json(String(row.details ?? "null")),
+    details: JSON.parse(String(row.details)),
     requester: String(row.requester),
     channel: String(row.channel ?? ""),
     status: String(row.status),
@@ -220,8 +218,4 @@ function sortValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortValue);
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(Object.keys(value).sort().map((key) => [key, sortValue((value as Record<string, unknown>)[key])]));
-}
-
-function json(value: string): unknown {
-  try { return JSON.parse(value); } catch { return null; }
 }

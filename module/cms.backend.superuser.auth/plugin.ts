@@ -18,37 +18,39 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   return html.async`<div class=-body><b>${stats.pending ?? 0}</b> ${app.t`pending action approvals`}</div>`;
 }
 
-export async function render(node: Node): Promise<HtmlString> {
+async function render(node: Node): Promise<HtmlString> {
   const ctx = getCtx();
+  const app = node.app;
+  const t = app.t;
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/SettingsEditor.mjs");
-  const [stats, recent] = await Promise.all([approvalStats(node.app), approvals(node.app, 100)]);
+  const [stats, recent] = await Promise.all([approvalStats(app), approvals(app, 100)]);
 
   return html.async`<div class=u2-flex>
     <div class=u2-card>
-      <div class=-head>${node.app.t`Action approvals`}</div>
+      <div class=-head>${t`Action approvals`}</div>
       <div class=-body>
-        <b>${stats.pending ?? 0}</b> ${node.app.t`pending`} ·
-        <b>${stats.approved ?? 0}</b> ${node.app.t`approved`} ·
-        <b>${stats.consumed ?? 0}</b> ${node.app.t`consumed`} ·
-        <b>${stats.denied ?? 0}</b> ${node.app.t`denied`}
+        <b>${stats.pending ?? 0}</b> ${t`pending`} ·
+        <b>${stats.approved ?? 0}</b> ${t`approved`} ·
+        <b>${stats.consumed ?? 0}</b> ${t`consumed`} ·
+        <b>${stats.denied ?? 0}</b> ${t`denied`}
       </div>
     </div>
     <div class=u2-card>
-      <div class=-head>${node.app.t`Configuration`}</div>
+      <div class=-head>${t`Configuration`}</div>
       <settings-editor source="/api/core/settings/auth"></settings-editor>
     </div>
     <div class=u2-card style="flex-basis:100%">
-      <div class=-head>${node.app.t`Recent action approvals`} (${recent.length})</div>
+      <div class=-head>${t`Recent action approvals`} (${recent.length})</div>
       <div class=-body style="overflow:auto">${recent.length
         ? html`<table class=u2-table>
           <thead><tr>
-            <th>${node.app.t`Requested`}
-            <th>${node.app.t`User`}
-            <th>${node.app.t`Requester`}
-            <th>${node.app.t`Action`}
-            <th>${node.app.t`Summary`}
-            <th>${node.app.t`Channel`}
-            <th>${node.app.t`State`}
+            <th>${t`Requested`}
+            <th>${t`User`}
+            <th>${t`Requester`}
+            <th>${t`Action`}
+            <th>${t`Summary`}
+            <th>${t`Channel`}
+            <th>${t`State`}
           <tbody>${recent.map((item) => html`<tr>
             <td>${time(item.requested)}
             <td>${[item.firstname, item.lastname].filter(Boolean).join(" ") || item.email || "#" + item.usrId}
@@ -58,7 +60,7 @@ export async function render(node: Node): Promise<HtmlString> {
             <td>${item.channel || "–"}
             <td><span class=u2-badge>${item.status}</span>`)}
         </table>`
-        : node.app.t`No action approvals yet.`}</div>
+        : t`No action approvals yet.`}</div>
     </div>
   </div>`;
 }

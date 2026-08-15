@@ -5,15 +5,15 @@ import { approval, decideApproval } from "./approval.ts";
 import type { Ctx, HtmlString } from "@qino/qino";
 
 export async function approvalPage(ctx: Ctx, id: string): Promise<never> {
-  if (!ctx.user || ctx.statelessAuth) return page(ctx, await ctx.app.t`Approval`, html`<main><h1>Approval</h1><p>Sign in in this browser to continue.</p></main>`, 403);
-  if (!/^[A-Za-z0-9_-]{32}$/.test(id)) return page(ctx, await ctx.app.t`Approval`, html`<main><h1>Approval</h1><p>Request not found.</p></main>`, 404);
+  if (!ctx.user || ctx.statelessAuth) return notice(ctx, ctx.app.t`Sign in in this browser to continue.`, 403);
+  if (!/^[A-Za-z0-9_-]{32}$/.test(id)) return notice(ctx, ctx.app.t`Request not found.`, 404);
 
   let row = await approval(ctx.app, ctx.userId, id);
-  if (!row) return page(ctx, await ctx.app.t`Approval`, html`<main><h1>Approval</h1><p>Request not found.</p></main>`, 404);
+  if (!row) return notice(ctx, ctx.app.t`Request not found.`, 404);
 
   const body = ctx.req.method === "POST" ? ctx.req.body : null;
   if (body?.decision != null) {
-    if (!safeEqual(body.csrfToken, ctx.csrfToken)) return page(ctx, await ctx.app.t`Approval`, html`<main><h1>Approval</h1><p>Invalid form token.</p></main>`, 403);
+    if (!safeEqual(body.csrfToken, ctx.csrfToken)) return notice(ctx, ctx.app.t`Invalid form token.`, 403);
     const decision = body.decision === "approved" ? "approved" : body.decision === "denied" ? "denied" : null;
     if (decision) row = await decideApproval(ctx.app, ctx.userId, id, decision) ?? row;
   }
@@ -36,6 +36,11 @@ export async function approvalPage(ctx: Ctx, id: string): Promise<never> {
       <button name=decision value=denied>${ctx.app.t`Deny`}</button>
     </form>` : html.async`<p>${ctx.app.t`This request is ${row.status}. You can close this page.`}</p>`}
   </main>`);
+}
+
+async function notice(ctx: Ctx, text: Promise<string>, status: number): Promise<never> {
+  const title = await ctx.app.t`Approval`;
+  return page(ctx, title, html`<main><h1>${title}</h1><p>${await text}</p></main>`, status);
 }
 
 function page(ctx: Ctx, title: string, body: HtmlString, status = 200): never {
