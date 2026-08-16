@@ -263,7 +263,7 @@ export const api: ApiTree = {
           const usrId = Number(r.cred.usr_id);
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
 
-          if (!await login(ctx, usrId)) return { ok: false, error: "user_inactive" };
+          if (!await login(ctx, usrId, "webauthn")) return { ok: false, error: "user_inactive" };
           return { ok: true };
         },
       },

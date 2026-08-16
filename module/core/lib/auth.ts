@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { bcrypt } from "../deps.ts";
+import { unixTime } from "./util.ts";
 
 import type { Ctx } from "./ctx/Ctx.ts";
 import type { Usr } from "./rows.ts";
@@ -39,14 +40,21 @@ export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError
   const rehash = pwNeedsRehash(usr.pw);
   if (!rehash) {
     const clientUsrs = await ctx.client.users();
-    if (clientUsrs[String(usr.id)]?.save_login) return await login(ctx, user.id) ? "" : "username";
+    // remember-me: the password is never asked here, so this is how access was had, not what proved it
+    if (clientUsrs[String(usr.id)]?.save_login) return await login(ctx, user.id, "remember") ? "" : "username";
   }
   if (!await pwVerify(pw, usr.pw ?? "")) return "password";
   if (rehash) await usr.$set({ pw: await pwHash(pw) });
-  return await login(ctx, user.id) ? "" : "username";
+  return await login(ctx, user.id, "password") ? "" : "username";
 }
 
-export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
+/**
+ * Make `id` the session's user — the caller has already established who that is.
+ * `via` records how, timestamped, so a later check can ask what showed this identity and how long
+ * ago. It is a record, not a permission: a policy accepts only what a linked module declares as a
+ * factor, so entries like `remember` or `login_as` are auditable without ever satisfying one.
+ */
+export async function login(ctx: Ctx, id: number | string, via?: string): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;
   // The values, not the item: logout() empties it, and the listeners run after that.
@@ -56,6 +64,7 @@ export async function login(ctx: Ctx, id: number | string): Promise<boolean> {
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
   ctx.sess = session;
   ctx.sess.data.core.userId(id);
+  if (via) ctx.sess.data.core.via[via](unixTime());
   ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
   await ctx.client.addUsr(id);
   await ctx.client.$set({ usr_id: id });

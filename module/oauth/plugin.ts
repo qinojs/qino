@@ -140,7 +140,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  if (!usrId || !await login(ctx, usrId)) throw new Output("oauth login denied", { status: 403 });
+  if (!usrId || !await login(ctx, usrId, "oauth")) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
 }
 

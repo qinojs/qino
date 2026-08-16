@@ -24,7 +24,7 @@ export default async function (node: Node, vars:any): Promise<any> {
     const allowLoginAs = !!(node.settings.allow_login_as()) || isSuperuser;
     if (!allowLoginAs) return false;
     if (!await target(vars.login_as)) return false;
-    await login(ctx, vars.login_as);
+    await login(ctx, vars.login_as, "login_as");
     return 1;
   }
 
