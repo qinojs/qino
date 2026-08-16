@@ -2,6 +2,7 @@
   "modules": {
     "ai": {},
     "api_key": {},
+    "auth": {},
     "cms": {},
     "cms.accessRules": {},
     "cms.backend": {},

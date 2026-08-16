@@ -55,14 +55,16 @@ const r = await wa.confirm(); // öffnet Authenticator-Dialog
 if (r.ok) { /* geschützte Aktion */ }
 ```
 
-Server-seitig prüfen (z.B. max. 60 Sekunden gültig):
+Der Nachweis landet über [auth](../auth/) in der Session, nicht in einem eigenen Flag — server-seitig
+prüfen heisst also, wie frisch er ist:
+
 ```ts
-const confirmed = Number(await ctx.sess.data.webauthn_confirmed() ?? "0");
-if (now() - confirmed > 60) return { ok: false, error: "confirmation_required" };
+const at = Number(ctx.sess.data.core.via.webauthn() ?? 0);
+if (unixTime() - at > 60) return { ok: false, error: "confirmation_required" };
 ```
 
-Bisher prüft das niemand. Wie daraus eine faktor-unabhängige Bestätigung am api-Endpunkt werden
-könnte, steht im Workspace in `PLAN-confirm.md`.
+Das tut bisher niemand von Hand: der Guard, der das für beliebige Faktoren am api-Verb erledigt,
+fehlt noch (siehe [auth](../auth/#possible-extensions)).
 
 ## Hook
 

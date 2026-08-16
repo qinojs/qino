@@ -1,9 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
-import { login, Output, Redirect, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Output, Redirect, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { proof } from "@qino/qino/auth";
 
 import type { App, Ctx } from "@qino/qino";
+import type { Factor } from "@qino/qino/auth";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+// No stepUp: the provider answers from its own session, so it says nothing about who is here now.
+export const authFactor: Factor = { name: "oauth", label: "Social login", login: true };
 
 /** Decode a JWT payload without verifying the signature — safe here: the token comes
  *  straight from the token endpoint over TLS (OIDC allows skipping the signature check). */
@@ -140,7 +145,7 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  if (!usrId || !await login(ctx, usrId, "oauth")) throw new Output("oauth login denied", { status: 403 });
+  if (!usrId || !await proof(ctx, "oauth", usrId)) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
 }
 

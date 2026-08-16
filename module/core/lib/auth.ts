@@ -48,12 +48,8 @@ export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError
   return await login(ctx, user.id, "password") ? "" : "username";
 }
 
-/**
- * Make `id` the session's user — the caller has already established who that is.
- * `via` records how, timestamped, so a later check can ask what showed this identity and how long
- * ago. It is a record, not a permission: a policy accepts only what a linked module declares as a
- * factor, so entries like `remember` or `login_as` are auditable without ever satisfying one.
- */
+/** Make `id` the session's user — the caller has already established who that is. `via` records how,
+ *  timestamped; a record, not a permission, so `remember` and `login_as` belong there too. */
 export async function login(ctx: Ctx, id: number | string, via?: string): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;

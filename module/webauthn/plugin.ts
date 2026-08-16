@@ -1,11 +1,15 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, login, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
+import { getCtx, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
+import { proof } from "@qino/qino/auth";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 
 import type { ApiTree, App, Db, Ctx } from "@qino/qino";
+import type { Factor } from "@qino/qino/auth";
 import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
+
+export const authFactor: Factor = { name: "webauthn", label: "Passkey", login: true, stepUp: true };
 
 export const settingsSchema = {
   properties: {
@@ -263,7 +267,7 @@ export const api: ApiTree = {
           const usrId = Number(r.cred.usr_id);
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
 
-          if (!await login(ctx, usrId, "webauthn")) return { ok: false, error: "user_inactive" };
+          if (!await proof(ctx, "webauthn", usrId)) return { ok: false, error: "user_inactive" };
           return { ok: true };
         },
       },
@@ -297,7 +301,7 @@ export const api: ApiTree = {
 
     verify: {
       post: {
-        description: "Verify step-up confirmation — sets session flag 'webauthn_confirmed'",
+        description: "Verify step-up confirmation — records a fresh proof in the session",
         access: Access.USER,
         input: assertionInput,
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
@@ -312,7 +316,7 @@ export const api: ApiTree = {
           if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
 
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
-          ctx.sess.data.webauthn_confirmed(unixTime());
+          if (!await proof(ctx, "webauthn", ctx.userId)) return { ok: false, error: "no_session_to_confirm" };
           return { ok: true };
         },
       },

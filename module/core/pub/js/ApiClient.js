@@ -3,10 +3,6 @@ const csrfHeaders = () => globalThis.qino?.csrfToken ? { "X-CSRF-Token": globalT
 
 /** A failed api response, as thrown. `code` is what to branch on, `message` what to show. */
 export class ApiError extends Error {
-  status;
-  code;
-  data;
-
   constructor(status, message, { code, data } = {}) {
     super(message);
     this.name = "ApiError";
