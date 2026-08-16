@@ -1,6 +1,21 @@
 const METHODS = new Set(["get", "post", "put", "delete", "patch"]);
 const csrfHeaders = () => globalThis.qino?.csrfToken ? { "X-CSRF-Token": globalThis.qino.csrfToken } : {};
 
+/** A failed api response, as thrown. `code` is what to branch on, `message` what to show. */
+export class ApiError extends Error {
+  status;
+  code;
+  data;
+
+  constructor(status, message, { code, data } = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+    this.data = data;
+  }
+}
+
 export class ApiClient extends EventTarget {
   #base;
   #handlers = [];
@@ -69,8 +84,8 @@ export class ApiClient extends EventTarget {
     return fetch(url, init).then(async res => {
       if (!res.ok) {
         const text = await res.text();
-        let msg; try { msg = JSON.parse(text)?.error; } catch { /* not json */ }
-        throw new Error(msg ?? (text || `${res.status} ${res.statusText}`));
+        let body; try { body = JSON.parse(text); } catch { /* not json */ }
+        throw new ApiError(res.status, body?.error ?? (text || `${res.status} ${res.statusText}`), body);
       }
       const value = res.status === 204 ? undefined : await res.json();
       const done = { ...detail, status: res.status, value };

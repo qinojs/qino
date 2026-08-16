@@ -2,23 +2,28 @@ import type { StandardIssue } from "../StandardSchema.ts";
 
 export class ApiError extends Error {
   #status: number;
-  #issues: readonly StandardIssue[] | undefined;
+  #code: string | undefined;
+  #data: unknown;
   get status(): number { return this.#status; }
-  get issues(): readonly StandardIssue[] | undefined { return this.#issues; }
+  /** Stable identifier the client branches on — the message is for humans and may change. */
+  get code(): string | undefined { return this.#code; }
+  /** What the client needs to react, e.g. which factors would satisfy a step-up. */
+  get data(): unknown { return this.#data; }
 
-  constructor(status: number, message: string, issues?: readonly StandardIssue[]) {
+  constructor(status: number, message: string, opts: { code?: string; data?: unknown } = {}) {
     super(message);
     this.name = this.constructor.name;
     this.#status = status;
-    this.#issues = issues;
+    this.#code = opts.code;
+    this.#data = opts.data;
   }
 }
 
-export class AccessError extends ApiError { constructor(message = "Access denied") { super(403, message); } }
-export class NotFoundError extends ApiError { constructor(message = "Not found") { super(404, message); } }
-export class ConflictError extends ApiError { constructor(message = "Conflict") { super(409, message); } }
+export class AccessError extends ApiError { constructor(message = "Access denied") { super(403, message, { code: "access" }); } }
+export class NotFoundError extends ApiError { constructor(message = "Not found") { super(404, message, { code: "not_found" }); } }
+export class ConflictError extends ApiError { constructor(message = "Conflict") { super(409, message, { code: "conflict" }); } }
 export class ValidationError extends ApiError {
   constructor(issues: readonly StandardIssue[], where = "input") {
-    super(422, `Validation failed (${where})`, issues);
+    super(422, `Validation failed (${where})`, { code: "validation", data: { issues, where } });
   }
 }

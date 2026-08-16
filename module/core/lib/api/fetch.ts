@@ -41,7 +41,7 @@ export async function apiFetch(req: Req, tree: ApiTree, path: string, opts: ApiF
     throw new Output(body, { status: result === undefined ? 204 : 200, headers: { "Content-Type": "application/json; charset=UTF-8" } });
   } catch (e) {
     if (e instanceof Output) throw e;
-    if (e instanceof ApiError) throw new Output({ error: e.message, ...(e.issues && { issues: e.issues }) }, { status: e.status });
+    if (e instanceof ApiError) throw new Output({ error: e.message, ...(e.code && { code: e.code }), ...(e.data !== undefined && { data: e.data }) }, { status: e.status });
     console.error("[api]", e);
     // unknown errors: detail only in dev, generic message otherwise (may contain SQL/paths)
     const detail = requestStorage.getStore()?.app.dev ? (errMsg(e)) : "";

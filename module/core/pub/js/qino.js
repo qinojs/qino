@@ -24,6 +24,7 @@ function defaultBase() {
 }
 
 export const api = new ApiClient(defaultBase());
+export { ApiError } from "./ApiClient.js";
 
 class CtxSetting extends Item {
 

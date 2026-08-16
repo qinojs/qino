@@ -101,7 +101,7 @@ async function callTool(params: Params, ctx: Ctx) {
     };
   } catch (e) {
     if (e instanceof Output) return outputContent(e); // endpoints that answer with a raw response signal
-    const detail = e instanceof ApiError ? e.message + (e.issues ? " " + JSON.stringify(e.issues) : "")
+    const detail = e instanceof ApiError ? e.message + (e.data !== undefined ? " " + JSON.stringify(e.data) : "")
       : ctx.app.dev && e instanceof Error ? e.message : "";
     if (!(e instanceof ApiError)) console.error("[mcp]", e);
     return { content: [{ type: "text", text: detail || "Internal error" }], isError: true };

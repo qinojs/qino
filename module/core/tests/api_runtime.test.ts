@@ -4,6 +4,7 @@ import { s } from "../lib/StandardSchema.ts";
 import {
   Access,
   AccessError,
+  ApiError,
   NotFoundError,
   ValidationError,
   apiClient,
@@ -160,6 +161,43 @@ Deno.test("api: __proto__ body keys do not become inherited input", async () => 
       body: `{"__proto__":{"_checkAccess":"1"}}`,
     });
     assertEquals(res.status, 422);
+  });
+});
+
+Deno.test("api: errors answer with code and data, so a client can react instead of parse", async () => {
+  await withCtx(async () => {
+    const tree = {
+      locked: {
+        get: {
+          access: Access.PUBLIC,
+          execute: () => { throw new ApiError(401, "Confirm it is you", { code: "step_up_required", data: { factors: ["webauthn"] } }); },
+        },
+      },
+      plain: {
+        get: { access: Access.PUBLIC, execute: () => { throw new ApiError(418, "Nope"); } },
+      },
+    };
+    const res = await apiRequest(tree, "/locked");
+    assertEquals(res.status, 401);
+    assertEquals(await res.json(), { error: "Confirm it is you", code: "step_up_required", data: { factors: ["webauthn"] } });
+
+    const plain = await apiRequest(tree, "/plain");
+    assertEquals(await plain.json(), { error: "Nope" });
+  });
+});
+
+Deno.test("api: a validation error carries its issues as data", async () => {
+  await withCtx(async () => {
+    const res = await apiRequest(api, "/thing/1/update", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "http://qino.test", "x-csrf-token": csrfToken },
+      body: `{"title":"Bad","count":"7"}`,
+    });
+    assertEquals(res.status, 422);
+    const body = await res.json();
+    assertEquals(body.code, "validation");
+    assertEquals(body.data.where, "input");
+    assertEquals(body.data.issues, [{ message: "expected number", path: ["count"] }]);
   });
 });
 
