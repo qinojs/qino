@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.superuser.auth",
+  "description": "Shows the declared authentication factors and how the current session was authenticated.",
+  "dependencies": [
+    "auth",
+    "cms.backend"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

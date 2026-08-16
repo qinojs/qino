@@ -10,7 +10,8 @@ export interface Verb {
   output?: StandardSchema;
   /** Static admissibility gate (param-free): who may use this at all. Evaluated for listings and on every call. */
   access?: (ctx: Ctx) => boolean | Promise<boolean>;
-  /** Per-call check (param-aware): is this concrete call allowed. Evaluated on invoke, after access. */
+  /** Per-call check: is this concrete call allowed. Runs after `access` and before input validation,
+   *  so `params` holds the resolved path params only — input and query are merged in afterwards. */
   guard?: (params: Params, ctx: Ctx) => boolean | Promise<boolean>;
   execute(params: Params, ctx: Ctx): unknown | Promise<unknown>;
 }

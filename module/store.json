@@ -29,6 +29,7 @@
     "cms.backend.settings": {},
     "cms.backend.superuser": {},
     "cms.backend.superuser.api_keys": {},
+    "cms.backend.superuser.auth": {},
     "cms.backend.superuser.cron": {},
     "cms.backend.superuser.db": {},
     "cms.backend.superuser.db.cleanup": {},
