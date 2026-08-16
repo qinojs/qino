@@ -1,45 +1,54 @@
 import { Output, sha256b64url } from "@qino/qino";
 import type { App, Ctx } from "@qino/qino";
 
-let cachedETag = "";
-
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
+  let cache: { key: string; script: string; etag: string } | undefined; // per app — a module global would mix tenants
+
+  // linking/unlinking a part is the only thing that changes the worker
+  const fresh = () => cache?.key === partNames(app).join() ? cache : undefined;
+
+  // answers revalidations before routing, the cheapest point in the pipeline
   app.on("request-start", ({ request, base }) => {
-    if (cachedETag && cachedETag === request.headers.get("if-none-match")) {
-      if (request.url.endsWith(base + "sw.js")) {
-        throw new Output(undefined, { status: 304, headers: { ETag: cachedETag } });
-      }
+    if (!request.url.endsWith(base + "sw.js")) return;
+    const hit = fresh();
+    if (hit && request.headers.get("if-none-match") === hit.etag) {
+      throw new Output(undefined, { status: 304, headers: { ETag: hit.etag } });
     }
   }, { signal });
-  
+
+  /** The worker is nothing but imports — every behaviour comes from a module's part. */
+  const build = async (ctx: Ctx) => {
+    const names = partNames(app);
+    if (!names.length) return; // no part, no worker
+    const script = names.map((name) => `import ${JSON.stringify(`${ctx.req.moduleUrl + name}/pub/sw.js`)};\n`).join("");
+    return cache = { key: names.join(), script, etag: `W/"${await sha256b64url(script)}"` };
+  };
+
+  async function serve(ctx: Ctx): Promise<void> {
+    const worker = fresh() ?? await build(ctx);
+    if (!worker) return;
+    // "no-cache" stores the worker but revalidates it; the ETag then answers most checks with a 304
+    const headers = {
+      "Content-Type": "text/javascript; charset=utf-8",
+      "Cache-Control": "no-cache",
+      ETag: worker.etag,
+    };
+    if (ctx.req.header("if-none-match") === worker.etag) throw new Output(undefined, { status: 304, headers });
+    throw new Output(worker.script, { headers });
+  }
+
   app.on("route", ({ ctx }) => ctx.req.appPath === "sw.js" ? serve(ctx) : undefined, { signal });
   app.on("html-ready", ({ ctx }) => register(ctx), { signal });
 }
 
-/** Modules that declare `export const serviceWorker = true` and are currently linked. */
-const parts = (app: App) =>
-  Object.values(app.modules.all()).filter((mod) => mod.plugin.serviceWorker && app.modules.linked(mod.name));
+/** Linked modules shipping a `pub/sw.js` — the file in the manifest is the whole declaration. */
+const partNames = (app: App) =>
+  Object.values(app.modules.all())
+    .filter((mod) => mod.manifest.files?.includes("pub/sw.js") && app.modules.linked(mod.name))
+    .map((mod) => mod.name);
 
-/** The worker is nothing but imports — every behaviour comes from a module's part. */
-async function serve(ctx: Ctx): Promise<void> {
-  const modules = parts(ctx.app);
-  if (!modules.length) return; // no part, no worker
-  const script = modules.map((m) => `import ${JSON.stringify(`${ctx.req.moduleUrl + m.name}/pub/sw.js`)};\n`).join("");
-  // "no-cache" stores the worker but revalidates it; the ETag then answers most checks with a 304
-  const headers = {
-    "Content-Type": "text/javascript; charset=utf-8",
-    "Cache-Control": "no-cache",
-    ETag: `W/"${await sha256b64url(script)}"`,
-  };
-  cachedETag = headers.ETag; 
-  if (ctx.req.header("if-none-match") === headers.ETag) throw new Output(undefined, { status: 304, headers });
-  setTimeout(() => (cachedETag = ""), 1000 * 60 * 10); // clear the cache after an hour
-  throw new Output(script, { headers });
-}
-
-// runs on every rendered page — short-circuits on the first part instead of collecting them
+// runs on every rendered page
 function register(ctx: Ctx): void {
-  const app = ctx.app;
-  if (!Object.values(app.modules.all()).some((mod) => mod.plugin.serviceWorker && app.modules.linked(mod.name))) return;
+  if (!partNames(ctx.app).length) return;
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "serviceworker/pub/register.js");
 }

@@ -6,7 +6,6 @@ import { publicKey, send } from "./mod.ts";
 import type { ApiTree, App } from "@qino/qino";
 import type { Channel } from "@qino/qino/messaging";
 
-export const serviceWorker = true; // pub/sw.js is imported into the app worker
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const messagingChannel: Channel = {

@@ -1,14 +1,15 @@
 # serviceworker
 
 A browser allows one service worker per scope. This module owns that one worker for the
-app; every module may contribute one part to it, by declaring it in its manifest:
+app; every module may contribute one part to it, by shipping a `pub/sw.js` and depending
+on this module:
 
-```ts
-export const dependencies = ["core", "serviceworker"];
-export const serviceWorker = true;   // this module has a pub/sw.js
+```json
+{ "dependencies": ["core", "serviceworker"], "files": ["pub/sw.js"] }
 ```
 
-That is the whole contract — no registration call, and nothing to undo: the worker is
+The file is the declaration — `files` is generated for every published module, so there
+is nothing to keep in sync. That is the whole contract — no registration call, and nothing to undo: the worker is
 assembled per request from the modules that are linked right then, so unlinking a module
 drops its part by itself.
 
@@ -27,8 +28,8 @@ Without a part there is no `sw.js` route and no registration script.
 
 ## Notes
 
-- Declaring `serviceWorker` without shipping `pub/sw.js` breaks the *whole* worker — one
-  failing static import fails the installation.
+- A part that fails to load breaks the *whole* worker — one failing static import fails
+  the installation.
 - Import maps do not apply to workers — a part must not import bare specifiers.
 
 ## Caching

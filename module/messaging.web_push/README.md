@@ -41,8 +41,8 @@ import { subscribe, unsubscribe, channels } from "/m/messaging.web_push/pub/web_
 await subscribe(["news"]);   // asks for permission; the list replaces what was there
 ```
 
-The service worker comes from the `serviceworker` module — this module only declares
-`serviceWorker = true` and adds its `push` and `notificationclick` listeners.
+The service worker comes from the `serviceworker` module — this module only ships a
+`pub/sw.js` that adds its `push` and `notificationclick` listeners.
 
 ## VAPID
 
