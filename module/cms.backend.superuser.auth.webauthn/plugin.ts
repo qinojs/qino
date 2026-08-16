@@ -1,13 +1,17 @@
 import { html } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
+import manifest from "./manifest.json" with { type: "json" };
+
 import type { App, Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
+
+const { name } = manifest;
 
 export const cms         = { node: { render } };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, "cms.backend.superuser.webauthn", { en: "WebAuthn", de: "WebAuthn" });
+  await backend.install(app, name, { en: "WebAuthn", de: "WebAuthn" });
 }
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {

@@ -1,9 +1,9 @@
 {
-  "name": "cms.backend.superuser.webauthn",
+  "name": "cms.backend.superuser.auth.webauthn",
   "description": "Lists and manages users' passkey credentials.",
   "dependencies": [
     "auth.webauthn",
-    "cms.backend"
+    "cms.backend.superuser.auth"
   ],
   "files": [
     "manifest.json",
