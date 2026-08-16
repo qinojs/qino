@@ -1,0 +1,12 @@
+{
+  "name": "cms.cont.my.clients",
+  "description": "Shows the signed-in user's active devices and sessions.",
+  "dependencies": [
+    "cms"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js"
+  ]
+}

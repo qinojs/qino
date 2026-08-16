@@ -2,7 +2,6 @@
   "modules": {
     "ai": {},
     "api_key": {},
-    "auth": {},
     "cms": {},
     "cms.accessRules": {},
     "cms.backend": {},
@@ -16,9 +15,9 @@
     "cms.backend.cms.tree.access": {},
     "cms.backend.config": {},
     "cms.backend.config.identity": {},
-    "cms.backend.config.webapp": {},
     "cms.backend.config.translate": {},
     "cms.backend.config.translate.export": {},
+    "cms.backend.config.webapp": {},
     "cms.backend.domain-monitor": {},
     "cms.backend.groups": {},
     "cms.backend.mail": {},
@@ -27,7 +26,6 @@
     "cms.backend.settings": {},
     "cms.backend.superuser": {},
     "cms.backend.superuser.api_keys": {},
-    "cms.backend.superuser.auth": {},
     "cms.backend.superuser.cron": {},
     "cms.backend.superuser.db": {},
     "cms.backend.superuser.db.cleanup": {},
@@ -70,6 +68,7 @@
     "cms.cont.lang.choose2": {},
     "cms.cont.login4": {},
     "cms.cont.my.api_keys": {},
+    "cms.cont.my.clients": {},
     "cms.cont.my.phones": {},
     "cms.cont.my.telegram": {},
     "cms.cont.nav3": {},
@@ -122,7 +121,7 @@
     "ticket": {},
     "u2": {},
     "uncdn": {},
-    "webauthn": {},
-    "webapp": {}
+    "webapp": {},
+    "webauthn": {}
   }
 }

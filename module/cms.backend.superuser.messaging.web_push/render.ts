@@ -91,9 +91,9 @@ export async function send(node: Node): Promise<HtmlString> {
         <optgroup label="${await t`Groups`}">${groupOptions}</optgroup>
         <optgroup label="${await t`Users`}">${userOptions}</optgroup>
       </select>
-      ${t`Title`} <input name=title required>
-      ${t`Text`} <input name=body>
-      ${t`Link`} <input name=url placeholder="/">
+      ${t`Title`} <input name=title required maxlength=30>
+      ${t`Text`} <textarea name=body required maxlength=65></textarea>
+      ${t`Link`} <input name=url placeholder="/" maxlength=200>
     </u2-fields>
     <div><button type=button data-send>${t`Send`}</button></div>
   </form>`;

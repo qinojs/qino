@@ -1,8 +1,17 @@
 import { Output, sha256b64url } from "@qino/qino";
-
 import type { App, Ctx } from "@qino/qino";
 
+let cachedETag = "";
+
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
+  app.on("request-start", ({ request, base }) => {
+    if (cachedETag && cachedETag === request.headers.get("if-none-match")) {
+      if (request.url.endsWith(base + "sw.js")) {
+        throw new Output(undefined, { status: 304, headers: { ETag: cachedETag } });
+      }
+    }
+  }, { signal });
+  
   app.on("route", ({ ctx }) => ctx.req.appPath === "sw.js" ? serve(ctx) : undefined, { signal });
   app.on("html-ready", ({ ctx }) => register(ctx), { signal });
 }
@@ -22,7 +31,9 @@ async function serve(ctx: Ctx): Promise<void> {
     "Cache-Control": "no-cache",
     ETag: `W/"${await sha256b64url(script)}"`,
   };
+  cachedETag = headers.ETag; 
   if (ctx.req.header("if-none-match") === headers.ETag) throw new Output(undefined, { status: 304, headers });
+  setTimeout(() => (cachedETag = ""), 1000 * 60 * 10); // clear the cache after an hour
   throw new Output(script, { headers });
 }
 

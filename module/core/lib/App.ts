@@ -42,7 +42,7 @@ const RESPONSE_HEADERS: Record<string, string> = {
 
 /** Core events. Module events are allowed but untyped — JSR forbids augmenting this map from a module. */
 export interface AppEvents {
-    "request-start": { request: Request; peerAddr: string; time: number };
+    "request-start": { request: Request; peerAddr: string; time: number, base: string };
     "authenticate": { ctx: Ctx };
     "route": { ctx: Ctx };
     "render": { ctx: Ctx };
@@ -133,8 +133,8 @@ export class App extends Emitter<AppEvents> {
     /** The single entry point: `Request` in, `Response` out. `appUrl` = the prefix this request is served under. */
     async handle(request: Request, appUrl: string = this.appUrl, peerAddr = ""): Promise<Response> {
         const time = performance.now();
-        const meta = { request, peerAddr, time };
         const base = ensureSlash(appUrl || "/");
+        const meta = { request, peerAddr, time, base };
         let ctx: Ctx;
         try {
 // console.log('start');
