@@ -85,7 +85,7 @@ async function fetchAndCache(url: string, filePath: string, cacheDir: string, me
 
 type CspSources = Record<string, true>;
 const origins = (s: CspSources) => Object.keys(s).filter(k => /^https?:\/\//.test(k));
-const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set([...set].map(fn));
+const mapSet = (set: Set<string>, fn: (value: string) => string) => new Set(set.values().map(fn));
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   const cacheDir = app.modules.get(name)!.cache;

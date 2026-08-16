@@ -19,7 +19,7 @@ async function app() {
   return {
     db,
     t: fakeT,
-    modules: { all: () => ({ pwReset: { name: "pwReset", plugin } }), linked: () => true },
+    modules: { linked: () => [{ name: "pwReset", plugin }] },
     // deno-lint-ignore no-explicit-any
   } as any;
 }

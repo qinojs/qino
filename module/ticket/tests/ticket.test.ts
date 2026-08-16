@@ -25,7 +25,7 @@ async function app() {
   await db.loadTables();
   return {
     db,
-    modules: { all: () => ({ test: { name: "test", plugin: { tickets: kinds } } }), linked: () => true },
+    modules: { linked: () => [{ name: "test", plugin: { tickets: kinds } }] },
     // deno-lint-ignore no-explicit-any
   } as any;
 }

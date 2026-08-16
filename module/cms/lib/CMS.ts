@@ -87,13 +87,11 @@ export class CMS {
     return this.#modules("cms.layout.");
   }
 
+  /** Linked only — a deactivated module is nothing a page can be built with. */
   #modules(prefix: string): Record<string, Module> {
-    const modules = Object.keys(this.app.modules.all()).sort();
     const ret: Record<string, Module> = {};
-    for (const module of modules) {
-      if (!module.startsWith(prefix)) continue;
-      ret[module] = this.app.modules.get(module)!;
-    }
+    for (const mod of this.app.modules.linked().sort((a, b) => a.name.localeCompare(b.name)))
+      if (mod.name.startsWith(prefix)) ret[mod.name] = mod;
     return ret;
   }
 

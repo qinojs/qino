@@ -64,7 +64,7 @@ export async function send(
   }
   if (gone.length) await app.db.exec`DELETE FROM telegram_chat WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
   await record(app, { channel: "telegram", direction: "out", grpId: to.grp, data: { to, msg }, time },
-    [...outcomes].map(([usrId, outcome]) => ({
+    Array.from(outcomes, ([usrId, outcome]) => ({
       usrId,
       error: outcome.sent ? undefined : outcome.errors.join("; "),
       time: unixTime(),

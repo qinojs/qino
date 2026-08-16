@@ -55,7 +55,7 @@ async function methods(node: Node): Promise<HtmlString> {
 
   // A page module marks a page as a product; which ones exist depends on what is installed.
   const chosen = String(await set.default_product_module ?? "");
-  const productModules = Object.keys(app.modules.all()).filter((n) => n.startsWith("cms.cont.shp3.product"));
+  const productModules = app.modules.linked().map((mod) => mod.name).filter((n) => n.startsWith("cms.cont.shp3.product"));
   if (chosen && !productModules.includes(chosen)) productModules.push(chosen);
 
   return html.async`<div class=u2-card style="flex:0 1 auto">

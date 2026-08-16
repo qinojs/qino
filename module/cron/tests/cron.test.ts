@@ -184,10 +184,7 @@ async function createTestApp(cron: Record<string, Job>) {
   const app = {
     db,
     settings: { cron: { pollSeconds: 60, timezone: "UTC" } },
-    modules: {
-      all: () => ({ [mod.name]: mod }),
-      linked: (name: string) => name === mod.name,
-    },
+    modules: { linked: () => [mod] },
     on: events.on.bind(events),
   } as unknown as App;
   const ctrl = new AbortController();

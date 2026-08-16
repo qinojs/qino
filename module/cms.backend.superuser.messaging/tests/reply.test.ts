@@ -27,7 +27,7 @@ Deno.test("messaging detail replies to the selected user's Telegram chat", async
   const app = {
     db,
     t: fakeT,
-    modules: { all: () => linked, linked: () => true, get: (name: string) => linked[name as keyof typeof linked] },
+    modules: { linked: () => Object.values(linked), get: (name: string) => linked[name as keyof typeof linked] },
     settings: { "messaging.telegram": { botToken: "123:test", webhookSecret: "secret" } },
   };
   const original = globalThis.fetch;

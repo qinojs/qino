@@ -27,7 +27,7 @@ export async function getHealthChecks(app: App): Promise<HealthChecks> {
     repair:  {},
   };
 
-  for (const mod of Object.values(app.modules.all())) {
+  for (const mod of app.modules.linked()) {
     const hc = mod.plugin.healthChecks;
     if (!hc) continue;
     const checks: HealthChecks = await hc(app);

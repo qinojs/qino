@@ -67,7 +67,7 @@ export async function send(
   }));
   if (gone.length) await app.db.exec`DELETE FROM web_push_subscription WHERE id IN (${sql.join(gone.map((id) => sql`${id}`))})`;
   await record(app, { channel: "web_push", direction: "out", grpId: to.grp, data: { to, msg }, time },
-    [...outcomes.values()].map((outcome) => ({
+    Array.from(outcomes.values(), (outcome) => ({
       usrId: outcome.usrId,
       error: outcome.sent ? undefined : outcome.errors.join("; "),
       time: unixTime(),

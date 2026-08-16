@@ -203,8 +203,7 @@ export function status(app: App): ReturnType<Scheduler["status"]> { return of(ap
 /** Jobs declared by linked modules, sorted by id. */
 function collect(app: App, timeZone: string): RegisteredJob[] {
   const ret = [];
-  for (const mod of Object.values(app.modules.all()).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (!app.modules.linked(mod.name)) continue;
+  for (const mod of app.modules.linked().sort((a, b) => a.name.localeCompare(b.name))) {
     const declared = mod.plugin.cron as Jobs | undefined;
     if (declared == null) continue;
     if (typeof declared !== "object" || Array.isArray(declared)) throw new Error(`Module "${mod.name}": cron must be an object`);

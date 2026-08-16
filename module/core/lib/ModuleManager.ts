@@ -119,10 +119,16 @@ export class ModuleManager {
 
   get(name: string): Module | undefined { return this.#modules[name]; }
 
+  /** Everything imported, linked or not — the raw registry (imported ⊇ linked). */
   all(): Record<string, Module> { return this.#modules; }
 
-  // True once a module's hooks have run (imported ⊇ linked). Unlink flips it back.
-  linked(name: string): boolean { return this.#linked.has(name); }
+  /** The working set: modules whose hooks have run, dependencies first. With a name: that one, if it is linked. */
+  linked(): Module[];
+  linked(name: string): Module | undefined;
+  linked(name?: string): Module[] | Module | undefined {
+    if (name === undefined) return Array.from(this.#linked, (n) => this.#modules[n]);
+    if (this.#linked.has(name)) return this.#modules[name];
+  }
 
   // True for modules the application declares itself — they outlive any uninstall.
   declared(name: string): boolean { return this.#declared.has(name); }

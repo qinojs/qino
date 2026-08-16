@@ -32,7 +32,7 @@ function candidates(app: App): Map<string, Holds> {
 
 async function repos(app: App): Promise<Repo<Holds>[]> {
   const found = await reposOf(candidates(app));
-  return Promise.all([...found].map(async ([root, holds]) => ({ root, holds, ...await status(root) })));
+  return Promise.all(found.entries().map(async ([root, holds]) => ({ root, holds, ...await status(root) })));
 }
 
 /** What lies in a repository, in one line: names while there are few, counts once there are many.

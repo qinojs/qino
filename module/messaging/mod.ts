@@ -45,9 +45,7 @@ export type Channel = {
 
 /** Every channel a linked module declares. */
 export function channels(app: App): Channel[] {
-  return Object.values(app.modules.all())
-    .filter((mod) => mod.plugin.messagingChannel && app.modules.linked(mod.name))
-    .map((mod) => mod.plugin.messagingChannel as Channel);
+  return app.modules.linked().filter((mod) => mod.plugin.messagingChannel).map((mod) => mod.plugin.messagingChannel as Channel);
 }
 
 export function channel(app: App, name: string): Channel | undefined {

@@ -43,9 +43,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
 /** Linked modules shipping a `pub/sw.js` — the file in the manifest is the whole declaration. */
 const partNames = (app: App) =>
-  Object.values(app.modules.all())
-    .filter((mod) => mod.manifest.files?.includes("pub/sw.js") && app.modules.linked(mod.name))
-    .map((mod) => mod.name);
+  app.modules.linked().filter((mod) => mod.manifest.files?.includes("pub/sw.js")).map((mod) => mod.name);
 
 // runs on every rendered page
 function register(ctx: Ctx): void {

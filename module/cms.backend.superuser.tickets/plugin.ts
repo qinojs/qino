@@ -62,7 +62,7 @@ export async function render(node: Node): Promise<HtmlString> {
     <div class=-head>${t`Open by kind`}</div>
     <div class=-body>
       ${byPurpose.size
-        ? [...byPurpose].map(([purpose, n]) => html`<div>${purpose}: <b>${n}</b></div>`)
+        ? Array.from(byPurpose, ([purpose, n]) => html`<div>${purpose}: <b>${n}</b></div>`)
         : html`<div>${await t`None`}</div>`}
     </div>
   </div>

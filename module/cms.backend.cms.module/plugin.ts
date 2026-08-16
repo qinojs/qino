@@ -22,7 +22,7 @@ const modAccess = (app: App, module: string) =>
 
 /** A module that can render a node — those are the ones listed here. */
 const isContent = (app: App, module: string) => !!app.modules.get(module)?.plugin.cms?.node?.render;
-const contentModules = (app: App) => Object.keys(app.modules.all()).sort().filter((n) => isContent(app, n));
+const contentModules = (app: App) => app.modules.linked().map((mod) => mod.name).filter((n) => isContent(app, n)).sort();
 
 /** Detail link of a module list page (this one or cms.backend.superuser.module). */
 const modUrl = (base: string, module: string) => base + (base.includes("?") ? "&" : "?") + "mod=" + module;
@@ -162,7 +162,7 @@ async function historyRows(node: Node, ids: number[], titles: Map<number, string
       <td data-value="${r.time}">${time(r.time)}
       <td>${who}
       <td class=-where>${await backend.breadcrumb(node, Number(r.node_id), titles)}
-      <td>${[...labels].map((l) => html`<div>${html.raw(l)}</div>`)}`);
+      <td>${Array.from(labels, (l) => html`<div>${html.raw(l)}</div>`)}`);
   }
   return out;
 }

@@ -66,7 +66,7 @@ class NodeCleaner {
     if (!this.conf.tags)       return el;
     if (this.conf.tags[el.tagName]) return el;
 
-    const before = Object.fromEntries([...cs].map(p => [p, cs.getPropertyValue(p)]));
+    const before = Object.fromEntries(Array.from(cs, p => [p, cs.getPropertyValue(p)]));
 
     const effectiveDisplay = display || (BLOCK_LIKE_TAGS[el.tagName] ? 'block' : 'inline');
     const nEl = document.createElement(NOT_INLINE[effectiveDisplay] ? 'div' : 'span');

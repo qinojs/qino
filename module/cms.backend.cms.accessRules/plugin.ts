@@ -79,8 +79,9 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, unknown
 
   const trParts = [];
   let total = 0;
-  for (const module of Object.keys(app.modules.all()).sort()) {
-    if (!app.modules.get(module)!.plugin.cms?.node?.render) continue;
+  for (const mod of app.modules.linked().sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!mod.plugin.cms?.node?.render) continue;
+    const module = mod.name;
     const row = modRows.get(module);
     if (!row) continue;
     total++;

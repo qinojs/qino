@@ -17,9 +17,9 @@ const TTL = 24 * 60 * 60;
 
 // A purpose is global — prefix it with the module that declares it.
 function kindOf(app: App, purpose: string): TicketKind {
-  for (const mod of Object.values(app.modules.all())) {
+  for (const mod of app.modules.linked()) {
     const kind = mod.plugin.tickets?.[purpose];
-    if (kind && app.modules.linked(mod.name)) return kind;
+    if (kind) return kind;
   }
   throw new Error(`ticket: no kind "${purpose}" — declare it in a module's tickets export`);
 }

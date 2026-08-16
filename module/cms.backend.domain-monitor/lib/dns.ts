@@ -18,7 +18,6 @@ export type Type = keyof typeof TYPES;
 const PORT = 53;
 const enc = new TextEncoder();
 const dec = new TextDecoder();
-const hex = (bytes: Uint8Array): string => [...bytes].map((n) => n.toString(16).padStart(2, "0")).join("");
 
 // RFC 5952 form, so values compare equal to what Deno.resolveDns returns.
 function ipv6(bytes: Uint8Array): string {
@@ -85,10 +84,10 @@ function rdata(r: Reader, type: number, len: number): string {
         return parts.join("");
       }
       case TYPES.CAA: { r.u8(); const tag = dec.decode(r.take(r.u8())); return `${tag} ${dec.decode(r.take(end - r.pos))}`; }
-      case TYPES.DS: case TYPES.DNSKEY: return `${r.u16()} ${r.u8()} ${r.u8()} ${hex(r.take(end - r.pos))}`;
-      case TYPES.TLSA: return `${r.u8()} ${r.u8()} ${r.u8()} ${hex(r.take(end - r.pos))}`;
+      case TYPES.DS: case TYPES.DNSKEY: return `${r.u16()} ${r.u8()} ${r.u8()} ${r.take(end - r.pos).toHex()}`;
+      case TYPES.TLSA: return `${r.u8()} ${r.u8()} ${r.u8()} ${r.take(end - r.pos).toHex()}`;
       case TYPES.HTTPS: return `${r.u16()} ${r.name() || "."}`; // priority and target, SvcParams skipped
-      default: return hex(r.take(end - r.pos));
+      default: return r.take(end - r.pos).toHex();
     }
   })();
   r.pos = end; // whatever a branch consumed, the next record starts here
