@@ -32,14 +32,14 @@ export const cron = {
 const CHALLENGE_TTL = 5 * 60;
 
 async function getRp(app: App): Promise<{ rpId: string; rpName: string }> {
-  const rpId   = String(await app.settings.webauthn.rpId   ?? "") || "localhost";
-  const rpName = String(await app.settings.webauthn.rpName ?? "") || "Qino";
+  const rpId   = String(await app.settings["auth.webauthn"].rpId   ?? "") || "localhost";
+  const rpName = String(await app.settings["auth.webauthn"].rpName ?? "") || "Qino";
   return { rpId, rpName };
 }
 
 /** Origins accepted in clientDataJSON — `origin` setting (comma-separated) or derived from the request. */
 async function expectedOrigins(ctx: Ctx, rpId: string): Promise<string[]> {
-  const setting = String(await ctx.app.settings.webauthn.origin ?? "");
+  const setting = String(await ctx.app.settings["auth.webauthn"].origin ?? "");
   if (setting) return setting.split(",").map((s) => s.trim()).filter(Boolean);
   const url = ctx.req.url;
   if (url.hostname === rpId || url.hostname.endsWith("." + rpId)) return [url.origin];

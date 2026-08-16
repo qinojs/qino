@@ -2,8 +2,8 @@
   "name": "cms.cont.socialLogin",
   "description": "Login links for configured OAuth providers.",
   "dependencies": [
-    "cms",
-    "oauth"
+    "auth.oauth",
+    "cms"
   ],
   "files": [
     "manifest.json",

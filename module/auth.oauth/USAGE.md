@@ -1,4 +1,4 @@
-# oauth — Login via external providers (OIDC & plain OAuth2)
+# auth.oauth — Login via external providers (OIDC & plain OAuth2)
 
 Lets Qino users sign in through an external provider and opens a normal Qino session
 via `login()`. Handles both:

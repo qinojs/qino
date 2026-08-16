@@ -1,5 +1,5 @@
 {
-  "name": "oauth",
+  "name": "auth.oauth",
   "description": "Authenticates users through configured OAuth 2.0 and OpenID providers.",
   "dependencies": [
     "auth",

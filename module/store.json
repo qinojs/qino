@@ -3,6 +3,8 @@
     "ai": {},
     "api_key": {},
     "auth": {},
+    "auth.oauth": {},
+    "auth.webauthn": {},
     "cms": {},
     "cms.accessRules": {},
     "cms.backend": {},
@@ -115,14 +117,12 @@
     "messaging.sms": {},
     "messaging.telegram": {},
     "messaging.web_push": {},
-    "oauth": {},
     "oauth_server": {},
     "score": {},
     "serviceworker": {},
     "ticket": {},
     "u2": {},
     "uncdn": {},
-    "webapp": {},
-    "webauthn": {}
+    "webapp": {}
   }
 }

@@ -27,7 +27,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<string | HtmlS
   const showManage = mode === "manage" || (mode === "auto" && !!ctx.user);
   const showLogin  = mode === "login"  || (mode === "auto" && !ctx.user);
 
-  const apiBase   = String(settings.apiBase() ?? "") || ctx.req.appUrl + "api/webauthn";
+  const apiBase   = String(settings.apiBase() ?? "") || ctx.req.appUrl + "api/auth.webauthn";
 
   if (showManage && ctx.user) return renderManage(node.app, apiBase);
   if (showLogin) {

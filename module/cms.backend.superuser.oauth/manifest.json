@@ -2,8 +2,8 @@
   "name": "cms.backend.superuser.oauth",
   "description": "Configures OAuth and OpenID login providers.",
   "dependencies": [
-    "cms.backend",
-    "oauth"
+    "auth.oauth",
+    "cms.backend"
   ],
   "files": [
     "manifest.json",

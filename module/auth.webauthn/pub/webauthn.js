@@ -1,7 +1,7 @@
 /**
  * webauthn.js — WebAuthn Client
  *
- * import { WebAuthn } from "/m/webauthn/pub/webauthn.js";
+ * import { WebAuthn } from "/m/auth.webauthn/pub/webauthn.js";
  */
 import { t } from "@qino/pub/qino.js";
 
@@ -10,7 +10,7 @@ const csrfHeaders = (method) =>
 
 export class WebAuthn {
   constructor(opts = {}) {
-    this.apiBase = opts.apiBase ?? "/api/webauthn";
+    this.apiBase = opts.apiBase ?? "/api/auth.webauthn";
   }
 
   // ── Fetch ─────────────────────────────────────────────────────────────────

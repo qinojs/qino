@@ -1,11 +1,11 @@
-# webauthn
+# auth.webauthn
 
 WebAuthn-Modul (Passkeys, Fingerabdruck, Face ID, Hardware-Key). Unabhängig vom CMS.
 
 ## Einbindung in server.ts
 
 ```ts
-app.modules.add(import.meta.resolve("../qino/module/webauthn/plugin.ts"));
+app.modules.add(import.meta.resolve("../qino/module/auth.webauthn/plugin.ts"));
 
 // Optional:
 app.modules.add(import.meta.resolve("../qino/module/cms.cont.webauthn/plugin.ts"));
@@ -22,7 +22,7 @@ app.modules.add(import.meta.resolve("../qino/module/cms.backend.superuser.webaut
 
 ## API
 
-Basis: `{appUrl}api/webauthn/`
+Basis: `{appUrl}api/auth.webauthn/`
 
 | Methode | Pfad                    | Auth    | Beschreibung                          |
 |---------|-------------------------|---------|---------------------------------------|
@@ -38,9 +38,9 @@ Basis: `{appUrl}api/webauthn/`
 ## Client
 
 ```js
-import { WebAuthn } from "/m/webauthn/pub/webauthn.js";
+import { WebAuthn } from "/m/auth.webauthn/pub/webauthn.js";
 
-const wa = new WebAuthn({ apiBase: "/cms1/api/webauthn" });
+const wa = new WebAuthn({ apiBase: "/cms1/api/auth.webauthn" });
 await wa.register({ name: "Mein MacBook" });
 await wa.login({ email: "user@example.com" });
 await wa.loginConditional(); // Autofill-Passkey (Conditional UI), null wenn nicht verfügbar
@@ -65,12 +65,6 @@ if (unixTime() - at > 60) return { ok: false, error: "confirmation_required" };
 
 Das tut bisher niemand von Hand: der Guard, der das für beliebige Faktoren am api-Verb erledigt,
 fehlt noch (siehe [auth](../auth/#possible-extensions)).
-
-## Hook
-
-```ts
-app.on("webauthn:login", ({ usr_id }) => { /* nach erfolgreichem WebAuthn-Login */ });
-```
 
 ## CMS-Module
 

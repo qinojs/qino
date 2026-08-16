@@ -1,5 +1,5 @@
 import { html } from "@qino/qino";
-import { providers } from "@qino/qino/oauth";
+import { providers } from "@qino/qino/auth.oauth";
 
 import type { Ctx, HtmlString } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";

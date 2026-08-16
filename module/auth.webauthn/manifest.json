@@ -1,5 +1,5 @@
 {
-  "name": "webauthn",
+  "name": "auth.webauthn",
   "description": "Provides passkey registration, login, and step-up authentication.",
   "dependencies": [
     "auth",

@@ -186,7 +186,8 @@ asset URL, so a store still needs a real `file:`, `http:` or `https:` URL.
   store only says *what is on offer*: nothing binds what was installed to what was reviewed. That is
   a hash in the `module` row, checked on re-import the way `deno.lock` does. Deno's `--allow-import`
   is no substitute — a process flag applies to every tenant of the runtime. A second factor in front
-of install/uninstall would cover the rest — `webauthn` has the ceremony, see `PLAN-confirm.md`.
+of install/uninstall would cover the rest — `auth` collects the factors, `auth.webauthn` has a
+ceremony, and what is missing is the step-up guard on the api verb.
 - **Everything a remote module is besides its code.** The manifest is there and is read before the
   import, but nothing lists a module's *files* yet: `/m/<module>/pub/…` still serves from a local
   `Module.dir`, and locales are discovered with `Deno.readDir(<module>/locale/)`. Both fail for the

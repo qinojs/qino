@@ -45,10 +45,29 @@ rotation on every login clear it without help.
 
 ## Possible extensions
 
-- **A step-up guard** for api verbs (`guard: stepUp({ maxAge: 300 })`) answering with a stable
-  `step_up_required`. The api error already carries a `code` and `data`; the policy and the client
-  dialog are missing. A policy also wants to ask for properties — that a passkey is unphishable and
-  a typed code is not — which is a field on `Factor` as soon as something reads it.
+- **Demanding a fresh proof before a grave action**, answering with a stable `step_up_required`.
+  The api error already carries a `code` and `data`; the policy and the client dialog are missing.
+  A policy also wants to ask for properties — that a passkey is unphishable and a typed code is not
+  — which is a field on `Factor` as soon as something reads it.
+
+  Where the demand belongs is settled by [`invoke()`](../core/lib/api/invoke.ts#L93): both get the
+  same `params`, but the guard runs before the validated input is merged into it, so at that moment
+  it holds the resolved path params and nothing else. An endpoint that
+  always needs a proof can say so there, but one that needs it for some values and not others —
+  a transfer above a limit, a bulk delete past a count — cannot, and has to ask inside `execute`
+  before it does anything. So the demand is a **function that throws**, not a flag on the verb:
+
+  ```ts
+  guard: (_p, ctx) => requireStepUp(ctx, { maxAge: 300 }),          // always
+  execute: async ({ amount }, ctx) => {
+    if (amount > 1000) await requireStepUp(ctx, { maxAge: 60 });    // only sometimes
+  ```
+
+  A verb property (`stepUpNeeded: true`) would cover only the first case and add surface for what
+  `guard` can already express. Throwing needs nothing from core: `invoke` does not catch, and
+  [`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. Resolving with
+  `true` keeps the guard form a one-liner. What the `execute` form owes is the whole point of it —
+  it has to throw before the first side effect, and only the author can guarantee that.
 - **Listing what one user has**, for a "your sign-in methods" page. Needs a `has()` per factor, and
   an honest answer for the ones that cannot know: which user a provider returns is only known once
   they have come back.

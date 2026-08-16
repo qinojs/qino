@@ -1,4 +1,4 @@
-import { WebAuthn } from "@qino/m/webauthn/pub/webauthn.js";
+import { WebAuthn } from "@qino/m/auth.webauthn/pub/webauthn.js";
 import { hee, t } from "@qino/pub/qino.js";
 
 cms.initNode("cont.webauthn", (el) => {

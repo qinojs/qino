@@ -48,8 +48,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     ? html`<tr><td colspan=9 style="text-align:center;color:#888;padding:1em">No credentials registered.`
     : "";
 
-  const rpId   = String(await node.app.settings.webauthn.rpId   ?? "") || "(not configured)";
-  const rpName = String(await node.app.settings.webauthn.rpName ?? "") || "(not configured)";
+  const rpId   = String(await node.app.settings["auth.webauthn"].rpId   ?? "") || "(not configured)";
+  const rpName = String(await node.app.settings["auth.webauthn"].rpName ?? "") || "(not configured)";
 
   return html.async`<div class=u2-flex>
 <div class=u2-card style="flex:0 1 24rem">
@@ -59,7 +59,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <tr><th>RP Name<td>${rpName}
   </table>
   <div class=-body>
-    <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → webauthn</code>.</p>
+    <p style="font-size:.85em;color:#888;margin-top:.5em">Settings under <code>Settings → auth.webauthn</code>.</p>
   </div>
 </div>
 <div class=u2-card style="flex:1">
