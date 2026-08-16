@@ -130,8 +130,10 @@ export class ModuleManager {
     if (this.#linked.has(name)) return this.#modules[name];
   }
 
-  // True for modules the application declares itself — they outlive any uninstall.
-  declared(name: string): boolean { return this.#declared.has(name); }
+  /** The module, if the application declares it itself — those outlive any uninstall. */
+  declared(name: string): Module | undefined {
+    if (this.#declared.has(name)) return this.#modules[name];
+  }
 
   // Installed modules that could not be imported this boot, and why; uninstall() is the way out.
   failures(): Record<string, string> { return this.#failed; }
