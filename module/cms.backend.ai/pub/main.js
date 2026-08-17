@@ -4,6 +4,11 @@ cms.initNode("backend.ai", (el) => {
   const nid = Number(cms.el.nid(el));
   const node = api.cms.node(nid);
 
+  // the key field starts readonly so password managers leave it alone
+  el.addEventListener("focusin", (e) => {
+    if (e.target.name === "api_key") e.target.removeAttribute("readonly");
+  });
+
   const filters = () => ({
     filterProvider: el.querySelector("#ai-filter-provider")?.value ?? "",
     filterKind: el.querySelector("#ai-filter-kind")?.value ?? "",

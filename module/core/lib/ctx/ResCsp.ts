@@ -3,6 +3,10 @@ type Sources = Record<string, true>;
 // Only a source ending in "/" is a path prefix in CSP — everything below it is already covered.
 const collapse = (keys: string[]) => keys.filter((k) => !keys.some((o) => o !== k && o.endsWith("/") && k.startsWith(o)));
 
+// Directives that fall back to default-src when absent — repeating what default-src already says is wasted bytes.
+// base-uri, form-action and frame-ancestors have no such fallback and are always emitted.
+const fallsBack = new Set(["font-src", "img-src", "script-src", "style-src", "connect-src", "frame-src"]);
+
 /** Content-Security-Policy builder. Directives are typed fields; add a field for new ones. */
 export class ResCsp {
   "default-src": Sources = { "'self'": true };
@@ -12,12 +16,19 @@ export class ResCsp {
   "style-src":   Sources = { "'self'": true, "'unsafe-inline'": true };
   "connect-src": Sources = { "'self'": true };
   "frame-src":   Sources = { "'self'": true };
+  "base-uri":    Sources = { "'self'": true };
+  "form-action": Sources = { "'self'": true };
+  /** Who may frame this site. Loosen it per site, not here. */
+  "frame-ancestors": Sources = { "'self'": true };
 
-  /** Violation-report endpoint. Emitted as `report-to`; pair with the `Reporting-Endpoints` header (see reportingEndpoints). */
+  /** Violation-report endpoint, emitted as `report-uri`. Deprecated in favour of the Reporting API,
+   *  but the only mechanism firefox and safari implement — and a policy carrying `report-to` makes
+   *  them ignore `report-uri`, so sending both means those browsers report nothing at all. */
   reportTo: string | undefined;
 
   toHeader(): string {
-    let s = "";
+    const parts: string[] = [];
+    let fallback = "";
     for (const [type, allowed] of Object.entries(this) as [string, Sources][]) {
       if (type === "reportTo") continue;
       let keys = collapse(Object.keys(allowed));
@@ -26,15 +37,12 @@ export class ResCsp {
       // 'none' is meaningless once other sources are present
       else if (type === "default-src" && keys.length > 1) keys = keys.filter((k) => k !== "'none'");
       if (!keys.length) continue;
-      s += type + " " + keys.join(" ") + "; ";
+      const value = keys.join(" ");
+      if (type === "default-src") fallback = value;
+      else if (value === fallback && fallsBack.has(type)) continue;
+      parts.push(type + " " + value);
     }
-    // report-uri is deprecated but the only one firefox/safari read; browsers that know report-to prefer it
-    if (this.reportTo) s += `report-to csp; report-uri ${this.reportTo}; `;
-    return s;
-  }
-
-  /** Value for the `Reporting-Endpoints` response header, or undefined when no endpoint is set. */
-  reportingEndpoints(): string | undefined {
-    return this.reportTo ? `csp="${this.reportTo}"` : undefined;
+    if (this.reportTo) parts.push("report-uri " + this.reportTo);
+    return parts.join("; ");
   }
 }

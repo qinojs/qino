@@ -180,7 +180,7 @@ function providerBox(provider: Row, modelCount: number, key: string, open: boole
           <td><input name=endpoint value="${provider.endpoint}">
         <tr>
           <th>API-Key
-          <td><input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly onfocus="this.removeAttribute('readonly')" placeholder="API-Key (optional for local endpoints)">
+          <td><input name=api_key type=text autocomplete=new-password data-lpignore=true data-form-type=other readonly placeholder="API-Key (optional for local endpoints)">
       </table>
       <div class=ai-autosave-state aria-live=polite></div>
     </form>

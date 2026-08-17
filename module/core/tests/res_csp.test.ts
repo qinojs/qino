@@ -15,6 +15,16 @@ Deno.test("csp: sources below a declared directory collapse into it", () => {
   assertEquals(directive(csp, "script-src"), ["'self'", store, "https://other.example/lib/", "'report-sample'"]);
 });
 
+Deno.test("csp: a directive that only repeats default-src is dropped, one without a fallback is not", () => {
+  const header = new ResCsp().toHeader();
+
+  assertEquals(header.includes("connect-src"), false); // 'self', same as default-src
+  assertEquals(header.includes("frame-src"), false);
+  assertEquals(header.includes("base-uri 'self'"), true); // no fallback to default-src
+  assertEquals(header.includes("form-action 'self'"), true);
+  assertEquals(header.includes("frame-ancestors 'self'"), true);
+});
+
 Deno.test("csp: a source without a trailing slash covers nothing but itself", () => {
   const csp = new ResCsp();
   csp["script-src"]["https://cdn.example/dump"] = true;

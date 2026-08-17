@@ -27,6 +27,10 @@ cms.initNode("backend.superuser.error_report", (el) => {
     const delGroup = e.target.closest("[data-delete-group]");
     if (delGroup) {
       reload({ deleteGroup: { ...delGroup.dataset } }, delGroup);
+      return;
     }
+
+    const del = e.target.closest("[data-delete]");
+    if (del) reload({ delete: { id: del.dataset.delete } }, del);
   });
 });

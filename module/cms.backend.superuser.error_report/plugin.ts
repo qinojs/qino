@@ -100,7 +100,11 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 function groupWhere(vals: Record<string, unknown>): Sql {
   return sql.join(["source", "file", "line", "col"].map(c => {
     const v = vals[c];
-    return v == null || v === "null" ? sql`${sql.id(c)} IS NULL` : sql`${sql.id(c)} = ${String(v)}`;
+    // a missing value reaches us as null, "null" or "" (an html attribute cannot carry NULL) — and the
+    // rows themselves hold either NULL or "", depending on who wrote them
+    return v == null || v === "null" || v === ""
+      ? sql`(${sql.id(c)} IS NULL OR ${sql.id(c)} = ${""})`
+      : sql`${sql.id(c)} = ${String(v)}`;
   }), " AND ");
 }
 
@@ -267,7 +271,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
 <tr style="white-space:nowrap">
   <td>
     <a href="${u.search}">${u2.el.time(row.time)} <br> ${row.log_id}</a>
-    <br><button onclick="cmsApi(${node.id},{delete:{id:'${row.id}'}}); this.disabled=true">delete</button>
+    <br><button data-delete="${row.id}">delete</button>
   <td>
     <b>${row.message}</b><br>
     <a href="${row.request}" target=_blank>${row.request}</a><br>
@@ -391,7 +395,7 @@ ${log ? html`<a href="${histHref("sess")}">Session</a> | <a href="${histHref("cl
     </table>
     <div class=-body>
       ${sess ? html`<b>Sess</b><pre>${JSON.stringify(sess, null, 2)}</pre>` : ""}
-      <button onclick="cmsApi(${node.id},{delete:{id:'${error.id}'}}); this.disabled=true">delete</button>
+      <button data-delete="${error.id}">delete</button>
     </div>
   </div>
 
