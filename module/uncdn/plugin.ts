@@ -136,10 +136,17 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
   html.legacyScripts = mapSet(html.legacyScripts, rwScript);
   html.scripts       = mapSet(html.scripts, rwScript);
   html.styles        = mapSet(html.styles, rwStyle);
+  // a sheet with attributes (media) lives in html.link instead of html.styles, and needs the same rewrite
+  for (const [url, attr] of Object.entries(html.link)) {
+    const to = attr.rel === "stylesheet" ? rwStyle(url) : url;
+    if (to === url) continue;
+    delete html.link[url];
+    html.link[to] = attr;
+  }
 
   // drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay
   stripDead(csp["script-src"], html.scripts, html.legacyScripts, html.importMap.values());
-  stripDead(csp["style-src"], html.styles);
+  stripDead(csp["style-src"], html.styles, Object.keys(html.link));
 }
 
 function stripDead(src: CspSources, ...refs: Iterable<string>[]): void {

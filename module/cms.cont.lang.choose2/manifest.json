@@ -8,6 +8,7 @@
     "manifest.json",
     "plugin.ts",
     "pub/main.css",
+    "pub/main.js",
     "pub/module.svg"
   ]
 }

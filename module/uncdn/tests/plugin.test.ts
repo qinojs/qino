@@ -34,6 +34,21 @@ Deno.test("uncdn: rewriteHtml proxies CSP-declared origins and drops them", () =
   assertEquals(csp["style-src"][remote], undefined);
 });
 
+Deno.test("uncdn: a sheet in html.link is proxied, keeping its attributes", () => {
+  const html = new ResHtml();
+  const remote = "https://cdn.example/lib/";
+  html.link[remote + "print.css"] = { rel: "stylesheet", media: "print" };
+  html.link[remote] = { rel: "preconnect" }; // not a sheet — stays external
+
+  const csp = new ResCsp();
+  csp["style-src"][remote] = true;
+  rewriteHtml(html, "/app/", csp);
+
+  assertEquals(html.link["/app/uncdn/cdn.example/lib/print.css"], { rel: "stylesheet", media: "print" });
+  assertEquals(html.link[remote], { rel: "preconnect" });
+  assertEquals(csp["style-src"][remote], true); // the preconnect still points there
+});
+
 Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
   const html = new ResHtml();
   html.scripts.add("https://other.example/x.js");        // not in CSP → left as-is

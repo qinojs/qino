@@ -57,7 +57,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       const selected = l === ctx.lang ? " selected" : "";
       return html`<option${selected} value="${await page.url(l)}" lang="${l}" class="-${l}">${label}`;
     }));
-    return html`<select onchange="location.href=this.value+location.hash">${options}</select>`;
+    return html`<select>${options}</select>`;
   }
 
   // links (default)
@@ -68,7 +68,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     const ariaLabel = !longText ? html` aria-label="${LANG_NAMES[l] ?? l}"` : "";
     const ariaCurrent = isActive ? html.raw(" aria-current=page") : "";
     const label = longText ? (LANG_NAMES[l] ?? l) : l;
-    return html`<li><a href="${await page.url(l)}" onclick="event.preventDefault();location.href=this.href+location.hash" class="${cls}" lang="${l}" hreflang="${l}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
+    return html`<li><a href="${await page.url(l)}" class="${cls}" lang="${l}" hreflang="${l}"${ariaLabel}${ariaCurrent}><span>${label}</span></a>`;
   }));
 
   const filteredItems = items.filter(Boolean);
@@ -80,6 +80,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 export const cms = {
   node: {
     css: ["pub/main.css"],
+    js: ["pub/main.js"],
     render,
     settingsSchema,
   },
