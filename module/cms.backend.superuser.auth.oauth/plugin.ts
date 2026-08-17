@@ -28,7 +28,7 @@ const PRESETS: Record<string, Preset> = {
 };
 
 export async function install({ app }: { app: App }): Promise<void> {
-  await backend.install(app, name, { en: "Social login", de: "Social-Login" });
+  await backend.install(app, name, { en: "Login providers", de: "Login-Provider" });
   for (const [pname, def] of Object.entries(PRESETS)) {
     if (await app.db.one`SELECT id FROM oauth_provider WHERE name = ${pname}`) continue;
     await app.db.table("oauth_provider").insert({

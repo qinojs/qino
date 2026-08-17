@@ -44,6 +44,15 @@ Deno.test("requireStepUp: a factor without stepUp neither counts nor is offered"
   assertEquals((e.data as any).factors, []);
 });
 
+Deno.test("requireStepUp: the offer is ordered, strongest first", async () => {
+  const e = await thrown(requireStepUp(await ctxWith({}, [
+    factor("backup_codes", { order: 90 }),
+    factor("webauthn", { order: 10 }),
+    factor("password"), // says nothing, so it lands between them
+  ])));
+  assertEquals((e.data as any).factors.map((f: any) => f.name), ["webauthn", "password", "backup_codes"]);
+});
+
 Deno.test("requireStepUp: only factors the user has are offered", async () => {
   const e = await thrown(requireStepUp(await ctxWith({}, [
     factor("password"),

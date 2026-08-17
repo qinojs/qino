@@ -10,6 +10,9 @@ export type Factor = {
   label: string;
   login?: boolean;
   stepUp?: boolean;
+  /** Where it sits among the offered ones, lowest first — the strongest way in should be the one a
+   *  dialog opens. Presentation only: what a factor is worth is not a number. */
+  order?: number;
   /** Whether this user has it set up. A factor that cannot know per user leaves it out and is then
    *  offered as a way in, but never counted as something they have. */
   has?(app: App, usrId: number): Promise<boolean>;

@@ -27,5 +27,5 @@ export async function send(ctx: Ctx, name: string): Promise<void> {
 /** Redeem it. `redeemCode` counts the attempts and throws; what is left is what the proof is worth. */
 export async function verify(ctx: Ctx, name: string, code: string): Promise<boolean> {
   await redeemCode(ctx.app, claim(name), ctx.userId, String(ctx.userId), code);
-  return await proof(ctx, name, ctx.userId);
+  return proof(ctx, name, ctx.userId);
 }

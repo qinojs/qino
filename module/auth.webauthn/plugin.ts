@@ -9,7 +9,7 @@ import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", login: true, stepUp: true }];
+export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", login: true, stepUp: true, order: 10 }];
 
 export const settingsSchema = {
   properties: {

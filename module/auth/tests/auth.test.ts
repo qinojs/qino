@@ -5,7 +5,7 @@ import { factors, proof } from "../mod.ts";
 import type { App, Ctx } from "@qino/qino";
 
 const passkey = { name: "webauthn", label: "Passkey", login: true, stepUp: true };
-const social = { name: "oauth", label: "Social login", login: true };
+const social = { name: "oauth", label: "External login", login: true };
 
 const app = {
   modules: {

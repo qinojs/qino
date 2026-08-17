@@ -17,6 +17,7 @@ export const authFactors = [{
     label: "Password",
     login: true,
     stepUp: true,
+    order: 60,
     has: async (app: App, usrId: number) => !!(await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND pw <> ''`),
 }];
 

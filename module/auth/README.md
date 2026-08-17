@@ -26,6 +26,11 @@ A list, because one module may bring several: [auth.otp](../auth.otp/) has one f
 channel. When which ones exist is only known at runtime, the export is a function of the app
 instead — that is the whole reason it takes one.
 
+`order` decides where a factor sits when several are offered, lowest first, so the dialog can open
+the best one right away — a passkey before a typed code, backup codes last. It is presentation, not
+a verdict: what a factor is worth is not a number, and a policy that needs to know will read a
+property, not a rank.
+
 `login` and `stepUp` are separate on purpose: starting a session and refreshing one are different
 permissions, and a factor may have either. A federated login declares only `login` — the provider
 answers from its own session and says nothing about who is at the keyboard now.
@@ -106,8 +111,11 @@ module to import it from. A factor that renders a field fills `root` and resolve
 proof went through; a passkey needs no field and starts the authenticator instead.
 
 ```js
-// auth.totp/pub/stepup.js
-export async function prove(root, factor) { /* … */ return ok; }
+// auth.totp/pub/stepup.js — `proveForm` comes from the dialog, since the shape is its contract
+export async function prove(root) {
+  const { done } = await proveForm(root, field, (form) => check(form.elements.code.value));
+  return done;
+}
 ```
 
 Nothing on the client is registered anywhere, so a new factor is again one module and no edit here.

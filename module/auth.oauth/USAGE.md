@@ -14,7 +14,7 @@ The mode is chosen per provider: set `authorize_url` → OAuth2; leave it empty 
 ## Konfigurieren
 
 Am einfachsten über das Backend-Modul **`cms.backend.superuser.auth.oauth`** (Superuser →
-Social login). Gängige Provider sind bei Installation als Vorlagen angelegt — meist nur
+Login providers). Gängige Provider sind bei Installation als Vorlagen angelegt — meist nur
 noch `client_id`/`client_secret` eintragen. Die Redirect-URI zum Eintragen beim Provider
 zeigt das Formular pro Provider an: **`{appUrl}oauth/callback/<name>`**.
 

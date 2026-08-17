@@ -19,11 +19,12 @@ const yesNo = (v?: boolean) => v ? html`<u2-ico icon=check_circle>✓</u2-ico>` 
 const when = (at: number) => html`<u2-time datetime="${new Date(at * 1000).toISOString()}" second type=relative></u2-time>`;
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
-  const declared = factors(node.app);
+  const declared = factors(node.app).sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
   const via = viaOf(ctx);
   const mine = ctx.userId ? await userFactors(node.app, ctx.userId) : [];
 
   const factorRows = declared.map((f) => html`<tr>
+    <td>${f.order ?? 50}
     <td>${f.label}
     <td><code>${f.name}</code>
     <td>${yesNo(f.login)}
@@ -53,15 +54,18 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <div class=-head>Declared factors (${declared.length})</div>
   <table class=u2-table>
     <thead><tr>
+      <th width=40>Order
       <th>Method
       <th>Name
       <th>Login
       <th>Step-up
       <th>You have it
-    <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=5>No module declares a factor.`}</tbody>
+    <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=6>No module declares a factor.`}</tbody>
   </table>
   <div class=-body>A module declares one by exporting <code>authFactors</code>. Nothing here knows a
-  factor by name, so a new one shows up in this table on its own. The last column is what the factor
+  factor by name, so a new one shows up in this table on its own. <em>Order</em> is where a factor
+  sits when several are offered — lowest first, so a step-up dialog opens the strongest one; a
+  factor that says nothing lands in the middle. The last column is what the factor
   answers about you — one that cannot tell users apart, as a federated login cannot, leaves it
   unanswered and counts as available.</div>
 </div>

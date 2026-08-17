@@ -11,6 +11,7 @@ export const authFactors: Factor[] = [{
   label: "Authenticator app",
   login: true,
   stepUp: true,
+  order: 20,
   has: async (app: App, usrId: number) => (await stored(app, usrId, "totp")).length > 0,
 }];
 

@@ -18,7 +18,8 @@ export const authFactors = (app: App): Factor[] =>
     name: c.name,
     label: `${c.label} code`,
     stepUp: true,
-    has: async (app: App, usrId: number) => await c.reach(app, usrId) > 0,
+    order: 40,
+    has: async (app, usrId) => await c.reach(app, usrId) > 0,
   }));
 
 export const api: ApiTree = {

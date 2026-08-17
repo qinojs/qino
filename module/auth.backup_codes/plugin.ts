@@ -11,6 +11,7 @@ export const authFactors: Factor[] = [{
   // No `login`: a code alone must not be a way into an account. It becomes a login factor the day
   // a login can ask for a second one — as the second, never as the only.
   stepUp: true,
+  order: 90, // the way out when nothing else is at hand, so never the first offer
   has: async (app: App, usrId: number) => await left(app, usrId) > 0,
 }];
 

@@ -70,17 +70,19 @@ export async function login(ctx: Ctx, id: number | string, via?: string): Promis
   return true;
 }
 
+const MIDDLE = 50; // where a factor lands that does not say where it belongs
+
 /** What a module declares as `plugin.authFactors` — a list, or a function of the app for a module
  *  whose factors depend on what else is installed. Core reads the fields a policy needs; what else
  *  a factor is, only the `auth` module cares about. */
-type Declared = { name: string; label: string; stepUp?: boolean; has?(app: App, usrId: number): Promise<boolean> };
-/** `module` travels with the factor: it is where the browser finds `pub/stepup.js`, and only the
- *  module list knows it — a factor's name is data and says nothing about who declared it. */
-type Offer = { name: string; label: string; module: string };
+type Declared = { name: string; label: string; stepUp?: boolean; order?: number; has?(app: App, usrId: number): Promise<boolean> };
+type Declaration = Declared[] | ((app: App) => Declared[]);
 
+/** The declaring module travels with each factor: it is where the browser finds `pub/stepup.js`,
+ *  and only this list knows it — a factor's name says nothing about who declared it. */
 const stepUpFactors = (app: App): (Declared & { module: string })[] =>
   app.modules.linked().flatMap((m) => {
-    const declared = m.plugin.authFactors as Declared[] | ((app: App) => Declared[]) | undefined;
+    const declared = m.plugin.authFactors as Declaration | undefined;
     const list = typeof declared === "function" ? declared(app) : declared ?? [];
     return list.filter((f) => f.stepUp).map((f) => ({ ...f, module: m.name }));
   });
@@ -100,7 +102,8 @@ export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: numbe
   if (newest && unixTime() - newest <= maxAge) return true;
   // A stateless credential has no session to prove anything into, so it is offered nothing.
   const usable = ctx.statelessAuth ? [] : await withFactor(ctx, factors);
-  throw new StepUpError(usable.map(({ name, label, module }): Offer => ({ name, label, module })), maxAge);
+  usable.sort((a, b) => (a.order ?? MIDDLE) - (b.order ?? MIDDLE));
+  throw new StepUpError(usable.map(({ name, label, module }) => ({ name, label, module })), maxAge);
 }
 
 /** Of the factors, those this user has set up. One that cannot answer per user is offered anyway. */
