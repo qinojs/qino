@@ -1,0 +1,13 @@
+{
+  "name": "cms.backend.superuser.auth.backup_codes",
+  "description": "Generates backup codes and shows who still has any.",
+  "dependencies": [
+    "auth.backup_codes",
+    "cms.backend.superuser.auth"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}

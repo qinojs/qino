@@ -1,6 +1,6 @@
 {
   "name": "cms.cont.my.clients",
-  "description": "Shows the signed-in user's active devices and sessions.",
+  "description": "Lists the user's own devices — when each was last here and whether it stays signed in — and signs them out remotely.",
   "dependencies": [
     "cms"
   ],

@@ -26,8 +26,14 @@ export const authFactor: Factor = { name: "webauthn", label: "Passkey", login: t
 permissions, and a factor may have either. A federated login declares only `login` — the provider
 answers from its own session and says nothing about who is at the keyboard now.
 
-`factors(app)` lists what linked modules declare. Nothing here knows a factor by name, so a new one
-costs no code in `auth`.
+`factors(app)` lists what linked modules declare, `userFactors(app, usrId, "stepUp")` narrows it to
+what would actually work for one person. Nothing here knows a factor by name, so a new one costs no
+code in `auth` and appears in
+[cms.backend.superuser.auth](../cms.backend.superuser.auth/) on its own.
+
+`has` is optional: a factor that cannot answer it per user — as a federated login cannot, since which
+user a provider returns is only known once they have come back — is still offered as a way in, but
+never counted as something the user *has*.
 
 ## What a proof is not
 
@@ -40,8 +46,18 @@ core writes entries there that prove nothing: `remember` for a login the stored 
 `login_as` for one an administrator took over. They are auditable and can never satisfy anything,
 because only a factor a linked module declares is ever asked for.
 
-There is no table: the record lives in the session, so [`logout()`](../core/lib/auth.ts) and the id
-rotation on every login clear it without help.
+## Storage
+
+The record of how a session got here lives in the session, so [`logout()`](../core/lib/auth.ts) and
+the id rotation on every login clear it without help.
+
+`usr_auth_factor` holds what a factor has to remember per user — one row per secret, so several
+authenticator apps, or a handful of backup codes, are rows of the same `type` rather than a list
+inside one. `data` is the factor's own JSON and `auth` never looks inside it; `store()`, `stored()`
+and `drop()` are the whole interface. `drop()` is always keyed by the user, so a factor module never
+has to check ownership itself and a foreign id removes nothing.
+
+A factor with real columns of its own keeps its own table, as [auth.webauthn](../auth.webauthn/) does.
 
 ## Possible extensions
 
@@ -68,10 +84,10 @@ rotation on every login clear it without help.
   [`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. Resolving with
   `true` keeps the guard form a one-liner. What the `execute` form owes is the whole point of it —
   it has to throw before the first side effect, and only the author can guarantee that.
-- **Listing what one user has**, for a "your sign-in methods" page. Needs a `has()` per factor, and
-  an honest answer for the ones that cannot know: which user a provider returns is only known once
-  they have come back.
+- **A page where users set their own methods up.** `userFactors()` is what it would list; what is
+  missing is a front-end module, and the enrolment each factor already has as api verbs.
 - **More than one factor for a login.** The partial state belongs in the session, which the id
   rotation already empties — no second place to expire and sweep.
-- **Factors of their own**: TOTP, backup codes, and a code to a verified contact once
-  [mail](../mail/) can say which addresses are verified.
+- **A code to a verified contact**, once [mail](../mail/) can say which addresses are verified.
+  Today there are [auth.webauthn](../auth.webauthn/), [auth.oauth](../auth.oauth/),
+  [auth.totp](../auth.totp/) and [auth.backup_codes](../auth.backup_codes/).

@@ -2,20 +2,26 @@ import { api, t } from "@qino/pub/qino.js";
 
 cms.initNode("cont.my.clients", async (el) => {
   const node = api.cms.node(Number(cms.el.nid(el)));
-  const buttons = [...el.querySelectorAll("[data-logout]")];
-  if (!buttons.length) return;
+  const labels = {
+    other: await t`Log out this device?`,
+    self: await t`Log out here?`,
+    error: await t`Could not log out this device.`,
+  };
 
-  const confirmText = await t`Log out this device?`;
-  for (const btn of buttons) {
-    btn.addEventListener("click", async () => {
-      if (!confirm(confirmText)) return;
-      const clientId = btn.dataset.client;
-      const res = await node.api.post({ logout_client: clientId });
-      if (res?.ok) {
-        btn.closest("tr")?.remove();
-      } else {
-        alert(res?.message || "Could not log out this device.");
-      }
-    });
-  }
+  el.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-logout]");
+    if (!btn) return;
+    const self = btn.hasAttribute("data-self");
+    if (!confirm(self ? labels.self : labels.other)) return;
+    btn.disabled = true;
+    if (self) { // the own device logs itself out the normal way
+      await api.core.logout.post();
+      location.reload();
+      return;
+    }
+    const res = await node.api.post({ logout_client: btn.dataset.logout });
+    if (res?.ok) return void btn.closest("tr")?.remove();
+    btn.disabled = false;
+    alert(res?.message || labels.error);
+  });
 });

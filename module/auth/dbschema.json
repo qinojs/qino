@@ -1,0 +1,46 @@
+{
+  "properties": {
+    "usr_auth_factor": {
+      "additionalProperties": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-autoincrement": true
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade",
+            "description": "Whose factor this is — removed with the user"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 32,
+            "x-index": true,
+            "description": "The factor's name, e.g. totp. Several rows of one type are one factor with several secrets, as backup codes are"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "What the user called it, so several of a kind stay distinguishable"
+          },
+          "data": {
+            "type": "string",
+            "description": "The factor's own secret as JSON — never read by auth, only by the module that wrote it"
+          },
+          "created": {
+            "type": "integer",
+            "x-index": true
+          },
+          "last_used": {
+            "type": "integer",
+            "description": "Null until it has proved something once"
+          }
+        },
+        "required": ["id", "usr_id", "type", "created"]
+      }
+    }
+  }
+}

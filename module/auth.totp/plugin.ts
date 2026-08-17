@@ -1,0 +1,57 @@
+import { Access, getCtx, s } from "@qino/qino";
+import { stored } from "@qino/qino/auth";
+
+import { confirm, enrol, forget, verify } from "./mod.ts";
+
+import type { ApiTree, App, Params } from "@qino/qino";
+import type { Factor } from "@qino/qino/auth";
+
+export const authFactor: Factor = {
+  name: "totp",
+  label: "Authenticator app",
+  login: true,
+  stepUp: true,
+  has: async (app: App, usrId: number) => (await stored(app, usrId, "totp")).length > 0,
+};
+
+export const api: ApiTree = {
+  enrol: {
+    post: {
+      description: "Start setting up an authenticator app — returns the secret to scan",
+      access: Access.USER,
+      execute: () => enrol(getCtx()),
+    },
+    verify: {
+      post: {
+        description: "Finish setting up — the code proves the app holds the secret",
+        access: Access.USER,
+        input: s.object({ code: s.string(), label: s.optional(s.string()) }),
+        execute: async ({ code, label }: Params) => {
+          await confirm(getCtx(), String(code), String(label ?? ""));
+          return { ok: true };
+        },
+      },
+    },
+  },
+
+  verify: {
+    post: {
+      description: "Prove the current user is present with a code from their authenticator app",
+      access: Access.USER,
+      input: s.object({ code: s.string() }),
+      execute: async ({ code }: Params) => ({ ok: await verify(getCtx(), String(code)) }),
+    },
+  },
+
+  ":factor": {
+    paramSchema: s.number(),
+    delete: {
+      description: "Remove one authenticator app",
+      access: Access.USER,
+      execute: async ({ factor }: Params) => {
+        await forget(getCtx(), Number(factor));
+        return { ok: true };
+      },
+    },
+  },
+};
