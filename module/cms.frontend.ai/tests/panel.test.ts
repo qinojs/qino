@@ -20,7 +20,7 @@ Deno.test("cms.frontend.ai: registers the bot and loads its frontend script in e
   const ctx = {
     req: { query: {}, moduleUrl: "/m/" },
     state: { cms: { editmode: true } },
-    res: { html: { scripts: { add: (u: string) => scripts.push(u) } } },
+    res: { html: { scripts: { add: (u: string) => scripts.push(u) } }, csp: { "script-src": {} } },
   };
   handlers["cms:page-ready"][0]({ ctx });
   assertEquals(scripts, ["/m/cms.frontend.ai/pub/init.mjs"]);

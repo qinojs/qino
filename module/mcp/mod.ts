@@ -73,13 +73,15 @@ async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
   throw new RpcErr(-32601, `Method not found: ${msg.method}`);
 }
 
-/** Same access filter as cms.webmcp: static `access` gates the list, per-call `guard` runs on invoke. */
+/** Same access filter as cms.webmcp: static `access` gates the list, per-call `guard` runs on invoke.
+ *  A verb demanding a fresh proof is left out — a Bearer token identifies a request, not a session,
+ *  so there is nothing here that could ever answer the demand. */
 async function listTools(ctx: Ctx) {
   const meta = new Map(toTools(ctx.app.apiTree).map((t) => [t.name, t]));
   const tools = [];
   for (const r of walk(ctx.app.apiTree)) {
     const access = r.verb.access;
-    if (!access || !(await access(ctx))) continue;
+    if (!access || r.verb.requireStepUp || !(await access(ctx))) continue;
     const t = meta.get(r.name);
     if (!t) continue;
     tools.push({ name: t.name, description: t.description, inputSchema: inputSchema(t) });

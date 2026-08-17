@@ -141,6 +141,25 @@ Deno.test("api: checkAccess option returns before input validation", async () =>
   });
 });
 
+Deno.test("api: a verb's requireStepUp is demanded before execute, but not by a dry run", async () => {
+  const ran: string[] = [];
+  const tree = {
+    grave: { post: { description: "Grave", access: Access.PUBLIC, requireStepUp: true, execute: () => (ran.push("grave"), { ok: true }) } },
+  };
+  const stepCtx = await testContext({
+    userId: 7,
+    sess: { data: { core: { userId: () => 7, via: () => ({}) } } }, // no proof recorded
+    app: { modules: { linked: () => [{ name: "auth.password", plugin: { authFactors: [{ name: "password", label: "Password", stepUp: true }] } }] } },
+  });
+  await requestStorage.run(stepCtx, async () => {
+    // a dry run asks who may use this — the proof is something the caller can still give
+    assertEquals(await invoke(tree, "POST", "/grave", {}, { checkAccess: true }), { ok: true });
+    const e = await assertRejects(() => invoke(tree, "POST", "/grave"), ApiError);
+    assertEquals(e.code, "step_up_required");
+    assertEquals(ran, []); // nothing was written before the demand
+  });
+});
+
 Deno.test("api: X-Api-Check header triggers the access gate over HTTP", async () => {
   await withCtx(async () => {
     const res = await apiRequest(api, "http://qino.test/thing/1/update", {

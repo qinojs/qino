@@ -29,7 +29,7 @@ export const api: ApiTree = {
       access: Access.USER,
       requireStepUp: true,
       execute: () => {
-        getCtx().sess.data.oauth.connect(unixTime());
+        getCtx().sess.data.oauth.proved(unixTime());
         return { ok: true };
       },
     },
@@ -157,8 +157,8 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   // Signed in, this hands out another way into the account — as grave as any enrolment. A route
   // cannot demand it (a StepUpError would land as a 403 page, not as the dialog), so the button
   // asks `POST auth.oauth/connect` first and this only looks for what that left behind.
-  const asked = Number(ctx.sess.data.oauth.connect() ?? 0);
-  if (ctx.userId && unixTime() - asked > CONNECT_TTL) throw new Output("connect not confirmed", { status: 403 });
+  const proved = Number(ctx.sess.data.oauth.proved() ?? 0);
+  if (ctx.userId && unixTime() - proved > CONNECT_TTL) throw new Output("connect not confirmed", { status: 403 });
 
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);
