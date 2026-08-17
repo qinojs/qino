@@ -99,4 +99,5 @@ Backend (bewusst schlank):
 - Kein Speichern/Löschen-Feedback, kein „Vorlage vs. konfiguriert"-Badge.
 
 Sonstiges:
-- Noch keine automatisierten Tests (nur manuell + DB-Smoke).
+- Getestet ist `resolveUser()`/`identity()`; der Callback selbst (Token-Tausch, id_token-Prüfung)
+  nur manuell.

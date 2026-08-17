@@ -80,7 +80,7 @@ async function provider(app: App, name: string): Promise<any> {
 }
 
 /** Distill an id_token / userinfo response into canonical identity fields (providers vary in naming). */
-function identity(c: any): { sub: string; email: string; verified: unknown; firstname: string; lastname: string } {
+export function identity(c: any): { sub: string; email: string; verified: unknown; firstname: string; lastname: string } {
   const full = String(c.name ?? c.global_name ?? c.username ?? c.login ?? "").trim();
   const [first, ...rest] = full.split(/\s+/);
   return {
@@ -100,7 +100,7 @@ function identity(c: any): { sub: string; email: string; verified: unknown; firs
  * Coming back to a signed-in session means "connect this to me": the link is made for whoever is
  * here, and an identity belonging to someone else is refused rather than silently switching account.
  */
-async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
+export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
   const db = ctx.app.db;
   const here = ctx.userId;
   // An e-mail off the allowed domains is refused wherever one is given — but a provider that stops
