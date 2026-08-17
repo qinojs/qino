@@ -48,7 +48,7 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
     if (where.parts.length) await db.exec`DELETE FROM m_error_report WHERE ${where}`;
   }
   if (vars.deleteGroup) {
-    await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(vars.deleteGroup)}`;
+    await db.exec`DELETE FROM m_error_report WHERE ${groupWhere(db, vars.deleteGroup)}`;
   }
   if (vars.deleteMatching) {
     await db.exec`DELETE FROM m_error_report WHERE ${filterWhere(db, vars.deleteMatching)}`;
@@ -95,17 +95,13 @@ async function render(node: Node, { vars = {} }: { vars?: Record<string, any> } 
 </div>`;
 }
 
-// WHERE for one error group (source/file/line/col). NULL columns travel through
-// URLs and datasets as the string "null" — translate that back to IS NULL.
-function groupWhere(vals: Record<string, unknown>): Sql {
-  return sql.join(["source", "file", "line", "col"].map(c => {
-    const v = vals[c];
-    // a missing value reaches us as null, "null" or "" (an html attribute cannot carry NULL) — and the
-    // rows themselves hold either NULL or "", depending on who wrote them
-    return v == null || v === "null" || v === ""
-      ? sql`(${sql.id(c)} IS NULL OR ${sql.id(c)} = ${""})`
-      : sql`${sql.id(c)} = ${String(v)}`;
-  }), " AND ");
+// WHERE for one error group (source/file/line/col). A missing value travels through URLs and
+// datasets as "null" or "" — the field decides what that means, "" being NULL on a numeric column.
+function groupWhere(db: App["db"], vals: Record<string, unknown>): Sql {
+  const cols = ["source", "file", "line", "col"];
+  return db.table("m_error_report").valuesToFragment(
+    Object.fromEntries(cols.map(c => [c, vals[c] === "null" ? null : vals[c] ?? null])),
+  );
 }
 
 // Cutoff in the table's "YYYY-MM-DD HH:MM:SS" time format; compares via the time index.
@@ -234,7 +230,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
   const { editorLink, fileDisplay } = makeFileHelper(ctx);
 
   if (!["source", "file", "line", "col"].some(k => get[k] !== undefined)) return html`<div>${await node.app.t`Invalid parameters`}</div>`;
-  const where = groupWhere(get);
+  const where = groupWhere(node.app.db, get);
 
   const rows = await db.query`
     SELECT e.*, usr.email
