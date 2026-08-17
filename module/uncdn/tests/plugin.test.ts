@@ -49,6 +49,15 @@ Deno.test("uncdn: a sheet in html.link is proxied, keeping its attributes", () =
   assertEquals(csp["style-src"][remote], true); // the preconnect still points there
 });
 
+Deno.test("uncdn: a source no html asset names survives — an import inside a script may need it", () => {
+  const html = new ResHtml();
+  const csp = new ResCsp();
+  csp["script-src"]["https://cdn.example/npm/lib/+esm"] = true; // imported from within a local module
+  rewriteHtml(html, "/app/", csp);
+
+  assertEquals(csp["script-src"]["https://cdn.example/npm/lib/+esm"], true);
+});
+
 Deno.test("uncdn: undeclared and query-string URLs stay external", () => {
   const html = new ResHtml();
   html.scripts.add("https://other.example/x.js");        // not in CSP → left as-is

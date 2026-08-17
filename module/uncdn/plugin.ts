@@ -125,11 +125,16 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 // (per directive: script-src gates scripts, style-src gates styles). Fonts/images
 // referenced relatively inside a proxied CSS cascade through the proxy on their own.
 export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
+  const rewritten = new Set<string>();
   const rewriter = (src: CspSources) => {
     const allow = origins(src);
-    return (url: string): string =>
-      /^https?:\/\//.test(url) && !/[?#]/.test(url) && allow.some(p => url.startsWith(p))
-        ? appUrl + PROXY_PREFIX + url.replace(/^https?:\/\//, "") : url;
+    return (url: string): string => {
+      if (!/^https?:\/\//.test(url) || /[?#]/.test(url)) return url;
+      const hit = allow.find(p => url.startsWith(p));
+      if (!hit) return url;
+      rewritten.add(hit);
+      return appUrl + PROXY_PREFIX + url.replace(/^https?:\/\//, "");
+    };
   };
   const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
   for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
@@ -145,11 +150,13 @@ export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
   }
 
   // drop origins now served same-origin; ones still referenced (e.g. query-string URLs) stay
-  stripDead(csp["script-src"], html.scripts, html.legacyScripts, html.importMap.values());
-  stripDead(csp["style-src"], html.styles, Object.keys(html.link));
+  stripDead(csp["script-src"], rewritten, html.scripts, html.legacyScripts, html.importMap.values());
+  stripDead(csp["style-src"], rewritten, html.styles, Object.keys(html.link));
 }
 
-function stripDead(src: CspSources, ...refs: Iterable<string>[]): void {
+/** Only what this pass actually moved to the proxy — a source no html asset names may still be
+ *  needed by an import inside a script, which is nothing this rewrite can see. */
+function stripDead(src: CspSources, rewritten: Set<string>, ...refs: Iterable<string>[]): void {
   const urls = refs.flatMap(ref => [...ref]);
-  for (const o of origins(src)) if (!urls.some(u => u.startsWith(o))) delete src[o];
+  for (const o of origins(src)) if (rewritten.has(o) && !urls.some(u => u.startsWith(o))) delete src[o];
 }

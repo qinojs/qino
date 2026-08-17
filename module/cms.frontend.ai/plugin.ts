@@ -11,5 +11,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
   app.on("cms:page-ready", ({ ctx }) => {
     if (ctx.req.query.cms_noFrontend || !cmsCtx(ctx).editmode) return;
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.frontend.ai/pub/init.mjs");
+    // the two libs chat.js imports — self-contained bundles, so the exact urls are enough
+    ctx.res.csp["script-src"]["https://cdn.jsdelivr.net/npm/marked@18/+esm"] = true;
+    ctx.res.csp["script-src"]["https://cdn.jsdelivr.net/npm/dompurify@3/+esm"] = true;
   }, { signal });
 }
