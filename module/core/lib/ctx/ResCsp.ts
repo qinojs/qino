@@ -28,7 +28,8 @@ export class ResCsp {
       if (!keys.length) continue;
       s += type + " " + keys.join(" ") + "; ";
     }
-    if (this.reportTo) s += "report-to csp; ";
+    // report-uri is deprecated but the only one firefox/safari read; browsers that know report-to prefer it
+    if (this.reportTo) s += `report-to csp; report-uri ${this.reportTo}; `;
     return s;
   }
 

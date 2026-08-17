@@ -50,6 +50,9 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
 
+  // main.css picks the material set for --u2-ico-dir; u2-ico fetches the svgs, so connect-src needs its origin
+  ctx.res.csp["connect-src"]["https://cdn.jsdelivr.net/npm/@material-icons/svg@1.0.33/"] = true;
+
   const page = await node.page();
 
   // Create default cont if none exists

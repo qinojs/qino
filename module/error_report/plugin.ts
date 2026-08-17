@@ -59,11 +59,19 @@ async function handleCssError(ctx: Ctx): Promise<void> {
   throw new Output();
 }
 
+/** Browsers send either the legacy `report-uri` object or the Reporting-API batch that `report-to` uses. */
+function cspReports(body: unknown): Report[] {
+  if (Array.isArray(body)) return body.filter((r) => r?.type === "csp-violation" && r.body).map((r) => r.body);
+  const legacy = (body as Report | undefined)?.["csp-report"];
+  return legacy ? [legacy as Report] : [];
+}
+
 async function handleCspError(ctx: Ctx): Promise<void> {
-  const report = ctx.req.body?.["csp-report"] as Report;
-  if (report) {
-    const directive = report["effective-directive"] ?? report["violated-directive"] ?? "";
-    let blockedUri = report["blocked-uri"] ?? "";
+  for (const report of cspReports(ctx.req.body)) {
+    // the two formats spell the same fields differently
+    const v = (...keys: string[]) => keys.map((k) => report[k]).find((x) => x != null) ?? "";
+    const directive = v("effective-directive", "effectiveDirective", "violated-directive");
+    let blockedUri = v("blocked-uri", "blockedURL");
     if (typeof blockedUri === "string" && /^https?:/.test(blockedUri)) {
       try { blockedUri = new URL(blockedUri).origin; } catch { /* keep invalid browser URL as-is */ }
     }
@@ -71,12 +79,12 @@ async function handleCspError(ctx: Ctx): Promise<void> {
     await addReport(ctx.app, {
       message: (reportOnly ? "Report only: " : "Blocked: ") + `"${blockedUri}" blocked by "${directive}"`,
       source: "csp",
-      file: report["source-file"] ?? "",
-      line: report["line-number"] ?? "",
-      request: report["document-uri"] ?? "",
-      referer: report.referrer ?? "",
+      file: v("source-file", "sourceFile"),
+      line: v("line-number", "lineNumber"),
+      request: v("document-uri", "documentURL"),
+      referer: v("referrer"),
       backtrace: [],
-      sample: report["script-sample"] ?? null,
+      sample: v("script-sample", "sample") || null,
       prio: reportOnly ? "notice" : "warning",
     });
   }
@@ -143,10 +151,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   }), { signal });
 
   app.on("render", async ({ ctx }) => {
-    if (!ctx.res.hasHtml || !await ctx.app.settings.error_report.browserErrors) return;
+    if (!ctx.res.hasHtml) return;
+    // the browser posts csp violations by itself — no reporter script and no browserErrors setting needed
+    ctx.res.csp.reportTo = ctx.req.appUrl + "csp-error";
+    if (!await ctx.app.settings.error_report.browserErrors) return;
     ctx.res.html.jsData.reporterJsOptions = { url: ctx.req.appUrl + "js-error", max: 50 };
     ctx.res.csp["script-src"][REPORTER_ROOT] = true;
     ctx.res.html.legacyScripts.add(REPORTER_PATH);
-    ctx.res.csp.reportTo = ctx.req.appUrl + "csp-error";
   }, { signal });
 }

@@ -55,6 +55,7 @@ export const settingsSchema = {
                 enable: {
                     type: "string",
                     enum: ["", "enforce", "report only"],
+                    default: "report only",
                     description: "Off, report only, or fully enforce.",
                 },
             },
