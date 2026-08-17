@@ -1,5 +1,5 @@
 import { toFileUrl } from "@std/path";
-import { errMsg, getCtx, html, moduleIcon } from "@qino/qino";
+import { errMsg, getCtx, html, moduleIcon, requireStepUp } from "@qino/qino";
 import * as u2 from "@qino/qino/u2";
 
 import { writeIndex } from "./storeIndex.ts";
@@ -18,6 +18,10 @@ const isSuperuser = () => !!getCtx().user?.superuser;
 
 // core is the root of the dependency graph, and this module renders the page you are looking at.
 const LOCKED = new Set(["core", name]);
+
+// Acts that change which code the app runs. An hour-old session is enough to read this page; it is
+// not enough to install a module, so these ask for a proof that the owner is still at the keyboard.
+const GRAVE = new Set(["addStore", "removeStore", "install", "uninstall", "useSource"]);
 
 // What is worth asking about before it happens.
 const CONFIRM = new Set(["repair", "reset", "uninstall", "unlink", "useSource"]);
@@ -227,6 +231,9 @@ export async function api(node: Node, vars: Record<string, unknown>): Promise<{ 
     if (!found) throw new Error(`Unknown store: ${store}`);
     return found;
   };
+  // Outside the try on purpose: the demand has to reach the browser as `step_up_required`, not as
+  // a message string in an ok:false.
+  if (GRAVE.has(act)) await requireStepUp(getCtx());
   try {
     switch (act) {
       case "addStore":

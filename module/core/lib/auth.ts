@@ -70,12 +70,20 @@ export async function login(ctx: Ctx, id: number | string, via?: string): Promis
   return true;
 }
 
-/** What a module declares as `plugin.authFactor`. Core reads the three fields a policy needs; what
- *  else a factor is, only the `auth` module cares about. */
+/** What a module declares as `plugin.authFactors` — a list, or a function of the app for a module
+ *  whose factors depend on what else is installed. Core reads the fields a policy needs; what else
+ *  a factor is, only the `auth` module cares about. */
 type Declared = { name: string; label: string; stepUp?: boolean; has?(app: App, usrId: number): Promise<boolean> };
+/** `module` travels with the factor: it is where the browser finds `pub/stepup.js`, and only the
+ *  module list knows it — a factor's name is data and says nothing about who declared it. */
+type Offer = { name: string; label: string; module: string };
 
-const stepUpFactors = (app: App): Declared[] =>
-  app.modules.linked().map((m) => m.plugin.authFactor as Declared).filter((f) => f?.stepUp);
+const stepUpFactors = (app: App): (Declared & { module: string })[] =>
+  app.modules.linked().flatMap((m) => {
+    const declared = m.plugin.authFactors as Declared[] | ((app: App) => Declared[]) | undefined;
+    const list = typeof declared === "function" ? declared(app) : declared ?? [];
+    return list.filter((f) => f.stepUp).map((f) => ({ ...f, module: m.name }));
+  });
 
 /**
  * Demand a proof of identity no older than `maxAge` seconds, else throw `StepUpError` with the
@@ -92,11 +100,11 @@ export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: numbe
   if (newest && unixTime() - newest <= maxAge) return true;
   // A stateless credential has no session to prove anything into, so it is offered nothing.
   const usable = ctx.statelessAuth ? [] : await withFactor(ctx, factors);
-  throw new StepUpError(usable.map((f) => ({ name: f.name, label: f.label })), maxAge);
+  throw new StepUpError(usable.map(({ name, label, module }): Offer => ({ name, label, module })), maxAge);
 }
 
 /** Of the factors, those this user has set up. One that cannot answer per user is offered anyway. */
-async function withFactor(ctx: Ctx, factors: Declared[]): Promise<Declared[]> {
+async function withFactor<T extends Declared>(ctx: Ctx, factors: T[]): Promise<T[]> {
   const has = await Promise.all(factors.map((f) => f.has?.(ctx.app, ctx.userId).catch(() => false) ?? true));
   return factors.filter((_, i) => has[i]);
 }

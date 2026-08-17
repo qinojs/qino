@@ -24,6 +24,10 @@ function defaultBase() {
 }
 
 export const api = new ApiClient(defaultBase());
+// The one thing worth retrying: a demand for a fresh proof, answered by the user. The dialog is
+// loaded the first time that happens — a page that never hits one never fetches it.
+api.recover = async (error) =>
+  error.code === "step_up_required" && await (await import("./stepUpDialog.js")).stepUp(error.data);
 export { ApiError } from "./ApiClient.js";
 
 class CtxSetting extends Item {

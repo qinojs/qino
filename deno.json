@@ -11,6 +11,7 @@
     "./auth": "./module/auth/mod.ts",
     "./auth.backup_codes": "./module/auth.backup_codes/mod.ts",
     "./auth.oauth": "./module/auth.oauth/mod.ts",
+    "./auth.otp": "./module/auth.otp/mod.ts",
     "./auth.totp": "./module/auth.totp/mod.ts",
     "./cms": "./module/cms/mod.ts",
     "./cms.accessRules": "./module/cms.accessRules/mod.ts",

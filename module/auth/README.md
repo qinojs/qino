@@ -15,12 +15,16 @@ line either way and never has to ask which case it is in.
 
 ## Declaring a factor
 
-A module says it can prove an identity by exporting `authFactor` from its plugin, the same way
+A module says it can prove an identity by exporting `authFactors` from its plugin, the same way
 [messaging](../messaging/) collects channels:
 
 ```ts
-export const authFactor: Factor = { name: "webauthn", label: "Passkey", login: true, stepUp: true };
+export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", login: true, stepUp: true }];
 ```
+
+A list, because one module may bring several: [auth.otp](../auth.otp/) has one factor per messaging
+channel. When which ones exist is only known at runtime, the export is a function of the app
+instead — that is the whole reason it takes one.
 
 `login` and `stepUp` are separate on purpose: starting a session and refreshing one are different
 permissions, and a factor may have either. A federated login declares only `login` — the provider
@@ -35,7 +39,9 @@ the declaration was missing.
 
 Setting a factor up is the user's own business, so each has a `cms.cont.my.*` page of its own —
 [my.totp](../cms.cont.my.totp/), [my.webauthn](../cms.cont.my.webauthn/),
-[my.backup_codes](../cms.cont.my.backup_codes/), [my.oauth](../cms.cont.my.oauth/). Several on one
+[my.backup_codes](../cms.cont.my.backup_codes/), [my.oauth](../cms.cont.my.oauth/) — except the
+[auth.otp](../auth.otp/) factors, which have nothing to set up: the channel is the enrolment.
+Several on one
 page make the security overview, so no module has to ask at runtime what is installed.
 
 `has` is optional: a factor that cannot answer it per user — as a federated login cannot, since which
@@ -66,39 +72,54 @@ has to check ownership itself and a foreign id removes nothing.
 
 A factor with real columns of its own keeps its own table, as [auth.webauthn](../auth.webauthn/) does.
 
+## Demanding a fresh proof
+
+[`requireStepUp(ctx, { maxAge })`](../core/lib/auth.ts#L88) lives in core, where `via` is written.
+It counts only what a linked module declares with `stepUp`, so `remember` and `login_as` never
+satisfy one, and it throws `StepUpError` — `code: "step_up_required"`, and the factors that would
+work for this user.
+
+Where the demand belongs is settled by [`invoke()`](../core/lib/api/invoke.ts#L93): both get the
+same `params`, but the guard runs before the validated input is merged into it, so at that moment
+it holds the resolved path params and nothing else. An endpoint that
+always needs a proof can say so there, but one that needs it for some values and not others —
+a transfer above a limit, a bulk delete past a count — cannot, and has to ask inside `execute`
+before it does anything. So the demand is a **function that throws**, not a flag on the verb:
+
+```ts
+guard: (_p, ctx) => requireStepUp(ctx, { maxAge: 300 }),          // always
+execute: async ({ amount }, ctx) => {
+  if (amount > 1000) await requireStepUp(ctx, { maxAge: 60 });    // only sometimes
+```
+
+A verb property (`stepUpNeeded: true`) would cover only the first case and add surface for what
+`guard` can already express. Throwing needs no machinery: `invoke` does not catch, and
+[`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. Resolving with
+`true` keeps the guard form a one-liner. What the `execute` form owes is the whole point of it —
+it has to throw before the first side effect, and only the author can guarantee that.
+
+In the browser, [`ApiClient`](../core/pub/js/ApiClient.js) knows nothing of any of this: it offers
+`recover(error)`, a hook that may fix a failed request and have it sent **once** more. `qino.js`
+sets it to the one thing worth retrying, and only that line names the step-up. The dialog knows no
+factor by name: each one ships a `pub/stepup.js` exporting `prove(root, factor)`, and the error says which
+module to import it from. A factor that renders a field fills `root` and resolves `true` when the
+proof went through; a passkey needs no field and starts the authenticator instead.
+
+```js
+// auth.totp/pub/stepup.js
+export async function prove(root, factor) { /* … */ return ok; }
+```
+
+Nothing on the client is registered anywhere, so a new factor is again one module and no edit here.
+
 ## Possible extensions
 
-- **Demanding a fresh proof before a grave action.**
-  [`requireStepUp()`](../core/lib/auth.ts#L88) lives in core, where `via` is written; it counts only
-  what a linked module declares with `stepUp`, so `remember` and `login_as` never satisfy one. What
-  is missing is the client dialog, and with it the first verb to demand a proof. A policy will also
-  want to ask for properties — that a passkey is unphishable and a typed code is not — which is a
-  field on `Factor` as soon as something reads it.
-
-  Where the demand belongs is settled by [`invoke()`](../core/lib/api/invoke.ts#L93): both get the
-  same `params`, but the guard runs before the validated input is merged into it, so at that moment
-  it holds the resolved path params and nothing else. An endpoint that
-  always needs a proof can say so there, but one that needs it for some values and not others —
-  a transfer above a limit, a bulk delete past a count — cannot, and has to ask inside `execute`
-  before it does anything. So the demand is a **function that throws**, not a flag on the verb:
-
-  ```ts
-  guard: (_p, ctx) => requireStepUp(ctx, { maxAge: 300 }),          // always
-  execute: async ({ amount }, ctx) => {
-    if (amount > 1000) await requireStepUp(ctx, { maxAge: 60 });    // only sometimes
-  ```
-
-  A verb property (`stepUpNeeded: true`) would cover only the first case and add surface for what
-  `guard` can already express. Throwing needs no machinery: `invoke` does not catch, and
-  [`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. Resolving with
-  `true` keeps the guard form a one-liner. What the `execute` form owes is the whole point of it —
-  it has to throw before the first side effect, and only the author can guarantee that.
+- **Properties in the policy.** A policy will want to ask whether a proof was phishing-resistant —
+  a field on `Factor` as soon as something reads it, and a claim nobody checks before that.
 - **More than one factor for a login.** The partial state belongs in the session, which the id
   rotation already empties — no second place to expire and sweep.
-- **A code to a channel** — phone, mailbox, Telegram, a push subscription. One mechanism, the one in
-  [messaging/lib/verify.ts](../messaging/lib/verify.ts), and twenty lines of declaration per
-  channel. No channel needs to be verified beforehand: the code coming back is the verification.
-  A push subscription only counts on a device other than the one asking, which the `client_id` on
-  the subscription says. Today there are [auth.webauthn](../auth.webauthn/),
-  [auth.oauth](../auth.oauth/), [auth.totp](../auth.totp/) and
-  [auth.backup_codes](../auth.backup_codes/).
+- **A code as a login factor, and approval instead of a code.**
+  [auth.otp](../auth.otp/) carries one to any channel today, but only for step-up: a code can be
+  requested only for a user the request already knows. Telegram and Web Push could ask for a tap
+  rather than a code, which is not phishable but invites MFA fatigue — the answer to that is number
+  matching, and it is a mechanism of its own.

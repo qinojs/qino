@@ -25,7 +25,7 @@ export class ConflictError extends ApiError { constructor(message = "Conflict") 
 /** Signed in, but not freshly enough. `factors` is what would satisfy it — an empty list means
  *  nothing here can, and signing in again is the only way. */
 export class StepUpError extends ApiError {
-  constructor(factors: { name: string; label: string }[], maxAge: number) {
+  constructor(factors: { name: string; label: string; module: string }[], maxAge: number) {
     super(403, "A fresh proof of identity is required", { code: "step_up_required", data: { factors, maxAge } });
   }
 }

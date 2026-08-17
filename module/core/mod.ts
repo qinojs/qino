@@ -22,7 +22,7 @@ export { s, StandardSchema, toJsonSchema } from "./lib/StandardSchema.ts";
 
 // api framework: action tree, errors, introspection
 export { Access } from "./lib/api/access.ts";
-export { ApiError, AccessError, NotFoundError, ConflictError, StepUpError, ValidationError } from "./lib/api/errors.ts";
+export { ApiError, AccessError, NotFoundError, ConflictError, ValidationError } from "./lib/api/errors.ts";
 export { invoke } from "./lib/api/invoke.ts";
 export { isTrustedOrigin } from "./lib/api/fetch.ts";
 export { walk, camelName, checkCollisions } from "./lib/api/route.ts";

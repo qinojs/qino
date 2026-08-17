@@ -105,9 +105,11 @@
     "pub/js/qg/c1Combobox.mjs",
     "pub/js/qg/fileHelpers.mjs",
     "pub/js/qino.js",
+    "pub/js/stepUpDialog.js",
     "pub/js/t.mjs",
     "pub/js/util/hee.mjs",
     "pub/js/util/transfer.mjs",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/stepup.js"
   ]
 }

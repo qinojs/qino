@@ -129,9 +129,9 @@ qino-cms:not(:defined) { display:none; }
     padding:0;
     min-width:20rem;
     &::backdrop { background:rgba(0,0,0,.4); }
-    & > * { padding:1.2em; }
+    & > * { padding:1.2rem; margin:0;}
     & > :is(header, .-head) {
-      padding-block: .8em;
+      padding-block: .8rem;
       background:var(--cms-dark);
       color:var(--cms-light);
       display:flex;

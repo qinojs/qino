@@ -1,0 +1,16 @@
+{
+  "name": "auth.otp",
+  "description": "A one-time code to a channel the user is already reachable on — one factor per messaging channel.",
+  "dependencies": [
+    "auth",
+    "messaging"
+  ],
+  "files": [
+    "README.md",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg",
+    "pub/stepup.js"
+  ]
+}

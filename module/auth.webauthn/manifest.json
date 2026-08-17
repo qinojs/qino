@@ -12,6 +12,7 @@
     "manifest.json",
     "plugin.ts",
     "pub/module.svg",
+    "pub/stepup.js",
     "pub/webauthn.js"
   ]
 }

@@ -17,6 +17,9 @@ export class ApiClient extends EventTarget {
   #handlers = [];
   #unwrap;
   headers = {};
+  /** Given a failed request, may fix what went wrong and resolve true to have it sent once more.
+   *  Unset — the normal case — means every error reaches the caller as it is. */
+  recover = null;
 
   constructor(base, { unwrap } = {}) {
     super();
@@ -93,7 +96,11 @@ export class ApiClient extends EventTarget {
       }
       this.#emit("complete", done);
       return this.#unwrap ? value?.[this.#unwrap] : value;
-    }).catch(error => {
+    }).catch(async error => {
+      // Once, never a loop: a second failure is the server's answer, not another prompt.
+      if (this.recover && !opts.retried && await this.recover(error)) {
+        return this.#request(method, parts, input, { ...opts, retried: true });
+      }
       this.#emit(error.name === "AbortError" ? "abort" : "error", { ...detail, error });
       throw error;
     });

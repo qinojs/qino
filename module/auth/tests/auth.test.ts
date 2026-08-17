@@ -10,8 +10,8 @@ const social = { name: "oauth", label: "Social login", login: true };
 const app = {
   modules: {
     linked: () => [
-      { name: "webauthn", plugin: { authFactor: passkey } },
-      { name: "oauth", plugin: { authFactor: social } },
+      { name: "webauthn", plugin: { authFactors: [passkey] } },
+      { name: "oauth", plugin: { authFactors: [social] } },
       { name: "cms", plugin: {} },
     ],
   },

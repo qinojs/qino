@@ -15,7 +15,7 @@ function ctxWith(via: Record<string, number>, factors: unknown[] = [factor("pass
   return testContext({
     userId: 7,
     sess,
-    app: { modules: { linked: () => factors.map((f) => ({ plugin: { authFactor: f } })) } },
+    app: { modules: { linked: () => factors.map((f: any) => ({ name: `auth.${f.name}`, plugin: { authFactors: [f] } })) } },
     set,
   });
 }
@@ -30,7 +30,8 @@ Deno.test("requireStepUp: an old proof throws, offering what would satisfy it", 
   const e = await thrown(requireStepUp(await ctxWith({ password: now() - 1000 }), { maxAge: 300 }));
   assertEquals(e.code, "step_up_required");
   assertEquals(e.status, 403);
-  assertEquals((e.data as any).factors, [{ name: "password", label: "password" }]);
+  // the module travels along: it is where the browser loads `pub/stepup.js` from
+  assertEquals((e.data as any).factors, [{ name: "password", label: "password", module: "auth.password" }]);
   assertEquals((e.data as any).maxAge, 300);
 });
 

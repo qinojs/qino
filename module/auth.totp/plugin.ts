@@ -6,13 +6,13 @@ import { confirm, enrol, forget, verify } from "./mod.ts";
 import type { ApiTree, App, Params } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
-export const authFactor: Factor = {
+export const authFactors: Factor[] = [{
   name: "totp",
   label: "Authenticator app",
   login: true,
   stepUp: true,
   has: async (app: App, usrId: number) => (await stored(app, usrId, "totp")).length > 0,
-};
+}];
 
 export const api: ApiTree = {
   get: {

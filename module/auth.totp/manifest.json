@@ -10,6 +10,7 @@
     "manifest.json",
     "mod.ts",
     "plugin.ts",
-    "pub/module.svg"
+    "pub/module.svg",
+    "pub/stepup.js"
   ]
 }

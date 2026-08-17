@@ -5,6 +5,7 @@
     "auth": {},
     "auth.backup_codes": {},
     "auth.oauth": {},
+    "auth.otp": {},
     "auth.totp": {},
     "auth.webauthn": {},
     "cms": {},

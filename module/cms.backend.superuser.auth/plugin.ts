@@ -60,7 +60,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>You have it
     <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=5>No module declares a factor.`}</tbody>
   </table>
-  <div class=-body>A module declares one by exporting <code>authFactor</code>. Nothing here knows a
+  <div class=-body>A module declares one by exporting <code>authFactors</code>. Nothing here knows a
   factor by name, so a new one shows up in this table on its own. The last column is what the factor
   answers about you — one that cannot tell users apart, as a federated login cannot, leaves it
   unanswered and counts as available.</div>

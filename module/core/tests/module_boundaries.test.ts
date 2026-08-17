@@ -316,10 +316,6 @@ const EXTERNAL = new Set([
   "core/mod.ts honoAdapter", // demo/server.ts mounts the app under hono
   "core/mod.ts Route", // test-modules/cms.cont.apitest consumes this public type
   "cms.cont.ts/mod.ts NodeRender", // types the node files cms.cont.ts generates, outside this tree
-  // Step-up: an api verb calls requireStepUp and the browser branches on the error's code. No verb
-  // demands one yet — the first will be store/module installation, once the dialog can answer it.
-  "core/mod.ts requireStepUp",
-  "core/mod.ts StepUpError",
 ]);
 
 Deno.test("no mod.ts exports anything nobody imports", async () => {

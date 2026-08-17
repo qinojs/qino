@@ -10,7 +10,7 @@ import type { Factor } from "@qino/qino/auth";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 // No stepUp: the provider answers from its own session, so it says nothing about who is here now.
-export const authFactor: Factor = { name: "oauth", label: "Social login", login: true };
+export const authFactors: Factor[] = [{ name: "oauth", label: "Social login", login: true }];
 
 export const api: ApiTree = {
   get: {

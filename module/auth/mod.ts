@@ -3,7 +3,7 @@ import { login, sql, unixTime } from "@qino/qino";
 
 import type { App, Ctx, Row } from "@qino/qino";
 
-/** A way of showing who you are, declared by a module as `export const authFactor`.
+/** A way of showing who you are, declared by a module as `export const authFactors`.
  *  Starting a session and refreshing one are different permissions — a factor may have either. */
 export type Factor = {
   name: string;
@@ -15,9 +15,16 @@ export type Factor = {
   has?(app: App, usrId: number): Promise<boolean>;
 };
 
+/** What a module exports: its factors, or a function of the app for a module whose factors depend
+ *  on what else is installed — `auth.otp` has one per messaging channel. */
+type Declaration = Factor[] | ((app: App) => Factor[]);
+
 /** Every factor a linked module declares. */
 export function factors(app: App): Factor[] {
-  return app.modules.linked().filter((mod) => mod.plugin.authFactor).map((mod) => mod.plugin.authFactor as Factor);
+  return app.modules.linked().flatMap((mod) => {
+    const declared = mod.plugin.authFactors as Declaration | undefined;
+    return typeof declared === "function" ? declared(app) : declared ?? [];
+  });
 }
 
 /** The factors one user has set up, narrowed to those allowed to `login` or to `stepUp`. */
@@ -72,7 +79,7 @@ export function via(from: Ctx | string): Record<string, number> {
  *  worth. Signed in as them it is a fresh proof kept in the session, otherwise it is a login. */
 export async function proof(ctx: Ctx, factor: string, usrId: number): Promise<boolean> {
   const declared = factors(ctx.app).find((f) => f.name === factor);
-  if (!declared) throw new Error(`auth: no factor "${factor}" — declare it in a module's authFactor export`);
+  if (!declared) throw new Error(`auth: no factor "${factor}" — declare it in a module's authFactors export`);
   if (ctx.userId === usrId) {
     // A stateless credential identifies a request, not a session — the session a proof would be
     // written to is whoever's holds the cookie, so there is nothing here to refresh.
