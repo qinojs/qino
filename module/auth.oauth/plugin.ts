@@ -1,14 +1,44 @@
 // deno-lint-ignore-file no-explicit-any
-import { Output, Redirect, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, ApiError, getCtx, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
-import type { App, Ctx } from "@qino/qino";
+import { links, unlink } from "./mod.ts";
+
+import type { ApiTree, App, Ctx, Params } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 // No stepUp: the provider answers from its own session, so it says nothing about who is here now.
 export const authFactor: Factor = { name: "oauth", label: "Social login", login: true };
+
+export const api: ApiTree = {
+  get: {
+    description: "The providers the current user signs in through",
+    access: Access.USER,
+    execute: async () => {
+      const ctx = getCtx();
+      const rows = await links(ctx.app, ctx.userId);
+      return rows.map((r) => ({ provider: r.provider, sub: r.sub, created: r.created, lastUsed: r.last_used }));
+    },
+  },
+
+  ":provider": {
+    paramSchema: s.string(),
+    ":sub": {
+      paramSchema: s.string(),
+      delete: {
+        description: "Disconnect one provider account",
+        access: Access.USER,
+        execute: async ({ provider, sub }: Params) => {
+          const ctx = getCtx();
+          if (!await unlink(ctx.app, ctx.userId, String(provider), String(sub))) throw new ApiError(404, "Not found");
+          return { ok: true };
+        },
+      },
+    },
+  },
+};
 
 /** Decode a JWT payload without verifying the signature — safe here: the token comes
  *  straight from the token endpoint over TLS (OIDC allows skipping the signature check). */
@@ -44,16 +74,17 @@ const safeReturn = (base: string, raw: unknown): string =>
   typeof raw === "string" && /^\/(?![/\\])/.test(raw) ? raw : base;
 
 async function provider(app: App, name: string): Promise<any> {
-  const p = await app.db.row`SELECT * FROM social_login_provider WHERE name = ${name}`;
+  const p = await app.db.row`SELECT * FROM oauth_provider WHERE name = ${name}`;
   if (!p) throw new Output("unknown login provider", { status: 404 });
   return p;
 }
 
 /** Distill an id_token / userinfo response into canonical identity fields (providers vary in naming). */
-function identity(c: any): { email: string; verified: unknown; firstname: string; lastname: string } {
+function identity(c: any): { sub: string; email: string; verified: unknown; firstname: string; lastname: string } {
   const full = String(c.name ?? c.global_name ?? c.username ?? c.login ?? "").trim();
   const [first, ...rest] = full.split(/\s+/);
   return {
+    sub: String(c.sub ?? c.id ?? ""), // OIDC calls it sub, plain OAuth2 userinfos usually id
     email: String(c.email ?? "").trim().toLowerCase(),
     verified: c.email_verified ?? c.verified, // may be undefined — many OAuth2 userinfos omit it
     firstname: String(c.given_name ?? first ?? ""),
@@ -61,17 +92,49 @@ function identity(c: any): { email: string; verified: unknown; firstname: string
   };
 }
 
-/** Map a distilled identity to a usr id (0 = deny). Links by e-mail, optionally auto-creates. */
+/**
+ * Map a distilled identity to a usr id (0 = deny). A remembered `sub` wins: it is the one thing the
+ * provider keeps stable, so a changed e-mail on either side no longer moves the account. Whoever is
+ * not known yet is matched by verified e-mail, optionally created — and remembered from then on.
+ *
+ * Coming back to a signed-in session means "connect this to me": the link is made for whoever is
+ * here, and an identity belonging to someone else is refused rather than silently switching account.
+ */
 async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
-  if (!id.email || id.verified === false) return 0; // never link/create on an unverified e-mail
+  const db = ctx.app.db;
+  const here = ctx.userId;
+  // An e-mail off the allowed domains is refused wherever one is given — but a provider that stops
+  // sending one (Apple does) must not lock out a link that already exists.
   const domains = String(p.allowed_domains ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  if (domains.length && !domains.includes(id.email.split("@")[1])) return 0;
-  const existing = await ctx.app.db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = ${id.email}`;
-  if (existing) return Number(existing);
-  if (!p.auto_create) return 0;
-  return Number(await ctx.app.db.table("usr").insert({
-    email: id.email, active: 1, pw: "", superuser: 0, firstname: id.firstname, lastname: id.lastname,
-  }));
+  if (id.email && domains.length && !domains.includes(id.email.split("@")[1] ?? "")) return 0;
+
+  if (id.sub) {
+    const link = await db.row`SELECT usr_id FROM oauth_provider_usr WHERE provider = ${p.name} AND sub = ${id.sub}`;
+    if (link) {
+      const linked = Number(link.usr_id);
+      if (here && here !== linked) return 0;
+      db.exec`UPDATE oauth_provider_usr SET last_used = ${unixTime()} WHERE provider = ${p.name} AND sub = ${id.sub}`; // background write
+      return linked;
+    }
+  }
+
+  let usrId = here;
+  if (!usrId) {
+    if (!id.email || id.verified === false) return 0; // never link/create on an unverified e-mail
+    const existing = await db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = ${id.email}`;
+    usrId = Number(existing ?? 0);
+    if (!usrId) {
+      if (!p.auto_create) return 0;
+      usrId = Number(await db.table("usr").insert({
+        email: id.email, active: 1, pw: "", superuser: 0, firstname: id.firstname, lastname: id.lastname,
+      }));
+    }
+  }
+  if (id.sub) {
+    const now = unixTime();
+    await db.table("oauth_provider_usr").insert({ provider: p.name, sub: id.sub, usr_id: usrId, created: now, last_used: now });
+  }
+  return usrId;
 }
 
 /** Redirect the browser to the provider's authorization endpoint (OIDC uses code flow + PKCE). */
@@ -145,7 +208,8 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  if (!usrId || !await proof(ctx, "oauth", usrId)) throw new Output("oauth login denied", { status: 403 });
+  // Already this user: the round trip connected a provider, there is no session to open.
+  if (!usrId || (usrId !== ctx.userId && !await proof(ctx, "oauth", usrId))) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
 }
 

@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.oauth",
+  "description": "Lets signed-in users see which providers they sign in through, and connect or disconnect them.",
+  "dependencies": [
+    "cms",
+    "auth.oauth"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

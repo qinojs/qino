@@ -1,5 +1,5 @@
 {
-  "name": "cms.cont.socialLogin",
+  "name": "cms.cont.oauth",
   "description": "Login links for configured OAuth providers.",
   "dependencies": [
     "auth.oauth",

@@ -15,6 +15,15 @@ export const authFactor: Factor = {
 };
 
 export const api: ApiTree = {
+  get: {
+    description: "How many of the current user's backup codes are still unspent",
+    access: Access.USER,
+    execute: async () => {
+      const ctx = getCtx();
+      return { left: await left(ctx.app, ctx.userId) };
+    },
+  },
+
   generate: {
     post: {
       description: "Replace the backup codes with a fresh set — shown this once and never again",

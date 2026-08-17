@@ -46,7 +46,8 @@ await wa.login({ email: "user@example.com" });
 await wa.loginConditional(); // Autofill-Passkey (Conditional UI), null wenn nicht verfügbar
 ```
 
-Fertige Login-/Verwaltungs-UI liefert das Content-Modul `cms.cont.webauthn` (siehe unten).
+Fertige UI liefern die Content-Module `cms.cont.webauthn` (anmelden) und `cms.cont.my.webauthn`
+(eigene Passkeys verwalten) — siehe unten.
 
 ## Step-up Authentication
 
@@ -68,13 +69,15 @@ fehlt noch (siehe [auth](../auth/#possible-extensions)).
 
 ## CMS-Module
 
-**`cms.cont.webauthn`** — Content-Node, Settings:
+**`cms.cont.webauthn`** — Content-Node zum Anmelden, Settings:
 
 | Setting               | Beschreibung                                        |
 |-----------------------|-----------------------------------------------------|
-| `mode`                | `auto` / `login` / `manage`                         |
 | `apiBase`             | URL der API (Standard: aus App-Pfad abgeleitet)     |
 | `showPasswordFallback`| Zeigt zusätzlich Passwort-Formular                  |
 | `redirectAfterLogin`  | Page-ID für Weiterleitung nach Login                |
+
+**`cms.cont.my.webauthn`** — Content-Node, auf dem der angemeldete Benutzer seine eigenen Passkeys
+verwaltet. Ohne Settings.
 
 **`cms.backend.superuser.auth.webauthn`** — Backend-Seite, listet alle Credentials (Superuser).

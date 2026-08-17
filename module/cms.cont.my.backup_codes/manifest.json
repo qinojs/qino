@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.backup_codes",
+  "description": "Lets signed-in users see how many backup codes they have left and draw a fresh set.",
+  "dependencies": [
+    "cms",
+    "auth.backup_codes"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

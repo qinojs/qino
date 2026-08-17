@@ -1,6 +1,6 @@
 {
   "properties": {
-    "social_login_provider": {
+    "oauth_provider": {
       "additionalProperties": {
         "properties": {
           "id": {
@@ -54,6 +54,35 @@
           }
         },
         "required": ["id", "name", "client_id", "client_secret"]
+      }
+    },
+    "oauth_provider_usr": {
+      "additionalProperties": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "maxLength": 64,
+            "x-index": "primary"
+          },
+          "sub": {
+            "type": "string",
+            "maxLength": 191,
+            "x-index": "primary"
+          },
+          "usr_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "last_used": {
+            "type": "integer"
+          }
+        },
+        "required": ["provider", "sub", "usr_id", "created", "last_used"]
       }
     }
   }

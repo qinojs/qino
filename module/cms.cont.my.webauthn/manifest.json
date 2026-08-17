@@ -1,0 +1,14 @@
+{
+  "name": "cms.cont.my.webauthn",
+  "description": "Lets signed-in users add and remove their own passkeys.",
+  "dependencies": [
+    "cms",
+    "auth.webauthn"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}

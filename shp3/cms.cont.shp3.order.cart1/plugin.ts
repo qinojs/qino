@@ -47,7 +47,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const taxes: HtmlString[] = [];
   for (const [rate, value] of Object.entries(costs.taxes)) {
-    taxes.push(html`<tr class=-tax><th colspan=3>${await t`VAT`} ${rate}%<td>${money(value)}`);
+    taxes.push(html`<tr class=-tax>
+      <th colspan=3>${await t`VAT`} ${rate}%
+      <td>${money(value)}
+      ${editable ? html`<td>` : ""}`);
   }
 
   return html.async`<div>
@@ -62,9 +65,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
     <tbody class=-items>${html.join(rows)}
     <tbody class=-generated>${html.join(generated)}
     <tfoot>
-      <tr class=-net><th colspan=3>${t`Subtotal`}<td>${money(costs.net)}
-      ${html.join(taxes)}
-      <tr class=-gross><th colspan=3>${t`Total`}<td class=-sum>${money(costs.gross)}
+      <tr class=-net>
+        <th colspan=3>${t`Subtotal`}
+        <td>${money(costs.net)}
+        ${editable ? html`<td>` : ""}
+  	  ${html.join(taxes)}
+      <tr class=-gross>
+        <th colspan=3>${t`Total`}
+        <td class=-sum>${money(costs.gross)}
+        ${editable ? html`<td>` : ""}
   </table>
 </div>`;
 }

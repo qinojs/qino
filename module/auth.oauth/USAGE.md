@@ -18,7 +18,7 @@ Social login). Gängige Provider sind bei Installation als Vorlagen angelegt —
 noch `client_id`/`client_secret` eintragen. Die Redirect-URI zum Eintragen beim Provider
 zeigt das Formular pro Provider an: **`{appUrl}oauth/callback/<name>`**.
 
-Tabelle `social_login_provider`:
+Tabelle `oauth_provider`:
 
 | Feld | Zweck |
 |---|---|
@@ -30,6 +30,19 @@ Tabelle `social_login_provider`:
 | `scopes` | leer = `openid email profile` |
 | `auto_create` | `1` = unbekannte, verifizierte User anlegen, `0` = nur bestehende |
 | `allowed_domains` | optional, kommagetrennt (z.B. `example.com`) — begrenzt öffentliche Provider |
+
+## Wer mit wem verknüpft ist
+
+Tabelle `oauth_provider_usr` (`provider`, `sub`) → `usr_id`: was der Provider als stabile Id
+seines Benutzers liefert (OIDC `sub`, sonst `id`), gemerkt beim ersten Login. Danach folgt
+jeder Login dieser Verknüpfung, nicht mehr der E-Mail — ein E-Mail-Wechsel auf einer der
+beiden Seiten verschiebt das Konto also nicht mehr. Wer noch keine Verknüpfung hat, wird wie
+bisher per verifizierter E-Mail zugeordnet (oder angelegt) und dabei gemerkt.
+
+`allowed_domains` greift überall dort, wo eine E-Mail mitkommt — eine bestehende Verknüpfung
+verfällt aber nicht, wenn der Provider später keine mehr schickt (Apple). Die Backend-Seite listet alle Verknüpfungen
+unter der Konfiguration und kann sie einzeln lösen; danach greift für diesen Benutzer wieder
+die E-Mail-Zuordnung. Wird ein Provider gelöscht, verschwinden seine Verknüpfungen mit.
 
 ### Mitgelieferte Presets
 
@@ -44,8 +57,9 @@ Weitere OAuth2-Provider lassen sich als Zeile anlegen: `authorize_url`, `token_u
 
 ## Login starten
 
-Frontend-Modul **`cms.cont.socialLogin`** rendert einen „Log in with …"-Link pro
-konfiguriertem Provider. Oder direkt verlinken:
+Frontend-Modul **`cms.cont.oauth`** rendert einen „Log in with …"-Link pro
+konfiguriertem Provider, **`cms.cont.my.oauth`** zeigt dem angemeldeten Benutzer seine
+Verknüpfungen und verbindet weitere. Oder direkt verlinken:
 
 ```html
 <a href="{appUrl}oauth/start/github">Login mit GitHub</a>
@@ -65,15 +79,14 @@ Optional `?return_to=/pfad` (nur lokale Pfade werden akzeptiert).
 - **`email_verified`:** ein explizit unverifiziertes E-Mail-Claim wird abgelehnt.
 - **Open-Redirect:** `return_to` nur lokale Pfade (kein `//`, kein Schema).
 - **Backend:** `client_secret` wird nie zurückgerendert.
-- **Achtung Account-Linking:** eine verifizierte E-Mail loggt in den bestehenden Qino-User
-  mit derselben E-Mail ein (inkl. evtl. Superuser). Mit `auto_create` an einem öffentlichen
+- **Achtung Account-Linking:** beim *ersten* Mal loggt eine verifizierte E-Mail in den
+  bestehenden Qino-User mit derselben E-Mail ein (inkl. evtl. Superuser); danach zählt die
+  gemerkte Verknüpfung. Mit `auto_create` an einem öffentlichen
   Provider käme jeder mit dortigem Konto rein (rechtlos) — dann `allowed_domains` setzen.
 
 ## Offen / verbesserungswürdig
 
 Kern:
-- **`sub`-Mapping-Tabelle** (`provider`, `sub`, `usr_id`) statt Bindung per E-Mail —
-  überlebt E-Mail-Wechsel und vermeidet E-Mail-basiertes Linking.
 - **JWKS-Signaturprüfung** als Defense-in-Depth; **`azp`** prüfen bei mehreren `aud`.
 - **Refresh-Tokens / RP-Logout** (`end_session_endpoint`): nicht implementiert.
 - **Apple client_secret-JWT** (ES256) generieren; **Microsoft Multi-Tenant** (`iss` mit

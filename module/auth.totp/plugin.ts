@@ -15,6 +15,16 @@ export const authFactor: Factor = {
 };
 
 export const api: ApiTree = {
+  get: {
+    description: "List the current user's authenticator apps",
+    access: Access.USER,
+    execute: async () => {
+      const ctx = getCtx();
+      const rows = await stored(ctx.app, ctx.userId, "totp");
+      return rows.map((r) => ({ id: r.id, label: r.label, created: r.created, lastUsed: r.last_used }));
+    },
+  },
+
   enrol: {
     post: {
       description: "Start setting up an authenticator app — returns the secret to scan",
