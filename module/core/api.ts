@@ -9,10 +9,10 @@ import { createHash } from "node:crypto";
 
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { $item, sql } from "./deps.ts";
-import { Access, AccessError, ConflictError } from "./lib/api/mod.ts";
+import { Access, AccessError, ApiError, ConflictError } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
-import { itemReadDeep } from "./lib/util.ts";
+import { itemReadDeep, unixTime } from "./lib/util.ts";
 
 import type { ApiTree } from "./lib/api/mod.ts";
 
@@ -64,6 +64,24 @@ export const api: ApiTree = {
   },
 
   password: {
+    verify: {
+      post: {
+        description: "Prove the signed-in user is present by typing their password again (step-up)",
+        access: Access.USER,
+        input: s.object({ pw: s.string() }),
+        execute: async ({ pw }: any) => {
+          const ctx = getCtx();
+          // Same reason as in auth's proof(): a stateless credential identifies a request, not the
+          // session a proof would be written to.
+          if (ctx.statelessAuth || !await pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? ""))) {
+            ctx.app.fire("suspicious", { ctx, reason: "password step-up failed" }).catch(() => {});
+            throw new ApiError(422, "That password does not match");
+          }
+          ctx.sess.data.core.via.password(unixTime());
+          return { ok: true };
+        },
+      },
+    },
     put: {
       description: "Change the password of the logged-in user",
       access: Access.USER,

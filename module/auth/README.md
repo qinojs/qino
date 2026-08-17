@@ -29,7 +29,14 @@ answers from its own session and says nothing about who is at the keyboard now.
 `factors(app)` lists what linked modules declare, `userFactors(app, usrId, "stepUp")` narrows it to
 what would actually work for one person. Nothing here knows a factor by name, so a new one costs no
 code in `auth` and appears in
-[cms.backend.superuser.auth](../cms.backend.superuser.auth/) on its own.
+[cms.backend.superuser.auth](../cms.backend.superuser.auth/) on its own. `core` is one of those
+modules and declares `password` itself — the column, the check and the form are not optional, only
+the declaration was missing.
+
+Setting a factor up is the user's own business, so each has a `cms.cont.my.*` page of its own —
+[my.totp](../cms.cont.my.totp/), [my.webauthn](../cms.cont.my.webauthn/),
+[my.backup_codes](../cms.cont.my.backup_codes/), [my.oauth](../cms.cont.my.oauth/). Several on one
+page make the security overview, so no module has to ask at runtime what is installed.
 
 `has` is optional: a factor that cannot answer it per user — as a federated login cannot, since which
 user a provider returns is only known once they have come back — is still offered as a way in, but
@@ -61,10 +68,12 @@ A factor with real columns of its own keeps its own table, as [auth.webauthn](..
 
 ## Possible extensions
 
-- **Demanding a fresh proof before a grave action**, answering with a stable `step_up_required`.
-  The api error already carries a `code` and `data`; the policy and the client dialog are missing.
-  A policy also wants to ask for properties — that a passkey is unphishable and a typed code is not
-  — which is a field on `Factor` as soon as something reads it.
+- **Demanding a fresh proof before a grave action.**
+  [`requireStepUp()`](../core/lib/auth.ts#L88) lives in core, where `via` is written; it counts only
+  what a linked module declares with `stepUp`, so `remember` and `login_as` never satisfy one. What
+  is missing is the client dialog, and with it the first verb to demand a proof. A policy will also
+  want to ask for properties — that a passkey is unphishable and a typed code is not — which is a
+  field on `Factor` as soon as something reads it.
 
   Where the demand belongs is settled by [`invoke()`](../core/lib/api/invoke.ts#L93): both get the
   same `params`, but the guard runs before the validated input is merged into it, so at that moment
@@ -80,14 +89,16 @@ A factor with real columns of its own keeps its own table, as [auth.webauthn](..
   ```
 
   A verb property (`stepUpNeeded: true`) would cover only the first case and add surface for what
-  `guard` can already express. Throwing needs nothing from core: `invoke` does not catch, and
+  `guard` can already express. Throwing needs no machinery: `invoke` does not catch, and
   [`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. Resolving with
   `true` keeps the guard form a one-liner. What the `execute` form owes is the whole point of it —
   it has to throw before the first side effect, and only the author can guarantee that.
-- **A page where users set their own methods up.** `userFactors()` is what it would list; what is
-  missing is a front-end module, and the enrolment each factor already has as api verbs.
 - **More than one factor for a login.** The partial state belongs in the session, which the id
   rotation already empties — no second place to expire and sweep.
-- **A code to a verified contact**, once [mail](../mail/) can say which addresses are verified.
-  Today there are [auth.webauthn](../auth.webauthn/), [auth.oauth](../auth.oauth/),
-  [auth.totp](../auth.totp/) and [auth.backup_codes](../auth.backup_codes/).
+- **A code to a channel** — phone, mailbox, Telegram, a push subscription. One mechanism, the one in
+  [messaging/lib/verify.ts](../messaging/lib/verify.ts), and twenty lines of declaration per
+  channel. No channel needs to be verified beforehand: the code coming back is the verification.
+  A push subscription only counts on a device other than the one asking, which the `client_id` on
+  the subscription says. Today there are [auth.webauthn](../auth.webauthn/),
+  [auth.oauth](../auth.oauth/), [auth.totp](../auth.totp/) and
+  [auth.backup_codes](../auth.backup_codes/).

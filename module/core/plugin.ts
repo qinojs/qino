@@ -10,6 +10,16 @@ export { api } from "./api.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
+// The password is not a module one can leave out — column, form and check are core. What a policy
+// needs on top is only this declaration, and `core` is a linked module like any other.
+export const authFactor = {
+    name: "password",
+    label: "Password",
+    login: true,
+    stepUp: true,
+    has: async (app: App, usrId: number) => !!(await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND pw <> ''`),
+};
+
 export const settingsSchema = {
     properties: {
         langs: {

@@ -1,8 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { bcrypt } from "../deps.ts";
+import { StepUpError } from "./api/errors.ts";
 import { unixTime } from "./util.ts";
 
+import type { App } from "./App.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
 import type { Usr } from "./rows.ts";
 
@@ -66,6 +68,37 @@ export async function login(ctx: Ctx, id: number | string, via?: string): Promis
   await ctx.client.$set({ usr_id: id });
   await ctx.app.fire("auth:login", { oldSession, usrId: id });
   return true;
+}
+
+/** What a module declares as `plugin.authFactor`. Core reads the three fields a policy needs; what
+ *  else a factor is, only the `auth` module cares about. */
+type Declared = { name: string; label: string; stepUp?: boolean; has?(app: App, usrId: number): Promise<boolean> };
+
+const stepUpFactors = (app: App): Declared[] =>
+  app.modules.linked().map((m) => m.plugin.authFactor as Declared).filter((f) => f?.stepUp);
+
+/**
+ * Demand a proof of identity no older than `maxAge` seconds, else throw `StepUpError` with the
+ * factors that would satisfy it. Resolves with `true`, so a verb can say it in one line:
+ * `guard: (_p, ctx) => requireStepUp(ctx, { maxAge: 300 })`.
+ *
+ * Only declared factors count. `via` also records `remember` and `login_as` — how access was had,
+ * not what proved it.
+ */
+export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: number } = {}): Promise<true> {
+  const factors = stepUpFactors(ctx.app);
+  const via = (ctx.sess.data.core.via() ?? {}) as Record<string, number>;
+  const newest = Math.max(0, ...factors.map((f) => Number(via[f.name] ?? 0)));
+  if (newest && unixTime() - newest <= maxAge) return true;
+  // A stateless credential has no session to prove anything into, so it is offered nothing.
+  const usable = ctx.statelessAuth ? [] : await withFactor(ctx, factors);
+  throw new StepUpError(usable.map((f) => ({ name: f.name, label: f.label })), maxAge);
+}
+
+/** Of the factors, those this user has set up. One that cannot answer per user is offered anyway. */
+async function withFactor(ctx: Ctx, factors: Declared[]): Promise<Declared[]> {
+  const has = await Promise.all(factors.map((f) => f.has?.(ctx.app, ctx.userId).catch(() => false) ?? true));
+  return factors.filter((_, i) => has[i]);
 }
 
 export async function logout(ctx: Ctx): Promise<void> {
