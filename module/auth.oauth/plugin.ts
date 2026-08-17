@@ -23,6 +23,18 @@ export const api: ApiTree = {
     },
   },
 
+  connect: {
+    post: {
+      description: "Ask to connect a provider to this account — what the round trip that follows needs",
+      access: Access.USER,
+      requireStepUp: true,
+      execute: () => {
+        getCtx().sess.data.oauth.connect(unixTime());
+        return { ok: true };
+      },
+    },
+  },
+
   ":provider": {
     paramSchema: s.string(),
     ":sub": {
@@ -30,6 +42,7 @@ export const api: ApiTree = {
       delete: {
         description: "Disconnect one provider account",
         access: Access.USER,
+        requireStepUp: true,
         execute: async ({ provider, sub }: Params) => {
           const ctx = getCtx();
           if (!await unlink(ctx.app, ctx.userId, String(provider), String(sub))) throw new ApiError(404, "Not found");
@@ -137,13 +150,22 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
   return usrId;
 }
 
+const CONNECT_TTL = 300;
+
 /** Redirect the browser to the provider's authorization endpoint (OIDC uses code flow + PKCE). */
 async function start(ctx: Ctx, name: string): Promise<never> {
+  // Signed in, this hands out another way into the account — as grave as any enrolment. A route
+  // cannot demand it (a StepUpError would land as a 403 page, not as the dialog), so the button
+  // asks `POST auth.oauth/connect` first and this only looks for what that left behind.
+  const asked = Number(ctx.sess.data.oauth.connect() ?? 0);
+  if (ctx.userId && unixTime() - asked > CONNECT_TTL) throw new Output("connect not confirmed", { status: 403 });
+
   const p = await provider(ctx.app, name);
   const e = await endpoints(p);
   const state = randB64(24), nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
 
   const d = ctx.sess.data.oauth; // one-shot transient, mirrors ctx.sess.data.core.*
+  d({}); // the mark is spent here: a second round trip asks again
   d.prov(name); d.state(state); d.nonce(nonce); d.verifier(verifier);
   d.returnTo(safeReturn(ctx.req.appUrl, ctx.req.query.return_to));
 

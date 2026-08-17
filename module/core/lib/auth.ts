@@ -101,7 +101,11 @@ export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: numbe
   const newest = Math.max(0, ...factors.map((f) => Number(via[f.name] ?? 0)));
   if (newest && unixTime() - newest <= maxAge) return true;
   // A stateless credential has no session to prove anything into, so it is offered nothing.
-  const usable = ctx.statelessAuth ? [] : await withFactor(ctx, factors);
+  if (ctx.statelessAuth) throw new StepUpError([], maxAge);
+  const usable = await withFactor(ctx, factors);
+  // Nothing to prove with: demanding it would only lock this user out of setting up their first
+  // factor — and a demand no one can meet protects nothing.
+  if (!usable.length) return true;
   usable.sort((a, b) => (a.order ?? MIDDLE) - (b.order ?? MIDDLE));
   throw new StepUpError(usable.map(({ name, label, module }) => ({ name, label, module })), maxAge);
 }

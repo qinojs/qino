@@ -10,7 +10,7 @@ export const authFactors: Factor[] = [{
   label: "Backup codes",
   // No `login`: a code alone must not be a way into an account. It becomes a login factor the day
   // a login can ask for a second one — as the second, never as the only.
-  stepUp: true,
+  requireStepUp: true,
   order: 90, // the way out when nothing else is at hand, so never the first offer
   has: async (app: App, usrId: number) => await left(app, usrId) > 0,
 }];
@@ -29,6 +29,7 @@ export const api: ApiTree = {
     post: {
       description: "Replace the backup codes with a fresh set — shown this once and never again",
       access: Access.USER,
+      requireStepUp: true,
       execute: async () => ({ codes: await generate(getCtx()) }),
     },
   },

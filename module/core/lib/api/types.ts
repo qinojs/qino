@@ -13,6 +13,11 @@ export interface Verb {
   /** Per-call check: is this concrete call allowed. Runs after `access` and before input validation,
    *  so `params` holds the resolved path params only — input and query are merged in afterwards. */
   guard?: (params: Params, ctx: Ctx) => boolean | Promise<boolean>;
+  /** This verb always demands a fresh proof of identity — issuing a factor, say. Declared rather
+   *  than called so a listing can see it, and so it cannot be demanded after the first write. Where
+   *  it depends on the call, calling `requireStepUp(ctx)` stays the way: in a `guard`, or in
+   *  `execute` for what only the input knows. */
+  requireStepUp?: boolean | { maxAge: number };
   execute(params: Params, ctx: Ctx): unknown | Promise<unknown>;
 }
 

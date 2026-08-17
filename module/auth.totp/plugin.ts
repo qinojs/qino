@@ -10,7 +10,7 @@ export const authFactors: Factor[] = [{
   name: "totp",
   label: "Authenticator app",
   login: true,
-  stepUp: true,
+  requireStepUp: true,
   order: 20,
   has: async (app: App, usrId: number) => (await stored(app, usrId, "totp")).length > 0,
 }];
@@ -30,12 +30,14 @@ export const api: ApiTree = {
     post: {
       description: "Start setting up an authenticator app — returns the secret to scan",
       access: Access.USER,
+      requireStepUp: true,
       execute: () => enrol(getCtx()),
     },
     verify: {
       post: {
         description: "Finish setting up — the code proves the app holds the secret",
         access: Access.USER,
+        requireStepUp: true,
         input: s.object({ code: s.string(), label: s.optional(s.string()) }),
         execute: async ({ code, label }: Params) => {
           await confirm(getCtx(), String(code), String(label ?? ""));
@@ -59,6 +61,7 @@ export const api: ApiTree = {
     delete: {
       description: "Remove one authenticator app",
       access: Access.USER,
+      requireStepUp: true,
       execute: async ({ factor }: Params) => {
         await forget(getCtx(), Number(factor));
         return { ok: true };

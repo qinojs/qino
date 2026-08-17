@@ -40,8 +40,12 @@ Deno.test("requireStepUp: remember and login_as are records of access, not proof
 });
 
 Deno.test("requireStepUp: a factor without stepUp neither counts nor is offered", async () => {
-  const e = await thrown(requireStepUp(await ctxWith({ oauth: now() }, [factor("oauth", { stepUp: false })])));
-  assertEquals((e.data as any).factors, []);
+  const e = await thrown(requireStepUp(await ctxWith({ oauth: now() }, [factor("oauth", { stepUp: false }), factor("password")])));
+  assertEquals((e.data as any).factors.map((f: any) => f.name), ["password"]);
+});
+
+Deno.test("requireStepUp: someone with no factor at all passes — else they could never set up a first one", async () => {
+  assertEquals(await requireStepUp(await ctxWith({}, [factor("password", { has: () => Promise.resolve(false) })])), true);
 });
 
 Deno.test("requireStepUp: the offer is ordered, strongest first", async () => {

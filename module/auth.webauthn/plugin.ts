@@ -114,6 +114,7 @@ export const api: ApiTree = {
       post: {
         description: "Request WebAuthn registration challenge",
         access: Access.USER,
+        requireStepUp: true,
         execute: async () => {
           const ctx = getCtx();
           const db  = ctx.app.db;
@@ -145,6 +146,7 @@ export const api: ApiTree = {
       post: {
         description: "Save WebAuthn credential after registration",
         access: Access.USER,
+        requireStepUp: true,
         input: s.object({
           token:             s.string(),
           credentialId:      s.string(),
@@ -341,6 +343,7 @@ export const api: ApiTree = {
       delete: {
         description: "Delete WebAuthn credential (own or as superuser)",
         access: Access.USER,
+        requireStepUp: true,
         execute: async ({ credId }: any) => {
           const ctx  = getCtx();
           const cred = await ctx.app.db.row`SELECT usr_id FROM webauthn_credential WHERE id = ${credId}`;
