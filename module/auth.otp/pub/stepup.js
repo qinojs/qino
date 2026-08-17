@@ -19,18 +19,34 @@ export async function prove(root, factor) {
       await otp.post();
       out.value = await t`Code sent.`;
       form.elements.code.focus();
+      readSms();
     } catch (e) {
       out.value = e?.message || String(e);
     }
     event.target.disabled = false;
   });
 
+  // Android reads the code out of the sms itself; everywhere else the keyboard offers it through
+  // autocomplete. Enhancement only — the field stays typeable if this does nothing.
+  const abort = new AbortController();
+  root.closest("dialog")?.addEventListener("close", () => abort.abort(), { once: true });
+  const readSms = () => {
+    if (factor.name !== "sms" || !("OTPCredential" in globalThis)) return;
+    navigator.credentials.get({ otp: { transport: ["sms"] }, signal: abort.signal })
+      .then((sms) => {
+        if (!sms?.code) return;
+        form.elements.code.value = sms.code;
+        form.requestSubmit();
+      })
+      .catch(() => {}); // aborted, declined, or the message never arrived here
+  };
+
   return await new Promise((resolve) => {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
         const { ok } = await otp.verify.post({ code: form.elements.code.value.trim() });
-        if (ok) return resolve(true);
+        if (ok) { abort.abort(); return resolve(true); }
         out.value = await t`That counted for nothing here.`;
       } catch (e) {
         out.value = e?.message || String(e);
