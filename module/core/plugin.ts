@@ -140,12 +140,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("route", async ({ ctx }) => {
         // HTTPS redirect
         const https = app.https;
-        if (https) {
+        if (https && ctx.req.url.protocol !== "https:") {
             const url = ctx.req.url.toURL();
-            if (url.protocol !== "https:") {
-                url.protocol = "https:";
-                throw new Redirect(url.href, 301);
-            }
+            url.protocol = "https:";
+            throw new Redirect(url.href, 301);
         }
 
         // HSTS
