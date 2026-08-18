@@ -57,7 +57,7 @@ sorts by `after` dependencies:
 |---|---|---|
 | `decode` | reduce an exotic input to a plain image/text | `gif-guard`, `pdf-decode`, `svg-decode`, `transcript`, `video-decode`, `audio-decode`, `markdown`, `ocr` |
 | `geometry` | resize / crop | `image-resize` |
-| `encode` | pick format + quality | `image-encode`, then `pngquant` (`after: image-encode`) |
+| `encode` | pick format + quality | `image-encode`, `svg-optimize`, then `pngquant` (`after: image-encode`) |
 
 Each transformer gets a shared `TransformContext` and mutates `currentPath` / `mime` / `meta` as
 it hands off to the next. `handles(ctx)` is the guard (mime, options, tool availability); only
@@ -117,6 +117,8 @@ Heavy lifting shells out to system binaries. Each lives behind a thin wrapper mo
 | `pngquant` | `pngquant` | `available` · `run` |
 | `rsvg` | `rsvg-convert` (librsvg) | `available` · `run` |
 | `inkscape` | `inkscape` | `available` · `run` |
+| `svgo` | `svgo` | `available` · `run` |
+| `scour` | `scour` | `available` · `run` |
 
 ```ts
 import * as ffmpeg from "./ffmpeg.ts";
@@ -135,7 +137,7 @@ served). Missing tools are a capability gap, not an error.
 ### Capability introspection
 
 ```ts
-await FileTransformer.capabilities.avif;   // Promise<boolean> per tool: magick, ffmpeg, avif, pngquant, pandoc, pdftotext, tesseract, rsvg, inkscape
+await FileTransformer.capabilities.avif;   // Promise<boolean> per tool: magick, ffmpeg, avif, pngquant, pandoc, pdftotext, tesseract, rsvg, inkscape, svgo, scour
 FileTransformer.resetCapabilityCache();    // re-probe after installing a binary at runtime
 ```
 

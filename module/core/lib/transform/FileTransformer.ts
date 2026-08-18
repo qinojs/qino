@@ -8,6 +8,8 @@ import * as ffmpeg from './ffmpeg.ts';
 import * as pngquantCli from './pngquant.ts';
 import * as rsvg from './rsvg.ts';
 import * as inkscape from './inkscape.ts';
+import * as svgo from './svgo.ts';
+import * as scour from './scour.ts';
 import * as pandoc from './pandoc.ts';
 import * as pdftotext from './pdftotext.ts';
 import * as tesseract from './tesseract.ts';
@@ -22,6 +24,7 @@ import { markdown } from './transformers/markdown.ts';
 import { ocr } from './transformers/ocr.ts';
 import { imageResize } from './transformers/imageResize.ts';
 import { imageEncode } from './transformers/imageEncode.ts';
+import { svgOptimize } from './transformers/svgOptimize.ts';
 import { pngquant } from './transformers/pngquant.ts';
 
 import type { OcrEngine, Phase, TransformerDef, TransformContext, TransformOptions, TransformResult, TranscriptEngine } from './types.ts';
@@ -30,7 +33,7 @@ const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'encode'];
 
 /** Built-in transformers (array order = registration order within a phase) */
 export const builtinTransformers: TransformerDef[] =
-  [gifGuard, pdfDecode, svgDecode, transcript, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, pngquant];
+  [gifGuard, pdfDecode, svgDecode, transcript, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, svgOptimize, pngquant];
 
 /** Framework-agnostic transform pipeline: per-instance transformers, OCR engines, cache dir and timeout. */
 export class FileTransformer {
@@ -55,7 +58,7 @@ export class FileTransformer {
     return transformer;
   }
 
-  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract' | 'rsvg' | 'inkscape', Promise<boolean>>> = {
+  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract' | 'rsvg' | 'inkscape' | 'svgo' | 'scour', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return magick.available(); },
     get ffmpeg(): Promise<boolean> { return ffmpeg.available(); },
     get avif(): Promise<boolean> { return magick.avifSupported(); },
@@ -65,10 +68,12 @@ export class FileTransformer {
     get tesseract(): Promise<boolean> { return tesseract.available(); },
     get rsvg(): Promise<boolean> { return rsvg.available(); },
     get inkscape(): Promise<boolean> { return inkscape.available(); },
+    get svgo(): Promise<boolean> { return svgo.available(); },
+    get scour(): Promise<boolean> { return scour.available(); },
   };
 
   static resetCapabilityCache(): void {
-    resetProbes();       // ffmpeg, pngquant, pandoc, pdftotext, tesseract, rsvg, inkscape
+    resetProbes();       // ffmpeg, pngquant, pandoc, pdftotext, tesseract, rsvg, inkscape, svgo, scour
     magick.resetCache(); // special-cased (IM6/IM7 command detection)
   }
 

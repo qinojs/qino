@@ -89,7 +89,7 @@ const BINARIES: Binary[] = [
     label: "ImageMagick",
     available: FileTransformer.capabilities.magick,
     install: {
-      debian: "api install imagemagick",
+      debian: "apt install imagemagick",
       alpine: "apk add imagemagick",
       macos:  "brew install imagemagick",
     },
@@ -99,7 +99,7 @@ const BINARIES: Binary[] = [
     label: "FFmpeg",
     available: FileTransformer.capabilities.ffmpeg,
     install: {
-      debian: "api install ffmpeg",
+      debian: "apt install ffmpeg",
       alpine: "apk add ffmpeg",
       macos:  "brew install ffmpeg",
     },
@@ -109,7 +109,7 @@ const BINARIES: Binary[] = [
     label: "pngquant",
     available: FileTransformer.capabilities.pngquant,
     install: {
-      debian: "api install pngquant",
+      debian: "apt install pngquant",
       alpine: "apk add pngquant",
       macos:  "brew install pngquant",
     },
@@ -119,7 +119,7 @@ const BINARIES: Binary[] = [
     label: "Pandoc",
     available: FileTransformer.capabilities.pandoc,
     install: {
-      debian: "api install pandoc",
+      debian: "apt install pandoc",
       alpine: "apk add pandoc",
       macos:  "brew install pandoc",
     },
@@ -129,7 +129,7 @@ const BINARIES: Binary[] = [
     label: "pdftotext (Poppler)",
     available: FileTransformer.capabilities.pdftotext,
     install: {
-      debian: "api install poppler-utils",
+      debian: "apt install poppler-utils",
       alpine: "apk add poppler-utils",
       macos:  "brew install poppler",
     },
@@ -139,7 +139,7 @@ const BINARIES: Binary[] = [
     label: "Tesseract OCR",
     available: FileTransformer.capabilities.tesseract,
     install: {
-      debian: "api install tesseract-ocr tesseract-ocr-deu",
+      debian: "apt install tesseract-ocr tesseract-ocr-deu",
       alpine: "apk add tesseract-ocr tesseract-ocr-data-deu",
       macos:  "brew install tesseract tesseract-lang",
     },
@@ -149,7 +149,7 @@ const BINARIES: Binary[] = [
     label: "librsvg (SVG rasterizer)",
     available: FileTransformer.capabilities.rsvg,
     install: {
-      debian: "api install librsvg2-bin",
+      debian: "apt install librsvg2-bin",
       alpine: "apk add librsvg",
       macos:  "brew install librsvg",
     },
@@ -160,7 +160,7 @@ const BINARIES: Binary[] = [
     label: "Inkscape (SVG fallback)",
     available: FileTransformer.capabilities.inkscape,
     install: {
-      debian: "api install inkscape",
+      debian: "apt install inkscape",
       alpine: "apk add inkscape",
       macos:  "brew install --cask inkscape",
     },
@@ -168,11 +168,34 @@ const BINARIES: Binary[] = [
     notes: "Optional. Only used when librsvg is missing; wider SVG 2 coverage, but a large install.",
   },
   {
+    id: "svgo",
+    label: "svgo (SVG minifier)",
+    available: FileTransformer.capabilities.svgo,
+    install: {
+      debian: "npm install -g svgo",
+      alpine: "npm install -g svgo",
+      macos:  "npm install -g svgo",
+    },
+    noAutoInstall: true,
+    notes: "Needs Node. Minifies SVG when `q` is requested; `q` maps to coordinate precision.",
+  },
+  {
+    id: "scour",
+    label: "scour (SVG minifier)",
+    available: FileTransformer.capabilities.scour,
+    install: {
+      debian: "apt install scour",
+      alpine: "apk add py3-scour",
+      macos:  "brew install scour",
+    },
+    notes: "Optional. Only used when svgo is missing; no Node runtime required.",
+  },
+  {
     id: "libheif",
     label: "AVIF (libheif)",
     available: FileTransformer.capabilities.avif,
     install: {
-      debian: "api install imagemagick-6.q16 libheif-dev",
+      debian: "apt install imagemagick-6.q16 libheif-dev",
       macos:  "brew install imagemagick libheif",
     },
     noAutoInstall: true,
@@ -184,7 +207,7 @@ async function runInstall(platform: Platform, bin: Binary): Promise<string> {
   const cmd = bin.install[platform];
   if (!cmd) return `No install command for platform "${platform}"`;
   const [prog, ...args] = cmd.split(" ");
-  if (prog === "api") args.unshift("-y");
+  if (prog === "apt") args.unshift("-y");
   try {
     const { stdout, stderr, code } = await new Deno.Command(prog, {
       args,
@@ -214,6 +237,8 @@ async function resolveVersion(bin: Binary): Promise<string> {
     tesseract:   [{ cmd: "tesseract", args: ["--version"] }],
     librsvg:     [{ cmd: "rsvg-convert", args: ["--version"] }],
     inkscape:    [{ cmd: "inkscape", args: ["--version"] }],
+    svgo:        [{ cmd: "svgo", args: ["--version"] }],
+    scour:       [{ cmd: "scour", args: ["--version"] }],
     libheif:     [
       { cmd: "magick",   args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
       { cmd: "convert",  args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },

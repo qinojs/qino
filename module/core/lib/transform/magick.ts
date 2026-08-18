@@ -28,7 +28,7 @@ async function checkMagick(): Promise<void> {
     _identifyArgs = [];
   } else {
     _available = false;
-    throw new Error('ImageMagick not found. Solution: sudo api install imagemagick');
+    throw new Error('ImageMagick not found. Solution: sudo apt install imagemagick');
   }
 
   _available = true;

@@ -9,7 +9,7 @@ export const pngquant: TransformerDef = {
   phase: 'encode',
   after: 'image-encode',
   props: ['q'],
-  handles: (ctx) => ctx.mime === 'image/png',
+  handles: (ctx) => ctx.mime === 'image/png' && (!!ctx.meta.geometryApplied || ctx.options.q !== undefined || ctx.options.fmt !== undefined),
   transform: async (ctx) => {
     if (!await pngquantCli.available()) return;
     const q = Math.min(Math.max(ctx.options.q ?? 77, 1), 100);
