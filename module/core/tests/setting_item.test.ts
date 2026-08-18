@@ -25,7 +25,7 @@ const rowCount = async (db: Db) => Number(await db.one`SELECT count(*) FROM qg_s
 const readBack = (db: Db, path: string[]) => itemReadDeep(createSettingItem(db).sub(path));
 
 Deno.test("SettingItem: object-set replaces — keys absent from the new object are removed", async () => {
-  const db = await setup();
+  await using db = await setup();
   const root = createSettingItem(db);
 
   await root.sub(["ui"]).set({ a: "1", b: "2", c: "3" });
@@ -36,11 +36,10 @@ Deno.test("SettingItem: object-set replaces — keys absent from the new object 
   assertEquals(await readBack(db, ["ui"]), { a: "9" });
   assertEquals(await rowCount(db), 2); // ui + a
 
-  await db.close();
 });
 
 Deno.test("SettingItem: object-set replace cascades into nested objects", async () => {
-  const db = await setup();
+  await using db = await setup();
   const root = createSettingItem(db);
 
   await root.sub(["cfg"]).set({ menu: { x: "1", y: "2" }, keep: "k" });
@@ -49,22 +48,20 @@ Deno.test("SettingItem: object-set replace cascades into nested objects", async 
   await root.sub(["cfg"]).set({ menu: { x: "9" }, keep: "k" }); // nested y gone
   assertEquals(await readBack(db, ["cfg"]), { menu: { x: "9" }, keep: "k" });
 
-  await db.close();
 });
 
 Deno.test("SettingItem: leaf write does not touch sibling keys", async () => {
-  const db = await setup();
+  await using db = await setup();
   const root = createSettingItem(db);
 
   await root.sub(["ui"]).set({ a: "1", b: "2" });
   await root.sub(["ui", "a"]).set("9"); // primitive leaf update, b untouched
   assertEquals(await readBack(db, ["ui"]), { a: "9", b: "2" });
 
-  await db.close();
 });
 
 Deno.test("SettingItem: two leaf writes under one branch do not duplicate the branch", async () => {
-  const db = await setup();
+  await using db = await setup();
   const root = createSettingItem(db);
 
   // Autovivifying a branch used to return its null value, which turned the branch into a
@@ -76,5 +73,4 @@ Deno.test("SettingItem: two leaf writes under one branch do not duplicate the br
   assertEquals(await readBack(db, ["shop"]), { vat: { mode: "excluded", rate: "20" } });
   assertEquals(Number(await db.one`SELECT count(*) FROM qg_setting WHERE "offset" = ${"vat"}`), 1);
 
-  await db.close();
 });

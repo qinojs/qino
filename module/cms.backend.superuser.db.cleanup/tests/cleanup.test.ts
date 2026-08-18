@@ -50,7 +50,7 @@ Deno.test("cms.backend.superuser.db.cleanup: metadata is wired", () => {
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: finds and deletes orphan relations", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   const parent = await db.table("parent").insert({ name: "kept" });
   await db.table("child").insert({ parent_id: parent });
   await db.table("child").insert({ parent_id: 999 });
@@ -66,17 +66,15 @@ Deno.test("cms.backend.superuser.db.cleanup: finds and deletes orphan relations"
   assertEquals(await cleanOrphans(db, "optional", "parent_id"), { cleaned: 1, remaining: 0, action: "setnull" });
   assertEquals(await db.one`SELECT COUNT(*) FROM child`, 2);
   assertEquals((await db.table("optional").selectByID(optional!))?.parent_id, null);
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: only removes structures outside the schema", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   assertEquals(schemaExtras(db).map(({ table, field }) => [table, field]), [["child", "stale"], ["extra", undefined]]);
 
   await dropExtraField(db, "child", "stale");
   await dropExtraTable(db, "extra");
   assertEquals(schemaExtras(db), []);
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: reports columns wider than the schema", async () => {
@@ -97,15 +95,14 @@ Deno.test("cms.backend.superuser.db.cleanup: reports columns wider than the sche
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: exposes supported SQLite maintenance", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   const status = await tableStatus(db, "child");
   assertEquals(maintenanceActions(db, status), ["check", "analyze", "reindex"]);
   assertEquals(await maintain(db, "check", "child", status), "ok");
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: renders one table-centric overview", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   await db.table("child").insert({ parent_id: 999 });
   await db.table("strict").insert({ parent_id: 999 });
   const out = String(await cms.node.render({ app: { db } } as never));
@@ -124,11 +121,10 @@ Deno.test("cms.backend.superuser.db.cleanup: renders one table-centric overview"
   assertEquals(out.includes("u2-table -Sticky"), true);
   assertEquals(out.includes("data-sort-handler"), true);
   assertEquals(out.includes(">Overhead"), true);
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: manages only verified index issues", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   assertEquals((await indexIssues(db, "child")).some((issue) => issue.kind === "missing" && issue.field === "parent_id"), true);
   await createMissingIndex(db, "child", "parent_id");
   assertEquals((await indexIssues(db, "child")).some((issue) => issue.kind === "missing" && issue.field === "parent_id"), false);
@@ -138,11 +134,10 @@ Deno.test("cms.backend.superuser.db.cleanup: manages only verified index issues"
   assertEquals(duplicate?.actionable, true);
   await dropRedundantIndex(db, "child", duplicate!.index!);
   assertEquals((await indexIssues(db, "child")).some((issue) => issue.kind === "duplicate" || issue.kind === "redundant"), false);
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: validates portable schema rules and empty extra fields", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   assertEquals(await isEmptyField(db, "child", "stale"), true);
   await db.exec`INSERT INTO child (parent_id, stale) VALUES (${null}, ${"legacy"})`;
   await db.exec`INSERT INTO parent (name) VALUES (${"wrong-long"}), (${null})`;
@@ -152,21 +147,19 @@ Deno.test("cms.backend.superuser.db.cleanup: validates portable schema rules and
     { field: "name", rule: "enum", count: 1 },
     { field: "name", rule: "maxLength 4", count: 1 },
   ]);
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: repairs a verified auto-id sequence", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   await db.table("parent").insert({ name: "kept" });
   await db.exec`UPDATE sqlite_sequence SET seq = ${0} WHERE name = ${"parent"}`;
   assertEquals(await sequenceIssue(db, "parent"), { field: "id", current: 0, max: 1 });
   await syncSequence(db, "parent");
   assertEquals(await sequenceIssue(db, "parent"), null);
-  await db.close();
 });
 
 Deno.test("cms.backend.superuser.db.cleanup: API returns targeted row updates", async () => {
-  const db = await testDb();
+  await using db = await testDb();
   const node = { app: { db } } as never;
 
   const maintenance = await cms.node.api(node, { action: "maintenance", maintenance: "check", table: "child" }) as {
@@ -179,5 +172,4 @@ Deno.test("cms.backend.superuser.db.cleanup: API returns targeted row updates", 
   const drop = await cms.node.api(node, { action: "drop-table", table: "extra" });
   assertEquals(drop, { message: "Table extra deleted", remove: "extra" });
   assertEquals(db.tables.extra, undefined);
-  await db.close();
 });

@@ -193,4 +193,5 @@ export class Db extends Emitter<DbEvents> {
   }
 
   close(): Promise<void> { return this.#driver.close(); }
+  [Symbol.asyncDispose](): Promise<void> { return this.close(); }
 }

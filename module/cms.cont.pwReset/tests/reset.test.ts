@@ -18,6 +18,7 @@ async function app() {
   await db.table("sess").insert({ usr_id: 1 });
   return {
     db,
+    [Symbol.asyncDispose]: () => db.close(),
     t: fakeT,
     modules: { linked: () => [{ name: "pwReset", plugin }] },
     // deno-lint-ignore no-explicit-any
@@ -25,7 +26,7 @@ async function app() {
 }
 
 Deno.test("the link sets the password once and logs every session out", async () => {
-  const a = await app();
+  await using a = await app();
   const node = { app: a } as unknown as Node;
   const handle = await issue(a, PURPOSE, { usrId: 1 });
 
@@ -54,5 +55,4 @@ Deno.test("the link sets the password once and logs every session out", async ()
     message: "This link is no longer valid. Please request a new one.",
   });
   assertEquals(await pwVerify("a good password", String(await a.db.one`SELECT pw FROM usr WHERE id = ${1}`)), true);
-  await a.db.close();
 });

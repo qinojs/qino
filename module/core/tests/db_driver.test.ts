@@ -119,3 +119,11 @@ Deno.test("a write escaping its transaction does not run on the finished one", a
   assertEquals(rows.map((r) => r.v), ["inside", "late"]);
   await driver.close();
 });
+
+Deno.test("close() is idempotent, so `await using` can close what a test already closed", async () => {
+  const db = new Db("sqlite::memory:");
+  await db.query`SELECT 1`;
+  await db.close();
+  await db.close();                  // the sqlite handle throws ERR_INVALID_STATE without the guard
+  await db[Symbol.asyncDispose]();
+});

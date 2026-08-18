@@ -15,49 +15,41 @@ async function shop() {
 }
 
 Deno.test("backend.shp3: the shop pages hang under one overview", async () => {
-  const app = await shop();
-  try {
-    const c = cms(app);
-    const overview = await c.nodeByModule("cms.backend.shp3");
-    assertEquals(!!overview, true);
-    const page = await (await overview!.page()).parent();
-    assertEquals(await (await c.nodeByModule("cms.backend"))!.page().then((p) => p.id), page!.id);
+  await using app = await shop();
+  const c = cms(app);
+  const overview = await c.nodeByModule("cms.backend.shp3");
+  assertEquals(!!overview, true);
+  const page = await (await overview!.page()).parent();
+  assertEquals(await (await c.nodeByModule("cms.backend"))!.page().then((p) => p.id), page!.id);
 
-    for (const m of BACKEND.slice(1)) {
-      const node = await c.nodeByModule(m);
-      const parent = await (await node!.page()).parent();
-      assertEquals(parent!.id, (await overview!.page()).id, `${m} sits under the overview`);
-    }
-  } finally {
-    await app.db.close();
+  for (const m of BACKEND.slice(1)) {
+    const node = await c.nodeByModule(m);
+    const parent = await (await node!.page()).parent();
+    assertEquals(parent!.id, (await overview!.page()).id, `${m} sits under the overview`);
   }
 });
 
 Deno.test("backend.shp3: every shop page reports its numbers to the overview", async () => {
-  const app = await shop();
-  try {
-    await app.db.table("page").insert({ id: 90, name: "Cup", access: 1 });
-    await app.db.table("shp3_product").insert({ id: 90, price: 12 });
-    await app.db.table("shp3_product").insert({ id: 91, price: 0 });
-    await app.db.table("shp3_order").insert({ time_ordered: 1000, cost: 12, paid: 0 });
-    await app.db.table("shp3_order").insert({ time_ordered: 0 });
-    await app.settings.shp3.location.country("CH");
-    await app.db.table("country").update({ id: "CH", shp3_enabled: true });
+  await using app = await shop();
+  await app.db.table("page").insert({ id: 90, name: "Cup", access: 1 });
+  await app.db.table("shp3_product").insert({ id: 90, price: 12 });
+  await app.db.table("shp3_product").insert({ id: 91, price: 0 });
+  await app.db.table("shp3_order").insert({ time_ordered: 1000, cost: 12, paid: 0 });
+  await app.db.table("shp3_order").insert({ time_ordered: 0 });
+  await app.settings.shp3.location.country("CH");
+  await app.db.table("country").update({ id: "CH", shp3_enabled: true });
 
-    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
-    await requestStorage.run(ctx, async () => {
-      const widget = (name: string) => app.modules.get(name)!.plugin.backendDashboardWidget(app);
-      const orders = String(await widget("cms.backend.shp3.orders1"));
-      assertStringIncludes(orders, "<td>1"); // one placed, one open, one unpaid
-      assertStringIncludes(orders, "shp3_orderId="); // and the newest ones, each linked
-      assertEquals(orders.includes("[object Promise]"), false);
-      const products = String(await widget("cms.backend.shp3.products"));
-      assertStringIncludes(products, "<td>2");
-      const settings = String(await widget("cms.backend.shp3.settings"));
-      assertStringIncludes(settings, "Switzerland"); // the shop's country, named by Intl
-      assertStringIncludes(settings, "<td>1 ");
-    });
-  } finally {
-    await app.db.close();
-  }
+  const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  await requestStorage.run(ctx, async () => {
+    const widget = (name: string) => app.modules.get(name)!.plugin.backendDashboardWidget(app);
+    const orders = String(await widget("cms.backend.shp3.orders1"));
+    assertStringIncludes(orders, "<td>1"); // one placed, one open, one unpaid
+    assertStringIncludes(orders, "shp3_orderId="); // and the newest ones, each linked
+    assertEquals(orders.includes("[object Promise]"), false);
+    const products = String(await widget("cms.backend.shp3.products"));
+    assertStringIncludes(products, "<td>2");
+    const settings = String(await widget("cms.backend.shp3.settings"));
+    assertStringIncludes(settings, "Switzerland"); // the shop's country, named by Intl
+    assertStringIncludes(settings, "<td>1 ");
+  });
 });

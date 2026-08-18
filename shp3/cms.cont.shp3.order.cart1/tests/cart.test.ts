@@ -21,34 +21,26 @@ async function shop() {
 const node = (app: App) => ({ app, settings: { editable: () => Promise.resolve(true) } }) as unknown as Node;
 
 Deno.test("cart1: what the shop adds itself is a line of its own", async () => {
-  const app = await shop();
-  try {
-    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
-    await requestStorage.run(ctx, async () => {
-      // a shipping rule that costs something — it is in the total, so it has to be visible
-      shp3(app).on("shipping-cost", (e) => { e.cost = 7; });
-      const order = (await cart(ctx))!;
-      await order.itemAdd(10, 1);
+  await using app = await shop();
+  const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  await requestStorage.run(ctx, async () => {
+    // a shipping rule that costs something — it is in the total, so it has to be visible
+    shp3(app).on("shipping-cost", (e) => { e.cost = 7; });
+    const order = (await cart(ctx))!;
+    await order.itemAdd(10, 1);
 
-      const html = String(await panel.node.render(node(app), { ctx } as never));
-      assertStringIncludes(html, "-generated");
-      assertStringIncludes(html, "7.00"); // the shipping line, not only inside the total
-      assertEquals(html.includes("[object Promise]"), false);
-    });
-  } finally {
-    await app.db.close();
-  }
+    const html = String(await panel.node.render(node(app), { ctx } as never));
+    assertStringIncludes(html, "-generated");
+    assertStringIncludes(html, "7.00"); // the shipping line, not only inside the total
+    assertEquals(html.includes("[object Promise]"), false);
+  });
 });
 
 Deno.test("cart1: an empty cart says so and shows no table", async () => {
-  const app = await shop();
-  try {
-    const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
-    await requestStorage.run(ctx, async () => {
-      const html = String(await panel.node.render(node(app), { ctx } as never));
-      assertEquals(html.includes("<table"), false);
-    });
-  } finally {
-    await app.db.close();
-  }
+  await using app = await shop();
+  const ctx = await Ctx.create(app, new Request("http://shop.test/"), { appUrl: "/" });
+  await requestStorage.run(ctx, async () => {
+    const html = String(await panel.node.render(node(app), { ctx } as never));
+    assertEquals(html.includes("<table"), false);
+  });
 });

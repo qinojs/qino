@@ -25,7 +25,10 @@ export abstract class DbDriver {
   abstract columns(table: string): Promise<Row[]>;
   /** Migrate the database to match the given item JSON-schema (dialect-specific DDL). */
   abstract migrate(schema: unknown, opts?: MigrateOptions): Promise<void>;
-  abstract close(): Promise<void>;
+  /** Idempotent — the underlying pools throw when ended twice. */
+  close(): Promise<void> { return this.#closed ? Promise.resolve() : (this.#closed = true, this.closeDriver()); }
+  protected abstract closeDriver(): Promise<void>;
+  #closed = false;
   /** Engine raises the counter itself when a row with an explicit higher id is inserted. */
   insertSyncsAutoIncrement = true;
   /** Move the id generator past `value` (never below). Only needed for ids the engine did not see. */
@@ -113,7 +116,7 @@ class MysqlDriver extends DbDriver {
       await tmp.end();
     }
   }
-  close() { return this.#pool.end(); }
+  protected override closeDriver() { return this.#pool.end(); }
 }
 
 class SqliteDriver extends DbDriver {
@@ -184,7 +187,7 @@ class SqliteDriver extends DbDriver {
   async migrate(schema: unknown, opts: MigrateOptions = {}) {
     await schemaToDbSqlite(schema, (sql: string) => this.query(sql), opts);
   }
-  close() { this.#db.close(); return Promise.resolve(); }
+  protected override closeDriver() { this.#db.close(); return Promise.resolve(); }
 }
 
 class PostgresDriver extends DbDriver {
@@ -292,5 +295,5 @@ class PostgresDriver extends DbDriver {
       await pool.end();
     }
   }
-  close() { return this.#pool.end(); }
+  protected override closeDriver() { return this.#pool.end(); }
 }

@@ -116,6 +116,9 @@ export class App extends Emitter<AppEvents> {
         await this.modules.init();       // migrate schema (DDL) + introspect tables + module init hooks
     }
 
+    /** `await using app = new App(...)` — closes the database. Files under `dir` are the caller's. */
+    [Symbol.asyncDispose](): Promise<void> { return this.db.close(); }
+
     /** Web-standard entry point — `Deno.serve({}, app.fetch)`. */
     get fetch(): (req: Request, info?: { remoteAddr?: { hostname?: string } }) => Promise<Response> {
         return (req, info) => this.handle(req, this.appUrl, info?.remoteAddr?.hostname);
