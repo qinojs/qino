@@ -1,0 +1,43 @@
+{
+  "properties": {
+    "shorturl": {
+      "additionalProperties": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 8,
+            "x-index": "primary",
+            "description": "Keyed fingerprint of the target plus one signing character"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Where it goes — absolute, resolved when the link was made"
+          },
+          "hits": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "last": {
+            "type": "integer",
+            "description": "When it was last followed"
+          },
+          "expires": {
+            "type": "integer",
+            "x-index": true,
+            "description": "Null means it keeps working — a printed link outlives every campaign"
+          },
+          "log_id": {
+            "type": "integer",
+            "x-index": true,
+            "x-qg-parent": "log",
+            "x-qg-on-parent-delete": "setnull",
+            "description": "The request that made it"
+          }
+        },
+        "required": ["code", "url", "hits"]
+      }
+    }
+  }
+}

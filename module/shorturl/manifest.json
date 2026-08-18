@@ -1,0 +1,17 @@
+{
+  "name": "shorturl",
+  "description": "Short links: a code stands for a URL, follows it, and tells listeners it was followed.",
+  "dependencies": [
+    "core",
+    "cron"
+  ],
+  "files": [
+    "README.md",
+    "dbschema.json",
+    "lib/code.ts",
+    "manifest.json",
+    "mod.ts",
+    "plugin.ts",
+    "pub/module.svg"
+  ]
+}
