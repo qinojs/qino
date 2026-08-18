@@ -116,7 +116,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 
   app.on("html-ready", ({ ctx }) => {
     if (!ctx.res.hasHtml) return;
-    for (const o of [...origins(ctx.res.csp["script-src"]), ...origins(ctx.res.csp["style-src"])]) allowed.add(o);
+    for (const src of [ctx.res.csp["script-src"], ctx.res.csp["style-src"]]) for (const o of origins(src)) allowed.add(o);
     rewriteHtml(ctx.res.html, ctx.req.appUrl, ctx.res.csp);
   }, { signal });
 }
@@ -126,17 +126,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 // referenced relatively inside a proxied CSS cascade through the proxy on their own.
 export function rewriteHtml(html: ResHtml, appUrl: string, csp: ResCsp): void {
   const rewritten = new Set<string>();
-  const rewriter = (src: CspSources) => {
-    const allow = origins(src);
-    return (url: string): string => {
-      if (!/^https?:\/\//.test(url) || /[?#]/.test(url)) return url;
-      const hit = allow.find(p => url.startsWith(p));
-      if (!hit) return url;
-      rewritten.add(hit);
-      return appUrl + PROXY_PREFIX + url.replace(/^https?:\/\//, "");
-    };
+  const rewriter = (allow: string[]) => (url: string): string => {
+    if (!/^https?:\/\//.test(url) || /[?#]/.test(url)) return url;
+    const hit = allow.find(p => url.startsWith(p));
+    if (!hit) return url;
+    rewritten.add(hit);
+    return appUrl + PROXY_PREFIX + url.replace(/^https?:\/\//, "");
   };
-  const rwScript = rewriter(csp["script-src"]), rwStyle = rewriter(csp["style-src"]);
+  const rwScript = rewriter(origins(csp["script-src"])), rwStyle = rewriter(origins(csp["style-src"]));
   for (const [name, url] of html.importMap) html.importMap.set(name, rwScript(url));
   html.legacyScripts = mapSet(html.legacyScripts, rwScript);
   html.scripts       = mapSet(html.scripts, rwScript);
