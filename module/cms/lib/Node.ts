@@ -338,8 +338,10 @@ export class Node {
         const ctx = getCtx();
         const textLang = lang == null ? await dbText.orFallback(ctx.lang) : dbText.lang(lang);
         let text = await textLang.get();
-        if (!this.edit) text = await resolveText(this.app, text); // edit mode keeps cmspid:// etc. unresolved
-        text = sanitizeHtml(text); // last step: nothing may touch the string after sanitizing
+        if (text !== "") { // an empty text has nothing to resolve and nothing to sanitize
+            if (!this.edit) text = await resolveText(this.app, text); // edit mode keeps cmspid:// etc. unresolved
+            text = sanitizeHtml(text); // last step: nothing may touch the string after sanitizing
+        }
         return {
             lang: textLang.lang,
             id: textLang.text.id,

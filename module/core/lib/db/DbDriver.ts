@@ -148,12 +148,23 @@ class SqliteDriver extends DbDriver {
     this.#chain = run.then(() => {}, () => {});
     return run;
   }
+  // Compiling the SQL is a measurable part of a request; the texts repeat because values are bound,
+  // not inlined. SQLite recompiles a cached statement itself when the schema changes under it.
+  #prepared = new Map<string, ReturnType<DatabaseSync["prepare"]>>();
+  #prepare(sql: string) {
+    let stmt = this.#prepared.get(sql);
+    if (!stmt) {
+      if (this.#prepared.size > 500) this.#prepared.clear(); // bounded by code paths, but migrations add texts
+      this.#prepared.set(sql, stmt = this.#db.prepare(sql));
+    }
+    return stmt;
+  }
   query(sql: string, params: unknown[] = []) {
-    return this.#serial(() => this.#db.prepare(sql).all(...this.#bind(params) as any[]) as Row[]);
+    return this.#serial(() => this.#prepare(sql).all(...this.#bind(params) as any[]) as Row[]);
   }
   exec(sql: string, params: unknown[] = [], _returning?: string) {
     return this.#serial(() => {
-      const r = this.#db.prepare(sql).run(...this.#bind(params) as any[]);
+      const r = this.#prepare(sql).run(...this.#bind(params) as any[]);
       return { insertId: Number(r.lastInsertRowid), affectedRows: Number(r.changes) };
     });
   }

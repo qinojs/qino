@@ -1,5 +1,5 @@
 import { Output, sha256b64url } from "@qino/qino";
-import type { App, Ctx } from "@qino/qino";
+import type { App, Ctx, Module } from "@qino/qino";
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
   let cache: { key: string; script: string; etag: string } | undefined; // per app — a module global would mix tenants
@@ -42,11 +42,11 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 }
 
 /** Linked modules shipping a `pub/sw.js` — the file in the manifest is the whole declaration. */
-const partNames = (app: App) =>
-  app.modules.linked().filter((mod) => mod.manifest.files?.includes("pub/sw.js")).map((mod) => mod.name);
+const hasWorkerPart = (mod: Module) => mod.manifest.files?.includes("pub/sw.js");
+const partNames = (app: App) => app.modules.linked().filter(hasWorkerPart).map((mod) => mod.name);
 
 // runs on every rendered page
 function register(ctx: Ctx): void {
-  if (!partNames(ctx.app).length) return;
+  if (!ctx.app.modules.linked().some(hasWorkerPart)) return;
   ctx.res.html.scripts.add(ctx.req.moduleUrl + "serviceworker/pub/register.js");
 }

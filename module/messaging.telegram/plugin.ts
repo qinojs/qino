@@ -25,10 +25,7 @@ export const settingsSchema = {
 };
 
 export function init(app: App, { signal }: { signal: AbortSignal }): void {
-  app.on("route", async ({ ctx }) => {
-    if (ctx.req.appPath !== "telegram/webhook") return;
-    await webhook(ctx);
-  }, { signal });
+  app.on("route", ({ ctx }) => ctx.req.appPath === "telegram/webhook" ? webhook(ctx) : undefined, { signal });
 }
 
 export const api: ApiTree = {
