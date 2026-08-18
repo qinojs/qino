@@ -54,21 +54,19 @@ export async function readDataUrl(uri: string, opt: { maxSize: number }): Promis
 async function saveStream(stream: ReadableStream<Uint8Array>, opt: { maxSize?: number; prefix?: string; dir?: string } = {}) {
   const { prefix, dir } = opt;
   const path = await Deno.makeTempFile({ prefix, dir });
-  const file = await Deno.open(path, { write: true });
   const hash = nodeCrypto.createHash("md5");
   let size = 0;
-  let ok = false;
   try {
+    using file = await Deno.open(path, { write: true });
     for await (const chunk of stream) {
       size += chunk.length;
       if (opt.maxSize && size > opt.maxSize) throw new Error("Stream too large");
       hash.update(chunk);
       await writeAll(file, chunk);
     }
-    ok = true;
-  } finally {
-    file.close();
-    if (!ok) await Deno.remove(path).catch(() => {});
+  } catch (e) {
+    await Deno.remove(path).catch(() => {}); // the file is already closed here — `using` disposes on block exit
+    throw e;
   }
   return { path, size, md5: hash.digest("hex") };
 }

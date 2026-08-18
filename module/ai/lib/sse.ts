@@ -25,7 +25,8 @@ export async function readSse(res: Response, onData: (data: Record<string, unkno
           const m = line.match(/^data:\s?(.*)$/);
           if (!m) continue;
           if (m[1] === "[DONE]") return;
-          try { onData(JSON.parse(m[1])); } catch { /* keepalive / non-json */ }
+          let data; try { data = JSON.parse(m[1]); } catch { continue; } // keepalive / non-json
+          onData(data);
         }
       }
       if (done) return;
