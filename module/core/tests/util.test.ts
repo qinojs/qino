@@ -97,7 +97,7 @@ Deno.test("util: ctx.urlToLocalPath maps module and data public files", async ()
     url: "http://h/app/",
     appUrl: "/app/",
     app: {
-      appPATH: "/app/",
+      dir: "/app/",
       modules: {
         get(name: string) {
           return name === "cms.foo" ? { dir: "/sys/cms.foo/" } : undefined;
@@ -121,7 +121,7 @@ Deno.test("util: ctx.urlToLocalPath maps module and data public files", async ()
 
 Deno.test("util: app.assertAllowedPath accepts app/module roots and rejects siblings", () => {
   const app = Object.assign(Object.create(App.prototype), {
-    appPATH: "/var/www/workplace/qinojs/demo/",
+    dir: "/var/www/workplace/qinojs/demo/",
     modules: {
       all() {
         return { "cms.foo": { dir: "/var/www/workplace/qinojs/qino/module/cms.foo/" } };

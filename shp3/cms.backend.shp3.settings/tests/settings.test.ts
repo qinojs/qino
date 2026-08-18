@@ -8,7 +8,7 @@ import { cms as panel } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");
   await app.init();

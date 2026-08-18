@@ -5,7 +5,7 @@ import { currency, updateRates } from "../mod.ts";
 import { cron } from "../plugin.ts";
 
 Deno.test("locale.currency: a row per currency, rates on top", async () => {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   try {
@@ -53,7 +53,7 @@ function serve(...answers: { match?: string; body: string; status?: number }[]) 
 }
 
 Deno.test("locale.currency: rates arrive as units per 1 USD", async () => {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   const source = serve({ body: ECB_XML });
@@ -76,7 +76,7 @@ Deno.test("locale.currency: rates arrive as units per 1 USD", async () => {
 });
 
 Deno.test("locale.currency: a source that cannot answer says so", async () => {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   try {
@@ -97,7 +97,7 @@ Deno.test("locale.currency: a source that cannot answer says so", async () => {
 });
 
 Deno.test("locale.currency: the job asks how old the rates may get", async () => {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   const set = app.settings["locale.currency"];
@@ -127,7 +127,7 @@ Deno.test("locale.currency: the job asks how old the rates may get", async () =>
 });
 
 Deno.test("locale.currency: a source that is down hands over to the next", async () => {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cron").add("locale.currency");
   await app.init();
   // the ECB is down, the JSON source answers — USD-based, so the rates land as they are

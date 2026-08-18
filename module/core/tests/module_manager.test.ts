@@ -28,34 +28,34 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     const root = await Deno.makeTempDir();
-    const appPATH = root + "/";
-    const localModDir = appPATH + "m/";
+    const dir = root + "/";
+    const localModDir = dir + "m/";
     await Deno.mkdir(localModDir + "local.foo/", { recursive: true });
-    await Deno.mkdir(appPATH + "private/private.foo/", { recursive: true });
-    await Deno.mkdir(appPATH + "private/private.js/", { recursive: true });
-    await Deno.mkdir(appPATH + "remote-ish/", { recursive: true });
+    await Deno.mkdir(dir + "private/private.foo/", { recursive: true });
+    await Deno.mkdir(dir + "private/private.js/", { recursive: true });
+    await Deno.mkdir(dir + "remote-ish/", { recursive: true });
 
     await Deno.writeTextFile(localModDir + "local.foo/plugin.ts", `
     export const value = "local";
   `);
-    await Deno.writeTextFile(appPATH + "private/private.foo/plugin.ts", `
+    await Deno.writeTextFile(dir + "private/private.foo/plugin.ts", `
     export const value = "private";
     export async function install({ app }) {
       app.installed.push("private.foo");
     }
   `);
-    await Deno.writeTextFile(appPATH + "private/private.foo/manifest.json", `{ "name": "private.foo", "dependencies": ["local.foo"] }`);
-    await Deno.writeTextFile(appPATH + "remote-ish/plugin.ts", `
+    await Deno.writeTextFile(dir + "private/private.foo/manifest.json", `{ "name": "private.foo", "dependencies": ["local.foo"] }`);
+    await Deno.writeTextFile(dir + "remote-ish/plugin.ts", `
     export const value = "file-url";
   `);
-    await Deno.writeTextFile(appPATH + "remote-ish/manifest.json", `{ "name": "remote-ish" }`);
-    await Deno.writeTextFile(appPATH + "private/private.js/plugin.js", `
+    await Deno.writeTextFile(dir + "remote-ish/manifest.json", `{ "name": "remote-ish" }`);
+    await Deno.writeTextFile(dir + "private/private.js/plugin.js", `
     export const value = "js";
   `);
-    await Deno.writeTextFile(appPATH + "private/private.js/manifest.json", `{ "name": "private.js" }`);
+    await Deno.writeTextFile(dir + "private/private.js/manifest.json", `{ "name": "private.js" }`);
 
     const app = {
-      appPATH,
+      dir,
       db: fakeDb(),
       installed: [],
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
@@ -72,20 +72,20 @@ Deno.test({
       "Use app.modules.add",
     );
 
-    assertEquals(local.data,  appPATH + "data/local.foo/");
-    assertEquals(local.cache, appPATH + "cache/local.foo/");
-    assertEquals(local.tmp,   appPATH + "tmp/local.foo/");
+    assertEquals(local.data,  dir + "data/local.foo/");
+    assertEquals(local.cache, dir + "cache/local.foo/");
+    assertEquals(local.tmp,   dir + "tmp/local.foo/");
 
-    const privateModule = await modules.import(toFileUrl(appPATH + "private/private.foo/plugin.ts").href);
+    const privateModule = await modules.import(toFileUrl(dir + "private/private.foo/plugin.ts").href);
     assertEquals(privateModule.name, "private.foo");
     assertEquals(privateModule.plugin.value, "private");
     assert(modules.get("local.foo"));
 
-    const jsModule = await modules.import(toFileUrl(appPATH + "private/private.js/plugin.js").href);
+    const jsModule = await modules.import(toFileUrl(dir + "private/private.js/plugin.js").href);
     assertEquals(jsModule.name, "private.js");
     assertEquals(jsModule.plugin.value, "js");
 
-    const fileUrlModule = await modules.import(toFileUrl(appPATH + "remote-ish/plugin.ts").href);
+    const fileUrlModule = await modules.import(toFileUrl(dir + "remote-ish/plugin.ts").href);
     assertEquals(fileUrlModule.name, "remote-ish");
     assertEquals(fileUrlModule.plugin.value, "file-url");
 
@@ -115,7 +115,7 @@ Deno.test({
 
     const bus = new Emitter<{ ping: { count: number } }>();
     const app = {
-      appPATH: root + "/",
+      dir: root + "/",
       db: fakeDb(),
       apiTree: {} as Record<string, unknown>,
       settings: { [$item]: { setSchema() {}, addEventListener() {} } },
@@ -188,7 +188,7 @@ Deno.test("Store selects modules by directory name", async () => {
 
     const createApp = () => {
       const app: any = {
-        appPATH: root + "/",
+        dir: root + "/",
         loaded: [],
         apiTree: {},
         db: fakeDb(),

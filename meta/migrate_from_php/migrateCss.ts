@@ -19,7 +19,7 @@ export async function migrateCss(app: App): Promise<void> {
     .sort((a, b) => b[0].length - a[0].length);
 
   let files = 0, hits = 0;
-  for await (const path of cssFiles(app.appPATH + "data/")) {
+  for await (const path of cssFiles(app.dir + "data/")) {
     const before = await Deno.readTextFile(path);
     let after = before;
     for (const [legacy, current] of pairs) {
@@ -28,7 +28,7 @@ export async function migrateCss(app: App): Promise<void> {
     }
     after = after.replaceAll(/\.-pid(\d+)(?![\w-])/g, '[qcms-id="$1"]');
     after = after.replaceAll(/\/qg\/([A-Za-z0-9._-]+)\//g, (_match, module) =>
-      relativeDir(path, `${app.appPATH}data/${module}/`)
+      relativeDir(path, `${app.dir}data/${module}/`)
     );
     if (after === before) continue;
     hits += before.match(/\.-m-|\.-pid\d+(?![\w-])|\/qg\/[A-Za-z0-9._-]+\//g)?.length ?? 0;

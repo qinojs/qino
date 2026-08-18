@@ -10,7 +10,7 @@ import type { App } from "@qino/qino";
  * `${await shorten(app, url)}/${deliveryId}` reaches the `shorturl:hit` event and is stored nowhere.
  */
 export async function shorten(app: App, url: string, opt: { expires?: number } = {}): Promise<string> {
-  const root = await base(app);
+  const root = await app.url();
   const target = new URL(url, root).href;
   const table = app.db.table("shorturl");
   // a code taken by another target gives way to the next round, which the link finds again the
@@ -34,12 +34,4 @@ export async function shorten(app: App, url: string, opt: { expires?: number } =
     return `${root}${PATH}/${code}`;
   }
   throw new Error(`shorturl: no free code for ${target}`);
-}
-
-async function base(app: App) {
-  const stored = String(await app.settings.shorturl.base ?? "");
-  if (stored) return stored.replace(/\/?$/, "/");
-  const ctx = requestStorage.getStore();
-  if (!ctx) throw new Error("shorturl: set shorturl.base to shorten outside a request");
-  return new URL(ctx.req.appUrl, ctx.req.url.href).href;
 }

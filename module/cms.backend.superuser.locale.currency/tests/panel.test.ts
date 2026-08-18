@@ -7,7 +7,7 @@ import { cms as panel } from "../plugin.ts";
 import type { Node } from "@qino/qino/cms";
 
 async function app_() {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("cms").add("cron").add("locale.currency");
   await app.init();
   return app;

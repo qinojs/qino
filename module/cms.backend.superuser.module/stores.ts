@@ -10,7 +10,7 @@ import type { Node } from "@qino/qino/cms";
 const name = "cms.backend.superuser.module";
 
 // A typed URL wins, everything else is a path below the app.
-const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.appPATH)).href;
+const resolve = (app: App, spec: string) => new URL(spec, toFileUrl(app.dir)).href;
 
 // Which stores are registered decides where server code may be installed from — the modules below
 // inherit that decision, which is why only this pair asks. Access to the page is not enough.
@@ -65,7 +65,7 @@ function storeLabel(app: App, url: string): string {
   const u = new URL(url);
   if (u.host) return u.host;
   const dir = decodeURIComponent(new URL(".", url).pathname);
-  const own = toFileUrl(app.appPATH).pathname;
+  const own = toFileUrl(app.dir).pathname;
   return dir.startsWith(own) ? "./" + dir.slice(own.length) : dir.split("/").filter(Boolean).slice(-2).join("/") || url;
 }
 

@@ -11,7 +11,7 @@ Deno.test("cms.backend.config.identity: metadata and node API are wired", () => 
 });
 
 Deno.test("cms.backend.config.identity: render exposes the canonical fields and assets", async () => {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("identity");
   await app.init();
     app.t = fakeT;

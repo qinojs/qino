@@ -5,7 +5,7 @@ import api from "../nodeApi.ts";
 
 Deno.test("cms.backend.config.webapp saves normalized and typed settings", async () => {
   const dir = await Deno.makeTempDir() + "/";
-  const app = new App({ db: "sqlite::memory:", appPATH: dir });
+  const app = new App({ db: "sqlite::memory:", dir: dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");
   await app.init();
   const node = { app } as never;

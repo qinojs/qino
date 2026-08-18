@@ -150,7 +150,7 @@ alike.
 ## URL resolution
 
 A function that receives `"../module/plugin.ts"` cannot know which source file called it. Relative
-strings are therefore resolved against `app.appPATH`. Call sites meaning "relative to this source
+strings are therefore resolved against `app.dir`. Call sites meaning "relative to this source
 file" resolve while that context still exists — `add()` takes a `URL` as well as a string:
 
 ```ts
@@ -198,7 +198,7 @@ ceremony, and what is missing is the step-up guard on the api verb.
   ```
 
   With it, one operation covers three features: fetch a module's files and write them somewhere.
-  Into `appPATH/remote/<name>/` it is the **mirror** that makes `Module.dir` always defined; into
+  Into `app.dir` + `remote/<name>/` it is the **mirror** that makes `Module.dir` always defined; into
   the own store under a new name it is the **fork** (copying a remote module, which
   [cms.backend.superuser.module.ownStore](../../cms.backend.superuser.module.ownStore/plugin.ts) refuses
   today); generated from the folder on the way out it is **publishing**. A publishing app writes no

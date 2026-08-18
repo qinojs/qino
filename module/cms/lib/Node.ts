@@ -533,7 +533,7 @@ export class Node {
         const base = parentUrl === "" || parentUrl.endsWith("/") ? parentUrl : parentUrl + "/";
         let url = base + part;
         const exists = await this.db.one`SELECT page_id FROM ${sql.id(tableRef("page_url"))} WHERE url = ${url} AND NOT (page_id = ${this.id} AND lang = ${lang})`;
-        if (await Deno.stat(this.app.appPATH + url).catch(() => null) || exists) url += "-" + lang + this;
+        if (await Deno.stat(this.app.dir + url).catch(() => null) || exists) url += "-" + lang + this;
         return url;
     }
 

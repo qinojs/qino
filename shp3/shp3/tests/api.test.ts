@@ -9,7 +9,7 @@ const call = (path: string[], verb: string, input?: unknown) =>
   (path.reduce((n: any, k) => n[k], api as any))[verb].execute(input);
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   app.modules.add(import.meta.resolve("../../shp3.shipping.pickup/plugin.ts"), "shp3.shipping.pickup");

@@ -68,8 +68,8 @@ export async function migrateForm1(app: App): Promise<void> {
 }
 
 async function moveData(app: App, from: string, to: string): Promise<void> {
-  const source = app.appPATH + "data/" + from;
-  const target = app.appPATH + "data/" + to;
+  const source = app.dir + "data/" + from;
+  const target = app.dir + "data/" + to;
   if (!await Deno.stat(source).catch(() => null) || await Deno.stat(target).catch(() => null)) return;
   await Deno.rename(source, target);
 }

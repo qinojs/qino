@@ -81,7 +81,7 @@ Alles war statisch in PHP (`html::`) — in Deno instanz-basiert via `ctx.html`.
 
 | PHP                   | Deno                                   |
 | --------------------- | -------------------------------------- |
-| `appPATH` (Konstante) | `app.appPATH`                          |
+| `appPATH` (Konstante) | `app.dir`                          |
 | `appURL` (Konstante)  | `ctx.req.appUrl`                       |
 | `sysURL` (Konstante)  | `ctx.req.moduleUrl`                    |
 | —                     | `ctx.req.appPath` (Pfad nach appUrl)   |

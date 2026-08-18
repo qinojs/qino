@@ -10,7 +10,7 @@ import type { Node } from "@qino/qino/cms";
 const { name } = manifest;
 
 /** The app's own modules: a folder store beside data/, deployed and backed up with the app. */
-const storeDir = (app: App) => app.appPATH + "module/";
+const storeDir = (app: App) => app.dir + "module/";
 const storeUrl = (app: App) => toFileUrl(storeDir(app)).href;
 /** Registered by install() below — the store is how a created module gets installed. */
 const ownStore = (app: App): Store => {

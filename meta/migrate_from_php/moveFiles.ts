@@ -3,11 +3,11 @@ import type { App } from "@qino/qino";
 /** The PHP CMS kept app files under qg/, uploads in qg/file/. They now live in
  *  data/<module>/, uploads owned by core. Names stay, so rows referencing a file keep working. */
 export async function migrateFiles(app: App): Promise<void> {
-  const legacy = app.appPATH + "qg/";
+  const legacy = app.dir + "qg/";
   let moved = 0, kept = 0;
   for (const name of await dirNames(legacy)) {
     // "file" is not a module — the uploads are core's
-    const [m, k] = await moveMerge(legacy + name + "/", app.appPATH + (name === "file" ? "data/core/file/" : `data/${name}/`));
+    const [m, k] = await moveMerge(legacy + name + "/", app.dir + (name === "file" ? "data/core/file/" : `data/${name}/`));
     moved += m;
     kept += k;
   }
@@ -17,7 +17,7 @@ export async function migrateFiles(app: App): Promise<void> {
 }
 
 async function moveCustom1Css(app: App): Promise<void> {
-  const dir = app.appPATH + "data/cms.layout.custom.1/";
+  const dir = app.dir + "data/cms.layout.custom.1/";
   const source = dir + "custom.css", target = dir + "pub/main.css";
   if (!await Deno.stat(source).catch(() => null) || await Deno.stat(target).catch(() => null)) return;
   await Deno.mkdir(dir + "pub", { recursive: true });

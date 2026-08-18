@@ -5,7 +5,7 @@ import { country } from "../mod.ts";
 import { install } from "../plugin.ts";
 
 async function app() {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("locale.country");
   await app.init();
   return app;

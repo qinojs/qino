@@ -15,7 +15,7 @@ async function app(): Promise<App> {
   await db.exec`CREATE TABLE log (id INTEGER PRIMARY KEY AUTOINCREMENT)`;
   await db.loadTables();
   db.schema = dbSchema;
-  return { db, settings: { shorturl: { base: "https://site.test/", _secret: "test" } } } as unknown as App;
+  return { db, url: () => Promise.resolve("https://site.test/"), settings: { shorturl: { _secret: "test" } } } as unknown as App;
 }
 
 Deno.test("shorten stores the target and builds a link under the path", async () => {

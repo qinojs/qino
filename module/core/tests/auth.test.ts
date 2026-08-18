@@ -29,7 +29,7 @@ Deno.test("loginFromRequest: login form requires POST", async () => {
 /** A real app and a request in it. Session writes are fire-and-forget, so they are given the tick
  *  they need before the database goes away — otherwise they land on a closed connection. */
 async function withApp(fn: (app: App, ctx: Ctx) => Promise<void>) {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json"));
   await app.init();
   try {

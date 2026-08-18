@@ -94,8 +94,8 @@ async function migrateRenamedModules(app: App): Promise<void> {
 /** `cms.cont.phpfile` kept one PHP file per node in qg/cmsPhpFiles/; `cms.cont.ts` expects a .ts
  *  beside the same id. Move the sources over so they sit where the port has to happen. */
 async function moveNodeCode(app: App): Promise<void> {
-  const from = app.appPATH + "data/cmsPhpFiles/";
-  const to = app.appPATH + "data/cms.cont.ts/";
+  const from = app.dir + "data/cmsPhpFiles/";
+  const to = app.dir + "data/cms.cont.ts/";
   const files = await Array.fromAsync(Deno.readDir(from)).catch(() => []);
   if (!files.length) return;
   await Deno.mkdir(to, { recursive: true });

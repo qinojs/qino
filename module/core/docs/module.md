@@ -88,7 +88,7 @@ manifest — today `cms.cont.*` and `cms.layout.*` are structurally identical th
 
 ## Files
 
-A module gets three directories below `app.appPATH`, each named after the module. They differ in
+A module gets three directories below `app.dir`, each named after the module. They differ in
 one thing only — what an operator may throw away:
 
 | Accessor | Directory | May be deleted |
@@ -100,12 +100,12 @@ one thing only — what an operator may throw away:
 That split is what makes the operator's jobs one path each: clear `tmp/` on boot, drop `tmp/` +
 `cache/` to reclaim space. Below the module name the layout is yours.
 
-**Backing up follows from it, and is stated the other way round: save all of `appPATH` except
+**Backing up follows from it, and is stated the other way round: save all of `app.dir` except
 `cache/` and `tmp/`, the database dumped rather than copied.** Excluding is the safe direction —
 whatever nobody classified is in the backup instead of missing from it, and it is missing that you
 notice at restore time. A whitelist would also have to name everything that is neither a module
 directory nor derived: the app's own `server.ts`, a store folder, and with SQLite the database file,
-which sits directly in `appPATH`. Copying that file while the app runs gives a torn copy, hence the
+which sits directly in `app.dir`. Copying that file while the app runs gives a torn copy, hence the
 dump — `VACUUM INTO` for SQLite, `mysqldump` / `pg_dump` otherwise.
 
 **The invariant that carries it:** everything in `cache/` must be reproducible from `data/` alone.

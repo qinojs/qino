@@ -23,7 +23,7 @@ import type { DbFile } from "./DbFileManager.ts";
 const mainDir = fromFileUrl(new URL(".", Deno.mainModule));
 
 const DEFAULT_CONFIG = {
-    appPATH: mainDir,
+    dir: mainDir,
     appUrl: "",
     https: false,
     dev: false,
@@ -58,18 +58,11 @@ export interface AppEvents {
     [name: string]: any;
 }
 
-// Deliberately runtime-global, not per-app: it exists to spot instances sharing one appPATH,
-// which would have them write over each other in data/, cache/ and tmp/. Paths only, no App refs.
-const appPathUses = new Map<string, number>();
-
-/** How many App instances of this runtime resolved to that appPATH. More than one is a misconfiguration. */
-export function appPathInstances(appPATH: string): number {
-    return appPathUses.get(appPATH) ?? 0;
-}
+export const urlOf = (ctx: Ctx): string => ctx.req.url.origin + ctx.req.appUrl;
 
 /** The central hub of a Qino application. Manages modules, routing, database, sessions, and settings. */
 export class App extends Emitter<AppEvents> {
-    appPATH: string;
+    dir: string;
     appUrl: string;
     https: boolean;
     dev: boolean;
@@ -92,23 +85,31 @@ export class App extends Emitter<AppEvents> {
     /** How you call it: `app.api.cms.node(42).get()`. Reads apiTree lazily, so runtime modules stay visible. */
     get api(): ApiProxy { return this.#api ??= apiClient(this.apiTree); }
 
+    /** The public address with a trailing slash: `core.url`, else the running request. */
+    async url(): Promise<string> {
+        const set = String(await this.settings.core.url ?? "");
+        if (set) return set.replace(/\/?$/, "/");
+        const ctx = requestStorage.getStore();
+        if (!ctx) throw new Error("core.url is not set and there is no request to take it from");
+        return urlOf(ctx);
+    }
+
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
         const cfg = { ...DEFAULT_CONFIG, ...config };
-        const appPATH = cfg.appPATH.startsWith("file:") ? fromFileUrl(cfg.appPATH) : cfg.appPATH;
+        const dir = cfg.dir.startsWith("file:") ? fromFileUrl(cfg.dir) : cfg.dir;
 
-        this.appPATH   = ensureSlash(appPATH);
-        appPathUses.set(this.appPATH, (appPathUses.get(this.appPATH) ?? 0) + 1);
+        this.dir   = ensureSlash(dir);
         this.appUrl    = ensureSlash(cfg.appUrl || "/");
         this.https     = cfg.https;
         this.dev       = cfg.dev;
         this.trustedProxyHops = cfg.trustedProxyHops;
 
-        this.db        = new Db(cfg.db || `sqlite:${this.appPATH}qino.sqlite`);
+        this.db        = new Db(cfg.db || `sqlite:${this.dir}qino.sqlite`);
         this.settings  = createSettingItem(this.db).proxy;
-        this.dbFiles   = new DbFileManager(this, this.appPATH + "data/core/file/");
+        this.dbFiles   = new DbFileManager(this, this.dir + "data/core/file/");
         this.dbTexts   = new DbTextManager(this);
-        this.fileTransformer = FileTransformer.create({ cacheDir: this.appPATH + "cache/core/file/" });
+        this.fileTransformer = FileTransformer.create({ cacheDir: this.dir + "cache/core/file/" });
         this.sessions  = new SessionManager(this.db);
         this.modules   = new ModuleManager(this);
         this.modules.add(new URL("../plugin.ts", import.meta.url)); // the root of the needs graph — every app has it
@@ -219,7 +220,7 @@ export class App extends Emitter<AppEvents> {
         if (!file || file.includes("\0")) throw new Output("invalid path", { status: 400 });
         const resolved = nodePath.resolve(file);
         if (resolved !== nodePath.normalize(file) && resolved !== file) throw new Output("invalid path", { status: 400 });
-        const roots = [nodePath.resolve(this.appPATH)];
+        const roots = [nodePath.resolve(this.dir)];
         for (const mod of Object.values(this.modules.all())) if (mod.dir) roots.push(nodePath.resolve(mod.dir));
         if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
     }

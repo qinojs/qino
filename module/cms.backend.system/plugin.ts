@@ -42,7 +42,7 @@ async function render(node: Node): Promise<HtmlString> {
       <tr><td>${t`Heap (Used/Total)`}:<td><u2-bytes>${mem.heapUsed}</u2-bytes> / <u2-bytes>${mem.heapTotal}</u2-bytes>
       <tr><td>${t`External`}:<td><u2-bytes>${mem.external}</u2-bytes>
       <tr><td>${t`RSS (actual RAM)`}:<td><u2-bytes>${mem.rss}</u2-bytes>
-      <tr><td>${t`APP-Path`}:<td>${app.appPATH}
+      <tr><td>${t`APP-Path`}:<td>${app.dir}
     </table>
   </div>
 </div>`;
@@ -199,7 +199,7 @@ export async function backendDashboardWidget(app: App): Promise<HtmlString> {
       cacheCount++;
     }
   }
-  await measureCache(app.appPATH + "cache/");
+  await measureCache(app.dir + "cache/");
 
   return html.async`<div class=-body>${statusHtml}</div>
 <div style="overflow:auto; padding:0">

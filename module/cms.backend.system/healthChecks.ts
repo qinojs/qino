@@ -1,4 +1,4 @@
-import { hee, getCtx, sql, unixTime, pwVerify, appPathInstances } from "@qino/qino";
+import { hee, getCtx, sql, unixTime, pwVerify } from "@qino/qino";
 
 import type { App } from "@qino/qino";
 import type { HealthChecks, Solution } from "./lib/healthRegistry.ts";
@@ -86,13 +86,6 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
     return { info: "set https: true in the app config" };
   };
 
-  // Nothing separates the instances below appPATH, so they overwrite each other's module files.
-  error["appPATH shared with another instance"] = () => {
-    const n = appPathInstances(app.appPATH);
-    if (n < 2) return;
-    return { info: `${n} apps of this runtime use ${hee(app.appPATH)} — give each its own appPATH, or they share data/, cache/ and tmp/` };
-  };
-
   // ── db-time vs os-time ───────────────────────────────────────────────────
   notice["db-time unlike os-time"] = async () => {
     const dbTime = Number(await db.one`${sql.raw(dbEpochSql(db.dialect))}`);
@@ -119,7 +112,7 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
   }
 
   // ── cache cleanup ────────────────────────────────────────────────────────
-  const cacheDir = app.appPATH + "cache/";
+  const cacheDir = app.dir + "cache/";
   const TWO_DAYS = 60 * 60 * 24 * 2 * 1000;
 
   async function countCacheFiles(dir: string, maxAge: number): Promise<number> {
@@ -159,7 +152,7 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
       info: "100+ files",
       solutions: {
         all:          { solve: async () => kb(await deleteCacheFiles(cacheDir,             TWO_DAYS)) },
-        "temp files": { solve: async () => kb(await deleteCacheFiles(app.appPATH + "tmp/", TWO_DAYS)) },
+        "temp files": { solve: async () => kb(await deleteCacheFiles(app.dir + "tmp/", TWO_DAYS)) },
       },
     };
   };

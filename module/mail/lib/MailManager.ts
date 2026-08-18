@@ -1,4 +1,4 @@
-import { getCtx, hee, uid } from "@qino/qino";
+import { hee, uid } from "@qino/qino";
 
 import { clean, importUpyo, renderMarkers, toBool, toInt, trackCert, trackURL } from "./helpers.ts";
 import { MailMessage } from "./MailMessage.ts";
@@ -56,6 +56,7 @@ export class MailManager {
 
   async close(): Promise<void> {
     const transport = this.#transport ?? this.#builtTransport;
+    this.#builtTransport = undefined; this.#builtKey = ""; // a closed transport must never be handed out again
     await transport?.closeAllConnections?.();
     await transport?.close?.();
   }
@@ -93,10 +94,7 @@ export class MailManager {
   async baseURL(): Promise<string> {
     const base = (await this.defaults()).base_url;
     if (base) return base.replace(/\/?$/, "/");
-    try {
-      const ctx = getCtx();
-      return new URL(ctx.req.appUrl, ctx.req.url.href).href;
-    } catch { return ""; }
+    return await this.app.url().catch(() => "");
   }
 
   async transport(): Promise<Transport> {
@@ -105,7 +103,7 @@ export class MailManager {
     const key = JSON.stringify(config);
     if (this.#builtTransport && this.#builtKey === key) return this.#builtTransport;
 
-    await this.#builtTransport?.close?.();
+    await this.close();
     const entry = transports[config.type];
     if (!entry) throw new Error(`Unknown mail transport "${config.type}"`);
     const transportClass = (await importUpyo(config.type))[entry.exportName] as TransportCtor | undefined;

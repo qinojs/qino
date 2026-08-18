@@ -1,12 +1,14 @@
 // qino-module manifest for core. The public library API lives in ./mod.ts.
 import { isOn, Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
+import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
 
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/Db.ts";
 
 export { api } from "./api.ts";
+export { healthChecks } from "./healthChecks.ts";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
@@ -22,6 +24,10 @@ export const authFactors = [{
 
 export const settingsSchema = {
     properties: {
+        url: {
+            type: "string",
+            description: "Public address of this app, e.g. https://example.com/. Used wherever there is no request to read it from — links in mails, text messages and jobs. Filled in on its own from the first superuser request.",
+        },
         loginTwoFactor: {
             type: "boolean",
             default: false,
@@ -107,6 +113,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
     registerRows(app.db);
 
+    const settings = app.settings.core;
+
     app.on("html-ready", ({ ctx }) => {
         ctx.res.html.importMap.set("@qino/item/", itemRoot);
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
@@ -123,10 +131,10 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         }
     }, { signal });
 
-    const langsRaw = String(await app.settings.core.langs ?? "");
+    const langsRaw = String(await settings.langs ?? "");
     app.languages.setLangs(langsRaw.split(","));
 
-    const transformTimeout = Number(await app.settings.core.transform.timeout ?? "");
+    const transformTimeout = Number(await settings.transform.timeout ?? "");
     if (transformTimeout) app.fileTransformer.timeout = transformTimeout;
 
     app.on("route", async ({ ctx }) => {
@@ -142,7 +150,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
 
         // HSTS
         if (https) {
-            const set = app.settings.core.HSTS;
+            const set = settings.HSTS;
             const maxAge = Number(await set["max-age"]) || 0;
             if (maxAge) {
                 let header = `max-age=${maxAge}`;
@@ -152,6 +160,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
             }
         }
 
+        if (!await settings.url) await settings.url(urlOf(ctx));
     }, { signal });
 
     // stamp the current request's logId onto every write — except the log tables themselves
@@ -174,7 +183,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     app.on("respond", async ({ ctx }) => {
         //ctx.res.headers.set("Accept-CH", "DPR");
 
-        const enableRaw = String(await ctx.app.settings.core.csp.enable ?? "");
+        const enableRaw = String(await settings.csp.enable ?? "");
         const enable = enableRaw === "report only" ? "report only" : (isOn(enableRaw) ? "enforce" : "");
 
         if (enable) {

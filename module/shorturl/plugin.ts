@@ -9,7 +9,6 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 export const settingsSchema = {
   properties: {
-    base: { type: "string", description: "Absolute app URL the links get built with — needed to shorten outside a request" },
     _secret: { type: "string", description: "Key the codes are signed with — generated on first use" },
   },
 };

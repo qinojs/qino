@@ -11,7 +11,7 @@ const round = (v: number, digits = 2) => Math.round(v * 10 ** digits) / 10 ** di
 
 // Prices include VAT (the default), so a 12.00 cup is 11.10 net at 8.1 %.
 async function shop(...modules: string[]) {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json")).add("cms").add("mail").add("cron").add("cron").add("locale.country").add("locale.currency");
   app.modules.add(import.meta.resolve("../plugin.ts"), "shp3");
   for (const m of modules) app.modules.add(import.meta.resolve(`../../${m}/plugin.ts`), m);

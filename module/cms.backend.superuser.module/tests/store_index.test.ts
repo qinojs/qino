@@ -14,7 +14,7 @@ async function fixture() {
   await Deno.writeTextFile(mod + "manifest.json", `{\n  "name": "t.one",\n  "description": "One."\n}\n`);
   await Deno.writeTextFile(mod + "pub/main.css", "");
   await Deno.writeTextFile(mod + "tests/one.test.ts", "");
-  const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+  const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
   return { dir, app, store: app.stores.add(toFileUrl(dir + "store/").href) };
 }
 

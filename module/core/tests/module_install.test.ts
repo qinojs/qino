@@ -12,10 +12,10 @@ async function fixture(): Promise<string> {
     await Deno.mkdir(dir + name, { recursive: true });
     await Deno.writeTextFile(`${dir + name}/plugin.ts`, `
       export async function install({ app }) {
-        await Deno.writeTextFile(app.appPATH + "installs.log", "${name}\\n", { append: true });
+        await Deno.writeTextFile(app.dir + "installs.log", "${name}\\n", { append: true });
       }
       export async function uninstall({ app }) {
-        await Deno.writeTextFile(app.appPATH + "uninstalls.log", "${name}\\n", { append: true });
+        await Deno.writeTextFile(app.dir + "uninstalls.log", "${name}\\n", { append: true });
       }
     `);
     await Deno.writeTextFile(`${dir + name}/manifest.json`, `{ "dependencies": ["core"] }`);
@@ -37,7 +37,7 @@ async function fixture(): Promise<string> {
       await setting(seeded.join(","));
     }
     export async function install({ app }) {
-      await Deno.writeTextFile(app.appPATH + "installs.log", "t.bundle\\n", { append: true });
+      await Deno.writeTextFile(app.dir + "installs.log", "t.bundle\\n", { append: true });
     }
   `);
     await Deno.writeTextFile(`${dir}t.bundle/manifest.json`, `{ "name": "t.bundle", "dependencies": ["core"] }`);
@@ -54,7 +54,7 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       app.modules.add(toFileUrl(`${dir}t.one/plugin.ts`).href);
       await app.init();
@@ -113,7 +113,7 @@ Deno.test({
   fn: async () => {
     const dir = await chain();
 
-    const declaring = new App({ appPATH: dir, db: `sqlite:${dir}a.sqlite` });
+    const declaring = new App({ dir: dir, db: `sqlite:${dir}a.sqlite` });
     declaring.modules.add(corePlugin);
     declaring.stores.add(new URL(toFileUrl(dir + "store.json").href)).add("d.top");
     await declaring.init();
@@ -121,7 +121,7 @@ Deno.test({
     await declaring.db.close();
 
     // The same at runtime, where it also has to be remembered — both are installed, both removable.
-    const installing = new App({ appPATH: dir, db: `sqlite:${dir}b.sqlite` });
+    const installing = new App({ dir: dir, db: `sqlite:${dir}b.sqlite` });
     installing.modules.add(corePlugin);
     const store = installing.stores.add(new URL(toFileUrl(dir + "store.json").href));
     await installing.init();
@@ -144,7 +144,7 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(toFileUrl(`${dir}t.bundle/plugin.ts`).href);
       await app.init();
       return app;
@@ -189,7 +189,7 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       await app.init();
       return app;
@@ -220,7 +220,7 @@ Deno.test({
   fn: async () => {
     const dir = await fixture();
     const boot = async () => {
-      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       await app.init();
       return app;
@@ -253,7 +253,7 @@ Deno.test({
     const dir = await fixture();
     const catalog = toFileUrl(dir + "store.json").href;
     const boot = async () => {
-      const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+      const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
       app.modules.add(corePlugin);
       await app.init();
       return app;
@@ -271,7 +271,7 @@ Deno.test({
     assertEquals(app2.stores.all().length, 0);
     await app2.db.close();
 
-    const app3 = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+    const app3 = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
     app3.modules.add(corePlugin);
     app3.stores.add(catalog); // declared in the application now
     await app3.init();
@@ -289,7 +289,7 @@ Deno.test({
   sanitizeResources: false,
   fn: async () => {
     const dir = await fixture();
-    const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+    const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
     const folder = app.stores.add(toFileUrl(dir).href);
     const catalog = app.stores.add(toFileUrl(dir + "store.json").href);
 
@@ -331,12 +331,12 @@ Deno.test({
       await Deno.writeTextFile(`${dir + store}/r.mod/plugin.ts`, `
         export const from = "${store}";
         export async function install({ app }) {
-          await Deno.writeTextFile(app.appPATH + "installs.log", "${store}\\n", { append: true });
+          await Deno.writeTextFile(app.dir + "installs.log", "${store}\\n", { append: true });
         }
       `);
       await Deno.writeTextFile(`${dir + store}/r.mod/manifest.json`, `{ "dependencies": ["core"] }`);
     }
-    const app = new App({ appPATH: dir, db: `sqlite:${dir}test.sqlite` });
+    const app = new App({ dir: dir, db: `sqlite:${dir}test.sqlite` });
     app.modules.add(corePlugin);
     const [a, b] = [app.stores.add(toFileUrl(dir + "a/").href), app.stores.add(toFileUrl(dir + "b/").href)];
     await app.init();

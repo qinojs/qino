@@ -5,7 +5,7 @@ import { file } from "@qino/qino/identity";
 import api from "../nodeApi.ts";
 
 async function testApp(): Promise<App> {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../store.json")).add("identity");
   await app.init();
   return app;

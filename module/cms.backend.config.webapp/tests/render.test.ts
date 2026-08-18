@@ -12,7 +12,7 @@ Deno.test("cms.backend.config.webapp: metadata and node API are wired", () => {
 
 Deno.test("cms.backend.config.webapp renders launch and browser settings", async () => {
   const dir = await Deno.makeTempDir() + "/";
-  const app = new App({ db: "sqlite::memory:", appPATH: dir });
+  const app = new App({ db: "sqlite::memory:", dir: dir });
   app.stores.add(import.meta.resolve("../../store.json")).add("webapp");
   await app.init();
   app.t = fakeT;

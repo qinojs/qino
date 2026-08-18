@@ -5,10 +5,10 @@ import { assertEquals } from "@qino/qino/tests";
 import { codeFiles } from "../codeFiles.ts";
 
 const fakeCtx = () => ({ dev: true, req: { appUrl: "/app/" }, res: { html: { styles: new Set<string>(), scripts: new Set<string>() } } });
-const fakeNode = (appPATH: string) => ({
+const fakeNode = (dir: string) => ({
   id: 7,
   module: {
-    data: `${appPATH}data/cms.cont.html/`,
+    data: `${dir}data/cms.cont.html/`,
     dataUrl: "/app/d/cms.cont.html/",
   },
 });

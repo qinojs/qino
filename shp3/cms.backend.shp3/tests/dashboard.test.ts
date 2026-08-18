@@ -5,7 +5,7 @@ import { cms } from "@qino/qino/cms";
 const BACKEND = ["cms.backend.shp3", "cms.backend.shp3.orders1", "cms.backend.shp3.products", "cms.backend.shp3.settings"];
 
 async function shop() {
-  const app = new App({ db: "sqlite::memory:", appPATH: await Deno.makeTempDir() + "/" });
+  const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
   app.stores.add(import.meta.resolve("../../../module/store.json"))
     .add("cms").add("cms.backend").add("cron").add("locale.country").add("locale.currency").add("u2");
   app.modules.add(import.meta.resolve("../../shp3/plugin.ts"), "shp3");

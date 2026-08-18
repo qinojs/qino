@@ -51,7 +51,7 @@ async function dirSize(dir: string): Promise<number> {
 
 type TreeNode = { size: number; children: Record<string, TreeNode> };
 
-async function dirTree(appPATH: string): Promise<Record<string, TreeNode>> {
+async function dirTree(dir: string): Promise<Record<string, TreeNode>> {
   const tree: Record<string, TreeNode> = {};
   async function walk(dir: string, relPath: string): Promise<number> {
     let total = 0;
@@ -80,20 +80,20 @@ async function dirTree(appPATH: string): Promise<Record<string, TreeNode>> {
     } catch { /* skip */ }
     return total;
   }
-  await walk(appPATH, "");
+  await walk(dir, "");
   return tree;
 }
 
 export default async function summary(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
-  const appPATH = node.app.appPATH;
+  const dir = node.app.dir;
 
   const tables = await dbTableStats(db);
   let dbTotal = 0;
   for (const t of tables) dbTotal += t.bytes;
 
-  const diskTotal = await dirSize(appPATH);
-  const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", appPATH] }).output();
+  const diskTotal = await dirSize(dir);
+  const dfOut = await new Deno.Command("df", { args: ["-B1", "--output=avail", dir] }).output();
   const diskFree = Number(new TextDecoder().decode(dfOut.stdout).trim().split("\n").pop() ?? "0");
 
   return html`
@@ -109,9 +109,9 @@ export default async function summary(node: Node): Promise<HtmlString> {
 
 export async function details(node: Node): Promise<HtmlString> {
   const db      = node.app.db;
-  const appPATH = node.app.appPATH;
+  const dir = node.app.dir;
 
-  const tree  = await dirTree(appPATH);
+  const tree  = await dirTree(dir);
   const array = Object.entries(tree)
     .flatMap(([p0, parent]) => Object.entries(parent.children).map(([p1, item]) => [`${p0}/${p1}`, item.size] as [string, number]))
     .sort((a, b) => b[1] - a[1]);

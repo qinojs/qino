@@ -58,7 +58,7 @@ export class Req {
   /** Where module files are served from: `appUrl` + `m/`. Data files are below `Module.dataUrl`. */
   get moduleUrl(): string { return this.#appUrl + "m/"; }
   /** Decoded app-relative routing path, without base prefix and query.
-   *  A URL path — not to be confused with `app.appPATH` (filesystem path). */
+   *  A URL path — not to be confused with `app.dir` (filesystem path). */
   get appPath(): string { return this.#appPath; }
   /** Time limit + abort signal of this request: `req.deadline.left += 60`, `req.deadline.signal`. */
   get deadline(): ReqDeadline { return this.#deadline ??= new ReqDeadline(this.#raw.signal); }

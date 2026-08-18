@@ -12,7 +12,7 @@ export const isModuleName = (name: string): boolean =>
 
 export function resolveSpecifier(app: App, spec: string | URL): string {
   if (spec instanceof URL) return spec.href;
-  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, toFileUrl(app.appPATH)).href;
+  if (spec.startsWith("./") || spec.startsWith("../")) return new URL(spec, toFileUrl(app.dir)).href;
   if (isAbsolute(spec)) return toFileUrl(spec).href;
   return import.meta.resolve(spec);
 }
@@ -84,11 +84,11 @@ export class Module {
   /** Directory the module lives in; undefined for remote modules. */
   get dir(): string | undefined { return this.#source.startsWith("file:") ? fromFileUrl(this.#source).replace(/\/[^/]+$/, "/") : undefined; }
   /** App files of this module — backed up, never deleted. What lies in pub/ is served. */
-  get data(): string { return `${this.#app.appPATH}data/${this.name}/`; }
+  get data(): string { return `${this.#app.dir}data/${this.name}/`; }
   /** Derived files, reproducible from data/ alone — droppable at any time, no backup. */
-  get cache(): string { return `${this.#app.appPATH}cache/${this.name}/`; }
+  get cache(): string { return `${this.#app.dir}cache/${this.name}/`; }
   /** Scratch space for a single operation — droppable when nothing runs, no backup. */
-  get tmp(): string { return `${this.#app.appPATH}tmp/${this.name}/`; }
+  get tmp(): string { return `${this.#app.dir}tmp/${this.name}/`; }
   /** The module dir as a URL; only pub/ below it is reachable. Remote modules serve from their source. */
   get modUrl(): string { return this.dir ? `${getCtx().req.moduleUrl}${this.name}/` : new URL(".", this.#source).href; }
   /** data/ as a URL; only pub/ below it is reachable. */
@@ -141,7 +141,7 @@ export class ModuleManager {
   /** The order everything runs in: dependencies before dependents. A module's index is its position. */
   order(): string[] { return this.#order(); }
 
-  /** Declare a module for import during app.init(). A relative string resolves against appPATH —
+  /** Declare a module for import during app.init(). A relative string resolves against dir —
    *  pass `new URL("./x/plugin.ts", import.meta.url)` for "relative to this source file". */
   add(spec: string | URL, name?: string): this {
     this.#pending.push({ spec: resolveSpecifier(this.#app, spec), ...(name && { name }) });

@@ -10,6 +10,7 @@
     "docs/module.md",
     "docs/stores.md",
     "docs/transform.md",
+    "healthChecks.ts",
     "lib/App.ts",
     "lib/DbFileManager.ts",
     "lib/DbTextManager.ts",
