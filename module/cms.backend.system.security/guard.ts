@@ -33,7 +33,7 @@ export function initSecurity(app: App, signal: AbortSignal) {
     if (!set.enabled) return;
     ctx.state.security = { start: performance.now() };
 
-    const info = reqInfo(ctx);
+    const info = reqInfo(ctx, fast);
     const signals = rankSignals(actionSignals(ctx, info), info, set);
 
     await hitBuckets(ctx, info, signals, set);

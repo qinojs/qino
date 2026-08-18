@@ -44,8 +44,8 @@ export function fastInfo(ctx: Ctx): any {
   };
 }
 
-export function reqInfo(ctx: Ctx): any {
-  const info = fastInfo(ctx);
+/** `info`: a `fastInfo` the caller already built — the request path builds it once. */
+export function reqInfo(ctx: Ctx, info: any = fastInfo(ctx)): any {
   return {
     ...info,
     inspect: [info.path, payloadText(ctx)].filter(Boolean).join("\n").slice(0, 8000),
