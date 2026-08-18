@@ -17,16 +17,16 @@
  */
 
 // deno-lint-ignore-file no-explicit-any
-import { Access, s, sql } from "@qino/qino";
+import { Access, s } from "@qino/qino";
 import { cms, cmsCtx } from "@qino/qino/cms";
 
-import { versedTables, view, initVers, shadowSchema } from "./lib/Vers.ts";
+import { versedTables, historicalViews, initVers, shadowSchema } from "./lib/Vers.ts";
 import { initHistory } from "./lib/History.ts";
 import { initSpaces, versSpaceSchema } from "./lib/Spaces.ts";
 import { getCmsVers, initHistoricalNodes, preventDbManipulations, cacheHeaders } from "./lib/CmsVers.ts";
 import { getForNode, logDetails, publishNode } from "./serverInterface.ts";
 
-import type { DbScope, ApiTree, App } from "@qino/qino";
+import type { ApiTree, App } from "@qino/qino";
 import type { Node } from "@qino/qino/cms";
 
 // import { ensureSpace } from "./lib/Spaces.ts"; // parked with draft/space mode
@@ -136,21 +136,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
             // Route reads through the historical views and give the request its
             // own caches (core dbScope) — the shared app caches stay untouched.
-            const db = ctx.app.db;
-            const tables: Record<string, string> = {};
-            let scope: DbScope | undefined;
-            try {
-                for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, vs.space, vs.log);
-                scope = ctx.state.dbScope = { tables, cache: {} };
+            await using _views = await historicalViews(ctx, vs.space, vs.log);
 
-                const load = async (node: Node): Promise<void> => {
-                    for (const cont of await node.conts()) await load(cont);
-                };
-                await load(await cms(app).node(pid));
-            } finally {
-                if (scope) delete scope.tables; // stop routing — the pre-loaded request cache stays
-                for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; // historical views are one-shot
-            }
+            const load = async (node: Node): Promise<void> => {
+                for (const cont of await node.conts()) await load(cont);
+            };
+            await load(await cms(app).node(pid));
         }
 
         // ─── Space-mode: draft reads ──────────────────────────────────────────

@@ -5,7 +5,7 @@
 // History capture lives in History.ts, space handling in Spaces.ts.
 import { sql } from "@qino/qino";
 
-import type { Ctx, App, Db } from "@qino/qino";
+import type { Ctx, App, Db, DbScope } from "@qino/qino";
 
 // ─── Per-Db state ────────────────────────────────────────────────────────────
 // Keyed by Db instance — module globals would leak between App instances (multi-tenant).
@@ -118,6 +118,18 @@ export async function view(db: Db, tableName: string, space: number, log: number
     });
     await creating;
     return name;
+}
+
+/** Route this request's reads through one-shot historical views and drop them again on dispose.
+ *  `await using` — leaving them behind accumulates one view set per browsed log entry. */
+export async function historicalViews(ctx: Ctx, space: number, log: number): Promise<AsyncDisposable> {
+    const db = ctx.app.db;
+    const tables: Record<string, string> = {};
+    const drop = async () => { for (const v of Object.values(tables)) await db.query`DROP VIEW IF EXISTS ${sql.id(v)}`; };
+    try { for (const t of Object.keys(versedTables(db))) tables[t] = await view(db, t, space, log); }
+    catch (e) { await drop(); throw e; } // a half-built set must not stay behind either
+    const scope: DbScope = ctx.state.dbScope = { tables, cache: {} };
+    return { async [Symbol.asyncDispose]() { delete scope.tables; await drop(); } };
 }
 
 async function createView(db: Db, tableName: string, vt: string, name: string, space: number, log: number): Promise<void> {
