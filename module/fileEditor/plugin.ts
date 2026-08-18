@@ -50,6 +50,8 @@ function editorFile(): string | null {
 }
 
 export function init(app: App, { signal }: { signal: AbortSignal }) {
+  // The editor is a root route, not a CMS page: it builds its document here and ends the
+  // request, so the cms render never turns the unknown path into its 404 page.
   app.on("route", async ({ ctx }) => {
     const file = editorFile();
     if (!file) return;
@@ -57,11 +59,8 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
 
     if (!await allowed(ctx, file, ctx.req.query.exp, ctx.req.query.sig)) throw new Output("no access");
     if (!(await nodeFs.stat(file).catch(() => null))?.isFile()) throw new Output("file does not exist");
-  }, { signal });
 
-  app.on("render", async () => {
-    const file = editorFile();
-    if (!file) return;
-    getCtx().res.html.content = await codemirrorView(file);
+    ctx.res.html.content = await codemirrorView(file);
+    throw new Output(); // the document on ctx.res is the response
   }, { signal });
 }

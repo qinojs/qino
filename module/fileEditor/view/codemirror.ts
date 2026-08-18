@@ -16,6 +16,10 @@ export default async function codemirrorView(file: string): Promise<string> {
   const CDN = "https://cdn.jsdelivr.net/npm/codemirror@5.65.5";
   const MIN = "min.";
 
+  // declaring the source is what lets it load at all — and what uncdn proxies against
+  ctx.res.csp["script-src"][CDN] = true;
+  ctx.res.csp["style-src"][CDN] = true;
+
   resHtml.styles.add(`${CDN}/lib/codemirror.${MIN}css`);
   resHtml.styles.add(`${CDN}/theme/eclipse.${MIN}css`);
 
