@@ -1,11 +1,9 @@
-import { assert, assertEquals } from "@qino/qino/tests";
+import { assert, assertEquals, createSettingItem, enableItemSchemaDefaults } from "@qino/qino/tests";
 
 import { Db } from "@qino/qino";
 
 import { bucketHits, hitBuckets, penaltyState, settings } from "../store.ts";
 import { settingsSchema } from "../schema.ts";
-import { createSettingItem } from "../../core/lib/SettingItem.ts";
-import { enableItemSchemaDefaults } from "../../core/lib/util.ts";
 
 Deno.test("security buckets apply scope weights", () => {
   const info = { ip: "1.2.3.4", ip_range: "1.2.3.0/24", path: "/x", client_id: 9, usr_id: 7 };

@@ -132,6 +132,10 @@ class SqliteDriver extends DbDriver {
     super();
     this.#db = new DatabaseSync(path);
     this.#db.exec("PRAGMA foreign_keys = ON");
+    // One sync per commit instead of one per write — a page request writes several rows (session,
+    // log, settings). NORMAL survives a process crash; only power loss can drop the last commits.
+    this.#db.exec("PRAGMA journal_mode = WAL");   // ignored for :memory:, which has no journal
+    this.#db.exec("PRAGMA synchronous = NORMAL"); // not persistent — set on every connect
   }
 
   quoteId(id: string) { return sqliteDialect.quoteId(id); }

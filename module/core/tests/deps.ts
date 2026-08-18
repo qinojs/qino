@@ -10,6 +10,9 @@ export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";
+// settings plumbing: tests that need a real (not faked) settings tree
+export { createSettingItem } from "../lib/SettingItem.ts";
+export { enableItemSchemaDefaults } from "../lib/util.ts";
 export { fakeSettings, fakeT } from "./appFake.ts";
 
 
