@@ -24,7 +24,7 @@ export async function manifest(ctx: Ctx): Promise<Record<string, unknown>> {
     .split(/[\r\n,]+/).map((v) => v.trim().toLowerCase()).filter(Boolean))];
   const icon = await (await identity.file(app, "icon"))?.exists();
   const icons = icon ? [{
-    src: await icon.url(),
+    src: await icon.url({ q: 90 }),
     ...(icon.mime && { type: icon.mime }),
     ...(icon.mime === "image/svg+xml" && { sizes: "any" }),
   }] : undefined;

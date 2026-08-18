@@ -170,7 +170,7 @@ export class Output extends Error {
   }
 }
 export class Redirect extends Output {
-  constructor(location: string, status = 302) { super(undefined, { status, headers: { Location: location } }); }
+  constructor(location: string, status = 302, headers: Record<string, string> = {}) { super(undefined, { status, headers: { ...headers, Location: location } }); }
 }
 
 // urlize

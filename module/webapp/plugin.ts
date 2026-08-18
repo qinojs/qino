@@ -43,12 +43,13 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
 }
 
 async function route(ctx: Ctx): Promise<void> {
-  if (ctx.req.appPath === "manifest.webmanifest") return serveManifest(ctx);
-  if (ctx.req.appPath !== "favicon.ico" && !/^apple-touch-icon(?:-\d+x\d+)?(?:-precomposed)?\.png$/.test(ctx.req.appPath)) return;
+  const appPath = ctx.req.appPath;
+  if (appPath === "manifest.webmanifest") return serveManifest(ctx);
+  if (appPath !== "favicon.ico" && appPath !== "apple-touch-icon.png") return;
   const icon = await (await identity.file(ctx.app, "icon"))?.exists();
   if (!icon) return;
-  const apple = ctx.req.appPath.startsWith("apple-touch-icon");
-  throw new Redirect(await icon.url({ w: apple ? 180 : 32, h: apple ? 180 : 32, fmt: "png" }));
+  const size = appPath === "apple-touch-icon.png" ? 180 : 32;
+  throw new Redirect(await icon.url({ w: size, h: size, fmt: "png", q: 90 }), 302, { "Cache-Control": "public, max-age=86400" });
 }
 
 async function serveManifest(ctx: Ctx): Promise<void> {
@@ -74,7 +75,7 @@ async function head(ctx: Ctx): Promise<void> {
   if (data.theme_color) html.meta["theme-color"] = String(data.theme_color);
   const identityIcon = await (await identity.file(ctx.app, "icon"))?.exists();
   if (identityIcon) {
-    const src = await identityIcon.url({ w: 180, h: 180, fmt: "png" });
+    const src = await identityIcon.url({ w: 180, h: 180, fmt: "png", q: 90 });
     html.link[src] = { rel: "apple-touch-icon" };
   }
   if (data.display && data.display !== "browser") { // needed, checked 2026
