@@ -81,16 +81,8 @@ export class App extends Emitter<AppEvents> {
     /** What the modules declare — the loader mounts each module's `api` export under its name. */
     apiTree: ApiTree = {};
     #api?: ApiProxy;
-
     /** How you call it: `app.api.cms.node(42).get()`. Reads apiTree lazily, so runtime modules stay visible. */
     get api(): ApiProxy { return this.#api ??= apiClient(this.apiTree); }
-
-    /** The public address with a trailing slash, from `core.url` — the route hook fills it in. */
-    async url(): Promise<string> {
-        const set = String(await this.settings.core.url ?? "");
-        if (!set) throw new Error("core.url is not set");
-        return set.replace(/\/?$/, "/");
-    }
 
     constructor(config: Partial<typeof DEFAULT_CONFIG> = {}) {
         super();
@@ -212,6 +204,13 @@ export class App extends Emitter<AppEvents> {
         await this.fire("response-ready", { ...meta, res });
 // console.log('done');
         return res;
+    }
+
+    /** The public address with a trailing slash, from `core.url` — the route hook fills it in. */
+    async url(): Promise<string> {
+        const set = String(await this.settings.core.url ?? "");
+        if (!set) throw new Error("core.url is not set");
+        return set.replace(/\/?$/, "/");
     }
 
     assertAllowedPath(file: string): void {
