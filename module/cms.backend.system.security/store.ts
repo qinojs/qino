@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { unixTime } from "@qino/qino";
 
-import { matchPath, parsePathList } from "./pathlist.ts";
+import { matchPath, pathList } from "./pathlist.ts";
 import { settingsSchema } from "./schema.ts";
 
 import type { App, Db, Ctx } from "@qino/qino";
@@ -28,10 +28,8 @@ export async function settings(app: App): Promise<SecuritySettings> {
 }
 
 export function suspiciousPath(set: SecuritySettings, path: string) {
-  const allow = parsePathList(set.allowedPaths);
-  const paths = parsePathList(set.suspiciousPaths);
-  if (matchPath(allow, path)) return "";
-  return matchPath(paths, path);
+  if (matchPath(pathList(set.allowedPaths), path)) return "";
+  return matchPath(pathList(set.suspiciousPaths), path);
 }
 
 

@@ -30,10 +30,22 @@ export function parsePathList(text: string) {
     .filter(s => !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()));
 }
 
+/** Match-ready list of a setting value: parsed and lowercased once per distinct text. */
+const compiled = new Map<string, string[]>();
+export function pathList(text: string): string[] {
+  let list = compiled.get(text);
+  if (!list) {
+    if (compiled.size > 50) compiled.clear(); // only setting values land here; an edited list leaves a dead entry
+    compiled.set(text, list = parsePathList(text).map(s => s.toLowerCase()));
+  }
+  return list;
+}
+
+/** Patterns must already be lowercase — use `pathList()`. */
 export function matchPath(patterns: string[], path: string) {
   const p = path.toLowerCase();
   const p2 = p.startsWith("/") ? p.slice(1) : "/" + p;
-  return patterns.find(pattern => match(pattern.toLowerCase(), p) || match(pattern.toLowerCase(), p2)) ?? "";
+  return patterns.find(pattern => match(pattern, p) || match(pattern, p2)) ?? "";
 }
 
 function match(pattern: string, path: string) {
