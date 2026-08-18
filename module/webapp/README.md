@@ -29,9 +29,10 @@ app.on("webapp:manifest", ({ manifest }) => {
   persisted, so the manifest does not claim generated `192x192` or `512x512` sizes it cannot
   prove. SVG icons are marked `sizes: "any"`; raster icons are published without `sizes`.
   Dedicated maskable and monochrome icon variants are not implemented yet.
-- Apple touch-icon and favicon redirects request PNG transforms, but the transformer does
-  not upscale small sources and currently leaves SVG sources as SVG. A small uploaded
-  identity icon therefore remains small, and an SVG is not rasterized for Apple clients.
+- Apple touch-icon and favicon redirects request PNG transforms, but the transformer does not
+  upscale small raster sources, so a small uploaded identity icon remains small. SVG sources are
+  rasterized to the requested size, which needs librsvg (or Inkscape) on the host; without either
+  the SVG is delivered unchanged and Apple clients show no icon.
 - Manifest localization is not implemented because identity strings are not localized yet.
 - The legacy health-check warnings for missing operator, theme and background data have no
   counterpart yet. The values can be edited in the Identity backend, but are not enforced.

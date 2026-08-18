@@ -45,11 +45,9 @@ export const recommended = [
   "cms.backend.config.identity",
   "cms.backend.config.webapp",
   "cms.backend.users",
-  "cms.backend.superuser.module",
   "cms.backend.system",
   "cms.backend.superuser",
-  "error_report",
-  "cms.backend.superuser.error_report",
+  "cms.backend.superuser.module",
 ];
 
 // Once per name, not once per app — install() would leave an older installation without the set,

@@ -6,12 +6,15 @@ import { resetProbes } from './tryCommand.ts';
 import * as magick from './magick.ts';
 import * as ffmpeg from './ffmpeg.ts';
 import * as pngquantCli from './pngquant.ts';
+import * as rsvg from './rsvg.ts';
+import * as inkscape from './inkscape.ts';
 import * as pandoc from './pandoc.ts';
 import * as pdftotext from './pdftotext.ts';
 import * as tesseract from './tesseract.ts';
 import { tesseractEngine } from './ocr.ts';
 import { gifGuard } from './transformers/gifGuard.ts';
 import { pdfDecode } from './transformers/pdfDecode.ts';
+import { svgDecode } from './transformers/svgDecode.ts';
 import { videoDecode } from './transformers/videoDecode.ts';
 import { audioDecode } from './transformers/audioDecode.ts';
 import { transcript } from './transformers/transcript.ts';
@@ -27,7 +30,7 @@ const PHASE_ORDER: Phase[] = ['decode', 'geometry', 'encode'];
 
 /** Built-in transformers (array order = registration order within a phase) */
 export const builtinTransformers: TransformerDef[] =
-  [gifGuard, pdfDecode, transcript, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, pngquant];
+  [gifGuard, pdfDecode, svgDecode, transcript, videoDecode, audioDecode, markdown, ocr, imageResize, imageEncode, pngquant];
 
 /** Framework-agnostic transform pipeline: per-instance transformers, OCR engines, cache dir and timeout. */
 export class FileTransformer {
@@ -52,7 +55,7 @@ export class FileTransformer {
     return transformer;
   }
 
-  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract', Promise<boolean>>> = {
+  static readonly capabilities: Readonly<Record<'magick' | 'ffmpeg' | 'avif' | 'pngquant' | 'pandoc' | 'pdftotext' | 'tesseract' | 'rsvg' | 'inkscape', Promise<boolean>>> = {
     get magick(): Promise<boolean> { return magick.available(); },
     get ffmpeg(): Promise<boolean> { return ffmpeg.available(); },
     get avif(): Promise<boolean> { return magick.avifSupported(); },
@@ -60,10 +63,12 @@ export class FileTransformer {
     get pandoc(): Promise<boolean> { return pandoc.available(); },
     get pdftotext(): Promise<boolean> { return pdftotext.available(); },
     get tesseract(): Promise<boolean> { return tesseract.available(); },
+    get rsvg(): Promise<boolean> { return rsvg.available(); },
+    get inkscape(): Promise<boolean> { return inkscape.available(); },
   };
 
   static resetCapabilityCache(): void {
-    resetProbes();       // ffmpeg, pngquant, pandoc, pdftotext, tesseract
+    resetProbes();       // ffmpeg, pngquant, pandoc, pdftotext, tesseract, rsvg, inkscape
     magick.resetCache(); // special-cased (IM6/IM7 command detection)
   }
 

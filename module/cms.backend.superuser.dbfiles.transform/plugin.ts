@@ -145,6 +145,29 @@ const BINARIES: Binary[] = [
     },
   },
   {
+    id: "librsvg",
+    label: "librsvg (SVG rasterizer)",
+    available: FileTransformer.capabilities.rsvg,
+    install: {
+      debian: "api install librsvg2-bin",
+      alpine: "apk add librsvg",
+      macos:  "brew install librsvg",
+    },
+    notes: "Renders SVG sources to raster formats. ImageMagick's built-in SVG renderer is not used.",
+  },
+  {
+    id: "inkscape",
+    label: "Inkscape (SVG fallback)",
+    available: FileTransformer.capabilities.inkscape,
+    install: {
+      debian: "api install inkscape",
+      alpine: "apk add inkscape",
+      macos:  "brew install --cask inkscape",
+    },
+    noAutoInstall: true,
+    notes: "Optional. Only used when librsvg is missing; wider SVG 2 coverage, but a large install.",
+  },
+  {
     id: "libheif",
     label: "AVIF (libheif)",
     available: FileTransformer.capabilities.avif,
@@ -189,6 +212,8 @@ async function resolveVersion(bin: Binary): Promise<string> {
     pandoc:      [{ cmd: "pandoc", args: ["--version"] }],
     pdftotext:   [{ cmd: "pdftotext", args: ["-v"] }],
     tesseract:   [{ cmd: "tesseract", args: ["--version"] }],
+    librsvg:     [{ cmd: "rsvg-convert", args: ["--version"] }],
+    inkscape:    [{ cmd: "inkscape", args: ["--version"] }],
     libheif:     [
       { cmd: "magick",   args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
       { cmd: "convert",  args: ["-list", "format"], extract: (o) => o.split("\n").find(l => /AVIF/i.test(l))?.trim() ?? "" },
