@@ -37,7 +37,7 @@ export class Ctx {
   async initSettings(): Promise<void> {
     this.#settingsRoot = this.user
       ? await userSettingsItem(this.user, this.app.ctxSettingsSchema)
-      : await sessSettingsItem(this.app.db, this.sess.id, this.app.ctxSettingsSchema);
+      : await sessSettingsItem(this.sess, this.app.ctxSettingsSchema);
     this.dev = this.app.dev || (!!this.user?.superuser && !!this.settings.core.dev());
   }
 

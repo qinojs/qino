@@ -2,6 +2,7 @@ import { bildJsonItem } from "../../deps.ts";
 import { enableItemSchemaDefaults } from "../util.ts";
 
 import type { Db } from "../db/Db.ts";
+import type { Session } from "../SessionManager.ts";
 import type { Usr } from "../rows.ts";
 
 async function buildRoot(
@@ -25,10 +26,14 @@ export function userSettingsItem(user: Usr, schema?: any): Promise<any> {
     );
 }
 
-export function sessSettingsItem(db: Db, sessId: string | number, schema?: any): Promise<any> {
+/* unschön, wieso nicht gleich sess.settingsItem ?? und usr.settingsItem als lazy item-generator? */
+export function sessSettingsItem(sess: Session, schema?: any): Promise<any> {
     return buildRoot(
-        async () => (await db.row`SELECT settings FROM sess WHERE id = ${sessId}`)?.settings,
-        async (json) => { await db.table("sess").update(sessId, { settings: json }); },
+        async () => sess.settings,
+        async (json) => {
+            sess.settings = json;
+            await sess.db.table("sess").update(sess.id, { settings: json });
+        },
         schema,
     );
 }
