@@ -4,6 +4,9 @@ import { keyed, PATH, sign, STEM } from "./lib/code.ts";
 
 import type { App } from "@qino/qino";
 
+/** Path segment the links live under — `${await app.url()}${PATH}/${code}` is a link. */
+export { PATH } from "./lib/code.ts";
+
 /**
  * A short link for `url`. The same target gives the same link back, and a later `expires` only
  * ever lengthens its life. Tell recipients apart with a segment of your own —

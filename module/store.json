@@ -57,6 +57,7 @@
     "cms.backend.superuser.module.ownStore": {},
     "cms.backend.superuser.oauth_server": {},
     "cms.backend.superuser.score": {},
+    "cms.backend.superuser.shorturl": {},
     "cms.backend.superuser.state": {},
     "cms.backend.superuser.stores": {},
     "cms.backend.superuser.stores.own": {},

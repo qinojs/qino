@@ -1,0 +1,14 @@
+{
+  "name": "cms.backend.superuser.shorturl",
+  "description": "Lists short links, their hits and expiry, and makes new ones.",
+  "dependencies": [
+    "cms.backend",
+    "shorturl"
+  ],
+  "files": [
+    "manifest.json",
+    "plugin.ts",
+    "pub/main.js",
+    "pub/module.svg"
+  ]
+}
