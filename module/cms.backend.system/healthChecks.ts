@@ -1,6 +1,8 @@
 import { hee, getCtx, sql, unixTime, pwVerify } from "@qino/qino";
 
 import type { App } from "@qino/qino";
+import { liveInstances } from "./lib/instanceMarker.ts";
+
 import type { HealthChecks, Solution } from "./lib/healthRegistry.ts";
 
 export async function healthChecks(app: App): Promise<HealthChecks> {
@@ -84,6 +86,13 @@ export async function healthChecks(app: App): Promise<HealthChecks> {
   warning["https not enforced"] = () => {
     if (app.https) return;
     return { info: "set https: true in the app config" };
+  };
+
+  // Nothing separates the instances below dir, so they overwrite each other's module files.
+  error["dir shared with another instance"] = async () => {
+    const n = await liveInstances(app.dir);
+    if (n < 2) return;
+    return { info: `${n} instances use ${hee(app.dir)} — give each its own dir, or they share data/, cache/ and tmp/` };
   };
 
   // ── db-time vs os-time ───────────────────────────────────────────────────

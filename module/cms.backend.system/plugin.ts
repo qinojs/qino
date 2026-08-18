@@ -2,6 +2,7 @@ import { html, sql } from "@qino/qino";
 import { backend } from "@qino/qino/cms.backend";
 
 import { getHealthChecks } from "./lib/healthRegistry.ts";
+import { markInstance } from "./lib/instanceMarker.ts";
 import statistic, { dbTableStats, details as statisticDetails } from "./parts/statistic.ts";
 import api from "./nodeApi.ts";
 
@@ -10,6 +11,10 @@ import type { Node } from "@qino/qino/cms";
 import type { CheckResult } from "./lib/healthRegistry.ts";
 
 export { healthChecks } from "./healthChecks.ts";
+
+export function init(app: App, { signal }: { signal: AbortSignal }): Promise<void> {
+  return markInstance(app.dir, signal);
+}
 
 export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.system", { en: "System", de: "System" });

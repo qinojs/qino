@@ -91,6 +91,12 @@ export class MailManager {
     return html.replace(/(<a\b[^>]*\bhref=["'])([^"']+)/gi, (_m, pre, href) => pre + (trackURL(href, base, secret, trackId) || href));
   }
 
+  /**
+   * Open: on an app answering under several domains every link goes to the canonical one, so a
+   * reset mail asked for on xy.ch leads back to abc.ch. Following the request host instead needs a
+   * list of hosts we answer on — an unchecked `Host` header would let a stranger aim that mail at
+   * their own domain.
+   */
   async baseURL(): Promise<string> {
     const base = (await this.defaults()).base_url;
     if (base) return base.replace(/\/?$/, "/");
