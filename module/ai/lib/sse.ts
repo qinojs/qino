@@ -12,21 +12,25 @@ export async function readSse(res: Response, onData: (data: Record<string, unkno
   if (!reader) return;
   const decoder = new TextDecoder();
   let buf = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    buf += decoder.decode(value, { stream: !done }).replaceAll("\r", ""); // CR is only ever a line terminator here
-    if (done) buf += "\n\n"; // flush a trailing event that lacks the final blank line
-    let nl: number;
-    while ((nl = buf.indexOf("\n\n")) >= 0) {
-      const event = buf.slice(0, nl);
-      buf = buf.slice(nl + 2);
-      for (const line of event.split("\n")) {
-        const m = line.match(/^data:\s?(.*)$/);
-        if (!m) continue;
-        if (m[1] === "[DONE]") return;
-        try { onData(JSON.parse(m[1])); } catch { /* keepalive / non-json */ }
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      buf += decoder.decode(value, { stream: !done }).replaceAll("\r", ""); // CR is only ever a line terminator here
+      if (done) buf += "\n\n"; // flush a trailing event that lacks the final blank line
+      let nl: number;
+      while ((nl = buf.indexOf("\n\n")) >= 0) {
+        const event = buf.slice(0, nl);
+        buf = buf.slice(nl + 2);
+        for (const line of event.split("\n")) {
+          const m = line.match(/^data:\s?(.*)$/);
+          if (!m) continue;
+          if (m[1] === "[DONE]") return;
+          try { onData(JSON.parse(m[1])); } catch { /* keepalive / non-json */ }
+        }
       }
+      if (done) return;
     }
-    if (done) return;
+  } finally {
+    await reader.cancel().catch(() => {}); // `[DONE]` returns mid-stream — the upstream body stays open otherwise
   }
 }
