@@ -29,7 +29,8 @@ export class LangManager {
   async initCtx(ctx: Ctx): Promise<void> {
     const usr = ctx.user;
 
-    ctx.langUsr = usr ? (usr.lang ?? "") : ctx.sess.data.core.lang() ?? "";
+    const stored = String(usr ? usr.lang ?? "" : ctx.sess.data.core.lang() ?? "");
+    ctx.langUsr = stored;
 
     const urlLang = ctx.req.query.lang;
     if (urlLang) ctx.langUsr = urlLang;
@@ -41,7 +42,8 @@ export class LangManager {
     if (!this.#langs.includes(ctx.langUsr)) ctx.langUsr = "";
     ctx.langUsr ||= this.#fromBrowser(ctx);
 
-    usr ? usr.$set({ lang: ctx.langUsr }) : ctx.sess.data.core.lang(ctx.langUsr); // background write, the request does not wait for it
+    // background write, the request does not wait for it — and only when the language actually changed
+    if (ctx.langUsr !== stored) usr ? usr.$set({ lang: ctx.langUsr }) : ctx.sess.data.core.lang(ctx.langUsr);
 
     ctx.lang = ctx.langUsr;
     ctx.langNs ??= "";
