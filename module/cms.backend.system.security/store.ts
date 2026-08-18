@@ -86,10 +86,12 @@ function hitBucket(db: Db, scope: string, ident: string, add: number, reason: st
 }
 
 export async function penaltyState(db: Db, info: any, set: Record<string, number>, signals: any[] = []) {
-  const ids = bucketScopes(info, set).concat(...signals.map(s => bucketScopes(info, set, s))).map(([scope, ident]) => [scope, ident]).filter((x) => x[1]);
+  const ids = bucketScopes(info, set).concat(...signals.map(s => bucketScopes(info, set, s))).filter(([, ident]) => ident);
+  // read in parallel: the highest score wins, so the order does not matter
+  const buckets = await Promise.all(ids.map(async ([scope, ident]) => [scope, ident, await getBucket(db, scope, ident, set)] as const));
+
   let best: any = { score: 0, delay: 0, blocked: false, warn: false };
-  for (const [scope, ident] of ids) {
-    const row = await getBucket(db, scope, ident, set);
+  for (const [scope, ident, row] of buckets) {
     if (!row || Number(row.score) <= best.score) continue;
     const score = Number(row.score);
     // Path buckets are load signals: slow down a hot URL, but do not block all visitors.
