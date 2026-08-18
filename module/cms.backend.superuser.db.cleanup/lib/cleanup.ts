@@ -28,12 +28,13 @@ function orphanWhere(field: DbField, parentField: DbField) {
   )`;
 }
 
-/** Broken x-qg-parent relations, with a few entry ids for review. */
+/** Broken x-qg-parent relations that declare a cleanup rule, with a few entry ids for review. */
 export async function findOrphans(db: Db, tableName?: string) {
   const relations = [];
   for (const table of Object.values(db.tables)) {
     if (tableName && table.name !== tableName) continue;
     for (const field of Object.values(table.fields ?? {})) {
+      if (field.onParentDelete !== "cascade" && field.onParentDelete !== "setnull") continue; // no rule: dangling ids are fine (e.g. purged log rows)
       const r = relation(db, table.name, field.name);
       if (r) relations.push(r);
     }
@@ -44,14 +45,10 @@ export async function findOrphans(db: Db, tableName?: string) {
     if (!count) return null;
     const rows = await db.query`SELECT ${sql.id("child")}.* FROM ${sql.id(table)} ${sql.id("child")} WHERE ${where} LIMIT 5`;
     const parentEmpty = !await db.one`SELECT 1 FROM ${sql.id(parent)} LIMIT 1`;
-    const hasPrimary = table.primaries.length > 0;
-    const actionable = hasPrimary && (field.onParentDelete === "cascade" || field.onParentDelete === "setnull" && field.null);
-    const blocked = !hasPrimary
+    const blocked = !table.primaries.length
       ? "table has no primary key"
       : field.onParentDelete === "setnull" && !field.null
       ? "field is NOT NULL"
-      : field.onParentDelete !== "cascade" && field.onParentDelete !== "setnull"
-      ? "relation has no cleanup rule"
       : "";
     return {
       table: table.name,
@@ -62,7 +59,7 @@ export async function findOrphans(db: Db, tableName?: string) {
       count,
       parentEmpty,
       samples: rows.map((row) => table.entryId(row)).filter((id) => id !== undefined),
-      actionable,
+      actionable: !blocked,
       blocked,
     };
   }));

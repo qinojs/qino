@@ -60,14 +60,12 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_id_ch": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "name": {
             "type": "string",
@@ -114,14 +112,12 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_id_ch": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "usr_id": {
             "type": "integer",
@@ -412,14 +408,12 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_id_ch": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "lang": {
             "type": "string",
@@ -445,14 +439,12 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_id_ch": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "active": {
             "type": "boolean",
@@ -515,8 +507,7 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           }
         },
         "required": ["usr_id", "grp_id"]

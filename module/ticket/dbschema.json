@@ -44,7 +44,6 @@
             "type": "integer",
             "x-index": true,
             "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull",
             "description": "The request that issued it"
           }
         },

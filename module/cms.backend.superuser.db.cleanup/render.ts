@@ -45,7 +45,7 @@ export async function renderRow(
   if (!status) return html``;
   const tableOrphans = allOrphans.filter((issue) => issue.table === table);
   const orphanRows = tableOrphans.map((issue) => {
-    const operation = issue.onDelete === "cascade" ? "delete" : issue.onDelete === "setnull" ? "set null" : "unresolved";
+    const operation = issue.onDelete === "cascade" ? "delete" : "set null";
     const action = issue.actionable
       ? html`<button type=button data-action=clean-orphans data-table="${table}" data-field="${issue.field}" u2-confirm="${operation} up to 1000 orphan references in ${table}.${issue.field}?">${operation}</button>`
       : html`<button type=button disabled title="${issue.blocked}">${operation}</button>`;

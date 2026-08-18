@@ -52,7 +52,7 @@ export const dbSchema = {
       additionalProperties: {
         properties: {
           id: { type: "integer", "x-index": "primary", "x-autoincrement": true },
-          log_id: { type: "integer", "x-index": true, "x-qg-parent": "log", "x-qg-on-parent-delete": "setnull" },
+          log_id: { type: "integer", "x-index": true, "x-qg-parent": "log" },
           time: { type: "integer", "x-index": true },
           prio: { type: "string", maxLength: 16, "x-index": true },
           kind: { type: "string", maxLength: 32, "x-index": true },

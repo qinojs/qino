@@ -77,21 +77,18 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_id_ch": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_changed": {
             "type": "integer",
             "default": 0,
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "usr_id": {
             "type": "integer",
@@ -179,14 +176,12 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "log_id_ch": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "order_id": {
             "type": "integer",

@@ -30,8 +30,7 @@
           "log_id": {
             "type": "integer",
             "x-index": true,
-            "x-qg-parent": "log",
-            "x-qg-on-parent-delete": "setnull"
+            "x-qg-parent": "log"
           },
           "data": {
             "type": "string",
