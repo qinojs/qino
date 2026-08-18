@@ -1,4 +1,4 @@
-import { requireStepUp } from "../auth.ts";
+import { requireStepUp } from "../factors.ts";
 import { getCtx } from "../ctx/Ctx.ts";
 import { AccessError, NotFoundError, ValidationError } from "./errors.ts";
 import { BODY_METHODS, RESERVED, VERB_SET, branch } from "./types.ts";
@@ -92,7 +92,7 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
 
   if (!verb.access) throw new AccessError("no access defined");
   if (!await verb.access(ctx) || (verb.guard && !await verb.guard(params, ctx))) throw new AccessError();
-  // A dry-run asks who may use this, and a proof is not that: it is something the caller can still give.
+  // a dry run asks who may use this; a proof is something the caller can still give
   if (opts.checkAccess) return { ok: true };
   if (verb.requireStepUp) await requireStepUp(ctx, verb.requireStepUp === true ? {} : verb.requireStepUp);
 

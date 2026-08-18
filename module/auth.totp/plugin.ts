@@ -9,7 +9,6 @@ import type { Factor } from "@qino/qino/auth";
 export const authFactors: Factor[] = [{
   name: "totp",
   label: "Authenticator app",
-  login: true,
   stepUp: true,
   order: 20,
   has: async (app: App, usrId: number) => (await stored(app, usrId, "totp")).length > 0,
@@ -50,7 +49,7 @@ export const api: ApiTree = {
   verify: {
     post: {
       description: "Prove the current user is present with a code from their authenticator app",
-      access: Access.USER,
+      access: Access.IDENTIFIED, // also the second factor of a login under way
       input: s.object({ code: s.string() }),
       execute: async ({ code }: Params) => ({ ok: await verify(getCtx(), String(code)) }),
     },

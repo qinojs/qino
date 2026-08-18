@@ -74,8 +74,7 @@ async function result(msg: Rpc, ctx: Ctx): Promise<unknown> {
 }
 
 /** Same access filter as cms.webmcp: static `access` gates the list, per-call `guard` runs on invoke.
- *  A verb demanding a fresh proof is left out — a Bearer token identifies a request, not a session,
- *  so there is nothing here that could ever answer the demand. */
+ *  Verbs demanding a fresh proof are left out: a Bearer token has no session to prove into. */
 async function listTools(ctx: Ctx) {
   const meta = new Map(toTools(ctx.app.apiTree).map((t) => [t.name, t]));
   const tools = [];

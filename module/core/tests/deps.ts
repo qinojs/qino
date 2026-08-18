@@ -32,7 +32,7 @@ export type TestContextInit = RequestInit & {
 /** Build a Ctx through the production `Ctx.create()` path. */
 export async function testContext(init: TestContextInit = {}): Promise<Ctx> {
   const { url = "http://qino.test/", appUrl = "/", app = {}, sess, userId = 0, set, ...reqInit } = init;
-  const session = sess ?? { data: { core: { userId: () => userId } } };
+  const session = sess ?? { data: { core: { userId: () => userId, pending: () => undefined } } };
   const appFake = {
     sessions: { loadFromRequest: () => session },
     trustedProxyHops: 0,

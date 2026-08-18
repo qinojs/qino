@@ -5,7 +5,7 @@ A factor for [auth](../auth/): it runs the ceremony and reports the result, `aut
 result is worth.
 
 ```ts
-export const authFactor = { name: "totp", label: "Authenticator app", login: true, stepUp: true };
+export const authFactors = [{ name: "totp", label: "Authenticator app", stepUp: true }];
 ```
 
 ## Setting one up

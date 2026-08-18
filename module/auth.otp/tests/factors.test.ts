@@ -24,7 +24,8 @@ Deno.test("auth.otp: one factor per channel, none without channels", () => {
   const factors = authFactors(appWith(channel("sms", "SMS", 1), channel("email", "Email", 1)));
   assertEquals(factors.map((f) => f.name), ["sms", "email"]);
   assertEquals(factors.map((f) => f.label), ["SMS code", "Email code"]);
-  assertEquals(factors.every((f) => f.stepUp && !f.login), true); // no login until a login can ask twice
+  // a code finishes a login, it never starts one: it can only be asked for a user already known
+  assertEquals(factors.every((f) => f.stepUp && f.second), true);
 });
 
 Deno.test("auth.otp: a channel that cannot reach the user is not something they have", async () => {

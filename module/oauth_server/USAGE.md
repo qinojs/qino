@@ -34,7 +34,7 @@ Client sie nicht von selbst, dann muss die Discovery-URL im Client konfiguriert 
 ## Login ohne CMS
 
 `/authorize` rendert ein eigenes Formular mit den Core-Feldern (`core_login`, `email`, `pw`,
-`csrfToken`). Eingeloggt wird also von `authListen()` im Core, bevor die Route überhaupt läuft —
+`csrfToken`). Eingeloggt wird also von `loginFromRequest()` im Core, bevor die Route überhaupt läuft —
 das Modul sieht nie ein Passwort und braucht keine CMS-Loginseite.
 
 ## Client verbinden

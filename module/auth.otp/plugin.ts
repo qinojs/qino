@@ -7,16 +7,16 @@ import type { ApiTree, App, Params } from "@qino/qino";
 import type { Factor } from "@qino/qino/auth";
 
 /**
- * One factor per messaging channel, derived rather than listed: a channel that can reach a person
- * can carry a code to them, and `reach()` is already the question `has()` asks.
+ * One factor per messaging channel, derived rather than listed: a channel that can reach a person can
+ * carry a code to them, and `reach()` is already the question `has()` asks.
  *
- * No `login` yet — a code can only be requested for a user the request already knows, which a login
- * does not until it can ask for a second factor.
+ * `second`, because a code can only be sent to a user the request already knows.
  */
 export const authFactors = (app: App): Factor[] =>
   channels(app).map((c) => ({
     name: c.name,
     label: `${c.label} code`,
+    second: true,
     stepUp: true,
     order: 40,
     has: async (app, usrId) => await c.reach(app, usrId) > 0,
@@ -27,7 +27,7 @@ export const api: ApiTree = {
     paramSchema: s.string(),
     post: {
       description: "Send a one-time code over this channel",
-      access: Access.USER,
+      access: Access.IDENTIFIED, // also to a login under way
       execute: async ({ channel }: Params) => {
         await send(getCtx(), String(channel));
         return { ok: true };
@@ -36,7 +36,7 @@ export const api: ApiTree = {
     verify: {
       post: {
         description: "Prove the current user is present with the code that was sent",
-        access: Access.USER,
+        access: Access.IDENTIFIED,
         input: s.object({ code: s.string() }),
         execute: async ({ channel, code }: Params) => ({ ok: await verify(getCtx(), String(channel), String(code)) }),
       },

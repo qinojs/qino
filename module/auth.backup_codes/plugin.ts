@@ -8,8 +8,7 @@ import type { Factor } from "@qino/qino/auth";
 export const authFactors: Factor[] = [{
   name: "backup_codes",
   label: "Backup codes",
-  // No `login`: a code alone must not be a way into an account. It becomes a login factor the day
-  // a login can ask for a second one — as the second, never as the only.
+  second: true, // never the only one: a code alone is no way into an account
   stepUp: true,
   order: 90, // the way out when nothing else is at hand, so never the first offer
   has: async (app: App, usrId: number) => await left(app, usrId) > 0,
@@ -37,7 +36,7 @@ export const api: ApiTree = {
   verify: {
     post: {
       description: "Spend one backup code to prove the current user is present",
-      access: Access.USER,
+      access: Access.IDENTIFIED, // also the second factor of a login under way
       input: s.object({ code: s.string() }),
       execute: async ({ code }: Params) => {
         const ctx = getCtx();

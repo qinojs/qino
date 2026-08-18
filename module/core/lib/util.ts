@@ -62,6 +62,9 @@ export function clientIp(request: Request, peerAddr: string, hops = 0): string {
 
 export const unixTime = (): number => Math.floor(Date.now() / 1000);
 
+/** To boolean. Settings are stored as text, so "false", "0" and "" are false. */
+export const isOn = (v: unknown): boolean => !!v && v !== "0" && v !== "false";
+
 /** The message of whatever was thrown — an Error or anything else. */
 export const errMsg = (e: unknown): string => e instanceof Error ? e.message : String(e);
 

@@ -12,6 +12,7 @@ import { $item, sql } from "./deps.ts";
 import { Access, AccessError, ApiError, ConflictError } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
 import { pwVerify, pwHash, logout } from "./lib/auth.ts";
+import { loginNeeds, pendingLogin } from "./lib/factors.ts";
 import { itemReadDeep, unixTime } from "./lib/util.ts";
 
 import type { ApiTree } from "./lib/api/mod.ts";
@@ -97,6 +98,20 @@ export const api: ApiTree = {
         if (String(pw ?? "").length < 8) return -2;
         await usr.$set({ pw: await pwHash(pw) });
         return 1;
+      },
+    },
+  },
+
+  login: {
+    missing: {
+      get: {
+        description: "The factors that would finish the login this session has under way",
+        access: Access.PUBLIC, // nobody is signed in yet — that is the point
+        execute: async () => {
+          const ctx = getCtx();
+          const open = pendingLogin(ctx);
+          return { factors: open ? await loginNeeds(ctx, open.usrId, open.via) : [] };
+        },
       },
     },
   },

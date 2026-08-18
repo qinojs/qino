@@ -13,7 +13,7 @@ export { Emitter } from "./lib/Emitter.ts";
 export { ResCsp } from "./lib/ctx/ResCsp.ts";
 
 // HTML & general utilities
-export { hee, unixTime, errMsg, html, moduleIcon, Output, Redirect, uid, b64url, unb64url, randB64, sha256b64url, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";
+export { hee, unixTime, errMsg, isOn, html, moduleIcon, Output, Redirect, uid, b64url, unb64url, randB64, sha256b64url, urlize, clientIp, sqlSearch, itemReadDeep, u2Root, header, isFile } from "./lib/util.ts";
 // HtmlString is type-only on purpose: construct via html.raw / html.join (mirrors sql.raw / sql.join).
 export type { HtmlString } from "./lib/util.ts";
 
@@ -56,7 +56,9 @@ export { isModuleName, Module } from "./lib/ModuleManager.ts";
 export { Store } from "./lib/StoreManager.ts";
 
 // Auth
-export { login, pwHash, pwVerify, requireStepUp, safeEqual } from "./lib/auth.ts";
+export { login, loginProof, pwHash, pwVerify, safeEqual } from "./lib/auth.ts";
+export { authFactors, identified, requireStepUp, userFactors } from "./lib/factors.ts";
+export type { AuthFactor, Offer } from "./lib/factors.ts";
 
 // File transforms
 export { FileTransformer } from "./lib/transform/mod.ts";

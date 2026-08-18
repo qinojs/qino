@@ -13,13 +13,17 @@ Not signed in, that is a login and core turns the identity into a session. Alrea
 that user, it is a fresh proof recorded in the session — a step-up. The caller writes the same
 line either way and never has to ask which case it is in.
 
+It resolves with **nothing when that went through, otherwise with what is still missing** — a login
+waiting for a second factor lists what would finish it, and an empty list means nothing here will
+help: an inactive user, or a factor that may not do this at all.
+
 ## Declaring a factor
 
 A module says it can prove an identity by exporting `authFactors` from its plugin, the same way
 [messaging](../messaging/) collects channels:
 
 ```ts
-export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", login: true, stepUp: true }];
+export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", stepUp: true }];
 ```
 
 A list, because one module may bring several: [auth.otp](../auth.otp/) has one factor per messaging
@@ -31,12 +35,15 @@ the best one right away — a passkey before a typed code, backup codes last. It
 a verdict: what a factor is worth is not a number, and a policy that needs to know will read a
 property, not a rank.
 
-`login` and `stepUp` are separate on purpose: starting a session and refreshing one are different
-permissions, and a factor may have either. A federated login declares only `login` — the provider
-answers from its own session and says nothing about who is at the keyboard now.
+Every factor can take part in a login; the two flags say what it may do beyond that. `stepUp` also
+refreshes a session that is already open — a federated login leaves it out, because the provider
+answers from its own session and says nothing about who is at the keyboard now. `second` can only
+ever be the second factor: [auth.backup_codes](../auth.backup_codes/) finishes a login somebody
+else started and never begins one, so a stolen code is worth nothing without the password in front
+of it.
 
-`factors(app)` lists what linked modules declare, `userFactors(app, usrId, "stepUp")` narrows it to
-what would actually work for one person. Nothing here knows a factor by name, so a new one costs no
+`factors(app)` lists what linked modules declare, `userFactors(app, usrId)` narrows it to what one
+person actually has. Nothing here knows a factor by name, so a new one costs no
 code in `auth` and appears in
 [cms.backend.superuser.auth](../cms.backend.superuser.auth/) on its own. `core` is one of those
 modules and declares `password` itself — the column, the check and the form are not optional, only
@@ -49,9 +56,23 @@ Setting a factor up is the user's own business, so each has a `cms.cont.my.*` pa
 Several on one
 page make the security overview, so no module has to ask at runtime what is installed.
 
-`has` is optional: a factor that cannot answer it per user — as a federated login cannot, since which
-user a provider returns is only known once they have come back — is still offered as a way in, but
-never counted as something the user *has*.
+`has` is optional: a factor that cannot answer it per user — as a federated login cannot, since
+which user a provider returns is only known once they are back — leaves it out and counts as
+available for everyone.
+
+## A login of more than one factor
+
+`core.loginTwoFactor` asks for a second one. The first proof then opens nothing: the identity waits
+in the anonymous session as `core.pending` for ten minutes, and the session rotation on the real
+login clears it — there is no half-login table and nothing to sweep. Whoever has no second factor is
+let in with one, for the same reason a step-up gives way for someone with no factor at all.
+
+The browser side is the step-up dialog again. The login page loads
+[`finishLogin.mjs`](../core/pub/js/finishLogin.mjs), which asks `GET core/login/missing` and opens
+it; each factor's `pub/stepup.js` is unchanged, because the verbs behind them ask for
+`Access.IDENTIFIED` — **whoever is signed in, or whoever a login under way has established.**
+`identified(ctx)` is the same question in server code, and it is why a code can be sent at all: it
+can only ever go to a user the request already knows.
 
 ## What a proof is not
 
@@ -79,29 +100,44 @@ A factor with real columns of its own keeps its own table, as [auth.webauthn](..
 
 ## Demanding a fresh proof
 
-[`requireStepUp(ctx, { maxAge })`](../core/lib/auth.ts#L88) lives in core, where `via` is written.
+[`requireStepUp(ctx, { maxAge })`](../core/lib/factors.ts) lives in core, next to what it reads.
 It counts only what a linked module declares with `stepUp`, so `remember` and `login_as` never
 satisfy one, and it throws `StepUpError` — `code: "step_up_required"`, and the factors that would
 work for this user.
 
-Where the demand belongs is settled by [`invoke()`](../core/lib/api/invoke.ts#L93): both get the
-same `params`, but the guard runs before the validated input is merged into it, so at that moment
-it holds the resolved path params and nothing else. An endpoint that
-always needs a proof can say so there, but one that needs it for some values and not others —
-a transfer above a limit, a bulk delete past a count — cannot, and has to ask inside `execute`
-before it does anything. So the demand is a **function that throws**, not a flag on the verb:
+A verb that always needs one says so, and [`invoke()`](../core/lib/api/invoke.ts#L95) asks on its
+behalf — after the access gate, before anything is validated or run:
 
 ```ts
-guard: (_p, ctx) => requireStepUp(ctx, { maxAge: 300 }),          // always
-execute: async ({ amount }, ctx) => {
-  if (amount > 1000) await requireStepUp(ctx, { maxAge: 60 });    // only sometimes
+requireStepUp: true,                                              // always
+requireStepUp: { maxAge: 60 },                                    // always, and sooner
 ```
 
-A verb property (`stepUpNeeded: true`) would cover only the first case and add surface for what
-`guard` can already express. Throwing needs no machinery: `invoke` does not catch, and
-[`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. Resolving with
-`true` keeps the guard form a one-liner. What the `execute` form owes is the whole point of it —
-it has to throw before the first side effect, and only the author can guarantee that.
+Where it depends on the call, the demand stays a function that throws. In a `guard` for what the
+path says, and inside `execute` for what only the input knows — a transfer above a limit, a bulk
+delete past a count — because the guard runs before the validated input is merged into `params`
+(ISSUES 277):
+
+```ts
+guard: (p, ctx) => p.node.owner === ctx.userId || requireStepUp(ctx),
+execute: async ({ amount }, ctx) => {
+  if (amount > 1000) await requireStepUp(ctx, { maxAge: 60 });     // before the first side effect
+```
+
+The field is not shorthand for the guard form: it is the only one a listing can see. A stateless
+caller can never answer a demand — a Bearer token identifies a request, not a session — so
+[`mcp`](../mcp/) leaves those verbs out of its tool list instead of offering a call that is certain
+to fail. And a declared demand cannot be made too late, which is exactly what the `execute` form
+owes and only its author can guarantee.
+
+Throwing needs no machinery either way: `invoke` does not catch, and
+[`apiFetch`](../core/lib/api/fetch.ts#L44) turns any `ApiError` into the response. A dry run
+(`x-api-check: access`) deliberately does not demand a proof: it asks who may use a verb, and the
+proof is something the caller can still give.
+
+Whoever has no factor at all passes. A demand nobody can meet protects nothing — it would only lock
+someone out of setting up their first factor — so it holds for a stateless request, where there is
+no session to prove into, and gives way for everyone else.
 
 In the browser, [`ApiClient`](../core/pub/js/ApiClient.js) knows nothing of any of this: it offers
 `recover(error)`, a hook that may fix a failed request and have it sent **once** more. `qino.js`
@@ -124,8 +160,9 @@ Nothing on the client is registered anywhere, so a new factor is again one modul
 
 - **Properties in the policy.** A policy will want to ask whether a proof was phishing-resistant —
   a field on `Factor` as soon as something reads it, and a claim nobody checks before that.
-- **More than one factor for a login.** The partial state belongs in the session, which the id
-  rotation already empties — no second place to expire and sweep.
+- **A login through a provider that needs two.** Every other way in is a verb whose answer the page
+  can read; the oauth round trip comes back as a redirect and needs a page of its own to ask for
+  what is missing. Until then it refuses rather than opening a login half way.
 - **A code as a login factor, and approval instead of a code.**
   [auth.otp](../auth.otp/) carries one to any channel today, but only for step-up: a code can be
   requested only for a user the request already knows. Telegram and Web Push could ask for a tap

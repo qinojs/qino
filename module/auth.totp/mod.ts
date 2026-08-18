@@ -1,5 +1,5 @@
 // Public API of auth.totp. The qino plugin lives in ./plugin.ts.
-import { ApiError, unixTime } from "@qino/qino";
+import { ApiError, identified, unixTime } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
 import { secret, uri, valid } from "./lib/totp.ts";
@@ -28,12 +28,13 @@ export async function confirm(ctx: Ctx, code: string, label = ""): Promise<void>
   pending(ctx)(undefined);
 }
 
-/** Prove the current user is present. Resolves with what the proof was worth. */
+/** Prove the user the request established is present — signed in, or half way into a login. */
 export async function verify(ctx: Ctx, code: string): Promise<boolean> {
-  for (const row of await stored(ctx.app, ctx.userId, TYPE)) {
+  const usrId = identified(ctx);
+  for (const row of await stored(ctx.app, usrId, TYPE)) {
     if (!await valid(String(JSON.parse(String(row.data)).secret), code)) continue;
     ctx.app.db.table("usr_auth_factor").update(Number(row.id), { last_used: unixTime() }); // background write
-    return await proof(ctx, TYPE, ctx.userId);
+    return !await proof(ctx, TYPE, usrId); // nothing missing = it counted
   }
   ctx.app.fire("suspicious", { ctx, reason: "totp verification failed" }).catch(() => {});
   throw new ApiError(422, "That code does not match");

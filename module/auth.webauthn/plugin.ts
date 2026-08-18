@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { getCtx, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
+import { getCtx, identified, unixTime, b64url, unb64url, randB64, Access, AccessError, s } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 import { verifyAuthenticationResponse, verifyRegistrationResponse } from "@simplewebauthn/server";
 
@@ -9,7 +9,7 @@ import type { Jobs } from "@qino/qino/cron";
 
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
-export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", login: true, stepUp: true, order: 10 }];
+export const authFactors: Factor[] = [{ name: "webauthn", label: "Passkey", stepUp: true, order: 10 }];
 
 export const settingsSchema = {
   properties: {
@@ -269,8 +269,10 @@ export const api: ApiTree = {
           const usrId = Number(r.cred.usr_id);
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
 
-          if (!await proof(ctx, "webauthn", usrId)) return { ok: false, error: "user_inactive" };
-          return { ok: true };
+          const missing = await proof(ctx, "webauthn", usrId);
+          if (!missing) return { ok: true };
+          // what would finish the login, or nothing to offer = nothing helps
+          return missing.length ? { ok: false, missing } : { ok: false, error: "user_inactive" };
         },
       },
     },
@@ -279,15 +281,16 @@ export const api: ApiTree = {
   confirm: {
     challenge: {
       post: {
-        description: "Step-up challenge — confirm identity of the logged-in user",
-        access: Access.USER,
+        description: "Step-up challenge — confirm the identity the request has established",
+        access: Access.IDENTIFIED, // also the second factor of a login under way
         execute: async () => {
           const ctx = getCtx();
           const db  = ctx.app.db;
+          const usrId = identified(ctx);
           const { rpId } = await getRp(ctx.app);
           const challenge = randB64(32);
-          const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${ctx.userId}`;
-          const token = await storeChallenge(db, challenge, ctx.userId, "confirm");
+          const creds = await db.query`SELECT credential_id FROM webauthn_credential WHERE usr_id = ${usrId}`;
+          const token = await storeChallenge(db, challenge, usrId, "confirm");
           return {
             token,
             publicKey: {
@@ -303,22 +306,23 @@ export const api: ApiTree = {
 
     verify: {
       post: {
-        description: "Verify step-up confirmation — records a fresh proof in the session",
-        access: Access.USER,
+        description: "Verify a confirmation — a fresh proof in the session, or the factor a login was missing",
+        access: Access.IDENTIFIED,
         input: assertionInput,
         execute: async ({ token, credentialId, clientDataJSON, authenticatorData, signature }: any) => {
           const ctx    = getCtx();
           const db     = ctx.app.db;
+          const usrId  = identified(ctx);
           const stored = await consumeChallenge(db, token, "confirm");
-          if (!stored)                      return { ok: false, error: "challenge_expired" };
-          if (stored.usr_id !== ctx.userId) return { ok: false, error: "user_mismatch" };
+          if (!stored)                   return { ok: false, error: "challenge_expired" };
+          if (stored.usr_id !== usrId)   return { ok: false, error: "user_mismatch" };
 
           const r = await verifyAssertion(ctx, { credentialId, clientDataJSON, authenticatorData, signature }, stored.challenge, true);
           if (!r.ok) return r;
-          if (Number(r.cred.usr_id) !== ctx.userId) return { ok: false, error: "user_mismatch" };
+          if (Number(r.cred.usr_id) !== usrId) return { ok: false, error: "user_mismatch" };
 
           await db.table("webauthn_credential").update(r.cred.id, { sign_count: r.newCounter, last_used: unixTime() });
-          if (!await proof(ctx, "webauthn", ctx.userId)) return { ok: false, error: "no_session_to_confirm" };
+          if (await proof(ctx, "webauthn", usrId)) return { ok: false, error: "no_session_to_confirm" };
           return { ok: true };
         },
       },

@@ -10,7 +10,7 @@ import type { Factor } from "@qino/qino/auth";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 // No stepUp: the provider answers from its own session, so it says nothing about who is here now.
-export const authFactors: Factor[] = [{ name: "oauth", label: "External login", login: true }];
+export const authFactors: Factor[] = [{ name: "oauth", label: "External login" }];
 
 export const api: ApiTree = {
   get: {
@@ -25,7 +25,7 @@ export const api: ApiTree = {
 
   connect: {
     post: {
-      description: "Ask to connect a provider to this account — what the round trip that follows needs",
+      description: "Ask to connect a provider to this account — the round trip that follows needs it",
       access: Access.USER,
       requireStepUp: true,
       execute: () => {
@@ -154,9 +154,8 @@ const CONNECT_TTL = 300;
 
 /** Redirect the browser to the provider's authorization endpoint (OIDC uses code flow + PKCE). */
 async function start(ctx: Ctx, name: string): Promise<never> {
-  // Signed in, this hands out another way into the account — as grave as any enrolment. A route
-  // cannot demand it (a StepUpError would land as a 403 page, not as the dialog), so the button
-  // asks `POST auth.oauth/connect` first and this only looks for what that left behind.
+  // Signed in, this hands out another way into the account. A route cannot demand a proof (a
+  // StepUpError would be a 403 page, not the dialog), so the button calls `connect` first.
   const proved = Number(ctx.sess.data.oauth.proved() ?? 0);
   if (ctx.userId && unixTime() - proved > CONNECT_TTL) throw new Output("connect not confirmed", { status: 403 });
 
@@ -165,7 +164,7 @@ async function start(ctx: Ctx, name: string): Promise<never> {
   const state = randB64(24), nonce = randB64(24), verifier = e.oidc ? randB64(48) : "";
 
   const d = ctx.sess.data.oauth; // one-shot transient, mirrors ctx.sess.data.core.*
-  d({}); // the mark is spent here: a second round trip asks again
+  d({}); // spends the mark: the next round trip asks again
   d.prov(name); d.state(state); d.nonce(nonce); d.verifier(verifier);
   d.returnTo(safeReturn(ctx.req.appUrl, ctx.req.query.return_to));
 
@@ -230,8 +229,9 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  // Already this user: the round trip connected a provider, there is no session to open.
-  if (!usrId || (usrId !== ctx.userId && !await proof(ctx, "oauth", usrId))) throw new Output("oauth login denied", { status: 403 });
+  // Already this user: the round trip connected a provider, no session to open. A login still
+  // missing a factor is refused — a redirect cannot answer with what would finish it.
+  if (!usrId || (usrId !== ctx.userId && await proof(ctx, "oauth", usrId))) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
 }
 

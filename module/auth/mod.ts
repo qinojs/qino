@@ -1,41 +1,13 @@
 // Public API of auth. The qino plugin lives in ./plugin.ts.
-import { login, sql, unixTime } from "@qino/qino";
+import { authFactors, loginProof, sql, unixTime } from "@qino/qino";
 
-import type { App, Ctx, Row } from "@qino/qino";
+import type { App, Ctx, Offer, Row } from "@qino/qino";
 
-/** A way of showing who you are, declared by a module as `export const authFactors`.
- *  Starting a session and refreshing one are different permissions — a factor may have either. */
-export type Factor = {
-  name: string;
-  label: string;
-  login?: boolean;
-  stepUp?: boolean;
-  /** Where it sits among the offered ones, lowest first — the strongest way in should be the one a
-   *  dialog opens. Presentation only: what a factor is worth is not a number. */
-  order?: number;
-  /** Whether this user has it set up. A factor that cannot know per user leaves it out and is then
-   *  offered as a way in, but never counted as something they have. */
-  has?(app: App, usrId: number): Promise<boolean>;
-};
+/** A way of proving who you are. Core owns the shape because core reads it. */
+export type { AuthFactor as Factor } from "@qino/qino";
 
-/** What a module exports: its factors, or a function of the app for a module whose factors depend
- *  on what else is installed — `auth.otp` has one per messaging channel. */
-type Declaration = Factor[] | ((app: App) => Factor[]);
-
-/** Every factor a linked module declares. */
-export function factors(app: App): Factor[] {
-  return app.modules.linked().flatMap((mod) => {
-    const declared = mod.plugin.authFactors as Declaration | undefined;
-    return typeof declared === "function" ? declared(app) : declared ?? [];
-  });
-}
-
-/** The factors one user has set up, narrowed to those allowed to `login` or to `stepUp`. */
-export async function userFactors(app: App, usrId: number, use?: "login" | "stepUp"): Promise<Factor[]> {
-  const all = use ? factors(app).filter((f) => f[use]) : factors(app);
-  const has = await Promise.all(all.map((f) => f.has?.(app, usrId).catch(() => false) ?? true));
-  return all.filter((_, i) => has[i]);
-}
+/** Every factor a linked module declares, and those one user has set up. */
+export { authFactors as factors, userFactors } from "@qino/qino";
 
 // ─── The secrets of factors too small for a table of their own ────────────────
 
@@ -78,17 +50,18 @@ export function via(from: Ctx | string): Record<string, number> {
   }
 }
 
-/** A factor established that this is user `usrId`; where the request stands decides what that is
- *  worth. Signed in as them it is a fresh proof kept in the session, otherwise it is a login. */
-export async function proof(ctx: Ctx, factor: string, usrId: number): Promise<boolean> {
-  const declared = factors(ctx.app).find((f) => f.name === factor);
+/**
+ * A factor established that this is user `usrId`. Signed in as them it is a step-up (a fresh proof in
+ * the session), otherwise a login.
+ *
+ * Nothing = done. Otherwise what is still missing; empty = nothing here helps (inactive user, or a
+ * factor that may not do this).
+ */
+export async function proof(ctx: Ctx, factor: string, usrId: number): Promise<Offer[] | undefined> {
+  const declared = authFactors(ctx.app).find((f) => f.name === factor);
   if (!declared) throw new Error(`auth: no factor "${factor}" — declare it in a module's authFactors export`);
-  if (ctx.userId === usrId) {
-    // A stateless credential identifies a request, not a session — the session a proof would be
-    // written to is whoever's holds the cookie, so there is nothing here to refresh.
-    if (ctx.statelessAuth || !declared.stepUp) return false;
-    ctx.sess.data.core.via[factor](unixTime()); // the same place `via()` reads, one screen up
-    return true;
-  }
-  return declared.login ? await login(ctx, usrId, factor) : false;
+  if (ctx.userId !== usrId) return await loginProof(ctx, declared, usrId);
+  // stateless credentials identify a request, not the session the proof would be written to
+  if (ctx.statelessAuth || !declared.stepUp) return [];
+  ctx.sess.data.core.via[factor](unixTime()); // the same place `via()` reads, one screen up
 }

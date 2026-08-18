@@ -1,4 +1,4 @@
-import { html } from "@qino/qino";
+import { html, isOn, walk } from "@qino/qino";
 import { factors, userFactors, via as viaOf } from "@qino/qino/auth";
 import { backend } from "@qino/qino/cms.backend";
 
@@ -22,14 +22,30 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const declared = factors(node.app).sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
   const via = viaOf(ctx);
   const mine = ctx.userId ? await userFactors(node.app, ctx.userId) : [];
+  const twoFactor = isOn(await node.app.settings.core.loginTwoFactor);
 
+  // the columns are the declaration itself, so the table reads like the code
   const factorRows = declared.map((f) => html`<tr>
-    <td>${f.order ?? 50}
-    <td>${f.label}
     <td><code>${f.name}</code>
-    <td>${yesNo(f.login)}
+    <td>${f.label}
+    <td>${f.order ?? 50}
+    <td>${yesNo(f.second)}
     <td>${yesNo(f.stepUp)}
     <td>${yesNo(mine.some((m) => m.name === f.name))}`);
+
+  // the only form of the demand a listing can see
+  const guardedRows = [...walk(node.app.apiTree)]
+    .filter((r) => r.verb.requireStepUp)
+    .map((r) => ({
+      route: r.method.toUpperCase() + " " + r.segments.join("/"),
+      description: r.verb.description ?? "",
+      maxAge: r.verb.requireStepUp === true ? 300 : (r.verb.requireStepUp as { maxAge: number }).maxAge,
+    }))
+    .sort((a, b) => a.route.localeCompare(b.route))
+    .map((g) => html`<tr>
+      <td><code>${g.route}</code>
+      <td>${g.description}
+      <td>${Math.round(g.maxAge / 60)} min`);
 
   const viaRows = Object.entries(via).sort((a, b) => b[1] - a[1]).map(([name, at]) => html`<tr>
     <td><code>${name}</code>
@@ -54,20 +70,38 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   <div class=-head>Declared factors (${declared.length})</div>
   <table class=u2-table>
     <thead><tr>
-      <th width=40>Order
-      <th>Method
-      <th>Name
-      <th>Login
-      <th>Step-up
-      <th>You have it
+      <th>name
+      <th>label
+      <th width=40>order
+      <th>second
+      <th>stepUp
+      <th>has(you)
     <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=6>No module declares a factor.`}</tbody>
   </table>
-  <div class=-body>A module declares one by exporting <code>authFactors</code>. Nothing here knows a
-  factor by name, so a new one shows up in this table on its own. <em>Order</em> is where a factor
-  sits when several are offered — lowest first, so a step-up dialog opens the strongest one; a
-  factor that says nothing lands in the middle. The last column is what the factor
-  answers about you — one that cannot tell users apart, as a federated login cannot, leaves it
-  unanswered and counts as available.</div>
+  <div class=-body>The columns are the fields a module exports as <code>authFactors</code>:
+  <code>second</code> can only finish a login, <code>stepUp</code> also refreshes an open session,
+  <code>order</code> sorts the offer, <code>has()</code> is unanswered where a factor cannot tell.
+  <p>Second factor demanded: <strong>${twoFactor ? "yes" : "no"}</strong>
+  (<code>core.loginTwoFactor</code>). ${twoFactor
+    ? html`An unfinished login waits ten minutes as <code>core.pending</code>; who has no second
+      factor is let in with one.`
+    : html`One factor that is not a <code>second</code> opens a session.`}</div>
+</div>
+<div class=u2-card style="flex:1 1 30rem">
+  <div class=-head>Verbs that always demand a fresh proof (${guardedRows.length})</div>
+  <div style="overflow:auto; padding:0">
+    <table class=u2-table>
+      <thead><tr>
+        <th>route
+        <th>description
+        <th width=60>maxAge
+      <tbody>${guardedRows.length ? html.join(guardedRows, "\n") : html`<tr><td colspan=3>No verb demands one.`}</tbody>
+    </table>
+  </div>
+  <div class=-body>Read out of the api tree: these carry <code>requireStepUp</code>, and
+  <code>invoke()</code> asks before running them. They are the ways a factor is handed out or taken
+  away. A demand that depends on the call (<code>guard</code>, <code>execute</code>) cannot appear
+  here — being listable is what the declared form is for.</div>
 </div>
 <div class=u2-card style="flex:1 1 20rem">
   <div class=-head>How this session got here</div>
@@ -78,10 +112,9 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>
     <tbody>${viaRows.length ? html.join(viaRows, "\n") : html`<tr><td colspan=3>Nothing recorded — this session was never authenticated.`}</tbody>
   </table>
-  <div class=-body>Every way in is written to <code>sess.data.core.via</code>. Entries marked
-  <em>record only</em> are no proof: <code>remember</code> is a login the stored client was handed,
-  <code>login_as</code> one an administrator took over. Only a declared factor can ever satisfy a
-  step-up, so those two are auditable without being worth anything.</div>
+  <div class=-body>Every way in is written to <code>sess.data.core.via</code>. A
+  <em>record only</em> entry proves nothing and can never satisfy a step-up: <code>remember</code>
+  is a login the stored client was handed, <code>login_as</code> one an administrator took over.</div>
 </div>
 <div class=u2-card style="flex:1 1 100%">
   <div class=-head>Signed-in sessions (${sessions.length})</div>
@@ -94,8 +127,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <tbody>${sessionRows.length ? html.join(sessionRows, "\n") : html`<tr><td colspan=3>Nobody is signed in.`}</tbody>
     </table>
   </div>
-  <div class=-body>The same record, read across the session table: who is signed in and what showed
-  it. There is no separate log to keep — a session that ends takes its record with it.</div>
+  <div class=-body>The same record read across the session table — no separate log to keep, and a
+  session that ends takes its own with it.</div>
 </div>
 </div>`;
 }

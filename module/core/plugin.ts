@@ -1,5 +1,5 @@
 // qino-module manifest for core. The public library API lives in ./mod.ts.
-import { Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
+import { isOn, Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { registerRows } from "./lib/rows.ts";
 
@@ -15,7 +15,6 @@ export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 export const authFactors = [{
     name: "password",
     label: "Password",
-    login: true,
     stepUp: true,
     order: 60,
     has: async (app: App, usrId: number) => !!(await app.db.one`SELECT id FROM usr WHERE id = ${usrId} AND pw <> ''`),
@@ -23,6 +22,11 @@ export const authFactors = [{
 
 export const settingsSchema = {
     properties: {
+        loginTwoFactor: {
+            type: "boolean",
+            default: false,
+            description: "Ask for a second factor when signing in. Users who have none are let in with one.",
+        },
         langs: {
             type: "string",
             description: "Comma-separated list of available language codes, e.g. en,de.",
@@ -171,9 +175,7 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
         //ctx.res.headers.set("Accept-CH", "DPR");
 
         const enableRaw = String(await ctx.app.settings.core.csp.enable ?? "");
-        const enable = enableRaw === "report only"
-            ? "report only"
-            : (enableRaw && enableRaw !== "0" && enableRaw !== "false" ? "enforce" : "");
+        const enable = enableRaw === "report only" ? "report only" : (isOn(enableRaw) ? "enforce" : "");
 
         if (enable) {
             // Hashed, not nonced: the hash is derived from the body, so it stays correct in any cache

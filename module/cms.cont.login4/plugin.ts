@@ -39,7 +39,11 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   let errorHtml: HtmlString | string = "";
   const errorT = await node.text("login failed");
   if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
-  if (ctx.loginError) {
+  if (ctx.loginError === "pending") {
+    // no failure: the password was right and one more proof is owed; the script asks which
+    ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
+    errorHtml = html`<div class=loginError>${await app.t`One more step: confirm it is you.`}</div>`;
+  } else if (ctx.loginError) {
     errorHtml = html`<div class=loginError>${html.raw(await errorT.string())}</div>`;
   }
 

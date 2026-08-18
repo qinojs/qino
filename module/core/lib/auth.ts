@@ -1,25 +1,30 @@
+/** Signing in: the form, the password, the session. What may prove an identity is factors.ts. */
 import { timingSafeEqual } from "node:crypto";
 
 import { bcrypt } from "../deps.ts";
-import { StepUpError } from "./api/errors.ts";
+import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
 import { unixTime } from "./util.ts";
 
 import type { App } from "./App.ts";
 import type { Ctx } from "./ctx/Ctx.ts";
+import type { AuthFactor, Offer } from "./factors.ts";
 import type { Usr } from "./rows.ts";
+
+/** Why a request is not signed in. `pending` is no failure: right credentials, second factor owed. */
+export type LoginError = "username" | "inactive" | "password" | "pending";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
 // response timing can't reveal whether an e-mail is registered (user enumeration).
 const DUMMY_HASH = "$2b$10$mNCtEIOBxmrxZ9o/YRr0UuW5LOGc.CCei3F1s/CpKt.6Fd0iJsJEi";
 
-export type LoginError = "username" | "inactive" | "password";
-
-export async function authListen(ctx: Ctx): Promise<void> {
+/** Act on the login/logout form in the request, or on a client that may come back without typing.
+ *  Part of the per-request boot, before any route runs. */
+export async function loginFromRequest(ctx: Ctx): Promise<void> {
   const body = ctx.req.method === "POST" ? ctx.req.body : null;
   if (body?.core_login != null) {
     if (!safeEqual(body.csrfToken, ctx.csrfToken)) return;
     const saveLogin = !!body.save_login;
-    ctx.loginError = await auth(ctx, String(body.email ?? ""), String(body.pw ?? "")) || undefined;
+    ctx.loginError = await tryLogin(ctx, String(body.email ?? ""), String(body.pw ?? "")) || undefined;
     await rememberLogin(ctx, saveLogin);
   }
   if (body?.core_logout != null) {
@@ -30,12 +35,14 @@ export async function authListen(ctx: Ctx): Promise<void> {
     const uid = Number(ctx.client.usr_id) || 0;
     if (uid) {
       const row = await ctx.app.db.row`SELECT email FROM usr WHERE id = ${uid}`;
-      if (row?.email) await auth(ctx, row.email);
+      if (row?.email) await tryLogin(ctx, row.email);
     }
   }
 }
 
-export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
+/** Log in whoever holds this e-mail — by what the client remembers, else by password.
+ *  Resolves with why no session was opened, or "" when one was. */
+export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginError | ""> {
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
@@ -47,12 +54,28 @@ export async function auth(ctx: Ctx, email: string, pw = ""): Promise<LoginError
   }
   if (!await pwVerify(pw, usr.pw ?? "")) return "password";
   if (rehash) await usr.$set({ pw: await pwHash(pw) });
-  return await login(ctx, user.id, "password") ? "" : "username";
+  // The same route every other factor takes: core declares `password` and claims no shortcut.
+  const missing = await loginProof(ctx, passwordFactor(ctx.app), Number(user.id));
+  if (!missing) return "";
+  return missing.length ? "pending" : "username";
 }
 
-/** Make `id` the session's user — the caller has already established who that is. `via` records how,
- *  timestamped; a record, not a permission, so `remember` and `login_as` belong there too. */
-export async function login(ctx: Ctx, id: number | string, via?: string): Promise<boolean> {
+/** Core's own declaration, read back from the plugin so it is stated once. */
+const passwordFactor = (app: App): AuthFactor =>
+  authFactors(app).find((f) => f.name === "password") ?? { name: "password", label: "Password" };
+
+/** A factor established `usrId` at login: park it, and open the session once the set is enough.
+ *  Nothing = signed in, otherwise what is missing (empty = nothing here helps). */
+export async function loginProof(ctx: Ctx, factor: AuthFactor, usrId: number): Promise<Offer[] | undefined> {
+  const via = parkLogin(ctx, factor, usrId);
+  if (!via) return [];
+  const missing = await loginNeeds(ctx, usrId, via);
+  return missing.length ? missing : (await login(ctx, usrId, via) ? undefined : []);
+}
+
+/** Make `id` the session's user; the caller has established who that is. `via` records how and when
+ *  — a record, not a permission, so `remember` and `login_as` belong there too. A set keeps each moment. */
+export async function login(ctx: Ctx, id: number | string, via?: string | Record<string, number>): Promise<boolean> {
   id = Number(id);
   if (!await ctx.app.db.one`SELECT id FROM usr WHERE id = ${id} AND active = ${true}`) return false;
   // The values, not the item: logout() empties it, and the listeners run after that.
@@ -62,58 +85,13 @@ export async function login(ctx: Ctx, id: number | string, via?: string): Promis
   const session = await ctx.app.sessions.regenerateId(ctx.sess.token);
   ctx.sess = session;
   ctx.sess.data.core.userId(id);
-  if (via) ctx.sess.data.core.via[via](unixTime());
+  const record = typeof via === "string" ? { [via]: unixTime() } : via ?? {};
+  for (const [name, at] of Object.entries(record)) ctx.sess.data.core.via[name](at);
   ctx.app.sessions.setCookieIfNew(ctx); // login owns the cookie, independent of request timing
   await ctx.client.addUsr(id);
   await ctx.client.$set({ usr_id: id });
   await ctx.app.fire("auth:login", { oldSession, usrId: id });
   return true;
-}
-
-const MIDDLE = 50; // where a factor lands that does not say where it belongs
-
-/** What a module declares as `plugin.authFactors` — a list, or a function of the app for a module
- *  whose factors depend on what else is installed. Core reads the fields a policy needs; what else
- *  a factor is, only the `auth` module cares about. */
-type Declared = { name: string; label: string; stepUp?: boolean; order?: number; has?(app: App, usrId: number): Promise<boolean> };
-type Declaration = Declared[] | ((app: App) => Declared[]);
-
-/** The declaring module travels with each factor: it is where the browser finds `pub/stepup.js`,
- *  and only this list knows it — a factor's name says nothing about who declared it. */
-const stepUpFactors = (app: App): (Declared & { module: string })[] =>
-  app.modules.linked().flatMap((m) => {
-    const declared = m.plugin.authFactors as Declaration | undefined;
-    const list = typeof declared === "function" ? declared(app) : declared ?? [];
-    return list.filter((f) => f.stepUp).map((f) => ({ ...f, module: m.name }));
-  });
-
-/**
- * Demand a proof of identity no older than `maxAge` seconds, else throw `StepUpError` with the
- * factors that would satisfy it. Resolves with `true`, so a verb can say it in one line:
- * `guard: (_p, ctx) => requireStepUp(ctx, { maxAge: 300 })`.
- *
- * Only declared factors count. `via` also records `remember` and `login_as` — how access was had,
- * not what proved it.
- */
-export async function requireStepUp(ctx: Ctx, { maxAge = 300 }: { maxAge?: number } = {}): Promise<true> {
-  const factors = stepUpFactors(ctx.app);
-  const via = (ctx.sess.data.core.via() ?? {}) as Record<string, number>;
-  const newest = Math.max(0, ...factors.map((f) => Number(via[f.name] ?? 0)));
-  if (newest && unixTime() - newest <= maxAge) return true;
-  // A stateless credential has no session to prove anything into, so it is offered nothing.
-  if (ctx.statelessAuth) throw new StepUpError([], maxAge);
-  const usable = await withFactor(ctx, factors);
-  // Nothing to prove with: demanding it would only lock this user out of setting up their first
-  // factor — and a demand no one can meet protects nothing.
-  if (!usable.length) return true;
-  usable.sort((a, b) => (a.order ?? MIDDLE) - (b.order ?? MIDDLE));
-  throw new StepUpError(usable.map(({ name, label, module }) => ({ name, label, module })), maxAge);
-}
-
-/** Of the factors, those this user has set up. One that cannot answer per user is offered anyway. */
-async function withFactor<T extends Declared>(ctx: Ctx, factors: T[]): Promise<T[]> {
-  const has = await Promise.all(factors.map((f) => f.has?.(ctx.app, ctx.userId).catch(() => false) ?? true));
-  return factors.filter((_, i) => has[i]);
 }
 
 export async function logout(ctx: Ctx): Promise<void> {
@@ -122,6 +100,16 @@ export async function logout(ctx: Ctx): Promise<void> {
   ctx.sess.data({});
 }
 
+/** Whether this client may come back as this user without typing anything. */
+async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
+  const usr = ctx.userId ? await ctx.app.db.table("usr").get(ctx.userId) : undefined;
+  if (!usr) return;
+  const link = ctx.app.db.table("client_usr").row({ usr_id: String(usr), client_id: String(ctx.client) });
+  await link.$set({ save_login: doSave });
+}
+
+// ─── Passwords and constant-time compares ─────────────────────────────────────
+
 export function pwHash(pw: string): Promise<string> {
   return bcrypt.hash(pw, 10);
 }
@@ -129,13 +117,6 @@ export function pwHash(pw: string): Promise<string> {
 export async function pwVerify(pw: string, hash: string) {
   if (!pw || !hash) return false;
   return bcrypt.compare(pw, hash.replace(/^\$2y\$/, "$2b$")); // PHP uses $2y$, bcryptjs uses $2b$ — functionally identical
-}
-
-async function rememberLogin(ctx: Ctx, doSave: boolean): Promise<void> {
-  const usr = ctx.userId ? await ctx.app.db.table("usr").get(ctx.userId) : undefined;
-  if (!usr) return;
-  const link = ctx.app.db.table("client_usr").row({ usr_id: String(usr), client_id: String(ctx.client) });
-  await link.$set({ save_login: doSave });
 }
 
 function pwNeedsRehash(hash: string) {

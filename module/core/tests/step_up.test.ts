@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertRejects, testContext } from "@qino/qino/tests";
 
-import { requireStepUp } from "../lib/auth.ts";
+import { requireStepUp } from "../lib/factors.ts";
 import { ApiError } from "../lib/api/errors.ts";
 
 const now = () => Math.floor(Date.now() / 1000);

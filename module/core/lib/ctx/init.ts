@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { header, cookiePrefix, uid, unixTime } from "../util.ts";
-import { authListen } from "../auth.ts";
+import { loginFromRequest } from "../auth.ts";
 
 import type { Ctx } from "./Ctx.ts";
 
@@ -10,7 +10,7 @@ export async function initRequest(ctx: Ctx): Promise<void> {
     await ctx.app.fire("authenticate", { ctx }); // explicit credentials first: a Bearer beats an ambient cookie
     if (!ctx.statelessAuth) {
         await initClient(ctx);
-        await authListen(ctx);
+        await loginFromRequest(ctx);
         touchSession(ctx);
     }
     if (ctx.userId) await ctx.app.db.table("usr").get(ctx.userId); // one SELECT, then ctx.user reads synchronously

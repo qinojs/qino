@@ -1,5 +1,5 @@
 // Public API of auth.backup_codes. The qino plugin lives in ./plugin.ts.
-import { ApiError, pwHash, pwVerify } from "@qino/qino";
+import { ApiError, identified, pwHash, pwVerify } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
 import type { App, Ctx } from "@qino/qino";
@@ -37,19 +37,20 @@ export async function left(app: App, usrId: number): Promise<number> {
   return (await stored(app, usrId, TYPE)).length;
 }
 
-/** Spend one to prove the current user is present. Resolves with what the proof was worth. */
+/** Spend one to prove the user is present — signed in, or a login under way. */
 export async function spend(ctx: Ctx, code: string): Promise<boolean> {
+  const usrId = identified(ctx);
   const typed = normalize(code);
-  const rows = await stored(ctx.app, ctx.userId, TYPE);
+  const rows = await stored(ctx.app, usrId, TYPE);
   let match;
   // Tried one by one: bcrypt makes that a second at worst, and only for the account's own owner
   for (const row of rows) {
     if (await pwVerify(typed, JSON.parse(String(row.data)).hash)) { match = row; break; }
   }
   // The delete decides the race: of two parallel attempts with the same code only one removes a row
-  if (!match || !await drop(ctx.app, ctx.userId, TYPE, Number(match.id))) {
+  if (!match || !await drop(ctx.app, usrId, TYPE, Number(match.id))) {
     ctx.app.fire("suspicious", { ctx, reason: "backup code rejected" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }
-  return await proof(ctx, TYPE, ctx.userId);
+  return !await proof(ctx, TYPE, usrId); // nothing missing = it counted
 }
