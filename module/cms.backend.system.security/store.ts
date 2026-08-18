@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { unixTime } from "@qino/qino";
+import { $item, itemReadDeep, unixTime } from "@qino/qino";
 
 import { matchPath, pathList } from "./pathlist.ts";
 import { settingsSchema } from "./schema.ts";
@@ -19,12 +19,13 @@ function serialize<T>(db: Db, key: string, fn: () => Promise<T>): Promise<T> {
   return run.finally(() => { if (writes.get(key) === run) writes.delete(key); });
 }
 
-// Awaiting the item reads the whole subtree and applies schema type + default per key
-// (enableItemSchemaDefaults). Only keys that were never written are missing — hence the spread.
+// Keys that were never written have no item at all — hence the spread over the schema defaults.
 const defaults = Object.fromEntries(Object.entries(settingsSchema.properties).map(([key, meta]) => [key, meta.default]));
 
 export async function settings(app: App): Promise<SecuritySettings> {
-  return { ...defaults, ...await app.settings["cms.backend.system.security"] as object } as SecuritySettings;
+  // itemReadDeep, not `await item`: reading the branch loads one level and leaves the values unread
+  const stored = await itemReadDeep(app.settings["cms.backend.system.security"][$item]);
+  return { ...defaults, ...stored as object } as SecuritySettings;
 }
 
 export function suspiciousPath(set: SecuritySettings, path: string) {

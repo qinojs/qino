@@ -1,6 +1,11 @@
 import { assert, assertEquals } from "@qino/qino/tests";
 
-import { bucketHits, hitBuckets, penaltyState } from "../store.ts";
+import { Db } from "@qino/qino";
+
+import { bucketHits, hitBuckets, penaltyState, settings } from "../store.ts";
+import { settingsSchema } from "../schema.ts";
+import { createSettingItem } from "../../core/lib/SettingItem.ts";
+import { enableItemSchemaDefaults } from "../../core/lib/util.ts";
 
 Deno.test("security buckets apply scope weights", () => {
   const info = { ip: "1.2.3.4", ip_range: "1.2.3.0/24", path: "/x", client_id: 9, usr_id: 7 };
@@ -44,3 +49,32 @@ Deno.test("security bucket writes are serialized per database", async () => {
   await Promise.all([runFirst, runSecond]);
   assert(independent, "another tenant must not wait for the same bucket key");
 });
+
+Deno.test("security settings read the stored values, not just the schema defaults", async () => {
+  await using db = await settingDb();
+  await settingsRoot(db).sub(["cms.backend.system.security"]).set({ enabled: "1", blockScore: "40" });
+
+  // a fresh root, so in-memory items from the write cannot stand in for a real read
+  const set = await settings({ settings: settingsRoot(db).proxy } as never);
+  assertEquals(set.enabled, true);   // stored, schema-coerced
+  assertEquals(set.blockScore, 40);
+  assertEquals(set.warnScore, 80);   // untouched key falls back to its default
+});
+
+function settingsRoot(db: Db) {
+  const root = createSettingItem(db);
+  root.setSchema({ properties: { "cms.backend.system.security": settingsSchema } });
+  enableItemSchemaDefaults(root);
+  return root;
+}
+
+/** In-memory settings store — the table the SettingItem reads and writes. */
+async function settingDb() {
+  const db = new Db("sqlite::memory:");
+  await db.query`CREATE TABLE qg_setting (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, basis INTEGER NOT NULL DEFAULT 0,
+    "offset" TEXT NOT NULL DEFAULT '', value TEXT, type INTEGER NOT NULL DEFAULT 0,
+    handler TEXT NOT NULL DEFAULT '', options TEXT NOT NULL DEFAULT '', w INTEGER NOT NULL DEFAULT 0)`;
+  await db.loadTables();
+  return db;
+}
