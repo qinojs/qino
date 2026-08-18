@@ -19,24 +19,15 @@ function serialize<T>(db: Db, key: string, fn: () => Promise<T>): Promise<T> {
   return run.finally(() => { if (writes.get(key) === run) writes.delete(key); });
 }
 
+// Awaiting the item reads the whole subtree and applies schema type + default per key
+// (enableItemSchemaDefaults). Only keys that were never written are missing — hence the spread.
+const defaults = Object.fromEntries(Object.entries(settingsSchema.properties).map(([key, meta]) => [key, meta.default]));
+
 export async function settings(app: App): Promise<SecuritySettings> {
-  const s = app.settings["cms.backend.system.security"];
-  const result: Record<string, unknown> = {};
-  for (const [key, meta] of Object.entries(settingsSchema.properties)) {
-    const raw = await s[key];
-    if (meta.type === "boolean")
-      result[key] = raw != null && raw !== "" ? raw === true || raw === "true" || raw === "1" : meta.default;
-    else if (meta.type === "integer") {
-      const n = Number(raw);
-      result[key] = (raw != null && raw !== "" && !isNaN(n)) ? n : meta.default;
-    } else
-      result[key] = (raw != null && raw !== "") ? String(raw) : meta.default;
-  }
-  return result as SecuritySettings;
+  return { ...defaults, ...await app.settings["cms.backend.system.security"] as object } as SecuritySettings;
 }
 
-export async function suspiciousPath(app: App, path: string) {
-  const set = await settings(app);
+export function suspiciousPath(set: SecuritySettings, path: string) {
   const allow = parsePathList(set.allowedPaths);
   const paths = parsePathList(set.suspiciousPaths);
   if (matchPath(allow, path)) return "";
