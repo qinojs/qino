@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node): Promise<HtmlString> {
   const images: HtmlString[] = [];
-  for (const file of Object.values(await node.files())) {
+  for (const file of (await node.files()).values()) {
     if (!file.mime.startsWith("image/")) continue;
     images.push(html`<div>${await cms_image2(file, { width: 200, height: 200, fit: "contain", editable: node.edit })}</div>`);
   }

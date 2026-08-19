@@ -50,8 +50,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const posted = node.edit ? postedVars(node.id) : undefined;
   if (posted && "save" in posted) await store(node, ctx, posted);
 
-  const text = (await node.texts())._redirect; // read-only: an unconfigured node stays row-free
-  const value = String(text ? await text.string(ctx.lang) : "").replace(/<[^>]*>/g, "").trim();
+  const text = (await node.texts()).get("_redirect"); // read-only: an unconfigured node stays row-free
+  const value = String(text ? await text.string() : "").replace(/<[^>]*>/g, "").trim();
   const { url, node: target } = value ? await resolve(node, value, ctx) : {};
   const loop = !!url && isSelf(url, ctx);
 

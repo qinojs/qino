@@ -98,7 +98,7 @@ async function item(node: Node, page: Node, text: string, words: string[]): Prom
 
   let image: HtmlString | string = "";
   if (await node.settings["preview image"]) {
-    const file = Object.values(await page.files()).find((f) => f.mime.startsWith("image/"));
+    const file = (await page.files()).values().find((f) => f.mime.startsWith("image/"));
     if (file) image = html`<a href="${href}"><img src="${await file.url({ w: 120, h: 400, max: true })}" alt=""></a>`;
   }
 

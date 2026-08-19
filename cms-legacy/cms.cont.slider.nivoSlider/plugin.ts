@@ -26,7 +26,7 @@ async function render(node: Node): Promise<HtmlString> {
   const width = Math.max(1, Number(await node.settings.width) || 500);
   const height = Math.max(1, Number(await node.settings.height) || 250);
   const slides: HtmlString[] = [];
-  for (const file of Object.values(await node.files())) {
+  for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const caption = await node.showText("file_" + file.id);
     slides.push(html`<div class=-slide>${await cms_image2(file, {

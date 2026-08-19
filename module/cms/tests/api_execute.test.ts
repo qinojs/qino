@@ -61,7 +61,7 @@ class FakeNode {
     return new TextObj(this.id * 100, this.textValues[name] ?? "");
   }
   async texts() {
-    return Object.fromEntries(Object.entries(this.textValues).map(([name, value]) => [name, {
+    return new Map(Object.entries(this.textValues).map(([name, value]) => [name, {
       id: this.id * 100,
       lang: () => ({ get: async () => value }),
     }]));
@@ -78,8 +78,8 @@ class FakeNode {
   createCont({ module }: { module: string }) {
     return new FakeNode(4, 3, { type: "c", module });
   }
-  files() { return Object.fromEntries(this.fileNames.map((slot) => [slot, fakeFile(slot)])); }
-  filesAndPlaceholders() { return Object.fromEntries(this.allFileNames.map((slot) => [slot, fakeFile(slot)])); }
+  files() { return new Map(this.fileNames.map((slot) => [slot, fakeFile(slot)])); }
+  filesAndPlaceholders() { return new Map(this.allFileNames.map((slot) => [slot, fakeFile(slot)])); }
   deleteFile(name: string) { this.deletedFiles.push(name); return true; }
   changeUser(user: unknown, access: number) { this.userChanges.push([user, access]); }
   changeGroup(group: unknown, access: number) { this.groupChanges.push([group, access]); }

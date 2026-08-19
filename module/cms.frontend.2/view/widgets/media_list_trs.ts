@@ -7,7 +7,7 @@ export default async function (node: Node): Promise<HtmlString> {
   const app = node.app;
   const files = await node.filesAndPlaceholders();
   const trs = [];
-  for (const [name, F] of Object.entries(files)) {
+  for (const [name, F] of files) {
     const ext = F.extension;
     const exists = await F.exists();
     let preview: HtmlString | string = "";

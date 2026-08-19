@@ -20,7 +20,7 @@ async function render(node: Node): Promise<HtmlString> {
   const height = String(await node.settings.height ?? "");
   const items: HtmlString[] = [];
 
-  for (const [fileName, file] of Object.entries(await node.files())) {
+  for (const [fileName, file] of await node.files()) {
     const detail: { target?: string; node?: Node } = {};
     const url = await node.cms.url(String(await node.settings.item[fileName].href ?? ""), detail) ?? "";
     const alt = detail.node ? String(await detail.node.showTitle()) : URL.parse(url)?.host ?? "";

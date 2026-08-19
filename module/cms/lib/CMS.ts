@@ -141,7 +141,7 @@ export class CMS {
     const ctx = getCtx();
     const page = await this.node(Number(node));
     const href = await page.url();
-    const target = (await page.urls())[ctx.lang]?.target;
+    const target = (await page.urls()).get(ctx.lang)?.target;
     const mainNode = cmsCtx(ctx).mainNode || await this.nodeFromRequest();
     const access = await page.access();
     const inside = await mainNode.in?.(page);
@@ -243,8 +243,8 @@ export class CMS {
   async parentText(node: Node, name: string): Promise<DbText | undefined> {
     let currentNode: Node | undefined = node;
     while (currentNode) {
-      const texts = await currentNode.texts();
-      if (name in texts) return texts[name];
+      const text = (await currentNode.texts()).get(name);
+      if (text) return text;
       currentNode = await currentNode.parent();
     }
   }

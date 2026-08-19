@@ -25,13 +25,13 @@ export class Node {
     #is = true;
 
     #title: DbText | null = null;
-    #texts: Record<string, DbText> | null = null;
-    #files: Promise<Record<string, DbFile>> | null = null;
-    #filesAll: Record<string, DbFile> | null = null;
-    #urls: Record<string, Record<string, string>> | null = null;
+    #texts: Map<string, DbText> | null = null;
+    #files: Promise<Map<string, DbFile>> | null = null;
+    #filesAll: Map<string, DbFile> | null = null;
+    #urls: Map<string, Record<string, string>> | null = null;
 
     #children: Promise<Map<number, Node>> | null = null;
-    #named: Record<string, Record<string, Node>> = {};
+    #named = new Map<string, Map<string, Node>>();
     #conts: Node[] | null = null;
 
     constructor(cms: CMS, id = 0, vs?: Record<string, string | number>) {
@@ -76,7 +76,7 @@ export class Node {
     exists(): this | undefined { return this.#is ? this : undefined; }
 
     /* Cache invalidation */
-    #clearTreeCache(): void { this.#children = this.#conts = null; this.#named = {}; }
+    #clearTreeCache(): void { this.#children = this.#conts = null; this.#named.clear(); }
     #clearFileCache(): void { this.#files = this.#filesAll = null; }
     #clearUrlCache(): void { this.#urls = null; }
 
@@ -296,8 +296,8 @@ export class Node {
                 if (!child.exists() || Number(child.vs.basis) !== this.id) continue;
                 map.set(id, child);
                 if (child.vs.name) {
-                    this.#named[String(child.vs.type)] ??= {};
-                    this.#named[String(child.vs.type)][String(child.vs.name)] = child;
+                    this.#named.getOrInsertComputed(String(child.vs.type), () => new Map())
+                        .set(String(child.vs.name), child);
                 }
             }
             return map;
@@ -362,13 +362,12 @@ export class Node {
         return this.#showTextLang(await this.title(), lang);
     }
 
-    async texts(): Promise<Record<string, any>> {
+    async texts(): Promise<Map<string, DbText>> {
         if (this.#texts === null) {
             const rows = await this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`;
-            this.#texts = {};
+            this.#texts = new Map();
             for (const [name, id] of Object.entries(rows ?? {})) {
-                const text = this.app.dbTexts.text(Number(id));
-                this.#texts[name] = text;
+                this.#texts.set(name, this.app.dbTexts.text(Number(id)));
             }
         }
         return this.#texts;
@@ -379,15 +378,17 @@ export class Node {
     async text(name: string, lang: string | null, value: any): Promise<DbTextLang | undefined>;
     async text(name = "main", lang?: string | null, value?: any): Promise<DbText | DbTextLang | undefined> {
         const texts = await this.texts();
-        if (!(name in texts)) {
-            texts[name] = await this.db.transaction(async () => {
-                const text = await this.app.dbTexts.generate();
-                await this.db.table("page_text").insert({ name, page_id: String(this), text_id: text.id });
-                return text;
+        let text = texts.get(name);
+        if (!text) {
+            text = await this.db.transaction(async () => {
+                const created = await this.app.dbTexts.generate();
+                await this.db.table("page_text").insert({ name, page_id: String(this), text_id: created.id });
+                return created;
             });
+            texts.set(name, text);
         }
-        if (lang == null) return texts[name];
-        const textLang = await texts[name].lang(lang);
+        if (lang == null) return text;
+        const textLang = await text.lang(lang);
         if (value === undefined) return textLang;
         if (await textLang.get() === value) return;
         await textLang.set(value);
@@ -396,9 +397,10 @@ export class Node {
 
     async textDelete(name: string): Promise<void> {
         const texts = await this.texts();
-        if (!texts[name]) return;
-        await this.db.table("text").delete(texts[name].id);
-        delete texts[name];
+        const text = texts.get(name);
+        if (!text) return;
+        await this.db.table("text").delete(text.id);
+        texts.delete(name);
     }
 
     async title(lang?: string | null, value?: any): Promise<any> {
@@ -413,11 +415,11 @@ export class Node {
     }
 
     /* Files */
-    files(): Promise<Record<string, DbFile>> {
+    files(): Promise<Map<string, DbFile>> {
         if (!this.#files) {
-            this.#filesAll = {};
+            this.#filesAll = new Map();
             this.#files = (async () => {
-                const files: Record<string, DbFile> = {};
+                const files = new Map<string, DbFile>();
                 const rows = await this.db.query`
                     SELECT f.*, pf.name as pf_name
                     FROM ${sql.id(tableRef("page_file"))} pf
@@ -427,8 +429,8 @@ export class Node {
                 const dbFiles = await Promise.all(rows.map((vs) => this.app.dbFiles.file(vs.id, vs)));
                 const exist = await Promise.all(dbFiles.map((f) => f.exists()));
                 rows.forEach((vs, i) => {
-                    this.#filesAll![vs.pf_name] = dbFiles[i];
-                    if (exist[i]) files[vs.pf_name] = dbFiles[i];
+                    this.#filesAll!.set(vs.pf_name, dbFiles[i]);
+                    if (exist[i]) files.set(vs.pf_name, dbFiles[i]);
                 });
                 return files;
             })();
@@ -436,15 +438,14 @@ export class Node {
         return this.#files;
     }
 
-    async filesAndPlaceholders(): Promise<Record<string, DbFile>> {
+    async filesAndPlaceholders(): Promise<Map<string, DbFile>> {
         await this.files();
         return this.#filesAll!;
     }
 
     async file(name: string): Promise<DbFile> {
         await this.files();
-        if (!(name in this.#filesAll!)) return this.addFile(undefined, name);
-        return this.#filesAll![name];
+        return this.#filesAll!.get(name) ?? await this.addFile(undefined, name);
     }
 
     async addFile(file?: DbFile | string, name?: string): Promise<DbFile> {
@@ -468,8 +469,8 @@ export class Node {
     }
     async #deleteFile(name: string): Promise<boolean> {
         await this.files();
-        if (!this.#filesAll![name]) return false;
-        const dbFile = this.#filesAll![name];
+        const dbFile = this.#filesAll!.get(name);
+        if (!dbFile) return false;
         await this.db.table("page_file").delete({ page_id: String(this), name });
         const used = await dbFile.used();
         if (!used) await dbFile.remove();
@@ -478,13 +479,13 @@ export class Node {
     }
 
     async hasFile(name: string): Promise<DbFile | undefined> {
-        return (await this.files())[name];
+        return (await this.files()).get(name);
     }
 
     /** Reorder files by name. Unknown names are ignored; existing files left out
      *  of the list keep their relative order and are appended at the end. */
     async sortFiles(sort: string[]): Promise<void> {
-        const names = Object.keys(await this.filesAndPlaceholders());
+        const names = [...(await this.filesAndPlaceholders()).keys()];
         const wanted = [...new Set(sort)].filter((n) => names.includes(n));
         const ordered = [...wanted, ...names.filter((n) => !wanted.includes(n))];
         const table = this.db.table("page_file");
@@ -495,11 +496,11 @@ export class Node {
     }
 
     /* URLs */
-    async urls(): Promise<Record<string, any>> {
+    async urls(): Promise<Map<string, Record<string, string>>> {
         if (this.#urls === null) {
-            this.#urls = {};
+            this.#urls = new Map();
             const rows = await this.db.query`SELECT lang, url, target FROM ${sql.id(tableRef("page_url"))} WHERE page_id = ${this.id}`;
-            for (const row of rows) this.#urls[row.lang] = row;
+            for (const row of rows) this.#urls.set(row.lang, row);
         }
         return this.#urls;
     }
@@ -515,8 +516,9 @@ export class Node {
 
     async urlSeo(lang: string): Promise<string> {
         const urls = await this.urls();
-        urls[lang] ??= { url: await this.#urlSeoOwn(lang), target: "" };
-        return urls[lang].url;
+        let url = urls.get(lang);
+        if (!url) urls.set(lang, url = { url: await this.#urlSeoOwn(lang), target: "" });
+        return url.url;
     }
 
     async urlSet(lang: string, data: Record<string, any>): Promise<void> {
@@ -653,7 +655,7 @@ export class Node {
         page.#title = titleCopy;
 
         const texts = await this.texts();
-        for (const [name, text] of Object.entries(texts)) {
+        for (const [name, text] of texts) {
             const textCopy = await text.copy();
             await this.db.table("page_text").insert({ page_id: newId, text_id: textCopy.id, name });
         }
@@ -661,7 +663,7 @@ export class Node {
 
         const old2new: Record<string, string> = {};
         const files = await this.files();
-        for (const [name, file] of Object.entries(files)) {
+        for (const [name, file] of files) {
             const newFile = await file.clone();
             old2new[String(file.id)] = String(newFile.id);
             await this.db.table("page_file").insert({ page_id: newId, file_id: newFile.id, name });
@@ -732,8 +734,8 @@ export class Node {
         const children = await this.children({ type: "*" });
         if (!children.has(Number(page))) return false;
         for (const sub of (await page.children({ type: "*" })).values()) await page.removeChild(sub);
-        for (const name of Object.keys(await page.files())) await page.deleteFile(name);
-        for (const name of Object.keys(await page.texts())) await page.textDelete(name);
+        for (const name of [...(await page.files()).keys()]) await page.deleteFile(name);
+        for (const name of [...(await page.texts()).keys()]) await page.textDelete(name);
         await this.db.table("page").delete(String(page));
         this.#clearTreeCache();
         return true;
@@ -741,14 +743,15 @@ export class Node {
 
     async cont(name: string, attris: any = {}): Promise<Node> {
         const conts = await this.conts();
-        this.#named.c ??= {};
-        if (!this.#named.c[name]) {
+        const named = this.#named.getOrInsertComputed("c", () => new Map());
+        let cont = named.get(name);
+        if (!cont) {
             if (typeof attris !== "object") attris = { module: attris };
             attris.name = name;
             attris.sort = conts.length + 1;
-            this.#named.c[name] = await this.createCont(attris);
+            named.set(name, cont = await this.createCont(attris));
         }
-        return this.#named.c[name];
+        return cont;
     }
 
     /* Access */

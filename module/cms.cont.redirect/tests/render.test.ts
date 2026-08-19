@@ -20,7 +20,7 @@ function contNode(value: string, opt: { edit?: boolean; permanent?: boolean; par
     edit: !!opt.edit,
     app: { t: fakeT },
     settings: { permanent: () => !!opt.permanent },
-    texts: () => ({ _redirect: { string: () => value } }),
+    texts: () => new Map([["_redirect", { string: () => value }]]),
     text: (_name: string, _lang: string, v: string) => { saved.push(v); },
     page: () => ({
       parent: () => opt.parent,

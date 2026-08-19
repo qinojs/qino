@@ -41,8 +41,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
   const texts = await node.texts();
   const legal: HtmlString[] = [];
-  for (const name of Object.keys(texts)) {
-    if (!name.endsWith("_p") || !texts[name.slice(0, -2) + "_h"]) continue;
+  for (const name of texts.keys()) {
+    if (!name.endsWith("_p") || !texts.has(name.slice(0, -2) + "_h")) continue;
     const key = name.slice(0, -2);
     if (!await node.settings.Einblenden[key]) continue;
     legal.push(await html.async`<div class=-block>${cmsText(node, key + "_h", "h" + heading)}${cmsText(node, name, "p")}</div>`);

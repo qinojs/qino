@@ -6,7 +6,7 @@ import type { Node } from "@qino/qino/cms";
 
 async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const slides: HtmlString[] = [], texts: HtmlString[] = [];
-  for (const [name, file] of Object.entries(await node.files())) {
+  for (const [name, file] of await node.files()) {
     if (!file.mime.startsWith("image/")) continue;
     if (name.startsWith("_")) {
       slides.push(html`<div data-id="${name}">${await cms_image2(file, {

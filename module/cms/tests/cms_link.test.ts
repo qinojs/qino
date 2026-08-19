@@ -11,7 +11,7 @@ Deno.test("CMS.link keeps sanitized title HTML", async () => {
   const raw = '<strong>Title</strong><img src=x onerror="alert(1)"><script>alert(2)</script>';
   const page = {
     urlSeo: () => {},
-    urls: () => ({ de: { target: 'x" onclick="alert(3)' } }),
+    urls: () => new Map([["de", { target: 'x" onclick="alert(3)' }]]),
     showTitle: () => sanitizeHtml(raw),
   };
   cms.node = () => Promise.resolve(page as never);
@@ -33,7 +33,7 @@ Deno.test("CMS.linkAttributes describes the target state", async () => {
     edit: true,
     toString: () => "7",
     urlSeo: () => {},
-    urls: () => ({ de: { target: 'x" onclick="alert(1)' } }),
+    urls: () => new Map([["de", { target: 'x" onclick="alert(1)' }]]),
     url: () => '/page?a=1&b="2"',
     access: () => 0,
     in: () => true,

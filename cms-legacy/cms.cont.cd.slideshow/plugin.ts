@@ -22,7 +22,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
               <button class="-arrow -next" type=button><span class=-img><svg viewBox="0 0 40 80"><use href="${arrow}"></use></svg></span></button>`;
 
   const slides: Promise<HtmlString>[] = [];
-  for (const [fileName, file] of Object.entries(await node.files())) {
+  for (const [fileName, file] of await node.files()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     slides.push(html.async`<div class=-cd_slide>
           <div class=-cd_image>

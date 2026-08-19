@@ -10,7 +10,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const texts = await node.texts();
   const sections: HtmlString[] = [];
   const preferred = ["accountable_body", "revocation", "grievance", "data_portability", "your_data", "https", "logs", "contactform", "youtube", "google_fonts", "cookies"];
-  const available = Object.keys(texts).filter((name) => name.startsWith("content_")).map((name) => name.slice(8));
+  const available = texts.keys().filter((name) => name.startsWith("content_")).map((name) => name.slice(8)).toArray();
   const keys = [...preferred.filter((key) => available.includes(key)), ...available.filter((key) => !preferred.includes(key))];
   for (const key of keys) {
     if (key === "https" && ctx.req.url.protocol !== "https:") continue;
@@ -24,7 +24,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       } catch { continue; }
     }
     const name = "content_" + key;
-    if (!texts["title_" + key]) continue;
+    if (!texts.has("title_" + key)) continue;
     let owner: HtmlString | string = "";
     if (key === "accountable_body") {
       const fields = ["company", "name", "address"];

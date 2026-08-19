@@ -31,7 +31,7 @@ export async function nodeLoadRuntimeCache(node: Node): Promise<void> {
     for (const l of ctx.app.languages.all) {
         await node.title(l);
         await node.urlSeo(l);
-        for (const text of Object.values(await node.texts())) await text.lang(l).get();
+        for (const text of (await node.texts()).values()) await text.lang(l).get();
     }
 }
 

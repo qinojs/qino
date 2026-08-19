@@ -25,10 +25,10 @@ class FakeText {
 class FakeNode {
   id: number;
   titleText: FakeText;
-  pageTexts: Record<string, FakeText>;
+  pageTexts: Map<string, FakeText>;
   childNodes: FakeNode[] = [];
 
-  constructor(id: number, titleText: FakeText, pageTexts: Record<string, FakeText> = {}) {
+  constructor(id: number, titleText: FakeText, pageTexts: Map<string, FakeText> = new Map()) {
     this.id = id;
     this.titleText = titleText;
     this.pageTexts = pageTexts;
@@ -91,7 +91,7 @@ Deno.test("cms.text: missing and empty texts are returned as untranslated", asyn
 Deno.test("cms.text: translate-all-langs translates only missing or empty texts", async () => {
   const title = new FakeText(10, { de: "Titel", en: "", fr: "" });
   const main = new FakeText(11, { de: "Hallo", en: "" });
-  const node = new FakeNode(1, title, { main });
+  const node = new FakeNode(1, title, new Map([["main", main]]));
   const texts = new Map([[10, title], [11, main]]);
   const fetchOrg = globalThis.fetch;
   globalThis.fetch = ((url: string | URL) => {

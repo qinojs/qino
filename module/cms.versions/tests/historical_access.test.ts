@@ -28,10 +28,10 @@ function setup(current: Record<number, any>, access: Record<number, number>, his
     id: row.id,
     vs: row,
     access: () => Promise.resolve(access[row.id] ?? 0),
-    files: () => { calls.push(row.id); return Promise.resolve({}); },
+    files: () => { calls.push(row.id); return Promise.resolve(new Map()); },
     title: () => Promise.resolve(""),
     urlSeo: () => Promise.resolve(""),
-    texts: () => Promise.resolve({}),
+    texts: () => Promise.resolve(new Map()),
   });
 
   const ctxPromise = testContext({ app });

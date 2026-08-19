@@ -56,7 +56,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
 
 /** The page's first image, if it has one. */
 async function image(node: Node, width: number) {
-  for (const file of Object.values(await node.files())) {
+  for (const file of (await node.files()).values()) {
     if (!file.mime.startsWith("image/")) continue;
     return html`<img class=-img src="${await file.url({ w: width, max: true })}" alt="" loading=lazy>`;
   }

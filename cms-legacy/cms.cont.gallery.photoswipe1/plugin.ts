@@ -28,7 +28,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const bigWidth = Number(node.settings.big_width()) || 3000;
   const bigHeight = Number(node.settings.big_height()) || 2500;
   const figures: HtmlString[] = [];
-  for (const file of Object.values(await node.files())) {
+  for (const file of (await node.files()).values()) {
     if (!await file.exists() || !file.mime.startsWith("image/")) continue;
     const size = await magick.identify(file.path, "%wx%h").catch(() => `${bigWidth}x${bigHeight}`);
     const [realWidth, realHeight] = size.split("x").map(Number);

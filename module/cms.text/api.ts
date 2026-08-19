@@ -89,7 +89,7 @@ class CmsTextService {
         let count = 0;
         const title = await node.title();
         count += await this.translateText(title.id, target_lang, source_lang, ifNeeded);
-        for (const text of Object.values(await node.texts()))
+        for (const text of (await node.texts()).values())
             count += await this.translateText((text as any).id, target_lang, source_lang, ifNeeded);
         return count;
     }

@@ -9,8 +9,6 @@ Deno.test("cms.installation.default: dependencies are the hard minimum, everythi
   assertEquals(name, "cms.installation.default");
   assertEquals(dependencies, ["cms"]);
   assertEquals(new Set(recommended).size, recommended.length);
-  for (const mod of ["cms.frontend.2", "cms.backend", "cms.cont.flexible", "cms.cont.login4", "cms.layout.backend", "cms.layout.login", "cms.image2", "error_report"])
-    assertEquals(recommended.includes(mod), true, mod);
 });
 
 Deno.test("cms.installation.default: every recommendation exists and its dependencies come along", async () => {

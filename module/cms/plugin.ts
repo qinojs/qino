@@ -113,7 +113,7 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         if (zipPid) {
             const page = await cms(app).node(Number(zipPid));
             if (!(await page.isReadable())) { ctx.res.status = 403; return; }
-            const files = Object.values(await page.files());
+            const files = [...(await page.files()).values()];
             if (!files.length) { ctx.res.status = 404; return; }
             const stream = await dbFiles2Zip(files).catch((e) => {
                 console.error(e);

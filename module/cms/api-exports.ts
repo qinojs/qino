@@ -145,8 +145,8 @@ export async function nodeFilesJson(node: Node): Promise<Record<string, any>> {
     const files = await node.files();
     const all = await node.filesAndPlaceholders();
     const res: Record<string, any> = {};
-    for (const [slot, file] of Object.entries(all)) {
-        res[slot] = slot in files
+    for (const [slot, file] of all) {
+        res[slot] = files.has(slot)
             ? { name: file.name, mime: file.mime, size: file.vs?.size, url: await file.url() }
             : { placeholder: true };
     }

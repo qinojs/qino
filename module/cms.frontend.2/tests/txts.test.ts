@@ -7,7 +7,7 @@ Deno.test("cms.frontend.2 texts: sanitizes stored HTML", async () => {
   const raw = '<strong>Title</strong><img src=x onerror="alert(1)"><script>alert(2)</script>';
   const node = {
     access: () => 2,
-    texts: () => ({ main: { id: 7, string: () => raw } }),
+    texts: () => new Map([["main", { id: 7, string: () => raw }]]),
     showText: () => sanitizeHtml(raw),
   };
   const out = String(await renderTexts(node as never));

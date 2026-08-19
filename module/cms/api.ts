@@ -47,7 +47,7 @@ const contentsJson = (node: Node) => fns.treeToJson({
   }),
 });
 const textsJson = async (node: Node) =>
-  Object.fromEntries(Object.entries(await node.texts()).map(([name, text]: any) => [name, text.id]));
+  Object.fromEntries((await node.texts()).entries().map(([name, text]) => [name, text.id]));
 
 /** What a node holds. Only meaningful after a render: modules create conts and texts lazily. */
 const shape = async (node: Node) => ({
@@ -184,7 +184,7 @@ const node = {
         ...nodeRead,
         query: s.object({ lang: s.optional(s.string()).describe("Language code, e.g. \"de\". Default: current language.") }),
         execute: async ({ node, name, lang }: any, ctx: Ctx) => {
-          const text = (await node.texts())[name];
+          const text = (await node.texts()).get(name);
           return text ? await text.lang(lang ?? ctx.lang).get() : null;
         },
       },
@@ -405,7 +405,7 @@ const node = {
         execute: async ({ node }: { node: Node }) => {
           const files = await node.files();
           const seen: Record<string, boolean> = {};
-          for (const [name, F] of Object.entries(files)) {
+          for (const [name, F] of files) {
             const md5 = F.vs?.md5;
             if (md5 && seen[md5]) await node.deleteFile(name);
             if (md5) seen[md5] = true;
@@ -420,7 +420,7 @@ const node = {
         description: "Delete all files of the node",
         ...nodeWrite,
         execute: async ({ node }: { node: Node }) => {
-          for (const name of Object.keys(await node.filesAndPlaceholders())) await node.deleteFile(name);
+          for (const name of [...(await node.filesAndPlaceholders()).keys()]) await node.deleteFile(name);
           return { ok: true };
         },
       },
