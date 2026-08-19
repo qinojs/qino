@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, fakeRender } from "@qino/qino/tests";
+import { unixTime } from "@qino/qino";
 
 import { identity, resolveUser } from "../plugin.ts";
 
@@ -22,6 +23,10 @@ function fakeDb({ link, usr }: { link?: number; usr?: number } = {}) {
 }
 
 const ctxWith = (db: any, userId = 0) => ({ app: { db }, userId }) as any;
+
+/** Nobody signed in, but a login waiting for its second factor — what the round trip answers. */
+const ctxPending = (db: any, usrId: number) =>
+  ({ app: { db }, userId: 0, sess: { data: { core: { pending: () => ({ usrId, via: {}, time: unixTime() }) } } } }) as any;
 
 const github = (over: Record<string, unknown> = {}) =>
   identity({ id: 4711, email: "kim@example.com", email_verified: true, ...over });
@@ -60,6 +65,17 @@ Deno.test("auth.oauth: signed in, the round trip connects the provider to whoeve
 Deno.test("auth.oauth: signed in, an identity linked to someone else is refused, not switched to", async () => {
   const db = fakeDb({ link: 7 });
   assertEquals(await resolveUser(ctxWith(db, 5), PROVIDER, github()), 0);
+});
+
+Deno.test("auth.oauth: a parked login connects the provider to the user it established", async () => {
+  const db = fakeDb();
+  assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github({ email: "someone.else@example.com" })), 5);
+  assertEquals(db.inserted[0][1].usr_id, 5);
+});
+
+Deno.test("auth.oauth: a parked login is not finished by an identity belonging to someone else", async () => {
+  const db = fakeDb({ link: 7 });
+  assertEquals(await resolveUser(ctxPending(db, 5), PROVIDER, github()), 0);
 });
 
 Deno.test("auth.oauth: allowed_domains rejects a foreign e-mail but spares an existing link", async () => {

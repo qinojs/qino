@@ -16,8 +16,8 @@ export type AuthFactor = {
   stepUp?: boolean;
   /** Sort order when several are offered, lowest first. Presentation only. */
   order?: number;
-  /** Whether this user has it set up. Left out where a factor cannot tell (oauth), and then counts
-   *  as set up for everyone. */
+  /** Whether this user has it set up. Left out where a factor cannot tell, and then counts as set
+   *  up for everyone. */
   has?(app: App, usrId: number): Promise<boolean>;
 };
 

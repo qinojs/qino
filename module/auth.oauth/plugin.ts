@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Access, ApiError, getCtx, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
+import { Access, ApiError, getCtx, identified, Output, Redirect, s, unixTime, unb64url, randB64, sha256b64url } from "@qino/qino";
 import { proof } from "@qino/qino/auth";
 
 import { links, unlink } from "./mod.ts";
@@ -10,7 +10,11 @@ import type { Factor } from "@qino/qino/auth";
 export { default as dbSchema } from "./dbschema.json" with { type: "json" };
 
 // No stepUp: the provider answers from its own session, so it says nothing about who is here now.
-export const authFactors: Factor[] = [{ name: "oauth", label: "External login" }];
+export const authFactors: Factor[] = [{
+  name: "oauth",
+  label: "External login",
+  has: async (app, usrId) => !!await app.db.one`SELECT 1 FROM oauth_provider_usr WHERE usr_id = ${usrId} LIMIT 1`,
+}];
 
 export const api: ApiTree = {
   get: {
@@ -110,12 +114,14 @@ export function identity(c: any): { sub: string; email: string; verified: unknow
  * provider keeps stable, so a changed e-mail on either side no longer moves the account. Whoever is
  * not known yet is matched by verified e-mail, optionally created — and remembered from then on.
  *
- * Coming back to a signed-in session means "connect this to me": the link is made for whoever is
- * here, and an identity belonging to someone else is refused rather than silently switching account.
+ * Coming back to a session that already knows someone means "connect this to me": the link is made
+ * for them, and an identity belonging to somebody else is refused rather than silently switching
+ * account. That someone is whoever is signed in — or the login parked here waiting for a second
+ * factor, which this round trip is answering.
  */
 export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identity>): Promise<number> {
   const db = ctx.app.db;
-  const here = ctx.userId;
+  const here = identified(ctx);
   // An e-mail off the allowed domains is refused wherever one is given — but a provider that stops
   // sending one (Apple does) must not lock out a link that already exists.
   const domains = String(p.allowed_domains ?? "").split(",").map((s) => s.trim()).filter(Boolean);
