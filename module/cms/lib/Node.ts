@@ -504,6 +504,7 @@ export class Node {
         const ctx = getCtx();
         lang ??= ctx.lang;
         const hash = this.vs.type === "c" ? await this.urlSeo(lang) : "";
+        await this.access(); // hack: `edit` reads the access cache synchronously — fill it, whatever the caller did before
         if (this.edit) return ctx.req.appUrl + "?cmspid=" + await this.page() + "&lang=" + lang + hash;
         return ctx.req.appUrl + (await (await this.page()).urlSeo(lang)) + hash;
     }
