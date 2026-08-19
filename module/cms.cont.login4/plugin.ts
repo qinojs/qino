@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import { html } from "@qino/qino";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -45,11 +44,10 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     errorHtml = html`<div class=loginError>${await app.t`One more step: confirm it is you.`}</div>`;
   } else if (ctx.loginError === "throttled") {
     const secs = ctx.loginRetryAfter ?? 0;
-    errorHtml = html`<div class=loginError>${
-      secs < 60
-        ? await app.t`Too many attempts. Please try again in ${secs} seconds.`
-        : await app.t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`
-    }</div>`;
+    const msg = secs < 60
+      ? await app.t`Too many attempts. Please try again in ${secs} seconds.`
+      : await app.t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`;
+    errorHtml = html`<div class=loginError>${msg}</div>`;
   } else if (ctx.loginError) {
     errorHtml = html`<div class=loginError>${html.raw(await errorT.string())}</div>`;
   }

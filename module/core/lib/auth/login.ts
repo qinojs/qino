@@ -1,8 +1,8 @@
 /** Signing in: the form, the password, the session. What may prove an identity is factors.ts. */
 import { timingSafeEqual } from "node:crypto";
 
-import { bcrypt } from "../../deps.ts";
 import { proofFailed, proofPassed, proofWait } from "./attempts.ts";
+import { bcrypt } from "../../deps.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
 import { unixTime } from "../util.ts";
 
@@ -47,31 +47,31 @@ export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginE
   const user = await ctx.app.db.row`SELECT * FROM usr WHERE LOWER(TRIM(email)) = LOWER(${email.trim()})`;
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
+  const usrId = Number(user.id);
   const rehash = pwNeedsRehash(usr.pw);
-  // Only a typed password is a guess: `loginFromRequest` comes through here without one on every
-  // request of a client whose session lapsed, which must neither cost the account nor make it wait.
-  //
-  // Counted against the account, so the user has to be known before we can ask — which also means a
-  // wait tells an outsider that this address exists. It costs them four wrong guesses to learn it,
-  // and the alternative is lying to the owner about why they cannot get in.
-  const guessed = pw !== "";
-  const throttled = guessed ? await proofWait(ctx.app, Number(user.id)) : 0;
   if (!rehash) {
     const clientUsrs = await ctx.client.users();
     // remember-me: the password is never asked here, so this is how access was had, not what proved it
-    if (clientUsrs[String(usr.id)]?.save_login) return await login(ctx, user.id, "remember") ? "" : "username";
+    if (clientUsrs[String(usrId)]?.save_login) return await login(ctx, usrId, "remember") ? "" : "username";
   }
-  if (throttled) {
-    ctx.loginRetryAfter = throttled; // the form says how long, so nobody has to guess that too
+  // Only a typed password is a guess — the pass above comes through without one on every request of
+  // a client whose session lapsed, and that must neither cost the account nor make it wait.
+  if (!pw) return "password";
+  // The wait is the account's, so the user has to be known before we can ask for it. A wait
+  // therefore tells an outsider that this address exists; it costs them four wrong guesses to learn
+  // that, and the alternative is lying to the owner about why they cannot get in.
+  const wait = await proofWait(ctx.app, usrId);
+  if (wait) {
+    ctx.loginRetryAfter = wait; // the form says how long, so nobody has to guess that too
     return "throttled";
   }
   if (!await pwVerify(pw, usr.pw ?? "")) {
-    if (guessed) await proofFailed(ctx.app, Number(user.id));
+    await proofFailed(ctx.app, usrId);
     return "password";
   }
   if (rehash) await usr.$set({ pw: await pwHash(pw) });
   // The same route every other factor takes: core declares `password` and claims no shortcut.
-  const missing = await loginProof(ctx, passwordFactor(ctx.app), Number(user.id));
+  const missing = await loginProof(ctx, passwordFactor(ctx.app), usrId);
   if (!missing) return "";
   return missing.length ? "pending" : "username";
 }

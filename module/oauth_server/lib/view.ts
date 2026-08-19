@@ -15,10 +15,17 @@ function page(ctx: Ctx, title: string, body: HtmlString, status = 200): never {
 export async function loginPage(ctx: Ctx, client: string): Promise<never> {
   const t = ctx.app.t;
   const title = await t`Sign in`;
+  const failed = !ctx.loginError ? "" : await (
+    ctx.loginError === "pending"
+      ? t`One more step: confirm it is you.`
+      : ctx.loginError === "throttled"
+      ? t`Too many attempts. Please try again in ${ctx.loginRetryAfter ?? 0} seconds.`
+      : t`Your login attempt failed`
+  );
   page(ctx, title, await html.async`<main>
   <h1>${title}</h1>
   <p>${t`${client} wants to access your account.`}</p>
-  ${ctx.loginError ? html`<p><strong>${await (ctx.loginError === "pending" ? t`One more step: confirm it is you.` : ctx.loginError === "throttled" ? t`Too many attempts. Please try again in ${ctx.loginRetryAfter ?? 0} seconds.` : t`Your login attempt failed`)}</strong></p>` : ""}
+  ${failed ? html`<p><strong>${failed}</strong></p>` : ""}
   <form method=post action="${ctx.req.url.href}">
     <input type=hidden name=core_login value=1>
     <input type=hidden name=csrfToken value="${ctx.csrfToken}">

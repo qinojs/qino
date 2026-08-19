@@ -71,10 +71,11 @@ export const api: ApiTree = {
         input: s.object({ pw: s.string() }),
         execute: async ({ pw }: any) => {
           const ctx = getCtx();
-          await beforeProof(ctx.app, ctx.userId);
           // Same reason as in auth's proof(): a stateless credential identifies a request, not the
-          // session a proof would be written to.
-          if (ctx.statelessAuth || !await pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? ""))) {
+          // session a proof would be written to. Nothing is guessed there, so nothing is counted.
+          if (ctx.statelessAuth) throw new ApiError(422, "That password does not match");
+          await beforeProof(ctx.app, ctx.userId);
+          if (!await pwVerify(String(pw ?? ""), String(ctx.user?.pw ?? ""))) {
             await proofFailed(ctx.app, ctx.userId);
             ctx.app.fire("suspicious", { ctx, reason: "password step-up failed" }).catch(() => {});
             throw new ApiError(422, "That password does not match");
