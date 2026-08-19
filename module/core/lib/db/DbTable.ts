@@ -16,7 +16,7 @@ const idValue = (field: DbField, value: any): string | undefined => {
 };
 
 export class DbTable {
-  #fields: Record<string, DbField> | null = null;
+  #fields: Map<string, DbField> | null = null;
   #primaries: DbField[] = []; // in id-part order
   #autoIncrement: DbField | undefined;
   #db: Db;
@@ -29,7 +29,7 @@ export class DbTable {
   }
 
   get db(): Db { return this.#db; }
-  get fields(): Record<string, DbField> | null { return this.#fields; }
+  get fields(): Map<string, DbField> | null { return this.#fields; }
   get autoIncrement(): DbField | undefined { return this.#autoIncrement; }
   get schema(): Record<string, any> { return this.#db.schema?.properties?.[String(this)] ?? {}; }
   get primaries(): DbField[] { return this.#primaries; }
@@ -52,11 +52,12 @@ export class DbTable {
   /** Read the column metadata. Built aside and swapped in, so nothing ever sees a table
    *  that has lost its fields while the introspection query is in flight. */
   async reloadFields(): Promise<void> {
-    const fields: Record<string, DbField> = {};
+    const fields = new Map<string, DbField>();
     const primaries = [];
     let autoIncrement: DbField | undefined;
     for (const vs of await this.#db.columns(this.#name)) {
-      const field = fields[vs.Field] = new DbField(this, vs.Field, vs);
+      const field = new DbField(this, vs.Field, vs);
+      fields.set(vs.Field, field);
       if (field.isPrimary()) primaries.push(field);
       if (field.isAutoIncrement()) autoIncrement = field;
     }
@@ -66,9 +67,9 @@ export class DbTable {
     this.#children = null;
   }
 
-  field(n: string): DbField | undefined { return this.#fields?.[n]; }
+  field(n: string): DbField | undefined { return this.#fields?.get(n); }
 
-  async init(): Promise<Record<string, DbField>> {
+  async init(): Promise<Map<string, DbField>> {
     if (this.#fields === null) await this.reloadFields();
     return this.#fields!;
   }
@@ -134,9 +135,13 @@ export class DbTable {
 
   valuesToFragment(values: Record<string, any>, alias?: string, isSet = false): Sql {
     const frags = [];
-    for (const [name, field] of Object.entries(this.#fields!)) {
+    const fields = this.#fields!;
+    // Field order, not values order: the rendered text stays the same for the same set of
+    // columns, which is what makes a prepared statement hit its cache. Keys, then get() —
+    // destructuring the map allocates a pair per column and measures slower.
+    for (const name of fields.keys()) {
       if (!(name in values)) continue;
-      const value = field.valueTransform(values[name]);
+      const value = fields.get(name)!.valueTransform(values[name]);
       const ref = alias ? sql`${sql.id(alias)}.${sql.id(name)}` : sql.id(name);
       if (!isSet && value === null) { frags.push(sql`${ref} IS NULL`); continue; }
       frags.push(sql`${ref} = ${value}`);
@@ -148,10 +153,11 @@ export class DbTable {
     const eBefore: any = { table: this, data: values, returnValue: undefined };
     await this.#db.fire("table:insert-before", eBefore);
     if (eBefore.returnValue !== undefined) return eBefore.returnValue;
-    const cols = Object.keys(this.#fields!).filter((f) => f in values);
+    const cols = [];
+    for (const name of this.#fields!.keys()) if (name in values) cols.push(name);
     // Standard `(cols) VALUES (?)`; the driver supplies its dialect-specific empty-row fragment.
     const into = cols.length
-      ? sql`(${sql.join(cols.map((f) => sql.id(f)))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields![f].valueTransform(values[f])}`))})`
+      ? sql`(${sql.join(cols.map((f) => sql.id(f)))}) VALUES (${sql.join(cols.map((f) => sql`${this.#fields!.get(f)!.valueTransform(values[f])}`))})`
       : sql.raw(this.#db.emptyInsert);
     const auto = this.autoIncrement;
     const res = await this.#db.exec(sql`INSERT INTO ${sql.id(this)} ${into}`, String(auto || this.primary || ""));

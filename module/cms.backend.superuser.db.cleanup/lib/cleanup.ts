@@ -33,7 +33,7 @@ export async function findOrphans(db: Db, tableName?: string) {
   const relations = [];
   for (const table of Object.values(db.tables)) {
     if (tableName && table.name !== tableName) continue;
-    for (const field of Object.values(table.fields ?? {})) {
+    for (const field of table.fields?.values() ?? []) {
       if (field.onParentDelete !== "cascade" && field.onParentDelete !== "setnull") continue; // no rule: dangling ids are fine (e.g. purged log rows)
       const r = relation(db, table.name, field.name);
       if (r) relations.push(r);
@@ -95,7 +95,7 @@ export function schemaExtras(db: Db) {
   for (const [table, dbTable] of Object.entries(db.tables)) {
     if (!(table in schema)) { issues.push({ table, status: "no-schema-table" }); continue; }
     const fields = schema[table].additionalProperties?.properties ?? {};
-    for (const [field, dbField] of Object.entries(dbTable.fields ?? {})) {
+    for (const [field, dbField] of dbTable.fields ?? []) {
       if (!(field in fields)) { issues.push({ table, field, status: "field-missing-schema" }); continue; }
       // The migration only ever widens, so a column can outgrow its schema and stay that way.
       // Only declared character lengths are comparable — an integer width is a different question.

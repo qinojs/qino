@@ -26,11 +26,11 @@ function boundAbove(cls: typeof DbRow, name: string): boolean {
 }
 
 /** Columns as accessors on the class. Per column, so a later reloadFields() picks up new ones. */
-function bindColumns(cls: typeof DbRow, names: string[]): void {
+function bindColumns(cls: typeof DbRow, fields: Map<string, unknown>): void {
   let done = boundNames.get(cls);
   if (!done) boundNames.set(cls, done = new Set());
-  if (done.size === names.length) return;
-  for (const name of names) {
+  if (done.size === fields.size) return;
+  for (const name of fields.keys()) {
     if (done.has(name)) continue;
     if (boundAbove(cls, name)) { done.add(name); continue; } // inherited accessor, not a member
     if (name[0] === "$") throw new Error(`${cls.name}: column "${name}" starts with $, which the row layer reserves`);
@@ -55,7 +55,7 @@ export class DbRow {
   constructor(table: DbTable, id: string) {
     this.#table = table;
     this.#id = id;
-    if (table.fields) bindColumns(this.constructor as typeof DbRow, Object.keys(table.fields));
+    if (table.fields) bindColumns(this.constructor as typeof DbRow, table.fields);
   }
 
   get $table(): DbTable { return this.#table; }

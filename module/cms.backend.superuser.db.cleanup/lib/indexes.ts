@@ -81,7 +81,7 @@ export async function indexIssues(db: Db, tableName: string) {
   if (!table) return [];
   const indexes = await tableIndexes(db, tableName);
   const issues = [];
-  const fields = Object.entries(table.fields ?? {});
+  const fields = [...table.fields ?? []];
   const wantedPrimary = fields.filter(([, field]) => field.schema["x-index"] === "primary").map(([name]) => name);
   const primary = indexes.find((index) => index.primary);
   const actualPrimary = primary?.fields ?? table.primaries.map(String);

@@ -72,6 +72,11 @@ class MysqlDriver extends DbDriver {
       ...this.#connParams, database: this.#database,
       charset: "utf8mb4", multipleStatements: false,
       waitForConnections: true, connectionLimit: 8, timezone: "Z",
+      // Dates as strings, the shape the sqlite driver already hands back: saves building a Date
+      // per row and keeps a column looking the same on every backend.
+      dateStrings: true,
+      // Per connection — times connectionLimit this stays far below max_prepared_stmt_count.
+      maxPreparedStatements: 200,
     });
     this.#pool.on("connection", (c: { query(sql: string, p?: unknown[]): void }) => c.query("SET SESSION sql_mode = ?", [SQL_MODE]));
   }

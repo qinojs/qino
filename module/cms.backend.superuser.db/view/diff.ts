@@ -21,11 +21,11 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
     const table = tables[tableName];
     if (!table) continue;
     const schemaFields = tableSchema.additionalProperties?.properties ?? {};
-    const dbFields = table.fields ?? {};
+    const dbFields = table.fields ?? new Map();
     for (const f of Object.keys(schemaFields)) {
-      if (!(f in dbFields)) rows.push({ table: tableName, field: f, status: "field-missing-db" });
+      if (!dbFields.has(f)) rows.push({ table: tableName, field: f, status: "field-missing-db" });
     }
-    for (const f of Object.keys(dbFields)) {
+    for (const f of dbFields.keys()) {
       if (!(f in schemaFields)) rows.push({ table: tableName, field: f, status: "field-missing-schema" });
     }
   }

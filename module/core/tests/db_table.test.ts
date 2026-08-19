@@ -66,7 +66,7 @@ Deno.test("DbTable: init discovers fields, primary and auto increment", async ()
   const table = new DbTable(fake as any, "thing");
   await table.init();
 
-  assertEquals(Object.keys(table.fields ?? {}), ["id", "name", "parent"]);
+  assertEquals([...table.fields?.keys() ?? []], ["id", "name", "parent"]);
   assertEquals(String(table.primary), "id");
   assertEquals(String(table.autoIncrement), "id");
 });
