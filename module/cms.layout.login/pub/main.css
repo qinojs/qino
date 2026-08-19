@@ -11,17 +11,20 @@ body {
   padding: .9375rem;
   display: flex;
   flex-flow: column;
-}
 
-#container input:not([type=checkbox]) {
-  background:transparent;
-  color:inherit;
-  width:100%;
-}
-
-#container input:-webkit-autofill {
-  box-shadow: 0 0 0 62.5rem var(--cms-color) inset;
-  -webkit-text-fill-color: #fff !important;
+  & input:not([type=checkbox]) {
+    background:transparent;
+    color:inherit;
+    width:100%;
+  }
+  & input:-webkit-autofill {
+    box-shadow: 0 0 0 62.5rem var(--cms-color) inset;
+    -webkit-text-fill-color: #fff !important;
+  }
+  & button {
+    width:100%;
+    background:var(--cms-dark);
+  }
 }
 
 #head {
@@ -44,92 +47,83 @@ body {
   min-width:13rem;
   max-width:100%;
 }
-#container button {
-  width:100%;
-  background:var(--cms-dark);
-}
 
 /* login */
-#container [qcms-mod="cont.login4"] table {
-  width:100%;
-}
-#container [qcms-mod="cont.login4"] td,
-#container [qcms-mod="cont.login4"] th {
-  font-weight:normal;
-  flex:1 1 auto;
-  padding:.5rem .25rem;
-}
-#container [qcms-mod="cont.login4"] th {
-  text-align:right;
-}
+#container [qcms-mod="cont.login4"] {
+  & table {
+    width:100%;
+  }
+  & td,
+  & th {
+    font-weight:normal;
+    flex:1 1 auto;
+    padding:.5rem .25rem;
+  }
+  & th {
+    text-align:right;
+  }
+  & td {
+    padding:0;
+  }
+  & input {
+    margin:0;
+  }
+  & tr {
+    display:flex;
+    align-items:stretch;
+    margin:1.0625rem 0;
+  }
+  & tr.-login > th {
+    display:none;
+  }
 
-#container [qcms-mod="cont.login4"] tr.-email > th,
-#container [qcms-mod="cont.login4"] tr.-login > th,
-#container [qcms-mod="cont.login4"] tr.-pw > th {
-  display:none;
-}
+  & tr.-save_login {
+    font-size:12px;
+    display:block;
+    text-align: right;
 
-#container [qcms-mod="cont.login4"] tr.-save_login {
-  font-size:12px;
-  display:block;
-  text-align: right;
-}
-#container [qcms-mod="cont.login4"] tr.-save_login > * {
-  display:inline-block;
-  vertical-align: middle;
-  padding-left:.375rem;
-}
+    & > * {
+      display:inline-block;
+      vertical-align: middle;
+      padding-left:.375rem;
+    }
+  }
 
-/* neu */
-#container [qcms-mod="cont.login4"] tr {
-  display:flex;
-  align-items:stretch;
-  margin:1.0625rem 0;
-}
-#container [qcms-mod="cont.login4"] td {
-  padding:0;
-}
-#container [qcms-mod="cont.login4"] input {
-  margin:0;
-}
+  & tr.-email,
+  & tr.-pw {
+    border:1px solid #fff;
+    border-width:0 0 1px 0;
+    background:var(--cms-color);
 
-#container [qcms-mod="cont.login4"] tr.-email,
-#container [qcms-mod="cont.login4"] tr.-pw {
-  border:1px solid #fff;
-  border-width:0 0 1px 0;
-  background:var(--cms-color);
-}
-#container [qcms-mod="cont.login4"] tr.-email > *,
-#container [qcms-mod="cont.login4"] tr.-pw > * {
-  display:flex !important;
-  background:var(--cms-color);
-}
-#container [qcms-mod="cont.login4"] tr.-email input,
-#container [qcms-mod="cont.login4"] tr.-pw input {
-  border:none;
-}
-#container [qcms-mod="cont.login4"] tr.-email > th > div,
-#container [qcms-mod="cont.login4"] tr.-pw    > th > div {
-  display:none;
-}
-#container [qcms-mod="cont.login4"] tr.-email > th,
-#container [qcms-mod="cont.login4"] tr.-pw    > th {
-  display:flex !important;
-  align-items:center;
-  flex:0;
-}
-#container [qcms-mod="cont.login4"] tr.-email > th:after,
-#container [qcms-mod="cont.login4"] tr.-pw    > th:after {
-  content:'';
-  display: block;
-  font-family: 'qg_cms';
-  line-height: 1;
-  font-size: 20px;
-  text-align: center;
-}
-#container [qcms-mod="cont.login4"] tr.-email > th:after { content: "\e600"; }
-#container [qcms-mod="cont.login4"] tr.-pw    > th:after { content: "\e900"; }
+    & > * {
+      display:flex !important;
+      background:var(--cms-color);
+    }
+    & input {
+      border:none;
+    }
+    & > th {
+      display:flex !important;
+      align-items:center;
+      flex:0;
 
-#container [qcms-mod="cont.login4"] button {
-  padding:.625rem .5625rem .5625rem;
+      & > div {
+        display:none;
+      }
+      &:after {
+        content:'';
+        display: block;
+        font-family: 'qg_cms';
+        line-height: 1;
+        font-size: 20px;
+        text-align: center;
+      }
+    }
+  }
+  & tr.-email > th:after { content: "\e600"; }
+  & tr.-pw    > th:after { content: "\e900"; }
+
+  & button {
+    padding:.625rem .5625rem .5625rem;
+  }
 }

@@ -53,6 +53,8 @@ qino-cms:not(:defined) { display:none; }
     color:#fff;
     border-color:transparent;
     background:var(--cms-color);
+    border-radius:.2rem;
+    padding: .5em 1.1em;
   }
   & table { font-size:inherit; }
   & input[type=number] { padding-right:0; }
@@ -155,7 +157,11 @@ qino-cms:not(:defined) { display:none; }
     background: color-mix(var(--color), #fff 88%);
     border-radius: var(--radius);
   }
-
+  u2-buttongroup {
+    display:flex;
+    gap: 1px;
+    & > * { margin:0; }
+  }
 
 }
 

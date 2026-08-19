@@ -11,11 +11,12 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
   resHtml.styles.add(ctx.req.moduleUrl + "cms/pub/css/ui.css");
   resHtml.scripts.add(ctx.req.moduleUrl + "cms/pub/js/cms.mjs");
+  resHtml.class.add("qgCMS");
 
   const title = await (await node.title()).string();
 
   return html.async`
-  <div id=container class=qgCMS>
+  <div id=container>
     <div id=head>
       <div id=title>${title}</div>
       <div id=subtitle>${ctx.req.header("host")}</div>
@@ -28,7 +29,9 @@ async function render(node: Node, {ctx}: { ctx: Ctx }): Promise<HtmlString> {
 
 export const cms = {
   node: {
-    css: ["pub/main.css"],
+    css: [
+      "pub/main.css",
+    ],
     render,
   },
 };
