@@ -10,12 +10,12 @@ export interface Verb {
   output?: StandardSchema;
   /** Static admissibility gate (param-free): who may use this at all. Evaluated for listings and on every call. */
   access?: (ctx: Ctx) => boolean | Promise<boolean>;
-  /** Per-call check: is this concrete call allowed. Runs after `access` and before input validation,
-   *  so `params` holds the resolved path params only — input and query are merged in afterwards. */
+  /** Per-call check: is this concrete call allowed. Runs after `access` on the resolved path params
+   *  plus the validated input and query — except in a dry run, which has no input to show it. */
   guard?: (params: Params, ctx: Ctx) => boolean | Promise<boolean>;
   /** Always demands a fresh proof of identity (issuing a factor, say). Declared rather than called,
    *  so a listing can see it and it cannot come too late. Where it depends on the call, call
-   *  `requireStepUp(ctx)` in a `guard`, or in `execute` for what only the input knows. */
+   *  `requireStepUp(ctx)` in a `guard`. */
   requireStepUp?: boolean | { maxAge: number };
   execute(params: Params, ctx: Ctx): unknown | Promise<unknown>;
 }

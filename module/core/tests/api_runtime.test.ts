@@ -124,9 +124,30 @@ Deno.test("api: access and validation errors are typed", async () => {
     await assertRejects(() => invoke(api, "GET", "/thing/9"), NotFoundError);
     await assertRejects(() => invoke(api, "GET", "/thing/2kb"), ValidationError);
     await assertRejects(() => invoke(api, "GET", "/closed"), AccessError);
-    await assertRejects(() => invoke(api, "POST", "/thing/2/update", { title: "No", count: 1 }), AccessError);
+    await assertRejects(() => invoke(api, "POST", "/thing/2/update", { input: { title: "No", count: 1 }, query: {} }), AccessError);
     await assertRejects(() => invoke(api, "POST", "/thing/1/update", { title: "Bad", count: "7" }), ValidationError);
     await assertRejects(() => invoke(api, "POST", "/thing/1/update", { input: { title: "Bad", count: 7 }, query: { preview: "yes" } }), ValidationError);
+  });
+});
+
+Deno.test("api: a guard sees the validated input", async () => {
+  const seen: unknown[] = [];
+  const tree: any = {
+    thing: {
+      post: {
+        access: Access.PUBLIC,
+        input: s.object({ count: s.number() }),
+        guard: ({ count }: any) => (seen.push(count), count < 10),
+        execute: () => ({ ok: true }),
+      },
+    },
+  };
+  await withCtx(async () => {
+    assertEquals(await invoke(tree, "POST", "/thing", { input: { count: 3 }, query: {} }), { ok: true });
+    await assertRejects(() => invoke(tree, "POST", "/thing", { input: { count: 99 }, query: {} }), AccessError);
+    // a dry run carries no input, so an input-dependent guard sees undefined there
+    await assertRejects(() => invoke(tree, "POST", "/thing", {}, { checkAccess: true }), AccessError);
+    assertEquals(seen, [3, 99, undefined]);
   });
 });
 

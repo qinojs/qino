@@ -100,7 +100,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   </div>
   <div class=-body>Read out of the api tree: these carry <code>requireStepUp</code>, and
   <code>invoke()</code> asks before running them. They are the ways a factor is handed out or taken
-  away. A demand that depends on the call (<code>guard</code>, <code>execute</code>) cannot appear
+  away. A demand that depends on the call (<code>guard</code>) cannot appear
   here — being listable is what the declared form is for.</div>
 </div>
 <div class=u2-card style="flex:1 1 20rem">

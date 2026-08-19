@@ -91,12 +91,14 @@ export async function invoke(tree: ApiTree, method: string, path: string, rawPar
   }
 
   if (!verb.access) throw new AccessError("no access defined");
-  if (!await verb.access(ctx) || (verb.guard && !await verb.guard(params, ctx))) throw new AccessError();
+  if (!await verb.access(ctx)) throw new AccessError();
+  // a dry run carries no input, so the guard sees the path params alone there
+  if (!opts.checkAccess) Object.assign(params, validatePart(verb.input, input, "input", !BODY_METHODS.has(m)), validatePart(verb.query, query, "query", true));
+  if (verb.guard && !await verb.guard(params, ctx)) throw new AccessError();
   // a dry run asks who may use this; a proof is something the caller can still give
   if (opts.checkAccess) return { ok: true };
   if (verb.requireStepUp) await requireStepUp(ctx, verb.requireStepUp === true ? {} : verb.requireStepUp);
 
-  Object.assign(params, validatePart(verb.input, input, "input", !BODY_METHODS.has(m)), validatePart(verb.query, query, "query", true));
   const result = await verb.execute(params, ctx);
 
   if (verb.output) {
