@@ -87,7 +87,7 @@ because only a factor a linked module declares is ever asked for.
 
 ## Storage
 
-The record of how a session got here lives in the session, so [`logout()`](../core/lib/auth.ts) and
+The record of how a session got here lives in the session, so [`logout()`](../core/lib/auth/login.ts) and
 the id rotation on every login clear it without help.
 
 `usr_auth_factor` holds what a factor has to remember per user — one row per secret, so several
@@ -100,7 +100,7 @@ A factor with real columns of its own keeps its own table, as [auth.webauthn](..
 
 ## Demanding a fresh proof
 
-[`requireStepUp(ctx, { maxAge })`](../core/lib/factors.ts) lives in core, next to what it reads.
+[`requireStepUp(ctx, { maxAge })`](../core/lib/auth/factors.ts) lives in core, next to what it reads.
 It counts only what a linked module declares with `stepUp`, so `remember` and `login_as` never
 satisfy one, and it throws `StepUpError` — `code: "step_up_required"`, and the factors that would
 work for this user.

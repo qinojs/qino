@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { header, cookiePrefix, uid, unixTime } from "../util.ts";
-import { loginFromRequest } from "../auth.ts";
+import { loginFromRequest } from "../auth/login.ts";
 
 import type { Ctx } from "./Ctx.ts";
 

@@ -11,9 +11,7 @@ import { getCtx } from "./lib/ctx/Ctx.ts";
 import { $item, sql } from "./deps.ts";
 import { Access, AccessError, ApiError, ConflictError } from "./lib/api/mod.ts";
 import { s } from "./lib/StandardSchema.ts";
-import { beforeProof, proofFailed, proofPassed } from "./lib/attempts.ts";
-import { pwVerify, pwHash, logout } from "./lib/auth.ts";
-import { loginNeeds, pendingLogin } from "./lib/factors.ts";
+import { beforeProof, loginNeeds, logout, pendingLogin, proofFailed, proofPassed, pwHash, pwVerify } from "./lib/auth/mod.ts";
 import { itemReadDeep, unixTime } from "./lib/util.ts";
 
 import type { ApiTree } from "./lib/api/mod.ts";

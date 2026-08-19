@@ -8,7 +8,7 @@ import { Req } from "./Req.ts";
 
 import type { Item, ItemProxy } from "../../deps.ts";
 import type { App } from "../App.ts";
-import type { LoginError } from "../auth.ts";
+import type { LoginError } from "../auth/login.ts";
 import type { Client, Usr } from "../rows.ts";
 import type { Session } from "../SessionManager.ts";
 
@@ -19,6 +19,7 @@ export class Ctx {
   clientId: string | null = null;
   logId: Promise<string | null> = Promise.resolve(null);
   loginError?: LoginError;
+  loginRetryAfter?: number; // seconds left of the wait a `throttled` login has to sit out
   // deno-lint-ignore no-explicit-any
   state: Record<string, any> = {};
   lang = "en";

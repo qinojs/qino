@@ -1,7 +1,5 @@
 import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
-import { beforeProof, proofFailed } from "../lib/attempts.ts";
-import { login, loginFromRequest, loginProof, pwHash, tryLogin } from "../lib/auth.ts";
-import { pendingLogin } from "../lib/factors.ts";
+import { beforeProof, login, loginFromRequest, loginProof, pendingLogin, proofFailed, pwHash, tryLogin } from "../lib/auth/mod.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
 
 Deno.test("loginFromRequest: login form requires token", async () => {
@@ -125,6 +123,16 @@ Deno.test("login: a half login does not wipe the wait — a known password buys 
     // typing the right password again settles nothing: the login it belongs to never finished
     assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "throttled");
     await assertRejects(() => beforeProof(app, 7), Error, "Too many attempts");
+  });
+});
+
+Deno.test("login: the pass a lapsed session makes costs the account nothing", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").update(7, { pw: await pwHash("secret") });
+    // what loginFromRequest does on every request of a client that is signed in nowhere
+    for (let i = 0; i < 9; i++) assertEquals(await tryLogin(ctx, "ann@example.test"), "password");
+    await beforeProof(app, 7); // nothing was typed, so nothing was guessed
+    assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "");
   });
 });
 

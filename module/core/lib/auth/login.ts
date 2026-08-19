@@ -1,15 +1,15 @@
 /** Signing in: the form, the password, the session. What may prove an identity is factors.ts. */
 import { timingSafeEqual } from "node:crypto";
 
-import { bcrypt } from "../deps.ts";
-import { beforeProof, proofFailed, proofPassed } from "./attempts.ts";
+import { bcrypt } from "../../deps.ts";
+import { proofFailed, proofPassed, proofWait } from "./attempts.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
-import { unixTime } from "./util.ts";
+import { unixTime } from "../util.ts";
 
-import type { App } from "./App.ts";
-import type { Ctx } from "./ctx/Ctx.ts";
+import type { App } from "../App.ts";
+import type { Ctx } from "../ctx/Ctx.ts";
 import type { AuthFactor, Offer } from "./factors.ts";
-import type { Usr } from "./rows.ts";
+import type { Usr } from "../rows.ts";
 
 /** Why a request is not signed in. `pending` is no failure: right credentials, second factor owed. */
 export type LoginError = "username" | "inactive" | "password" | "pending" | "throttled";
@@ -48,18 +48,25 @@ export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginE
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
   const rehash = pwNeedsRehash(usr.pw);
-  // Wrong tries are counted against the account, so the user has to be known before we can ask —
-  // which also means a wait tells an outsider that this address exists. It costs them four wrong
-  // guesses to learn it, and the alternative is lying to the owner about why they cannot get in.
-  const throttled = await beforeProof(ctx.app, Number(user.id)).then(() => false, () => true);
+  // Only a typed password is a guess: `loginFromRequest` comes through here without one on every
+  // request of a client whose session lapsed, which must neither cost the account nor make it wait.
+  //
+  // Counted against the account, so the user has to be known before we can ask — which also means a
+  // wait tells an outsider that this address exists. It costs them four wrong guesses to learn it,
+  // and the alternative is lying to the owner about why they cannot get in.
+  const guessed = pw !== "";
+  const throttled = guessed ? await proofWait(ctx.app, Number(user.id)) : 0;
   if (!rehash) {
     const clientUsrs = await ctx.client.users();
     // remember-me: the password is never asked here, so this is how access was had, not what proved it
     if (clientUsrs[String(usr.id)]?.save_login) return await login(ctx, user.id, "remember") ? "" : "username";
   }
-  if (throttled) return "throttled";
+  if (throttled) {
+    ctx.loginRetryAfter = throttled; // the form says how long, so nobody has to guess that too
+    return "throttled";
+  }
   if (!await pwVerify(pw, usr.pw ?? "")) {
-    await proofFailed(ctx.app, Number(user.id));
+    if (guessed) await proofFailed(ctx.app, Number(user.id));
     return "password";
   }
   if (rehash) await usr.$set({ pw: await pwHash(pw) });

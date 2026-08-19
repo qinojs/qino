@@ -1,9 +1,9 @@
-/** Which proofs of identity exist, and whether a set of them is enough. Opening a session is auth.ts. */
-import { StepUpError } from "./api/errors.ts";
-import { isOn, unixTime } from "./util.ts";
+/** Which proofs of identity exist, and whether a set of them is enough. Opening a session is login.ts. */
+import { StepUpError } from "../api/errors.ts";
+import { isOn, unixTime } from "../util.ts";
 
-import type { App } from "./App.ts";
-import type { Ctx } from "./ctx/Ctx.ts";
+import type { App } from "../App.ts";
+import type { Ctx } from "../ctx/Ctx.ts";
 
 /** A way of proving who you are, declared by a module as `authFactors` — a list, or a function of
  *  the app when it depends on what else is installed. Every factor can log in; the flags add to that. */

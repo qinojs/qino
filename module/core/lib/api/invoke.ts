@@ -1,4 +1,4 @@
-import { requireStepUp } from "../factors.ts";
+import { requireStepUp } from "../auth/factors.ts";
 import { getCtx } from "../ctx/Ctx.ts";
 import { AccessError, NotFoundError, ValidationError } from "./errors.ts";
 import { BODY_METHODS, RESERVED, VERB_SET, branch } from "./types.ts";

@@ -54,6 +54,7 @@ export function initNodeChanged(app: App, signal: AbortSignal) {
         const table = String(e.table);
         if (table !== "page" && table !== "text" && table !== "file" && !LINKED.has(table)) return;
         const vs = { ...(e.id != null ? e.table.entryIdValues?.(e.id) : {}), ...e.data };
+        if ((LINKED.has(table) ? vs.page_id : vs.id) == null) return; // incomplete id (e.g. composite key given as a single value)
         const logId = Number(await ctx.logId) || 0;
         if (!logId) return;
 

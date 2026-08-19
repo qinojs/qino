@@ -44,7 +44,12 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
     errorHtml = html`<div class=loginError>${await app.t`One more step: confirm it is you.`}</div>`;
   } else if (ctx.loginError === "throttled") {
-    errorHtml = html`<div class=loginError>${await app.t`Too many attempts. Please wait a moment and try again.`}</div>`;
+    const secs = ctx.loginRetryAfter ?? 0;
+    errorHtml = html`<div class=loginError>${
+      secs < 60
+        ? await app.t`Too many attempts. Please try again in ${secs} seconds.`
+        : await app.t`Too many attempts. Please try again in ${Math.ceil(secs / 60)} minutes.`
+    }</div>`;
   } else if (ctx.loginError) {
     errorHtml = html`<div class=loginError>${html.raw(await errorT.string())}</div>`;
   }

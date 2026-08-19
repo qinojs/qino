@@ -1,4 +1,4 @@
-import { identified } from "../factors.ts";
+import { identified } from "../auth/factors.ts";
 
 import type { Verb } from "./types.ts";
 
