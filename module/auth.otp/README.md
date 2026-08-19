@@ -32,6 +32,13 @@ cost the account a growing wait — unlike a TOTP, it is not implicitly bounded 
 wait is core's and shared: guesses spent here also slow down the password and the authenticator app,
 so nobody gets a fresh budget by switching factor.
 
+Never to the device that is asking. A code arriving where it is typed proves nothing beyond holding
+this browser, which the request already showed — so `send()` passes the request's client as
+`notClient`, and `has()` asks `reach()` the same way, or the factor would be offered with nowhere to
+send. Only `web_push` can be the asking device; sms, mail and telegram are out of band by nature and
+ignore it. A user whose only subscription is the browser they log in from therefore has no web_push
+factor, which is the honest answer.
+
 The claim is keyed `otp:<channel>` on the user's own id, not on the address: the contact is verified
 already, so what the code proves is presence, not ownership — and it must not collide with a pending
 claim on the same address.

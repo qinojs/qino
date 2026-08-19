@@ -25,21 +25,23 @@ export function titleOf(msg: Msg, max = 78): string {
   return cut.slice(0, cut.lastIndexOf(" ") + 1 || max).trimEnd() + "…";
 }
 
-/** Who a message goes to; every channel understands these and adds its own keys. */
-export type To = { grp?: number; usr?: number; all?: true };
+/** Who a message goes to; every channel understands these and adds its own keys.
+ *  `notClient` names the device that must be skipped — a channel that reaches devices honours it,
+ *  one that is out of band by nature (sms, mail, telegram) has none and ignores it. */
+export type To = { grp?: number; usr?: number; all?: true; notClient?: string | number };
 
 /**
  * A way to reach a person, declared by a module as `export const messagingChannel`.
  *
  * `name` is what lands in the journal's `channel` column, so it outlives module renames.
- * `reach` answers how many destinations one user has; `send` is the module's own send() —
- * the declaration is the same function, not a wrapper around it.
+ * `reach` answers how many destinations one user has, skipping `notClient` as `To` does; `send` is
+ * the module's own send() — the declaration is the same function, not a wrapper around it.
  */
 export type Channel = {
   name: string;
   label: string;
   color?: string;
-  reach(app: App, usrId: number): Promise<number>;
+  reach(app: App, usrId: number, notClient?: string | number): Promise<number>;
   send(app: App, to: To, msg: string | Msg): Promise<number>;
 };
 

@@ -12,8 +12,9 @@ export const messagingChannel: Channel = {
   name: "web_push",
   label: "Web Push",
   color: "--purple",
-  reach: async (app: App, usrId: number) =>
-    Number(await app.db.one`SELECT COUNT(*) FROM web_push_subscription WHERE usr_id = ${usrId}`),
+  reach: async (app: App, usrId: number, notClient?: string | number) =>
+    Number(await app.db.one`SELECT COUNT(*) FROM web_push_subscription WHERE usr_id = ${usrId}
+      ${notClient == null ? sql`` : sql`AND client_id <> ${Number(notClient)}`}`),
   send,
 };
 

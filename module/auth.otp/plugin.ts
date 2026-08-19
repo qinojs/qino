@@ -1,4 +1,4 @@
-import { Access, getCtx, s } from "@qino/qino";
+import { Access, getCtx, requestStorage, s } from "@qino/qino";
 import { channels } from "@qino/qino/messaging";
 
 import { send, verify } from "./mod.ts";
@@ -19,8 +19,12 @@ export const authFactors = (app: App): Factor[] =>
     second: true,
     stepUp: true,
     order: 40,
-    has: async (app, usrId) => await c.reach(app, usrId) > 0,
+    // the asking device is no second factor, so it does not count towards having one either
+    has: async (app, usrId) => await c.reach(app, usrId, asking()) > 0,
   }));
+
+/** The device this is asked from, when a request is what asks — a job reaching every device is fine. */
+const asking = () => requestStorage.getStore()?.clientId ?? undefined;
 
 export const api: ApiTree = {
   ":channel": {

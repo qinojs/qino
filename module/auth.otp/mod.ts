@@ -14,12 +14,15 @@ const claim = (name: string) => "otp:" + name;
 export async function send(ctx: Ctx, name: string): Promise<void> {
   const usrId = identified(ctx);
   const target = channel(ctx.app, name);
-  if (!target || !await target.reach(ctx.app, usrId)) throw new ApiError(404, "No such way to reach you");
+  // Not to the device that is asking: a code that arrives where it is typed proves nothing beyond
+  // holding this browser, which the request already showed. Only web_push can be that device.
+  const notClient = ctx.clientId ?? undefined;
+  if (!target || !await target.reach(ctx.app, usrId, notClient)) throw new ApiError(404, "No such way to reach you");
   const code = await requestCode(ctx.app, claim(name), usrId, String(usrId));
   // WebOTP: Android fills the field by itself, but only from an sms whose last line is exactly
   // `@host #code` — the host being the origin that asks for it. Noise anywhere else, so sms only.
   const webOtp = name === "sms" ? `\n\n@${ctx.req.url.host} #${code}` : "";
-  await target.send(ctx.app, { usr: usrId }, {
+  await target.send(ctx.app, { usr: usrId, notClient }, {
     title: await ctx.app.t`Your confirmation code`,
     text: await ctx.app.t`${code} confirms it is you. It is valid for ten minutes.` + webOtp,
   });

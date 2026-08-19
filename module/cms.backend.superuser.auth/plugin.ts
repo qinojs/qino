@@ -76,7 +76,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>second
       <th>stepUp
       <th>has(you)
-    <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=6>No module declares a factor.`}</tbody>
+    <tbody>${factorRows.length ? html.join(factorRows, "\n") : html`<tr><td colspan=6>No module declares a factor.`}
   </table>
   <div class=-body>The columns are the fields a module exports as <code>authFactors</code>:
   <code>second</code> can only finish a login, <code>stepUp</code> also refreshes an open session,
@@ -95,7 +95,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         <th>route
         <th>description
         <th width=60>maxAge
-      <tbody>${guardedRows.length ? html.join(guardedRows, "\n") : html`<tr><td colspan=3>No verb demands one.`}</tbody>
+      <tbody>${guardedRows.length ? html.join(guardedRows, "\n") : html`<tr><td colspan=3>No verb demands one.`}
     </table>
   </div>
   <div class=-body>Read out of the api tree: these carry <code>requireStepUp</code>, and
@@ -110,7 +110,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
       <th>Recorded as
       <th>When
       <th>
-    <tbody>${viaRows.length ? html.join(viaRows, "\n") : html`<tr><td colspan=3>Nothing recorded — this session was never authenticated.`}</tbody>
+    <tbody>${viaRows.length ? html.join(viaRows, "\n") : html`<tr><td colspan=3>Nothing recorded — this session was never authenticated.`}
   </table>
   <div class=-body>Every way in is written to <code>sess.data.core.via</code>. A
   <em>record only</em> entry proves nothing and can never satisfy a step-up: <code>remember</code>
@@ -124,7 +124,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
         <th>User
         <th>Came in by
         <th>Last seen
-      <tbody>${sessionRows.length ? html.join(sessionRows, "\n") : html`<tr><td colspan=3>Nobody is signed in.`}</tbody>
+      <tbody>${sessionRows.length ? html.join(sessionRows, "\n") : html`<tr><td colspan=3>Nobody is signed in.`}
     </table>
   </div>
   <div class=-body>The same record read across the session table — no separate log to keep, and a

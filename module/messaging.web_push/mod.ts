@@ -18,23 +18,27 @@ import type { Msg } from "@qino/qino/messaging";
  * first line of the text. Everything besides `text` and `url` reaches showNotification()
  * as is — `icon`, `image`, `tag`, `actions`, `requireInteraction` and friends.
  */
+/** A one-time code proves presence only where the request is not — so the asking device is skipped. */
+const notClient = (id: string | number | undefined) => id == null ? sql`` : sql`AND client_id <> ${Number(id)}`;
+
 export async function send(
   app: App,
-  to: { channel?: string; grp?: number; usr?: number; client?: string | number; sub?: number; all?: true },
+  to: { channel?: string; grp?: number; usr?: number; client?: string | number; sub?: number; all?: true; notClient?: string | number },
   message: string | Msg & { url?: string } & Record<string, unknown>,
 ): Promise<number> {
   const given = msgOf(message);
   const msg = { ...given, title: titleOf(given) }; // journal what was really sent, derived title included
-  const where = to.channel != null ? sql`WHERE id IN (
+  const who = to.channel != null ? sql`id IN (
       SELECT sc.sub_id FROM web_push_subscription_channel sc
       JOIN web_push_channel c ON c.id = sc.channel_id WHERE c.name = ${to.channel})`
-    : to.grp != null ? sql`WHERE usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
-    : to.usr != null ? sql`WHERE usr_id = ${to.usr}`
-    : to.client != null ? sql`WHERE client_id = ${to.client}`
-    : to.sub != null ? sql`WHERE id = ${to.sub}`
-    : to.all ? sql``
+    : to.grp != null ? sql`usr_id IN (SELECT usr_id FROM usr_grp WHERE grp_id = ${to.grp})`
+    : to.usr != null ? sql`usr_id = ${to.usr}`
+    : to.client != null ? sql`client_id = ${Number(to.client)}`
+    : to.sub != null ? sql`id = ${to.sub}`
+    : to.all ? sql`${true}`
     : null;
-  if (!where) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
+  if (!who) throw new Error("send needs a recipient: { channel }, { grp }, { usr }, { client }, { sub } or { all: true }");
+  const where = sql`WHERE ${who} ${notClient(to.notClient)}`;
   const time = unixTime();
 
   const rows = await app.db.query`SELECT id, usr_id, endpoint, p256dh, auth, error FROM web_push_subscription ${where}`;
