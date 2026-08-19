@@ -18,7 +18,7 @@ export async function loginPage(ctx: Ctx, client: string): Promise<never> {
   page(ctx, title, await html.async`<main>
   <h1>${title}</h1>
   <p>${t`${client} wants to access your account.`}</p>
-  ${ctx.loginError ? html`<p><strong>${await (ctx.loginError === "pending" ? t`One more step: confirm it is you.` : t`Your login attempt failed`)}</strong></p>` : ""}
+  ${ctx.loginError ? html`<p><strong>${await (ctx.loginError === "pending" ? t`One more step: confirm it is you.` : ctx.loginError === "throttled" ? t`Too many attempts. Please wait a moment and try again.` : t`Your login attempt failed`)}</strong></p>` : ""}
   <form method=post action="${ctx.req.url.href}">
     <input type=hidden name=core_login value=1>
     <input type=hidden name=csrfToken value="${ctx.csrfToken}">

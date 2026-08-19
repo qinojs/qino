@@ -31,6 +31,7 @@
     "lib/api/route.ts",
     "lib/api/toTools.ts",
     "lib/api/types.ts",
+    "lib/attempts.ts",
     "lib/auth.ts",
     "lib/ctx/Ctx.ts",
     "lib/ctx/Req.ts",

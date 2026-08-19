@@ -1,5 +1,5 @@
 // Public API of auth.backup_codes. The qino plugin lives in ./plugin.ts.
-import { ApiError, identified, pwHash, pwVerify } from "@qino/qino";
+import { ApiError, beforeProof, identified, proofFailed, pwHash, pwVerify } from "@qino/qino";
 import { drop, proof, store, stored } from "@qino/qino/auth";
 
 import type { App, Ctx } from "@qino/qino";
@@ -40,6 +40,7 @@ export async function left(app: App, usrId: number): Promise<number> {
 /** Spend one to prove the user is present — signed in, or a login under way. */
 export async function spend(ctx: Ctx, code: string): Promise<boolean> {
   const usrId = identified(ctx);
+  await beforeProof(ctx.app, usrId);
   const typed = normalize(code);
   const rows = await stored(ctx.app, usrId, TYPE);
   let match;
@@ -49,6 +50,7 @@ export async function spend(ctx: Ctx, code: string): Promise<boolean> {
   }
   // The delete decides the race: of two parallel attempts with the same code only one removes a row
   if (!match || !await drop(ctx.app, usrId, TYPE, Number(match.id))) {
+    await proofFailed(ctx.app, usrId);
     ctx.app.fire("suspicious", { ctx, reason: "backup code rejected" }).catch(() => {});
     throw new ApiError(422, "That code does not match");
   }

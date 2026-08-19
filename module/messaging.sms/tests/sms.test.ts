@@ -1,5 +1,5 @@
 import { ApiError, Db } from "@qino/qino";
-import { assert, assertEquals, assertRejects, assertThrows, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
+import { assert, assertEquals, assertRejects, assertThrows, authAttemptDbSchema, fakeT, messagingDbSchema as messageSchema } from "@qino/qino/tests";
 
 import dbSchema from "../dbschema.json" with { type: "json" };
 import { deliver } from "../lib/provider.ts";
@@ -9,7 +9,7 @@ import type { SmsProvider } from "../mod.ts";
 
 async function makeDb(): Promise<Db> {
   const db = new Db("sqlite::memory:");
-  await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties } });
+  await db.migrate({ properties: { ...messageSchema.properties, ...dbSchema.properties, ...authAttemptDbSchema.properties } });
   await db.query`CREATE TABLE usr (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL)`;
   await db.query`CREATE TABLE usr_grp (usr_id INTEGER NOT NULL, grp_id INTEGER NOT NULL)`;
   await db.loadTables();
@@ -146,7 +146,7 @@ Deno.test("trusted administration can approve a phone without its code", async (
   assertEquals(await pendingPhones(app, 1), []);
 });
 
-Deno.test("verification resends are limited and five wrong attempts invalidate the code", async () => {
+Deno.test("verification resends are limited and wrong attempts buy a growing wait", async () => {
   const db = await makeDb();
   const app = makeApp(db);
   const messages: string[] = [];
@@ -157,8 +157,8 @@ Deno.test("verification resends are limited and five wrong attempts invalidate t
   for (let i = 0; i < 5; i++) {
     await assertRejects(() => verifyPhone(app, 1, "+41791234567", "000000"), ApiError);
   }
-  // the fifth wrong attempt spends the claim, so the real code has nothing left to redeem
-  await assertRejects(() => verifyPhone(app, 1, "+41791234567", codeFrom(messages[0])), ApiError, "Nothing to verify");
+  // the code is still good, but the account has to sit out what the wrong ones earned
+  await assertRejects(() => verifyPhone(app, 1, "+41791234567", codeFrom(messages[0])), ApiError, "Too many attempts");
 });
 
 Deno.test("send reaches only verified phones selected by user, group or all", async () => {

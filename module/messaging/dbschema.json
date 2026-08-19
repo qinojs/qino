@@ -112,11 +112,6 @@
             "type": "integer",
             "x-index": true
           },
-          "attempts": {
-            "type": "integer",
-            "minimum": 0,
-            "default": 0
-          },
           "sent": {
             "type": "integer",
             "description": "When the last code went out — the resend limit reads this"
@@ -126,7 +121,7 @@
             "x-index": true
           }
         },
-        "required": ["channel", "address", "usr_id", "hash", "expires", "attempts", "created"]
+        "required": ["channel", "address", "usr_id", "hash", "expires", "created"]
       }
     }
   }

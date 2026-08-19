@@ -2,6 +2,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { bcrypt } from "../deps.ts";
+import { beforeProof, proofFailed, proofPassed } from "./attempts.ts";
 import { authFactors, loginNeeds, parkLogin } from "./factors.ts";
 import { unixTime } from "./util.ts";
 
@@ -11,7 +12,7 @@ import type { AuthFactor, Offer } from "./factors.ts";
 import type { Usr } from "./rows.ts";
 
 /** Why a request is not signed in. `pending` is no failure: right credentials, second factor owed. */
-export type LoginError = "username" | "inactive" | "password" | "pending";
+export type LoginError = "username" | "inactive" | "password" | "pending" | "throttled";
 
 // Valid cost-10 bcrypt hash, compared against when the user is missing/inactive so
 // response timing can't reveal whether an e-mail is registered (user enumeration).
@@ -47,12 +48,20 @@ export async function tryLogin(ctx: Ctx, email: string, pw = ""): Promise<LoginE
   if (!user || !user.active) { await pwVerify(pw, DUMMY_HASH); return user ? "inactive" : "username"; }
   const usr = ctx.app.db.table("usr").row<Usr>(user.id).$receive(user); // the SELECT above is the load
   const rehash = pwNeedsRehash(usr.pw);
+  // Wrong tries are counted against the account, so the user has to be known before we can ask —
+  // which also means a wait tells an outsider that this address exists. It costs them four wrong
+  // guesses to learn it, and the alternative is lying to the owner about why they cannot get in.
+  const throttled = await beforeProof(ctx.app, Number(user.id)).then(() => false, () => true);
   if (!rehash) {
     const clientUsrs = await ctx.client.users();
     // remember-me: the password is never asked here, so this is how access was had, not what proved it
     if (clientUsrs[String(usr.id)]?.save_login) return await login(ctx, user.id, "remember") ? "" : "username";
   }
-  if (!await pwVerify(pw, usr.pw ?? "")) return "password";
+  if (throttled) return "throttled";
+  if (!await pwVerify(pw, usr.pw ?? "")) {
+    await proofFailed(ctx.app, Number(user.id));
+    return "password";
+  }
   if (rehash) await usr.$set({ pw: await pwHash(pw) });
   // The same route every other factor takes: core declares `password` and claims no shortcut.
   const missing = await loginProof(ctx, passwordFactor(ctx.app), Number(user.id));
@@ -70,7 +79,11 @@ export async function loginProof(ctx: Ctx, factor: AuthFactor, usrId: number): P
   const via = parkLogin(ctx, factor, usrId);
   if (!via) return [];
   const missing = await loginNeeds(ctx, usrId, via);
-  return missing.length ? missing : (await login(ctx, usrId, via) ? undefined : []);
+  // Only a finished login wipes the wait. Clearing it per factor would hand whoever knows the
+  // password a fresh budget for every guess at the second one, which is the very attack it is for.
+  if (missing.length) return missing;
+  if (!await login(ctx, usrId, via)) return [];
+  await proofPassed(ctx.app, usrId);
 }
 
 /** Make `id` the session's user; the caller has established who that is. `via` records how and when

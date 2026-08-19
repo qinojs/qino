@@ -43,6 +43,8 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
     // no failure: the password was right and one more proof is owed; the script asks which
     ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
     errorHtml = html`<div class=loginError>${await app.t`One more step: confirm it is you.`}</div>`;
+  } else if (ctx.loginError === "throttled") {
+    errorHtml = html`<div class=loginError>${await app.t`Too many attempts. Please wait a moment and try again.`}</div>`;
   } else if (ctx.loginError) {
     errorHtml = html`<div class=loginError>${html.raw(await errorT.string())}</div>`;
   }

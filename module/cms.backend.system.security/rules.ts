@@ -19,8 +19,9 @@ export function actionSignals(ctx: any, info: any): Signal[] {
   hits.push(...attacks
     .filter(([r]) => r.test(info.inspect ?? info.path))
     .map(([, reason, score, confidence]) => signal("error", "attack", "ip", info.ip, reason, score, confidence)));
-  // `pending` says the credentials were right and a second factor is owed — not a failed attempt
-  if (ctx.loginError && ctx.loginError !== "pending") {
+  // `pending` says the credentials were right and a second factor is owed, `throttled` is one core
+  // already turned away — neither is an attempt this has to score again
+  if (ctx.loginError && ctx.loginError !== "pending" && ctx.loginError !== "throttled") {
     hits.push(signal("warning", "login", "ip", info.ip, "login failed: " + ctx.loginError, ctx.loginError === "password" ? 45 : 25, ctx.loginError === "password" ? 85 : 65));
   }
   return hits;

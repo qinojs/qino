@@ -1,4 +1,4 @@
-import { $item, ApiError, randB64, safeEqual, sha256b64url, unixTime } from "@qino/qino";
+import { $item, ApiError, beforeProof, proofFailed, proofPassed, randB64, safeEqual, sha256b64url, unixTime } from "@qino/qino";
 
 import type { App, Row } from "@qino/qino";
 
@@ -10,12 +10,13 @@ import type { App, Row } from "@qino/qino";
 // only and `WHERE verified IS NOT NULL` stops being a rule one can forget.
 //
 // Not a [ticket](../../ticket/): that one is a capability — whoever knows the handle may act. Six
-// digits are short enough to guess, so they only work together with "who is asking" and "how often
-// have they tried", which is what the columns here are for.
+// digits are short enough to guess, so they only work together with "who is asking" — and with how
+// often that one has tried, which core counts per account for every kind of proof at once. Counting
+// it here instead would restart at zero with every resend, and would not see the guesses the same
+// user is spending on their password next door.
 
 const CODE_TTL = 10 * 60;
 const RESEND_AFTER = 60;
-const MAX_ATTEMPTS = 5;
 
 /** Start or resend a claim on `address`; resolves with the code to deliver. */
 export async function requestCode(app: App, channel: string, usrId: number, address: string): Promise<string> {
@@ -34,30 +35,27 @@ export async function requestCode(app: App, channel: string, usrId: number, addr
     usr_id: usrId,
     hash: await codeHash(app, channel, address, code),
     expires: now + CODE_TTL,
-    attempts: 0,
     sent: now,
     created: Number(open?.created) || now,
   });
   return code;
 }
 
-/** Redeem a claim. Throws unless the code proves the contact is the user's; the claim is spent either way it ends. */
+/** Redeem a claim. Throws unless the code proves the contact is the user's; a right one spends it. */
 export async function redeemCode(app: App, channel: string, usrId: number, address: string, code: string): Promise<void> {
   const open = await claim(app, channel, address);
   if (!open || Number(open.usr_id) !== usrId) throw new ApiError(404, "Nothing to verify");
+  await beforeProof(app, usrId);
   const drop = () => app.db.exec`DELETE FROM usr_contact_verification WHERE channel = ${channel} AND address = ${address}`;
   if (Number(open.expires) < unixTime()) {
     await drop();
     throw new ApiError(410, "Verification code expired");
   }
-  if (/^\d{6}$/.test(code) && safeEqual(await codeHash(app, channel, address, code), String(open.hash))) return void await drop();
-
-  const attempts = Number(open.attempts) + 1;
-  if (attempts >= MAX_ATTEMPTS) {
-    await drop();
-    throw new ApiError(422, "Verification code rejected; request a new one");
+  if (/^\d{6}$/.test(code) && safeEqual(await codeHash(app, channel, address, code), String(open.hash))) {
+    await proofPassed(app, usrId);
+    return void await drop();
   }
-  await app.db.table("usr_contact_verification").update({ channel, address }, { attempts });
+  await proofFailed(app, usrId);
   throw new ApiError(422, "Verification code is invalid");
 }
 

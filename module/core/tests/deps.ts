@@ -1,3 +1,4 @@
+import coreSchema from "../dbschema.json" with { type: "json" };
 import { fakeSettings } from "./appFake.ts";
 import { apiFetch } from "../lib/api/mod.ts";
 import { Req } from "../lib/ctx/Req.ts";
@@ -7,6 +8,10 @@ import { Output } from "../lib/util.ts";
 import type { ApiTree } from "../lib/api/mod.ts";
 
 export { assert, assertEquals, assertRejects, assertStringIncludes, assertThrows } from "@std/assert";
+
+/** The core table that holds what a wrong proof costs the next one — a factor's tests migrate it
+ *  next to their own schema, because the count belongs to the account and not to the method. */
+export const authAttemptDbSchema = { properties: { usr_auth_attempt: coreSchema.properties.usr_auth_attempt } };
 // Not in mod.ts on purpose — App and Db extend it, nobody else needs to construct one.
 export { Emitter } from "../lib/Emitter.ts";
 export { fakeRender } from "./sqlFake.ts";

@@ -27,8 +27,10 @@ enrolment path for a factor** and needs the same protection as one.
 
 Straight from [messaging/lib/verify.ts](../messaging/lib/verify.ts), which already had every part:
 six digits from `crypto.getRandomValues`, hashed with an app secret, ten minutes, sixty seconds
-between requests, five attempts, single use. The attempt counter is what makes a static six-digit
-code safe at all — unlike a TOTP, it is not implicitly bounded by a time window.
+between requests, single use. What makes a static six-digit code safe at all is that wrong tries
+cost the account a growing wait — unlike a TOTP, it is not implicitly bounded by a time window. That
+wait is core's and shared: guesses spent here also slow down the password and the authenticator app,
+so nobody gets a fresh budget by switching factor.
 
 The claim is keyed `otp:<channel>` on the user's own id, not on the address: the contact is verified
 already, so what the code proves is presence, not ownership — and it must not collide with a pending

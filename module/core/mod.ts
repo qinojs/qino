@@ -56,6 +56,7 @@ export { isModuleName, Module } from "./lib/ModuleManager.ts";
 export { Store } from "./lib/StoreManager.ts";
 
 // Auth
+export { beforeProof, proofFailed, proofPassed } from "./lib/attempts.ts";
 export { login, loginProof, pwHash, pwVerify, safeEqual } from "./lib/auth.ts";
 export { authFactors, identified, requireStepUp, userFactors } from "./lib/factors.ts";
 export type { AuthFactor, Offer } from "./lib/factors.ts";

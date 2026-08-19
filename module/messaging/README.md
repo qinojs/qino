@@ -78,7 +78,8 @@ Pending claims live in `usr_contact_verification` and **nowhere else**, so `usr_
 FROM usr_phone WHERE usr_id = 22` is always legitimate, instead of `WHERE verified IS NOT
 NULL` being a rule one can forget once and send to a number that was never anyone's.
 
-The claim is spent however it ends — redeemed, expired, or five wrong attempts. Codes last
+The claim is spent when it is redeemed or has expired; a wrong code does not spend it but costs
+the account a growing wait, counted in core next to every other wrong proof of identity. Codes last
 ten minutes, resending is limited to once a minute, and only a keyed hash is stored. One open
 claim per address and channel: a second user asking for the same address is refused until the
 first one lapses. `pendingContacts(app, channel, usrId?)` lists what is open,

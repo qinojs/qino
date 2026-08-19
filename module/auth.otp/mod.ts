@@ -25,7 +25,7 @@ export async function send(ctx: Ctx, name: string): Promise<void> {
   });
 }
 
-/** Redeem it. `redeemCode` counts the attempts and throws; what is left is what the proof is worth. */
+/** Redeem it. `redeemCode` makes a wrong one cost the account its wait and throws. */
 export async function verify(ctx: Ctx, name: string, code: string): Promise<boolean> {
   const usrId = identified(ctx);
   await redeemCode(ctx.app, claim(name), usrId, String(usrId), code);

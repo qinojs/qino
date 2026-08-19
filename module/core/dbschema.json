@@ -489,6 +489,30 @@
         "required": ["id", "active", "pw", "firstname", "lastname", "superuser"]
       }
     },
+    "usr_auth_attempt": {
+      "additionalProperties": {
+        "properties": {
+          "usr_id": {
+            "type": "integer",
+            "x-index": "primary",
+            "x-qg-parent": "usr",
+            "x-qg-on-parent-delete": "cascade"
+          },
+          "fails": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Wrong proofs of identity in a row — the wait before the next one grows with it"
+          },
+          "last": {
+            "type": "integer",
+            "x-index": true,
+            "description": "When the last wrong one was; an hour later the count is forgotten"
+          }
+        },
+        "required": ["usr_id", "fails", "last"]
+      }
+    },
     "usr_grp": {
       "additionalProperties": {
         "properties": {

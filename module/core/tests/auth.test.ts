@@ -1,4 +1,5 @@
-import { assert, assertEquals, testContext } from "./deps.ts";
+import { assert, assertEquals, assertRejects, testContext } from "./deps.ts";
+import { beforeProof, proofFailed } from "../lib/attempts.ts";
 import { login, loginFromRequest, loginProof, pwHash, tryLogin } from "../lib/auth.ts";
 import { pendingLogin } from "../lib/factors.ts";
 import { App, Ctx, requestStorage, unixTime } from "../mod.ts";
@@ -96,6 +97,43 @@ Deno.test("login: whoever has no second factor is let in with one — a demand n
 
     assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "");
     assertEquals(ctx.userId, 7);
+  });
+});
+
+Deno.test("login: wrong passwords buy a growing wait that every factor shares", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").update(7, { pw: await pwHash("secret") });
+
+    for (let i = 0; i < 4; i++) assertEquals(await tryLogin(ctx, "ann@example.test", "wrong"), "password");
+    // the fifth is not checked at all — and the right password has to sit out what the wrong ones earned
+    assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "throttled");
+    assertEquals(ctx.userId, 0);
+    // the same wait stands in front of every other factor: nobody gets a fresh budget by switching
+    await assertRejects(() => beforeProof(app, 7), Error, "Too many attempts");
+  });
+});
+
+Deno.test("login: a half login does not wipe the wait — a known password buys no fresh guesses", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").update(7, { pw: await pwHash("secret") });
+    await app.settings.core.loginTwoFactor(true);
+    linkFactors(app, [totp]);
+
+    assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "pending");
+    for (let i = 0; i < 4; i++) await proofFailed(app, 7); // guesses at the second factor
+
+    // typing the right password again settles nothing: the login it belongs to never finished
+    assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "throttled");
+    await assertRejects(() => beforeProof(app, 7), Error, "Too many attempts");
+  });
+});
+
+Deno.test("login: a proof that lands wipes the wait", async () => {
+  await withApp(async (app, ctx) => {
+    await app.db.table("usr").update(7, { pw: await pwHash("secret") });
+    for (let i = 0; i < 3; i++) assertEquals(await tryLogin(ctx, "ann@example.test", "wrong"), "password");
+    assertEquals(await tryLogin(ctx, "ann@example.test", "secret"), "");
+    await beforeProof(app, 7); // whoever got in was not the one being kept out
   });
 });
 
