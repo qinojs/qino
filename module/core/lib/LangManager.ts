@@ -10,7 +10,7 @@ export class LangManager {
 
   #app: App;
   #langs: string[] = [];   // all available languages, first = default
-  #txtsCache: Record<string, Promise<Record<string, string>>> = {};
+  #txtsCache = new Map<string, Promise<Record<string, string>>>();
 
   constructor(app: App) {
     this.#app = app;
@@ -93,13 +93,12 @@ export class LangManager {
   }
 
   // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
-  clear() { this.#txtsCache = {}; }
+  clear() { this.#txtsCache.clear(); }
 
   #getTxts(ns: string, l: string): Promise<Record<string, string>> {
-    const key = `${l}::${ns}`;
     // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
-    return this.#txtsCache[key] ??= this.#app.db.indexCol<string>`
-      SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`;
+    return this.#txtsCache.getOrInsertComputed(`${l}::${ns}`, () => this.#app.db.indexCol<string>`
+      SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`);
   }
 
   async #getTxt(string: string, ctx: Ctx): Promise<string> {
