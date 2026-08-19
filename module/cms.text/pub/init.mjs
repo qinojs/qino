@@ -64,7 +64,7 @@ const showEditor = async el => {
       dialog.close();
       showEditor(el);
     } catch (err) {
-      alert(err.message);
+      await cms.dialogs.alert(err.message);
     }
     unmark();
   });
@@ -112,7 +112,7 @@ const showEditor = async el => {
         dialog.close();
         showEditor(el); // Reload the main editor with restored content
       } else {
-        alert('Failed to restore');
+        await cms.dialogs.alert('Failed to restore');
       }
     });
     hDialog.addEventListener('close', () => setTimeout(() => hDialog.remove(), 2000));
@@ -189,11 +189,11 @@ const addTranslateWidget = el=>{
     const done = c1.loading.mark(e.target);
     try {
       const result = await api['cms.text'].page(nodeId).translate.post({ target_lang: lang, source_lang: sourceLang, ifNeeded: true, subpages: false });
-      alert('translated texts: '+result.count);
-      if (result.fail) alert('not allowed on '+result.fail+' pages');
+      await cms.dialogs.alert('translated texts: '+result.count);
+      if (result.fail) await cms.dialogs.alert('not allowed on '+result.fail+' pages');
       result.count && location.reload();
     } catch (err) {
-      alert(err.message);
+      await cms.dialogs.alert(err.message);
     }
     done();
   });

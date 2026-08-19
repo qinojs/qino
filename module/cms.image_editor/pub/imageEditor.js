@@ -25,8 +25,8 @@ export class ImageEditor extends FullScreenDialog {
             options.onload?.();
             URL.revokeObjectURL(img.src);
       };
-      img.onerror = () => {
-        alert('Das Bild konnte nicht geladen werden, oder ist nicht vorhanden. Klicken Sie auf "hochladen" um ein Bild von Ihrem Computer auszuwählen.');
+      img.onerror = async () => {
+        await cms.dialogs.alert('Das Bild konnte nicht geladen werden, oder ist nicht vorhanden. Klicken Sie auf "hochladen" um ein Bild von Ihrem Computer auszuwählen.');
             options.onerror?.();
       };
       img.src = src;
@@ -106,8 +106,8 @@ export class ImageEditor extends FullScreenDialog {
       promise.then(() => requestAnimationFrame(() => this.resetCropper()));
     }
 
-    hide() {
-      if (this.changed && !confirm('Möchten Sie die Änderungen verwerfen?')) return;
+    async hide() {
+      if (this.changed && !await cms.dialogs.confirm('Möchten Sie die Änderungen verwerfen?')) return;
       this.cropper.hide();
       removeEventListener('resize', this);
       super.hide();

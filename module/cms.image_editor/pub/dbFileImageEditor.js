@@ -209,13 +209,13 @@ export class DbFileImageEditor extends ImageEditor {
     api['cms.image_editor'].history(this.file_id).get().then(res => {
       this.el('.-history').innerHTML = `<div style="max-height:25rem; overflow:auto">${res}</div>`;
     });
-    this.el('.-history').onclick = e => {
+    this.el('.-history').onclick = async e => {
       const log = parseInt(e.target.getAttribute('log'), 10);
       if (!Number.isFinite(log)) return;
-      if (!confirm('Möchten Sie das Bild wiederherstellen?')) return;
+      if (!await cms.dialogs.confirm('Möchten Sie das Bild wiederherstellen?')) return;
       api['cms.image_editor'].restore(this.file_id).post({ log: log + 1 })
         .then(() => { location.href = location.href.replace(/#.*$/, ''); })
-        .catch(err => alert('Wiederherstellen fehlgeschlagen: ' + err.message));
+        .catch(err => cms.dialogs.alert('Wiederherstellen fehlgeschlagen: ' + err.message));
     };
   }
 }
