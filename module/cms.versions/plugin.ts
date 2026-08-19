@@ -128,6 +128,12 @@ export function init(app: App, { signal }: { signal: AbortSignal }) {
         // ── Log-mode: render a historical snapshot ────────────────────────────
         if (vs.log) {
             const pid = Number(ctx.req.query.cms_versions_page ?? "0");
+
+            // A stopgap: the views are built up front, so without a gate here anyone has the database
+            // create and drop them. Building them per qualifying node would need an async tableRef().
+            const page = await cms(app).node(pid);
+            if (!page.exists() || await page.access() < 2) { vs.log = 0; return; }
+
             cacheHeaders(ctx);
 
             // Disable editmode for the historical view — request-only override;

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { App } from "@qino/qino";
-import { historicalViews } from "../lib/Vers.ts";
+import { historicalViews, versedTables } from "../lib/Vers.ts";
 
 async function versionedApp() {
   const app = new App({ db: "sqlite::memory:", dir: await Deno.makeTempDir() + "/" });
@@ -40,4 +40,23 @@ Deno.test("historicalViews: a failed render leaves no view behind", async () => 
 
   assertEquals(failed, "render failed");
   assertEquals(await views(app), []);
+});
+
+Deno.test("historicalViews: a half-built set is dropped when setup itself fails", async () => {
+  const queries: unknown[] = [];
+  let columns = 0;
+  const db = {
+    on() {},
+    query(...args: unknown[]) { queries.push(args); },
+    columns() {
+      if (++columns > 1) throw new Error("setup failed");
+      return [{ Field: "id", Key: "PRI" }];
+    },
+  };
+  Object.assign(versedTables(db as never), { page: true, page_text: true });
+  const ctx = { app: { db }, state: {} as any } as any;
+
+  await assertRejects(() => historicalViews(ctx, 0, 2), Error, "setup failed");
+
+  assertEquals(queries.length, 3); // create first view (2 queries), then drop it
 });
