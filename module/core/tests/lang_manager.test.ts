@@ -113,7 +113,7 @@ Deno.test("LangManager: t inserts new smalltext and replaces placeholders", asyn
         field: () => true,
         insert: (values: Record<string, unknown>) => { inserts.push(values); return Promise.resolve(1); },
       }),
-      indexCol: () => ({}),
+      indexCol: () => new Map(),
       query: (sql: string, params?: unknown[]) => {
         queries.push([sql, params]);
         return [];

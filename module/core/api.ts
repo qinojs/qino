@@ -43,10 +43,10 @@ export const api: ApiTree = {
         const rows = await ctx.app.db.indexCol`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND hash IN (${sql.join(hashes.map((h: string) => sql`${h}`))})`;
         const result: Record<string, string> = {};
         for (let i = 0; i < texts.length; i++) {
-          if (dev && !(hashes[i] in rows)) {
+          if (dev && !rows.has(hashes[i])) {
             await ctx.app.db.table("smalltext").insert({ namespace: ns, hash: hashes[i], original: texts[i] });
           }
-          result[texts[i]] = rows[hashes[i]] || texts[i];
+          result[texts[i]] = rows.get(hashes[i]) || texts[i];
         }
         return result;
       },

@@ -28,6 +28,11 @@ export interface DbEvents {
   [name: string]: Record<string, unknown>; // untyped module events stay allowed
 }
 
+/** A row's first column, without building an array for it — these rows have one or two. */
+function firstValue(row: Row): unknown {
+  for (const name in row) if (Object.hasOwn(row, name)) return row[name];
+}
+
 export class Db extends Emitter<DbEvents> {
   #tables: Record<string, DbTable> = {};
   #driver: DbDriver;
@@ -113,15 +118,18 @@ export class Db extends Emitter<DbEvents> {
   }
 
   async col<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T[]> {
-    return (await this.query(strings, ...values)).map((r) => Object.values(r)[0]);
+    return (await this.query(strings, ...values)).map(firstValue) as T[];
   }
 
   async one<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T | undefined> {
-    return Object.values((await this.query(strings, ...values))[0] ?? {})[0];
+    const row = (await this.query(strings, ...values))[0];
+    return row && firstValue(row) as T;
   }
 
-  async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Record<string, T>> {
-    return Object.fromEntries((await this.query(strings, ...values)).map((r) => Object.values(r) as [string, T]));
+  /** First column keyed by it, second as the value — one row per key. */
+  async indexCol<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<Map<string, T>> {
+    const rows = await this.query(strings, ...values);
+    return new Map(rows.map((r) => { const [k, v] = Object.values(r); return [String(k), v as T]; }));
   }
 
   exec(strings: TemplateStringsArray, ...values: unknown[]): Promise<ExecResult>;

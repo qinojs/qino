@@ -73,7 +73,7 @@ async function list(node: Node | null, { ctx, vars }: { ctx: Ctx; vars?: Record<
       <td>${s.id}
       <td><a href="${base + s.id}">${s.bot}</a>
       <td>${s.user_id}
-      <td>${Number(counts[s.id] ?? 0)}
+      <td>${Number(counts.get(String(s.id)) ?? 0)}
       <td><u2-time datetime="${time}" type=relative>${time.slice(0, 16).replace("T", " ")}</u2-time>`);
   }
   return rows.length ? html.join(rows) : html`<tr><td colspan=5><em>No sessions.</em>`;

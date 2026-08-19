@@ -366,9 +366,7 @@ export class Node {
         if (this.#texts === null) {
             const rows = await this.db.indexCol`SELECT name, text_id FROM ${sql.id(tableRef("page_text"))} WHERE page_id = ${this.id}`;
             this.#texts = new Map();
-            for (const [name, id] of Object.entries(rows ?? {})) {
-                this.#texts.set(name, this.app.dbTexts.text(Number(id)));
-            }
+            for (const [name, id] of rows) this.#texts.set(name, this.app.dbTexts.text(Number(id)));
         }
         return this.#texts;
     }

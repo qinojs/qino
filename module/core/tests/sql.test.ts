@@ -28,6 +28,6 @@ Deno.test("sql`` tag renders and runs (sqlite)", async () => {
 
   // direct method-tag form with an interpolated sql.id (LangManager shape)
   const idx = await db.indexCol`SELECT id, ${sql.id(col)} FROM t`;
-  assertEquals(idx, { 1: "a", 2: "b" });
+  assertEquals(idx, new Map([["1", "a"], ["2", "b"]]));
   await db.close();
 });

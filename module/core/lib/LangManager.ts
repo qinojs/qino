@@ -10,7 +10,7 @@ export class LangManager {
 
   #app: App;
   #langs: string[] = [];   // all available languages, first = default
-  #txtsCache = new Map<string, Promise<Record<string, string>>>();
+  #txtsCache = new Map<string, Promise<Map<string, string>>>();
 
   constructor(app: App) {
     this.#app = app;
@@ -95,7 +95,7 @@ export class LangManager {
   // Drop the cached smalltext indexes (call after direct writes to `smalltext`)
   clear() { this.#txtsCache.clear(); }
 
-  #getTxts(ns: string, l: string): Promise<Record<string, string>> {
+  #getTxts(ns: string, l: string): Promise<Map<string, string>> {
     // Cache the promise, not the resolved value: parallel lookups (html.async) share one query instead of stampeding.
     return this.#txtsCache.getOrInsertComputed(`${l}::${ns}`, () => this.#app.db.indexCol<string>`
       SELECT hash, ${sql.id(l)} as txt FROM smalltext WHERE namespace = ${ns}`);
@@ -106,12 +106,13 @@ export class LangManager {
     const ns = ctx.langNs;
     const l = ctx.lang;
     const txts = await this.#getTxts(ns, l);
-    if (!(hash in txts)) {
-      txts[hash] = ""; // claim it before awaiting: the same new string, twice in one render, must insert once
+    if (!txts.has(hash)) {
+      txts.set(hash, ""); // claim it before awaiting: the same new string, twice in one render, must insert once
       await this.#app.db.table('smalltext').insert({ namespace: ns, hash, original: string }).catch(() => {});
     }
-    const translated = txts[hash] || string;
-    if (ctx.dev && !txts[hash]) return `*${string}*`;
+    const stored = txts.get(hash);
+    if (ctx.dev && !stored) return `*${string}*`;
+    const translated = stored || string;
     if (await this.#app.settings.core.smalltext.counter) {
       this.#app.db.exec`UPDATE smalltext SET count = count+1 WHERE hash = ${hash} AND namespace = ${ns}`
         .catch(() => {}); // fire-and-forget, already logged by Db
