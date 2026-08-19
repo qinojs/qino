@@ -20,6 +20,9 @@ export abstract class DbDriver {
   abstract exec(sql: string, params?: unknown[], returning?: string): Promise<ExecResult>;
   /** Run fn in a transaction; nested calls join the outer one. */
   abstract transaction<T>(fn: () => Promise<T>): Promise<T>;
+  /** Set by drivers that serialize everything over one connection, where work outside a
+   *  transaction has to wait for its commit — see `Db.unit`. */
+  oneConnection = false;
   abstract listTables(): Promise<string[]>;
   /** Column metadata in MySQL `SHOW FULL COLUMNS` shape (Field/Type/Null/Key/Default/Extra). */
   abstract columns(table: string): Promise<Row[]>;
@@ -124,8 +127,13 @@ class MysqlDriver extends DbDriver {
   protected override closeDriver() { return this.#pool.end(); }
 }
 
+// How long a transaction may hold the one connection with work waiting behind it before that wait
+// is treated as a deadlock rather than a slow transaction.
+const STUCK_MS = 30_000;
+
 class SqliteDriver extends DbDriver {
   dialect = "sqlite" as const;
+  override oneConnection = true;
   #db: DatabaseSync;
   // One shared connection: while a transaction awaits, outside queries must not touch it.
   // Holds a box, not a flag: clearing it on end sends late writes (debounced saves, whose ALS
@@ -146,11 +154,16 @@ class SqliteDriver extends DbDriver {
   quoteId(id: string) { return sqliteDialect.quoteId(id); }
   // node:sqlite rejects boolean binds; SQLite has no boolean type, so map to 0/1.
   #bind(params: unknown[]) { return params.map((p) => typeof p === "boolean" ? +p : p); }
-  // Serialize access against an open transaction; the tx owner (#txAls set) runs directly to avoid deadlock.
-  #serial<T>(fn: () => T | Promise<T>): Promise<T> {
+  #queued = 0;
+  // Serialize access against an open transaction; the tx owner (#txAls set) runs directly to avoid
+  // deadlock. `hold` lets a transaction hand the connection on before it ends — see below.
+  #serial<T>(fn: () => T | Promise<T>, hold?: Promise<unknown>): Promise<T> {
     if (this.#txAls.getStore()?.open) return Promise.resolve(fn());
+    this.#queued++;
     const run = this.#chain.then(fn, fn);
-    this.#chain = run.then(() => {}, () => {});
+    const done = run.then(() => {}, () => {});
+    this.#chain = hold ? Promise.race([done, hold]) : done;
+    done.then(() => this.#queued--);
     return run;
   }
   // Compiling the SQL is a measurable part of a request; the texts repeat because values are bound,
@@ -176,12 +189,23 @@ class SqliteDriver extends DbDriver {
   transaction<T>(fn: () => Promise<T>): Promise<T> {
     if (this.#txAls.getStore()?.open) return fn(); // nested → join the running transaction
     const box = { open: true };
+    let unblock!: () => void;
+    const gate = new Promise<void>((r) => unblock = r);
+    // Work issued outside this transaction waits for its commit. A transaction that awaits such
+    // work therefore waits on itself, and the whole queue behind it is stuck for good — the shape
+    // `db.unit` exists to avoid. If it happens anyway, hand the connection on: the waiting work
+    // then runs inside the open transaction and shares its rollback, which beats a dead process.
+    const stuck = setTimeout(() => {
+      if (this.#queued < 2) return; // the transaction counts itself
+      console.error(`sqlite: transaction open for ${STUCK_MS / 1000}s with ${this.#queued - 1} queries queued behind it — letting them run inside it to break the deadlock; wrap multi-step background work in db.unit()`);
+      unblock();
+    }, STUCK_MS);
     return this.#serial(() => this.#txAls.run(box, async () => {
       this.#db.exec("BEGIN");
       try { const r = await fn(); this.#db.exec("COMMIT"); return r; }
       catch (e) { this.#db.exec("ROLLBACK"); throw e; }
-      finally { box.open = false; }
-    }));
+      finally { box.open = false; clearTimeout(stuck); }
+    }), gate);
   }
   async listTables() {
     const rows = await this.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");

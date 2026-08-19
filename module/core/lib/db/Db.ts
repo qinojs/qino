@@ -153,6 +153,13 @@ export class Db extends Emitter<DbEvents> {
     }
   }
 
+  /** Run fn as one uninterrupted unit. On a driver with a single connection (SQLite) its statements
+   *  would otherwise be split around a transaction started meanwhile — and awaiting the result from
+   *  inside that transaction deadlocks. Use it for multi-step background writes; free on pools. */
+  unit<T>(fn: () => Promise<T>): Promise<T> {
+    return this.#driver.oneConnection ? this.transaction(fn) : fn();
+  }
+
   /** Defer a non-rollbackable side effect (file unlink) until the outermost transaction committed. */
   async afterCommit(fn: () => unknown): Promise<void> {
     const hooks = this.#tx.getStore()?.hooks;

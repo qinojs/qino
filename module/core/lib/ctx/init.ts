@@ -70,8 +70,9 @@ function initLog(ctx: Ctx): void {
 
     const urlIdOf = (url: string) => dictId("log_url", "hash", url ? md5(url) : EMPTY_URL, { url });
 
-    // runs in the background; consumers await ctx.logId only when they actually need the id
-    ctx.logId = (async () => {
+    // Runs in the background; consumers await ctx.logId only when they actually need the id — so it
+    // has to finish as one unit, or its last step queues behind a transaction that is waiting for it.
+    ctx.logId = db.unit(async () => {
       try {
         const url = ctx.req.url.href;
         const referer = ctx.req.header("referer") ?? "";
@@ -89,6 +90,6 @@ function initLog(ctx: Ctx): void {
         const logId = await db.table("log").insert({ ...data, url_id, referer_id, ip_id, user_agent_id });
         return logId ? String(logId) : null;
       } catch (e) { console.error("log write error:", e); return null; }
-    })();
+    });
 
 }
