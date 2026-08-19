@@ -552,10 +552,10 @@ onEl(".more-manager", (el) => {
     const pw2 = findEl(e.currentTarget, "[name=new2]").value;
     if (pw2 !== pw) await alert(t`Passwords do not match`);
     else {
-      const res = await api.core.password.put({ oldpw, pw });
-      if (res === 1) await alert(t`Password changed successfully.`);
-      if (res === -1) await alert(t`The old password is incorrect.`);
-      if (res === -2) await alert(t`The password is too short.`);
+      try {
+        await api.core.password.put({ oldpw, pw });
+        await alert(t`Password changed successfully.`);
+      } catch (err) { await alert(err.message); }
     }
   });
   findEl(el, ".-changelang").addEventListener("change", (e) => {

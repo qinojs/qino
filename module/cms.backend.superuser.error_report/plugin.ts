@@ -11,6 +11,14 @@ export async function install({ app }: { app: App }): Promise<void> {
   await backend.install(app, "cms.backend.superuser.error_report", { en: "Errors", de: "Fehler" });
 }
 
+/** Reports come from the browser, so the stored column is not to be trusted as valid JSON. */
+function backtraceOf(raw: unknown) {
+  try {
+    const bt = raw ? JSON.parse(String(raw)) : [];
+    return Array.isArray(bt) ? bt.filter((i) => i && typeof i === "object") : [];
+  } catch { return []; }
+}
+
 function makeFileHelper(ctx: Ctx) {
   /** Local fs path for a report/backtrace file; `file:` URLs only within the app root policy. */
   function localPath(file: string): string | null {
@@ -252,7 +260,7 @@ async function renderEntryList(node: Node, ctx: Ctx, get: Record<string, string>
       : sample;
 
     const btTrs = [];
-    const bt = row.backtrace ? JSON.parse(row.backtrace) : [];
+    const bt = backtraceOf(row.backtrace);
     for (const item of bt) {
       const itemUrl = editorLink(item.file ?? "", item.line, item.col);
       const name = fileDisplay(item.file ?? "");
@@ -303,7 +311,7 @@ async function renderDetail(node: Node, id: number): Promise<HtmlString> {
   const usr  = sess?.usr_id  ? await db.row`SELECT * FROM usr  WHERE id = ${sess.usr_id}` : null;
 
   const btTrs = [];
-  const bt = error.backtrace ? JSON.parse(error.backtrace) : [];
+  const bt = backtraceOf(error.backtrace);
   for (const item of bt) {
     const itemUrl = editorLink(item.file ?? "", item.line, item.col);
     const position = html`<span style="opacity:.6">: ${item.line}${item.col ? " : " + item.col : ""}</span>`;

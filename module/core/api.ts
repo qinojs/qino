@@ -96,11 +96,11 @@ export const api: ApiTree = {
       execute: async ({ oldpw, pw }: any) => {
         const ctx = getCtx();
         const usr = ctx.user;
-        if (!usr) return 0;
-        if (!await pwVerify(oldpw, String(usr.pw ?? ""))) return -1;
-        if (String(pw ?? "").length < 8) return -2;
+        if (!usr) throw new AccessError();
+        if (!await pwVerify(oldpw, String(usr.pw ?? ""))) throw new ApiError(422, "The old password is incorrect");
+        if (String(pw ?? "").length < 8) throw new ApiError(422, "The password is too short");
         await usr.$set({ pw: await pwHash(pw) });
-        return 1;
+        return { ok: true };
       },
     },
   },
@@ -124,7 +124,11 @@ export const api: ApiTree = {
       description: "Logout current session",
       access: Access.USER,
       execute: async () => {
-        await logout(getCtx());
+        const ctx = getCtx();
+        // A stateless credential identifies a request, not a session — there is nothing here to end,
+        // and the key stays valid either way. Say so instead of failing on the missing client.
+        if (ctx.statelessAuth) throw new ApiError(409, "Nothing to log out — this request carries no session");
+        await logout(ctx);
         return { ok: true };
       },
     },

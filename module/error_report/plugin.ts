@@ -109,7 +109,8 @@ async function addReport(app: App, vs: Report): Promise<void> {
     row.ip ??= ctx.req.clientIp;
     row.log_id ??= await ctx.logId;
   } catch { /* no request context available */ }
-  if (Array.isArray(row.backtrace)) row.backtrace = JSON.stringify(row.backtrace);
+  // the column always holds a JSON array — a report from the browser may send anything at all
+  row.backtrace = JSON.stringify(Array.isArray(row.backtrace) ? row.backtrace : []);
   await app.db.table("m_error_report").insert(row).catch(() => {});
 }
 
