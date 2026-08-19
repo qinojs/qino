@@ -33,7 +33,7 @@ function chip(kind: "table" | "field", name: string, mods: string[], definedByLa
   return html`<span class="${cls} -shared" data-modules="${title}" title="${title}">${name}</span>`;
 }
 
-export async function renderModules(app: App, modules: Record<string, any>): Promise<HtmlString> {
+export async function renderModules(app: App, modules: Map<string, any>): Promise<HtmlString> {
   const t = app.t;
   const index = buildModuleTableIndex(modules);
   const tableMods = tableOrigins(index);

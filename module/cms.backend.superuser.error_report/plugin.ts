@@ -29,7 +29,7 @@ function makeFileHelper(ctx: Ctx) {
   function fileDisplay(file: string): string {
     const path = localPath(file);
     if (!path) return file;
-    for (const mod of Object.values(ctx.app.modules.all())) {
+    for (const mod of ctx.app.modules.all().values()) {
       if (mod.dir && path.startsWith(mod.dir)) return "m/" + mod.name + "/" + path.slice(mod.dir.length);
     }
     const mIdx = path.lastIndexOf("/m/");

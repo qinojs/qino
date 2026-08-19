@@ -101,12 +101,12 @@ export class Module {
 
 export class ModuleManager {
   #app: App;
-  #modules: Record<string, Module> = {};
+  #modules = new Map<string, Module>();
   #pending: { spec: string; name?: string }[] = [];
   #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
   #declared = new Set<string>(); // came from add(), i.e. the application itself — not uninstallable
   #installed = new Map<string, number>(); // name → time install() ran; the `module` table in memory
-  #failed: Record<string, string> = {}; // installed but not importable this boot → name: why
+  #failed = new Map<string, string>(); // installed but not importable this boot → name: why
   #booting = false; // inside init(): install() only registers, the link pass follows
 
   /** Where to find a module that nobody declared. Set by whoever knows a catalog — the StoreManager
@@ -117,26 +117,26 @@ export class ModuleManager {
     this.#app = app;
   }
 
-  get(name: string): Module | undefined { return this.#modules[name]; }
+  get(name: string): Module | undefined { return this.#modules.get(name); }
 
   /** Everything imported, linked or not — the raw registry (imported ⊇ linked). */
-  all(): Record<string, Module> { return this.#modules; }
+  all(): Map<string, Module> { return this.#modules; }
 
   /** The working set: modules whose hooks have run, dependencies first. With a name: that one, if it is linked. */
   linked(): Module[];
   linked(name: string): Module | undefined;
   linked(name?: string): Module[] | Module | undefined {
-    if (name === undefined) return Array.from(this.#linked, (n) => this.#modules[n]);
-    if (this.#linked.has(name)) return this.#modules[name];
+    if (name === undefined) return Array.from(this.#linked, (n) => this.#modules.get(n)!);
+    if (this.#linked.has(name)) return this.#modules.get(name);
   }
 
   /** The module, if the application declares it itself — those outlive any uninstall. */
   declared(name: string): Module | undefined {
-    if (this.#declared.has(name)) return this.#modules[name];
+    if (this.#declared.has(name)) return this.#modules.get(name);
   }
 
   // Installed modules that could not be imported this boot, and why; uninstall() is the way out.
-  failures(): Record<string, string> { return this.#failed; }
+  failures(): Map<string, string> { return this.#failed; }
 
   /** The order everything runs in: dependencies before dependents. A module's index is its position. */
   order(): string[] { return this.#order(); }
@@ -163,36 +163,36 @@ export class ModuleManager {
     if (!isModuleName(name)) throw new Error(`Invalid module name "${name}": ${source}`);
     if (expectedName && manifest.name && expectedName !== manifest.name)
       throw new Error(`Module name mismatch: store has "${expectedName}", manifest says "${manifest.name}"`);
-    const existing = this.#modules[name];
+    const existing = this.#modules.get(name);
     if (existing) {
       if (existing.source !== source) throw new Error(`Duplicate module name "${name}": ${existing.source} vs ${source}`);
       return existing;
     }
 
-    const same = Object.values(this.#modules).find((mod) => mod.source === source);
+    const same = this.#modules.values().find((mod) => mod.source === source);
     if (same) throw new Error(`Plugin ${source} is already registered as "${same.name}"`);
 
     const plugin = await import(source);
     const mod = new Module(this.#app, name, plugin, manifest, source);
-    this.#modules[name] = mod;
+    this.#modules.set(name, mod);
     return mod;
   }
 
   async init(): Promise<void> {
     for (const { spec, name } of this.#pending) await this.import(spec, name);
     this.#pending = [];
-    this.#declared = new Set(Object.keys(this.#modules));
+    this.#declared = new Set(this.#modules.keys());
     // Chicken-and-egg: `url` says which modules to import, but importing them is what completes the
     // schema this table is migrated to. So read it before its own migration — as it is, since a fresh
     // database has no table and an install older than the column has no `url`.
     const rows = await this.#app.db.query`SELECT * FROM module`.catch(() => []);
     for (const { name, url, installed } of rows) {
       if (installed) this.#installed.set(name, installed);
-      if (!url || this.#modules[name]) continue;
+      if (!url || this.#modules.has(name)) continue;
       // A deleted folder or an unreachable host must not keep the app from booting: shout, skip,
       // and let the module page offer the uninstall that clears the row.
       await this.import(url, name).catch((e) => {
-        this.#failed[name] = errMsg(e);
+        this.#failed.set(name, errMsg(e));
         console.error(`Module "${name}" is installed but could not be imported from ${url}:`, e);
       });
     }
@@ -202,12 +202,12 @@ export class ModuleManager {
     // those need the same ordering and schema merge as the first round, not a nested link().
     this.#booting = true;
     try {
-      for (let count = 0; count !== Object.keys(this.#modules).length;) {
-        count = Object.keys(this.#modules).length;
+      for (let count = 0; count !== this.#modules.size;) {
+        count = this.#modules.size;
         const order = this.#order();
         await this.#applyDbSchema(order);
         this.#applySchemas(order);
-        for (const name of order) if (!this.#linked.has(name)) await this.#linkOne(this.#modules[name]);
+        for (const name of order) if (!this.#linked.has(name)) await this.#linkOne(this.#modules.get(name)!);
       }
     } finally { this.#booting = false; }
   }
@@ -220,19 +220,19 @@ export class ModuleManager {
     // an error: an unorderable module would break the next boot, so it must not reach the table.
     try {
       for (const need of mod.dependencies) {
-        if (this.#modules[need]) continue;
+        if (this.#modules.has(need)) continue;
         const url = await this.locate(need);
         if (!url) throw new Error(`Cannot install "${mod.name}": needs ${need}`);
         await this.install(url, need);
       }
     } catch (e) {
-      delete this.#modules[mod.name]; // nothing half-registered
+      this.#modules.delete(mod.name); // nothing half-registered
       throw e;
     }
     await this.#app.db.table("module").ensure({ name: mod.name, url: mod.source });
     if (!this.#booting) {
       await this.link(mod.name); // during boot init() links it in a later pass
-      for (const name of Object.keys(this.#failed)) await this.link(name).then(() => delete this.#failed[name], () => {});
+      for (const name of [...this.#failed.keys()]) await this.link(name).then(() => this.#failed.delete(name), () => {});
     }
     return mod;
   }
@@ -240,7 +240,7 @@ export class ModuleManager {
   /** Run install() again — the hooks are written to fill gaps, so this restores what was deleted.
    *  It does not touch what was changed: a seed guarded by "does this exist?" skips what is there. */
   async repair(name: string): Promise<void> {
-    const mod = this.#modules[name];
+    const mod = this.#modules.get(name);
     if (!mod || !this.#linked.has(name)) throw new Error(`Cannot repair "${name}": not linked`);
     await mod.plugin.install?.({ app: this.#app, module: mod.plugin });
     const installed = unixTime();
@@ -251,7 +251,7 @@ export class ModuleManager {
   /** Back to factory: let the module remove what it owns, then install it again. Needs an
    *  uninstall() hook — without one there is nothing to undo and repair() is the honest option. */
   async reset(name: string): Promise<void> {
-    const mod = this.#modules[name];
+    const mod = this.#modules.get(name);
     if (!mod || !this.#linked.has(name)) throw new Error(`Cannot reset "${name}": not linked`);
     if (!mod.plugin.uninstall) throw new Error(`Cannot reset "${name}": the module has no uninstall()`);
     await mod.plugin.uninstall({ app: this.#app, module: mod.plugin });
@@ -261,7 +261,7 @@ export class ModuleManager {
   /** Unlink, let the module clean up after itself and forget it. Its data goes, unlink() keeps it. */
   async uninstall(name: string): Promise<void> {
     if (this.#declared.has(name)) throw new Error(`Cannot uninstall "${name}": the application declares it`);
-    const mod = this.#modules[name];
+    const mod = this.#modules.get(name);
     if (!mod && !await this.#app.db.table("module").get(name)) throw new Error(`Cannot uninstall "${name}": unknown`);
     if (mod) { // a leftover row has no hooks to reverse and no plugin to ask — only the row goes
       this.unlink(name);
@@ -269,8 +269,8 @@ export class ModuleManager {
     }
     await this.#app.db.table("module").delete(name);
     this.#installed.delete(name);
-    delete this.#failed[name];
-    delete this.#modules[name];
+    this.#failed.delete(name);
+    this.#modules.delete(name);
   }
 
   /** Same module, other source: where its code comes from changes, what it owns stays. Throws like
@@ -278,10 +278,10 @@ export class ModuleManager {
    *  leaves it pointing at the source that worked and the next boot is back where it started. */
   async relocate(name: string, url: string): Promise<void> {
     if (this.#declared.has(name)) throw new Error(`Cannot relocate "${name}": the application declares it`);
-    if (!this.#modules[name]) throw new Error(`Cannot relocate "${name}": not imported`); // never an install in disguise
+    if (!this.#modules.has(name)) throw new Error(`Cannot relocate "${name}": not imported`); // never an install in disguise
     const linked = this.#linked.has(name); // unlink() forgets it, and a deactivated module stays deactivated
     this.unlink(name);
-    delete this.#modules[name]; // import() refuses a name it already holds
+    this.#modules.delete(name); // import() refuses a name it already holds
     await this.import(url, name);
     if (linked) await this.link(name);
     await this.#app.db.table("module").ensure({ name, url });
@@ -289,7 +289,7 @@ export class ModuleManager {
 
   // Run a registered module's hooks at runtime. Idempotent; its dependencies must already be linked.
   async link(name: string): Promise<void> {
-    const mod = this.#modules[name];
+    const mod = this.#modules.get(name);
     if (!mod) throw new Error(`Cannot link "${name}": not imported`);
     if (this.#linked.has(name)) return;
     for (const need of mod.dependencies)
@@ -302,9 +302,9 @@ export class ModuleManager {
 
   // Reverse a module's hooks. Stays registered (re-linkable); tables, locales and install content (data) remain.
   unlink(name: string): void {
-    const mod = this.#modules[name];
+    const mod = this.#modules.get(name);
     if (!mod || !this.#linked.has(name)) return;
-    for (const other of Object.values(this.#modules))
+    for (const other of this.#modules.values())
       if (other !== mod && this.#linked.has(other.name) && other.dependencies.includes(name))
         throw new Error(`Cannot unlink "${name}": "${other.name}" needs it`);
     mod.abort(); // fires the signal init() registered its listeners/timers with
@@ -335,7 +335,7 @@ export class ModuleManager {
     const appSettingsSchema = { properties: {} as Record<string, unknown> };
     const ctxSettingsSchema = { properties: {} as Record<string, unknown> };
     for (const name of order) {
-      const { plugin } = this.#modules[name];
+      const { plugin } = this.#modules.get(name)!;
       appSettingsSchema.properties[name] = plugin.settingsSchema;
       ctxSettingsSchema.properties[name] = plugin.ctxSettingsSchema;
     }
@@ -348,7 +348,7 @@ export class ModuleManager {
   // Merge the given modules' dbSchema (static, then function-form) and migrate additively.
   async #applyDbSchema(order: string[]): Promise<void> {
     const dbSchema = { properties: {} };
-    const schemas = order.map((name) => this.#modules[name].plugin.dbSchema);
+    const schemas = order.map((name) => this.#modules.get(name)!.plugin.dbSchema);
     for (const schema of schemas) if (typeof schema !== "function") mergeSchema(dbSchema, schema);
     // Function-form dbSchema runs after the static merge — for tables derived from other modules.
     for (const schema of schemas) if (typeof schema === "function") mergeSchema(dbSchema, schema(dbSchema));
@@ -381,30 +381,30 @@ export class ModuleManager {
   async #importDependencies(): Promise<void> {
     const tried = new Set<string>();
     // One at a time: a module brings its own dependencies, which the next round picks up.
-    const next = () => Object.values(this.#modules).flatMap((mod) => mod.dependencies)
-      .find((need) => !this.#modules[need] && !tried.has(need));
+    const next = () => this.#modules.values().flatMap((mod) => mod.dependencies)
+      .find((need) => !this.#modules.has(need) && !tried.has(need));
     for (let need = next(); need; need = next()) {
       tried.add(need);
       const url = await this.locate(need);
       if (!url) continue; // unresolvable: leave the reporting to #skipMissing()
       await this.import(url, need).catch((e) => {
-        this.#failed[need] = errMsg(e);
+        this.#failed.set(need, errMsg(e));
         console.error(`Module "${need}" is needed but could not be imported from ${url}:`, e);
       });
     }
   }
 
   #skipMissing(): void {
-    const gone = (need: string) => !this.#modules[need] || this.#failed[need];
+    const gone = (need: string) => !this.#modules.has(need) || this.#failed.has(need);
     // Marking one module broken can break its dependents, so sweep until a pass changes nothing.
     for (let again = true; again;) {
       again = false;
-      for (const mod of Object.values(this.#modules)) {
-        if (this.#declared.has(mod.name) || this.#failed[mod.name]) continue;
+      for (const mod of this.#modules.values()) {
+        if (this.#declared.has(mod.name) || this.#failed.has(mod.name)) continue;
         const need = mod.dependencies.find(gone);
         if (!need) continue;
         const why = `Module "${mod.name}" needs "${need}", but it is not imported`;
-        this.#failed[mod.name] = why;
+        this.#failed.set(mod.name, why);
         console.error(`${why}; skipping installed module`);
         again = true;
       }
@@ -412,18 +412,18 @@ export class ModuleManager {
   }
 
   // Dependency-ordered subset (default: all imported). Recurses dependencies only within the set.
-  #order(names: string[] = Object.keys(this.#modules).filter((name) => !this.#failed[name])): string[] {
+  #order(names: string[] = this.#modules.keys().filter((name) => !this.#failed.has(name)).toArray()): string[] {
     const order: string[] = [];
     const seen: Record<string, "visiting" | "done"> = {};
     const set = new Set(names);
     const visit = (name: string) => {
       if (seen[name] === "done") return;
       if (seen[name] === "visiting") throw new Error(`Circular module dependency: ${name}`);
-      const mod = this.#modules[name];
+      const mod = this.#modules.get(name);
       if (!mod) throw new Error(`Module "${name}" is not imported`);
       seen[name] = "visiting";
       for (const need of mod.dependencies) {
-        if (!this.#modules[need]) throw new Error(`Module "${name}" needs "${need}", but it is not imported`);
+        if (!this.#modules.has(need)) throw new Error(`Module "${name}" needs "${need}", but it is not imported`);
         if (set.has(need)) visit(need);
       }
       seen[name] = "done";

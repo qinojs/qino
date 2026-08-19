@@ -201,11 +201,11 @@ Deno.test({
     await app1.db.close();
 
     const app2 = await boot(); // boots at all: that is the assertion
-    assert(app2.modules.failures()["t.gone"], "the failed import is reported");
+    assert(app2.modules.failures().has("t.gone"), "the failed import is reported");
     assertEquals(app2.modules.get("t.gone"), undefined);
 
     await app2.modules.uninstall("t.gone"); // the way out, without a plugin to ask
-    assertEquals(app2.modules.failures(), {});
+    assertEquals(app2.modules.failures().size, 0);
     assertEquals(await app2.db.query`SELECT name FROM module WHERE name = 't.gone'`, []);
     await app2.db.close();
 
@@ -233,7 +233,7 @@ Deno.test({
     await app1.db.close();
 
     const app2 = await boot();
-    assertEquals(app2.modules.failures(), {}, "not broken: the name may still be on offer somewhere");
+    assertEquals(app2.modules.failures().size, 0, "not broken: the name may still be on offer somewhere");
     assertEquals(app2.modules.get("t.leftover"), undefined);
 
     await assertRejects(() => app2.modules.uninstall("t.never"), Error, "unknown");

@@ -5,7 +5,7 @@ import { collectConflicts } from "../lib/analyze.ts";
 
 import type { App, HtmlString } from "@qino/qino";
 
-export function renderConflicts(app: App, modules: Record<string, any>): Promise<HtmlString> {
+export function renderConflicts(app: App, modules: Map<string, any>): Promise<HtmlString> {
   const t = app.t;
   const conflicts = collectConflicts(modules);
 

@@ -19,7 +19,7 @@ function statusBadge(app: App, inSchema: boolean, uncovered: number): Promise<Ht
   return html`<u2-ico inline icon=check_circle aria-label=ok style="color:var(--green)">✓</u2-ico>`;
 }
 
-export function renderTables(app: App, db: any, modules: Record<string, any>, table: string): Promise<HtmlString> {
+export function renderTables(app: App, db: any, modules: Map<string, any>, table: string): Promise<HtmlString> {
   return table ? tableDetail(app, db, modules, table) : tableOverview(app, db);
 }
 
@@ -76,7 +76,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
   </div>`;
 }
 
-async function tableDetail(app: App, db: any, modules: Record<string, any>, tableName: string): Promise<HtmlString> {
+async function tableDetail(app: App, db: any, modules: Map<string, any>, tableName: string): Promise<HtmlString> {
   const t = app.t;
   const table = db.tables?.[tableName];
   if (!table) return html.async`<div class=u2-card><div class=-body>${t`Table`} <b>${tableName}</b> ${t`not found.`}</div></div>`;

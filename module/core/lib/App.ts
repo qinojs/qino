@@ -221,7 +221,7 @@ export class App extends Emitter<AppEvents> {
         const resolved = nodePath.resolve(file);
         if (resolved !== nodePath.normalize(file) && resolved !== file) throw new Output("invalid path", { status: 400 });
         const roots = [nodePath.resolve(this.dir)];
-        for (const mod of Object.values(this.modules.all())) if (mod.dir) roots.push(nodePath.resolve(mod.dir));
+        for (const mod of this.modules.all().values()) if (mod.dir) roots.push(nodePath.resolve(mod.dir));
         if (!roots.some(root => resolved.startsWith(root + nodePath.sep))) throw new Output("invalid path", { status: 400 });
     }
 }

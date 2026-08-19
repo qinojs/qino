@@ -21,7 +21,7 @@ type Holds = { kind: "app" | "module" | "store"; label: string };
 
 function candidates(app: App): Map<string, Holds> {
   const dirs = new Map<string, Holds>([[app.dir, { kind: "app", label: app.dir }]]);
-  for (const mod of Object.values(app.modules.all())) if (mod.dir) dirs.set(mod.dir, { kind: "module", label: mod.name });
+  for (const mod of app.modules.all().values()) if (mod.dir) dirs.set(mod.dir, { kind: "module", label: mod.name });
   for (const store of app.stores.all()) {
     if (!store.base.startsWith("file:")) continue;
     const dir = fromFileUrl(store.base);

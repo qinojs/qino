@@ -104,7 +104,7 @@ async function render(node: Node): Promise<HtmlString> {
   const t = app.t;
   const store = app.stores.get(storeUrl(app));
   const mine = await (store?.names() ?? Promise.resolve([])).catch(() => []);
-  const templates = Object.values(app.modules.all()).filter((mod) => mod.manifest.files?.length).map((mod) => mod.name).sort();
+  const templates = app.modules.all().values().filter((mod) => mod.manifest.files?.length).map((mod) => mod.name).toArray().sort();
   const modulesPage = await (await node.cms.nodeByModule("cms.backend.superuser.module"))?.page();
   const modulesUrl = modulesPage && await modulesPage.access() ? await modulesPage.url() : "";
   const modUrl = (mod: string) => `${modulesUrl}${modulesUrl.includes("?") ? "&" : "?"}mod=${encodeURIComponent(mod)}`;

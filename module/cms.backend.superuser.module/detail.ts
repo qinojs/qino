@@ -25,7 +25,7 @@ async function renderModule(node: Node, modName: string): Promise<HtmlString> {
   const t = app.t;
   const ctx = getCtx();
   const allMods = app.modules.all();
-  const modObj = allMods[modName];
+  const modObj = allMods.get(modName);
 
   const back = ctx.req.url.toURL(); back.searchParams.delete("mod");
   const backHref = back.search;

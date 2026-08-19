@@ -204,7 +204,7 @@ Deno.test("Store selects modules by directory name", async () => {
     await selected.stores.init();
     await selected.modules.init();
     assertEquals(selected.loaded, ["hello.world"]);
-    assertEquals(Object.keys(selected.modules.all()), ["hello.world"]);
+    assertEquals([...selected.modules.all().keys()], ["hello.world"]);
 
     const all = createApp();
     await all.stores.add(toFileUrl(root + "/store.json").href).addAll();
@@ -261,10 +261,10 @@ Deno.test("ModuleManager init reports missing and circular dependencies", async 
     } as any);
     await installed.init();
     assert(!installed.linked("missing.dep"));
-    assert(installed.failures()["missing.dep"]);
+    assert(installed.failures().has("missing.dep"));
     await installed.install(toFileUrl(root + "/not.imported/plugin.ts").href);
     assert(installed.linked("missing.dep"));
-    assertEquals(installed.failures(), {});
+    assertEquals(installed.failures().size, 0);
 
     const cyclic = new ModuleManager(app as any);
     await cyclic.import(toFileUrl(root + "/a/plugin.ts").href);

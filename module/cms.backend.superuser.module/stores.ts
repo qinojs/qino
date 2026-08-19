@@ -46,7 +46,7 @@ type RowState = "active" | "inactive" | "available" | "broken" | "elsewhere";
  *  a store, so the same module can be installed in one row and merely on offer in the next —
  *  `Module.source` says which store it actually came from, and only that row acts on it. */
 function state(app: App, mod: string, store?: Store): RowState {
-  if (app.modules.failures()[mod]) return "broken";
+  if (app.modules.failures().has(mod)) return "broken";
   const known = app.modules.get(mod);
   // Storeless and unimported leaves only one origin: a row in the module table nothing can load.
   // Same state as a failed import — a row with nothing behind it; only the reason differs.
@@ -85,8 +85,8 @@ function catalogs(app: App) {
 async function moduleList(app: App, cats: Awaited<ReturnType<typeof catalogs>>): Promise<{ mod: string; store?: Store }[]> {
   const rows: { mod: string; store?: Store }[] = [];
   for (const { store, names } of cats) for (const mod of names) rows.push({ mod, store });
-  for (const mod of Object.values(app.modules.all())) if (!offered(app, mod)) rows.push({ mod: mod.name });
-  for (const mod of Object.keys(app.modules.failures())) if (!rows.some((row) => row.mod === mod)) rows.push({ mod });
+  for (const mod of app.modules.all().values()) if (!offered(app, mod)) rows.push({ mod: mod.name });
+  for (const mod of app.modules.failures().keys()) if (!rows.some((row) => row.mod === mod)) rows.push({ mod });
   // A name the table still holds that neither a catalog nor an import accounted for: the leftover of
   // a module since renamed or dropped. Boot cannot spot it — it does not know the catalogs — and no
   // other page lists it, so this is the only place it can be removed.
@@ -141,7 +141,7 @@ function ranks(app: App): Map<string, number> {
 async function moduleRow(app: App, mod: string, store: Store | undefined, l: Labels, label: (url: string) => string, rank: Map<string, number>): Promise<HtmlString> {
   const st = state(app, mod, store);
   // Every broken row says why: the import error, or that nothing offers the name any more.
-  const why = st !== "broken" ? undefined : app.modules.failures()[mod] ?? l.noStore;
+  const why = st !== "broken" ? undefined : app.modules.failures().get(mod) ?? l.noStore;
   const known = app.modules.get(mod);
   const all = app.modules.all();
   const iconMod = !store || known?.source === store.moduleUrl(mod)
@@ -348,9 +348,9 @@ export async function renderOverview(node: Node): Promise<HtmlString> {
 /** What is there, what came last, and the inactive modules — those are the ones you may want back. */
 export async function backendDashboardWidget(app: App): Promise<HtmlString> {
   const t = app.t;
-  const mods = Object.keys(app.modules.all());
+  const mods = [...app.modules.all().keys()];
   const inactive = mods.filter((mod) => !app.modules.linked(mod));
-  const broken = Object.keys(app.modules.failures()).length;
+  const broken = app.modules.failures().size;
   const latest = await app.db.query`SELECT name, installed FROM module WHERE installed > 0 ORDER BY installed DESC LIMIT 3`.catch(() => []);
 
   const recent = !latest.length ? "" : html.async`<table class=u2-table style="white-space:nowrap">

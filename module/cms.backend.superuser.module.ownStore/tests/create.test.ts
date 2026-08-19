@@ -30,7 +30,7 @@ Deno.test("own modules link to module administration details", async () => {
     dir: "/app/",
     t: (strings: TemplateStringsArray) => strings.join(""),
     stores: { get: () => ({ names: () => Promise.resolve(["cms.cont.own"]) }) },
-    modules: { all: () => ({}), linked: () => true },
+    modules: { all: () => new Map(), linked: () => true },
   };
   const node = {
     app,
@@ -80,7 +80,7 @@ Deno.test({
       { files: ["manifest.json", "plugin.ts", "pub/main.css", "pub/pixel.bin", "pub/name#part.txt"] },
       "https://modules.example/cms.cont.remote/plugin.ts",
     );
-    app.modules.all()[remote.name] = remote;
+    app.modules.all().set(remote.name, remote);
     const assets = new Map<string, BodyInit>([
       ["manifest.json", JSON.stringify({ name: remote.name, files: remote.manifest.files })],
       ["plugin.ts", "export function init() {}\n"],

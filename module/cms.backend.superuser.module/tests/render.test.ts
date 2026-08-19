@@ -17,15 +17,15 @@ function fixture(query = {}) {
     manifest: { description: "Demo description", dependencies: ["core"] },
     plugin: { init() {}, api: { things: { get() {} } } },
   };
-  const modules = { "demo.module": demo };
+  const modules = new Map([["demo.module", demo]]);
   const app = {
     t,
     modules: {
       all: () => modules,
-      get: (name: string) => modules[name as keyof typeof modules],
+      get: (name: string) => modules.get(name),
       linked: () => true,
       declared: () => false,
-      failures: () => ({}),
+      failures: () => new Map(),
     },
     stores: { all: () => [] },
     db: { query: () => Promise.resolve([]) },

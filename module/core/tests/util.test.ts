@@ -124,7 +124,7 @@ Deno.test("util: app.assertAllowedPath accepts app/module roots and rejects sibl
     dir: "/var/www/workplace/qinojs/demo/",
     modules: {
       all() {
-        return { "cms.foo": { dir: "/var/www/workplace/qinojs/qino/module/cms.foo/" } };
+        return new Map([["cms.foo", { dir: "/var/www/workplace/qinojs/qino/module/cms.foo/" }]]);
       },
     },
   }) as App;
