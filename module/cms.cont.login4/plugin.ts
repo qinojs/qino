@@ -39,8 +39,7 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString | s
   const errorT = await node.text("login failed");
   if (!(await errorT.string())) await errorT.lang("en").set("Your login attempt failed");
   if (ctx.loginError === "pending") {
-    // no failure: the password was right and one more proof is owed; the script asks which
-    ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
+    // no failure: the password was right and one more proof is owed; core loads the script that asks
     errorHtml = html`<div class=loginError>${await app.t`One more step: confirm it is you.`}</div>`;
   } else if (ctx.loginError === "throttled") {
     const secs = ctx.loginRetryAfter ?? 0;

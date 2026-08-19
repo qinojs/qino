@@ -46,8 +46,10 @@ modules and declares `password`. Each factor brings its own `cms.cont.my.*` page
 as `core.pending` in the anonymous session for ten minutes, and the rotation on the real login
 clears it — no half-login table, nothing to sweep. Whoever has no second factor is let in with one.
 
-In the browser it is the step-up dialog again: the login page loads
-[`finishLogin.mjs`](../core/pub/js/finishLogin.mjs), which asks `GET core/login/missing`. The
+In the browser it is the step-up dialog again: core loads
+[`finishLogin.mjs`](../core/pub/js/finishLogin.mjs) on any page while a login is parked, and it asks
+`GET core/login/missing` — so a login that came back as a redirect (oauth) is finished on the page it
+returned to, without a page of its own. The
 `verify` verbs behind it take `Access.IDENTIFIED` — **whoever is signed in, or whoever a login under
 way has established** (`identified(ctx)` in server code). That is also why a code can be sent at
 all: only ever to a user the request already knows.
@@ -129,10 +131,6 @@ own keeps its own table, as [auth.webauthn](../auth.webauthn/) does.
 
 ## Open
 
-- **A login through a provider that needs two factors.** The oauth round trip returns as a redirect
-  and cannot answer with what is missing; it needs a "finish signing in" page, the same thing
-  `finishLogin.mjs` does. Until then it refuses — with `core.loginTwoFactor` on, an oauth user meets
-  a bare 403 ([auth.oauth/plugin.ts](../auth.oauth/plugin.ts#L234)).
 - **The policy beyond the one switch.** The **known client**: a stolen password sits on an unknown
   one by definition, and `client_usr` knows the difference — it may excuse the second factor at
   login and never satisfy a step-up, with a mail on a login from a new client as the counter-check.

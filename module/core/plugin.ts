@@ -3,6 +3,7 @@ import { isOn, Redirect, sha256b64, u2Root, itemRoot } from "./lib/util.ts";
 import { getCtx } from "./lib/ctx/Ctx.ts";
 import { urlOf } from "./lib/App.ts";
 import { registerRows } from "./lib/rows.ts";
+import { pendingLogin } from "./lib/auth/factors.ts";
 
 import type { App } from "./lib/App.ts";
 import type { DbEvents } from "./lib/db/Db.ts";
@@ -116,6 +117,8 @@ export async function init(app: App, { signal }: { signal: AbortSignal }) {
     const settings = app.settings.core;
 
     app.on("html-ready", ({ ctx }) => {
+        // a login owed another factor asks for it wherever it lands, not only on the login page
+        if (pendingLogin(ctx)) ctx.res.html.scripts.add(ctx.req.moduleUrl + "core/pub/js/finishLogin.mjs");
         ctx.res.html.importMap.set("@qino/item/", itemRoot);
         ctx.res.html.importMap.set("@qino/u2/", u2Root);
         // browser-only: the core's client api, and any module's pub files — relative paths break across stores

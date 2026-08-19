@@ -229,9 +229,11 @@ async function callback(ctx: Ctx, name: string): Promise<never> {
   }
 
   const usrId = await resolveUser(ctx, p, identity(claims));
-  // Already this user: the round trip connected a provider, no session to open. A login still
-  // missing a factor is refused — a redirect cannot answer with what would finish it.
-  if (!usrId || (usrId !== ctx.userId && await proof(ctx, "oauth", usrId))) throw new Output("oauth login denied", { status: 403 });
+  // Already this user: the round trip connected a provider, no session to open. A login still owed
+  // a factor is parked in the session, and the page we return to asks for it; an empty list means
+  // nothing would finish it.
+  const missing = usrId && usrId !== ctx.userId ? await proof(ctx, "oauth", usrId) : undefined;
+  if (!usrId || missing?.length === 0) throw new Output("oauth login denied", { status: 403 });
   throw new Redirect(safeReturn(ctx.req.appUrl, returnTo));
 }
 
