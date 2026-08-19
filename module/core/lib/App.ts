@@ -175,8 +175,9 @@ export class App extends Emitter<AppEvents> {
     /** The normal path: whatever isn't dbFile or api, the modules render. */
     async #render(ctx: Ctx): Promise<Response> {
         await this.fire("render", { ctx });
-        // nobody serves a favicon: say so, instead of letting the browser ask again
-        if (ctx.req.appPath === "favicon.ico" && !ctx.res.hasHtml && !ctx.res.body) ctx.res.status = 204;
+        // Nobody rendered anything: that is a 404, not an empty 200 — and it is the honest answer to
+        // /favicon.ico too, so no path needs naming here.
+        if (!ctx.res.answered) ctx.res.status = 404;
         return this.#buildResponse(ctx);
     }
 

@@ -21,3 +21,23 @@ Deno.test("Res: csp is instance-local", () => {
   const b = new Res();
   assert(a.csp !== b.csp);
 });
+
+Deno.test("Res: answered tells an untouched response from a deliberate one", () => {
+  assertEquals(new Res().answered, false);
+
+  const html = new Res();
+  html.html.title = "t";
+  assertEquals(html.answered, true);
+
+  const body = new Res();
+  body.body = "x";
+  assertEquals(body.answered, true);
+
+  const redirect = new Res();
+  redirect.headers.set("Location", "/");
+  assertEquals(redirect.answered, true);
+
+  const empty200 = new Res(); // meaning it, rather than never having been touched
+  empty200.status = 200;
+  assertEquals(empty200.answered, true);
+});
