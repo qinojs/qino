@@ -79,7 +79,7 @@ async function conversation(
     <div class=-head>${app.t`Communication with ${userName(user)}`} (${rows.length})</div>
     <div class=-scroll>
       ${rows.length
-        ? html`<table class=-chat><tbody>${rows.toReversed().map((row) => chatMessage(row, view))}</tbody></table>`
+        ? html`<table class=-chat><tbody>${rows.toReversed().map((row) => chatMessage(row, view))}</table>`
         : html`<div class=-body>${await app.t`No messages yet.`}</div>`}
     </div>
     <div>

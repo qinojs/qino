@@ -172,7 +172,7 @@ async function tableRows(node: Node): Promise<HtmlString> {
 
 export async function render(node: Node): Promise<HtmlString> {
   const freeBytes = await sqliteFreeBytes(node.app.db);
-  return html`<div class="u2-card -full">
+  return html`<div class=u2-card style="flex-grow:0">
     <div class=-head>Database cleanup</div>
     <div class=-body>
       <small>Maintenance can take a long time, lock tables and require additional disk space. Tables outside the schema can belong to modules that are currently not loaded.${freeBytes ? html` SQLite has <u2-bytes>${freeBytes}</u2-bytes> reusable free pages.` : ""}</small>
@@ -184,7 +184,7 @@ export async function render(node: Node): Promise<HtmlString> {
         ${node.app.db.dialect === "sqlite" ? html`<button data-action=vacuum u2-confirm="Vacuum the complete SQLite database? This can take a long time, needs free disk space and blocks the database.">Vacuum database</button>` : ""}
       </div>
     </div>
-    <u2-table style="padding:0;max-height:85vh;overflow:auto">
+    <u2-table style="padding:0;max-height:80vh;overflow:auto">
       <table class="u2-table -Sticky">
         <thead><tr>
           <th data-sort-handler>Table

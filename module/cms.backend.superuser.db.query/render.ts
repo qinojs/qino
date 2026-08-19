@@ -94,7 +94,7 @@ function renderRows(app: App, rows: any[], ms: number): Promise<HtmlString> {
   const body = html.join(shown.map(r => html`<tr>${cols.map(c => html`<td>${cell(r[c])}`)}`));
   const more = rows.length > MAX_ROWS ? html.async` · ${app.t`showing first`} ${MAX_ROWS}` : "";
 
-  return html.async`<div class="u2-card -full -result">
+  return html.async`<div class="u2-card -result">
     <div class=-head>${rows.length} ${app.t`rows`} · ${ms.toFixed(1)} ms${more}</div>
     <u2-table style="padding:0">
       <table class=u2-table>
@@ -164,7 +164,7 @@ function renderHelper(app: App, tables: Table[]): Promise<HtmlString> {
     </details>`;
   }));
 
-  return html.async`<div class="u2-card -full -helper">
+  return html.async`<div class="u2-card -helper">
     <div class=-head>${app.t`Tables & fields`} (${tables.length})</div>
     <div class=-body>
       <input type=search class=-tsearch placeholder="${app.t`Filter`}…">

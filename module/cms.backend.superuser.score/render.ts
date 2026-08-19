@@ -12,7 +12,7 @@ type Stats = { total: number; faded: number; last: number };
 
 export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head>
       <span>${t`Scores`}</span>
       <button type=button data-prune u2-confirm="${t`Delete all faded scores now?`}">${t`Prune now`}</button>

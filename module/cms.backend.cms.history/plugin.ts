@@ -160,7 +160,7 @@ async function render(node: Node, { ctx, vars = {} }: { ctx: Ctx; vars?: Record<
         <th>${t`Where`}
         <th>${t`What`}
         <th>${t`Client`}
-      <tbody cms-part=history>${initial}</tbody>
+      <tbody cms-part=history>${initial}
     </table>
   </div>
 </div>`;

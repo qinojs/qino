@@ -14,7 +14,7 @@ export function counts(jobs: JobStatus[]) {
 
 export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head>
       <span>${t`Cron jobs`}</span>
       <button type=button data-run-due>${t`Run due jobs`}</button>

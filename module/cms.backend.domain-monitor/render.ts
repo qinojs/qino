@@ -491,7 +491,7 @@ async function renderDetail(node: Node, ctx: Ctx, domain: string): Promise<HtmlS
         ])}
       </table>
     </div>
-    <div class="u2-card -full" style="flex:2 1 50rem">
+    <div class="u2-card" style="flex:2 1 50rem">
       <div class=-head>Check history (${checks.length}${checks.length === HISTORY_LIMIT ? "+" : ""})</div>
       <u2-table class=-history>
         <table class="u2-table -Sticky">

@@ -97,7 +97,7 @@ ${note ? html`<div class=u2-card style="flex:1 1 100%"><div class=-body>${note}<
         <th>Set up
         <th>Last used
         <th width=60>
-      <tbody>${rows.length ? html.join(rows, "\n") : html`<tr><td colspan=5>Nobody has set one up yet.`}</tbody>
+      <tbody>${rows.length ? html.join(rows, "\n") : html`<tr><td colspan=5>Nobody has set one up yet.`}
     </table>
   </div>
 </div>

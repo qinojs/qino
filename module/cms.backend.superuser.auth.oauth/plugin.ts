@@ -157,7 +157,7 @@ async function links(app: App, csrf: string): Promise<HtmlString> {
         <th>Connected
         <th>Last used
         <th width=60>
-      <tbody>${list.length ? html.join(list, "\n") : html`<tr><td colspan=6>Nobody has signed in through a provider yet.`}</tbody>
+      <tbody>${list.length ? html.join(list, "\n") : html`<tr><td colspan=6>Nobody has signed in through a provider yet.`}
     </table>
   </div>
 </div>`;

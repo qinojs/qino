@@ -71,17 +71,17 @@ export async function renderDiff(app: App, db: Db): Promise<HtmlString> {
   );
 
   return html.async`
-  <div class="u2-card -full">
+  <div class="u2-card">
     <div class=-head>Diff (${rows.length})</div>
     ${diffTable}
   </div>
   ${!isEmptyObject(missingTables) ? html.async`
-  <div class="u2-card -full">
+  <div class="u2-card">
     <div class=-head>${t`Missing tables as schema JSON`}</div>
     <div class=-body><textarea style="width:100%;height:18.75rem;font-family:monospace;font-size:.85em" readonly>${JSON.stringify({ properties: missingTables }, null, 2)}</textarea></div>
   </div>` : ""}
   ${diffs.length ? html.async`
-  <div class="u2-card -full">
+  <div class="u2-card">
     <div class=-head>${t`Schema deviations from DB`} (${diffs.length})</div>
     <table class=u2-table>
       <thead>

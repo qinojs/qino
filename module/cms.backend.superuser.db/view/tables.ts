@@ -57,7 +57,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
     })
   );
 
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head>${t`Tables`} (${tables.length})</div>
     <div class=-body><input type=search data-table-search placeholder="${t`Search`}..." style="width:18.75rem;max-width:100%"></div>
     <u2-table style="padding:0">
@@ -112,7 +112,7 @@ async function tableDetail(app: App, db: any, modules: Map<string, any>, tableNa
     : "";
 
   const u = getCtx().req.url.toURL(); u.searchParams.set("view", "tables"); u.searchParams.delete("table");
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head><a href="${u.search}">← ${t`Tables`}</a> &nbsp; ${tableName} ${meta}</div>
     <table class=u2-table>
       <thead>

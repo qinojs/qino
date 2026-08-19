@@ -114,7 +114,7 @@ function render(node: Node): Promise<HtmlString> {
           <th>User
           <th>Msgs
           <th>Updated
-        <tbody cms-part=list>${list(node, { ctx, vars: {} })}</tbody>
+        <tbody cms-part=list>${list(node, { ctx, vars: {} })}
       </table>
     </div>
   </div>

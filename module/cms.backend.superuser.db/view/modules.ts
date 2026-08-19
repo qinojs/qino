@@ -64,7 +64,7 @@ export async function renderModules(app: App, modules: Map<string, any>): Promis
   const fieldCount = Object.values(index).reduce((sum, tables) =>
     sum + Object.values(tables).reduce((s, fields) => s + fields.length, 0), 0);
 
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head>${t`Modules with DB schema`} <small>${moduleCount} ${t`modules`} &middot; ${tableCount} ${tablesLabel} &middot; ${fieldCount} ${fieldsLabel}</small></div>
     <table class=u2-table>
       <thead>

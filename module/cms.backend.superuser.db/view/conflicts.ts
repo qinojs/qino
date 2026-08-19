@@ -24,7 +24,7 @@ export function renderConflicts(app: App, modules: Map<string, any>): Promise<Ht
       <td>${valCells}`;
   });
 
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head>${t`Schema conflicts`} (${conflicts.length})</div>
     <table class="u2-table -conflicts">
       <thead>

@@ -9,7 +9,7 @@ import type { Node } from "@qino/qino/cms";
 
 export function render(node: Node): Promise<HtmlString> {
   const t = node.app.t;
-  return html.async`<div class="u2-card -full">
+  return html.async`<div class="u2-card">
     <div class=-head>
       <span>${t`Score test`}</span>
       <button type=button data-clear u2-confirm="${t`Delete all scores collected here?`}">${t`Clear`}</button>

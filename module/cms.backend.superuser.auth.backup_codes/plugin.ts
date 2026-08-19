@@ -68,7 +68,7 @@ ${note ? html`<div class=u2-card style="flex:1 1 100%"><div class=-body>${note}<
       <th>User
       <th>Unspent
       <th>Generated
-    <tbody>${rows.length ? html.join(rows, "\n") : html`<tr><td colspan=3>Nobody has generated any yet.`}</tbody>
+    <tbody>${rows.length ? html.join(rows, "\n") : html`<tr><td colspan=3>Nobody has generated any yet.`}
   </table>
   <div class=-body>A code is deleted the moment it is spent, so this count is what is really left.
   Backup codes declare no <code>login</code>: they stand in for a second factor, never for the first.</div>
