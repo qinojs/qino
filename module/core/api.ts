@@ -18,6 +18,13 @@ import type { ApiTree } from "./lib/api/mod.ts";
 
 const pathParam = s.array(s.string()).describe("Sub-path, e.g. [\"foo\", \"bar\"]");
 
+// `core.t` is public and unauthenticated. The client never sends more than T_WARN in one call,
+// so anything above it is nobody we know.
+// T_MAX stays under the tightest binding limit any backend brings (sqlite before 3.32 caps
+// variables at 999). Keep T_WARN in step with MAX in core/pub/js/t.mjs.
+const T_WARN = 400;
+const T_MAX = 420;
+
 function appSettingsRoot(path?: string[]) {
   const ctx = getCtx();
   if (!ctx.user?.superuser) throw new AccessError();
@@ -32,20 +39,25 @@ export const api: ApiTree = {
 
   t: {
     post: {
-      description: "Translate an array of texts for the current language",
+      description: "Look up texts in the current language — unknown ones come back unchanged.",
       access: Access.PUBLIC,
-      input: s.object({ texts: s.array(s.string()) }),
+      input: s.object({ texts: s.array(s.string()).describe(`At most ${T_WARN}`) }),
       execute: async ({ texts }: any) => {
         const ctx = getCtx();
         const { lang, langNs: ns, dev } = ctx;
-        const hashes = texts.map((text: string) => createHash("md5").update(text).digest("hex"));
-        const rows = await ctx.app.db.indexCol`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND hash IN (${sql.join(hashes.map((h: string) => sql`${h}`))})`;
-        const result: Record<string, string> = {};
-        for (let i = 0; i < texts.length; i++) {
+        const list = [...new Set<string>(texts)]; // the same string twice is one lookup
+        if (!list.length) return {}; // an empty `IN ()` is no SQL
+        if (list.length > T_WARN) ctx.app.fire("suspicious", { ctx, reason: "oversized translation batch" }).catch(() => {});
+        if (list.length > T_MAX) throw new ApiError(422, "too much to translate at once");
+        const hashes = list.map((text) => createHash("md5").update(text).digest("hex"));
+        const rows = await ctx.app.db.indexCol<string>`SELECT hash, ${sql.id(lang)} as txt FROM smalltext WHERE namespace = ${ns} AND hash IN (${sql.join(hashes.map((h: string) => sql`${h}`))})`;
+        // keys are caller-supplied: on a plain object `__proto__` is swallowed and `toString` is inherited
+        const result: Record<string, string> = Object.create(null);
+        for (let i = 0; i < list.length; i++) {
           if (dev && !rows.has(hashes[i])) {
-            await ctx.app.db.table("smalltext").insert({ namespace: ns, hash: hashes[i], original: texts[i] });
+            await ctx.app.db.table("smalltext").insert({ namespace: ns, hash: hashes[i], original: list[i] });
           }
-          result[texts[i]] = rows.get(hashes[i]) || texts[i];
+          result[list[i]] = rows.get(hashes[i]) || list[i];
         }
         return result;
       },

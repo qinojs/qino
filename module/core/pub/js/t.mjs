@@ -8,12 +8,20 @@ function interpolate(template, values) {
   return values.reduce((s, v, i) => s.replaceAll(`{${i}}`, String(v ?? "")), template);
 }
 
+// One microtask can queue more than one call may carry — keep in step with T_WARN in core/api.ts,
+// which treats anything above it as nobody we know.
+const MAX = 400;
+
 function flush() {
   scheduled = false;
   const batch = new Map(pending);
   pending.clear();
-  api.core.t.post({ texts: [...batch.keys()] }).then(result => {
-    for (const [text, { resolve }] of batch) resolve(result[text] ?? text);
+  const texts = [...batch.keys()];
+  const calls = [];
+  for (let i = 0; i < texts.length; i += MAX) calls.push(api.core.t.post({ texts: texts.slice(i, i + MAX) }));
+  Promise.all(calls).then(results => {
+    const all = Object.assign(Object.create(null), ...results); // a text called "toString" must not find one
+    for (const [text, { resolve }] of batch) resolve(all[text] ?? text);
   }).catch(err => {
     for (const { reject } of batch.values()) reject(err);
   });
