@@ -18,7 +18,7 @@ async function moveFile(from: string, to: string) {
 }
 
 export class DbFileManager {
-  #cache: Record<string, DbFile> = {};
+  #cache = new Map<string, DbFile>();
   #app: App;
   #directory: string;
 
@@ -32,23 +32,21 @@ export class DbFileManager {
   get db(): Db { return this.#app.db; }
   get directory(): string { return this.#directory; }
 
-  #files(): Record<string, DbFile> {
-    return scopeCache<Record<string, DbFile>>(this.#cache, "dbFiles", () => ({}));
+  #files(): Map<string, DbFile> {
+    return scopeCache<Map<string, DbFile>>(this.#cache, "dbFiles", () => new Map());
   }
 
   async file(id: number | string, vs?: any): Promise<DbFile> {
-    const key = String(id);
-    const cache = this.#files();
-    cache[key] ??= new DbFile(this, id);
-    if (vs) cache[key].setLocalVs(vs);
-    else await cache[key].ensureVs();
-    return cache[key];
+    const file = this.#files().getOrInsertComputed(String(id), () => new DbFile(this, id));
+    if (vs) file.setLocalVs(vs);
+    else await file.ensureVs();
+    return file;
   }
 
   clearCache(id?: number | string) {
     const cache = this.#files();
-    if (id !== undefined) delete cache[String(id)];
-    else for (const k in cache) delete cache[k];
+    if (id !== undefined) cache.delete(String(id));
+    else cache.clear();
   }
 
   async add(path?: string): Promise<DbFile> {

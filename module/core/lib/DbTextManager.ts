@@ -7,7 +7,7 @@ import type { App } from "./App.ts";
 import type { Db } from "./db/Db.ts";
 
 export class DbTextManager {
-  #cache: Record<string, DbText> = {};
+  #cache = new Map<string, DbText>();
   #app: App;
 
   constructor(app: App) {
@@ -17,15 +17,18 @@ export class DbTextManager {
   get db(): Db { return this.#app.db; }
   get app(): App { return this.#app; }
 
+  #texts(): Map<string, DbText> {
+    return scopeCache<Map<string, DbText>>(this.#cache, "dbTexts", () => new Map());
+  }
+
   text(id: number | string): DbText {
-    const cache = scopeCache<Record<string, DbText>>(this.#cache, "dbTexts", () => ({}));
-    return cache[String(id)] ??= new DbText(this, id);
+    return this.#texts().getOrInsertComputed(String(id), () => new DbText(this, id));
   }
 
   clearCache(id?: number | string) {
-    const cache = scopeCache<Record<string, DbText>>(this.#cache, "dbTexts", () => ({}));
-    if (id !== undefined) delete cache[String(id)];
-    else for (const k in cache) delete cache[k];
+    const cache = this.#texts();
+    if (id !== undefined) cache.delete(String(id));
+    else cache.clear();
   }
 
   async generate(): Promise<DbText> {
