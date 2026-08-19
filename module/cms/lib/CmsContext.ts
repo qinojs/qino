@@ -13,7 +13,7 @@ export class CmsContext {
   requestedNode!: Node;
   editmode = 0;
   renderPath: Set<number> = new Set();
-  accessCache: Record<string, number> = {};
+  accessCache: Map<string, number> = new Map();
   get nodeId(): number | undefined { return this.mainNode?.id; }
   get requestedNodeId(): number | undefined { return this.requestedNode?.id; }
 }

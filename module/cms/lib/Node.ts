@@ -104,11 +104,12 @@ export class Node {
         const usrId = Number(user);
         const cache = cmsCtx(ctx).accessCache;
         const key = `${this.id}:${usrId}`;
-        if (cache[key] === undefined) {
-            const e: AppEvents["node:access"] = { node: this, user, access: await this.#rawAccess(user) };
-            cache[key] = (await this.app.fire("node:access", e)).access;
-        }
-        return cache[key];
+        const hit = cache.get(key);
+        if (hit !== undefined) return hit;
+        const e: AppEvents["node:access"] = { node: this, user, access: await this.#rawAccess(user) };
+        const access = (await this.app.fire("node:access", e)).access as number;
+        cache.set(key, access);
+        return access;
     }
 
     /** Node-level access before node:access adjustments (module axis). Inheritance builds on
@@ -116,8 +117,11 @@ export class Node {
     async #rawAccess(user?: Usr | null): Promise<number> {
         const cache = cmsCtx(getCtx()).accessCache;
         const key = `${this.id}:${Number(user)}:raw`;
-        cache[key] ??= await this.#calcUsrAccess(user);
-        return cache[key];
+        const hit = cache.get(key);
+        if (hit !== undefined) return hit;
+        const access = await this.#calcUsrAccess(user);
+        cache.set(key, access);
+        return access;
     }
 
     async #calcUsrAccess(user?: Usr | null): Promise<number> {
@@ -266,7 +270,7 @@ export class Node {
         const ctx = getCtx();
         const usrId = Number(ctx.user);
         const cache = cmsCtx(ctx).accessCache;
-        const cachedAccess = cache[`${this.id}:${usrId}`] ?? 0;
+        const cachedAccess = cache.get(`${this.id}:${usrId}`) ?? 0;
         return cachedAccess > 1 && !!cmsCtx(ctx).editmode;
     }
 
