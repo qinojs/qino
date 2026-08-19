@@ -99,7 +99,7 @@ export function identity(c: any): { sub: string; email: string; verified: unknow
   return {
     sub: String(c.sub ?? c.id ?? ""), // OIDC calls it sub, plain OAuth2 userinfos usually id
     email: String(c.email ?? "").trim().toLowerCase(),
-    verified: c.email_verified ?? c.verified, // may be undefined — many OAuth2 userinfos omit it
+    verified: c.email_verified ?? c.verified, // may be undefined — that counts as unconfirmed
     firstname: String(c.given_name ?? first ?? ""),
     lastname: String(c.family_name ?? rest.join(" ")),
   };
@@ -133,7 +133,9 @@ export async function resolveUser(ctx: Ctx, p: any, id: ReturnType<typeof identi
 
   let usrId = here;
   if (!usrId) {
-    if (!id.email || id.verified === false) return 0; // never link/create on an unverified e-mail
+    // Never link/create on an e-mail the provider does not vouch for. A missing claim counts as
+    // unconfirmed: a provider whose userinfo mail is editable would otherwise hand over accounts.
+    if (!id.email || (id.verified !== true && id.verified !== "true")) return 0;
     const existing = await db.one`SELECT id FROM usr WHERE LOWER(TRIM(email)) = ${id.email}`;
     usrId = Number(existing ?? 0);
     if (!usrId) {
