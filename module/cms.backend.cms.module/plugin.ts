@@ -237,7 +237,7 @@ async function renderDetail(node: Node, modName: string, message: string): Promi
 
   <div class=u2-card style="flex:1 1 31.25rem; max-height:90vh; overflow:auto">
     <div class=-head>${t`Used by`}</div>
-    ${canReplace ? html.async`<form onsubmit="return false">
+    ${canReplace ? html.async`<form data-replace-form>
       <label>${t`Replace with`}
         <select name=target data-target><option value="">–${targets.map((m) => html`<option value="${m}">${m}`)}</select>
       </label>

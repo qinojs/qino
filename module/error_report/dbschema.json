@@ -20,7 +20,7 @@
           },
           "source": {
             "type": "string",
-            "maxLength": 5,
+            "maxLength": 10,
             "x-index": true
           },
           "message": {

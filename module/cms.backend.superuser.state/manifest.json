@@ -8,6 +8,6 @@
     "manifest.json",
     "plugin.ts",
     "pub/module.svg",
-    "pub/state.mjs"
+    "pub/main.js"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@qino/qino",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "minimumDependencyAge": {
     "age": "P1D",
     "exclude": ["jsr:@nuxodin/item"]

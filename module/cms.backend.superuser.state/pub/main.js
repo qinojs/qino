@@ -3,22 +3,27 @@
 import { ctx, hee } from "@qino/pub/qino.js";
 import { dump } from "https://cdn.jsdelivr.net/gh/nuxodin/dump.js@v1.5.2/mod.js";
 
-const mount = document.getElementById("qg-client-ctx");
-if (mount) {
-  const safeRender = (value) =>
-    typeof value === "function"
-      ? `<function>function <b>${hee(value.name)}</b>(${value.length})</function>`
-      : undefined;
-  try {
-    mount.innerHTML = dump(ctx, {
-      depth: 2,
-      inherited: true,
-      symbols: true,
-      callGetters: true,
-      order: false,
-      customRender: safeRender,
-    });
-  } catch (err) {
-    mount.innerHTML = `<pre>${hee(err?.stack ?? err)}</pre>`;
-  }
-}
+const safeRender = (value) =>
+  typeof value === "function"
+    ? `<function>function <b>${hee(value.name)}</b>(${value.length})</function>`
+    : undefined;
+
+cms.initNode("backend.superuser.state", (el) => {
+  // the box lives in the reloadable part, so it is filled again after every reload
+  const fill = () => {
+    const mount = el.querySelector("[data-client-ctx]");
+    if (!mount) return;
+    try {
+      mount.innerHTML = dump(ctx, { depth: 2, inherited: true, symbols: true, callGetters: true, order: false, customRender: safeRender });
+    } catch (err) {
+      mount.innerHTML = `<pre>${hee(err?.stack ?? err)}</pre>`;
+    }
+  };
+
+  el.querySelector("[data-reload]")?.addEventListener("click", async () => {
+    await cms.reloadPart(Number(cms.el.nid(el)), "state");
+    fill();
+  });
+
+  fill();
+});

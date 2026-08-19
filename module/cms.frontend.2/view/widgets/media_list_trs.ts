@@ -29,8 +29,8 @@ export default async function (node: Node): Promise<HtmlString> {
       case "mp3": case "flac": case "ogg": case "aac": case "wav": case "m4a": {
         const url = await F.url();
         if (await FileTransformer.capabilities.ffmpeg) {
-          preview = html`<img src="${await F.url({w: 70, h: 40, max: true})}" alt="" draggable=true
-            onerror="this.replaceWith(Object.assign(document.createElement('audio'),{src:${JSON.stringify(url)},controls:true,draggable:true,style:'min-width:4.4rem;width:100%'}))">`;
+          // no waveform came back: panel.mjs swaps the broken thumbnail for a player
+          preview = html`<img src="${await F.url({w: 70, h: 40, max: true})}" alt="" draggable=true data-audio="${url}">`;
         } else {
           preview = html`<audio src="${url}" controls style="min-width:4.375rem;width:100%" draggable=true>`;
         }

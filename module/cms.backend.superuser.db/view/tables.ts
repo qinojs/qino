@@ -37,10 +37,10 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
       const fields = await table.init();
       const schemaFields: Record<string, any> = schemaProps[table.name]?.additionalProperties?.properties ?? {};
       const status = await tableStatus(db, table.name).catch(() => null);
-      const uncovered = Object.keys(fields).filter(f => !(f in schemaFields)).length;
+      const uncovered = [...fields.keys()].filter(f => !(f in schemaFields)).length;
 
       const bytes = status?.bytes != null ? html`<u2-bytes>${status.bytes}</u2-bytes>` : "?";
-      const primaries = Object.values(fields).filter((f: any) => f.isPrimary());
+      const primaries = [...fields.values()].filter((f: any) => f.isPrimary());
       const primaryBadge = primaries.length === 0
         ? html.async`<small class=u2-badge style="background:var(--red)">${t`none`}</small>`
         : primaries.length === 1
@@ -51,7 +51,7 @@ async function tableOverview(app: App, db: any): Promise<HtmlString> {
         <td><a href="${u.search}">${table.name}</a>
         <td style="text-align:right">${status?.rows ?? "?"}
         <td style="text-align:right">${bytes}
-        <td style="text-align:right">${Object.keys(fields).length}
+        <td style="text-align:right">${fields.size}
         <td data-value="${primaries.length}">${primaryBadge}
         <td>${statusBadge(app, table.name in schemaProps, uncovered)}`;
     })
@@ -86,7 +86,7 @@ async function tableDetail(app: App, db: any, modules: Map<string, any>, tableNa
   const origins = fieldOriginsByTable(modules, tableName);
   const status = await tableStatus(db, tableName).catch(() => null);
 
-  const rows = Object.entries(fields as Record<string, any>).map(([fname, field]) => {
+  const rows = [...fields].map(([fname, field]: [string, any]) => {
     const props = schemaFields[fname];
     const schemaCell = props
       ? html.join(Object.entries(props).map(([k, v]) =>

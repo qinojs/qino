@@ -66,6 +66,16 @@ cms.dialogs = {
   prompt:  async (text, initial) => scoped.prompt(await text, initial),
 };
 const { alert, confirm } = cms.dialogs;
+
+// A failed <img> fires no bubbling event, so the media list is listened to at the root.
+root.addEventListener("error", (e) => {
+  const src = e.target?.dataset?.audio;
+  if (!src) return;
+  e.target.replaceWith(Object.assign(document.createElement("audio"), {
+    src, controls: true, draggable: true, style: "min-width:4.4rem; width:100%",
+  }));
+}, true);
+
 function onEl(selector, fn) {
   new SelectorObserver({ on: el => requestAnimationFrame(() => fn(el)) }).observe(selector, { root });
 }

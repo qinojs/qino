@@ -120,7 +120,7 @@ function buildSchema(app: App): Promise<Table[]> {
     const fields = await t.init();
     return {
       name: t.name,
-      fields: Object.entries(fields).map(([name, f]) => ({ name, type: f.vs?.Type ?? "" })),
+      fields: [...fields].map(([name, f]) => ({ name, type: f.vs?.Type ?? "" })),
     };
   }));
 }

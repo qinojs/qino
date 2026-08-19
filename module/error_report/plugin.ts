@@ -3,7 +3,7 @@
  *  - Deno backend:  wraps console.error/warn via reporterJsOptions → addReport() → DB
  *  - Browser:       mod.js served, reporterJsOptions.url → /js-error endpoint → DB
  */
-import { getCtx, Output } from "@qino/qino";
+import { getCtx, Output, unixTime } from "@qino/qino";
 
 import type { Ctx, App } from "@qino/qino";
 
@@ -27,11 +27,25 @@ export const settingsSchema = {
   },
 };
 
+// The three report routes are open write paths: a browser has nothing to authenticate with, so
+// neither has anyone else posting there. The cap is the only thing between them and the table (and
+// the disk read in handleCssError). Counted per client in this process, not across workers.
+const INTAKE_MAX = 20;
+const INTAKE_WINDOW = 600;
+const intake = new Map<string, { n: number; until: number }>();
+function intakeAllowed(ctx: Ctx): boolean {
+  const who = String(ctx.clientId || ctx.req.clientIp);
+  const now = unixTime();
+  const seen = intake.get(who);
+  if (seen && seen.until > now) return ++seen.n <= INTAKE_MAX;
+  if (intake.size > 5000) intake.clear(); // nothing else collects this map
+  intake.set(who, { n: 1, until: now + INTAKE_WINDOW });
+  return true;
+}
+
 async function handleJsError(ctx: Ctx): Promise<void> {
   const report = ctx.req.body;
-  if (report?.message) {
-    await addReport(ctx.app, { source: "js", ...report });
-  }
+  if (report?.message) await addReport(ctx.app, { source: "js", ...report });
   throw new Output({});
 }
 
@@ -123,10 +137,14 @@ export function init(app: App, { signal }: { signal: AbortSignal }): void {
   };
   signal.addEventListener("abort", () => { delete reporter.onError; }, { once: true });
 
-  app.on("route", ({ ctx }) => {
-    if (ctx.req.appPath === "js-error")  return handleJsError(ctx);
-    if (ctx.req.appPath === "css-error") return handleCssError(ctx);
-    if (ctx.req.appPath === "csp-error") return handleCspError(ctx);
+  app.on("route", async ({ ctx }) => {
+    const path = ctx.req.appPath;
+    if (path !== "js-error" && path !== "css-error" && path !== "csp-error") return;
+    if (!intakeAllowed(ctx)) throw new Output({});
+    if (path === "csp-error") return handleCspError(ctx); // csp reports are not covered by the setting
+    if (!await app.settings.error_report.browserErrors) throw new Output({});
+    if (path === "js-error") return handleJsError(ctx)
+    if (path === "css-error") return handleCssError(ctx);
   }, { signal });
 
   // Track every 404 response (pages, api, dbFile, static). A direct visit of the

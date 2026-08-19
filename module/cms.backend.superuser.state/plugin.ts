@@ -16,7 +16,7 @@ function render(node: Node): HtmlString {
   <div class=u2-card style="flex:1 1 100%">
     <div class=-head>State</div>
     <div class=-body style="flex:1 1 100%; xdisplay:flex; gap:.5rem; align-items:start; flex-wrap:wrap">
-      <button type=button onclick="cms.reloadPart(${Number(node.id)}, 'state')">neu laden</button>
+      <button type=button data-reload>neu laden</button>
     </div>
   </div>
   <div class=u2-flex cms-part=state>${renderState(node)}</div>
@@ -25,7 +25,6 @@ function render(node: Node): HtmlString {
 
 function renderState(node: Node): HtmlString {
   const ctx = getCtx();
-  ctx.res.html.scripts.add(ctx.req.moduleUrl + "cms.backend.superuser.state/pub/state.mjs");
   ctx.res.html.importMap.set(DUMP_JS, DUMP_JS); // ugly
   ctx.res.csp["script-src"][DUMP_JS] = true;
   return html`
@@ -34,11 +33,11 @@ function renderState(node: Node): HtmlString {
     ${clientCtxBox("Client / ctx (qino.js)")}`;
 }
 
-// empty box, filled client-side by pub/state.mjs with dump(getCtx())
+// empty box, filled client-side by pub/main.js with dump(ctx)
 function clientCtxBox(title: string): HtmlString {
   return html`<div class=u2-card style="min-width:0; overflow:auto; height:80vh">
   <div class=-head>${title}</div>
-  <div class=-body id=qg-client-ctx style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
+  <div class=-body data-client-ctx style="overflow:auto; max-height:90vh"><em>lädt…</em></div>
 </div>`;
 }
 
@@ -80,6 +79,7 @@ export function backendDashboardWidget(app: App): Promise<HtmlString> {
 
 export const cms = {
   node: {
+    js: ["pub/main.js"],
     render,
     parts: {
       state: renderState,

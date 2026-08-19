@@ -4,6 +4,9 @@ cms.initNode("backend.cms.module", (el) => {
   const nid = Number(cms.el.nid(el));
 
   // overview: search + type filter, client-side — every module is already rendered
+  // the buttons act on their own; nothing here is meant to submit
+  el.querySelector("[data-replace-form]")?.addEventListener("submit", (e) => e.preventDefault());
+
   const search = el.querySelector("[data-search]");
   const typeFilter = el.querySelector("[data-type-filter]");
   if (typeFilter) {

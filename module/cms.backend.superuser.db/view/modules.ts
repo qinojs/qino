@@ -41,7 +41,7 @@ export async function renderModules(app: App, modules: Map<string, any>): Promis
   const tablesLabel = await t`tables`;
   const fieldsLabel = await t`fields`;
   const definedByLabel = await t`defined by`;
-  const moduleRows = Object.keys(modules).sort().flatMap(modName => {
+  const moduleRows = [...modules.keys()].sort().flatMap((modName: string) => {
     const tables = index[modName];
     if (!tables) return [];
 
