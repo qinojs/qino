@@ -105,7 +105,7 @@ export class ModuleManager {
   #pending: { spec: string; name?: string }[] = [];
   #linked = new Set<string>(); // modules whose hooks have run (imported ⊇ linked)
   #declared = new Set<string>(); // came from add(), i.e. the application itself — not uninstallable
-  #installed: Record<string, number> = {}; // name → time install() ran; the `module` table in memory
+  #installed = new Map<string, number>(); // name → time install() ran; the `module` table in memory
   #failed: Record<string, string> = {}; // installed but not importable this boot → name: why
   #booting = false; // inside init(): install() only registers, the link pass follows
 
@@ -187,7 +187,7 @@ export class ModuleManager {
     // database has no table and an install older than the column has no `url`.
     const rows = await this.#app.db.query`SELECT * FROM module`.catch(() => []);
     for (const { name, url, installed } of rows) {
-      if (installed) this.#installed[name] = installed;
+      if (installed) this.#installed.set(name, installed);
       if (!url || this.#modules[name]) continue;
       // A deleted folder or an unreachable host must not keep the app from booting: shout, skip,
       // and let the module page offer the uninstall that clears the row.
@@ -243,8 +243,9 @@ export class ModuleManager {
     const mod = this.#modules[name];
     if (!mod || !this.#linked.has(name)) throw new Error(`Cannot repair "${name}": not linked`);
     await mod.plugin.install?.({ app: this.#app, module: mod.plugin });
-    this.#installed[name] = unixTime();
-    await this.#app.db.table("module").ensure({ name, installed: this.#installed[name] });
+    const installed = unixTime();
+    this.#installed.set(name, installed);
+    await this.#app.db.table("module").ensure({ name, installed });
   }
 
   /** Back to factory: let the module remove what it owns, then install it again. Needs an
@@ -267,7 +268,7 @@ export class ModuleManager {
       await mod.plugin.uninstall?.({ app: this.#app, module: mod.plugin });
     }
     await this.#app.db.table("module").delete(name);
-    delete this.#installed[name];
+    this.#installed.delete(name);
     delete this.#failed[name];
     delete this.#modules[name];
   }
@@ -317,11 +318,11 @@ export class ModuleManager {
     const { plugin } = mod;
     try {
       await plugin.init?.(this.#app, { signal: mod.newSignal() });
-      if (!this.#installed[mod.name]) {
+      if (!this.#installed.has(mod.name)) {
         await plugin.install?.({ app: this.#app, module: plugin });
         const installed = unixTime();
         await this.#app.db.table("module").ensure({ name: mod.name, installed }); // db row first: the memo must not outlive a failed write
-        this.#installed[mod.name] = installed;
+        this.#installed.set(mod.name, installed);
       }
       await this.#loadLocales(mod);
       if (plugin.api) this.#app.apiTree[mod.name] = plugin.api;
