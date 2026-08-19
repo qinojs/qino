@@ -1,4 +1,4 @@
-import { html, sql } from "@qino/qino";
+import { html, sql, sqlSearch } from "@qino/qino";
 import { cmsCtx } from "@qino/qino/cms";
 
 import type { Ctx, HtmlString } from "@qino/qino";
@@ -12,8 +12,15 @@ async function render(node: Node, { ctx }: { ctx: Ctx }): Promise<HtmlString> {
   const possiblePages = new Set<string>();
 
   if (words) {
-    const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
-    const rows = await node.app.db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
+    const db = node.app.db;
+    let rows;
+    if (db.dialect === "mysql") {
+      const match = sql`MATCH (t.text) AGAINST (${words} IN BOOLEAN MODE)`;
+      rows = await db.query`SELECT p.id, MAX(${match}) score FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${match} GROUP BY p.id ORDER BY score DESC LIMIT 100`;
+    } else {
+      const { where } = sqlSearch(words, ["t.text"]);
+      rows = await db.query`SELECT p.id FROM page p INNER JOIN text t ON p.title_id = t.id WHERE p.searchable AND ${where} GROUP BY p.id LIMIT 100`;
+    }
     let limit = 5;
     for (const row of rows) {
       const p = await node.cms.node(row.id);
